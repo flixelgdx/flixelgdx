@@ -50,6 +50,7 @@ www-test/
 
 ## IntelliJ, Android Studio:
 .idea/
+.junie/
 *.ipr
 *.iws
 *.iml

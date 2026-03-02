@@ -83,7 +83,9 @@ public class FlixelTweenSettings {
    * @param setter Consumes the interpolated value on every tween update.
    * @return {@code this} tween settings object for chaining.
    */
-  public FlixelTweenSettings addGoal(@NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatGetter getter, float toValue, @NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter setter) {
+  public FlixelTweenSettings addGoal(@NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatGetter getter,
+                                     float toValue,
+                                     @NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter setter) {
     propertyGoals.add(new FlixelTweenPropertyGoal(getter, toValue, setter));
     return this;
   }

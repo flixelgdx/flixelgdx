@@ -11,12 +11,10 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.XmlReader;
-
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
-
-import com.badlogic.gdx.utils.ObjectMap;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;

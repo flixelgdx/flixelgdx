@@ -53,7 +53,7 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
 
   /**
    * Called when the state is first created. This is where you want to assign your
-   * sprites and setup everything your state uses!
+   * sprites and set up everything your state uses!
    *
    * <p>Make sure to override this, NOT the constructor!
    */
@@ -157,7 +157,7 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   public void resume() {}
 
   @Override
-  public void hide() {}
+  public final void hide() {}
 
   /**
    * Disposes {@code this} state, any active substate, and all members. Called automatically

@@ -3,7 +3,7 @@ package me.stringdotjar.flixelgdx.display;
 import com.badlogic.gdx.graphics.Color;
 
 /**
- * A {@code FlixelSubState} can be opened inside of a {@link FlixelState}. By default, it
+ * A {@code FlixelSubState} can be opened inside a {@link FlixelState}. By default, it
  * stops the parent state from updating, making it convenient for pause screens or menus.
  *
  * <p>The parent state's {@link FlixelState#persistentUpdate} and
@@ -16,11 +16,11 @@ import com.badlogic.gdx.graphics.Color;
  */
 public abstract class FlixelSubState extends FlixelState {
 
-  /** Called when this substate is closed. */
-  public Runnable closeCallback;
-
   /** Called when this substate is opened or resumed. */
   public Runnable openCallback;
+
+  /** Called when this substate is closed. */
+  public Runnable closeCallback;
 
   /** The parent state that opened this substate. Set internally by {@link FlixelState#openSubState}. */
   FlixelState parentState;
@@ -42,9 +42,7 @@ public abstract class FlixelSubState extends FlixelState {
     this.bgColor = bgColor;
   }
 
-  /**
-   * Closes this substate by telling the parent state to remove it.
-   */
+  /** Closes this substate by telling the parent state to remove it. */
   public void close() {
     if (parentState != null) {
       parentState.closeSubState();

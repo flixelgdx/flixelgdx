@@ -458,7 +458,7 @@ public class FlixelCamera extends FlixelBasic {
       }
     }
 
-    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * 60f);
+    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * Flixel.getGame().getFramerate());
     scroll.x = MathUtils.lerp(scroll.x, desiredX, lerpFactor);
     scroll.y = MathUtils.lerp(scroll.y, desiredY, lerpFactor);
   }
