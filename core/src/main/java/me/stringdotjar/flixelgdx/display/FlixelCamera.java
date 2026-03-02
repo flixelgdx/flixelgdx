@@ -611,7 +611,7 @@ public class FlixelCamera extends FlixelBasic {
    * @param color The color to flash.
    * @param duration How long the flash takes to fade, in seconds.
    * @param onComplete Callback invoked when the flash finishes, or {@code null}.
-   * @param force If {@code true}, resets any currently-running flash.
+   * @param force If {@code true}, resets any currently running flash.
    */
   public void flash(Color color, float duration, Runnable onComplete, boolean force) {
     if (flashActive && !force) {
@@ -797,7 +797,7 @@ public class FlixelCamera extends FlixelBasic {
    * Fills the camera display with the specified color using the given batch and a
    * 1x1 white texture.
    *
-   * @param fillColor The color to fill with (alpha channel is respected).
+   * @param fillColor The color to fill with (an alpha channel is respected).
    * @param blendAlpha Whether to blend the alpha or overwrite previous contents.
    * @param fxAlpha Additional alpha multiplier (0.0 to 1.0).
    * @param batch An active {@link Batch} to draw with (must be between
