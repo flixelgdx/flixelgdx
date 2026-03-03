@@ -92,7 +92,7 @@ public class Custom3DCamera extends FlixelCamera {
     
   public Custom3DCamera(float x, float y, int width, int height, float zoom) {
     // You can add your own custom camera and viewport directly!
-    super(x, y, width, height, zoom, new PerspectiveCamera(), new ExtendViewport(640, 360, perspectiveCamera));
+    super(x, y, width, height, zoom, new PerspectiveCamera(), new ExtendViewport(640, 360));
   }
 }
 ```
@@ -118,8 +118,8 @@ public class Player extends FlixelSprite {
     makeGraphic(16, 16, Color.WHITE);
 
     // Basic positioning and motion come from FlixelObject.
-    x = 100;
-    y = 80;
+    setX(100);
+    setY(80);
     velocityX = 60;  // move right (velocityY, acceleration, drag, etc. also available)
   }
 }

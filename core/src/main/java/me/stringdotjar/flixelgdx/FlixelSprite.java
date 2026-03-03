@@ -345,8 +345,8 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
       float oX = currentFrame.originalWidth / 2f;
       float oY = currentFrame.originalHeight / 2f;
 
-      float drawX = x - offsetX + currentFrame.offsetX;
-      float drawY = y - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
+      float drawX = getX() - offsetX + currentFrame.offsetX;
+      float drawY = getY() - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
 
       boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
       boolean isFlippedY = flipY;
@@ -362,7 +362,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
         currentFrame.getRegionHeight(),
         isFlippedX ? -scaleX : scaleX,
         isFlippedY ? -scaleY : scaleY,
-        angle,
+        getAngle(),
         currentFrame.getRegionX(),
         currentFrame.getRegionY(),
         currentFrame.getRegionWidth(),
@@ -378,7 +378,17 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
       float sy = isFlippedY ? -scaleY : scaleY;
 
       batch.setColor(color);
-      batch.draw(currentRegion, x - offsetX, y - offsetY, originX, originY, width, height, sx, sy, angle);
+      batch.draw(
+        currentRegion,
+        getX() - offsetX,
+        getY() - offsetY,
+        originX,
+        originY,
+        getWidth(),
+        getHeight(),
+        sx,
+        sy,
+        getAngle());
       batch.setColor(Color.WHITE);
     }
   }
@@ -410,7 +420,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     color.set(Color.WHITE);
     flipX = false;
     flipY = false;
-    angle = 0f;
+    setAngle(0f);
     if (texture != null) {
       texture.dispose();
       texture = null;
@@ -476,8 +486,8 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   }
 
   public void setOriginCenter() {
-    originX = width / 2f;
-    originY = height / 2f;
+    originX = getWidth() / 2f;
+    originY = getHeight() / 2f;
   }
 
   public float getOffsetX() {

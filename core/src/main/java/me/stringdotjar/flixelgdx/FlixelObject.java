@@ -13,19 +13,19 @@ package me.stringdotjar.flixelgdx;
 public class FlixelObject extends FlixelBasic {
 
   /** X position of the upper left corner of this object in world space. */
-  protected float x = 0f;
+  private float x = 0f;
 
   /** Y position of the upper left corner of this object in world space. */
-  protected float y = 0f;
+  private float y = 0f;
 
   /** The width of this object's hitbox. */
-  protected float width = 0f;
+  private float width = 0f;
 
   /** The height of this object's hitbox. */
-  protected float height = 0f;
+  private float height = 0f;
 
   /** The angle (in degrees) of this object. Used for visual rotation in sprites. */
-  protected float angle = 0f;
+  private float angle = 0f;
 
   /** The current velocity of this object in pixels-per-second. */
   protected float velocityX = 0f;
