@@ -13,6 +13,20 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 - [**Project Structure**](PROJECT.md): Understand the multi-module layout and how Gradle is used.
 - [**Compiling & Testing**](TESTING.md): How to build the framework and test it as a dependency in your own projects.
 
+# Supported Platforms
+
+FlixelGDX supports the following platforms through its modular backend system:
+
+- **Desktop**: Windows, macOS, and Linux via LWJGL3.
+- **Android**: Full support for Android mobile devices.
+- **iOS**: Support via RoboVM.
+- **Web**: Support via TeaVM.
+
+> [!WARNING]
+> FlixelGDX is a _modern_ framework, which means it requires _modern_ Java. You must use Java 17 or higher to be able
+> to use FlixelGDX. Because of this, web games don't (and can't) support GWT; it is done through a modern
+> library called TeaVM, which transpiles Java code to JavaScript to be run in a browser.
+
 # Goals
 
 ## Replicate Flixel API
@@ -409,17 +423,3 @@ This keeps logging consistent and readable. You can plug in your own `FlixelLogg
 #### Using FlixelGDX logging in a regular libGDX project
 
 The static methods `Flixel.info`, `Flixel.warn`, and `Flixel.error` use a default logger that is created when Flixel is initialized (e.g. by `FlixelGame`). If you use FlixelGDX only as a library and never call `Flixel.initialize()`, you can still call these methods after setting your own logger with `Flixel.setLogger(logger)` so that all Flixel log calls go through your pipeline. Alternatively, use your existing logging in parallel; Flixel’s API is just a convenience and doesn’t replace libGDX or other logging.
-
-## Supported Platforms
-
-FlixelGDX supports the following platforms through its modular backend system:
-
-- **Desktop**: Windows, macOS, and Linux via LWJGL3.
-- **Android**: Full support for Android mobile devices.
-- **iOS**: Support via RoboVM.
-- **Web**: Support via TeaVM.
-
-> [!WARNING]
-> FlixelGDX is a _modern_ framework, which means it requires modern Java. You must use Java 17 or higher to be able
-> to use FlixelGDX. Because of this, web games don't (and can't) support GWT, it is done through a modern
-> library called TeaVM, which transpiles Java code to JavaScript to be run in a browser.
