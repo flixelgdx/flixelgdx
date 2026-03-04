@@ -353,7 +353,7 @@ public class FlixelSound extends FlixelBasic {
   }
 
   public static String extractAudioPath(String path) {
-    FileHandle handle = Gdx.files.absolute(FlixelPathsUtil.resolveAudioPath(path));
+    FileHandle handle = Gdx.files.absolute(path);
     if (handle.file().exists()) {
       return handle.file().getAbsolutePath();
     }
