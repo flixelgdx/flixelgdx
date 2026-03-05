@@ -10,6 +10,7 @@ import games.rednblack.miniaudio.MAGroup;
 import games.rednblack.miniaudio.MASound;
 import games.rednblack.miniaudio.MiniAudio;
 import games.rednblack.miniaudio.loader.MASoundLoader;
+import me.stringdotjar.flixelgdx.audio.FlixelSound;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 import me.stringdotjar.flixelgdx.backend.FlixelAlerter;
@@ -18,10 +19,8 @@ import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.signal.FlixelSignal;
-import me.stringdotjar.flixelgdx.signal.FlixelSignalData.MusicPlayedSignalData;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
-import me.stringdotjar.flixelgdx.signal.FlixelSignalData.SoundPlayedSignalData;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
@@ -50,7 +49,7 @@ public final class Flixel {
   private static MAGroup soundsGroup;
 
   /** The sound for playing music throughout the game. */
-  private static MASound music;
+  private static FlixelSound music;
 
   /** The current master volume that is set. */
   private static float masterVolume = 1;
@@ -67,7 +66,7 @@ public final class Flixel {
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   private static FlixelLogger defaultLogger;
 
-  /** System used to detect where a log come froms when a log is created. **/
+  /** System used to detect where a log comes from when a log is created. **/
   private static FlixelStackTraceProvider stackTraceProvider;
 
   /**
@@ -141,7 +140,7 @@ public final class Flixel {
    * regular string (without {@code assets/} at the beginning).
    * @return The new sound instance.
    */
-  public static MASound playSound(String path) {
+  public static FlixelSound playSound(String path) {
     return playSound(path, 1, false, null, false);
   }
 
@@ -162,7 +161,7 @@ public final class Flixel {
    * @param volume The volume to play the new sound with.
    * @return The new sound instance.
    */
-  public static MASound playSound(String path, float volume) {
+  public static FlixelSound playSound(String path, float volume) {
     return playSound(path, volume, false, null, false);
   }
 
@@ -184,7 +183,7 @@ public final class Flixel {
    * @param looping Should the new sound loop indefinitely?
    * @return The new sound instance.
    */
-  public static MASound playSound(String path, float volume, boolean looping) {
+  public static FlixelSound playSound(String path, float volume, boolean looping) {
     return playSound(path, volume, looping, null, false);
   }
 
@@ -209,7 +208,7 @@ public final class Flixel {
    * default sound group will be used.
    * @return The new sound instance.
    */
-  public static MASound playSound(String path, float volume, boolean looping, MAGroup group) {
+  public static FlixelSound playSound(String path, float volume, boolean looping, MAGroup group) {
     return playSound(path, volume, looping, group, false);
   }
 
@@ -237,15 +236,14 @@ public final class Flixel {
    * @param external Should this sound be loaded externally? (This is only for mobile platforms!)
    * @return The new sound instance.
    */
-  public static MASound playSound(@NotNull String path, float volume, boolean looping, MAGroup group, boolean external) {
+  public static FlixelSound playSound(@NotNull String path, float volume, boolean looping, MAGroup group, boolean external) {
     String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
     MASound sound = engine.createSound(resolvedPath, (short) 0, (group != null) ? group : soundsGroup, external);
-    Signals.preSoundPlayed.dispatch(new SoundPlayedSignalData(sound));
-    sound.setVolume(volume);
-    sound.setLooping(looping);
-    sound.play();
-    Signals.postSoundPlayed.dispatch(new SoundPlayedSignalData(sound));
-    return sound;
+    FlixelSound flixelSound = new FlixelSound(sound);
+    flixelSound.setVolume(volume);
+    flixelSound.setLooped(looping);
+    flixelSound.play();
+    return flixelSound;
   }
 
   /**
@@ -262,8 +260,9 @@ public final class Flixel {
    * @param path The path to load the music from. Note that if you're loading an external sound file
    * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
    * regular string (without {@code assets/} at the beginning).
+   * @return The new music sound instance.
    */
-  public static MASound playMusic(String path) {
+  public static FlixelSound playMusic(String path) {
     return playMusic(path, 1, true, false);
   }
 
@@ -282,8 +281,9 @@ public final class Flixel {
    * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
    * regular string (without {@code assets/} at the beginning).
    * @param volume The volume to play the new music with.
+   * @return The new music sound instance.
    */
-  public static MASound playMusic(String path, float volume) {
+  public static FlixelSound playMusic(String path, float volume) {
     return playMusic(path, volume, true, false);
   }
 
@@ -303,8 +303,9 @@ public final class Flixel {
    * regular string (without {@code assets/} at the beginning).
    * @param volume The volume to play the new music with.
    * @param looping Should the new music loop indefinitely?
+   * @return The new music sound instance.
    */
-  public static MASound playMusic(String path, float volume, boolean looping) {
+  public static FlixelSound playMusic(String path, float volume, boolean looping) {
     return playMusic(path, volume, looping, false);
   }
 
@@ -327,18 +328,18 @@ public final class Flixel {
    * @param volume The volume to play the new music with.
    * @param looping Should the new music loop indefinitely?
    * @param external Should this music be loaded externally? (This is only for mobile platforms!)
+   * @return The new music sound instance.
    */
-  public static MASound playMusic(String path, float volume, boolean looping, boolean external) {
-    Signals.preMusicPlayed.dispatch(new MusicPlayedSignalData(music));
+  public static FlixelSound playMusic(String path, float volume, boolean looping, boolean external) {
     if (music != null) {
       music.stop();
     }
     String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
-    music = engine.createSound(resolvedPath, (short) 0, soundsGroup, external);
+    MASound sound = engine.createSound(resolvedPath, (short) 0, soundsGroup, external);
+    music = new FlixelSound(sound);
     music.setVolume(volume);
-    music.setLooping(looping);
+    music.setLooped(looping);
     music.play();
-    Signals.postMusicPlayed.dispatch(new MusicPlayedSignalData(music));
     return music;
   }
 
@@ -450,7 +451,7 @@ public final class Flixel {
     return state;
   }
 
-  public static MASound getMusic() {
+  public static FlixelSound getMusic() {
     return music;
   }
 
@@ -568,10 +569,6 @@ public final class Flixel {
     public static final FlixelSignal<Void> windowFocused = new FlixelSignal<>();
     public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
     public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
-    public static final FlixelSignal<SoundPlayedSignalData> preSoundPlayed = new FlixelSignal<>();
-    public static final FlixelSignal<SoundPlayedSignalData> postSoundPlayed = new FlixelSignal<>();
-    public static final FlixelSignal<MusicPlayedSignalData> preMusicPlayed = new FlixelSignal<>();
-    public static final FlixelSignal<MusicPlayedSignalData> postMusicPlayed = new FlixelSignal<>();
 
     private Signals() {}
   }

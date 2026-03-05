@@ -7,7 +7,6 @@ import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
-import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,9 +66,14 @@ public class FlixelSound extends FlixelBasic {
 
   /** Signal dispatched when the sound reaches its end (non-looping). */
   @NotNull
-  private final FlixelSignal<Void> onComplete = new FlixelSignal<>();
+  public final FlixelSignal<Void> onComplete = new FlixelSignal<>();
 
-  public FlixelSound(FileHandle path) {
+  /**
+   * Creates a new Flixel sound wrapping the given file path.
+   * 
+   * @param path The path to the sound file.
+   */
+  public FlixelSound(@NotNull FileHandle path) {
     this(Flixel.getAudioEngine().createSound(path.path(), (short) 0, null, false));
   }
 
@@ -250,7 +254,7 @@ public class FlixelSound extends FlixelBasic {
     cancelFadeTween();
     FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
       .setDuration(durationSeconds)
-      .addGoal(() -> getVolume(), to, this::setVolume);
+      .addGoal(this::getVolume, to, this::setVolume);
     fadeTween = FlixelTween.tween(settings);
     return this;
   }
@@ -301,12 +305,6 @@ public class FlixelSound extends FlixelBasic {
     this.persist = persist;
   }
 
-  /** Dispatched when the sound reaches its end (non-looping). */
-  @NotNull
-  public FlixelSignal<Void> getOnComplete() {
-    return onComplete;
-  }
-
   @Override
   public void update(float elapsed) {
     if (!active || !exists || sound == null) {
@@ -352,7 +350,14 @@ public class FlixelSound extends FlixelBasic {
     return audioPathCache;
   }
 
-  public static String extractAudioPath(String path) {
+  /**
+   * Extracts the path to the audio file and converts it to an absolute path
+   * so MiniAudio can open it and play it.
+   * 
+   * @param path The path to the audio file.
+   * @return The absolute path to the audio file.
+   */
+  public static String extractAudioPath(@NotNull String path) {
     FileHandle handle = Gdx.files.absolute(path);
     if (handle.file().exists()) {
       return handle.file().getAbsolutePath();
