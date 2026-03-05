@@ -185,7 +185,7 @@ public final class FlixelRuntimeUtil {
   }
 
   /**
-   * Enum representing the environment in which Flixel is running in.
+   * Enum representing the environment in which the game is running in.
    */
   public enum RunEnvironment {
     IDE,

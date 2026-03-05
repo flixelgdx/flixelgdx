@@ -96,10 +96,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /** Whether this sprite is flipped vertically. */
   protected boolean flipY = false;
 
-  /**
-   * The direction this sprite is facing. LEFT, RIGHT, UP, DOWN.
-   * Useful for automatic flipping.
-   */
+  /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelConstants.Graphics.FACING_RIGHT;
 
   public FlixelSprite() {
@@ -111,18 +108,18 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /**
    * Updates {@code this} sprite.
    *
-   * @param delta The amount of time that has passed since the last frame update.
+   * @param elapsed The amount of time that has passed since the last frame update.
    */
   @Override
-  public void update(float delta) {
+  public void update(float elapsed) {
     if (moves) {
-      updateMotion(delta);
+      updateMotion(elapsed);
     }
 
     if (animations != null && !animations.isEmpty()) {
       Animation<TextureRegion> anim = animations.get(currentAnim);
       if (anim != null) {
-        stateTime += delta;
+        stateTime += elapsed;
         currentFrame = (TextureAtlas.AtlasRegion) anim.getKeyFrame(stateTime, looping);
         currentRegion = currentFrame;
       }
