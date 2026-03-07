@@ -3,15 +3,13 @@ package me.stringdotjar.flixelgdx.util;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import me.stringdotjar.flixelgdx.audio.FlixelSound;
+
+// TODO: Remove this class and find a better way to generically handle paths, this is only here because of
+// FlixelGDX recently being moved from Polyverse.
 
 /** Utility class for simplifying asset paths and libGDX {@link FileHandle}s. */
 public final class FlixelPathsUtil {
-
-  private static final Map<String, String> audioPathCache = new ConcurrentHashMap<>();
 
   public static FileHandle asset(String path) {
     return Gdx.files.internal(path);
@@ -51,24 +49,7 @@ public final class FlixelPathsUtil {
    * @return An absolute filesystem path that MiniAudio can open.
    */
   public static String resolveAudioPath(String path) {
-    return audioPathCache.computeIfAbsent(path, FlixelPathsUtil::extractAudioPath);
-  }
-
-  private static String extractAudioPath(String path) {
-    FileHandle handle = asset(path);
-    if (handle.file().exists()) {
-      return handle.file().getAbsolutePath();
-    }
-    // Asset is inside a JAR, copy it out to a temp file so MiniAudio can open it.
-    String ext = path.contains(".") ? path.substring(path.lastIndexOf('.')) : "";
-    try {
-      File temp = File.createTempFile("flixelaudio_", ext);
-      temp.deleteOnExit();
-      handle.copyTo(new FileHandle(temp));
-      return temp.getAbsolutePath();
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to extract audio asset from JAR: " + path, e);
-    }
+    return FlixelSound.getAudioPathCache().computeIfAbsent(path, FlixelSound::extractAudioPath);
   }
 
   private FlixelPathsUtil() {}

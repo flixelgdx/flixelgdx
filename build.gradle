@@ -138,6 +138,24 @@ subprojects {
   }
 }
 
+configure(subprojects) {
+  apply plugin: 'maven-publish'
+  afterEvaluate {
+    publishing {
+      publications {
+        if (project.plugins.hasPlugin('java-library') || project.plugins.hasPlugin('java')) {
+          maven(MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+          }
+        }
+      }
+    }
+  }
+}
+
 eclipse.project.name = 'flixelgdx' + '-parent'
 
 subprojects {

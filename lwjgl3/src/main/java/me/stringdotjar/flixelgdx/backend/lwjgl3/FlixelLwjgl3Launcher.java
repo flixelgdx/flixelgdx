@@ -42,8 +42,10 @@ public class FlixelLwjgl3Launcher {
 
       @Override
       public void focusLost() {
-        super.focusLost();
-        Flixel.getGame().onWindowUnfocused();
+        if (!Flixel.getGame().isMinimized()) {
+          super.focusLost();
+          Flixel.getGame().onWindowUnfocused();
+        }
       }
 
       @Override

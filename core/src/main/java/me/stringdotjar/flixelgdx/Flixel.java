@@ -3,25 +3,23 @@ package me.stringdotjar.flixelgdx;
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import games.rednblack.miniaudio.MAGroup;
+
 import games.rednblack.miniaudio.MASound;
-import games.rednblack.miniaudio.MiniAudio;
 import games.rednblack.miniaudio.loader.MASoundLoader;
+import games.rednblack.miniaudio.MiniAudio;
+import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
+import me.stringdotjar.flixelgdx.audio.FlixelSound;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
-import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 import me.stringdotjar.flixelgdx.backend.FlixelAlerter;
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.signal.FlixelSignal;
-import me.stringdotjar.flixelgdx.signal.FlixelSignalData.MusicPlayedSignalData;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
-import me.stringdotjar.flixelgdx.signal.FlixelSignalData.SoundPlayedSignalData;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
@@ -30,30 +28,22 @@ import java.util.Properties;
 /**
  * Global manager and utility class for Flixel.
  *
- * <p>This is where you want to do the main things, like switching screens, playing sounds/music, etc.
+ * <p>Use this for switching screens, and use {@link #sound} for playing sounds and music
+ * ({@code Flixel.sound.playSound()}, {@code Flixel.sound.playMusic()}, etc.).
  */
 public final class Flixel {
 
   /** The current {@code FlixelState} being displayed. */
   private static FlixelState state;
 
-  /** The main audio object used to create, */
-  private static MiniAudio engine;
+  /** Central audio manager: use {@code Flixel.sound.playSound()}, {@code Flixel.sound.playMusic()}, etc. */
+  public static FlixelAudioManager sound;
 
   /** The global asset manager used to preload and cache assets. */
   private static AssetManager assetManager;
 
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
-
-  /** The audio group for all sound effects, including the current music. */
-  private static MAGroup soundsGroup;
-
-  /** The sound for playing music throughout the game. */
-  private static MASound music;
-
-  /** The current master volume that is set. */
-  private static float masterVolume = 1;
 
   /** The static instance used to access the core elements of the game. */
   private static FlixelGame game;
@@ -67,7 +57,7 @@ public final class Flixel {
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   private static FlixelLogger defaultLogger;
 
-  /** System used to detect where a log come froms when a log is created. **/
+  /** System used to detect where a log comes from when a log is created. **/
   private static FlixelStackTraceProvider stackTraceProvider;
 
   /**
@@ -94,10 +84,8 @@ public final class Flixel {
 
     assetManager = new AssetManager();
 
-    // Set up the game's global audio system.
-    engine = new MiniAudio();
-    soundsGroup = engine.createGroup();
-    assetManager.setLoader(MASound.class, new MASoundLoader(engine, assetManager.getFileHandleResolver()));
+    sound = new FlixelAudioManager();
+    assetManager.setLoader(MASound.class, new MASoundLoader(sound.getEngine(), assetManager.getFileHandleResolver()));
 
     initialized = true;
   }
@@ -123,233 +111,6 @@ public final class Flixel {
     state = newState;
     state.create();
     Signals.postStateSwitch.dispatch(new StateSwitchSignalData(newState));
-  }
-
-  /**
-   * Plays a new sound effect.
-   *
-   * <p>When you want to play a sound externally, outside the assets folder, you can use a {@link
-   * FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * Flixel.playSound(FlixelPathsUtil.external("your/path/here").path());
-   * }</pre>
-   *
-   * @param path The path to load the sound from. Note that if you're loading an external sound
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @return The new sound instance.
-   */
-  public static MASound playSound(String path) {
-    return playSound(path, 1, false, null, false);
-  }
-
-  /**
-   * Plays a new sound effect.
-   *
-   * <p>When you want to play a sound externally, outside the assets folder, you can use a {@link
-   * FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * Flixel.playSound(FlixelPathsUtil.external("your/path/here").path(), 1);
-   * }</pre>
-   *
-   * @param path The path to load the sound from. Note that if you're loading an external sound
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new sound with.
-   * @return The new sound instance.
-   */
-  public static MASound playSound(String path, float volume) {
-    return playSound(path, volume, false, null, false);
-  }
-
-  /**
-   * Plays a new sound effect.
-   *
-   * <p>When you want to play a sound externally, outside the assets folder, you can use a {@link
-   * FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * Flixel.playSound(FlixelPathsUtil.external("your/path/here").path(), 1, false);
-   * }</pre>
-   *
-   * @param path The path to load the sound from. Note that if you're loading an external sound
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new sound with.
-   * @param looping Should the new sound loop indefinitely?
-   * @return The new sound instance.
-   */
-  public static MASound playSound(String path, float volume, boolean looping) {
-    return playSound(path, volume, looping, null, false);
-  }
-
-  /**
-   * Plays a new sound effect.
-   *
-   * <p>When you want to play a sound externally, outside the assets folder, you can use a {@link
-   * FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * // If null is passed down for the group, then the default sound group will be used.
-   * Flixel.playSound(FlixelPathsUtil.external("your/path/here").path(), 1, false, null);
-   * }</pre>
-   *
-   * @param path The path to load the sound from. Note that if you're loading an external sound
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new sound with.
-   * @param looping Should the new sound loop indefinitely?
-   * @param group The sound group to add the new sound to. If {@code null} is passed down, then the
-   * default sound group will be used.
-   * @return The new sound instance.
-   */
-  public static MASound playSound(String path, float volume, boolean looping, MAGroup group) {
-    return playSound(path, volume, looping, group, false);
-  }
-
-  /**
-   * Plays a new sound effect.
-   *
-   * <p>When you want to play a sound externally, outside the assets folder, you can use a {@link
-   * FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * // If null is passed down for the group, then the default sound group will be used.
-   * // For the boolean attribute "external", you only should make it true for mobile builds,
-   * // otherwise just simply leave it be or make it "false" for other platforms like desktop.
-   * Flixel.playSound(FlixelPathsUtil.external("your/path/here").path(), 1, false, null, true);
-   * }</pre>
-   *
-   * @param path The path to load the sound from. Note that if you're loading an external sound
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new sound with.
-   * @param looping Should the new sound loop indefinitely?
-   * @param group The sound group to add the new sound to. If {@code null} is passed down, then the
-   * default sound group will be used.
-   * @param external Should this sound be loaded externally? (This is only for mobile platforms!)
-   * @return The new sound instance.
-   */
-  public static MASound playSound(@NotNull String path, float volume, boolean looping, MAGroup group, boolean external) {
-    String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
-    MASound sound = engine.createSound(resolvedPath, (short) 0, (group != null) ? group : soundsGroup, external);
-    Signals.preSoundPlayed.dispatch(new SoundPlayedSignalData(sound));
-    sound.setVolume(volume);
-    sound.setLooping(looping);
-    sound.play();
-    Signals.postSoundPlayed.dispatch(new SoundPlayedSignalData(sound));
-    return sound;
-  }
-
-  /**
-   * Sets the current music playing for the entire game.
-   *
-   * <p>When you want to play music located externally, outside the assets folder, you can use a
-   * {@link FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * Flixel.playMusic(FlixelPathsUtil.external("your/path/here").path());
-   * }</pre>
-   *
-   * @param path The path to load the music from. Note that if you're loading an external sound file
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   */
-  public static MASound playMusic(String path) {
-    return playMusic(path, 1, true, false);
-  }
-
-  /**
-   * Sets the current music playing for the entire game.
-   *
-   * <p>When you want to play music located externally, outside the assets folder, you can use a
-   * {@link FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * Flixel.playMusic(FlixelPathsUtil.external("your/path/here").path(), 1);
-   * }</pre>
-   *
-   * @param path The path to load the music from. Note that if you're loading an external sound file
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new music with.
-   */
-  public static MASound playMusic(String path, float volume) {
-    return playMusic(path, volume, true, false);
-  }
-
-  /**
-   * Sets the current music playing for the entire game.
-   *
-   * <p>When you want to play music located externally, outside the assets folder, you can use a
-   * {@link FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * Flixel.playMusic(FlixelPathsUtil.external("your/path/here").path(), 1, false);
-   * }</pre>
-   *
-   * @param path The path to load the music from. Note that if you're loading an external sound file
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new music with.
-   * @param looping Should the new music loop indefinitely?
-   */
-  public static MASound playMusic(String path, float volume, boolean looping) {
-    return playMusic(path, volume, looping, false);
-  }
-
-  /**
-   * Sets the current music playing for the entire game.
-   *
-   * <p>When you want to play music located externally, outside the assets folder, you can use a
-   * {@link FileHandle} like so:
-   *
-   * <pre>{@code
-   * // Notice how it uses the FlixelPathsUtil class provided by Flixel'.
-   * // For the boolean attribute "external", you only should make it true for mobile builds,
-   * // otherwise just simply leave it be or make it "false" for other platforms like desktop.
-   * Flixel.playMusic(FlixelPathsUtil.external("your/path/here").path(), 1, false, true);
-   * }</pre>
-   *
-   * @param path The path to load the music from. Note that if you're loading an external sound file
-   * outside the game's assets, you should use {@link FileHandle}; otherwise, just pass down a
-   * regular string (without {@code assets/} at the beginning).
-   * @param volume The volume to play the new music with.
-   * @param looping Should the new music loop indefinitely?
-   * @param external Should this music be loaded externally? (This is only for mobile platforms!)
-   */
-  public static MASound playMusic(String path, float volume, boolean looping, boolean external) {
-    Signals.preMusicPlayed.dispatch(new MusicPlayedSignalData(music));
-    if (music != null) {
-      music.stop();
-    }
-    String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
-    music = engine.createSound(resolvedPath, (short) 0, soundsGroup, external);
-    music.setVolume(volume);
-    music.setLooping(looping);
-    music.play();
-    Signals.postMusicPlayed.dispatch(new MusicPlayedSignalData(music));
-    return music;
-  }
-
-  /**
-   * Sets the game master/global volume, which is automatically applied to all current sounds.
-   *
-   * @param volume The new master volume to set.
-   */
-  public static void setMasterVolume(float volume) {
-    engine.setMasterVolume(!(volume > 1.0) ? volume : 1.0f);
-    masterVolume = volume;
   }
 
   /**
@@ -450,8 +211,8 @@ public final class Flixel {
     return state;
   }
 
-  public static MASound getMusic() {
-    return music;
+  public static FlixelSound getMusic() {
+    return sound.getMusic();
   }
 
   public static Vector2 getWindowSize() {
@@ -467,19 +228,15 @@ public final class Flixel {
   }
 
   public static MiniAudio getAudioEngine() {
-    return engine;
+    return sound.getEngine();
   }
 
   public static float getMasterVolume() {
-    return masterVolume;
+    return sound.getMasterVolume();
   }
 
   public static AssetManager getAssetManager() {
     return assetManager;
-  }
-
-  public static MAGroup getSoundsGroup() {
-    return soundsGroup;
   }
 
   public static float getElapsed() {
@@ -568,10 +325,6 @@ public final class Flixel {
     public static final FlixelSignal<Void> windowFocused = new FlixelSignal<>();
     public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
     public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
-    public static final FlixelSignal<SoundPlayedSignalData> preSoundPlayed = new FlixelSignal<>();
-    public static final FlixelSignal<SoundPlayedSignalData> postSoundPlayed = new FlixelSignal<>();
-    public static final FlixelSignal<MusicPlayedSignalData> preMusicPlayed = new FlixelSignal<>();
-    public static final FlixelSignal<MusicPlayedSignalData> postMusicPlayed = new FlixelSignal<>();
 
     private Signals() {}
   }

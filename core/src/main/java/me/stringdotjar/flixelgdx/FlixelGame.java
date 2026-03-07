@@ -430,11 +430,7 @@ public abstract class FlixelGame implements ApplicationListener {
     batch.dispose();
     bgTexture.dispose();
 
-    if (Flixel.getMusic() != null) {
-      Flixel.getMusic().dispose();
-    }
-    Flixel.getSoundsGroup().dispose();
-    Flixel.getAudioEngine().dispose();
+    Flixel.sound.dispose();
 
     FlixelFontRegistry.dispose();
 
