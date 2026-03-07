@@ -289,6 +289,7 @@ public final class Flixel {
       return;
     }
 
+    // Apply antialiasing to all sprites in the current state.
     var members = state.getMembers();
     var mbrs = members.begin();
     for (int i = 0; i < members.size; i++) {

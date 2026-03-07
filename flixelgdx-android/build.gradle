@@ -34,6 +34,7 @@ configurations {
 dependencies {
   coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
+  api project(':flixelgdx-core')
   api "androidx.multidex:multidex:2.0.1"
   api "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-armeabi-v7a"
   api "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-arm64-v8a"
