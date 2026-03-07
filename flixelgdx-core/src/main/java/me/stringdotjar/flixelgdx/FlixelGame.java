@@ -3,6 +3,8 @@ package me.stringdotjar.flixelgdx;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -239,6 +241,22 @@ public abstract class FlixelGame implements ApplicationListener {
 
     Flixel.switchState(initialScreen);
     initialScreen = null;
+
+    // Ensure keyboard state is tracked for Flixel.keys (firstJustPressed, firstJustReleased, etc.)
+    if (Flixel.keys != null) {
+      InputProcessor keysProcessor = Flixel.keys.getInputProcessor();
+      InputProcessor current = Gdx.input.getInputProcessor();
+      if (current instanceof InputMultiplexer multiplexer) {
+        multiplexer.addProcessor(0, keysProcessor);
+      } else {
+        InputMultiplexer m = new InputMultiplexer();
+        m.addProcessor(keysProcessor);
+        if (current != null) {
+          m.addProcessor(current);
+        }
+        Gdx.input.setInputProcessor(m);
+      }
+    }
   }
 
   @Override
@@ -261,6 +279,11 @@ public abstract class FlixelGame implements ApplicationListener {
   public void update(float elapsed) {
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
+
+    // Always update input first!
+    if (Flixel.keys != null) {
+      Flixel.keys.update();
+    }
 
     stage.act(elapsed);
     FlixelTween.getGlobalManager().update(elapsed);

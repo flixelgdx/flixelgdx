@@ -15,6 +15,7 @@ import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.backend.FlixelAlerter;
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
+import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.signal.FlixelSignal;
@@ -37,8 +38,11 @@ public final class Flixel {
   /** The current {@code FlixelState} being displayed. */
   private static FlixelState state;
 
-  /** Central audio manager: use {@code Flixel.sound.playSound()}, {@code Flixel.sound.playMusic()}, etc. */
+  /** Central audio manager: use {@code Flixel.sound.play()}, {@code Flixel.sound.playMusic()}, etc. */
   public static FlixelAudioManager sound;
+
+  /** Keyboard input manager: use {@code Flixel.keys.keyPressed()}, {@code Flixel.keys.keyJustPressed()}, etc. */
+  public static FlixelKeyInputManager keys;
 
   /** The global asset manager used to preload and cache assets. */
   private static AssetManager assetManager;
@@ -87,6 +91,8 @@ public final class Flixel {
 
     sound = new FlixelAudioManager();
     assetManager.setLoader(MASound.class, new MASoundLoader(sound.getEngine(), assetManager.getFileHandleResolver()));
+
+    keys = new FlixelKeyInputManager();
 
     initialized = true;
   }
@@ -160,14 +166,6 @@ public final class Flixel {
    */
   public static void showErrorAlert(String title, String message) {
     alerter.showErrorAlert(title, message);
-  }
-
-  public static boolean keyPressed(int key) {
-    return Gdx.input.isKeyPressed(key);
-  }
-
-  public static boolean keyJustPressed(int key) {
-    return Gdx.input.isKeyJustPressed(key);
   }
 
   public static void info(Object message) {
@@ -308,6 +306,7 @@ public final class Flixel {
       return;
     }
 
+    // Apply antialiasing to all sprites in the current state.
     var members = state.getMembers();
     var mbrs = members.begin();
     for (int i = 0; i < members.size; i++) {

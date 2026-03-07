@@ -1092,8 +1092,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Cleans up this camera's state, stopping all effects and clearing the follow
-   * target.
+   * Cleans up this camera's state, stopping all effects and clearing the follow target.
    */
   @Override
   public void destroy() {

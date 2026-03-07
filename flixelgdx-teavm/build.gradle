@@ -23,6 +23,6 @@ teavm {
 }
 
 dependencies {
-  api project(":core")
-  api "com.github.xpenatan.gdx-teavm:backend-web:$gdxTeaVMVersion"
+    api project(':flixelgdx-core')
+    api "com.github.xpenatan.gdx-teavm:backend-web:$gdxTeaVMVersion"
 }

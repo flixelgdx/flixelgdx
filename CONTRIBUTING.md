@@ -2,6 +2,9 @@
 
 We welcome contributions! Whether you're fixing bugs, adding new features, or improving documentation, your help is appreciated. To ensure a smooth process for everyone, please follow these guidelines.
 
+> [!TIP]
+> You can learn more about the project structure and build system in the [Project Structure](PROJECT.md) and [Compiling](COMPILING.md) documents.
+
 ## Workflow
 
 To maintain a stable code base, we follow a specific branching model:

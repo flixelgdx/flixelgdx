@@ -1,6 +1,7 @@
 package me.stringdotjar.flixelgdx;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.Disposable;
 
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 
@@ -11,7 +12,7 @@ import me.stringdotjar.flixelgdx.display.FlixelCamera;
  *
  * @see <a href="https://api.haxeflixel.com/flixel/FlxBasic.html">FlxBasic (HaxeFlixel)</a>
  */
-public class FlixelBasic {
+public class FlixelBasic implements Disposable {
 
   private static int idEnumerator = 0;
 
@@ -59,6 +60,14 @@ public class FlixelBasic {
    * Cleans up this object so it can be garbage-collected. A destroyed {@code FlixelBasic}
    * should not be used anymore. Use {@link #kill()} if you only want to disable it
    * temporarily and {@link #revive()} it later.
+   * 
+   * <p>Override this function to clean up any resources used by this object, 
+   * such as textures, fonts, sounds, etc.
+   * 
+   * <p>This function is called automatically when {@link #dispose()} is called,
+   * so you don't need to call it manually.
+   * 
+   * @see #dispose()
    */
   public void destroy() {
     exists = false;
@@ -81,6 +90,11 @@ public class FlixelBasic {
   public void revive() {
     alive = true;
     exists = true;
+  }
+
+  @Override
+  public void dispose() {
+    destroy();
   }
 
   @Override

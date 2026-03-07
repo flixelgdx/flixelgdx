@@ -11,7 +11,7 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 
 - [**Contributing Guide**](CONTRIBUTING.md): Learn how to contribute to the project, coding standards, and PR requirements.
 - [**Project Structure**](PROJECT.md): Understand the multi-module layout and how Gradle is used.
-- [**Compiling & Testing**](TESTING.md): How to build the framework and test it as a dependency in your own projects.
+- [**Compiling & Testing**](COMPILING.md): How to build the framework and test it as a dependency in your own projects.
 
 # Supported Platforms
 
@@ -36,7 +36,7 @@ using the tools of libGDX to allow it to be seamlessly integrated into new and e
 
 ## LibGDX Integration
 
-We use libGDX's standard lifecycle methods (`update()`, `draw()`, `dispose()`) and performance-oriented tools (like `Poolable` interfaces)
+We use libGDX's standard lifecycle and incorporate Flixel's methods (`update()`, `draw()`, `destroy()`) and performance-oriented tools (like `Poolable` interfaces)
 to ensure that lifecycle and performance are handled correctly.
 
 Because everything is built on top of libGDX, adding FlixelGDX to a new or existing project will be a breeze.

@@ -7,6 +7,8 @@ import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.badlogic.gdx.utils.Disposable;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -20,7 +22,7 @@ import java.util.Set;
  * sound effects and music, global master volume, and automatic pause when the game loses focus
  * (and resume when it regains focus).
  */
-public final class FlixelAudioManager {
+public class FlixelAudioManager implements Disposable {
 
   private final MiniAudio engine;
   private final MAGroup sfxGroup;
@@ -79,11 +81,26 @@ public final class FlixelAudioManager {
    * Sets the global master volume applied to all sounds.
    *
    * @param volume New master volume (values &gt; 1 are clamped to 1).
+   * @return The new master volume.
    */
-  public void setMasterVolume(float volume) {
-    float clamped = volume > 1f ? 1f : volume;
+  public float setMasterVolume(float volume) {
+    float clamped = volume;
+    clamped = Math.max(0f, clamped);
+    clamped = Math.min(1f, clamped);
     engine.setMasterVolume(clamped);
     masterVolume = clamped;
+    return clamped;
+  }
+
+  /**
+   * Changes the global master volume applied to all sounds of {@code this} audio manager 
+   * by the given amount.
+   * 
+   * @param amount The amount to change the master volume by.
+   * @return The new master volume.
+   */
+  public float changeMasterVolume(float amount) {
+    return setMasterVolume(masterVolume + amount);
   }
 
   /**
@@ -93,26 +110,38 @@ public final class FlixelAudioManager {
    * @return The new FlixelSound instance.
    */
   @NotNull
-  public FlixelSound playSound(@NotNull String path) {
-    return playSound(path, 1f, false, null, false);
+  public FlixelSound play(@NotNull String path) {
+    return play(path, 1f, false, null, false);
   }
 
-  /** @see #playSound(String, float, boolean, MAGroup, boolean) */
+  /**
+   * Plays a new sound effect.
+   *
+   * @param path Path to the sound.
+   * @param volume Volume to play with.
+   * @return The new FlixelSound instance.
+   */
   @NotNull
-  public FlixelSound playSound(@NotNull String path, float volume) {
-    return playSound(path, volume, false, null, false);
+  public FlixelSound play(@NotNull String path, float volume) {
+    return play(path, volume, false, null, false);
   }
 
-  /** @see #playSound(String, float, boolean, MAGroup, boolean) */
+  /**
+   * Plays a new sound effect.
+   *
+   * @param path Path to the sound.
+   * @param volume Volume to play with.
+   * @param looping Whether to loop.
+   */
   @NotNull
-  public FlixelSound playSound(@NotNull String path, float volume, boolean looping) {
-    return playSound(path, volume, looping, null, false);
+  public FlixelSound play(@NotNull String path, float volume, boolean looping) {
+    return play(path, volume, looping, null, false);
   }
 
-  /** @see #playSound(String, float, boolean, MAGroup, boolean) */
+  /** @see #play(String, float, boolean, MAGroup, boolean) */
   @NotNull
-  public FlixelSound playSound(@NotNull String path, float volume, boolean looping, @Nullable MAGroup group) {
-    return playSound(path, volume, looping, group, false);
+  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable MAGroup group) {
+    return play(path, volume, looping, group, false);
   }
 
   /**
@@ -126,7 +155,7 @@ public final class FlixelAudioManager {
    * @return The new FlixelSound instance.
    */
   @NotNull
-  public FlixelSound playSound(@NotNull String path, float volume, boolean looping, @Nullable MAGroup group, boolean external) {
+  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable MAGroup group, boolean external) {
     String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
     MAGroup targetGroup = (group != null) ? group : sfxGroup;
     MASound sound = engine.createSound(resolvedPath, (short) 0, targetGroup, external);
@@ -196,6 +225,9 @@ public final class FlixelAudioManager {
   public void pause() {
     pausedByFocus.clear();
     for (FlixelSound s : activeSounds) {
+      if (s == null) {
+        continue;
+      }
       if (s.isPlaying()) {
         s.pause();
         pausedByFocus.add(s);
@@ -208,6 +240,9 @@ public final class FlixelAudioManager {
    */
   public void resume() {
     for (FlixelSound s : pausedByFocus) {
+      if (s == null) {
+        continue;
+      }
       s.resume();
     }
     pausedByFocus.clear();
@@ -217,6 +252,7 @@ public final class FlixelAudioManager {
    * Disposes the current music (if any), all groups, and the engine. Call once when the game is
    * shutting down. After this, the manager must not be used.
    */
+  @Override
   public void dispose() {
     if (music != null) {
       music.dispose();
