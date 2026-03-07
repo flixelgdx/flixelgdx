@@ -34,9 +34,6 @@ public class FlixelTween implements Pool.Poolable {
   /** How many seconds has elapsed since {@code this} tween started. */
   protected float secondsSinceStart = 0.0f;
 
-  /** Whether {@code this} tween will use startDelay or loopDelay from tweenSettings based on executions */
-  protected float delayToUse = 0;
-
   /** How many times {@code this} tween has updated. */
   protected int executions = 0;
 
@@ -119,14 +116,17 @@ public class FlixelTween implements Pool.Poolable {
    */
   public FlixelTween start() {
     waitingForRestart = false;
+    var type = this.getTweenSettings().getType();
+    if(!type.equals(FlixelTweenType.PINGPONG)) {
+      backward = type.equals(FlixelTweenType.BACKWARD);
+    }
     secondsSinceStart = 0f;
-    delayToUse = (executions > 0) ? tweenSettings.getLoopDelay() : tweenSettings.getStartDelay();
     if(tweenSettings.getDuration() <= 0) {
       active = false;
       return this;
     }
     active = true;
-    running = false;
+    running = true;
     finished = false;
     return this;
   }
@@ -140,7 +140,7 @@ public class FlixelTween implements Pool.Poolable {
    * @param elapsed The amount of time that has passed since the last update.
    */
   public final void update(float elapsed) {
-    if (paused || finished || !active || manager == null) {
+    if (paused || !active || manager == null) {
       return;
     }
     if (tweenSettings == null) {
@@ -157,7 +157,8 @@ public class FlixelTween implements Pool.Poolable {
     secondsSinceStart += elapsed;
     float postTick = secondsSinceStart;
 
-    if (secondsSinceStart < delayToUse) {
+    float delay = (executions > 0) ? tweenSettings.getLoopDelay() : tweenSettings.getStartDelay();
+    if (secondsSinceStart < delay) {
       return;
     }
 
@@ -166,26 +167,25 @@ public class FlixelTween implements Pool.Poolable {
       postTick = Math.round(postTick * framerate) / framerate;
     }
 
-    scale = Math.max((postTick - delayToUse), 0.0f) / duration;
+    scale = Math.max((postTick - delay), 0.0f) / duration;
     if (ease != null) {
       scale = ease.compute(scale);
     }
     if (backward) {
       scale = 1 - scale;
     }
-    if (secondsSinceStart >= delayToUse && !running) {
+    if (secondsSinceStart >= delay && !running) {
       running = true;
       if (onStart != null) {
         onStart.run(this);
       }
     }
-    updateTweenValues();
     // Check if the tween has finished.
-    if (secondsSinceStart >= duration + delayToUse) {
-      scale = (backward) ? 0 : 1;
+    if (secondsSinceStart >= duration + delay) {
+      updateTweenValues();
       finished = true;
-
     } else {
+      updateTweenValues();
       if (postTick > preTick && onUpdate != null) {
         onUpdate.run(this);
       }
@@ -198,47 +198,29 @@ public class FlixelTween implements Pool.Poolable {
   public void finish() {
     executions++;
     var onComplete = tweenSettings.getOnComplete();
-    var duration = tweenSettings.getDuration();
-    var ease = tweenSettings.getEase();
-
     var type = tweenSettings.getType();
 
     if (onComplete != null) {
       onComplete.run(this);
     }
 
-    if (type == FlixelTweenType.PERSIST || type == FlixelTweenType.ONESHOT)
-    {
+    scale = (backward) ? 0 : 1;
+    if (type.equals(FlixelTweenType.LOOPING) || type.equals(FlixelTweenType.PINGPONG)) {
+      if (type == FlixelTweenType.PINGPONG)
+      {
+        backward = !backward;
+      }
+      restart();
+    }
+    else {
       active = false;
-      finished = true;
       running = false;
-      secondsSinceStart = duration + tweenSettings.getStartDelay();
-
-      if (type == FlixelTweenType.ONESHOT && manager != null)
+      if (type.equals(FlixelTweenType.ONESHOT) && manager != null)
       {
         manager.removeTween(this, true);
       }
     }
 
-    if (type == FlixelTweenType.LOOPING || type == FlixelTweenType.PINGPONG) {
-      secondsSinceStart = (secondsSinceStart - delayToUse) % duration + delayToUse;
-      scale = Math.max((secondsSinceStart - delayToUse), 0) / duration;
-
-      if (ease != null && scale > 0 && scale < 1)
-      {
-        scale = ease.compute(scale);
-      }
-
-      if (type == FlixelTweenType.PINGPONG)
-      {
-        backward = !backward;
-        if (backward)
-        {
-          scale = 1 - scale;
-        }
-      }
-      restart();
-    }
   }
 
   /**
@@ -246,10 +228,12 @@ public class FlixelTween implements Pool.Poolable {
    */
   public void destroy()
   {
-    tweenSettings.setOnStart(null);
-    tweenSettings.setOnUpdate(null);
-    tweenSettings.setOnComplete(null);
-    tweenSettings.setEase(null);
+    if(tweenSettings != null) {
+      tweenSettings.setOnStart(null);
+      tweenSettings.setOnUpdate(null);
+      tweenSettings.setOnComplete(null);
+      tweenSettings.setEase(null);
+    }
     manager = null;
   }
 
@@ -314,8 +298,11 @@ public class FlixelTween implements Pool.Poolable {
    * Cancels {@code this} tween, removes it from its manager and automatically defaults its values.
    */
   public FlixelTween cancel() {
-    resetBasic();
-    manager.getTweenPool().free(this);
+    if (manager != null) {
+      manager.removeTween(this, true);
+    } else {
+      resetBasic();
+    }
     return this;
   }
 
@@ -336,7 +323,10 @@ public class FlixelTween implements Pool.Poolable {
     paused = false;
     running = false;
     finished = false;
-    backward = this.getTweenSettings().getType().equals(FlixelTweenType.BACKWARD);
+    active = false;
+    waitingForRestart = false;
+    backward = tweenSettings != null
+      && this.getTweenSettings().getType().equals(FlixelTweenType.BACKWARD);
   }
 
   public FlixelTweenSettings getTweenSettings() {
@@ -360,16 +350,21 @@ public class FlixelTween implements Pool.Poolable {
     return active;
   }
 
+  public Boolean isWaitingForRestart() {
+    return waitingForRestart;
+  }
+
   public FlixelTween setManager(FlixelTweenManager newManager) {
-    if (newManager != null) {
-      if (manager != null) {
-        int index = manager.getActiveTweens().indexOf(this, true);
-        manager.getActiveTweens().removeIndex(index);
-        manager.getTweenPool().free(this);
-      }
-      manager = newManager;
-      manager.getActiveTweens().add(this);
+    if (newManager == null) {
+      return this;
     }
+
+    if (manager != null) {
+      manager.getActiveTweens().removeValue(this, true);
+    }
+
+    manager = newManager;
+    manager.addToActiveTweens(this);
     return this;
   }
 }

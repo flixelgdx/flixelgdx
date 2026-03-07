@@ -32,8 +32,22 @@ public class FlixelTweenManager {
    * @param elapsed The amount of time that has passed since the last frame.
    */
   public void update(float elapsed) {
-    FlixelTween[] tweens = activeTweens.begin();
-    ArrayList<FlixelTween> finishedTweens = getFlixelTweens(elapsed, tweens);
+    ArrayList<FlixelTween> finishedTweens = new ArrayList<>();
+    for (FlixelTween tween : activeTweens) {
+      if (tween == null || !tween.isActive()) {
+        continue;
+      }
+      tween.update(elapsed);
+    }
+
+    for (FlixelTween tween : activeTweens) {
+      if (tween.isFinished()) {
+        if (tween.manager != this) {
+          continue;
+        }
+        finishedTweens.add(tween);
+      }
+    }
 
     if(!finishedTweens.isEmpty()) {
       for(FlixelTween finishedTween : finishedTweens) {
@@ -41,30 +55,6 @@ public class FlixelTweenManager {
       }
     }
     activeTweens.end();
-  }
-
-  private ArrayList<FlixelTween> getFlixelTweens(float elapsed, FlixelTween[] tweens) {
-    ArrayList<FlixelTween> finishedTweens = new ArrayList<>();
-    for (int i = 0, n = activeTweens.size; i < n; i++) {
-      FlixelTween tween = tweens[i];
-      if (tween == null || !tween.isActive()) {
-        continue;
-      }
-      tween.update(elapsed);
-
-      if (tween.isFinished()) {
-        if (tween.manager != this) {
-          continue;
-        }
-        var settings = tween.getTweenSettings();
-        if (settings == null) {
-          continue;
-        }
-
-        finishedTweens.add(tween);
-      }
-    }
-    return finishedTweens;
   }
 
   /**
@@ -80,13 +70,12 @@ public class FlixelTweenManager {
       return null;
 
     tween.active = false;
+    activeTweens.removeValue(tween, true);
 
     if (destroy) {
       tween.destroy();
       tweenPool.free(tween);
     }
-
-    activeTweens.removeValue(tween, true);
 
     return tween;
   }
@@ -96,6 +85,9 @@ public class FlixelTweenManager {
    */
   public void addToActiveTweens(FlixelTween tween) {
     activeTweens.add(tween);
+    if(tween.isWaitingForRestart()) {
+      tween.restart();
+    }
   }
 
   public SnapshotArray<FlixelTween> getActiveTweens() {
