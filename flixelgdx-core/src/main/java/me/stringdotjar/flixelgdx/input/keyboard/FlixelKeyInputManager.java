@@ -1,4 +1,4 @@
-package me.stringdotjar.flixelgdx.input.key;
+package me.stringdotjar.flixelgdx.input.keyboard;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;

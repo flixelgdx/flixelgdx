@@ -9,6 +9,7 @@ java {
 }
 
 dependencies {
+  api project(':flixelgdx-core')
   api "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-desktop"
   api "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"

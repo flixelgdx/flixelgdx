@@ -5,7 +5,7 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.display;
   exports me.stringdotjar.flixelgdx.text;
   exports me.stringdotjar.flixelgdx.group;
-  exports me.stringdotjar.flixelgdx.input.key;
+  exports me.stringdotjar.flixelgdx.input.keyboard;
   exports me.stringdotjar.flixelgdx.input.gamepad;
   exports me.stringdotjar.flixelgdx.logging;
   exports me.stringdotjar.flixelgdx.signal;

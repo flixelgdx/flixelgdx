@@ -44,7 +44,7 @@ allprojects {
   }
 }
 
-configure(subprojects.findAll { p -> p.name == 'core' || p.name == 'jvm' }) {
+configure(subprojects.findAll { p -> p.name == 'flixelgdx-core' || p.name == 'flixelgdx-jvm' }) {
   apply plugin: 'java-library'
   java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -55,21 +55,21 @@ configure(subprojects.findAll { p -> p.name == 'core' || p.name == 'jvm' }) {
 // These modules are currently NOT configured in the root build.gradle for java-library
 // but they apply it themselves.
 
-configure(subprojects.findAll { p -> p.name != 'core' }) {
+configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
-        api rootProject.project(':core')
+        api rootProject.project(':flixelgdx-core')
       }
     } else if (it.plugins.hasPlugin('java')) {
       dependencies {
-        implementation rootProject.project(':core')
+        implementation rootProject.project(':flixelgdx-core')
       }
     }
   }
 }
 
-configure(subprojects.findAll { !it.path.contains('android') }) {
+configure(subprojects.findAll { !it.path.contains('flixelgdx-android') }) {
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
   tasks.register('generateAssetList') {
@@ -95,15 +95,15 @@ configure(subprojects.findAll { !it.path.contains('android') }) {
   }
 }
 
-configure(subprojects.findAll { p -> p.name != 'core' && p.name != 'jvm' && p.name != 'teavm' }) {
+configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-jvm' && p.name != 'flixelgdx-teavm' }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
-        api rootProject.project(':jvm')
+        api rootProject.project(':flixelgdx-jvm')
       }
     } else if (it.plugins.hasPlugin('java')) {
       dependencies {
-        implementation rootProject.project(':jvm')
+        implementation rootProject.project(':flixelgdx-jvm')
       }
     }
   }

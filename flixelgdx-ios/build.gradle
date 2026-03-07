@@ -14,6 +14,7 @@ ext {
 }
 
 dependencies {
+  api project(':flixelgdx-core')
   api "com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
   api "com.mobidevelop.robovm:robovm-rt:$roboVMVersion"

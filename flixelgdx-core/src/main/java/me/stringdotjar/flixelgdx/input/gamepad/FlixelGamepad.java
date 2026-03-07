@@ -2,7 +2,7 @@ package me.stringdotjar.flixelgdx.input.gamepad;
 
 import com.badlogic.gdx.Input;
 
-import me.stringdotjar.flixelgdx.input.key.FlixelKey;
+import me.stringdotjar.flixelgdx.input.keyboard.FlixelKey;
 
 /**
  * Gamepad button codes copied from libGDX {@link Input.Keys} BUTTON_* values for backwards compatibility.
