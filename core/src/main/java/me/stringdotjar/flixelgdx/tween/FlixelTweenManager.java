@@ -2,12 +2,8 @@ package me.stringdotjar.flixelgdx.tween;
 
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-
-import static me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType.ONESHOT;
-import static me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType.PINGPONG;
 
 /** Manager class for handling a list of active {@link FlixelTween}s. */
 public class FlixelTweenManager {
@@ -32,17 +28,19 @@ public class FlixelTweenManager {
    * @param elapsed The amount of time that has passed since the last frame.
    */
   public void update(float elapsed) {
-    activeTweens.begin();
+    FlixelTween[] items = activeTweens.begin();
     ArrayList<FlixelTween> finishedTweens = new ArrayList<>();
-    for (FlixelTween tween : activeTweens) {
+    for (int i = 0; i < activeTweens.size; i++) {
+      FlixelTween tween = items[i];
       if (tween == null || !tween.isActive()) {
         continue;
       }
       tween.update(elapsed);
     }
 
-    for (FlixelTween tween : activeTweens) {
-      if (tween.isFinished()) {
+    for (int i = 0; i < activeTweens.size; i++) {
+      FlixelTween tween = items[i];
+      if (tween != null && tween.isFinished()) {
         if (tween.manager != this) {
           continue;
         }
