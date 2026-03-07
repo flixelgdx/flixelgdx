@@ -1,6 +1,5 @@
 package me.stringdotjar.flixelgdx.signal;
 
-import games.rednblack.miniaudio.MASound;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.display.FlixelState;
 
@@ -39,10 +38,6 @@ public final class FlixelSignalData {
   }
 
   public record StateSwitchSignalData(FlixelState screen) {}
-
-  public record SoundPlayedSignalData(MASound sound) {}
-
-  public record MusicPlayedSignalData(MASound music) {}
 
   private FlixelSignalData() {}
 }

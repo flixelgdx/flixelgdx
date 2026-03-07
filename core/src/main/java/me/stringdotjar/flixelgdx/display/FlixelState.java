@@ -62,10 +62,10 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   /**
    * Updates the logic of {@code this} state.
    *
-   * @param delta The amount of time that's occurred since the last frame.
+   * @param elapsed The amount of time that's occurred since the last frame.
    */
-  public void update(float delta) {
-    super.update(delta);
+  public void update(float elapsed) {
+    super.update(elapsed);
   }
 
   /**

@@ -7,7 +7,7 @@ public enum FlixelTweenType {
   ONESHOT,
   /** Will stop when it finishes but remain in the manager. */
   PERSIST,
-  /** Will play tween in reverse direction */
+  /** Will play tween in reverse direction. */
   BACKWARD,
   /** Will restart immediately when it finishes. */
   LOOPING,
