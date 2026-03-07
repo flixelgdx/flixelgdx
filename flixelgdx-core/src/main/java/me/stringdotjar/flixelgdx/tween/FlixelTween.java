@@ -201,16 +201,15 @@ public class FlixelTween implements Pool.Poolable {
       restart();
     }
     else {
-      active = false;
-      if (type.equals(FlixelTweenType.ONESHOT) && manager != null)
+      var onComplete = tweenSettings.getOnComplete();
+      if (onComplete != null) {
+        onComplete.run(this);
+      }
+      // If it's not PERSIST, remove tween from activeTweens and set to active = false
+      if (type.equals(FlixelTweenType.ONESHOT) || type.equals(FlixelTweenType.BACKWARD) && manager != null)
       {
         manager.removeTween(this, true);
       }
-    }
-
-    var onComplete = tweenSettings.getOnComplete();
-    if (onComplete != null) {
-      onComplete.run(this);
     }
   }
 
