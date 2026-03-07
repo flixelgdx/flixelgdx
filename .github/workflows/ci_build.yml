@@ -57,20 +57,20 @@ jobs:
 
       - name: Build (LWJGL3)
         if: matrix.platform == 'linux' || matrix.platform == 'windows' || matrix.platform == 'macos'
-        run: ./gradlew :core:assemble :lwjgl3:assemble --no-daemon
+        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-lwjgl3:assemble --no-daemon
         shell: bash
 
       - name: Build (Android)
         if: matrix.platform == 'android'
-        run: ./gradlew :core:assemble :android:assembleRelease --no-daemon
+        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-android:assembleRelease --no-daemon
         shell: bash
 
       - name: Build (iOS)
         if: matrix.platform == 'ios'
-        run: ./gradlew :core:assemble :ios:assemble --no-daemon
+        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-ios:assemble --no-daemon
         shell: bash
 
       - name: Build (TeaVM)
         if: matrix.platform == 'teavm'
-        run: ./gradlew :core:assemble :teavm:assemble --no-daemon
+        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-teavm:assemble --no-daemon
         shell: bash
