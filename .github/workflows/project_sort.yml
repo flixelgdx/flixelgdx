@@ -1,0 +1,159 @@
+name: Project Board Sorter
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled]
+  pull_request:
+    types: [opened, labeled, unlabeled]
+
+jobs:
+  move-to-category:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      repository-projects: write
+    steps:
+      - name: Move issue/PR to project status by label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_SORT }}
+          script: |
+            const projectBoardTitle = 'FlixelGDX Project Board';
+            const labelName = context.payload.label?.name;
+            const isUnlabeled = context.payload.action === 'unlabeled';
+            const isOpened = context.payload.action === 'opened';
+
+            // Add one line per label. Key = exact label name, value = Status column name on the board.
+            // Use plain names (e.g. "Bugs", "Top Priority"); emojis in the board column are matched automatically.
+            const LABEL_TO_STATUS = {
+              'bug': 'Bugs',
+              'top priority': 'Top Priority',
+              'enhancement': 'Todo',
+              // 'documentation': 'Todo',
+            };
+
+            // When a label is removed, move the item to this status (use null to skip moving on unlabel).
+            const UNLABEL_DEFAULT_STATUS = 'Todo';
+
+            const content = context.payload.issue || context.payload.pull_request;
+            const contentNodeId = content.node_id;
+
+            let targetStatus = null;
+            if (isOpened) {
+              targetStatus = 'Todo';  // New issues (and PRs if you add opened to pull_request) go to Todo
+            } else if (isUnlabeled) {
+              targetStatus = UNLABEL_DEFAULT_STATUS;
+            } else if (labelName && LABEL_TO_STATUS[labelName]) {
+              targetStatus = LABEL_TO_STATUS[labelName];
+            }
+
+            if (!targetStatus) return;
+
+            const { owner, repo } = context.repo;
+
+            const repoQuery = await github.graphql(`
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  owner {
+                    ... on Organization {
+                      projectsV2(first: 100) { nodes { id title number } }
+                    }
+                    ... on User {
+                      projectsV2(first: 100) { nodes { id title number } }
+                    }
+                  }
+                }
+              }
+            `, { owner, repo });
+
+            const ownerNode = repoQuery.repository.owner;
+            const projects = ownerNode.projectsV2?.nodes || [];
+            const project = projects.find(p => p.title === projectBoardTitle);
+            if (!project) {
+              console.log(`Project board "${projectBoardTitle}" not found.`);
+              return;
+            }
+
+            const projectQuery = await github.graphql(`
+              query($projectId: ID!) {
+                node(id: $projectId) {
+                  ... on ProjectV2 {
+                    field(name: "Status") {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        options { id name }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { projectId: project.id });
+
+            const statusField = projectQuery.node?.field;
+            if (!statusField) {
+              console.log('No Status field found on project.');
+              return;
+            }
+
+            // Match by text only; strip leading emoji/symbols.
+            const option = statusField.options.find(o => {
+              const nameOnly = o.name.replace(/^[^\w\s]+/g, '').trim();
+              return nameOnly.toLowerCase() === targetStatus.trim().toLowerCase();
+            });
+            if (!option) {
+              console.log(`Status "${targetStatus}" not found. Options: ${statusField.options.map(o => o.name).join(', ')}`);
+              return;
+            }
+
+            const contentQuery = await github.graphql(`
+              query($contentId: ID!) {
+                node(id: $contentId) {
+                  ... on Issue {
+                    projectItems(first: 20) { nodes { id project { id } } }
+                  }
+                  ... on PullRequest {
+                    projectItems(first: 20) { nodes { id project { id } } }
+                  }
+                }
+              }
+            `, { contentId: contentNodeId });
+
+            const projectItems = contentQuery.node?.projectItems?.nodes || [];
+            let item = projectItems.find(pi => pi.project.id === project.id);
+
+            if (!item) {
+              if (!isOpened) {
+                console.log('Issue/PR is not on this project board.');
+                return;
+              }
+              const addResult = await github.graphql(`
+                mutation($projectId: ID!, $contentId: ID!) {
+                  addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
+                    projectV2Item { id }
+                  }
+                }
+              `, { projectId: project.id, contentId: contentNodeId });
+              item = addResult.addProjectV2ItemById.projectV2Item;
+            }
+
+            await github.graphql(`
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId,
+                  itemId: $itemId,
+                  fieldId: $fieldId,
+                  value: { singleSelectOptionId: $optionId }
+                }) {
+                  projectV2Item { id }
+                }
+              }
+            `, {
+              projectId: project.id,
+              itemId: item.id,
+              fieldId: statusField.id,
+              optionId: option.id
+            });
+
+            console.log(`Moved to "${targetStatus}".`);

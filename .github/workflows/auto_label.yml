@@ -1,0 +1,37 @@
+name: Auto Labeler
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  label_issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Label based on title tags
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = context.payload.issue.title;
+            const issue_number = context.payload.issue.number;
+            
+            // Defining our mappings: [Tag] -> Label Name
+            // The 'i' in /.../i makes it case-insensitive
+            const labelsToAdd = [];
+
+            if (/\[bug\]/i.test(title)) labelsToAdd.push('bug');
+            if (/\[refactor\]/i.test(title)) labelsToAdd.push('refactor');
+            if (/\[feature\]/i.test(title)) labelsToAdd.push('enhancement');
+            if (/\[documentation\]/i.test(title)) labelsToAdd.push('documentation');
+            if (/\[codebase\]/i.test(title)) labelsToAdd.push('codebase lifecycle');
+            if (/\[chore\]/i.test(title)) labelsToAdd.push('chore');
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue_number,
+                labels: labelsToAdd
+              });
+            }
