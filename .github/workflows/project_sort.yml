@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
+      pull-requests: write
+      repository-projects: write
     steps:
       - name: Move issue/PR to project status by label
         uses: actions/github-script@v7
