@@ -2,12 +2,17 @@ package me.stringdotjar.flixelgdx.tween;
 
 import com.badlogic.gdx.utils.Pool;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelAbstractTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelNumTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelVarTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Core class for creating new tweens to add nice and smooth animations.
@@ -22,6 +27,18 @@ public class FlixelTween implements Pool.Poolable {
 
   /** The global tween manager for the entire game. */
   private static final FlixelTweenManager globalManager = new FlixelTweenManager();
+
+  /**
+   * Registry of tween types to their designated builder classes. Used by {@link #tween(Class, Class)}
+   * to ensure only registered tween/builder pairs are used.
+   */
+  private static final Map<Class<? extends FlixelTween>, Class<? extends FlixelAbstractTweenBuilder<?, ?>>> tweenRegistry = new HashMap<>();
+
+  static {
+    registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class);
+    registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class);
+    registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class);
+  }
 
   /** The settings used for how the tween is handled and calculated (aka how it looks and animates). */
   protected FlixelTweenSettings tweenSettings;
@@ -63,10 +80,34 @@ public class FlixelTween implements Pool.Poolable {
   }
 
   /**
+   * Registers a tween type with its designated builder. The pair must be used together when
+   * calling {@link #tween(Class, Class)}. Built-in types (property, num, var) are already
+   * registered; use this to add custom tween types or to replace a built-in pairing.
+   *
+   * @param tweenType   The tween class (e.g. {@link FlixelPropertyTween}.class).
+   * @param builderType The builder class that constructs this tween (e.g. {@link FlixelPropertyTweenBuilder}.class).
+   */
+  public static <T extends FlixelTween, B extends FlixelAbstractTweenBuilder<T, B>> void registerTweenType(Class<T> tweenType, Class<B> builderType) {
+    tweenRegistry.put(tweenType, (Class<? extends FlixelAbstractTweenBuilder<?, ?>>) builderType);
+  }
+
+  /**
+   * Returns the builder class registered for the given tween type, or {@code null} if not registered.
+   */
+  public static Class<? extends FlixelAbstractTweenBuilder<?, ?>> getRegisteredBuilder(Class<? extends FlixelTween> tweenType) {
+    return tweenRegistry.get(tweenType);
+  }
+
+  /**
    * Returns a fluent builder for the given tween type. Pass both the tween class and its builder
    * class so the return type is the concrete builder ({@code B}), giving full IDE support for
    * type-specific methods ({@code addGoal}, {@code from}, {@code to}, etc.) and common ones
    * ({@code setDuration}, {@code setEase}), then {@link FlixelAbstractTweenBuilder#start()}.
+   *
+   * <p>The tween type must be registered with its builder via {@link #registerTweenType};
+   * the built-in types ({@link FlixelPropertyTween}, {@link FlixelNumTween}, {@link FlixelVarTween})
+   * are already registered. If the tween type is not registered, or a different builder is passed
+   * than the one registered for that type, an exception is thrown.
    *
    * <p>Example (property):
    * <pre>{@code
@@ -89,8 +130,15 @@ public class FlixelTween implements Pool.Poolable {
    * @param tweenType   The tween class (e.g. {@link FlixelPropertyTween}.class).
    * @param builderType The corresponding builder class (e.g. {@link FlixelPropertyTweenBuilder}.class).
    * @return A new builder instance of type {@code B} for chaining.
+   * @throws IllegalArgumentException if the tween type is not registered, or the builder does not match the registered builder for that type.
    */
   public static <T extends FlixelTween, B extends FlixelAbstractTweenBuilder<T, B>> B tween(Class<T> tweenType, Class<B> builderType) {
+    Class<? extends FlixelAbstractTweenBuilder<?, ?>> registered = tweenRegistry.get(tweenType);
+    if (registered == null) {
+      throw new IllegalArgumentException(
+        "Tween type " + tweenType.getName() + " is not registered. Register it with FlixelTween.registerTweenType("
+          + tweenType.getSimpleName() + ".class, " + tweenType.getSimpleName() + "Builder.class) (or your custom builder class).");
+    }
     try {
       return builderType.getDeclaredConstructor().newInstance();
     } catch (ReflectiveOperationException e) {

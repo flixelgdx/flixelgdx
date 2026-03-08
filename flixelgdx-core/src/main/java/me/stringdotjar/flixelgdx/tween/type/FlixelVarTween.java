@@ -5,7 +5,6 @@ import com.badlogic.gdx.utils.ObjectSet;
 
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.util.FlixelReflectUtil;
 
 import java.lang.reflect.Field;
