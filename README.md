@@ -283,26 +283,25 @@ FlixelGDX includes a built-in tweening system inspired by Flixel/HaxeFlixel that
 - **Reducing boilerplate compared to Universal Tween Engine (UTE)**, which typically requires writing a `TweenAccessor` for every type you want to animate.
 - **Providing both beginner-friendly defaults and power features** that experienced users expect (easing, delays, callbacks, looping), without forcing you into reflection-heavy or brittle APIs.
 
-At the core is `FlixelTween` plus a settings object `FlixelTweenSettings`. For property-based tweens, `FlixelPropertyTween` lets you supply getters and setters directly, so you can tween real Java properties with side effects instead of raw fields.
+At the core is `FlixelTween` and a fluent builder API. You call `FlixelTween.tween(tweenType, builderType)` with the tween class and its builder class; the returned builder lets you chain options and then call `.start()` to run the tween. Three built-in variants are available:
+
+- **Var tweens**: `FlixelVarTween` / `FlixelVarTweenBuilder`: tween a single object and optional completion callback (e.g. `setObject(sprite).setCallback(...)`).
+- **Property tweens**: `FlixelPropertyTween` / `FlixelPropertyTweenBuilder`: supply getters and setters so you can tween real Java properties with side effects.
+- **Num tweens**: `FlixelNumTween` / `FlixelNumTweenBuilder`: tween a numeric range with `from(...).to(...)` and optional callback.
+
+Example: tween the player's X and Y using the property builder:
 
 ```java
 FlixelSprite player = new FlixelSprite()
   .makeGraphic(16, 16, Color.WHITE);
 
-// Tween the player's X and Y using getters/setters.
-FlixelTween.tween(
-  new FlixelTweenSettings()
-    .setDuration(0.5f)
-    .setEase(FlixelEase::quadOut)
-    .addGoal(player::getX, 400f, player::setX)
-    .addGoal(player::getY, 200f, player::setY)
-);
+FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+  .setDuration(0.5f)
+  .setEase(FlixelEase::quadOut)
+  .addGoal(player::getX, 400f, player::setX)
+  .addGoal(player::getY, 200f, player::setY)
+  .start();
 ```
-
-This pattern is familiar to HaxeFlixel users (property-style tweens) while being very approachable for beginners:
-
-- **Beginners** just pass method references (`player::getX`, `player::setX`) and a target value.
-- **Experienced users** can configure easing, durations, delays, callbacks, and loop behavior through `FlixelTweenSettings`, or drop down to lower-level types like `FlixelVarTween` if they want reflection-based tweens.
 
 Compared to Universal Tween Engine's `TweenAccessor` pattern, you do not need to:
 
@@ -327,11 +326,10 @@ public class PlayState extends FlixelState {
     add(player);
 
     // Fade the player in over 1 second (alpha: 0 -> 1).
-    FlixelTween.tween(
-      new FlixelTweenSettings()
-        .setDuration(1.0f)
-        .addGoal(() -> player.getColor().a, 1.0f, player::setAlpha)
-    );
+    FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+      .setDuration(1.0f)
+      .addGoal(() -> player.getColor().a, 1.0f, player::setAlpha)
+      .start();
   }
 }
 ```
@@ -350,12 +348,11 @@ public class MyLibGdxScreen implements Screen {
   public void show() {
     player.makeGraphic(16, 16, Color.WHITE);
 
-    FlixelTween.tween(
-      new FlixelTweenSettings()
-        .setDuration(0.75f)
-        .setEase(FlixelEase::sineInOut)
-        .addGoal(player::getScaleX, 2.0f, value -> player.setScale(value, value))
-    );
+    FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+      .setDuration(0.75f)
+      .setEase(FlixelEase::sineInOut)
+      .addGoal(player::getScaleX, 2.0f, value -> player.setScale(value, value))
+      .start();
   }
 
   @Override
