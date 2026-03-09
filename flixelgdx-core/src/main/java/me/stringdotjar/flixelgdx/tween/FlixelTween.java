@@ -40,10 +40,10 @@ public class FlixelTween implements Pool.Poolable {
   /** Is {@code this} tween currently paused? */
   public boolean paused = false;
 
-  /** Is {@code this} tween active */
+  /** Is {@code this} tween active? */
   protected boolean active = false;
 
-  /** Is {@code this} tween waiting for a restart */
+  /** Is {@code this} tween waiting for a restart? */
   protected boolean waitingForRestart = false;
 
   /** Is {@code this} tween finished tweening? */
@@ -53,8 +53,7 @@ public class FlixelTween implements Pool.Poolable {
   protected boolean backward = false;
 
   /** Default constructor for pooling purposes. */
-  protected FlixelTween() {
-  }
+  protected FlixelTween() {}
 
   /**
    * Constructs a new tween with the provided settings.
@@ -113,12 +112,7 @@ public class FlixelTween implements Pool.Poolable {
   public FlixelTween start() {
     // resetToBasic won't work for LOOPING & PINGPONG, hence removed it and switched vars manually
     waitingForRestart = false;
-    var type = this.getTweenSettings().getType();
-    if(!type.equals(FlixelTweenType.PINGPONG)) { // If it's PINGPONG use the finish() backward variable instead of resetting it here
-      backward = type.equals(FlixelTweenType.BACKWARD);
-    }
-    secondsSinceStart = 0f;
-    if(tweenSettings.getDuration() <= 0) {
+    if (tweenSettings.getDuration() <= 0) {
       active = false;
       return this;
     }
@@ -190,34 +184,31 @@ public class FlixelTween implements Pool.Poolable {
    */
   public void finish() {
     executions++;
+    secondsSinceStart = 0f;
 
     var type = tweenSettings.getType();
 
     if (type.equals(FlixelTweenType.LOOPING) || type.equals(FlixelTweenType.PINGPONG)) {
-      if (type.equals(FlixelTweenType.PINGPONG))
-      {
+      if (type.equals(FlixelTweenType.PINGPONG)) {
         backward = !backward;
       }
       restart();
-    }
-    else {
+    } else {
       var onComplete = tweenSettings.getOnComplete();
       if (onComplete != null) {
         onComplete.run(this);
       }
       // If it's not PERSIST, remove tween from activeTweens and set to active = false
-      if (type.equals(FlixelTweenType.ONESHOT) || type.equals(FlixelTweenType.BACKWARD) && manager != null)
-      {
+      if ((type.equals(FlixelTweenType.ONESHOT) || type.equals(FlixelTweenType.BACKWARD)) && manager != null) {
         manager.removeTween(this, true);
       }
     }
   }
 
   /**
-   * Destroys {@code this} tween
+   * Sets {@code this} tween's {@code FlixelTweenSettings} and {@code FlixelTweenManager} to null.
    */
-  public void destroy()
-  {
+  public void destroy() {
     tweenSettings = null;
     manager = null;
   }
@@ -270,11 +261,13 @@ public class FlixelTween implements Pool.Poolable {
    * Restarts {@code this} tween if it is currently running and not finished.
    */
   public void restart() {
-    if (active) {
-      start();
-    } else {
-      waitingForRestart = true;
+    waitingForRestart = false;
+    if (tweenSettings.getDuration() <= 0) {
+      active = false;
+      return;
     }
+    active = true;
+    finished = false;
   }
 
   /**
@@ -288,7 +281,7 @@ public class FlixelTween implements Pool.Poolable {
   @Override
   public void reset() {
     resetBasic();
-    manager = null;
+    destroy();
   }
 
   /**
@@ -320,6 +313,10 @@ public class FlixelTween implements Pool.Poolable {
     return globalManager;
   }
 
+  public FlixelTweenManager getManager() {
+    return manager;
+  }
+
   public boolean isFinished() {
     return finished;
   }
@@ -332,17 +329,13 @@ public class FlixelTween implements Pool.Poolable {
     return waitingForRestart;
   }
 
-  public FlixelTween setManager(FlixelTweenManager newManager) {
-    if (newManager == null) {
-      return this;
-    }
-
+  public FlixelTween setManager(@NotNull FlixelTweenManager newManager) {
     if (manager != null) {
       manager.removeTween(this, false);
     }
 
     manager = newManager;
-    manager.addToActiveTweens(this);
+    manager.addTween(this);
     return this;
   }
 }

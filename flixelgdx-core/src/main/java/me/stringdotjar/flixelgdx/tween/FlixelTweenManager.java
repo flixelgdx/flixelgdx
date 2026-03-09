@@ -29,7 +29,6 @@ public class FlixelTweenManager {
    */
   public void update(float elapsed) {
     FlixelTween[] items = activeTweens.begin();
-    ArrayList<FlixelTween> finishedTweens = new ArrayList<>();
     for (int i = 0; i < activeTweens.size; i++) {
       FlixelTween tween = items[i];
       if (tween == null || !tween.isActive()) {
@@ -44,35 +43,30 @@ public class FlixelTweenManager {
         if (tween.manager != this) {
           continue;
         }
-        finishedTweens.add(tween);
+        tween.finish();
       }
     }
 
-    if(!finishedTweens.isEmpty()) {
-      for(FlixelTween finishedTween : finishedTweens) {
-        finishedTween.finish();
-      }
-    }
     activeTweens.end();
   }
 
   /**
-   * Remove a FlixelTween
-   *
+   * Remove an {@link FlixelTween} from {@code this} manager.
+   * Note that when the FlixelTween is removed, it will call {@link FlixelTween#destroy} and it can no longer be used.
    *
    * @param tween The FlixelTween to remove.
    * @param destroy Whether you want to destroy the FlixelTween.
-   * @return	The removed FlixelTween object.
+   * @return  The removed FlixelTween object.
    */
-  public FlixelTween removeTween(FlixelTween tween, Boolean destroy) {
-    if (tween == null)
+  public FlixelTween removeTween(FlixelTween tween, boolean destroy) {
+    if (tween == null) {
       return null;
+    }
 
     tween.active = false;
     activeTweens.removeValue(tween, true);
 
     if (destroy) {
-      tween.destroy();
       tweenPool.free(tween);
     }
 
@@ -80,11 +74,15 @@ public class FlixelTweenManager {
   }
 
   /**
-   * Add FlixelTween to activeTweens array
+   * Add an {@link FlixelTween} to {@code this} manager.
+   * When FlixelTween is added, it is added to the activeTweens SnapshortArray List.
+   * If the FlixelTween is waiting for a restart, the restart() method for the FlixelTween will be called.
+   *
+   * @param tween The FlixelTween to add.
    */
-  public void addToActiveTweens(FlixelTween tween) {
+  public void addTween (FlixelTween tween) {
     activeTweens.add(tween);
-    if(tween.isWaitingForRestart()) {
+    if (tween.isWaitingForRestart()) {
       tween.restart();
     }
   }
