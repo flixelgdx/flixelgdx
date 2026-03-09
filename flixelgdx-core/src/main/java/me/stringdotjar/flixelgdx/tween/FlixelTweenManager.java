@@ -3,7 +3,13 @@ package me.stringdotjar.flixelgdx.tween;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
 
-/** Manager class for handling a list of active {@link FlixelTween}s. */
+/**
+ * Manager class for handling a list of active {@link FlixelTween}s.
+ *
+ * <p>Mirrors <a href="https://api.haxeflixel.com/flixel/tweens/FlxTweenManager.html">FlxTweenManager</a>:
+ * normally used via {@link FlixelTween#getGlobalManager()} rather than instantiating separately.
+ * Adding a tween via {@link #addTween(FlixelTween)} automatically starts it.
+ */
 public class FlixelTweenManager {
 
   /** Array where all current active tweens are stored. */
@@ -16,6 +22,18 @@ public class FlixelTweenManager {
       return new FlixelTween();
     }
   };
+
+  /**
+   * Adds the tween to this manager and starts it immediately.
+   *
+   * @param tween The tween to add and start.
+   * @return The same tween for chaining.
+   */
+  public FlixelTween addTween(FlixelTween tween) {
+    tween.setManager(this);
+    tween.start();
+    return tween;
+  }
 
   /**
    * Updates all active tweens that are stored and updated in {@code this} manager.

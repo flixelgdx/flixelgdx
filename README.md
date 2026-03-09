@@ -279,39 +279,86 @@ Use `FlixelGroup` the same way: create a group, `add()` your `FlixelBasic` (or `
 
 ### Tweening
 
-FlixelGDX includes a built-in tweening system inspired by Flixel/HaxeFlixel that aims to solve two common problems:
+FlixelGDX includes a built-in tweening system inspired by Flixel/HaxeFlixel. It reduces boilerplate compared to engines like the Universal Tween Engine (UTE) and gives you several ways to create tweens: a **fluent builder** for maximum flexibility, or **direct factory methods** when you already have settings or simple numeric/object tweens.
 
-- **Reducing boilerplate compared to Universal Tween Engine (UTE)**, which typically requires writing a `TweenAccessor` for every type you want to animate.
-- **Providing both beginner-friendly defaults and power features** that experienced users expect (easing, delays, callbacks, looping), without forcing you into reflection-heavy or brittle APIs.
+#### FlixelGDX vs Universal Tween Engine (UTE)
 
-At the core is `FlixelTween` plus a settings object `FlixelTweenSettings`. For property-based tweens, `FlixelPropertyTween` lets you supply getters and setters directly, so you can tween real Java properties with side effects instead of raw fields.
+In UTE, tweening a type typically requires:
+
+1. **Implement a `TweenAccessor<YourObjectType>`**: you define how to get/set values by index (e.g. index 0 = x, 1 = y).
+2. **Map each value**: you manually assign which index corresponds to which field and implement `getValues()` / `setValues()` for every target type.
+3. **Manually define updates**: you copy values in and out of a float array and handle each index yourself.
+4. **Register the accessor**: `Tween.registerAccessor(YourObjectType.class, yourAccessor)` before use.
+5. **Then tween**: finally you can call the engine with the object, type, and duration.
+
+That’s a lot of setup per type. In FlixelGDX you don’t create accessors or a global mapping. You either use the **builder** and declare exactly what to tween with getter/setter pairs, or use **direct APIs** when you don’t need the builder.
+
+**UTE-style (conceptual):**
+
+```text
+1. Write TweenAccessor<FlixelSprite> with getValues/setValues and index constants.
+2. Register: Tween.registerAccessor(FlixelSprite.class, accessor).
+3. Later: Tween.to(sprite, SpriteAccessor.XY, 0.5f).target(400f, 200f).start();
+```
+
+**FlixelGDX with the builder (one place, no registration for built-in types):**
+
+```java
+FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+  .setDuration(0.5f)
+  .setEase(FlixelEase::quadOut)
+  .addGoal(player::getX, 400f, player::setX)
+  .addGoal(player::getY, 200f, player::setY)
+  .start();
+```
+
+No accessor class, no index mapping, no per-type registration. You say *what* to tween (getter, target value, setter) at the call site. The builder is versatile: add as many goals as you want, set duration, ease, delays, and callbacks in one chain.
+
+In other words: you don't have to make an accessor for every single type of object you
+want to tween, you make a builder that defines *how* to tween the object, and then you can tween any object that uses that builder.
+
+**Other ways to create tweens in FlixelGDX** (no builder required):
+
+- **Property tween with existing settings** – e.g. when you already have `FlixelTweenSettings` and goals configured elsewhere:
+  `FlixelTween.tween(settings)` returns a started `FlixelPropertyTween`.
+- **Numeric tween** – tween a single number with a callback:  
+  `FlixelTween.num(from, to, settings, value -> doSomething(value))`.
+- **Var (reflection) tween** – tween fields by name on an object:  
+  `FlixelTween.tween(object, settings, callback)`, with goals added via the settings.
+
+So you can use the builder for the full fluent experience, or the direct `tween(...)` / `num(...)` overloads when that fits better.
+
+#### Registry and built-in types
+
+Tween types and their builders are paired in a **registry**. The static `FlixelTween.tween(tweenType, builderType)` checks this registry: the tween type must be registered, and the builder you pass must be the one registered for that type (otherwise an exception explains that the type must be registered or the wrong builder was used). Built-in types are already registered:
+
+- **Property**: `FlixelPropertyTween` ↔ `FlixelPropertyTweenBuilder`
+- **Num**: `FlixelNumTween` ↔ `FlixelNumTweenBuilder`
+- **Var**: `FlixelVarTween` ↔ `FlixelVarTweenBuilder`
+
+For custom tween types, register your pair once (e.g. at startup) with `FlixelTween.registerTweenType(YourTween.class, YourTweenBuilder.class)`.
+
+#### Builder API at a glance
+
+- **Var tweens**: `FlixelVarTween` / `FlixelVarTweenBuilder` – tween an object’s fields by name (reflection) with `setObject(...)`, `addGoal(field, value)`, `setCallback(...)`.
+- **Property tweens**: `FlixelPropertyTween` / `FlixelPropertyTweenBuilder` – tween via getter/setter pairs; no reflection, setter side effects run every frame. Use `addGoal(getter, toValue, setter)`.
+- **Num tweens**: `FlixelNumTween` / `FlixelNumTweenBuilder` – tween a numeric range with `from(...).to(...)` and `setCallback(value -> ...)`.
+
+Example: tween the player's X and Y using the property builder:
 
 ```java
 FlixelSprite player = new FlixelSprite()
   .makeGraphic(16, 16, Color.WHITE);
 
-// Tween the player's X and Y using getters/setters.
-FlixelTween.tween(
-  new FlixelTweenSettings()
-    .setDuration(0.5f)
-    .setEase(FlixelEase::quadOut)
-    .addGoal(player::getX, 400f, player::setX)
-    .addGoal(player::getY, 200f, player::setY)
-);
+FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+  .setDuration(0.5f)
+  .setEase(FlixelEase::quadOut)
+  .addGoal(player::getX, 400f, player::setX)
+  .addGoal(player::getY, 200f, player::setY)
+  .start();
 ```
 
-This pattern is familiar to HaxeFlixel users (property-style tweens) while being very approachable for beginners:
-
-- **Beginners** just pass method references (`player::getX`, `player::setX`) and a target value.
-- **Experienced users** can configure easing, durations, delays, callbacks, and loop behavior through `FlixelTweenSettings`, or drop down to lower-level types like `FlixelVarTween` if they want reflection-based tweens.
-
-Compared to Universal Tween Engine's `TweenAccessor` pattern, you do not need to:
-
-- Implement a custom accessor interface per type.
-- Register accessors in a global registry.
-- Manually map indices to fields.
-
-Instead, you declare exactly what you want to tween with strongly typed getter/setter pairs. This keeps the API compact while still preserving all the niceties of having tweens as first-class objects.
+So compared to UTE you avoid: implementing an accessor per type, mapping indices to fields, manually reading/writing values in an accessor, and registering accessors. In FlixelGDX you either declare goals at the call site with the builder or use the direct `tween`/`num` overloads, and you get easing, delays, callbacks, and looping without extra boilerplate.
 
 #### Using tweens inside a FlixelGDX game
 
@@ -328,11 +375,10 @@ public class PlayState extends FlixelState {
     add(player);
 
     // Fade the player in over 1 second (alpha: 0 -> 1).
-    FlixelTween.tween(
-      new FlixelTweenSettings()
-        .setDuration(1.0f)
-        .addGoal(() -> player.getColor().a, 1.0f, player::setAlpha)
-    );
+    FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+      .setDuration(1.0f)
+      .addGoal(() -> player.getColor().a, 1.0f, player::setAlpha)
+      .start();
   }
 }
 ```
@@ -351,12 +397,11 @@ public class MyLibGdxScreen implements Screen {
   public void show() {
     player.makeGraphic(16, 16, Color.WHITE);
 
-    FlixelTween.tween(
-      new FlixelTweenSettings()
-        .setDuration(0.75f)
-        .setEase(FlixelEase::sineInOut)
-        .addGoal(player::getScaleX, 2.0f, value -> player.setScale(value, value))
-    );
+    FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+      .setDuration(0.75f)
+      .setEase(FlixelEase::sineInOut)
+      .addGoal(player::getScaleX, 2.0f, value -> player.setScale(value, value))
+      .start();
   }
 
   @Override
