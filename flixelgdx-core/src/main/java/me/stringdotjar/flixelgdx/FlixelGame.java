@@ -313,6 +313,11 @@ public abstract class FlixelGame implements ApplicationListener {
     }
     cameras.end();
 
+    // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame
+    if (Flixel.keys != null) {
+      Flixel.keys.endFrame();
+    }
+
     postUpdateData.set(elapsed);
     Flixel.Signals.postUpdate.dispatch(postUpdateData);
   }

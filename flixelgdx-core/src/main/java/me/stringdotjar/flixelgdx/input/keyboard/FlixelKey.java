@@ -184,12 +184,16 @@ public final class FlixelKey {
   public static final int MAX_KEYCODE = 255;
 
   /**
-   * Resolves a key name (as returned by {@link Input.Keys#toString(int)}) to a key code.
+   * Resolves a key name (as returned by {@link FlixelKey#toString(int)} or 
+   * {@link Input.Keys#toString(int)}) to a key code.
    *
-   * @param keyname Key name from {@link Input.Keys#toString(int)}.
-   * @return The key code, or -1 if not found.
+   * @param keyname Key name from {@link FlixelKey#toString(int)}.
+   * @return The key code, or {@link NONE} if not found.
    */
   public static int fromString(String keyname) {
+    if (keyname == null || keyname.equalsIgnoreCase("NONE")) {
+      return NONE;
+    }
     return Input.Keys.valueOf(keyname);
   }
 
@@ -197,9 +201,16 @@ public final class FlixelKey {
    * Returns a human-readable string for the given key code.
    *
    * @param keycode Key code from this class (same values as {@link Input.Keys}).
-   * @return Human-readable key name, or null if unknown.
+   * @return Human-readable key name, or "NONE" if the key code is {@link #NONE} or 
+   * "ANY" if the key code is {@link #ANY}.
    */
   public static String toString(int keycode) {
+    if (keycode == NONE) {
+      return "NONE";
+    }
+    if (keycode == ANY) {
+      return "ANY";
+    }
     return Input.Keys.toString(keycode);
   }
 }
