@@ -55,7 +55,7 @@ public class FlixelTweenManager {
    * Note that when the FlixelTween is removed, it will call {@link FlixelTween#destroy} and it can no longer be used.
    *
    * @param tween The FlixelTween to remove.
-   * @param destroy Whether you want to destroy the FlixelTween.
+   * @param destroy To determine if the FlixelTween will be destroyed upon calling the method.
    * @return  The removed FlixelTween object.
    */
   public FlixelTween removeTween(FlixelTween tween, boolean destroy) {
@@ -63,7 +63,7 @@ public class FlixelTweenManager {
       return null;
     }
 
-    tween.active = false;
+    tween.setActive(false);
     activeTweens.removeValue(tween, true);
 
     if (destroy) {
@@ -74,9 +74,20 @@ public class FlixelTweenManager {
   }
 
   /**
+   * Set {@link FlixelTween} for a restart.
+   * {@link FlixelTween#restart} will be called on the next {@link FlixelTween#update}.
+   *
+   * @param tween The FlixelTween to set restart for.
+   * @param waitingForRestart To determine if the FlixelTween will restart next time it is added to the active pool.
+   */
+  public void setRestartForTween(FlixelTween tween, boolean waitingForRestart) {
+    tween.setWaitingForRestart(waitingForRestart);
+  }
+
+  /**
    * Add an {@link FlixelTween} to {@code this} manager.
    * When FlixelTween is added, it is added to the activeTweens SnapshortArray List.
-   * If the FlixelTween is waiting for a restart, the restart() method for the FlixelTween will be called.
+   * If the FlixelTween is waiting for a restart, it will call {@link FlixelTween#restart}.
    *
    * @param tween The FlixelTween to add.
    */

@@ -110,14 +110,11 @@ public class FlixelTween implements Pool.Poolable {
    *
    */
   public FlixelTween start() {
-    // resetToBasic won't work for LOOPING & PINGPONG, hence removed it and switched vars manually
-    waitingForRestart = false;
     if (tweenSettings.getDuration() <= 0) {
       active = false;
       return this;
     }
-    active = true;
-    finished = false;
+    resetBasic();
     return this;
   }
 
@@ -132,6 +129,10 @@ public class FlixelTween implements Pool.Poolable {
   public final void update(float elapsed) {
     if (paused || !active || manager == null || tweenSettings == null) {
       return;
+    }
+
+    if(waitingForRestart) {
+      restart();
     }
 
     var ease = tweenSettings.getEase();
@@ -200,13 +201,14 @@ public class FlixelTween implements Pool.Poolable {
       }
       // If it's not PERSIST, remove tween from activeTweens and set to active = false
       if ((type.equals(FlixelTweenType.ONESHOT) || type.equals(FlixelTweenType.BACKWARD)) && manager != null) {
+        waitingForRestart = false;
         manager.removeTween(this, true);
       }
     }
   }
 
   /**
-   * Sets {@code this} tween's {@code FlixelTweenSettings} and {@code FlixelTweenManager} to null.
+   * Sets {@code this} tween's {@link FlixelTweenSettings} and {@link FlixelTweenManager} to null.
    */
   public void destroy() {
     tweenSettings = null;
@@ -275,6 +277,7 @@ public class FlixelTween implements Pool.Poolable {
    */
   public FlixelTween cancel() {
     resetBasic();
+    waitingForRestart = false;
     return manager.removeTween(this, true);
   }
 
@@ -293,7 +296,7 @@ public class FlixelTween implements Pool.Poolable {
     secondsSinceStart = 0.0f;
     executions = 0;
     paused = false;
-    active = false;
+    active = true;
     finished = false;
     waitingForRestart = false;
     backward = tweenSettings != null
@@ -325,13 +328,22 @@ public class FlixelTween implements Pool.Poolable {
     return active;
   }
 
+  public void setActive(boolean active) {
+    this.active = active;
+  }
+
   public boolean isWaitingForRestart() {
     return waitingForRestart;
+  }
+
+  public void setWaitingForRestart(boolean waitingForRestart) {
+    this.waitingForRestart = waitingForRestart;
   }
 
   public FlixelTween setManager(@NotNull FlixelTweenManager newManager) {
     if (manager != null) {
       manager.removeTween(this, false);
+      waitingForRestart = true;
     }
 
     manager = newManager;
