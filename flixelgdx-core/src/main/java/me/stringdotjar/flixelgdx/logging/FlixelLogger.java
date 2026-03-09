@@ -27,13 +27,12 @@ import java.util.function.Consumer;
  */
 public class FlixelLogger {
 
-  private final ConcurrentLinkedQueue<String> logQueue = new ConcurrentLinkedQueue<>();
-  private final Object logQueueLock = new Object();
-  private volatile boolean logWriterShutdownRequested = false;
-  private Thread logThread;
-  private String customLogsFolderPath = null; // Null means use default (IDE root or JAR dir).
-
-  /** Whether to write logs to a file when {@link #startFileLogging()} is called. */
+  /** 
+   * Whether to write logs to a file when {@link #startFileLogging()} is called. 
+   * 
+   * <p>Once {@link #startFileLogging()} is called, setting this will have no effect.
+   * You must call {@link #stopFileLogging()} before changing this again.
+   */
   private boolean canStoreLogs = true;
 
   /** Maximum number of log files to keep when file logging is enabled. */
@@ -53,6 +52,12 @@ public class FlixelLogger {
 
   /** Provider for collecting stack trace information for the logger. */
   private FlixelStackTraceProvider stackTraceProvider;
+
+  private final ConcurrentLinkedQueue<String> logQueue = new ConcurrentLinkedQueue<>();
+  private final Object logQueueLock = new Object();
+  private volatile boolean logWriterShutdownRequested = false;
+  private Thread logThread;
+  private String customLogsFolderPath = null; // Null means use default (IDE root or JAR dir).
 
   /**
    * Creates a logger that outputs to the console and a file.
@@ -188,6 +193,7 @@ public class FlixelLogger {
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
       String date = now.format(formatter);
 
+      // Delete old log files if we have more than the maximum number of log files.
       FileHandle[] logFiles = logsFolder.list();
       if (logFiles != null && logFiles.length >= maxLogFiles) {
         Arrays.sort(logFiles, Comparator.comparing(FileHandle::name));
@@ -202,6 +208,7 @@ public class FlixelLogger {
       setLogFileLocation(logFile);
       setFileLineConsumer(this::enqueueLogToFile);
 
+      // Start the log writer thread.
       logWriterShutdownRequested = false;
       final FileHandle logFileForThread = logFile;
       logThread = new Thread(() -> {
@@ -230,13 +237,6 @@ public class FlixelLogger {
       logThread.setName("FlixelGDX Log Thread");
       logThread.setDaemon(true);
       logThread.start();
-    } else {
-      FileHandle[] logFiles = logsFolder.list();
-      if (logFiles != null) {
-        for (FileHandle f : logFiles) {
-          f.delete();
-        }
-      }
     }
   }
 
