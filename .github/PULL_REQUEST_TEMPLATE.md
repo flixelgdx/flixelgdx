@@ -9,16 +9,17 @@ Explain *what* was changed and *why*. Link to any relevant issues.
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 - [ ] Refactor / Optimization
+- [ ] Other (please specify in description)
 
 ## Checklist
 
 - [ ] My PR targets the **develop** branch, not master/main.
-- [ ] My code follows the code style of this project.
-- [ ] I have performed a self-review of my own code.
-- [ ] I have commented my code, particularly in hard-to-understand areas.
+- [ ] My code follows the code style of this project (if any code was added or changed).
+- [ ] I have performed a self-review of my own code (if any code was added or changed).
+- [ ] I have commented my code, particularly in hard-to-understand areas (if any code was added or changed).
 - [ ] My changes pass all automated build checks.
 - [ ] I have updated the documentation accordingly (if applicable).
-- [ ] I have added tests that prove my fix is effective or that my feature works.
+- [ ] I have added tests that prove my fix is effective or that my feature works (if any code was added or changed).
 
 ## Screenshots / Evidence (if applicable)
 

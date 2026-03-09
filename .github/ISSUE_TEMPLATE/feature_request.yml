@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest an idea for FlixelGDX
-title: "[FEATURE] "
+title: "[Feature Request] "
 labels: ["enhancement"]
 body:
   - type: textarea

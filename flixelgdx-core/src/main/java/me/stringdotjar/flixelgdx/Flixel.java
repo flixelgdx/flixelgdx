@@ -20,6 +20,7 @@ import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
+import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.jetbrains.annotations.NotNull;
 
@@ -97,11 +98,21 @@ public final class Flixel {
   }
 
   /**
-   * Sets the current screen to the provided screen.
-   *
+   * Sets the current screen to the provided screen, and clears all active tweens by default.
+   * 
    * @param newState The new {@code FlixelState} to set as the current screen.
    */
   public static void switchState(FlixelState newState) {
+    switchState(newState, true);
+  }
+
+  /**
+   * Sets the current screen to the provided screen.
+   *
+   * @param newState The new {@code FlixelState} to set as the current screen.
+   * @param clearTweens Whether to clear all active tweens.
+   */
+  public static void switchState(FlixelState newState, boolean clearTweens) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(newState));
     if (!initialized) {
       throw new IllegalStateException("Flixel has not been initialized yet!");
@@ -112,6 +123,14 @@ public final class Flixel {
     if (state != null) {
       state.hide();
       state.dispose();
+    }
+    if (clearTweens) {
+      FlixelTween.getGlobalManager()
+        .getActiveTweens()
+        .forEach(tween -> tween.cancel());
+      FlixelTween.getGlobalManager()
+        .getTweenPool()
+        .clear();
     }
     game.resetCameras();
     state = newState;

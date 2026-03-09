@@ -10,6 +10,7 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.logging;
   exports me.stringdotjar.flixelgdx.signal;
   exports me.stringdotjar.flixelgdx.tween;
+  exports me.stringdotjar.flixelgdx.tween.builders;
   exports me.stringdotjar.flixelgdx.tween.settings;
   exports me.stringdotjar.flixelgdx.tween.type;
   exports me.stringdotjar.flixelgdx.util;

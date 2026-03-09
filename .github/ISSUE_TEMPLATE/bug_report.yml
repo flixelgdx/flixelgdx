@@ -1,6 +1,6 @@
 name: Bug report
 description: Create a report to help us improve
-title: "[BUG] "
+title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
@@ -52,8 +52,9 @@ body:
       label: Platform
       description: What platform are you experiencing this on?
       options:
+        - Core (Every Platform)
         - Desktop (LWJGL3)
         - Android
-        - iOS
+        - iOS (RoboVM)
         - Web (TeaVM)
         - Other (please specify in description)
