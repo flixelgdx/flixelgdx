@@ -7,6 +7,7 @@ import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
+import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,11 +71,11 @@ public class FlixelSound extends FlixelBasic {
 
   /**
    * Creates a new Flixel sound wrapping the given file path.
-   * 
+   *
    * @param path The path to the sound file.
    */
   public FlixelSound(@NotNull FileHandle path) {
-    this(Flixel.getAudioEngine().createSound(path.path(), (short) 0, null, false));
+    this(createSoundForHandle(path));
   }
 
   /**
@@ -375,6 +376,11 @@ public class FlixelSound extends FlixelBasic {
     return audioPathCache;
   }
 
+  private static MASound createSoundForHandle(@NotNull FileHandle path) {
+    String resolvedPath = FlixelPathsUtil.resolveAudioPath(path.path());
+    return Flixel.getAudioEngine().createSound(resolvedPath, (short) 0, Flixel.sound.getSfxGroup(), false);
+  }
+
   /**
    * Extracts the path to the audio file and converts it to an absolute path
    * so MiniAudio can open it and play it.
@@ -383,13 +389,23 @@ public class FlixelSound extends FlixelBasic {
    * @return The absolute path to the audio file.
    */
   public static String extractAudioPath(@NotNull String path) {
-    FileHandle handle = Gdx.files.absolute(path);
-    if (handle.file().exists()) {
-      return handle.file().getAbsolutePath();
+    FileHandle handle = Gdx.files.internal(path);
+    try {
+      File file = handle.file();
+      if (file.exists()) {
+        return file.getAbsolutePath();
+      }
+    } catch (Exception ignored) {
+      // When running from a packaged JAR, internal/classpath handles may not expose a real
+      // filesystem File. In that case we fall through and extract to a temp file instead.
     }
-    // Asset is inside a JAR, copy it out to a temp file so MiniAudio can open it.
+    // Asset is inside a JAR or otherwise not directly accessible as a real file; copy it
+    // out to a temp file so MiniAudio can open it.
     String ext = path.contains(".") ? path.substring(path.lastIndexOf('.')) : "";
     try {
+      if (ext.isEmpty()) {
+        ext = ".tmp";
+      }
       File temp = File.createTempFile("flixelaudio_", ext);
       temp.deleteOnExit();
       handle.copyTo(new FileHandle(temp));

@@ -111,7 +111,7 @@ public final class FlixelRuntimeUtil {
   }
 
   /**
-   * Returns the working directory of the game.
+   * Returns the working directory of the game (code source location: class output dir or JAR path).
    *
    * @return The working directory of the game. If an error occurs, {@code null} is returned.
    */
@@ -126,6 +126,58 @@ public final class FlixelRuntimeUtil {
     } catch (Exception e) {
       return null;
     }
+  }
+
+  /**
+   * Returns the default directory path where log files should be stored, depending on the runtime.
+   * <ul>
+   *   <li>When running in an IDE: the project root directory, so logs go to {@code <project-root>/logs/}.</li>
+   *   <li>When running from a JAR: the directory containing the JAR, so logs go to {@code <jar-dir>/logs/}.</li>
+   *   <li>Otherwise (e.g. classpath): the current working directory, so logs go to {@code <user.dir>/logs/}.</li>
+   * </ul>
+   *
+   * @return The absolute path to the logs folder (with no trailing separator), or {@code null} if it cannot be determined.
+   */
+  public static String getDefaultLogsFolderPath() {
+    String path = getWorkingDirectory();
+    if (path == null) {
+      return null;
+    }
+    path = path.replaceAll("/$", "");
+    if (isRunningInIDE()) {
+      // Project root: strip IDE/build output segments so we get the project root.
+      if (path.contains("build/classes")) {
+        path = path.substring(0, path.indexOf("build/classes"));
+      } else if (path.contains("out/production")) {
+        path = path.substring(0, path.indexOf("out/production"));
+      } else if (path.contains("/bin/")) {
+        path = path.substring(0, path.indexOf("/bin/"));
+      }
+      path = path.replaceAll("/$", "");
+      // In many LibGDX project templates the working directory is the assets folder; if so,
+      // trim the trailing /assets segment so logs go to the project root instead of assets/.
+      if (path.endsWith("/assets")) {
+        path = path.substring(0, path.length() - "/assets".length());
+      }
+      return path + "/logs";
+    }
+    if (isRunningFromJar()) {
+      // Directory containing the JAR.
+      int lastSlash = path.lastIndexOf('/');
+      if (lastSlash > 0) {
+        path = path.substring(0, lastSlash);
+      }
+      return path.replaceAll("/$", "") + "/logs";
+    }
+    // CLASSPATH or other: use current working directory.
+    String cwd = System.getProperty("user.dir", "");
+    String base = (cwd.isEmpty() ? path : cwd).replaceAll("/$", "");
+    // If the working directory is the assets folder, move one level up so logs land in the
+    // project root rather than under assets/.
+    if (base.endsWith("/assets")) {
+      base = base.substring(0, base.length() - "/assets".length());
+    }
+    return base + "/logs";
   }
 
   /**
