@@ -5,7 +5,6 @@ import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -17,19 +16,12 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
-import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 
 import static me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * The game object used for containing the main loop and core elements of the Flixel game.
@@ -113,15 +105,6 @@ public abstract class FlixelGame implements ApplicationListener {
   /** Where all the global cameras are stored. */
   protected SnapshotArray<FlixelCamera> cameras;
 
-  /** The queue of logs to be written to the log file. */
-  private final ConcurrentLinkedQueue<String> logQueue = new ConcurrentLinkedQueue<>();
-
-  /** The maximum number of log files FlixelGDX can store. */
-  protected int maxLogFiles = 10;
-
-  /** Can the game store logs to a text file and store them in a folder of the game's working directory? */
-  private boolean canStoreLogs = true;
-
   /** Is the game currently closing? */
   private boolean isClosing = false;
 
@@ -133,15 +116,6 @@ public abstract class FlixelGame implements ApplicationListener {
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
-
-  /** Signals the log writer thread to drain the queue and exit. */
-  private volatile boolean logWriterShutdownRequested = false;
-
-  /** Lock for coordinating between log producers and the log writer thread via wait/notify. */
-  private final Object logQueueLock = new Object();
-
-  /** Reference to the log writer thread so we can wait for it to finish during dispose. */
-  private Thread logThread;
 
   /**
    * Creates a new game instance with the details specified.
@@ -236,8 +210,8 @@ public abstract class FlixelGame implements ApplicationListener {
     bgTexture = new Texture(pixmap);
     pixmap.dispose();
 
-    // Set up the log thread to write logs to a file.
-    setupLogWriterThread();
+    // Set up file logging (writes to project root in IDE, or next to the JAR when run from a JAR).
+    Flixel.startFileLogging();
 
     Flixel.switchState(initialScreen);
     initialScreen = null;
@@ -312,6 +286,11 @@ public abstract class FlixelGame implements ApplicationListener {
       camera.update(elapsed);
     }
     cameras.end();
+
+    // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame
+    if (Flixel.keys != null) {
+      Flixel.keys.endFrame();
+    }
 
     postUpdateData.set(elapsed);
     Flixel.Signals.postUpdate.dispatch(postUpdateData);
@@ -465,21 +444,7 @@ public abstract class FlixelGame implements ApplicationListener {
 
     Flixel.Signals.postGameClose.dispatch();
 
-    // Signal the log thread to drain the queue and exit. Must happen AFTER all dispose-time
-    // logs are added, so they get written before the thread exits.
-    synchronized (logQueueLock) {
-      logWriterShutdownRequested = true;
-      logQueueLock.notify();
-    }
-
-    // Wait for the log thread to flush all remaining logs to disk before marking closed.
-    if (logThread != null && logThread.isAlive()) {
-      try {
-        logThread.join(5000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    }
+    Flixel.stopFileLogging();
 
     isClosed = true;
   }
@@ -502,90 +467,13 @@ public abstract class FlixelGame implements ApplicationListener {
   }
 
   /**
-   * Sets up the log writer thread to write logs to a file.
+   * Sets a custom folder for log files. Call before {@link #create()} so that file logging uses
+   * this folder instead of the default (project root in IDE, directory containing the JAR when run from a JAR).
+   *
+   * @param absolutePathToLogsFolder Absolute path to the logs folder, or {@code null} to use the default.
    */
-  protected void setupLogWriterThread() {
-    String path = FlixelRuntimeUtil.getWorkingDirectory();
-    if (path == null) {
-      return;
-    }
-    String logsFolder = path.substring(0, path.lastIndexOf('/')) + "/logs/";
-
-    if (canStoreLogs) {
-      LocalDateTime now = LocalDateTime.now();
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
-      String date = now.format(formatter);
-
-      // Create/get the path to the logs folder, which is inside the game's working directory.
-      Gdx.files.absolute(logsFolder).mkdirs();
-
-      // Check if the logs folder has too many log files, and if so, delete the oldest ones.
-      // We prune when count >= maxLogFiles so that after creating this run's log, we have at most maxLogFiles.
-      FileHandle[] logFiles = Gdx.files.absolute(logsFolder).list();
-      if (logFiles != null && logFiles.length >= maxLogFiles) {
-        // Sort by name so we delete the oldest first (flixel-yyyy-MM-dd_HH-mm-ss.log is lexicographically ordered).
-        Arrays.sort(logFiles, Comparator.comparing(FileHandle::name));
-        int toDelete = logFiles.length - maxLogFiles + 1;
-        for (int i = 0; i < toDelete; i++) {
-          logFiles[i].delete();
-        }
-      }
-
-      FileHandle logFile = Gdx.files.absolute(logsFolder + "/flixel-" + date + ".log");
-
-      // Wire the default logger (used by Flixel.info()/warn()/error()) to also write to the file.
-      FlixelLogger defaultLogger = Flixel.getLogger();
-      if (defaultLogger != null) {
-        defaultLogger.setLogFileLocation(logFile);
-        defaultLogger.setFileLineConsumer(this::enqueueLog);
-      }
-
-      final FileHandle logFileForThread = logFile;
-      logThread = new Thread(() -> {
-        try {
-          // Keep running until shutdown is requested AND the queue is fully drained.
-          // This ensures logs added during dispose() (e.g. "Disposing...") are written.
-          while (true) {
-            String log = logQueue.poll();
-            if (log != null) {
-              logFileForThread.writeString(log + "\n", true);
-            } else {
-              synchronized (logQueueLock) {
-                if (logWriterShutdownRequested) {
-                  break;
-                }
-                try {
-                  logQueueLock.wait();
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                }
-              }
-            }
-          }
-        } catch (Exception ignored) {}
-      });
-      logThread.setName("FlixelGDX Log Thread");
-      logThread.setDaemon(true);
-      logThread.start();
-    } else {
-      FileHandle[] logFiles = Gdx.files.absolute(logsFolder).list();
-      if (logFiles != null) {
-        for (FileHandle logFile : logFiles) {
-          logFile.delete();
-        }
-      }
-    }
-  }
-
-  /**
-   * Adds a log entry to the queue and notifies the log writer thread. Prefer this over
-   * {@link #getLogQueue()} when adding logs so the writer wakes immediately instead of polling.
-   */
-  public void enqueueLog(String log) {
-    logQueue.add(log);
-    synchronized (logQueueLock) {
-      logQueueLock.notify();
-    }
+  public void setLogsFolder(String absolutePathToLogsFolder) {
+    Flixel.setLogsFolder(absolutePathToLogsFolder);
   }
 
   /**
@@ -643,18 +531,6 @@ public abstract class FlixelGame implements ApplicationListener {
 
   public Stage getStage() {
     return stage;
-  }
-
-  public boolean canStoreLogs() {
-    return canStoreLogs;
-  }
-
-  public void setCanStoreLogs(boolean canStoreLogs) {
-    this.canStoreLogs = canStoreLogs;
-  }
-
-  public ConcurrentLinkedQueue<String> getLogQueue() {
-    return logQueue;
   }
 
   public SnapshotArray<FlixelCamera> getCameras() {

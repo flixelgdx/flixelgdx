@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.utils.IntArray;
 import com.badlogic.gdx.utils.IntSet;
 
 /**
@@ -26,17 +27,24 @@ public class FlixelKeyInputManager {
   /** Keys that were pressed last frame, used to compute {@link #justPressed(int)} and {@link #justReleased()}. */
   private final IntSet previousPressedKeys = new IntSet();
 
+  /** Order keys were pressed (chronological), so {@link #firstPressed()} returns the first key held. */
+  private final IntArray pressedOrder = new IntArray();
+
   /** Input processor that tracks key state. */
   private final InputProcessor inputProcessor = new InputProcessor() {
     @Override
     public boolean keyDown(int keycode) {
       currentPressedKeys.add(keycode);
+      if (pressedOrder.indexOf(keycode) < 0) {
+        pressedOrder.add(keycode);
+      }
       return false;
     }
 
     @Override
     public boolean keyUp(int keycode) {
       currentPressedKeys.remove(keycode);
+      pressedOrder.removeValue(keycode);
       return false;
     }
 
@@ -75,8 +83,38 @@ public class FlixelKeyInputManager {
   /**
    * Updates internal key state. Must be called once per frame (e.g. from the game loop)
    * so that {@link #justReleased(int)} and {@link #firstJustPressed()} / {@link #firstJustReleased()} work correctly.
+   *
+   * <p>Syncs {@link #currentPressedKeys} from {@link com.badlogic.gdx.Gdx#input} so that
+   * {@link #firstPressed()}, {@link #firstJustPressed()} and {@link #firstJustReleased()} work
+   * even when the manager's {@link #getInputProcessor()} is not in the input chain. Call
+   * {@link #endFrame()} at the end of the frame so "just pressed/released" detection works next frame.
    */
   public void update() {
+    currentPressedKeys.clear();
+    for (int i = 0; i <= FlixelKey.MAX_KEYCODE; i++) {
+      if (Gdx.input.isKeyPressed(i)) {
+        currentPressedKeys.add(i);
+      }
+    }
+    // Keep pressedOrder in sync: remove released keys, add newly pressed (e.g. focus return) in keycode order.
+    for (int i = pressedOrder.size - 1; i >= 0; i--) {
+      if (!currentPressedKeys.contains(pressedOrder.get(i))) {
+        pressedOrder.removeIndex(i);
+      }
+    }
+    for (int i = 0; i <= FlixelKey.MAX_KEYCODE; i++) {
+      if (currentPressedKeys.contains(i) && pressedOrder.indexOf(i) < 0) {
+        pressedOrder.add(i);
+      }
+    }
+  }
+
+  /**
+   * Captures current key state as "previous" for the next frame. Must be called once per frame
+   * at the <i>end</i> of the update cycle (after all state updates) so that
+   * {@link #firstJustPressed()} and {@link #firstJustReleased()} work correctly next frame.
+   */
+  public void endFrame() {
     previousPressedKeys.clear();
     previousPressedKeys.addAll(currentPressedKeys);
   }
@@ -169,19 +207,20 @@ public class FlixelKeyInputManager {
   }
 
   /**
-   * Returns the first key code that is currently pressed, or {@link FlixelKey#NONE} if none.
+   * Returns the key code that was pressed first (chronologically) among those currently held,
+   * or {@link FlixelKey#NONE} if none.
    *
    * @return First pressed key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstPressed() {
-    if (!enabled || currentPressedKeys.size == 0) {
+    if (!enabled || pressedOrder.size == 0) {
       return FlixelKey.NONE;
     }
-    return currentPressedKeys.first();
+    return pressedOrder.first();
   }
 
   /**
-   * Returns the first key code that was just pressed this frame, or -1 if none.
+   * Returns the first key code that was just pressed this frame, or {@link FlixelKey#NONE} if none.
    *
    * @return First just-pressed key code, or {@link FlixelKey#NONE} if none.
    */
@@ -223,5 +262,6 @@ public class FlixelKeyInputManager {
   public void reset() {
     currentPressedKeys.clear();
     previousPressedKeys.clear();
+    pressedOrder.clear();
   }
 }
