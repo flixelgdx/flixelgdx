@@ -87,6 +87,12 @@ public abstract class FlixelGame implements ApplicationListener {
   /** Should the game start in fullscreen mode? */
   protected boolean fullscreen;
 
+  /**
+   * When true, the game automatically pauses update/draw and the sound system
+   * when the window loses focus or is minimized.
+   */
+  public boolean autoPause = true;
+
   /** Is the game's window currently focused? */
   private boolean isFocused = true;
 
@@ -408,6 +414,16 @@ public abstract class FlixelGame implements ApplicationListener {
   /** Toggles fullscreen mode on or off, depending on the current state. */
   public void toggleFullscreen() {
     setFullscreen(!Flixel.isFullscreen());
+  }
+
+  /**
+   * Toggles auto-pause on or off.
+   *
+   * @return The new value of autoPause after toggling.
+   */
+  public boolean toggleAutoPause() {
+    autoPause = !autoPause;
+    return autoPause;
   }
 
   /**
