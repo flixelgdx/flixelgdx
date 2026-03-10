@@ -51,10 +51,7 @@ public class FlixelTween implements Pool.Poolable {
   /** Is {@code this} tween tweening backwards? */
   protected boolean backward = false;
 
-  /**
-   * True when {@link #restart()} is being invoked internally from {@link #finish()} for
-   * looping / ping-pong behavior, as opposed to a manual restart call.
-   */
+  /** Does {@code this} tween need to be restarted internally from {@link #finish()} for looping / ping-pong tweens? */
   protected boolean internalRestart = false;
 
   /** Default constructor for pooling purposes. */
@@ -93,7 +90,7 @@ public class FlixelTween implements Pool.Poolable {
    *   .start();
    * }</pre>
    *
-   * @param tweenType   The tween class (e.g. {@link FlixelPropertyTween}.class).
+   * @param tweenType The tween class (e.g. {@link FlixelPropertyTween}.class).
    * @param builderType The corresponding builder class (e.g. {@link FlixelPropertyTweenBuilder}.class).
    * @return A new builder instance of type {@code B} for chaining.
    */
@@ -145,7 +142,6 @@ public class FlixelTween implements Pool.Poolable {
 
   /**
    * Starts {@code this} tween and resets every value to its initial state.
-   *
    */
   public FlixelTween start() {
     if (tweenSettings.getDuration() <= 0) {
@@ -216,9 +212,10 @@ public class FlixelTween implements Pool.Poolable {
 
   /**
    * Finishes {@code this} tween and determine to remove by the Tween type.
-   * If {@code this} tween's {@link FlixelTweenType} is {@link FlixelTweenType#LOOPING} or {@link FlixelTweenType#PINGPONG} {@link FlixelTween#restart} is called.
-   * Otherwise, the tween is removed from the manager and call any callback on completion.
-   *
+   * 
+   * <p>If {@code this} tween's {@link FlixelTweenType} is {@link FlixelTweenType#LOOPING} or 
+   * {@link FlixelTweenType#PINGPONG}, then {@link FlixelTween#restart} is called; otherwise, the
+   * tween is removed from the manager and any callback on completion is called.
    */
   public void finish() {
     executions++;
@@ -226,6 +223,7 @@ public class FlixelTween implements Pool.Poolable {
 
     var type = tweenSettings.getType();
 
+    // If the tween is looping or ping-pong, restart the tween.
     if (type.equals(FlixelTweenType.LOOPING) || type.equals(FlixelTweenType.PINGPONG)) {
       if (type.equals(FlixelTweenType.PINGPONG)) {
         backward = !backward;
@@ -248,6 +246,7 @@ public class FlixelTween implements Pool.Poolable {
    * Sets {@code this} tween's {@link FlixelTweenSettings} and {@link FlixelTweenManager} to null.
    */
   public void destroy() {
+    resetBasic();
     tweenSettings = null;
     manager = null;
   }
@@ -317,12 +316,14 @@ public class FlixelTween implements Pool.Poolable {
    */
   public FlixelTween cancel() {
     resetBasic();
-    return manager.removeTween(this, true);
+    if (manager != null) {
+      manager.removeTween(this, true);
+    }
+    return this;
   }
 
   @Override
   public void reset() {
-    resetBasic();
     destroy();
   }
 
@@ -375,6 +376,7 @@ public class FlixelTween implements Pool.Poolable {
       manager.removeTween(this, false);
     }
     manager = newManager;
-    return manager.addTweenToActiveTweenList(this);
+    manager.getActiveTweens().add(this);
+    return this;
   }
 }

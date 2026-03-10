@@ -75,6 +75,7 @@ public class FlixelVarTween extends FlixelTween {
       fieldsCache = FlixelReflectUtil.getAllFieldsAsArray(object.getClass());
     }
 
+    // Get all the float fields on the object.
     ObjectSet<String> floatFieldIds = new ObjectSet<>(fieldsCache.length);
     for (Field f : fieldsCache) {
       if (f != null && f.getType() == float.class) {
@@ -85,6 +86,7 @@ public class FlixelVarTween extends FlixelTween {
       }
     }
 
+    // Set the initial values and goal values for the fields.
     final Field[] fields = fieldsCache;
     final Object target = object;
     tweenSettings.forEachGoal((fieldName, value) -> {
@@ -104,6 +106,7 @@ public class FlixelVarTween extends FlixelTween {
           goalValues.put(fieldName, value);
           break;
         } catch (IllegalAccessException e) {
+          // Ignore and move on to the next field / goal.
         }
       }
     });
@@ -131,8 +134,7 @@ public class FlixelVarTween extends FlixelTween {
   public void restart() {
     // For manual restarts, refresh the starting values from the current object fields
     // so the tween resumes from "where things are now". For internal loop / ping-pong
-    // restarts, keep the original start values so the animation stays between the
-    // original endpoints.
+    // restarts, keep the original start values so the animation stays between the original endpoints.
     if (!internalRestart && tweenSettings != null && object != null && fieldsCache != null) {
       var goals = tweenSettings.getGoals();
       if (goals != null && !goals.isEmpty()) {
@@ -152,7 +154,7 @@ public class FlixelVarTween extends FlixelTween {
               initialValues.put(fieldName, field.getFloat(target));
               break;
             } catch (IllegalAccessException e) {
-              // ignore and move on to the next field / goal
+              // Ignore and move on to the next field / goal.
             }
           }
         });

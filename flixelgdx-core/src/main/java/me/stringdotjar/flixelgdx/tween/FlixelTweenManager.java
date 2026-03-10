@@ -37,18 +37,6 @@ public class FlixelTweenManager {
   }
 
   /**
-   * Adds the tween to {@link FlixelTweenManager#activeTweens} without setting manager.
-   *
-   * @param tween The tween to add and start.
-   * @return The same tween for chaining.
-   */
-  public FlixelTween addTweenToActiveTweenList(FlixelTween tween) {
-    activeTweens.add(tween);
-    tween.start();
-    return tween;
-  }
-
-  /**
    * Updates all active tweens that are stored and updated in {@code this} manager.
    *
    * <p>Iterates in reverse so that finished ONESHOT tweens can be removed by index
