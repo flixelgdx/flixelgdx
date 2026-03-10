@@ -93,6 +93,12 @@ public abstract class FlixelGame implements ApplicationListener {
   /** Is the game's window currently minimized? */
   private boolean isMinimized = false;
 
+  /**
+   * When true, the game automatically pauses update/draw and the sound system
+   * when the window loses focus or is minimized.
+   */
+  private boolean autoPause = true;
+
   /** The main stage used for rendering all screens and sprites on screen. */
   protected Stage stage;
 
@@ -352,7 +358,9 @@ public abstract class FlixelGame implements ApplicationListener {
 
     fullscreen = Gdx.graphics.isFullscreen();
 
-    update(delta);
+    if (!autoPause || isFocused) {
+      update(delta);
+    }
     draw();
   }
 
@@ -365,6 +373,9 @@ public abstract class FlixelGame implements ApplicationListener {
   /** Called when the user regains focus on the game's window. */
   public void onWindowFocused() {
     isFocused = true;
+    if (autoPause && Flixel.sound != null) {
+      Flixel.sound.resume();
+    }
     Flixel.Signals.windowFocused.dispatch();
   }
 
@@ -374,6 +385,9 @@ public abstract class FlixelGame implements ApplicationListener {
       return;
     }
     isFocused = false;
+    if (autoPause && Flixel.sound != null) {
+      Flixel.sound.pause();
+    }
     Flixel.Signals.windowUnfocused.dispatch();
   }
 
@@ -389,6 +403,9 @@ public abstract class FlixelGame implements ApplicationListener {
       return;
     }
     isFocused = false;
+    if (autoPause && Flixel.sound != null) {
+      Flixel.sound.pause();
+    }
     Flixel.Signals.windowMinimized.dispatch();
   }
 
@@ -527,6 +544,21 @@ public abstract class FlixelGame implements ApplicationListener {
 
   public boolean isFocused() {
     return isFocused;
+  }
+
+  /** Returns whether auto-pause is enabled. */
+  public boolean isAutoPause() {
+    return autoPause;
+  }
+
+  /** Sets whether the game should auto-pause when the window loses focus. */
+  public void setAutoPause(boolean autoPause) {
+    this.autoPause = autoPause;
+  }
+
+  /** Toggles auto-pause on or off. */
+  public void toggleAutoPause() {
+    this.autoPause = !this.autoPause;
   }
 
   public Stage getStage() {
