@@ -16,6 +16,7 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
+import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
@@ -358,7 +359,7 @@ public abstract class FlixelGame implements ApplicationListener {
 
     fullscreen = Gdx.graphics.isFullscreen();
 
-    if (!autoPause || (isFocused && !isMinimized)) {
+    if (!autoPause || isFocused) {
       update(delta);
     }
     draw();
@@ -386,7 +387,6 @@ public abstract class FlixelGame implements ApplicationListener {
     }
     isFocused = false;
     if (autoPause) {
-      // pause audio when focus lost (and not minimized)
       Flixel.sound.pause();
     }
     Flixel.Signals.windowUnfocused.dispatch();
@@ -399,17 +399,13 @@ public abstract class FlixelGame implements ApplicationListener {
    * for compatibility with the window listener in the LWJGL3 (desktop) launcher.
    */
   public void onWindowMinimized(boolean iconified) {
-    isMinimized = iconified;
-    if (iconified) {
-      isFocused = false;
-      if (autoPause) {
-        Flixel.sound.pause();
-      }
-      Flixel.Signals.windowMinimized.dispatch();
-    } else if (isFocused && autoPause) {
-      Flixel.sound.resume();
-    }
+  isMinimized = iconified;
+  isFocused = false;
+  if (autoPause) {
+    Flixel.sound.pause();
   }
+  Flixel.Signals.windowMinimized.dispatch();
+}
 
   /**
    * Sets fullscreen mode for the game's window.
