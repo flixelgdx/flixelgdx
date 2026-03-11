@@ -537,7 +537,7 @@ public abstract class FlixelGame implements ApplicationListener {
     return (int) windowSize.x;
   }
 
-  public  int getWindowHeight() {
+  public int getWindowHeight() {
     return (int) windowSize.y;
   }
 
