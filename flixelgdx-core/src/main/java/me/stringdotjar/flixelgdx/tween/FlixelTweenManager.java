@@ -31,6 +31,7 @@ public class FlixelTweenManager {
    */
   public FlixelTween addTween(FlixelTween tween) {
     tween.setManager(this);
+    activeTweens.add(tween);
     tween.start();
     return tween;
   }
@@ -44,33 +45,49 @@ public class FlixelTweenManager {
    * @param elapsed The amount of time that has passed since the last frame.
    */
   public void update(float elapsed) {
-    FlixelTween[] tweens = activeTweens.begin();
-    for (int i = 0, n = activeTweens.size; i < n; i++) {
-      FlixelTween tween = tweens[i];
-      if (tween == null) {
+    FlixelTween[] items = activeTweens.begin();
+    for (int i = 0; i < activeTweens.size; i++) {
+      FlixelTween tween = items[i];
+      if (tween == null || !tween.isActive()) {
         continue;
       }
       tween.update(elapsed);
+    }
 
-      if (tween.finished) {
+    for (int i = 0; i < activeTweens.size; i++) {
+      FlixelTween tween = items[i];
+      if (tween != null && tween.isFinished()) {
         if (tween.manager != this) {
           continue;
         }
-        var settings = tween.getTweenSettings();
-        if (settings == null) {
-          continue;
-        }
-
-        switch (settings.getType()) {
-          case ONESHOT -> {
-            activeTweens.removeValue(tween, true);
-            tweenPool.free(tween);
-          }
-          case PERSIST -> {} // Do nothing, let it be.
-        }
+        tween.finish();
       }
     }
+
     activeTweens.end();
+  }
+
+  /**
+   * Remove an {@link FlixelTween} from {@code this} manager.
+   * Note that when the FlixelTween is removed, it will call {@link FlixelTween#destroy} and it can no longer be used.
+   *
+   * @param tween The FlixelTween to remove.
+   * @param destroy To determine if the FlixelTween will be destroyed upon calling the method.
+   * @return  The removed FlixelTween object.
+   */
+  public FlixelTween removeTween(FlixelTween tween, boolean destroy) {
+    if (tween == null) {
+      return null;
+    }
+
+    tween.setActive(false);
+    activeTweens.removeValue(tween, true);
+
+    if (destroy) {
+      tweenPool.free(tween);
+    }
+
+    return tween;
   }
 
   public SnapshotArray<FlixelTween> getActiveTweens() {

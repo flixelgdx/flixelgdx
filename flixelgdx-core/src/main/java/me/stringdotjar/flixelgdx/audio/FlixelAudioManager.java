@@ -223,29 +223,16 @@ public class FlixelAudioManager implements Disposable {
    * Only sounds that were playing are paused; they can be resumed with {@link #resume()}.
    */
   public void pause() {
-    pausedByFocus.clear();
-    for (FlixelSound s : activeSounds) {
-      if (s == null) {
-        continue;
-      }
-      if (s.isPlaying()) {
-        s.pause();
-        pausedByFocus.add(s);
-      }
-    }
+    sfxGroup.pause();
+    musicGroup.pause();
   }
 
   /**
    * Resumes all sounds that were paused by {@link #pause()}. Called when the game regains focus.
    */
   public void resume() {
-    for (FlixelSound s : pausedByFocus) {
-      if (s == null) {
-        continue;
-      }
-      s.resume();
-    }
-    pausedByFocus.clear();
+    sfxGroup.play();
+    musicGroup.play();
   }
 
   /**

@@ -80,6 +80,30 @@ public class FlixelPropertyTween extends FlixelTween {
   }
 
   @Override
+  public void restart() {
+    // For manual restarts, refresh the starting values from the current object state
+    // so the tween resumes from "where things are now". For internal loop / ping-pong
+    // restarts, keep the original start values so the animation stays between the
+    // original endpoints.
+    if (!internalRestart && tweenSettings != null) {
+      var propertyGoals = tweenSettings.getPropertyGoals();
+      if (propertyGoals != null && !propertyGoals.isEmpty()) {
+        cachedPropertyGoals.clear();
+        propertyGoalStartValues.clear();
+        for (int i = 0; i < propertyGoals.size; i++) {
+          var goal = propertyGoals.get(i);
+          if (goal == null) {
+            continue;
+          }
+          cachedPropertyGoals.add(goal);
+          propertyGoalStartValues.add(goal.getter().get());
+        }
+      }
+    }
+    super.restart();
+  }
+
+  @Override
   public void reset() {
     super.reset();
     cachedPropertyGoals.clear();

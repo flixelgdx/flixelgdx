@@ -10,7 +10,7 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-jvm`**: Contains common logic for all JVM-based backends (Desktop, Android, etc.). This is primarily an internal module; most games will not depend on it directly.
 - **`flixelgdx-lwjgl3`**: The primary desktop backend using the [Lightweight Java Game Library](https://www.lwjgl.org/). When you create a desktop launcher with FlixelGDX, this is the module that provides the actual `Lwjgl3Application`.
 - **`flixelgdx-android`**: The backend for Android devices. This integrates FlixelGDX with libGDX's Android launcher and lifecycle.
-- **`flixelgdx-ios`**: The backend for iOS using RoboVM.
+- **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM).
 - **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java to JavaScript.
 
 ### Which module should my game depend on?
@@ -24,6 +24,8 @@ When you are building a project that is structured like FlixelGDX itself (multi-
 
 - depend on `flixelgdx-core` from your game logic,
 - depend on the appropriate backend modules (`flixelgdx-lwjgl3`, `flixelgdx-android`, `flixelgdx-ios`, `flixelgdx-teavm`) in your platform-specific launchers.
+
+For more info on how to wire FlixelGDX into a new libGDX project, see the [COMPILING.md](COMPILING.md) document.
 
 ## Build System
 

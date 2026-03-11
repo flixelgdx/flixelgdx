@@ -280,8 +280,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /**
    * Adds a new animation to the animations list if it doesn't exist already.
    *
-   * @param name The name of the animation. This is what you'll use every time you use {@code
-   * playAnimation()}.
+   * @param name The name of the animation. This is what you'll use every time you use {@code playAnimation()}.
    * @param frameIndices An array of integers used for animation frame indices.
    * @param frameDuration How long each frame lasts for in seconds.
    */
