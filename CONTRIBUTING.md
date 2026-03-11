@@ -21,7 +21,29 @@ FlixelGDX aims to be a high-quality framework. Please follow these standards so 
 
 ### Formatting
 
-We use [EditorConfig](https://editorconfig.org) for shared formatting. The project root contains a `.editorconfig` file; configure your editor to use it so your changes match automatically.
+We use [EditorConfig](https://editorconfig.org) to keep indentation, line endings, and basic whitespace consistent across editors. The project root contains a `.editorconfig` file that defines:
+
+- **Charset**: UTF-8
+- **Line endings**: LF
+- **Final newline**: Insert at end of file
+- **Trailing whitespace**: Trim (except in Markdown, where it is left for line breaks)
+- **Indentation**: 2 spaces (no tabs) for Java, Gradle, Kotlin, etc.
+- **Line length**: 120 characters for Java and similar (see `.editorconfig` for scope)
+
+EditorConfig only controls how your editor behaves when you type or when it applies basic rules (e.g. indent on Tab, trim on save). It does **not** run a full code formatter. For “Format” or format-on-save, your editor uses its own formatter (e.g. IntelliJ’s code style or a VS Code formatter). To avoid clashes, enable EditorConfig in your editor so its behavior matches the project, and use the Project code style where applicable.
+
+#### Editor setup (use EditorConfig in your editor)
+
+- **IntelliJ IDEA**
+  - Go to **Settings → Editor → Code Style** and enable **“Enable EditorConfig support”** (on some versions it is under **Settings → Editor → General**).
+  - Use the **Project** code style scheme so EditorConfig takes precedence over personal/IDE defaults. The project’s `.editorconfig` also includes IntelliJ-specific options (e.g. `ij_java_*`) for brace style and imports.
+- **VS Code / Cursor**
+  - EditorConfig is not built in. Install the **“EditorConfig for VS Code”** extension (publisher: **EditorConfig**, extension ID: `EditorConfig.EditorConfig`).
+  - After that, the editor will follow `.editorconfig` for indent, line endings, and trim/final newline when you edit. Any “Format” or format-on-save still uses whatever formatter you have selected; configure that formatter to match the project (e.g. 2 spaces, 120 chars) so formatting and EditorConfig stay in sync.
+
+Once EditorConfig is enabled, new and edited files will respect the project’s indentation and whitespace rules automatically.
+
+#### Style rules (match the codebase)
 
 - **Indentation**: 2 spaces (no tabs). Apply to Java, Gradle, and Markdown (where applicable).
 - **Line length**: Prefer staying under 120 characters. Break long lines at natural points (e.g. after a comma, before an operator); avoid breaking in the middle of a word or string when possible.
@@ -118,21 +140,60 @@ public class MyObject extends FlixelSprite {
 }
 ```
 
-**Good Javadoc on a public method:**
+**Good Javadoc (with good comments and formatting) on a public method:**
 
 ```java
 /**
- * Adds a property goal that tweens a value via a getter and setter.
+ * Adds a new animation to the animations list if it doesn't exist already.
  *
- * <p>The getter is called once at tween start; each update interpolates toward {@code toValue}
- * and passes the result to the setter.
- *
- * @param getter Supplies the initial value of the property.
- * @param toValue The target value.
- * @param setter Consumes the interpolated value on each update.
- * @return {@code this} for chaining.
+ * @param name The name of the animation. This is what you'll use every time you use {@code playAnimation()}.
+ * @param frameIndices An array of integers used for animation frame indices.
+ * @param frameDuration How long each frame lasts for in seconds.
  */
-public FlixelTweenSettings addGoal(FlixelTweenPropertyFloatGetter getter, float toValue, FlixelTweenPropertyFloatSetter setter) { ... }
+public void addAnimation(String name, int[] frameIndices, float frameDuration) {
+  Array<TextureRegion> animFrames = new Array<>();
+
+  // Convert 1D indices (0, 1, 2...) to 2D grid coordinates.
+  int cols = frames[0].length;
+  for (int index : frameIndices) {
+    int row = index / cols;
+    int col = index % cols;
+    animFrames.add(frames[row][col]);
+  }
+
+  animations.put(name, new Animation<>(frameDuration, animFrames));
+}
+```
+
+**Bad Javadoc (with bad comments and formatting) on a public method:**
+
+```java
+/**
+ * uuhhhhhhhhhhh idk
+ *
+ * @param name its da name
+ * @param frameIndices eh you can figure it out...
+ * @param frameDuration what do you think it is ._.
+ */
+public 
+void addAnimation(String name, int[] frameIndices, float frameDuration) {
+  Array<TextureRegion> animFrames = new Array<>(); // create a new array to store the animation frames
+
+  // convert     indices (0, 1, 2, wtv) to  grid coordinates   .
+  int cols = 
+    frames[0].length;
+  for(int index : frameIndices) 
+    { // loop through the indices and convert them to grid coordinates
+    int row = index /   cols; // calculate the row number
+       int col = index%cols; // calculate the column number
+     animFrames.add(frames // add the frame to the array
+     [row] // the row number
+     [col] // the column number
+     );
+  }
+
+  animations.put(name, new Animation<>(frameDuration, animFrames)); // add the animation to the animations map
+}
 ```
 
 ## Creating a Pull Request
@@ -141,6 +202,6 @@ A good PR is easy to review and merge.
 
 - **Title**: Descriptive and brief (e.g. "Add FlixelSpriteGroup support", "Fix NPE in FlixelTween when settings are null").
 - **Description**: Explain *what* was changed and *why*. If the PR relates to an issue, reference it (e.g. "Fixes #123"). For features, describe the intended use and any breaking changes.
-- **Self-review**: Before submitting, run `./gradlew classes` (and any other relevant tasks) and fix build failures. Ensure formatting and style match the rest of the project; use the project’s `.editorconfig` if your editor supports it.
+- **Self-review**: Before submitting, run `./gradlew classes` (and any other relevant tasks) and fix build failures. Ensure formatting and style match the rest of the project; see [Editor setup (use EditorConfig in your editor)](#editor-setup-use-editorconfig-in-your-editor) above to enable EditorConfig in your editor.
 - **Tests**: If you add a new feature, include tests or clear steps to verify the behavior. For bug fixes, describe how to reproduce the bug and confirm the fix.
 - **Review feedback**: Address review comments in new commits or by amending. Keep the discussion focused and update the PR description if the scope changes.

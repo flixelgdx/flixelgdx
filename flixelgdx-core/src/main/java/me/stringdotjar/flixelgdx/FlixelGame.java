@@ -22,8 +22,6 @@ import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 
-import static me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
-
 /**
  * The game object used for containing the main loop and core elements of the Flixel game.
  *
@@ -88,10 +86,7 @@ public abstract class FlixelGame implements ApplicationListener {
   /** Should the game start in fullscreen mode? */
   protected boolean fullscreen;
 
-  /**
-   * When true, the game automatically pauses update/draw and the sound system
-   * when the window loses focus or is minimized.
-   */
+  /** Should the game pause update calls and audio when the window loses focus or is minimized? */
   public boolean autoPause = true;
 
   /** Is the game's window currently focused? */
@@ -294,7 +289,7 @@ public abstract class FlixelGame implements ApplicationListener {
     }
     cameras.end();
 
-    // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame
+    // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame.
     if (Flixel.keys != null) {
       Flixel.keys.endFrame();
     }
@@ -334,7 +329,6 @@ public abstract class FlixelGame implements ApplicationListener {
           batch.setColor(current.getBgColor());
           batch.draw(bgTexture, camera.x, camera.y, camera.getWorldWidth(), camera.getWorldHeight());
           batch.setColor(Color.WHITE);
-
           current.draw(batch);
         }
 
@@ -382,9 +376,6 @@ public abstract class FlixelGame implements ApplicationListener {
 
   /** Called when the user loses focus on the game's window, while also not being minimized. */
   public void onWindowUnfocused() {
-    if (isMinimized) {
-      return;
-    }
     isFocused = false;
     if (autoPause) {
       Flixel.sound.pause();
@@ -399,13 +390,13 @@ public abstract class FlixelGame implements ApplicationListener {
    * for compatibility with the window listener in the LWJGL3 (desktop) launcher.
    */
   public void onWindowMinimized(boolean iconified) {
-  isMinimized = iconified;
-  isFocused = false;
-  if (autoPause) {
-    Flixel.sound.pause();
+    isMinimized = iconified;
+    isFocused = false;
+    if (autoPause) {
+      Flixel.sound.pause();
+    }
+    Flixel.Signals.windowMinimized.dispatch();
   }
-  Flixel.Signals.windowMinimized.dispatch();
-}
 
   /**
    * Sets fullscreen mode for the game's window.

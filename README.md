@@ -19,7 +19,7 @@ FlixelGDX supports the following platforms through its modular backend system:
 
 - **Desktop**: Windows, macOS, and Linux via LWJGL3.
 - **Android**: Full support for Android mobile devices.
-- **iOS**: Support via RoboVM.
+- **iOS**: Support via [MobiVM](https://github.com/MobiVM/robovm) (RoboVM fork for libGDX iOS).
 - **Web**: Support via TeaVM.
 
 > [!WARNING]
@@ -34,7 +34,7 @@ FlixelGDX supports the following platforms through its modular backend system:
 FlixelGDX attempts to bring the ease of use and rapid prototyping capabilities of HaxeFlixel to Java, while also
 using the tools of libGDX to allow it to be seamlessly integrated into new and existing projects alike.
 
-## LibGDX Integration
+## libGDX Integration
 
 We use libGDX's standard lifecycle and incorporate Flixel's methods (`update()`, `draw()`, `destroy()`) and performance-oriented tools (like `Poolable` interfaces)
 to ensure that lifecycle and performance are handled correctly.
@@ -60,8 +60,46 @@ public class MyGame extends FlixelGame {
 
   @Override
   public void create() {
-    super.create();  
+    super.create();
     // Your game initialization code here!
+  }
+}
+```
+
+Then, create a new state class for your game to enter into when it starts:
+
+```java
+public class PlayState extends FlixelState {
+
+  private FlixelSprite player;
+
+  @Override
+  public void create() {
+    super.create();
+    player = new FlixelSprite();
+    player.makeGraphic(16, 16, Color.RED);
+    player.setX(100);
+    player.setY(100);
+    add(player);
+  }
+
+  @Override
+  public void update(float elapsed) {
+    super.update(elapsed);
+
+    // Move the player with WASD!
+    if (Flixel.keys.justPressed(FlixelKey.W)) {
+      player.changeY(-10);
+    }
+    if (Flixel.keys.justPressed(FlixelKey.A)) {
+      player.changeX(-10);
+    }
+    if (Flixel.keys.justPressed(FlixelKey.S)) {
+      player.changeY(10);
+    }
+    if (Flixel.keys.justPressed(FlixelKey.D)) {
+      player.changeX(10);
+    }
   }
 }
 ```
@@ -77,11 +115,12 @@ public class Lwjgl3Launcher {
       return;
     }
 
+    // Create a new game instance and pass the initial state.
     MyGame game = new MyGame(
       "My Game",
       800,
       600,
-      new InitialState() // The initial state the game enters when it starts!
+      new PlayState() // The initial state the game enters when it starts!
     );
 
     // Start the game using the LWJGL3 launcher.
@@ -194,7 +233,7 @@ public class MenuState extends FlixelState {
   public void update(float elapsed) {
     super.update(delta);
 
-    if (Flixel.keyJustPressed(FlixelKey.ENTER)) {
+    if (Flixel.keys.justPressed(FlixelKey.ENTER)) {
       Flixel.switchState(new PlayState());
     }
   }
@@ -217,7 +256,7 @@ public class PauseSubState extends FlixelSubState {
   @Override
   public void update(float elapsed) {
     super.update(delta);
-    if (Flixel.keyJustPressed(FlixelKey.ESCAPE)) {
+    if (Flixel.keys.justPressed(FlixelKey.ESCAPE)) {
       close(); // returns to parent state
     }
   }
@@ -431,13 +470,13 @@ public void update(float delta) {
   super.update(delta);
 
   // One-shot: jump only when space is first pressed
-  if (Flixel.keyJustPressed(FlixelKey.SPACE)) {
+  if (Flixel.keys.justPressed(FlixelKey.SPACE)) {
     player.jump();
   }
 
   // Held: move while arrow keys are down
-  if (Flixel.keyPressed(FlixelKey.LEFT))  player.velocityX = -100;
-  if (Flixel.keyPressed(FlixelKey.RIGHT)) player.velocityX =  100;
+  if (Flixel.keys.justPressed(FlixelKey.LEFT))  player.velocityX = -100;
+  if (Flixel.keys.justPressed(FlixelKey.RIGHT)) player.velocityX =  100;
 }
 ```
 
