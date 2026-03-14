@@ -53,8 +53,7 @@ public final class FlixelNumTweenBuilder extends FlixelAbstractTweenBuilder<Flix
     }
     FlixelTweenSettings settings = new FlixelTweenSettings(type, ease);
     applyTo(settings);
-    FlixelNumTween tween = manager.obtainTween(FlixelNumTween.class, () -> new FlixelNumTween(from, to, settings, callback));
-    tween.init(from, to, settings, callback);
-    return (FlixelNumTween) manager.addTween(tween);
+    FlixelNumTween tween = new FlixelNumTween(from, to, settings, callback);
+    return (FlixelNumTween) FlixelTween.getGlobalManager().addTween(tween);
   }
 }

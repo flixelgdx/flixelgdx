@@ -1,9 +1,7 @@
 package me.stringdotjar.flixelgdx.tween;
 
+import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
-import me.stringdotjar.flixelgdx.util.FlixelPool;
-
-import java.util.function.Supplier;
 
 /**
  * Manager class for handling a list of active {@link FlixelTween}s.
@@ -11,36 +9,19 @@ import java.util.function.Supplier;
  * <p>Mirrors <a href="https://api.haxeflixel.com/flixel/tweens/FlxTweenManager.html">FlxTweenManager</a>:
  * normally used via {@link FlixelTween#getGlobalManager()} rather than instantiating separately.
  * Adding a tween via {@link #addTween(FlixelTween)} automatically starts it.
- *
- * <p>Uses a single {@link FlixelPool} for all tween types. Obtain a tween via
- * {@link #obtainTween(Class, Supplier)} (reusing a freed instance of the requested type if
- * available, otherwise using the factory to create one).
  */
 public class FlixelTweenManager {
 
   /** Array where all current active tweens are stored. */
   protected final SnapshotArray<FlixelTween> activeTweens = new SnapshotArray<>(FlixelTween[]::new);
 
-  /** Pool of freed tweens (any subtype) available for reuse. */
-  private final FlixelPool<FlixelTween> tweenPool = new FlixelPool<FlixelTween>() {
+  /** A pool where all unused tweens are stored to preserve memory. */
+  protected final Pool<FlixelTween> tweenPool = new Pool<>() {
     @Override
     protected FlixelTween newObject() {
       return new FlixelTween();
     }
   };
-
-  /**
-   * Obtains a tween of the given type from the pool, or creates one using the factory if none
-   * of that type are available. The returned tween is reset; the caller must set its settings
-   * (and any type-specific state) before adding it via {@link #addTween(FlixelTween)}.
-   *
-   * @param type The tween class (e.g. {@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}.class).
-   * @param factory Creates a new tween when the pool has no instance of {@code type}.
-   * @return A reset tween of type {@code T}, either from the pool or from {@code factory}.
-   */
-  public <T extends FlixelTween> T obtainTween(Class<T> type, Supplier<T> factory) {
-    return tweenPool.obtain(type, factory);
-  }
 
   /**
    * Adds the tween to this manager and starts it immediately.
@@ -50,6 +31,7 @@ public class FlixelTweenManager {
    */
   public FlixelTween addTween(FlixelTween tween) {
     tween.setManager(this);
+    activeTweens.add(tween);
     tween.start();
     return tween;
   }
@@ -112,15 +94,7 @@ public class FlixelTweenManager {
     return activeTweens;
   }
 
-  public FlixelPool<FlixelTween> getTweenPool() {
+  public Pool<FlixelTween> getTweenPool() {
     return tweenPool;
-  }
-
-  public void clearPool() {
-    tweenPool.clear();
-  }
-
-  public int getPoolFree() {
-    return tweenPool.getFree();
   }
 }

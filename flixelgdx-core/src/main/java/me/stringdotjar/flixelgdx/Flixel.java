@@ -131,7 +131,9 @@ public final class Flixel {
       FlixelTween.getGlobalManager()
         .getActiveTweens()
         .forEach(tween -> tween.cancel());
-      FlixelTween.getGlobalManager().clearPool();
+      FlixelTween.getGlobalManager()
+        .getTweenPool()
+        .clear();
     }
     game.resetCameras();
     state = newState;

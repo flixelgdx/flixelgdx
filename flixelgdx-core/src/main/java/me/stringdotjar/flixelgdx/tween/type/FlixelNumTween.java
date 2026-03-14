@@ -33,14 +33,6 @@ public class FlixelNumTween extends FlixelTween {
    */
   public FlixelNumTween(float start, float end, FlixelTweenSettings settings, FlixelNumTweenUpdateCallback updateCallback) {
     super(settings);
-    init(start, end, settings, updateCallback);
-  }
-
-  /**
-   * Re-initializes this tween (e.g. when obtained from the pool) with new range and callback.
-   */
-  public void init(float start, float end, FlixelTweenSettings settings, FlixelNumTweenUpdateCallback updateCallback) {
-    super.init(settings);
     this.start = start;
     this.end = end;
     this.value = start;

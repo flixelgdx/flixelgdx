@@ -54,14 +54,6 @@ public class FlixelVarTween extends FlixelTween {
    */
   public FlixelVarTween(Object object, FlixelTweenSettings settings, FunkinVarTweenUpdateCallback updateCallback) {
     super(settings);
-    init(object, settings, updateCallback);
-  }
-
-  /**
-   * Re-initializes this tween (e.g. when obtained from the pool) with a new target and callback.
-   */
-  public void init(Object object, FlixelTweenSettings settings, FunkinVarTweenUpdateCallback updateCallback) {
-    super.init(settings);
     this.object = object;
     this.updateCallback = updateCallback;
   }

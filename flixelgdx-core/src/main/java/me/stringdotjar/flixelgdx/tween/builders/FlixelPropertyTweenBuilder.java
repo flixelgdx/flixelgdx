@@ -39,8 +39,7 @@ public final class FlixelPropertyTweenBuilder extends FlixelAbstractTweenBuilder
       var goal = propertyGoals.get(i);
       settings.addGoal(goal.getter(), goal.toValue(), goal.setter());
     }
-    FlixelPropertyTween tween = manager.obtainTween(FlixelPropertyTween.class, () -> new FlixelPropertyTween(settings));
-    tween.init(settings);
-    return (FlixelPropertyTween) manager.addTween(tween);
+    FlixelPropertyTween tween = new FlixelPropertyTween(settings);
+    return (FlixelPropertyTween) FlixelTween.getGlobalManager().addTween(tween);
   }
 }
