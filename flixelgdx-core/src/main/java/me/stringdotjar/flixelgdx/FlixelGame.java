@@ -212,12 +212,6 @@ public abstract class FlixelGame implements ApplicationListener {
     bgTexture = new Texture(pixmap);
     pixmap.dispose();
 
-    // Set up file logging (writes to project root in IDE, or next to the JAR when run from a JAR).
-    Flixel.startFileLogging();
-
-    Flixel.switchState(initialScreen);
-    initialScreen = null;
-
     // Ensure keyboard state is tracked for Flixel.keys (firstJustPressed, firstJustReleased, etc.)
     if (Flixel.keys != null) {
       InputProcessor keysProcessor = Flixel.keys.getInputProcessor();
@@ -233,6 +227,8 @@ public abstract class FlixelGame implements ApplicationListener {
         Gdx.input.setInputProcessor(m);
       }
     }
+
+    Flixel.switchState(initialScreen);
   }
 
   @Override

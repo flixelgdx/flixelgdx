@@ -58,6 +58,19 @@ public class FlixelVarTween extends FlixelTween {
     this.updateCallback = updateCallback;
   }
 
+  /**
+   * Reconfigures this tween for reuse (e.g. from pool). Call before {@link #start()}.
+   *
+   * @param object The object to tween.
+   * @param updateCallback Callback to apply tweened values.
+   * @return this, for chaining.
+   */
+  public FlixelVarTween setTarget(Object object, FunkinVarTweenUpdateCallback updateCallback) {
+    this.object = object;
+    this.updateCallback = updateCallback;
+    return this;
+  }
+
   @Override
   public FlixelTween start() {
     super.start();

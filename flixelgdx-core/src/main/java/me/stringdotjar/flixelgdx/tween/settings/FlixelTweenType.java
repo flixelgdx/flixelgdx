@@ -1,16 +1,31 @@
 package me.stringdotjar.flixelgdx.tween.settings;
 
-/** Enum containing all different tween types that can determine */
+/** Enum containing all different tween types that can determine the behavior of a tween. */
 public enum FlixelTweenType {
 
-  /** Will stop and remove itself from the manager when it finishes. */
+  /** Stops and removes itself from the manager when it finishes. */
   ONESHOT,
-  /** Will stop when it finishes but remain in the manager. */
+  /** Stops when finished but remains in the manager (can be restarted). */
   PERSIST,
-  /** Will play tween in reverse direction. */
+  /** Like PERSIST but plays once in reverse; does not remove on finish. */
   BACKWARD,
-  /** Will restart immediately when it finishes. */
+  /** Restarts immediately when it finishes; onComplete is called every cycle. */
   LOOPING,
-  /** "To and from", will play tween hither and thither. Also loops indefinitely. */
+  /** Like LOOPING but every second run is in reverse; onComplete is called every cycle. */
   PINGPONG;
+
+  /** True for LOOPING and PINGPONG (tween restarts and may flip direction). */
+  public boolean isLooping() {
+    return this == LOOPING || this == PINGPONG;
+  }
+
+  /** True if this type plays in reverse (initial direction for BACKWARD; toggled each cycle for PINGPONG). */
+  public boolean isBackward() {
+    return this == BACKWARD;
+  }
+
+  /** True only for ONESHOT: tween is removed from the manager when it finishes. */
+  public boolean removeOnFinish() {
+    return this == ONESHOT;
+  }
 }

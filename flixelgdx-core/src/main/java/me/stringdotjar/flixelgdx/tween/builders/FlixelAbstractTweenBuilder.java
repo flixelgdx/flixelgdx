@@ -2,6 +2,7 @@ package me.stringdotjar.flixelgdx.tween.builders;
 
 import me.stringdotjar.flixelgdx.tween.FlixelEase;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
+import me.stringdotjar.flixelgdx.tween.FlixelTweenManager;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import org.jetbrains.annotations.Nullable;
@@ -20,6 +21,7 @@ public abstract class FlixelAbstractTweenBuilder<T extends FlixelTween, B extend
   protected float duration = 1f;
   protected FlixelTweenType type = FlixelTweenType.ONESHOT;
   protected FlixelEase.FunkinEaseFunction ease = FlixelEase::linear;
+  protected FlixelTweenManager manager = FlixelTween.getGlobalManager();
   protected float startDelay;
   protected float loopDelay;
   protected float framerate;
@@ -59,6 +61,11 @@ public abstract class FlixelAbstractTweenBuilder<T extends FlixelTween, B extend
 
   public B setEase(FlixelEase.FunkinEaseFunction ease) {
     this.ease = ease;
+    return self();
+  }
+
+  public B setManager(FlixelTweenManager manager) {
+    this.manager = manager;
     return self();
   }
 

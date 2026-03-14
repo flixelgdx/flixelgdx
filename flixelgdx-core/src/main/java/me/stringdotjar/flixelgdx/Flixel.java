@@ -67,7 +67,7 @@ public final class Flixel {
 
   /**
    * Initializes the entire Flixel system.
-   * 
+   *
    * <p>This gets called BEFORE {@link FlixelGame#create()} is executed.
    * It sets up every core system that Flixel needs to work, such as the asset manager, audio system, key input manager,
    * logger, backend systems for different platforms, and more.
@@ -101,18 +101,18 @@ public final class Flixel {
   }
 
   /**
-   * Sets the current screen to the provided screen, and clears all active tweens by default.
-   * 
-   * @param newState The new {@code FlixelState} to set as the current screen.
+   * Sets the current state to the provided state, and clears all active tweens by default.
+   *
+   * @param newState The new {@code FlixelState} to set as the current state.
    */
   public static void switchState(FlixelState newState) {
     switchState(newState, true);
   }
 
   /**
-   * Sets the current screen to the provided screen.
+   * Sets the current state to the provided state.
    *
-   * @param newState The new {@code FlixelState} to set as the current screen.
+   * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Whether to clear all active tweens.
    */
   public static void switchState(FlixelState newState, boolean clearTweens) {
@@ -131,9 +131,7 @@ public final class Flixel {
       FlixelTween.getGlobalManager()
         .getActiveTweens()
         .forEach(tween -> tween.cancel());
-      FlixelTween.getGlobalManager()
-        .getTweenPool()
-        .clear();
+      FlixelTween.getGlobalManager().clearPools();
     }
     game.resetCameras();
     state = newState;

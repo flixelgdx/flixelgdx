@@ -11,10 +11,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelNumTweenBuilder extends FlixelAbstractTweenBuilder<FlixelNumTween, FlixelNumTweenBuilder> {
 
-  private static final float UNSET = Float.NaN;
-
-  private float from = UNSET;
-  private float to = UNSET;
+  private float from = Float.NaN;
+  private float to = Float.NaN;
   private FlixelNumTween.FlixelNumTweenUpdateCallback callback;
 
   /** Creates a new num tween builder. Use {@link FlixelTween#tween(Class, Class) FlixelTween.tween(FlixelNumTween.class, FlixelNumTweenBuilder.class)}. */

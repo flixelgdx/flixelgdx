@@ -1,7 +1,13 @@
 package me.stringdotjar.flixelgdx.tween;
 
+import java.util.function.Supplier;
+
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
+
+import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
 
 /**
  * Manager class for handling a list of active {@link FlixelTween}s.
@@ -9,17 +15,33 @@ import com.badlogic.gdx.utils.SnapshotArray;
  * <p>Mirrors <a href="https://api.haxeflixel.com/flixel/tweens/FlxTweenManager.html">FlxTweenManager</a>:
  * normally used via {@link FlixelTween#getGlobalManager()} rather than instantiating separately.
  * Adding a tween via {@link #addTween(FlixelTween)} automatically starts it.
+ *
+ * <p>Uses a separate libGDX {@link Pool} per concrete tween type for reuse. Call {@link #clearPools()}
+ * when clearing state (e.g. on state switch) to release pooled instances.
  */
 public class FlixelTweenManager {
 
   /** Array where all current active tweens are stored. */
   protected final SnapshotArray<FlixelTween> activeTweens = new SnapshotArray<>(FlixelTween[]::new);
 
-  /** A pool where all unused tweens are stored to preserve memory. */
-  protected final Pool<FlixelTween> tweenPool = new Pool<>() {
+  private final Pool<FlixelPropertyTween> propertyTweenPool = new Pool<FlixelPropertyTween>() {
     @Override
-    protected FlixelTween newObject() {
-      return new FlixelTween();
+    protected FlixelPropertyTween newObject() {
+      return new FlixelPropertyTween(null);
+    }
+  };
+
+  private final Pool<FlixelVarTween> varTweenPool = new Pool<FlixelVarTween>() {
+    @Override
+    protected FlixelVarTween newObject() {
+      return new FlixelVarTween(null, null, null);
+    }
+  };
+
+  private final Pool<FlixelNumTween> numTweenPool = new Pool<FlixelNumTween>() {
+    @Override
+    protected FlixelNumTween newObject() {
+      return new FlixelNumTween(0, 0, null, null);
     }
   };
 
@@ -30,10 +52,13 @@ public class FlixelTweenManager {
    * @return The same tween for chaining.
    */
   public FlixelTween addTween(FlixelTween tween) {
-    tween.setManager(this);
+    if (tween == null) {
+      return null;
+    }
+
     activeTweens.add(tween);
-    tween.start();
-    return tween;
+    tween.manager = this;
+    return tween.start();
   }
 
   /**
@@ -68,12 +93,35 @@ public class FlixelTweenManager {
   }
 
   /**
-   * Remove an {@link FlixelTween} from {@code this} manager.
-   * Note that when the FlixelTween is removed, it will call {@link FlixelTween#destroy} and it can no longer be used.
+   * Obtains a tween of the given type from the appropriate pool, or creates one using the factory
+   * if the type is not one of the built-in pooled types. The returned tween is reset; the caller
+   * must set its settings (and any type-specific state) before adding it via {@link #addTween(FlixelTween)}.
    *
-   * @param tween The FlixelTween to remove.
-   * @param destroy To determine if the FlixelTween will be destroyed upon calling the method.
-   * @return  The removed FlixelTween object.
+   * @param type The tween class (e.g. {@link FlixelPropertyTween}.class).
+   * @param factory Creates a new tween when the type is not pooled or the pool is empty.
+   * @return A reset tween of type {@code T}, either from the pool or from {@code factory}.
+   */
+  @SuppressWarnings("unchecked")
+  public <T extends FlixelTween> T obtainTween(Class<T> type, Supplier<T> factory) {
+    if (type == FlixelPropertyTween.class) {
+      return (T) propertyTweenPool.obtain();
+    }
+    if (type == FlixelVarTween.class) {
+      return (T) varTweenPool.obtain();
+    }
+    if (type == FlixelNumTween.class) {
+      return (T) numTweenPool.obtain();
+    }
+    return factory.get();
+  }
+
+  /**
+   * Remove an {@link FlixelTween} from {@code this} manager.
+   * When {@code destroy} is true, the tween is reset and returned to its type-specific pool for reuse.
+   *
+   * @param tween The tween to remove.
+   * @param destroy If true, reset the tween and free it to the pool (if it is a pooled type).
+   * @return The removed tween.
    */
   public FlixelTween removeTween(FlixelTween tween, boolean destroy) {
     if (tween == null) {
@@ -84,17 +132,41 @@ public class FlixelTweenManager {
     activeTweens.removeValue(tween, true);
 
     if (destroy) {
-      tweenPool.free(tween);
+      if (tween instanceof FlixelPropertyTween) {
+        propertyTweenPool.free((FlixelPropertyTween) tween);
+      } else if (tween instanceof FlixelVarTween) {
+        varTweenPool.free((FlixelVarTween) tween);
+      } else if (tween instanceof FlixelNumTween) {
+        numTweenPool.free((FlixelNumTween) tween);
+      }
+      // Custom subclasses are not pooled; they are just dropped for GC
     }
 
     return tween;
   }
 
-  public SnapshotArray<FlixelTween> getActiveTweens() {
-    return activeTweens;
+  public Pool<FlixelPropertyTween> getPropertyTweenPool() {
+    return propertyTweenPool;
   }
 
-  public Pool<FlixelTween> getTweenPool() {
-    return tweenPool;
+  public Pool<FlixelVarTween> getVarTweenPool() {
+    return varTweenPool;
+  }
+
+  public Pool<FlixelNumTween> getNumTweenPool() {
+    return numTweenPool;
+  }
+
+  /**
+   * Clears all tween pools. Call when switching state with {@code clearTweens} to release pooled instances.
+   */
+  public void clearPools() {
+    propertyTweenPool.clear();
+    varTweenPool.clear();
+    numTweenPool.clear();
+  }
+
+  public SnapshotArray<FlixelTween> getActiveTweens() {
+    return activeTweens;
   }
 }
