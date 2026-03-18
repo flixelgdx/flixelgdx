@@ -65,7 +65,7 @@ import org.fusesource.jansi.AnsiConsole;
  * }
  * }
  */
-public abstract class FlixelGame implements ApplicationListener {
+public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable {
 
   /** The title displayed on the game's window. */
   protected String title;
@@ -120,9 +120,6 @@ public abstract class FlixelGame implements ApplicationListener {
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
-
-  /** Debug overlay drawn on a separate layer; {@code null} when debug mode is off. */
-  private FlixelDebugOverlay debugOverlay;
 
   /**
    * Creates a new game instance with the details specified.
@@ -235,9 +232,9 @@ public abstract class FlixelGame implements ApplicationListener {
 
     // Create the debug overlay when debug mode is enabled.
     if (Flixel.isDebugMode()) {
-      debugOverlay = new FlixelDebugOverlay();
+      FlixelDebugOverlay overlay = Flixel.createDebugOverlay();
       if (Flixel.getLogger() != null) {
-        Flixel.getLogger().addLogListener(debugOverlay.getLogListener());
+        Flixel.getLogger().addLogListener(overlay.getLogListener());
       }
     }
 
@@ -255,6 +252,7 @@ public abstract class FlixelGame implements ApplicationListener {
     }
     cameras.end();
 
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       debugOverlay.resize(width, height);
     }
@@ -265,6 +263,7 @@ public abstract class FlixelGame implements ApplicationListener {
    *
    * @param elapsed The amount of time that occurred in the last frame.
    */
+  @Override
   public void update(float elapsed) {
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
@@ -307,6 +306,7 @@ public abstract class FlixelGame implements ApplicationListener {
       Flixel.keys.endFrame();
     }
 
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       debugOverlay.update(elapsed);
     }
@@ -359,6 +359,7 @@ public abstract class FlixelGame implements ApplicationListener {
 
     stage.draw();
 
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       debugOverlay.drawBoundingBoxes(cameras);
       debugOverlay.draw();
@@ -367,8 +368,23 @@ public abstract class FlixelGame implements ApplicationListener {
     Flixel.Signals.postDraw.dispatch();
   }
 
+  /**
+   * Updates the game's global and internal {@link #update(float)} and {@link #draw()} methods, with elapsed time clamped
+   * to the min and max values to prevent major lag spikes.
+   *
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#render()} method when the game is
+   * running, so it is not necessary to override this method in most cases. However, it can be overridden to
+   * perform custom updating/rendering before the game is updated/rendered.
+   *
+   * <p>This method is kept non-final for compatibility with existing projects that want to extend to this class
+   * and use its structured game loop. It's advised to override {@link #update(float)} and {@link #draw()} instead to
+   * perform custom updating and rendering.
+   *
+   * @see #update(float)
+   * @see #draw()
+   */
   @Override
-  public final void render() {
+  public void render() {
     float rawDelta = Gdx.graphics.getDeltaTime();
     float clampedDelta = Math.max(FlixelConstants.Graphics.MIN_ELAPSED, Math.min(rawDelta, FlixelConstants.Graphics.MAX_ELAPSED));
     Flixel.elapsed = clampedDelta;
@@ -458,8 +474,21 @@ public abstract class FlixelGame implements ApplicationListener {
    */
   protected void close() {}
 
+  /**
+   * Disposes the core resources of the game and also calls the {@link #close()} method to perform custom cleanup.
+   *
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#dispose()} method when the
+   * game is closing, so it is not necessary to call this method manually in most cases. However, it can be called
+   * manually to perform custom cleanup before the game is closed. This method just calls the {@link #close()} method to
+   * dispose of the core resources and then calls the {@link #close()} method.
+   *
+   * <p>This method is kept non-final for compatibility with existing projects that want to extend to this class
+   * and use its structured game loop. It's advised to override {@link #close()} instead to perform custom cleanup.
+   *
+   * @see #close()
+   */
   @Override
-  public final void dispose() {
+  public void dispose() {
     if (isClosing) {
       return;
     }
@@ -467,12 +496,13 @@ public abstract class FlixelGame implements ApplicationListener {
 
     Flixel.Signals.preGameClose.dispatch();
 
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       if (Flixel.getLogger() != null) {
         Flixel.getLogger().removeLogListener(debugOverlay.getLogListener());
       }
       debugOverlay.dispose();
-      debugOverlay = null;
+      Flixel.clearDebugOverlay();
     }
 
     Flixel.getState().hide();

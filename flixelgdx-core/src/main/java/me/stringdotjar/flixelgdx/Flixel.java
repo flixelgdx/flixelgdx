@@ -13,9 +13,12 @@ import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSound;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
+
+import java.util.function.Supplier;
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -32,6 +35,7 @@ import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.util.Properties;
@@ -47,14 +51,20 @@ public final class Flixel {
   /** The current {@code FlixelState} being displayed. */
   private static FlixelState state;
 
-  /** Central audio manager: use {@code Flixel.sound.play()}, {@code Flixel.sound.playMusic()}, etc. */
-  public static FlixelAudioManager sound;
-
   /** Keyboard input manager: use {@code Flixel.keys.keyPressed()}, {@code Flixel.keys.keyJustPressed()}, etc. */
   public static FlixelKeyInputManager keys;
 
+  /** Central audio manager: use {@code Flixel.sound.play()}, {@code Flixel.sound.playMusic()}, etc. */
+  public static FlixelAudioManager sound;
+
+  /** The debug watch manager. Access via {@code Flixel.watch.add(...)}, {@code Flixel.watch.addQuick(...)}, etc. */
+  public static FlixelDebugWatchManager watch;
+
+  /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
+  public static FlixelLogger log;
+
   /** The global asset manager used to preload and cache assets. */
-  private static AssetManager assetManager;
+  public static AssetManager assets;
 
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
@@ -67,9 +77,6 @@ public final class Flixel {
 
   /** Has the global manager been initialized yet? */
   private static boolean initialized = false;
-
-  /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
-  private static FlixelLogger defaultLogger;
 
   /** System used to detect where a log comes from when a log is created. **/
   private static FlixelStackTraceProvider stackTraceProvider;
@@ -89,14 +96,21 @@ public final class Flixel {
   /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw libGDX delta. */
   protected static float elapsed = 0f;
 
-  /** The debug watch manager. Access via {@code Flixel.watch.add(...)}, {@code Flixel.watch.addQuick(...)}, etc. */
-  public static FlixelDebugWatchManager watch;
-
   /** Current key used to toggle the debug overlay. */
   private static int debugToggleKey = FlixelConstants.Debug.DEFAULT_TOGGLE_KEY;
 
   /** Current key used to toggle visual debug (bounding boxes). */
   private static int debugDrawToggleKey = FlixelConstants.Debug.DEFAULT_DRAW_DEBUG_KEY;
+
+  /**
+   * Factory used to create the debug overlay when the game starts. Developers can replace
+   * this with their own subclass via {@link #setDebugOverlay(Supplier)} before the game
+   * starts (i.e. in the launcher, before {@link FlixelGame#create()} runs).
+   */
+  private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelDebugOverlay::new;
+
+  /** The active debug overlay instance, created by {@link FlixelGame} during startup. */
+  private static FlixelDebugOverlay debugOverlay;
 
   /**
    * Initializes the entire Flixel system.
@@ -118,15 +132,20 @@ public final class Flixel {
     if (initialized) {
       throw new IllegalStateException("Flixel has already been initialized!");
     }
+
+    // Set the game and backend systems.
     game = gameInstance;
     alerter = alertSystem;
     stackTraceProvider = stackTraceProviderSystem;
+
+    // Initialize the core systems.
     keys = new FlixelKeyInputManager();
     sound = new FlixelAudioManager();
     watch = new FlixelDebugWatchManager();
-    defaultLogger = new FlixelLogger(FlixelLogMode.SIMPLE);
-    assetManager = new AssetManager();
-    assetManager.setLoader(MASound.class, new MASoundLoader(sound.getEngine(), assetManager.getFileHandleResolver()));
+    log = new FlixelLogger(FlixelLogMode.SIMPLE);
+    assets = new AssetManager();
+    // TODO: Change this out to use FlixelSound instead of MASound.
+    assets.setLoader(MASound.class, new MASoundLoader(sound.getEngine(), assets.getFileHandleResolver()));
 
     // Register default tween types.
     FlixelTween.getGlobalManager()
@@ -153,7 +172,7 @@ public final class Flixel {
    * @param clearTweens Whether to clear all active tweens.
    */
   public static void switchState(FlixelState newState, boolean clearTweens) {
-    Signals.preStateSwitch.dispatch(new StateSwitchSignalData(newState));
+    Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
     if (!initialized) {
       throw new IllegalStateException("Flixel has not been initialized yet!");
     }
@@ -162,7 +181,7 @@ public final class Flixel {
     }
     if (state != null) {
       state.hide();
-      state.dispose();
+      state.destroy();
     }
     if (clearTweens) {
       FlixelTween.getGlobalManager()
@@ -173,7 +192,7 @@ public final class Flixel {
     game.resetCameras();
     state = newState;
     state.create();
-    Signals.postStateSwitch.dispatch(new StateSwitchSignalData(newState));
+    Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
   }
 
   /**
@@ -207,23 +226,23 @@ public final class Flixel {
   }
 
   public static void info(Object message) {
-    info(defaultLogger.getDefaultTag(), message);
+    info(log.getDefaultTag(), message);
   }
 
   public static void info(String tag, Object message) {
-    defaultLogger.info(tag, message);
+    log.info(tag, message);
   }
 
   public static void warn(Object message) {
-    warn(defaultLogger.getDefaultTag(), message);
+    warn(log.getDefaultTag(), message);
   }
 
   public static void warn(String tag, Object message) {
-    defaultLogger.warn(tag, message);
+    log.warn(tag, message);
   }
 
   public static void error(String message) {
-    error(defaultLogger.getDefaultTag(), message, null);
+    error(log.getDefaultTag(), message, null);
   }
 
   public static void error(String tag, Object message) {
@@ -231,66 +250,71 @@ public final class Flixel {
   }
 
   public static void error(String tag, Object message, Throwable throwable) {
-    defaultLogger.error(tag, message, throwable);
+    log.error(tag, message, throwable);
   }
 
   public static void setLogger(@NotNull FlixelLogger logger) {
-    defaultLogger = logger;
+    log = logger;
   }
 
   public static void setDefaultLogTag(@NotNull String tag) {
-    if (defaultLogger != null) {
-      defaultLogger.setDefaultTag(tag);
+    if (log != null) {
+      log.setDefaultTag(tag);
     }
   }
 
-  /** Sets the folder where log files are stored, or {@code null} for default (project root in IDE, next to JAR when run from JAR). */
-  public static void setLogsFolder(String absolutePathToLogsFolder) {
-    if (defaultLogger != null) {
-      defaultLogger.setLogsFolder(absolutePathToLogsFolder);
+  /**
+   * Sets the folder where log files are stored, or {@code null} for default
+   * (project root in IDE, next to JAR when run from JAR).
+   *
+   * @param absolutePathToLogsFolder The absolute path to the logs folder, or {@code null} for default.
+   */
+  public static void setLogsFolder(@Nullable String absolutePathToLogsFolder) {
+    if (log != null) {
+      log.setLogsFolder(absolutePathToLogsFolder);
     }
   }
 
   /** Returns the custom logs folder path, or {@code null} if using the default. */
   public static String getLogsFolder() {
-    return defaultLogger != null ? defaultLogger.getLogsFolder() : null;
+    return log != null ? log.getLogsFolder() : null;
   }
 
   /** Enables or disables writing logs to a file when {@link #startFileLogging()} is called. */
   public static void setCanStoreLogs(boolean canStoreLogs) {
-    if (defaultLogger != null) {
-      defaultLogger.setCanStoreLogs(canStoreLogs);
+    if (log != null) {
+      log.setCanStoreLogs(canStoreLogs);
     }
   }
 
   /** Returns whether file logging is enabled for the default logger. */
   public static boolean canStoreLogs() {
-    return defaultLogger != null && defaultLogger.canStoreLogs();
+    return log != null && log.canStoreLogs();
   }
 
   /** Sets the maximum number of log files to keep. */
   public static void setMaxLogFiles(int maxLogFiles) {
-    if (defaultLogger != null) {
-      defaultLogger.setMaxLogFiles(maxLogFiles);
+    if (log != null) {
+      log.setMaxLogFiles(maxLogFiles);
     }
   }
 
   /** Returns the maximum number of log files to keep. If no logger is set, returns 0. */
   public static int getMaxLogFiles() {
-    return defaultLogger != null ? defaultLogger.getMaxLogFiles() : 0;
+    return log != null ? log.getMaxLogFiles() : 0;
   }
 
   /** Starts file logging for the default logger (uses its current canStoreLogs and maxLogFiles). */
   public static void startFileLogging() {
-    if (defaultLogger != null) {
-      defaultLogger.startFileLogging();
+    if (log != null) {
+      log.startFileLogging();
     }
   }
 
   /** Stops the default logger's file writer thread; call during game shutdown. */
   public static void stopFileLogging() {
-    if (defaultLogger != null) {
-      defaultLogger.stopFileLogging();
+    if (log != null) {
+      log.stopFileLogging();
     }
   }
 
@@ -299,11 +323,11 @@ public final class Flixel {
   }
 
   public static FlixelLogger getLogger() {
-    return defaultLogger;
+    return log;
   }
 
   public static FlixelLogMode getLogMode() {
-    return defaultLogger != null ? defaultLogger.getLogMode() : FlixelLogMode.SIMPLE;
+    return log != null ? log.getLogMode() : FlixelLogMode.SIMPLE;
   }
 
   public static FlixelGame getGame() {
@@ -342,8 +366,8 @@ public final class Flixel {
     return sound.getMasterVolume();
   }
 
-  public static AssetManager getAssetManager() {
-    return assetManager;
+  public static AssetManager getAssets() {
+    return assets;
   }
 
   /**
@@ -431,6 +455,49 @@ public final class Flixel {
    */
   public static void setDebugDrawToggleKey(int key) {
     debugDrawToggleKey = key;
+  }
+
+  /**
+   * Sets a factory that produces the {@link FlixelDebugOverlay} used when debug mode is
+   * enabled. This can be called either in the launcher (before the game starts) or in the
+   * {@link FlixelGame#create()} method itself.
+   *
+   * <p>A factory is used instead of a new instance directly for timing, so that way the
+   * debug overlay can be set even before GL context is created.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.setDebugOverlay(MyCustomOverlay::new);
+   * }</pre>
+   *
+   * @param factory A supplier that creates a new {@link FlixelDebugOverlay} (or subclass).
+   */
+  public static void setDebugOverlay(@NotNull Supplier<FlixelDebugOverlay> factory) {
+    debugOverlayFactory = factory;
+  }
+
+  /**
+   * Returns the active debug overlay instance, or {@code null} when debug mode is off
+   * or the overlay has not been created yet.
+   */
+  public static FlixelDebugOverlay getDebugOverlay() {
+    return debugOverlay;
+  }
+
+  /**
+   * Creates the debug overlay using the registered factory. Called internally by
+   * {@link FlixelGame} during startup when debug mode is enabled.
+   */
+  protected static FlixelDebugOverlay createDebugOverlay() {
+    debugOverlay = debugOverlayFactory.get();
+    return debugOverlay;
+  }
+
+  /**
+   * Clears the active debug overlay reference. Called internally by {@link FlixelGame} during shutdown.
+   */
+  protected static void clearDebugOverlay() {
+    debugOverlay = null;
   }
 
   /** Returns the Java heap memory currently in use, in bytes. */
@@ -526,13 +593,15 @@ public final class Flixel {
         String v = p.getProperty("version");
         if (v != null && !v.isEmpty()) return v;
       }
-    } catch (Exception ignored) {}
+    } catch (Exception ignored) {
+      // Ignored.
+    }
     return "Unknown";
   }
 
   public static void setLogMode(@NotNull FlixelLogMode mode) {
-    if (defaultLogger != null) {
-      defaultLogger.setLogMode(mode);
+    if (log != null) {
+      log.setLogMode(mode);
     }
   }
 

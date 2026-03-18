@@ -157,15 +157,14 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   public void resume() {}
 
   @Override
-  public final void hide() {}
+  public void hide() {}
 
-  /**
-   * Disposes {@code this} state, any active substate, and all members. Called automatically
-   * when {@link me.stringdotjar.flixelgdx.Flixel#switchState(FlixelState)} is used, so that
-   * sprites and other objects release their resources.
-   */
   @Override
-  public void dispose() {
+  public void destroy() {
+    super.destroy();
+
+    hide();
+
     if (subState != null) {
       closeSubState();
     }
@@ -179,8 +178,19 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
         obj.destroy();
       }
     }
+
     members.end();
     members.clear();
+  }
+
+  /**
+   * Disposes {@code this} state, any active substate, and all members. Called automatically
+   * when {@link me.stringdotjar.flixelgdx.Flixel#switchState(FlixelState)} is used, so that
+   * sprites and other objects release their resources.
+   */
+  @Override
+  public void dispose() {
+    destroy();
   }
 
   /**

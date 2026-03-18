@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.Pool;
@@ -32,9 +31,6 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
 
   /** The texture image that {@code this} sprite uses. */
   protected Texture texture;
-
-  /** The hitbox used for collision detection and angling. */
-  protected Rectangle hitbox;
 
   /** The cameras that {@code this} sprite is projected onto. */
   protected FlixelCamera[] cameras;
@@ -99,6 +95,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelConstants.Graphics.FACING_RIGHT;
 
+  /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
     super();
     animations = new ObjectMap<>();
