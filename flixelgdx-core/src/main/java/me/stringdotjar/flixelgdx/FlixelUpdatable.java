@@ -1,7 +1,7 @@
 package me.stringdotjar.flixelgdx;
 
 /**
- * Interface for objects that can be updated.
+ * Interface for Flixel-based objects that can be updated.
  *
  * @see FlixelBasic
  */

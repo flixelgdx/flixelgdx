@@ -40,17 +40,8 @@ public final class FlixelConstants {
     /** Default key used to toggle visual debug (bounding boxes) on/off. */
     public static final int DEFAULT_DRAW_DEBUG_KEY = FlixelKey.F3;
 
-    /** Maximum number of log entries the debug console keeps in its buffer. */
+    /** The maximum number of log entries the debug console keeps in its buffer. */
     public static final int MAX_LOG_ENTRIES = 200;
-
-    /** RGBA color for bounding boxes drawn around objects with no collision. */
-    public static final float[] BOUNDINGBOX_COLOR_NO_COLLISION = { 0.2f, 0.4f, 1f, 0.6f };
-
-    /** RGBA color for bounding boxes drawn around immovable objects. */
-    public static final float[] BOUNDINGBOX_COLOR_IMMOVABLE = { 0.2f, 0.9f, 0.2f, 0.6f };
-
-    /** RGBA color for bounding boxes drawn around normal objects. */
-    public static final float[] BOUNDINGBOX_COLOR_NORMAL = { 1f, 0.2f, 0.2f, 0.6f };
 
     /** Stats update interval in seconds (how often FPS/memory stats refresh). */
     public static final float STATS_UPDATE_INTERVAL = 0.5f;

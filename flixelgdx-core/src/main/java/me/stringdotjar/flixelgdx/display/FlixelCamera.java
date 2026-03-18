@@ -15,22 +15,19 @@ import me.stringdotjar.flixelgdx.FlixelBasic;
 import me.stringdotjar.flixelgdx.FlixelObject;
 
 /**
- * The camera class is used to display the game's visuals.
+ * A powerful camera class that allows you to control the camera's position, zoom, and more.
  *
  * <p>
- * By default, one camera is created automatically, that is the same size as the
- * window. You can
- * add more cameras or even replace the main camera using utilities in
- * {@code FlixelGame}.
+ * All cameras are stored and managed by {@code FlixelGame}. By default, one camera is created automatically, that
+ * is the same size as the window. You can add more cameras or even replace the
+ * main camera using utilities in {@code FlixelGame}.
  *
  * <p>
- * Every camera wraps a libGDX {@link Camera} and {@link Viewport} internally.
- * By default, an
+ * Every camera wraps a libGDX {@link Camera} and {@link Viewport} internally. By default, an
  * {@link OrthographicCamera} and {@link FitViewport} are used, but custom types can be provided
  * via the constructor overloads.
  *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxCamera.html">FlxCamera
- * (HaxeFlixel)</a>
+ * @see <a href="https://api.haxeflixel.com/flixel/FlxCamera.html">FlxCamera (HaxeFlixel)</a>
  */
 public class FlixelCamera extends FlixelBasic {
 
@@ -40,7 +37,10 @@ public class FlixelCamera extends FlixelBasic {
    */
   public static float defaultZoom = 1.0f;
 
+  /** The underlying libGDX {@link Camera} used for projection. */
   private Camera camera;
+
+  /** The underlying libGDX {@link Viewport} used for screen scaling. */
   private Viewport viewport;
 
   /** The alpha value of this camera display (0.0 to 1.0). */
@@ -48,11 +48,6 @@ public class FlixelCamera extends FlixelBasic {
 
   /** The angle of the camera display in degrees. */
   public float angle = 0f;
-
-  /**
-   * Whether the camera display is smooth and filtered, or chunky and pixelated.
-   */
-  public boolean antialiasing = false;
 
   /** The natural background color of the camera. Defaults to black. */
   public Color bgColor = new Color(Color.BLACK);

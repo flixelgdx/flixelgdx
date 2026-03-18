@@ -3,7 +3,7 @@ package me.stringdotjar.flixelgdx;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
 /**
- * Interface for visible objects that can be drawn.
+ * Interface for Flixel-based visible objects that can be drawn.
  *
  * @see FlixelBasic
  */
