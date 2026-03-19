@@ -191,6 +191,18 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     this.fullscreen = fullscreen;
   }
 
+  /**
+   * Called when the game is created. This is where you should initialize your game's resources.
+   *
+   * <p>This method configures the crash handler, sets up input processing, initializes the debug overlay, configures
+   * the ANSI system for color output in terminals, and then switches to the initial screen.
+   *
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#create()} method when the game is
+   * created, so it is not necessary to call this method manually in most cases. However, it can be overridden to
+   * perform custom initialization before the game is created.
+   *
+   * @see ApplicationListener#create()
+   */
   @Override
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
@@ -382,6 +394,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    *
    * @see #update(float)
    * @see #draw()
+   * @see ApplicationListener#render()
    */
   @Override
   public void render() {
@@ -480,12 +493,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * <p>This method is called automatically by libGDX's {@link ApplicationListener#dispose()} method when the
    * game is closing, so it is not necessary to call this method manually in most cases. However, it can be called
    * manually to perform custom cleanup before the game is closed. This method just calls the {@link #close()} method to
-   * dispose of the core resources and then calls the {@link #close()} method.
+   * dispose of the core resources and then does post cleanup after FlixelGDX is fully done shutting down.
    *
    * <p>This method is kept non-final for compatibility with existing projects that want to extend to this class
    * and use its structured game loop. It's advised to override {@link #close()} instead to perform custom cleanup.
    *
    * @see #close()
+   * @see ApplicationListener#dispose()
    */
   @Override
   public void dispose() {
@@ -524,7 +538,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.Signals.postGameClose.dispatch();
 
     Flixel.stopFileLogging();
-
     isClosed = true;
   }
 
