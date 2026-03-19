@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.SnapshotArray;
@@ -21,6 +22,7 @@ import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -120,6 +122,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
+
+  /** Global Box2D world owned by {@code this} game instance. */
+  private World world;
 
   /**
    * Creates a new game instance with the details specified.
@@ -242,6 +247,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
+    // Initialize the Box2D world with zero gravity by default.
+    world = new World(new Vector2(0, 0), true);
+
     // Create the debug overlay when debug mode is enabled.
     if (Flixel.isDebugMode()) {
       FlixelDebugOverlay overlay = Flixel.createDebugOverlay();
@@ -300,6 +308,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
 
       current = sub;
+    }
+
+    // Step the Box2D world and sync body positions back to objects.
+    if (world != null) {
+      world.step(elapsed,
+        FlixelConstants.Physics.VELOCITY_ITERATIONS,
+        FlixelConstants.Physics.POSITION_ITERATIONS);
+      FlixelDebugUtil.forEachBox2DObject(FlixelBox2DObject::syncFromBody);
     }
 
     // Update all cameras.
@@ -526,6 +542,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     bgTexture.dispose();
 
     Flixel.sound.dispose();
+    if (world != null) {
+      world.dispose();
+      world = null;
+    }
 
     FlixelFontRegistry.dispose();
 
@@ -674,5 +694,31 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void setWindowSize(Vector2 newSize) {
     viewSize = newSize;
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
+  }
+
+  public World getWorld() {
+    return world;
+  }
+
+  /**
+   * Sets the gravity of this game's Box2D world.
+   *
+   * @param gravityX Horizontal gravity in m/s².
+   * @param gravityY Vertical gravity in m/s².
+   */
+  public void setGravity(float gravityX, float gravityY) {
+    if (world != null) {
+      world.setGravity(new Vector2(gravityX, gravityY));
+    }
+  }
+
+  /**
+   * Returns this game's Box2D gravity, or {@code (0, 0)} if no world exists.
+   */
+  public Vector2 getGravity() {
+    if (world != null) {
+      return world.getGravity();
+    }
+    return new Vector2(0, 0);
   }
 }

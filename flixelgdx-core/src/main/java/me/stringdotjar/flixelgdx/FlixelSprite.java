@@ -109,9 +109,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    */
   @Override
   public void update(float elapsed) {
-    if (moves) {
-      updateMotion(elapsed);
-    }
+    super.update(elapsed);
 
     if (animations != null && !animations.isEmpty()) {
       Animation<TextureRegion> anim = animations.get(currentAnim);

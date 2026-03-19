@@ -48,9 +48,7 @@ import java.util.function.Consumer;
  */
 public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
 
-  private final float[] BOUNDINGBOX_COLOR_NORMAL = { 1f, 0.2f, 0.2f, 0.6f };
-  private final float[] BOUNDINGBOX_COLOR_IMMOVABLE = { 0.2f, 0.9f, 0.2f, 0.6f };
-  private final float[] BOUNDINGBOX_COLOR_NO_COLLISION = { 0.2f, 0.4f, 1f, 0.6f };
+  private static final float[] FALLBACK_COLOR = { 1f, 0.2f, 0.2f, 0.6f };
 
   private final SpriteBatch batch;
   private final ShapeRenderer shapeRenderer;
@@ -148,16 +146,35 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       int objectCount = FlixelDebugUtil.countActiveMembers();
 
       cachedFpsText = "[#00FF00]FPS: " + fps;
-      cachedHeapText = "[#AAAAFF]Heap: " + String.format("%.1f", heapMB) + " MB";
-      cachedNativeText = "[#AAAAFF]Native: " + String.format("%.1f", nativeMB) + " MB";
+      cachedHeapText = "[#AAAAFF]Heap: " + formatOneDecimal(heapMB) + " MB";
+      cachedNativeText = "[#AAAAFF]Native: " + formatOneDecimal(nativeMB) + " MB";
       cachedObjectsText = "[#FFFF00]Objects: " + objectCount;
     }
   }
 
+  private static String formatOneDecimal(float value) {
+    // Avoid String.format/Formatter allocations.
+    float rounded = Math.round(value * 10f) / 10f;
+    String s = Float.toString(rounded);
+    int dot = s.indexOf('.');
+    if (dot < 0) {
+      return s + ".0";
+    }
+    // Ensure exactly one decimal digit.
+    int decimals = s.length() - dot - 1;
+    if (decimals == 0) {
+      return s + "0";
+    }
+    if (decimals > 1) {
+      return s.substring(0, dot + 2);
+    }
+    return s;
+  }
+
   /**
-   * Draws bounding boxes for all visible {@link me.stringdotjar.flixelgdx.FlixelObject} instances
-   * using each game camera's projection. Called from
-   * {@link me.stringdotjar.flixelgdx.FlixelGame#draw()} when visual debug is enabled.
+   * Draws bounding boxes for all visible {@link me.stringdotjar.flixelgdx.FlixelDebugDrawable}
+   * instances using each game camera's projection. Each object provides its own debug
+   * color via {@link me.stringdotjar.flixelgdx.FlixelDebugDrawable#getDebugBoundingBoxColor()}.
    *
    * @param cameras The game camera array.
    */
@@ -165,8 +182,6 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     if (!drawDebug) {
       return;
     }
-
-    float[] c = BOUNDINGBOX_COLOR_NORMAL;
 
     Gdx.gl.glEnable(GL20.GL_BLEND);
     Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -179,9 +194,12 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       }
       shapeRenderer.setProjectionMatrix(cam.getCamera().combined);
       shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-      FlixelDebugUtil.forEachVisibleObject(obj -> {
+      FlixelDebugUtil.forEachDebugDrawable(drawable -> {
+        float[] c = drawable.getDebugBoundingBoxColor();
+        if (c == null || c.length < 4) c = FALLBACK_COLOR;
         shapeRenderer.setColor(c[0], c[1], c[2], c[3]);
-        shapeRenderer.rect(obj.getX(), obj.getY(), obj.getWidth(), obj.getHeight());
+        shapeRenderer.rect(drawable.getDebugX(), drawable.getDebugY(),
+          drawable.getDebugWidth(), drawable.getDebugHeight());
       });
       shapeRenderer.end();
     }

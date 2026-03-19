@@ -2,6 +2,8 @@ package me.stringdotjar.flixelgdx.util;
 
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKey;
 
+// TODO: Move all constants into their respective classes instead of having this class.
+
 /**
  * Core class for holding static classes with values which do not change. It is NOT RECOMMENDED to
  * store things like {@link java.util.ArrayList}'s, as they can still be modified even if they are
@@ -27,6 +29,43 @@ public final class FlixelConstants {
     public static final float MAX_ELAPSED = 0.1f;
 
     private Graphics() {}
+  }
+
+  /**
+   * Direction flags used for collision detection and touch sensing, matching
+   * <a href="https://api.haxeflixel.com/flixel/util/FlxDirectionFlags.html">FlxDirectionFlags</a>.
+   * The same bit patterns are reused for facing directions in {@link Graphics}.
+   */
+  public static final class Physics {
+
+    public static final int NONE = 0x0000;
+    public static final int LEFT = 0x0001;
+    public static final int RIGHT = 0x0010;
+    public static final int UP = 0x0100;
+    public static final int DOWN = 0x1000;
+    public static final int ANY = LEFT | RIGHT | UP | DOWN;
+
+    public static final int FLOOR = DOWN;
+    public static final int CEILING = UP;
+    public static final int WALL = LEFT | RIGHT;
+
+    /**
+     * Maximum number of pixels two objects can intersect before separation gives up.
+     *
+     * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#SEPARATE_BIAS">FlxObject.SEPARATE_BIAS</a>
+     */
+    public static final float SEPARATE_BIAS = 4f;
+
+    /** Default pixels-per-meter ratio used by Box2D helpers. */
+    public static final float PIXELS_PER_METER = 100f;
+
+    /** Box2D velocity solver iterations per step. */
+    public static final int VELOCITY_ITERATIONS = 6;
+
+    /** Box2D position solver iterations per step. */
+    public static final int POSITION_ITERATIONS = 2;
+
+    private Physics() {}
   }
 
   /**

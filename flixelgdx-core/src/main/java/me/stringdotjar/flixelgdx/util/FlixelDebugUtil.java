@@ -4,7 +4,8 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelBasic;
-import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.FlixelBox2DObject;
+import me.stringdotjar.flixelgdx.FlixelDebugDrawable;
 import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 
@@ -14,13 +15,12 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility methods used by the debug overlay for recursively traversing the state's object
- * tree (counting active members, iterating {@link FlixelObject} instances for bounding-box
- * drawing, etc.).
+ * tree (counting active members, iterating {@link FlixelDebugDrawable} instances for
+ * bounding-box drawing, syncing Box2D objects, etc.).
  *
  * <p>Recursion descends into any member that implements {@link FlixelGroupable}, which
  * covers both {@link me.stringdotjar.flixelgdx.group.FlixelGroup} and
  * {@link me.stringdotjar.flixelgdx.group.FlixelSpriteGroup}.
- *
  */
 public final class FlixelDebugUtil {
 
@@ -60,32 +60,66 @@ public final class FlixelDebugUtil {
   }
 
   /**
-   * Iterates all visible {@link FlixelObject} instances in the current state's object tree
-   * (where {@code exists} and {@code visible} are both {@code true}), invoking the callback
-   * for each one. No intermediate collection is created.
+   * Iterates all visible {@link FlixelDebugDrawable} instances in the current state's
+   * object tree (where {@code exists} and {@code visible} are both {@code true}),
+   * invoking the callback for each one. No intermediate collection is created.
    *
-   * @param callback Invoked once per visible {@link FlixelObject}.
+   * @param callback Invoked once per visible {@link FlixelDebugDrawable}.
    */
-  public static void forEachVisibleObject(Consumer<FlixelObject> callback) {
+  public static void forEachDebugDrawable(Consumer<FlixelDebugDrawable> callback) {
     FlixelState state = Flixel.getState();
     if (state == null) {
       return;
     }
-    forEachVisibleObjectRecursive(state.getMembers(), callback);
+    forEachDebugDrawableRecursive(state.getMembers(), callback);
   }
 
-  private static void forEachVisibleObjectRecursive(@NotNull SnapshotArray<? extends FlixelBasic> members, @NotNull Consumer<FlixelObject> callback) {
+  private static void forEachDebugDrawableRecursive(@NotNull SnapshotArray<? extends FlixelBasic> members,
+                                                    @NotNull Consumer<FlixelDebugDrawable> callback) {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       FlixelBasic member = (FlixelBasic) items[i];
       if (member == null) {
         continue;
       }
-      if (member instanceof FlixelObject obj && obj.exists && obj.visible) {
-        callback.accept(obj);
+      if (member instanceof FlixelDebugDrawable drawable && member.exists && member.visible) {
+        callback.accept(drawable);
       }
       if (member instanceof FlixelGroupable<?> group) {
-        forEachVisibleObjectRecursive(group.getMembers(), callback);
+        forEachDebugDrawableRecursive(group.getMembers(), callback);
+      }
+    }
+    members.end();
+  }
+
+  /**
+   * Iterates all active {@link FlixelBox2DObject} instances in the current state's
+   * object tree (where the underlying {@link FlixelBasic#exists} is {@code true}),
+   * invoking the callback for each one that has a non-null body.
+   *
+   * @param callback Invoked once per active {@link FlixelBox2DObject} with a body.
+   */
+  public static void forEachBox2DObject(Consumer<FlixelBox2DObject> callback) {
+    FlixelState state = Flixel.getState();
+    if (state == null) {
+      return;
+    }
+    forEachBox2DObjectRecursive(state.getMembers(), callback);
+  }
+
+  private static void forEachBox2DObjectRecursive(@NotNull SnapshotArray<? extends FlixelBasic> members,
+                                                  @NotNull Consumer<FlixelBox2DObject> callback) {
+    Object[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelBasic member = (FlixelBasic) items[i];
+      if (member == null) {
+        continue;
+      }
+      if (member instanceof FlixelBox2DObject box2d && member.exists && box2d.getBody() != null) {
+        callback.accept(box2d);
+      }
+      if (member instanceof FlixelGroupable<?> group) {
+        forEachBox2DObjectRecursive(group.getMembers(), callback);
       }
     }
     members.end();

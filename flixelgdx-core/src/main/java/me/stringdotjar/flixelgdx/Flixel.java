@@ -4,7 +4,9 @@ import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.utils.SnapshotArray;
 
 import games.rednblack.miniaudio.MASound;
 import games.rednblack.miniaudio.loader.MASoundLoader;
@@ -15,9 +17,12 @@ import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
+import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
@@ -95,6 +100,12 @@ public final class Flixel {
 
   /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw libGDX delta. */
   protected static float elapsed = 0f;
+
+  /**
+   * World bounds used by {@link #overlap} and {@link #collide} for broad-phase culling.
+   * Format: {@code [x, y, width, height]}. Defaults to a very large area.
+   */
+  private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
   /** Current key used to toggle the debug overlay. */
   private static int debugToggleKey = FlixelConstants.Debug.DEFAULT_TOGGLE_KEY;
@@ -631,6 +642,187 @@ public final class Flixel {
         sprite.setAntialiasing(enabled);
       }
     }
+  }
+
+  /**
+   * Returns the global Box2D {@link World}, or {@code null} if it has not been initialized.
+   */
+  public static World getWorld() {
+    if (game == null) {
+      return null;
+    }
+    return game.getWorld();
+  }
+
+  /**
+   * Sets the gravity of the global Box2D world. Convenience overload that
+   * sets horizontal gravity to {@code 0}.
+   *
+   * @param gravity Vertical gravity in m/s² (negative = down in most setups).
+   */
+  public static void setGravity(float gravity) {
+    setGravity(0, gravity);
+  }
+
+  /**
+   * Sets the gravity of the global Box2D world.
+   *
+   * @param gravityX Horizontal gravity in m/s².
+   * @param gravityY Vertical gravity in m/s².
+   */
+  public static void setGravity(float gravityX, float gravityY) {
+    if (game != null) {
+      game.setGravity(gravityX, gravityY);
+    }
+  }
+
+  /**
+   * Returns the current gravity of the Box2D world, or {@code (0,0)} if no world exists.
+   */
+  public static Vector2 getGravity() {
+    if (game != null) {
+      return game.getGravity();
+    }
+    return new Vector2(0, 0);
+  }
+
+  /**
+   * Returns the world bounds used for collision broad-phase culling.
+   * The returned array is {@code [x, y, width, height]}.
+   */
+  public static float[] getWorldBounds() {
+    return worldBounds;
+  }
+
+  /**
+   * Sets the world bounds used for collision culling.
+   *
+   * @param x Left edge of the world.
+   * @param y Top edge of the world.
+   * @param width Width of the world in pixels.
+   * @param height Height of the world in pixels.
+   */
+  public static void setWorldBounds(float x, float y, float width, float height) {
+    worldBounds[0] = x;
+    worldBounds[1] = y;
+    worldBounds[2] = width;
+    worldBounds[3] = height;
+  }
+
+  /**
+   * Checks for overlaps between two objects or groups. Can be called with
+   * any combination of single {@link FlixelObject}s and {@link FlixelGroupable}s.
+   *
+   * <p>This is modeled after
+   * <a href="https://api.haxeflixel.com/flixel/FlxG.html#overlap">FlxG.overlap</a>.
+   *
+   * @param objectOrGroup1 First object or group (may be {@code null} to use the current state).
+   * @param objectOrGroup2 Second object or group (may be {@code null} to use the current state).
+   * @param notifyCallback Called for each overlapping pair. May be {@code null}.
+   * @param processCallback If provided, must return {@code true} for the pair to count as overlapping.
+   * Pass {@code null} for simple AABB overlap.
+   * @return {@code true} if any overlaps were detected.
+   */
+  public static boolean overlap(@Nullable FlixelBasic objectOrGroup1,
+                                @Nullable FlixelBasic objectOrGroup2,
+                                @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
+                                @Nullable BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
+    if (objectOrGroup1 == null) objectOrGroup1 = state;
+    if (objectOrGroup2 == null) objectOrGroup2 = state;
+    if (objectOrGroup1 == null || objectOrGroup2 == null) return false;
+    return overlapInternal(objectOrGroup1, objectOrGroup2, notifyCallback, processCallback);
+  }
+
+  /**
+   * Shorthand for {@link #overlap(FlixelBasic, FlixelBasic, BiConsumer, BiFunction)}
+   * with no callbacks.
+   */
+  public static boolean overlap(@Nullable FlixelBasic objectOrGroup1, @Nullable FlixelBasic objectOrGroup2) {
+    return overlap(objectOrGroup1, objectOrGroup2, null, null);
+  }
+
+  /**
+   * Checks for overlaps and separates colliding objects. Equivalent to calling
+   * {@link #overlap} with {@link FlixelObject#separate} as the process callback.
+   *
+   * <p>This is modeled after <a href="https://api.haxeflixel.com/flixel/FlxG.html#collide">FlxG.collide</a>.
+   *
+   * @param objectOrGroup1 First object or group.
+   * @param objectOrGroup2 Second object or group.
+   * @param notifyCallback Called for each pair that was separated. May be {@code null}.
+   * @return {@code true} if any objects were separated.
+   */
+  public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
+                                @Nullable FlixelBasic objectOrGroup2,
+                                @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback) {
+    return overlap(objectOrGroup1, objectOrGroup2, notifyCallback, FlixelObject::separate);
+  }
+
+  /**
+   * Shorthand for {@link #collide(FlixelBasic, FlixelBasic, BiConsumer)} with
+   * no {@code notifyCallback}.
+   */
+  public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
+                                @Nullable FlixelBasic objectOrGroup2) {
+    return collide(objectOrGroup1, objectOrGroup2, null);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static boolean overlapInternal(FlixelBasic obj1, FlixelBasic obj2,
+                                         BiConsumer<FlixelObject, FlixelObject> notifyCallback,
+                                         BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
+    boolean result = false;
+
+    if (obj1 instanceof FlixelGroupable<?> group1) {
+      SnapshotArray<? extends FlixelBasic> members = (SnapshotArray<? extends FlixelBasic>) group1.getMembers();
+      Object[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        FlixelBasic member = (FlixelBasic) items[i];
+        if (member != null && member.exists) {
+          result |= overlapInternal(member, obj2, notifyCallback, processCallback);
+        }
+      }
+      members.end();
+      return result;
+    }
+
+    if (obj2 instanceof FlixelGroupable<?> group2) {
+      SnapshotArray<? extends FlixelBasic> members = (SnapshotArray<? extends FlixelBasic>) group2.getMembers();
+      Object[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        FlixelBasic member = (FlixelBasic) items[i];
+        if (member != null && member.exists) {
+          result |= overlapInternal(obj1, member, notifyCallback, processCallback);
+        }
+      }
+      members.end();
+      return result;
+    }
+
+    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2)) return false;
+    if (obj1 == obj2) return false;
+    if (!fo1.exists || !fo2.exists) return false;
+
+    boolean overlaps = fo1.getX() < fo2.getX() + fo2.getWidth()
+      && fo1.getX() + fo1.getWidth() > fo2.getX()
+      && fo1.getY() < fo2.getY() + fo2.getHeight()
+      && fo1.getY() + fo1.getHeight() > fo2.getY();
+
+    if (!overlaps) {
+      return false;
+    }
+
+    if (processCallback != null) {
+      if (!processCallback.apply(fo1, fo2)) {
+        return false;
+      }
+    }
+
+    if (notifyCallback != null) {
+      notifyCallback.accept(fo1, fo2);
+    }
+
+    return true;
   }
 
   /**
