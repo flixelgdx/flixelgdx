@@ -712,6 +712,9 @@ public class FlixelText extends FlixelSprite {
 
   @Override
   public void draw(Batch batch) {
+    if (!isOnDrawCamera()) {
+      return;
+    }
     if (text.isEmpty()) {
       return;
     }
@@ -1019,18 +1022,18 @@ public class FlixelText extends FlixelSprite {
     updateLayoutColors(borderColor);
 
     switch (borderStyle) {
-      case SHADOW:
+      case SHADOW -> {
         bitmapFont.draw(batch, glyphLayout, x + borderSize, y - borderSize);
-        break;
+      }
 
-      case OUTLINE_FAST:
+      case OUTLINE_FAST -> {
         bitmapFont.draw(batch, glyphLayout, x - borderSize, y);
         bitmapFont.draw(batch, glyphLayout, x + borderSize, y);
         bitmapFont.draw(batch, glyphLayout, x, y - borderSize);
         bitmapFont.draw(batch, glyphLayout, x, y + borderSize);
-        break;
+      }
 
-      case OUTLINE:
+      case OUTLINE -> {
         int iterations = Math.max(1, (int) (borderSize * borderQuality));
         float step = borderSize / iterations;
         for (int i = 1; i <= iterations; i++) {
@@ -1044,10 +1047,11 @@ public class FlixelText extends FlixelSprite {
           bitmapFont.draw(batch, glyphLayout, x, y + offset);
           bitmapFont.draw(batch, glyphLayout, x + offset, y + offset);
         }
-        break;
+      }
 
-      default:
-        break;
+      default -> {
+        throw new IllegalArgumentException("Unexpected value: " + borderStyle);
+      }
     }
   }
 

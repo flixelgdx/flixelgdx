@@ -201,7 +201,7 @@ On **Windows** in Command Prompt or PowerShell, use:
 gradlew.bat publishToMavenLocal
 ```
 
-The first run may take longer while Gradle downloads the wrapper and dependencies. After it succeeds, the framework is available to other Gradle projects on your machine.
+The first run may take longer while Gradle downloads the wrapper and dependencies. After it succeeds, the framework is available to other Gradle projects on your machine. The default build does **not** include the Android module and does **not** require an Android SDK; see [Setting up the Android SDK](#setting-up-the-android-sdk-for-contributing-to-the-android-platform) if you need to build the Android module.
 
 **Published coordinates:**
 
@@ -474,10 +474,25 @@ Composite build lets the test project use your local FlixelGDX source so changes
 
 If you want to contribute to the **flixelgdx-android** module or run and test FlixelGDX on Android (in this repo or in a test project), you need the Android SDK and a way to run an Android app (emulator or physical device). This section covers installation, configuration, and the limitations and workarounds you may hit depending on your OS.
 
+### The Android module is optional (no SDK required by default)
+
+The framework repo **does not require an Android SDK** to compile. By default, the **flixelgdx-android** module is **not included** in the build, so you can clone, build core/desktop/TeaVM, and contribute without installing the SDK. Testing on Android is done in a **separate test project** (see [Testing with a test project](#testing-with-a-test-project)); that test project has its own Android app and its own SDK—install the SDK there when you need to run on device or emulator.
+
+To **build the Android module in this repo** (e.g. to work on Android-specific code or to publish the AAR), you must enable it in one of two ways (do **not** add this to the committed `gradle.properties`—that would require everyone to have the SDK):
+
+- **CI or one-off builds**: pass the property on the command line:  
+  `./gradlew -PincludeAndroid=true :flixelgdx-android:assembleRelease`
+- **Local development (recommended if you often work on Android)**: add a line to **local.properties** (this file is gitignored, so you never commit it):
+  ```properties
+  includeAndroid=true
+  ```
+  Then any normal `./gradlew ...` run will include the Android module. You still need the Android SDK and the setup steps below when the module is enabled.
+
 ### Why you need the Android SDK
 
-- Building the **flixelgdx-android** module: `./gradlew :flixelgdx-android:assemble` (or building a test project that includes an Android module) requires the Android SDK and build tools.
-- Running on an emulator or device: to verify behavior and debug, you need either an Android Virtual Device (AVD) or a physical Android device.
+- **Building the flixelgdx-android module in this repo**: after enabling it (see above), `./gradlew :flixelgdx-android:assemble` (or `assembleRelease`) requires the Android SDK and build tools.
+- **Building a test project that includes an Android module**: requires the Android SDK in that project (and `sdk.dir` in that project’s `local.properties`).
+- **Running on an emulator or device**: to verify behavior and debug, you need either an Android Virtual Device (AVD) or a physical Android device.
 
 ### Installing the Android SDK
 
@@ -490,6 +505,21 @@ Android Studio installs the SDK, SDK Manager, and emulator support in one place.
 
 **Option B: Command-line tools only**  
 If you prefer not to use Android Studio, install the [command-line tools](https://developer.android.com/studio#command-tools) and use `sdkmanager` to install packages (platform-tools, build-tools, a platform like `android-34`, and optionally emulator and system images).
+
+**Option C: Using the project's setup scripts**  
+The FlixelGDX repo includes helper scripts in the **`scripts/`** directory that download and install the Android command-line tools and a minimal set of packages:
+
+- **Windows**: Run `scripts\android_setup_windows.bat` from the repo root (e.g. from Command Prompt). The script installs to `%USERPROFILE%\android-sdk` with the same packages.
+- **macOS / Linux**: Run `./scripts/android_setup_macos_linux.sh` (or `bash scripts/android_setup_macos_linux.sh`) from the repo root. The script installs the SDK to `$HOME/android-sdk` and installs platform-tools, `platforms;android-34`, and `build-tools;34.0.0`.
+
+After running a script, add `ANDROID_HOME` and the script’s suggested `PATH` entries to your environment (as printed at the end of the run), then set `sdk.dir` in `local.properties` as described in [Configuring the SDK for FlixelGDX](#configuring-the-sdk-for-flixelgdx).
+
+**Warnings when using the scripts:**
+
+- **Command-line tools only**: The scripts do **not** install Android Studio or emulator/AVD components. To run an emulator, you must install emulator and system-image packages yourself (e.g. via `sdkmanager`) or use Android Studio.
+- **Fixed install path**: The scripts always install to `$HOME/android-sdk` (mac/Linux) or `%USERPROFILE%\android-sdk` (Windows). If you already have Android Studio, it usually uses a different path (e.g. `~/Library/Android/sdk` on macOS). You may then have two SDK installations; set `ANDROID_HOME` and `sdk.dir` to the one you want Gradle to use.
+- **Windows**: License acceptance is done by sending a fixed number of “y” responses. If the script fails with license-related errors, run `sdkmanager --sdk_root="%ANDROID_HOME%" --licenses` manually (with `ANDROID_HOME` set to your SDK path), accept all required licenses, then install any missing packages with `sdkmanager` if needed.
+- **macOS / Linux**: The script downloads a zip into the **current working directory** before extracting it (then deletes the zip). Run the script from the repo root or from `scripts/` to avoid leaving temporary files in other directories.
 
 ### Configuring the SDK for FlixelGDX
 
@@ -514,7 +544,7 @@ If you prefer not to use Android Studio, install the [command-line tools](https:
    ```properties
    sdk.dir=C\:\\Users\\You\\AppData\\Local\\Android\\Sdk
    ```
-   Use the path for your machine; on Windows use double backslashes. This file is usually gitignored so each developer uses their own path.
+   Use the path for your machine; on Windows use double backslashes. This file is usually gitignored so each developer uses their own path. If you are building the Android module in the FlixelGDX repo, you can also add `includeAndroid=true` to this file so the Android module is included without passing `-PincludeAndroid=true` each time.
 
 3. **Accept SDK licenses**  
    From a terminal:
@@ -532,12 +562,12 @@ If you prefer not to use Android Studio, install the [command-line tools](https:
 
 | Platform | Limitations | Workarounds |
 |----------|-------------|-------------|
-| **Windows** | Emulator can be slow without acceleration; Hyper-V and Android Emulator can conflict. | Use **HAXM** (Intel) or **Windows Hypervisor Platform** for x86/x86_64 emulator images if available; or use a physical device. For FlixelGDX you can still **build** the Android module (`./gradlew :flixelgdx-android:assemble`) and contribute code without running the app; CI or maintainers can run on device/emulator. |
+| **Windows** | Emulator can be slow without acceleration; Hyper-V and Android Emulator can conflict. | Use **HAXM** (Intel) or **Windows Hypervisor Platform** for x86/x86_64 emulator images if available; or use a physical device. For FlixelGDX you can still **build** the Android module (`./gradlew -PincludeAndroid=true :flixelgdx-android:assemble`) and contribute code without running the app; CI or maintainers can run on device/emulator. |
 | **macOS** | None specific to Android, although Apple Silicon (M1/M2) doesn't support x86 emulation very well. | Choose an AVD with an ARM64 image (e.g. “Apple M1” or “ARM 64” in AVD Manager). On Apple Silicon (M1/M2), use **ARM64** (e.g. `arm64-v8a`) system images for the emulator to avoid slow x86 emulation. |
 | **Linux** | Some older SDK tools expect 32-bit libs; modern installs are 64-bit. Emulator needs KVM for acceleration. | Install KVM and ensure your user is in the `kvm` group for hardware-accelerated emulator. If you cannot run an emulator, build the module and use a physical device or rely on CI. |
 
 **Contributing without running on a device/emulator**  
-You can still edit and build the **flixelgdx-android** module. Run `./gradlew :flixelgdx-android:assemble` to confirm it compiles. For runtime behavior, rely on a maintainer or CI that has an Android environment, or use a cloud/VM with the SDK and an emulator.
+You can still edit and build the **flixelgdx-android** module. Enable the module (e.g. add `includeAndroid=true` to `local.properties` or use `-PincludeAndroid=true`), then run `./gradlew :flixelgdx-android:assemble` to confirm it compiles. For runtime behavior, rely on a maintainer or CI that has an Android environment, or use a cloud/VM with the SDK and an emulator.
 
 ---
 

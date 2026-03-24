@@ -1,6 +1,7 @@
 package me.stringdotjar.flixelgdx.tween.builders;
 
 import com.badlogic.gdx.utils.Array;
+import me.stringdotjar.flixelgdx.functional.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings.FlixelTweenPropertyGoal;
@@ -31,6 +32,14 @@ public final class FlixelPropertyTweenBuilder extends FlixelAbstractTweenBuilder
     return this;
   }
 
+  /**
+   * Adds a property goal using the shared {@link FloatSupplier} interface.
+   */
+  public FlixelPropertyTweenBuilder addGoal(@NotNull FloatSupplier getter, float toValue, @NotNull FlixelTweenPropertyFloatSetter setter) {
+    propertyGoals.add(new FlixelTweenPropertyGoal(getter, toValue, setter));
+    return this;
+  }
+
   @Override
   public FlixelPropertyTween start() {
     FlixelTweenSettings settings = new FlixelTweenSettings(type, ease);
@@ -39,7 +48,10 @@ public final class FlixelPropertyTweenBuilder extends FlixelAbstractTweenBuilder
       var goal = propertyGoals.get(i);
       settings.addGoal(goal.getter(), goal.toValue(), goal.setter());
     }
-    FlixelPropertyTween tween = new FlixelPropertyTween(settings);
+    FlixelPropertyTween tween = (FlixelPropertyTween) FlixelTween.getGlobalManager()
+      .obtainTween(FlixelPropertyTween.class, () -> new FlixelPropertyTween(settings))
+      .setTweenSettings(settings);
+
     return (FlixelPropertyTween) FlixelTween.getGlobalManager().addTween(tween);
   }
 }

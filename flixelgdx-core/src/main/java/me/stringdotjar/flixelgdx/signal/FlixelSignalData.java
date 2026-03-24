@@ -20,20 +20,20 @@ public final class FlixelSignalData {
    * callback only.
    */
   public static final class UpdateSignalData {
-    private float delta;
+    private float elapsed;
 
     public UpdateSignalData() {}
 
-    public UpdateSignalData(float delta) {
-      this.delta = delta;
+    public UpdateSignalData(float elapsed) {
+      this.elapsed = elapsed;
     }
 
-    public float delta() {
-      return delta;
+    public float elapsed() {
+      return elapsed;
     }
 
-    public void set(float delta) {
-      this.delta = delta;
+    public void set(float elapsed) {
+      this.elapsed = elapsed;
     }
   }
 

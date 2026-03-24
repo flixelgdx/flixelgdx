@@ -10,23 +10,32 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.SnapshotArray;
 
+import me.stringdotjar.flixelgdx.box2d.FlixelBox2DObject;
+import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
+import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * The game object used for containing the main loop and core elements of the Flixel game.
  *
  * <p>To actually use this properly, you need to create a subclass of this and override
  * the methods you want to change.
+ *
+ * <p>It is strongly advised that you do <b>NOT</b> use this class to add the main gameplay logic to your game;
+ * your code should go into your {@link FlixelState} or libGDX Screen classes instead.
  *
  * <p>It is recommended for using this in the following way:
  *
@@ -35,6 +44,7 @@ import org.fusesource.jansi.AnsiConsole;
  * // Remember that you can override any methods to add extra functionality
  * // to the game's behavior.
  * public class MyGame extends FlixelGame {
+ *
  *   public MyGame(String title, int width, int height, FlixelState initialState) {
  *     super(title, width, height, initialState);
  *   }
@@ -46,6 +56,7 @@ import org.fusesource.jansi.AnsiConsole;
  * <pre>{@code
  * // Example of how to create a new game instance and run it using the LWJGL3 launcher.
  * public class Lwjgl3Launcher {
+ *
  *   public static void main(String[] args) {
  *     if (StartupHelper.startNewJvmIfRequired()) { // This handles macOS support and helps on Windows.
  *       return;
@@ -63,7 +74,7 @@ import org.fusesource.jansi.AnsiConsole;
  * }
  * }
  */
-public abstract class FlixelGame implements ApplicationListener {
+public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable {
 
   /** The title displayed on the game's window. */
   protected String title;
@@ -101,11 +112,14 @@ public abstract class FlixelGame implements ApplicationListener {
   /** The main sprite batch used for rendering all sprites on screen. */
   protected SpriteBatch batch;
 
-  /** The 1x1 texture used to draw the background color of the current screen. */
+  /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
+  protected Color bgColor = new Color(Color.BLACK);
+
+  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link SpriteBatch#setColor}. */
   protected Texture bgTexture;
 
   /** Where all the global cameras are stored. */
-  protected SnapshotArray<FlixelCamera> cameras;
+  protected Array<FlixelCamera> cameras;
 
   /** Is the game currently closing? */
   private boolean isClosing = false;
@@ -118,6 +132,9 @@ public abstract class FlixelGame implements ApplicationListener {
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
+
+  /** Global Box2D world owned by {@code this} game instance. */
+  private World world;
 
   /**
    * Creates a new game instance with the details specified.
@@ -189,6 +206,18 @@ public abstract class FlixelGame implements ApplicationListener {
     this.fullscreen = fullscreen;
   }
 
+  /**
+   * Called when the game is created. This is where you should initialize your game's resources.
+   *
+   * <p>This method configures the crash handler, sets up input processing, initializes the debug overlay, configures
+   * the ANSI system for color output in terminals, and then switches to the initial screen.
+   *
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#create()} method when the game is
+   * created, so it is not necessary to call this method manually in most cases. However, it can be overridden to
+   * perform custom initialization before the game is created.
+   *
+   * @see ApplicationListener#create()
+   */
   @Override
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
@@ -201,22 +230,15 @@ public abstract class FlixelGame implements ApplicationListener {
     }
 
     batch = new SpriteBatch();
-    cameras = new SnapshotArray<>(FlixelCamera[]::new);
+    cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
     stage = new Stage(getCamera().getViewport(), batch);
 
-    // Set up the background color for the game.
     Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
     pixmap.setColor(Color.WHITE);
     pixmap.fill();
     bgTexture = new Texture(pixmap);
     pixmap.dispose();
-
-    // Set up file logging (writes to project root in IDE, or next to the JAR when run from a JAR).
-    Flixel.startFileLogging();
-
-    Flixel.switchState(initialScreen);
-    initialScreen = null;
 
     // Ensure keyboard state is tracked for Flixel.keys (firstJustPressed, firstJustReleased, etc.)
     if (Flixel.keys != null) {
@@ -233,18 +255,39 @@ public abstract class FlixelGame implements ApplicationListener {
         Gdx.input.setInputProcessor(m);
       }
     }
+
+    // Initialize the Box2D world with zero gravity by default.
+    world = new World(new Vector2(0, 0), true);
+
+    // Create the debug overlay when debug mode is enabled.
+    if (Flixel.isDebugMode()) {
+      FlixelDebugOverlay overlay = Flixel.createDebugOverlay();
+      if (Flixel.getLogger() != null) {
+        Flixel.getLogger().addLogListener(overlay.getLogListener());
+      }
+    }
+
+    Flixel.switchState(initialScreen);
   }
 
   @Override
   public void resize(int width, int height) {
-    FlixelCamera[] camerasArray = cameras.begin();
-    for (int i = 0; i < cameras.size; i++) {
-      FlixelCamera camera = camerasArray[i];
-      if (camera != null) {
-        camera.update(width, height, true);
-      }
+    windowSize.x = width;
+    windowSize.y = height;
+
+    for (FlixelCamera camera : cameras) {
+      camera.update(width, height, camera.centerCameraOnResize);
     }
-    cameras.end();
+
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    if (debugOverlay != null) {
+      debugOverlay.resize(width, height);
+    }
+
+    FlixelState state = Flixel.getState();
+    if (state != null) {
+      state.resize(width, height);
+    }
   }
 
   /**
@@ -252,6 +295,7 @@ public abstract class FlixelGame implements ApplicationListener {
    *
    * @param elapsed The amount of time that occurred in the last frame.
    */
+  @Override
   public void update(float elapsed) {
     preUpdateData.set(elapsed);
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
@@ -278,20 +322,27 @@ public abstract class FlixelGame implements ApplicationListener {
       current = sub;
     }
 
+    // Step the Box2D world and sync body positions back to objects.
+    if (world != null) {
+      world.step(elapsed,
+        FlixelConstants.Physics.VELOCITY_ITERATIONS,
+        FlixelConstants.Physics.POSITION_ITERATIONS);
+      FlixelDebugUtil.forEachBox2DObject(FlixelBox2DObject::syncFromBody);
+    }
+
     // Update all cameras.
-    FlixelCamera[] cams = cameras.begin();
-    for (int i = 0; i < cameras.size; i++) {
-      FlixelCamera camera = cams[i];
-      if (camera == null) {
-        continue;
-      }
+    for (FlixelCamera camera : cameras) {
       camera.update(elapsed);
     }
-    cameras.end();
 
     // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame.
     if (Flixel.keys != null) {
       Flixel.keys.endFrame();
+    }
+
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    if (debugOverlay != null && Flixel.isDebugMode()) {
+      debugOverlay.update(elapsed);
     }
 
     postUpdateData.set(elapsed);
@@ -304,49 +355,73 @@ public abstract class FlixelGame implements ApplicationListener {
   public void draw() {
     Flixel.Signals.preDraw.dispatch();
 
-    ScreenUtils.clear(Color.BLACK); // Clear the screen to refresh the screen.
+    ScreenUtils.clear(bgColor); // Clear the screen to refresh the screen.
     FlixelState state = Flixel.getState();
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
-    FlixelCamera[] cams = cameras.begin();
-    for (int i = 0; i < cameras.size; i++) {
-      FlixelCamera camera = cams[i];
-      if (camera == null) {
-        continue;
-      }
+    for (FlixelCamera camera : cameras) {
+      Flixel.setDrawCamera(camera);
+      try {
+        camera.getViewport().apply();
+        batch.setProjectionMatrix(camera.getCamera().combined);
+        batch.begin();
 
-      batch.setProjectionMatrix(camera.getCamera().combined);
-      batch.begin();
+        camera.fill(camera.bgColor, camera.useBgAlphaBlending, 1f, batch, bgTexture);
 
-      // Walk the state/substate chain. Each state is drawn only if it is the
-      // active (innermost) state or if its persistentDraw flag is true.
-      FlixelState current = state;
-      while (current != null) {
-        FlixelState sub = current.getSubState();
-        boolean hasSubState = (sub != null);
+        // Walk the state/substate chain. Each state is drawn only if it is the
+        // active (innermost) state or if its persistentDraw flag is true.
+        FlixelState current = state;
+        while (current != null) {
+          FlixelState sub = current.getSubState();
+          boolean hasSubState = (sub != null);
 
-        if (!hasSubState || current.persistentDraw) {
-          batch.setColor(current.getBgColor());
-          batch.draw(bgTexture, camera.x, camera.y, camera.getWorldWidth(), camera.getWorldHeight());
-          batch.setColor(Color.WHITE);
-          current.draw(batch);
+          if (!hasSubState || current.persistentDraw) {
+            current.draw(batch);
+          }
+
+          current = sub;
         }
 
-        current = sub;
-      }
+        camera.drawFX(batch, bgTexture);
 
-      batch.end();
+        batch.end();
+      } finally {
+        Flixel.setDrawCamera(null);
+      }
     }
-    cameras.end();
 
     stage.draw();
+
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    if (debugOverlay != null) {
+      debugOverlay.drawBoundingBoxes(cameras.items);
+      debugOverlay.draw();
+    }
 
     Flixel.Signals.postDraw.dispatch();
   }
 
+  /**
+   * Updates the game's global and internal {@link #update(float)} and {@link #draw()} methods, with elapsed time clamped
+   * to the min and max values to prevent major lag spikes.
+   *
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#render()} method when the game is
+   * running, so it is not necessary to override this method in most cases. However, it can be overridden to
+   * perform custom updating/rendering before the game is updated/rendered.
+   *
+   * <p>This method is kept non-final for compatibility with existing projects that want to extend to this class
+   * and use its structured game loop. It's advised to override {@link #update(float)} and {@link #draw()} instead to
+   * perform custom updating and rendering.
+   *
+   * @see #update(float)
+   * @see #draw()
+   * @see ApplicationListener#render()
+   */
   @Override
-  public final void render() {
-    float delta = Gdx.graphics.getDeltaTime();
+  public void render() {
+    float rawDelta = Gdx.graphics.getDeltaTime();
+    float elapsed = Math.max(FlixelConstants.Graphics.MIN_ELAPSED, Math.min(rawDelta, FlixelConstants.Graphics.MAX_ELAPSED));
+    Flixel.elapsed = elapsed;
 
     windowSize.x = Gdx.graphics.getWidth();
     windowSize.y = Gdx.graphics.getHeight();
@@ -354,7 +429,7 @@ public abstract class FlixelGame implements ApplicationListener {
     fullscreen = Gdx.graphics.isFullscreen();
 
     if (!autoPause || isFocused) {
-      update(delta);
+      update(elapsed);
     }
     draw();
   }
@@ -433,14 +508,37 @@ public abstract class FlixelGame implements ApplicationListener {
    */
   protected void close() {}
 
+  /**
+   * Disposes the core resources of the game and also calls the {@link #close()} method to perform custom cleanup.
+   *
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#dispose()} method when the
+   * game is closing, so it is not necessary to call this method manually in most cases. However, it can be called
+   * manually to perform custom cleanup before the game is closed. This method just calls the {@link #close()} method to
+   * dispose of the core resources and then does post cleanup after FlixelGDX is fully done shutting down.
+   *
+   * <p>This method is kept non-final for compatibility with existing projects that want to extend to this class
+   * and use its structured game loop. It's advised to override {@link #close()} instead to perform custom cleanup.
+   *
+   * @see #close()
+   * @see ApplicationListener#dispose()
+   */
   @Override
-  public final void dispose() {
+  public void dispose() {
     if (isClosing) {
       return;
     }
     isClosing = true;
 
     Flixel.Signals.preGameClose.dispatch();
+
+    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    if (debugOverlay != null) {
+      if (Flixel.getLogger() != null) {
+        Flixel.getLogger().removeLogListener(debugOverlay.getLogListener());
+      }
+      debugOverlay.destroy();
+      Flixel.clearDebugOverlay();
+    }
 
     Flixel.getState().hide();
     Flixel.getState().dispose();
@@ -449,6 +547,10 @@ public abstract class FlixelGame implements ApplicationListener {
     bgTexture.dispose();
 
     Flixel.sound.dispose();
+    if (world != null) {
+      world.dispose();
+      world = null;
+    }
 
     FlixelFontRegistry.dispose();
 
@@ -461,7 +563,6 @@ public abstract class FlixelGame implements ApplicationListener {
     Flixel.Signals.postGameClose.dispatch();
 
     Flixel.stopFileLogging();
-
     isClosed = true;
   }
 
@@ -499,12 +600,13 @@ public abstract class FlixelGame implements ApplicationListener {
    * @return The first camera in the list.
    */
   public FlixelCamera getCamera() {
-    Vector2 windowSize = Flixel.getWindowSize();
+    Vector2 windowSize = Flixel.getViewSize();
     if (cameras == null) {
-      cameras = new SnapshotArray<>(FlixelCamera[]::new);
+      cameras = new Array<>(FlixelCamera[]::new);
     }
     if (cameras.isEmpty()) {
       cameras.add(new FlixelCamera((int) windowSize.x, (int) windowSize.y));
+      cameras.first().apply();
       stage.setViewport(cameras.first().getViewport());
     }
     return cameras.first();
@@ -515,8 +617,8 @@ public abstract class FlixelGame implements ApplicationListener {
    */
   public void resetCameras() {
     FlixelCamera camera = new FlixelCamera((int) viewSize.x, (int) viewSize.y);
-    camera.update((int) windowSize.x, (int) windowSize.y, true);
-    cameras.clear();
+    camera.update((int) windowSize.x, (int) windowSize.y, camera.centerCameraOnResize);
+    cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(camera);
     stage.setViewport(camera.getViewport());
   }
@@ -527,6 +629,14 @@ public abstract class FlixelGame implements ApplicationListener {
 
   public Vector2 getViewSize() {
     return viewSize;
+  }
+
+  public int getViewWidth() {
+    return (int) viewSize.x;
+  }
+
+  public int getViewHeight() {
+    return (int) viewSize.y;
   }
 
   public Vector2 getWindowSize() {
@@ -549,7 +659,7 @@ public abstract class FlixelGame implements ApplicationListener {
     return stage;
   }
 
-  public SnapshotArray<FlixelCamera> getCameras() {
+  public Array<FlixelCamera> getCameras() {
     return cameras;
   }
 
@@ -557,8 +667,15 @@ public abstract class FlixelGame implements ApplicationListener {
     return batch;
   }
 
-  public Texture getBgTexture() {
-    return bgTexture;
+  public Color getBgColor() {
+    return bgColor;
+  }
+
+  public void setBgColor(@NotNull Color bgColor) {
+    if (bgColor == null) {
+      return;
+    }
+    this.bgColor.set(bgColor);
   }
 
   public boolean isMinimized() {
@@ -598,5 +715,31 @@ public abstract class FlixelGame implements ApplicationListener {
   public void setWindowSize(Vector2 newSize) {
     viewSize = newSize;
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
+  }
+
+  public World getWorld() {
+    return world;
+  }
+
+  /**
+   * Sets the gravity of this game's Box2D world.
+   *
+   * @param gravityX Horizontal gravity in m/s².
+   * @param gravityY Vertical gravity in m/s².
+   */
+  public void setGravity(float gravityX, float gravityY) {
+    if (world != null) {
+      world.setGravity(new Vector2(gravityX, gravityY));
+    }
+  }
+
+  /**
+   * Returns this game's Box2D gravity, or {@code (0, 0)} if no world exists.
+   */
+  public Vector2 getGravity() {
+    if (world != null) {
+      return world.getGravity();
+    }
+    return new Vector2(0, 0);
   }
 }

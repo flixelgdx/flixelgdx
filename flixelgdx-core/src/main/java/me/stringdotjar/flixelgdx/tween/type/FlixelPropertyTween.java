@@ -60,7 +60,7 @@ public class FlixelPropertyTween extends FlixelTween {
         continue;
       }
       cachedPropertyGoals.add(goal);
-      propertyGoalStartValues.add(goal.getter().get());
+      propertyGoalStartValues.add(goal.getter().getAsFloat());
     }
 
     return this;
@@ -96,7 +96,7 @@ public class FlixelPropertyTween extends FlixelTween {
             continue;
           }
           cachedPropertyGoals.add(goal);
-          propertyGoalStartValues.add(goal.getter().get());
+          propertyGoalStartValues.add(goal.getter().getAsFloat());
         }
       }
     }

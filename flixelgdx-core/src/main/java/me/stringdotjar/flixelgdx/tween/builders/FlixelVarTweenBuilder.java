@@ -56,7 +56,9 @@ public final class FlixelVarTweenBuilder extends FlixelAbstractTweenBuilder<Flix
       var goal = goals.get(i);
       settings.addGoal(goal.field(), goal.value());
     }
-    FlixelVarTween tween = new FlixelVarTween(object, settings, callback);
-    return (FlixelVarTween) FlixelTween.getGlobalManager().addTween(tween);
+    FlixelVarTween tween = manager.obtainTween(FlixelVarTween.class, () -> new FlixelVarTween(object, settings, callback));
+    tween.setTweenSettings(settings);
+    tween.setTarget(object, callback);
+    return (FlixelVarTween) manager.addTween(tween);
   }
 }

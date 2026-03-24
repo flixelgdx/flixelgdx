@@ -32,11 +32,11 @@ import java.util.function.Predicate;
  * <p>
  * Rotation behavior is controlled by {@link RotationMode}:
  * <ul>
- *   <li>{@link RotationMode#INDIVIDUAL} (default) &ndash; the rotation delta is applied
+ *   <li>{@link RotationMode#INDIVIDUAL} (default): the rotation delta is applied
  *       to each sprite's own rotation; no positional changes occur.</li>
- *   <li>{@link RotationMode#WHEEL} &ndash; sprites are arranged radially around the center
+ *   <li>{@link RotationMode#WHEEL}: sprites are arranged radially around the center
  *       like a wheel, repositioned absolutely each frame in {@link #update(float)}.</li>
- *   <li>{@link RotationMode#ORBIT} &ndash; sprites orbit around the group origin as a rigid body;
+ *   <li>{@link RotationMode#ORBIT}: sprites orbit around the group origin as a rigid body;
  *       both position and individual rotation are adjusted by the delta.</li>
  * </ul>
  */
@@ -420,14 +420,17 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
     return members.size == 0;
   }
 
+  @Override
   public int getMaxSize() {
     return maxSize;
   }
 
+  @Override
   public void setMaxSize(int maxSize) {
     this.maxSize = Math.max(0, maxSize);
   }
 
+  @Override
   public SnapshotArray<FlixelSprite> getMembers() {
     return members;
   }
@@ -465,12 +468,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
     if (function == null || members == null || members.size == 0) {
       return;
     }
+    FlixelSprite[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelSprite s = members.get(i);
+      FlixelSprite s = items[i];
       if (s != null) {
         function.accept(s);
       }
     }
+    members.end();
   }
 
   /**
@@ -486,12 +491,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
     if (type == null || callback == null) {
       return;
     }
+    FlixelSprite[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelSprite s = members.get(i);
-      if (type.isInstance(s)) {
+      FlixelSprite s = items[i];
+      if (s != null && type.isInstance(s)) {
         callback.accept(type.cast(s));
       }
     }
+    members.end();
   }
 
   public void sort(Comparator<FlixelSprite> comparator) {
@@ -526,6 +533,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
   /**
    * Moves a member to the end of the draw list so that it renders on top of all other
    * members. Has no effect if the sprite is not a member of this group.
+   *
+   * @param sprite The sprite to bring to the front of the group's list.
    */
   public void bringToFront(FlixelSprite sprite) {
     if (members.removeValue(sprite, true)) {
@@ -536,6 +545,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
   /**
    * Moves a member to the beginning of the draw list so that it renders behind all other
    * members. Has no effect if the sprite is not a member of this group.
+   *
+   * @param sprite The sprite to send to the back of the group's list.
    */
   public void sendToBack(FlixelSprite sprite) {
     if (members.removeValue(sprite, true)) {
@@ -546,6 +557,9 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
   /**
    * Swaps the draw order of two members by their indices. Out-of-bounds indices are
    * silently ignored.
+   *
+   * @param index1 The index of the first sprite to swap.
+   * @param index2 The index of the second sprite to swap.
    */
   public void swapMembers(int index1, int index2) {
     if (index1 < 0 || index1 >= members.size || index2 < 0 || index2 >= members.size) {
@@ -634,7 +648,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<F
    */
   @Override
   public void draw(Batch batch) {
-    if (!visible) {
+    if (!visible || !isOnDrawCamera()) {
       return;
     }
 

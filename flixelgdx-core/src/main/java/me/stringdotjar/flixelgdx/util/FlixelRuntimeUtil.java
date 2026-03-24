@@ -154,7 +154,7 @@ public final class FlixelRuntimeUtil {
         path = path.substring(0, path.indexOf("/bin/"));
       }
       path = path.replaceAll("/$", "");
-      // In many LibGDX project templates the working directory is the assets folder; if so,
+      // In many libGDX projects, the working directory is the assets folder; if so,
       // trim the trailing /assets segment so logs go to the project root instead of assets/.
       if (path.endsWith("/assets")) {
         path = path.substring(0, path.length() - "/assets".length());

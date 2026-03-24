@@ -3,9 +3,9 @@ package me.stringdotjar.flixelgdx.tween.type;
 import com.badlogic.gdx.utils.ObjectFloatMap;
 import com.badlogic.gdx.utils.ObjectSet;
 
+import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
-import me.stringdotjar.flixelgdx.util.FlixelReflectUtil;
 
 import java.lang.reflect.Field;
 
@@ -58,6 +58,19 @@ public class FlixelVarTween extends FlixelTween {
     this.updateCallback = updateCallback;
   }
 
+  /**
+   * Reconfigures this tween for reuse (e.g. from pool). Call before {@link #start()}.
+   *
+   * @param object The object to tween.
+   * @param updateCallback Callback to apply tweened values.
+   * @return this, for chaining.
+   */
+  public FlixelVarTween setTarget(Object object, FunkinVarTweenUpdateCallback updateCallback) {
+    this.object = object;
+    this.updateCallback = updateCallback;
+    return this;
+  }
+
   @Override
   public FlixelTween start() {
     super.start();
@@ -72,7 +85,7 @@ public class FlixelVarTween extends FlixelTween {
     }
 
     if (fieldsCache == null) {
-      fieldsCache = FlixelReflectUtil.getAllFieldsAsArray(object.getClass());
+      fieldsCache = Flixel.reflect.getAllFieldsAsArray(object.getClass());
     }
 
     // Get all the float fields on the object.

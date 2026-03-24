@@ -1,11 +1,11 @@
 package me.stringdotjar.flixelgdx.backend.lwjgl3.alert;
 
-import me.stringdotjar.flixelgdx.backend.FlixelAlerter;
-
 import java.awt.EventQueue;
 import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.JOptionPane;
+
+import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 
 public class FlixelLwjgl3Alerter implements FlixelAlerter {
 

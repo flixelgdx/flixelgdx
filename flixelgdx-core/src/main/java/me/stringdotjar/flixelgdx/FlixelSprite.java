@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.Pool;
@@ -18,6 +17,8 @@ import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The core building block of all Flixel games. Extends {@link FlixelObject} with graphical
@@ -30,14 +31,9 @@ import java.util.Comparator;
  */
 public class FlixelSprite extends FlixelObject implements Pool.Poolable {
 
-  /** The texture image that {@code this} sprite uses. */
-  protected Texture texture;
-
-  /** The hitbox used for collision detection and angling. */
-  protected Rectangle hitbox;
-
-  /** The cameras that {@code this} sprite is projected onto. */
-  protected FlixelCamera[] cameras;
+  /** Cameras this sprite may render on. {@code null} or an empty array means every camera. */
+  @Nullable
+  public FlixelCamera[] cameras;
 
   /** The atlas regions used in this sprite (used for animations). */
   protected Array<TextureAtlas.AtlasRegion> atlasRegions;
@@ -45,7 +41,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /** A map that animations are stored and registered in. */
   protected final ObjectMap<String, Animation<TextureRegion>> animations;
 
-  /** The current frame that {@code this} sprite is on in its animation (if one is playing). */
+  /** The current frame that {@code this} sprite is currently using for drawing. */
   protected TextureAtlas.AtlasRegion currentFrame;
 
   /** Used for updating {@code this} sprite's current animation. */
@@ -99,10 +95,11 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelConstants.Graphics.FACING_RIGHT;
 
+  /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
     super();
     animations = new ObjectMap<>();
-    cameras = new FlixelCamera[]{Flixel.getCamera()};
+    cameras = null;
   }
 
   /**
@@ -112,9 +109,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    */
   @Override
   public void update(float elapsed) {
-    if (moves) {
-      updateMotion(elapsed);
-    }
+    super.update(elapsed);
 
     if (animations != null && !animations.isEmpty()) {
       Animation<TextureRegion> anim = animations.get(currentAnim);
@@ -161,12 +156,18 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     return loadGraphic(new Texture(path), frameWidth, frameHeight);
   }
 
+  /**
+   * Loads a texture and automatically resizes the size of {@code this} sprite.
+   *
+   * @param texture The texture to load onto {@code this} sprite.
+   * @param frameWidth How wide the sprite should be.
+   * @param frameHeight How tall the sprite should be.
+   * @return {@code this} sprite for chaining.
+   */
   public FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
-    this.texture = texture;
     frames = TextureRegion.split(texture, frameWidth, frameHeight);
     currentRegion = frames[0][0];
-    setSize(frameWidth, frameHeight);
-    setOriginCenter();
+    updateHitbox(frameWidth, frameHeight);
     return this;
   }
 
@@ -190,10 +191,8 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /**
    * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
    *
-   * @param texture The path to the {@code .png} texture file for slicing and extracting the
-   * different frames from.
-   * @param xmlFile The path to the {@code .xml} file which contains the data for each subtexture of
-   * the sparrow atlas.
+   * @param texture The path to the {@code .png} texture file for slicing and extracting the different frames from.
+   * @param xmlFile The path to the {@code .xml} file which contains the data for each subtexture of the sparrow atlas.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadSparrowFrames(FileHandle texture, FileHandle xmlFile) {
@@ -203,10 +202,8 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   /**
    * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
    *
-   * @param texture The {@code .png} texture file for slicing and extracting the different frames
-   * from.
-   * @param xmlFile The {@link XmlReader.Element} data which contains the data for each subtexture
-   * of the sparrow atlas.
+   * @param texture The {@code .png} texture file for slicing and extracting the different frames from.
+   * @param xmlFile The {@link XmlReader.Element} data which contains the data for each subtexture of the sparrow atlas.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadSparrowFrames(Texture texture, XmlReader.Element xmlFile) {
@@ -219,7 +216,6 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
       int width = subTexture.getInt("width");
       int height = subTexture.getInt("height");
 
-      this.texture = texture;
       TextureAtlas.AtlasRegion region = new TextureAtlas.AtlasRegion(texture, x, y, width, height);
       region.name = name;
 
@@ -337,6 +333,9 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
 
   @Override
   public void draw(Batch batch) {
+    if (!isOnDrawCamera()) {
+      return;
+    }
     if (currentFrame != null) {
       float oX = currentFrame.originalWidth / 2f;
       float oY = currentFrame.originalHeight / 2f;
@@ -389,19 +388,82 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     }
   }
 
+  /**
+   * Sets how large the graphic is drawn on screen (in pixels), without changing which part of the
+   * texture is used.
+   *
+   * <p>This adjusts {@link #setScale(float, float)} so the full current frame/region maps to the
+   * given size. It does <em>not</em> change {@link TextureRegion} bounds: {@code
+   * TextureRegion#setRegionWidth}/{@code setRegionHeight} only resize the <strong>source</strong>
+   * rectangle inside the texture (UVs), which crops or re-samples texels; the drawable size in
+   * this class comes from {@link #getWidth()}/{@link #getHeight()} and scale in {@link #draw}.
+   *
+   * @param width The drawn width in pixels (must be {@code > 0}).
+   * @param height The drawn height in pixels (must be {@code > 0}).
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite setGraphicSize(int width, int height) {
+    if (width <= 0 || height <= 0 || currentRegion == null) {
+      return this;
+    }
+    int rw;
+    int rh;
+    if (currentFrame != null) {
+      rw = currentFrame.getRegionWidth();
+      rh = currentFrame.getRegionHeight();
+    } else {
+      rw = currentRegion.getRegionWidth();
+      rh = currentRegion.getRegionHeight();
+    }
+    if (rw <= 0 || rh <= 0) {
+      return this;
+    }
+    setScale(width / (float) rw, height / (float) rh);
+    updateHitbox();
+    return this;
+  }
+
+  /**
+   * Sets the hitbox to match the on-screen graphic.
+   *
+   * <p>For textures drawn via {@link #currentRegion}, {@link #draw} uses {@code getWidth() *
+   * |scaleX|} (and height), so this folds scale into {@link #setSize(float, float)} and resets
+   * scale to {@code 1} to avoid double-scaling. Sparrow/atlas frames ({@link #currentFrame}) keep
+   * scale because {@link #draw} sizes that path from the frame region × scale, while hitbox
+   * dimensions are still set to the same effective pixel size for {@link Flixel#overlap}.
+   */
+  public FlixelSprite updateHitbox() {
+    if (currentRegion == null) {
+      return this;
+    }
+    float effW;
+    float effH;
+    if (currentFrame != null) {
+      effW = Math.abs(scaleX) * currentFrame.getRegionWidth();
+      effH = Math.abs(scaleY) * currentFrame.getRegionHeight();
+      return updateHitbox(effW, effH);
+    }
+    effW = Math.abs(scaleX) * getWidth();
+    effH = Math.abs(scaleY) * getHeight();
+    setScale(1f, 1f);
+    return updateHitbox(effW, effH);
+  }
+
+  /**
+   * Updates the hitbox of {@code this} sprite to the size of the given width and height.
+   *
+   * @param width The width of the hitbox.
+   * @param height The height of the hitbox.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite updateHitbox(float width, float height) {
+    setSize(width, height);
+    setOriginCenter();
+    return this;
+  }
+
   @Override
   public void destroy() {
-    reset();
-  }
-
-  public boolean isAnimationFinished() {
-    Animation<TextureRegion> anim = animations.get(currentAnim);
-    if (anim == null) return true;
-    return anim.isAnimationFinished(stateTime);
-  }
-
-  @Override
-  public void reset() {
     setPosition(0f, 0f);
     stateTime = 0;
     currentAnim = null;
@@ -417,10 +479,6 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     flipX = false;
     flipY = false;
     setAngle(0f);
-    if (texture != null) {
-      texture.dispose();
-      texture = null;
-    }
     if (currentFrame != null) {
       currentFrame.getTexture().dispose();
       currentFrame = null;
@@ -449,6 +507,33 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
       }
       frames = null;
     }
+    cameras = null;
+  }
+
+  public boolean isAnimationFinished() {
+    Animation<TextureRegion> anim = animations.get(currentAnim);
+    if (anim == null) return true;
+    return anim.isAnimationFinished(stateTime);
+  }
+
+  @Override
+  public void reset() {
+    destroy();
+  }
+
+  /**
+   * Whether this sprite should render in the current {@link FlixelGame} camera pass.
+   */
+  protected boolean isOnDrawCamera() {
+    return Flixel.isOnDrawCamera(cameras);
+  }
+
+  public Texture getGraphic() {
+    return getTexture();
+  }
+
+  public Texture getTexture() {
+    return currentRegion != null ? currentRegion.getTexture() : null;
   }
 
   public float getScaleX() {
@@ -513,20 +598,13 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
 
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
+    Texture texture = currentRegion != null ? currentRegion.getTexture() : null;
     if (texture != null) {
       texture.setFilter(
         antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
         antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest
       );
     }
-  }
-
-  public Texture getGraphic() {
-    return texture;
-  }
-
-  public void setGraphic(Texture texture) {
-    this.texture = texture;
   }
 
   public int getFacing() {

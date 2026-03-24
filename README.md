@@ -19,7 +19,7 @@ FlixelGDX supports the following platforms through its modular backend system:
 
 - **Desktop**: Windows, macOS, and Linux via LWJGL3.
 - **Android**: Full support for Android mobile devices.
-- **iOS**: Support via [MobiVM](https://github.com/MobiVM/robovm) (RoboVM fork for libGDX iOS).
+- **iOS**: Support via [MobiVM](https://github.com/MobiVM/robovm).
 - **Web**: Support via TeaVM.
 
 > [!WARNING]
@@ -63,6 +63,24 @@ public class MyGame extends FlixelGame {
     super.create();
     // Your game initialization code here!
   }
+
+  @Override
+  public void update(float elapsed) {
+    super.update(elapsed);
+    // Your global game loop update logic here!
+  }
+
+  @Override
+  public void draw(Batch batch) {
+    super.draw(batch);
+    // Your global game loop drawing logic here!
+  }
+
+  @Override
+  public void close() {
+    super.close();
+    // Your game cleanup code here!
+  }
 }
 ```
 
@@ -88,16 +106,16 @@ public class PlayState extends FlixelState {
     super.update(elapsed);
 
     // Move the player with WASD!
-    if (Flixel.keys.justPressed(FlixelKey.W)) {
+    if (Flixel.keys.pressed(FlixelKey.W)) {
       player.changeY(-10);
     }
-    if (Flixel.keys.justPressed(FlixelKey.A)) {
+    if (Flixel.keys.pressed(FlixelKey.A)) {
       player.changeX(-10);
     }
-    if (Flixel.keys.justPressed(FlixelKey.S)) {
+    if (Flixel.keys.pressed(FlixelKey.S)) {
       player.changeY(10);
     }
-    if (Flixel.keys.justPressed(FlixelKey.D)) {
+    if (Flixel.keys.pressed(FlixelKey.D)) {
       player.changeX(10);
     }
   }
@@ -152,7 +170,7 @@ public class Custom3DCamera extends FlixelCamera {
 
 ## Features
 
-- **Entity Component-ish System**: Clean separation of logic and rendering via `FlixelBasic`, `FlixelObject`, and `FlixelSprite`.
+- **Structural Hierarchy**: Clean separation of logic and rendering via `FlixelBasic`, `FlixelObject`, and `FlixelSprite`.
 - **State Management**: Simple state switching and substates for menus, pauses, and transitions.
 - **Group System**: Powerful grouping for batch updates, collisions, and nested transformations.
 - **Tweening**: Built-in tweening system for smooth animations and transitions, with property-based tweens that work naturally with getters/setters.
@@ -231,7 +249,7 @@ public class MenuState extends FlixelState {
 
   @Override
   public void update(float elapsed) {
-    super.update(delta);
+    super.update(elapsed);
 
     if (Flixel.keys.justPressed(FlixelKey.ENTER)) {
       Flixel.switchState(new PlayState());
@@ -244,6 +262,7 @@ Substates are ideal for pause menus, dialogs, or any overlay that should block i
 
 ```java
 public class PauseSubState extends FlixelSubState {
+
   public PauseSubState() {
     super(new Color(0, 0, 0, 0.5f)); // semi-transparent overlay
   }
@@ -255,7 +274,7 @@ public class PauseSubState extends FlixelSubState {
 
   @Override
   public void update(float elapsed) {
-    super.update(delta);
+    super.update(elapsed);
     if (Flixel.keys.justPressed(FlixelKey.ESCAPE)) {
       close(); // returns to parent state
     }
@@ -340,7 +359,7 @@ That’s a lot of setup per type. In FlixelGDX you don’t create accessors or a
 3. Later: Tween.to(sprite, SpriteAccessor.XY, 0.5f).target(400f, 200f).start();
 ```
 
-**FlixelGDX with the builder (one place, no registration for built-in types):**
+**FlixelGDX with the builder:**
 
 ```java
 FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
@@ -351,7 +370,7 @@ FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
   .start();
 ```
 
-No accessor class, no index mapping, no per-type registration. You say *what* to tween (getter, target value, setter) at the call site. The builder is versatile: add as many goals as you want, set duration, ease, delays, and callbacks in one chain.
+No accessor class, no index mapping. You say *what* to tween at the call site. The builder is versatile: add as many goals as you want, set duration, ease, delays, and callbacks in one chain.
 
 In other words: you don't have to make an accessor for every single type of object you
 want to tween, you make a builder that defines *how* to tween the object, and then you can tween any object that uses that builder.
@@ -377,27 +396,17 @@ Tween types and their builders are paired in a **registry**. The static `FlixelT
 
 For custom tween types, register your pair once (e.g. at startup) with `FlixelTween.registerTweenType(YourTween.class, YourTweenBuilder.class)`.
 
+> #### Why a registry? Is it necessary?
+> 
+> Yes, it is necessary. When you register a tween type with its builder, it automatically gets its own pool for memory management. Because of how object pooling works,
+> we need to have a pool for each tween type to ensure that when a tween object is being pulled from the pool, it is the correct, specific type of tween that is needed
+> to be reused.
+
 #### Builder API at a glance
 
 - **Var tweens**: `FlixelVarTween` / `FlixelVarTweenBuilder` – tween an object’s fields by name (reflection) with `setObject(...)`, `addGoal(field, value)`, `setCallback(...)`.
 - **Property tweens**: `FlixelPropertyTween` / `FlixelPropertyTweenBuilder` – tween via getter/setter pairs; no reflection, setter side effects run every frame. Use `addGoal(getter, toValue, setter)`.
 - **Num tweens**: `FlixelNumTween` / `FlixelNumTweenBuilder` – tween a numeric range with `from(...).to(...)` and `setCallback(value -> ...)`.
-
-Example: tween the player's X and Y using the property builder:
-
-```java
-FlixelSprite player = new FlixelSprite()
-  .makeGraphic(16, 16, Color.WHITE);
-
-FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
-  .setDuration(0.5f)
-  .setEase(FlixelEase::quadOut)
-  .addGoal(player::getX, 400f, player::setX)
-  .addGoal(player::getY, 200f, player::setY)
-  .start();
-```
-
-So compared to UTE you avoid: implementing an accessor per type, mapping indices to fields, manually reading/writing values in an accessor, and registering accessors. In FlixelGDX you either declare goals at the call site with the builder or use the direct `tween`/`num` overloads, and you get easing, delays, callbacks, and looping without extra boilerplate.
 
 #### Using tweens inside a FlixelGDX game
 
@@ -456,18 +465,19 @@ This lets you adopt FlixelGDX's tweening in small pieces inside an existing libG
 
 ### Input Handling
 
-FlixelGDX wraps libGDX input behind a small set of helpers so you can check “was this key just pressed?” or “is it held?” without touching `Gdx.input` directly. That keeps gameplay code focused on intent (e.g. “jump when space is pressed”) and works the same on desktop, Android, and web.
+FlixelGDX wraps libGDX input behind a small set of helpers so you can check “was this key just pressed?”, “is it held?”, or "is it touching the screen?" without touching `Gdx.input` directly. That keeps gameplay code focused on intent (e.g. “jump when space is pressed”) and works the same on desktop, Android, and web.
 
 **How it Works**
 
-- **`Flixel.keyPressed(int key)`** - Returns whether the key is currently held (same as `Gdx.input.isKeyPressed(key)`). Use for movement or continuous actions.
-- **`Flixel.keyJustPressed(int key)`** - Returns whether the key was pressed this frame (one-shot). Use for jump, shoot, menu confirm, etc., so the action doesn’t repeat every frame.
-- **`FlixelKey`** - Extends `Input.Keys` and provides the same constants (e.g. `FlixelKey.SPACE`, `FlixelKey.LEFT`, `FlixelKey.A`). Pass these as the `key` argument so your code stays readable.
+- **`Flixel.keys.pressed(int key)`** - Returns whether the key is currently held (same as `Gdx.input.isKeyPressed(key)`). Use for movement or continuous actions.
+- **`Flixel.keys.justPressed(int key)`** - Returns whether the key was pressed this frame (one-shot). Use for jump, shoot, menu confirm, etc.
+- **`Flixel.keys.justReleased(int key)`** - Returns whether the key was released this frame (one-shot). Use for menu cancel, etc.
+- **`FlixelKey`** - Provides key constants such as `FlixelKey.SPACE`, `FlixelKey.LEFT`, `FlixelKey.A`, etc. Pass these as the `key` argument so your code stays readable. `Input.Keys` will also suffice if you prefer to use pure libGDX input constants instead.
 
 ```java
 @Override
-public void update(float delta) {
-  super.update(delta);
+public void update(float elapsed) {
+  super.update(elapsed);
 
   // One-shot: jump only when space is first pressed
   if (Flixel.keys.justPressed(FlixelKey.SPACE)) {
@@ -475,8 +485,8 @@ public void update(float delta) {
   }
 
   // Held: move while arrow keys are down
-  if (Flixel.keys.justPressed(FlixelKey.LEFT))  player.velocityX = -100;
-  if (Flixel.keys.justPressed(FlixelKey.RIGHT)) player.velocityX =  100;
+  if (Flixel.keys.pressed(FlixelKey.LEFT))  player.velocityX = -100;
+  if (Flixel.keys.pressed(FlixelKey.RIGHT)) player.velocityX =  100;
 }
 ```
 
@@ -484,11 +494,11 @@ Touch and mouse input still go through libGDX (`Gdx.input`); FlixelGDX’s helpe
 
 #### Using input helpers in a regular libGDX project
 
-`Flixel.keyPressed()` and `Flixel.keyJustPressed()` delegate to `Gdx.input`, so they work in any libGDX app as long as `Gdx.input` is available (which it is once the application is running). You don’t need `FlixelGame` for these; just call them from your update loop. If you haven’t initialized Flixel at all, the static methods still work because they only use `Gdx.input`.
+`Flixel.keys.pressed(int key)`, `Flixel.keys.justPressed(int key)`, and `Flixel.keys.justReleased(int key)` delegate to `Gdx.input`, so they work in any libGDX app as long as `Gdx.input` is available (which it is once the application is running). You don’t need `FlixelGame` for these; just call them from your update loop. If you haven’t initialized Flixel at all, the static methods still work because they only use `Gdx.input`.
 
 ### Logging & Debugging
 
-FlixelGDX provides a small logging API so you can tag messages, control how much detail is shown, and optionally attach stack traces - without scattering `System.out.println` or wiring a full logging framework up front.
+FlixelGDX provides a small logging API so you can tag messages, control how much detail is shown, and optionally attach stack traces without scattering `System.out.println` or wiring a full logging framework up front.
 
 **How it Works**
 

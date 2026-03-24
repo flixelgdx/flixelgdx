@@ -1,5 +1,8 @@
 package me.stringdotjar.flixelgdx.display;
 
+import org.jetbrains.annotations.NotNull;
+
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -12,35 +15,37 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.FlixelObject;
 
 /**
- * The camera class is used to display the game's visuals.
+ * A powerful camera class that allows you to control the camera's position, zoom, and more.
  *
  * <p>
- * By default, one camera is created automatically, that is the same size as the
- * window. You can
- * add more cameras or even replace the main camera using utilities in
- * {@code FlixelGame}.
+ * In a full FlixelGDX game, cameras are usually managed by {@link me.stringdotjar.flixelgdx.FlixelGame}.
+ * You can also use {@code FlixelCamera} in a plain libGDX {@code ApplicationListener}. When
+ * {@link me.stringdotjar.flixelgdx.Flixel#getGame()} is {@code null}, window size and follow framerate fall back to
+ * {@link Gdx#graphics} (call {@link #update(int, int, boolean)} from {@code resize} as usual).
  *
  * <p>
- * Every camera wraps a libGDX {@link Camera} and {@link Viewport} internally.
- * By default, an
+ * Every camera wraps a libGDX {@link Camera} and {@link Viewport} internally. By default, an
  * {@link OrthographicCamera} and {@link FitViewport} are used, but custom types can be provided
  * via the constructor overloads.
  *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxCamera.html">FlxCamera
- * (HaxeFlixel)</a>
+ * @see <a href="https://api.haxeflixel.com/flixel/FlxCamera.html">FlxCamera (HaxeFlixel)</a>
  */
 public class FlixelCamera extends FlixelBasic {
 
   /**
-   * Any {@code FlixelCamera} with a zoom of 0 (the default constructor value)
+   * Any {@code FlixelCamera} with a zoom of anything {@code <= 0} (the default constructor value)
    * will receive this zoom level instead.
    */
   public static float defaultZoom = 1.0f;
 
+  /** The underlying libGDX {@link Camera} used for projection. */
   private Camera camera;
+
+  /** The underlying libGDX {@link Viewport} used for screen scaling. */
   private Viewport viewport;
 
   /** The alpha value of this camera display (0.0 to 1.0). */
@@ -48,11 +53,6 @@ public class FlixelCamera extends FlixelBasic {
 
   /** The angle of the camera display in degrees. */
   public float angle = 0f;
-
-  /**
-   * Whether the camera display is smooth and filtered, or chunky and pixelated.
-   */
-  public boolean antialiasing = false;
 
   /** The natural background color of the camera. Defaults to black. */
   public Color bgColor = new Color(Color.BLACK);
@@ -73,6 +73,14 @@ public class FlixelCamera extends FlixelBasic {
   public boolean useBgAlphaBlending = false;
 
   /**
+   * Whether the libGDX viewport should (re-)center the camera when the game window is resized.
+   *
+   * <p>Split-screen setups often want this to stay enabled (default), matching existing
+   * behavior. Disable it if you want strict scroll preservation through resizes.
+   */
+  public boolean centerCameraOnResize = true;
+
+  /**
    * The X position of this camera's display in native screen pixels.
    * {@link #zoom} does NOT affect this value.
    */
@@ -91,31 +99,21 @@ public class FlixelCamera extends FlixelBasic {
   public int height;
 
   /**
-   * The basic parallax scrolling values, essentially the camera's top-left corner
-   * position
-   * in world coordinates. Use {@link #focusOn(Vector2)} to look at a specific
-   * world point.
+   * The basic parallax scrolling values, essentially the camera's top-left corner position in world coordinates.
+   * Use {@link #focusOn(Vector2)} to look at a specific world point.
    */
   public final Vector2 scroll = new Vector2();
 
-  /**
-   * Lower bound of the camera's scroll on the X axis. {@code null} = unbounded.
-   */
+  /** Lower bound of the camera's scroll on the X axis. {@code null} = unbounded. */
   public Float minScrollX;
 
-  /**
-   * Upper bound of the camera's scroll on the X axis. {@code null} = unbounded.
-   */
+  /** Upper bound of the camera's scroll on the X axis. {@code null} = unbounded. */
   public Float maxScrollX;
 
-  /**
-   * Lower bound of the camera's scroll on the Y axis. {@code null} = unbounded.
-   */
+  /** Lower bound of the camera's scroll on the Y axis. {@code null} = unbounded. */
   public Float minScrollY;
 
-  /**
-   * Upper bound of the camera's scroll on the Y axis. {@code null} = unbounded.
-   */
+  /** Upper bound of the camera's scroll on the Y axis. {@code null} = unbounded. */
   public Float maxScrollY;
 
   /**
@@ -149,6 +147,48 @@ public class FlixelCamera extends FlixelBasic {
   public final float initialZoom;
 
   /**
+   * When {@code true}, {@link #update(int, int, boolean)} fits this camera into the screen rectangle
+   * {@code (x, y, width, height)} (see {@link #x}) instead of the full window. When {@code false}, placement
+   * is inferred when {@link Flixel#getGame()} has multiple cameras (horizontal/vertical strips, PiP, etc.).
+   */
+  public boolean useSubScreenViewport = false;
+
+  /**
+   * Controls how this camera interprets its screen region coordinates.
+   * This only affects where the camera is placed on the window, not world/object coordinate behavior.
+   */
+  private RegionMode regionMode = RegionMode.PIXEL_TOP_LEFT;
+
+  /**
+   * Whether pixel-based region placement should use explicit region fields instead of x/y/width/height.
+   */
+  private boolean hasCustomPixelRegion = false;
+
+  /** Explicit pixel region X for screen placement. */
+  private float regionX = 0f;
+
+  /** Explicit pixel region Y for screen placement. */
+  private float regionY = 0f;
+
+  /** Explicit pixel region width for screen placement. */
+  private int regionWidth = 0;
+
+  /** Explicit pixel region height for screen placement. */
+  private int regionHeight = 0;
+
+  /** Normalized screen-region X position used by {@link RegionMode#NORMALIZED_RECT} (0..1). */
+  private float normalizedRegionX = 0f;
+
+  /** Normalized screen-region Y position used by {@link RegionMode#NORMALIZED_RECT} (0..1). */
+  private float normalizedRegionY = 0f;
+
+  /** Normalized screen-region width used by {@link RegionMode#NORMALIZED_RECT} (0..1). */
+  private float normalizedRegionWidth = 1f;
+
+  /** Normalized screen-region height used by {@link RegionMode#NORMALIZED_RECT} (0..1). */
+  private float normalizedRegionHeight = 1f;
+
+  /**
    * Internal zoom storage. Use {@link #getZoom()} / {@link #setZoom(float)} to access.
    * A value of {@code 1} = 1:1. {@code 2} = 2x zoom in (world appears larger).
    */
@@ -173,7 +213,7 @@ public class FlixelCamera extends FlixelBasic {
   private float shakeIntensity = 0.05f;
   private float shakeDuration = 0.5f;
   private float shakeElapsed = 0f;
-  private FlxAxes shakeAxes = FlxAxes.XY;
+  private Axes shakeAxes = Axes.XY;
   private Runnable shakeOnComplete;
   private float shakeOffsetX = 0f;
   private float shakeOffsetY = 0f;
@@ -189,7 +229,7 @@ public class FlixelCamera extends FlixelBasic {
    * {@link OrthographicCamera} and {@link FitViewport}.
    */
   public FlixelCamera() {
-    this(0f, 0f, Flixel.getWindowWidth(), Flixel.getWindowHeight(), 0f);
+    this(0f, 0f, resolveWindowWidth(), resolveWindowHeight(), 0f);
   }
 
   /**
@@ -209,8 +249,7 @@ public class FlixelCamera extends FlixelBasic {
    *
    * @param width The width of the camera display in game pixels.
    * @param height The height of the camera display in game pixels.
-   * @param camera A custom libGDX Camera (e.g.
-   * {@link com.badlogic.gdx.graphics.PerspectiveCamera}).
+   * @param camera A custom libGDX Camera (e.g. {@link com.badlogic.gdx.graphics.PerspectiveCamera}).
    */
   public FlixelCamera(int width, int height, Camera camera) {
     this(0f, 0f, width, height, 0f, camera, null);
@@ -222,23 +261,19 @@ public class FlixelCamera extends FlixelBasic {
    *
    * @param width The width of the camera display in game pixels.
    * @param height The height of the camera display in game pixels.
-   * @param viewport A custom libGDX Viewport (e.g.
-   * {@link com.badlogic.gdx.utils.viewport.ScreenViewport}).
+   * @param viewport A custom libGDX Viewport (e.g. {@link com.badlogic.gdx.utils.viewport.ScreenViewport}).
    */
   public FlixelCamera(int width, int height, Viewport viewport) {
     this(0f, 0f, width, height, 0f, null, viewport);
   }
 
   /**
-   * Creates a camera at the given display position, size, and zoom level using
-   * default types.
+   * Creates a camera at the given display position, size, and zoom level using default types.
    *
    * @param x X location of the camera's display in native screen pixels.
    * @param y Y location of the camera's display in native screen pixels.
-   * @param width The width of the camera display in game pixels. 0 = window
-   * width.
-   * @param height The height of the camera display in game pixels. 0 = window
-   * height.
+   * @param width The width of the camera display in game pixels. 0 = window width.
+   * @param height The height of the camera display in game pixels. 0 = window height.
    * @param zoom The initial zoom level. 0 = {@link #defaultZoom}.
    */
   public FlixelCamera(float x, float y, int width, int height, float zoom) {
@@ -246,8 +281,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Full constructor allowing fully custom libGDX {@link Camera} and
-   * {@link Viewport} types.
+   * Full constructor allowing fully custom libGDX {@link Camera} and {@link Viewport} types.
    *
    * <p>
    * If {@code viewport} is provided, its camera is used (the {@code camera} parameter is ignored).
@@ -267,8 +301,8 @@ public class FlixelCamera extends FlixelBasic {
     super();
     this.x = x;
     this.y = y;
-    this.width = (width <= 0) ? Flixel.getWindowWidth() : width;
-    this.height = (height <= 0) ? Flixel.getWindowHeight() : height;
+    this.width = (width <= 0) ? resolveWindowWidth() : width;
+    this.height = (height <= 0) ? resolveWindowHeight() : height;
 
     if (viewport != null) {
       this.viewport = viewport;
@@ -284,6 +318,8 @@ public class FlixelCamera extends FlixelBasic {
     this.zoom = (zoom == 0f) ? defaultZoom : zoom;
     this.initialZoom = this.zoom;
     applyZoom();
+
+    update(resolveWindowWidth(), resolveWindowHeight(), centerCameraOnResize);
   }
 
   /** Returns the underlying libGDX {@link Camera} used for projection. */
@@ -298,7 +334,7 @@ public class FlixelCamera extends FlixelBasic {
 
   /**
    * Applies the viewport's OpenGL viewport rectangle. Call before rendering
-   * through this camera.
+   * through {@code this} camera.
    */
   public void apply() {
     viewport.apply();
@@ -312,15 +348,17 @@ public class FlixelCamera extends FlixelBasic {
    * @param centerCamera Whether to re-center the camera in the viewport.
    */
   public void update(int screenWidth, int screenHeight, boolean centerCamera) {
-    viewport.update(screenWidth, screenHeight, centerCamera);
+    if (shouldUseSubScreenViewport(screenWidth, screenHeight)) {
+      updateSubScreenViewport(screenWidth, screenHeight, centerCamera);
+    } else {
+      viewport.update(screenWidth, screenHeight, centerCamera);
+    }
   }
 
-  /** Returns the world width of the underlying viewport. */
   public float getWorldWidth() {
     return viewport.getWorldWidth();
   }
 
-  /** Returns the world height of the underlying viewport. */
   public float getWorldHeight() {
     return viewport.getWorldHeight();
   }
@@ -358,8 +396,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Tells this camera to follow the given sprite using {@link FollowStyle#LOCKON}
-   * and lerp of 1.
+   * Tells this camera to follow the given sprite using {@link FollowStyle#LOCKON} and lerp of {@code 1.0f}.
    *
    * @param target The sprite to follow. Pass {@code null} to stop following.
    */
@@ -368,8 +405,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Tells this camera to follow the given sprite with the specified style and a
-   * lerp of 1.
+   * Tells this camera to follow the given sprite with the specified style and a lerp of {@code 1.0f}.
    *
    * @param target The sprite to follow. Pass {@code null} to stop following.
    * @param style One of the preset {@link FollowStyle} dead zone presets.
@@ -379,12 +415,11 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Tells this camera to follow the given sprite.
+   * Tells {@code this} camera to follow the given sprite.
    *
    * @param target The sprite to follow. Pass {@code null} to stop following.
    * @param style One of the preset {@link FollowStyle} dead zone presets.
-   * @param lerp How much lag the camera should have. {@code 1.0} = snap, lower
-   * = smoother.
+   * @param lerp How much lag the camera should have. {@code 1.0f} = snap, lower = smoother.
    */
   public void follow(FlixelObject target, FollowStyle style, float lerp) {
     this.target = target;
@@ -458,7 +493,7 @@ public class FlixelCamera extends FlixelBasic {
       }
     }
 
-    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * Flixel.getGame().getFramerate());
+    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * resolveTargetFramerate());
     scroll.x = MathUtils.lerp(scroll.x, desiredX, lerpFactor);
     scroll.y = MathUtils.lerp(scroll.y, desiredY, lerpFactor);
   }
@@ -501,8 +536,7 @@ public class FlixelCamera extends FlixelBasic {
 
   /**
    * Specifies the bounds of where the camera scroll is allowed. Pass {@code null}
-   * for any side
-   * to leave it unbounded.
+   * for any side to leave it unbounded.
    *
    * @param minX Lower X bound (or {@code null}).
    * @param maxX Upper X bound (or {@code null}).
@@ -566,11 +600,10 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Clamps the given scroll position to the camera's min/max bounds, modifying it
-   * in-place.
+   * Clamps the given scroll position to {@code this} camera's min/max bounds, modifying it in-place.
    *
    * @param scrollPos The scroll position to restrict.
-   * @return The same vector, clamped within bounds.
+   * @return The same {@link Vector2} passed in, clamped within bounds.
    */
   public Vector2 bindScrollPos(Vector2 scrollPos) {
     float vw = getViewWidth();
@@ -595,13 +628,22 @@ public class FlixelCamera extends FlixelBasic {
     flash(Color.WHITE, 1f, null, false);
   }
 
-  /** Flashes the given color for 1 second. */
-  public void flash(Color color) {
+  /**
+   * Flashes the given color for 1 second.
+   *
+   * @param color The color to flash.
+   */
+  public void flash(@NotNull Color color) {
     flash(color, 1f, null, false);
   }
 
-  /** Flashes the given color for the specified duration. */
-  public void flash(Color color, float duration) {
+  /**
+   * Flashes the given color for the specified duration.
+   *
+   * @param color The color to flash.
+   * @param duration How long the flash takes to fade, in seconds.
+   */
+  public void flash(@NotNull Color color, float duration) {
     flash(color, duration, null, false);
   }
 
@@ -645,18 +687,33 @@ public class FlixelCamera extends FlixelBasic {
     fade(Color.BLACK, 1f, false, null, false);
   }
 
-  /** Fades to the given color over 1 second. */
-  public void fade(Color color) {
+  /**
+   * Fades to the given color over 1 second.
+   *
+   * @param color The color to fade to.
+   */
+  public void fade(@NotNull Color color) {
     fade(color, 1f, false, null, false);
   }
 
-  /** Fades to the given color over the specified duration. */
-  public void fade(Color color, float duration) {
+  /**
+   * Fades to the given color over the specified duration.
+   *
+   * @param color The color to fade to.
+   * @param duration How long the fade takes to fade, in seconds.
+   */
+  public void fade(@NotNull Color color, float duration) {
     fade(color, duration, false, null, false);
   }
 
-  /** Fades to/from the given color. */
-  public void fade(Color color, float duration, boolean fadeIn) {
+  /**
+   * Fades to/from the given color.
+   *
+   * @param color The color to fade to/from.
+   * @param duration How long the fade takes to fade, in seconds.
+   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
+   */
+  public void fade(@NotNull Color color, float duration, boolean fadeIn) {
     fade(color, duration, fadeIn, null, false);
   }
 
@@ -665,8 +722,7 @@ public class FlixelCamera extends FlixelBasic {
    *
    * @param color The color to fade to/from.
    * @param duration How long the fade takes, in seconds.
-   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false}
-   * = fade TO the color.
+   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
    * @param onComplete Callback invoked when the fade finishes, or {@code null}.
    * @param force If {@code true}, resets any currently-running fade.
    */
@@ -701,31 +757,39 @@ public class FlixelCamera extends FlixelBasic {
 
   /** Shakes with default intensity (0.05) for 0.5 seconds on both axes. */
   public void shake() {
-    shake(0.05f, 0.5f, null, true, FlxAxes.XY);
+    shake(0.05f, 0.5f, null, true, Axes.XY);
   }
 
-  /** Shakes with the given intensity for 0.5 seconds on both axes. */
+  /**
+   * Shakes with the given intensity for 0.5 seconds on both axes.
+   *
+   * @param intensity The intensity of the shake. This is typically VERY small numbers like {@code 0.05f} or {@code 0.01f}.
+   */
   public void shake(float intensity) {
-    shake(intensity, 0.5f, null, true, FlxAxes.XY);
+    shake(intensity, 0.5f, null, true, Axes.XY);
   }
 
-  /** Shakes with the given intensity and duration on both axes. */
+  /**
+   * Shakes with the given intensity and duration on both axes.
+   *
+   * @param intensity The intensity of the shake. This is typically VERY small numbers like {@code 0.05f} or {@code 0.01f}.
+   * @param duration How long the shake lasts, in seconds.
+   */
   public void shake(float intensity, float duration) {
-    shake(intensity, duration, null, true, FlxAxes.XY);
+    shake(intensity, duration, null, true, Axes.XY);
   }
 
   /**
    * A simple screen-shake effect.
    *
-   * @param intensity Fraction of camera size representing the max shake
-   * distance.
+   * @param intensity Fraction of camera size representing the max shake distance.
+   * This is typically VERY small numbers like {@code 0.05f} or {@code 0.01f}.
    * @param duration How long the shake lasts, in seconds.
    * @param onComplete Callback invoked when the shake finishes, or {@code null}.
-   * @param force If {@code true}, resets any currently-running shake
-   * (default unlike flash/fade).
+   * @param force If {@code true}, resets any currently-running shake (default unlike flash/fade).
    * @param axes Which axes to shake on.
    */
-  public void shake(float intensity, float duration, Runnable onComplete, boolean force, FlxAxes axes) {
+  public void shake(float intensity, float duration, Runnable onComplete, boolean force, Axes axes) {
     if (shakeActive && !force) {
       return;
     }
@@ -733,7 +797,7 @@ public class FlixelCamera extends FlixelBasic {
     shakeIntensity = intensity;
     shakeDuration = Math.max(duration, 0.001f);
     shakeElapsed = 0f;
-    shakeAxes = (axes != null) ? axes : FlxAxes.XY;
+    shakeAxes = (axes != null) ? axes : Axes.XY;
     shakeOnComplete = onComplete;
     shakeOffsetX = 0f;
     shakeOffsetY = 0f;
@@ -754,8 +818,8 @@ public class FlixelCamera extends FlixelBasic {
       return;
     }
 
-    float sx = (shakeAxes == FlxAxes.Y) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * width);
-    float sy = (shakeAxes == FlxAxes.X) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * height);
+    float sx = (shakeAxes == Axes.Y) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * width);
+    float sy = (shakeAxes == Axes.X) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * height);
 
     boolean pp = pixelPerfectShake || pixelPerfectRender;
     if (pp) {
@@ -794,20 +858,34 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Fills the camera display with the specified color using the given batch and a
-   * 1x1 white texture.
+   * Fills the camera display with the specified color using the given batch and a 1x1 white {@link Texture}.
    *
    * @param fillColor The color to fill with (an alpha channel is respected).
    * @param blendAlpha Whether to blend the alpha or overwrite previous contents.
    * @param fxAlpha Additional alpha multiplier (0.0 to 1.0).
-   * @param batch An active {@link Batch} to draw with (must be between
-   * begin/end).
+   * @param batch An active {@link Batch} to draw with (must be between {@code begin()} and {@code end()}).
    * @param whitePixel A 1x1 white {@link Texture} used for color drawing.
    */
   public void fill(Color fillColor, boolean blendAlpha, float fxAlpha, Batch batch, Texture whitePixel) {
-    float a = blendAlpha ? fillColor.a * fxAlpha : fxAlpha;
-    batch.setColor(fillColor.r, fillColor.g, fillColor.b, a);
-    batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+    float r = fillColor.r;
+    float g = fillColor.g;
+    float b = fillColor.b;
+    float a = fillColor.a * fxAlpha;
+    if (blendAlpha) {
+      if (a <= 0f) {
+        return;
+      }
+      batch.setColor(r, g, b, a);
+      batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+    } else {
+      boolean wasBlending = batch.isBlendingEnabled();
+      batch.disableBlending();
+      batch.setColor(r, g, b, a);
+      batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+      if (wasBlending) {
+        batch.enableBlending();
+      }
+    }
     batch.setColor(Color.WHITE);
   }
 
@@ -831,8 +909,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Checks whether this camera's display area contains the given point (screen
-   * coordinates).
+   * Checks whether this camera's display area contains the given point (screen coordinates).
    *
    * @param point The point to test.
    * @return {@code true} if the point is inside the camera display.
@@ -842,8 +919,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Checks whether this camera's display area overlaps a rectangle at the given
-   * point.
+   * Checks whether this camera's display area overlaps a rectangle at the given point.
    *
    * @param point Top-left corner of the rectangle in screen coordinates.
    * @param width Width of the rectangle.
@@ -869,89 +945,66 @@ public class FlixelCamera extends FlixelBasic {
     return containsPoint(tmpVec.set(rect.x, rect.y), rect.width, rect.height);
   }
 
-  /** The width of the visible area in world-space, accounting for zoom. */
   public float getViewWidth() {
     return width / zoom;
   }
 
-  /** The height of the visible area in world-space, accounting for zoom. */
   public float getViewHeight() {
     return height / zoom;
   }
 
-  /** The left edge of the visible area in world-space. */
   public float getViewX() {
     return scroll.x + getViewMarginX();
   }
 
-  /** The top edge of the visible area in world-space. */
   public float getViewY() {
     return scroll.y + getViewMarginY();
   }
 
-  /** Alias for {@link #getViewX()}. */
   public float getViewLeft() {
     return getViewX();
   }
 
-  /** Alias for {@link #getViewY()}. */
   public float getViewTop() {
     return getViewY();
   }
 
-  /** The right edge of the visible area in world-space. */
   public float getViewRight() {
     return getViewX() + getViewWidth();
   }
 
-  /** The bottom edge of the visible area in world-space. */
   public float getViewBottom() {
     return getViewY() + getViewHeight();
   }
 
-  /** Margin cut off on each side horizontally by zoom, in world-space. */
   public float getViewMarginX() {
     return (width - getViewWidth()) / 2f;
   }
 
-  /** Margin cut off on each side vertically by zoom, in world-space. */
   public float getViewMarginY() {
     return (height - getViewHeight()) / 2f;
   }
 
-  /** Margin cut off on the left by zoom. */
   public float getViewMarginLeft() {
     return getViewMarginX();
   }
 
-  /** Margin cut off on the right by zoom. */
   public float getViewMarginRight() {
     return getViewMarginX();
   }
 
-  /** Margin cut off on the top by zoom. */
   public float getViewMarginTop() {
     return getViewMarginY();
   }
 
-  /** Margin cut off on the bottom by zoom. */
   public float getViewMarginBottom() {
     return getViewMarginY();
   }
 
-  /**
-   * Returns a {@link Rectangle} describing the view margins (position = margin offsets, size = visible area).
-   *
-   * @return A new rectangle with the margin bounds.
-   */
   public Rectangle getViewMarginRect() {
     return tmpRect.set(getViewMarginLeft(), getViewMarginTop(), getViewWidth(), getViewHeight());
   }
 
-  /**
-   * Returns the current zoom level. {@code 1} = 1:1, {@code 2} = 2x magnification.
-   * Changing zoom affects all view properties ({@link #getViewWidth()}, etc.).
-   */
   public float getZoom() {
     return zoom;
   }
@@ -988,47 +1041,102 @@ public class FlixelCamera extends FlixelBasic {
     }
   }
 
-  /** The horizontal scale factor derived from zoom. */
   public float getScaleX() {
     return zoom;
   }
 
-  /** The vertical scale factor derived from zoom. */
   public float getScaleY() {
     return zoom;
   }
 
-  /**
-   * Product of the camera's {@link #getScaleX()} and the game's scale mode.
-   * For a default setup this equals {@link #getScaleX()}.
-   */
   public float getTotalScaleX() {
     return getScaleX();
   }
 
-  /**
-   * Product of the camera's {@link #getScaleY()} and the game's scale mode.
-   * For a default setup this equals {@link #getScaleY()}.
-   */
   public float getTotalScaleY() {
     return getScaleY();
   }
 
-  /**
-   * Sets the display position of this camera.
-   *
-   * @param x The new X display position.
-   * @param y The new Y display position.
-   */
   public void setPosition(float x, float y) {
     this.x = x;
     this.y = y;
   }
 
   /**
+   * Sets the screen-region mode for this camera.
+   *
+   * <p>
+   * This changes how {@link #x}/{@link #y} and region sizes are interpreted when placing the viewport rectangle
+   * on screen. It does not change world-space object movement, physics, or camera follow math.
+   *
+   * @param regionMode The new region mode. {@code null} is ignored.
+   */
+  public void setRegionMode(@NotNull RegionMode regionMode) {
+    if (regionMode == null) {
+      return;
+    }
+    this.regionMode = regionMode;
+  }
+
+  /**
+   * Returns the current screen-region mode.
+   */
+  public RegionMode getRegionMode() {
+    return regionMode;
+  }
+
+  /**
+   * Sets the camera's screen rectangle in pixels.
+   *
+   * <p>
+   * Interpretation depends on {@link #regionMode}:
+   * top-left anchored, bottom-left anchored, or center anchored.
+   *
+   * @param x Region X coordinate in pixels.
+   * @param y Region Y coordinate in pixels.
+   * @param width Region width in pixels.
+   * @param height Region height in pixels.
+   */
+  public void setScreenRegion(float x, float y, int width, int height) {
+    this.regionX = x;
+    this.regionY = y;
+    this.regionWidth = width;
+    this.regionHeight = height;
+    this.hasCustomPixelRegion = true;
+  }
+
+  /**
+   * Sets the camera's screen rectangle in normalized coordinates (0..1), relative to window size.
+   *
+   * <p>
+   * This is used only when {@link #regionMode} is {@link RegionMode#NORMALIZED_RECT}.
+   * Normalized coordinates use a top-left origin (Y increases downward) for consistency with HaxeFlixel-style layout.
+   *
+   * @param x Normalized X position (0..1).
+   * @param y Normalized Y position (0..1).
+   * @param width Normalized width (0..1).
+   * @param height Normalized height (0..1).
+   */
+  public void setScreenRegionNormalized(float x, float y, float width, float height) {
+    normalizedRegionX = x;
+    normalizedRegionY = y;
+    normalizedRegionWidth = width;
+    normalizedRegionHeight = height;
+  }
+
+  /**
+   * Clears the custom pixel region set by {@link #setScreenRegion(float, float, int, int)}.
+   *
+   * <p>
+   * After clearing, pixel-based modes fall back to legacy fields ({@link #x}, {@link #y}, {@link #width}, {@link #height}).
+   */
+  public void clearScreenRegion() {
+    hasCustomPixelRegion = false;
+  }
+
+  /**
    * Sets the zoom-based scale of this camera. Because cameras use a single zoom
-   * value, this
-   * sets zoom to the average of {@code scaleX} and {@code scaleY}.
+   * value, this sets zoom to the average of {@code scaleX} and {@code scaleY}.
    *
    * @param scaleX The desired horizontal scale.
    * @param scaleY The desired vertical scale.
@@ -1049,8 +1157,7 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Copies the bounds, follow target, deadzone info, and scroll from another
-   * camera.
+   * Copies the bounds, follow target, deadzone info, and scroll from another camera.
    *
    * @param other The camera to copy from.
    * @return This camera for chaining.
@@ -1060,6 +1167,18 @@ public class FlixelCamera extends FlixelBasic {
     y = other.y;
     width = other.width;
     height = other.height;
+    useSubScreenViewport = other.useSubScreenViewport;
+    centerCameraOnResize = other.centerCameraOnResize;
+    regionMode = other.regionMode;
+    hasCustomPixelRegion = other.hasCustomPixelRegion;
+    regionX = other.regionX;
+    regionY = other.regionY;
+    regionWidth = other.regionWidth;
+    regionHeight = other.regionHeight;
+    normalizedRegionX = other.normalizedRegionX;
+    normalizedRegionY = other.normalizedRegionY;
+    normalizedRegionWidth = other.normalizedRegionWidth;
+    normalizedRegionHeight = other.normalizedRegionHeight;
     scroll.set(other.scroll);
 
     target = other.target;
@@ -1079,16 +1198,11 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Called by the game front end on window resize. Triggers repositioning of
-   * internal display
-   * objects.
+   * Called by the game's front-end on window resize. Triggers repositioning of internal display objects.
    */
   public void onResize() {
-    viewport.update(
-      Flixel.getWindowWidth(),
-      Flixel.getWindowHeight(),
-      true
-    );
+    // Use the same logic as update(...) so x/y/width/height-based split regions remain stable.
+    update(resolveWindowWidth(), resolveWindowHeight(), centerCameraOnResize);
   }
 
   /**
@@ -1134,8 +1248,151 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /**
-   * Preset dead zone styles used with
-   * {@link #follow(FlixelObject, FollowStyle, float)}.
+   * Window width for defaults: {@link Flixel#getViewWidth()} when {@link Flixel#getGame()} exists, else
+   * {@link com.badlogic.gdx.Graphics#getWidth()}.
+   */
+  private static int resolveWindowWidth() {
+    if (Flixel.getGame() != null) {
+      return Flixel.getViewWidth();
+    }
+    if (Gdx.graphics != null) {
+      return Math.max(1, Gdx.graphics.getWidth());
+    }
+    return 1;
+  }
+
+  /**
+   * Window height for defaults: {@link Flixel#getViewHeight()} when {@link Flixel#getGame()} exists, else
+   * {@link com.badlogic.gdx.Graphics#getHeight()}.
+   */
+  private static int resolveWindowHeight() {
+    if (Flixel.getGame() != null) {
+      return Flixel.getViewHeight();
+    }
+    if (Gdx.graphics != null) {
+      return Math.max(1, Gdx.graphics.getHeight());
+    }
+    return 1;
+  }
+
+  /** Target updates per second for follow lerp; matches {@link FlixelGame#getFramerate()} when in FlixelGDX. */
+  private static float resolveTargetFramerate() {
+    FlixelGame game = Flixel.getGame();
+    if (game != null) {
+      return game.getFramerate();
+    }
+    if (Gdx.graphics != null) {
+      int hz = Gdx.graphics.getDisplayMode().refreshRate;
+      if (hz > 0) {
+        return hz;
+      }
+    }
+    return 60f;
+  }
+
+  /**
+   * Fits the world into {@link #width}x{@link #height} pixels, then places that rectangle at {@link #x},{@link #y}
+   * (top-left origin, Y down, converted to libGDX bottom-left for {@code glViewport}).
+   */
+  private void updateSubScreenViewport(int screenWidth, int screenHeight, boolean centerCamera) {
+    resolveScreenRegionTopLeft(screenWidth, screenHeight, tmpRect);
+    int rx = Math.round(tmpRect.x);
+    int ryTop = Math.round(tmpRect.y);
+    int rw = Math.max(1, Math.round(tmpRect.width));
+    int rh = Math.max(1, Math.round(tmpRect.height));
+    int regionBottomY = screenHeight - ryTop - rh;
+
+    viewport.update(rw, rh, centerCamera);
+    int fittedX = viewport.getScreenX();
+    int fittedY = viewport.getScreenY();
+    int fittedW = viewport.getScreenWidth();
+    int fittedH = viewport.getScreenHeight();
+
+    viewport.setScreenBounds(
+      rx + fittedX,
+      regionBottomY + fittedY,
+      fittedW,
+      fittedH);
+    viewport.apply(centerCamera);
+  }
+
+  private boolean shouldUseSubScreenViewport(int screenWidth, int screenHeight) {
+    if (useSubScreenViewport || hasCustomPixelRegion || regionMode != RegionMode.PIXEL_TOP_LEFT) {
+      return true;
+    }
+    FlixelGame game = Flixel.getGame();
+    if (game == null || game.getCameras() == null || game.getCameras().size <= 1) {
+      return false;
+    }
+    boolean coversFullWindow = x <= 0f && y <= 0f && width >= screenWidth && height >= screenHeight;
+    if (coversFullWindow) {
+      return false;
+    }
+    boolean horizontalStrip = width < screenWidth && Math.abs(height - screenHeight) <= 1;
+    boolean verticalStrip = height < screenHeight && Math.abs(width - screenWidth) <= 1;
+    boolean positioned = x != 0f || y != 0f;
+    return horizontalStrip || verticalStrip || positioned;
+  }
+
+  /**
+   * Resolves the desired screen region to top-left pixel coordinates.
+   *
+   * <p>
+   * This method is the single source of truth for how {@link #regionMode} interprets region coordinates.
+   * The returned rectangle uses top-left screen origin semantics (Y down). Callers should convert to libGDX
+   * bottom-left coordinates right before {@link Viewport#setScreenBounds(int, int, int, int)}.
+   */
+  private void resolveScreenRegionTopLeft(int screenWidth, int screenHeight, Rectangle out) {
+    int resolvedRegionWidth = hasCustomPixelRegion
+      ? regionWidth
+      : ((width > 0) ? width : screenWidth);
+    int resolvedRegionHeight = hasCustomPixelRegion
+      ? regionHeight
+      : ((height > 0) ? height : screenHeight);
+    resolvedRegionWidth = Math.max(1, resolvedRegionWidth);
+    resolvedRegionHeight = Math.max(1, resolvedRegionHeight);
+    float px = hasCustomPixelRegion ? regionX : x;
+    float py = hasCustomPixelRegion ? regionY : y;
+
+    float topLeftX;
+    float topLeftY;
+
+    switch (regionMode) {
+      case PIXEL_BOTTOM_LEFT -> {
+        topLeftX = px;
+        topLeftY = screenHeight - py - resolvedRegionHeight;
+      }
+      case PIXEL_CENTERED -> {
+        topLeftX = px - (resolvedRegionWidth / 2f);
+        topLeftY = py - (resolvedRegionHeight / 2f);
+      }
+      case NORMALIZED_RECT -> {
+        float nx = MathUtils.clamp(normalizedRegionX, 0f, 1f);
+        float ny = MathUtils.clamp(normalizedRegionY, 0f, 1f);
+        float nw = MathUtils.clamp(normalizedRegionWidth, 0f, 1f);
+        float nh = MathUtils.clamp(normalizedRegionHeight, 0f, 1f);
+        float resolvedW = Math.max(1f, nw * screenWidth);
+        float resolvedH = Math.max(1f, nh * screenHeight);
+        topLeftX = nx * screenWidth;
+        topLeftY = ny * screenHeight;
+        out.set(topLeftX, topLeftY, resolvedW, resolvedH);
+        return;
+      }
+      case PIXEL_TOP_LEFT -> {
+        topLeftX = px;
+        topLeftY = py;
+      }
+      default -> {
+        topLeftX = px;
+        topLeftY = py;
+      }
+    }
+
+    out.set(topLeftX, topLeftY, resolvedRegionWidth, resolvedRegionHeight);
+  }
+
+  /**
+   * Determines how a {@link FlixelCamera} follows a {@link FlixelObject}.
    */
   public enum FollowStyle {
 
@@ -1179,7 +1436,65 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   /** Axes on which an effect (e.g. shake) can operate. */
-  public enum FlxAxes {
+  public enum Axes {
     X, Y, XY
+  }
+
+  /**
+   * Defines how a {@link FlixelCamera}'s screen region coordinates are interpreted when placing its viewport on the window.
+   *
+   * <p>
+   * These modes affect only screen-space camera placement/clipping. They do not change world coordinates,
+   * object movement, physics directions, or camera follow logic.
+   */
+  public enum RegionMode {
+
+    /**
+     * Pixel coordinates with a top-left origin (X right, Y down) for the camera region.
+     *
+     * <p>
+     * Before calling libGDX {@link Viewport#setScreenBounds(int, int, int, int)}, FlixelGDX converts this top-left
+     * region to libGDX's bottom-left screen bounds. This is also the default region mode.
+     *
+     * <p>
+     * Recommended for users familiar with HaxeFlixel-style screen layout semantics.
+     */
+    PIXEL_TOP_LEFT,
+
+    /**
+     * Pixel coordinates with a bottom-left origin (X right, Y up) for the camera region.
+     *
+     * <p>
+     * This is already in libGDX/OpenGL viewport terms, so conversion to {@link Viewport#setScreenBounds(int, int, int, int)}
+     * is direct.
+     *
+     * <p>
+     * Recommended for users who prefer native libGDX viewport coordinate conventions.
+     */
+    PIXEL_BOTTOM_LEFT,
+
+    /**
+     * Pixel coordinates where {@code x/y} represent the region center.
+     *
+     * <p>
+     * FlixelGDX first resolves a top-left rectangle from the center anchor, then converts to libGDX bottom-left
+     * screen bounds for {@link Viewport#setScreenBounds(int, int, int, int)}.
+     *
+     * <p>
+     * Recommended for users who want stable split-screen or picture-in-picture placement across resize/maximize events.
+     */
+    PIXEL_CENTERED,
+
+    /**
+     * Normalized region values (0..1) relative to current window size, using top-left origin semantics.
+     *
+     * <p>
+     * The normalized rectangle is converted to pixel top-left coordinates, then converted again to libGDX bottom-left
+     * bounds for {@link Viewport#setScreenBounds(int, int, int, int)}.
+     *
+     * <p>
+     * Recommended for users who want resolution-independent camera layouts that scale with window size.
+     */
+    NORMALIZED_RECT
   }
 }

@@ -111,7 +111,18 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     members.end();
   }
 
+  @Override
   public SnapshotArray<FlixelBasic> getMembers() {
     return members;
+  }
+
+  @Override
+  public int getMaxSize() {
+    return maxSize;
+  }
+
+  @Override
+  public void setMaxSize(int maxSize) {
+    this.maxSize = Math.max(0, maxSize);
   }
 }

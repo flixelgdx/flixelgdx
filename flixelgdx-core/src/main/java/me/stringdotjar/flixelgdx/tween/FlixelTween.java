@@ -51,7 +51,7 @@ public class FlixelTween implements Pool.Poolable {
   /** Is {@code this} tween tweening backwards? */
   protected boolean backward = false;
 
-  /** Does {@code this} tween need to be restarted internally from {@link #finish()} for looping / ping-pong tweens? */
+  /** Set during {@link #finish()} when restarting for LOOPING/PINGPONG so subclasses keep original start values. */
   protected boolean internalRestart = false;
 
   /** Default constructor for pooling purposes. */
@@ -67,10 +67,15 @@ public class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Returns a fluent builder for the given tween type. Pass both the tween class and its builder
-   * class so the return type is the concrete builder ({@code B}), giving full IDE support for
-   * type-specific methods ({@code addGoal}, {@code from}, {@code to}, etc.) and common ones
-   * ({@code setDuration}, {@code setEase}), then {@link FlixelAbstractTweenBuilder#start()}.
+   * Returns a fluent builder for the given tween type.
+   *
+   * <p>The tween type must be registered (e.g. via {@link FlixelTweenManager#registerTweenType}); if not, then
+   * this method will throw an {@link IllegalArgumentException}.
+   *
+   * <p>Pass both the tween class and its builder class so the
+   * return type is the concrete builder ({@code B}), giving full IDE support for type-specific methods
+   * ({@code addGoal()}, {@code from()}, {@code to()}, etc.) and common ones ({@code setDuration},
+   * {@code setEase}), then {@link FlixelAbstractTweenBuilder#start()}.
    *
    * <p>Example (property):
    * <pre>{@code
@@ -80,25 +85,24 @@ public class FlixelTween implements Pool.Poolable {
    *   .start();
    * }</pre>
    *
-   * <p>Example (num):
-   * <pre>{@code
-   * FlixelNumTween tween = FlixelTween.tween(FlixelNumTween.class, FlixelNumTweenBuilder.class)
-   *   .from(0f)
-   *   .to(1f)
-   *   .setCallback(v -> {})
-   *   .setDuration(1f)
-   *   .start();
-   * }</pre>
-   *
-   * @param tweenType The tween class (e.g. {@link FlixelPropertyTween}.class).
+   * @param tweenType The tween class (e.g. {@link FlixelPropertyTween}.class). Must be registered.
    * @param builderType The corresponding builder class (e.g. {@link FlixelPropertyTweenBuilder}.class).
    * @return A new builder instance of type {@code B} for chaining.
+   * @throws IllegalArgumentException If {@code tweenType} is not registered, or the registered builder could not be instantiated.
    */
   public static <T extends FlixelTween, B extends FlixelAbstractTweenBuilder<T, B>> B tween(Class<T> tweenType, Class<B> builderType) {
+    Class<?> registeredBuilderClass = globalManager.getBuilderClass(tweenType);
+    if (!builderType.isAssignableFrom(registeredBuilderClass)) {
+      throw new IllegalArgumentException(
+          "Registered builder for " + tweenType.getName() + " is " + registeredBuilderClass.getName()
+              + ", which is not assignable to " + builderType.getName());
+    }
     try {
-      return builderType.getDeclaredConstructor().newInstance();
+      @SuppressWarnings("unchecked")
+      B builder = (B) registeredBuilderClass.getDeclaredConstructor().newInstance();
+      return builder;
     } catch (ReflectiveOperationException e) {
-      throw new IllegalArgumentException("Could not instantiate builder " + builderType.getName() + ". It must have a no-arg constructor.", e);
+      throw new IllegalArgumentException("Could not instantiate builder " + registeredBuilderClass.getName() + ". It must have a no-arg constructor.", e);
     }
   }
 
@@ -112,7 +116,8 @@ public class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings, FlixelVarTween.FunkinVarTweenUpdateCallback updateCallback) {
-    return globalManager.addTween(new FlixelVarTween(object, tweenSettings, updateCallback));
+    FlixelVarTween tween = globalManager.obtainTween(FlixelVarTween.class, () -> new FlixelVarTween(object, tweenSettings, updateCallback));
+    return globalManager.addTween(tween);
   }
 
   /**
@@ -123,7 +128,8 @@ public class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween tween(FlixelTweenSettings tweenSettings) {
-    return globalManager.addTween(new FlixelPropertyTween(tweenSettings));
+    FlixelPropertyTween tween = globalManager.obtainTween(FlixelPropertyTween.class, () -> new FlixelPropertyTween(tweenSettings));
+    return globalManager.addTween(tween);
   }
 
   /**
@@ -137,14 +143,15 @@ public class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween num(float from, float to, FlixelTweenSettings tweenSettings, FlixelNumTween.FlixelNumTweenUpdateCallback updateCallback) {
-    return globalManager.addTween(new FlixelNumTween(from, to, tweenSettings, updateCallback));
+    FlixelNumTween tween = globalManager.obtainTween(FlixelNumTween.class, () -> new FlixelNumTween(from, to, tweenSettings, updateCallback));
+    return globalManager.addTween(tween);
   }
 
   /**
    * Starts {@code this} tween and resets every value to its initial state.
    */
   public FlixelTween start() {
-    if (tweenSettings.getDuration() <= 0) {
+    if (tweenSettings != null && tweenSettings.getDuration() <= 0) {
       active = false;
       return this;
     }
@@ -190,7 +197,7 @@ public class FlixelTween implements Pool.Poolable {
       scale = ease.compute(scale);
     }
     if (backward) {
-      scale = 1 - scale;
+      scale = 1f - scale;
     }
     if (secondsSinceStart >= delay) {
       if (onStart != null) {
@@ -211,32 +218,29 @@ public class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Finishes {@code this} tween and determine to remove by the Tween type.
-   * 
-   * <p>If {@code this} tween's {@link FlixelTweenType} is {@link FlixelTweenType#LOOPING} or 
-   * {@link FlixelTweenType#PINGPONG}, then {@link FlixelTween#restart} is called; otherwise, the
-   * tween is removed from the manager and any callback on completion is called.
+   * Called when the tween reaches the end of its duration. Invokes {@code onComplete} (including for LOOPING/PINGPONG each cycle).
+   * LOOPING/PINGPONG restart (PINGPONG flips direction). Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop updating and no longer overwrite the target; only ONESHOT is removed from the manager.
    */
   public void finish() {
     executions++;
-    secondsSinceStart = 0f;
 
-    var type = tweenSettings.getType();
+    var onComplete = tweenSettings.getOnComplete();
+    if (onComplete != null) {
+      onComplete.run(this);
+    }
 
-    // If the tween is looping or ping-pong, restart the tween.
-    if (type.equals(FlixelTweenType.LOOPING) || type.equals(FlixelTweenType.PINGPONG)) {
-      if (type.equals(FlixelTweenType.PINGPONG)) {
+    FlixelTweenType type = tweenSettings.getType();
+    if (type.isLooping()) {
+      secondsSinceStart = 0f;
+      if (type == FlixelTweenType.PINGPONG) {
         backward = !backward;
       }
       internalRestart = true;
       restart();
       internalRestart = false;
     } else {
-      var onComplete = tweenSettings.getOnComplete();
-      if (onComplete != null) {
-        onComplete.run(this);
-      }
-      if ((type.equals(FlixelTweenType.ONESHOT) || type.equals(FlixelTweenType.BACKWARD)) && manager != null) {
+      active = false;
+      if (type.removeOnFinish() && manager != null) {
         manager.removeTween(this, true);
       }
     }
@@ -305,8 +309,8 @@ public class FlixelTween implements Pool.Poolable {
       active = false;
       return;
     }
-    secondsSinceStart = 0.0f;
-    scale = 0.0f;
+    secondsSinceStart = 0f;
+    scale = 0f;
     active = true;
     finished = false;
   }
@@ -332,14 +336,13 @@ public class FlixelTween implements Pool.Poolable {
    * object, its settings or its callback function.
    */
   public void resetBasic() {
-    scale = 0.0f;
-    secondsSinceStart = 0.0f;
+    scale = 0f;
+    secondsSinceStart = 0f;
     executions = 0;
     paused = false;
     active = true;
     finished = false;
-    backward = tweenSettings != null
-      && this.getTweenSettings().getType().equals(FlixelTweenType.BACKWARD);
+    backward = tweenSettings != null && tweenSettings.getType().isBackward();
   }
 
   public FlixelTweenSettings getTweenSettings() {
@@ -373,7 +376,7 @@ public class FlixelTween implements Pool.Poolable {
 
   public FlixelTween setManager(@NotNull FlixelTweenManager newManager) {
     if (manager != null) {
-      manager.removeTween(this, false);
+      manager.removeTween(this, true);
     }
     manager = newManager;
     manager.getActiveTweens().add(this);

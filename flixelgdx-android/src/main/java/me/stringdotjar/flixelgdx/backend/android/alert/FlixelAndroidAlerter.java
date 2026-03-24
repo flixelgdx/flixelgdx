@@ -2,7 +2,7 @@ package me.stringdotjar.flixelgdx.backend.android.alert;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import me.stringdotjar.flixelgdx.backend.FlixelAlerter;
+import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 
 public class FlixelAndroidAlerter implements FlixelAlerter {
 

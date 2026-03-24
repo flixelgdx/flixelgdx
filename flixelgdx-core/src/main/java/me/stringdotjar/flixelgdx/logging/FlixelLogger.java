@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -27,9 +29,9 @@ import java.util.function.Consumer;
  */
 public class FlixelLogger {
 
-  /** 
-   * Whether to write logs to a file when {@link #startFileLogging()} is called. 
-   * 
+  /**
+   * Whether to write logs to a file when {@link #startFileLogging()} is called.
+   *
    * <p>Once {@link #startFileLogging()} is called, setting this will have no effect.
    * You must call {@link #stopFileLogging()} before changing this again.
    */
@@ -58,6 +60,12 @@ public class FlixelLogger {
   private volatile boolean logWriterShutdownRequested = false;
   private Thread logThread;
   private String customLogsFolderPath = null; // Null means use default (IDE root or JAR dir).
+
+  /** Listeners notified whenever a log message is produced (used by the debug overlay). */
+  private final List<Consumer<FlixelLogEntry>> logListeners = new CopyOnWriteArrayList<>();
+
+  /** Registered debug console entries that supply custom lines to the overlay console. */
+  private final List<FlixelDebugConsoleEntry> consoleEntries = new CopyOnWriteArrayList<>();
 
   /**
    * Creates a logger that outputs to the console and a file.
@@ -261,6 +269,51 @@ public class FlixelLogger {
     setFileLineConsumer(null);
   }
 
+  /**
+   * Registers a listener that will be notified every time a log message is produced.
+   *
+   * @param listener A consumer that receives a {@link FlixelLogEntry}.
+   */
+  public void addLogListener(Consumer<FlixelLogEntry> listener) {
+    if (listener != null) {
+      logListeners.add(listener);
+    }
+  }
+
+  /**
+   * Removes a previously registered log listener.
+   *
+   * @param listener The listener to remove.
+   */
+  public void removeLogListener(Consumer<FlixelLogEntry> listener) {
+    logListeners.remove(listener);
+  }
+
+  /**
+   * Registers a custom console entry whose lines will be shown in the debug overlay console.
+   *
+   * @param entry The entry to register.
+   */
+  public void addConsoleEntry(FlixelDebugConsoleEntry entry) {
+    if (entry != null) {
+      consoleEntries.add(entry);
+    }
+  }
+
+  /**
+   * Removes a previously registered console entry.
+   *
+   * @param entry The entry to remove.
+   */
+  public void removeConsoleEntry(FlixelDebugConsoleEntry entry) {
+    consoleEntries.remove(entry);
+  }
+
+  /** Returns the list of registered debug console entries. */
+  public List<FlixelDebugConsoleEntry> getConsoleEntries() {
+    return consoleEntries;
+  }
+
   public void info(Object message) {
     info(defaultTag, message);
   }
@@ -351,6 +404,14 @@ public class FlixelLogger {
         + colorText(rawMessage, color, false, true, false);
     }
     System.out.println(coloredLog);
+
+    // Notify in-game log listeners (e.g. the debug overlay console).
+    if (!logListeners.isEmpty()) {
+      FlixelLogEntry entry = new FlixelLogEntry(level, tag, rawMessage);
+      for (Consumer<FlixelLogEntry> listener : logListeners) {
+        listener.accept(entry);
+      }
+    }
 
     // File: always detailed (plain, no ANSI).
     if (fileLineConsumer != null) {

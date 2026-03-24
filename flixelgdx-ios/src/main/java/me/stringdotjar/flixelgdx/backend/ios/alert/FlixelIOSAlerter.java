@@ -2,7 +2,9 @@ package me.stringdotjar.flixelgdx.backend.ios.alert;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
-import me.stringdotjar.flixelgdx.backend.FlixelAlerter;
+
+import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
+
 import org.robovm.apple.dispatch.DispatchQueue;
 import org.robovm.apple.uikit.UIAlertAction;
 import org.robovm.apple.uikit.UIAlertActionStyle;

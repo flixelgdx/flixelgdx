@@ -1,4 +1,4 @@
-package me.stringdotjar.flixelgdx.backend;
+package me.stringdotjar.flixelgdx.backend.alert;
 
 /**
  * Interface for displaying alert notifications to the user.

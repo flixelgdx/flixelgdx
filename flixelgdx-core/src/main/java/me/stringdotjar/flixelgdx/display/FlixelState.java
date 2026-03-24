@@ -5,10 +5,12 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
 import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.FlixelBasic;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.group.FlixelGroup;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for creating a better screen display with more functionality than the default {@link
@@ -34,9 +36,6 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
    * reduce state creation time, at the cost of greater memory usage.
    */
   public boolean destroySubStates = true;
-
-  /** The background color of {@code this} current state. */
-  protected Color bgColor;
 
   /** The currently active substate opened on top of {@code this} state. */
   private FlixelSubState subState;
@@ -81,25 +80,26 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
    * Opens a {@link FlixelSubState} on top of {@code this} state. If there is already
    * an active substate, it will be closed first.
    *
-   * @param subState The substate to open.
+   * @param toOpen The substate to open.
    */
-  public void openSubState(FlixelSubState subState) {
-    if (subState == null) {
+  public void openSubState(FlixelSubState toOpen) {
+    if (toOpen == null) {
       return;
     }
-    if (this.subState == subState) {
+    if (this.subState == toOpen) {
       return;
     }
     if (this.subState != null) {
       closeSubState();
     }
 
-    this.subState = subState;
-    subState.parentState = this;
-    subState.create();
+    this.subState = toOpen;
+    toOpen.parentState = this;
+    toOpen.create();
+    toOpen.syncBackgroundToCameras();
 
-    if (subState.openCallback != null) {
-      subState.openCallback.run();
+    if (toOpen.openCallback != null) {
+      toOpen.openCallback.run();
     }
   }
 
@@ -157,15 +157,14 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   public void resume() {}
 
   @Override
-  public final void hide() {}
+  public void hide() {}
 
-  /**
-   * Disposes {@code this} state, any active substate, and all members. Called automatically
-   * when {@link me.stringdotjar.flixelgdx.Flixel#switchState(FlixelState)} is used, so that
-   * sprites and other objects release their resources.
-   */
   @Override
-  public void dispose() {
+  public void destroy() {
+    super.destroy();
+
+    hide();
+
     if (subState != null) {
       closeSubState();
     }
@@ -179,8 +178,19 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
         obj.destroy();
       }
     }
+
     members.end();
     members.clear();
+  }
+
+  /**
+   * Disposes {@code this} state, any active substate, and all members. Called automatically
+   * when {@link me.stringdotjar.flixelgdx.Flixel#switchState(FlixelState)} is used, so that
+   * sprites and other objects release their resources.
+   */
+  @Override
+  public void dispose() {
+    destroy();
   }
 
   /**
@@ -201,7 +211,34 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
     return subState;
   }
 
+  /**
+   * Reads the first camera's {@link FlixelCamera#bgColor}.
+   *
+   * @return The background color of the first camera.
+   */
   public Color getBgColor() {
-    return (bgColor != null) ? bgColor : Color.BLACK;
+    FlixelGame game = Flixel.getGame();
+    if (game == null) {
+      return Color.BLACK;
+    }
+    return game.getCamera().bgColor;
+  }
+
+  /**
+   * Assigns every listed camera's {@link FlixelCamera#bgColor}.
+   *
+   * @param value The background color to set.
+   */
+  public void setBgColor(@Nullable Color value) {
+    if (value == null) {
+      return;
+    }
+    FlixelGame game = Flixel.getGame();
+    if (game == null) {
+      return;
+    }
+    for (FlixelCamera cam : game.getCameras()) {
+      cam.bgColor.set(value);
+    }
   }
 }

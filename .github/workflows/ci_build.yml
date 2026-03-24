@@ -62,7 +62,7 @@ jobs:
 
       - name: Build (Android)
         if: matrix.platform == 'android'
-        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-android:assembleRelease --no-daemon
+        run: ./gradlew -PincludeAndroid=true :flixelgdx-core:assemble :flixelgdx-android:assembleRelease --no-daemon
         shell: bash
 
       - name: Build (iOS)

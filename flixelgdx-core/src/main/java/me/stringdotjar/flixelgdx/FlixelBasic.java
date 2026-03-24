@@ -12,7 +12,7 @@ import me.stringdotjar.flixelgdx.display.FlixelCamera;
  *
  * @see <a href="https://api.haxeflixel.com/flixel/FlxBasic.html">FlxBasic (HaxeFlixel)</a>
  */
-public class FlixelBasic implements Disposable {
+public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable, Disposable {
 
   private static int idEnumerator = 0;
 
@@ -46,6 +46,7 @@ public class FlixelBasic implements Disposable {
    *
    * @param elapsed Seconds elapsed since the last frame.
    */
+  @Override
   public void update(float elapsed) {}
 
   /**
@@ -54,21 +55,23 @@ public class FlixelBasic implements Disposable {
    *
    * @param batch The batch used for rendering.
    */
+  @Override
   public void draw(Batch batch) {}
 
   /**
    * Cleans up this object so it can be garbage-collected. A destroyed {@code FlixelBasic}
    * should not be used anymore. Use {@link #kill()} if you only want to disable it
    * temporarily and {@link #revive()} it later.
-   * 
-   * <p>Override this function to clean up any resources used by this object, 
+   *
+   * <p>Override this function to clean up any resources used by this object,
    * such as textures, fonts, sounds, etc.
-   * 
+   *
    * <p>This function is called automatically when {@link #dispose()} is called,
    * so you don't need to call it manually.
-   * 
+   *
    * @see #dispose()
    */
+  @Override
   public void destroy() {
     exists = false;
     active = false;

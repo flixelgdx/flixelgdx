@@ -40,6 +40,23 @@ public class FlixelNumTween extends FlixelTween {
     this.updateCallback = updateCallback;
   }
 
+  /**
+   * Reconfigures this tween for reuse (e.g. from pool). Call before {@link #start()}.
+   *
+   * @param from Start value.
+   * @param to End value.
+   * @param updateCallback Callback for each updated value.
+   * @return this, for chaining.
+   */
+  public FlixelNumTween setTarget(float from, float to, FlixelNumTweenUpdateCallback updateCallback) {
+    this.start = from;
+    this.end = to;
+    this.value = from;
+    this.range = to - from;
+    this.updateCallback = updateCallback;
+    return this;
+  }
+
   @Override
   protected void updateTweenValues() {
     if (updateCallback == null) {

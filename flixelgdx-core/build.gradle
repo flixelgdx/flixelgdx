@@ -44,6 +44,7 @@ configurations.configureEach {
 
 dependencies {
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.github.tommyettinger:anim8-gdx:$anim8Version"
   api "com.github.tommyettinger:libgdx-utils:$utilsVersion"

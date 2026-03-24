@@ -4,6 +4,8 @@ import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
+import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
+import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
 import me.stringdotjar.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
 
@@ -25,22 +27,35 @@ import me.stringdotjar.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
 public class FlixelTeaVMLauncher {
 
   /**
-   * Launches the web version of the game with the given game instance.
+   * Launches the web version of the game in {@link FlixelRuntimeMode#RELEASE RELEASE} mode.
+   *
+   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
+   */
+  public static void launch(FlixelGame game) {
+    launch(game, FlixelRuntimeMode.RELEASE);
+  }
+
+  /**
+   * Launches the web version of the game with the given runtime mode.
    *
    * <p>Call this from your TeaVM entry point (the class configured as {@code mainClass} in the
    * TeaVM block of your web module's build.gradle). Create your {@link FlixelGame} subclass
    * instance and pass it here.
    *
-   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
+   * @param game        The game instance to launch (e.g. {@code new MyGame(...)}).
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
-  public static void launch(FlixelGame game) {
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
     Flixel.initialize(game, new FlixelTeaVMAlerter(), new TeaVMStackTraceProvider());
+    Flixel.setReflection(new FlixelDefaultReflectionHandler());
+    Flixel.setRuntimeMode(runtimeMode);
+    Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
 
     WebApplicationConfiguration configuration = new WebApplicationConfiguration();
     configuration.canvasID = "flixelgdx-canvas";
-    if (game.getWindowWidth() > 0 && game.getWindowHeight() > 0) {
-      configuration.width = game.getWindowWidth();
-      configuration.height = game.getWindowHeight();
+    if (game.getViewWidth() > 0 && game.getViewHeight() > 0) {
+      configuration.width = game.getViewWidth();
+      configuration.height = game.getViewHeight();
     }
 
     new WebApplication(game, configuration);

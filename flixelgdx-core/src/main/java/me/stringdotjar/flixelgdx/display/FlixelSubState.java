@@ -25,6 +25,9 @@ public abstract class FlixelSubState extends FlixelState {
   /** The parent state that opened this substate. Set internally by {@link FlixelState#openSubState}. */
   FlixelState parentState;
 
+  /** Preserved so {@link #syncBackgroundToCameras()} can run after the game exists (constructor may run earlier). */
+  private final Color subStateBackground;
+
   /**
    * Creates a new substate with a clear background.
    */
@@ -39,7 +42,13 @@ public abstract class FlixelSubState extends FlixelState {
    */
   public FlixelSubState(Color bgColor) {
     super();
-    this.bgColor = bgColor;
+    subStateBackground = bgColor != null ? new Color(bgColor) : new Color(Color.CLEAR);
+    setBgColor(subStateBackground);
+  }
+
+  /** Re-applies this substate's background to all cameras (needed if the constructor ran before {@link me.stringdotjar.flixelgdx.FlixelGame#create}). */
+  protected void syncBackgroundToCameras() {
+    setBgColor(subStateBackground);
   }
 
   /** Closes this substate by telling the parent state to remove it. */

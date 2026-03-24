@@ -2,11 +2,9 @@ package me.stringdotjar.flixelgdx.input.keyboard;
 
 import com.badlogic.gdx.Input;
 
-import me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepad;
-
 /**
- * Keyboard key codes copied from libGDX {@link Input.Keys} (gamepad buttons are in {@link FlixelGamepad}).
- * Values match Input.Keys for backwards compatibility.
+ * Keyboard key codes used for {@link FlixelKeyInputManager}. Values match {@link com.badlogic.gdx.Input.Keys}
+ * for backwards compatibility with libGDX.
  */
 public final class FlixelKey {
 
@@ -184,7 +182,7 @@ public final class FlixelKey {
   public static final int MAX_KEYCODE = 255;
 
   /**
-   * Resolves a key name (as returned by {@link FlixelKey#toString(int)} or 
+   * Resolves a key name (as returned by {@link FlixelKey#toString(int)} or
    * {@link Input.Keys#toString(int)}) to a key code.
    *
    * @param keyname Key name from {@link FlixelKey#toString(int)}.
@@ -201,7 +199,7 @@ public final class FlixelKey {
    * Returns a human-readable string for the given key code.
    *
    * @param keycode Key code from this class (same values as {@link Input.Keys}).
-   * @return Human-readable key name, or "NONE" if the key code is {@link #NONE} or 
+   * @return Human-readable key name, or "NONE" if the key code is {@link #NONE} or
    * "ANY" if the key code is {@link #ANY}.
    */
   public static String toString(int keycode) {

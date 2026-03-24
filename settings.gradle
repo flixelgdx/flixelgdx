@@ -3,4 +3,22 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
 
-include 'flixelgdx-core', 'flixelgdx-lwjgl3', 'flixelgdx-android', 'flixelgdx-ios', 'flixelgdx-teavm', 'flixelgdx-jvm'
+// Android module is optional so the framework can be built without an Android SDK.
+// Enable via: -PincludeAndroid=true (CI / one-off) or includeAndroid=true in local.properties (gitignored).
+def includeAndroidFromCli = gradle.startParameter.projectProperties.get('includeAndroid') == 'true'
+def includeAndroidFromLocal = false
+def localPropsFile = new File(settingsDir, 'local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { stream ->
+        def props = new java.util.Properties()
+        props.load(stream)
+        includeAndroidFromLocal = props.getProperty('includeAndroid', 'false') == 'true'
+    }
+}
+gradle.ext.includeAndroid = includeAndroidFromCli || includeAndroidFromLocal
+
+def modules = ['flixelgdx-core', 'flixelgdx-lwjgl3', 'flixelgdx-ios', 'flixelgdx-teavm', 'flixelgdx-jvm']
+if (gradle.ext.includeAndroid) {
+    modules += 'flixelgdx-android'
+}
+include modules

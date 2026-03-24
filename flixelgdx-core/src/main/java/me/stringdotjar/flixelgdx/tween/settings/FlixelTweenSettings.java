@@ -1,6 +1,7 @@
 package me.stringdotjar.flixelgdx.tween.settings;
 
 import com.badlogic.gdx.utils.Array;
+import me.stringdotjar.flixelgdx.functional.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.FlixelEase;
 import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
@@ -84,6 +85,21 @@ public class FlixelTweenSettings {
    * @return {@code this} tween settings object for chaining.
    */
   public FlixelTweenSettings addGoal(@NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatGetter getter,
+                                     float toValue,
+                                     @NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter setter) {
+    propertyGoals.add(new FlixelTweenPropertyGoal(getter, toValue, setter));
+    return this;
+  }
+
+  /**
+   * Adds a new property goal using the shared {@link FloatSupplier} interface.
+   *
+   * @param getter Supplies the current value of the property at tween start.
+   * @param toValue The value to tween the property to.
+   * @param setter Consumes the interpolated value on every tween update.
+   * @return {@code this} tween settings object for chaining.
+   */
+  public FlixelTweenSettings addGoal(@NotNull FloatSupplier getter,
                                      float toValue,
                                      @NotNull FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter setter) {
     propertyGoals.add(new FlixelTweenPropertyGoal(getter, toValue, setter));
@@ -227,12 +243,17 @@ public class FlixelTweenSettings {
    * @param toValue The value to tween the property to.
    * @param setter Consumes the interpolated value on every tween update.
    */
-  public record FlixelTweenPropertyGoal(@NotNull FlixelTweenPropertyFloatGetter getter, float toValue, @NotNull FlixelTweenPropertyFloatSetter setter) {
+  public record FlixelTweenPropertyGoal(@NotNull FloatSupplier getter, float toValue, @NotNull FlixelTweenPropertyFloatSetter setter) {
 
     /** Supplies a primitive {@code float} without boxing. */
     @FunctionalInterface
-    public interface FlixelTweenPropertyFloatGetter {
+    public interface FlixelTweenPropertyFloatGetter extends FloatSupplier {
       float get();
+
+      @Override
+      default float getAsFloat() {
+        return get();
+      }
     }
 
     /** Consumes a primitive {@code float} without boxing. */
