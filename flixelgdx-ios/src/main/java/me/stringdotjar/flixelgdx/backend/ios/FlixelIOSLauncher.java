@@ -6,6 +6,7 @@ import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.ios.alert.FlixelIOSAlerter;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 
 /**
@@ -51,12 +52,13 @@ public class FlixelIOSLauncher {
    * }
    * }</pre>
    *
-   * @param game        The game instance to launch (e.g. {@code new MyGame(...)}).
+   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    * @return The configured {@link IOSApplication} to return from {@code createApplication()}.
    */
   public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
     Flixel.initialize(game, new FlixelIOSAlerter(), new FlixelDefaultStackTraceProvider());
+    Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
 

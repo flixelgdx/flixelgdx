@@ -15,6 +15,8 @@ import games.rednblack.miniaudio.MiniAudio;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSound;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
+import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
+import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
@@ -68,6 +70,9 @@ public final class Flixel {
 
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   public static FlixelLogger log;
+
+  /** Global reflection service. Use {@code Flixel.reflect.hasField(target, fieldName)}, etc. */
+  public static FlixelReflection reflect = new FlixelUnsupportedReflectionHandler();
 
   /** The global asset manager used to preload and cache assets. */
   public static AssetManager assets;
@@ -673,6 +678,18 @@ public final class Flixel {
 
   public static FlixelStackTraceProvider getStackTraceProvider() {
     return stackTraceProvider;
+  }
+
+  /**
+   * Sets the runtime reflection service implementation.
+   *
+   * @param reflection Reflection service to expose as {@link #reflect}.
+   */
+  public static void setReflection(FlixelReflection reflection) {
+    if (reflection == null) {
+      throw new IllegalArgumentException("Reflection service cannot be null.");
+    }
+    Flixel.reflect = reflection;
   }
 
   public static String getVersion() {

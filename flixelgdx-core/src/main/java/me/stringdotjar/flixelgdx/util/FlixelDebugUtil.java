@@ -82,7 +82,7 @@ public final class FlixelDebugUtil {
       if (member == null) {
         continue;
       }
-      if (member instanceof FlixelDebugDrawable drawable && member.exists && member.visible) {
+      if (member instanceof FlixelDebugDrawable drawable && member.exists) {
         callback.accept(drawable);
       }
       if (member instanceof FlixelGroupable<?> group) {

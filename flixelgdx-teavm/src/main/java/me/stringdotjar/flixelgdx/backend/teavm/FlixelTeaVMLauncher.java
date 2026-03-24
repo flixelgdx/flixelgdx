@@ -4,6 +4,7 @@ import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
+import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
 import me.stringdotjar.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
@@ -46,6 +47,7 @@ public class FlixelTeaVMLauncher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
     Flixel.initialize(game, new FlixelTeaVMAlerter(), new TeaVMStackTraceProvider());
+    Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
 

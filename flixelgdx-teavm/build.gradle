@@ -22,6 +22,89 @@ teavm {
   }
 }
 
+def reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD").toString().trim().toUpperCase(java.util.Locale.ROOT)
+def reflectionProfile = ["SIMPLE", "STANDARD", "ALL"].contains(reflectionProfileRaw) ? reflectionProfileRaw : "STANDARD"
+def reflectionExtraPackages = (findProperty("flixelReflectionExtraPackages") ?: "")
+  .toString()
+  .split(",")
+  .collect { it.trim() }
+  .findAll { !it.isEmpty() }
+
+def generateTeaVmReflectionConfig = tasks.register("generateTeaVmReflectionConfig") {
+  def outputDir = layout.buildDirectory.dir("generated/teavm-config")
+  outputs.dir(outputDir)
+
+  doLast {
+    def out = outputDir.get().file("teavm.json").asFile
+    out.parentFile.mkdirs()
+
+    def classNames = new LinkedHashSet<String>()
+
+    // Add all local TeaVM module classes.
+    sourceSets.main.output.classesDirs.files.each { dir ->
+      if (!dir.exists()) return
+      dir.eachFileRecurse { file ->
+        if (file.name.endsWith(".class")) {
+          def rel = file.path.substring(dir.path.length() + 1).replace(File.separatorChar, '.' as char)
+          classNames.add(rel.substring(0, rel.length() - ".class".length()))
+        }
+      }
+    }
+
+    // Add core classes and profile-selected dependencies.
+    def interestingPrefixes = ["me/stringdotjar/flixelgdx/"]
+    if (reflectionProfile == "STANDARD" || reflectionProfile == "ALL") {
+      interestingPrefixes += "com/badlogic/gdx/"
+    }
+    if (reflectionProfile == "ALL") {
+      interestingPrefixes += [
+        "com/github/tommyettinger/",
+        "games/rednblack/miniaudio/"
+      ]
+    }
+    reflectionExtraPackages.each { pkg ->
+      interestingPrefixes += pkg.replace('.', '/') + "/"
+    }
+    configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+      def file = artifact.file
+      if (!file.name.endsWith(".jar")) return
+      zipTree(file).matching { include "**/*.class" }.visit { details ->
+        if (details.directory) return
+        def path = details.path
+        if (!interestingPrefixes.any { path.startsWith(it) }) return
+        def cls = path.replace('/', '.').substring(0, path.length() - ".class".length())
+        classNames.add(cls)
+      }
+    }
+
+    def classesJson = classNames.collect {
+      """    {
+      "name": "${it}",
+      "allDeclaredFields": true,
+      "allDeclaredMethods": true,
+      "allPublicFields": true,
+      "allPublicMethods": true
+    }"""
+    }.join(",\n")
+
+    out.text = """{
+  "comment": "Auto-generated reflection metadata for FlixelDefaultReflectionHandler (${reflectionProfile}).",
+  "reflection": {
+    "classes": [
+${classesJson}
+    ]
+  }
+}
+"""
+  }
+}
+
+processResources {
+  from(generateTeaVmReflectionConfig) {
+    into ""
+  }
+}
+
 dependencies {
     api project(':flixelgdx-core')
     api "com.github.xpenatan.gdx-teavm:backend-web:$gdxTeaVMVersion"

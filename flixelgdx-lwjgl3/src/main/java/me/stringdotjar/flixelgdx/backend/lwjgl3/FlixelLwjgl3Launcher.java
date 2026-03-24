@@ -6,6 +6,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
+import me.stringdotjar.flixelgdx.backend.lwjgl3.runtime.reflect.FlixelReflectASMHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
@@ -104,6 +105,7 @@ public class FlixelLwjgl3Launcher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, Lwjgl3ApplicationConfiguration configuration) {
     Flixel.initialize(game, new FlixelLwjgl3Alerter(), new FlixelDefaultStackTraceProvider());
+    Flixel.setReflection(new FlixelReflectASMHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
 

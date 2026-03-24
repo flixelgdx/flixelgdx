@@ -16,6 +16,7 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.FlixelUpdatable;
 import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.logging.FlixelDebugConsoleEntry;
@@ -297,6 +298,26 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       shapeRenderer.setProjectionMatrix(cam.getCamera().combined);
       shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
       FlixelDebugUtil.forEachDebugDrawable(drawable -> {
+        if (drawable == null) {
+          return;
+        }
+        if (drawable instanceof FlixelSprite sprite) {
+          // Skip if the object is not projected to the current camera.
+          boolean found = false;
+          if (sprite.cameras == null) { // Null means the object is projected to all cameras.
+            found = true;
+          } else {
+            for (FlixelCamera c : sprite.cameras) {
+              if (c == cam) {
+                found = true;
+                break;
+              }
+            }
+          }
+          if (!found) {
+            return;
+          }
+        }
         float[] c = drawable.getDebugBoundingBoxColor();
         if (c == null || c.length < 4) c = FALLBACK_COLOR;
         shapeRenderer.setColor(c[0], c[1], c[2], c[3]);
