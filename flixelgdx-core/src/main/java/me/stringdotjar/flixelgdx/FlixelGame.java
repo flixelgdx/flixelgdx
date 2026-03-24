@@ -115,7 +115,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
   protected Color bgColor = new Color(Color.BLACK);
 
-  /** 1×1 white texture used to draw solid fills (camera bg, FX); tinted via {@link SpriteBatch#setColor}. */
+  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link SpriteBatch#setColor}. */
   protected Texture bgTexture;
 
   /** Where all the global cameras are stored. */

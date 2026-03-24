@@ -7,6 +7,7 @@ import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import me.stringdotjar.flixelgdx.backend.runtime.reflect.FlixelDefaultReflectionHandler;
 
 /**
  * Launches the Android version of the FlixelGDX game.
@@ -40,6 +41,7 @@ public class FlixelAndroidLauncher {
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode) {
     Flixel.initialize(game, new FlixelAndroidAlerter(activity), new FlixelDefaultStackTraceProvider());
+    Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
 
