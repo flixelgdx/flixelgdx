@@ -14,6 +14,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import me.stringdotjar.flixelgdx.util.FlixelAxes;
+
 /**
  * A powerful camera class that allows you to control the camera's position, zoom, and more.
  *
@@ -209,7 +211,7 @@ public class FlixelCamera extends FlixelBasic {
   private float shakeIntensity = 0.05f;
   private float shakeDuration = 0.5f;
   private float shakeElapsed = 0f;
-  private Axes shakeAxes = Axes.XY;
+  private FlixelAxes shakeAxes = FlixelAxes.XY;
   private Runnable shakeOnComplete;
   private float shakeOffsetX = 0f;
   private float shakeOffsetY = 0f;
@@ -753,7 +755,7 @@ public class FlixelCamera extends FlixelBasic {
 
   /** Shakes with default intensity (0.05) for 0.5 seconds on both axes. */
   public void shake() {
-    shake(0.05f, 0.5f, null, true, Axes.XY);
+    shake(0.05f, 0.5f, null, true, FlixelAxes.XY);
   }
 
   /**
@@ -762,7 +764,7 @@ public class FlixelCamera extends FlixelBasic {
    * @param intensity The intensity of the shake. This is typically VERY small numbers like {@code 0.05f} or {@code 0.01f}.
    */
   public void shake(float intensity) {
-    shake(intensity, 0.5f, null, true, Axes.XY);
+    shake(intensity, 0.5f, null, true, FlixelAxes.XY);
   }
 
   /**
@@ -772,7 +774,7 @@ public class FlixelCamera extends FlixelBasic {
    * @param duration How long the shake lasts, in seconds.
    */
   public void shake(float intensity, float duration) {
-    shake(intensity, duration, null, true, Axes.XY);
+    shake(intensity, duration, null, true, FlixelAxes.XY);
   }
 
   /**
@@ -785,7 +787,7 @@ public class FlixelCamera extends FlixelBasic {
    * @param force If {@code true}, resets any currently-running shake (default unlike flash/fade).
    * @param axes Which axes to shake on.
    */
-  public void shake(float intensity, float duration, Runnable onComplete, boolean force, Axes axes) {
+  public void shake(float intensity, float duration, Runnable onComplete, boolean force, FlixelAxes axes) {
     if (shakeActive && !force) {
       return;
     }
@@ -793,7 +795,7 @@ public class FlixelCamera extends FlixelBasic {
     shakeIntensity = intensity;
     shakeDuration = Math.max(duration, 0.001f);
     shakeElapsed = 0f;
-    shakeAxes = (axes != null) ? axes : Axes.XY;
+    shakeAxes = (axes != null) ? axes : FlixelAxes.XY;
     shakeOnComplete = onComplete;
     shakeOffsetX = 0f;
     shakeOffsetY = 0f;
@@ -814,8 +816,8 @@ public class FlixelCamera extends FlixelBasic {
       return;
     }
 
-    float sx = (shakeAxes == Axes.Y) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * width);
-    float sy = (shakeAxes == Axes.X) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * height);
+    float sx = (shakeAxes == FlixelAxes.Y) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * width);
+    float sy = (shakeAxes == FlixelAxes.X) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * height);
 
     boolean pp = pixelPerfectShake || pixelPerfectRender;
     if (pp) {
@@ -1429,11 +1431,6 @@ public class FlixelCamera extends FlixelBasic {
      * the camera does not track the target automatically.
      */
     NO_DEAD_ZONE
-  }
-
-  /** Axes on which an effect (e.g. shake) can operate. */
-  public enum Axes {
-    X, Y, XY
   }
 
   /**

@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.XmlReader;
 
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
+import me.stringdotjar.flixelgdx.util.FlixelAxes;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
@@ -317,7 +318,6 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
       graphic.release();
     }
     graphic = g;
-    // HaxeFlixel-like convenience: load synchronously if not preloaded yet.
     Texture texture = g.loadNow();
 
     atlasFrames = new Array<>(FlixelFrame[]::new);
@@ -575,6 +575,36 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   public FlixelSprite updateHitbox(float width, float height) {
     setSize(width, height);
     setOriginCenter();
+    return this;
+  }
+
+  /**
+   * Centers {@code this} sprite on the screen.
+   *
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite screenCenter() {
+    return screenCenter(FlixelAxes.XY);
+  }
+
+  /**
+   * Centers {@code this} sprite on the screen.
+   *
+   * @param axes The axes to center on.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite screenCenter(FlixelAxes axes) {
+    switch (axes) {
+      case X -> {
+        setPosition(Flixel.getViewWidth() / 2f - getWidth() / 2f, getY());
+      }
+      case Y -> {
+        setPosition(getX(), Flixel.getViewHeight() / 2f - getHeight() / 2f);
+      }
+      case XY -> {
+        setPosition(Flixel.getViewWidth() / 2f - getWidth() / 2f, Flixel.getViewHeight() / 2f - getHeight() / 2f);
+      }
+    }
     return this;
   }
 
