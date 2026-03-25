@@ -699,6 +699,10 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     }
   }
 
+  public float getAlpha() {
+    return color.a;
+  }
+
   public int getFacing() {
     return facing;
   }
