@@ -9,11 +9,6 @@ import org.jetbrains.annotations.Nullable;
 
 import com.badlogic.gdx.utils.Disposable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 /**
  * Central manager for all audio: FlixelSound instances, master volume, sound groups (SFX and Music),
  * and focus-based pause/resume.
@@ -30,9 +25,6 @@ public class FlixelAudioManager implements Disposable {
 
   private float masterVolume = 1f;
   private FlixelSound music;
-
-  private final List<FlixelSound> activeSounds = new ArrayList<>();
-  private final Set<FlixelSound> pausedByFocus = new HashSet<>();
 
   public FlixelAudioManager() {
     engine = new MiniAudio();
@@ -93,9 +85,9 @@ public class FlixelAudioManager implements Disposable {
   }
 
   /**
-   * Changes the global master volume applied to all sounds of {@code this} audio manager 
+   * Changes the global master volume applied to all sounds of {@code this} audio manager
    * by the given amount.
-   * 
+   *
    * @param amount The amount to change the master volume by.
    * @return The new master volume.
    */
@@ -163,7 +155,6 @@ public class FlixelAudioManager implements Disposable {
     flixelSound.setVolume(volume);
     flixelSound.setLooped(looping);
     flixelSound.play();
-    registerSound(flixelSound);
     return flixelSound;
   }
 
@@ -210,12 +201,7 @@ public class FlixelAudioManager implements Disposable {
     music.setVolume(volume);
     music.setLooped(looping);
     music.play();
-    registerSound(music);
     return music;
-  }
-
-  private void registerSound(@NotNull FlixelSound flixelSound) {
-    activeSounds.add(flixelSound);
   }
 
   /**
@@ -245,8 +231,6 @@ public class FlixelAudioManager implements Disposable {
       music.dispose();
       music = null;
     }
-    activeSounds.clear();
-    pausedByFocus.clear();
     sfxGroup.dispose();
     musicGroup.dispose();
     engine.dispose();

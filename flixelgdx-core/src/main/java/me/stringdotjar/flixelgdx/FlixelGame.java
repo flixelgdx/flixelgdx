@@ -17,8 +17,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import me.stringdotjar.flixelgdx.box2d.FlixelBox2DObject;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
-import me.stringdotjar.flixelgdx.display.FlixelCamera;
-import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;

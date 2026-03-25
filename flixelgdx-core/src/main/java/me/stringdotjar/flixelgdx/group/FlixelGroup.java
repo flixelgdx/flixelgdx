@@ -54,6 +54,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
       if (member == null) {
         continue;
       }
+      if (!member.exists || !member.active) {
+        continue;
+      }
       member.update(elapsed);
     }
     members.end();
@@ -65,6 +68,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     for (int i = 0, n = members.size; i < n; i++) {
       FlixelBasic member = items[i];
       if (member == null) {
+        continue;
+      }
+      if (!member.exists || !member.visible) {
         continue;
       }
       member.draw(batch);

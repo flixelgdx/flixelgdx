@@ -7,8 +7,6 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.math.Matrix4;
@@ -17,6 +15,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.XmlReader;
 
 import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 
 import com.badlogic.gdx.utils.ObjectMap;
 
@@ -779,7 +778,13 @@ public class FlixelText extends FlixelSprite {
 
   /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
   @Override
-  public final FlixelSprite loadSparrowFrames(Texture texture, XmlReader.Element xmlFile) {
+  public final FlixelSprite loadSparrowFrames(String textureKey, FileHandle xmlFile) {
+    throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
+  }
+
+  /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
+  @Override
+  public final FlixelSprite loadSparrowFrames(String textureKey, XmlReader.Element xmlFile) {
     throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
   }
 
@@ -819,39 +824,32 @@ public class FlixelText extends FlixelSprite {
     return true;
   }
 
-  private static final ObjectMap<String, Animation<TextureRegion>> EMPTY_ANIMATIONS = new ObjectMap<>(0);
-
   /** @return An empty map; text has no animations. */
   @Override
-  public final ObjectMap<String, Animation<TextureRegion>> getAnimations() {
-    return EMPTY_ANIMATIONS;
+  public final ObjectMap<String, Animation<FlixelFrame>> getAnimations() {
+    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   /** @return {@code null} always; text has no atlas regions. */
   @Override
-  public final Array<TextureAtlas.AtlasRegion> getAtlasRegions() {
-    return null;
+  public final Array<FlixelFrame> getAtlasRegions() {
+    throw new UnsupportedOperationException("FlixelText does not support atlas regions.");
   }
 
   /** @return {@code null} always; text has no animation frames. */
   @Override
-  public final TextureAtlas.AtlasRegion getCurrentFrame() {
-    return null;
+  public final FlixelFrame getCurrentFrame() {
+    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   /** @return {@code null} always; text has no image frames. */
   @Override
-  public final TextureRegion[][] getFrames() {
-    return null;
+  public final FlixelFrame[][] getFrames() {
+    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   @Override
   public void destroy() {
-    reset();
-  }
-
-  @Override
-  public void reset() {
     disposeFont();
     text = "";
     size = 8;
@@ -876,6 +874,11 @@ public class FlixelText extends FlixelSprite {
     layoutDirty = true;
     setPosition(0, 0);
     setColor(Color.WHITE);
+  }
+
+  @Override
+  public void reset() {
+    destroy();
   }
 
   @Override

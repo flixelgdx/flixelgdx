@@ -12,8 +12,12 @@ import games.rednblack.miniaudio.MASound;
 import games.rednblack.miniaudio.loader.MASoundLoader;
 import games.rednblack.miniaudio.MiniAudio;
 
+import me.stringdotjar.flixelgdx.assets.FlixelAsset;
+import me.stringdotjar.flixelgdx.assets.FlixelStringAssetLoader;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSound;
+import me.stringdotjar.flixelgdx.audio.FlixelSoundSource;
+import me.stringdotjar.flixelgdx.audio.FlixelSoundSourceLoader;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
@@ -23,8 +27,7 @@ import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
-import me.stringdotjar.flixelgdx.display.FlixelCamera;
-import me.stringdotjar.flixelgdx.display.FlixelState;
+import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
@@ -166,8 +169,10 @@ public final class Flixel {
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     assets = new AssetManager();
 
-    // TODO: Change this out to use FlixelSound instead of MASound.
+    // Register asset loaders.
     assets.setLoader(MASound.class, new MASoundLoader(sound.getEngine(), assets.getFileHandleResolver()));
+    assets.setLoader(String.class, new FlixelStringAssetLoader(assets.getFileHandleResolver())); // JSON/YAML/etc as raw strings.
+    assets.setLoader(FlixelSoundSource.class, new FlixelSoundSourceLoader(assets.getFileHandleResolver()));
 
     // Register default tween types.
     FlixelTween.getGlobalManager()
@@ -219,6 +224,9 @@ public final class Flixel {
     if (state != null) {
       state.destroy();
     }
+
+    FlixelGraphic.clearNonPersist();
+    FlixelAsset.clearNonPersist();
     if (clearTweens) {
       FlixelTween.getGlobalManager()
         .getActiveTweens()
@@ -860,7 +868,6 @@ public final class Flixel {
     return collide(objectOrGroup1, objectOrGroup2, null);
   }
 
-  @SuppressWarnings("unchecked")
   private static boolean overlapInternal(FlixelBasic obj1, FlixelBasic obj2,
                                          BiConsumer<FlixelObject, FlixelObject> notifyCallback,
                                          BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {

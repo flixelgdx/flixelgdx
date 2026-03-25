@@ -6,14 +6,14 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.XmlReader;
-import me.stringdotjar.flixelgdx.display.FlixelCamera;
+
+import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
+import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
@@ -31,18 +31,20 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelSprite extends FlixelObject implements Pool.Poolable {
 
-  /** Cameras this sprite may render on. {@code null} or an empty array means every camera. */
+  /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
   @Nullable
-  public FlixelCamera[] cameras;
+  protected FlixelGraphic graphic;
 
-  /** The atlas regions used in this sprite (used for animations). */
-  protected Array<TextureAtlas.AtlasRegion> atlasRegions;
+  /** The atlas frames used in this sprite (used for animations). */
+  @Nullable
+  protected Array<FlixelFrame> atlasFrames;
 
   /** A map that animations are stored and registered in. */
-  protected final ObjectMap<String, Animation<TextureRegion>> animations;
+  protected final ObjectMap<String, Animation<FlixelFrame>> animations;
 
   /** The current frame that {@code this} sprite is currently using for drawing. */
-  protected TextureAtlas.AtlasRegion currentFrame;
+  @Nullable
+  protected FlixelFrame currentFrame;
 
   /** Used for updating {@code this} sprite's current animation. */
   protected float stateTime = 0;
@@ -57,10 +59,12 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * Where all the image frames are stored. This is also where the main image is stored when using
    * {@link #loadGraphic(FileHandle)}.
    */
-  protected TextureRegion[][] frames;
+  @Nullable
+  protected FlixelFrame[][] frames;
 
   /** The currently active texture region rendered when no animation is playing. */
-  protected TextureRegion currentRegion;
+  @Nullable
+  protected FlixelFrame currentRegion;
 
   /** Horizontal scale factor. {@code 1} = normal size. */
   protected float scaleX = 1f;
@@ -99,7 +103,6 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   public FlixelSprite() {
     super();
     animations = new ObjectMap<>();
-    cameras = null;
   }
 
   /**
@@ -112,10 +115,10 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     super.update(elapsed);
 
     if (animations != null && !animations.isEmpty()) {
-      Animation<TextureRegion> anim = animations.get(currentAnim);
+      Animation<FlixelFrame> anim = animations.get(currentAnim);
       if (anim != null) {
         stateTime += elapsed;
-        currentFrame = (TextureAtlas.AtlasRegion) anim.getKeyFrame(stateTime, looping);
+        currentFrame = anim.getKeyFrame(stateTime, looping);
         currentRegion = currentFrame;
       }
     }
@@ -128,8 +131,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FileHandle path) {
-    Texture texture = new Texture(path);
-    return loadGraphic(texture, texture.getWidth(), texture.getHeight());
+    return loadGraphic(path.path());
   }
 
   /**
@@ -140,8 +142,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FileHandle path, int frameWidth) {
-    Texture texture = new Texture(path);
-    return loadGraphic(texture, frameWidth, texture.getHeight());
+    return loadGraphic(path.path(), frameWidth);
   }
 
   /**
@@ -153,22 +154,115 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FileHandle path, int frameWidth, int frameHeight) {
-    return loadGraphic(new Texture(path), frameWidth, frameHeight);
+    return loadGraphic(path.path(), frameWidth, frameHeight);
   }
 
   /**
    * Loads a texture and automatically resizes the size of {@code this} sprite.
    *
-   * @param texture The texture to load onto {@code this} sprite.
+   * @param texture The texture to load onto {@code this} sprite (owned by caller).
    * @param frameWidth How wide the sprite should be.
    * @param frameHeight How tall the sprite should be.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
-    frames = TextureRegion.split(texture, frameWidth, frameHeight);
+    if (graphic != null) {
+      graphic.release();
+    }
+    graphic = FlixelGraphic.owned(texture).retain();
+
+    TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
+    frames = wrapFrames(regions);
     currentRegion = frames[0][0];
     updateHitbox(frameWidth, frameHeight);
     return this;
+  }
+
+  /**
+   * Loads a cached graphic by key. The texture must be preloaded via {@link FlixelGraphic#queueLoad()}
+   * and {@code Flixel.assets.update()} in a loading state.
+   *
+   * <p>This method falls back to a synchronous load if the texture is not loaded yet.
+   * Preloading is still strongly recommended to avoid mid-frame stalls.
+   *
+   * @param assetKey The key of the graphic to load.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(String assetKey) {
+    FlixelGraphic g = FlixelGraphic.get(assetKey).retain();
+    Texture t = g.loadNow();
+    return loadGraphic(g, t.getWidth(), t.getHeight());
+  }
+
+  /**
+   * Loads a cached graphic by key. The texture must be preloaded via {@link FlixelGraphic#queueLoad()}
+   * and {@code Flixel.assets.update()} in a loading state.
+   *
+   * <p>This method falls back to a synchronous load if the texture
+   * is not loaded yet. Preloading is still strongly recommended to avoid mid-frame stalls.
+   *
+   * @param assetKey The key of the graphic to load.
+   * @param frameWidth The width of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
+    FlixelGraphic g = FlixelGraphic.get(assetKey).retain();
+    Texture t = g.loadNow();
+    return loadGraphic(g, frameWidth, t.getHeight());
+  }
+
+  /**
+   * Loads a cached graphic by key. The texture must be preloaded via {@link FlixelGraphic#queueLoad()}
+   * and {@code Flixel.assets.update()} in a loading state.
+   *
+   * <p>This method falls back to a synchronous load if the texture is not loaded yet.
+   * Preloading is still strongly recommended to avoid mid-frame stalls.
+   *
+   * @param assetKey The key of the graphic to load.
+   * @param frameWidth The width of the graphic.
+   * @param frameHeight The height of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
+    FlixelGraphic g = FlixelGraphic.get(assetKey).retain();
+    return loadGraphic(g, frameWidth, frameHeight);
+  }
+
+  /**
+   * Loads a graphic from a FlixelGraphic.
+   *
+   * @param g The FlixelGraphic to load.
+   * @param frameWidth The width of the graphic.
+   * @param frameHeight The height of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g, int frameWidth, int frameHeight) {
+    if (graphic != null) {
+      graphic.release();
+    }
+    graphic = g;
+    Texture texture = g.loadNow();
+    TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
+    frames = wrapFrames(regions);
+    currentRegion = frames[0][0];
+    currentFrame = null;
+    atlasFrames = null;
+    animations.clear();
+    updateHitbox(frameWidth, frameHeight);
+    return this;
+  }
+
+  private static FlixelFrame[][] wrapFrames(TextureRegion[][] regions) {
+    FlixelFrame[][] out = new FlixelFrame[regions.length][];
+    for (int i = 0; i < regions.length; i++) {
+      TextureRegion[] row = regions[i];
+      FlixelFrame[] rowFrames = new FlixelFrame[row.length];
+      for (int j = 0; j < row.length; j++) {
+        rowFrames[j] = new FlixelFrame(row[j]);
+      }
+      out[i] = rowFrames;
+    }
+    return out;
   }
 
   /**
@@ -196,52 +290,72 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadSparrowFrames(FileHandle texture, FileHandle xmlFile) {
-    return loadSparrowFrames(new Texture(texture), new XmlReader().parse(xmlFile));
+    return loadSparrowFrames(texture.path(), new XmlReader().parse(xmlFile));
   }
 
   /**
    * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
    *
-   * @param texture The {@code .png} texture file for slicing and extracting the different frames from.
+   * @param textureKey The key of the graphic to load.
+   * @param xmlFile The path to the {@code .xml} file which contains the data for each subtexture of the sparrow atlas.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadSparrowFrames(String textureKey, FileHandle xmlFile) {
+    return loadSparrowFrames(textureKey, new XmlReader().parse(xmlFile));
+  }
+
+  /**
+   * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
+   *
+   * @param textureKey The key of the graphic to load.
    * @param xmlFile The {@link XmlReader.Element} data which contains the data for each subtexture of the sparrow atlas.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadSparrowFrames(Texture texture, XmlReader.Element xmlFile) {
-    atlasRegions = new Array<>(AtlasRegion[]::new);
+  public FlixelSprite loadSparrowFrames(String textureKey, XmlReader.Element xmlFile) {
+    FlixelGraphic g = FlixelGraphic.get(textureKey).retain();
+    if (graphic != null) {
+      graphic.release();
+    }
+    graphic = g;
+    // HaxeFlixel-like convenience: load synchronously if not preloaded yet.
+    Texture texture = g.loadNow();
+
+    atlasFrames = new Array<>(FlixelFrame[]::new);
 
     for (XmlReader.Element subTexture : xmlFile.getChildrenByName("SubTexture")) {
-      String name = subTexture.getAttribute("name");
+      String name = subTexture.getAttribute("name", null);
       int x = subTexture.getInt("x");
       int y = subTexture.getInt("y");
       int width = subTexture.getInt("width");
       int height = subTexture.getInt("height");
 
-      TextureAtlas.AtlasRegion region = new TextureAtlas.AtlasRegion(texture, x, y, width, height);
-      region.name = name;
+      TextureRegion region = new TextureRegion(texture, x, y, width, height);
+      FlixelFrame frame = new FlixelFrame(region);
+      frame.name = name;
 
       if (subTexture.hasAttribute("frameX")) {
-        region.offsetX = Math.abs(subTexture.getInt("frameX"));
-        region.offsetY = Math.abs(subTexture.getInt("frameY"));
-        region.originalWidth = subTexture.getInt("frameWidth");
-        region.originalHeight = subTexture.getInt("frameHeight");
+        frame.offsetX = Math.abs(subTexture.getInt("frameX"));
+        frame.offsetY = Math.abs(subTexture.getInt("frameY"));
+        frame.originalWidth = subTexture.getInt("frameWidth");
+        frame.originalHeight = subTexture.getInt("frameHeight");
       } else {
-        region.offsetX = 0;
-        region.offsetY = 0;
-        region.originalWidth = width;
-        region.originalHeight = height;
+        frame.offsetX = 0;
+        frame.offsetY = 0;
+        frame.originalWidth = width;
+        frame.originalHeight = height;
       }
 
-      atlasRegions.add(region);
+      atlasFrames.add(frame);
     }
 
-    if (atlasRegions.size > 0) {
-      currentFrame = atlasRegions.first();
+    if (atlasFrames.size > 0) {
+      currentFrame = atlasFrames.first();
       currentRegion = currentFrame;
       setSize(currentFrame.getRegionWidth(), currentFrame.getRegionHeight());
     }
 
-    currentRegion = atlasRegions.first();
-    setSize(currentRegion.getRegionWidth(), currentRegion.getRegionHeight());
+    frames = null;
+    animations.clear();
     return this;
   }
 
@@ -254,18 +368,19 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @param loop Should the new animation loop indefinitely?
    */
   public void addAnimationByPrefix(String name, String prefix, int frameRate, boolean loop) {
-    Array<TextureAtlas.AtlasRegion> frames = new Array<>();
+    Array<FlixelFrame> frames = new Array<>();
 
-    for (TextureAtlas.AtlasRegion region : atlasRegions) {
-      if (region.name.startsWith(prefix)) {
-        frames.add(region);
+    if (atlasFrames == null) return;
+
+    for (FlixelFrame frame : atlasFrames) {
+      if (frame != null && frame.name != null && frame.name.startsWith(prefix)) {
+        frames.add(frame);
       }
     }
 
     if (frames.size > 0) {
       // Ensure frames are sorted alphabetically (e.g., confirm0000, confirm0001).
-      frames.sort(Comparator.comparing(o -> o.name));
-
+      frames.sort(Comparator.comparing(f -> f.name));
       animations.put(
         name,
         new Animation<>(1f / frameRate, frames, loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL)
@@ -281,9 +396,10 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @param frameDuration How long each frame lasts for in seconds.
    */
   public void addAnimation(String name, int[] frameIndices, float frameDuration) {
-    Array<TextureRegion> animFrames = new Array<>();
+    Array<FlixelFrame> animFrames = new Array<>();
 
     // Convert 1D indices (0, 1, 2...) to 2D grid coordinates.
+    if (frames == null) return;
     int cols = frames[0].length;
     for (int index : frameIndices) {
       int row = index / cols;
@@ -374,7 +490,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
 
       batch.setColor(color);
       batch.draw(
-        currentRegion,
+        currentRegion.getRegion(),
         getX() - offsetX,
         getY() - offsetY,
         originX,
@@ -479,39 +595,22 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     flipX = false;
     flipY = false;
     setAngle(0f);
-    if (currentFrame != null) {
-      currentFrame.getTexture().dispose();
-      currentFrame = null;
-    }
+    currentFrame = null;
     currentRegion = null;
-    if (atlasRegions != null) {
-      for (int i = atlasRegions.size - 1; i >= 0; i--) {
-        var region = atlasRegions.items[i];
-        if (region != null) {
-          region.getTexture().dispose();
-        }
-      }
-      atlasRegions.setSize(0);
-      atlasRegions = null;
+    if (atlasFrames != null) {
+      atlasFrames.setSize(0);
+      atlasFrames = null;
     }
-    if (frames != null) {
-      for (int i = frames.length - 1; i >= 0; i--) {
-        var frame = frames[i];
-        if (frame != null) {
-          for (TextureRegion region : frame) {
-            if (region != null) {
-              region.getTexture().dispose();
-            }
-          }
-        }
-      }
-      frames = null;
+    frames = null;
+    animations.clear();
+    if (graphic != null) {
+      graphic.release();
+      graphic = null;
     }
-    cameras = null;
   }
 
   public boolean isAnimationFinished() {
-    Animation<TextureRegion> anim = animations.get(currentAnim);
+    Animation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) return true;
     return anim.isAnimationFinished(stateTime);
   }
@@ -519,13 +618,6 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   @Override
   public void reset() {
     destroy();
-  }
-
-  /**
-   * Whether this sprite should render in the current {@link FlixelGame} camera pass.
-   */
-  protected boolean isOnDrawCamera() {
-    return Flixel.isOnDrawCamera(cameras);
   }
 
   public Texture getGraphic() {
@@ -645,11 +737,11 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
   }
 
   public void setRegion(TextureRegion region) {
-    currentRegion = region;
+    currentRegion = region != null ? new FlixelFrame(region) : null;
   }
 
   public TextureRegion getRegion() {
-    return currentRegion;
+    return currentRegion != null ? currentRegion.getRegion() : null;
   }
 
   public int getRegionWidth() {
@@ -660,19 +752,15 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     return currentRegion != null ? currentRegion.getRegionHeight() : 0;
   }
 
-  public ObjectMap<String, Animation<TextureRegion>> getAnimations() {
+  public ObjectMap<String, Animation<FlixelFrame>> getAnimations() {
     return animations;
   }
 
-  public Array<TextureAtlas.AtlasRegion> getAtlasRegions() {
-    return atlasRegions;
+  public Array<FlixelFrame> getAtlasRegions() {
+    return atlasFrames;
   }
 
-  public FlixelCamera[] getCameras() {
-    return cameras;
-  }
-
-  public TextureAtlas.AtlasRegion getCurrentFrame() {
+  public FlixelFrame getCurrentFrame() {
     return currentFrame;
   }
 
@@ -688,7 +776,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     return looping;
   }
 
-  public TextureRegion[][] getFrames() {
+  public FlixelFrame[][] getFrames() {
     return frames;
   }
 }

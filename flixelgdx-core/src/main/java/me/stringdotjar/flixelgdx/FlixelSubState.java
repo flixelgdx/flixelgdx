@@ -1,4 +1,4 @@
-package me.stringdotjar.flixelgdx.display;
+package me.stringdotjar.flixelgdx;
 
 import com.badlogic.gdx.graphics.Color;
 

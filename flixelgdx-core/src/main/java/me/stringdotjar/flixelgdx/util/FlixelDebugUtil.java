@@ -4,9 +4,9 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.FlixelState;
 import me.stringdotjar.flixelgdx.box2d.FlixelBox2DObject;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugDrawable;
-import me.stringdotjar.flixelgdx.display.FlixelState;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 
 import java.util.function.Consumer;

@@ -2,8 +2,7 @@ package me.stringdotjar.flixelgdx;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.Disposable;
-
-import me.stringdotjar.flixelgdx.display.FlixelCamera;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This is the most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
@@ -34,8 +33,13 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
   /** Controls whether {@link #draw(Batch)} is automatically called. */
   public boolean visible = true;
 
+  /** Cameras this object may render on. {@code null} or an empty array means every camera. */
+  @Nullable
+  public FlixelCamera[] cameras;
+
   public FlixelBasic() {
     this.ID = idEnumerator++;
+    this.cameras = null;
   }
 
   /**
@@ -57,6 +61,13 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
    */
   @Override
   public void draw(Batch batch) {}
+
+  /**
+   * Whether this object should render in the current {@link FlixelGame} camera pass.
+   */
+  protected boolean isOnDrawCamera() {
+    return Flixel.isOnDrawCamera(cameras);
+  }
 
   /**
    * Cleans up this object so it can be garbage-collected. A destroyed {@code FlixelBasic}

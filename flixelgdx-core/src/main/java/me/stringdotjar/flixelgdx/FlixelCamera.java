@@ -1,4 +1,4 @@
-package me.stringdotjar.flixelgdx.display;
+package me.stringdotjar.flixelgdx;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -13,10 +13,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.FlixelBasic;
-import me.stringdotjar.flixelgdx.FlixelGame;
-import me.stringdotjar.flixelgdx.FlixelObject;
 
 /**
  * A powerful camera class that allows you to control the camera's position, zoom, and more.

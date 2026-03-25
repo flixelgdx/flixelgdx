@@ -1,7 +1,7 @@
 package me.stringdotjar.flixelgdx.signal;
 
 import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.display.FlixelState;
+import me.stringdotjar.flixelgdx.FlixelState;
 
 /**
  * Convenience class for holding all signal data types used in the default signals stored in
