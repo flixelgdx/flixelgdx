@@ -357,19 +357,14 @@ public class FlixelSound extends FlixelBasic {
 
   @Override
   public void destroy() {
-    cancelFadeTween();
-    onComplete.clear();
     super.destroy();
-  }
-
-  /**
-   * Disposes the underlying MASound and destroys this wrapper. Call when the sound is no longer
-   * needed. After dispose, this instance must not be used.
-   */
-  public void dispose() {
     cancelFadeTween();
     onComplete.clear();
     sound.dispose();
+  }
+
+  @Override
+  public void dispose() {
     destroy();
   }
 

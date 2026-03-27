@@ -26,6 +26,7 @@ import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -177,7 +178,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     if (graphic != null) {
       graphic.release();
     }
-    graphic = FlixelGraphic.owned(texture).retain();
+    graphic = Flixel.ensureAssets().obtainOwnedGraphic(texture).retain();
 
     TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
     frames = wrapFrames(regions);
@@ -197,8 +198,8 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = FlixelGraphic.get(assetKey).retain();
-    Texture t = g.loadNow();
+    FlixelGraphic g = Flixel.ensureAssets().obtainGraphic(assetKey).retain();
+    Texture t = requireOrLoad(g);
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
 
@@ -214,8 +215,8 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = FlixelGraphic.get(assetKey).retain();
-    Texture t = g.loadNow();
+    FlixelGraphic g = Flixel.ensureAssets().obtainGraphic(assetKey).retain();
+    Texture t = requireOrLoad(g);
     return loadGraphic(g, frameWidth, t.getHeight());
   }
 
@@ -232,7 +233,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = FlixelGraphic.get(assetKey).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainGraphic(assetKey).retain();
     return loadGraphic(g, frameWidth, frameHeight);
   }
 
@@ -249,7 +250,7 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
       graphic.release();
     }
     graphic = g;
-    Texture texture = g.loadNow();
+    Texture texture = requireOrLoad(g);
     TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
     frames = wrapFrames(regions);
     currentRegion = frames[0][0];
@@ -258,6 +259,15 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
     animations.clear();
     updateHitbox(frameWidth, frameHeight);
     return this;
+  }
+
+  @NotNull
+  private static Texture requireOrLoad(@NotNull FlixelGraphic g) {
+    try {
+      return g.requireTexture();
+    } catch (IllegalStateException e) {
+      return g.loadNow();
+    }
   }
 
   private static FlixelFrame[][] wrapFrames(TextureRegion[][] regions) {
@@ -320,12 +330,12 @@ public class FlixelSprite extends FlixelObject implements Pool.Poolable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadSparrowFrames(String textureKey, XmlReader.Element xmlFile) {
-    FlixelGraphic g = FlixelGraphic.get(textureKey).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainGraphic(textureKey).retain();
     if (graphic != null) {
       graphic.release();
     }
     graphic = g;
-    Texture texture = g.loadNow();
+    Texture texture = requireOrLoad(g);
 
     atlasFrames = new Array<>(FlixelFrame[]::new);
 

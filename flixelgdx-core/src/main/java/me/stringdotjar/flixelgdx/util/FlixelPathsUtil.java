@@ -57,10 +57,7 @@ public final class FlixelPathsUtil {
    * @see me.stringdotjar.flixelgdx.asset.FlixelAssetManager#resolveAudioPath(String)
    */
   public static String resolveAudioPath(String path) {
-    if (Flixel.assets == null) {
-      throw new IllegalStateException("Flixel.assets is not initialized yet. Call Flixel.initialize(...) first.");
-    }
-    return Flixel.assets.resolveAudioPath(path);
+    return Flixel.ensureAssets().resolveAudioPath(path);
   }
 
   private FlixelPathsUtil() {}

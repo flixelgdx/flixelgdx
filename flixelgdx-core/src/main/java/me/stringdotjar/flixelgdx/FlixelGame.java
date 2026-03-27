@@ -558,11 +558,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       bgTexture.dispose();
     }
 
-    if (Flixel.sound != null) {
-      Flixel.sound.destroy();
-    }
     if (Flixel.assets != null) {
       Flixel.assets.dispose();
+    }
+    if (Flixel.sound != null) {
+      Flixel.sound.destroy();
     }
     if (world != null) {
       world.dispose();

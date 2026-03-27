@@ -16,6 +16,7 @@ import com.badlogic.gdx.utils.Array;
 
 import games.rednblack.miniaudio.MiniAudio;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
+import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSound;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
@@ -72,7 +73,7 @@ public final class Flixel {
   public static FlixelAudioManager sound;
 
   /** Central asset manager. Use this for loading, caching and managing assets. */
-  @NotNull
+  @Nullable
   public static FlixelAssetManager assets;
 
   /** The debug watch manager. Access via {@code Flixel.watch.add(...)}, {@code Flixel.watch.remove(...)}, etc. */
@@ -178,7 +179,12 @@ public final class Flixel {
     sound = new FlixelAudioManager();
     watch = new FlixelDebugWatchManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
-    assets = new FlixelAssetManager();
+    if (assets == null) {
+      assets = new FlixelDefaultAssetManager();
+    }
+    if (assets instanceof FlixelDefaultAssetManager dam) {
+      dam.ensureMiniAudioLoader();
+    }
 
     // Register default tween types.
     FlixelTween.getGlobalManager()
@@ -411,6 +417,20 @@ public final class Flixel {
 
   public static FlixelLogMode getLogMode() {
     return log != null ? log.getLogMode() : FlixelLogMode.SIMPLE;
+  }
+
+  /**
+   * Ensures {@link #assets} is available for embedded libGDX usage.
+   *
+   * <p>If Flixel has not been initialized yet, this creates a default asset manager on first use.
+   * Note that audio loaders are only registered once the global audio system is initialized.
+   */
+  @NotNull
+  public static FlixelAssetManager ensureAssets() {
+    if (assets == null) {
+      assets = new FlixelDefaultAssetManager();
+    }
+    return assets;
   }
 
   public static FlixelGame getGame() {

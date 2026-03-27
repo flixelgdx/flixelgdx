@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cached sound \"source\" (asset) that can spawn fresh {@link FlixelSound} instances on demand.
+ * Cached sound "source" (asset) that can spawn fresh {@link FlixelSound} instances on demand.
  *
  * <p>Do not cache {@link FlixelSound} playback objects directly: a playback object has mutable state
  * (volume/pan/time/playing) and cannot be safely shared across callers or overlapping plays.

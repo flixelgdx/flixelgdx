@@ -9,7 +9,6 @@ package me.stringdotjar.flixelgdx.graphics;
 
 import com.badlogic.gdx.graphics.Texture;
 
-import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 
 import java.util.Objects;
@@ -44,11 +43,11 @@ public final class FlixelGraphic {
 
   private final boolean owned;
 
-  private FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey) {
+  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey) {
     this(assetManager, assetKey, null);
   }
 
-  private FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String key, @Nullable Texture ownedTexture) {
+  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String key, @Nullable Texture ownedTexture) {
     if (key == null || key.isEmpty()) {
       throw new IllegalArgumentException("Asset key cannot be null/empty.");
     }
@@ -109,7 +108,7 @@ public final class FlixelGraphic {
     if (owned) {
       return;
     }
-    assetManager.load(assetKey);
+    assetManager.load(new FlixelGraphicSource(assetKey));
   }
 
   /**
@@ -134,50 +133,6 @@ public final class FlixelGraphic {
     if (owned) {
       return Objects.requireNonNull(ownedTexture);
     }
-    return Flixel.assets.loadTextureNow(assetKey);
-  }
-
-  /**
-   * Used by {@link FlixelAssets} to create instances for the global graphic pool.
-   */
-  @NotNull
-  public static FlixelGraphic createPooledKey(@NotNull String assetKey) {
-    return new FlixelGraphic(Flixel.assets, assetKey);
-  }
-
-  /**
-   * Used by {@link FlixelAssets} for pixmap / generated textures.
-   */
-  @NotNull
-  public static FlixelGraphic createPooledOwned(@NotNull String syntheticKey, @NotNull Texture texture) {
-    return new FlixelGraphic(Flixel.assets, syntheticKey, texture);
-  }
-
-  /**
-   * Gets or creates a cached graphic wrapper for the given key (via {@link FlixelAssetManager}).
-   */
-  @NotNull
-  public static FlixelGraphic get(@NotNull String assetKey) {
-    return Flixel.assets.obtainGraphic(assetKey);
-  }
-
-  /**
-   * Wraps an externally created texture (e.g. from {@link com.badlogic.gdx.graphics.Pixmap})
-   * as an owned graphic.
-   */
-  @NotNull
-  public static FlixelGraphic owned(@NotNull Texture texture) {
-    if (texture == null) {
-      throw new IllegalArgumentException("Texture cannot be null.");
-    }
-    return Flixel.assets.obtainOwnedGraphic(texture);
-  }
-
-  /**
-   * Returns the cached wrapper if present, otherwise null.
-   */
-  @Nullable
-  public static FlixelGraphic peek(@NotNull String assetKey) {
-    return Flixel.assets.peekGraphic(assetKey);
+    return assetManager.loadGraphicSourceNow(assetKey);
   }
 }
