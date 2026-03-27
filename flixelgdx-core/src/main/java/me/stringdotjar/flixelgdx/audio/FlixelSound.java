@@ -1,22 +1,25 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.audio;
 
 import games.rednblack.miniaudio.MASound;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.asset.FlixelAsset;
 import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 
 /**
@@ -27,17 +30,28 @@ import com.badlogic.gdx.files.FileHandle;
  * an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
  *
  * @see <a href="https://api.haxeflixel.com/flixel/sound/FlxSound.html">FlxSound (HaxeFlixel)</a>
+ * @see me.stringdotjar.flixelgdx.asset.FlixelAssetManager#resolveAudioPath(String)
+ *
+ * <p>This class implements {@link FlixelAsset}{@code <MASound>} for a shared refcount / {@code persist}
+ * contract. {@link #persist} controls whether this {@code FlixelSound} is treated as long-lived in game state
+ * (e.g. not killed on substate switches). It is separate from {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#clearNonPersist()},
+ * which clears <em>pooled</em> typed handles and wrappers on the global asset manager—not miniaudio instances created
+ * directly from a {@link com.badlogic.gdx.files.FileHandle}. Use {@link #retain()} / {@link #release()} if you mirror
+ * pooled-asset semantics for sounds you manage manually.
  */
-public class FlixelSound extends FlixelBasic {
+public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
 
   private static final float SEC_TO_MS = 1000f;
   private static final float MS_TO_SEC = 1f / SEC_TO_MS;
 
-  private static final ConcurrentHashMap<String, String> audioPathCache = new ConcurrentHashMap<>();
+  @NotNull
+  private final String assetKey;
 
   /** The underlying miniaudio sound. Use {@link #getMASound()} for external access. */
   @NotNull
   private final MASound sound;
+
+  private int refCount;
 
   /** Cached pitch (MASound has no getPitch). */
   private float pitch = 1f;
@@ -86,6 +100,7 @@ public class FlixelSound extends FlixelBasic {
   public FlixelSound(@NotNull MASound sound) {
     super();
     this.sound = sound;
+    this.assetKey = "__flixel_sound__/" + ID;
   }
 
   /**
@@ -95,6 +110,57 @@ public class FlixelSound extends FlixelBasic {
    */
   @NotNull
   public MASound getMASound() {
+    return sound;
+  }
+
+  @NotNull
+  @Override
+  public String getAssetKey() {
+    return assetKey;
+  }
+
+  @NotNull
+  @Override
+  public Class<MASound> getType() {
+    return MASound.class;
+  }
+
+  @Override
+  public int getRefCount() {
+    return refCount;
+  }
+
+  @NotNull
+  @Override
+  public FlixelSound retain() {
+    refCount++;
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public FlixelSound release() {
+    refCount--;
+    if (refCount < 0) {
+      refCount = 0;
+    }
+    return this;
+  }
+
+  @Override
+  public void queueLoad() {
+    // Sound is created eagerly in constructors; nothing to queue on the libGDX AssetManager.
+  }
+
+  @NotNull
+  @Override
+  public MASound require() {
+    return sound;
+  }
+
+  @NotNull
+  @Override
+  public MASound loadNow() {
     return sound;
   }
 
@@ -141,7 +207,7 @@ public class FlixelSound extends FlixelBasic {
 
   /**
    * Sets the playback position in milliseconds.
-   * 
+   *
    * @param timeMs The time to set the playback position to in milliseconds.
    * @return {@code this} for chaining.
    */
@@ -323,12 +389,16 @@ public class FlixelSound extends FlixelBasic {
     this.autoDestroy = autoDestroy;
   }
 
+  @Override
   public boolean isPersist() {
     return persist;
   }
 
-  public void setPersist(boolean persist) {
+  @NotNull
+  @Override
+  public FlixelSound setPersist(boolean persist) {
     this.persist = persist;
+    return this;
   }
 
   @Override
@@ -356,62 +426,19 @@ public class FlixelSound extends FlixelBasic {
 
   @Override
   public void destroy() {
-    cancelFadeTween();
-    onComplete.clear();
     super.destroy();
-  }
-
-  /**
-   * Disposes the underlying MASound and destroys this wrapper. Call when the sound is no longer
-   * needed. After dispose, this instance must not be used.
-   */
-  public void dispose() {
     cancelFadeTween();
     onComplete.clear();
     sound.dispose();
-    destroy();
   }
 
-  public static ConcurrentHashMap<String, String> getAudioPathCache() {
-    return audioPathCache;
+  @Override
+  public void dispose() {
+    destroy();
   }
 
   private static MASound createSoundForHandle(@NotNull FileHandle path) {
     String resolvedPath = FlixelPathsUtil.resolveAudioPath(path.path());
     return Flixel.getAudioEngine().createSound(resolvedPath, (short) 0, Flixel.sound.getSfxGroup(), false);
-  }
-
-  /**
-   * Extracts the path to the audio file and converts it to an absolute path
-   * so MiniAudio can open it and play it.
-   * 
-   * @param path The path to the audio file.
-   * @return The absolute path to the audio file.
-   */
-  public static String extractAudioPath(@NotNull String path) {
-    FileHandle handle = Gdx.files.internal(path);
-    try {
-      File file = handle.file();
-      if (file.exists()) {
-        return file.getAbsolutePath();
-      }
-    } catch (Exception ignored) {
-      // When running from a packaged JAR, internal/classpath handles may not expose a real
-      // filesystem File. In that case we fall through and extract to a temp file instead.
-    }
-    // Asset is inside a JAR or otherwise not directly accessible as a real file; copy it
-    // out to a temp file so MiniAudio can open it.
-    String ext = path.contains(".") ? path.substring(path.lastIndexOf('.')) : "";
-    try {
-      if (ext.isEmpty()) {
-        ext = ".tmp";
-      }
-      File temp = File.createTempFile("flixelaudio_", ext);
-      temp.deleteOnExit();
-      handle.copyTo(new FileHandle(temp));
-      return temp.getAbsolutePath();
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to extract audio asset from JAR: " + path, e);
-    }
   }
 }

@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.backend.ios;
 
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
@@ -57,10 +64,12 @@ public class FlixelIOSLauncher {
    * @return The configured {@link IOSApplication} to return from {@code createApplication()}.
    */
   public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
-    Flixel.initialize(game, new FlixelIOSAlerter(), new FlixelDefaultStackTraceProvider());
+    Flixel.setAlerter(new FlixelIOSAlerter());
+    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.initialize(game);
 
     IOSApplicationConfiguration configuration = new IOSApplicationConfiguration();
     configuration.preventScreenDimming = false;

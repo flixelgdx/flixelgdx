@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.group;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -54,6 +61,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
       if (member == null) {
         continue;
       }
+      if (!member.exists || !member.active) {
+        continue;
+      }
       member.update(elapsed);
     }
     members.end();
@@ -65,6 +75,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     for (int i = 0, n = members.size; i < n; i++) {
       FlixelBasic member = items[i];
       if (member == null) {
+        continue;
+      }
+      if (!member.exists || !member.visible) {
         continue;
       }
       member.draw(batch);

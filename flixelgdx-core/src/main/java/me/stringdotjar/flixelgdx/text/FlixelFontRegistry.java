@@ -1,7 +1,23 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.text;
 
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.utils.ObjectMap;
+
+import me.stringdotjar.flixelgdx.FlixelDestroyable;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -17,6 +33,9 @@ import java.util.Set;
  * referenced by that identifier throughout the game. The registry caches
  * {@link FreeTypeFontGenerator} instances internally so that multiple {@link FlixelText}
  * objects sharing the same font ID reuse the same generator, avoiding redundant file parsing.
+ * Generated {@link BitmapFont} instances are also cached (keyed by font source and glyph
+ * parameters) so repeated {@link FlixelText} instances with the same settings share one
+ * texture-backed font. The built-in libGDX default bitmap font is cached per pixel size.
  *
  * <h3>Usage</h3>
  * <pre>{@code
@@ -47,6 +66,17 @@ public final class FlixelFontRegistry {
   /** The ID of the font that FlixelText uses when no explicit font is set. */
   private static String defaultFontId;
 
+  /**
+   * Shared libGDX default {@link BitmapFont} instances, one per requested pixel size (after
+   * scaling the built-in 15px font to match).
+   */
+  private static final IntMap<BitmapFont> defaultBitmapFontsBySize = new IntMap<>();
+
+  /**
+   * FreeType-generated bitmap fonts keyed by {@link #freeTypeBitmapFontKey(String, int, int)}.
+   */
+  private static final ObjectMap<String, BitmapFont> freeTypeBitmapFonts = new ObjectMap<>();
+
   private FlixelFontRegistry() {}
 
   /**
@@ -64,7 +94,8 @@ public final class FlixelFontRegistry {
 
     Entry existing = entries.get(id);
     if (existing != null) {
-      existing.dispose();
+      removeFreeTypeBitmapFontsForPrefix("reg:" + id + "|");
+      existing.destroy();
     }
     entries.put(id, new Entry(fontFile));
   }
@@ -77,12 +108,16 @@ public final class FlixelFontRegistry {
    * @param id The font identifier to remove.
    */
   public static void unregister(String id) {
+    if (id != null) {
+      removeFreeTypeBitmapFontsForPrefix("reg:" + id + "|");
+      if (id.equals(defaultFontId)) {
+        removeFreeTypeBitmapFontsForPrefix("def:" + id + "|");
+        defaultFontId = null;
+      }
+    }
     Entry removed = entries.remove(id);
     if (removed != null) {
-      removed.dispose();
-    }
-    if (id != null && id.equals(defaultFontId)) {
-      defaultFontId = null;
+      removed.destroy();
     }
   }
 
@@ -144,6 +179,9 @@ public final class FlixelFontRegistry {
     if (id != null && !entries.containsKey(id)) {
       throw new IllegalArgumentException("Font id \"" + id + "\" is not registered.");
     }
+    if (defaultFontId != null && !defaultFontId.equals(id)) {
+      removeFreeTypeBitmapFontsForPrefix("def:" + defaultFontId + "|");
+    }
     defaultFontId = id;
   }
 
@@ -166,15 +204,108 @@ public final class FlixelFontRegistry {
   }
 
   /**
+   * Returns a shared libGDX default {@link BitmapFont} (Arial 15px) scaled to the given
+   * pixel size. Multiple {@link FlixelText} instances with the same size reuse one font.
+   *
+   * @param pixelSize The target font size in pixels (clamped to at least 1).
+   * @return A cached bitmap font; do not {@link BitmapFont#dispose()} it — use
+   *     {@link #dispose()} at shutdown.
+   */
+  public static BitmapFont obtainDefaultBitmapFont(int pixelSize) {
+    int size = Math.max(1, pixelSize);
+    BitmapFont font = defaultBitmapFontsBySize.get(size);
+    if (font != null) {
+      return font;
+    }
+    font = new BitmapFont();
+    float defaultHeight = font.getLineHeight();
+    if (defaultHeight > 0) {
+      font.getData().setScale(size / defaultHeight);
+    }
+    font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    defaultBitmapFontsBySize.put(size, font);
+    return font;
+  }
+
+  /**
+   * Returns a shared {@link BitmapFont} generated from the given FreeType generator with
+   * the supplied parameters. Equivalent requests reuse the same instance.
+   *
+   * @param cacheKeyPrefix A stable prefix for this font source (e.g. {@code "reg:myId"},
+   *     {@code "file:/path/font.ttf"}, {@code "def:defaultId"}).
+   * @param generator The generator to use on cache miss (must match the prefix's source).
+   * @param size Pixel size.
+   * @param letterSpacing Horizontal spacing between characters.
+   * @return A cached font; do not dispose from {@link FlixelText} it's released with the registry's
+   *     {@link #dispose()} or when the corresponding font is {@link #unregister(String)}.
+   */
+  public static BitmapFont obtainBitmapFontFromFreeType(
+      @NotNull String cacheKeyPrefix,
+      @NotNull FreeTypeFontGenerator generator,
+      int size,
+      int letterSpacing) {
+    String key = freeTypeBitmapFontKey(cacheKeyPrefix, size, letterSpacing);
+    BitmapFont existing = freeTypeBitmapFonts.get(key);
+    if (existing != null) {
+      return existing;
+    }
+    FreeTypeFontParameter param = new FreeTypeFontParameter();
+    param.size = size;
+    param.spaceX = letterSpacing;
+    param.genMipMaps = true;
+    param.minFilter = Texture.TextureFilter.Linear;
+    param.magFilter = Texture.TextureFilter.Linear;
+    BitmapFont font = generator.generateFont(param);
+    font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    freeTypeBitmapFonts.put(key, font);
+    return font;
+  }
+
+  /**
+   * Builds the cache key used by {@link #obtainBitmapFontFromFreeType(String,
+   * FreeTypeFontGenerator, int, int)} for a given source prefix and glyph settings.
+   */
+  public static String freeTypeBitmapFontKey(String cacheKeyPrefix, int size, int letterSpacing) {
+    return cacheKeyPrefix + "|" + size + "|" + letterSpacing;
+  }
+
+  /**
    * Disposes all cached {@link FreeTypeFontGenerator} instances and clears the
    * registry. This should be called when the game shuts down.
    */
   public static void dispose() {
+    disposeAllCachedBitmapFonts();
     for (Entry entry : entries.values()) {
-      entry.dispose();
+      entry.destroy();
     }
     entries.clear();
     defaultFontId = null;
+  }
+
+  private static void disposeAllCachedBitmapFonts() {
+    for (BitmapFont font : defaultBitmapFontsBySize.values()) {
+      font.dispose();
+    }
+    defaultBitmapFontsBySize.clear();
+    for (BitmapFont font : freeTypeBitmapFonts.values()) {
+      font.dispose();
+    }
+    freeTypeBitmapFonts.clear();
+  }
+
+  private static void removeFreeTypeBitmapFontsForPrefix(String keyPrefix) {
+    Array<String> toRemove = new Array<>();
+    for (String key : freeTypeBitmapFonts.keys()) {
+      if (key.startsWith(keyPrefix)) {
+        toRemove.add(key);
+      }
+    }
+    for (String key : toRemove) {
+      BitmapFont removed = freeTypeBitmapFonts.remove(key);
+      if (removed != null) {
+        removed.dispose();
+      }
+    }
   }
 
   private static Entry requireEntry(String id) {
@@ -186,7 +317,7 @@ public final class FlixelFontRegistry {
   }
 
   /** Holds the file handle and a lazily-created generator for a single registered font. */
-  private static final class Entry {
+  private static final class Entry implements FlixelDestroyable {
 
     final FileHandle fontFile;
     FreeTypeFontGenerator generator;
@@ -202,7 +333,8 @@ public final class FlixelFontRegistry {
       return generator;
     }
 
-    void dispose() {
+    @Override
+    public void destroy() {
       if (generator != null) {
         generator.dispose();
         generator = null;

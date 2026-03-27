@@ -1,9 +1,16 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.util;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 
-import me.stringdotjar.flixelgdx.audio.FlixelSound;
+import me.stringdotjar.flixelgdx.Flixel;
 
 // TODO: Remove this class and find a better way to generically handle paths, this is only here because of
 // FlixelGDX recently being moved from Polyverse.
@@ -47,9 +54,10 @@ public final class FlixelPathsUtil {
    *
    * @param path The internal asset path, e.g. {@code "shared/sounds/foo.ogg"}.
    * @return An absolute filesystem path that MiniAudio can open.
+   * @see me.stringdotjar.flixelgdx.asset.FlixelAssetManager#resolveAudioPath(String)
    */
   public static String resolveAudioPath(String path) {
-    return FlixelSound.getAudioPathCache().computeIfAbsent(path, FlixelSound::extractAudioPath);
+    return Flixel.ensureAssets().resolveAudioPath(path);
   }
 
   private FlixelPathsUtil() {}

@@ -1,13 +1,16 @@
-package me.stringdotjar.flixelgdx.display;
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
+package me.stringdotjar.flixelgdx;
 
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 
-import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.FlixelGame;
-import me.stringdotjar.flixelgdx.FlixelBasic;
-import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.group.FlixelGroup;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

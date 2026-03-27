@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.debug;
 
 import com.badlogic.gdx.Gdx;
@@ -15,10 +22,10 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
-import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.FlixelUpdatable;
-import me.stringdotjar.flixelgdx.display.FlixelCamera;
 import me.stringdotjar.flixelgdx.logging.FlixelDebugConsoleEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
@@ -301,13 +308,14 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
         if (drawable == null) {
           return;
         }
-        if (drawable instanceof FlixelSprite sprite) {
+        if (drawable instanceof FlixelBasic basic) {
           // Skip if the object is not projected to the current camera.
           boolean found = false;
-          if (sprite.cameras == null) { // Null means the object is projected to all cameras.
+          FlixelCamera[] list = basic.cameras;
+          if (list == null || list.length == 0) { // Null/empty means the object is projected to all cameras.
             found = true;
           } else {
-            for (FlixelCamera c : sprite.cameras) {
+            for (FlixelCamera c : list) {
               if (c == cam) {
                 found = true;
                 break;

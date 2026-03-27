@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.text;
 
 import com.badlogic.gdx.files.FileHandle;
@@ -7,8 +14,6 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.math.Matrix4;
@@ -17,6 +22,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.XmlReader;
 
 import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 
 import com.badlogic.gdx.utils.ObjectMap;
 
@@ -105,6 +111,16 @@ public class FlixelText extends FlixelSprite {
 
   /** The font used for text rendering. */
   private BitmapFont bitmapFont;
+
+  /**
+   * {@code true} if {@link #bitmapFont} was produced by FreeType for a direct
+   * {@link #fontFile} (not registry-cached); such fonts are disposed when replaced or on
+   * {@link #destroy()}.
+   */
+  private boolean privateBitmapFontOwned;
+
+  /** Reused when generating FreeType fonts from a private {@link #fontFile}. */
+  private final FreeTypeFontParameter freeTypeParams = new FreeTypeFontParameter();
 
   /** Cached text layout used for measurement and drawing. */
   private final GlyphLayout glyphLayout = new GlyphLayout();
@@ -512,6 +528,7 @@ public class FlixelText extends FlixelSprite {
     this.bitmapFont = font;
     this.fontFile = null;
     this.fontRegistryId = null;
+    privateBitmapFontOwned = false;
     fontDirty = false;
     layoutDirty = true;
     return this;
@@ -779,7 +796,13 @@ public class FlixelText extends FlixelSprite {
 
   /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
   @Override
-  public final FlixelSprite loadSparrowFrames(Texture texture, XmlReader.Element xmlFile) {
+  public final FlixelSprite loadSparrowFrames(String textureKey, FileHandle xmlFile) {
+    throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
+  }
+
+  /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
+  @Override
+  public final FlixelSprite loadSparrowFrames(String textureKey, XmlReader.Element xmlFile) {
     throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
   }
 
@@ -819,39 +842,33 @@ public class FlixelText extends FlixelSprite {
     return true;
   }
 
-  private static final ObjectMap<String, Animation<TextureRegion>> EMPTY_ANIMATIONS = new ObjectMap<>(0);
-
   /** @return An empty map; text has no animations. */
   @Override
-  public final ObjectMap<String, Animation<TextureRegion>> getAnimations() {
-    return EMPTY_ANIMATIONS;
+  public final ObjectMap<String, Animation<FlixelFrame>> getAnimations() {
+    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   /** @return {@code null} always; text has no atlas regions. */
   @Override
-  public final Array<TextureAtlas.AtlasRegion> getAtlasRegions() {
-    return null;
+  public final Array<FlixelFrame> getAtlasRegions() {
+    throw new UnsupportedOperationException("FlixelText does not support atlas regions.");
   }
 
   /** @return {@code null} always; text has no animation frames. */
   @Override
-  public final TextureAtlas.AtlasRegion getCurrentFrame() {
-    return null;
+  public final FlixelFrame getCurrentFrame() {
+    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   /** @return {@code null} always; text has no image frames. */
   @Override
-  public final TextureRegion[][] getFrames() {
-    return null;
+  public final FlixelFrame[][] getFrames() {
+    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   @Override
   public void destroy() {
-    reset();
-  }
-
-  @Override
-  public void reset() {
+    super.destroy();
     disposeFont();
     text = "";
     size = 8;
@@ -870,12 +887,18 @@ public class FlixelText extends FlixelSprite {
     borderQuality = 1;
     fontFile = null;
     fontRegistryId = null;
+    privateBitmapFontOwned = false;
     currentGeneratorPath = null;
     ownsGenerator = false;
     fontDirty = true;
     layoutDirty = true;
     setPosition(0, 0);
     setColor(Color.WHITE);
+  }
+
+  @Override
+  public void reset() {
+    destroy();
   }
 
   @Override
@@ -913,29 +936,35 @@ public class FlixelText extends FlixelSprite {
    */
   private void rebuildFont() {
     BitmapFont oldFont = bitmapFont;
+    boolean oldPrivate = privateBitmapFontOwned;
 
     FreeTypeFontGenerator gen = resolveGenerator();
     if (gen != null) {
-      FreeTypeFontParameter param = new FreeTypeFontParameter();
-      param.size = size;
-      param.spaceX = (int) letterSpacing;
-      param.genMipMaps = true;
-      param.minFilter = Texture.TextureFilter.Linear;
-      param.magFilter = Texture.TextureFilter.Linear;
-
-      bitmapFont = gen.generateFont(param);
-    } else {
-      bitmapFont = new BitmapFont();
-      float defaultHeight = bitmapFont.getLineHeight();
-      if (defaultHeight > 0) {
-        bitmapFont.getData().setScale(size / defaultHeight);
+      int space = (int) letterSpacing;
+      if (fontRegistryId != null) {
+        bitmapFont = FlixelFontRegistry.obtainBitmapFontFromFreeType(
+            "reg:" + fontRegistryId, gen, size, space);
+        privateBitmapFontOwned = false;
+      } else if (fontFile != null) {
+        freeTypeParams.size = size;
+        freeTypeParams.spaceX = space;
+        freeTypeParams.genMipMaps = true;
+        freeTypeParams.minFilter = Texture.TextureFilter.Linear;
+        freeTypeParams.magFilter = Texture.TextureFilter.Linear;
+        bitmapFont = gen.generateFont(freeTypeParams);
+        privateBitmapFontOwned = true;
+      } else {
+        String defId = FlixelFontRegistry.getDefault();
+        bitmapFont = FlixelFontRegistry.obtainBitmapFontFromFreeType(
+            "def:" + defId, gen, size, space);
+        privateBitmapFontOwned = false;
       }
-      bitmapFont.getRegion()
-        .getTexture()
-        .setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    } else {
+      bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
+      privateBitmapFontOwned = false;
     }
 
-    if (oldFont != null) {
+    if (oldFont != null && oldFont != bitmapFont && oldPrivate) {
       oldFont.dispose();
     }
   }
@@ -1066,12 +1095,13 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Disposes the BitmapFont and any privately-owned generator. */
+  /** Releases font references; disposes only instance-owned FreeType bitmap fonts. */
   private void disposeFont() {
-    if (bitmapFont != null) {
+    if (bitmapFont != null && privateBitmapFontOwned) {
       bitmapFont.dispose();
-      bitmapFont = null;
     }
+    bitmapFont = null;
+    privateBitmapFontOwned = false;
     disposeOwnedGenerator();
   }
 

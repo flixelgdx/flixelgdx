@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.tween;
 
 /** Class where all easer functions are stored, mostly used for tweening. */
@@ -5,7 +12,6 @@ public final class FlixelEase {
 
   // Easing constants for specific functions.
   private static final float PI2 = (float) Math.PI / 2;
-  private static final float EL = (float) ((float) 2 * Math.PI / .45);
   private static final float B1 = (float) ((float) 1 / 2.75);
   private static final float B2 = (float) ((float) 2 / 2.75);
   private static final float B3 = (float) ((float) 1.5 / 2.75);

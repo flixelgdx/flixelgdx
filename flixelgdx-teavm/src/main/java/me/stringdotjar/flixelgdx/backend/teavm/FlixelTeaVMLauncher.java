@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.backend.teavm;
 
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
@@ -46,10 +53,12 @@ public class FlixelTeaVMLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
-    Flixel.initialize(game, new FlixelTeaVMAlerter(), new TeaVMStackTraceProvider());
+    Flixel.setAlerter(new FlixelTeaVMAlerter());
+    Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
     Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.initialize(game);
 
     WebApplicationConfiguration configuration = new WebApplicationConfiguration();
     configuration.canvasID = "flixelgdx-canvas";

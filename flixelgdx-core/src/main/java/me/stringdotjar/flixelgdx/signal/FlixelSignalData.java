@@ -1,7 +1,14 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.signal;
 
 import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.display.FlixelState;
+import me.stringdotjar.flixelgdx.FlixelState;
 
 /**
  * Convenience class for holding all signal data types used in the default signals stored in

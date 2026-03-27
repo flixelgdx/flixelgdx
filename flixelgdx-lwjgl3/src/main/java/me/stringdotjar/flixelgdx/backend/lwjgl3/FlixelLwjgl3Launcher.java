@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.backend.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
@@ -104,10 +111,12 @@ public class FlixelLwjgl3Launcher {
    * @param configuration The {@link Lwjgl3ApplicationConfiguration} to use.
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, Lwjgl3ApplicationConfiguration configuration) {
-    Flixel.initialize(game, new FlixelLwjgl3Alerter(), new FlixelDefaultStackTraceProvider());
+    Flixel.setAlerter(new FlixelLwjgl3Alerter());
+    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setReflection(new FlixelReflectASMHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.initialize(game);
 
     new Lwjgl3Application(game, configuration);
   }

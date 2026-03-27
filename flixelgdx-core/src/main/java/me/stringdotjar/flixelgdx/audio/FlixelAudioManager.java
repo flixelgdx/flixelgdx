@@ -1,18 +1,21 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.audio;
 
 import games.rednblack.miniaudio.MAGroup;
 import games.rednblack.miniaudio.MASound;
 import games.rednblack.miniaudio.MiniAudio;
+import me.stringdotjar.flixelgdx.FlixelDestroyable;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.badlogic.gdx.utils.Disposable;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Central manager for all audio: FlixelSound instances, master volume, sound groups (SFX and Music),
@@ -22,7 +25,7 @@ import java.util.Set;
  * sound effects and music, global master volume, and automatic pause when the game loses focus
  * (and resume when it regains focus).
  */
-public class FlixelAudioManager implements Disposable {
+public class FlixelAudioManager implements FlixelDestroyable, Disposable {
 
   private final MiniAudio engine;
   private final MAGroup sfxGroup;
@@ -30,9 +33,6 @@ public class FlixelAudioManager implements Disposable {
 
   private float masterVolume = 1f;
   private FlixelSound music;
-
-  private final List<FlixelSound> activeSounds = new ArrayList<>();
-  private final Set<FlixelSound> pausedByFocus = new HashSet<>();
 
   public FlixelAudioManager() {
     engine = new MiniAudio();
@@ -93,9 +93,9 @@ public class FlixelAudioManager implements Disposable {
   }
 
   /**
-   * Changes the global master volume applied to all sounds of {@code this} audio manager 
+   * Changes the global master volume applied to all sounds of {@code this} audio manager
    * by the given amount.
-   * 
+   *
    * @param amount The amount to change the master volume by.
    * @return The new master volume.
    */
@@ -163,7 +163,6 @@ public class FlixelAudioManager implements Disposable {
     flixelSound.setVolume(volume);
     flixelSound.setLooped(looping);
     flixelSound.play();
-    registerSound(flixelSound);
     return flixelSound;
   }
 
@@ -210,12 +209,7 @@ public class FlixelAudioManager implements Disposable {
     music.setVolume(volume);
     music.setLooped(looping);
     music.play();
-    registerSound(music);
     return music;
-  }
-
-  private void registerSound(@NotNull FlixelSound flixelSound) {
-    activeSounds.add(flixelSound);
   }
 
   /**
@@ -235,20 +229,19 @@ public class FlixelAudioManager implements Disposable {
     musicGroup.play();
   }
 
-  /**
-   * Disposes the current music (if any), all groups, and the engine. Call once when the game is
-   * shutting down. After this, the manager must not be used.
-   */
   @Override
-  public void dispose() {
+  public void destroy() {
     if (music != null) {
       music.dispose();
       music = null;
     }
-    activeSounds.clear();
-    pausedByFocus.clear();
     sfxGroup.dispose();
     musicGroup.dispose();
     engine.dispose();
+  }
+
+  @Override
+  public void dispose() {
+    destroy();
   }
 }

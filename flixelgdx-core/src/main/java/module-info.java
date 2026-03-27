@@ -1,13 +1,14 @@
 module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx;
+  exports me.stringdotjar.flixelgdx.asset;
   exports me.stringdotjar.flixelgdx.audio;
   exports me.stringdotjar.flixelgdx.backend.alert;
   exports me.stringdotjar.flixelgdx.backend.runtime;
   exports me.stringdotjar.flixelgdx.backend.reflect;
   exports me.stringdotjar.flixelgdx.box2d;
   exports me.stringdotjar.flixelgdx.debug;
-  exports me.stringdotjar.flixelgdx.display;
   exports me.stringdotjar.flixelgdx.functional;
+  exports me.stringdotjar.flixelgdx.graphics;
   exports me.stringdotjar.flixelgdx.text;
   exports me.stringdotjar.flixelgdx.group;
   exports me.stringdotjar.flixelgdx.input.keyboard;

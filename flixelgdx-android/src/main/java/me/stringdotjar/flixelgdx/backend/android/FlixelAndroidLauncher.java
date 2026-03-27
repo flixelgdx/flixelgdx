@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.backend.android;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
@@ -40,10 +47,12 @@ public class FlixelAndroidLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode) {
-    Flixel.initialize(game, new FlixelAndroidAlerter(activity), new FlixelDefaultStackTraceProvider());
+    Flixel.setAlerter(new FlixelAndroidAlerter(activity));
+    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.initialize(game);
 
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;

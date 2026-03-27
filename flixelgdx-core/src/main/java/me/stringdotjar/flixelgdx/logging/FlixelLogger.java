@@ -1,3 +1,10 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.logging;
 
 import com.badlogic.gdx.Gdx;
@@ -250,7 +257,7 @@ public class FlixelLogger {
 
   /**
    * Stops this logger's log file writer thread and flushes any remaining log lines. Call this during
-   * game shutdown (e.g. from {@link FlixelGame#dispose()}) so that logs written during dispose are persisted.
+   * game shutdown (e.g. from {@link FlixelGame#destroy()}) so that logs written during dispose are persisted.
    */
   public void stopFileLogging() {
     synchronized (logQueueLock) {
