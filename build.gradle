@@ -140,6 +140,38 @@ subprojects {
   }
 }
 
+ext.configureFlixelMavenPom = { MavenPublication publication ->
+  publication.pom {
+    name = rootProject.findProperty('pomName') ?: 'FlixelGDX'
+    description = rootProject.findProperty('pomDescription') ?: 'High-level and powerful game development framework that brings the Flixel philosophy to Java and libGDX.'
+    url = rootProject.findProperty('pomUrl') ?: 'https://github.com/stringdotjar/flixelgdx'
+    licenses {
+      license {
+        name = rootProject.findProperty('pomLicenseName') ?: 'MIT License'
+        url = rootProject.findProperty('pomLicenseUrl') ?: 'https://opensource.org/licenses/MIT'
+        distribution = 'repo'
+      }
+    }
+    developers {
+      developer {
+        id = rootProject.findProperty('pomDeveloperId') ?: 'stringdotjar'
+        name = rootProject.findProperty('pomDeveloperName') ?: 'String'
+      }
+    }
+    scm {
+      connection = rootProject.findProperty('pomScmConnection') ?: 'scm:git:git://github.com/stringdotjar/flixelgdx.git'
+      developerConnection = rootProject.findProperty('pomScmDeveloperConnection') ?: 'scm:git:ssh://git@github.com/stringdotjar/flixelgdx.git'
+      url = rootProject.findProperty('pomScmUrl') ?: 'https://github.com/stringdotjar/flixelgdx'
+    }
+  }
+}
+
+subprojects { Project p ->
+  p.pluginManager.withPlugin('java-library') {
+    p.apply from: rootProject.file('gradle/flixelgdx-library-publish.gradle')
+  }
+}
+
 configure(subprojects) {
   apply plugin: 'maven-publish'
   afterEvaluate {
@@ -151,11 +183,46 @@ configure(subprojects) {
             groupId = project.group
             artifactId = project.name
             version = project.version
+            rootProject.configureFlixelMavenPom(delegate)
           }
         }
       }
     }
   }
+}
+
+subprojects {
+  afterEvaluate { Project p ->
+    if (!p.plugins.hasPlugin('maven-publish')) {
+      return
+    }
+    def pubs = p.publishing.publications.withType(MavenPublication)
+    if (pubs.isEmpty()) {
+      return
+    }
+    def signingExplicit = p.findProperty('flixel.signing.enabled')?.toString() == 'true'
+    def signingKeys = p.findProperty('signing.keyId') != null && p.findProperty('signing.secretKeyRingFile') != null
+    if (!signingExplicit && !signingKeys) {
+      return
+    }
+    p.apply plugin: 'signing'
+    pubs.configureEach { pub ->
+      p.signing.sign(pub)
+    }
+  }
+}
+
+// Aggregate API documentation for CI and local checks (Java library modules only).
+tasks.register('javadocAll') {
+  group = 'verification'
+  description = 'Runs Javadoc (with doclint) on all published Java library modules.'
+  dependsOn(
+    ':flixelgdx-core:javadoc',
+    ':flixelgdx-jvm:javadoc',
+    ':flixelgdx-lwjgl3:javadoc',
+    ':flixelgdx-ios:javadoc',
+    ':flixelgdx-teavm:javadoc'
+  )
 }
 
 eclipse.project.name = 'flixelgdx' + '-parent'

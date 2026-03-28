@@ -10,11 +10,16 @@ package me.stringdotjar.flixelgdx.asset;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Pooled wrapper registered with {@link FlixelAssetManager#registerWrapper(FlixelPooledWrapper)} for
- * {@link #clearNonPersist()} lifecycle.
+ * Pooled wrapper registered through {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager} ({@code registerWrapper}) for
+ * {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#clearNonPersist()} lifecycle.
  */
 public interface FlixelPooledWrapper {
 
+  /**
+   * Gets and returns the asset key associated with {@code this} wrapper.
+   *
+   * @return The asset key.
+   */
   @NotNull
   String getAssetKey();
 
@@ -27,5 +32,10 @@ public interface FlixelPooledWrapper {
     return getClass();
   }
 
+  /**
+   * Checks if {@code this} wrapper is owned.
+   *
+   * @return {@code true} if the wrapper is owned, {@code false} otherwise.
+   */
   boolean isOwned();
 }

@@ -37,7 +37,7 @@ import java.util.Set;
  * parameters) so repeated {@link FlixelText} instances with the same settings share one
  * texture-backed font. The built-in libGDX default bitmap font is cached per pixel size.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * // Register fonts at startup (e.g. in your FlixelState.create()):
  * FlixelFontRegistry.register("pixel", Gdx.files.internal("fonts/pixel.ttf"));
@@ -54,7 +54,7 @@ import java.util.Set;
  * FlixelFontRegistry.dispose();
  * }</pre>
  *
- * <h3>Lifecycle</h3>
+ * <h2>Lifecycle</h2>
  * <p>{@link #dispose()} is called when the game shuts down (in
  * {@code FlixelGame.dispose()}) to release all cached generators. Individual entries
  * can be removed earlier with {@link #unregister(String)}.

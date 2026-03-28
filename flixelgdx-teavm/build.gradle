@@ -33,6 +33,11 @@ def reflectionExtraPackages = (findProperty("flixelReflectionExtraPackages") ?: 
 def generateTeaVmReflectionConfig = tasks.register("generateTeaVmReflectionConfig") {
   def outputDir = layout.buildDirectory.dir("generated/teavm-config")
   outputs.dir(outputDir)
+  // runtimeClasspath resolves project(':flixelgdx-core') to its consumer JAR under build/libs/.
+  // That file is only created by the jar task, not by compileJava or javadoc alone, so any
+  // workflow that runs processResources (e.g. javadoc pulling main output / classpath) must
+  // build the core JAR first.
+  dependsOn project(':flixelgdx-core').tasks.named('jar')
 
   doLast {
     def out = outputDir.get().file("teavm.json").asFile

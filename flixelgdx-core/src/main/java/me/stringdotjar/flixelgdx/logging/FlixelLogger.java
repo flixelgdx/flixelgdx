@@ -256,8 +256,9 @@ public class FlixelLogger {
   }
 
   /**
-   * Stops this logger's log file writer thread and flushes any remaining log lines. Call this during
-   * game shutdown (e.g. from {@link FlixelGame#destroy()}) so that logs written during dispose are persisted.
+   * Stops {@code this} logger's log file writer thread and flushes any remaining log lines. Call this during
+   * game shutdown (e.g. from {@link me.stringdotjar.flixelgdx.FlixelGame#dispose()}) so that
+   * logs written during dispose are persisted.
    */
   public void stopFileLogging() {
     synchronized (logQueueLock) {

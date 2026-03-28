@@ -36,23 +36,23 @@ import org.jetbrains.annotations.NotNull;
  * {@link BitmapFont} for rendering and optionally {@link FreeTypeFontGenerator} for
  * dynamic font generation from {@code .ttf}/{@code .otf} files.
  *
- * <h3>Auto-sizing</h3>
+ * <h2>Auto-sizing</h2>
  * <p>By default, {@code FlixelText} auto-sizes to fit its text content. To use a fixed
  * width, pass a positive {@code fieldWidth} to the constructor or call
  * {@link #setFieldWidth(float)}. A fixed height can be set via {@link #setFieldHeight(float)}.
  *
- * <h3>Fonts</h3>
+ * <h2>Fonts</h2>
  * <p>The default font is libGDX's built-in bitmap font (Arial 15px), scaled to the
  * requested size. For best quality at any size, supply a {@code .ttf} or {@code .otf}
  * file via {@link #setFont(FileHandle)}, which uses FreeType to generate a crisp
  * bitmap font at the exact pixel size requested.
  *
- * <h3>Border Styles</h3>
+ * <h2>Border Styles</h2>
  * <p>Text can be rendered with borders via {@link #setBorderStyle(BorderStyle, Color, float, float)}.
  * Supported styles are {@link BorderStyle#SHADOW}, {@link BorderStyle#OUTLINE}, and
  * {@link BorderStyle#OUTLINE_FAST}.
  *
- * <h3>Sprite Methods</h3>
+ * <h2>Sprite Methods</h2>
  * <p>Graphic-loading and animation methods inherited from {@link FlixelSprite} are not
  * applicable to text and will throw {@link UnsupportedOperationException} if called.
  */

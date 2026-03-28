@@ -65,7 +65,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * or {@link #load(String)} unless you need direct control over the libGDX type.
    *
    * @param fileName Asset key/path passed to libGDX.
-   * @param type Concrete type registered with {@link AssetManager} (e.g. {@link Texture}.class).
+   * @param type Concrete type registered with {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@link com.badlogic.gdx.graphics.Texture}.class).
    */
   <T> void load(@NotNull String fileName, @NotNull Class<T> type);
 

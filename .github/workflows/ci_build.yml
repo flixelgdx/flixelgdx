@@ -7,6 +7,27 @@ on:
     branches: [master, develop]
 
 jobs:
+  javadoc:
+    name: Javadoc (doclint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Javadoc all Java modules
+        run: ./gradlew javadocAll --no-daemon --warning-mode all
+        shell: bash
+
   build:
     name: Build (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
@@ -70,7 +91,7 @@ jobs:
         run: ./gradlew :flixelgdx-core:assemble :flixelgdx-ios:assemble --no-daemon
         shell: bash
 
-      - name: Build (TeaVM)
-        if: matrix.platform == 'teavm'
+      - name: Build (TeaVM / web)
+        if: matrix.platform == 'web'
         run: ./gradlew :flixelgdx-core:assemble :flixelgdx-teavm:assemble --no-daemon
         shell: bash

@@ -29,7 +29,7 @@
  *
  * <p><b>When to use sources vs wrappers</b>
  *
- * <table border="1" summary="Sources vs wrappers">
+ * <table border="1">
  *   <caption>Choosing between extension loading and the wrapper pool</caption>
  *   <tr><th>Need</th><th>Use</th><th>Wrapper factory?</th></tr>
  *   <tr>

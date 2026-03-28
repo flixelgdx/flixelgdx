@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.javadoc.Javadoc
+import org.gradle.external.javadoc.CoreJavadocOptions
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
@@ -56,4 +59,13 @@ dependencies {
   if (enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+}
+
+// Javadoc runs in classpath mode: module-info is for compilation only; mixing JPMS + automatic
+// modules on the javadoc tool's module path is brittle with Gradle's defaults.
+// Document as a real JPMS module: same layout as compileJava (all deps on --module-path).
+tasks.named('javadoc', Javadoc) {
+  modularity.inferModulePath = false
+  classpath = files()
+  (options as CoreJavadocOptions).modulePath = sourceSets.main.compileClasspath + sourceSets.main.output.classesDirs
 }

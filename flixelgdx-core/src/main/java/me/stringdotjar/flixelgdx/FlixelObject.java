@@ -21,13 +21,13 @@ import me.stringdotjar.flixelgdx.util.FlixelConstants;
  * <p>Most games interact with this through {@link FlixelSprite}, which adds graphical
  * capabilities on top of this spatial foundation.
  *
- * <h3>Collision</h3>
+ * <h2>Collision</h2>
  * Use {@link me.stringdotjar.flixelgdx.Flixel#overlap Flixel.overlap()} and
  * {@link me.stringdotjar.flixelgdx.Flixel#collide Flixel.collide()} for overlap/separation
  * checks. The static {@link #separate(FlixelObject, FlixelObject)} method resolves overlaps
  * by adjusting positions and velocities.
  *
- * <h3>Box2D</h3>
+ * <h2>Box2D</h2>
  * To use Box2D physics instead of the built-in kinematic model, implement
  * {@link FlixelBox2DObject} on your subclass. See that interface's documentation for details.
  *

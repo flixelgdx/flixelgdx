@@ -77,7 +77,7 @@ import org.jetbrains.annotations.NotNull;
  *     FlixelLwjgl3Launcher.launch(game);
  *   }
  * }
- * }
+ * }</pre>
  */
 public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable {
 
