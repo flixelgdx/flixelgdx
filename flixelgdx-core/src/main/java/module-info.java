@@ -19,6 +19,7 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.tween.builders;
   exports me.stringdotjar.flixelgdx.tween.settings;
   exports me.stringdotjar.flixelgdx.tween.type;
+  exports me.stringdotjar.flixelgdx.tween.type.motion;
   exports me.stringdotjar.flixelgdx.util;
 
   // Automatic module names (from JAR filenames when on the module path).

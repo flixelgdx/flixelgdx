@@ -65,6 +65,11 @@ public class FlixelNumTween extends FlixelTween {
   }
 
   @Override
+  public boolean isTweenOf(Object object, String field) {
+    return false;
+  }
+
+  @Override
   protected void updateTweenValues() {
     if (updateCallback == null) {
       return;

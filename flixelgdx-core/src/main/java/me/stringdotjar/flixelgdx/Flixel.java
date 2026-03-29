@@ -34,12 +34,32 @@ import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelAngleTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelCircularMotionBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelColorTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelCubicMotionBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelFlickerTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelLinearMotionBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelLinearPathBuilder;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelNumTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelQuadMotionBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelQuadPathBuilder;
+import me.stringdotjar.flixelgdx.tween.builders.FlixelShakeTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelVarTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
+import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCircularMotion;
+import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCubicMotion;
+import me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion;
+import me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearPath;
+import me.stringdotjar.flixelgdx.tween.type.motion.FlixelQuadMotion;
+import me.stringdotjar.flixelgdx.tween.type.motion.FlixelQuadPath;
 import me.stringdotjar.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
 
 import org.jetbrains.annotations.NotNull;
@@ -190,7 +210,17 @@ public final class Flixel {
     FlixelTween.getGlobalManager()
       .registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, () -> new FlixelPropertyTween(null))
       .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, () -> new FlixelVarTween(null, null, null))
-      .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null));
+      .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null))
+      .registerTweenType(FlixelAngleTween.class, FlixelAngleTweenBuilder.class, () -> new FlixelAngleTween(null))
+      .registerTweenType(FlixelColorTween.class, FlixelColorTweenBuilder.class, () -> new FlixelColorTween(null))
+      .registerTweenType(FlixelShakeTween.class, FlixelShakeTweenBuilder.class, () -> new FlixelShakeTween(null))
+      .registerTweenType(FlixelFlickerTween.class, FlixelFlickerTweenBuilder.class, () -> new FlixelFlickerTween(null))
+      .registerTweenType(FlixelLinearMotion.class, FlixelLinearMotionBuilder.class, () -> new FlixelLinearMotion(null))
+      .registerTweenType(FlixelCircularMotion.class, FlixelCircularMotionBuilder.class, () -> new FlixelCircularMotion(null))
+      .registerTweenType(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class, () -> new FlixelQuadMotion(null))
+      .registerTweenType(FlixelCubicMotion.class, FlixelCubicMotionBuilder.class, () -> new FlixelCubicMotion(null))
+      .registerTweenType(FlixelLinearPath.class, FlixelLinearPathBuilder.class, () -> new FlixelLinearPath(null))
+      .registerTweenType(FlixelQuadPath.class, FlixelQuadPathBuilder.class, () -> new FlixelQuadPath(null));
 
     initialized = true;
   }

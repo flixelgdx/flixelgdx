@@ -10,7 +10,10 @@ package me.stringdotjar.flixelgdx.tween.type;
 import com.badlogic.gdx.utils.ObjectFloatMap;
 import com.badlogic.gdx.utils.ObjectSet;
 
+import java.util.Objects;
+
 import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.backend.reflect.FlixelPropertyPath;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
@@ -18,7 +21,7 @@ import java.lang.reflect.Field;
 
 /**
  * Tween type for tweening specific fields on an object using reflection.
- * 
+ *
  * <p>Although it is slightly slower than a {@link FlixelPropertyTween}, this type is here
  * just in case you need it and for convenience.
  */
@@ -92,7 +95,7 @@ public class FlixelVarTween extends FlixelTween {
     }
 
     if (fieldsCache == null) {
-      fieldsCache = Flixel.reflect.getAllFieldsAsArray(object.getClass());
+      fieldsCache = Flixel.reflect.objectFieldsArray(object.getClass());
     }
 
     // Get all the float fields on the object.
@@ -195,6 +198,21 @@ public class FlixelVarTween extends FlixelTween {
     super.resetBasic();
     initialValues.clear();
     currentValues.clear();
+  }
+
+  @Override
+  public boolean isTweenOf(Object o, String field) {
+    if (object == null || goalValues.isEmpty()) {
+      return false;
+    }
+    if (field == null || field.isEmpty()) {
+      return Objects.equals(o, object);
+    }
+    if (field.indexOf('.') < 0) {
+      return Objects.equals(o, object) && goalValues.containsKey(field);
+    }
+    FlixelPropertyPath path = Flixel.reflect.resolvePropertyPath(o, field);
+    return Objects.equals(path.leafObject(), object) && goalValues.containsKey(path.leafName());
   }
 
   /** Callback interface for changing an objects values when a var tween updates its values. */

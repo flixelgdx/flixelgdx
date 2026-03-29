@@ -324,7 +324,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
     FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
       .setDuration(durationSeconds)
       .addGoal(this::getVolume, to, this::setVolume);
-    fadeTween = FlixelTween.tween(settings);
+    fadeTween = FlixelTween.tween(this, settings);
     return this;
   }
 
@@ -347,7 +347,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
     FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
       .setDuration(durationSeconds)
       .addGoal(this::getVolume, to, this::setVolume);
-    fadeTween = FlixelTween.tween(settings);
+    fadeTween = FlixelTween.tween(this, settings);
     return this;
   }
 

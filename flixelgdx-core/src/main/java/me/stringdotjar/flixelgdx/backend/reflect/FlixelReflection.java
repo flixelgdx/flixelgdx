@@ -69,7 +69,7 @@ public interface FlixelReflection {
    * @param propertyName The property name to resolve.
    * @return The resolved property value.
    */
-  Object getProperty(Object target, String propertyName);
+  Object property(Object target, String propertyName);
 
   /**
    * Writes a property value on the target.
@@ -150,7 +150,7 @@ public interface FlixelReflection {
    * @param type Class to inspect.
    * @return All resolved fields.
    */
-  List<Field> getAllFields(Class<?> type);
+  List<Field> objectFields(Class<?> type);
 
   /**
    * Returns all fields declared on a type and its superclasses as an array.
@@ -158,7 +158,7 @@ public interface FlixelReflection {
    * @param type Class to inspect.
    * @return All resolved fields as an array.
    */
-  Field[] getAllFieldsAsArray(Class<?> type);
+  Field[] objectFieldsArray(Class<?> type);
 
   /**
    * Checks whether the class at the given class path is declared as final.
@@ -170,4 +170,49 @@ public interface FlixelReflection {
    * @return {@code true} when the resolved class is final.
    */
   boolean isClassFinal(String classPath);
+
+  /**
+   * Walks a dotted path from {@code root}, using {@link #property(Object, String)} for each
+   * segment except the last. The last segment is the leaf name (e.g. VarTween goal key), not read
+   * as a property here. Callers compare it to stored goal names or use it with {@link #field}.
+   *
+   * @param root Non-null root object (e.g. the VarTween target).
+   * @param dottedPath Non-empty path; a single segment with no {@code '.'} returns {@code (root, segment)}.
+   * @return The resolved leaf object and leaf name.
+   * @throws IllegalArgumentException If {@code root} is null, {@code dottedPath} is null/empty, or the path is malformed.
+   * @throws IllegalStateException If a non-final segment resolves to null.
+   */
+  default FlixelPropertyPath resolvePropertyPath(Object root, String dottedPath) {
+    if (root == null) {
+      throw new IllegalArgumentException("root cannot be null.");
+    }
+    if (dottedPath == null || dottedPath.isEmpty()) {
+      throw new IllegalArgumentException("dottedPath must be non-empty.");
+    }
+
+    // Split the dotted path into segments.
+    String[] raw = dottedPath.split("\\.", -1);
+    java.util.ArrayList<String> segments = new java.util.ArrayList<>(raw.length);
+    for (String s : raw) {
+      if (s.isEmpty()) {
+        throw new IllegalArgumentException("Invalid dotted path: \"" + dottedPath + "\"");
+      }
+      segments.add(s);
+    }
+    if (segments.size() == 1) {
+      return new FlixelPropertyPath(root, segments.get(0));
+    }
+
+    // Walk the path, resolving each segment as a property.
+    Object current = root;
+    for (int i = 0; i < segments.size() - 1; i++) {
+      Object next = property(current, segments.get(i));
+      if (next == null) {
+        throw new IllegalStateException(
+            "Null at segment \"" + segments.get(i) + "\" in path \"" + dottedPath + "\"");
+      }
+      current = next;
+    }
+    return new FlixelPropertyPath(current, segments.get(segments.size() - 1));
+  }
 }

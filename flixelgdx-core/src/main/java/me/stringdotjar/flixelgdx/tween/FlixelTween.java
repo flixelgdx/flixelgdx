@@ -115,7 +115,7 @@ public class FlixelTween implements Pool.Poolable {
 
   /**
    * Creates a new reflection-based tween with the provided settings and adds it to the global tween manager
-   * (which starts it automatically). Shorthand for create, add and start, matching HaxeFlixel's FlxTween.tween.
+   * (which starts it automatically). Shorthand for create, add and start.
    *
    * @param object The object to tween its values.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -124,24 +124,35 @@ public class FlixelTween implements Pool.Poolable {
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings, FlixelVarTween.FunkinVarTweenUpdateCallback updateCallback) {
     FlixelVarTween tween = globalManager.obtainTween(FlixelVarTween.class, () -> new FlixelVarTween(object, tweenSettings, updateCallback));
+    tween.setTweenSettings(tweenSettings);
+    tween.setTarget(object, updateCallback);
     return globalManager.addTween(tween);
   }
 
   /**
    * Creates a new property-based tween with the provided settings and adds it to the global tween manager
-   * (which starts it automatically). Shorthand for create, add and start, matching HaxeFlixel's FlxTween.tween.
+   * (which starts it automatically). Shorthand for create, add and start.
    *
+   * <p>{@link FlixelPropertyTween} requires a subject: use
+   * {@link FlixelTween#tween(Class, Class)} with {@link me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder}
+   * and {@link me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder#setObject(Object)} before
+   * {@link me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder#start()}; this overload only
+   * applies settings and will throw {@link IllegalStateException} on start if {@code setObject} was not used.
+   *
+   * @param object The object to tween.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
-  public static FlixelTween tween(FlixelTweenSettings tweenSettings) {
+  public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     FlixelPropertyTween tween = globalManager.obtainTween(FlixelPropertyTween.class, () -> new FlixelPropertyTween(tweenSettings));
+    tween.setTweenSettings(tweenSettings);
+    tween.setObject(object);
     return globalManager.addTween(tween);
   }
 
   /**
    * Creates a new numerical tween with the provided settings and adds it to the global tween manager
-   * (which starts it automatically). Shorthand for create, add and start, matching HaxeFlixel's FlxTween.num.
+   * (which starts it automatically). Shorthand for create, add and start.
    *
    * @param from The starting floating point value.
    * @param to The ending floating point value.
@@ -151,6 +162,8 @@ public class FlixelTween implements Pool.Poolable {
    */
   public static FlixelTween num(float from, float to, FlixelTweenSettings tweenSettings, FlixelNumTween.FlixelNumTweenUpdateCallback updateCallback) {
     FlixelNumTween tween = globalManager.obtainTween(FlixelNumTween.class, () -> new FlixelNumTween(from, to, tweenSettings, updateCallback));
+    tween.setTweenSettings(tweenSettings);
+    tween.setTarget(from, to, updateCallback);
     return globalManager.addTween(tween);
   }
 
@@ -226,7 +239,8 @@ public class FlixelTween implements Pool.Poolable {
 
   /**
    * Called when the tween reaches the end of its duration. Invokes {@code onComplete} (including for LOOPING/PINGPONG each cycle).
-   * LOOPING/PINGPONG restart (PINGPONG flips direction). Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop updating and no longer overwrite the target; only ONESHOT is removed from the manager.
+   * LOOPING/PINGPONG restart (PINGPONG flips direction). Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop
+   * updating and no longer overwrite the target; only ONESHOT is removed from the manager.
    */
   public void finish() {
     executions++;
@@ -388,5 +402,18 @@ public class FlixelTween implements Pool.Poolable {
     manager = newManager;
     manager.getActiveTweens().add(this);
     return this;
+  }
+
+  /**
+   * Whether this tween is considered to animate {@code object} for the given logical field or path.
+   * Used by {@link FlixelTweenManager#cancelTweensOf(Object, String...)} and related APIs.
+   *
+   * @param object The instance to test (e.g. the root passed to {@code cancelTweensOf}).
+   * @param field Optional goal key or dotted path (e.g. {@code "x"} or {@code "weapon.rotation"}); {@code null} or
+   *     empty matches any field on {@code object} for types that support it.
+   * @return {@code false} by default; subclasses override.
+   */
+  public boolean isTweenOf(Object object, String field) {
+    return false;
   }
 }
