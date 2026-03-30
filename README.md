@@ -201,7 +201,7 @@ public class Custom3DCamera extends FlixelCamera {
 - **Input**: Keyboard helpers via `Flixel.keys`; touch/mouse still through libGDX.
 - **Logging & debugging**: `Flixel.log`, `Flixel.watch`, optional debug overlay.
 - **Signals**: `Flixel.Signals` for pre/post update, draw, state switch, window focus, and more.
-- and much more!
+- ...and much more!
 
 ### Entity & Sprite Basics
 
@@ -222,13 +222,13 @@ public class Player extends FlixelSprite {
 }
 ```
 
-**How it Works** 
+**How it works**
 
 The entity hierarchy mirrors HaxeFlixel:
 
-- `**FlixelBasic`** - The base for everything. It has no position or graphics, only lifecycle flags: `active` (whether `update()` runs), `exists` (whether it is updated and drawn), `alive` (for game logic), and `visible` (whether it is drawn). Override `update(float)` and `draw(Batch)` for custom behavior; use `kill()` / `revive()` to temporarily disable or bring back objects.
-- `**FlixelObject**` - Adds position (`x`, `y`), size (`width`, `height`), rotation (`angle`), and physics-style motion: velocity, acceleration, drag, and max velocity (X/Y and angular). Set `moves = true` (default) so `update()` calls `updateMotion()`, which applies velocity and acceleration each frame.
-- `**FlixelSprite**` - Adds rendering: textures, spritesheets, animations, scale, origin, offset, color tint, and flip. Use `loadGraphic()` for images, `makeGraphic()` for solid rectangles, or `loadSparrowFrames()` for XML-based atlases; then `addAnimation()` / `addAnimationByPrefix()` and `playAnimation()` for frame-based animation.
+- **`FlixelBasic`** — The base for everything. It has no position or graphics, only lifecycle flags: `active` (whether `update()` runs), `exists` (whether it is updated and drawn), `alive` (for game logic), and `visible` (whether it is drawn). Override `update(float)` and `draw(Batch)` for custom behavior; use `kill()` / `revive()` to temporarily disable or bring back objects.
+- **`FlixelObject`** — Adds position (`x`, `y`), size (`width`, `height`), rotation (`angle`), and physics-style motion: velocity, acceleration, drag, and max velocity (X/Y and angular). Set `moves = true` (default) so `update()` calls `updateMotion()`, which applies velocity and acceleration each frame.
+- **`FlixelSprite`** — Adds rendering: textures, spritesheets, animations, scale, origin, offset, color tint, and flip. Use `loadGraphic()` for images, `makeGraphic()` for solid rectangles, or `loadSparrowFrames()` for XML-based atlases; then `addAnimation()` / `addAnimationByPrefix()` and `playAnimation()` for frame-based animation.
 
 So you get a clear separation: logic and “does it exist?” in `FlixelBasic`, position and movement in `FlixelObject`, and drawing in `FlixelSprite`. That keeps code organized whether you’re prototyping or building a larger game.
 
@@ -258,10 +258,10 @@ You can use `FlixelSprite` and `FlixelObject` even if you don’t use `FlixelGam
 
 States give you a high-level way to structure screens (menus, loading, gameplay, pause overlays, etc.), similar to HaxeFlixel's `FlxState` and `FlxSubState`. Each state is a `Screen` and a group: you override `create()`, `update(float)`, and `draw(Batch)` and add sprites/groups with `add()`.
 
-**How it works.**
+**How it works**
 
-- `**FlixelState`** extends `FlixelGroup<FlixelBasic>` and implements libGDX’s `Screen`. When the game switches to a state, `create()` is called once; then each frame the state’s `update(elapsed)` and `draw(batch)` run, which in turn update and draw all members you added. Use `Flixel.switchState(newState)` to transition; the old state is disposed automatically.
-- `**FlixelSubState**` is a state that is opened *on top of* another state. By default the parent state stops updating (`persistentUpdate = false`) but keeps drawing (`persistentDraw = true`), so you get a classic “pause overlay” or modal dialog. The substate has `openCallback` and `closeCallback`; call `close()` from inside the substate to remove it and resume the parent.
+- **`FlixelState`** extends `FlixelGroup<FlixelBasic>` and implements libGDX’s `Screen`. When the game switches to a state, `create()` is called once; then each frame the state’s `update(elapsed)` and `draw(batch)` run, which in turn update and draw all members you added. Use `Flixel.switchState(newState)` to transition; the old state is disposed automatically.
+- **`FlixelSubState`** is a state that is opened *on top of* another state. By default the parent state stops updating (`persistentUpdate = false`) but keeps drawing (`persistentDraw = true`), so you get a classic “pause overlay” or modal dialog. The substate has `openCallback` and `closeCallback`; call `close()` from inside the substate to remove it and resume the parent.
 - **Outros.** Override `startOutro(onOutroComplete)` on a state to run an exit animation or transition before the switch; when done, call the callback so the framework proceeds with the state change.
 
 ```java
@@ -323,9 +323,9 @@ In a standard FlixelGDX setup you pass the initial `FlixelState` to `FlixelGame`
 
 Groups batch-update and draw many objects so you don’t hand-write loops everywhere. `FlixelState` is a `FlixelGroup<FlixelBasic>`, so when you `add()` sprites to a state you’re already using the group system.
 
-**How it Works**
+**How it works**
 
-- `**FlixelGroup<T>`** holds a list of `FlixelBasic` members. Each frame it iterates over them and calls `update(elapsed)` then `draw(batch)`. You `add()` and `remove()` members; `clear()` removes all without destroying them; `destroy()` destroys every member and clears the list.
+- **`FlixelGroup<T>`** holds a list of `FlixelBasic` members. Each frame it iterates over them and calls `update(elapsed)` then `draw(batch)`. You `add()` and `remove()` members; `clear()` removes all without destroying them; `destroy()` destroys every member and clears the list.
 - **Capacity.** The constructor takes an optional `maxSize`. If `maxSize > 0`, `add()` won’t add when the group is full, which helps for fixed-size object pools (e.g. bullets).
 - **Iteration.** Use `forEachMember(callback)` to run logic on every member, or `forEachMemberType(Class<C>, callback)` to iterate only over members of a given type (e.g. all `FlixelSprite` or your own `Enemy` class).
 
@@ -362,7 +362,7 @@ Use `FlixelGroup` the same way: create a group, `add()` your `FlixelBasic` (or `
 
 ### Tweening
 
-FlixelGDX includes a tweening system inspired by Flixel/HaxeFlixel. You can use a **fluent builder** (`FlixelTween.tween(tweenClass, builderClass)`), **static factories** on `FlixelTween` (motion, color, shake, and more), or `**FlixelTween.tween(object, settings)`** when goals are already on `FlixelTweenSettings`.
+FlixelGDX includes a tweening system inspired by Flixel/HaxeFlixel. You can use a **fluent builder** (`FlixelTween.tween(tweenClass, builderClass)`), **static factories** on `FlixelTween` (motion, color, shake, and more), or **`FlixelTween.tween(object, settings)`** when goals are already on `FlixelTweenSettings`.
 
 #### FlixelGDX vs Universal Tween Engine (UTE)
 
@@ -401,7 +401,6 @@ No accessor class or index map: duration, ease, delays, and callbacks chain on t
 
 These add a started tween to the **global** manager (same as `addTween` after `obtainTween`):
 
-
 | API                                                                                                             | Purpose                                                                                                                                                                                                            |
 | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tween(object, settings)`                                                                                       | Dispatches by goals on `settings`: **property** goals → `FlixelPropertyTween`; **var** goals (`addGoal(String, float)`) → `FlixelVarTween` via `Flixel.reflect`. Do not mix both kinds on one `settings` instance. |
@@ -417,8 +416,7 @@ These add a started tween to the **global** manager (same as `addTween` after `o
 | `linearPath(target, durationOrSpeed, useDuration, settings, x0, y0, x1, y1, …)`                                 | Polyline path; varargs are vertex pairs (at least two points).                                                                                                                                                     |
 | `quadPath(target, durationOrSpeed, useDuration, settings, x0, y0, …)`                                           | Chain of quad segments: **odd** vertex count, at least three points (`start, control, end, control, end, …`).                                                                                                      |
 
-
-For complex easing, delays, or extra configuration, you can still use `**FlixelTween.tween(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class)`** (and the other motion/path builder pairs) for a fluent chain.
+For complex easing, delays, or extra configuration, you can still use **`FlixelTween.tween(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class)`** (and the other motion/path builder pairs) for a fluent chain.
 
 #### Registry and built-in types
 
@@ -472,7 +470,6 @@ FlixelTween.registerTweenType(
 
 Most games use the single global tween manager. These static methods forward to it so you rarely need `FlixelTween.getGlobalManager()` in gameplay code (use `getGlobalManager()` when you called `setManager(...)` on a builder for a custom manager):
 
-
 | Method                                                                 | Purpose                                                                       |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `FlixelTween.updateTweens(delta)`                                      | Advance all active tweens (what `FlixelGame` calls each frame).               |
@@ -484,7 +481,6 @@ Most games use the single global tween manager. These static methods forward to 
 | `FlixelTween.containsTweensOf(object, fieldPaths...)`                  | Whether any active tween matches.                                             |
 | `FlixelTween.cancelActiveTweens()`                                     | Cancel every active tween.                                                    |
 | `FlixelTween.clearTweenPools()`                                        | Clear all tween object pools (often paired with cancel on a full reset).      |
-
 
 #### Using tweens inside a FlixelGDX game
 
@@ -543,52 +539,52 @@ This lets you adopt FlixelGDX's tweening in small pieces inside an existing libG
 
 ### Assets
 
-After `Flixel.initialize()`, `**Flixel.assets**` is the active `FlixelAssetManager` (default: `FlixelDefaultAssetManager`). It sits on top of libGDX’s `AssetManager` and encourages **typed** loading:
+After `Flixel.initialize()`, **`Flixel.assets`** is the active `FlixelAssetManager` (default: `FlixelDefaultAssetManager`). It sits on top of libGDX’s `AssetManager` and encourages **typed** loading:
 
-- `**load(FlixelSource)`** — Preferred: the source describes both path and asset type (texture, atlas, sound, etc.).
-- `**load(String path)**` — Resolves a `FlixelSource` from the file extension via an **extension registry** on the manager. Convenient for quick tests; register custom mappings with `registerExtension` if extensions are ambiguous.
-- `**finishLoading()`** / progress APIs — Same idea as libGDX: queue loads, then block or poll until ready.
-- `**get(...)**` — Retrieve loaded assets by key/type.
+- **`load(FlixelSource)`** — Preferred: the source describes both path and asset type (texture, atlas, sound, etc.).
+- **`load(String path)`** — Resolves a `FlixelSource` from the file extension via an **extension registry** on the manager. Convenient for quick tests; register custom mappings with `registerExtension` if extensions are ambiguous.
+- **`finishLoading()`** / progress APIs — Same idea as libGDX: queue loads, then block or poll until ready.
+- **`get(...)`** — Retrieve loaded assets by key/type.
 
-You can supply your own manager before initialization (see `Flixel` asset factory/setter APIs in the Javadoc). On `**Flixel.switchState**`, non-persistent assets are cleared (`clearNonPersist`) so each state can own its load set unless you mark content persistent.
+You can supply your own manager before initialization (see `Flixel` asset factory/setter APIs in the Javadoc). On **`Flixel.switchState`**, non-persistent assets are cleared (`clearNonPersist`) so each state can own its load set unless you mark content persistent.
 
 ### Audio
 
-`**Flixel.sound**` is a `**FlixelAudioManager**` built on **MiniAudio**: separate groups for **SFX** and **music**, plus a **master volume** (clamped 0–1).
+**`Flixel.sound`** is a **`FlixelAudioManager`** built on **MiniAudio**: separate groups for **SFX** and **music**, plus a **master volume** (clamped 0–1).
 
-- `**play(path)`** / overloads — One-shot or looping sound effects on the SFX group; paths are resolved for internal files unless you use the “external” overloads.
-- `**playMusic(path)**` / overloads — Stops previous music, plays on the music group (typical looping background track).
-- `**pause()` / `resume()**` — Used when the window loses/regains focus so audio does not run in the background unintentionally.
-- `**getEngine()**` — Access to MiniAudio for advanced loading or custom sounds.
+- **`play(path)`** / overloads — One-shot or looping sound effects on the SFX group; paths are resolved for internal files unless you use the “external” overloads.
+- **`playMusic(path)`** / overloads — Stops previous music, plays on the music group (typical looping background track).
+- **`pause()` / `resume()`** — Used when the window loses/regains focus so audio does not run in the background unintentionally.
+- **`getEngine()`** — Access to MiniAudio for advanced loading or custom sounds.
 
-Sounds are represented as `**FlixelSound**` instances (volume, loop, play/stop/dispose).
+Sounds are represented as **`FlixelSound`** instances (volume, loop, play/stop/dispose).
 
 ### Reflection
 
-`**Flixel.reflect**` implements `**FlixelReflection**`: read/write **fields**, **JavaBean-style properties** (`property` / `setProperty`), **method calls**, **dotted path resolution** (`resolvePropertyPath`), and helpers used by **var tweens** and other runtime features.
+**`Flixel.reflect`** implements **`FlixelReflection`**: read/write **fields**, **JavaBean-style properties** (`property` / `setProperty`), **method calls**, **dotted path resolution** (`resolvePropertyPath`), and helpers used by **var tweens** and other runtime features.
 
-Until you call `**Flixel.setReflection(...)`** with a real implementation (e.g. `**FlixelDefaultReflectionHandler**` on desktop), the default **unsupported** stub throws: configure reflection during startup if you use `**FlixelVarTween`** or anything else that depends on it.
+Until you call **`Flixel.setReflection(...)`** with a real implementation (e.g. **`FlixelDefaultReflectionHandler`** on desktop), the default **unsupported** stub throws: configure reflection during startup if you use **`FlixelVarTween`** or anything else that depends on it.
 
 ### Text
 
-`**FlixelText**` extends `**FlixelSprite**`, so you add labels to states and groups like any other sprite (tint, scale, rotation, alpha). It renders with libGDX `**BitmapFont**`, with optional **FreeType** generation from `**.ttf` / `.otf`** via `**setFont(FileHandle)**` for crisp sizes. You get **auto-sized** bounds by default, optional **field width/height**, **alignment**, and **border** styles (shadow, outline). Graphic and atlas-loading APIs inherited from `FlixelSprite` are not valid on text and throw if used.
+**`FlixelText`** extends **`FlixelSprite`**, so you add labels to states and groups like any other sprite (tint, scale, rotation, alpha). It renders with libGDX **`BitmapFont`**, with optional **FreeType** generation from `.ttf` / `.otf` files via **`setFont(FileHandle)`** for crisp sizes. You get **auto-sized** bounds by default, optional **field width/height**, **alignment**, and **border** styles (shadow, outline). Graphic and atlas-loading APIs inherited from `FlixelSprite` are not valid on text and throw if used.
 
 ### Signals, cameras & debugging
 
-- `**Flixel.Signals`** — Global `**FlixelSignal**` hooks: `**preUpdate` / `postUpdate**`, `**preDraw` / `postDraw**`, `**preStateSwitch` / `postStateSwitch**`, window focus/minimize, and game close. `**pre**` runs before framework work; `**post**` runs after.
-- **Cameras** — `**FlixelCamera`** (used by `**FlixelGame**`) wraps a libGDX camera and viewport; games can use multiple cameras and scroll modes. See the `FlixelCamera` Javadoc for viewport access when you need raw libGDX types.
-- **Debug** — `**Flixel.watch`** (`**FlixelDebugWatchManager**`) tracks values on the debug overlay. `**Flixel.setDebugOverlay(Supplier)**` supplies a custom `**FlixelDebugOverlay**`; debug drawing runs when `**Flixel.isDebugMode()**` is true under `**FlixelGame**`.
+- **`Flixel.Signals`** — Global **`FlixelSignal`** hooks: **`preUpdate` / `postUpdate`**, **`preDraw` / `postDraw`**, **`preStateSwitch` / `postStateSwitch`**, window focus/minimize, and game close. **`pre*`** runs before framework work; **`post*`** runs after.
+- **Cameras** — **`FlixelCamera`** (used by **`FlixelGame`**) wraps a libGDX camera and viewport; games can use multiple cameras and scroll modes. See the `FlixelCamera` Javadoc for viewport access when you need raw libGDX types.
+- **Debug** — **`Flixel.watch`** (**`FlixelDebugWatchManager`**) tracks values on the debug overlay. **`Flixel.setDebugOverlay(Supplier)`** supplies a custom **`FlixelDebugOverlay`**; debug drawing runs when **`Flixel.isDebugMode()`** is true under **`FlixelGame`**.
 
 ### Input Handling
 
 FlixelGDX wraps libGDX input behind a small set of helpers so you can check “was this key just pressed?”, “is it held?”, or "is it touching the screen?" without touching `Gdx.input` directly. That keeps gameplay code focused on intent (e.g. “jump when space is pressed”) and works the same on desktop, Android, and web.
 
-**How it Works**
+**How it works**
 
-- `**Flixel.keys.pressed(int key)`** - Returns whether the key is currently held (same as `Gdx.input.isKeyPressed(key)`). Use for movement or continuous actions.
-- `**Flixel.keys.justPressed(int key)**` - Returns whether the key was pressed this frame (one-shot). Use for jump, shoot, menu confirm, etc.
-- `**Flixel.keys.justReleased(int key)**` - Returns whether the key was released this frame (one-shot). Use for menu cancel, etc.
-- `**FlixelKey**` - Provides key constants such as `FlixelKey.SPACE`, `FlixelKey.LEFT`, `FlixelKey.A`, etc. Pass these as the `key` argument so your code stays readable. `Input.Keys` will also suffice if you prefer to use pure libGDX input constants instead.
+- **`Flixel.keys.pressed(int key)`** — Returns whether the key is currently held (same as `Gdx.input.isKeyPressed(key)`). Use for movement or continuous actions.
+- **`Flixel.keys.justPressed(int key)`** — Returns whether the key was pressed this frame (one-shot). Use for jump, shoot, menu confirm, etc.
+- **`Flixel.keys.justReleased(int key)`** — Returns whether the key was released this frame (one-shot). Use for menu cancel, etc.
+- **`FlixelKey`** — Provides key constants such as `FlixelKey.SPACE`, `FlixelKey.LEFT`, `FlixelKey.A`, etc. Pass these as the `key` argument so your code stays readable. `Input.Keys` will also suffice if you prefer to use pure libGDX input constants instead.
 
 ```java
 @Override
@@ -616,11 +612,11 @@ Touch and mouse input still go through libGDX (`Gdx.input`); FlixelGDX’s helpe
 
 FlixelGDX provides a small logging API so you can tag messages, control how much detail is shown, and optionally attach stack traces without scattering `System.out.println` or wiring a full logging framework up front.
 
-**How it Works**
+**How it works**
 
-- `**Flixel.info(message)`** / `**Flixel.warn(message)**` / `**Flixel.error(message)**` - Log with the default tag. Use for general state, warnings, and errors.
-- `**Flixel.info(tag, message)**` / `**Flixel.warn(tag, message)**` / `**Flixel.error(tag, message)**` - Log with a custom tag (e.g. `"Player"`, `"Save"`) so you can filter or grep logs more easily.
-- `**Flixel.error(tag, message, throwable)**` - Log an error with an exception; the logger can include the stack trace depending on mode.
+- **`Flixel.info(message)`** / **`Flixel.warn(message)`** / **`Flixel.error(message)`** — Log with the default tag. Use for general state, warnings, and errors.
+- **`Flixel.info(tag, message)`** / **`Flixel.warn(tag, message)`** / **`Flixel.error(tag, message)`** — Log with a custom tag (e.g. `"Player"`, `"Save"`) so you can filter or grep logs more easily.
+- **`Flixel.error(tag, message, throwable)`** — Log an error with an exception; the logger can include the stack trace depending on mode.
 - **Log mode.** The default logger uses `FlixelLogMode.SIMPLE` (compact, HaxeFlixel-style) or `FlixelLogMode.DETAILED` (timestamp, class, line, method). You can replace the global logger with `Flixel.setLogger(yourLogger)` or set a default tag with `Flixel.setDefaultLogTag("MyGame")`.
 
 ```java
