@@ -7,8 +7,9 @@
 
 package me.stringdotjar.flixelgdx.tween.type;
 
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectFloatMap;
-import com.badlogic.gdx.utils.ObjectSet;
+import com.badlogic.gdx.utils.ObjectMap;
 
 import java.util.Objects;
 
@@ -17,67 +18,47 @@ import me.stringdotjar.flixelgdx.backend.reflect.FlixelPropertyPath;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
-import java.lang.reflect.Field;
-
 /**
- * Tween type for tweening specific fields on an object using reflection.
+ * Tweens numeric properties on a target object by name using {@link Flixel#reflect}.
  *
- * <p>Although it is slightly slower than a {@link FlixelPropertyTween}, this type is here
- * just in case you need it and for convenience.
+ * <p>At {@link #start()}, each goal value is read once with {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#property(Object, String)}
+ * on the resolved leaf object (see {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#resolvePropertyPath(Object, String)} for dotted
+ * paths such as {@code "child.x"}). On every update, interpolated values are written with
+ * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#setProperty(Object, String, Object)}, so JavaBean setters run when present and
+ * behave like normal assignments.
+ *
+ * <p>Goals must resolve to a {@link Number} when read. Configure goals with {@link FlixelTweenSettings#addGoal(String, float)}. Install a
+ * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection} implementation via {@link Flixel#setReflection} before use; the default
+ * placeholder throws until then.
+ *
+ * <p>This is slightly slower than {@link FlixelPropertyTween}, which avoids reflection by closing over getter/setter references.
  */
 public class FlixelVarTween extends FlixelTween {
 
-  /** The object to tween. */
+  /** The object to tween (root for path resolution). */
   protected Object object;
 
-  /** The initial values of the fields being tweened. */
+  /** Start values captured at {@link #start()} (or refreshed on manual {@link #restart()}). */
   protected final ObjectFloatMap<String> initialValues = new ObjectFloatMap<>();
 
-  /** Reusable map for computed tween values, cleared and repopulated each frame. */
-  protected final ObjectFloatMap<String> currentValues = new ObjectFloatMap<>();
-
-  /**
-   * Maps each goal field name to its target value.
-   */
+  /** Goal key -> target value. */
   protected final ObjectFloatMap<String> goalValues = new ObjectFloatMap<>();
 
-  /**
-   * Cache of the fields being tweened for faster access so they aren't accessed every time the
-   * {@link #start()} method is called.
-   */
-  protected Field[] fieldsCache = null;
+  /** Goal key -> leaf target and property name after resolving dotted paths. */
+  protected final ObjectMap<String, FlixelPropertyPath> goalPaths = new ObjectMap<>();
 
-  /** The update callback for {@code this} tween to change the objects values every update. */
-  protected FlixelVarTween.FunkinVarTweenUpdateCallback updateCallback;
-
-  /**
-   * Constructs a new object tween using reflection.
-   *
-   * <p>Note that this does NOT add the tween to the global manager, it just assigns its main
-   * values. That's it. If you wish to create a tween to automatically start working, you might want
-   * to see {@link FlixelTween#tween(Object object, FlixelTweenSettings tweenSettings,
-   * FunkinVarTweenUpdateCallback updateCallback)}.
-   *
-   * @param object The object to tween values.
-   * @param settings The settings that configure and determine how the tween should animate and last for.
-   * @param updateCallback Callback function for updating the objects values when the tween updates.
-   */
-  public FlixelVarTween(Object object, FlixelTweenSettings settings, FunkinVarTweenUpdateCallback updateCallback) {
+  public FlixelVarTween(Object object, FlixelTweenSettings settings) {
     super(settings);
     this.object = object;
-    this.updateCallback = updateCallback;
   }
 
   /**
-   * Reconfigures this tween for reuse (e.g. from pool). Call before {@link #start()}.
+   * Sets the root target for path resolution. Call before {@link #start()} when reusing a pooled tween.
    *
-   * @param object The object to tween.
-   * @param updateCallback Callback to apply tweened values.
    * @return this, for chaining.
    */
-  public FlixelVarTween setTarget(Object object, FunkinVarTweenUpdateCallback updateCallback) {
+  public FlixelVarTween setObject(Object object) {
     this.object = object;
-    this.updateCallback = updateCallback;
     return this;
   }
 
@@ -89,97 +70,71 @@ public class FlixelVarTween extends FlixelTween {
       return this;
     }
 
-    var goals = tweenSettings.getGoals();
+    Array<FlixelTweenSettings.FlixelTweenVarGoal> goals = tweenSettings.getGoals();
     if (goals == null || goals.isEmpty()) {
       return this;
     }
 
-    if (fieldsCache == null) {
-      fieldsCache = Flixel.reflect.objectFieldsArray(object.getClass());
+    if (object == null) {
+      throw new IllegalStateException(
+          "FlixelVarTween requires a non-null target object before start(). "
+              + "Call setTarget(object) or pass the object to FlixelTween.tween(object, settings).");
     }
 
-    // Get all the float fields on the object.
-    ObjectSet<String> floatFieldIds = new ObjectSet<>(fieldsCache.length);
-    for (Field f : fieldsCache) {
-      if (f != null && f.getType() == float.class) {
-        String name = f.getName();
-        if (name != null && !name.isEmpty()) {
-          floatFieldIds.add(name);
-        }
-      }
-    }
+    initialValues.clear();
+    goalValues.clear();
+    goalPaths.clear();
 
-    // Set the initial values and goal values for the fields.
-    final Field[] fields = fieldsCache;
-    final Object target = object;
     tweenSettings.forEachGoal((fieldName, value) -> {
-      if (!floatFieldIds.contains(fieldName)) {
-        String message = "Field \"" + fieldName + "\" does not exist on the given object or is not a float field.";
-        throw new RuntimeException(message);
-      }
-      for (Field field : fields) {
-        if (!field.getName().equals(fieldName)) {
-          continue;
-        }
-        try {
-          if (!field.trySetAccessible()) {
-            continue;
-          }
-          initialValues.put(fieldName, field.getFloat(target));
-          goalValues.put(fieldName, value);
-          break;
-        } catch (IllegalAccessException e) {
-          // Ignore and move on to the next field / goal.
-        }
-      }
+      FlixelPropertyPath path = Flixel.reflect.resolvePropertyPath(object, fieldName);
+      Object raw = Flixel.reflect.property(path.leafObject(), path.leafName());
+      initialValues.put(fieldName, requireNumeric(raw, fieldName));
+      goalValues.put(fieldName, value);
+      goalPaths.put(fieldName, path);
     });
 
     return this;
   }
 
+  private static float requireNumeric(Object raw, String goalKey) {
+    if (raw instanceof Number n) {
+      return n.floatValue();
+    }
+    String kind = raw == null ? "null" : raw.getClass().getName();
+    throw new IllegalStateException(
+        "VarTween goal \"" + goalKey + "\" must be numeric when read via Flixel.reflect.property; got " + kind + ".");
+  }
+
   @Override
   protected void updateTweenValues() {
-    if (updateCallback == null || goalValues.isEmpty()) {
+    if (goalValues.isEmpty() || goalPaths.isEmpty()) {
       return;
     }
-    currentValues.clear();
     for (ObjectFloatMap.Entry<String> entry : goalValues.entries()) {
-      float startValue = initialValues.get(entry.key, 0f);
+      String key = entry.key;
+      FlixelPropertyPath path = goalPaths.get(key);
+      if (path == null) {
+        continue;
+      }
+      float startValue = initialValues.get(key, 0f);
       float newValue = startValue + (entry.value - startValue) * scale;
-      currentValues.put(entry.key, newValue);
-    }
-    if (currentValues.size > 0) {
-      updateCallback.update(currentValues);
+      Flixel.reflect.setProperty(path.leafObject(), path.leafName(), newValue);
     }
   }
 
   @Override
   public void restart() {
-    // For manual restarts, refresh the starting values from the current object fields
-    // so the tween resumes from "where things are now". For internal loop / ping-pong
-    // restarts, keep the original start values so the animation stays between the original endpoints.
-    if (!internalRestart && tweenSettings != null && object != null && fieldsCache != null) {
-      var goals = tweenSettings.getGoals();
+    if (!internalRestart && tweenSettings != null && object != null && !goalPaths.isEmpty()) {
+      Array<FlixelTweenSettings.FlixelTweenVarGoal> goals = tweenSettings.getGoals();
       if (goals != null && !goals.isEmpty()) {
         initialValues.clear();
-
-        final Field[] fields = fieldsCache;
-        final Object target = object;
         tweenSettings.forEachGoal((fieldName, value) -> {
-          for (Field field : fields) {
-            if (field == null || !field.getName().equals(fieldName)) {
-              continue;
-            }
-            try {
-              if (!field.trySetAccessible()) {
-                continue;
-              }
-              initialValues.put(fieldName, field.getFloat(target));
-              break;
-            } catch (IllegalAccessException e) {
-              // Ignore and move on to the next field / goal.
-            }
+          FlixelPropertyPath path = goalPaths.get(fieldName);
+          if (path == null) {
+            return;
           }
+          Object raw = Flixel.reflect.property(path.leafObject(), path.leafName());
+          initialValues.put(fieldName, requireNumeric(raw, fieldName));
         });
       }
     }
@@ -189,15 +144,15 @@ public class FlixelVarTween extends FlixelTween {
   @Override
   public void reset() {
     super.reset();
-    fieldsCache = null;
+    goalPaths.clear();
     goalValues.clear();
+    object = null;
   }
 
   @Override
   public void resetBasic() {
     super.resetBasic();
     initialValues.clear();
-    currentValues.clear();
   }
 
   @Override
@@ -208,23 +163,6 @@ public class FlixelVarTween extends FlixelTween {
     if (field == null || field.isEmpty()) {
       return Objects.equals(o, object);
     }
-    if (field.indexOf('.') < 0) {
-      return Objects.equals(o, object) && goalValues.containsKey(field);
-    }
-    FlixelPropertyPath path = Flixel.reflect.resolvePropertyPath(o, field);
-    return Objects.equals(path.leafObject(), object) && goalValues.containsKey(path.leafName());
-  }
-
-  /** Callback interface for changing an objects values when a var tween updates its values. */
-  @FunctionalInterface
-  public interface FunkinVarTweenUpdateCallback {
-
-    /**
-     * A callback method that is called when the tween updates its values during its tweening (or
-     * animating) process.
-     *
-     * @param values The new current values of the fields being tweened during the animation.
-     */
-    void update(ObjectFloatMap<String> values);
+    return Objects.equals(o, object) && goalValues.containsKey(field);
   }
 }

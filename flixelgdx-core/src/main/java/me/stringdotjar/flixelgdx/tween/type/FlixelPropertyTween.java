@@ -24,9 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * reflection. Use this when you need setter side effects (e.g. bounds updates, listeners) to
  * run on every interpolated step. Configure with {@link FlixelTweenSettings#addGoal}.
  *
- * <p>Note that this is faster than {@link FlixelVarTween} since it does not use reflection to access the fields.
- * It is recommended to use this when you need setter side effects (e.g. bounds updates, listeners) to
- * run on every interpolated step, the {@code FlixelVarTween} type is there for convenience.
+ * <p>This is faster than {@link FlixelVarTween}, which resolves names through {@link me.stringdotjar.flixelgdx.Flixel#reflect}
+ * each frame. Both can invoke JavaBean setters on every step when configured that way; prefer this type when you can
+ * close over getter/setter references and avoid reflection.
  */
 public class FlixelPropertyTween extends FlixelTween {
 
@@ -65,7 +65,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * Sets the object {@code this} tween logically animates (required before {@link #start()}).
    *
    * <p>This has to be set because {@link #isTweenOf(Object, String)} needs to know the object to tween.
-   * This method is purely for logic purposes used by {@link FlixelTweenManager}, not for tweening purposes.
+   * This method is purely for logic purposes used by {@link me.stringdotjar.flixelgdx.tween.FlixelTweenManager}, not for tweening purposes.
    *
    * @param tweenObject The object to tween.
    * @return {@code this} for chaining.

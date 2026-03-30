@@ -207,9 +207,8 @@ public final class Flixel {
     }
 
     // Register default tween types.
-    FlixelTween.getGlobalManager()
-      .registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, () -> new FlixelPropertyTween(null))
-      .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, () -> new FlixelVarTween(null, null, null))
+    FlixelTween.registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, () -> new FlixelPropertyTween(null))
+      .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, () -> new FlixelVarTween(null, null))
       .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null))
       .registerTweenType(FlixelAngleTween.class, FlixelAngleTweenBuilder.class, () -> new FlixelAngleTween(null))
       .registerTweenType(FlixelColorTween.class, FlixelColorTweenBuilder.class, () -> new FlixelColorTween(null))
@@ -303,10 +302,8 @@ public final class Flixel {
       assets.clearNonPersist();
     }
     if (clearTweens) {
-      FlixelTween.getGlobalManager()
-        .getActiveTweens()
-        .forEach(tween -> tween.cancel());
-      FlixelTween.getGlobalManager().clearPools();
+      FlixelTween.cancelActiveTweens();
+      FlixelTween.clearTweenPools();
     }
     game.resetCameras();
     state = newState;

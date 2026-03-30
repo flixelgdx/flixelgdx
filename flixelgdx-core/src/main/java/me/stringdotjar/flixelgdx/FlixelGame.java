@@ -311,7 +311,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
 
     stage.act(elapsed);
-    FlixelTween.getGlobalManager().update(elapsed);
+    FlixelTween.updateTweens(elapsed);
 
     // Walk the state/substate chain. Each state in the chain is updated only
     // if it is the active (innermost) state or if its persistentUpdate flag is true.

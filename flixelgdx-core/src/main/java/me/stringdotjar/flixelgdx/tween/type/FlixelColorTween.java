@@ -37,7 +37,15 @@ public class FlixelColorTween extends FlixelTween {
     super(settings);
   }
 
-  /** Tween between two {@link FlixelColor} endpoints. */
+  /**
+   * Tween between two {@link FlixelColor} endpoints.
+   *
+   * @param sprite The sprite to tween.
+   * @param from The starting color.
+   * @param to The ending color.
+   * @param onColor The callback to run when the tween is complete.
+   * @return {@code this} for chaining.
+   */
   public FlixelColorTween setColorEndpoints(@Nullable FlixelSprite sprite, @Nullable FlixelColor from, @Nullable FlixelColor to, @Nullable Runnable onColor) {
     this.useRawColor = false;
     this.sprite = sprite;
@@ -57,7 +65,11 @@ public class FlixelColorTween extends FlixelTween {
    * @return {@code this} for chaining.
    */
   public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelSprite sprite, @Nullable Color from, @Nullable Color to, @Nullable Runnable onColor) {
-    setColorEndpoints(sprite, null, null, onColor);
+    this.useRawColor = true;
+    this.sprite = sprite;
+    this.fromFlixel = null;
+    this.toFlixel = null;
+    this.onColor = onColor;
     if (from != null) {
       workFrom.set(from);
     }

@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.NotNull;
+
 import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
 
@@ -22,8 +24,8 @@ import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 /**
  * Manager class for handling a list of active {@link FlixelTween}s.
  *
- * <p>Mirrors <a href="https://api.haxeflixel.com/flixel/tweens/FlxTweenManager.html">FlxTweenManager</a>:
- * normally used via {@link FlixelTween#getGlobalManager()} rather than instantiating separately.
+ * normally used via {@link FlixelTween#getGlobalManager()} or the static helpers on {@link FlixelTween} (e.g.
+ * {@link FlixelTween#updateTweens}, {@link FlixelTween#registerTweenType}) rather than instantiating separately.
  * Adding a tween via {@link #addTween(FlixelTween)} automatically starts it.
  *
  * <p>Uses a registry: each tween type is registered with its builder class and a pool factory.
@@ -192,7 +194,6 @@ public class FlixelTweenManager {
     if (object == null) {
       throw new IllegalArgumentException("Object to cancel tweens of cannot be null");
     }
-    // We use a try/finally to ensure the array is always ended, even if an exception is thrown.
     FlixelTween[] items = activeTweens.begin();
     try {
       for (int i = activeTweens.size - 1; i >= 0; i--) {
@@ -213,15 +214,21 @@ public class FlixelTweenManager {
    * Completes matching tweens in one step (large delta). Non-{@link FlixelTweenType#isLooping() looping} tweens only.
    * {@link me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings#getOnComplete()} runs when
    * {@link FlixelTween#finish()} is invoked after the tween reports finished.
+   *
+   * @param object The object to complete tweens of.
+   * @param fieldPaths The field paths to complete tweens of.
+   * @throws NullPointerException If the object is null.
+   * @throws IllegalArgumentException If the object is null.
    */
-  public void completeTweensOf(Object object, String... fieldPaths) {
+  public void completeTweensOf(@NotNull Object object, String... fieldPaths) {
     if (object == null) {
       throw new IllegalArgumentException("Object to complete tweens of cannot be null");
     }
-    // We use a try/finally to ensure the array is always ended, even if an exception is thrown.
+    // Iterate in reverse to avoid issues with ONESHOT tweens calling removeTween from finish(), which shrinks the list.
+    // Forward iteration would skip the tween that shifted into the index we just advanced past (same pattern as cancelTweensOf).
     FlixelTween[] items = activeTweens.begin();
     try {
-      for (int i = 0; i < activeTweens.size; i++) {
+      for (int i = activeTweens.size - 1; i >= 0; i--) {
         FlixelTween tween = items[i];
         if (tween == null || !tween.isActive()) {
           continue;
@@ -249,7 +256,7 @@ public class FlixelTweenManager {
   public void completeAll() {
     FlixelTween[] items = activeTweens.begin();
     try {
-      for (int i = 0; i < activeTweens.size; i++) {
+      for (int i = activeTweens.size - 1; i >= 0; i--) {
         FlixelTween tween = items[i];
         if (tween == null || !tween.isActive()) {
           continue;
@@ -270,15 +277,18 @@ public class FlixelTweenManager {
 
   /**
    * Completes all active tweens assignable to {@code type} (non-looping only).
+   *
+   * @param type The type of tween to complete.
+   * @throws NullPointerException If the type is null.
+   * @throws IllegalArgumentException If the type is null.
    */
   public void completeTweensOfType(Class<? extends FlixelTween> type) {
     if (type == null) {
       throw new IllegalArgumentException("Type to complete tweens of cannot be null");
     }
-    // We use a try/finally to ensure the array is always ended, even if an exception is thrown.
     FlixelTween[] items = activeTweens.begin();
     try {
-      for (int i = 0; i < activeTweens.size; i++) {
+      for (int i = activeTweens.size - 1; i >= 0; i--) {
         FlixelTween tween = items[i];
         if (tween == null || !tween.isActive() || !type.isInstance(tween)) {
           continue;
@@ -299,12 +309,17 @@ public class FlixelTweenManager {
 
   /**
    * Returns whether any active tween matches {@code object} and optional {@code fieldPaths} (OR).
+   *
+   * @param object The object to check for tweens of.
+   * @param fieldPaths The field paths to check for tweens of.
+   * @throws NullPointerException If the object is null.
+   * @throws IllegalArgumentException If the object is null.
+   * @return True if the manager contains tweens of the given object and field paths, false otherwise.
    */
   public boolean containsTweensOf(Object object, String... fieldPaths) {
     if (object == null) {
       throw new IllegalArgumentException("Object to check for tweens of cannot be null");
     }
-    // We use a try/finally to ensure the array is always ended, even if an exception is thrown.
     FlixelTween[] items = activeTweens.begin();
     try {
       for (int i = 0; i < activeTweens.size; i++) {
@@ -321,6 +336,9 @@ public class FlixelTweenManager {
 
   /**
    * Invokes {@code action} for each active tween (current snapshot order).
+   *
+   * @param action The action to invoke for each active tween.
+   * @throws NullPointerException If the action is null.
    */
   public void forEach(Consumer<FlixelTween> action) {
     if (action == null) {
@@ -360,7 +378,7 @@ public class FlixelTweenManager {
     TweenTypeRegistration reg = registry.get(tweenClass);
     if (reg == null) {
       throw new IllegalArgumentException("Tween type \"" + tweenClass.getName() + "\" is not registered. "
-          + "Register it with FlixelTweenManager.registerTweenType().");
+          + "Register it with FlixelTween.registerTweenType(...) or FlixelTweenManager.registerTweenType(...).");
     }
     return reg;
   }
