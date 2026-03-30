@@ -7,11 +7,12 @@ FlixelGDX is organized into multiple Gradle modules to separate the core framewo
 The project is split into several modules, each serving a specific purpose:
 
 - **`flixelgdx-core`**: This is the heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent.
-- **`flixelgdx-jvm`**: Contains common logic for all JVM-based backends (Desktop, Android, etc.). This is primarily an internal module; most games will not depend on it directly.
-- **`flixelgdx-lwjgl3`**: The primary desktop backend using the [Lightweight Java Game Library](https://www.lwjgl.org/). When you create a desktop launcher with FlixelGDX, this is the module that provides the actual `Lwjgl3Application`.
+- **`flixelgdx-lwjgl3`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**. When you create a desktop launcher with FlixelGDX, this is the module that provides the actual `Lwjgl3Application`.
 - **`flixelgdx-android`**: The backend for Android devices. This integrates FlixelGDX with libGDX's Android launcher and lifecycle.
 - **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM).
-- **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java to JavaScript.
+- **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript.
+- **`flixelgdx-jvm`**: Contains common logic for all JVM-based backends (Desktop, Android, etc.). This is primarily an internal module; most games will not depend on it directly.
+- **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, reflection, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
 ### Which module should my game depend on?
 

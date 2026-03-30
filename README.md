@@ -1,5 +1,9 @@
 # FlixelGDX
 
+[![CI](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml)
+[![JitPack](https://jitpack.io/v/stringdotjar/flixelgdx.svg)](https://jitpack.io/#stringdotjar/flixelgdx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 FlixelGDX is a high-level 2D game framework built on top of [libGDX](https://libgdx.com/). It aims to replicate the powerful and developer-friendly API of [HaxeFlixel](https://haxeflixel.com/) (based on the original ActionScript [Flixel](http://www.flixel.org/)) while leveraging the robust cross-platform capabilities and performance of the libGDX ecosystem.
 
 The goal of FlixelGDX is to provide the familiar Flixel-like structure that developers love, while remaining open for experienced libGDX developers to integrate their own lower-level functionality.
@@ -12,6 +16,7 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 - [Introduction](#flixelgdx)
 - [Project navigation](#project-navigation)
 - [Supported platforms](#supported-platforms)
+- [Using FlixelGDX as a dependency](#using-flixelgdx-as-a-dependency)
 - [Goals](#goals)
 - [Open architecture](#open-architecture)
 - [Features](#features)
@@ -32,6 +37,7 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 - **[Contributing Guide](CONTRIBUTING.md)**: Learn how to contribute to the project, coding standards, and PR requirements.
 - **[Project Structure](PROJECT.md)**: Understand the multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
+- **API docs (Javadoc)**: Built from `main` via GitHub Actions — after the first successful deploy, browse **`https://stringdotjar.github.io/flixelgdx/`** (core module). Run `./gradlew javadocAll` locally to generate HTML under each module’s `build/docs/javadoc`.
 
 # Supported Platforms
 
@@ -43,16 +49,54 @@ FlixelGDX supports the following platforms through its modular backend system:
 - **Web**: Support via TeaVM.
 
 > [!WARNING]
-> FlixelGDX is a *modern* framework, which means it requires *modern* Java. You must use Java 17 or higher to be able
-> to use FlixelGDX. Because of this, web games don't (and can't) support GWT; it is done through a modern
-> library called TeaVM, which transpiles Java code to JavaScript to be run in a browser.
+> FlixelGDX is a *modern* framework, which means it requires *modern* Java. You must use **Java 17** or higher.
+> For development and running games, use a JDK with **Eclipse OpenJ9** (e.g. **[IBM Semeru](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/)**), not Oracle JDK or HotSpot-only builds. OpenJ9 uses **much less RAM**, which matters for games. See [CONTRIBUTING.md](CONTRIBUTING.md) and [COMPILING.md](COMPILING.md).
+> Web games don't (and can't) support GWT; they use **TeaVM**, which transpiles Java bytecode to JavaScript for the browser.
+
+# Using FlixelGDX as a dependency
+
+FlixelGDX is published as multiple Gradle modules under the Maven coordinates **`me.stringdotjar.flixelgdx`**. Until the project is on Maven Central, you can consume builds from **[JitPack](https://jitpack.io)** (see [`jitpack.yml`](jitpack.yml)).
+
+1. Add JitPack as a repository in your root **`build.gradle`** file:
+
+```gradle
+repositories {
+  mavenCentral()
+  maven { url 'https://jitpack.io' }
+}
+```
+
+2. Add the modules you need. Replace **`TAG`** with a [Git tag](https://github.com/stringdotjar/flixelgdx/tags), branch name, or commit hash (JitPack builds from Git).
+
+**JitPack group id** (per [JitPack docs](https://docs.jitpack.io)): `com.github.stringdotjar.flixelgdx`
+
+```gradle
+dependencies {
+  // Core API (required for every game)
+  implementation 'com.github.stringdotjar.flixelgdx:flixelgdx-core:TAG'
+
+  // Pick one or more backends for your targets:
+  implementation 'com.github.stringdotjar.flixelgdx:flixelgdx-lwjgl3:TAG'   // Desktop
+  // implementation 'com.github.stringdotjar.flixelgdx:flixelgdx-android:TAG'
+  // implementation 'com.github.stringdotjar.flixelgdx:flixelgdx-ios:TAG'
+  // implementation 'com.github.stringdotjar.flixelgdx:flixelgdx-teavm:TAG'
+}
+```
+
+> [!IMPORTANT]
+> Many backend modules already depend on `flixelgdx-core`; you typically depend on **one backend** plus any extra modules you use directly.
+> Every backend module already includes libGDX and many other common dependencies, so you don't need to add them to your project. Simply just
+> adding the core module (and one backend module) is enough.
+
+**Local development** against a clone is described in [COMPILING.md](COMPILING.md).
 
 # Goals
 
 ## Replicate Flixel API
 
 FlixelGDX attempts to bring the ease of use and rapid prototyping capabilities of HaxeFlixel to Java, while also
-using the tools of libGDX to allow it to be seamlessly integrated into new and existing projects alike.
+using the tools of libGDX to allow it to be seamlessly integrated into new and existing projects alike, with much less boilerplate
+and better performance than the original HaxeFlixel.
 
 ## libGDX Integration
 
@@ -201,7 +245,7 @@ public class Custom3DCamera extends FlixelCamera {
 - **Input**: Keyboard helpers via `Flixel.keys`; touch/mouse still through libGDX.
 - **Logging & debugging**: `Flixel.log`, `Flixel.watch`, optional debug overlay.
 - **Signals**: `Flixel.Signals` for pre/post update, draw, state switch, window focus, and more.
-- ...and much more!
+- **...and much more!**
 
 ### Entity & Sprite Basics
 
@@ -563,7 +607,7 @@ Sounds are represented as **`FlixelSound`** instances (volume, loop, play/stop/d
 
 **`Flixel.reflect`** implements **`FlixelReflection`**: read/write **fields**, **JavaBean-style properties** (`property` / `setProperty`), **method calls**, **dotted path resolution** (`resolvePropertyPath`), and helpers used by **var tweens** and other runtime features.
 
-Until you call **`Flixel.setReflection(...)`** with a real implementation (e.g. **`FlixelDefaultReflectionHandler`** on desktop), the default **unsupported** stub throws: configure reflection during startup if you use **`FlixelVarTween`** or anything else that depends on it.
+Until you call **`Flixel.setReflection(...)`** with a real implementation (e.g. **`FlixelDefaultReflectionHandler`** for most platforms, and **`FlixelReflectASMHandler`** for desktop), the default **unsupported** stub throws: configure reflection during startup if you use **`FlixelVarTween`** or anything else that depends on it.
 
 ### Text
 
