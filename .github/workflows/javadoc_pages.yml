@@ -39,26 +39,6 @@ jobs:
         run: ./gradlew :flixelgdx-core:javadoc --no-daemon --warning-mode all
         shell: bash
 
-      - name: Generate Javadoc (LWJGL3)
-        run: ./gradlew :flixelgdx-lwjgl3:javadoc --no-daemon --warning-mode all
-        shell: bash
-
-      - name: Generate Javadoc (Android)
-        run: ./gradlew :flixelgdx-android:javadoc --no-daemon --warning-mode all
-        shell: bash
-
-      - name: Generate Javadoc (iOS)
-        run: ./gradlew :flixelgdx-ios:javadoc --no-daemon --warning-mode all
-        shell: bash
-
-      - name: Generate Javadoc (TeaVM)
-        run: ./gradlew :flixelgdx-teavm:javadoc --no-daemon --warning-mode all
-        shell: bash
-
-      - name: Generate Javadoc (JVM)
-        run: ./gradlew :flixelgdx-jvm:javadoc --no-daemon --warning-mode all
-        shell: bash
-
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
