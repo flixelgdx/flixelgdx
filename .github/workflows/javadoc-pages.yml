@@ -1,0 +1,67 @@
+# Builds API documentation from flixelgdx-core and publishes to GitHub Pages (gh-pages branch).
+# Enable Pages: Settings -> Pages -> Source: Deploy from a branch -> gh-pages / root.
+name: Deploy Javadoc to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (OpenJ9)
+        uses: actions/setup-java@v4
+        with:
+          distribution: semeru
+          java-version: 17
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Generate Javadoc (Core)
+        run: ./gradlew :flixelgdx-core:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (LWJGL3)
+        run: ./gradlew :flixelgdx-lwjgl3:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (Android)
+        run: ./gradlew :flixelgdx-android:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (iOS)
+        run: ./gradlew :flixelgdx-ios:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (TeaVM)
+        run: ./gradlew :flixelgdx-teavm:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (JVM)
+        run: ./gradlew :flixelgdx-jvm:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./flixelgdx-core/build/docs/javadoc
+          force_orphan: true

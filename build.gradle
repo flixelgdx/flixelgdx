@@ -1,3 +1,6 @@
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JvmImplementation
+
 buildscript {
   repositories {
     mavenCentral()
@@ -19,19 +22,8 @@ plugins {
   id 'java-library'
 }
 
-repositories {
-  mavenCentral()
-}
-
-dependencies {
-  testImplementation platform('org.junit:junit-bom:5.10.0')
-  testImplementation 'org.junit.jupiter:junit-jupiter'
-  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-test {
-  useJUnitPlatform()
-}
+// Root is an aggregator only (no src/). Do not apply the Java plugin here: it would create
+// :processResources while generateAssetList is registered only on library subprojects.
 
 allprojects {
   apply plugin: 'eclipse'
@@ -57,7 +49,7 @@ configure(subprojects.findAll { p -> p.name == 'flixelgdx-core' || p.name == 'fl
 // These modules are currently NOT configured in the root build.gradle for java-library
 // but they apply it themselves.
 
-configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' }) {
+configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-test' }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
@@ -71,7 +63,7 @@ configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' }) {
   }
 }
 
-configure(subprojects.findAll { !it.path.contains('flixelgdx-android') }) {
+configure(subprojects.findAll { !it.path.contains('flixelgdx-android') && it.name != 'flixelgdx-test' }) {
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
   tasks.register('generateAssetList') {
@@ -90,14 +82,18 @@ configure(subprojects.findAll { !it.path.contains('flixelgdx-android') }) {
       assetsFile.append(it + "\n")
     }
   }
-  processResources.dependsOn 'generateAssetList'
-
-  compileJava {
-    options.incremental = true
+  // Child build.gradle files apply Java after this root script runs; wire after subproject is configured.
+  afterEvaluate {
+    if (plugins.hasPlugin('java-library') || plugins.hasPlugin('java')) {
+      processResources.dependsOn 'generateAssetList'
+    }
+    tasks.withType(JavaCompile).configureEach {
+      options.incremental = true
+    }
   }
 }
 
-configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-jvm' && p.name != 'flixelgdx-teavm' }) {
+configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-jvm' && p.name != 'flixelgdx-teavm' && p.name != 'flixelgdx-test' }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
@@ -126,7 +122,7 @@ subprojects {
     maven { url 'https://jitpack.io' }
   }
 
-  // Force Java 17 for the entire framework.
+  // Java 17; prefer Eclipse OpenJ9 for compilation/tests (see CONTRIBUTING.md). Android uses compileOptions in its module.
   if (!project.path.contains('android')) {
     plugins.withType(JavaPlugin).tap {
       configureEach {
@@ -172,7 +168,7 @@ subprojects { Project p ->
   }
 }
 
-configure(subprojects) {
+configure(subprojects.findAll { it.name != 'flixelgdx-test' }) {
   apply plugin: 'maven-publish'
   afterEvaluate {
     publishing {
@@ -226,12 +222,3 @@ tasks.register('javadocAll') {
 }
 
 eclipse.project.name = 'flixelgdx' + '-parent'
-
-subprojects {
-  if (project.plugins.hasPlugin('java-library') || project.plugins.hasPlugin('java')) {
-    processResources.dependsOn 'generateAssetList'
-    compileJava {
-      options.incremental = true
-    }
-  }
-}

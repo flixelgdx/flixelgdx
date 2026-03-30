@@ -1,0 +1,7 @@
+# https://docs.jitpack.io
+jdk:
+  - openjdk17
+
+# Publish all library artifacts to the local Maven repo for JitPack to pick up.
+install:
+  - ./gradlew publishToMavenLocal --no-daemon
