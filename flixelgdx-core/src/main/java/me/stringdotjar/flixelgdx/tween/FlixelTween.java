@@ -42,20 +42,97 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Core class for creating new tweens to add nice and smooth animations.
+ * Base class for all FlixelGDX tweens and motion interpolators.
+ * <p>
+ * A {@code FlixelTween} provides a flexible system for animating properties, variables, or
+ * custom behaviors over time, often used for smooth transitions, UI animations, procedural
+ * effects, and advanced gameplay motions. FlixelTweens can manipulate values such as position,
+ * color, angle, scale, or arbitrary numbers, and support features like easing, delay, repeats,
+ * ping-pong (reverse-on-repeat), pausing, and callbacks for completion events.
  *
- * <p>Please note that while this isn't an abstract class, it is advised to NOT create instances
- * of this class, since it does not implement the actual tweening logic. Instead, you should use one of
- * its subclasses, such as {@link FlixelVarTween}, or create your own subclass and add your own functionality.
+ * <h2>Common Use Cases</h2>
+ * <ul>
+ *   <li>Smoothly moving sprites or objects from one position to another</li>
+ *   <li>Animating color transitions (e.g., fading to black, flashing effects)</li>
+ *   <li>Pulsing, scaling, or rotating objects for visual effects</li>
+ *   <li>Chaining tweens to create sequenced or looping animations</li>
+ *   <li>Triggering sound or code when an animation completes</li>
+ * </ul>
  *
- * <p>The only reason this class is not abstract is to allow pooling of generic tweens when needed to save memory.
+ * <h2>How Tweens are Managed</h2>
+ * <p>
+ * Tweens are not updated automatically unless added to a {@link FlixelTweenManager}.
+ * By default, all tweens are managed by a single global manager, but you can create and
+ * control your own managers for local tween control (such as for a specific state or
+ * menu screen).
+ * </p>
+ * <p>
+ * Each tween may be paused, resumed, finished (immediately), restarted (for repeat behavior),
+ * or canceled. Tweens are generally pooled for efficient memory use.
+ * </p>
  *
- * <p><b>Global manager shortcuts.</b> {@link #registerTweenType}, {@link #updateTweens}, {@link #cancelTweensOf},
- * {@link #completeTweensOf}, {@link #completeAllTweens}, and related static methods forward to {@link #getGlobalManager()}
- * so gameplay code does not need to spell {@code FlixelTween.getGlobalManager().…} everywhere. Use {@link #getGlobalManager()}
- * directly when you use a non-default manager via {@link FlixelAbstractTweenBuilder#setManager}.
+ * <h2>Extension and Implementation</h2>
+ * <p>
+ * Subclasses of {@code FlixelTween} implement specialized behavior:
+ * <ul>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween} — interpolates properties of objects using lambda getters and setters.</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelNumTween} — tweens a simple numeric value using reflection.</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelColorTween} — tweens between colors</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween} — smoothly rotates a value</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion} and others — for advanced motion paths</li>
+ * </ul>
+ *
+ * <h2>Key Fields</h2>
+ * <ul>
+ *   <li>{@code tweenSettings}: the configuration parameters for this tween (duration, repeat, easing, etc.)</li>
+ *   <li>{@code manager}: the manager that updates and contains this tween instance</li>
+ *   <li>{@code paused}, {@code active}, {@code finished}: control and status flags</li>
+ *   <li>{@code scale}: represents current tween progress, interpolated from 0 to 1</li>
+ *   <li>{@code secondsSinceStart}, {@code executions}: time-tracking for tween progress and repeats</li>
+ * </ul>
+ *
+ * <h2>Usage Example</h2>
+ * <pre>{@code
+ * // Start a tween that moves a sprite's x value from 0 to 100 over 1 second.
+ *
+ * // Example with a property tween and a generic helper.
+ * FlixelTween tween = FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *   .addGoal(sprite::getX, 100f, sprite::setX)
+ *   .setDuration(1f)
+ *   .setEase(FlixelEase::cubicInOut)
+ *   .onComplete(() -> Flixel.info("Done!"))
+ *   .start());
+ *
+ * // Example with a property tween and a builder.
+ * FlixelTween tween = FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+ *   .addGoal(sprite::getX, 100f, sprite::setX)
+ *   .setDuration(1f)
+ *   .setEase(FlixelEase::cubicInOut)
+ *   .onComplete(() -> Flixel.info("Done!"))
+ *   .start();
+ * }</pre>
+ *
+ * <h2>Lifecycle and Pooling</h2>
+ * <p>
+ * When a tween completes (naturally or by calling {@link #finish()}), it is automatically
+ * released back to a pool unless flagged otherwise. Do not hold references to finished
+ * or canceled tweens if using pooling, as they may be reused. If you must keep the reference of a tween,
+ * consider taking a look at {@link FlixelTweenType#PERSIST}.
+ * </p>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>
+ * Tweens and their managers are generally intended for use on the game thread only.
+ * </p>
+ *
+ * @see FlixelTweenManager
+ * @see FlixelAbstractTweenBuilder
+ * @see me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings
+ *
+ * @author stringdotjar
  */
-public class FlixelTween implements Pool.Poolable {
+
+public abstract class FlixelTween implements Pool.Poolable {
 
   /** The global tween manager for the entire game. */
   private static final FlixelTweenManager globalManager = new FlixelTweenManager();

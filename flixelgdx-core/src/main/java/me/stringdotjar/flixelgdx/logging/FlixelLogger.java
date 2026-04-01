@@ -473,6 +473,6 @@ public class FlixelLogger {
   }
 
   public void setDefaultTag(String defaultTag) {
-    this.defaultTag = defaultTag;
+    this.defaultTag = defaultTag != null ? defaultTag : "";
   }
 }

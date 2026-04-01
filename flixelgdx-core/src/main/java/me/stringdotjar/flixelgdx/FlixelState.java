@@ -23,8 +23,6 @@ import org.jetbrains.annotations.Nullable;
  * By default, when a substate is active the parent state will continue to be drawn
  * ({@link #persistentDraw} = {@code true}) but will stop updating
  * ({@link #persistentUpdate} = {@code false}).
- *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxState.html">FlxState (HaxeFlixel)</a>
  */
 public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Screen {
 
@@ -44,14 +42,16 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   private FlixelSubState subState;
 
   public FlixelState() {
-    super(0);
+    super(FlixelBasic[]::new, 0);
   }
 
   @Override
-  public final void show() {}
+  public void show() {
+    create();
+  }
 
   @Override
-  public final void render(float delta) {}
+  public void render(float delta) {}
 
   /**
    * Called when the state is first created. This is where you want to assign your
@@ -201,6 +201,7 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
    *
    * @param basic The object to add to the state.
    */
+  @Override
   public void add(@NotNull FlixelBasic basic) {
     members.add(basic);
 
@@ -209,7 +210,7 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
     }
   }
 
-  /** Returns the currently active substate, or {@code null} if none is open. */
+  @Nullable
   public FlixelSubState getSubState() {
     return subState;
   }
@@ -243,5 +244,10 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
     for (FlixelCamera cam : game.getCameras()) {
       cam.bgColor.set(value);
     }
+  }
+
+  @Override
+  public String toString() {
+    return "FlixelState(members=" + members.size + ", subState=" + subState.toString() + ")";
   }
 }

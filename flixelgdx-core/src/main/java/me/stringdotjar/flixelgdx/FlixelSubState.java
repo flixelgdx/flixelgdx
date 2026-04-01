@@ -18,8 +18,6 @@ import com.badlogic.gdx.graphics.Color;
  * draw while this substate is active.
  *
  * <p>Substates can be nested: a substate can open another substate on top of itself.
- *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxSubState.html">FlxSubState (HaxeFlixel)</a>
  */
 public abstract class FlixelSubState extends FlixelState {
 
@@ -63,5 +61,10 @@ public abstract class FlixelSubState extends FlixelState {
     if (parentState != null) {
       parentState.closeSubState();
     }
+  }
+
+  @Override
+  public String toString() {
+    return "FlixelSubState(members=" + members.size + ")";
   }
 }

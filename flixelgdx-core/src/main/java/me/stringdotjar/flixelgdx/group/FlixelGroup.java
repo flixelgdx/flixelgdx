@@ -8,6 +8,7 @@
 package me.stringdotjar.flixelgdx.group;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.ArraySupplier;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.FlixelBasic;
@@ -17,12 +18,12 @@ import java.util.function.Consumer;
 /**
  * Base class for creating groups with a list of members inside it.
  */
-public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic implements FlixelGroupable<T> {
+public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic implements FlixelBasicGroupable<T> {
 
   /**
    * The list of members that {@code this} group contains.
    */
-  protected SnapshotArray<FlixelBasic> members;
+  protected SnapshotArray<T> members;
 
   /**
    * Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
@@ -33,31 +34,27 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
   /**
    * Creates a new FlixelGroup with no maximum size.
    */
-  public FlixelGroup() {
-    this(0);
+  protected FlixelGroup(ArraySupplier<T[]> arrayFactory) {
+    this(arrayFactory, 0);
   }
 
   /**
    * Creates a new FlixelGroup with the given maximum size.
    *
+   * @param memberType The runtime class of {@code T} used for array allocation.
    * @param maxSize Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
    * When {@code > 0}, {@link #add} will not add if at capacity.
    */
-  public FlixelGroup(int maxSize) {
+  protected FlixelGroup(ArraySupplier<T[]> arrayFactory, int maxSize) {
     this.maxSize = Math.max(0, maxSize);
-    members = new SnapshotArray<>(FlixelBasic[]::new);
-  }
-
-  @Override
-  public void add(T member) {
-    members.add(member);
+    members = new SnapshotArray<>(arrayFactory);
   }
 
   @Override
   public void update(float elapsed) {
-    FlixelBasic[] items = members.begin();
+    T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
+      T member = items[i];
       if (member == null) {
         continue;
       }
@@ -71,9 +68,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
 
   @Override
   public void draw(Batch batch) {
-    FlixelBasic[] items = members.begin();
+    T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
+      T member = items[i];
       if (member == null) {
         continue;
       }
@@ -87,11 +84,19 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
 
   @Override
   public void remove(T member) {
+    if (member == null) {
+      return;
+    }
+    if (!members.contains(member, true)) {
+      return;
+    }
+    member.destroy();
     members.removeValue(member, true);
   }
 
   @Override
   public void destroy() {
+    super.destroy();
     members.forEach(FlixelBasic::destroy);
     members.clear();
   }
@@ -101,10 +106,10 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     members.clear();
   }
 
-  public void forEachMember(Consumer<FlixelBasic> callback) {
-    FlixelBasic[] items = members.begin();
+  public void forEachMember(Consumer<T> callback) {
+    T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
+      T member = items[i];
       if (member == null) {
         continue;
       }
@@ -114,9 +119,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
   }
 
   public <C> void forEachMemberType(Class<C> type, Consumer<C> callback) {
-    FlixelBasic[] items = members.begin();
+    T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
+      T member = items[i];
       if (type.isInstance(member)) {
         callback.accept(type.cast(member));
       }
@@ -125,7 +130,7 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
   }
 
   @Override
-  public SnapshotArray<FlixelBasic> getMembers() {
+  public SnapshotArray<T> getMembers() {
     return members;
   }
 

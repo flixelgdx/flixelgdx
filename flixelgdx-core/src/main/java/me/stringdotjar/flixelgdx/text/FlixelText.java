@@ -949,8 +949,8 @@ public class FlixelText extends FlixelSprite {
         freeTypeParams.size = size;
         freeTypeParams.spaceX = space;
         freeTypeParams.genMipMaps = true;
-        freeTypeParams.minFilter = Texture.TextureFilter.Linear;
-        freeTypeParams.magFilter = Texture.TextureFilter.Linear;
+        freeTypeParams.minFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+        freeTypeParams.magFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
         bitmapFont = gen.generateFont(freeTypeParams);
         privateBitmapFontOwned = true;
       } else {

@@ -5,19 +5,18 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.functional;
+package me.stringdotjar.flixelgdx.functional.supplier;
 
 /**
- * Represents a supplier of {@code byte}-valued results.
+ * Represents a supplier of {@code char}-valued results.
  */
 @FunctionalInterface
-public interface ByteSupplier {
+public interface CharSupplier {
 
   /**
-   * Gets a byte result.
+   * Gets a char result.
    *
    * @return a result.
    */
-  byte getAsByte();
+  char getAsChar();
 }
-

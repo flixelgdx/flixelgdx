@@ -5,7 +5,7 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.signal;
+package me.stringdotjar.flixelgdx.util;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelState;
@@ -15,8 +15,8 @@ import me.stringdotjar.flixelgdx.FlixelState;
  * the global {@link Flixel} manager class.
  *
  * <p>{@link UpdateSignalData} is a mutable, reusable class rather than a record because it is
- * dispatched every frame. Allocating a new object 120 times per second (pre+post) adds GC
- * pressure that causes frame stutters. Signal handlers must not hold a reference to the data
+ * dispatched every frame. Allocating a new object 120 times per second (pre+post, and assuming the FPS is 60)
+ * adds GC pressure that causes frame stutters. Signal handlers must not hold a reference to the data
  * object past the callback return.
  */
 public final class FlixelSignalData {
@@ -44,7 +44,7 @@ public final class FlixelSignalData {
     }
   }
 
-  public record StateSwitchSignalData(FlixelState screen) {}
+  public record StateSwitchSignalData(FlixelState state) {}
 
   private FlixelSignalData() {}
 }

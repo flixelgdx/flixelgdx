@@ -8,6 +8,7 @@
 package me.stringdotjar.flixelgdx.signal;
 
 import me.stringdotjar.flixelgdx.GdxHeadlessExtension;
+import me.stringdotjar.flixelgdx.util.FlixelSignal;
 
 import java.util.ArrayList;
 import java.util.List;

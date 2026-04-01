@@ -47,7 +47,7 @@ import java.util.function.Predicate;
  *       both position and individual rotation are adjusted by the delta.</li>
  * </ul>
  */
-public class FlixelSpriteGroup extends FlixelSprite implements FlixelGroupable<FlixelSprite> {
+public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupable<FlixelSprite> {
 
   /** The members belonging to this group. */
   protected final SnapshotArray<FlixelSprite> members;

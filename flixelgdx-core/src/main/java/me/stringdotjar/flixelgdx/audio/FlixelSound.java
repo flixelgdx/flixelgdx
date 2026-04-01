@@ -11,11 +11,11 @@ import games.rednblack.miniaudio.MASound;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelBasic;
 import me.stringdotjar.flixelgdx.asset.FlixelAsset;
-import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
+import me.stringdotjar.flixelgdx.util.FlixelSignal;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

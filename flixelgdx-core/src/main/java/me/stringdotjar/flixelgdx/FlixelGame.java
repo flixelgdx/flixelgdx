@@ -24,12 +24,13 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import me.stringdotjar.flixelgdx.box2d.FlixelBox2DObject;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
-import me.stringdotjar.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
+import me.stringdotjar.flixelgdx.util.FlixelSignalData.UpdateSignalData;
+
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
 
