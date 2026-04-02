@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -37,7 +38,14 @@ import me.stringdotjar.flixelgdx.util.FlixelAxes;
  * {@link OrthographicCamera} and {@link FitViewport} are used, but custom types can be provided
  * via the constructor overloads.
  *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxCamera.html">FlxCamera (HaxeFlixel)</a>
+ * <p>
+ * {@link FitViewport} scales the game world to the window, so the world-to-screen factor is often
+ * not a whole number when the window is larger than the camera's internal size (e.g. fullscreen).
+ * libGDX {@link BitmapFont} defaults to integer-snapped glyph quads, which looks blocky under
+ * that scaling. Set {@link BitmapFont#setUseIntegerPositions(boolean)} to {@code false} on fonts
+ * you draw through this pipeline (FlixelGDX does this for {@link me.stringdotjar.flixelgdx.text.FlixelText}
+ * and registry fonts automatically).
+ *
  */
 public class FlixelCamera extends FlixelBasic {
 

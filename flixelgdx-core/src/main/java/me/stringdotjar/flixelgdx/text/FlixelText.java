@@ -543,6 +543,7 @@ public class FlixelText extends FlixelSprite {
     privateBitmapFontOwned = false;
     fontDirty = false;
     layoutDirty = true;
+    font.setUseIntegerPositions(!antialiasing);
     return this;
   }
 
@@ -735,7 +736,7 @@ public class FlixelText extends FlixelSprite {
    * animation state machine in {@link FlixelSprite} from running.
    */
   @Override
-  public void update(float delta) {
+  public void update(float elapsed) {
     // No-op: text does not animate.
   }
 
@@ -774,6 +775,12 @@ public class FlixelText extends FlixelSprite {
     } else {
       drawTextContent(batch, getX(), getY() + textTop);
     }
+  }
+
+  @Override
+  public void setAntialiasing(boolean antialiasing) {
+    this.antialiasing = antialiasing;
+    fontDirty = true;
   }
 
   /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
@@ -956,9 +963,8 @@ public class FlixelText extends FlixelSprite {
       } else if (fontFile != null) {
         freeTypeParams.size = size;
         freeTypeParams.spaceX = space;
-        freeTypeParams.genMipMaps = true;
         freeTypeParams.incremental = true;
-        // freeTypeParams.gamma = 1.8f;
+        freeTypeParams.mono = !antialiasing;
         freeTypeParams.hinting = antialiasing ? FreeTypeFontGenerator.Hinting.Full : FreeTypeFontGenerator.Hinting.None;
         freeTypeParams.minFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
         freeTypeParams.magFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
@@ -978,6 +984,8 @@ public class FlixelText extends FlixelSprite {
     if (oldFont != null && oldFont != bitmapFont && oldPrivate) {
       oldFont.dispose();
     }
+
+    bitmapFont.setUseIntegerPositions(!antialiasing);
   }
 
   /**

@@ -223,6 +223,7 @@ public final class FlixelFontRegistry {
       font.getData().setScale(size / defaultHeight);
     }
     font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    font.setUseIntegerPositions(false);
     defaultBitmapFontsBySize.put(size, font);
     return font;
   }
