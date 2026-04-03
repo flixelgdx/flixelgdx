@@ -136,6 +136,12 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
    */
   protected float mass = 1f;
 
+  /** Parallax scroll factor on X ({@code 1} = moves with the camera like normal world objects). */
+  protected float scrollX = 1f;
+
+  /** Parallax scroll factor on Y ({@code 1} = moves with the camera like normal world objects). */
+  protected float scrollY = 1f;
+
   /**
    * Color when {@code allowCollisions == ANY} and {@code !immovable} (solid).
    * Default: red.
@@ -219,7 +225,22 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     immovable = false;
     elasticity = 0f;
     mass = 1f;
+    scrollX = 1f;
+    scrollY = 1f;
     debugColorOverride = null;
+  }
+
+  public float getScrollX() {
+    return scrollX;
+  }
+
+  public float getScrollY() {
+    return scrollY;
+  }
+
+  public void setScrollFactor(float scrollX, float scrollY) {
+    this.scrollX = scrollX;
+    this.scrollY = scrollY;
   }
 
   public float getX() {
@@ -887,6 +908,16 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
   @Override
   public float getDebugY() {
     return y;
+  }
+
+  @Override
+  public float getDebugDrawX(FlixelCamera cam) {
+    return getX() - cam.scroll.x * getScrollX();
+  }
+
+  @Override
+  public float getDebugDrawY(FlixelCamera cam) {
+    return getY() - cam.scroll.y * getScrollY();
   }
 
   @Override

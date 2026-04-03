@@ -181,6 +181,7 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
    */
   @Override
   public void add(@NotNull FlixelBasic basic) {
+    ensureMembers();
     members.add(basic);
 
     if (basic instanceof FlixelSprite sprite) {

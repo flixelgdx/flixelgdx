@@ -982,6 +982,17 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
+   * Resets the registry of all registered tween types and their respective pools.
+   *
+   * <p>It is advised to <strong>only call this if you know what you are doing</strong>, as
+   * this will include the default registered tween types. If you call this, you will need to
+   * register the tween types again.
+   */
+  public static void resetRegistry() {
+    globalManager.resetRegistry();
+  }
+
+  /**
    * Cancels every active tween on the global manager. Does not clear pools; pair with {@link #clearTweenPools()} if you
    * want a full reset (as {@link me.stringdotjar.flixelgdx.Flixel#switchState} does when {@code clearTweens} is true).
    */

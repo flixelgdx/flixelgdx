@@ -10,6 +10,7 @@ package me.stringdotjar.flixelgdx.debug;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
 
+import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.functional.supplier.ByteSupplier;
 import me.stringdotjar.flixelgdx.functional.supplier.CharSupplier;
 import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
@@ -177,7 +178,14 @@ public class FlixelDebugWatchManager {
 
   /** Adds a convenience watch entry that shows the current mouse screen position. */
   public void addMouse() {
-    watches.put(MOUSE_WATCH_NAME, new ObjectWatchEntry(() -> Gdx.input.getX() + ", " + Gdx.input.getY()));
+    watches.put(
+      MOUSE_WATCH_NAME,
+      new ObjectWatchEntry(() -> {
+        if (Flixel.mouse != null) {
+          return Flixel.mouse.getScreenX() + ", " + Flixel.mouse.getScreenY();
+        }
+        return Gdx.input.getX() + ", " + Gdx.input.getY();
+      }));
   }
 
   /** Removes the convenience mouse position watch entry. */

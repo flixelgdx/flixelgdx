@@ -11,32 +11,31 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectMap;
-import com.badlogic.gdx.utils.XmlReader;
 
+import me.stringdotjar.flixelgdx.animation.FlixelAnimationController;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
-import java.util.Comparator;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * The core building block of all Flixel games. Extends {@link FlixelObject} with graphical
- * capabilities including texture rendering, animation, scaling, rotation, tinting, and flipping.
+ * capabilities including texture rendering, scaling, rotation, tinting, and flipping.
+ *
+ * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
+ * <strong>not</strong> allocated by default (saves memory for large sprite counts on the order of thousands of
+ * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or {@link #setAnimation(FlixelAnimationController)}
+ * when you need clips, then use {@code sprite.ensureAnimation().playAnimation(...)}, {@code loadSparrowFrames(...)}, etc.
  *
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
- *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxSprite.html">FlxSprite (HaxeFlixel)</a>
  */
 public class FlixelSprite extends FlixelObject {
 
@@ -48,21 +47,15 @@ public class FlixelSprite extends FlixelObject {
   @Nullable
   protected Array<FlixelFrame> atlasFrames;
 
-  /** A map that animations are stored and registered in. */
-  protected final ObjectMap<String, Animation<FlixelFrame>> animations;
+  /**
+   * Optional animation controller; {@code null} until {@link #ensureAnimation()} or {@link #setAnimation(FlixelAnimationController)}.
+   */
+  @Nullable
+  public FlixelAnimationController animation;
 
   /** The current frame that {@code this} sprite is currently using for drawing. */
   @Nullable
   protected FlixelFrame currentFrame;
-
-  /** Used for updating {@code this} sprite's current animation. */
-  protected float stateTime = 0;
-
-  /** The name of the current animation playing. */
-  private String currentAnim = "";
-
-  /** Is {@code this} sprites current animation looping indefinitely? */
-  private boolean looping = true;
 
   /**
    * Where all the image frames are stored. This is also where the main image is stored when using
@@ -111,7 +104,21 @@ public class FlixelSprite extends FlixelObject {
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
     super();
-    animations = new ObjectMap<>();
+  }
+
+  /**
+   * Returns the existing controller or creates and assigns a new {@link FlixelAnimationController} for {@code this} sprite.
+   */
+  @NotNull
+  public FlixelAnimationController ensureAnimation() {
+    if (animation == null) {
+      animation = new FlixelAnimationController(this);
+    }
+    return animation;
+  }
+
+  public void setAnimation(@Nullable FlixelAnimationController animation) {
+    this.animation = animation;
   }
 
   /**
@@ -122,14 +129,20 @@ public class FlixelSprite extends FlixelObject {
   @Override
   public void update(float elapsed) {
     super.update(elapsed);
+    if (animation != null) {
+      animation.update(elapsed);
+    }
+  }
 
-    if (animations != null && !animations.isEmpty()) {
-      Animation<FlixelFrame> anim = animations.get(currentAnim);
-      if (anim != null) {
-        stateTime += elapsed;
-        currentFrame = anim.getKeyFrame(stateTime, looping);
-        currentRegion = currentFrame;
-      }
+  /**
+   * Called by {@link FlixelAnimationController} when the displayed keyframe changes.
+   *
+   * @param frame The frame to draw, or {@code null} to leave static graphic unchanged.
+   */
+  public void setCurrentFrameForAnimation(@Nullable FlixelFrame frame) {
+    currentFrame = frame;
+    if (frame != null) {
+      currentRegion = frame;
     }
   }
 
@@ -260,7 +273,9 @@ public class FlixelSprite extends FlixelObject {
     currentRegion = frames[0][0];
     currentFrame = null;
     atlasFrames = null;
-    animations.clear();
+    if (animation != null) {
+      animation.clear();
+    }
     updateHitbox(frameWidth, frameHeight);
     return this;
   }
@@ -293,7 +308,7 @@ public class FlixelSprite extends FlixelObject {
    * @param width The width of the graphic.
    * @param height The height of the graphic.
    * @param color The color of the graphic.
-   * @return This sprite for chaining.
+   * @return {@code this} sprite for chaining.
    */
   public FlixelSprite makeGraphic(int width, int height, Color color) {
     Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
@@ -305,166 +320,27 @@ public class FlixelSprite extends FlixelObject {
   }
 
   /**
-   * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
+   * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
+   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} only;
+   * not a general API for game code.
    *
-   * @param texture The path to the {@code .png} texture file for slicing and extracting the different frames from.
-   * @param xmlFile The path to the {@code .xml} file which contains the data for each subtexture of the sparrow atlas.
-   * @return {@code this} sprite for chaining.
+   * @param newGraphic Graphic wrapper already {@code retain()}ed by the caller.
+   * @param parsedFrames Frames built from the XML (may be empty).
    */
-  public FlixelSprite loadSparrowFrames(FileHandle texture, FileHandle xmlFile) {
-    return loadSparrowFrames(texture.path(), new XmlReader().parse(xmlFile));
-  }
-
-  /**
-   * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
-   *
-   * @param textureKey The key of the graphic to load.
-   * @param xmlFile The path to the {@code .xml} file which contains the data for each subtexture of the sparrow atlas.
-   * @return {@code this} sprite for chaining.
-   */
-  public FlixelSprite loadSparrowFrames(String textureKey, FileHandle xmlFile) {
-    return loadSparrowFrames(textureKey, new XmlReader().parse(xmlFile));
-  }
-
-  /**
-   * Loads an {@code .xml} spritesheet with {@code SubTexture} data inside of it.
-   *
-   * @param textureKey The key of the graphic to load.
-   * @param xmlFile The {@link XmlReader.Element} data which contains the data for each subtexture of the sparrow atlas.
-   * @return {@code this} sprite for chaining.
-   */
-  public FlixelSprite loadSparrowFrames(String textureKey, XmlReader.Element xmlFile) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class).retain();
+  public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
     if (graphic != null) {
       graphic.release();
     }
-    graphic = g;
-    Texture texture = requireOrLoad(g);
-
-    atlasFrames = new Array<>(FlixelFrame[]::new);
-
-    for (XmlReader.Element subTexture : xmlFile.getChildrenByName("SubTexture")) {
-      String name = subTexture.getAttribute("name", null);
-      int x = subTexture.getInt("x");
-      int y = subTexture.getInt("y");
-      int width = subTexture.getInt("width");
-      int height = subTexture.getInt("height");
-
-      TextureRegion region = new TextureRegion(texture, x, y, width, height);
-      FlixelFrame frame = new FlixelFrame(region);
-      frame.name = name;
-
-      if (subTexture.hasAttribute("frameX")) {
-        frame.offsetX = Math.abs(subTexture.getInt("frameX"));
-        frame.offsetY = Math.abs(subTexture.getInt("frameY"));
-        frame.originalWidth = subTexture.getInt("frameWidth");
-        frame.originalHeight = subTexture.getInt("frameHeight");
-      } else {
-        frame.offsetX = 0;
-        frame.offsetY = 0;
-        frame.originalWidth = width;
-        frame.originalHeight = height;
-      }
-
-      atlasFrames.add(frame);
-    }
-
-    if (atlasFrames.size > 0) {
-      currentFrame = atlasFrames.first();
-      currentRegion = currentFrame;
-      setSize(currentFrame.getRegionWidth(), currentFrame.getRegionHeight());
-    }
-
+    graphic = newGraphic;
+    atlasFrames = parsedFrames;
     frames = null;
-    animations.clear();
-    return this;
-  }
-
-  /**
-   * Adds an animation by looking for sub textures that start with the prefix passed down.
-   *
-   * @param name The name of the animation (e.g., "confirm").
-   * @param prefix The prefix in the {@code .xml} file (e.g., "left confirm").
-   * @param frameRate How fast the animation should play in frames-per-second. Standard is 24.
-   * @param loop Should the new animation loop indefinitely?
-   */
-  public void addAnimationByPrefix(String name, String prefix, int frameRate, boolean loop) {
-    Array<FlixelFrame> frames = new Array<>();
-
-    if (atlasFrames == null) return;
-
-    for (FlixelFrame frame : atlasFrames) {
-      if (frame != null && frame.name != null && frame.name.startsWith(prefix)) {
-        frames.add(frame);
-      }
+    if (animation != null) {
+      animation.clear();
     }
-
-    if (frames.size > 0) {
-      // Ensure frames are sorted alphabetically (e.g., confirm0000, confirm0001).
-      frames.sort(Comparator.comparing(f -> f.name));
-      animations.put(
-        name,
-        new Animation<>(1f / frameRate, frames, loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL)
-      );
-    }
-  }
-
-  /**
-   * Adds a new animation to the animations list if it doesn't exist already.
-   *
-   * @param name The name of the animation. This is what you'll use every time you use {@code playAnimation()}.
-   * @param frameIndices An array of integers used for animation frame indices.
-   * @param frameDuration How long each frame lasts for in seconds.
-   */
-  public void addAnimation(String name, int[] frameIndices, float frameDuration) {
-    Array<FlixelFrame> animFrames = new Array<>();
-
-    // Convert 1D indices (0, 1, 2...) to 2D grid coordinates.
-    if (frames == null) return;
-    int cols = frames[0].length;
-    for (int index : frameIndices) {
-      int row = index / cols;
-      int col = index % cols;
-      animFrames.add(frames[row][col]);
-    }
-
-    animations.put(name, new Animation<>(frameDuration, animFrames));
-  }
-
-  /**
-   * Plays an animation {@code this} sprite has, with looping enabled by default.
-   *
-   * @param name The name of the animation to play.
-   */
-  public void playAnimation(String name) {
-    playAnimation(name, true);
-  }
-
-  /**
-   * Plays an animation {@code this} sprite has, if it exists.
-   *
-   * @param name The name of the animation to play.
-   * @param loop Should this animation loop indefinitely?
-   */
-  public void playAnimation(String name, boolean loop) {
-    playAnimation(name, loop, true);
-  }
-
-  /**
-   * Plays an animation {@code this} sprite has, if it exists.
-   *
-   * @param name The name of the animation to play.
-   * @param loop Should this animation loop indefinitely?
-   * @param forceRestart Should the animation automatically restart regardless if it's playing?
-   */
-  public void playAnimation(String name, boolean loop, boolean forceRestart) {
-    if (currentAnim.equals(name) && !forceRestart) {
-      return;
-    }
-    if (isAnimationFinished() || forceRestart) {
-      this.currentAnim = name;
-      this.looping = loop;
-      this.stateTime = 0;
+    if (parsedFrames.size > 0) {
+      FlixelFrame first = parsedFrames.first();
+      setCurrentFrameForAnimation(first);
+      setSize(first.getRegionWidth(), first.getRegionHeight());
     }
   }
 
@@ -473,12 +349,15 @@ public class FlixelSprite extends FlixelObject {
     if (!isOnDrawCamera()) {
       return;
     }
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    float wx = getX() - cam.scroll.x * scrollX;
+    float wy = getY() - cam.scroll.y * scrollY;
     if (currentFrame != null) {
       float oX = currentFrame.originalWidth / 2f;
       float oY = currentFrame.originalHeight / 2f;
 
-      float drawX = getX() - offsetX + currentFrame.offsetX;
-      float drawY = getY() - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
+      float drawX = wx - offsetX + currentFrame.offsetX;
+      float drawY = wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
 
       boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
       boolean isFlippedY = flipY;
@@ -512,8 +391,8 @@ public class FlixelSprite extends FlixelObject {
       batch.setColor(color);
       batch.draw(
         currentRegion.getRegion(),
-        getX() - offsetX,
-        getY() - offsetY,
+        wx - offsetX,
+        wy - offsetY,
         originX,
         originY,
         getWidth(),
@@ -566,7 +445,7 @@ public class FlixelSprite extends FlixelObject {
    * <p>For textures drawn via {@link #currentRegion}, {@link #draw} uses {@code getWidth() *
    * |scaleX|} (and height), so this folds scale into {@link #setSize(float, float)} and resets
    * scale to {@code 1} to avoid double-scaling. Sparrow/atlas frames ({@link #currentFrame}) keep
-   * scale because {@link #draw} sizes that path from the frame region × scale, while hitbox
+   * scale because {@link #draw} sizes that path from the frame {@code region * scale}, while hitbox
    * dimensions are still set to the same effective pixel size for {@link Flixel#overlap}.
    */
   public FlixelSprite updateHitbox() {
@@ -632,9 +511,10 @@ public class FlixelSprite extends FlixelObject {
   @Override
   public void destroy() {
     super.destroy();
-    stateTime = 0;
-    currentAnim = "";
-    looping = true;
+    if (animation != null) {
+      animation.clear();
+      animation = null;
+    }
     scaleX = 1f;
     scaleY = 1f;
     originX = 0f;
@@ -653,17 +533,10 @@ public class FlixelSprite extends FlixelObject {
       atlasFrames = null;
     }
     frames = null;
-    animations.clear();
     if (graphic != null) {
       graphic.release();
       graphic = null;
     }
-  }
-
-  public boolean isAnimationFinished() {
-    Animation<FlixelFrame> anim = animations.get(currentAnim);
-    if (anim == null) return true;
-    return anim.isAnimationFinished(stateTime);
   }
 
   public Texture getGraphic() {
@@ -802,28 +675,12 @@ public class FlixelSprite extends FlixelObject {
     return currentRegion != null ? currentRegion.getRegionHeight() : 0;
   }
 
-  public ObjectMap<String, Animation<FlixelFrame>> getAnimations() {
-    return animations;
-  }
-
   public Array<FlixelFrame> getAtlasRegions() {
     return atlasFrames;
   }
 
   public FlixelFrame getCurrentFrame() {
     return currentFrame;
-  }
-
-  public float getStateTime() {
-    return stateTime;
-  }
-
-  public String getCurrentAnim() {
-    return currentAnim;
-  }
-
-  public boolean isLooping() {
-    return looping;
   }
 
   public FlixelFrame[][] getFrames() {

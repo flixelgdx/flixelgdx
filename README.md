@@ -20,6 +20,7 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 - [Goals](#goals)
 - [Open architecture](#open-architecture)
 - [Features](#features)
+- [Memory efficiency](#memory-efficiency)
 - [Entity & sprite basics](#entity--sprite-basics)
 - [State management & substates](#state-management--substates)
 - [Group system](#group-system)
@@ -254,23 +255,25 @@ public class Custom3DCamera extends FlixelCamera {
 
 ### Memory Efficiency
 
-FlixelGDX is incredibly memory efficient. It is designed to be runnable on extremely low-end devices, despite being a 
-full-featured game framework.
+FlixelGDX is *extremely* memory efficient. It is designed to be runnable on extremely low-end devices, despite being a 
+massive complex game framework with many features and capabilities.
 
 These are the stress-test stats to show how memory efficient FlixelGDX is:
 
 **Setup**
 
-- A refurbished 10 year old $200 OptiPlex 7050 with integrated graphics.
+- A refurbished 10 year old $200 OptiPlex 7050 with integrated graphics (which can't run Roblox by itself on lowest settings without lagging).
 - JVM maximum memory usage: 32MB
+- JVM Type: OpenJ9 Semeru Runtime (although FlixelGDX works well with other JVMs, too)
 
 **Results**
 
 | Test (Number of Sprites & Active Tweens) | Memory Usage |
 |------------------------------------------|--------------|
 | 100 sprites/tweens (around a normal sized game) | ~4MB |
-| 1000 sprites/tweens | ~6MB |
-| 17308 sprites/tweens (breaking point where it finally crashed) | ~31MB |
+| 1000 sprites/tweens | ~6-7MB |
+| ~27k-28k sprites/tweens (breaking point where it finally crashed) | ~32MB |
+| ~66k sprites (no tweens, breaking point where it finally crashed) | ~32MB |
 
 ### Entity & Sprite Basics
 

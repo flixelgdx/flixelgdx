@@ -34,6 +34,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    */
   protected SnapshotArray<T> members;
 
+  /** Used to recreate {@link #members} after {@link #destroy()} when this group is reused (e.g. root state). */
+  private final ArraySupplier<T[]> memberArrayFactory;
+
   /**
    * Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
    * When {@code > 0}, {@link #add} will not add if at capacity.
@@ -55,8 +58,18 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    * When {@code > 0}, {@link #add} will not add if at capacity.
    */
   protected FlixelGroup(ArraySupplier<T[]> arrayFactory, int maxSize) {
+    this.memberArrayFactory = arrayFactory;
     this.maxSize = Math.max(0, maxSize);
     members = new SnapshotArray<>(arrayFactory);
+  }
+
+  /**
+   * Recreates {@link #members} if {@link #destroy()} has run (members is {@code null}).
+   */
+  public void ensureMembers() {
+    if (members == null) {
+      members = new SnapshotArray<>(memberArrayFactory);
+    }
   }
 
   @Override
@@ -103,6 +116,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     if (member == null) {
       return;
     }
+    if (members == null) {
+      return;
+    }
     if (!members.contains(member, true)) {
       return;
     }
@@ -120,7 +136,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
 
   @Override
   public void clear() {
-    members.clear();
+    if (members != null) {
+      members.clear();
+    }
   }
 
   /**
@@ -128,6 +146,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    */
   @Nullable
   public T getFirstDead() {
+    if (members == null) {
+      return null;
+    }
     T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       T m = items[i];
@@ -141,6 +162,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
 
   /** Index of the first {@code null} slot in {@link #members}, or {@code -1} if none. */
   public int getFirstNullIndex() {
+    if (members == null) {
+      return -1;
+    }
     T[] items = members.begin();
       for (int i = 0, n = members.size; i < n; i++) {
         if (items[i] == null) {
@@ -157,7 +181,7 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    * @param member The member to detach.
    */
   public void detach(T member) {
-    if (member == null || !members.contains(member, true)) {
+    if (member == null || members == null || !members.contains(member, true)) {
       return;
     }
     members.removeValue(member, true);
@@ -174,7 +198,7 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     if (member == null) {
       return;
     }
-    if (!members.contains(member, true)) {
+    if (members == null || !members.contains(member, true)) {
       return;
     }
     if (destroy) {
@@ -193,6 +217,7 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    * @return A reusable member.
    */
   public T recycle(@NotNull Supplier<? extends T> factory) {
+    ensureMembers();
     T dead = getFirstDead();
     if (dead != null) {
       dead.revive();
@@ -215,6 +240,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    * @param callback The callback to call for each member.
    */
   public void forEachMember(Consumer<T> callback) {
+    if (members == null) {
+      return;
+    }
     T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       T member = items[i];
@@ -236,6 +264,9 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    * @param callback The callback to call for each member.
    */
   public <C> void forEachMemberType(Class<C> type, Consumer<C> callback) {
+    if (members == null) {
+      return;
+    }
     T[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       T member = items[i];
