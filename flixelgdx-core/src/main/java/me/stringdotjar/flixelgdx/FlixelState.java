@@ -10,24 +10,33 @@ package me.stringdotjar.flixelgdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.SnapshotArray;
 
-import me.stringdotjar.flixelgdx.group.FlixelGroup;
-
-import java.util.function.Supplier;
+import me.stringdotjar.flixelgdx.group.FlixelBasicGroup;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for creating a better screen display with more functionality than the default {@link
- * com.badlogic.gdx.Screen} interface.
+ * The core building block for every FlixelGDX game.
  *
- * <p>A {@code FlixelState} can open a {@link FlixelSubState} on top of itself.
+ * <p>A state is a collection of {@link FlixelBasic} objects that can be used for any
+ * important part of your game. This can be a level, a menu, or anything else.
+ *
+ * <p>Members are not pooled by the engine: {@link #remove} only unlinks objects. Prefer {@link FlixelBasic#kill()} /
+ * {@link FlixelBasic#revive()} or {@link FlixelBasicGroup#recycle()} for reuse. {@link #createMemberForRecycle()} supplies
+ * new {@link FlixelSprite} instances when {@link FlixelBasicGroup#recycle()} has no dead member to revive. Override it if
+ * your state recycles another {@link FlixelBasic} subtype.
+ *
+ * <p>A state can open a {@link FlixelSubState} on top of itself.
  * By default, when a substate is active the parent state will continue to be drawn
  * ({@link #persistentDraw} = {@code true}) but will stop updating
  * ({@link #persistentUpdate} = {@code false}).
+ *
+ * @see FlixelBasic
+ * @see FlixelBasicGroup
  */
-public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Screen {
+public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implements Screen {
 
   /** Should {@code this} state update its logic even when a substate is currently opened? */
   public boolean persistentUpdate = false;
@@ -44,8 +53,32 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   /** The currently active substate opened on top of {@code this} state. */
   private FlixelSubState subState;
 
-  public FlixelState() {
-    super(FlixelBasic[]::new, 0);
+  /** Creates a new state with no limit on member count. */
+  protected FlixelState() {
+    super(FlixelBasic[]::new);
+  }
+
+  /**
+   * Creates a new state with a maximum member count ({@code 0} means unlimited).
+   *
+   * @param maxSize Maximum members ({@code 0} = unlimited).
+   */
+  protected FlixelState(int maxSize) {
+    super(FlixelBasic[]::new, maxSize);
+  }
+
+  @Override
+  protected FlixelBasic createMemberForRecycle() {
+    return new FlixelSprite();
+  }
+
+  @Override
+  public FlixelBasic recycle() {
+    FlixelBasic member = super.recycle();
+    if (member instanceof FlixelSprite sprite) {
+      sprite.setAntialiasing(Flixel.globalAntialiasing());
+    }
+    return member;
   }
 
   @Override
@@ -181,16 +214,10 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
    */
   @Override
   public void add(@NotNull FlixelBasic basic) {
-    members.add(basic);
-
+    super.add(basic);
     if (basic instanceof FlixelSprite sprite) {
       sprite.setAntialiasing(Flixel.globalAntialiasing());
     }
-  }
-
-  @Override
-  public FlixelBasic recycle(@NotNull Supplier<? extends FlixelBasic> factory) {
-    return super.recycle(factory);
   }
 
   @Nullable
@@ -231,6 +258,7 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
 
   @Override
   public String toString() {
-    return "FlixelState(members=" + members.size + ", subState=" + subState.toString() + ")";
+    SnapshotArray<?> m = getMembers();
+    return "FlixelState(members=" + (m != null ? m.size : 0) + ", subState=" + subState + ")";
   }
 }

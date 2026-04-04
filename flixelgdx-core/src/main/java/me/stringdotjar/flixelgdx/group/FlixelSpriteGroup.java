@@ -19,20 +19,19 @@ import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Random;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * A special {@link FlixelSprite} that can be treated like a single sprite even when
- * made up of several member sprites. It implements the {@link FlixelGroupable} API
+ * made up of several member sprites. It implements {@link FlixelBasicGroupable}
  * for managing members while inheriting all sprite properties from {@link FlixelSprite}.
  * <p>
- * Because {@code FlixelSpriteGroup} extends {@code FlixelSprite}, groups can be nested
+ * Because FlixelSpriteGroup extends {@link me.stringdotjar.flixelgdx.FlixelSprite}, groups can be nested
  * inside other groups, enabling complex hierarchical sprite compositions. Any property
  * change on the group (position, alpha, color, scale, rotation, flip) automatically
  * propagates to all members.
@@ -51,10 +50,10 @@ import org.jetbrains.annotations.Nullable;
  *       both position and individual rotation are adjusted by the delta.</li>
  * </ul>
  *
- * <p><b>Pooled members:</b> {@link #remove} does not call {@link FlixelSprite#destroy}; use
- * {@link #removeMember}{@code (sprite, true)} to destroy. {@link #detach} and {@link #removeMember}{@code (member, false)}
- * only remove the sprite and restore local coordinates. {@link #recycle} reuses {@link #getFirstDead()} with
- * {@link #preAdd} or {@link #add}s a new sprite.
+ * <p>{@link #remove} and {@link #detach} restore local coordinates and unlink the sprite; they do not call
+ * {@link FlixelSprite#destroy()}. Use {@link me.stringdotjar.flixelgdx.FlixelBasic#kill()} / {@link me.stringdotjar.flixelgdx.FlixelBasic#revive()} or
+ * {@link #recycle()} for reuse. {@link #clear()} unlinks all members without destroying them.
+ * {@link #destroy()} on this group destroys every member (releases graphics) and resets group state.
  */
 public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupable<FlixelSprite> {
 
@@ -77,26 +76,17 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private boolean antialiasing = false;
   private int facing = FlixelConstants.Graphics.FACING_RIGHT;
 
-  /** Creates a new group with unlimited size, a default rotation radius of 100, and 0 rotation. */
+  /** Creates a sprite group with no member limit and default wheel radius {@code 100}. */
   public FlixelSpriteGroup() {
     this(0, 100f, 0f);
   }
 
   /**
-   * Creates a new group with the given maximum size.
+   * Creates a sprite group with the given maximum size, rotation radius, and rotation.
    *
-   * @param maxSize the maximum number of members allowed; 0 for unlimited.
-   */
-  public FlixelSpriteGroup(int maxSize) {
-    this(maxSize, 100f, 0f);
-  }
-
-  /**
-   * Creates a new group with the given parameters.
-   *
-   * @param maxSize The maximum number of members allowed; 0 for unlimited.
-   * @param rotationRadius The distance of each sprite from the center in {@link RotationMode#WHEEL}.
-   * @param rotation The initial rotation in degrees.
+   * @param maxSize The maximum size of the group ({@code 0} = unlimited).
+   * @param rotationRadius The radius used by {@link RotationMode#WHEEL}.
+   * @param rotation The group's initial angle in degrees.
    */
   public FlixelSpriteGroup(int maxSize, float rotationRadius, float rotation) {
     super();
@@ -147,11 +137,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   /**
    * Sets the group's rotation in degrees. The behavior depends on the current {@link RotationMode}:
    * <ul>
-   *   <li>{@link RotationMode#INDIVIDUAL} &ndash; the delta is applied to each sprite's
+   *   <li>{@link RotationMode#INDIVIDUAL}: the delta is applied to each sprite's
    *       own rotation.</li>
-   *   <li>{@link RotationMode#WHEEL} &ndash; the value is stored and applied during the
+   *   <li>{@link RotationMode#WHEEL}: the value is stored and applied during the
    *       next {@link #update(float)} call.</li>
-   *   <li>{@link RotationMode#ORBIT} &ndash; each sprite's position is rotated around the group
+   *   <li>{@link RotationMode#ORBIT}: each sprite's position is rotated around the group
    *       origin by the delta, and its individual rotation is adjusted by the same amount.</li>
    * </ul>
    *
@@ -164,14 +154,9 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
     if (delta != 0) {
       switch (rotationMode) {
-        case INDIVIDUAL:
-          transformMembersIndividualRotation(delta);
-          break;
-        case ORBIT:
-          orbitMembersAroundCenter(delta);
-          break;
-        case WHEEL:
-          break;
+        case INDIVIDUAL -> transformMembersIndividualRotation(delta);
+        case ORBIT -> orbitMembersAroundCenter(delta);
+        case WHEEL -> { /* Wheel rotation is applied during update. */ }
       }
     }
   }
@@ -202,7 +187,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setAlpha(float a) {
     super.setAlpha(a);
-    forEach(s -> s.setAlpha(a));
+    forEachMember(s -> s.setAlpha(a));
   }
 
   public float getAlpha() {
@@ -213,35 +198,35 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setColor(Color tint) {
     super.setColor(tint);
-    forEach(s -> s.setColor(tint));
+    forEachMember(s -> s.setColor(tint));
   }
 
   /** Sets a color tint on the group and propagates it to all current members. */
   @Override
   public void setColor(float r, float g, float b, float a) {
     super.setColor(r, g, b, a);
-    forEach(s -> s.setColor(r, g, b, a));
+    forEachMember(s -> s.setColor(r, g, b, a));
   }
 
   /** Sets a uniform scale on the group and propagates it to all current members. */
   @Override
   public void setScale(float scaleXY) {
     super.setScale(scaleXY);
-    forEach(s -> s.setScale(scaleXY));
+    forEachMember(s -> s.setScale(scaleXY));
   }
 
   /** Sets a non-uniform scale on the group and propagates it to all current members. */
   @Override
   public void setScale(float scaleX, float scaleY) {
     super.setScale(scaleX, scaleY);
-    forEach(s -> s.setScale(scaleX, scaleY));
+    forEachMember(s -> s.setScale(scaleX, scaleY));
   }
 
   /** Toggles the flip state on the X and/or Y axis for the group and all current members. */
   @Override
   public void flip(boolean x, boolean y) {
     super.flip(x, y);
-    forEach(s -> s.flip(x, y));
+    forEachMember(s -> s.flip(x, y));
   }
 
   /**
@@ -255,7 +240,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (isFlipX() != flipX) {
       super.flip(true, false);
     }
-    forEach(s -> {
+    forEachMember(s -> {
       if (s.isFlipX() != flipX) {
         s.flip(true, false);
       }
@@ -273,7 +258,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (isFlipY() != flipY) {
       super.flip(false, true);
     }
-    forEach(s -> {
+    forEachMember(s -> {
       if (s.isFlipY() != flipY) {
         s.flip(false, true);
       }
@@ -291,7 +276,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
-    forEach(s -> s.setAntialiasing(antialiasing));
+    forEachMember(s -> s.setAntialiasing(antialiasing));
   }
 
   public boolean isAntialiasing() {
@@ -306,33 +291,33 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setFacing(int facing) {
     this.facing = facing;
-    forEach(s -> s.setFacing(facing));
+    forEachMember(s -> s.setFacing(facing));
   }
 
   /** Sets the rotation and scale pivot point on every current member. */
   @Override
   public void setOrigin(float originX, float originY) {
     super.setOrigin(originX, originY);
-    forEach(s -> s.setOrigin(originX, originY));
+    forEachMember(s -> s.setOrigin(originX, originY));
   }
 
   /** Centers the origin on every current member based on each member's own dimensions. */
   @Override
   public void setOriginCenter() {
     super.setOriginCenter();
-    forEach(FlixelSprite::setOriginCenter);
+    forEachMember(FlixelSprite::setOriginCenter);
   }
 
   /**
    * Adds a sprite to the group. The sprite's position is automatically offset by the
    * group's current position, and its alpha is multiplied by the group's alpha. If the
    * group has a {@link #maxSize} and is already at capacity, the sprite is not added.
+   *
+   * @param sprite The sprite to add.
    */
   @Override
-  public void add(FlixelSprite sprite) {
-    if (sprite == null) {
-      return;
-    }
+  public void add(@NotNull FlixelSprite sprite) {
+    Objects.requireNonNull(sprite);
     if (maxSize > 0 && members.size >= maxSize) {
       return;
     }
@@ -340,8 +325,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     members.add(sprite);
   }
 
-  /** Adds a sprite to the group and returns it, allowing for method chaining. */
-  public FlixelSprite addAndReturn(FlixelSprite sprite) {
+  /**
+   * Adds a sprite to the group and returns it, allowing for method chaining.
+   *
+   * @param sprite The sprite to add.
+   * @return The added sprite.
+   */
+  public FlixelSprite addAndReturn(@NotNull FlixelSprite sprite) {
+    Objects.requireNonNull(sprite);
     add(sprite);
     return sprite;
   }
@@ -366,98 +357,48 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   /**
-   * Removes a sprite from the group. The group's position offset is subtracted from the
-   * sprite to restore it to local coordinates.
+   * Removes the sprite from the group and restores local coordinates. Does not call {@link FlixelSprite#destroy()}.
    */
   @Override
   public void remove(FlixelSprite sprite) {
-    if (sprite == null) {
+    if (sprite == null || !members.removeValue(sprite, true)) {
       return;
     }
-    members.removeValue(sprite, true);
-    sprite.setX(sprite.getX() - getX());
-    sprite.setY(sprite.getY() - getY());
+    restoreLocalCoordinates(sprite);
   }
 
-  /**
-   * Same as {@link #remove}. Removes the sprite without destroying it (pool-friendly).
-   *
-   * @param sprite The sprite to detach.
-   */
+  /** Same as {@link #remove(FlixelSprite)}: restores local coordinates and unlinks the sprite. */
+  @Override
   public void detach(FlixelSprite sprite) {
-    remove(sprite);
-  }
-
-  /**
-   * Removes {@code member} from the group and restores its local coordinates. When {@code destroy} is
-   * {@code true}, {@link FlixelSprite#destroy()} is called after removal.
-   *
-   * @param member The member to remove.
-   * @param destroy Whether to call {@link FlixelSprite#destroy()} on the member.
-   */
-  public void removeMember(FlixelSprite member, boolean destroy) {
-    if (member == null || !members.contains(member, true)) {
+    if (sprite == null || !members.removeValue(sprite, true)) {
       return;
     }
-    members.removeValue(member, true);
-    member.setX(member.getX() - getX());
-    member.setY(member.getY() - getY());
-    if (destroy) {
-      member.destroy();
-    }
-  }
-
-  @Nullable
-  public FlixelSprite getFirstDead() {
-    FlixelSprite[] items = members.begin();
-    try {
-      for (int i = 0, n = members.size; i < n; i++) {
-        FlixelSprite m = items[i];
-        if (m != null && !m.exists) {
-          return m;
-        }
-      }
-    } finally {
-      members.end();
-    }
-    return null;
-  }
-
-  public int getFirstNullIndex() {
-    FlixelSprite[] items = members.begin();
-    try {
-      for (int i = 0, n = members.size; i < n; i++) {
-        if (items[i] == null) {
-          return i;
-        }
-      }
-    } finally {
-      members.end();
-    }
-    return -1;
+    restoreLocalCoordinates(sprite);
   }
 
   /**
-   * Revives and {@link #reset}s the first dead member (with {@link #preAdd}), or {@link #add}s
-   * {@code factory.get()}.
-   *
-   * @param factory The factory to create a new member.
-   * @return A reusable member.
+   * Revives the first dead member, or creates a new sprite, applies {@link #preAdd}, and adds it when under
+   * {@link #maxSize}. When at capacity and no dead slot exists, returns {@code null}.
    */
-  public FlixelSprite recycle(@NotNull Supplier<? extends FlixelSprite> factory) {
+  @Nullable
+  public FlixelSprite recycle() {
     FlixelSprite dead = getFirstDead();
     if (dead != null) {
       dead.revive();
-      dead.reset();
-      preAdd(dead);
+      dead.active = true;
+      dead.visible = true;
       return dead;
     }
-    FlixelSprite created = factory.get();
     if (maxSize > 0 && members.size >= maxSize) {
-      return created;
+      return null;
     }
-    add(created);
-    return created;
+    FlixelSprite fresh = new FlixelSprite();
+    fresh.revive();
+    fresh.active = true;
+    fresh.visible = true;
+    preAdd(fresh);
+    members.add(fresh);
+    return fresh;
   }
 
   /**
@@ -478,19 +419,35 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       add(newSprite);
       return newSprite;
     }
+    restoreLocalCoordinates(oldSprite);
     preAdd(newSprite);
     members.set(idx, newSprite);
     return newSprite;
   }
 
-  /** Destroys every member and then clears the group. */
+  /** Unlinks every member and restores local coordinates. Does not call {@link FlixelSprite#destroy()}. */
   @Override
   public void clear() {
-    forEach(FlixelSprite::destroy);
+    FlixelSprite[] items = members.begin();
+    try {
+      for (int i = 0, n = members.size; i < n; i++) {
+        FlixelSprite s = items[i];
+        if (s != null) {
+          restoreLocalCoordinates(s);
+        }
+      }
+    } finally {
+      members.end();
+    }
     members.clear();
   }
 
-  /** Returns the member at the given index, or {@code null} if the index is out of bounds. */
+  /**
+   * Returns the member at the given index, or {@code null} if the index is out of bounds.
+   *
+   * @param index The index of the member to get.
+   * @return The member at the given index, or {@code null} if the index is out of bounds.
+   */
   public FlixelSprite get(int index) {
     if (index < 0 || index >= members.size) {
       return null;
@@ -528,6 +485,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   @Override
+  @NotNull
   public SnapshotArray<FlixelSprite> getMembers() {
     return members;
   }
@@ -560,52 +518,22 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     return members.get(startIndex + RANDOM.nextInt(span));
   }
 
-  /** Applies a function to every non-null member in order. */
-  public void forEach(Consumer<FlixelSprite> function) {
-    if (function == null || members == null || members.size == 0) {
-      return;
-    }
-    FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      FlixelSprite s = items[i];
-      if (s != null) {
-        function.accept(s);
-      }
-    }
-    members.end();
-  }
-
   /**
-   * Applies a function only to members that are instances of the given type. This is useful
-   * when a group contains a mix of {@link FlixelSprite} subclasses (including nested
-   * {@link FlixelSpriteGroup} instances).
+   * Sorts the members of the group using the given comparator.
    *
-   * @param type The class to filter by.
-   * @param callback The function to apply to each matching member.
-   * @param <C> The member subtype.
+   * @param comparator The comparator to use to sort the members.
    */
-  public <C extends FlixelSprite> void forEachOfType(Class<C> type, Consumer<C> callback) {
-    if (type == null || callback == null) {
-      return;
-    }
-    FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      FlixelSprite s = items[i];
-      if (s != null && type.isInstance(s)) {
-        callback.accept(type.cast(s));
-      }
-    }
-    members.end();
-  }
-
-  public void sort(Comparator<FlixelSprite> comparator) {
-    if (comparator == null) {
-      return;
-    }
+  public void sort(@NotNull Comparator<FlixelSprite> comparator) {
+    Objects.requireNonNull(comparator);
     members.sort(comparator);
   }
 
-  /** Returns the first member that satisfies the predicate, or {@code null} if none match. */
+  /**
+   * Returns the first member that satisfies the predicate, or {@code null} if none match.
+   *
+   * @param predicate The predicate to test the members against.
+   * @return The first member that satisfies the predicate, or {@code null} if none match.
+   */
   public FlixelSprite getFirstMatching(Predicate<FlixelSprite> predicate) {
     if (predicate == null) {
       return null;
@@ -775,12 +703,28 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   @Override
   public void destroy() {
-    super.destroy();
-    forEach(FlixelSprite::destroy);
+    FlixelSprite[] items = members.begin();
+    try {
+      for (int i = 0, n = members.size; i < n; i++) {
+        FlixelSprite s = items[i];
+        if (s != null) {
+          restoreLocalCoordinates(s);
+          s.destroy();
+        }
+      }
+    } finally {
+      members.end();
+    }
     members.clear();
+    super.destroy();
     rotationMode = RotationMode.INDIVIDUAL;
     rotationRadius = 100f;
     visible = true;
+  }
+
+  private void restoreLocalCoordinates(FlixelSprite sprite) {
+    sprite.setX(sprite.getX() - getX());
+    sprite.setY(sprite.getY() - getY());
   }
 
   /**
@@ -796,15 +740,15 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   private void transformMembersX(float dx) {
-    forEach(s -> s.setX(s.getX() + dx));
+    forEachMember(s -> s.setX(s.getX() + dx));
   }
 
   private void transformMembersY(float dy) {
-    forEach(s -> s.setY(s.getY() + dy));
+    forEachMember(s -> s.setY(s.getY() + dy));
   }
 
   private void transformMembersPosition(float dx, float dy) {
-    forEach(s -> s.setPosition(s.getX() + dx, s.getY() + dy));
+    forEachMember(s -> s.setPosition(s.getX() + dx, s.getY() + dy));
   }
 
   /**
@@ -812,7 +756,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * any positions. Used by {@link RotationMode#INDIVIDUAL}.
    */
   private void transformMembersIndividualRotation(float delta) {
-    forEach(s -> s.setAngle(s.getAngle() + delta));
+    forEachMember(s -> s.setAngle(s.getAngle() + delta));
   }
 
   /**

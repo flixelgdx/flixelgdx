@@ -654,14 +654,17 @@ public class FlixelBar extends FlixelSprite {
     }
     ensureWhitePixel();
 
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
     float px = getX();
     float py = getY();
     if (screenSpace) {
-      FlixelCamera cam = Flixel.getDrawCamera();
       if (cam != null) {
-        px += cam.scroll.x;
-        py += cam.scroll.y;
+        px += cam.scroll.x * getScrollX();
+        py += cam.scroll.y * getScrollY();
       }
+    } else if (cam != null) {
+      px -= cam.scroll.x * getScrollX();
+      py -= cam.scroll.y * getScrollY();
     }
 
     float w = getWidth();
@@ -683,12 +686,11 @@ public class FlixelBar extends FlixelSprite {
     if (text != null) {
       float oldX = text.getX();
       float oldY = text.getY();
-      float tx = px + w / 2f + textOffsetX;
-      float ty = py + h / 2f + textOffsetY;
+      float tcx = getX() + w / 2f + textOffsetX;
+      float tcy = getY() + h / 2f + textOffsetY;
 
-      // FlixelText's y is the baseline; we want center positioning.
-      // Approximate by subtracting half the text height.
-      text.setPosition(tx - text.getWidth() / 2f, ty - text.getHeight() / 2f);
+      // Logical center so FlixelText applies the same scrollFactor as other sprites (matches bar quads above).
+      text.setPosition(tcx - text.getWidth() / 2f, tcy - text.getHeight() / 2f);
       text.cameras = cameras;
       text.draw(batch);
       text.setPosition(oldX, oldY);

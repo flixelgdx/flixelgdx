@@ -1,5 +1,6 @@
 module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx;
+  exports me.stringdotjar.flixelgdx.animation;
   exports me.stringdotjar.flixelgdx.asset;
   exports me.stringdotjar.flixelgdx.audio;
   exports me.stringdotjar.flixelgdx.backend.alert;
@@ -12,6 +13,7 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.text;
   exports me.stringdotjar.flixelgdx.group;
   exports me.stringdotjar.flixelgdx.input.keyboard;
+  exports me.stringdotjar.flixelgdx.input.mouse;
   exports me.stringdotjar.flixelgdx.input.gamepad;
   exports me.stringdotjar.flixelgdx.logging;
   exports me.stringdotjar.flixelgdx.tween;
@@ -21,6 +23,9 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.tween.type.motion;
   exports me.stringdotjar.flixelgdx.ui;
   exports me.stringdotjar.flixelgdx.util;
+  exports me.stringdotjar.flixelgdx.util.save;
+  exports me.stringdotjar.flixelgdx.util.signal;
+  exports me.stringdotjar.flixelgdx.util.timer;
 
   // Automatic module names (from JAR filenames when on the module path).
   requires transitive gdx;

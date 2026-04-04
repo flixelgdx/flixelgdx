@@ -7,15 +7,18 @@
 
 package me.stringdotjar.flixelgdx;
 
-import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectSet;
 
 import games.rednblack.miniaudio.MiniAudio;
 
@@ -29,13 +32,17 @@ import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHand
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
-import me.stringdotjar.flixelgdx.group.FlixelBasicGroupable;
+import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
+import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
-import me.stringdotjar.flixelgdx.util.FlixelSignal;
-import me.stringdotjar.flixelgdx.util.FlixelSignalData.StateSwitchSignalData;
-import me.stringdotjar.flixelgdx.util.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
+import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
+import me.stringdotjar.flixelgdx.util.save.FlixelSave;
+import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
@@ -117,6 +124,12 @@ import java.util.function.Supplier;
  *     <b>Signals and Events:</b>
  *     Emits signals for state switches, updates, and critical events.
  *   </li>
+ *   <li>
+ *     <b>Frame timers:</b>
+ *     {@link FlixelTimer#getGlobalManager()} is stepped from {@link FlixelGame}.
+ *     Use {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer#wait(float, me.stringdotjar.flixelgdx.util.timer.FlixelTimerListener)}
+ *     or {@code start(...)} on the manager. {@link #getTimeScale()} scales timer elapsed only (not the whole game loop).
+ *   </li>
  * </ul>
  *
  * <h2>Typical Usage</h2>
@@ -129,8 +142,13 @@ import java.util.function.Supplier;
  * Flixel.sound.play("explosion.mp3");
  *
  * // Check if a key is pressed.
- * if (Flixel.keys.justPressed(Input.Keys.SPACE)) {
+ * if (Flixel.keys.justPressed(FlixelKeys.SPACE)) {
  *   // Jump!
+ * }
+ *
+ * // Check if a mouse button is pressed.
+ * if (Flixel.mouse.justPressed(FlixelMouseButton.LEFT)) {
+ *   // Left mouse button was just pressed!
  * }
  *
  * // Log diagnostic information.
@@ -186,6 +204,13 @@ public final class Flixel {
   /** The current {@code FlixelState} being displayed. */
   private static FlixelState state;
 
+  /**
+   * Produces a fresh root {@link FlixelState} for {@link #resetState()}. Updated when
+   * {@link #switchState(FlixelState)} is called with a non-null supplier.
+   */
+  @Nullable
+  private static Supplier<FlixelState> currentStateFactory = null;
+
   /** Keyboard input manager. Use {@code Flixel.keys.pressed(key)}, {@code Flixel.keys.justPressed(key)}, etc. */
   @NotNull
   public static FlixelKeyInputManager keys;
@@ -202,6 +227,14 @@ public final class Flixel {
   @NotNull
   public static FlixelDebugWatchManager watch;
 
+  /** Preferences-based save helper. Call {@link FlixelSave#bind(String, String)} before use. */
+  @NotNull
+  public static FlixelSave save;
+
+  /** Mouse/pointer input manager. Use after {@link #initialize(FlixelGame)}. */
+  @NotNull
+  public static FlixelMouseManager mouse;
+
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   @NotNull
   public static FlixelLogger log;
@@ -213,11 +246,11 @@ public final class Flixel {
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
 
-  /**
-   * Filled by {@link #getApproximateLoadedTextureBytes()} via {@link AssetManager#getAll}. Reused so that method
-   * allocates no new collections per call. Guarded by synchronization, not re-entrant.
-   */
+  // Helpers for getting approximate loaded texture bytes for memory tracking.
+  // These are reused so that the method allocates no new collections per call.
   private static final Array<Texture> TEXTURE_BYTES_SCRATCH = new Array<>(false, 64);
+  private static final Array<TextureAtlas> TEXTURE_ATLAS_SCRATCH = new Array<>(false, 32);
+  private static final ObjectSet<Texture> TEXTURE_DEDUPE_SCRATCH = new ObjectSet<>();
 
   /** The static instance used to access the core elements of the game. */
   @NotNull
@@ -254,6 +287,12 @@ public final class Flixel {
   protected static float elapsed = 0f;
 
   /**
+   * Global time scale for frame-based timers ({@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer}). {@code 1f} is
+   * normal speed; lower slows timers, higher speeds them up. Does not change {@link #elapsed} itself.
+   */
+  private static float timeScale = 1f;
+
+  /**
    * World bounds used by {@link #overlap} and {@link #collide} for broad-phase culling.
    * Format: {@code [x, y, width, height]}. Defaults to a very large area.
    */
@@ -264,6 +303,18 @@ public final class Flixel {
 
   /** Current key used to toggle visual debug (bounding boxes). */
   private static int debugDrawToggleKey = FlixelConstants.Debug.DEFAULT_DRAW_DEBUG_KEY;
+
+  /** Current key used to pause the game update loop (debug mode only). */
+  private static int debugPauseKey = FlixelConstants.Debug.DEFAULT_PAUSE_KEY;
+
+  /** Current button used to pan the debug camera. */
+  private static int debugCameraPanButton = Input.Buttons.RIGHT;
+
+  /** Current key used to cycle the debug camera to the left while paused (with Alt). */
+  private static int debugCameraCycleLeftKey = FlixelConstants.Debug.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
+
+  /** Current key used to cycle the debug camera to the right while paused (with Alt). */
+  private static int debugCameraCycleRightKey = FlixelConstants.Debug.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
 
   /**
    * Factory used to create the debug overlay when the game starts. Developers can replace
@@ -283,7 +334,8 @@ public final class Flixel {
    * audio system, key input manager,
    * logger, backend systems for different platforms, and more.
    *
-   * <p>This can only be called once. If attempted to be executed again, the game will throw an {@link IllegalStateException}.
+   * <p>Normally called once at startup. After {@link #resetGame()}, {@code initialized} is cleared and this may run
+   * again to rebuild global subsystems on the same {@link FlixelGame} instance.
    *
    * @param gameInstance The {@link FlixelGame} instance to use.
    * @throws IllegalStateException If Flixel has already been initialized.
@@ -304,8 +356,14 @@ public final class Flixel {
 
     // Initialize the core systems.
     keys = new FlixelKeyInputManager();
-    sound = new FlixelAudioManager();
+    if (sound == null) {
+      sound = new FlixelAudioManager();
+    } else {
+      sound.resetSession();
+    }
     watch = new FlixelDebugWatchManager();
+    save = new FlixelSave();
+    mouse = new FlixelMouseManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
@@ -371,7 +429,7 @@ public final class Flixel {
    * @param newState The new {@code FlixelState} to set as the current state.
    */
   public static void switchState(FlixelState newState) {
-    switchState(newState, true, true);
+    switchState(newState, true, true, () -> newState);
   }
 
   /**
@@ -381,7 +439,7 @@ public final class Flixel {
    * @param clearTweens Should all active tweens be cancelled and their pools be cleared?
    */
   public static void switchState(FlixelState newState, boolean clearTweens) {
-    switchState(newState, clearTweens, true);
+    switchState(newState, clearTweens, true, () -> newState);
   }
 
   /**
@@ -392,6 +450,18 @@ public final class Flixel {
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    */
   public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC) {
+    switchState(newState, clearTweens, triggerGC, () -> newState);
+  }
+
+  /**
+   * Sets the current state to the provided state.
+   *
+   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param clearTweens Should all active tweens be cancelled and their pools be cleared?
+   * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
+   * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
+   */
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC, Supplier<FlixelState> stateFactory) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
     if (!initialized) {
       throw new IllegalStateException("Flixel has not been initialized yet!");
@@ -415,7 +485,9 @@ public final class Flixel {
     }
     game.resetCameras();
     state = newState;
+    state.ensureMembers();
     state.create();
+    currentStateFactory = stateFactory;
     Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
   }
 
@@ -690,6 +762,24 @@ public final class Flixel {
     return elapsed;
   }
 
+  /** Global timer scale. Multiplied into {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer} updates each frame. */
+  public static float getTimeScale() {
+    return timeScale;
+  }
+
+  /**
+   * Sets the global timer scale. Non-finite or negative values are clamped to {@code 0f}.
+   *
+   * @param scale The scale to set.
+   */
+  public static void setTimeScale(float scale) {
+    if (!Float.isFinite(scale) || scale < 0f) {
+      timeScale = 0f;
+    } else {
+      timeScale = scale;
+    }
+  }
+
   /**
    * Sets whether the game is running in debug mode. This may only be called <strong>once</strong>,
    * typically from the platform launcher before the game starts. A second call throws an
@@ -765,6 +855,126 @@ public final class Flixel {
    */
   public static void setDebugDrawToggleKey(int key) {
     debugDrawToggleKey = key;
+  }
+
+  /** Key used to pause the game update loop (debug mode only). */
+  public static int getDebugPauseKey() {
+    return debugPauseKey;
+  }
+
+  public static void setDebugPauseKey(int key) {
+    debugPauseKey = key;
+  }
+
+  /** Mouse button (e.g. {@link Input.Buttons#RIGHT}) for debug camera pan while paused. */
+  public static int getDebugCameraPanButton() {
+    return debugCameraPanButton;
+  }
+
+  public static void setDebugCameraPanButton(int button) {
+    debugCameraPanButton = button;
+  }
+
+  public static int getDebugCameraCycleLeftKey() {
+    return debugCameraCycleLeftKey;
+  }
+
+  public static void setDebugCameraCycleLeftKey(int key) {
+    debugCameraCycleLeftKey = key;
+  }
+
+  public static int getDebugCameraCycleRightKey() {
+    return debugCameraCycleRightKey;
+  }
+
+  public static void setDebugCameraCycleRightKey(int key) {
+    debugCameraCycleRightKey = key;
+  }
+
+  /**
+   * Whether the game update loop is frozen (debug pause).
+   *
+   * @see FlixelGame#setGamePaused(boolean)
+   */
+  public static boolean isPaused() {
+    return game != null && game.isGamePaused();
+  }
+
+  public static void setPaused(boolean paused) {
+    if (game != null) {
+      game.setGamePaused(paused);
+    }
+  }
+
+  /**
+   * Same as {@link #switchState(FlixelState)}. Prefer {@code switchState} directly; this method exists for older
+   * call sites.
+   *
+   * @deprecated Use {@link #switchState(FlixelState)}.
+   */
+  @Deprecated
+  public static void resetState(@NotNull FlixelState newRoot) {
+    switchState(Objects.requireNonNull(newRoot, "newRoot"));
+  }
+
+  /**
+   * Refreshes the current state by creating a new instance from the factory last set by
+   * {@link #switchState(FlixelState, boolean, boolean, Supplier)}. Does nothing if the factory is {@code null}.
+   *
+   * <p>This is the equivalent of calling {@code Flixel.switchState(new CurrentState())}.
+   */
+  public static void resetState() {
+    Objects.requireNonNull(game, "Game is not initialized. Call initialize() first.");
+    FlixelState next = currentStateFactory != null ? currentStateFactory.get() : null;
+    if (next != null) {
+      switchState(next);
+    }
+  }
+
+  /**
+   * Full session teardown. Sets {@code initialized} to {@code false}, destroys audio and tears down the current
+   * {@link FlixelGame} via {@link FlixelGame#reset()} (stage/batch/state/world only, not a full
+   * {@link FlixelGame#destroy()} application shutdown) and clears cameras/state/debug references.
+   *
+   * <p>Re-initializes the <strong>same</strong> {@link FlixelGame} instance passed to the first {@link
+   * #initialize(FlixelGame)}. libGDX keeps the original {@code ApplicationListener} reference (e.g. {@code
+   * Lwjgl3Application(game, ...)}); allocating a new {@code FlixelGame} would leave rendering on a dead instance
+   * and break statics (null batch, etc.).
+   *
+   * <p>Unlike {@link #resetState()}, this is intended for a cold restart from code. Call on the <strong>main
+   * libGDX thread</strong>. The window keeps running. This method does not call {@code Gdx.app.exit()}.
+   */
+  public static void resetGame() {
+    if (!initialized) {
+      return;
+    }
+    FlixelGame listener = Objects.requireNonNull(game, "Flixel game cannot be null!");
+    initialized = false;
+    FlixelTimer.cancelAll();
+    try {
+      listener.reset();
+    } catch (Exception ignored) {
+      // Ignore.
+    }
+    state = null;
+    currentStateFactory = null;
+    drawCamera = null;
+    debugOverlay = null;
+    if (assets != null) {
+      assets.dispose();
+      assets = null;
+    }
+    FlixelTween.resetRegistry();
+    FlixelFontRegistry.dispose();
+    System.gc();
+    Flixel.initialize(listener);
+    listener.create();
+    // libGDX only invokes ApplicationListener#create() once per run; after a cold reset we must re-sync
+    // window dimensions ourselves. Otherwise, cameras keep constructor sizing (often viewSize, not the real
+    // framebuffer) and the main loop can appear frozen or split viewports stay misaligned until a resize.
+    if (Gdx.graphics != null) {
+      listener.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+    }
   }
 
   /**
@@ -921,12 +1131,15 @@ public final class Flixel {
   }
 
   /**
-   * Approximate GPU-style memory for <strong>loaded</strong> {@link Texture} assets in the global
-   * {@link #assets} {@link AssetManager}, as {@code width x height x bytesPerPixel} per texture (base level,
-   * uncompressed estimate). Mipmaps, render targets, compressed formats, and textures not managed by the
-   * asset manager are not reflected accurately; use for debug/trending only.
+   * Approximate GPU-style memory for <strong>loaded</strong> textures reachable from the global
+   * {@link #assets} {@link AssetManager}: each {@link Texture} is counted at most once (deduplicated), including
+   * page textures referenced by managed {@link com.badlogic.gdx.graphics.g2d.TextureAtlas} instances.
    *
-   * <p>This method does not allocate a new {@link Array}, uses an internal scratch buffer (synchronized, non-reentrant).
+   * <p>Estimate is {@code width x height x bytesPerPixel} per distinct {@link Texture} (base level, uncompressed).
+   * Excludes framebuffers, mip level overhead, compressed GPU formats (heuristic bpp), and any
+   * texture not registered with the asset manager. Use for debug/trending only.
+   *
+   * <p>Uses internal synchronized scratch buffers; does not allocate per call.
    *
    * @return Sum in bytes, or {@code 0} when {@link #assets} is not initialized.
    */
@@ -940,14 +1153,31 @@ public final class Flixel {
       return 0L;
     }
     synchronized (TEXTURE_BYTES_SCRATCH) {
+      TEXTURE_DEDUPE_SCRATCH.clear();
       TEXTURE_BYTES_SCRATCH.clear();
       manager.getAll(Texture.class, TEXTURE_BYTES_SCRATCH);
-      long total = 0L;
       for (int i = 0, n = TEXTURE_BYTES_SCRATCH.size; i < n; i++) {
         Texture tex = TEXTURE_BYTES_SCRATCH.get(i);
-        if (tex == null) {
+        if (tex != null) {
+          TEXTURE_DEDUPE_SCRATCH.add(tex);
+        }
+      }
+      TEXTURE_ATLAS_SCRATCH.clear();
+      manager.getAll(TextureAtlas.class, TEXTURE_ATLAS_SCRATCH);
+      for (int i = 0, n = TEXTURE_ATLAS_SCRATCH.size; i < n; i++) {
+        TextureAtlas atlas = TEXTURE_ATLAS_SCRATCH.get(i);
+        if (atlas == null) {
           continue;
         }
+        ObjectSet<Texture> pages = atlas.getTextures();
+        for (Texture t : pages) {
+          if (t != null) {
+            TEXTURE_DEDUPE_SCRATCH.add(t);
+          }
+        }
+      }
+      long total = 0L;
+      for (Texture tex : TEXTURE_DEDUPE_SCRATCH) {
         int w = tex.getWidth();
         int h = tex.getHeight();
         if (w <= 0 || h <= 0) {
@@ -1015,7 +1245,8 @@ public final class Flixel {
   }
 
   /**
-   * The camera currently being drawn in {@link FlixelGame#draw()}, or {@code null} if not in a camera pass.
+   * The camera currently being drawn in {@link me.stringdotjar.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch)},
+   * or {@code null} if not in a camera pass.
    */
   @Nullable
   public static FlixelCamera getDrawCamera() {
@@ -1189,7 +1420,7 @@ public final class Flixel {
 
   /**
    * Checks for overlaps between two objects or groups. Can be called with
-   * any combination of single {@link FlixelObject}s and {@link FlixelBasicGroupable}s.
+   * any combination of single {@link FlixelObject}s and {@link FlixelGroupable}s.
    *
    * @param objectOrGroup1 First object or group (may be {@code null} to use the current state).
    * @param objectOrGroup2 Second object or group (may be {@code null} to use the current state).
@@ -1245,21 +1476,25 @@ public final class Flixel {
                                          BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
     boolean result = false;
 
-    if (obj1 instanceof FlixelBasicGroupable<?> group1) {
-      Array<? extends FlixelBasic> members = (Array<? extends FlixelBasic>) group1.getMembers();
-      for (FlixelBasic member : members) {
-        if (member != null && member.exists) {
-          result |= overlapInternal(member, obj2, notifyCallback, processCallback);
+    if (obj1 instanceof FlixelGroupable<?> group1) {
+      Array<?> members = group1.getMembers();
+      if (members != null) {
+        for (Object o : members) {
+          if (o instanceof FlixelBasic member && member.exists) {
+            result |= overlapInternal(member, obj2, notifyCallback, processCallback);
+          }
         }
       }
       return result;
     }
 
-    if (obj2 instanceof FlixelBasicGroupable<?> group2) {
-      Array<? extends FlixelBasic> members = (Array<? extends FlixelBasic>) group2.getMembers();
-      for (FlixelBasic member : members) {
-        if (member != null && member.exists) {
-          result |= overlapInternal(obj1, member, notifyCallback, processCallback);
+    if (obj2 instanceof FlixelGroupable<?> group2) {
+      Array<?> members = group2.getMembers();
+      if (members != null) {
+        for (Object o : members) {
+          if (o instanceof FlixelBasic member && member.exists) {
+            result |= overlapInternal(obj1, member, notifyCallback, processCallback);
+          }
         }
       }
       return result;

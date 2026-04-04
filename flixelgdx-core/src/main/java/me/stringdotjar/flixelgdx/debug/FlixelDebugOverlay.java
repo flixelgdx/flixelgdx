@@ -8,6 +8,8 @@
 package me.stringdotjar.flixelgdx.debug;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -26,6 +28,7 @@ import me.stringdotjar.flixelgdx.FlixelBasic;
 import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
 import me.stringdotjar.flixelgdx.FlixelUpdatable;
+import me.stringdotjar.flixelgdx.input.keyboard.FlixelKey;
 import me.stringdotjar.flixelgdx.logging.FlixelDebugConsoleEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
@@ -54,6 +57,7 @@ import java.util.function.Consumer;
  *
  * <p>Toggle overlay visibility with {@link Flixel#getDebugToggleKey()} (default: {@link FlixelConstants.Debug#DEFAULT_TOGGLE_KEY}).
  * Toggle visual debug (hitboxes) with {@link Flixel#getDebugDrawToggleKey()} (default: {@link FlixelConstants.Debug#DEFAULT_DRAW_DEBUG_KEY}).
+ * In debug mode, {@link Flixel#getDebugPauseKey()} (default F4) pauses the game; inspect camera with Alt+arrows, RMB pan, wheel zoom.
  */
 public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
 
@@ -98,6 +102,18 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final StringBuilder lineObjects = new StringBuilder(40);
   private final StringBuilder lineTexVram = new StringBuilder(56);
   private final StringBuilder lineVisDbg = new StringBuilder(48);
+  private final StringBuilder linePaused = new StringBuilder(48);
+  private final StringBuilder lineCamInspect = new StringBuilder(72);
+  private final StringBuilder lineKeybinds = new StringBuilder(320);
+
+  private int debugInspectCameraIndex;
+
+  // Screen-space anchor for Alt+RMB pan (avoids mixing world unprojects across changing scroll).
+  private int lastPanScreenX;
+  private int lastPanScreenY;
+
+  private final Vector2 panUnprojectA = new Vector2();
+  private final Vector2 panUnprojectB = new Vector2();
 
   private boolean visDbgLineInitialized = false;
   private boolean lastDrawDebugForVisLine = false;
@@ -148,6 +164,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     visible = !visible;
     if (visible && !was) {
       watchRefreshTimer = 0.11f;
+      statsTimer = FlixelConstants.Debug.STATS_UPDATE_INTERVAL;
     }
   }
 
@@ -178,6 +195,15 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       toggleDrawDebug();
     }
 
+    if (Flixel.isDebugMode()) {
+      if (Flixel.keys.justPressed(Flixel.getDebugPauseKey())) {
+        Flixel.setPaused(!Flixel.isPaused());
+      }
+      if (Flixel.isPaused()) {
+        handleInspectCameraTools();
+      }
+    }
+
     if (!visible) {
       return;
     }
@@ -204,6 +230,9 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       appendMbStatLine(lineNative, "[#AAAAFF]Native: ", nativeMB);
       appendObjectsLine(lineObjects, objectCount);
       appendMbStatLine(lineTexVram, "[#FFAA66]TexVRAM (approx.): ", texMb);
+      appendPausedLine(linePaused);
+      appendCamInspectLine(lineCamInspect);
+      appendKeybindsLine(lineKeybinds);
     }
 
     // Refresh watch values at 10 Hz to avoid unnecessary per-frame allocations,
@@ -229,6 +258,92 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     } else {
       lineVisDbg.append("[#CCCCCC]VisDbg: [#FF4444]OFF");
     }
+  }
+
+  private void handleInspectCameraTools() {
+    if (Flixel.mouse == null) {
+      return;
+    }
+    Array<FlixelCamera> cams = Flixel.getCamerasArray();
+    if (cams == null || cams.size == 0) {
+      return;
+    }
+    if (debugInspectCameraIndex < 0 || debugInspectCameraIndex >= cams.size) {
+      debugInspectCameraIndex = 0;
+    }
+    boolean alt = Flixel.keys.pressed(FlixelKey.ALT_LEFT) || Flixel.keys.pressed(FlixelKey.ALT_RIGHT)
+      || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+    if (alt && Flixel.keys.justPressed(Flixel.getDebugCameraCycleLeftKey())) {
+      debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.size) % cams.size;
+    }
+    if (alt && Flixel.keys.justPressed(Flixel.getDebugCameraCycleRightKey())) {
+      debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.size;
+    }
+    FlixelCamera cam = cams.get(debugInspectCameraIndex);
+    float scrollDelta = Flixel.mouse.getScrollDeltaY();
+    if (scrollDelta != 0f) {
+      float newZoom = cam.getZoom() + scrollDelta * -0.08f;
+      if (newZoom < 0.05f) {
+        newZoom = 0.05f;
+      }
+      if (newZoom > 20f) {
+        newZoom = 20f;
+      }
+      cam.setZoom(newZoom);
+    }
+    cam.applyLibCameraTransform();
+    if (Flixel.mouse.pressed(Flixel.getDebugCameraPanButton())) {
+      int sx = Flixel.mouse.getScreenX();
+      int sy = Flixel.mouse.getScreenY();
+      if (Flixel.mouse.justPressed(Flixel.getDebugCameraPanButton())) {
+        lastPanScreenX = sx;
+        lastPanScreenY = sy;
+      } else {
+        panUnprojectA.set(lastPanScreenX, lastPanScreenY);
+        cam.getViewport().unproject(panUnprojectA);
+        panUnprojectB.set(sx, sy);
+        cam.getViewport().unproject(panUnprojectB);
+        cam.scroll.x -= panUnprojectB.x - panUnprojectA.x;
+        cam.scroll.y -= panUnprojectB.y - panUnprojectA.y;
+        lastPanScreenX = sx;
+        lastPanScreenY = sy;
+      }
+    }
+  }
+
+  private void appendCamInspectLine(StringBuilder out) {
+    out.setLength(0);
+    Array<FlixelCamera> cams = Flixel.getCamerasArray();
+    int n = cams != null ? cams.size : 0;
+    out.append("[#CCCCCC]Cameras: ").append(n).append("  Inspect: ");
+    if (n == 0) {
+      out.append('-');
+      return;
+    }
+    int idx = Math.min(debugInspectCameraIndex, n - 1) + 1;
+    out.append(idx).append('/').append(n);
+  }
+
+  private static void appendPausedLine(StringBuilder out) {
+    out.setLength(0);
+    out.append("[#CCCCCC]Update: ");
+    if (Flixel.isPaused()) {
+      out.append("[#FFAA00]PAUSED");
+    } else {
+      out.append("[#00FF88]RUNNING");
+    }
+  }
+
+  private static void appendKeybindsLine(StringBuilder out) {
+    out.setLength(0);
+    out.append("[#AAAAAA]");
+    out.append(Input.Keys.toString(Flixel.getDebugToggleKey())).append("=ov ");
+    out.append(Input.Keys.toString(Flixel.getDebugDrawToggleKey())).append("=hit ");
+    out.append(Input.Keys.toString(Flixel.getDebugPauseKey())).append("=pause ");
+    out.append("Alt+");
+    out.append(Input.Keys.toString(Flixel.getDebugCameraCycleLeftKey())).append('/');
+    out.append(Input.Keys.toString(Flixel.getDebugCameraCycleRightKey())).append("=cam ");
+    out.append("RMB=pan Wh=zoom");
   }
 
   private void reclaimConsoleBlocksToPool() {
@@ -375,7 +490,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
         float[] c = drawable.getDebugBoundingBoxColor();
         if (c == null || c.length < 4) c = FALLBACK_COLOR;
         shapeRenderer.setColor(c[0], c[1], c[2], c[3]);
-        shapeRenderer.rect(drawable.getDebugX(), drawable.getDebugY(),
+        shapeRenderer.rect(drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
           drawable.getDebugWidth(), drawable.getDebugHeight());
       });
       shapeRenderer.end();
@@ -391,7 +506,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   /**
    * Draws the overlay panels (stats, log console, watch list) on top of everything using
    * the overlay's own batch and camera. Called from
-   * {@link me.stringdotjar.flixelgdx.FlixelGame#draw()} after the game stage is drawn.
+   * {@link me.stringdotjar.flixelgdx.FlixelGame#draw(Batch)} after the game stage is drawn.
    */
   public void draw() {
     if (!visible) {
@@ -427,6 +542,12 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     drawText(lineObjects, x, y);
     y -= lineH;
     drawText(lineTexVram, x, y);
+    y -= lineH;
+    drawText(linePaused, x, y);
+    y -= lineH;
+    drawText(lineCamInspect, x, y);
+    y -= lineH;
+    drawText(lineKeybinds, x, y);
     y -= lineH;
     drawText(lineVisDbg, x, y);
     return y;

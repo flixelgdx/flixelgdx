@@ -366,6 +366,9 @@ public class FlixelCamera extends FlixelBasic {
     } else {
       viewport.update(screenWidth, screenHeight, centerCamera);
     }
+    // Viewport.apply(centerCamera) resets the libGDX camera to the world center when centerCamera is true.
+    // Flixel owns the visible region via {@link #scroll}. Ensure the camera is positioned correctly by re-applying it.
+    applyLibCameraTransform();
   }
 
   public float getWorldWidth() {
@@ -393,7 +396,21 @@ public class FlixelCamera extends FlixelBasic {
     updateFlash(elapsed);
     updateFade(elapsed);
     updateShake(elapsed);
+    applyLibCameraTransform();
+  }
 
+  /**
+   * Pushes {@link #scroll}, zoom, angle, and shake into the underlying libGDX {@link com.badlogic.gdx.graphics.Camera}.
+   * Call this after {@code scroll} is mutated outside {@link #update(float)} (e.g. debug pause pan) and before
+   * {@link com.badlogic.gdx.utils.viewport.Viewport#unproject(com.badlogic.gdx.math.Vector2)} or rendering.
+   * Safe to call every frame; {@link #update(float)} ends with this.
+   *
+   * <p>Drawables use scroll-local batch coordinates ({@code worldPos - scroll}, see {@link FlixelSprite#draw}).
+   * The orthographic camera must look at the center of that space {@code (viewW/2, viewH/2)}, not
+   * {@code scroll + view/2}, or the frustum disagrees with batch vertices whenever {@code scroll != 0}
+   * (broken follow, split-screen drift).
+   */
+  public void applyLibCameraTransform() {
     if (camera instanceof OrthographicCamera ortho) {
       ortho.up.set(0, 1, 0);
       ortho.direction.set(0, 0, -1);
@@ -402,8 +419,8 @@ public class FlixelCamera extends FlixelBasic {
       }
     }
 
-    float camX = scroll.x + getViewWidth() / 2f + shakeOffsetX;
-    float camY = scroll.y + getViewHeight() / 2f + shakeOffsetY;
+    float camX = getViewWidth() / 2f + shakeOffsetX;
+    float camY = getViewHeight() / 2f + shakeOffsetY;
     camera.position.set(camX, camY, 0);
     camera.update();
   }
@@ -461,22 +478,85 @@ public class FlixelCamera extends FlixelBasic {
     if (target == null) {
       return;
     }
+    float fsx = followScrollFactorX(target);
+    float fsy = followScrollFactorY(target);
     float tx = target.getX() + target.getWidth() / 2f + targetOffset.x + followLead.x;
     float ty = target.getY() + target.getHeight() / 2f + targetOffset.y + followLead.y;
-    focusOn(tmpVec.set(tx, ty));
+    float vw = getViewWidth();
+    float vh = getViewHeight();
+    scroll.set(scrollForFollowCenterAxis(tx, vw, fsx), scrollForFollowCenterAxis(ty, vh, fsy));
     updateScroll();
   }
 
+  /**
+   * Positive scroll factors from the follow target; {@code <= 0} or NaN are treated as {@code 1} for stability.
+   */
+  private static float followScrollFactorX(FlixelObject t) {
+    float s = t.getScrollX();
+    return (s > 0f && !Float.isNaN(s)) ? s : 1f;
+  }
+
+  private static float followScrollFactorY(FlixelObject t) {
+    float s = t.getScrollY();
+    return (s > 0f && !Float.isNaN(s)) ? s : 1f;
+  }
+
+  /**
+   * Scroll coordinate so the follow target’s visual center (see {@link FlixelSprite#draw}) matches the viewport
+   * center: solves {@code tx - scroll * sx = scroll + viewW/2} i.e. {@code scroll = (tx - viewW/2) / (sx + 1)}.
+   * When {@code sx} is ~1, uses classic Flixel behavior {@code scroll = tx - viewW/2} so existing games stay
+   * unchanged.
+   *
+   * @param tx The target x position.
+   * @param viewW The full view width or height from {@link #getViewWidth()} / {@link #getViewHeight()}.
+   * @param sx The scroll factor x.
+   * @return The scroll coordinate.
+   */
+  private static float scrollForFollowCenterAxis(float tx, float viewW, float sx) {
+    float half = viewW * 0.5f;
+    if (Math.abs(sx - 1f) < 1e-4f) {
+      return tx - half;
+    }
+    return (tx - half) / (sx + 1f);
+  }
+
+  /**
+   * Like {@link #scrollForFollowCenterAxis} for dead-zone edge targets (numerator is already the scroll delta for
+   * {@code sx=1} space, e.g. {@code tx - deadzone.x}).
+   *
+   * @param numerator The numerator of the scroll delta.
+   * @param sx The scroll factor x.
+   * @return The scroll coordinate.
+   */
+  private static float scrollForFollowEdgeAxis(float numerator, float sx) {
+    if (Math.abs(sx - 1f) < 1e-4f) {
+      return numerator;
+    }
+    return numerator / (sx + 1f);
+  }
+
+  /**
+   * Camera follow uses the same batch-space math as {@link FlixelSprite#draw} ({@code wx = x - scroll * sx}) and
+   * {@link #applyLibCameraTransform} (ortho center {@code = view/2} in scroll-local space).
+   *
+   * @param elapsed Seconds elapsed since the last frame.
+   */
   private void updateFollow(float elapsed) {
     if (target == null) {
       return;
     }
 
+    float fsx = followScrollFactorX(target);
+    float fsy = followScrollFactorY(target);
+
     float tx = target.getX() + target.getWidth() / 2f + targetOffset.x + followLead.x;
     float ty = target.getY() + target.getHeight() / 2f + targetOffset.y + followLead.y;
 
-    float desiredX = tx - getViewWidth() / 2f;
-    float desiredY = ty - getViewHeight() / 2f;
+    float vw = getViewWidth();
+    float vh = getViewHeight();
+
+    float desiredX = scrollForFollowCenterAxis(tx, vw, fsx);
+    float desiredY = scrollForFollowCenterAxis(ty, vh, fsy);
 
     if (followLerp >= 1.0f) {
       scroll.set(desiredX, desiredY);
@@ -490,17 +570,17 @@ public class FlixelCamera extends FlixelBasic {
       float dzBottom = dzTop + deadzone.height;
 
       if (tx < dzLeft) {
-        desiredX = tx - deadzone.x;
+        desiredX = scrollForFollowEdgeAxis(tx - deadzone.x, fsx);
       } else if (tx > dzRight) {
-        desiredX = tx - deadzone.x - deadzone.width;
+        desiredX = scrollForFollowEdgeAxis(tx - deadzone.x - deadzone.width, fsx);
       } else {
         desiredX = scroll.x;
       }
 
       if (ty < dzTop) {
-        desiredY = ty - deadzone.y;
+        desiredY = scrollForFollowEdgeAxis(ty - deadzone.y, fsy);
       } else if (ty > dzBottom) {
-        desiredY = ty - deadzone.y - deadzone.height;
+        desiredY = scrollForFollowEdgeAxis(ty - deadzone.y - deadzone.height, fsy);
       } else {
         desiredY = scroll.y;
       }
@@ -512,11 +592,8 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   private void updateDeadzoneForStyle() {
-    if (style == null || style == FollowStyle.NO_DEAD_ZONE) {
-      deadzone = null;
-      return;
-    }
-
+    float vw = getViewWidth();
+    float vh = getViewHeight();
     float w, h;
     switch (style) {
       case LOCKON -> {
@@ -524,27 +601,27 @@ public class FlixelCamera extends FlixelBasic {
         h = 1;
       }
       case PLATFORMER -> {
-        w = width / 8f;
-        h = height / 3f;
+        w = vw / 8f;
+        h = vh / 3f;
       }
       case TOPDOWN -> {
-        w = width / 3f;
-        h = height / 3f;
+        w = vw / 3f;
+        h = vh / 3f;
       }
       case TOPDOWN_TIGHT -> {
-        w = width / 8f;
-        h = height / 8f;
+        w = vw / 8f;
+        h = vh / 8f;
       }
       case SCREEN_BY_SCREEN -> {
-        w = width;
-        h = height;
+        w = vw;
+        h = vh;
       }
       default -> {
         deadzone = null;
         return;
       }
     }
-    deadzone = new Rectangle((width - w) / 2f, (height - h) / 2f, w, h);
+    deadzone = new Rectangle((vw - w) / 2f, (vh - h) / 2f, w, h);
   }
 
   /**
@@ -889,12 +966,12 @@ public class FlixelCamera extends FlixelBasic {
         return;
       }
       batch.setColor(r, g, b, a);
-      batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
     } else {
       boolean wasBlending = batch.isBlendingEnabled();
       batch.disableBlending();
       batch.setColor(r, g, b, a);
-      batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
       if (wasBlending) {
         batch.enableBlending();
       }
@@ -912,11 +989,11 @@ public class FlixelCamera extends FlixelBasic {
   public void drawFX(Batch batch, Texture whitePixel) {
     if (flashActive && flashAlpha > 0f) {
       batch.setColor(flashColor.r, flashColor.g, flashColor.b, flashAlpha * alpha);
-      batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
     }
     if (fadeActive || fadeAlpha > 0f) {
       batch.setColor(fadeColor.r, fadeColor.g, fadeColor.b, fadeAlpha * alpha);
-      batch.draw(whitePixel, scroll.x, scroll.y, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
     }
     batch.setColor(Color.WHITE);
   }
@@ -1037,6 +1114,29 @@ public class FlixelCamera extends FlixelBasic {
     scroll.x = centerX - width / (2f * this.zoom);
     scroll.y = centerY - height / (2f * this.zoom);
     applyZoom();
+    if (target != null && style != null && style != FollowStyle.NO_DEAD_ZONE) {
+      updateDeadzoneForStyle();
+    }
+  }
+
+  /**
+   * Restores scroll and zoom together without running {@link #setZoom(float)}'s recentering logic.
+   * Used when leaving debug pause so inspect-tool mutations can be reverted exactly as they were before.
+   *
+   * @param scrollX World scroll X to restore.
+   * @param scrollY World scroll Y to restore.
+   * @param zoomLevel Zoom to restore; non-positive values are replaced with {@link #defaultZoom}.
+   */
+  public void restoreScrollAndZoom(float scrollX, float scrollY, float zoomLevel) {
+    if (zoomLevel <= 0f) {
+      zoomLevel = defaultZoom;
+    }
+    this.zoom = zoomLevel;
+    this.scroll.set(scrollX, scrollY);
+    applyZoom();
+    if (target != null && style != null && style != FollowStyle.NO_DEAD_ZONE) {
+      updateDeadzoneForStyle();
+    }
   }
 
   /**

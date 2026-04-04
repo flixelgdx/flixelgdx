@@ -7,6 +7,7 @@
 
 package me.stringdotjar.flixelgdx.debug;
 
+import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelObject;
 
 /**
@@ -32,6 +33,26 @@ public interface FlixelDebugDrawable {
 
   /** Height of the bounding box in world pixels. */
   float getDebugHeight();
+
+  /**
+   * X position of the debug box in the same world space as {@link FlixelCamera} projection during
+   * {@code draw} (includes scroll-factor / parallax). Defaults to {@link #getDebugX()}.
+   *
+   * @param camera The game camera used for this debug pass.
+   */
+  default float getDebugDrawX(FlixelCamera camera) {
+    return getDebugX();
+  }
+
+  /**
+   * Y position of the debug box in the same world space as {@link FlixelCamera} projection during
+   * {@code draw}. Defaults to {@link #getDebugY()}.
+   *
+   * @param camera The game camera used for this debug pass.
+   */
+  default float getDebugDrawY(FlixelCamera camera) {
+    return getDebugY();
+  }
 
   /**
    * Returns the RGBA color for this object's debug bounding box as a 4-element

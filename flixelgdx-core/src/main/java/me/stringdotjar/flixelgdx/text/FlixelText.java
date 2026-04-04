@@ -10,7 +10,6 @@ package me.stringdotjar.flixelgdx.text;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -19,13 +18,12 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.XmlReader;
-
+import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
+import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelStringUtil;
-
-import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -54,8 +52,8 @@ import org.jetbrains.annotations.NotNull;
  * {@link BorderStyle#OUTLINE_FAST}.
  *
  * <h2>Sprite Methods</h2>
- * <p>Graphic-loading and animation methods inherited from {@link FlixelSprite} are not
- * applicable to text and will throw {@link UnsupportedOperationException} if called.
+ * <p>Graphic-loading methods inherited from {@link FlixelSprite} are not applicable to text and will throw
+ * {@link UnsupportedOperationException} if called.
  */
 public class FlixelText extends FlixelSprite {
 
@@ -736,7 +734,7 @@ public class FlixelText extends FlixelSprite {
    * animation state machine in {@link FlixelSprite} from running.
    */
   @Override
-  public void update(float elapsed) {
+  public final void update(float elapsed) {
     // No-op: text does not animate.
   }
 
@@ -749,6 +747,10 @@ public class FlixelText extends FlixelSprite {
       return;
     }
     rebuildIfDirty();
+
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    float wx = getX() - cam.scroll.x * getScrollX();
+    float wy = getY() - cam.scroll.y * getScrollY();
 
     float scaleX = getScaleX();
     float scaleY = getScaleY();
@@ -763,7 +765,7 @@ public class FlixelText extends FlixelSprite {
       float ox = getOriginX();
       float oy = getOriginY();
       textTransform.set(savedTransform);
-      textTransform.translate(getX() + ox, getY() + oy, 0);
+      textTransform.translate(wx + ox, wy + oy, 0);
       textTransform.rotate(0, 0, 1, rotation);
       textTransform.scale(scaleX, scaleY, 1);
       textTransform.translate(-ox, -oy, 0);
@@ -773,7 +775,7 @@ public class FlixelText extends FlixelSprite {
 
       batch.setTransformMatrix(savedTransform);
     } else {
-      drawTextContent(batch, getX(), getY() + textTop);
+      drawTextContent(batch, wx, wy + textTop);
     }
   }
 
@@ -807,64 +809,10 @@ public class FlixelText extends FlixelSprite {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
+  /** @throws UnsupportedOperationException always; text objects cannot use Sparrow atlases. */
   @Override
-  public final FlixelSprite loadSparrowFrames(FileHandle texture, FileHandle xmlFile) {
+  public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
     throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
-  @Override
-  public final FlixelSprite loadSparrowFrames(String textureKey, FileHandle xmlFile) {
-    throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects cannot load sparrow frames. */
-  @Override
-  public final FlixelSprite loadSparrowFrames(String textureKey, XmlReader.Element xmlFile) {
-    throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects do not have frame animations. */
-  @Override
-  public final void addAnimationByPrefix(String name, String prefix, int frameRate, boolean loop) {
-    throw new UnsupportedOperationException("FlixelText does not support animations.");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects do not have frame animations. */
-  @Override
-  public final void addAnimation(String name, int[] frameIndices, float frameDuration) {
-    throw new UnsupportedOperationException("FlixelText does not support animations.");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects do not have frame animations. */
-  @Override
-  public final void playAnimation(String name) {
-    throw new UnsupportedOperationException("FlixelText does not support animations.");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects do not have frame animations. */
-  @Override
-  public final void playAnimation(String name, boolean loop) {
-    throw new UnsupportedOperationException("FlixelText does not support animations.");
-  }
-
-  /** @throws UnsupportedOperationException always; text objects do not have frame animations. */
-  @Override
-  public final void playAnimation(String name, boolean loop, boolean forceRestart) {
-    throw new UnsupportedOperationException("FlixelText does not support animations.");
-  }
-
-  /** @return {@code true} always, since text has no animations to finish. */
-  @Override
-  public final boolean isAnimationFinished() {
-    return true;
-  }
-
-  /** @return An empty map; text has no animations. */
-  @Override
-  public final ObjectMap<String, Animation<FlixelFrame>> getAnimations() {
-    throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
   /** @return {@code null} always; text has no atlas regions. */

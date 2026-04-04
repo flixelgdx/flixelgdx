@@ -747,9 +747,11 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Called when the tween reaches the end of its duration. Invokes {@code onComplete} (including for LOOPING/PINGPONG each cycle).
-   * LOOPING/PINGPONG restart (PINGPONG flips direction). Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop
-   * updating and no longer overwrite the target; only ONESHOT is removed from the manager.
+   * Called when the tween reaches the end of its duration.
+   *
+   * <p>Invokes {@code onComplete} (including for LOOPING/PINGPONG each cycle). LOOPING/PINGPONG restart (PINGPONG flips direction).
+   * Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop updating and no longer overwrite the target; only
+   * ONESHOT is removed from the manager.
    */
   public void finish() {
     executions++;
@@ -794,9 +796,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * not finished, has a manager and settings). The {@link #scale} field is already set to
    * the correct value for the current frame.
    */
-  protected void updateTweenValues() {
-    // No-op by default; subclasses provide their own implementation.
-  }
+  protected abstract void updateTweenValues();
 
   /**
    * Resumes {@code this} tween if it was previously paused.
@@ -979,6 +979,17 @@ public abstract class FlixelTween implements Pool.Poolable {
   /** Clears every tween pool on the global manager (e.g. after a major state reset). */
   public static void clearTweenPools() {
     globalManager.clearPools();
+  }
+
+  /**
+   * Resets the registry of all registered tween types and their respective pools.
+   *
+   * <p>It is advised to <strong>only call this if you know what you are doing</strong>, as
+   * this will include the default registered tween types. If you call this, you will need to
+   * register the tween types again.
+   */
+  public static void resetRegistry() {
+    globalManager.resetRegistry();
   }
 
   /**

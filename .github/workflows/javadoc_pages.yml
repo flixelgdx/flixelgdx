@@ -1,5 +1,5 @@
-# Builds API documentation from flixelgdx-core and publishes to GitHub Pages (gh-pages branch).
-# Enable Pages: Settings -> Pages -> Source: Deploy from a branch -> gh-pages / root.
+# Builds API documentation from from all modules (excluding flixelgdx-test) and
+# publishes to GitHub Pages (gh-pages branch).
 name: Deploy Javadoc to GitHub Pages
 
 on:
@@ -37,6 +37,26 @@ jobs:
 
       - name: Generate Javadoc (Core)
         run: ./gradlew :flixelgdx-core:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (LWJGL3)
+        run: ./gradlew :flixelgdx-lwjgl3:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (Android)
+        run: ./gradlew -PincludeAndroid=true :flixelgdx-android:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (iOS)
+        run: ./gradlew :flixelgdx-ios:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (Teavm)
+        run: ./gradlew :flixelgdx-teavm:javadoc --no-daemon --warning-mode all
+        shell: bash
+
+      - name: Generate Javadoc (JVM)
+        run: ./gradlew :flixelgdx-jvm:javadoc --no-daemon --warning-mode all
         shell: bash
 
       - name: Deploy to gh-pages
