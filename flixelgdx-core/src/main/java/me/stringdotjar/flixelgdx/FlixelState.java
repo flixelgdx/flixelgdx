@@ -10,17 +10,24 @@ package me.stringdotjar.flixelgdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.Pool;
 
 import me.stringdotjar.flixelgdx.group.FlixelGroup;
 
-import java.util.function.Supplier;
+import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for creating a better screen display with more functionality than the default {@link
- * com.badlogic.gdx.Screen} interface.
+ * The core building block for every FlixelGDX game.
+ *
+ * <p>A state is a collection of {@link FlixelBasic} objects that can be used for any
+ * important part of your game. This can be a level, a menu, or anything else.
+ *
+ * <p>Members are backed by a mandatory {@link Pool} (see {@link FlixelGroup#getMemberPool()}). {@link #remove} returns
+ * instances to the pool. Use {@link #obtainMember()}, {@link #obtainMemberAs(Class)}, {@link #obtainSpriteMember()}, or
+ * {@link #recycle()} to avoid allocating new {@link FlixelBasic} instances each frame.
  *
  * <p>A {@code FlixelState} can open a {@link FlixelSubState} on top of itself.
  * By default, when a substate is active the parent state will continue to be drawn
@@ -44,8 +51,30 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
   /** The currently active substate opened on top of {@code this} state. */
   private FlixelSubState subState;
 
-  public FlixelState() {
-    super(FlixelBasic[]::new, 0);
+  /**
+   * Creates a new state with a default member pool of capacity {@code 32}.
+   */
+  protected FlixelState() {
+    this(FlixelGroup.createSpriteMemberPool(32));
+  }
+
+  /**
+   * Creates a new state with the given member pool.
+   *
+   * @param memberPool The pool to use for members.
+   */
+  protected FlixelState(@NotNull Pool<FlixelBasic> memberPool) {
+    super(FlixelBasic[]::new, Objects.requireNonNull(memberPool, "memberPool"));
+  }
+
+  /**
+   * Creates a new state with the given member pool and maximum size.
+   *
+   * @param maxSize The maximum size of the state.
+   * @param memberPool The pool to use for members.
+   */
+  protected FlixelState(int maxSize, @NotNull Pool<FlixelBasic> memberPool) {
+    super(FlixelBasic[]::new, maxSize, Objects.requireNonNull(memberPool, "memberPool"));
   }
 
   @Override
@@ -181,17 +210,19 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
    */
   @Override
   public void add(@NotNull FlixelBasic basic) {
-    ensureMembers();
-    members.add(basic);
-
+    super.add(basic);
     if (basic instanceof FlixelSprite sprite) {
       sprite.setAntialiasing(Flixel.globalAntialiasing());
     }
   }
 
-  @Override
-  public FlixelBasic recycle(@NotNull Supplier<? extends FlixelBasic> factory) {
-    return super.recycle(factory);
+  /**
+   * Obtains from {@link #getMemberPool()} as {@link FlixelSprite}. Requires {@link FlixelGroup#createSpriteMemberPool}
+   * or another pool whose {@link Pool#newObject()} returns {@link FlixelSprite}.
+   */
+  @NotNull
+  public FlixelSprite obtainSpriteMember() {
+    return obtainMemberAs(FlixelSprite.class);
   }
 
   @Nullable
@@ -232,6 +263,6 @@ public abstract class FlixelState extends FlixelGroup<FlixelBasic> implements Sc
 
   @Override
   public String toString() {
-    return "FlixelState(members=" + members.size + ", subState=" + subState.toString() + ")";
+    return "FlixelState(members=" + (members != null ? members.size : 0) + ", subState=" + subState + ")";
   }
 }

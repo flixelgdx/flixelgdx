@@ -21,7 +21,7 @@ import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.FlixelUpdatable;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
-import me.stringdotjar.flixelgdx.util.FlixelSignal;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
 
 import org.jetbrains.annotations.NotNull;
 

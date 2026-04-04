@@ -81,16 +81,22 @@ public class FlixelSave implements FlixelDestroyable {
   @NotNull
   private FlixelSaveStatus status = FlixelSaveStatus.EMPTY;
 
-  /** Root data object (JSON-compatible tree via libGDX {@link ObjectMap}). */
+  /**
+   * Root data object (JSON-compatible tree via libGDX {@link ObjectMap}).
+   *
+   * <p>This is where all of your save data is stored. Use this to set any kind of
+   * data you want to preserve after the game is closed. Remember to call {@link #flush()}
+   * to actually save the data to disk!
+   */
   @NotNull
-  private final ObjectMap<String, Object> data = new ObjectMap<>();
+  public final ObjectMap<String, Object> data = new ObjectMap<>();
 
   /**
    * Binds to local preferences. {@code slot} selects a separate file name suffix for multiple slots.
    *
-   * @param name primary preferences name (no spaces; safe for file names)
-   * @param slot optional suffix, e.g. {@code "slot1"} -> {@code name_slot1}
-   * @return {@code true} if bind succeeded and data was loaded (or empty new save)
+   * @param name Primary preferences name (no spaces; safe for file names).
+   * @param slot Optional suffix, e.g. {@code "slot1"} -> {@code name_slot1}.
+   * @return {@code true} if bind succeeded and data was loaded (or empty new save).
    */
   public boolean bind(@NotNull String name, @Nullable String slot) {
     if (name.isEmpty()) {
@@ -127,12 +133,7 @@ public class FlixelSave implements FlixelDestroyable {
     return status;
   }
 
-  @NotNull
-  public ObjectMap<String, Object> getData() {
-    return data;
-  }
-
-  /** Reloads from {@link Preferences} into {@link #getData()}. */
+  /** Loads the last saved data from disk and refreshes the {@link #data} map. */
   public void load() {
     if (preferences == null) {
       return;
@@ -173,7 +174,11 @@ public class FlixelSave implements FlixelDestroyable {
     }
   }
 
-  /** Writes {@link #getData()} to preferences and flushes. */
+  /**
+   * Writes {@link #data} to preferences and flushes.
+   *
+   * @return {@code true} if the data was successfully written to disk.
+   */
   public boolean flush() {
     if (preferences == null) {
       return false;
@@ -188,7 +193,11 @@ public class FlixelSave implements FlixelDestroyable {
     }
   }
 
-  /** Erases the save data and flushes automatically. */
+  /**
+   * Erases the save data and flushes automatically.
+   *
+   * @return {@code true} if the data was successfully erased and flushed.
+   */
   public boolean erase() {
     if (preferences == null) {
       return false;

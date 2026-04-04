@@ -9,7 +9,7 @@ package me.stringdotjar.flixelgdx.animation;
 
 import com.badlogic.gdx.utils.ObjectMap;
 
-import me.stringdotjar.flixelgdx.util.FlixelSignal;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
 
 import org.jetbrains.annotations.NotNull;
 

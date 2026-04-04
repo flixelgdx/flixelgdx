@@ -28,9 +28,10 @@ import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
-import me.stringdotjar.flixelgdx.util.FlixelSignalData.UpdateSignalData;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
@@ -354,6 +355,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (!gamePaused) {
       stage.act(elapsed);
       FlixelTween.updateTweens(elapsed);
+      FlixelTimer.getGlobalManager().update(elapsed * Flixel.getTimeScale());
 
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.

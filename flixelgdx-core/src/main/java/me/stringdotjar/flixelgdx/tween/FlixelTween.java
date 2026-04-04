@@ -747,9 +747,11 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Called when the tween reaches the end of its duration. Invokes {@code onComplete} (including for LOOPING/PINGPONG each cycle).
-   * LOOPING/PINGPONG restart (PINGPONG flips direction). Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop
-   * updating and no longer overwrite the target; only ONESHOT is removed from the manager.
+   * Called when the tween reaches the end of its duration.
+   *
+   * <p>Invokes {@code onComplete} (including for LOOPING/PINGPONG each cycle). LOOPING/PINGPONG restart (PINGPONG flips direction).
+   * Non-looping tweens (ONESHOT, PERSIST, BACKWARD) are deactivated so they stop updating and no longer overwrite the target; only
+   * ONESHOT is removed from the manager.
    */
   public void finish() {
     executions++;
@@ -794,9 +796,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * not finished, has a manager and settings). The {@link #scale} field is already set to
    * the correct value for the current frame.
    */
-  protected void updateTweenValues() {
-    // No-op by default; subclasses provide their own implementation.
-  }
+  protected abstract void updateTweenValues();
 
   /**
    * Resumes {@code this} tween if it was previously paused.

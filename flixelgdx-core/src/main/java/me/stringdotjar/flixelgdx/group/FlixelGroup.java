@@ -9,63 +9,64 @@ package me.stringdotjar.flixelgdx.group;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.ArraySupplier;
+import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.FlixelSprite;
 
+import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for creating groups with a list of members inside it.
+ * Base class for groups with a {@link SnapshotArray} of members and a mandatory {@link Pool}.
  *
- * <p><b>Owned vs pooled members:</b> {@link #remove} calls {@link FlixelBasic#destroy()} (group-owned
- * teardown). For pooled instances, use {@link #detach} or {@link #removeMember} with {@code destroy == false},
- * then {@link com.badlogic.gdx.utils.Pool#free free} the member yourself. {@link #recycle} revives the first
- * non-existent member or {@link #add}s a new one from the factory.
+ * <p>{@link #remove} detaches the member and {@link Pool#free}s it. Pool {@code reset} runs {@link FlixelBasic#destroy}.
+ * {@link #detach} only removes from the list (for reparenting). Use {@link #recycle()} or {@link #obtainMember()} so
+ * instances come from the same pool.
+ *
+ * <p>Factory: {@link #createSpriteMemberPool(int)} builds a {@link Pool} of {@link FlixelSprite} instances as
+ * {@link FlixelBasic} for typical {@link me.stringdotjar.flixelgdx.FlixelState} usage.
  */
 public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic implements FlixelBasicGroupable<T> {
 
-  /**
-   * The list of members that {@code this} group contains.
-   */
   protected SnapshotArray<T> members;
 
-  /** Used to recreate {@link #members} after {@link #destroy()} when this group is reused (e.g. root state). */
   private final ArraySupplier<T[]> memberArrayFactory;
 
-  /**
-   * Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
-   * When {@code > 0}, {@link #add} will not add if at capacity.
-   */
   protected int maxSize = 0;
 
-  /**
-   * Creates a new FlixelGroup with no maximum size.
-   */
-  protected FlixelGroup(ArraySupplier<T[]> arrayFactory) {
-    this(arrayFactory, 0);
-  }
+  @NotNull
+  protected final Pool<T> memberPool;
 
   /**
-   * Creates a new FlixelGroup with the given maximum size.
-   *
-   * @param memberType The runtime class of {@code T} used for array allocation.
-   * @param maxSize Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
-   * When {@code > 0}, {@link #add} will not add if at capacity.
+   * Pool that allocates {@link FlixelSprite} instances as {@link FlixelBasic} (common default for {@link me.stringdotjar.flixelgdx.FlixelState}).
    */
-  protected FlixelGroup(ArraySupplier<T[]> arrayFactory, int maxSize) {
-    this.memberArrayFactory = arrayFactory;
+  @NotNull
+  public static Pool<FlixelBasic> createSpriteMemberPool(int initialCapacity) {
+    int cap = Math.max(1, initialCapacity);
+    return new Pool<FlixelBasic>(cap) {
+      @Override
+      protected FlixelBasic newObject() {
+        return new FlixelSprite();
+      }
+    };
+  }
+
+  protected FlixelGroup(@NotNull ArraySupplier<T[]> arrayFactory, @NotNull Pool<T> memberPool) {
+    this(arrayFactory, 0, memberPool);
+  }
+
+  protected FlixelGroup(@NotNull ArraySupplier<T[]> arrayFactory, int maxSize, @NotNull Pool<T> memberPool) {
+    this.memberArrayFactory = Objects.requireNonNull(arrayFactory, "Array factory cannot be null");
+    this.memberPool = Objects.requireNonNull(memberPool, "Member pool cannot be null");
     this.maxSize = Math.max(0, maxSize);
     members = new SnapshotArray<>(arrayFactory);
   }
 
-  /**
-   * Recreates {@link #members} if {@link #destroy()} has run (members is {@code null}).
-   */
   public void ensureMembers() {
     if (members == null) {
       members = new SnapshotArray<>(memberArrayFactory);
@@ -73,23 +74,37 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
   }
 
   @Override
+  public void add(T member) {
+    if (member == null) {
+      return;
+    }
+    ensureMembers();
+    if (maxSize > 0 && members.size >= maxSize) {
+      return;
+    }
+    members.add(member);
+  }
+
+  @Override
   public void update(float elapsed) {
     if (members == null) {
       return;
     }
-
-    T[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      T member = items[i];
-      if (member == null) {
-        continue;
+    try {
+      T[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        T member = items[i];
+        if (member == null) {
+          continue;
+        }
+        if (!member.exists || !member.active) {
+          continue;
+        }
+        member.update(elapsed);
       }
-      if (!member.exists || !member.active) {
-        continue;
-      }
-      member.update(elapsed);
+    } finally {
+      members.end();
     }
-    members.end();
   }
 
   @Override
@@ -97,66 +112,89 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     if (members == null) {
       return;
     }
-    T[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      T member = items[i];
-      if (member == null) {
-        continue;
+    try {
+      T[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        T member = items[i];
+        if (member == null) {
+          continue;
+        }
+        if (!member.exists || !member.visible) {
+          continue;
+        }
+        member.draw(batch);
       }
-      if (!member.exists || !member.visible) {
-        continue;
-      }
-      member.draw(batch);
+    } finally {
+      members.end();
     }
-    members.end();
   }
 
   @Override
   public void remove(T member) {
-    if (member == null) {
+    if (member == null || members == null) {
       return;
     }
-    if (members == null) {
+    if (!members.removeValue(member, true)) {
       return;
     }
-    if (!members.contains(member, true)) {
-      return;
-    }
-    member.destroy();
-    members.removeValue(member, true);
+    memberPool.free(member);
   }
 
   @Override
   public void destroy() {
     super.destroy();
-    forEachMember(FlixelBasic::destroy);
-    members.clear();
-    members = null;
+    if (members != null) {
+      try {
+        T[] items = members.begin();
+        for (int i = 0, n = members.size; i < n; i++) {
+          T m = items[i];
+          if (m != null) {
+            memberPool.free(m);
+          }
+        }
+      } finally {
+        members.end();
+      }
+      members.clear();
+      members = null;
+    }
   }
 
   @Override
   public void clear() {
-    if (members != null) {
-      members.clear();
+    if (members == null) {
+      return;
     }
+    try {
+      T[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        T m = items[i];
+        if (m != null) {
+          memberPool.free(m);
+        }
+      }
+    } finally {
+      members.end();
+    }
+    members.clear();
   }
 
-  /**
-   * First member reference that is non-null and {@link FlixelBasic#exists} is {@code false}, or {@code null}.
-   */
   @Nullable
   public T getFirstDead() {
     if (members == null) {
       return null;
     }
     T[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      T m = items[i];
-      if (m != null && !m.exists) {
-        return m;
+    try {
+      for (int i = 0, n = members.size; i < n; i++) {
+        T m = items[i];
+        if (m != null && !m.exists) {
+          return m;
+        }
       }
+    } finally {
+      members.end();
     }
-    members.end();
     return null;
   }
 
@@ -166,33 +204,35 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
       return -1;
     }
     T[] items = members.begin();
+    try {
       for (int i = 0, n = members.size; i < n; i++) {
         if (items[i] == null) {
           return i;
         }
       }
-    members.end();
+    } finally {
+      members.end();
+    }
     return -1;
   }
 
   /**
-   * Removes {@code member} from this group without calling {@link FlixelBasic#destroy()}.
+   * Removes the member from the group without destroying it.
    *
-   * @param member The member to detach.
+   * @param member The member to remove.
    */
   public void detach(T member) {
-    if (member == null || members == null || !members.contains(member, true)) {
+    if (member == null || members == null) {
       return;
     }
     members.removeValue(member, true);
   }
 
   /**
-   * Removes {@code member}; when {@code destroy} is {@code true}, matches {@link #remove}; otherwise matches
-   * {@link #detach}.
+   * Removes the member from the group and optionally destroys it.
    *
    * @param member The member to remove.
-   * @param destroy Whether to call {@link FlixelBasic#destroy()} on the member.
+   * @param destroy Whether to destroy the member.
    */
   public void removeMember(T member, boolean destroy) {
     if (member == null) {
@@ -216,23 +256,29 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
    * @param factory The factory to create a new member.
    * @return A reusable member.
    */
-  public T recycle(@NotNull Supplier<? extends T> factory) {
+  public T recycle() {
     ensureMembers();
     T dead = getFirstDead();
     if (dead != null) {
       dead.revive();
+      dead.active = true;
+      dead.visible = true;
       return dead;
     }
-    T created = factory.get();
+    T pooled = memberPool.obtain();
+    pooled.revive();
+    pooled.active = true;
+    pooled.visible = true;
     if (maxSize > 0 && members.size >= maxSize) {
-      return created;
+      memberPool.free(pooled);
+      return pooled;
     }
-    members.add(created);
-    return created;
+    members.add(pooled);
+    return pooled;
   }
 
   /**
-   * Calls {@code callback} for each member in this group. This is a safe
+   * Calls {@code callback} for each member in {@code this} group. This is a safe
    * way to iterate over the members without worrying about concurrent modification, as it
    * automatically acquires a snapshot of the members array and reduces the boilerplate code
    * for you.
@@ -243,19 +289,22 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     if (members == null) {
       return;
     }
-    T[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      T member = items[i];
-      if (member == null) {
-        continue;
+    try {
+      T[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        T member = items[i];
+        if (member == null) {
+          continue;
+        }
+        callback.accept(member);
       }
-      callback.accept(member);
+    } finally {
+      members.end();
     }
-    members.end();
   }
 
   /**
-   * Calls {@code callback} for each member in this group that is an instance of the given type.
+   * Calls {@code callback} for each member in {@code this} group that is an instance of the given type.
    * This is a safe way to iterate over the members without worrying about concurrent modification, as it
    * automatically acquires a snapshot of the members array and reduces the boilerplate code for you.
    *
@@ -267,14 +316,17 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
     if (members == null) {
       return;
     }
-    T[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      T member = items[i];
-      if (type.isInstance(member)) {
-        callback.accept(type.cast(member));
+    try {
+      T[] items = members.begin();
+      for (int i = 0, n = members.size; i < n; i++) {
+        T member = items[i];
+        if (type.isInstance(member)) {
+          callback.accept(type.cast(member));
+        }
       }
+    } finally {
+      members.end();
     }
-    members.end();
   }
 
   @Override
@@ -290,5 +342,11 @@ public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic imp
   @Override
   public void setMaxSize(int maxSize) {
     this.maxSize = Math.max(0, maxSize);
+  }
+
+  @Override
+  @NotNull
+  public Pool<T> getMemberPool() {
+    return memberPool;
   }
 }

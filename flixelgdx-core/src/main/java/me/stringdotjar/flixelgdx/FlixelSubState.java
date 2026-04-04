@@ -65,6 +65,6 @@ public abstract class FlixelSubState extends FlixelState {
 
   @Override
   public String toString() {
-    return "FlixelSubState(members=" + members.size + ")";
+    return "FlixelSubState(members=" + (members != null ? members.size : 0) + ")";
   }
 }

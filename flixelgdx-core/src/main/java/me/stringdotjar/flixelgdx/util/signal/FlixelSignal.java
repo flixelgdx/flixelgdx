@@ -5,7 +5,7 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.util;
+package me.stringdotjar.flixelgdx.util.signal;
 
 import com.badlogic.gdx.utils.SnapshotArray;
 

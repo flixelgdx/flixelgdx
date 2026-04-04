@@ -539,6 +539,14 @@ public class FlixelSprite extends FlixelObject {
     }
   }
 
+  /**
+   * Whether {@code this} sprite holds an owned {@link FlixelGraphic} (e.g. from {@link #makeGraphic(int, int, Color)}),
+   * so CPU-side pixmap uploads are allowed without mutating a shared atlas.
+   */
+  public boolean hasOwnedGraphic() {
+    return graphic != null && graphic.isOwned();
+  }
+
   public Texture getGraphic() {
     return getTexture();
   }

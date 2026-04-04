@@ -24,12 +24,12 @@ class FlixelSaveTest {
     String name = "flixelgdx_junit_save_" + System.nanoTime();
     FlixelSave a = new FlixelSave();
     assertTrue(a.bind(name, null));
-    a.getData().put("score", 42);
+    a.data.put("score", 42);
     assertTrue(a.flush());
 
     FlixelSave b = new FlixelSave();
     assertTrue(b.bind(name, null));
-    Object v = b.getData().get("score");
+    Object v = b.data.get("score");
     assertEquals(42.0, ((Number) v).doubleValue(), 1e-6);
   }
 
@@ -37,13 +37,13 @@ class FlixelSaveTest {
   void mergeDataRespectsOverwrite() {
     FlixelSave s = new FlixelSave();
     assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null));
-    s.getData().put("k", "a");
+    s.data.put("k", "a");
     ObjectMap<String, Object> in = new ObjectMap<>();
     in.put("k", "b");
     in.put("other", 1);
     s.mergeData(in, false, false);
-    assertEquals("a", s.getData().get("k"));
+    assertEquals("a", s.data.get("k"));
     s.mergeData(in, true, false);
-    assertEquals("b", s.getData().get("k"));
+    assertEquals("b", s.data.get("k"));
   }
 }

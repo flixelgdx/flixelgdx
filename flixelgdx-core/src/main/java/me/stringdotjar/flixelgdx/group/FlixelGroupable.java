@@ -15,28 +15,26 @@ import com.badlogic.gdx.utils.SnapshotArray;
  * generic traversal of the object tree (e.g. for debug utilities).
  *
  * <p>This interface is intentionally engine-agnostic. It does not require members to extend
- * any FlixelGDX base class. Engine systems that need {@code FlixelBasic} behavior should
- * depend on {@link FlixelBasicGroupable} instead.
+ * any FlixelGDX base class. Engine systems that need {@link me.stringdotjar.flixelgdx.FlixelBasic} behavior and
+ * mandatory pooling should depend on {@link FlixelBasicGroupable} instead.
  *
  * @param <T> The member type.
  */
 public interface FlixelGroupable<T> {
 
   /**
-   * Adds a member to this group.
-   *
-   * @param member The member to add.
+   * Adds a member to this group. For {@link FlixelBasicGroupable} implementations, members removed via
+   * {@link #remove} are returned to {@link FlixelBasicGroupable#getMemberPool()}; prefer obtaining them with
+   * {@link FlixelBasicGroupable#obtainMember()} or {@link FlixelGroup#recycle()} so {@link #remove} stays consistent.
    */
   void add(T member);
 
   /**
-   * Removes a member from this group.
-   *
-   * @param member The member to remove.
+   * Removes a member and, for {@link FlixelBasicGroupable} groups, returns it to the mandatory pool after destroy.
    */
   void remove(T member);
 
-  /** Removes all members from this group. */
+  /** Removes all members. For pooled groups, each member is returned to the pool. */
   void clear();
 
   /** Returns the backing array of members. */

@@ -28,16 +28,39 @@ import com.badlogic.gdx.utils.Disposable;
 public class FlixelAudioManager implements FlixelDestroyable, Disposable {
 
   private final MiniAudio engine;
-  private final MAGroup sfxGroup;
-  private final MAGroup musicGroup;
+  private MAGroup sfxGroup;
+  private MAGroup musicGroup;
 
   private float masterVolume = 1f;
   private FlixelSound music;
 
+  /** Constructs a new FlixelAudioManager with an internal MiniAudio engine and sound groups. */
   public FlixelAudioManager() {
     engine = new MiniAudio();
     sfxGroup = engine.createGroup();
     musicGroup = engine.createGroup();
+  }
+
+  /**
+   * Stops session audio and rebuilds SFX and music groups on the existing {@link MiniAudio} engine.
+   *
+   * <p>Use this during {@link me.stringdotjar.flixelgdx.Flixel#resetGame()} instead of {@link #destroy()} so the
+   * native backend is not torn down and re-created in one frame (which can break PulseAudio and similar backends).
+   */
+  public void resetSession() {
+    if (music != null) {
+      music.dispose();
+      music = null;
+    }
+    if (sfxGroup != null) {
+      sfxGroup.dispose();
+    }
+    if (musicGroup != null) {
+      musicGroup.dispose();
+    }
+    sfxGroup = engine.createGroup();
+    musicGroup = engine.createGroup();
+    engine.setMasterVolume(masterVolume);
   }
 
   /** Returns the underlying MiniAudio engine for advanced use and asset loading. */

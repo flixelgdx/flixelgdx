@@ -13,16 +13,17 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Pool;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,10 +52,9 @@ import org.jetbrains.annotations.Nullable;
  *       both position and individual rotation are adjusted by the delta.</li>
  * </ul>
  *
- * <p><b>Pooled members:</b> {@link #remove} does not call {@link FlixelSprite#destroy}; use
- * {@link #removeMember}{@code (sprite, true)} to destroy. {@link #detach} and {@link #removeMember}{@code (member, false)}
- * only remove the sprite and restore local coordinates. {@link #recycle} reuses {@link #getFirstDead()} with
- * {@link #preAdd} or {@link #add}s a new sprite.
+ * <p>{@link #remove} restores local coordinates and {@link Pool#free}s the sprite (pool
+ * {@code reset} calls {@link FlixelSprite#destroy}). {@link #detach} and {@link #removeMember}{@code (member, false)}
+ * only remove from the list without returning to the pool. {@link #recycle} revives a dead member or obtains from the pool.
  */
 public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupable<FlixelSprite> {
 
@@ -63,6 +63,9 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   /** Maximum members allowed. When {@code 0}, the group can grow without limit. */
   protected int maxSize;
+
+  @NotNull
+  protected final Pool<FlixelSprite> memberPool;
 
   /** Distance of each sprite from the center when using {@link RotationMode#WHEEL}. */
   private float rotationRadius;
@@ -77,29 +80,52 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private boolean antialiasing = false;
   private int facing = FlixelConstants.Graphics.FACING_RIGHT;
 
-  /** Creates a new group with unlimited size, a default rotation radius of 100, and 0 rotation. */
+  @NotNull
+  public static Pool<FlixelSprite> createSpriteMemberPool(int initialCapacity) {
+    int cap = Math.max(1, initialCapacity);
+    return new Pool<FlixelSprite>(cap) {
+      @Override
+      protected FlixelSprite newObject() {
+        return new FlixelSprite();
+      }
+    };
+  }
+
+  /** Creates a sprite group with {@link #createSpriteMemberPool(int)} capacity {@code 16}. */
   public FlixelSpriteGroup() {
-    this(0, 100f, 0f);
+    this(createSpriteMemberPool(16), 0, 100f, 0f);
   }
 
   /**
-   * Creates a new group with the given maximum size.
+   * Creates a sprite group with the given member pool.
    *
-   * @param maxSize the maximum number of members allowed; 0 for unlimited.
+   * @param memberPool The pool to use for members.
    */
-  public FlixelSpriteGroup(int maxSize) {
-    this(maxSize, 100f, 0f);
+  public FlixelSpriteGroup(@NotNull Pool<FlixelSprite> memberPool) {
+    this(memberPool, 0, 100f, 0f);
   }
 
   /**
-   * Creates a new group with the given parameters.
+   * Creates a sprite group with the given member pool and maximum size.
    *
-   * @param maxSize The maximum number of members allowed; 0 for unlimited.
-   * @param rotationRadius The distance of each sprite from the center in {@link RotationMode#WHEEL}.
-   * @param rotation The initial rotation in degrees.
+   * @param memberPool The pool to use for members.
+   * @param maxSize The maximum size of the group.
    */
-  public FlixelSpriteGroup(int maxSize, float rotationRadius, float rotation) {
+  public FlixelSpriteGroup(@NotNull Pool<FlixelSprite> memberPool, int maxSize) {
+    this(memberPool, maxSize, 100f, 0f);
+  }
+
+  /**
+   * Creates a sprite group with the given member pool, maximum size, rotation radius, and rotation.
+   *
+   * @param memberPool The pool to use for members.
+   * @param maxSize The maximum size of the group.
+   * @param rotationRadius The radius of the rotation.
+   * @param rotation The rotation of the group.
+   */
+  public FlixelSpriteGroup(@NotNull Pool<FlixelSprite> memberPool, int maxSize, float rotationRadius, float rotation) {
     super();
+    this.memberPool = Objects.requireNonNull(memberPool, "Member pool cannot be null!");
     this.maxSize = Math.max(0, maxSize);
     this.rotationRadius = rotationRadius;
     super.setAngle(rotation);
@@ -366,44 +392,33 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   /**
-   * Removes a sprite from the group. The group's position offset is subtracted from the
-   * sprite to restore it to local coordinates.
+   * Removes the sprite, restores local coordinates, and returns it to {@link #memberPool} (pool reset destroys it).
    */
   @Override
   public void remove(FlixelSprite sprite) {
-    if (sprite == null) {
+    if (sprite == null || !members.removeValue(sprite, true)) {
       return;
     }
-    members.removeValue(sprite, true);
-    sprite.setX(sprite.getX() - getX());
-    sprite.setY(sprite.getY() - getY());
+    restoreLocalCoordinates(sprite);
+    memberPool.free(sprite);
   }
 
-  /**
-   * Same as {@link #remove}. Removes the sprite without destroying it (pool-friendly).
-   *
-   * @param sprite The sprite to detach.
-   */
+  /** Removes the sprite and restores local coordinates without returning it to the pool (e.g. reparenting). */
   public void detach(FlixelSprite sprite) {
-    remove(sprite);
+    if (sprite == null || !members.removeValue(sprite, true)) {
+      return;
+    }
+    restoreLocalCoordinates(sprite);
   }
 
   /**
-   * Removes {@code member} from the group and restores its local coordinates. When {@code destroy} is
-   * {@code true}, {@link FlixelSprite#destroy()} is called after removal.
-   *
-   * @param member The member to remove.
-   * @param destroy Whether to call {@link FlixelSprite#destroy()} on the member.
+   * @param destroy {@code true} matches {@link #remove} (pool); {@code false} matches {@link #detach}.
    */
   public void removeMember(FlixelSprite member, boolean destroy) {
-    if (member == null || !members.contains(member, true)) {
-      return;
-    }
-    members.removeValue(member, true);
-    member.setX(member.getX() - getX());
-    member.setY(member.getY() - getY());
     if (destroy) {
-      member.destroy();
+      remove(member);
+    } else {
+      detach(member);
     }
   }
 
@@ -444,20 +459,31 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param factory The factory to create a new member.
    * @return A reusable member.
    */
-  public FlixelSprite recycle(@NotNull Supplier<? extends FlixelSprite> factory) {
+  public FlixelSprite recycle() {
     FlixelSprite dead = getFirstDead();
     if (dead != null) {
       dead.revive();
-      dead.reset();
-      preAdd(dead);
+      dead.active = true;
+      dead.visible = true;
       return dead;
     }
-    FlixelSprite created = factory.get();
+    FlixelSprite pooled = memberPool.obtain();
+    pooled.revive();
+    pooled.active = true;
+    pooled.visible = true;
     if (maxSize > 0 && members.size >= maxSize) {
-      return created;
+      memberPool.free(pooled);
+      return pooled;
     }
-    add(created);
-    return created;
+    preAdd(pooled);
+    members.add(pooled);
+    return pooled;
+  }
+
+  @Override
+  @NotNull
+  public Pool<FlixelSprite> getMemberPool() {
+    return memberPool;
   }
 
   /**
@@ -478,6 +504,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       add(newSprite);
       return newSprite;
     }
+    restoreLocalCoordinates(oldSprite);
+    memberPool.free(oldSprite);
     preAdd(newSprite);
     members.set(idx, newSprite);
     return newSprite;
@@ -486,7 +514,18 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   /** Destroys every member and then clears the group. */
   @Override
   public void clear() {
-    forEach(FlixelSprite::destroy);
+    FlixelSprite[] items = members.begin();
+    try {
+      for (int i = 0, n = members.size; i < n; i++) {
+        FlixelSprite s = items[i];
+        if (s != null) {
+          restoreLocalCoordinates(s);
+          memberPool.free(s);
+        }
+      }
+    } finally {
+      members.end();
+    }
     members.clear();
   }
 
@@ -776,11 +815,15 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void destroy() {
     super.destroy();
-    forEach(FlixelSprite::destroy);
-    members.clear();
+    clear();
     rotationMode = RotationMode.INDIVIDUAL;
     rotationRadius = 100f;
     visible = true;
+  }
+
+  private void restoreLocalCoordinates(FlixelSprite sprite) {
+    sprite.setX(sprite.getX() - getX());
+    sprite.setY(sprite.getY() - getY());
   }
 
   /**

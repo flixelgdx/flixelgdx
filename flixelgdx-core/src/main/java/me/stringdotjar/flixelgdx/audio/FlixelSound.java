@@ -20,7 +20,7 @@ import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
-import me.stringdotjar.flixelgdx.util.FlixelSignal;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
