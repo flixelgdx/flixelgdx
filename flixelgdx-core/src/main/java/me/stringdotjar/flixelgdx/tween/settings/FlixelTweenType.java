@@ -12,13 +12,17 @@ public enum FlixelTweenType {
 
   /** Stops and removes itself from the manager when it finishes. */
   ONESHOT,
-  /** Stops when finished but remains in the manager (can be restarted). */
+
+  /** Stops when finished but remains in the manager. Can be reused multiple times. */
   PERSIST,
-  /** Like PERSIST but plays once in reverse; does not remove on finish. */
+
+  /** Like {@link #PERSIST} but plays once in reverse; does not remove on finish. */
   BACKWARD,
-  /** Restarts immediately when it finishes; onComplete is called every cycle. */
+
+  /** Restarts immediately when it finishes. {@code onComplete} is called every cycle. */
   LOOPING,
-  /** Like LOOPING but every second run is in reverse; onComplete is called every cycle. */
+
+  /** Like {@link #LOOPING} but every second run is in reverse. {@code onComplete} is called every cycle. */
   PINGPONG;
 
   /** True for LOOPING and PINGPONG (tween restarts and may flip direction). */
@@ -26,12 +30,12 @@ public enum FlixelTweenType {
     return this == LOOPING || this == PINGPONG;
   }
 
-  /** True if this type plays in reverse (initial direction for BACKWARD; toggled each cycle for PINGPONG). */
+  /** True if this type plays in reverse (initial direction for {@link #BACKWARD}). Toggled each cycle for {@link #PINGPONG}. */
   public boolean isBackward() {
     return this == BACKWARD;
   }
 
-  /** True only for ONESHOT: tween is removed from the manager when it finishes. */
+  /** True only for {@link #ONESHOT}: tween is removed from the manager when it finishes. */
   public boolean removeOnFinish() {
     return this == ONESHOT;
   }

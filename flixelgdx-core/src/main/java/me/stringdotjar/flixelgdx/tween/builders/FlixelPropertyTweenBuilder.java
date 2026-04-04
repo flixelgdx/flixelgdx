@@ -8,7 +8,8 @@
 package me.stringdotjar.flixelgdx.tween.builders;
 
 import com.badlogic.gdx.utils.Array;
-import me.stringdotjar.flixelgdx.functional.FloatSupplier;
+
+import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings.FlixelTweenPropertyGoal;

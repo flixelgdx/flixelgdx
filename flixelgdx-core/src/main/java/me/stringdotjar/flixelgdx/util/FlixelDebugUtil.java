@@ -26,8 +26,8 @@ import org.jetbrains.annotations.NotNull;
  * bounding-box drawing, syncing Box2D objects, etc.).
  *
  * <p>Recursion descends into any member that implements {@link FlixelGroupable}, which
- * covers both {@link me.stringdotjar.flixelgdx.group.FlixelGroup} and
- * {@link me.stringdotjar.flixelgdx.group.FlixelSpriteGroup}.
+ * covers {@link me.stringdotjar.flixelgdx.group.FlixelBasicGroup}, {@link me.stringdotjar.flixelgdx.group.FlixelSpriteGroup},
+ * and nested {@link me.stringdotjar.flixelgdx.group.FlixelGroup} instances whose elements are {@link FlixelBasic}.
  */
 public final class FlixelDebugUtil {
 
@@ -47,19 +47,22 @@ public final class FlixelDebugUtil {
     return countActiveMembersRecursive(state.getMembers());
   }
 
-  private static int countActiveMembersRecursive(SnapshotArray<? extends FlixelBasic> members) {
+  private static int countActiveMembersRecursive(SnapshotArray<?> members) {
     int count = 0;
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = (FlixelBasic) items[i];
-      if (member == null) {
+      Object o = items[i];
+      if (!(o instanceof FlixelBasic member)) {
         continue;
       }
       if (member.exists) {
         count++;
       }
       if (member instanceof FlixelGroupable<?> group) {
-        count += countActiveMembersRecursive(group.getMembers());
+        SnapshotArray<?> nested = group.getMembers();
+        if (nested != null) {
+          count += countActiveMembersRecursive(nested);
+        }
       }
     }
     members.end();
@@ -81,19 +84,22 @@ public final class FlixelDebugUtil {
     forEachDebugDrawableRecursive(state.getMembers(), callback);
   }
 
-  private static void forEachDebugDrawableRecursive(@NotNull SnapshotArray<? extends FlixelBasic> members,
+  private static void forEachDebugDrawableRecursive(@NotNull SnapshotArray<?> members,
                                                     @NotNull Consumer<FlixelDebugDrawable> callback) {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = (FlixelBasic) items[i];
-      if (member == null) {
+      Object o = items[i];
+      if (!(o instanceof FlixelBasic member)) {
         continue;
       }
       if (member instanceof FlixelDebugDrawable drawable && member.exists) {
         callback.accept(drawable);
       }
       if (member instanceof FlixelGroupable<?> group) {
-        forEachDebugDrawableRecursive(group.getMembers(), callback);
+        SnapshotArray<?> nested = group.getMembers();
+        if (nested != null) {
+          forEachDebugDrawableRecursive(nested, callback);
+        }
       }
     }
     members.end();
@@ -114,19 +120,22 @@ public final class FlixelDebugUtil {
     forEachBox2DObjectRecursive(state.getMembers(), callback);
   }
 
-  private static void forEachBox2DObjectRecursive(@NotNull SnapshotArray<? extends FlixelBasic> members,
+  private static void forEachBox2DObjectRecursive(@NotNull SnapshotArray<?> members,
                                                   @NotNull Consumer<FlixelBox2DObject> callback) {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = (FlixelBasic) items[i];
-      if (member == null) {
+      Object o = items[i];
+      if (!(o instanceof FlixelBasic member)) {
         continue;
       }
       if (member instanceof FlixelBox2DObject box2d && member.exists && box2d.getBody() != null) {
         callback.accept(box2d);
       }
       if (member instanceof FlixelGroupable<?> group) {
-        forEachBox2DObjectRecursive(group.getMembers(), callback);
+        SnapshotArray<?> nested = group.getMembers();
+        if (nested != null) {
+          forEachBox2DObjectRecursive(nested, callback);
+        }
       }
     }
     members.end();

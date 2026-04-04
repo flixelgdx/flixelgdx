@@ -358,6 +358,20 @@ public class FlixelTweenManager {
     }
   }
 
+  /**
+   * Clears the registry of all registered tween types and their respective pools.
+   *
+   * <p>It is advised to <strong>only call this if you know what you are doing</strong>, as
+   * this will include the default registered tween types. If you call this, you will need to
+   * register the tween types again.
+   */
+  public void resetRegistry() {
+    forEach(FlixelTween::cancel);
+    clearPools();
+    activeTweens.clear();
+    registry.clear();
+  }
+
   private static boolean matchesTweenOf(FlixelTween tween, Object object, String[] fieldPaths) {
     if (fieldPaths == null || fieldPaths.length == 0) {
       return tween.isTweenOf(object, null);

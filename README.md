@@ -20,6 +20,7 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 - [Goals](#goals)
 - [Open architecture](#open-architecture)
 - [Features](#features)
+- [Memory efficiency](#memory-efficiency)
 - [Entity & sprite basics](#entity--sprite-basics)
 - [State management & substates](#state-management--substates)
 - [Group system](#group-system)
@@ -42,6 +43,10 @@ The goal of FlixelGDX is to provide the familiar Flixel-like structure that deve
 # Supported Platforms
 
 FlixelGDX supports the following platforms through its modular backend system:
+
+> [!IMPORTANT]
+> FlixelGDX is currently in alpha, and currently only supports Desktop/LWJGL3. Mobile and web support will be added
+> very soon in the future.
 
 - **Desktop**: Windows, macOS, and Linux via LWJGL3.
 - **Android**: Full support for Android mobile devices.
@@ -234,6 +239,7 @@ public class Custom3DCamera extends FlixelCamera {
 
 ## Features
 
+- **Extreme memory efficiency**: FlixelGDX is designed to be as memory efficient as possible, with a focus on performance and scalability.
 - **Structural hierarchy**: Logic and rendering via `FlixelBasic`, `FlixelObject`, and `FlixelSprite`.
 - **State management**: State switching and substates for menus, pauses, and transitions.
 - **Group system**: Batch updates, collisions, and nested groups.
@@ -246,6 +252,28 @@ public class Custom3DCamera extends FlixelCamera {
 - **Logging & debugging**: `Flixel.log`, `Flixel.watch`, optional debug overlay.
 - **Signals**: `Flixel.Signals` for pre/post update, draw, state switch, window focus, and more.
 - **...and much more!**
+
+### Memory Efficiency
+
+FlixelGDX is *extremely* memory efficient. It is designed to be runnable on extremely low-end devices, despite being a 
+massive complex game framework with many features and capabilities.
+
+These are the stress-test stats to show how memory efficient FlixelGDX is:
+
+**Setup**
+
+- A refurbished 10 year old $200 OptiPlex 7050 with integrated graphics (which can't run Roblox by itself on lowest settings without lagging).
+- JVM maximum memory usage: 32MB
+- JVM Type: OpenJ9 Semeru Runtime (although FlixelGDX works well with other JVMs, too)
+
+**Results**
+
+| Test (Number of Sprites & Active Tweens) | Memory Usage |
+|------------------------------------------|--------------|
+| 100 sprites/tweens (around a normal sized game) | ~4MB |
+| 1000 sprites/tweens | ~6-7MB |
+| ~27k-28k sprites/tweens (breaking point where it finally crashed) | ~32MB |
+| ~66k sprites (no tweens, breaking point where it finally crashed) | ~32MB |
 
 ### Entity & Sprite Basics
 
@@ -365,19 +393,24 @@ In a standard FlixelGDX setup you pass the initial `FlixelState` to `FlixelGame`
 
 ### Group System
 
-Groups batch-update and draw many objects so you don’t hand-write loops everywhere. `FlixelState` is a `FlixelGroup<FlixelBasic>`, so when you `add()` sprites to a state you’re already using the group system.
+There are two layers:
 
-**How it works**
+- **`FlixelGroup<T>`** — generic `SnapshotArray` wrapper for **any** `T` (e.g. Scene2D `Actor`, your own entities). It only stores members: `add`, `remove`, `clear`, `maxSize`, `forEachMember`, `forEachMemberType`. It does **not** call `update`/`draw` for you; you iterate in your own `FlixelState`/`Screen` or game loop.
+- **`FlixelBasicGroup<T extends FlixelBasic>`** — extends `FlixelBasic` and **delegates** storage to an internal `FlixelGroup<T>`. It runs `update`/`draw` over members (respecting `exists` / `active` / `visible`), supports `recycle()` / `createMemberForRecycle()`, and `destroy()` tears down every member. **`FlixelState`** extends `FlixelBasicGroup<FlixelBasic>`.
 
-- **`FlixelGroup<T>`** holds a list of `FlixelBasic` members. Each frame it iterates over them and calls `update(elapsed)` then `draw(batch)`. You `add()` and `remove()` members; `clear()` removes all without destroying them; `destroy()` destroys every member and clears the list.
-- **Capacity.** The constructor takes an optional `maxSize`. If `maxSize > 0`, `add()` won’t add when the group is full, which helps for fixed-size object pools (e.g. bullets).
-- **Iteration.** Use `forEachMember(callback)` to run logic on every member, or `forEachMemberType(Class<C>, callback)` to iterate only over members of a given type (e.g. all `FlixelSprite` or your own `Enemy` class).
+**`FlixelGroupable<T>`** is the shared list API. **`FlixelBasicGroupable<T extends FlixelBasic>`** extends it with `getFirstDead()` and `removeMember(member, destroy)` for Flixel lifecycle. `FlixelSpriteGroup` implements `FlixelBasicGroupable<FlixelSprite>`.
+
+**How it works (FlixelBasic path)**
+
+- **`remove` / `detach`** only unlink; they do not call `destroy()` on members. Prefer `kill()` / `revive()` or `recycle()` for reuse; call `destroy()` when you discard an object. See `FlixelBasic` Javadoc for the lifecycle table.
+- **Capacity.** `maxSize > 0` means `add()` refuses when full (handy for fixed slots).
+- **Iteration.** `forEachMember` and `forEachMemberType` use snapshot-safe iteration.
 
 ```java
-public class EnemyGroup extends FlixelGroup<FlixelBasic> {
+public class EnemyGroup extends FlixelBasicGroup<FlixelBasic> {
 
   public EnemyGroup() {
-    super(0); // 0 = unlimited size
+    super(FlixelBasic[]::new, 0); // 0 = unlimited
   }
 
   public void spawnEnemy(float x, float y) {
@@ -394,15 +427,26 @@ EnemyGroup enemies = new EnemyGroup();
 add(enemies);
 enemies.spawnEnemy(200, 120);
 
-// Or iterate over a specific type
 enemies.forEachMemberType(Enemy.class, enemy -> enemy.setTarget(player));
 ```
 
-Groups can contain other groups (nested structure). Because everything uses libGDX’s `Batch` and the same update/draw lifecycle, this fits into an existing libGDX game while giving you a Flixel-style hierarchy.
+Nested groups work when members are themselves `FlixelBasic` (e.g. another `FlixelBasicGroup` or `FlixelSpriteGroup`).
 
 #### Using groups in a regular libGDX project
 
-Use `FlixelGroup` the same way: create a group, `add()` your `FlixelBasic` (or `FlixelSprite`) instances, and each frame call `group.update(delta)` and `group.draw(batch)` from your own game loop. You don’t need `FlixelGame` or `FlixelState` for the group logic to work.
+**Generic `FlixelGroup<T>`** — Drop in without `FlixelGame` / `FlixelState`:
+
+```java
+FlixelGroup<Actor> layer = new FlixelGroup<>(Actor[]::new);
+layer.add(myActor);
+// each frame, from your Screen:
+layer.forEachMember(a -> a.act(delta));
+// draw Stage as usual, or iterate and draw yourself
+```
+
+Use an array factory matching your type (`Enemy[]::new`, `Actor[]::new`, etc.).
+
+**`FlixelBasic` / sprites** — Subclass `FlixelBasicGroup<FlixelBasic>` (or use `FlixelSprite` / `FlixelState`) and call `group.update(delta)` and `group.draw(batch)` each frame, same as before. `FlixelGroup` alone does not update or draw `FlixelSprite` instances; use `FlixelBasicGroup` for that behavior.
 
 ### Tweening
 
@@ -445,6 +489,7 @@ No accessor class or index map: duration, ease, delays, and callbacks chain on t
 
 These add a started tween to the **global** manager (same as `addTween` after `obtainTween`):
 
+
 | API                                                                                                             | Purpose                                                                                                                                                                                                            |
 | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tween(object, settings)`                                                                                       | Dispatches by goals on `settings`: **property** goals → `FlixelPropertyTween`; **var** goals (`addGoal(String, float)`) → `FlixelVarTween` via `Flixel.reflect`. Do not mix both kinds on one `settings` instance. |
@@ -459,6 +504,7 @@ These add a started tween to the **global** manager (same as `addTween` after `o
 | `cubicMotion(target, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, durationOrSpeed, useDuration, settings)`           | Cubic Bézier (endpoints p0, p3; control points p1, p2).                                                                                                                                                            |
 | `linearPath(target, durationOrSpeed, useDuration, settings, x0, y0, x1, y1, …)`                                 | Polyline path; varargs are vertex pairs (at least two points).                                                                                                                                                     |
 | `quadPath(target, durationOrSpeed, useDuration, settings, x0, y0, …)`                                           | Chain of quad segments: **odd** vertex count, at least three points (`start, control, end, control, end, …`).                                                                                                      |
+
 
 For complex easing, delays, or extra configuration, you can still use **`FlixelTween.tween(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class)`** (and the other motion/path builder pairs) for a fluent chain.
 
@@ -514,6 +560,7 @@ FlixelTween.registerTweenType(
 
 Most games use the single global tween manager. These static methods forward to it so you rarely need `FlixelTween.getGlobalManager()` in gameplay code (use `getGlobalManager()` when you called `setManager(...)` on a builder for a custom manager):
 
+
 | Method                                                                 | Purpose                                                                       |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `FlixelTween.updateTweens(delta)`                                      | Advance all active tweens (what `FlixelGame` calls each frame).               |
@@ -525,6 +572,7 @@ Most games use the single global tween manager. These static methods forward to 
 | `FlixelTween.containsTweensOf(object, fieldPaths...)`                  | Whether any active tween matches.                                             |
 | `FlixelTween.cancelActiveTweens()`                                     | Cancel every active tween.                                                    |
 | `FlixelTween.clearTweenPools()`                                        | Clear all tween object pools (often paired with cancel on a full reset).      |
+
 
 #### Using tweens inside a FlixelGDX game
 
@@ -583,7 +631,7 @@ This lets you adopt FlixelGDX's tweening in small pieces inside an existing libG
 
 ### Assets
 
-After `Flixel.initialize()`, **`Flixel.assets`** is the active `FlixelAssetManager` (default: `FlixelDefaultAssetManager`). It sits on top of libGDX’s `AssetManager` and encourages **typed** loading:
+After `Flixel.initialize()`, `**Flixel.assets**` is the active `FlixelAssetManager` (default: `FlixelDefaultAssetManager`). It sits on top of libGDX’s `AssetManager` and encourages **typed** loading:
 
 - **`load(FlixelSource)`** — Preferred: the source describes both path and asset type (texture, atlas, sound, etc.).
 - **`load(String path)`** — Resolves a `FlixelSource` from the file extension via an **extension registry** on the manager. Convenient for quick tests; register custom mappings with `registerExtension` if extensions are ambiguous.
@@ -615,7 +663,7 @@ Until you call **`Flixel.setReflection(...)`** with a real implementation (e.g. 
 
 ### Signals, cameras & debugging
 
-- **`Flixel.Signals`** — Global **`FlixelSignal`** hooks: **`preUpdate` / `postUpdate`**, **`preDraw` / `postDraw`**, **`preStateSwitch` / `postStateSwitch`**, window focus/minimize, and game close. **`pre*`** runs before framework work; **`post*`** runs after.
+- **`Flixel.Signals`** — Global **`FlixelSignal`** hooks: **`preUpdate` / `postUpdate`**, **`preDraw` / `postDraw`**, **`preStateSwitch` / `postStateSwitch`**, window focus/minimize, and game close. **`pre`** runs before framework work; **`post`** runs after.
 - **Cameras** — **`FlixelCamera`** (used by **`FlixelGame`**) wraps a libGDX camera and viewport; games can use multiple cameras and scroll modes. See the `FlixelCamera` Javadoc for viewport access when you need raw libGDX types.
 - **Debug** — **`Flixel.watch`** (**`FlixelDebugWatchManager`**) tracks values on the debug overlay. **`Flixel.setDebugOverlay(Supplier)`** supplies a custom **`FlixelDebugOverlay`**; debug drawing runs when **`Flixel.isDebugMode()`** is true under **`FlixelGame`**.
 

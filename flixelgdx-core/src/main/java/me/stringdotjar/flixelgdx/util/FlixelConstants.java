@@ -56,11 +56,7 @@ public final class FlixelConstants {
     public static final int CEILING = UP;
     public static final int WALL = LEFT | RIGHT;
 
-    /**
-     * Maximum number of pixels two objects can intersect before separation gives up.
-     *
-     * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#SEPARATE_BIAS">FlxObject.SEPARATE_BIAS</a>
-     */
+    /** Maximum number of pixels two objects can intersect before separation gives up. */
     public static final float SEPARATE_BIAS = 4f;
 
     /** Default pixels-per-meter ratio used by Box2D helpers. */
@@ -85,6 +81,15 @@ public final class FlixelConstants {
 
     /** Default key used to toggle visual debug (bounding boxes) on/off. */
     public static final int DEFAULT_DRAW_DEBUG_KEY = FlixelKey.F3;
+
+    /** Default key used to pause the game update loop (debug mode only). */
+    public static final int DEFAULT_PAUSE_KEY = FlixelKey.F4;
+
+    /** Default keys to cycle the inspect camera while paused (with Alt). */
+    public static final int DEFAULT_DEBUG_CAMERA_CYCLE_LEFT = FlixelKey.LEFT;
+
+    /** Default key used to cycle the inspect camera to the right while paused (with Alt). */
+    public static final int DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT = FlixelKey.RIGHT;
 
     /** The maximum number of log entries the debug console keeps in its buffer. */
     public static final int MAX_LOG_ENTRIES = 200;

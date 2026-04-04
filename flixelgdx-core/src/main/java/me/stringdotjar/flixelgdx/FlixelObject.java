@@ -132,31 +132,30 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
 
   /**
    * Virtual mass used during elastic collision resolution. Default is
-   * {@code 1}. Only matters when both colliding objects have
-   * {@code elasticity > 0}.
+   * {@code 1}. Only matters when both colliding objects have {@code elasticity > 0}.
    */
   protected float mass = 1f;
+
+  /** Parallax scroll factor on X ({@code 1} = moves with the camera like normal world objects). */
+  protected float scrollX = 1f;
+
+  /** Parallax scroll factor on Y ({@code 1} = moves with the camera like normal world objects). */
+  protected float scrollY = 1f;
 
   /**
    * Color when {@code allowCollisions == ANY} and {@code !immovable} (solid).
    * Default: red.
-   *
-   * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#debugBoundingBoxColorSolid">FlxObject.debugBoundingBoxColorSolid</a>
    */
   protected final float[] debugColorSolid = { 1f, 0.2f, 0.2f, 0.6f };
 
   /**
    * Color when {@code immovable} is {@code true} or {@code allowCollisions}
    * is partial. Default: green.
-   *
-   * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#debugBoundingBoxColorPartial">FlxObject.debugBoundingBoxColorPartial</a>
    */
   protected final float[] debugColorImmovable = { 0.2f, 0.9f, 0.2f, 0.6f };
 
   /**
    * Color when {@code allowCollisions == NONE}. Default: blue.
-   *
-   * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#debugBoundingBoxColorNotSolid">FlxObject.debugBoundingBoxColorNotSolid</a>
    */
   protected final float[] debugColorNoCollision = { 0.2f, 0.4f, 1f, 0.6f };
 
@@ -201,6 +200,47 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
 
     wasTouching = touching;
     touching = FlixelConstants.Physics.NONE;
+  }
+
+  @Override
+  public void destroy() {
+    super.destroy();
+    x = y = 0f;
+    width = height = 0f;
+    lastX = lastY = 0f;
+    angle = 0f;
+    velocityX = velocityY = 0f;
+    accelerationX = accelerationY = 0f;
+    dragX = dragY = 0f;
+    maxVelocityX = 10000f;
+    maxVelocityY = 10000f;
+    angularVelocity = 0f;
+    angularAcceleration = 0f;
+    angularDrag = 0f;
+    maxAngularVelocity = 10000f;
+    moves = true;
+    allowCollisions = FlixelConstants.Physics.ANY;
+    touching = FlixelConstants.Physics.NONE;
+    wasTouching = FlixelConstants.Physics.NONE;
+    immovable = false;
+    elasticity = 0f;
+    mass = 1f;
+    scrollX = 1f;
+    scrollY = 1f;
+    debugColorOverride = null;
+  }
+
+  public float getScrollX() {
+    return scrollX;
+  }
+
+  public float getScrollY() {
+    return scrollY;
+  }
+
+  public void setScrollFactor(float scrollX, float scrollY) {
+    this.scrollX = scrollX;
+    this.scrollY = scrollY;
   }
 
   public float getX() {
@@ -868,6 +908,16 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
   @Override
   public float getDebugY() {
     return y;
+  }
+
+  @Override
+  public float getDebugDrawX(FlixelCamera cam) {
+    return getX() - cam.scroll.x * getScrollX();
+  }
+
+  @Override
+  public float getDebugDrawY(FlixelCamera cam) {
+    return getY() - cam.scroll.y * getScrollY();
   }
 
   @Override

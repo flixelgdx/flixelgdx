@@ -7,125 +7,102 @@
 
 package me.stringdotjar.flixelgdx.group;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.ArraySupplier;
 import com.badlogic.gdx.utils.SnapshotArray;
 
-import me.stringdotjar.flixelgdx.FlixelBasic;
+import java.util.Objects;
 
-import java.util.function.Consumer;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Base class for creating groups with a list of members inside it.
+ * Framework-agnostic member list backed by a {@link SnapshotArray}. Use this in a plain libGDX {@code Screen} or game
+ * loop with <em>any</em> member type ({@code FlixelGroup<Actor>}, {@code FlixelGroup<YourEntity>}, etc.): call
+ * {@link #add}, {@link #remove}, and {@link #forEachMember} yourself; there is no automatic {@code update}/{@code draw}.
+ *
+ * <p>For FlixelGDX objects that extend {@link me.stringdotjar.flixelgdx.FlixelBasic}, use {@link FlixelBasicGroup} or
+ * {@link me.stringdotjar.flixelgdx.FlixelState} instead so members receive the usual update/draw/recycle lifecycle.
+ *
+ * @param <T> Member type (unconstrained).
+ * @see FlixelBasicGroup
  */
-public abstract class FlixelGroup<T extends FlixelBasic> extends FlixelBasic implements FlixelGroupable<T> {
+public class FlixelGroup<T> implements FlixelGroupable<T> {
 
-  /**
-   * The list of members that {@code this} group contains.
-   */
-  protected SnapshotArray<FlixelBasic> members;
+  protected SnapshotArray<T> members;
 
-  /**
-   * Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
-   * When {@code > 0}, {@link #add} will not add if at capacity.
-   */
+  private final ArraySupplier<T[]> memberArrayFactory;
+
   protected int maxSize = 0;
 
   /**
-   * Creates a new FlixelGroup with no maximum size.
+   * Creates a new group with the given array factory and unlimited size by default.
+   *
+   * @param arrayFactory The array factory to use.
    */
-  public FlixelGroup() {
-    this(0);
+  public FlixelGroup(@NotNull ArraySupplier<T[]> arrayFactory) {
+    this(arrayFactory, 0);
   }
 
   /**
-   * Creates a new FlixelGroup with the given maximum size.
+   * Creates a new group with the given array factory and maximum size.
    *
-   * @param maxSize Maximum number of members allowed. When {@code 0}, the group can grow without limit (default).
-   * When {@code > 0}, {@link #add} will not add if at capacity.
+   * @param arrayFactory The array factory to use.
+   * @param maxSize The maximum size of the group.
    */
-  public FlixelGroup(int maxSize) {
+  public FlixelGroup(@NotNull ArraySupplier<T[]> arrayFactory, int maxSize) {
+    this.memberArrayFactory = Objects.requireNonNull(arrayFactory, "Array factory cannot be null");
     this.maxSize = Math.max(0, maxSize);
-    members = new SnapshotArray<>(FlixelBasic[]::new);
+    members = new SnapshotArray<>(arrayFactory);
+  }
+
+  public void ensureMembers() {
+    if (members == null) {
+      members = new SnapshotArray<>(memberArrayFactory);
+    }
   }
 
   @Override
   public void add(T member) {
+    if (member == null) {
+      return;
+    }
+    ensureMembers();
+    if (maxSize > 0 && members.size >= maxSize) {
+      return;
+    }
     members.add(member);
   }
 
   @Override
-  public void update(float elapsed) {
-    FlixelBasic[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
-      if (member == null) {
-        continue;
-      }
-      if (!member.exists || !member.active) {
-        continue;
-      }
-      member.update(elapsed);
-    }
-    members.end();
-  }
-
-  @Override
-  public void draw(Batch batch) {
-    FlixelBasic[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
-      if (member == null) {
-        continue;
-      }
-      if (!member.exists || !member.visible) {
-        continue;
-      }
-      member.draw(batch);
-    }
-    members.end();
-  }
-
-  @Override
   public void remove(T member) {
+    if (member == null || members == null) {
+      return;
+    }
     members.removeValue(member, true);
   }
 
   @Override
-  public void destroy() {
-    members.forEach(FlixelBasic::destroy);
-    members.clear();
-  }
-
-  @Override
   public void clear() {
+    if (members == null) {
+      return;
+    }
     members.clear();
   }
 
-  public void forEachMember(Consumer<FlixelBasic> callback) {
-    FlixelBasic[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
-      if (member == null) {
-        continue;
-      }
-      callback.accept(member);
+  /**
+   * Clears the member list and discards the backing {@link SnapshotArray} so the next {@link #ensureMembers()} or
+   * {@link #add} allocates a fresh array. Does not call any method on member instances.
+   */
+  public void resetStorage() {
+    if (members != null) {
+      members.clear();
+      members = null;
     }
-    members.end();
-  }
-
-  public <C> void forEachMemberType(Class<C> type, Consumer<C> callback) {
-    FlixelBasic[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
-      FlixelBasic member = items[i];
-      if (type.isInstance(member)) {
-        callback.accept(type.cast(member));
-      }
-    }
-    members.end();
   }
 
   @Override
-  public SnapshotArray<FlixelBasic> getMembers() {
+  @Nullable
+  public SnapshotArray<T> getMembers() {
     return members;
   }
 

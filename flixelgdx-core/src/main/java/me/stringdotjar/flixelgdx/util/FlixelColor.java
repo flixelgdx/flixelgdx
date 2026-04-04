@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelColor {
 
+  @NotNull
   private final Color color;
 
   /**
@@ -25,6 +26,22 @@ public final class FlixelColor {
    */
   public FlixelColor() {
     this.color = new Color(Color.WHITE);
+  }
+
+  /**
+   * Creates a new color with the given RGBA values. Values must be in the range 0-255.
+   *
+   * @param r The red component.
+   * @param g The green component.
+   * @param b The blue component.
+   * @param a The alpha component.
+   */
+  public FlixelColor(int r, int g, int b, int a) {
+    float nr = MathUtils.clamp(r, 0, 255) / 255f;
+    float ng = MathUtils.clamp(g, 0, 255) / 255f;
+    float nb = MathUtils.clamp(b, 0, 255) / 255f;
+    float na = MathUtils.clamp(a, 0, 255) / 255f;
+    this.color = new Color(nr, ng, nb, na);
   }
 
   /**
@@ -39,15 +56,19 @@ public final class FlixelColor {
     this.color = new Color(r, g, b, a);
   }
 
-  /** Copies {@code rgba8888} into a new owned color. */
+  /**
+   * Creates a new color from the given packed RGBA8888 value.
+   *
+   * @param rgba8888 The packed RGBA8888 value.
+   */
   public FlixelColor(int rgba8888) {
     this.color = new Color(rgba8888);
   }
 
   /**
-   * Defensive copy of {@code source} into owned storage.
+   * Creates a new color from the given {@link Color} value.
    *
-   * @param source The color to copy.
+   * @param source The {@link Color} value to copy.
    */
   public FlixelColor(@NotNull Color source) {
     this.color = new Color(source);
@@ -74,22 +95,60 @@ public final class FlixelColor {
     return color.a;
   }
 
+  /**
+   * Sets the color to the given RGBA values. Values must be in the range 0-255.
+   *
+   * @param r The red component.
+   * @param g The green component.
+   * @param b The blue component.
+   * @param a The alpha component.
+   * @return {@code this} for chaining.
+   */
+  public FlixelColor set(int r, int g, int b, int a) {
+    float nr = MathUtils.clamp(r, 0, 255) / 255f;
+    float ng = MathUtils.clamp(g, 0, 255) / 255f;
+    float nb = MathUtils.clamp(b, 0, 255) / 255f;
+    float na = MathUtils.clamp(a, 0, 255) / 255f;
+    color.set(nr, ng, nb, na);
+    return this;
+  }
+
+  /**
+   * Sets the color to the given RGBA values. Values must be in the range 0-1.
+   *
+   * @param r The red component.
+   * @param g The green component.
+   * @param b The blue component.
+   * @param a The alpha component.
+   * @return {@code this} for chaining.
+   */
   public FlixelColor set(float r, float g, float b, float a) {
     color.set(r, g, b, a);
     return this;
   }
 
+  /**
+   * Sets the color to the given {@link Color} value.
+   *
+   * @param other The {@link Color} value to copy.
+   * @return {@code this} for chaining.
+   */
   public FlixelColor set(@NotNull Color other) {
     color.set(other);
     return this;
   }
 
+  /**
+   * Sets the color to the given {@link FlixelColor} value.
+   *
+   * @param other The {@link FlixelColor} value to copy.
+   * @return {@code this} for chaining.
+   */
   public FlixelColor set(@NotNull FlixelColor other) {
     color.set(other.color);
     return this;
   }
 
-  /** Packed RGBA8888. */
   public int pack() {
     return Color.rgba8888(color);
   }

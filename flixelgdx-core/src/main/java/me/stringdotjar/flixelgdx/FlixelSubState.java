@@ -8,6 +8,7 @@
 package me.stringdotjar.flixelgdx;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.utils.SnapshotArray;
 
 /**
  * A {@code FlixelSubState} can be opened inside a {@link FlixelState}. By default, it
@@ -18,8 +19,6 @@ import com.badlogic.gdx.graphics.Color;
  * draw while this substate is active.
  *
  * <p>Substates can be nested: a substate can open another substate on top of itself.
- *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxSubState.html">FlxSubState (HaxeFlixel)</a>
  */
 public abstract class FlixelSubState extends FlixelState {
 
@@ -63,5 +62,11 @@ public abstract class FlixelSubState extends FlixelState {
     if (parentState != null) {
       parentState.closeSubState();
     }
+  }
+
+  @Override
+  public String toString() {
+    SnapshotArray<?> m = getMembers();
+    return "FlixelSubState(members=" + (m != null ? m.size : 0) + ")";
   }
 }

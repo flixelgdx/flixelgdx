@@ -7,30 +7,33 @@
 
 package me.stringdotjar.flixelgdx.audio;
 
+import games.rednblack.miniaudio.MANode;
 import games.rednblack.miniaudio.MASound;
+import games.rednblack.miniaudio.MiniAudio;
+import games.rednblack.miniaudio.effect.MADelayNode;
+import games.rednblack.miniaudio.effect.MAReverbNode;
+import games.rednblack.miniaudio.filter.MALowPassFilter;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelBasic;
 import me.stringdotjar.flixelgdx.asset.FlixelAsset;
-import me.stringdotjar.flixelgdx.signal.FlixelSignal;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
+import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.Array;
 
 /**
- * Flixel sound object that wraps an {@link MASound} from the miniaudio library and exposes an API
- * consistent with HaxeFlixel's {@code FlxSound}.
+ * Flixel sound object that wraps an {@link MASound} from the miniaudio library.
  *
- * <p>Provides volume, pitch, pan, play/pause/stop/resume, fade-in/fade-out, position (time), and
- * an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
- *
- * @see <a href="https://api.haxeflixel.com/flixel/sound/FlxSound.html">FlxSound (HaxeFlixel)</a>
- * @see me.stringdotjar.flixelgdx.asset.FlixelAssetManager#resolveAudioPath(String)
+ * <p>Provides volume, pitch, pan, play/pause/stop/resume, fade-in/fade-out, position (time), optional
+ * miniaudio graph effects ({@link #addReverb}, {@link #addEcho}, {@link #addLowPassMuffle},
+ * {@link #attachCustomNode}), and an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
  *
  * <p>This class implements {@link FlixelAsset}{@code <MASound>} for a shared refcount / {@code persist}
  * contract. {@link #persist} controls whether this {@code FlixelSound} is treated as long-lived in game state
@@ -38,6 +41,8 @@ import com.badlogic.gdx.files.FileHandle;
  * which clears <em>pooled</em> typed handles and wrappers on the global asset manager—not miniaudio instances created
  * directly from a {@link com.badlogic.gdx.files.FileHandle}. Use {@link #retain()} / {@link #release()} if you mirror
  * pooled-asset semantics for sounds you manage manually.
+ *
+ * @see me.stringdotjar.flixelgdx.asset.FlixelAssetManager#resolveAudioPath(String)
  */
 public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
 
@@ -50,6 +55,10 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   /** The underlying miniaudio sound. Use {@link #getMASound()} for external access. */
   @NotNull
   private final MASound sound;
+
+  /** The manager that {@code this} sound is a member of. */
+  @Nullable
+  private FlixelAudioManager manager;
 
   private int refCount;
 
@@ -78,6 +87,9 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   /** Current fade tween, so it can be cancelled when starting a new fade. */
   @Nullable
   private FlixelTween fadeTween;
+
+  /** Tail-ordered effect nodes: each attaches to the previous node or to {@link #sound}. */
+  private final Array<MANode> audioEffectNodes = new Array<>(4);
 
   /** Signal dispatched when the sound reaches its end (non-looping). */
   @NotNull
@@ -111,6 +123,28 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   @NotNull
   public MASound getMASound() {
     return sound;
+  }
+
+  /**
+   * Returns the manager that {@code this} sound is a member of.
+   *
+   * @return The manager that {@code this} sound is a member of, or {@code null} if it is not a member of any manager.
+   */
+  @Nullable
+  public FlixelAudioManager getManager() {
+    return manager;
+  }
+
+  /**
+   * Sets the manager that {@code this} sound is a member of.
+   *
+   * @param manager The manager to set.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelSound setManager(@Nullable FlixelAudioManager manager) {
+    this.manager = manager;
+    return this;
   }
 
   @NotNull
@@ -170,8 +204,9 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   }
 
   /** Sets volume (0 = silent, 1 = default, >1 = louder). */
-  public void setVolume(float volume) {
+  public FlixelSound setVolume(float volume) {
     sound.setVolume(volume);
+    return this;
   }
 
   /** Pitch multiplier; 1 = default, >1 = higher. */
@@ -180,9 +215,10 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   }
 
   /** Sets pitch; must be > 0. */
-  public void setPitch(float pitch) {
+  public FlixelSound setPitch(float pitch) {
     this.pitch = pitch;
     sound.setPitch(pitch);
+    return this;
   }
 
   /** Pan in [-1, 1]; -1 = left, 0 = center, 1 = right. */
@@ -191,9 +227,10 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   }
 
   /** Sets pan in [-1, 1]. */
-  public void setPan(float pan) {
+  public FlixelSound setPan(float pan) {
     this.pan = pan;
     sound.setPan(pan);
+    return this;
   }
 
   /**
@@ -224,8 +261,9 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
     return sound.isLooping();
   }
 
-  public void setLooped(boolean looped) {
+  public FlixelSound setLooped(boolean looped) {
     sound.setLooping(looped);
+    return this;
   }
 
   public boolean isPlaying() {
@@ -299,8 +337,9 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   }
 
   /** Sets the position (ms) at which to stop. Null = play to end. */
-  public void setEndTime(@Nullable Float endTimeMs) {
+  public FlixelSound setEndTime(@Nullable Float endTimeMs) {
     this.endTimeMs = endTimeMs;
+    return this;
   }
 
   /** Fades in from 0 to 1 over the given duration (seconds). */
@@ -375,18 +414,20 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
   }
 
   /** Sets world position for proximity/panning. */
-  public void setPosition(float x, float y) {
+  public FlixelSound setPosition(float x, float y) {
     this.x = x;
     this.y = y;
     sound.setPosition(x, y, 0f);
+    return this;
   }
 
   public boolean isAutoDestroy() {
     return autoDestroy;
   }
 
-  public void setAutoDestroy(boolean autoDestroy) {
+  public FlixelSound setAutoDestroy(boolean autoDestroy) {
     this.autoDestroy = autoDestroy;
+    return this;
   }
 
   @Override
@@ -424,17 +465,98 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<MASound> {
     }
   }
 
-  @Override
-  public void destroy() {
-    super.destroy();
-    cancelFadeTween();
-    onComplete.clear();
-    sound.dispose();
+  /**
+   * Detaches and disposes every node in {@link #audioEffectNodes} (reverse order). Called from
+   * {@link #reset()} and {@link #destroy()}.
+   */
+  public void clearAudioEffectChain() {
+    MiniAudio mini = Flixel.getAudioEngine();
+    for (int i = audioEffectNodes.size - 1; i >= 0; i--) {
+      MANode n = audioEffectNodes.get(i);
+      n.detach(0);
+      n.dispose();
+    }
+    audioEffectNodes.clear();
+    // Effects replace the default sound -> endpoint route; restore it when the chain is empty.
+    mini.attachToEngineOutput(sound, 0);
+  }
+
+  /**
+   * Appends a reverb node with the given wet amount in {@code [0, 1]} (dry is set to {@code 1 - wet}).
+   * Build effect chains in load/setup code, not every frame.
+   */
+  @NotNull
+  public FlixelSound addReverb(float wetAmount) {
+    MiniAudio engine = Flixel.getAudioEngine();
+    MAReverbNode rev = new MAReverbNode(engine);
+    float w = Math.max(0f, Math.min(1f, wetAmount));
+    rev.setWet(w);
+    rev.setDry(1f - w);
+    attachEffectNode(rev);
+    return this;
+  }
+
+  /**
+   * Appends a stereo delay/echo node (miniaudio {@link MADelayNode}).
+   *
+   * @param delaySeconds Delay time in seconds.
+   * @param decay Decay factor for the delayed signal.
+   */
+  @NotNull
+  public FlixelSound addEcho(float delaySeconds, float decay) {
+    MADelayNode node = new MADelayNode(Flixel.getAudioEngine(), delaySeconds, decay);
+    attachEffectNode(node);
+    return this;
+  }
+
+  /**
+   * Appends a 2nd-order low-pass filter (muffled / distant sound).
+   *
+   * @param cutoffHz Cutoff frequency in Hz.
+   */
+  @NotNull
+  public FlixelSound addLowPassMuffle(double cutoffHz) {
+    MALowPassFilter lp = new MALowPassFilter(Flixel.getAudioEngine(), cutoffHz, 2);
+    attachEffectNode(lp);
+    return this;
+  }
+
+  /**
+   * Expert escape hatch: append any {@link MANode} to the effect chain. {@code this} sound disposes the node
+   * when {@link #clearAudioEffectChain} runs unless you remove it yourself first.
+   */
+  @NotNull
+  public FlixelSound attachCustomNode(@NotNull MANode node) {
+    attachEffectNode(node);
+    return this;
+  }
+
+  private void attachEffectNode(@NotNull MANode node) {
+    MiniAudio mini = Flixel.getAudioEngine();
+    MANode upstream = audioEffectNodes.size == 0 ? sound : audioEffectNodes.peek();
+    node.attachToThisNode(upstream, 0);
+    audioEffectNodes.add(node);
+    // Wiring upstream -> node removes the previous output attachment (e.g. sound or prior tail -> endpoint).
+    mini.attachToEngineOutput(node, 0);
   }
 
   @Override
-  public void dispose() {
-    destroy();
+  public void destroy() {
+    super.destroy();
+    clearAudioEffectChain();
+    cancelFadeTween();
+    onComplete.clear();
+    sound.stop();
+    pitch = 1f;
+    pan = 0f;
+    sound.setPitch(1f);
+    sound.setPan(0f);
+    x = 0f;
+    y = 0f;
+    sound.setPosition(0f, 0f, 0f);
+    endTimeMs = null;
+    autoDestroy = false;
+    persist = false;
   }
 
   private static MASound createSoundForHandle(@NotNull FileHandle path) {

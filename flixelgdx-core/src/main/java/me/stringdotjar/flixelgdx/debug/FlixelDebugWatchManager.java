@@ -8,13 +8,21 @@
 package me.stringdotjar.flixelgdx.debug;
 
 import com.badlogic.gdx.Gdx;
-import me.stringdotjar.flixelgdx.functional.ByteSupplier;
-import me.stringdotjar.flixelgdx.functional.FloatSupplier;
-import me.stringdotjar.flixelgdx.functional.ShortSupplier;
+import com.badlogic.gdx.utils.Array;
+
+import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.functional.supplier.ByteSupplier;
+import me.stringdotjar.flixelgdx.functional.supplier.CharSupplier;
+import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
+import me.stringdotjar.flixelgdx.functional.supplier.ShortSupplier;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
@@ -54,20 +62,20 @@ public class FlixelDebugWatchManager {
   }
 
   /**
-   * Registers a float watch entry without boxing.
+   * Registers a {@code byte}-valued watch entry without boxing.
    *
    * @param displayName The label shown in the watch panel.
-   * @param valueGetter A supplier that returns a primitive float each frame.
+   * @param valueGetter A supplier that returns a primitive byte each frame.
    */
-  public void add(@NotNull String displayName, @NotNull FloatSupplier valueGetter) {
+  public void add(@NotNull String displayName, @NotNull ByteSupplier valueGetter) {
     if (displayName == null || valueGetter == null) {
       return;
     }
-    watches.put(displayName, new FloatWatchEntry(valueGetter));
+    watches.put(displayName, new ByteWatchEntry(valueGetter));
   }
 
   /**
-   * Registers a short watch entry without boxing.
+   * Registers a {@code short}-valued watch entry without boxing.
    *
    * @param displayName The label shown in the watch panel.
    * @param valueGetter A supplier that returns a primitive short each frame.
@@ -80,16 +88,81 @@ public class FlixelDebugWatchManager {
   }
 
   /**
-   * Registers a byte watch entry without boxing.
+   * Registers an {@code int}-valued watch entry without boxing.
    *
    * @param displayName The label shown in the watch panel.
-   * @param valueGetter A supplier that returns a primitive byte each frame.
+   * @param valueGetter A supplier that returns a primitive int each frame.
    */
-  public void add(@NotNull String displayName, @NotNull ByteSupplier valueGetter) {
+  public void add(@NotNull String displayName, @NotNull IntSupplier valueGetter) {
     if (displayName == null || valueGetter == null) {
       return;
     }
-    watches.put(displayName, new ByteWatchEntry(valueGetter));
+    watches.put(displayName, new IntWatchEntry(valueGetter));
+  }
+
+  /**
+   * Registers a {@code long}-valued watch entry without boxing.
+   *
+   * @param displayName The label shown in the watch panel.
+   * @param valueGetter A supplier that returns a primitive long each frame.
+   */
+  public void add(@NotNull String displayName, @NotNull LongSupplier valueGetter) {
+    if (displayName == null || valueGetter == null) {
+      return;
+    }
+    watches.put(displayName, new LongWatchEntry(valueGetter));
+  }
+
+  /**
+   * Registers a {@code float}-valued watch entry without boxing.
+   *
+   * @param displayName The label shown in the watch panel.
+   * @param valueGetter A supplier that returns a primitive float each frame.
+   */
+  public void add(@NotNull String displayName, @NotNull FloatSupplier valueGetter) {
+    if (displayName == null || valueGetter == null) {
+      return;
+    }
+    watches.put(displayName, new FloatWatchEntry(valueGetter));
+  }
+
+  /**
+   * Registers a {@code double}-valued watch entry without boxing.
+   *
+   * @param displayName The label shown in the watch panel.
+   * @param valueGetter A supplier that returns a primitive double each frame.
+   */
+  public void add(@NotNull String displayName, @NotNull DoubleSupplier valueGetter) {
+    if (displayName == null || valueGetter == null) {
+      return;
+    }
+    watches.put(displayName, new DoubleWatchEntry(valueGetter));
+  }
+
+  /**
+   * Registers a {@code boolean}-valued watch entry without boxing.
+   *
+   * @param displayName The label shown in the watch panel.
+   * @param valueGetter A supplier that returns a primitive boolean each frame.
+   */
+  public void add(@NotNull String displayName, @NotNull BooleanSupplier valueGetter) {
+    if (displayName == null || valueGetter == null) {
+      return;
+    }
+    watches.put(displayName, new BooleanWatchEntry(valueGetter));
+  }
+
+  /**
+   * Registers a {@code char}-valued watch entry without boxing.
+   *
+   * @param displayName The label shown in the watch panel.
+   * @param valueGetter A supplier that returns a primitive char each frame.
+   */
+  public void add(@NotNull String displayName, @NotNull CharSupplier valueGetter) {
+    if (displayName == null || valueGetter == null) {
+      return;
+    }
+    watches.put(displayName, new CharWatchEntry(valueGetter));
   }
 
   /**
@@ -105,7 +178,14 @@ public class FlixelDebugWatchManager {
 
   /** Adds a convenience watch entry that shows the current mouse screen position. */
   public void addMouse() {
-    watches.put(MOUSE_WATCH_NAME, new ObjectWatchEntry(() -> Gdx.input.getX() + ", " + Gdx.input.getY()));
+    watches.put(
+      MOUSE_WATCH_NAME,
+      new ObjectWatchEntry(() -> {
+        if (Flixel.mouse != null) {
+          return Flixel.mouse.getScreenX() + ", " + Flixel.mouse.getScreenY();
+        }
+        return Gdx.input.getX() + ", " + Gdx.input.getY();
+      }));
   }
 
   /** Removes the convenience mouse position watch entry. */
@@ -125,6 +205,27 @@ public class FlixelDebugWatchManager {
     }
   }
 
+  /**
+   * Formats all watch lines into {@code output}, reusing existing {@link StringBuilder} slots and
+   * shrinking the array when fewer watches are registered. Each line includes markup for the debug overlay.
+   *
+   * @param output Cleared and filled with one builder per watch entry (order follows {@link Map#entrySet()}).
+   */
+  public void fillWatchLineBuilders(@NotNull Array<StringBuilder> output) {
+    int n = watches.size();
+    while (output.size < n) {
+      output.add(new StringBuilder(64));
+    }
+    output.setSize(n);
+    int i = 0;
+    for (Map.Entry<String, WatchEntry> entry : watches.entrySet()) {
+      StringBuilder sb = output.get(i++);
+      sb.setLength(0);
+      sb.append("[#88CCFF]").append(entry.getKey()).append(":[#FFFFFF] ");
+      sb.append(entry.getValue().getValueString());
+    }
+  }
+
   /** Returns {@code true} when there are no watch entries registered. */
   public boolean isEmpty() {
     return watches.isEmpty();
@@ -138,11 +239,19 @@ public class FlixelDebugWatchManager {
   /**
    * Interface for allowing primitive suppliers to be used without boxing.
    */
-  private sealed interface WatchEntry permits ObjectWatchEntry, FloatWatchEntry, ShortWatchEntry, ByteWatchEntry {
+  protected interface WatchEntry {
+
+    /**
+     * Returns the current value of the watch entry as a string.
+     *
+     * @return The current value of the watch entry as a string. May be {@code "<error>"} if
+     *   the supplier throws an exception.
+     */
     String getValueString();
   }
 
   private record ObjectWatchEntry(Supplier<?> supplier) implements WatchEntry {
+
     @Override
     public String getValueString() {
       Object val;
@@ -155,30 +264,8 @@ public class FlixelDebugWatchManager {
     }
   }
 
-  private record FloatWatchEntry(FloatSupplier supplier) implements WatchEntry {
-    @Override
-    public String getValueString() {
-      try {
-        float value = supplier.getAsFloat();
-        return trimTrailingZeros(value);
-      } catch (Exception e) {
-        return "<error>";
-      }
-    }
-  }
-
-  private record ShortWatchEntry(ShortSupplier supplier) implements WatchEntry {
-    @Override
-    public String getValueString() {
-      try {
-        return Short.toString(supplier.getAsShort());
-      } catch (Exception e) {
-        return "<error>";
-      }
-    }
-  }
-
   private record ByteWatchEntry(ByteSupplier supplier) implements WatchEntry {
+
     @Override
     public String getValueString() {
       try {
@@ -189,19 +276,83 @@ public class FlixelDebugWatchManager {
     }
   }
 
-  private static String trimTrailingZeros(float value) {
-    String s = Float.toString(value);
-    int dot = s.indexOf('.');
-    if (dot < 0) {
-      return s;
+  private record ShortWatchEntry(ShortSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      try {
+        return Short.toString(supplier.getAsShort());
+      } catch (Exception e) {
+        return "<error>";
+      }
     }
-    int end = s.length();
-    while (end > dot + 1 && s.charAt(end - 1) == '0') {
-      end--;
+  }
+
+  private record IntWatchEntry(IntSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      try {
+        return Integer.toString(supplier.getAsInt());
+      } catch (Exception e) {
+        return "<error>";
+      }
     }
-    if (s.charAt(end - 1) == '.') {
-      end--;
+  }
+
+  private record FloatWatchEntry(FloatSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      try {
+        return Float.toString(supplier.getAsFloat());
+      } catch (Exception e) {
+        return "<error>";
+      }
     }
-    return s.substring(0, end);
+  }
+
+  private record LongWatchEntry(LongSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      try {
+        return Long.toString(supplier.getAsLong());
+      } catch (Exception e) {
+        return "<error>";
+      }
+    }
+  }
+
+  private record DoubleWatchEntry(DoubleSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      try {
+        return Double.toString(supplier.getAsDouble());
+      } catch (Exception e) {
+        return "<error>";
+      }
+    }
+  }
+
+  private record BooleanWatchEntry(BooleanSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      return Boolean.toString(supplier.getAsBoolean());
+    }
+  }
+
+  private record CharWatchEntry(CharSupplier supplier) implements WatchEntry {
+
+    @Override
+    public String getValueString() {
+      try {
+        return Character.toString(supplier.getAsChar());
+      } catch (Exception e) {
+        return "<error>";
+      }
+    }
   }
 }

@@ -5,19 +5,13 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.functional;
+package me.stringdotjar.flixelgdx.util.save;
 
 /**
- * Represents a supplier of {@code float}-valued results.
+ * Status of a {@link FlixelSave} {@code bind()}/{@code load()} operation.
  */
-@FunctionalInterface
-public interface FloatSupplier {
-
-  /**
-   * Gets a float result.
-   *
-   * @return a result.
-   */
-  float getAsFloat();
+public enum FlixelSaveStatus {
+  EMPTY,
+  OK,
+  ERROR
 }
-
