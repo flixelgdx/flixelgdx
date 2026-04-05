@@ -108,7 +108,9 @@ configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'fl
 }
 
 subprojects {
-  group = 'me.stringdotjar.flixelgdx'
+  // JitPack serves artifacts as com.github.<user>.<repo>; POMs must use the same groupId for
+  // transitive flixelgdx modules or Gradle looks up me.stringdotjar.flixelgdx on other repos and fails.
+  group = System.getenv('JITPACK') == 'true' ? 'com.github.stringdotjar.flixelgdx' : 'me.stringdotjar.flixelgdx'
   version = "$projectVersion"
   ext.appName = 'flixelgdx'
   repositories {
