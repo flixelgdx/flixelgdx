@@ -7,6 +7,9 @@
 
 package me.stringdotjar.flixelgdx.backend.lwjgl3;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
@@ -25,7 +28,8 @@ public class FlixelLwjgl3Launcher {
 
   /**
    * Launches the LWJGL3 version of the Flixel game in {@link FlixelRuntimeMode#RELEASE RELEASE}
-   * mode and with a default configuration object.
+   * mode and with a default configuration object. This should be called from the main method of the
+   * libGDX LWJGL3 launcher class, and the game instance should be created in the same general area.
    *
    * @param game The game instance to launch.
    */
@@ -39,7 +43,7 @@ public class FlixelLwjgl3Launcher {
    * libGDX LWJGL3 launcher class, and the game instance should be created in the same general area.
    *
    * @param game The game instance to launch.
-   * @param icons Window icon paths.
+   * @param icons Window icon paths. Make sure your icons actually exist and are valid!
    */
   public static void launch(FlixelGame game, String... icons) {
     launch(game, FlixelRuntimeMode.RELEASE, icons);
@@ -52,7 +56,7 @@ public class FlixelLwjgl3Launcher {
    *
    * @param game The game instance to launch.
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   * @param icons Window icon paths.
+   * @param icons Window icon paths. Make sure your icons actually exist and are valid!
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, String... icons) {
     Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
@@ -64,7 +68,12 @@ public class FlixelLwjgl3Launcher {
     } else {
       configuration.setWindowedMode(game.getViewWidth(), game.getViewHeight());
     }
-    configuration.setWindowIcon(icons);
+    // Ensure the icons are not null, empty, or whitespace only.
+    configuration.setWindowIcon(Arrays.stream(icons)
+      .filter(Objects::nonNull)
+      .map(String::trim)
+      .filter(s -> !s.isEmpty())
+      .toArray(String[]::new));
     configuration.setWindowListener(new Lwjgl3WindowAdapter() {
       @Override
       public void focusGained() {
