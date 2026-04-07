@@ -136,9 +136,20 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         File userIndex = new File(ext.getWebappDir().get().getAsFile(), "index.html");
         return !userIndex.exists();
       });
+      // Create a default index.html file, copied from the resources folder.
       task.doLast(t -> {
         try {
-          writeDefaultIndexHtml(ext);
+          String template;
+          try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(INDEX_TEMPLATE)) {
+            if (in == null) {
+              throw new IOException("default-index.html template not found in plugin JAR at " + INDEX_TEMPLATE);
+            }
+            template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+          }
+          String html = template.replace("{{CANVAS_ID}}", ext.getCanvasId().get());
+          File outputDir = ext.getOutputDir().get().getAsFile();
+          outputDir.mkdirs();
+          Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
         }
@@ -151,24 +162,6 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       wireTo(p, "generateJavaScript");
       wireTo(p, "javaScriptDevServer");
     });
-  }
-
-  private void registerGenerateIndexHtmlTask(Project project, FlixelTeaVMExtension ext) {
-
-  }
-
-  private void writeDefaultIndexHtml(FlixelTeaVMExtension ext) throws IOException {
-    String template;
-    try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(INDEX_TEMPLATE)) {
-      if (in == null) {
-        throw new IOException("default-index.html template not found in plugin JAR at " + INDEX_TEMPLATE);
-      }
-      template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-    }
-    String html = template.replace("{{CANVAS_ID}}", ext.getCanvasId().get());
-    File outputDir = ext.getOutputDir().get().getAsFile();
-    outputDir.mkdirs();
-    Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
   }
 
   private void wireTo(Project project, String taskName) {
