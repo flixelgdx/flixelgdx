@@ -23,6 +23,9 @@ import org.gradle.api.provider.Property;
  *
  * <pre>{@code
  * flixelgdx {
+ *   // Title of the game (default: "My FlixelGDX Game").
+ *   title = 'My Game Title'
+ *
  *   // Override the canvas element ID (default: "flixelgdx-canvas").
  *   canvasId = 'my-game-canvas'
  *
@@ -32,6 +35,21 @@ import org.gradle.api.provider.Property;
  *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
+ *
+ *   // Specify the directory where game assets are stored (default: rootProject/assets/).
+ *   assetsDir = file('../assets')
+ *
+ *   // Specify the directory where user-provided web resources are stored (default: src/main/webapp/).
+ *   webappDir = file('src/main/webapp')
+ *
+ *   // Set to false to disable index.html auto-generation entirely (default: true).
+ *   generateDefaultIndexHtml = true
+ *
+ *   // Set to false to disable automatic startup logo generation (default: true).
+ *   generateDefaultStartupLogo = true
+ *
+ *   // Provide a custom startup logo instead of the built-in placeholder.
+ *   customStartupLogo = file('src/main/webapp/startup-logo.png')
  *
  *   // Provide a custom index.html instead of the generated default.
  *   customIndexHtml = file('src/main/webapp/index.html')
