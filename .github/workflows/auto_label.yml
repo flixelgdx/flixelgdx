@@ -10,7 +10,7 @@ jobs:
       issues: write
     steps:
       - name: Label based on title tags
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const title = context.payload.issue.title;
