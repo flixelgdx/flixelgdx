@@ -7,6 +7,7 @@
 
 package me.stringdotjar.flixelgdx.asset;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
@@ -261,6 +262,13 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @NotNull
   @Override
   public String extractAssetPath(@NotNull String path) {
+    // On web/TeaVM, audio is loaded via Gdx.files.internal() which reads from
+    // the virtual filesystem populated by the preloader, which does not require filesystem extraction.
+    // This is because browsers don't actually have a real filesystem, so we simply return the path as is.
+    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
+      return path;
+    }
+
     FileHandle handle = Gdx.files.internal(path);
     try {
       File file = handle.file();

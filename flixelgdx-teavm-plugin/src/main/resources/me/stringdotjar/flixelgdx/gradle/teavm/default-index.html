@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>FlixelGDX Game</title>
+{{FAVICON}}
   <style>
     html, body {
       margin: 0;
@@ -11,16 +12,42 @@
       height: 100%;
       background: #000;
       overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #{{CANVAS_ID}} {
       display: block;
-      margin: 0 auto;
+      transform-origin: center center;
     }
   </style>
 </head>
 <body>
   <canvas id="{{CANVAS_ID}}"></canvas>
   <script src="js/teavm.js"></script>
+  <script>
+    main();
+
+    (function () {
+      var canvas = document.getElementById('{{CANVAS_ID}}');
+
+      function scaleCanvas() {
+        if (!canvas.width || !canvas.height) return;
+        var scaleX = window.innerWidth / canvas.width;
+        var scaleY = window.innerHeight / canvas.height;
+        canvas.style.transform = 'scale(' + Math.min(scaleX, scaleY) + ')';
+      }
+
+      // Poll until TeaVM sets the canvas dimensions, then scale and watch for resizes.
+      var poll = setInterval(function () {
+        if (canvas.width && canvas.height) {
+          clearInterval(poll);
+          scaleCanvas();
+          window.addEventListener('resize', scaleCanvas);
+        }
+      }, 100);
+    })();
+  </script>
 </body>
 </html>

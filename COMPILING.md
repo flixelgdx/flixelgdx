@@ -455,7 +455,7 @@ otherwise require manual setup:
 | Without plugin | With plugin |
 |---|---|
 | Write `src/main/webapp/index.html` by hand | Auto-generated with the correct canvas ID |
-| Add a `copyAssets` Gradle task | Handled by `flixelCopyAssets` |
+| Add a `copyAssets` Gradle task | Handled by `copyAssets` |
 | Wire copy tasks to `generateJavaScript` | Handled automatically |
 
 #### 1. Add plugin resolution to `settings.gradle`
@@ -480,8 +480,8 @@ Add a `teavm/` directory (or any name you prefer) to your project. A minimal
 
 ```gradle
 plugins {
-  id 'org.teavm'                        version '0.13.0'
-  id 'me.stringdotjar.flixelgdx.teavm' version '0.1.0-beta'
+  id 'org.teavm' version '0.13.0'
+  id 'flixelgdx.teavm' version '0.1.0-beta'
 }
 
 teavm {
@@ -528,8 +528,7 @@ That is the entire setup. The plugin automatically:
 ./gradlew :teavm:javaScriptDevServer
 ```
 
-Open `http://localhost:8080` in a browser. Stop the server with
-`./gradlew :teavm:stopJavaScriptDevServer`.
+Open `http://localhost:8080` in a browser. Stop the server with `./gradlew :teavm:stopJavaScriptDevServer`.
 
 For a static build (e.g. to deploy):
 
@@ -578,12 +577,12 @@ dimensions, or other web-specific settings:
 
 ```java
 FlixelTeaVMLauncher.launch(
-    new MyGame("My Game", 800, 600, new InitialState()),
-    FlixelRuntimeMode.RELEASE,
-    config -> {
-      config.canvasID = "my-canvas";
-      config.antialiasing = true;
-    }
+  new MyGame("My Game", 800, 600, new InitialState()),
+  FlixelRuntimeMode.RELEASE,
+  config -> {
+    config.canvasID = "my-canvas";
+    config.antialiasing = true;
+  }
 );
 ```
 

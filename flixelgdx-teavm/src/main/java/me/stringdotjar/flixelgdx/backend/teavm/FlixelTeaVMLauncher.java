@@ -9,6 +9,8 @@ package me.stringdotjar.flixelgdx.backend.teavm;
 
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
+import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetInstance;
+import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetLoaderListener;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
@@ -124,7 +126,25 @@ public class FlixelTeaVMLauncher {
       configCustomizer.accept(configuration);
     }
 
-    new WebApplication(game, configuration);
+    new WebApplication(game, configuration) {
+      @Override
+      protected void init() {
+        super.init();
+        addInitQueue();
+        AssetInstance.getLoaderInstance().loadScript("freetype.js", new AssetLoaderListener<>() {
+          @Override
+          public void onSuccess(String url, String result) {
+            subtractInitQueue();
+          }
+
+          @Override
+          public void onFailure(String url) {
+            subtractInitQueue();
+            System.err.println("[FlixelGDX] freetype.js failed to load. FreeType fonts will not work.");
+          }
+        });
+      }
+    };
   }
 
   /**
