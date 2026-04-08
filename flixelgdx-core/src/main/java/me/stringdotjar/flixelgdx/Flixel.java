@@ -15,17 +15,15 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectSet;
-
-import games.rednblack.miniaudio.MiniAudio;
 
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSound;
+import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
@@ -33,6 +31,7 @@ import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
+import me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
@@ -271,6 +270,20 @@ public final class Flixel {
   @NotNull
   private static FlixelStackTraceProvider stackTraceProvider;
 
+  /**
+   * Platform-specific handler for writing log output to a file. May be
+   * {@code null} on platforms that do not support file logging (e.g. web/TeaVM).
+   */
+  @Nullable
+  private static FlixelLogFileHandler logFileHandler;
+
+  /**
+   * Platform-specific factory for creating sounds, groups and effect nodes.
+   * Set by the launcher before {@link #initialize(FlixelGame)}.
+   */
+  @Nullable
+  private static FlixelSoundBackend.Factory soundFactory;
+
   /** Whether the game is running in debug mode. Can only be set once from the launcher. */
   private static boolean debugMode = false;
 
@@ -353,11 +366,14 @@ public final class Flixel {
     if (stackTraceProvider == null) {
       throw new IllegalStateException("Flixel stack trace provider not set. Call Flixel.setStackTraceProvider(...) before Flixel.initialize(...).");
     }
+    if (soundFactory == null) {
+      throw new IllegalStateException("Flixel sound backend factory not set. Call Flixel.setSoundBackendFactory(...) before Flixel.initialize(...).");
+    }
 
     // Initialize the core systems.
     keys = new FlixelKeyInputManager();
     if (sound == null) {
-      sound = new FlixelAudioManager();
+      sound = new FlixelAudioManager(soundFactory);
     } else {
       sound.resetSession();
     }
@@ -368,24 +384,21 @@ public final class Flixel {
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
     }
-    if (assets instanceof FlixelDefaultAssetManager dam) {
-      dam.ensureMiniAudioLoader();
-    }
 
-    // Register default tween types.
-    FlixelTween.registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, () -> new FlixelPropertyTween(null))
-      .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, () -> new FlixelVarTween(null, null))
-      .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null))
-      .registerTweenType(FlixelAngleTween.class, FlixelAngleTweenBuilder.class, () -> new FlixelAngleTween(null))
-      .registerTweenType(FlixelColorTween.class, FlixelColorTweenBuilder.class, () -> new FlixelColorTween(null))
-      .registerTweenType(FlixelShakeTween.class, FlixelShakeTweenBuilder.class, () -> new FlixelShakeTween(null))
-      .registerTweenType(FlixelFlickerTween.class, FlixelFlickerTweenBuilder.class, () -> new FlixelFlickerTween(null))
-      .registerTweenType(FlixelLinearMotion.class, FlixelLinearMotionBuilder.class, () -> new FlixelLinearMotion(null))
-      .registerTweenType(FlixelCircularMotion.class, FlixelCircularMotionBuilder.class, () -> new FlixelCircularMotion(null))
-      .registerTweenType(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class, () -> new FlixelQuadMotion(null))
-      .registerTweenType(FlixelCubicMotion.class, FlixelCubicMotionBuilder.class, () -> new FlixelCubicMotion(null))
-      .registerTweenType(FlixelLinearPath.class, FlixelLinearPathBuilder.class, () -> new FlixelLinearPath(null))
-      .registerTweenType(FlixelQuadPath.class, FlixelQuadPathBuilder.class, () -> new FlixelQuadPath(null));
+    // Register default tween types with explicit builder factories (no reflection for TeaVM compatibility).
+    FlixelTween.registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, FlixelPropertyTweenBuilder::new, () -> new FlixelPropertyTween(null))
+      .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, FlixelVarTweenBuilder::new, () -> new FlixelVarTween(null, null))
+      .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null))
+      .registerTweenType(FlixelAngleTween.class, FlixelAngleTweenBuilder.class, FlixelAngleTweenBuilder::new, () -> new FlixelAngleTween(null))
+      .registerTweenType(FlixelColorTween.class, FlixelColorTweenBuilder.class, FlixelColorTweenBuilder::new, () -> new FlixelColorTween(null))
+      .registerTweenType(FlixelShakeTween.class, FlixelShakeTweenBuilder.class, FlixelShakeTweenBuilder::new, () -> new FlixelShakeTween(null))
+      .registerTweenType(FlixelFlickerTween.class, FlixelFlickerTweenBuilder.class, FlixelFlickerTweenBuilder::new, () -> new FlixelFlickerTween(null))
+      .registerTweenType(FlixelLinearMotion.class, FlixelLinearMotionBuilder.class, FlixelLinearMotionBuilder::new, () -> new FlixelLinearMotion(null))
+      .registerTweenType(FlixelCircularMotion.class, FlixelCircularMotionBuilder.class, FlixelCircularMotionBuilder::new, () -> new FlixelCircularMotion(null))
+      .registerTweenType(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class, FlixelQuadMotionBuilder::new, () -> new FlixelQuadMotion(null))
+      .registerTweenType(FlixelCubicMotion.class, FlixelCubicMotionBuilder.class, FlixelCubicMotionBuilder::new, () -> new FlixelCubicMotion(null))
+      .registerTweenType(FlixelLinearPath.class, FlixelLinearPathBuilder.class, FlixelLinearPathBuilder::new, () -> new FlixelLinearPath(null))
+      .registerTweenType(FlixelQuadPath.class, FlixelQuadPathBuilder.class, FlixelQuadPathBuilder::new, () -> new FlixelQuadPath(null));
 
     initialized = true;
   }
@@ -420,6 +433,72 @@ public final class Flixel {
       throw new IllegalArgumentException("Stack trace provider cannot be null.");
     }
     stackTraceProvider = provider;
+  }
+
+  /**
+   * Sets the platform-specific handler responsible for writing log output to a
+   * persistent file.
+   *
+   * <p>This must be called before {@link #initialize(FlixelGame)}. Calling it after
+   * initialization throws an exception. On platforms that do not support file
+   * logging (for example web/TeaVM), this method may be skipped entirely and
+   * file logging will be silently disabled.
+   *
+   * @param handler The log file handler to use, must not be {@code null}.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   * @throws IllegalArgumentException If {@code handler} is {@code null}.
+   */
+  public static void setLogFileHandler(@NotNull FlixelLogFileHandler handler) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change the log file handler after Flixel has been initialized.");
+    }
+    if (handler == null) {
+      throw new IllegalArgumentException("Log file handler cannot be null.");
+    }
+    logFileHandler = handler;
+  }
+
+  /**
+   * Returns the platform-specific log file handler, or {@code null} if none has
+   * been registered (for example, on web/TeaVM).
+   *
+   * @return The current log file handler, or {@code null}.
+   */
+  @Nullable
+  public static FlixelLogFileHandler getLogFileHandler() {
+    return logFileHandler;
+  }
+
+  /**
+   * Sets the platform-specific sound backend factory used to create sounds,
+   * groups, and effect nodes.
+   *
+   * <p>This must be called before {@link #initialize(FlixelGame)}. Calling it
+   * after initialization throws an exception.
+   *
+   * @param factory The sound backend factory to use (must not be {@code null}).
+   * @throws IllegalStateException If FlixelGDX has already been initialized.
+   * @throws IllegalArgumentException If {@code factory} is {@code null}.
+   */
+  public static void setSoundBackendFactory(@NotNull FlixelSoundBackend.Factory factory) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change sound backend factory after Flixel has been initialized.");
+    }
+    if (factory == null) {
+      throw new IllegalArgumentException("Sound backend factory cannot be null.");
+    }
+    soundFactory = factory;
+  }
+
+  /**
+   * Returns the platform-specific sound backend factory, or {@code null} if
+   * none has been registered yet.
+   *
+   * @return The current sound backend factory, or {@code null}.
+   */
+  @Nullable
+  public static FlixelSoundBackend.Factory getSoundFactory() {
+    return soundFactory;
   }
 
   /**
@@ -742,10 +821,6 @@ public final class Flixel {
 
   public static int getViewHeight() {
     return (int) game.viewSize.y;
-  }
-
-  public static MiniAudio getAudioEngine() {
-    return sound.getEngine();
   }
 
   public static float getMasterVolume() {
@@ -1354,45 +1429,6 @@ public final class Flixel {
         sprite.setAntialiasing(enabled);
       }
     }
-  }
-
-  public static World getWorld() {
-    if (game == null) {
-      return null;
-    }
-    return game.getWorld();
-  }
-
-  /**
-   * Sets the gravity of the global Box2D world. Convenience overload that
-   * sets horizontal gravity to {@code 0}.
-   *
-   * @param gravity Vertical gravity in m/s² (negative = down in most setups).
-   */
-  public static void setGravity(float gravity) {
-    setGravity(0, gravity);
-  }
-
-  /**
-   * Sets the gravity of the global Box2D world.
-   *
-   * @param gravityX Horizontal gravity in m/s².
-   * @param gravityY Vertical gravity in m/s².
-   */
-  public static void setGravity(float gravityX, float gravityY) {
-    if (game != null) {
-      game.setGravity(gravityX, gravityY);
-    }
-  }
-
-  /**
-   * Returns the current gravity of the Box2D world, or {@code (0,0)} if no world exists.
-   */
-  public static Vector2 getGravity() {
-    if (game != null) {
-      return game.getGravity();
-    }
-    return new Vector2(0, 0);
   }
 
   /**

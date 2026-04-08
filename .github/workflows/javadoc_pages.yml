@@ -1,4 +1,4 @@
-# Builds API documentation from from all modules (excluding flixelgdx-test) and
+# Builds API documentation from all Java modules (excluding flixelgdx-test) and
 # publishes to GitHub Pages (gh-pages branch).
 name: Deploy Javadoc to GitHub Pages
 
@@ -35,33 +35,75 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Generate Javadoc (Core)
-        run: ./gradlew :flixelgdx-core:javadoc --no-daemon --warning-mode all
+      # One invocation: core, jvm, lwjgl3, ios, teavm, teavm-plugin (see root javadocAll).
+      - name: Generate Javadoc (Java modules)
+        run: ./gradlew javadocAll --no-daemon --warning-mode all
         shell: bash
 
-      - name: Generate Javadoc (LWJGL3)
-        run: ./gradlew :flixelgdx-lwjgl3:javadoc --no-daemon --warning-mode all
-        shell: bash
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "tools platform-tools platforms;android-36 build-tools;36.0.0"
 
+      - name: Create local.properties (Android)
+        run: |
+          SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "sdk.dir=$SDK_DIR" >> local.properties
+
+      # AGP writes release Javadoc under build/docs/javadoc/release (variant-specific).
       - name: Generate Javadoc (Android)
+        continue-on-error: true
         run: ./gradlew -PincludeAndroid=true :flixelgdx-android:javaDocReleaseGeneration --no-daemon --warning-mode all
         shell: bash
 
-      - name: Generate Javadoc (iOS)
-        run: ./gradlew :flixelgdx-ios:javadoc --no-daemon --warning-mode all
-        shell: bash
+      - name: Merge Javadocs and landing page
+        run: |
+          set -euo pipefail
+          mkdir -p merged-javadoc
+          cp .github/javadoc-landing-index.html merged-javadoc/index.html
 
-      - name: Generate Javadoc (Teavm)
-        run: ./gradlew :flixelgdx-teavm:javadoc --no-daemon --warning-mode all
-        shell: bash
+          copy_required() {
+            local from="$1" to="$2"
+            if [[ ! -f "$from/index.html" ]]; then
+              echo "ERROR: Missing Javadoc at $from (expected index.html)"
+              exit 1
+            fi
+            rm -rf "merged-javadoc/$to"
+            cp -r "$from" "merged-javadoc/$to"
+            echo "OK: $to"
+          }
 
-      - name: Generate Javadoc (JVM)
-        run: ./gradlew :flixelgdx-jvm:javadoc --no-daemon --warning-mode all
-        shell: bash
+          copy_required flixelgdx-core/build/docs/javadoc core
+          copy_required flixelgdx-jvm/build/docs/javadoc jvm
+          copy_required flixelgdx-lwjgl3/build/docs/javadoc lwjgl3
+          copy_required flixelgdx-teavm/build/docs/javadoc teavm
+          copy_required flixelgdx-teavm-plugin/build/docs/javadoc teavm-plugin
+          copy_required flixelgdx-ios/build/docs/javadoc ios
+
+          # AGP 8+ writes HTML under intermediates (not always build/docs/javadoc).
+          ANDROID_COPIED=0
+          for d in \
+            flixelgdx-android/build/intermediates/java_doc_dir/release/javaDocReleaseGeneration \
+            flixelgdx-android/build/docs/javadoc/release \
+            flixelgdx-android/build/docs/javadoc; do
+            if [[ -f "$d/index.html" ]]; then
+              rm -rf merged-javadoc/android
+              cp -r "$d" merged-javadoc/android
+              echo "OK: android (from $d)"
+              ANDROID_COPIED=1
+              break
+            fi
+          done
+          if [[ "$ANDROID_COPIED" -eq 0 ]]; then
+            echo "NOTE: Android Javadoc not merged (task skipped, failed, or different AGP output path)."
+          fi
+
+          test -f merged-javadoc/index.html
+          echo "Landing page and module trees ready under merged-javadoc/"
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./flixelgdx-core/build/docs/javadoc
+          publish_dir: ./merged-javadoc
           force_orphan: true

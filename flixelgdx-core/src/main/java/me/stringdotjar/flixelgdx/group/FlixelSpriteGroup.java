@@ -187,7 +187,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setAlpha(float a) {
     super.setAlpha(a);
-    forEachMember(s -> s.setAlpha(a));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setAlpha(a);
+      }
+    }
+    members.end();
   }
 
   public float getAlpha() {
@@ -198,35 +205,70 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setColor(Color tint) {
     super.setColor(tint);
-    forEachMember(s -> s.setColor(tint));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setColor(tint);
+      }
+    }
+    members.end();
   }
 
   /** Sets a color tint on the group and propagates it to all current members. */
   @Override
   public void setColor(float r, float g, float b, float a) {
     super.setColor(r, g, b, a);
-    forEachMember(s -> s.setColor(r, g, b, a));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setColor(r, g, b, a);
+      }
+    }
+    members.end();
   }
 
   /** Sets a uniform scale on the group and propagates it to all current members. */
   @Override
   public void setScale(float scaleXY) {
     super.setScale(scaleXY);
-    forEachMember(s -> s.setScale(scaleXY));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setScale(scaleXY);
+      }
+    }
+    members.end();
   }
 
   /** Sets a non-uniform scale on the group and propagates it to all current members. */
   @Override
   public void setScale(float scaleX, float scaleY) {
     super.setScale(scaleX, scaleY);
-    forEachMember(s -> s.setScale(scaleX, scaleY));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setScale(scaleX, scaleY);
+      }
+    }
+    members.end();
   }
 
   /** Toggles the flip state on the X and/or Y axis for the group and all current members. */
   @Override
   public void flip(boolean x, boolean y) {
     super.flip(x, y);
-    forEachMember(s -> s.flip(x, y));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.flip(x, y);
+      }
+    }
+    members.end();
   }
 
   /**
@@ -240,11 +282,15 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (isFlipX() != flipX) {
       super.flip(true, false);
     }
-    forEachMember(s -> {
-      if (s.isFlipX() != flipX) {
-        s.flip(true, false);
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s == null || s.isFlipX() == flipX) {
+        continue;
       }
-    });
+      s.flip(true, false);
+    }
+    members.end();
   }
 
   /**
@@ -258,11 +304,15 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (isFlipY() != flipY) {
       super.flip(false, true);
     }
-    forEachMember(s -> {
-      if (s.isFlipY() != flipY) {
-        s.flip(false, true);
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s == null || s.isFlipY() == flipY) {
+        continue;
       }
-    });
+      s.flip(false, true);
+    }
+    members.end();
   }
 
   public boolean isVisible() {
@@ -276,7 +326,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
-    forEachMember(s -> s.setAntialiasing(antialiasing));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setAntialiasing(antialiasing);
+      }
+    }
+    members.end();
   }
 
   public boolean isAntialiasing() {
@@ -291,21 +348,42 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setFacing(int facing) {
     this.facing = facing;
-    forEachMember(s -> s.setFacing(facing));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setFacing(facing);
+      }
+    }
+    members.end();
   }
 
   /** Sets the rotation and scale pivot point on every current member. */
   @Override
   public void setOrigin(float originX, float originY) {
     super.setOrigin(originX, originY);
-    forEachMember(s -> s.setOrigin(originX, originY));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setOrigin(originX, originY);
+      }
+    }
+    members.end();
   }
 
   /** Centers the origin on every current member based on each member's own dimensions. */
   @Override
   public void setOriginCenter() {
     super.setOriginCenter();
-    forEachMember(FlixelSprite::setOriginCenter);
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setOriginCenter();
+      }
+    }
+    members.end();
   }
 
   /**
@@ -740,15 +818,36 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   private void transformMembersX(float dx) {
-    forEachMember(s -> s.setX(s.getX() + dx));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setX(s.getX() + dx);
+      }
+    }
+    members.end();
   }
 
   private void transformMembersY(float dy) {
-    forEachMember(s -> s.setY(s.getY() + dy));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setY(s.getY() + dy);
+      }
+    }
+    members.end();
   }
 
   private void transformMembersPosition(float dx, float dy) {
-    forEachMember(s -> s.setPosition(s.getX() + dx, s.getY() + dy));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setPosition(s.getX() + dx, s.getY() + dy);
+      }
+    }
+    members.end();
   }
 
   /**
@@ -756,7 +855,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * any positions. Used by {@link RotationMode#INDIVIDUAL}.
    */
   private void transformMembersIndividualRotation(float delta) {
-    forEachMember(s -> s.setAngle(s.getAngle() + delta));
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setAngle(s.getAngle() + delta);
+      }
+    }
+    members.end();
   }
 
   /**

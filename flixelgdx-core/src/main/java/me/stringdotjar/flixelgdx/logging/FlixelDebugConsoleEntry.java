@@ -57,7 +57,7 @@ public abstract class FlixelDebugConsoleEntry {
    *
    * @return An unmodifiable list of display lines, never {@code null}.
    */
-  public abstract List<String> getConsoleLines();
+  public abstract String[] getConsoleLines();
 
   /**
    * Convenience method for entries that only need a single line.

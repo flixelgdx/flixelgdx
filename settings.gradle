@@ -17,7 +17,7 @@ if (localPropsFile.exists()) {
 }
 gradle.ext.includeAndroid = includeAndroidFromCli || includeAndroidFromLocal
 
-def modules = ['flixelgdx-core', 'flixelgdx-lwjgl3', 'flixelgdx-ios', 'flixelgdx-teavm', 'flixelgdx-jvm', 'flixelgdx-test']
+def modules = ['flixelgdx-core', 'flixelgdx-lwjgl3', 'flixelgdx-ios', 'flixelgdx-teavm', 'flixelgdx-jvm', 'flixelgdx-teavm-plugin', 'flixelgdx-test']
 if (gradle.ext.includeAndroid) {
   modules += 'flixelgdx-android'
 }

@@ -7,21 +7,14 @@
 
 package me.stringdotjar.flixelgdx.logging;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
-import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+
+import com.badlogic.gdx.utils.Array;
 
 /**
  * Logger instance for Flixel that formats and outputs log messages to the console and optionally
@@ -50,82 +43,68 @@ public class FlixelLogger {
   /** Default tag to use when logging without a specific tag. */
   private String defaultTag = "";
 
-  /** Where the log file is written (for reference); actual writes go through the file line consumer. */
-  private FileHandle logFileLocation;
-
   /** Log mode for console output. File output always uses {@link FlixelLogMode#DETAILED}. */
   private FlixelLogMode logMode;
-
-  /** Callback for when a log message is written to the file. */
-  private Consumer<String> fileLineConsumer;
 
   /** Provider for collecting stack trace information for the logger. */
   private FlixelStackTraceProvider stackTraceProvider;
 
-  private final ConcurrentLinkedQueue<String> logQueue = new ConcurrentLinkedQueue<>();
-  private final Object logQueueLock = new Object();
-  private volatile boolean logWriterShutdownRequested = false;
-  private Thread logThread;
-  private String customLogsFolderPath = null; // Null means use default (IDE root or JAR dir).
+  /** Custom logs folder path, or {@code null} to use the platform default. */
+  private String customLogsFolderPath = null;
 
   /** Listeners notified whenever a log message is produced (used by the debug overlay). */
-  private final List<Consumer<FlixelLogEntry>> logListeners = new CopyOnWriteArrayList<>();
+  private final Array<Consumer<FlixelLogEntry>> logListeners = new Array<>(Consumer[]::new);
 
   /** Registered debug console entries that supply custom lines to the overlay console. */
-  private final List<FlixelDebugConsoleEntry> consoleEntries = new CopyOnWriteArrayList<>();
+  private final Array<FlixelDebugConsoleEntry> consoleEntries = new Array<>(FlixelDebugConsoleEntry[]::new);
 
   /**
-   * Creates a logger that outputs to the console and a file.
+   * Creates a logger that outputs to the console and optionally to a file
+   * (when a {@link FlixelLogFileHandler} is registered on
+   * {@link Flixel#setLogFileHandler}).
    *
-   * @param logMode The mode used for console output.
+   * @param logMode The mode used for console output formatting.
    */
   public FlixelLogger(FlixelLogMode logMode) {
-    this(null, logMode, null);
-  }
-
-  /**
-   * Creates a logger with an optional log file location, optional consumer for file lines, and
-   * a custom stack trace provider.
-   *
-   * @param logFileLocation Where the log file is stored (which might be null).
-   * @param logMode The mode used for console output.
-   * @param fileLineConsumer Callback for when a log message is written to the file.
-   */
-  public FlixelLogger(FileHandle logFileLocation, FlixelLogMode logMode, Consumer<String> fileLineConsumer) {
-    this.logFileLocation = logFileLocation;
     this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
-    this.fileLineConsumer = fileLineConsumer;
     this.stackTraceProvider = Flixel.getStackTraceProvider();
   }
 
-  public FileHandle getLogFileLocation() {
-    return logFileLocation;
-  }
-
-  public void setLogFileLocation(FileHandle logFileLocation) {
-    this.logFileLocation = logFileLocation;
-  }
-
+  /**
+   * Returns the current log mode used for console output formatting.
+   *
+   * @return The active log mode, never {@code null}.
+   */
   public FlixelLogMode getLogMode() {
     return logMode;
   }
 
+  /**
+   * Sets the log mode used for console output formatting. If {@code null}
+   * is passed, the mode defaults to {@link FlixelLogMode#SIMPLE}.
+   *
+   * @param logMode The desired log mode, or {@code null} to reset to the default simple mode.
+   */
   public void setLogMode(FlixelLogMode logMode) {
     this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
   }
 
-  public Consumer<String> getFileLineConsumer() {
-    return fileLineConsumer;
-  }
-
-  public void setFileLineConsumer(Consumer<String> fileLineConsumer) {
-    this.fileLineConsumer = fileLineConsumer;
-  }
-
+  /**
+   * Returns the stack trace provider used to determine the caller location
+   * when logging messages.
+   *
+   * @return The current stack trace provider, or {@code null} if none has been set.
+   */
   public FlixelStackTraceProvider getStackTraceProvider() {
     return stackTraceProvider;
   }
 
+  /**
+   * Sets the stack trace provider used to resolve the calling class and
+   * method name for each log message.
+   *
+   * @param stackTraceProvider The provider to use for stack trace resolution.
+   */
   public void setStackTraceProvider(FlixelStackTraceProvider stackTraceProvider) {
     this.stackTraceProvider = stackTraceProvider;
   }
@@ -136,7 +115,7 @@ public class FlixelLogger {
    * is used: when running in an IDE, the project root's {@code logs} folder; when running from a
    * JAR, the {@code logs} folder next to the JAR.
    *
-   * @param absolutePathToLogsFolder Absolute path to the logs folder, or {@code null} to use the default.
+   * @param absolutePathToLogsFolder The absolute path to the logs folder, or {@code null} to use the default.
    */
   public void setLogsFolder(String absolutePathToLogsFolder) {
     this.customLogsFolderPath = (absolutePathToLogsFolder == null || absolutePathToLogsFolder.isEmpty())
@@ -144,137 +123,56 @@ public class FlixelLogger {
       : absolutePathToLogsFolder.replaceAll("/$", "");
   }
 
-  /**
-   * Returns the custom logs folder path set by {@link #setLogsFolder(String)}, or {@code null} if
-   * the default location is used.
-   */
   public String getLogsFolder() {
     return customLogsFolderPath;
   }
 
-  /** Returns whether file logging is enabled when {@link #startFileLogging()} is called. */
   public boolean canStoreLogs() {
     return canStoreLogs;
   }
 
-  /** Sets whether to write logs to a file when {@link #startFileLogging()} is called. */
   public void setCanStoreLogs(boolean canStoreLogs) {
     this.canStoreLogs = canStoreLogs;
   }
 
-  /** Returns the maximum number of log files to keep when file logging is enabled. */
   public int getMaxLogFiles() {
     return maxLogFiles;
   }
 
-  /** Sets the maximum number of log files to keep; older files are deleted when exceeded. */
   public void setMaxLogFiles(int maxLogFiles) {
     this.maxLogFiles = maxLogFiles;
   }
 
   /**
-   * Enqueues a single log line for this logger's file writer thread. Used by this logger's file consumer.
-   */
-  void enqueueLogToFile(String log) {
-    logQueue.add(log);
-    synchronized (logQueueLock) {
-      logQueueLock.notify();
-    }
-  }
-
-  /**
-   * Starts or configures file logging for this logger. When {@link #canStoreLogs()} is {@code true},
-   * creates the logs folder (default or custom), prunes old log files, creates a new timestamped log
-   * file, and starts a background thread that writes log lines to that file. When {@code canStoreLogs}
-   * is {@code false}, no writer thread is started and any existing log files in the logs folder are deleted.
+   * Starts file logging by delegating to the registered
+   * {@link FlixelLogFileHandler}. If no handler has been registered (for example, on web/TeaVM) or if
+   * {@link #canStoreLogs()} returns {@code false}, this method is a no-op.
+   *
+   * <p>The handler creates the log folder, prunes old files, opens a new
+   * timestamped log file, and (on JVM) starts a background writer thread.
    */
   public void startFileLogging() {
-    String logsFolderPath = (customLogsFolderPath != null)
-      ? customLogsFolderPath
-      : FlixelRuntimeUtil.getDefaultLogsFolderPath();
-    if (logsFolderPath == null) {
+    FlixelLogFileHandler handler = Flixel.getLogFileHandler();
+    if (handler == null || !canStoreLogs) {
       return;
     }
-
-    if (Gdx.files == null) {
-      return;
-    }
-
-    FileHandle logsFolder = Gdx.files.absolute(logsFolderPath);
-    logsFolder.mkdirs();
-
-    if (canStoreLogs) {
-      LocalDateTime now = LocalDateTime.now();
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
-      String date = now.format(formatter);
-
-      // Delete old log files if we have more than the maximum number of log files.
-      FileHandle[] logFiles = logsFolder.list();
-      if (logFiles != null && logFiles.length >= maxLogFiles) {
-        Arrays.sort(logFiles, Comparator.comparing(FileHandle::name));
-        int toDelete = logFiles.length - maxLogFiles + 1;
-        for (int i = 0; i < toDelete; i++) {
-          logFiles[i].delete();
-        }
-      }
-
-      FileHandle logFile = Gdx.files.absolute(logsFolderPath + "/flixel-" + date + ".log");
-
-      setLogFileLocation(logFile);
-      setFileLineConsumer(this::enqueueLogToFile);
-
-      // Start the log writer thread.
-      logWriterShutdownRequested = false;
-      final FileHandle logFileForThread = logFile;
-      logThread = new Thread(() -> {
-        try {
-          while (true) {
-            String log = logQueue.poll();
-            if (log != null) {
-              logFileForThread.writeString(log + "\n", true);
-            } else {
-              synchronized (logQueueLock) {
-                if (logWriterShutdownRequested) {
-                  break;
-                }
-                try {
-                  logQueueLock.wait();
-                } catch (InterruptedException e) {
-                  Thread.currentThread().interrupt();
-                }
-              }
-            }
-          }
-        } catch (Exception ignored) {
-          // ignore
-        }
-      });
-      logThread.setName("FlixelGDX Log Thread");
-      logThread.setDaemon(true);
-      logThread.start();
-    }
+    handler.start(customLogsFolderPath, maxLogFiles);
   }
 
   /**
-   * Stops {@code this} logger's log file writer thread and flushes any remaining log lines. Call this during
-   * game shutdown (e.g. from {@link me.stringdotjar.flixelgdx.FlixelGame#dispose()}) so that
-   * logs written during dispose are persisted.
+   * Stops file logging by delegating to the registered
+   * {@link FlixelLogFileHandler}. The handler flushes any buffered log
+   * lines and releases its resources.
+   *
+   * <p>Call this during game shutdown (for example from
+   * {@link me.stringdotjar.flixelgdx.FlixelGame#dispose()}) so that logs
+   * written during disposal are persisted.
    */
   public void stopFileLogging() {
-    synchronized (logQueueLock) {
-      logWriterShutdownRequested = true;
-      logQueueLock.notify();
+    FlixelLogFileHandler handler = Flixel.getLogFileHandler();
+    if (handler != null) {
+      handler.stop();
     }
-    if (logThread != null && logThread.isAlive()) {
-      try {
-        logThread.join(5000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-      logThread = null;
-    }
-    setLogFileLocation(null);
-    setFileLineConsumer(null);
   }
 
   /**
@@ -294,7 +192,7 @@ public class FlixelLogger {
    * @param listener The listener to remove.
    */
   public void removeLogListener(Consumer<FlixelLogEntry> listener) {
-    logListeners.remove(listener);
+    logListeners.removeValue(listener, true);
   }
 
   /**
@@ -314,42 +212,89 @@ public class FlixelLogger {
    * @param entry The entry to remove.
    */
   public void removeConsoleEntry(FlixelDebugConsoleEntry entry) {
-    consoleEntries.remove(entry);
+    consoleEntries.removeValue(entry, true);
   }
 
-  /** Returns the list of registered debug console entries. */
-  public List<FlixelDebugConsoleEntry> getConsoleEntries() {
-    return consoleEntries;
+  public FlixelDebugConsoleEntry[] getConsoleEntries() {
+    return consoleEntries.items;
   }
 
+  /**
+   * Logs an informational message using the default tag.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   */
   public void info(Object message) {
     info(defaultTag, message);
   }
 
+  /**
+   * Logs an informational message under a custom tag.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   */
   public void info(String tag, Object message) {
     outputLog(tag, evaluateMessage(message), FlixelLogLevel.INFO);
   }
 
+  /**
+   * Logs a warning message using the default tag.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   */
   public void warn(Object message) {
     warn(defaultTag, message);
   }
 
+  /**
+   * Logs a warning message under a custom tag.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   */
   public void warn(String tag, Object message) {
     outputLog(tag, evaluateMessage(message), FlixelLogLevel.WARN);
   }
 
+  /**
+   * Logs an error message using the default tag with no throwable.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   */
   public void error(Object message) {
     error(defaultTag, message, null);
   }
 
+  /**
+   * Logs an error message using the default tag, including the throwable's
+   * string representation in the output.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   * @param throwable The exception to append to the log output.
+   */
   public void error(Object message, Throwable throwable) {
     error(defaultTag, message, throwable);
   }
 
+  /**
+   * Logs an error message under a custom tag with no throwable.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   */
   public void error(String tag, Object message) {
     error(tag, message, null);
   }
 
+  /**
+   * Logs an error message under a custom tag, optionally including a
+   * throwable in the output.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   * @param throwable The exception to append to the log output, or {@code null} if none.
+   */
   public void error(String tag, Object message, Throwable throwable) {
     String msg = (throwable != null) ? (evaluateMessage(message) + " | Exception: " + throwable) : evaluateMessage(message);
     outputLog(tag, msg, FlixelLogLevel.ERROR);
@@ -422,14 +367,15 @@ public class FlixelLogger {
     }
 
     // File: always detailed (plain, no ANSI).
-    if (fileLineConsumer != null) {
+    FlixelLogFileHandler fileHandler = Flixel.getLogFileHandler();
+    if (fileHandler != null && fileHandler.isActive()) {
       String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
       String levelTag = "[" + level + "]";
       String tagPart = "[" + tag + "]";
       String filePart = "[" + file + "]";
       String methodPart = "[" + method + "]";
       String plainLog = timestamp + " " + levelTag + " " + tagPart + " " + filePart + " " + methodPart + " " + rawMessage;
-      fileLineConsumer.accept(plainLog);
+      fileHandler.write(plainLog);
     }
   }
 

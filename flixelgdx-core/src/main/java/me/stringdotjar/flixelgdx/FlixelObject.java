@@ -7,7 +7,6 @@
 
 package me.stringdotjar.flixelgdx;
 
-import me.stringdotjar.flixelgdx.box2d.FlixelBox2DObject;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugDrawable;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
@@ -27,12 +26,6 @@ import me.stringdotjar.flixelgdx.util.FlixelConstants;
  * checks. The static {@link #separate(FlixelObject, FlixelObject)} method resolves overlaps
  * by adjusting positions and velocities.
  *
- * <h2>Box2D</h2>
- * To use Box2D physics instead of the built-in kinematic model, implement
- * {@link FlixelBox2DObject} on your subclass. See that interface's documentation for details.
- *
- * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html">FlxObject (HaxeFlixel)</a>
- * @see FlixelBox2DObject
  */
 public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
 

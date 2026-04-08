@@ -32,7 +32,7 @@ public class FlixelTimerManager extends FlixelBasic {
   /** Timers currently stepped by {@link #update(float)}. Named {@code activeTimers} to avoid clashing with {@link #active}. */
   protected final Array<FlixelTimer> activeTimers = new Array<>(false, 32);
 
-  protected final Pool<FlixelTimer> pool = new Pool<FlixelTimer>(32) {
+  protected final Pool<FlixelTimer> pool = new Pool<>(32) {
     @Override
     protected FlixelTimer newObject() {
       return new FlixelTimer();

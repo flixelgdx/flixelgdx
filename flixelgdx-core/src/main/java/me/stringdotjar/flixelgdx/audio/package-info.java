@@ -1,7 +1,7 @@
 /**
  * Audio support for FlixelGDX.
  *
- * <p>This package provides Flixel style audio APIs on top of MiniAudio and libGDX integration.
+ * <p>This package provides simple audio APIs on top of a platform-agnostic sound backend.
  * It includes playback objects, cached sources, and managers for controlling sound and music.
  *
  * <p>Key types:

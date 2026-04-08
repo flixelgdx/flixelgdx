@@ -14,19 +14,34 @@ import com.badlogic.gdx.utils.FloatArray;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelPropertyPath;
+import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Tween type for animating values via getter/setter pairs (property goals) rather than
- * reflection. Use this when you need setter side effects (e.g. bounds updates, listeners) to
- * run on every interpolated step. Configure with {@link FlixelTweenSettings#addGoal}.
+ * Tween type for animating values via getter/setter pairs (property goals)
+ * rather than reflection. Use this when you need setter side effects (for
+ * example, bounds updates or listeners) to run on every interpolated step.
+ * Configure property goals with
+ * {@link FlixelTweenSettings#addGoal(FloatSupplier, float, FlixelTweenSettings.FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter)}.
  *
- * <p>This is faster than {@link FlixelVarTween}, which resolves names through {@link me.stringdotjar.flixelgdx.Flixel#reflect}
- * each frame. Both can invoke JavaBean setters on every step when configured that way; prefer this type when you can
- * close over getter/setter references and avoid reflection.
+ * <p>This tween type is faster than {@link FlixelVarTween}, which resolves
+ * property names through {@link Flixel#reflect} on each frame. Both can
+ * invoke JavaBean setters on every step when configured that way; prefer this
+ * type when you can close over getter/setter references and avoid reflection.
+ *
+ * <h2>Recommended for Web / TeaVM Targets</h2>
+ *
+ * <p><strong>This is the recommended tween type for games targeting the web
+ * (TeaVM) backend.</strong> Because it uses explicit getter/setter lambda
+ * references instead of runtime reflection, it is fully compatible with
+ * ahead-of-time compilation targets such as TeaVM. If your game targets the
+ * web, always prefer this type over {@link FlixelVarTween}.
+ *
+ * @see FlixelVarTween
+ * @see FlixelTweenSettings
  */
 public class FlixelPropertyTween extends FlixelTween {
 
@@ -65,7 +80,8 @@ public class FlixelPropertyTween extends FlixelTween {
    * Sets the object {@code this} tween logically animates (required before {@link #start()}).
    *
    * <p>This has to be set because {@link #isTweenOf(Object, String)} needs to know the object to tween.
-   * This method is purely for logic purposes used by {@link me.stringdotjar.flixelgdx.tween.FlixelTweenManager}, not for tweening purposes.
+   * This method is purely for logic purposes used by {@link me.stringdotjar.flixelgdx.tween.FlixelTweenManager}, not
+   * for tweening purposes.
    *
    * @param tweenObject The object to tween.
    * @return {@code this} for chaining.
@@ -76,18 +92,37 @@ public class FlixelPropertyTween extends FlixelTween {
   }
 
   /**
-   * Optional logical field name for {@link #isTweenOf(Object, String)} matching.
+   * Assigns an optional logical field name used by
+   * {@link #isTweenOf(Object, String)} when checking whether this tween
+   * animates a particular named property.
+   *
+   * @param fieldLabel The field label to associate with this tween, or {@code null} to clear any previously set label.
+   * @return This tween instance for method chaining.
    */
   public FlixelPropertyTween setFieldLabel(@Nullable String fieldLabel) {
     this.fieldLabel = fieldLabel;
     return this;
   }
 
-  public @Nullable Object getTweenObject() {
+  /**
+   * Returns the logical target object that this tween animates, or
+   * {@code null} if no object has been set yet.
+   *
+   * @return The tween target object, or {@code null}.
+   */
+  @Nullable
+  public Object getTweenObject() {
     return tweenObject;
   }
 
-  public @Nullable String getFieldLabel() {
+  /**
+   * Returns the optional logical field label associated with this tween, or
+   * {@code null} if none has been set.
+   *
+   * @return The field label, or {@code null}.
+   */
+  @Nullable
+  public String getFieldLabel() {
     return fieldLabel;
   }
 
@@ -108,18 +143,7 @@ public class FlixelPropertyTween extends FlixelTween {
     if (propertyGoals == null || propertyGoals.isEmpty()) {
       return this;
     }
-
-    cachedPropertyGoals.clear();
-    propertyGoalStartValues.clear();
-    for (int i = 0; i < propertyGoals.size; i++) {
-      var goal = propertyGoals.get(i);
-      if (goal == null) {
-        continue;
-      }
-      cachedPropertyGoals.add(goal);
-      propertyGoalStartValues.add(goal.getter().getAsFloat());
-    }
-
+    resetGoals();
     return this;
   }
 
@@ -145,16 +169,7 @@ public class FlixelPropertyTween extends FlixelTween {
     if (!internalRestart && tweenSettings != null) {
       var propertyGoals = tweenSettings.getPropertyGoals();
       if (propertyGoals != null && !propertyGoals.isEmpty()) {
-        cachedPropertyGoals.clear();
-        propertyGoalStartValues.clear();
-        for (int i = 0; i < propertyGoals.size; i++) {
-          var goal = propertyGoals.get(i);
-          if (goal == null) {
-            continue;
-          }
-          cachedPropertyGoals.add(goal);
-          propertyGoalStartValues.add(goal.getter().getAsFloat());
-        }
+        resetGoals();
       }
     }
     super.restart();
@@ -183,5 +198,19 @@ public class FlixelPropertyTween extends FlixelTween {
     FlixelPropertyPath path = Flixel.reflect.resolvePropertyPath(o, field);
     return Objects.equals(path.leafObject(), tweenObject)
         && (fieldLabel == null || fieldLabel.equals(path.leafName()));
+  }
+
+  private void resetGoals() {
+    var propertyGoals = tweenSettings.getPropertyGoals();
+    cachedPropertyGoals.clear();
+    propertyGoalStartValues.clear();
+    for (int i = 0; i < propertyGoals.size; i++) {
+      var goal = propertyGoals.get(i);
+      if (goal == null) {
+        continue;
+      }
+      cachedPropertyGoals.add(goal);
+      propertyGoalStartValues.add(goal.getter().getAsFloat());
+    }
   }
 }

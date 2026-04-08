@@ -111,6 +111,8 @@ processResources {
 }
 
 dependencies {
-    api project(':flixelgdx-core')
-    api "com.github.xpenatan.gdx-teavm:backend-web:$gdxTeaVMVersion"
+  api project(':flixelgdx-core')
+  api "com.github.xpenatan.gdx-teavm:backend-web:$gdxTeaVMVersion"
+  implementation "com.github.xpenatan.gdx-teavm:gdx-freetype-teavm:$gdxTeaVMVersion"
+  implementation 'org.jetbrains:annotations:15.0'
 }

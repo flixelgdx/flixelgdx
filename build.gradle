@@ -49,7 +49,7 @@ configure(subprojects.findAll { p -> p.name == 'flixelgdx-core' || p.name == 'fl
 // These modules are currently NOT configured in the root build.gradle for java-library
 // but they apply it themselves.
 
-configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-test' }) {
+configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-test' && p.name != 'flixelgdx-teavm-plugin' }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
@@ -63,7 +63,7 @@ configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'fl
   }
 }
 
-configure(subprojects.findAll { !it.path.contains('flixelgdx-android') && it.name != 'flixelgdx-test' }) {
+configure(subprojects.findAll { !it.path.contains('flixelgdx-android') && it.name != 'flixelgdx-test' && it.name != 'flixelgdx-teavm-plugin' }) {
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
   tasks.register('generateAssetList') {
@@ -93,7 +93,7 @@ configure(subprojects.findAll { !it.path.contains('flixelgdx-android') && it.nam
   }
 }
 
-configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-jvm' && p.name != 'flixelgdx-teavm' && p.name != 'flixelgdx-test' }) {
+configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-jvm' && p.name != 'flixelgdx-teavm' && p.name != 'flixelgdx-test' && p.name != 'flixelgdx-teavm-plugin' }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
@@ -170,7 +170,7 @@ subprojects { Project p ->
   }
 }
 
-configure(subprojects.findAll { it.name != 'flixelgdx-test' }) {
+configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-teavm-plugin' }) {
   apply plugin: 'maven-publish'
   afterEvaluate {
     publishing {
@@ -184,6 +184,20 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' }) {
             rootProject.configureFlixelMavenPom(delegate)
           }
         }
+      }
+    }
+  }
+}
+
+// The plugin module uses java-gradle-plugin which auto-creates the pluginMaven publication
+// (including the plugin marker artifact). We apply maven-publish and configure the POM there
+// separately to avoid a duplicate 'maven' publication.
+configure(subprojects.findAll { it.name == 'flixelgdx-teavm-plugin' }) {
+  apply plugin: 'maven-publish'
+  afterEvaluate {
+    publishing {
+      publications.withType(MavenPublication).configureEach {
+        rootProject.configureFlixelMavenPom(delegate)
       }
     }
   }
@@ -219,7 +233,8 @@ tasks.register('javadocAll') {
     ':flixelgdx-jvm:javadoc',
     ':flixelgdx-lwjgl3:javadoc',
     ':flixelgdx-ios:javadoc',
-    ':flixelgdx-teavm:javadoc'
+    ':flixelgdx-teavm:javadoc',
+    ':flixelgdx-teavm-plugin:javadoc'
   )
 }
 

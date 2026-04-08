@@ -15,6 +15,7 @@ import me.stringdotjar.flixelgdx.functional.supplier.ByteSupplier;
 import me.stringdotjar.flixelgdx.functional.supplier.CharSupplier;
 import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.functional.supplier.ShortSupplier;
+import me.stringdotjar.flixelgdx.util.FlixelString;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +47,9 @@ public class FlixelDebugWatchManager {
   private static final String MOUSE_WATCH_NAME = "Mouse";
 
   private final Map<String, WatchEntry> watches = new ConcurrentHashMap<>();
+
+  /** Reused only by {@link #forEach(BiConsumer)} so that path does not allocate a buffer per entry. */
+  private final FlixelString forEachScratch = new FlixelString(128);
 
   /**
    * Registers a watch entry. If an entry with the same name already exists it is replaced.
@@ -178,14 +182,7 @@ public class FlixelDebugWatchManager {
 
   /** Adds a convenience watch entry that shows the current mouse screen position. */
   public void addMouse() {
-    watches.put(
-      MOUSE_WATCH_NAME,
-      new ObjectWatchEntry(() -> {
-        if (Flixel.mouse != null) {
-          return Flixel.mouse.getScreenX() + ", " + Flixel.mouse.getScreenY();
-        }
-        return Gdx.input.getX() + ", " + Gdx.input.getY();
-      }));
+    watches.put(MOUSE_WATCH_NAME, new MouseScreenWatchEntry());
   }
 
   /** Removes the convenience mouse position watch entry. */
@@ -195,34 +192,38 @@ public class FlixelDebugWatchManager {
 
   /**
    * Iterates every watch entry, invoking the callback with each display name and its
-   * current resolved value string. No intermediate collections are created.
+   * current resolved value string. The value string is materialized for the callback; prefer
+   * {@link #fillWatchLines(Array)} when drawing to avoid per-entry {@link String} churn in tight loops.
    *
    * @param callback Receives (displayName, currentValueString) for every entry.
    */
   public void forEach(@NotNull BiConsumer<String, String> callback) {
     for (Map.Entry<String, WatchEntry> entry : watches.entrySet()) {
-      callback.accept(entry.getKey(), entry.getValue().getValueString());
+      forEachScratch.clear();
+      entry.getValue().appendValue(forEachScratch);
+      callback.accept(entry.getKey(), forEachScratch.copyContentToNewString());
     }
   }
 
   /**
-   * Formats all watch lines into {@code output}, reusing existing {@link StringBuilder} slots and
+   * Formats all watch lines into {@code output}, reusing existing {@link FlixelString} slots and
    * shrinking the array when fewer watches are registered. Each line includes markup for the debug overlay.
    *
-   * @param output Cleared and filled with one builder per watch entry (order follows {@link Map#entrySet()}).
+   * @param output Cleared and filled with one {@link FlixelString} per watch entry (order follows
+   *   {@link Map#entrySet()}).
    */
-  public void fillWatchLineBuilders(@NotNull Array<StringBuilder> output) {
+  public void fillWatchLines(@NotNull Array<FlixelString> output) {
     int n = watches.size();
     while (output.size < n) {
-      output.add(new StringBuilder(64));
+      output.add(new FlixelString(64));
     }
     output.setSize(n);
     int i = 0;
     for (Map.Entry<String, WatchEntry> entry : watches.entrySet()) {
-      StringBuilder sb = output.get(i++);
-      sb.setLength(0);
-      sb.append("[#88CCFF]").append(entry.getKey()).append(":[#FFFFFF] ");
-      sb.append(entry.getValue().getValueString());
+      FlixelString line = output.get(i++);
+      line.clear();
+      line.concat("[#88CCFF]").concat(entry.getKey()).concat(":[#FFFFFF] ");
+      entry.getValue().appendValue(line);
     }
   }
 
@@ -237,41 +238,43 @@ public class FlixelDebugWatchManager {
   }
 
   /**
-   * Interface for allowing primitive suppliers to be used without boxing.
+   * Internal hook for formatting a watch value into a {@link FlixelString} without returning an intermediate
+   * {@link String}.
    */
   protected interface WatchEntry {
 
     /**
-     * Returns the current value of the watch entry as a string.
+     * Appends the current watch value to {@code out}. Implementations must not clear {@code out}; callers
+     * own the prefix and lifecycle.
      *
-     * @return The current value of the watch entry as a string. May be {@code "<error>"} if
-     *   the supplier throws an exception.
+     * @param out Destination buffer.
      */
-    String getValueString();
+    void appendValue(FlixelString out);
   }
 
   private record ObjectWatchEntry(Supplier<?> supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       Object val;
       try {
         val = supplier.get();
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
+        return;
       }
-      return String.valueOf(val);
+      out.concat(val);
     }
   }
 
   private record ByteWatchEntry(ByteSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Byte.toString(supplier.getAsByte());
+        out.concat(supplier.getAsByte());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
       }
     }
   }
@@ -279,11 +282,11 @@ public class FlixelDebugWatchManager {
   private record ShortWatchEntry(ShortSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Short.toString(supplier.getAsShort());
+        out.concat(supplier.getAsShort());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
       }
     }
   }
@@ -291,11 +294,11 @@ public class FlixelDebugWatchManager {
   private record IntWatchEntry(IntSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Integer.toString(supplier.getAsInt());
+        out.concat(supplier.getAsInt());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
       }
     }
   }
@@ -303,11 +306,11 @@ public class FlixelDebugWatchManager {
   private record FloatWatchEntry(FloatSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Float.toString(supplier.getAsFloat());
+        out.concat(supplier.getAsFloat());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
       }
     }
   }
@@ -315,11 +318,11 @@ public class FlixelDebugWatchManager {
   private record LongWatchEntry(LongSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Long.toString(supplier.getAsLong());
+        out.concat(supplier.getAsLong());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
       }
     }
   }
@@ -327,11 +330,11 @@ public class FlixelDebugWatchManager {
   private record DoubleWatchEntry(DoubleSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Double.toString(supplier.getAsDouble());
+        out.concat(supplier.getAsDouble());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
       }
     }
   }
@@ -339,19 +342,39 @@ public class FlixelDebugWatchManager {
   private record BooleanWatchEntry(BooleanSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
-      return Boolean.toString(supplier.getAsBoolean());
+    public void appendValue(FlixelString out) {
+      try {
+        out.concat(supplier.getAsBoolean());
+      } catch (Exception e) {
+        out.concat("<error>");
+      }
     }
   }
 
   private record CharWatchEntry(CharSupplier supplier) implements WatchEntry {
 
     @Override
-    public String getValueString() {
+    public void appendValue(FlixelString out) {
       try {
-        return Character.toString(supplier.getAsChar());
+        out.concat(supplier.getAsChar());
       } catch (Exception e) {
-        return "<error>";
+        out.concat("<error>");
+      }
+    }
+  }
+
+  private static final class MouseScreenWatchEntry implements WatchEntry {
+
+    @Override
+    public void appendValue(FlixelString out) {
+      try {
+        if (Flixel.mouse != null) {
+          out.concat(Flixel.mouse.getScreenX()).concat(", ").concat(Flixel.mouse.getScreenY());
+        } else {
+          out.concat(Gdx.input.getX()).concat(", ").concat(Gdx.input.getY());
+        }
+      } catch (Exception e) {
+        out.concat("<error>");
       }
     }
   }

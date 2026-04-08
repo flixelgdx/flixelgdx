@@ -17,8 +17,8 @@ import me.stringdotjar.flixelgdx.FlixelObject;
  * without being hard-coded into the overlay.
  *
  * <p>{@link FlixelObject} implements this by default, using collision state to
- * pick an appropriate color. Custom objects (including Box2D bodies) can implement
- * this interface to provide their own debug visualization.
+ * pick an appropriate color. Custom objects can implement this interface to provide
+ * their own debug visualization.
  */
 public interface FlixelDebugDrawable {
 

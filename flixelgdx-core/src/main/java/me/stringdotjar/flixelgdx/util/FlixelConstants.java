@@ -39,8 +39,7 @@ public final class FlixelConstants {
   }
 
   /**
-   * Direction flags used for collision detection and touch sensing, matching
-   * <a href="https://api.haxeflixel.com/flixel/util/FlxDirectionFlags.html">FlxDirectionFlags</a>.
+   * Direction flags used for collision detection and touch sensing.
    * The same bit patterns are reused for facing directions in {@link Graphics}.
    */
   public static final class Physics {
@@ -58,15 +57,6 @@ public final class FlixelConstants {
 
     /** Maximum number of pixels two objects can intersect before separation gives up. */
     public static final float SEPARATE_BIAS = 4f;
-
-    /** Default pixels-per-meter ratio used by Box2D helpers. */
-    public static final float PIXELS_PER_METER = 100f;
-
-    /** Box2D velocity solver iterations per step. */
-    public static final int VELOCITY_ITERATIONS = 6;
-
-    /** Box2D position solver iterations per step. */
-    public static final int POSITION_ITERATIONS = 2;
 
     private Physics() {}
   }

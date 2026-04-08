@@ -7,9 +7,6 @@
 
 package me.stringdotjar.flixelgdx.audio;
 
-import games.rednblack.miniaudio.MAGroup;
-import games.rednblack.miniaudio.MASound;
-import games.rednblack.miniaudio.MiniAudio;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
@@ -18,34 +15,39 @@ import org.jetbrains.annotations.Nullable;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
- * Central manager for all audio: FlixelSound instances, master volume, sound groups (SFX and Music),
- * and focus-based pause/resume.
+ * Central manager for all audio. {@link FlixelSound} instances, master volume,
+ * sound groups (SFX and music), and focus-based pause/resume.
  *
- * <p>Access via {@link me.stringdotjar.flixelgdx.Flixel#sound}. Supports separate groups for
- * sound effects and music, global master volume, and automatic pause when the game loses focus
- * (and resume when it regains focus).
+ * <p>Access via {@link me.stringdotjar.flixelgdx.Flixel#sound}. Supports
+ * separate groups for sound effects and music, global master volume, and
+ * automatic pause when the game loses focus (and resume when it regains focus).
  */
 public class FlixelAudioManager implements FlixelDestroyable, Disposable {
 
-  private final MiniAudio engine;
-  private MAGroup sfxGroup;
-  private MAGroup musicGroup;
+  private final FlixelSoundBackend.Factory factory;
+  private Object sfxGroup;
+  private Object musicGroup;
 
   private float masterVolume = 1f;
   private FlixelSound music;
 
-  /** Constructs a new FlixelAudioManager with an internal MiniAudio engine and sound groups. */
-  public FlixelAudioManager() {
-    engine = new MiniAudio();
-    sfxGroup = engine.createGroup();
-    musicGroup = engine.createGroup();
+  /**
+   * Constructs a new audio manager using the given backend factory.
+   *
+   * @param factory The platform-specific sound backend factory.
+   */
+  public FlixelAudioManager(@NotNull FlixelSoundBackend.Factory factory) {
+    this.factory = factory;
+    sfxGroup = factory.createGroup();
+    musicGroup = factory.createGroup();
   }
 
   /**
-   * Stops session audio and rebuilds SFX and music groups on the existing {@link MiniAudio} engine.
+   * Stops session audio and rebuilds SFX and music groups on the existing engine.
    *
-   * <p>Use this during {@link me.stringdotjar.flixelgdx.Flixel#resetGame()} instead of {@link #destroy()} so the
-   * native backend is not torn down and re-created in one frame (which can break PulseAudio and similar backends).
+   * <p>Use during {@link me.stringdotjar.flixelgdx.Flixel#resetGame()} instead
+   * of {@link #destroy()} so the native backend is not torn down and re-created
+   * in one frame (which can break PulseAudio and similar backends).
    */
   public void resetSession() {
     if (music != null) {
@@ -53,49 +55,72 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       music = null;
     }
     if (sfxGroup != null) {
-      sfxGroup.dispose();
+      factory.disposeGroup(sfxGroup);
     }
     if (musicGroup != null) {
-      musicGroup.dispose();
+      factory.disposeGroup(musicGroup);
     }
-    sfxGroup = engine.createGroup();
-    musicGroup = engine.createGroup();
-    engine.setMasterVolume(masterVolume);
+    sfxGroup = factory.createGroup();
+    musicGroup = factory.createGroup();
+    factory.setMasterVolume(masterVolume);
   }
 
-  /** Returns the underlying MiniAudio engine for advanced use and asset loading. */
+  /**
+   * Returns the underlying backend factory for advanced use.
+   *
+   * @return The backend factory powering this manager.
+   */
   @NotNull
-  public MiniAudio getEngine() {
-    return engine;
+  public FlixelSoundBackend.Factory getFactory() {
+    return factory;
   }
 
-  /** Group for sound effects. Use for playing sounds or custom sounds that should be categorized as SFX. */
+  /**
+   * Returns the SFX group handle. Use for playing sounds or custom sounds
+   * that should be categorised as SFX.
+   *
+   * @return The SFX group handle.
+   */
   @NotNull
-  public MAGroup getSfxGroup() {
+  public Object getSfxGroup() {
     return sfxGroup;
   }
 
-  /** Group for music. Used by {@link #playMusic}. */
+  /**
+   * Returns the music group handle. Used by {@link #playMusic}.
+   *
+   * @return The music group handle.
+   */
   @NotNull
-  public MAGroup getMusicGroup() {
+  public Object getMusicGroup() {
     return musicGroup;
   }
 
   /**
    * Returns the default group used when no group is specified (SFX group).
-   * Provided for backward compatibility with code that expects a single "sounds" group.
+   *
+   * @return The SFX group handle.
    */
   @NotNull
-  public MAGroup getSoundsGroup() {
+  public Object getSoundsGroup() {
     return sfxGroup;
   }
 
+  /**
+   * Returns the currently playing music, or {@code null} if none.
+   *
+   * @return The current music sound, or {@code null}.
+   */
   @Nullable
   public FlixelSound getMusic() {
     return music;
   }
 
-  /** Master volume in 0-1. Values > 1 are clamped to 1 when applied to the engine. */
+  /**
+   * Returns the current master volume.
+   *
+   * @return Master volume in [0, 1].
+   */
   public float getMasterVolume() {
     return masterVolume;
   }
@@ -103,21 +128,18 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   /**
    * Sets the global master volume applied to all sounds.
    *
-   * @param volume New master volume (values &gt; 1 are clamped to 1).
-   * @return The new master volume.
+   * @param volume New master volume (values outside [0, 1] are clamped).
+   * @return The clamped master volume.
    */
   public float setMasterVolume(float volume) {
-    float clamped = volume;
-    clamped = Math.max(0f, clamped);
-    clamped = Math.min(1f, clamped);
-    engine.setMasterVolume(clamped);
+    float clamped = Math.max(0f, Math.min(1f, volume));
+    factory.setMasterVolume(clamped);
     masterVolume = clamped;
     return clamped;
   }
 
   /**
-   * Changes the global master volume applied to all sounds of {@code this} audio manager
-   * by the given amount.
+   * Changes the global master volume by the given amount.
    *
    * @param amount The amount to change the master volume by.
    * @return The new master volume.
@@ -130,7 +152,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    * Plays a new sound effect (SFX group).
    *
    * @param path Path to the sound (internal or resolved via {@link FlixelPathsUtil}).
-   * @return The new FlixelSound instance.
+   * @return The new {@link FlixelSound} instance.
    */
   @NotNull
   public FlixelSound play(@NotNull String path) {
@@ -142,7 +164,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    *
    * @param path Path to the sound.
    * @param volume Volume to play with.
-   * @return The new FlixelSound instance.
+   * @return The new {@link FlixelSound} instance.
    */
   @NotNull
   public FlixelSound play(@NotNull String path, float volume) {
@@ -155,15 +177,24 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    * @param path Path to the sound.
    * @param volume Volume to play with.
    * @param looping Whether to loop.
+   * @return The new {@link FlixelSound} instance.
    */
   @NotNull
   public FlixelSound play(@NotNull String path, float volume, boolean looping) {
     return play(path, volume, looping, null, false);
   }
 
-  /** @see #play(String, float, boolean, MAGroup, boolean) */
+  /**
+   * Plays a new sound effect.
+   *
+   * @param path Path to the sound.
+   * @param volume Volume to play with.
+   * @param looping Whether to loop.
+   * @param group Sound group, or {@code null} to use the default SFX group.
+   * @return The new {@link FlixelSound} instance.
+   */
   @NotNull
-  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable MAGroup group) {
+  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable Object group) {
     return play(path, volume, looping, group, false);
   }
 
@@ -173,16 +204,17 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    * @param path Path to the sound.
    * @param volume Volume to play with.
    * @param looping Whether to loop.
-   * @param group Sound group, or null to use the default SFX group.
-   * @param external If true, path is used as-is (for external files, e.g. mobile).
-   * @return The new FlixelSound instance.
+   * @param group Sound group, or {@code null} to use the default SFX group.
+   * @param external If {@code true}, the path is used as-is (for external files).
+   * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable MAGroup group, boolean external) {
+  public FlixelSound play(@NotNull String path, float volume, boolean looping,
+                           @Nullable Object group, boolean external) {
     String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
-    MAGroup targetGroup = (group != null) ? group : sfxGroup;
-    MASound sound = engine.createSound(resolvedPath, (short) 0, targetGroup, external);
-    FlixelSound flixelSound = new FlixelSound(sound);
+    Object targetGroup = (group != null) ? group : sfxGroup;
+    FlixelSoundBackend backend = factory.createSound(resolvedPath, (short) 0, targetGroup, external);
+    FlixelSound flixelSound = new FlixelSound(backend);
     flixelSound.setVolume(volume);
     flixelSound.setLooped(looping);
     flixelSound.play();
@@ -193,20 +225,33 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    * Sets and plays the current music (music group). Stops any previous music.
    *
    * @param path Path to the music file.
-   * @return The new music FlixelSound instance.
+   * @return The new music {@link FlixelSound} instance.
    */
   @NotNull
   public FlixelSound playMusic(@NotNull String path) {
     return playMusic(path, 1f, true, false);
   }
 
-  /** @see #playMusic(String, float, boolean, boolean) */
+  /**
+   * Sets and plays the current music. Stops any previous music.
+   *
+   * @param path Path to the music file.
+   * @param volume Volume.
+   * @return The new music {@link FlixelSound} instance.
+   */
   @NotNull
   public FlixelSound playMusic(@NotNull String path, float volume) {
     return playMusic(path, volume, true, false);
   }
 
-  /** @see #playMusic(String, float, boolean, boolean) */
+  /**
+   * Sets and plays the current music. Stops any previous music.
+   *
+   * @param path Path to the music file.
+   * @param volume Volume.
+   * @param looping Whether to loop.
+   * @return The new music {@link FlixelSound} instance.
+   */
   @NotNull
   public FlixelSound playMusic(@NotNull String path, float volume, boolean looping) {
     return playMusic(path, volume, looping, false);
@@ -218,8 +263,8 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    * @param path Path to the music file.
    * @param volume Volume.
    * @param looping Whether to loop.
-   * @param external If true, path is used as-is (e.g. for mobile external storage).
-   * @return The new music FlixelSound instance.
+   * @param external If {@code true}, the path is used as-is (e.g. for mobile external storage).
+   * @return The new music {@link FlixelSound} instance.
    */
   @NotNull
   public FlixelSound playMusic(@NotNull String path, float volume, boolean looping, boolean external) {
@@ -227,8 +272,8 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       music.stop();
     }
     String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
-    MASound sound = engine.createSound(resolvedPath, (short) 0, musicGroup, external);
-    music = new FlixelSound(sound);
+    FlixelSoundBackend backend = factory.createSound(resolvedPath, (short) 0, musicGroup, external);
+    music = new FlixelSound(backend);
     music.setVolume(volume);
     music.setLooped(looping);
     music.play();
@@ -236,20 +281,22 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   }
 
   /**
-   * Pauses all currently playing sounds. Used when the game loses focus or is minimized.
-   * Only sounds that were playing are paused; they can be resumed with {@link #resume()}.
+   * Pauses all currently playing sounds. Used when the game loses focus or
+   * is minimized. Only sounds that were playing are paused; they can be
+   * resumed with {@link #resume()}.
    */
   public void pause() {
-    sfxGroup.pause();
-    musicGroup.pause();
+    factory.groupPause(sfxGroup);
+    factory.groupPause(musicGroup);
   }
 
   /**
-   * Resumes all sounds that were paused by {@link #pause()}. Called when the game regains focus.
+   * Resumes all sounds that were paused by {@link #pause()}. Called when the
+   * game regains focus.
    */
   public void resume() {
-    sfxGroup.play();
-    musicGroup.play();
+    factory.groupPlay(sfxGroup);
+    factory.groupPlay(musicGroup);
   }
 
   @Override
@@ -258,9 +305,9 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       music.dispose();
       music = null;
     }
-    sfxGroup.dispose();
-    musicGroup.dispose();
-    engine.dispose();
+    factory.disposeGroup(sfxGroup);
+    factory.disposeGroup(musicGroup);
+    factory.disposeEngine();
   }
 
   @Override

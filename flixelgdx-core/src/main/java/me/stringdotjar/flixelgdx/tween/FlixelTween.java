@@ -210,13 +210,7 @@ public abstract class FlixelTween implements Pool.Poolable {
           "Registered builder for " + tweenType.getName() + " is " + registeredBuilderClass.getName()
               + ", which is not assignable to " + builderType.getName());
     }
-    try {
-      @SuppressWarnings("unchecked")
-      B builder = (B) registeredBuilderClass.getDeclaredConstructor().newInstance();
-      return builder;
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalArgumentException("Could not instantiate builder " + registeredBuilderClass.getName() + ". It must have a no-arg constructor.", e);
-    }
+    return globalManager.createBuilder(tweenType);
   }
 
   /**
@@ -885,23 +879,26 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Registers a tween type with its builder and pool factory on the global manager. Returns the manager so calls can be
-   * chained when registering several types at startup.
+   * Registers a tween type with its builder factory and pool factory on the global manager.
+   * Returns the manager so calls can be chained when registering several types at startup.
    *
    * @param tweenClass The tween class to register.
-   * @param builderClass The builder class to register.
-   * @param poolFactory The pool factory to use.
-   * @return The global manager.
-   * @throws NullPointerException If the pool factory is null.
-   *
-   * @see FlixelTweenManager#registerTweenType(Class, Class, Supplier)
+   * @param builderClass The builder class, used for type verification.
+   * @param builderFactory A no-arg supplier that creates a fresh builder instance without reflection.
+   * @param poolFactory A supplier for new tween instances when the pool is empty.
+   * @param <T> The tween type.
+   * @return The global manager, for chaining.
+   * @throws NullPointerException If {@code poolFactory} or {@code builderFactory} is {@code null}.
+   * @see FlixelTweenManager#registerTweenType(Class, Class, Supplier, Supplier)
    */
   public static <T extends FlixelTween> FlixelTweenManager registerTweenType(
       @NotNull Class<T> tweenClass,
       @NotNull Class<? extends FlixelAbstractTweenBuilder<T, ?>> builderClass,
+      @NotNull Supplier<? extends FlixelAbstractTweenBuilder<T, ?>> builderFactory,
       @NotNull Supplier<T> poolFactory) {
+    Objects.requireNonNull(builderFactory, "builderFactory");
     Objects.requireNonNull(poolFactory, "poolFactory");
-    return globalManager.registerTweenType(tweenClass, builderClass, poolFactory);
+    return globalManager.registerTweenType(tweenClass, builderClass, builderFactory, poolFactory);
   }
 
   /**

@@ -23,6 +23,7 @@ import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
+import me.stringdotjar.flixelgdx.util.FlixelString;
 import me.stringdotjar.flixelgdx.util.FlixelStringUtil;
 
 import org.jetbrains.annotations.NotNull;
@@ -58,7 +59,7 @@ import org.jetbrains.annotations.NotNull;
 public class FlixelText extends FlixelSprite {
 
   /** The text buffer for saving memory when the text is not changing. */
-  private final StringBuilder textBuffer = new StringBuilder(48);
+  private final FlixelString textBuffer = new FlixelString(48);
 
   /** Font size in pixels. */
   private int size;
@@ -214,7 +215,7 @@ public class FlixelText extends FlixelSprite {
   }
 
   /** Returns the text currently being displayed. */
-  public StringBuilder getTextBuffer() {
+  public FlixelString getTextBuffer() {
     return textBuffer;
   }
 
@@ -229,18 +230,11 @@ public class FlixelText extends FlixelSprite {
   }
 
   public FlixelText setText(CharSequence text) {
-    if (text == null) {
-      text = "null";
-    }
-    if (FlixelStringUtil.contentEquals(text, textBuffer)) {
+    if (FlixelStringUtil.contentEquals(text == null ? "null" : text, textBuffer)) {
       return this;
     }
-
-    textBuffer.setLength(0);
-    textBuffer.append(text);
-
+    textBuffer.set(text);
     layoutDirty = true;
-
     return this;
   }
 
@@ -837,7 +831,7 @@ public class FlixelText extends FlixelSprite {
   public void destroy() {
     super.destroy();
     disposeFont();
-    textBuffer.setLength(0);
+    textBuffer.clear();
     textBuffer.trimToSize();
     size = 8;
     alignment = Alignment.LEFT;
@@ -866,7 +860,7 @@ public class FlixelText extends FlixelSprite {
 
   @Override
   public String toString() {
-    return "FlixelText(text=\"" + textBuffer + "\", size=" + size
+    return "FlixelText(textLen=" + textBuffer.length() + ", size=" + size
       + ", x=" + getX() + ", y=" + getY()
       + ", fieldWidth=" + fieldWidth + ", autoSize=" + autoSize + ")";
   }
@@ -1122,6 +1116,7 @@ public class FlixelText extends FlixelSprite {
 
   /** Border/outline styles for text rendering. */
   public enum BorderStyle {
+
     /** No border. */
     NONE,
     /** A simple drop-shadow offset below and to the right of the text. */

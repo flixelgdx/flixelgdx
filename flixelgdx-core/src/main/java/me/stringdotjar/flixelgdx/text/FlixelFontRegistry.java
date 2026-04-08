@@ -208,8 +208,7 @@ public final class FlixelFontRegistry {
    * pixel size. Multiple {@link FlixelText} instances with the same size reuse one font.
    *
    * @param pixelSize The target font size in pixels (clamped to at least 1).
-   * @return A cached bitmap font; do not {@link BitmapFont#dispose()} it — use
-   *     {@link #dispose()} at shutdown.
+   * @return A cached bitmap font. Do not {@link BitmapFont#dispose()} it, use {@link #dispose()} at shutdown.
    */
   public static BitmapFont obtainDefaultBitmapFont(int pixelSize) {
     int size = Math.max(1, pixelSize);

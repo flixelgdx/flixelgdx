@@ -15,11 +15,15 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
+import me.stringdotjar.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
+import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.runtime.reflect.FlixelReflectASMHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 
-import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import org.fusesource.jansi.AnsiConsole;
 
 /**
  * Launches the desktop (LWJGL3) version of the Flixel game.
@@ -59,6 +63,7 @@ public class FlixelLwjgl3Launcher {
    * @param icons Window icon paths. Make sure your icons actually exist and are valid!
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, String... icons) {
+    Objects.requireNonNull(game, "The game object provided cannot be null!");
     Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
     configuration.setTitle(game.getTitle());
     configuration.useVsync(game.isVsync());
@@ -78,17 +83,11 @@ public class FlixelLwjgl3Launcher {
       @Override
       public void focusGained() {
         super.focusGained();
-        if (Flixel.getGame() == null) {
-          return;
-        }
         Flixel.getGame().onWindowFocused();
       }
 
       @Override
       public void focusLost() {
-        if (Flixel.getGame() == null) {
-          return;
-        }
         if (!Flixel.getGame().isMinimized()) {
           super.focusLost();
           Flixel.getGame().onWindowUnfocused();
@@ -98,9 +97,6 @@ public class FlixelLwjgl3Launcher {
       @Override
       public void iconified(boolean isIconified) {
         super.iconified(isIconified);
-        if (Flixel.getGame() == null) {
-          return;
-        }
         Flixel.getGame().onWindowMinimized(isIconified);
       }
     });
@@ -120,13 +116,23 @@ public class FlixelLwjgl3Launcher {
    * @param configuration The {@link Lwjgl3ApplicationConfiguration} to use.
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, Lwjgl3ApplicationConfiguration configuration) {
+    if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
+      AnsiConsole.systemInstall();
+    }
+
     Flixel.setAlerter(new FlixelLwjgl3Alerter());
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setReflection(new FlixelReflectASMHandler());
+    Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
+    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     Flixel.initialize(game);
 
     new Lwjgl3Application(game, configuration);
+
+    if (AnsiConsole.isInstalled()) {
+      AnsiConsole.systemUninstall();
+    }
   }
 }

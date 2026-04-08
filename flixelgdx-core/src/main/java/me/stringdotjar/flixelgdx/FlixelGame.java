@@ -18,22 +18,18 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-import me.stringdotjar.flixelgdx.box2d.FlixelBox2DObject;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
-import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 
-import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -161,9 +157,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
 
-  /** Global Box2D world owned by {@code this} game instance. */
-  private World world;
-
   /**
    * Creates a new game instance with the details specified.
    *
@@ -260,13 +253,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
 
-    // Install Jansi's ANSI-aware output stream so that ANSI color codes render correctly in
-    // terminals that don't natively support them (e.g., the Windows terminal). Skipped in the
-    // IDE because the IDE console already handles ANSI codes without Jansi's help.
-    if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
-      AnsiConsole.systemInstall();
-    }
-
     batch = new SpriteBatch();
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
@@ -299,9 +285,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         m.addProcessor(idx, Flixel.mouse.getInputProcessor());
       }
     }
-
-    // Initialize the Box2D world with zero gravity by default.
-    world = new World(new Vector2(0, 0), true);
 
     // Create the debug overlay when debug mode is enabled.
     if (Flixel.isDebugMode()) {
@@ -371,17 +354,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         current = sub;
       }
 
-      // Step the Box2D world and sync body positions back to objects.
-      if (world != null) {
-        world.step(elapsed,
-          FlixelConstants.Physics.VELOCITY_ITERATIONS,
-          FlixelConstants.Physics.POSITION_ITERATIONS);
-        FlixelDebugUtil.forEachBox2DObject(FlixelBox2DObject::syncFromBody);
-      }
-
       // Update all cameras.
-      for (FlixelCamera camera : cameras) {
-        camera.update(elapsed);
+      FlixelCamera[] cameraItems = cameras.items;
+      for (int i = 0, n = cameras.size; i < n; i++) {
+        cameraItems[i].update(elapsed);
       }
     }
 
@@ -416,7 +392,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     FlixelState state = Flixel.getState();
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
-    for (FlixelCamera camera : cameras) {
+    FlixelCamera[] cameraItems = cameras.items;
+    for (int ci = 0, cn = cameras.size; ci < cn; ci++) {
+      FlixelCamera camera = cameraItems[ci];
       Flixel.setDrawCamera(camera);
       try {
         if (gamePaused) {
@@ -651,7 +629,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Tears down this session's cameras, state, stage, batch, and Box2D world without application-exit semantics.
+   * Tears down this session's cameras, state, stage, and batch without application-exit semantics.
    * No {@link Flixel#stopFileLogging()}, ANSI uninstall, or {@code postGameClose} signal, and does not dispose
    * {@link Flixel#assets} or {@link Flixel#sound} (callers such as {@link Flixel#resetGame()} own those). Leaves
    * {@link #isClosed()} {@code false} so the process can call {@link Flixel#initialize(FlixelGame)} again.
@@ -704,11 +682,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    if (world != null) {
-      world.dispose();
-      world = null;
-    }
-
     cameras = null;
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
@@ -717,10 +690,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     FlixelFontRegistry.dispose();
 
     if (permanentShutdown) {
-      if (AnsiConsole.isInstalled()) {
-        AnsiConsole.systemUninstall();
-      }
-
       close();
 
       Flixel.Signals.postGameClose.dispatch();
@@ -880,29 +849,4 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
   }
 
-  public World getWorld() {
-    return world;
-  }
-
-  /**
-   * Sets the gravity of this game's Box2D world.
-   *
-   * @param gravityX Horizontal gravity in m/s².
-   * @param gravityY Vertical gravity in m/s².
-   */
-  public void setGravity(float gravityX, float gravityY) {
-    if (world != null) {
-      world.setGravity(new Vector2(gravityX, gravityY));
-    }
-  }
-
-  /**
-   * Returns this game's Box2D gravity, or {@code (0, 0)} if no world exists.
-   */
-  public Vector2 getGravity() {
-    if (world != null) {
-      return world.getGravity();
-    }
-    return new Vector2(0, 0);
-  }
 }

@@ -7,6 +7,8 @@
 
 package me.stringdotjar.flixelgdx.util;
 
+import com.badlogic.gdx.utils.CharArray;
+
 /**
  * Handy utility class for handling strings more efficiently.
  */
@@ -38,6 +40,36 @@ public final class FlixelStringUtil {
       }
     }
     return true;
+  }
+
+  /**
+   * Appends {@code value} rounded to one decimal place (nearest tenth) using only {@link CharArray} primitive
+   * appenders, avoiding {@link Float#toString(float)} and other helpers that allocate {@link String} objects.
+   *
+   * <p>Non-finite values are appended via {@link CharArray#append(float)} as a fallback.
+   *
+   * @param out Destination buffer; for {@link FlixelString} callers prefer {@link FlixelString#concatFloatRoundedOneDecimal(float)}
+   *   or {@link FlixelString#setFloatRoundedOneDecimal(float)} instead of reaching for a raw {@link CharArray}.
+   * @param value Value to format.
+   */
+  public static void appendFloatRoundedOneDecimal(CharArray out, float value) {
+    if (out == null) {
+      return;
+    }
+    if (Float.isNaN(value) || Float.isInfinite(value)) {
+      out.append(value);
+      return;
+    }
+    int tenths = Math.round(value * 10f);
+    if (tenths < 0) {
+      out.append('-');
+      tenths = -tenths;
+    }
+    int whole = tenths / 10;
+    int frac = tenths % 10;
+    out.append(whole);
+    out.append('.');
+    out.append((char) ('0' + frac));
   }
 
   private FlixelStringUtil() {}

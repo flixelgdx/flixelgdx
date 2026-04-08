@@ -23,6 +23,7 @@ import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.text.FlixelText;
 import me.stringdotjar.flixelgdx.util.FlixelColor;
 import me.stringdotjar.flixelgdx.util.FlixelSpriteUtil;
+import me.stringdotjar.flixelgdx.util.FlixelString;
 import me.stringdotjar.flixelgdx.util.FlixelStringUtil;
 
 import org.jetbrains.annotations.NotNull;
@@ -61,7 +62,7 @@ import java.util.function.Consumer;
  * <p><b>Appearance</b>: Solid colors, custom empty and filled regions, optional two-color gradients,
  * optional border, and threshold-based fill colors with optional color smoothing when the fill percent
  * drops. Optional overlay text uses {@link #setText(java.util.function.Consumer)} with a
- * {@link StringBuilder} scratch buffer (see that method for why).
+ * {@link FlixelString} scratch buffer (see that method for why).
  *
  * <p><b>Screen space</b>: With {@link #setScreenSpace(boolean)} {@code true}, the bar is offset by the
  * current draw camera scroll so it stays fixed on screen while the world moves.
@@ -134,10 +135,13 @@ public class FlixelBar extends FlixelSprite {
   private final Color thresholdScratch = new Color(Color.WHITE);
 
   @Nullable
-  private Consumer<StringBuilder> textFormatter;
-  private final StringBuilder overlayTextScratch = new StringBuilder(48);
-  /** Snapshot of the last string passed to {@link FlixelText#setText}; never the same instance as {@link #overlayTextScratch}. */
-  private final StringBuilder overlayTextLast = new StringBuilder(48);
+  private Consumer<FlixelString> textFormatter;
+  private final FlixelString overlayTextScratch = new FlixelString(48);
+  /**
+   * Snapshot of the last label passed to {@link FlixelText#setText}; never the same instance as
+   * {@link #overlayTextScratch}.
+   */
+  private final FlixelString overlayTextLast = new FlixelString(48);
 
   /**
    * The text object used to display the overlay text.
@@ -559,29 +563,28 @@ public class FlixelBar extends FlixelSprite {
 
   /**
    * Sets an optional label rendered on top of the bar. Each {@link #update(float)}, the given callback
-   * receives a cleared {@link StringBuilder}; append the full visible text (for example
-   * {@code sb.append("HP")} or {@code sb.append(hp).append('/').append(maxHp)}). Text is centered on the
-   * bar by default; use {@link #setTextOffset(float, float)} to nudge it. Pass {@code null} to remove overlay
-   * text.
+   * receives a cleared {@link FlixelString}; use {@link FlixelString#concat} and {@link FlixelString#set}
+   * overloads to build the visible text without allocating a
+   * {@link String} each frame. Text is centered on the bar by default; use {@link #setTextOffset(float, float)}
+   * to nudge it. Pass {@code null} to remove overlay text.
    *
-   * <p><b>Why a {@code Consumer<StringBuilder>} and not {@code Supplier<String>}?</b> A supplier that returns
+   * <p><b>Why a {@code Consumer<FlixelString>} and not {@code Supplier<String>}?</b> A supplier that returns
    * a new {@link String} every frame (common with {@link String#format} or {@code +}) allocates on the heap
-   * every frame per bar, which adds up quickly on typical JVMs. This API reuses one {@link StringBuilder} per
-   * bar, compares the new characters to the last label without building a {@link String} when nothing
-   * changed, and only then calls {@link FlixelText#setText(String)}. That keeps HUD text paths much friendlier
-   * to garbage collection.
+   * every frame per bar, which adds up quickly on typical JVMs and on TeaVM. This API reuses one
+   * {@link FlixelString} per bar, compares the new characters to the last label without building a
+   * {@link String} when nothing changed, and only then calls {@link FlixelText#setText(CharSequence)}.
    *
    * @param formatter {@code null} for no overlay; otherwise invoked each update with the shared scratch buffer.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setText(@Nullable Consumer<StringBuilder> formatter) {
+  public FlixelBar setText(@Nullable Consumer<FlixelString> formatter) {
     if (this.textFormatter != formatter) {
-      overlayTextLast.setLength(0);
+      overlayTextLast.clear();
     }
     this.textFormatter = formatter;
     if (formatter == null) {
       text = null;
-      overlayTextLast.setLength(0);
+      overlayTextLast.clear();
       return this;
     }
     if (text == null) {
@@ -637,12 +640,11 @@ public class FlixelBar extends FlixelSprite {
     }
 
     if (text != null && textFormatter != null) {
-      overlayTextScratch.setLength(0);
+      overlayTextScratch.clear();
       textFormatter.accept(overlayTextScratch);
       if (!FlixelStringUtil.contentEquals(overlayTextScratch, overlayTextLast)) {
         text.setText(overlayTextScratch);
-        overlayTextLast.setLength(0);
-        overlayTextLast.append(overlayTextScratch);
+        overlayTextLast.set(overlayTextScratch);
       }
     }
   }

@@ -26,15 +26,15 @@ class FlixelNumTweenManagerTest {
   @Test
   void duplicateRegistrationThrows() {
     FlixelTweenManager manager = new FlixelTweenManager();
-    manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null));
+    manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null));
     assertThrows(IllegalArgumentException.class, () ->
-      manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null)));
+      manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null)));
   }
 
   @Test
   void numTweenReachesEndValueLinear() {
     FlixelTweenManager manager = new FlixelTweenManager();
-    manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, () -> new FlixelNumTween(0, 0, null, null));
+    manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null));
 
     AtomicReference<Float> last = new AtomicReference<>(Float.NaN);
     new FlixelNumTweenBuilder()

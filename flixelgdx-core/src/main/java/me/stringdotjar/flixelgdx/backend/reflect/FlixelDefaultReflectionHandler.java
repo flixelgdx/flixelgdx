@@ -7,6 +7,7 @@
 
 package me.stringdotjar.flixelgdx.backend.reflect;
 
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -219,12 +220,12 @@ public class FlixelDefaultReflectionHandler implements FlixelReflection {
 
     for (Class<?> current = type; current != null; current = current.getSuperclass()) {
       for (Field field : current.getDeclaredFields()) {
-        field.trySetAccessible();
+        tryMakeAccessible(field);
         allFields.add(field);
         fieldsByName.putIfAbsent(field.getName(), field);
       }
       for (Method method : current.getDeclaredMethods()) {
-        method.trySetAccessible();
+        tryMakeAccessible(method);
         methodsByName.computeIfAbsent(method.getName(), k -> new ArrayList<>()).add(method);
         if (method.getParameterCount() == 0 && method.getReturnType() != void.class) {
           String property = getterPropertyName(method.getName());
@@ -238,7 +239,7 @@ public class FlixelDefaultReflectionHandler implements FlixelReflection {
 
     try {
       noArgConstructor = type.getDeclaredConstructor();
-      noArgConstructor.trySetAccessible();
+      tryMakeAccessible(noArgConstructor);
     } catch (NoSuchMethodException ignored) {
       // Optional for copy().
     }
@@ -342,6 +343,21 @@ public class FlixelDefaultReflectionHandler implements FlixelReflection {
     if (segment == null || segment.isEmpty()) return null;
     if (segment.length() == 1) return segment.toLowerCase(Locale.ROOT);
     return Character.toLowerCase(segment.charAt(0)) + segment.substring(1);
+  }
+
+  /**
+   * Attempts to make the given accessible object (field, method, or constructor)
+   * accessible. Uses {@code setAccessible(true)} instead of the JDK 9+
+   * {@code trySetAccessible()} method, which is not available on TeaVM.
+   *
+   * @param obj the accessible object to unlock.
+   */
+  private static void tryMakeAccessible(AccessibleObject obj) {
+    try {
+      obj.setAccessible(true);
+    } catch (RuntimeException ignored) {
+      // Some environments restrict reflective access, so proceed without it.
+    }
   }
 
   private record CachedClassMetadata(

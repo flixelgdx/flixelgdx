@@ -34,11 +34,11 @@ import me.stringdotjar.flixelgdx.logging.FlixelLogEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
+import me.stringdotjar.flixelgdx.util.FlixelString;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -84,8 +84,8 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   /** Timer used to refresh watch values at a fixed rate (10 Hz). */
   private float watchRefreshTimer = 0f;
 
-  /** Cached formatted watch lines refreshed at 10 Hz; builders are reused across refreshes. */
-  private final Array<StringBuilder> cachedWatchLines = new Array<>();
+  /** Cached formatted watch lines refreshed at 10 Hz; buffers are reused across refreshes. */
+  private final Array<FlixelString> cachedWatchLines = new Array<>();
 
   /**
    * Cached {@link FlixelDebugConsoleEntry} rendering; rebuilt at 10 Hz while the overlay is visible
@@ -96,15 +96,15 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   /** Pool of console blocks between rebuilds to avoid reallocating block objects. */
   private final Array<CachedConsoleBlock> cachedConsoleBlockPool = new Array<>();
 
-  private final StringBuilder lineFps = new StringBuilder(32);
-  private final StringBuilder lineHeap = new StringBuilder(48);
-  private final StringBuilder lineNative = new StringBuilder(48);
-  private final StringBuilder lineObjects = new StringBuilder(40);
-  private final StringBuilder lineTexVram = new StringBuilder(56);
-  private final StringBuilder lineVisDbg = new StringBuilder(48);
-  private final StringBuilder linePaused = new StringBuilder(48);
-  private final StringBuilder lineCamInspect = new StringBuilder(72);
-  private final StringBuilder lineKeybinds = new StringBuilder(320);
+  private final FlixelString lineFps = new FlixelString(32);
+  private final FlixelString lineHeap = new FlixelString(48);
+  private final FlixelString lineNative = new FlixelString(48);
+  private final FlixelString lineObjects = new FlixelString(40);
+  private final FlixelString lineTexVram = new FlixelString(56);
+  private final FlixelString lineVisDbg = new FlixelString(48);
+  private final FlixelString linePaused = new FlixelString(48);
+  private final FlixelString lineCamInspect = new FlixelString(72);
+  private final FlixelString lineKeybinds = new FlixelString(320);
 
   private int debugInspectCameraIndex;
 
@@ -121,8 +121,8 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final Deque<BufferedLogLine> logBuffer = new ArrayDeque<>();
   private final Consumer<FlixelLogEntry> logListener = this::onLogEntry;
 
-  /** Reused when formatting {@link FlixelLogEntry} lines for the log buffer (one allocation per new log line). */
-  private final StringBuilder logMarkupScratch = new StringBuilder(128);
+  /** Reused when formatting {@link FlixelLogEntry} lines for the log buffer. */
+  private final FlixelString logMarkupScratch = new FlixelString(128);
 
   /** Mutable y-cursor used during watch panel rendering to avoid boxing a float. */
   private float watchDrawY;
@@ -242,7 +242,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
 
       FlixelDebugWatchManager mgr = Flixel.watch;
       if (mgr != null && !mgr.isEmpty()) {
-        mgr.fillWatchLineBuilders(cachedWatchLines);
+        mgr.fillWatchLines(cachedWatchLines);
       } else {
         cachedWatchLines.clear();
       }
@@ -252,11 +252,11 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   }
 
   private void refreshVisDbgLine() {
-    lineVisDbg.setLength(0);
+    lineVisDbg.clear();
     if (drawDebug) {
-      lineVisDbg.append("[#CCCCCC]VisDbg: [#00FF00]ON");
+      lineVisDbg.concat("[#CCCCCC]VisDbg: [#00FF00]ON");
     } else {
-      lineVisDbg.append("[#CCCCCC]VisDbg: [#FF4444]OFF");
+      lineVisDbg.concat("[#CCCCCC]VisDbg: [#FF4444]OFF");
     }
   }
 
@@ -311,39 +311,39 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     }
   }
 
-  private void appendCamInspectLine(StringBuilder out) {
-    out.setLength(0);
+  private void appendCamInspectLine(FlixelString line) {
+    line.clear();
     Array<FlixelCamera> cams = Flixel.getCamerasArray();
     int n = cams != null ? cams.size : 0;
-    out.append("[#CCCCCC]Cameras: ").append(n).append("  Inspect: ");
+    line.concat("[#CCCCCC]Cameras: ").concat(n).concat("  Inspect: ");
     if (n == 0) {
-      out.append('-');
+      line.concat('-');
       return;
     }
     int idx = Math.min(debugInspectCameraIndex, n - 1) + 1;
-    out.append(idx).append('/').append(n);
+    line.concat(idx).concat('/').concat(n);
   }
 
-  private static void appendPausedLine(StringBuilder out) {
-    out.setLength(0);
-    out.append("[#CCCCCC]Update: ");
+  private static void appendPausedLine(FlixelString line) {
+    line.clear();
+    line.concat("[#CCCCCC]Update: ");
     if (Flixel.isPaused()) {
-      out.append("[#FFAA00]PAUSED");
+      line.concat("[#FFAA00]PAUSED");
     } else {
-      out.append("[#00FF88]RUNNING");
+      line.concat("[#00FF88]RUNNING");
     }
   }
 
-  private static void appendKeybindsLine(StringBuilder out) {
-    out.setLength(0);
-    out.append("[#AAAAAA]");
-    out.append(Input.Keys.toString(Flixel.getDebugToggleKey())).append("=ov ");
-    out.append(Input.Keys.toString(Flixel.getDebugDrawToggleKey())).append("=hit ");
-    out.append(Input.Keys.toString(Flixel.getDebugPauseKey())).append("=pause ");
-    out.append("Alt+");
-    out.append(Input.Keys.toString(Flixel.getDebugCameraCycleLeftKey())).append('/');
-    out.append(Input.Keys.toString(Flixel.getDebugCameraCycleRightKey())).append("=cam ");
-    out.append("RMB=pan Wh=zoom");
+  private static void appendKeybindsLine(FlixelString line) {
+    line.clear();
+    line.concat("[#AAAAAA]");
+    line.concat(Input.Keys.toString(Flixel.getDebugToggleKey())).concat("=ov ");
+    line.concat(Input.Keys.toString(Flixel.getDebugDrawToggleKey())).concat("=hit ");
+    line.concat(Input.Keys.toString(Flixel.getDebugPauseKey())).concat("=pause ");
+    line.concat("Alt+");
+    line.concat(Input.Keys.toString(Flixel.getDebugCameraCycleLeftKey())).concat('/');
+    line.concat(Input.Keys.toString(Flixel.getDebugCameraCycleRightKey())).concat("=cam ");
+    line.concat("RMB=pan Wh=zoom");
   }
 
   private void reclaimConsoleBlocksToPool() {
@@ -365,81 +365,59 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     if (logger == null) {
       return;
     }
-    List<FlixelDebugConsoleEntry> entries = logger.getConsoleEntries();
-    if (entries == null || entries.isEmpty()) {
+    FlixelDebugConsoleEntry[] entries = logger.getConsoleEntries();
+    if (entries == null || entries.length == 0) {
       return;
     }
     for (FlixelDebugConsoleEntry entry : entries) {
-      List<String> lines = entry.getConsoleLines();
-      if (lines == null || lines.isEmpty()) {
+      if (entry == null) {
+        continue;
+      }
+      String[] lines = entry.getConsoleLines();
+      if (lines == null || lines.length == 0) {
         continue;
       }
       CachedConsoleBlock block = obtainConsoleBlock();
-      StringBuilder header = block.header;
-      header.setLength(0);
-      header.append("[#AADDFF]<").append(entry.getName()).append('>');
-      int n = lines.size();
+      block.header.clear();
+      block.header.concat("[#AADDFF]<").concat(entry.getName()).concat('>');
+      int n = lines.length;
       block.ensureBodyLineCount(n);
       for (int i = 0; i < n; i++) {
-        StringBuilder body = block.bodies[i];
-        body.setLength(0);
-        body.append(CONSOLE_BODY_LINE_PREFIX).append(lines.get(i));
+        block.bodies[i].clear();
+        block.bodies[i].concat(CONSOLE_BODY_LINE_PREFIX).concat(lines[i]);
       }
       block.bodyCount = n;
       cachedConsoleBlocks.add(block);
     }
   }
 
-  private static void appendLogMarkup(StringBuilder out, FlixelLogEntry e) {
-    out.setLength(0);
+  private static void appendLogMarkup(FlixelString line, FlixelLogEntry e) {
+    line.clear();
     switch (e.level()) {
-      case INFO -> out.append("[#CCCCCC]");
-      case WARN -> out.append("[#FFFF00]");
-      case ERROR -> out.append("[#FF4444]");
+      case INFO -> line.concat("[#CCCCCC]");
+      case WARN -> line.concat("[#FFFF00]");
+      case ERROR -> line.concat("[#FF4444]");
     }
-    out.append('[').append(e.level().name()).append("] ");
+    line.concat('[').concat(e.level().name()).concat("] ");
     if (!e.tag().isEmpty()) {
-      out.append('[').append(e.tag()).append("] ");
+      line.concat('[').concat(e.tag()).concat("] ");
     }
-    out.append(e.message());
+    line.concat(e.message());
   }
 
-  private static void appendFpsLine(StringBuilder out, int fps) {
-    out.setLength(0);
-    out.append("[#00FF00]FPS: ").append(fps);
+  private static void appendFpsLine(FlixelString line, int fps) {
+    line.clear();
+    line.concat("[#00FF00]FPS: ").concat(fps);
   }
 
-  private static void appendObjectsLine(StringBuilder out, int count) {
-    out.setLength(0);
-    out.append("[#FFFF00]Objects: ").append(count);
+  private static void appendObjectsLine(FlixelString line, int count) {
+    line.clear();
+    line.concat("[#FFFF00]Objects: ").concat(count);
   }
 
-  private static void appendMbStatLine(StringBuilder out, String prefix, float megabytes) {
-    out.setLength(0);
-    out.append(prefix);
-    appendOneDecimal(out, megabytes);
-    out.append(" MB");
-  }
-
-  /**
-   * Appends {@code value} rounded to one decimal place (no {@link String#format} / substring churn).
-   */
-  private static void appendOneDecimal(StringBuilder out, float value) {
-    float rounded = Math.round(value * 10f) / 10f;
-    String s = Float.toString(rounded);
-    int dot = s.indexOf('.');
-    if (dot < 0) {
-      out.append(s).append(".0");
-      return;
-    }
-    int decimals = s.length() - dot - 1;
-    if (decimals == 0) {
-      out.append(s).append('0');
-    } else if (decimals > 1) {
-      out.append(s, 0, dot + 2);
-    } else {
-      out.append(s);
-    }
+  private static void appendMbStatLine(FlixelString line, String prefix, float megabytes) {
+    line.clear();
+    line.concat(prefix).concatFloatRoundedOneDecimal(megabytes).concat(" MB");
   }
 
   /**
@@ -563,7 +541,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
 
     watchDrawY = y;
     for (int i = 0; i < cachedWatchLines.size; i++) {
-      StringBuilder line = cachedWatchLines.get(i);
+      FlixelString line = cachedWatchLines.get(i);
       if (line == null) {
         continue;
       }
@@ -589,7 +567,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       drawText(block.header, x, ey);
       ey -= lineH;
       for (int li = 0; li < block.bodyCount; li++) {
-        StringBuilder bodyLine = block.bodies[li];
+        FlixelString bodyLine = block.bodies[li];
         if (bodyLine != null) {
           drawText(bodyLine, x, ey);
         }
@@ -612,7 +590,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
         if (y > entriesBottom) {
           break;
         }
-        drawText(it.next().markupBuilder, x, y);
+        drawText(it.next().markup, x, y);
         y += lineH;
       }
     }
@@ -630,9 +608,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     synchronized (logBuffer) {
       synchronized (logMarkupScratch) {
         appendLogMarkup(logMarkupScratch, entry);
-        StringBuilder lineBuf = new StringBuilder(logMarkupScratch.length());
-        lineBuf.append(logMarkupScratch);
-        logBuffer.addLast(new BufferedLogLine(lineBuf));
+        logBuffer.addLast(new BufferedLogLine(new FlixelString(logMarkupScratch)));
       }
       while (logBuffer.size() > FlixelConstants.Debug.MAX_LOG_ENTRIES) {
         logBuffer.removeFirst();
@@ -664,25 +640,25 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
 
   /** One colored line in the log console; markup is built once when the log is received. */
   private static final class BufferedLogLine {
-    final StringBuilder markupBuilder;
+    final FlixelString markup;
 
-    BufferedLogLine(StringBuilder markupBuilder) {
-      this.markupBuilder = markupBuilder;
+    BufferedLogLine(FlixelString markup) {
+      this.markup = markup;
     }
   }
 
   /** Cached block for {@link FlixelDebugConsoleEntry} output (rebuilt at 10 Hz). */
   private static final class CachedConsoleBlock {
-    final StringBuilder header = new StringBuilder(64);
-    StringBuilder[] bodies = new StringBuilder[0];
+    final FlixelString header = new FlixelString(64);
+    FlixelString[] bodies = new FlixelString[0];
     int bodyCount;
 
     void ensureBodyLineCount(int n) {
       if (bodies.length < n) {
-        StringBuilder[] nb = new StringBuilder[n];
+        FlixelString[] nb = new FlixelString[n];
         System.arraycopy(bodies, 0, nb, 0, bodies.length);
         for (int i = bodies.length; i < n; i++) {
-          nb[i] = new StringBuilder(96);
+          nb[i] = new FlixelString(96);
         }
         bodies = nb;
       }

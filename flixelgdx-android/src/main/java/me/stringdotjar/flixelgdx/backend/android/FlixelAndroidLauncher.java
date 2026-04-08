@@ -12,7 +12,9 @@ import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
+import me.stringdotjar.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 
@@ -50,6 +52,8 @@ public class FlixelAndroidLauncher {
     Flixel.setAlerter(new FlixelAndroidAlerter(activity));
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setReflection(new FlixelDefaultReflectionHandler());
+    Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
+    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     Flixel.initialize(game);

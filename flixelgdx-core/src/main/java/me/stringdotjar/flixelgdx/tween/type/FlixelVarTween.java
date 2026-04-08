@@ -19,19 +19,50 @@ import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
 /**
- * Tweens numeric properties on a target object by name using {@link Flixel#reflect}.
+ * Tweens numeric properties on a target object by name using
+ * {@link Flixel#reflect}.
  *
- * <p>At {@link #start()}, each goal value is read once with {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#property(Object, String)}
- * on the resolved leaf object (see {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#resolvePropertyPath(Object, String)} for dotted
- * paths such as {@code "child.x"}). On every update, interpolated values are written with
- * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#setProperty(Object, String, Object)}, so JavaBean setters run when present and
- * behave like normal assignments.
+ * <p>At {@link #start()}, each goal value is read once with
+ * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#property(Object, String)}
+ * on the resolved leaf object (see
+ * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#resolvePropertyPath(Object, String)}
+ * for dotted paths such as {@code "child.x"}). On every update, interpolated values are written with
+ * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection#setProperty(Object, String, Object)},
+ * so JavaBean setters run when present and behave like normal assignments.
  *
  * <p>Goals must resolve to a {@link Number} when read. Configure goals with {@link FlixelTweenSettings#addGoal(String, float)}. Install a
- * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection} implementation via {@link Flixel#setReflection} before use; the default
- * placeholder throws until then.
+ * {@link me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection} implementation via {@link Flixel#setReflection} before use; the default placeholder throws until then.
  *
- * <p>This is slightly slower than {@link FlixelPropertyTween}, which avoids reflection by closing over getter/setter references.
+ * <p>This tween type is slightly slower than {@link FlixelPropertyTween}, which avoids reflection by closing over getter/setter references.
+ *
+ * <h2>Web / TeaVM Compatibility Warning</h2>
+ *
+ * <p><strong>This tween type is not recommended for games targeting the web
+ * (TeaVM) backend.</strong> It depends on runtime reflection to read and write
+ * property values every frame. TeaVM compiles Java to JavaScript ahead of time
+ * and supports reflection only through pre-generated metadata, which adds
+ * overhead and can cause unexpected failures when metadata is incomplete.
+ *
+ * <p>If your game targets the web, prefer {@link FlixelPropertyTween} instead.
+ * {@code FlixelPropertyTween} uses explicit getter/setter lambda references
+ * and does not rely on reflection at runtime, making it fully compatible with
+ * TeaVM and other ahead-of-time compilation targets.
+ *
+ * <p>To migrate, replace:
+ * <pre>{@code
+ * // VarTween (reflection-based, NOT recommended for web):
+ * FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *     .addGoal("x", 100f)
+ *     .setDuration(1f));
+ *
+ * // PropertyTween (lambda-based, recommended for web):
+ * FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *     .addGoal(sprite::getX, 100f, sprite::setX)
+ *     .setDuration(1f));
+ * }</pre>
+ *
+ * @see FlixelPropertyTween
+ * @see FlixelTweenSettings#addGoal(String, float)
  */
 public class FlixelVarTween extends FlixelTween {
 
@@ -47,15 +78,25 @@ public class FlixelVarTween extends FlixelTween {
   /** Goal key -> leaf target and property name after resolving dotted paths. */
   protected final ObjectMap<String, FlixelPropertyPath> goalPaths = new ObjectMap<>();
 
+  /**
+   * Constructs a new var tween that will animate the given object's
+   * properties using reflection. Goals must be added via
+   * {@link FlixelTweenSettings#addGoal(String, float)} before starting.
+   *
+   * @param object The target object whose properties will be tweened.
+   * @param settings The settings that configure how the tween animates.
+   */
   public FlixelVarTween(Object object, FlixelTweenSettings settings) {
     super(settings);
     this.object = object;
   }
 
   /**
-   * Sets the root target for path resolution. Call before {@link #start()} when reusing a pooled tween.
+   * Sets the root target for property path resolution. Call this before
+   * {@link #start()} when reusing a pooled tween whose target has changed.
    *
-   * @return this, for chaining.
+   * @param object The target object whose properties will be tweened.
+   * @return {@code this} tween instance for method chaining.
    */
   public FlixelVarTween setObject(Object object) {
     this.object = object;
