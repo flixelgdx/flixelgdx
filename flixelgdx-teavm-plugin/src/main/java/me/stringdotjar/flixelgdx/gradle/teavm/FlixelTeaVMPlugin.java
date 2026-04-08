@@ -53,7 +53,8 @@ import java.util.jar.JarFile;
  *   <li>{@code copyAssets} - copies the game's asset directory into
  *       {@code <outputDir>/assets/}.</li>
  *   <li>{@code copyWebApp} - copies everything in {@code src/main/webapp/} into
- *       {@code <outputDir>/} (skipped if the directory does not exist).</li>
+ *       {@code <outputDir>/} (skipped if the directory does not exist), except
+ *       {@code startup-logo.png}, which is placed under {@code assets/} by {@code copyDefaultStartupLogo}.</li>
  *   <li>{@code generateIndexHtml} - writes a default {@code index.html} into
  *       {@code <outputDir>/} when no {@code index.html} is present in the webapp directory.
  *       The generated page uses the canvas ID configured via {@link FlixelTeaVMExtension}.</li>
@@ -63,10 +64,12 @@ import java.util.jar.JarFile;
  *   <li>{@code generatePreloadFile} - scans the assets directory and writes a {@code preload.txt}
  *       manifest into {@code <outputDir>/assets/}. This file is required by gdx-teavm's asset
  *       preloader to discover and download game assets at startup.</li>
+ *   <li>{@code copyDefaultStartupLogo} - writes {@code startup-logo.png} into
+ *       {@code <outputDir>/assets/} for gdx-teavm's preload screen.</li>
  * </ul>
  *
- * <p>All five tasks are added as dependencies of both {@code generateJavaScript} and
- * {@code javaScriptDevServer} (when those tasks exist on the project).
+ * <p>All six helper tasks above are added as dependencies of {@code generateJavaScript},
+ * {@code javaScriptDevServer}, and {@code run} (when those tasks exist on the project).
  *
  * <h2>Minimal usage</h2>
  *
@@ -131,7 +134,12 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
   private static final String DEFAULT_INDEX_TEMPLATE = "/me/stringdotjar/flixelgdx/gradle/teavm/default-index.html";
-  private static final String DEFAULT_STARTUP_LOGO = "me/stringdotjar/flixelgdx/gradle/teavm/default-startup-logo.png";
+  /**
+   * Must start with {@code /} so {@link Class#getResourceAsStream(String)} resolves from the classpath
+   * root. Without a leading slash, the path is treated as relative to this class's package and becomes
+   * {@code .../teavm/me/stringdotjar/.../default-startup-logo.png}, which does not exist in the JAR.
+   */
+  private static final String DEFAULT_STARTUP_LOGO = "/me/stringdotjar/flixelgdx/gradle/teavm/default-startup-logo.png";
 
   @Override
   public void apply(Project project) {
@@ -161,6 +169,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.onlyIf(t -> ext.getWebappDir().get().getAsFile().exists());
       task.from(ext.getWebappDir());
       task.into(ext.getOutputDir());
+      task.exclude("startup-logo.png"); // If we copied the default logo here, it would sit next to index.html and the preloader would 404.
     });
 
     // Create a task that automatically runs if no index.html file is detected.
@@ -265,24 +274,21 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       });
     });
 
-    // Copy startup-logo.png into <outputDir>/assets/. gdx-teavm requires this file to exist at
-    // the start of the preload sequence. Uses a custom file if provided, otherwise falls back to
-    // the built-in placeholder. Must run after copyAssets so the assets directory exists.
+    // Copy startup-logo.png into <outputDir>/assets/. gdx-teavm requires this file at assets/startup-logo.png
+    // for the preload sequence. Uses a custom file if provided, otherwise falls back to the built-in placeholder.
     project.getTasks().register("copyDefaultStartupLogo", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription("Copies startup-logo.png into the assets output directory. Uses a custom file if provided, otherwise falls back to the built-in placeholder.");
       task.mustRunAfter(project.getTasks().named("copyAssets"));
       task.onlyIf(t -> {
-        // Always run if the developer supplied their own startup logo.
         if (ext.getCustomStartupLogo().isPresent() && ext.getCustomStartupLogo().getAsFile().get().exists()) {
           return true;
         }
-        if (!ext.getGenerateDefaultStartupLogo().get()) {
-          return false;
+        File webappLogo = new File(ext.getWebappDir().get().getAsFile(), "startup-logo.png");
+        if (webappLogo.exists()) {
+          return true;
         }
-        // Skip if the webapp dir already has one (copyWebApp handles it).
-        File userStartupLogo = new File(ext.getWebappDir().get().getAsFile(), "startup-logo.png");
-        return !userStartupLogo.exists();
+        return ext.getGenerateDefaultStartupLogo().get();
       });
       task.doLast(t -> {
         File assetsDir = new File(ext.getOutputDir().get().getAsFile(), "assets");
@@ -303,6 +309,19 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         }
 
         // Fall back to the built-in placeholder (copied as raw bytes to avoid corrupting binary PNG data).
+        File webappLogo = new File(ext.getWebappDir().get().getAsFile(), "startup-logo.png");
+        if (webappLogo.exists()) {
+          try {
+            Files.copy(webappLogo.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          } catch (IOException e) {
+            throw new RuntimeException("FlixelGDX: failed to copy webapp startup-logo.png.", e);
+          }
+          return;
+        }
+
+        if (!ext.getGenerateDefaultStartupLogo().get()) {
+          return;
+        }
         try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(DEFAULT_STARTUP_LOGO)) {
           if (in == null) {
             throw new IOException("Built-in startup-logo.png not found in plugin JAR at " + DEFAULT_STARTUP_LOGO);
@@ -315,11 +334,12 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     });
 
     // Generate preload.txt in the format gdx-teavm expects (fileType:assetType:path:size:overwrite).
-    // This must run AFTER copyAssets so the output assets directory is populated.
+    // This must run AFTER copyAssets and copyDefaultStartupLogo so assets/ includes startup-logo.png.
     project.getTasks().register("generatePreloadFile", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription("Generates preload.txt asset manifest required by gdx-teavm's runtime asset loader.");
       task.mustRunAfter(project.getTasks().named("copyAssets"));
+      task.mustRunAfter(project.getTasks().named("copyDefaultStartupLogo"));
       task.doLast(t -> {
         File assetsOutputDir = new File(ext.getOutputDir().get().getAsFile(), "assets");
         if (!assetsOutputDir.isDirectory()) {
