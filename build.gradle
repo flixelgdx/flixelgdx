@@ -13,7 +13,7 @@ buildscript {
   }
   dependencies {
     if (gradle.ext.get('includeAndroid') == true) {
-      classpath "com.android.tools.build:gradle:8.7.3"
+      classpath "com.android.tools.build:gradle:9.1.0"
     }
   }
 }
