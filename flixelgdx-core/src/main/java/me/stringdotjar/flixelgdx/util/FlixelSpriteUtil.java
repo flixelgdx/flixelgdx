@@ -562,7 +562,7 @@ public final class FlixelSpriteUtil {
   }
 
   /**
-   * Midpoint of the sprite AABB in world space. Reuses {@code out} when non-null.
+   * Midpoint of the given sprite's hitbox in world space. Reuses {@code out} when non-null.
    *
    * @param sprite The sprite to get the midpoint of.
    * @param out The vector to store the midpoint in.

@@ -33,7 +33,6 @@ import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
-import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
@@ -255,7 +254,7 @@ public final class Flixel {
   @NotNull
   private static FlixelGame game;
 
-  /** The camera currently being drawn in {@link FlixelGame#draw()}, or {@code null} if not in a camera pass. */
+  /** The camera currently being drawn in {@link FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch)}. */
   @Nullable
   private static FlixelCamera drawCamera;
 
@@ -264,7 +263,7 @@ public final class Flixel {
   private static FlixelAlerter alerter;
 
   /** Has the global manager been initialized yet? */
-  private static boolean initialized = false;
+  protected static boolean initialized = false;
 
   /** System used to detect where a log comes from when a log is created. **/
   @NotNull
@@ -300,7 +299,7 @@ public final class Flixel {
   protected static float elapsed = 0f;
 
   /**
-   * Global time scale for frame-based timers ({@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer}). {@code 1f} is
+   * Global timescale for frame-based timers ({@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer}). {@code 1f} is
    * normal speed; lower slows timers, higher speeds them up. Does not change {@link #elapsed} itself.
    */
   private static float timeScale = 1f;
@@ -343,12 +342,8 @@ public final class Flixel {
    * Initializes the entire Flixel system.
    *
    * <p>This gets called BEFORE {@link FlixelGame#create()} is executed.
-   * It sets up every core system that Flixel needs to work, such as {@link FlixelAssetManager},
-   * audio system, key input manager,
-   * logger, backend systems for different platforms, and more.
-   *
-   * <p>Normally called once at startup. After {@link #resetGame()}, {@code initialized} is cleared and this may run
-   * again to rebuild global subsystems on the same {@link FlixelGame} instance.
+   * It sets up every core system that Flixel needs to work, such as {@link FlixelAssetManager}, audio system,
+   * key input manager, logger, backend systems for different platforms, and more.
    *
    * @param gameInstance The {@link FlixelGame} instance to use.
    * @throws IllegalStateException If Flixel has already been initialized.
@@ -982,17 +977,6 @@ public final class Flixel {
   }
 
   /**
-   * Same as {@link #switchState(FlixelState)}. Prefer {@code switchState} directly; this method exists for older
-   * call sites.
-   *
-   * @deprecated Use {@link #switchState(FlixelState)}.
-   */
-  @Deprecated
-  public static void resetState(@NotNull FlixelState newRoot) {
-    switchState(Objects.requireNonNull(newRoot, "newRoot"));
-  }
-
-  /**
    * Refreshes the current state by creating a new instance from the factory last set by
    * {@link #switchState(FlixelState, boolean, boolean, Supplier)}. Does nothing if the factory is {@code null}.
    *
@@ -1003,52 +987,6 @@ public final class Flixel {
     FlixelState next = currentStateFactory != null ? currentStateFactory.get() : null;
     if (next != null) {
       switchState(next);
-    }
-  }
-
-  /**
-   * Full session teardown. Sets {@code initialized} to {@code false}, destroys audio and tears down the current
-   * {@link FlixelGame} via {@link FlixelGame#reset()} (stage/batch/state/world only, not a full
-   * {@link FlixelGame#destroy()} application shutdown) and clears cameras/state/debug references.
-   *
-   * <p>Re-initializes the <strong>same</strong> {@link FlixelGame} instance passed to the first {@link
-   * #initialize(FlixelGame)}. libGDX keeps the original {@code ApplicationListener} reference (e.g. {@code
-   * Lwjgl3Application(game, ...)}); allocating a new {@code FlixelGame} would leave rendering on a dead instance
-   * and break statics (null batch, etc.).
-   *
-   * <p>Unlike {@link #resetState()}, this is intended for a cold restart from code. Call on the <strong>main
-   * libGDX thread</strong>. The window keeps running. This method does not call {@code Gdx.app.exit()}.
-   */
-  public static void resetGame() {
-    if (!initialized) {
-      return;
-    }
-    FlixelGame listener = Objects.requireNonNull(game, "Flixel game cannot be null!");
-    initialized = false;
-    FlixelTimer.cancelAll();
-    try {
-      listener.reset();
-    } catch (Exception ignored) {
-      // Ignore.
-    }
-    state = null;
-    currentStateFactory = null;
-    drawCamera = null;
-    debugOverlay = null;
-    if (assets != null) {
-      assets.dispose();
-      assets = null;
-    }
-    FlixelTween.resetRegistry();
-    FlixelFontRegistry.dispose();
-    System.gc();
-    Flixel.initialize(listener);
-    listener.create();
-    // libGDX only invokes ApplicationListener#create() once per run; after a cold reset we must re-sync
-    // window dimensions ourselves. Otherwise, cameras keep constructor sizing (often viewSize, not the real
-    // framebuffer) and the main loop can appear frozen or split viewports stay misaligned until a resize.
-    if (Gdx.graphics != null) {
-      listener.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
   }
 
@@ -1407,6 +1345,12 @@ public final class Flixel {
     return antialiasing;
   }
 
+  /**
+   * Sets antialiasing to be applied to all {@link FlixelSprite} objects.
+   * Automatically updates the current state.
+   *
+   * @param enabled If antialiasing should be applied to all current and any future {@link FlixelSprite} objects.
+   */
   public static void setAntialiasing(boolean enabled) {
     if (enabled == antialiasing) {
       return;

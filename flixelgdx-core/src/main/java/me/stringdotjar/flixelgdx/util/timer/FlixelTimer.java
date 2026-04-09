@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>The timer is removed from its manager before the final callback runs.
  */
-public final class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, Pool.Poolable {
+public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, Pool.Poolable {
 
   /** Whether the timer is currently active. */
   public boolean active;

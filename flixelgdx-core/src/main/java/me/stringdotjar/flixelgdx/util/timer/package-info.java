@@ -11,8 +11,6 @@
  *     and {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer#loop(float, me.stringdotjar.flixelgdx.util.timer.FlixelTimerListener, int)}.</li>
  *   <li>Scaling: {@link me.stringdotjar.flixelgdx.FlixelGame} passes {@code elapsed} times {@link me.stringdotjar.flixelgdx.Flixel#getTimeScale()} into
  *     {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimerManager#update(float)}.</li>
- *   <li>Lifecycle: {@link me.stringdotjar.flixelgdx.Flixel#resetGame()} and {@link me.stringdotjar.flixelgdx.Flixel#initialize(me.stringdotjar.flixelgdx.FlixelGame)}
- *     call {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimerManager#cancelAll()} so cold restarts do not leak callbacks.</li>
  *   <li>Pooled instances: do not store {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer} references across {@link me.stringdotjar.flixelgdx.util.timer.FlixelTimer#cancel()} or completion;
  *     the manager returns them to an internal {@link com.badlogic.gdx.utils.Pool}.</li>
  * </ul>

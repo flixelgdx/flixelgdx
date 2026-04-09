@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
  * Mutable color wrapper that owns a single {@link Color} instance for stable tinting
  * and tween endpoints without per-frame allocations.
  */
-public final class FlixelColor {
+public class FlixelColor {
 
   @NotNull
   private final Color color;

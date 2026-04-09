@@ -24,6 +24,7 @@ public final class FlixelGitUtil {
    * @param isModified Does the current repository have any changes made to it?
    */
   public record RepoInfo(String commit, String branch, String remoteUrl, String isModified) {
+
     @Override
     public String commit() {
       if (commit == null || commit.isBlank()) {

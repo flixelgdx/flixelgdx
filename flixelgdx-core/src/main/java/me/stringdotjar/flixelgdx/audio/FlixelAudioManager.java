@@ -45,9 +45,9 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   /**
    * Stops session audio and rebuilds SFX and music groups on the existing engine.
    *
-   * <p>Use during {@link me.stringdotjar.flixelgdx.Flixel#resetGame()} instead
-   * of {@link #destroy()} so the native backend is not torn down and re-created
-   * in one frame (which can break PulseAudio and similar backends).
+   * <p>Use this instead of {@link #destroy()} so the native backend is not torn down and re-created
+   * in one frame (which can break PulseAudio and similar backends) unless you know for sure you don't want to
+   * use the audio system anymore.
    */
   public void resetSession() {
     if (music != null) {

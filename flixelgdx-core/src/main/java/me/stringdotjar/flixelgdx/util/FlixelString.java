@@ -45,7 +45,7 @@ import java.util.function.Supplier;
  * to build text without touching {@link CharArray} at call sites. {@link #charBuffer()} remains available for
  * advanced interop with libGDX APIs that require a raw {@link CharArray}.
  */
-public final class FlixelString implements CharSequence {
+public class FlixelString implements CharSequence {
 
   private final CharArray buffer;
 
