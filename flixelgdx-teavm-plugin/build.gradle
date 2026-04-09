@@ -1,5 +1,6 @@
 plugins {
   id 'java-gradle-plugin'
+  id 'org.jetbrains.dokka'
 }
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -20,3 +21,5 @@ gradlePlugin {
     }
   }
 }
+
+apply from: rootProject.file('gradle/dokka-site.gradle')

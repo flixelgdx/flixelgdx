@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  --flixel-bg: #0a0a0a;
+  --flixel-surface: #111111;
+  --flixel-text: #e8e8e8;
+  --flixel-muted: #9a9a9a;
+  --flixel-green: #00d02f;
+  --flixel-yellow: #fdbb30;
+  --flixel-pink: #f73e6d;
+  --flixel-red-solid: #d91045;
+  --flixel-blue: #4136f1;
+  --flixel-cyan: #00b9f2;
+}
+
+html[data-theme='dark'] {
+  --ifm-background-color: var(--flixel-bg);
+  --ifm-font-color-base: var(--flixel-text);
+  --ifm-navbar-background-color: #000000;
+  --ifm-footer-background-color: #000000;
+  --ifm-heading-color: var(--flixel-yellow);
+  --ifm-link-color: var(--flixel-cyan);
+  --ifm-link-hover-color: var(--flixel-green);
+  --ifm-menu-color: var(--flixel-text);
+  --ifm-toc-border-color: #333;
+  --home-page-bg: var(--flixel-bg);
+  --home-tagline: var(--flixel-muted);
+}
+
+html[data-theme='light'] {
+  --ifm-heading-color: #1a1a1a;
+  --ifm-link-color: var(--flixel-blue);
+  --ifm-link-hover-color: var(--flixel-pink);
+  --home-page-bg: #fafafa;
+  --home-tagline: #4a4a4a;
+}
+
+body {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Logo only — hide duplicate title text next to the brand image */
+.navbar__title {
+  display: none;
+}
+
+.hero--primary {
+  background: linear-gradient(
+    160deg,
+    var(--flixel-bg) 0%,
+    #1f1428 40%,
+    #0d1f2a 100%
+  );
+  border-bottom: 2px solid var(--flixel-blue);
+}
+
+html[data-theme='light'] .hero--primary {
+  background: linear-gradient(
+    160deg,
+    #f0f0f0 0%,
+    #e4eaf5 50%,
+    #d8e4f0 100%
+  );
+}
+
+.button.button--secondary {
+  background: var(--flixel-red-solid);
+  color: #fff;
+  border: 2px solid #b30d38;
+  font-weight: 700;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset;
+}
+
+.button.button--secondary:hover {
+  background: #c50e3e;
+  color: #fff;
+  border-color: #9a0c2f;
+}
+
+/* Outlined companion (API) — solid red border, fills on hover */
+.heroHome .button.button--outline.button--secondary {
+  background: transparent;
+  color: var(--flixel-red-solid);
+  border: 2px solid var(--flixel-red-solid);
+}
+
+.heroHome .button.button--outline.button--secondary:hover {
+  background: var(--flixel-red-solid);
+  color: #fff;
+  border-color: var(--flixel-red-solid);
+}
+
+/* Top nav links: stronger red on hover / active */
+.navbar .navbar__link:hover,
+.navbar .navbar__link--active,
+.menu__link:hover,
+.menu__link--active {
+  color: var(--flixel-red-solid);
+}
+
+.navbar-github-link {
+  display: flex;
+  align-items: center;
+  padding: 0 0.35rem;
+  opacity: 0.92;
+}
+
+.navbar-github-link:hover {
+  opacity: 1;
+}
+
+.navbar-github-icon {
+  width: 34px;
+  height: 34px;
+  display: block;
+}
+
+html[data-theme='dark'] .navbar-github-icon {
+  filter: brightness(0) invert(1);
+}
+
+html[data-theme='light'] .navbar-github-icon {
+  filter: brightness(0);
+}
+
+html[data-theme='dark'] .footer--dark {
+  --ifm-footer-background-color: #000000;
+  background-color: #000000;
+}

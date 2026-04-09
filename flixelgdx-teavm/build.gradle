@@ -1,6 +1,7 @@
 plugins {
   id "java-library"
   id "org.teavm" version "0.13.0"
+  id "org.jetbrains.dokka"
 }
 
 eclipse.project.name = appName + '-teavm'
@@ -116,3 +117,5 @@ dependencies {
   implementation "com.github.xpenatan.gdx-teavm:gdx-freetype-teavm:$gdxTeaVMVersion"
   implementation 'org.jetbrains:annotations:15.0'
 }
+
+apply from: rootProject.file('gradle/dokka-site.gradle')

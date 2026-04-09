@@ -1,0 +1,38 @@
+// Shared Dokka output for docs site: website/static/dokka-html/<project.name>/
+// (Avoid /api/* under static/; the site has a React page at /api that can steal nested paths on some hosts.)
+// No Dokka imports: applied Groovy scripts cannot see Dokka on their compile classpath reliably.
+afterEvaluate {
+  if (!plugins.hasPlugin('org.jetbrains.dokka')) {
+    return
+  }
+  tasks.named('dokkaHtml').configure {
+    outputDirectory.set(rootProject.layout.projectDirectory.dir("website/static/dokka-html/${project.name}"))
+    moduleName.set(project.name)
+    moduleVersion.set(project.version.toString())
+    dokkaSourceSets.register('javaApi') {
+      displayName.set(project.name)
+      jdkVersion.set(17)
+      skipEmptyPackages.set(true)
+      suppressGeneratedFiles.set(false)
+      sourceRoots.from(layout.projectDirectory.dir('src/main/java'))
+      def isAndroid = plugins.hasPlugin('com.android.library') || plugins.hasPlugin('com.android.application')
+      if (isAndroid) {
+        def variant = android.libraryVariants.find { it.name == 'release' } ?: android.libraryVariants.first()
+        classpath.from(variant.javaCompileProvider.get().classpath)
+        classpath.from(android.bootClasspath)
+      } else {
+        classpath.from(
+          sourceSets.main.compileClasspath,
+          sourceSets.main.output.classesDirs
+        )
+      }
+    }
+    def dokkaCss = rootProject.file('website/dokka/custom.css')
+    pluginsMapConfiguration.set([
+      'org.jetbrains.dokka.base.DokkaBase': """{
+        "customStyleSheets": ["${dokkaCss.absolutePath.replace(File.separatorChar, '/' as char)}"],
+        "footerMessage": "FlixelGDX ${project.name} API reference"
+      }"""
+    ])
+  }
+}

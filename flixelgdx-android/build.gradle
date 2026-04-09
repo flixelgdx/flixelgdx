@@ -1,6 +1,8 @@
 eclipse.project.name = appName + '-android'
 
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.dokka'
+apply from: rootProject.file('gradle/dokka-site.gradle')
 
 def reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD").toString().trim().toUpperCase(java.util.Locale.ROOT)
 def reflectionProfile = ["SIMPLE", "STANDARD", "ALL"].contains(reflectionProfileRaw) ? reflectionProfileRaw : "STANDARD"

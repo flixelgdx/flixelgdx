@@ -97,6 +97,13 @@ nb-configuration.xml
 .DS_Store
 Thumbs.db
 
+## Documentation site (Docusaurus + generated API)
+website/node_modules/
+website/.docusaurus/
+website/build/
+website/static/dokka-html/
+website/static/api-class-index.json
+
 ## Miscellaneous:
 *~
 *.*#

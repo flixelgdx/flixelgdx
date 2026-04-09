@@ -1,10 +1,10 @@
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.external.javadoc.CoreJavadocOptions
-
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
 
 apply plugin: "java-library"
+apply plugin: "org.jetbrains.dokka"
 
 // Embed version from build so Flixel.getVersion() can read it at runtime (Gradle does not set JAR manifest like Maven).
 def generateFlixelVersion = tasks.register('generateFlixelVersion', WriteProperties) {
@@ -66,3 +66,5 @@ tasks.named('javadoc', Javadoc) {
   classpath = files()
   (options as CoreJavadocOptions).modulePath = sourceSets.main.compileClasspath + sourceSets.main.output.classesDirs
 }
+
+apply from: rootProject.file('gradle/dokka-site.gradle')

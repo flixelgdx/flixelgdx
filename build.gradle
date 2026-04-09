@@ -20,6 +20,7 @@ buildscript {
 
 plugins {
   id 'java-library'
+  id 'org.jetbrains.dokka' version '1.9.20' apply false
 }
 
 // Root is an aggregator only (no src/). Do not apply the Java plugin here: it would create
@@ -221,6 +222,76 @@ subprojects {
     pubs.configureEach { pub ->
       p.signing.sign(pub)
     }
+  }
+}
+
+// API reference for the docs site: run ./gradlew dokkaWebsite (Dokka HTML per module -> website/static/dokka-html/<module>/).
+tasks.register('dokkaWebsite') {
+  group = 'documentation'
+  description = 'Generates Dokka HTML for all documented modules into website/static/dokka-html/<module>.'
+  dependsOn(
+    ':flixelgdx-core:dokkaHtml',
+    ':flixelgdx-android:dokkaHtml',
+    ':flixelgdx-jvm:dokkaHtml',
+    ':flixelgdx-lwjgl3:dokkaHtml',
+    ':flixelgdx-ios:dokkaHtml',
+    ':flixelgdx-teavm:dokkaHtml',
+    ':flixelgdx-teavm-plugin:dokkaHtml'
+  )
+}
+
+tasks.register('writeApiClassIndex') {
+  group = 'documentation'
+  description = 'Writes website/static/api-class-index.json for the docs API browser (package tree).'
+  def outFile = layout.projectDirectory.file('website/static/api-class-index.json')
+  outputs.file(outFile)
+  doLast {
+    def modules = [
+      'flixelgdx-core',
+      'flixelgdx-android',
+      'flixelgdx-jvm',
+      'flixelgdx-lwjgl3',
+      'flixelgdx-ios',
+      'flixelgdx-teavm',
+      'flixelgdx-teavm-plugin'
+    ]
+    def root = [:]
+    modules.each { mod ->
+      def p = project(":${mod}")
+      def src = p.file('src/main/java')
+      def pkgMap = [:]
+      if (src.isDirectory()) {
+        p.fileTree(src).matching { include '**/*.java' }.visit { d ->
+          if (d.directory) {
+            return
+          }
+          if (!d.file.name.endsWith('.java') || d.file.name == 'module-info.java') {
+            return
+          }
+          def text = d.file.getText('UTF-8')
+          def pkgM = text =~ /package\s+([\w.]+)\s*;/
+          if (!pkgM.find()) {
+            return
+          }
+          def pkg = pkgM.group(1)
+          def clsM = text =~ /(?m)^\s*public\s+(?:abstract\s+|final\s+|sealed\s+|strictfp\s+)*(?:class|interface|enum|record)\s+(\w+)/
+          if (!clsM.find()) {
+            return
+          }
+          def simple = clsM.group(1)
+          if (!pkgMap.containsKey(pkg)) {
+            pkgMap[pkg] = []
+          }
+          pkgMap[pkg] << simple
+        }
+      }
+      pkgMap.each { k, v ->
+        pkgMap[k] = (v as List).unique().sort()
+      }
+      root[mod] = pkgMap
+    }
+    outFile.asFile.parentFile.mkdirs()
+    outFile.asFile.setText(new groovy.json.JsonBuilder(root).toPrettyString(), 'UTF-8')
   }
 }
 

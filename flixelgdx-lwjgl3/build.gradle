@@ -1,4 +1,5 @@
 apply plugin: "java-library"
+apply plugin: "org.jetbrains.dokka"
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-lwjgl3'
@@ -17,3 +18,5 @@ dependencies {
   api "com.esotericsoftware:reflectasm:$reflectasmVersion"
   implementation "org.fusesource.jansi:jansi:$jansiVersion"
 }
+
+apply from: rootProject.file('gradle/dokka-site.gradle')

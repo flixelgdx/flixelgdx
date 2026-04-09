@@ -1,0 +1,91 @@
+.page {
+  max-width: 720px;
+}
+
+.lead {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--ifm-color-emphasis-700);
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-toc-border-color);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.h2 {
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+  color: var(--flixel-yellow, #fdbb30);
+}
+
+.checkList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.checkList li {
+  margin: 0.5rem 0;
+}
+
+.checkList label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.warn {
+  color: var(--flixel-pink, #f73e6d);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-background-color);
+  color: var(--ifm-font-color-base);
+}
+
+.hint {
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.error {
+  color: var(--flixel-pink, #f73e6d);
+  font-weight: 600;
+}
+
+.actions {
+  margin-top: 1.5rem;
+}

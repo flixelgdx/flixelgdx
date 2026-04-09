@@ -11,6 +11,7 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-android`**: The backend for Android devices. This integrates FlixelGDX with libGDX's Android launcher and lifecycle.
 - **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM).
 - **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript.
+- **`flixelgdx-teavm-plugin`**: Custom plugin for automating tedious TeaVM tasks for web game development.
 - **`flixelgdx-jvm`**: Contains common logic for all JVM-based backends (Desktop, Android, etc.). This is primarily an internal module; most games will not depend on it directly.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, reflection, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
@@ -27,6 +28,10 @@ When you are building a project that is structured like FlixelGDX itself (multi-
 - depend on the appropriate backend modules (`flixelgdx-lwjgl3`, `flixelgdx-android`, `flixelgdx-ios`, `flixelgdx-teavm`) in your platform-specific launchers.
 
 For more info on how to wire FlixelGDX into a new libGDX project, see the [COMPILING.md](COMPILING.md) document.
+
+> [!IMPORTANT]
+> If you are going to use FlixelGDX as a library in an existing libGDX project, make sure to check what version of
+> libGDX you're using to make sure FlixelGDX is compatible!
 
 ## Build System
 

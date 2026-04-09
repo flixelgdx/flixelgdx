@@ -1,0 +1,69 @@
+/* HaxeFlixel-inspired palette for Dokka output (flixelgdx-core API) */
+:root {
+  --flixel-bg: #181818;
+  --flixel-surface: #222222;
+  --flixel-text: #e8e8e8;
+  --flixel-muted: #a0a0a0;
+  --flixel-green: #00d02f;
+  --flixel-yellow: #fdbb30;
+  --flixel-pink: #f73e6d;
+  --flixel-blue: #4136f1;
+  --flixel-cyan: #00b9f2;
+}
+
+html,
+body,
+.theme-dark,
+#container,
+#leftColumn {
+  background-color: var(--flixel-bg) !important;
+  color: var(--flixel-text) !important;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace !important;
+}
+
+#leftColumn {
+  border-right: 1px solid #333 !important;
+}
+
+#sideMenu a,
+.navigation a,
+.breadcrumbs a,
+.symbol a {
+  color: var(--flixel-cyan) !important;
+}
+
+#sideMenu a:hover,
+.navigation a:hover {
+  color: var(--flixel-green) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+.keyword,
+.token.keyword {
+  color: var(--flixel-yellow) !important;
+}
+
+.symbol.monospace,
+.symbol .token {
+  color: var(--flixel-pink) !important;
+}
+
+footer,
+.footer {
+  border-top: 1px solid #333 !important;
+  color: var(--flixel-muted) !important;
+}
+
+/* Dokka 1.9 layout helpers */
+.cover .filter-section,
+.tabs-section {
+  background: var(--flixel-surface) !important;
+}
+
+.platform-hinted .platform-tags .tag {
+  background: var(--flixel-blue) !important;
+  color: #fff !important;
+}
