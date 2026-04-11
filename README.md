@@ -176,13 +176,13 @@ public class PlayState extends FlixelState {
 
     // Move the player with WASD!
     if (Flixel.keys.pressed(FlixelKey.W)) {
-      player.changeY(-10);
+      player.changeY(10);
     }
     if (Flixel.keys.pressed(FlixelKey.A)) {
       player.changeX(-10);
     }
     if (Flixel.keys.pressed(FlixelKey.S)) {
-      player.changeY(10);
+      player.changeY(-10);
     }
     if (Flixel.keys.pressed(FlixelKey.D)) {
       player.changeX(10);
