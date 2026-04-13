@@ -25,12 +25,12 @@ public final class FlixelAnimationSources {
   /**
    * Adds an animation using named regions from an atlas (order preserved).
    *
-   * @param controller The animation controller to add the animation to
-   * @param name The name of the animation
-   * @param atlas The texture atlas to get the frames from
-   * @param regionNames The names of the regions to get the frames from
+   * @param controller The animation controller to add the animation to.
+   * @param name The name of the animation.
+   * @param atlas The texture atlas to get the frames from.
+   * @param regionNames The names of the regions to get the frames from.
    * @param frameDuration Seconds per frame.
-   * @param loop Whether to loop the animation
+   * @param loop Whether to loop the animation.
    */
   public static void addFromTextureAtlas(
     @NotNull FlixelAnimationController controller,
