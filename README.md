@@ -1,5 +1,7 @@
 # FlixelGDX
 
+<img src="docs/readme/flxgdx.png" width="400">
+
 [![CI](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml)
 [![JitPack](https://jitpack.io/v/stringdotjar/flixelgdx.svg)](https://jitpack.io/#stringdotjar/flixelgdx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

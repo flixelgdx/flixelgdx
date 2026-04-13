@@ -11,6 +11,7 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-android`**: The backend for Android devices. This integrates FlixelGDX with libGDX's Android launcher and lifecycle.
 - **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM).
 - **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript.
+- **`flixelgdx-teavm-plugin`**: A custom plugin to automate the workflow for web games.
 - **`flixelgdx-jvm`**: Contains common logic for all JVM-based backends (Desktop, Android, etc.). This is primarily an internal module; most games will not depend on it directly.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, reflection, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
