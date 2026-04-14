@@ -1,6 +1,6 @@
 # FlixelGDX
 
-<img src="docs/readme/flxgdx.png" width="400">
+<img src="docs/readme/flxgdx ii.png" width="400">
 
 [![CI](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml)
 [![JitPack](https://jitpack.io/v/stringdotjar/flixelgdx.svg)](https://jitpack.io/#stringdotjar/flixelgdx)
@@ -125,8 +125,8 @@ In your core code, you can simply extend `FlixelGame` and start coding your game
 public class MyGame extends FlixelGame {
   
   // Make sure to create a constructor so you can use it in a launcher!  
-  public MyGame(String title, int width, int height, FlixelState initialState) {
-    super(title, width, height, initialState);
+  public MyGame() {
+    super("My Game", 1280, 720, new PlayState()); // PlayState is the initial state your game starts in!
   }
 
   @Override
@@ -148,8 +148,8 @@ public class MyGame extends FlixelGame {
   }
 
   @Override
-  public void close() {
-    super.close();
+  public void destroy() {
+    super.destroy();
     // Your game cleanup code here!
   }
 }
@@ -178,13 +178,13 @@ public class PlayState extends FlixelState {
 
     // Move the player with WASD!
     if (Flixel.keys.pressed(FlixelKey.W)) {
-      player.changeY(-10);
+      player.changeY(10);
     }
     if (Flixel.keys.pressed(FlixelKey.A)) {
       player.changeX(-10);
     }
     if (Flixel.keys.pressed(FlixelKey.S)) {
-      player.changeY(10);
+      player.changeY(-10);
     }
     if (Flixel.keys.pressed(FlixelKey.D)) {
       player.changeX(10);

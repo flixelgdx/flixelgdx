@@ -9,7 +9,7 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 > ## Our Stance on AI
 > We welcome AI assistance with open arms. We believe that AI (if used correctly) is a powerful tool, which can be a massive
 > aid for development; however, we put emphasis on "assistance". While AI can be incredibly useful, it's not a replacement.
-> You can't outsource AI with a brain if you don't have one in the first place.
+> You can't outsource to AI with a brain if you don't have one in the first place.
 >
 > To ensure we have a stable codebase, we ask everyone to follow these simple rules when using AI in their workflow:
 >
