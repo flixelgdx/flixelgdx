@@ -18,6 +18,8 @@ import me.stringdotjar.flixelgdx.asset.FlixelWrapperFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 /**
  * Pooled {@link FlixelGraphic} factory for {@link FlixelAssetManager#obtainWrapper(String, Class)}.
  */
@@ -84,6 +86,13 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
       for (int i = 0; i < toRemove.size; i++) {
         cache.remove(toRemove.get(i));
       }
+    }
+  }
+
+  @Override
+  public void forEachWrappedAsset(Consumer<FlixelGraphic> consumer) {
+    for (FlixelGraphic graphic : cache.values()) {
+      consumer.accept(graphic);
     }
   }
 

@@ -29,9 +29,8 @@ import java.util.Comparator;
 
 /**
  * Playback state and clip registration for {@link FlixelSprite} animations. Obtain a controller with
- * {@link FlixelSprite#ensureAnimation()} (or assign via {@link FlixelSprite#setAnimation(FlixelAnimationController)}),
- * then call {@code sprite.ensureAnimation().loadSparrowFrames(...)}, {@code .playAnimation(...)}, etc. Decouples
- * animation timing from rendering and physics.
+ * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().loadSparrowFrames(...)},
+ * {@code .playAnimation(...)}, etc. Decouples animation timing from rendering and physics.
  */
 public class FlixelAnimationController implements FlixelUpdatable {
 

@@ -97,8 +97,7 @@ public final class FlixelSoundSource implements FlixelSource<FlixelSoundSource> 
   }
 
   /**
-   * Convenience constructor from a libGDX file handle (uses
-   * {@code handle.path()} as key).
+   * Convenience constructor from a libGDX file handle (uses {@code handle.path()} as key).
    *
    * @param handle The file handle to the audio file.
    * @return A new sound source.

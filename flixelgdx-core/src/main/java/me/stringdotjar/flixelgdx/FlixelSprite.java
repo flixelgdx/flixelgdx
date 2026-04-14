@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
  * <strong>not</strong> allocated by default (saves memory for large sprite counts on the order of thousands of
- * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or {@link #setAnimation(FlixelAnimationController)}
+ * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or assign a controller directly
  * when you need clips, then use {@code sprite.ensureAnimation().playAnimation(...)}, {@code loadSparrowFrames(...)}, etc.
  *
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
@@ -48,7 +48,7 @@ public class FlixelSprite extends FlixelObject {
   protected Array<FlixelFrame> atlasFrames;
 
   /**
-   * Optional animation controller; {@code null} until {@link #ensureAnimation()} or {@link #setAnimation(FlixelAnimationController)}.
+   * Heavy controller object for handling animations. {@code null} until {@link #ensureAnimation()} or assigned directly.
    */
   @Nullable
   public FlixelAnimationController animation;
@@ -103,7 +103,18 @@ public class FlixelSprite extends FlixelObject {
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
-    super();
+    this(0, 0);
+  }
+
+  public FlixelSprite(float x,  float y) {
+    this(x, y, null);
+  }
+
+  public FlixelSprite(float x, float y, String graphicAssetKey) {
+    super(x, y);
+    if (graphicAssetKey != null && graphicAssetKey.isEmpty()) {
+      loadGraphic(graphicAssetKey);
+    }
   }
 
   /**
@@ -115,10 +126,6 @@ public class FlixelSprite extends FlixelObject {
       animation = new FlixelAnimationController(this);
     }
     return animation;
-  }
-
-  public void setAnimation(@Nullable FlixelAnimationController animation) {
-    this.animation = animation;
   }
 
   /**
@@ -239,7 +246,7 @@ public class FlixelSprite extends FlixelObject {
 
   /**
    * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@code Flixel.assets.update()} in a loading state.
+   * and {@link FlixelAssetManager#update()} in a loading state.
    *
    * <p>This method falls back to a synchronous load if the texture is not loaded yet.
    * Preloading is still strongly recommended to avoid mid-frame stalls.
