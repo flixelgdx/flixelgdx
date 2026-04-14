@@ -15,8 +15,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Default pooled implementation of {@link FlixelAsset}; constructed only via
  * {@link FlixelAssetManager#ensureTypedAsset(String, Class)} / {@link FlixelAssetManager#obtainTypedAsset(String, Class)}
- * or framework subclasses. New handles default to {@code persist == true} so {@code clearNonPersist} keeps
- * loaded data in memory when the refcount drops to zero. Call {@link #setPersist(boolean)} {@code false} to allow eviction.
+ * or framework subclasses. New handles default to {@link FlixelAssetManager#getGlobalPersist()} so {@code clearNonPersist}
+ * either keeps or drops unreferenced handles accordingly. Call {@link #setPersist(boolean)} to override per handle.
  *
  * @param <T> Asset type.
  */
@@ -49,7 +49,7 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
     this.assetManager = assetManager;
     this.assetKey = assetKey;
     this.type = type;
-    this.persist = true;
+    this.persist = assetManager.getGlobalPersist();
     this.refCount = 0;
   }
 

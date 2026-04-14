@@ -65,6 +65,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   /** Per-instance extension (e.g. {@code .png}) to source factory for {@link #load(String)}. */
   private final ConcurrentHashMap<String, Function<String, FlixelSource<?>>> extensionRegistry = new ConcurrentHashMap<>();
 
+  /** Default {@link FlixelTypedAsset#isPersist()} for handles created after construction; see {@link #getGlobalPersist()}. */
+  private boolean globalPersist = false;
+
   /** FlixelString object to prevent allocation every time {@link #getDiagnostics()} is called. */
   private final FlixelString diagnosticsString = new FlixelString();
 
@@ -415,6 +418,16 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       return g != null ? g.getRefCount() : 0;
     }
     return 0;
+  }
+
+  @Override
+  public boolean getGlobalPersist() {
+    return globalPersist;
+  }
+
+  @Override
+  public void setGlobalPersist(boolean globalPersist) {
+    this.globalPersist = globalPersist;
   }
 
   @Override

@@ -14,8 +14,8 @@ import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
-import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.tween.builders.FlixelAbstractTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -31,6 +31,10 @@ import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
  * <p>Uses a registry: each tween type is registered with its builder class and a pool factory.
  * Only registered types can be used with {@link FlixelTween#tween(Class, Class)}. Call
  * {@link #clearPools()} when clearing state (e.g. on state switch) to release pooled instances.
+ *
+ * <p>Active tweens use an unordered {@link Array}: removals swap with the last element (no
+ * {@link com.badlogic.gdx.utils.SnapshotArray} copy-on-write), so the per-frame update path stays
+ * allocation-free even when tweens finish and unregister.
  */
 public class FlixelTweenManager {
 
@@ -48,8 +52,8 @@ public class FlixelTweenManager {
   /** Registry: tween type -> (builder class, pool). */
   private final Map<Class<? extends FlixelTween>, TweenTypeRegistration> registry = new HashMap<>();
 
-  /** Array where all current active tweens are stored. */
-  protected final SnapshotArray<FlixelTween> activeTweens = new SnapshotArray<>(FlixelTween[]::new);
+  /** Active tweens; unordered so {@link #removeTween} is O(1) without snapshot copies. */
+  protected final Array<FlixelTween> activeTweens = new Array<>(false, 16, FlixelTween[]::new);
 
   /**
    * Registers a tween type with its builder factory and a pool factory for creating new tween instances when the pool is empty.
@@ -128,14 +132,15 @@ public class FlixelTweenManager {
   /**
    * Updates all active tweens that are stored and updated in {@code this} manager.
    *
-   * <p>Iterates in reverse so that finished ONESHOT tweens can be removed by index
-   * without skipping elements or traversing null padding beyond the array's valid size.
+   * <p>The finish pass runs in reverse order so {@link FlixelTween#finish()} can remove tweens
+   * (swap-with-last removal) without skipping entries.
    *
    * @param elapsed The amount of time that has passed since the last frame.
    */
   public void update(float elapsed) {
-    FlixelTween[] items = activeTweens.begin();
-    for (int i = 0; i < activeTweens.size; i++) {
+    FlixelTween[] items = activeTweens.items;
+    int n = activeTweens.size;
+    for (int i = 0; i < n; i++) {
       FlixelTween tween = items[i];
       if (tween == null || !tween.isActive()) {
         continue;
@@ -143,8 +148,8 @@ public class FlixelTweenManager {
       tween.update(elapsed);
     }
 
-    for (int i = 0; i < activeTweens.size; i++) {
-      FlixelTween tween = items[i];
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween tween = activeTweens.items[i];
       if (tween != null && tween.isFinished()) {
         if (tween.manager != this) {
           continue;
@@ -152,8 +157,6 @@ public class FlixelTweenManager {
         tween.finish();
       }
     }
-
-    activeTweens.end();
   }
 
   /**
@@ -205,7 +208,7 @@ public class FlixelTweenManager {
     }
   }
 
-  public SnapshotArray<FlixelTween> getActiveTweens() {
+  public Array<FlixelTween> getActiveTweens() {
     return activeTweens;
   }
 
@@ -220,19 +223,14 @@ public class FlixelTweenManager {
     if (object == null) {
       throw new IllegalArgumentException("Object to cancel tweens of cannot be null");
     }
-    FlixelTween[] items = activeTweens.begin();
-    try {
-      for (int i = activeTweens.size - 1; i >= 0; i--) {
-        FlixelTween tween = items[i];
-        if (tween == null || !tween.isActive()) {
-          continue;
-        }
-        if (matchesTweenOf(tween, object, fieldPaths)) {
-          tween.cancel();
-        }
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween tween = activeTweens.items[i];
+      if (tween == null || !tween.isActive()) {
+        continue;
       }
-    } finally {
-      activeTweens.end();
+      if (matchesTweenOf(tween, object, fieldPaths)) {
+        tween.cancel();
+      }
     }
   }
 
@@ -252,27 +250,22 @@ public class FlixelTweenManager {
     }
     // Iterate in reverse to avoid issues with ONESHOT tweens calling removeTween from finish(), which shrinks the list.
     // Forward iteration would skip the tween that shifted into the index we just advanced past (same pattern as cancelTweensOf).
-    FlixelTween[] items = activeTweens.begin();
-    try {
-      for (int i = activeTweens.size - 1; i >= 0; i--) {
-        FlixelTween tween = items[i];
-        if (tween == null || !tween.isActive()) {
-          continue;
-        }
-        if (!matchesTweenOf(tween, object, fieldPaths)) {
-          continue;
-        }
-        FlixelTweenSettings settings = tween.getTweenSettings();
-        if (settings != null && settings.getType().isLooping()) {
-          continue;
-        }
-        tween.update(Float.MAX_VALUE);
-        if (tween.isFinished()) {
-          tween.finish();
-        }
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween tween = activeTweens.items[i];
+      if (tween == null || !tween.isActive()) {
+        continue;
       }
-    } finally {
-      activeTweens.end();
+      if (!matchesTweenOf(tween, object, fieldPaths)) {
+        continue;
+      }
+      FlixelTweenSettings settings = tween.getTweenSettings();
+      if (settings != null && settings.getType().isLooping()) {
+        continue;
+      }
+      tween.update(Float.MAX_VALUE);
+      if (tween.isFinished()) {
+        tween.finish();
+      }
     }
   }
 
@@ -280,24 +273,19 @@ public class FlixelTweenManager {
    * Completes all active non-looping tweens.
    */
   public void completeAll() {
-    FlixelTween[] items = activeTweens.begin();
-    try {
-      for (int i = activeTweens.size - 1; i >= 0; i--) {
-        FlixelTween tween = items[i];
-        if (tween == null || !tween.isActive()) {
-          continue;
-        }
-        FlixelTweenSettings settings = tween.getTweenSettings();
-        if (settings != null && settings.getType().isLooping()) {
-          continue;
-        }
-        tween.update(Float.MAX_VALUE);
-        if (tween.isFinished()) {
-          tween.finish();
-        }
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween tween = activeTweens.items[i];
+      if (tween == null || !tween.isActive()) {
+        continue;
       }
-    } finally {
-      activeTweens.end();
+      FlixelTweenSettings settings = tween.getTweenSettings();
+      if (settings != null && settings.getType().isLooping()) {
+        continue;
+      }
+      tween.update(Float.MAX_VALUE);
+      if (tween.isFinished()) {
+        tween.finish();
+      }
     }
   }
 
@@ -312,24 +300,19 @@ public class FlixelTweenManager {
     if (type == null) {
       throw new IllegalArgumentException("Type to complete tweens of cannot be null");
     }
-    FlixelTween[] items = activeTweens.begin();
-    try {
-      for (int i = activeTweens.size - 1; i >= 0; i--) {
-        FlixelTween tween = items[i];
-        if (tween == null || !tween.isActive() || !type.isInstance(tween)) {
-          continue;
-        }
-        FlixelTweenSettings settings = tween.getTweenSettings();
-        if (settings != null && settings.getType().isLooping()) {
-          continue;
-        }
-        tween.update(Float.MAX_VALUE);
-        if (tween.isFinished()) {
-          tween.finish();
-        }
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween tween = activeTweens.items[i];
+      if (tween == null || !tween.isActive() || !type.isInstance(tween)) {
+        continue;
       }
-    } finally {
-      activeTweens.end();
+      FlixelTweenSettings settings = tween.getTweenSettings();
+      if (settings != null && settings.getType().isLooping()) {
+        continue;
+      }
+      tween.update(Float.MAX_VALUE);
+      if (tween.isFinished()) {
+        tween.finish();
+      }
     }
   }
 
@@ -346,22 +329,18 @@ public class FlixelTweenManager {
     if (object == null) {
       throw new IllegalArgumentException("Object to check for tweens of cannot be null");
     }
-    FlixelTween[] items = activeTweens.begin();
-    try {
-      for (int i = 0; i < activeTweens.size; i++) {
-        FlixelTween tween = items[i];
-        if (tween != null && tween.isActive() && matchesTweenOf(tween, object, fieldPaths)) {
-          return true;
-        }
+    for (int i = 0; i < activeTweens.size; i++) {
+      FlixelTween tween = activeTweens.items[i];
+      if (tween != null && tween.isActive() && matchesTweenOf(tween, object, fieldPaths)) {
+        return true;
       }
-    } finally {
-      activeTweens.end();
     }
     return false;
   }
 
   /**
-   * Invokes {@code action} for each active tween (current snapshot order).
+   * Invokes {@code action} for each active tween. Iteration is from the end of the backing array
+   * downward so {@code action} may cancel or remove tweens without skipping entries.
    *
    * @param action The action to invoke for each active tween.
    * @throws NullPointerException If the action is null.
@@ -370,17 +349,11 @@ public class FlixelTweenManager {
     if (action == null) {
       throw new IllegalArgumentException("Action cannot be null");
     }
-    // We use a try/finally to ensure the array is always ended, even if an exception is thrown.
-    FlixelTween[] items = activeTweens.begin();
-    try {
-      for (int i = 0; i < activeTweens.size; i++) {
-        FlixelTween tween = items[i];
-        if (tween != null) {
-          action.accept(tween);
-        }
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween tween = activeTweens.items[i];
+      if (tween != null) {
+        action.accept(tween);
       }
-    } finally {
-      activeTweens.end();
     }
   }
 
@@ -392,7 +365,12 @@ public class FlixelTweenManager {
    * register the tween types again.
    */
   public void resetRegistry() {
-    forEach(FlixelTween::cancel);
+    for (int i = activeTweens.size - 1; i >= 0; i--) {
+      FlixelTween t = activeTweens.items[i];
+      if (t != null) {
+        t.cancel();
+      }
+    }
     clearPools();
     activeTweens.clear();
     registry.clear();

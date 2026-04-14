@@ -217,6 +217,38 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    */
   void clearNonPersist();
 
+  /**
+   * Returns the default {@link FlixelAsset#isPersist()} value assigned to newly created pooled handles
+   * ({@link FlixelTypedAsset} and subclasses created through this manager). When {@code true}, new handles
+   * stay in the manager cache when their reference count is zero and {@link #clearNonPersist()} runs, so
+   * loaded data can remain in memory across state switches until {@link #clear()} or {@link FlixelAsset#setPersist(boolean)}.
+   * When {@code false}, new handles may be removed on {@code clearNonPersist()} once unreferenced.
+   *
+   * <p>Owned wrappers (see {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic} and {@code isOwned()} on
+   * {@link FlixelPooledWrapper}) use {@code persist == false} regardless of this setting so synthetic textures
+   * are always eligible for eviction when refcount is zero.
+   *
+   * <p><b>Owned versus persist</b> (see also {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic}):
+   * <ul>
+   *   <li><b>Owned</b> - Structural: this handle wraps a dedicated {@link com.badlogic.gdx.graphics.Texture} that
+   *     the framework disposes when the wrapper leaves the pool (for example pixmap or caller-supplied textures).
+   *     Not a user toggle; determined by how the graphic was created.</li>
+   *   <li><b>Persist</b> - Policy: whether an unreferenced pooled handle is kept in the cache when
+   *     {@code clearNonPersist()} runs. Applies to normal path-keyed graphics; owned graphics ignore persist for
+   *     that eviction pass so they are always removed at refcount zero.</li>
+   * </ul>
+   *
+   * @return Default persist flag for new typed and path-pooled handles.
+   */
+  boolean getGlobalPersist();
+
+  /**
+   * Sets {@link #getGlobalPersist()}. Does not change {@code persist} on handles already in the cache.
+   *
+   * @param globalPersist default for future {@link FlixelTypedAsset} and similar creations
+   */
+  void setGlobalPersist(boolean globalPersist);
+
   /** Clears all cached assets, regardless if {@link FlixelAsset#isPersist()} is true or not. */
   void clear();
 
