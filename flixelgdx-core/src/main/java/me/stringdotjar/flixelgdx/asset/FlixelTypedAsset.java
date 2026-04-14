@@ -7,12 +7,16 @@
 
 package me.stringdotjar.flixelgdx.asset;
 
+import java.util.Objects;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Default pooled implementation of {@link FlixelAsset}; constructed only via
- * {@link FlixelAssetManager#obtainTypedAsset(String, Class)} or framework subclasses.
+ * {@link FlixelAssetManager#ensureTypedAsset(String, Class)} / {@link FlixelAssetManager#obtainTypedAsset(String, Class)}
+ * or framework subclasses. New handles default to {@code persist == true} so {@code clearNonPersist} keeps
+ * loaded data in memory when the refcount drops to zero. Call {@link #setPersist(boolean)} {@code false} to allow eviction.
  *
  * @param <T> Asset type.
  */
@@ -39,19 +43,13 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
     @NotNull String assetKey,
     @NotNull Class<T> type
   ) {
-    if (assetManager == null) {
-      throw new IllegalArgumentException("Asset manager cannot be null.");
-    }
-    if (assetKey == null || assetKey.isEmpty()) {
-      throw new IllegalArgumentException("Asset key cannot be null/empty.");
-    }
-    if (type == null) {
-      throw new IllegalArgumentException("Type cannot be null.");
-    }
+    Objects.requireNonNull(assetManager, "Asset manager cannot be null.");
+    Objects.requireNonNull(assetKey, "Asset key cannot be null/empty.");
+    Objects.requireNonNull(type, "Type cannot be null.");
     this.assetManager = assetManager;
     this.assetKey = assetKey;
     this.type = type;
-    this.persist = false;
+    this.persist = true;
     this.refCount = 0;
   }
 
@@ -135,7 +133,7 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
    */
   @NotNull
   public FlixelAsset<T> get(@NotNull String otherAssetKey, @NotNull Class<T> otherType) {
-    return assetManager.obtainTypedAsset(otherAssetKey, otherType);
+    return assetManager.ensureTypedAsset(otherAssetKey, otherType);
   }
 
   @Nullable

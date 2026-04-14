@@ -222,7 +222,7 @@ public class FlixelSprite extends FlixelObject {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
     Texture t = requireOrLoad(g);
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
@@ -239,7 +239,7 @@ public class FlixelSprite extends FlixelObject {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
     Texture t = requireOrLoad(g);
     return loadGraphic(g, frameWidth, t.getHeight());
   }
@@ -257,7 +257,7 @@ public class FlixelSprite extends FlixelObject {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
     return loadGraphic(g, frameWidth, frameHeight);
   }
 
@@ -331,8 +331,8 @@ public class FlixelSprite extends FlixelObject {
    * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} only;
    * not a general API for game code.
    *
-   * @param newGraphic Graphic wrapper already {@code retain()}ed by the caller.
-   * @param parsedFrames Frames built from the XML (may be empty).
+   * @param newGraphic Graphic from {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...)} (implicit retain).
+   * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
     if (graphic != null) {
@@ -412,8 +412,7 @@ public class FlixelSprite extends FlixelObject {
   }
 
   /**
-   * Sets how large the graphic is drawn on screen (in pixels), without changing which part of the
-   * texture is used.
+   * Sets how large the graphic is drawn on screen (in pixels), without changing which part of the texture is used.
    *
    * <p>This adjusts {@link #setScale(float, float)} so the full current frame/region maps to the
    * given size. It does <em>not</em> change {@link TextureRegion} bounds: {@code

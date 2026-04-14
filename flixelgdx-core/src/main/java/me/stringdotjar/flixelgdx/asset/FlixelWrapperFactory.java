@@ -7,7 +7,6 @@
 
 package me.stringdotjar.flixelgdx.asset;
 
-import com.badlogic.gdx.utils.ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

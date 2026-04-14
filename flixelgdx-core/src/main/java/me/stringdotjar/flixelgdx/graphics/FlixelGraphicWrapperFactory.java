@@ -98,6 +98,12 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
 
   @Override
   public void clearAll() {
+    for (FlixelGraphic graphic : cache.values()) {
+      var texture = graphic.getOwnedTexture();
+      if (texture != null) {
+        texture.dispose();
+      }
+    }
     cache.clear();
   }
 }

@@ -7,8 +7,9 @@
 
 package me.stringdotjar.flixelgdx.audio;
 
+import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
-import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
+import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,6 +22,11 @@ import com.badlogic.gdx.utils.Disposable;
  * <p>Access via {@link me.stringdotjar.flixelgdx.Flixel#sound}. Supports
  * separate groups for sound effects and music, global master volume, and
  * automatic pause when the game loses focus (and resume when it regains focus).
+ *
+ * <p>For internal paths, {@link #play} and {@link #playMusic} resolve audio through
+ * {@link Flixel#ensureAssets()}, which uses a loaded {@link FlixelSoundSource} when present,
+ * otherwise enqueue and block-load that source before creating a {@link FlixelSound}.
+ * External paths still bypass the asset manager and hit the backend directly.
  */
 public class FlixelAudioManager implements FlixelDestroyable, Disposable {
 
@@ -151,7 +157,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   /**
    * Plays a new sound effect (SFX group).
    *
-   * @param path Path to the sound (internal or resolved via {@link FlixelPathsUtil}).
+   * @param path Internal asset key / path, or external path when {@code external} is {@code true}.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
@@ -211,14 +217,8 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   @NotNull
   public FlixelSound play(@NotNull String path, float volume, boolean looping,
                            @Nullable Object group, boolean external) {
-    String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
     Object targetGroup = (group != null) ? group : sfxGroup;
-    FlixelSoundBackend backend = factory.createSound(resolvedPath, (short) 0, targetGroup, external);
-    FlixelSound flixelSound = new FlixelSound(backend);
-    flixelSound.setVolume(volume);
-    flixelSound.setLooped(looping);
-    flixelSound.play();
-    return flixelSound;
+    return createAndPlaySoundFromPath(path, external, volume, looping, targetGroup);
   }
 
   /**
@@ -269,15 +269,54 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   @NotNull
   public FlixelSound playMusic(@NotNull String path, float volume, boolean looping, boolean external) {
     if (music != null) {
-      music.stop();
+      music.destroy();
+      music = null;
     }
-    String resolvedPath = external ? path : FlixelPathsUtil.resolveAudioPath(path);
-    FlixelSoundBackend backend = factory.createSound(resolvedPath, (short) 0, musicGroup, external);
-    music = new FlixelSound(backend);
-    music.setVolume(volume);
-    music.setLooped(looping);
-    music.play();
+    music = createAndPlaySoundFromPath(path, external, volume, looping, musicGroup);
     return music;
+  }
+
+  /**
+   * Builds a new {@link FlixelSound} for {@code path}, starts playback, and returns it.
+   *
+   * <p>When {@code external} is {@code false}, uses {@link Flixel#ensureAssets()} to read or
+   * synchronously load a {@link FlixelSoundSource} for {@code path}, then {@link FlixelSoundSource#create(Object)}
+   * with {@code targetGroup}. External paths keep the previous behavior: direct backend creation from {@code path}.
+   *
+   * @param path The path to the sound file.
+   * @param external If {@code true}, the path is used as-is (for external files).
+   * @param volume The volume to play the sound at.
+   * @param looping If {@code true}, the sound will loop.
+   * @param targetGroup The group to play the sound in.
+   * @return The new {@link FlixelSound} instance.
+   */
+  @NotNull
+  private FlixelSound createAndPlaySoundFromPath(
+    @NotNull String path,
+    boolean external,
+    float volume,
+    boolean looping,
+    @NotNull Object targetGroup
+  ) {
+    if (external) {
+      FlixelSoundBackend backend = factory.createSound(path, (short) 0, targetGroup, true);
+      FlixelSound s = new FlixelSound(backend);
+      s.setVolume(volume);
+      s.setLooped(looping);
+      s.play();
+      return s;
+    }
+    FlixelAssetManager assets = Flixel.ensureAssets();
+    if (!assets.isLoaded(path, FlixelSoundSource.class)) {
+      assets.load(path, FlixelSoundSource.class);
+      assets.finishLoadingAsset(path);
+    }
+    FlixelSoundSource source = assets.get(path, FlixelSoundSource.class);
+    FlixelSound flixelSound = source.create(targetGroup);
+    flixelSound.setVolume(volume);
+    flixelSound.setLooped(looping);
+    flixelSound.play();
+    return flixelSound;
   }
 
   /**

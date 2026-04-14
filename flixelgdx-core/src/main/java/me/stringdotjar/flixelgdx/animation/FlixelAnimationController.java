@@ -117,7 +117,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    */
   @NotNull
   public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
     Texture texture;
     try {
       texture = g.requireTexture();
