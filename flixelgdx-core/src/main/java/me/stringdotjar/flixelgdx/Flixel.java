@@ -82,11 +82,12 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
- * <p>
- * The static singleton entry point and global manager for the FlixelGDX framework. This class exposes core services,
- * settings, and utility methods needed to develop games and interactive applications using FlixelGDX. Nearly all main
- * gameplay logic interacts with Flixel via this class, either to control the playback loop, switch states/scenes,
- * access global systems (input, audio, asset management, logging, debugging), or modify global properties.
+ * The static singleton entry point and global manager for the FlixelGDX framework.
+ *
+ * <p>This class exposes core services, settings, and utility methods needed to develop games and interactive
+ * applications using FlixelGDX. Nearly all main gameplay logic interacts with Flixel via this class, either to control
+ * the playback loop, switch states/scenes, access global systems (input, audio, asset management, logging, debugging),
+ * or modify global properties.
  *
  * <h2>Core Responsibilities</h2>
  * <ul>
@@ -196,7 +197,6 @@ import java.util.function.Supplier;
  *
  * @author stringdotjar
  */
-
 public final class Flixel {
 
   /** The current {@code FlixelState} being displayed. */
@@ -1224,7 +1224,6 @@ public final class Flixel {
       case LuminanceAlpha -> 2;
       case RGB888 -> 3;
       case RGB565, RGBA4444, RGBA8888 -> 4;
-      default -> 4;
     };
   }
 
@@ -1242,6 +1241,8 @@ public final class Flixel {
     return game.getCamera();
   }
 
+  // TODO: When fully removed, rename getCamerasArray() to just getCameras(), since users can just access the items anyways.
+  @Deprecated(since = "0.1.1-beta", forRemoval = true)
   public static FlixelCamera[] getCameras() {
     Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
     return game.getCameras().items;

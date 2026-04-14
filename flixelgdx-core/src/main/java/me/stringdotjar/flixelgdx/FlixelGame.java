@@ -43,7 +43,7 @@ import java.util.function.Supplier;
  * the methods you want to change.
  *
  * <p>It is strongly advised that you do <b>NOT</b> use this class to add the main gameplay logic to your game;
- * your code should go into your {@link FlixelState} or libGDX Screen classes instead.
+ * your code should go into your {@link FlixelState}s or libGDX {@link com.badlogic.gdx.Screen} implementations instead.
  *
  * <p>It is recommended for using this in the following way:
  *
@@ -164,7 +164,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * Creates a new game instance with the details specified.
    *
    * @param title The title of the game's window.
-   * @param initialState The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, FlixelState initialState) {
     this(title, 640, 360, initialState, 60, true, false);
@@ -176,7 +176,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState) {
     this(title, width, height, initialState, 60, true, false);
@@ -188,7 +188,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    * @param framerate The framerate of how fast the game should update and render.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate) {
@@ -201,9 +201,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use VSync to limit the framerate to the monitor's refresh rate?
+   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync) {
     this(title, width, height, initialState, framerate, vsync, false);
@@ -215,9 +215,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use VSync to limit the framerate to the monitor's refresh rate?
+   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    * @param fullscreen Should the game start in fullscreen mode?
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync, boolean fullscreen) {
@@ -230,9 +230,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialStateFactory The initial screen to load when the game starts as a supplier factory.
+   * @param initialStateFactory The initial state to load when the game starts as a supplier factory.
    * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use VSync to limit the framerate to the monitor's refresh rate?
+   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    * @param fullscreen Should the game start in fullscreen mode?
    */
   public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory, int framerate, boolean vsync, boolean fullscreen) {
@@ -249,7 +249,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * Called when the game is created. This is where you should initialize your game's resources.
    *
    * <p>This method configures the crash handler, sets up input processing, initializes the debug overlay, configures
-   * the ANSI system for color output in terminals, and then switches to the initial screen.
+   * the ANSI system for color output in terminals, and then switches to the initial state.
    *
    * <p>This method is called automatically by libGDX's {@link ApplicationListener#create()} method when the game is
    * created, so it is not necessary to call this method manually in most cases. However, it can be overridden to
@@ -371,14 +371,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame.
-    if (Flixel.keys != null) {
-      Flixel.keys.endFrame();
-    }
-
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null && Flixel.isDebugMode()) {
       debugOverlay.update(elapsed);
+    }
+
+    // Capture key state at end of frame so firstJustPressed()/firstJustReleased() work next frame.
+    if (Flixel.keys != null) {
+      Flixel.keys.endFrame();
     }
 
     if (Flixel.mouse != null) {
@@ -614,8 +614,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Destroys the game and all of its resources. Note that this doesn't close the game entirely.
-   * If you want to close the entire game, use {@link Application#exit()}.
+   * Destroys the game and all of its resources. Note that this doesn't close the game entirely, it just disposes
+   * of the game's resources. If you want to close the entire game, use {@link Application#exit()}.
    */
   @Override
   public void destroy() {
@@ -694,7 +694,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Configures Flixel's crash handler to safely catch uncaught exceptions and gracefully close the game.
+   * Configures the framework's crash handler to safely catch uncaught exceptions and gracefully close the game.
    */
   protected void configureCrashHandler() {
     Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
@@ -702,7 +702,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       String msg = "There was an uncaught exception on thread \"" + thread.getName() + "\"!\n" + logs;
       Flixel.error(msg);
       Flixel.showErrorAlert("Uncaught Exception", msg);
-      dispose();
+      destroy();
       // Only use Gdx.app.exit() on non-iOS platforms to avoid App Store guideline violations!
       if (Gdx.app.getType() != Application.ApplicationType.iOS) {
         Gdx.app.exit();

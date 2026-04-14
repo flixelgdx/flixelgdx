@@ -3,21 +3,35 @@
 We welcome contributions! Whether you're fixing bugs, adding new features, or improving documentation, your help is appreciated. To ensure a smooth process for everyone, please follow these guidelines.
 
 > [!TIP]
-> You can learn more about the project structure and build system in the [Project Structure](PROJECT.md) and [Compiling](COMPILING.md) documents.
+> You can learn more about the project structure and how to test it locally in the [Project Structure](PROJECT.md) and [Compiling](COMPILING.md) documents.
+
+> [!IMPORTANT]
+> ## Our Stance on AI
+> We welcome AI assistance with open arms. We believe that AI (if used correctly) is a powerful tool, which can be a massive
+> aid for development; however, we put emphasis on "assistance". While AI can be incredibly useful, it's not a replacement.
+> You can't outsource to AI with a brain if you don't have one in the first place.
+>
+> To ensure we have a stable codebase, we ask everyone to follow these simple rules when using AI in their workflow:
+>
+> 1. ***You must know what the code does before you request to merge it***. There are no excuses for this. If your code is broken,
+> not documented, unoptimized, or overall just unreadable, we will request you to make changes; and if you can't, then we will
+> close your pull request.
+>
+> 2. We don't require you to mention whether you used AI to help you by default. We believe that the core of software engineering
+> isn't just about writing code, but rather it's about solving problems through innovation; however, if a maintainer at any
+> point asks you about whether or not you used AI to help you, we request you to be honest and transparent about it.
+>
+> 3. If your code is broken or rejected, ***it is not the AI's fault, it is yours***. AI is useful, but it can't do the thinking for you.
 
 ## Java runtime (JDK 17, OpenJ9)
 
-FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use a JDK that ships **Eclipse OpenJ9** as the VM — specifically **[IBM Semeru Runtime](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/)** (Java 17, OpenJ9 edition).
-
-**Why:** OpenJ9 typically uses **much less heap and RSS** than HotSpot-class JVMs (Oracle JDK, Eclipse Temurin, Amazon Corretto, Azul Zulu HotSpot, and most default `openjdk-17` packages from Linux distros). That matters for games and iterative runs.
+FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use a JDK that ships **Eclipse OpenJ9** as the VM — specifically **[IBM Semeru Runtime](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/)** (Java 17, OpenJ9 edition). OpenJ9 typically uses **much less heap and RSS** than HotSpot-class JVMs (Oracle JDK, Eclipse Temurin, Amazon Corretto, Azul Zulu HotSpot, and most default `openjdk-17` packages from Linux distros). That matters for games and iterative runs.
 
 **Do not** use Oracle’s JDK or other **HotSpot** builds as your default for this project unless you have no alternative. If `java -version` output mentions **OpenJ9**, you are on the right VM; if it mentions **HotSpot** (or only “OpenJDK” without OpenJ9), switch to Semeru.
 
 CI uses **IBM Semeru (OpenJ9)** via GitHub Actions so builds match that recommendation.
 
-**Gradle toolchains:** The build is configured so **Java compile and test tasks** use a **Java 17 toolchain with the Eclipse OpenJ9 VM** (`JvmImplementation.J9`), not HotSpot. The [Foojay Toolchains Resolver](https://github.com/gradle/foojay-toolchains) (see `settings.gradle`) can auto-provision a matching JDK when possible. If you truly cannot use OpenJ9 for a one-off local build, pass **`-Pflixel.toolchain.requireOpenJ9=false`** or set **`flixel.toolchain.requireOpenJ9=false`** in `gradle.properties` (not recommended for day-to-day work).
-
-Full install steps for Windows, macOS, and Linux are in [COMPILING.md](COMPILING.md) (Java section).
+Full installation steps for Windows, macOS, and Linux are in [COMPILING.md](COMPILING.md) (Java section).
 
 ## Automated tests
 
@@ -53,11 +67,11 @@ EditorConfig only controls how your editor behaves when you type or when it appl
 #### Editor setup (use EditorConfig in your editor)
 
 - **IntelliJ IDEA**
-  - Go to **Settings → Editor → Code Style** and enable **“Enable EditorConfig support”** (on some versions it is under **Settings → Editor → General**).
-  - Use the **Project** code style scheme so EditorConfig takes precedence over personal/IDE defaults. The project’s `.editorconfig` also includes IntelliJ-specific options (e.g. `ij_java_*`) for brace style and imports.
+    - Go to **Settings → Editor → Code Style** and enable **“Enable EditorConfig support”** (on some versions it is under **Settings → Editor → General**).
+    - Use the **Project** code style scheme so EditorConfig takes precedence over personal/IDE defaults. The project’s `.editorconfig` also includes IntelliJ-specific options (e.g. `ij_java_*`) for brace style and imports.
 - **VS Code / Cursor**
-  - EditorConfig is not built in. Install the **“EditorConfig for VS Code”** extension (publisher: **EditorConfig**, extension ID: `EditorConfig.EditorConfig`).
-  - After that, the editor will follow `.editorconfig` for indent, line endings, and trim/final newline when you edit. Any “Format” or format-on-save still uses whatever formatter you have selected; configure that formatter to match the project (e.g. 2 spaces, 120 chars) so formatting and EditorConfig stay in sync.
+    - EditorConfig is not built in. Install the **“EditorConfig for VS Code”** extension (publisher: **EditorConfig**, extension ID: `EditorConfig.EditorConfig`).
+    - After that, the editor will follow `.editorconfig` for indent, line endings, and trim/final newline when you edit. Any “Format” or format-on-save still uses whatever formatter you have selected; configure that formatter to match the project (e.g. 2 spaces, 120 chars) so formatting and EditorConfig stay in sync.
 
 Once EditorConfig is enabled, new and edited files will respect the project’s indentation and whitespace rules automatically.
 
