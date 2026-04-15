@@ -594,4 +594,3 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
   }
 }
-
