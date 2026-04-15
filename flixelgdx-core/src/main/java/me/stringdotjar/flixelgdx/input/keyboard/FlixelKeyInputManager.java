@@ -162,8 +162,83 @@ public class FlixelKeyInputManager {
   /**
    * Returns whether at least one of the given keys is currently pressed.
    *
-   * @param keys key codes to check
-   * @return {@code true} if any key in the array is pressed and input is enabled.
+   * @param k1 The first key code to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
+   */
+  public boolean anyPressed(int k1) {
+    return enabled && pressed(k1);
+  }
+
+  /**
+   * Returns whether at least one of the given keys is currently pressed.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
+   */
+  public boolean anyPressed(int k1, int k2) {
+    return enabled && (pressed(k1) || pressed(k2));
+  }
+
+  /**
+   * Returns whether at least one of the given keys is currently pressed.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
+   */
+  public boolean anyPressed(int k1, int k2, int k3) {
+    return enabled && (pressed(k1) || pressed(k2) || pressed(k3));
+  }
+
+  /**
+   * Returns whether at least one of the given keys is currently pressed.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
+   */
+  public boolean anyPressed(int k1, int k2, int k3, int k4) {
+    return enabled && (pressed(k1) || pressed(k2) || pressed(k3) || pressed(k4));
+  }
+
+  /**
+   * Returns whether at least one of the given keys is currently pressed.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @param k5 The fifth key code to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
+   */
+  public boolean anyPressed(int k1, int k2, int k3, int k4, int k5) {
+    return enabled && (pressed(k1) || pressed(k2) || pressed(k3) || pressed(k4) || pressed(k5));
+  }
+
+  /**
+   * Returns whether at least one of the given keys is currently pressed.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @param k5 The fifth key code to check.
+   * @param k6 The sixth key code to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
+   */
+  public boolean anyPressed(int k1, int k2, int k3, int k4, int k5, int k6) {
+    return enabled && (pressed(k1) || pressed(k2) || pressed(k3) || pressed(k4) || pressed(k5) || pressed(k6));
+  }
+
+  /**
+   * Returns whether at least one of the given keys is currently pressed.
+   *
+   * @param keys The keys to check.
+   * @return {@code true} if any key in the given list is pressed and input is enabled.
    */
   public boolean anyPressed(int... keys) {
     if (!enabled || keys == null) {
@@ -180,8 +255,95 @@ public class FlixelKeyInputManager {
   /**
    * Returns whether at least one of the given keys was just pressed this frame.
    *
-   * @param keys key codes to check
+   * @param k1 The first key code to check.
    * @return true if any key in the array was just pressed and input is enabled
+   */
+  public boolean anyJustPressed(int k1) {
+    return enabled && Gdx.input.isKeyJustPressed(k1);
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just pressed this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @return {@code true} if any key in the given list was just pressed and input is enabled.
+   */
+  public boolean anyJustPressed(int k1, int k2) {
+    return enabled && (Gdx.input.isKeyJustPressed(k1) || Gdx.input.isKeyJustPressed(k2));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just pressed this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @return {@code true} if any key in the given list was just pressed and input is enabled.
+   */
+  public boolean anyJustPressed(int k1, int k2, int k3) {
+    return enabled && (Gdx.input.isKeyJustPressed(k1) || Gdx.input.isKeyJustPressed(k2) || Gdx.input.isKeyJustPressed(k3));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just pressed this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @return {@code true} if any key in the given list was just pressed and input is enabled.
+   */
+  public boolean anyJustPressed(int k1, int k2, int k3, int k4) {
+    return enabled
+      && (Gdx.input.isKeyJustPressed(k1) || Gdx.input.isKeyJustPressed(k2) || Gdx.input.isKeyJustPressed(k3) || Gdx.input.isKeyJustPressed(k4));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just pressed this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @param k5 The fifth key code to check.
+   * @return {@code true} if any key in the given list was just pressed and input is enabled.
+   */
+  public boolean anyJustPressed(int k1, int k2, int k3, int k4, int k5) {
+    return enabled
+      && (Gdx.input.isKeyJustPressed(k1)
+        || Gdx.input.isKeyJustPressed(k2)
+        || Gdx.input.isKeyJustPressed(k3)
+        || Gdx.input.isKeyJustPressed(k4)
+        || Gdx.input.isKeyJustPressed(k5));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just pressed this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @param k5 The fifth key code to check.
+   * @param k6 The sixth key code to check.
+   * @return {@code true} if any key in the given list was just pressed and input is enabled.
+   */
+  public boolean anyJustPressed(int k1, int k2, int k3, int k4, int k5, int k6) {
+    return enabled
+      && (Gdx.input.isKeyJustPressed(k1)
+        || Gdx.input.isKeyJustPressed(k2)
+        || Gdx.input.isKeyJustPressed(k3)
+        || Gdx.input.isKeyJustPressed(k4)
+        || Gdx.input.isKeyJustPressed(k5)
+        || Gdx.input.isKeyJustPressed(k6));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just pressed this frame.
+   *
+   * @param keys The keys to check.
+   * @return {@code true} if any key in the given list was just pressed and input is enabled.
    */
   public boolean anyJustPressed(int... keys) {
     if (!enabled || keys == null) {
@@ -198,7 +360,83 @@ public class FlixelKeyInputManager {
   /**
    * Returns whether at least one of the given keys was just released this frame.
    *
-   * @param keys Keys to check if they were just released.
+   * @param k1 The first key code to check.
+   * @return {@code true} if any key in the given list was just released and input is enabled.
+   */
+  public boolean anyJustReleased(int k1) {
+    return enabled && justReleased(k1);
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just released this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @return {@code true} if any key in the given list was just released and input is enabled.
+   */
+  public boolean anyJustReleased(int k1, int k2) {
+    return enabled && (justReleased(k1) || justReleased(k2));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just released this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @return {@code true} if any key in the given list was just released and input is enabled.
+   */
+  public boolean anyJustReleased(int k1, int k2, int k3) {
+    return enabled && (justReleased(k1) || justReleased(k2) || justReleased(k3));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just released this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @return {@code true} if any key in the given list was just released and input is enabled.
+   */
+  public boolean anyJustReleased(int k1, int k2, int k3, int k4) {
+    return enabled && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just released this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @param k5 The fifth key code to check.
+   * @return {@code true} if any key in the given list was just released and input is enabled.
+   */
+  public boolean anyJustReleased(int k1, int k2, int k3, int k4, int k5) {
+    return enabled && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4) || justReleased(k5));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just released this frame.
+   *
+   * @param k1 The first key code to check.
+   * @param k2 The second key code to check.
+   * @param k3 The third key code to check.
+   * @param k4 The fourth key code to check.
+   * @param k5 The fifth key code to check.
+   * @param k6 The sixth key code to check.
+   * @return {@code true} if any key in the given list was just released and input is enabled.
+   */
+  public boolean anyJustReleased(int k1, int k2, int k3, int k4, int k5, int k6) {
+    return enabled
+      && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4) || justReleased(k5) || justReleased(k6));
+  }
+
+  /**
+   * Returns whether at least one of the given keys was just released this frame.
+   *
+   * @param keys The keys to check.
    * @return {@code true} if any key in the given list was just released and input is enabled.
    */
   public boolean anyJustReleased(int... keys) {

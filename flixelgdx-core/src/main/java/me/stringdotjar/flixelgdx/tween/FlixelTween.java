@@ -994,7 +994,13 @@ public abstract class FlixelTween implements Pool.Poolable {
    * want a full reset (as {@link me.stringdotjar.flixelgdx.Flixel#switchState} does when {@code clearTweens} is true).
    */
   public static void cancelActiveTweens() {
-    globalManager.getActiveTweens().forEach(tween -> tween.cancel());
+    Array<FlixelTween> list = globalManager.getActiveTweens();
+    for (int i = list.size - 1; i >= 0; i--) {
+      FlixelTween t = list.get(i);
+      if (t != null) {
+        t.cancel();
+      }
+    }
   }
 
   public static FlixelTweenManager getGlobalManager() {

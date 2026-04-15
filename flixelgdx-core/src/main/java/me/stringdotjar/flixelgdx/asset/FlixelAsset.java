@@ -12,9 +12,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Typed handle for one asset path + class, with optional {@code persist} and refcount.
  *
- * <p>Obtain pooled handles with {@link FlixelAssetManager#obtainTypedAsset(String, Class)} (cached on
- * {@link me.stringdotjar.flixelgdx.Flixel#assets}). {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic} and
- * {@link me.stringdotjar.flixelgdx.audio.FlixelSound} also implement this contract where applicable.
+ * <p>Handles are cached on {@link me.stringdotjar.flixelgdx.Flixel#assets}. {@link FlixelAssetManager#obtainTypedAsset(String, Class)}
+ * and {@link FlixelAssetManager#obtainWrapper(String, Class)} implicitly {@link #retain()}; use {@link FlixelAssetManager#ensureTypedAsset}
+ * / {@link FlixelAssetManager#ensureWrapper} when you must not change the refcount. {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic}
+ * and {@link me.stringdotjar.flixelgdx.audio.FlixelSound} also implement this contract where applicable.
  *
  * <p>Prefer {@link #queueLoad()} in a loading state and {@code Flixel.assets.update()} each frame.
  *

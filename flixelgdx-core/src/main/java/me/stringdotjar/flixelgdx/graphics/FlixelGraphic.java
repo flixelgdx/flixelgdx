@@ -27,6 +27,18 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper instances are pooled in {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager} so
  * multiple sprites can share policy state.
  *
+ * <p><b>Owned versus persist</b>:
+ * <ul>
+ *   <li><b>Owned</b> - Structural. This graphic was built with a non-null dedicated {@link Texture} (for example
+ *     {@code makeGraphic} or {@code loadGraphic(Texture, ...)}). The framework disposes that texture when the wrapper
+ *     is evicted from the pool. {@code isOwned()} is true. Not a user toggle.</li>
+ *   <li><b>Persist</b> - Policy. For path-keyed pooled graphics, whether an unreferenced wrapper survives
+ *     {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#clearNonPersist()}. New non-owned graphics use
+ *     {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#getGlobalPersist()} by default. Owned graphics always
+ *     use {@code persist == false} and are always removed on {@code clearNonPersist()} when refcount is zero, so
+ *     {@code persist} does not block eviction of synthetic textures.</li>
+ * </ul>
+ *
  * <p>Lifecycle ({@code persist}, refcount) is tracked here; keyed texture loading is implemented in
  * {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager} ({@link me.stringdotjar.flixelgdx.Flixel#assets}).
  *
@@ -47,16 +59,19 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
     this(assetManager, assetKey, null);
   }
 
-  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String key, @Nullable Texture ownedTexture) {
-    super(assetManager, key, Texture.class);
+  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey, @Nullable Texture ownedTexture) {
+    super(assetManager, assetKey, Texture.class);
     this.owned = (ownedTexture != null);
     this.ownedTexture = ownedTexture;
+    if (this.owned) {
+      setPersist(false);
+    }
   }
 
   @NotNull
   @Override
   public FlixelGraphic setPersist(boolean persist) {
-    super.setPersist(persist);
+    super.setPersist(!owned ? persist : false); // If the graphic is owned, then we don't want to change the persist state.
     return this;
   }
 

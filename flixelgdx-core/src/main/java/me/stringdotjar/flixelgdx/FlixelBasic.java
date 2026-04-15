@@ -15,14 +15,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * This is the most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
- * extend this class. It has no size, position, or graphical data, only lifecycle flags and
- * a unique ID.
+ * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
  * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
  * it clears lifecycle state and, in subclasses such as {@link FlixelSprite}, releases graphics and
  * other resources. {@link #dispose()} and {@link #reset()} (for {@link com.badlogic.gdx.utils.Pool}) delegate to
- * {@link #destroy()}, which aligns with libGDX&rsquo;s {@link com.badlogic.gdx.utils.Disposable} expectations.
+ * {@link #destroy()}, which aligns with libGDX's {@link com.badlogic.gdx.utils.Disposable} expectations.
  *
  * <table border="1">
  *   <caption><strong>Lifecycle cheat sheet</strong></caption>
@@ -36,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #destroy()} (drops resources you may still want)</td>
  *     </tr>
  *     <tr>
- *       <td>Reuse a &ldquo;dead&rdquo; slot in a {@link me.stringdotjar.flixelgdx.group.FlixelBasicGroup}</td>
+ *       <td>Reuse a "dead" slot in a {@link me.stringdotjar.flixelgdx.group.FlixelBasicGroup}</td>
  *       <td>{@link me.stringdotjar.flixelgdx.group.FlixelBasicGroup#recycle()} or {@link #revive()} after {@link #kill()}</td>
  *       <td>{@link #destroy()} unless you truly discard the instance</td>
  *     </tr>
@@ -82,7 +81,7 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
   /** Controls whether {@link #update(float)} and {@link #draw(Batch)} are automatically called. */
   public boolean exists = true;
 
-  /** Controls whether {@link #draw(Batch)} is automatically called. */
+  /** Controls whether {@code this} object should be displayed on the screen. */
   public boolean visible = true;
 
   /** Cameras this object may render on. {@code null} or an empty array means every camera. */
@@ -154,8 +153,7 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
   }
 
   /**
-   * Brings this object back to life by setting {@link #alive} and {@link #exists} to
-   * {@code true}.
+   * Brings this object back to life by setting {@link #alive} and {@link #exists} to {@code true}.
    */
   public void revive() {
     alive = true;
