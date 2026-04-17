@@ -237,3 +237,4 @@ A good PR is easy to review and merge.
 - **Self-review**: Before submitting, run `./gradlew classes` and `./gradlew :flixelgdx-test:test` (and any other relevant tasks) and fix build failures. Ensure formatting and style match the rest of the project; see [Editor setup (use EditorConfig in your editor)](#editor-setup-use-editorconfig-in-your-editor) above to enable EditorConfig in your editor.
 - **Tests**: If you add a new feature, include tests or clear steps to verify the behavior. For bug fixes, describe how to reproduce the bug and confirm the fix.
 - **Review feedback**: Address review comments in new commits or by amending. Keep the discussion focused and update the PR description if the scope changes.
+- **Size**: Please keep pull requests small and concise. If a pull request has thousands of changes, ***we will close it***.
