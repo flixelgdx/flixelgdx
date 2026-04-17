@@ -8,6 +8,8 @@
 - [x] Add unit tests for verifying logic works in the `flixelgdx-core` module.
 - [x] Implement GitHub configs, such as issue templates, build checks, etc. (**NOTE**: this might change over time!)
 - [x] Create a logo for the framework, including a large and small one
+- [ ] Add support for Android and iOS
+  - [ ] Find someone to help me test iOS ***or*** get a Macbook with Xcode and test it on there
 - [ ] Create a Discord server for people to find help and for collaborators/contributors to easily contact me
 - [ ] Develop comprehensive and modernized website (EJ will help with this)
   - [ ] Create homepage
