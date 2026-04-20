@@ -4,4 +4,4 @@ jdk:
 
 # Publish all library artifacts to the local Maven repo for JitPack to pick up.
 install:
-  - ./gradlew publishToMavenLocal --no-daemon
+  - ./gradlew publishToMavenLocal -PincludeAndroid=true --no-daemon
