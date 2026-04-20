@@ -110,7 +110,7 @@ configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'fl
 subprojects {
   // JitPack serves artifacts as com.github.<user>.<repo>; POMs must use the same groupId for
   // transitive flixelgdx modules or Gradle looks up me.stringdotjar.flixelgdx on other repos and fails.
-  group = System.getenv('JITPACK') == 'true' ? 'com.github.stringdotjar.flixelgdx' : 'me.stringdotjar.flixelgdx'
+  group = "$groupId"
   version = "$projectVersion"
   ext.appName = 'flixelgdx'
   repositories {
@@ -184,12 +184,22 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixe
             rootProject.configureFlixelMavenPom(delegate)
           }
         }
+      }
+    }
+  }
+}
 
+// Force natives for the published artifacts uploaded to Maven Central and JitPack
+// so that way developers aren't required to add the natives-desktop modules every time.
+configure(subprojects.findAll { it.name == 'flixelgdx-lwjgl3' }) {
+  afterEvaluate {
+    publishing {
+      publications {
         named('maven', MavenPublication) {
           pom.withXml {
-            def dependenciesNode = asNode().appendNode('dependencies')
+            // Find or create the dependencies node
+            def dependenciesNode = asNode().get('dependencies')[0] ?: asNode().appendNode('dependencies')
 
-            // Function to add a classified dependency
             def addNatives = { gId, aId, ver, classifier ->
               def dep = dependenciesNode.appendNode('dependency')
               dep.appendNode('groupId', gId)
@@ -199,7 +209,6 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixe
               dep.appendNode('scope', 'compile')
             }
 
-            // Force the natives into the POM
             addNatives('com.badlogicgames.gdx', 'gdx-platform', gdxVersion, 'natives-desktop')
             addNatives('com.badlogicgames.gdx', 'gdx-freetype-platform', gdxVersion, 'natives-desktop')
             addNatives('games.rednblack.miniaudio', 'gdx-miniaudio-platform', miniaudioVersion, 'natives-desktop')
