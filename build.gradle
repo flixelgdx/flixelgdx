@@ -110,7 +110,7 @@ configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'fl
 subprojects {
   // JitPack serves artifacts as com.github.<user>.<repo>; POMs must use the same groupId for
   // transitive flixelgdx modules or Gradle looks up me.stringdotjar.flixelgdx on other repos and fails.
-  group = System.getenv('JITPACK') == 'true' ? 'com.github.stringdotjar.flixelgdx' : 'me.stringdotjar.flixelgdx'
+  group = "$groupId"
   version = "$projectVersion"
   ext.appName = 'flixelgdx'
   repositories {
@@ -167,6 +167,16 @@ ext.configureFlixelMavenPom = { MavenPublication publication ->
 subprojects { Project p ->
   p.pluginManager.withPlugin('java-library') {
     p.apply from: rootProject.file('gradle/flixelgdx-library-publish.gradle')
+  }
+}
+
+// JitPack rewrites published Gradle module metadata (.module) and drops thirdPartyCompatibility
+// entries (artifactSelector / classifiers like natives-desktop). Gradle then resolves the wrong
+// libGDX artifacts. POMs still declare classifiers correctly; skip publishing .module so consumers
+// use the POM (and are not misled by JitPack-stripped metadata).
+subprojects {
+  tasks.matching { it.name.startsWith('generateMetadataFileFor') }.configureEach {
+    enabled = false
   }
 }
 
