@@ -170,6 +170,16 @@ subprojects { Project p ->
   }
 }
 
+// JitPack rewrites published Gradle module metadata (.module) and drops thirdPartyCompatibility
+// entries (artifactSelector / classifiers like natives-desktop). Gradle then resolves the wrong
+// libGDX artifacts. POMs still declare classifiers correctly; skip publishing .module so consumers
+// use the POM (and are not misled by JitPack-stripped metadata).
+subprojects {
+  tasks.matching { it.name.startsWith('generateMetadataFileFor') }.configureEach {
+    enabled = false
+  }
+}
+
 configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-teavm-plugin' }) {
   apply plugin: 'maven-publish'
   afterEvaluate {
@@ -182,36 +192,6 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixe
             artifactId = project.name
             version = project.version
             rootProject.configureFlixelMavenPom(delegate)
-          }
-        }
-      }
-    }
-  }
-}
-
-// Force natives for the published artifacts uploaded to Maven Central and JitPack
-// so that way developers aren't required to add the natives-desktop modules every time.
-configure(subprojects.findAll { it.name == 'flixelgdx-lwjgl3' }) {
-  afterEvaluate {
-    publishing {
-      publications {
-        named('maven', MavenPublication) {
-          pom.withXml {
-            // Find or create the dependencies node
-            def dependenciesNode = asNode().get('dependencies')[0] ?: asNode().appendNode('dependencies')
-
-            def addNatives = { gId, aId, ver, classifier ->
-              def dep = dependenciesNode.appendNode('dependency')
-              dep.appendNode('groupId', gId)
-              dep.appendNode('artifactId', aId)
-              dep.appendNode('version', ver)
-              dep.appendNode('classifier', classifier)
-              dep.appendNode('scope', 'compile')
-            }
-
-            addNatives('com.badlogicgames.gdx', 'gdx-platform', gdxVersion, 'natives-desktop')
-            addNatives('com.badlogicgames.gdx', 'gdx-freetype-platform', gdxVersion, 'natives-desktop')
-            addNatives('games.rednblack.miniaudio', 'gdx-miniaudio-platform', miniaudioVersion, 'natives-desktop')
           }
         }
       }

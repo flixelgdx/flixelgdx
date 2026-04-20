@@ -61,6 +61,7 @@ www-test/
 .metadata/
 /android/bin/
 /core/bin/
+flixelgdx-*/bin/
 /lwjgl2/bin/
 /lwjgl3/bin/
 /html/bin/
