@@ -184,6 +184,27 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixe
             rootProject.configureFlixelMavenPom(delegate)
           }
         }
+
+        named('maven', MavenPublication) {
+          pom.withXml {
+            def dependenciesNode = asNode().appendNode('dependencies')
+
+            // Function to add a classified dependency
+            def addNatives = { gId, aId, ver, classifier ->
+              def dep = dependenciesNode.appendNode('dependency')
+              dep.appendNode('groupId', gId)
+              dep.appendNode('artifactId', aId)
+              dep.appendNode('version', ver)
+              dep.appendNode('classifier', classifier)
+              dep.appendNode('scope', 'compile')
+            }
+
+            // Force the natives into the POM
+            addNatives('com.badlogicgames.gdx', 'gdx-platform', gdxVersion, 'natives-desktop')
+            addNatives('com.badlogicgames.gdx', 'gdx-freetype-platform', gdxVersion, 'natives-desktop')
+            addNatives('games.rednblack.miniaudio', 'gdx-miniaudio-platform', miniaudioVersion, 'natives-desktop')
+          }
+        }
       }
     }
   }
