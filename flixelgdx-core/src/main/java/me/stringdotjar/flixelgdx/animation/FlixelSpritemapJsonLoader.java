@@ -26,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Helper class that loads Adobe/CreateJS-style spritemap JSON plus an animation definition JSON and applies them to
- * a {@link FlixelSprite} through a {@link FlixelAnimationController}. Kept out of
+ * a {@link me.stringdotjar.flixelgdx.FlixelSprite} through a {@link FlixelAnimationController}. Kept out of
  * {@link FlixelAnimationController} so the controller file stays a thin timing and playback API.
  */
 public final class FlixelSpritemapJsonLoader {
