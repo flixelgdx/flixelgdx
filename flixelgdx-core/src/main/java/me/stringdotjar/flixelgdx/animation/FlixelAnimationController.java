@@ -25,6 +25,7 @@ import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.StringReader;
 import java.util.Comparator;
 
 /**
@@ -119,17 +120,19 @@ public class FlixelAnimationController implements FlixelUpdatable {
   @NotNull
   public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull String xmlPath) {
     FileHandle xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
-    return loadSparrowFrames(textureKey, new XmlReader().parse(xml.reader("UTF-8")));
+    String text = FlixelSpritemapJsonLoader.readUtf8Text(xml);
+    return loadSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
   }
 
   /**
    * @param textureKey Asset key of the {@link FlixelGraphic}.
-   * @param xmlFile Sparrow XML file, read as UTF-8
+   * @param xmlFile Sparrow XML file, read as UTF-8 (optional BOM stripped)
    * @return The owning sprite for chaining.
    */
   @NotNull
   public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
-    return loadSparrowFrames(textureKey, new XmlReader().parse(xmlFile.reader("UTF-8")));
+    String text = FlixelSpritemapJsonLoader.readUtf8Text(xmlFile);
+    return loadSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
   }
 
   /**

@@ -122,10 +122,18 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private boolean lastDrawDebugForVisLine = false;
 
   private final Deque<BufferedLogLine> logBuffer = new ArrayDeque<>();
+  /** Pooled log lines: reuse {@link FlixelString} storage instead of allocating per message. */
+  private final Array<BufferedLogLine> logLinePool = new Array<>();
   private final Consumer<FlixelLogEntry> logListener = this::onLogEntry;
 
   /** Reused when formatting {@link FlixelLogEntry} lines for the log buffer. */
   private final FlixelString logMarkupScratch = new FlixelString(128);
+
+  /** Recomputed only when a debug key binding changes (avoids {@link Input.Keys#toString} allocations every 0.5s). */
+  private int cachedKeybindsHash = Integer.MIN_VALUE;
+
+  private int lastDrawViewportW = -1;
+  private int lastDrawViewportH = -1;
 
   /** Mutable y-cursor used during watch panel rendering to avoid boxing a float. */
   private float watchDrawY;
@@ -235,7 +243,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       appendMbStatLine(lineTexVram, "[#FFAA66]TexVRAM (approx.): ", texMb);
       appendPausedLine(linePaused);
       appendCamInspectLine(lineCamInspect);
-      appendKeybindsLine(lineKeybinds);
+      maybeAppendKeybindsLine();
     }
 
     // Refresh watch values at 10 Hz to avoid unnecessary per-frame allocations,
@@ -337,16 +345,26 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     }
   }
 
-  private static void appendKeybindsLine(FlixelString line) {
-    line.clear();
-    line.concat("[#AAAAAA]");
-    line.concat(Input.Keys.toString(Flixel.getDebugToggleKey())).concat("=ov ");
-    line.concat(Input.Keys.toString(Flixel.getDebugDrawToggleKey())).concat("=hit ");
-    line.concat(Input.Keys.toString(Flixel.getDebugPauseKey())).concat("=pause ");
-    line.concat("Alt+");
-    line.concat(Input.Keys.toString(Flixel.getDebugCameraCycleLeftKey())).concat('/');
-    line.concat(Input.Keys.toString(Flixel.getDebugCameraCycleRightKey())).concat("=cam ");
-    line.concat("RMB=pan Wh=zoom");
+  private void maybeAppendKeybindsLine() {
+    int kt = Flixel.getDebugToggleKey();
+    int kd = Flixel.getDebugDrawToggleKey();
+    int kp = Flixel.getDebugPauseKey();
+    int kl = Flixel.getDebugCameraCycleLeftKey();
+    int kr = Flixel.getDebugCameraCycleRightKey();
+    int h = kt ^ (kd << 5) ^ (kp << 10) ^ (kl << 15) ^ (kr << 20);
+    if (h == cachedKeybindsHash && lineKeybinds.length() > 0) {
+      return;
+    }
+    cachedKeybindsHash = h;
+    lineKeybinds.clear();
+    lineKeybinds.concat("[#AAAAAA]");
+    lineKeybinds.concat(Input.Keys.toString(kt)).concat("=ov ");
+    lineKeybinds.concat(Input.Keys.toString(kd)).concat("=hit ");
+    lineKeybinds.concat(Input.Keys.toString(kp)).concat("=pause ");
+    lineKeybinds.concat("Alt+");
+    lineKeybinds.concat(Input.Keys.toString(kl)).concat('/');
+    lineKeybinds.concat(Input.Keys.toString(kr)).concat("=cam ");
+    lineKeybinds.concat("RMB=pan Wh=zoom");
   }
 
   private void reclaimConsoleBlocksToPool() {
@@ -494,7 +512,13 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       return;
     }
 
-    viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+    int dw = Gdx.graphics.getWidth();
+    int dh = Gdx.graphics.getHeight();
+    if (dw != lastDrawViewportW || dh != lastDrawViewportH) {
+      lastDrawViewportW = dw;
+      lastDrawViewportH = dh;
+      viewport.update(dw, dh, true);
+    }
     camera.update();
 
     batch.setProjectionMatrix(camera.combined);
@@ -611,16 +635,21 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     synchronized (logBuffer) {
       synchronized (logMarkupScratch) {
         appendLogMarkup(logMarkupScratch, entry);
-        logBuffer.addLast(new BufferedLogLine(new FlixelString(logMarkupScratch)));
-      }
-      while (logBuffer.size() > FlixelLogger.MAX_LOG_ENTRIES) {
-        logBuffer.removeFirst();
+        while (logBuffer.size() >= FlixelLogger.MAX_LOG_ENTRIES) {
+          BufferedLogLine old = logBuffer.removeFirst();
+          logLinePool.add(old);
+        }
+        BufferedLogLine line = logLinePool.size > 0 ? logLinePool.pop() : new BufferedLogLine();
+        line.markup.set(logMarkupScratch);
+        logBuffer.addLast(line);
       }
     }
   }
 
   /** Call from {@link me.stringdotjar.flixelgdx.FlixelGame#resize(int, int)} to keep the overlay viewport in sync. */
   public void resize(int width, int height) {
+    lastDrawViewportW = -1;
+    lastDrawViewportH = -1;
     viewport.update(width, height, true);
   }
 
@@ -654,13 +683,9 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     private Keybinds() {}
   }
 
-  /** One colored line in the log console; markup is built once when the log is received. */
+  /** One colored line in the log console; buffer is recycled through {@link #logLinePool}. */
   private static final class BufferedLogLine {
-    final FlixelString markup;
-
-    BufferedLogLine(FlixelString markup) {
-      this.markup = markup;
-    }
+    final FlixelString markup = new FlixelString(192);
   }
 
   /** Cached block for {@link FlixelDebugConsoleEntry} output (rebuilt at 10 Hz). */
