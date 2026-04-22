@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  *     {@code persist} does not block eviction of synthetic textures.</li>
  * </ul>
  *
- * <p>Lifecycle ({@code persist}, refcount) is tracked here; keyed texture loading is implemented in
+ * <p>Lifecycle ({@code persist}, refcount) is tracked here. Keyed texture loading is implemented in
  * {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager} ({@link me.stringdotjar.flixelgdx.Flixel#assets}).
  *
  * <p>Enqueue loads with {@link #queueLoad()} (or {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#load(FlixelSource)} /
@@ -55,10 +55,26 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
 
   private final boolean owned;
 
+  /**
+   * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
+   * 
+   * @param assetManager The parent asset manager.
+   * @param assetKey The asset key.
+   */
   public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey) {
     this(assetManager, assetKey, null);
   }
 
+  /**
+   * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
+   * 
+   * <p>This constructor is used to create a new {@link FlixelGraphic} with an owned texture.
+   * This is typically used by {@link me.stringdotjar.flixelgdx.FlixelSprite#makeGraphic(int, int, Color)} and {@link me.stringdotjar.flixelgdx.FlixelSprite#loadGraphic(Texture, int)}.
+   *
+   * @param assetManager The parent asset manager.
+   * @param assetKey The asset key.
+   * @param ownedTexture The owned texture.
+   */
   public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey, @Nullable Texture ownedTexture) {
     super(assetManager, assetKey, Texture.class);
     this.owned = (ownedTexture != null);
@@ -110,7 +126,7 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
   }
 
   /**
-   * Returns the loaded texture. Strict: the texture must already be loaded
+   * Returns the loaded texture. Note the texture must already be loaded
    * (typically via {@link #queueLoad()} plus {@link FlixelAssetManager#update()} in a loading state).
    */
   @NotNull

@@ -265,6 +265,27 @@ public class FlixelSprite extends FlixelObject {
    * Loads a graphic from a {@link FlixelGraphic}.
    *
    * @param g The {@link FlixelGraphic} to load.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g) {
+    return loadGraphic(g, g.requireTexture().getWidth(), g.requireTexture().getHeight());
+  }
+
+  /**
+   * Loads a graphic from a {@link FlixelGraphic}.
+   *
+   * @param g The {@link FlixelGraphic} to load.
+   * @param frameWidth The width of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g, int frameWidth) {
+    return loadGraphic(g, frameWidth, g.requireTexture().getHeight());
+  }
+
+  /**
+   * Loads a graphic from a {@link FlixelGraphic}.
+   *
+   * @param g The {@link FlixelGraphic} to load.
    * @param frameWidth The width of the graphic.
    * @param frameHeight The height of the graphic.
    * @return {@code this} sprite for chaining.
