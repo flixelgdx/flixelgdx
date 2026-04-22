@@ -56,6 +56,15 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   void load(@NotNull String path);
 
   /**
+   * Like {@link #load(String)} but marks the asset key so the first {@link FlixelAsset} or {@link FlixelGraphic}
+   * handle created for that key uses {@code persist == true} (survives {@link #clearNonPersist()} when unreferenced).
+   *
+   * @param path Same as {@link #load(String)}.
+   * @param persist When {@code true}, the next handle for this key is persistent.
+   */
+  void load(@NotNull String path, boolean persist);
+
+  /**
    * Registers or replaces the factory used for a file extension (e.g. {@code ".png"} or {@code png}).
    * The factory receives the full path string and returns a {@link FlixelSource} whose runtime type is
    * what libGDX {@link AssetManager} should load (e.g. {@link com.badlogic.gdx.graphics.Texture}).
@@ -82,11 +91,29 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   <T> void load(@NotNull String fileName, @NotNull Class<T> type);
 
   /**
+   * Like {@link #load(String, Class)} with a pending persist flag for the first handle (see {@link #load(String, boolean)}).
+   * 
+   * @param fileName The asset key/path passed to libGDX.
+   * @param type The concrete type registered with {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@link com.badlogic.gdx.graphics.Texture}.class).
+   * @param persist The pending persist flag for the first handle.
+   * @param <T> The asset type.
+   */
+  <T> void load(@NotNull String fileName, @NotNull Class<T> type, boolean persist);
+
+  /**
    * Enqueues loading for the given source’s key and runtime type.
    *
    * @param source Non-null source describing what to load.
    */
   void load(@NotNull FlixelSource<?> source);
+
+  /**
+   * Like {@link #load(FlixelSource)} with a pending persist flag (see {@link #load(String, boolean)}).
+   *
+   * @param source The source to load.
+   * @param persist The pending persist flag for the first handle.
+   */
+  void load(@NotNull FlixelSource<?> source, boolean persist);
 
   /**
    * Enqueues loading using a libGDX asset descriptor.

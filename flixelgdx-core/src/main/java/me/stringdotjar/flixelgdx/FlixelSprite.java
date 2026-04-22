@@ -20,7 +20,6 @@ import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +98,7 @@ public class FlixelSprite extends FlixelObject {
   protected boolean flipY = false;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
-  protected int facing = FlixelConstants.Graphics.FACING_RIGHT;
+  protected int facing = FlixelObject.DirectionFlags.RIGHT;
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
@@ -349,7 +348,8 @@ public class FlixelSprite extends FlixelObject {
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} only;
+   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link me.stringdotjar.flixelgdx.animation.FlixelSpritemapJsonLoader#load};
    * not a general API for game code.
    *
    * @param newGraphic Graphic from {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...)} (implicit retain).
@@ -387,7 +387,7 @@ public class FlixelSprite extends FlixelObject {
       float drawX = wx - offsetX + currentFrame.offsetX;
       float drawY = wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
 
-      boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       batch.setColor(color);
@@ -410,7 +410,7 @@ public class FlixelSprite extends FlixelObject {
         isFlippedY);
       batch.setColor(Color.WHITE);
     } else if (currentRegion != null) {
-      boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       float sx = isFlippedX ? -scaleX : scaleX;

@@ -8,14 +8,12 @@
 package me.stringdotjar.flixelgdx;
 
 import me.stringdotjar.flixelgdx.debug.FlixelDebugDrawable;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 /**
  * The base class for all visual/spatial objects in Flixel. Extends {@link FlixelBasic} with
  * position ({@link #x}, {@link #y}), dimensions ({@link #width}, {@link #height}),
  * rotation ({@link #angle}), and a full kinematic physics model (velocity, acceleration,
- * drag, collision flags) modeled after
- * <a href="https://api.haxeflixel.com/flixel/FlxObject.html">HaxeFlixel's FlxObject</a>.
+ * drag, collision flags).
  *
  * <p>Most games interact with this through {@link FlixelSprite}, which adds graphical
  * capabilities on top of this spatial foundation.
@@ -28,6 +26,12 @@ import me.stringdotjar.flixelgdx.util.FlixelConstants;
  *
  */
 public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
+
+  /**
+   * Maximum number of pixels two objects can intersect before {@link #separate(FlixelObject, FlixelObject)} gives up
+   * when using overlap checks.
+   */
+  public static final float SEPARATE_BIAS = 4f;
 
   /** X position of the upper left corner of this object in world space. */
   private float x = 0f;
@@ -91,25 +95,25 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
 
   /**
    * Bit field of direction flags indicating which sides allow collision.
-   * Use {@link FlixelConstants.Physics#ANY} (default) for full collision,
-   * {@link FlixelConstants.Physics#NONE} for no collision, or combine
+   * Use {@link DirectionFlags#ANY} (default) for full collision,
+   * {@link DirectionFlags#NONE} for no collision, or combine
    * individual flags.
    *
-   * @see FlixelConstants.Physics
+   * @see DirectionFlags
    */
-  protected int allowCollisions = FlixelConstants.Physics.ANY;
+  protected int allowCollisions = DirectionFlags.ANY;
 
   /**
    * Bit field indicating which surfaces this object is currently touching.
    * Set by {@link #separate} and reset at the start of each {@link #update}.
    */
-  protected int touching = FlixelConstants.Physics.NONE;
+  protected int touching = DirectionFlags.NONE;
 
   /**
    * Copy of {@link #touching} from the previous frame, useful for detecting
    * the moment an object lands ({@link #justTouched}).
    */
-  protected int wasTouching = FlixelConstants.Physics.NONE;
+  protected int wasTouching = DirectionFlags.NONE;
 
   /**
    * When {@code true}, this object will not be moved by collision resolution.
@@ -158,14 +162,31 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
    */
   protected float[] debugColorOverride = null;
 
+  /**
+   * Creates a new {@link FlixelObject} with the default position (0, 0) and size (0, 0).
+   */
   public FlixelObject() {
     this(0f, 0f, 0f, 0f);
   }
 
+  /**
+   * Creates a new {@link FlixelObject} with the given position and size (0, 0).
+   *
+   * @param x The x position.
+   * @param y The y position.
+   */
   public FlixelObject(float x, float y) {
     this(x, y, 0f, 0f);
   }
 
+  /**
+   * Creates a new {@link FlixelObject} with the given position and size.
+   *
+   * @param x The x position.
+   * @param y The y position.
+   * @param width The width.
+   * @param height The height.
+   */
   public FlixelObject(float x, float y, float width, float height) {
     super();
     this.x = x;
@@ -192,7 +213,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     }
 
     wasTouching = touching;
-    touching = FlixelConstants.Physics.NONE;
+    touching = DirectionFlags.NONE;
   }
 
   @Override
@@ -212,9 +233,9 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     angularDrag = 0f;
     maxAngularVelocity = 10000f;
     moves = true;
-    allowCollisions = FlixelConstants.Physics.ANY;
-    touching = FlixelConstants.Physics.NONE;
-    wasTouching = FlixelConstants.Physics.NONE;
+    allowCollisions = DirectionFlags.ANY;
+    touching = DirectionFlags.NONE;
+    wasTouching = DirectionFlags.NONE;
     immovable = false;
     elasticity = 0f;
     mass = 1f;
@@ -464,18 +485,19 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
   }
 
   /**
-   * Convenience accessor, returns {@code true} when {@code allowCollisions} is not {@link FlixelConstants.Physics#NONE}.
+   * Convenience accessor, returns {@code true} when {@code allowCollisions} is not {@link DirectionFlags#NONE}.
    */
   public boolean isSolid() {
-    return allowCollisions != FlixelConstants.Physics.NONE;
+    return allowCollisions != DirectionFlags.NONE;
   }
 
   /**
-   * Convenience setter: sets {@link #allowCollisions} to {@code ANY} when
-   * {@code solid} is true, or {@code NONE} when false.
+   * Sets {@link #allowCollisions} to {@code ANY} when {@code solid} is true, or {@code NONE} when false.
+   *
+   * @param solid Whether the object should be solid.
    */
   public void setSolid(boolean solid) {
-    allowCollisions = solid ? FlixelConstants.Physics.ANY : FlixelConstants.Physics.NONE;
+    allowCollisions = solid ? DirectionFlags.ANY : DirectionFlags.NONE;
   }
 
   public int getTouching() {
@@ -542,7 +564,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     lastX = x;
     lastY = y;
     velocityX = velocityY = 0f;
-    touching = wasTouching = FlixelConstants.Physics.NONE;
+    touching = wasTouching = DirectionFlags.NONE;
   }
 
   /**
@@ -586,8 +608,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
 
   /**
    * Internal function for updating the position and speed of this object
-   * using a velocity-verlet style integration matching
-   * <a href="https://api.haxeflixel.com/flixel/FlxObject.html">FlxObject</a>.
+   * using a velocity-verlet style integration.
    *
    * @param elapsed Seconds elapsed since the last frame.
    */
@@ -655,7 +676,6 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
    * @param object1 First object.
    * @param object2 Second object.
    * @return {@code true} if the objects were overlapping and were separated.
-   * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#separate">FlxObject.separate</a>
    */
   public static boolean separate(FlixelObject object1, FlixelObject object2) {
     boolean separatedX = separateX(object1, object2);
@@ -768,7 +788,6 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
    * @param object2 Second object.
    * @param checkMaxOverlap Whether to reject overlaps greater than combined movement + {@code SEPARATE_BIAS}.
    * @return Signed overlap in pixels (positive means object1's right side penetrates object2's left side).
-   * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#computeOverlapX">FlxObject.computeOverlapX</a>
    */
   public static float computeOverlapX(FlixelObject object1, FlixelObject object2, boolean checkMaxOverlap) {
     float obj1delta = object1.x - object1.lastX;
@@ -797,23 +816,23 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
       return 0;
     }
 
-    float maxOverlap = checkMaxOverlap ? (obj1deltaAbs + obj2deltaAbs + FlixelConstants.Physics.SEPARATE_BIAS) : 0;
+    float maxOverlap = checkMaxOverlap ? (obj1deltaAbs + obj2deltaAbs + SEPARATE_BIAS) : 0;
     float overlap;
 
     if (obj1delta > obj2delta) {
       overlap = object1.x + object1.width - object2.x;
       if (checkMaxOverlap && overlap > maxOverlap) return 0;
-      if ((object1.allowCollisions & FlixelConstants.Physics.RIGHT) == 0
-        || (object2.allowCollisions & FlixelConstants.Physics.LEFT) == 0) return 0;
-      object1.touching |= FlixelConstants.Physics.RIGHT;
-      object2.touching |= FlixelConstants.Physics.LEFT;
+      if ((object1.allowCollisions & DirectionFlags.RIGHT) == 0
+        || (object2.allowCollisions & DirectionFlags.LEFT) == 0) return 0;
+      object1.touching |= DirectionFlags.RIGHT;
+      object2.touching |= DirectionFlags.LEFT;
     } else {
       overlap = object1.x - object2.width - object2.x;
       if (checkMaxOverlap && -overlap > maxOverlap) return 0;
-      if ((object1.allowCollisions & FlixelConstants.Physics.LEFT) == 0
-        || (object2.allowCollisions & FlixelConstants.Physics.RIGHT) == 0) return 0;
-      object1.touching |= FlixelConstants.Physics.LEFT;
-      object2.touching |= FlixelConstants.Physics.RIGHT;
+      if ((object1.allowCollisions & DirectionFlags.LEFT) == 0
+        || (object2.allowCollisions & DirectionFlags.RIGHT) == 0) return 0;
+      object1.touching |= DirectionFlags.LEFT;
+      object2.touching |= DirectionFlags.RIGHT;
     }
 
     return overlap;
@@ -827,7 +846,6 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
    * @param object2 Second object.
    * @param checkMaxOverlap Whether to reject overlaps greater than combined movement + {@code SEPARATE_BIAS}.
    * @return Signed overlap in pixels (positive means object1's bottom side penetrates object2's top side).
-   * @see <a href="https://api.haxeflixel.com/flixel/FlxObject.html#computeOverlapY">FlxObject.computeOverlapY</a>
    */
   public static float computeOverlapY(FlixelObject object1, FlixelObject object2, boolean checkMaxOverlap) {
     float obj1delta = object1.y - object1.lastY;
@@ -855,24 +873,24 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
       return 0;
     }
 
-    float maxOverlap = checkMaxOverlap ? (obj1deltaAbs + obj2deltaAbs + FlixelConstants.Physics.SEPARATE_BIAS) : 0;
+    float maxOverlap = checkMaxOverlap ? (obj1deltaAbs + obj2deltaAbs + SEPARATE_BIAS) : 0;
     float overlap;
 
     // libGDX Y-up: positive delta = moving up -> object1's top hits object2's bottom.
     if (obj1delta > obj2delta) {
       overlap = object1.y + object1.height - object2.y;
       if (checkMaxOverlap && overlap > maxOverlap) return 0;
-      if ((object1.allowCollisions & FlixelConstants.Physics.UP) == 0
-        || (object2.allowCollisions & FlixelConstants.Physics.DOWN) == 0) return 0;
-      object1.touching |= FlixelConstants.Physics.UP;
-      object2.touching |= FlixelConstants.Physics.DOWN;
+      if ((object1.allowCollisions & DirectionFlags.UP) == 0
+        || (object2.allowCollisions & DirectionFlags.DOWN) == 0) return 0;
+      object1.touching |= DirectionFlags.UP;
+      object2.touching |= DirectionFlags.DOWN;
     } else {
       overlap = object1.y - object2.height - object2.y;
       if (checkMaxOverlap && -overlap > maxOverlap) return 0;
-      if ((object1.allowCollisions & FlixelConstants.Physics.DOWN) == 0
-        || (object2.allowCollisions & FlixelConstants.Physics.UP) == 0) return 0;
-      object1.touching |= FlixelConstants.Physics.DOWN;
-      object2.touching |= FlixelConstants.Physics.UP;
+      if ((object1.allowCollisions & DirectionFlags.DOWN) == 0
+        || (object2.allowCollisions & DirectionFlags.UP) == 0) return 0;
+      object1.touching |= DirectionFlags.DOWN;
+      object2.touching |= DirectionFlags.UP;
     }
 
     return overlap;
@@ -935,8 +953,8 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
   @Override
   public float[] getDebugBoundingBoxColor() {
     if (debugColorOverride != null) return debugColorOverride;
-    if (allowCollisions == FlixelConstants.Physics.NONE) return debugColorNoCollision;
-    if (immovable || allowCollisions != FlixelConstants.Physics.ANY) return debugColorImmovable;
+    if (allowCollisions == DirectionFlags.NONE) return debugColorNoCollision;
+    if (immovable || allowCollisions != DirectionFlags.ANY) return debugColorImmovable;
     return debugColorSolid;
   }
 
@@ -955,5 +973,27 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     return getClass().getSimpleName() + "(ID=" + ID
       + ", x=" + x + ", y=" + y
       + ", w=" + width + ", h=" + height + ")";
+  }
+
+  /**
+   * Bit flags for collision and touch sides. The same bit patterns are used for sprite facing in
+   * {@link FlixelSprite.Facing}.
+   */
+  public static final class DirectionFlags {
+
+    // Facing flags.
+    public static final int NONE = 0x0000;
+    public static final int LEFT = 0x0001;
+    public static final int RIGHT = 0x0010;
+    public static final int UP = 0x0100;
+    public static final int DOWN = 0x1000;
+    public static final int ANY = LEFT | RIGHT | UP | DOWN;
+
+    // Collision flags.
+    public static final int FLOOR = DOWN;
+    public static final int CEILING = UP;
+    public static final int WALL = LEFT | RIGHT;
+
+    private DirectionFlags() {}
   }
 }

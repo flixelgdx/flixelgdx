@@ -85,35 +85,59 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * Loads a Sparrow-format XML atlas (SubTexture elements) using a texture already registered as a
-   * {@link FlixelGraphic} under {@code textureFile.path()}. Parses frames here; the owning sprite receives the
-   * graphic and {@link FlixelSprite#getAtlasRegions()} list via {@link FlixelSprite#applySparrowAtlas}.
-   *
-   * @param textureFile image file whose path is the asset key for the backing {@link FlixelGraphic}
-   * @param xmlFile Sparrow XML file
-   * @return the owning sprite for chaining
+   * The sprite that owns this controller. Package use includes spritemap loading helpers.
    */
   @NotNull
-  public FlixelSprite loadSparrowFrames(@NotNull FileHandle textureFile, @NotNull FileHandle xmlFile) {
-    return loadSparrowFrames(textureFile.path(), new XmlReader().parse(xmlFile));
+  public FlixelSprite getOwner() {
+    return owner;
   }
 
   /**
-   * @param textureKey asset key of the {@link FlixelGraphic}
-   * @param xmlFile Sparrow XML file
-   * @return the owning sprite for chaining
+   * Adobe/CreateJS spritemap plus animation index JSON. See {@link FlixelSpritemapJsonLoader#load} for file shapes.
+   *
+   * @param textureKey Asset key of the already-enqueued {@link FlixelGraphic}.
+   * @param spritemapJsonPath Path resolved like other assets (internal or classpath).
+   * @param animationJsonPath JSON with an {@code animations} object.
+   * @return The owning sprite for chaining.
+   */
+  @NotNull
+  public FlixelSprite loadSpritemapFromJson(
+      @NotNull String textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    FlixelSpritemapJsonLoader.load(this, textureKey, spritemapJsonPath, animationJsonPath);
+    return owner;
+  }
+
+  /**
+   * Loads Sparrow XML from a path string (UTF-8). Tries {@code Gdx.files.internal} then {@code classpath}.
+   *
+   * @param textureKey Asset key of the {@link FlixelGraphic}.
+   * @param xmlPath Path to Sparrow XML (e.g. {@code "data/hero.xml"}).
+   * @return The owning sprite for chaining.
+   */
+  @NotNull
+  public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull String xmlPath) {
+    FileHandle xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
+    return loadSparrowFrames(textureKey, new XmlReader().parse(xml.reader("UTF-8")));
+  }
+
+  /**
+   * @param textureKey Asset key of the {@link FlixelGraphic}.
+   * @param xmlFile Sparrow XML file, read as UTF-8
+   * @return The owning sprite for chaining.
    */
   @NotNull
   public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
-    return loadSparrowFrames(textureKey, new XmlReader().parse(xmlFile));
+    return loadSparrowFrames(textureKey, new XmlReader().parse(xmlFile.reader("UTF-8")));
   }
 
   /**
    * Parses Sparrow {@code SubTexture} entries and installs the result on the owner.
    *
-   * @param textureKey asset key of the {@link FlixelGraphic}
-   * @param xmlRoot root XML element (e.g. from {@link XmlReader#parse(FileHandle)})
-   * @return the owning sprite for chaining
+   * @param textureKey Asset key of the {@link FlixelGraphic}.
+   * @param xmlRoot Root XML element (e.g. from {@link XmlReader#parse(FileHandle)}).
+   * @return The owning sprite for chaining.
    */
   @NotNull
   public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
@@ -226,6 +250,38 @@ public class FlixelAnimationController implements FlixelUpdatable {
       name,
       new Animation<>(
         1f / frameRate,
+        clipFrames,
+        loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
+  }
+
+  /**
+   * Adds a clip from the current atlas list {@link FlixelSprite#getAtlasRegions()} using zero-based indices into
+   * that list. Used by spritemap JSON and by games that know frame order after a Sparrow or spritemap load.
+   *
+   * @param name Clip name for {@link #playAnimation(String)}.
+   * @param atlasFrameIndices Indices into the atlas list (out-of-range entries are skipped).
+   * @param frameDuration libGDX frame duration in seconds (reciprocal of FPS).
+   * @param loop Whether the clip loops.
+   */
+  public void addAnimationFromAtlas(
+    @NotNull String name, @NotNull int[] atlasFrameIndices, float frameDuration, boolean loop) {
+    Array<FlixelFrame> atlas = owner.getAtlasRegions();
+    if (atlas == null || atlas.size == 0) {
+      return;
+    }
+    Array<FlixelFrame> clipFrames = new Array<>();
+    for (int i : atlasFrameIndices) {
+      if (i >= 0 && i < atlas.size) {
+        clipFrames.add(atlas.get(i));
+      }
+    }
+    if (clipFrames.size == 0) {
+      return;
+    }
+    animations.put(
+      name,
+      new Animation<>(
+        frameDuration,
         clipFrames,
         loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
   }

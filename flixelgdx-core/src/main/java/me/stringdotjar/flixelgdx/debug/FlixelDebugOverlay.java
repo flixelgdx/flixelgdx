@@ -32,7 +32,7 @@ import me.stringdotjar.flixelgdx.input.keyboard.FlixelKey;
 import me.stringdotjar.flixelgdx.logging.FlixelDebugConsoleEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelString;
 
@@ -55,11 +55,13 @@ import java.util.function.Consumer;
  *   <li>Optional visual debugging (bounding boxes around {@link me.stringdotjar.flixelgdx.FlixelObject} instances)</li>
  * </ul>
  *
- * <p>Toggle overlay visibility with {@link Flixel#getDebugToggleKey()} (default: {@link FlixelConstants.Debug#DEFAULT_TOGGLE_KEY}).
- * Toggle visual debug (hitboxes) with {@link Flixel#getDebugDrawToggleKey()} (default: {@link FlixelConstants.Debug#DEFAULT_DRAW_DEBUG_KEY}).
+ * <p>Toggle overlay visibility with {@link Flixel#getDebugToggleKey()} (default: {@link Keybinds#DEFAULT_TOGGLE_KEY}).
+ * Toggle visual debug (hitboxes) with {@link Flixel#getDebugDrawToggleKey()} (default: {@link Keybinds#DEFAULT_DRAW_DEBUG_KEY}).
  * In debug mode, {@link Flixel#getDebugPauseKey()} (default F4) pauses the game; inspect camera with Alt+arrows, RMB pan, wheel zoom.
  */
 public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
+
+  private static final float STATS_UPDATE_INTERVAL = 0.5f;
 
   private static final float[] FALLBACK_COLOR = { 1f, 0.2f, 0.2f, 0.6f };
 
@@ -70,6 +72,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final ShapeRenderer shapeRenderer;
   private final OrthographicCamera camera;
   private final ScreenViewport viewport;
+  /** Shared registry font (15px default bitmap); do not {@link BitmapFont#dispose()}. */
   private final BitmapFont font;
   private final Texture whitePixel;
 
@@ -133,7 +136,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     shapeRenderer = new ShapeRenderer();
     camera = new OrthographicCamera();
     viewport = new ScreenViewport(camera);
-    font = new BitmapFont();
+    font = FlixelFontRegistry.obtainDefaultBitmapFont(15);
     font.setColor(Color.WHITE);
     font.getData().markupEnabled = true;
 
@@ -164,7 +167,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     visible = !visible;
     if (visible && !was) {
       watchRefreshTimer = 0.11f;
-      statsTimer = FlixelConstants.Debug.STATS_UPDATE_INTERVAL;
+      statsTimer = STATS_UPDATE_INTERVAL;
     }
   }
 
@@ -217,7 +220,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     statsTimer += elapsed;
     watchRefreshTimer += elapsed;
 
-    if (statsTimer >= FlixelConstants.Debug.STATS_UPDATE_INTERVAL) {
+    if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
       int fps = Flixel.getFPS();
       float heapMB = Flixel.getJavaHeapUsedMegabytes();
@@ -610,7 +613,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
         appendLogMarkup(logMarkupScratch, entry);
         logBuffer.addLast(new BufferedLogLine(new FlixelString(logMarkupScratch)));
       }
-      while (logBuffer.size() > FlixelConstants.Debug.MAX_LOG_ENTRIES) {
+      while (logBuffer.size() > FlixelLogger.MAX_LOG_ENTRIES) {
         logBuffer.removeFirst();
       }
     }
@@ -629,13 +632,26 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     destroyed = true;
     batch.dispose();
     shapeRenderer.dispose();
-    font.dispose();
     whitePixel.dispose();
   }
 
   @Override
   public void dispose() {
     destroy();
+  }
+
+  /**
+   * Default key codes for the debug overlay. You can read these when rebinding in {@link Flixel}.
+   */
+  public static final class Keybinds {
+
+    public static final int DEFAULT_TOGGLE_KEY = FlixelKey.F2;
+    public static final int DEFAULT_DRAW_DEBUG_KEY = FlixelKey.F3;
+    public static final int DEFAULT_PAUSE_KEY = FlixelKey.F4;
+    public static final int DEFAULT_DEBUG_CAMERA_CYCLE_LEFT = FlixelKey.LEFT;
+    public static final int DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT = FlixelKey.RIGHT;
+
+    private Keybinds() {}
   }
 
   /** One colored line in the log console; markup is built once when the log is received. */

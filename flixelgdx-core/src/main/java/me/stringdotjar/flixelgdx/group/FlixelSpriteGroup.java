@@ -15,8 +15,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.SnapshotArray;
 
+import me.stringdotjar.flixelgdx.FlixelObject;
 import me.stringdotjar.flixelgdx.FlixelSprite;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -74,7 +74,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
   private boolean visible = true;
   private boolean antialiasing = false;
-  private int facing = FlixelConstants.Graphics.FACING_RIGHT;
+  private int facing = FlixelObject.DirectionFlags.RIGHT;
 
   /** Creates a sprite group with no member limit and default wheel radius {@code 100}. */
   public FlixelSpriteGroup() {

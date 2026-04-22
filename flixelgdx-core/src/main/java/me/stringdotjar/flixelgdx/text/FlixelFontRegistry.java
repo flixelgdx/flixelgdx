@@ -7,6 +7,7 @@
 
 package me.stringdotjar.flixelgdx.text;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -60,6 +61,12 @@ import java.util.Set;
  * can be removed earlier with {@link #unregister(String)}.
  */
 public final class FlixelFontRegistry {
+
+  /**
+   * Packaged copy of libGDX default {@code lsans-15} ({@code .fnt} + {@code lsans-15.png} alongside), so
+   * desktop, mobile, and TeaVM can open the same path without relying on gdx JAR internal entries.
+   */
+  private static final String DEFAULT_BITMAP_FNT = "me/stringdotjar/flixelgdx/bitmap/lsans-15.fnt";
 
   private static final Map<String, Entry> entries = new HashMap<>();
 
@@ -204,8 +211,9 @@ public final class FlixelFontRegistry {
   }
 
   /**
-   * Returns a shared libGDX default {@link BitmapFont} (Arial 15px) scaled to the given
-   * pixel size. Multiple {@link FlixelText} instances with the same size reuse one font.
+   * Returns a shared libGDX-style default {@link BitmapFont} (packaged {@code lsans-15}, scaled) so the same
+   * path works on desktop, mobile, and web. Multiple {@link FlixelText} instances with the same size reuse one
+   * font. Falls back to {@code new BitmapFont()} only if the packaged font is not on the classpath.
    *
    * @param pixelSize The target font size in pixels (clamped to at least 1).
    * @return A cached bitmap font. Do not {@link BitmapFont#dispose()} it, use {@link #dispose()} at shutdown.
@@ -216,7 +224,12 @@ public final class FlixelFontRegistry {
     if (font != null) {
       return font;
     }
-    font = new BitmapFont();
+    FileHandle fnt = Gdx.files.classpath(DEFAULT_BITMAP_FNT);
+    if (fnt == null || !fnt.exists()) {
+      font = new BitmapFont();
+    } else {
+      font = new BitmapFont(fnt);
+    }
     float defaultHeight = font.getLineHeight();
     if (defaultHeight > 0) {
       font.getData().setScale(size / defaultHeight);

@@ -20,15 +20,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * JVM implementation of {@link FlixelLogFileHandler} that writes log lines to a
  * timestamped {@code .log} file on a dedicated daemon thread.
  *
  * <p>Log lines are enqueued via {@link #write(String)} and drained by the
- * background thread, keeping game-thread latency to a minimum. On
- * {@link #stop()}, the thread is given up to five seconds to flush remaining
+ * background thread, keeping game-thread latency to a minimum. The queue is bounded (default 20,000
+ * lines). When it is full, new lines are dropped so a log storm cannot grow the heap without limit.
+ * On {@link #stop()}, the thread is given up to five seconds to flush remaining
  * lines before it is interrupted.
  *
  * <p>This handler is intended for desktop and other JVM-based backends (LWJGL3,
@@ -39,10 +42,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
 
+  private static final int MAX_QUEUED_LINES = 20_000;
+
   private static final DateTimeFormatter FILE_DATE_FORMAT =
       DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
-  private final ConcurrentLinkedQueue<String> logQueue = new ConcurrentLinkedQueue<>();
+  private final BlockingQueue<String> logQueue = new ArrayBlockingQueue<>(MAX_QUEUED_LINES);
   private final Object queueLock = new Object();
   private volatile boolean shutdownRequested = false;
   private volatile boolean active = false;
@@ -73,21 +78,24 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
     writerThread = new Thread(() -> {
       try {
         while (true) {
-          String line = logQueue.poll();
+          String line;
+          try {
+            line = logQueue.poll(200, TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break;
+          }
           if (line != null) {
             logFile.writeString(line + "\n", true);
-          } else {
-            synchronized (queueLock) {
-              if (shutdownRequested) {
-                break;
-              }
-              try {
-                queueLock.wait();
-              } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-              }
-            }
+            continue;
           }
+          if (shutdownRequested) {
+            break;
+          }
+        }
+        String rest;
+        while ((rest = logQueue.poll()) != null) {
+          logFile.writeString(rest + "\n", true);
         }
       } catch (Exception ignored) {
         // Silently stop if the file becomes inaccessible.
@@ -125,9 +133,8 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
     if (!active || logLine == null) {
       return;
     }
-    logQueue.add(logLine);
-    synchronized (queueLock) {
-      queueLock.notify();
+    if (!logQueue.offer(logLine)) {
+      // The queue is full, so we drop the log line.
     }
   }
 

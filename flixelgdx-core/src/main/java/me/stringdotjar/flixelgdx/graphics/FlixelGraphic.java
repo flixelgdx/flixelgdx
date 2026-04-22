@@ -10,6 +10,7 @@ package me.stringdotjar.flixelgdx.graphics;
 import com.badlogic.gdx.graphics.Texture;
 
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
+import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.asset.FlixelSource;
 import me.stringdotjar.flixelgdx.asset.FlixelTypedAsset;
 import me.stringdotjar.flixelgdx.asset.FlixelPooledWrapper;
@@ -81,6 +82,8 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
     this.ownedTexture = ownedTexture;
     if (this.owned) {
       setPersist(false);
+    } else if (assetManager instanceof FlixelDefaultAssetManager m) {
+      m.applyPendingPersistOnNewHandle(assetKey, this);
     }
   }
 

@@ -228,10 +228,14 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
+          String teavmScript = ext.getTeavmScriptSrc().isPresent()
+            ? ext.getTeavmScriptSrc().get()
+            : inferTeavmScriptSrc(project);
           String html = template
             .replace("{{TITLE}}", ext.getTitle().get())
             .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
-            .replace("{{FAVICON}}", faviconLink);
+            .replace("{{FAVICON}}", faviconLink)
+            .replace("{{TEAVM_SCRIPT}}", teavmScript);
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -513,6 +517,30 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           project.getTasks().named("copyDefaultStartupLogo"));
     } else {
       project.getLogger().warn("[FlixelGDX] Task '{}' not found. Make sure 'org.teavm' is applied before 'flixelgdx.teavm'.", taskName);
+    }
+  }
+
+  /**
+   * Resolves {@code js/<teavm.js.targetFileName>} from the {@code org.teavm} extension when available.
+   */
+  private static String inferTeavmScriptSrc(@NonNull Project project) {
+    String fallback = "js/teavm.js";
+    try {
+      Object teavm = project.getExtensions().findByName("teavm");
+      if (teavm == null) {
+        return fallback;
+      }
+      Object js = teavm.getClass().getMethod("getJs").invoke(teavm);
+      if (js == null) {
+        return fallback;
+      }
+      Object name = js.getClass().getMethod("getTargetFileName").invoke(js);
+      if (name == null) {
+        return fallback;
+      }
+      return "js/" + name;
+    } catch (Exception e) {
+      return fallback;
     }
   }
 }
