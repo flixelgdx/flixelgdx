@@ -14,12 +14,12 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.utils.ObjectMap;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 
-import java.util.Comparator;
 import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
@@ -80,10 +80,10 @@ public final class FlixelSpritemapJsonLoader {
    * <p>Animation files may be:
    * <ul>
    *   <li>Simple: {@code "animations": { "name": { "frames": [0, 1, 2] } } } with optional root {@code framerate}.</li>
-   *   <li>Friday Night Funkin / Adobe BTA: root {@code AN.TL.L} with a layer whose {@code FR} entries have
-   *   {@code N} (clip name), {@code I} (start frame index), and {@code DU} (length). Root {@code MD.FRT} is
-   *   the frame rate. Spritemaps for that family use {@code ATLAS.SPRITES} (see
-   *   <a href="https://github.com/FunkinCrew/funkin.assets">funkin.assets</a> example {@code bf}).</li>
+   *   <li>Adobe BTA: with {@code SD} (symbol dictionary), clips are resolved by walking
+   *   nested symbol timelines and {@code ASI.N} spritemap names; {@code ATLAS.SPRITES} order defines frame indices
+   *   (not numeric name sort). Without {@code SD}, a flat layer is used: {@code FR} with {@code N}, {@code I},
+   *   {@code DU}. Root {@code MD.FRT} is the frame rate.</li>
    * </ul>
    *
    * @param controller The animation controller to load the spritemap into.
@@ -109,13 +109,14 @@ public final class FlixelSpritemapJsonLoader {
       texture = g.loadNow();
     }
 
-    Array<FlixelFrame> frames = buildFrames(spritemapRoot, texture);
+    ObjectMap<String, Integer> spritemapNameToIndex = new ObjectMap<>();
+    Array<FlixelFrame> frames = buildFrames(spritemapRoot, texture, spritemapNameToIndex);
     controller.getOwner().applySparrowAtlas(g, frames);
 
     if (animRoot.get("animations") != null) {
       loadSimpleAnimationsJson(controller, animRoot);
     } else if (animRoot.get("AN") != null) {
-      loadAdobeBtaAnJson(controller, animRoot);
+      loadAdobeBtaAnJson(controller, animRoot, frames, spritemapNameToIndex);
     } else {
       throw new IllegalArgumentException(
         "Animation JSON has no \"animations\" object and no \"AN\" (Adobe BTA) block. Unrecognized format.");
@@ -161,11 +162,19 @@ public final class FlixelSpritemapJsonLoader {
    * include {@code N} (name), {@code I} (start index), {@code DU} (inclusive length).
    */
   private static void loadAdobeBtaAnJson(
-      @NotNull FlixelAnimationController controller, @NotNull JsonValue animRoot) {
+      @NotNull FlixelAnimationController controller,
+      @NotNull JsonValue animRoot,
+      @NotNull Array<FlixelFrame> atlasFrames,
+      @NotNull ObjectMap<String, Integer> spritemapNameToIndex) {
     JsonValue md = animRoot.get("MD");
     float fps = (md != null) ? readFloat(md, "FRT", 24f) : 24f;
     if (fps <= 0f) {
       fps = 24f;
+    }
+    if (animRoot.get("SD") != null && spritemapNameToIndex.size > 0) {
+      FlixelBtaSymbolAnimationResolver.loadAnimations(
+        controller, animRoot, fps, spritemapNameToIndex, atlasFrames);
+      return;
     }
     JsonValue an = animRoot.get("AN");
     if (an == null) {
@@ -237,11 +246,15 @@ public final class FlixelSpritemapJsonLoader {
   }
 
   @NotNull
-  private static Array<FlixelFrame> buildFrames(@NotNull JsonValue root, @NotNull Texture texture) {
+  private static Array<FlixelFrame> buildFrames(
+      @NotNull JsonValue root,
+      @NotNull Texture texture,
+      @NotNull ObjectMap<String, Integer> spritemapNameToIndexOut) {
     JsonValue atlas = root.get("ATLAS");
     if (atlas != null) {
-      return buildFnfAtlasFrames(atlas, texture);
+      return buildAtlasFrames(atlas, texture, spritemapNameToIndexOut);
     }
+    spritemapNameToIndexOut.clear();
     JsonValue framesNode = root.get("frames");
     if (framesNode == null) {
       throw new IllegalArgumentException(
@@ -290,12 +303,16 @@ public final class FlixelSpritemapJsonLoader {
   }
 
   @NotNull
-  private static Array<FlixelFrame> buildFnfAtlasFrames(@NotNull JsonValue atlas, @NotNull Texture texture) {
+  private static Array<FlixelFrame> buildAtlasFrames(
+      @NotNull JsonValue atlas,
+      @NotNull Texture texture,
+      @NotNull ObjectMap<String, Integer> spritemapNameToIndexOut) {
+    spritemapNameToIndexOut.clear();
     JsonValue sprites = atlas.get("SPRITES");
     if (sprites == null || !sprites.isArray()) {
       throw new IllegalArgumentException("ATLAS.SPRITES must be a JSON array.");
     }
-    Array<JsonSprite> list = new Array<>();
+    Array<FlixelFrame> out = new Array<>();
     for (JsonValue el = sprites.child; el != null; el = el.next) {
       JsonValue sp = el.get("SPRITE");
       if (sp == null) {
@@ -310,42 +327,16 @@ public final class FlixelSpritemapJsonLoader {
       int y = sp.getInt("y");
       int w = sp.getInt("w");
       int h = sp.getInt("h");
-      list.add(new JsonSprite(name, x, y, w, h));
+      int idx = out.size;
+      out.add(buildFrame(texture, x, y, w, h, name));
+      if (name != null && !name.isEmpty()) {
+        spritemapNameToIndexOut.put(name, idx);
+      }
     }
-    if (list.size == 0) {
+    if (out.size == 0) {
       throw new IllegalArgumentException("ATLAS.SPRITES contained no valid SPRITE entries.");
     }
-    list.sort(Comparator.comparingInt(JsonSprite::sortKey));
-    Array<FlixelFrame> out = new Array<>();
-    for (int i = 0; i < list.size; i++) {
-      JsonSprite s = list.get(i);
-      out.add(buildFrame(texture, s.x, s.y, s.w, s.h, s.name));
-    }
     return out;
-  }
-
-  private static final class JsonSprite {
-    final String name;
-    final int x, y, w, h;
-
-    JsonSprite(String name, int x, int y, int w, int h) {
-      this.name = name;
-      this.x = x;
-      this.y = y;
-      this.w = w;
-      this.h = h;
-    }
-
-    int sortKey() {
-      if (name == null) {
-        return 0;
-      }
-      try {
-        return Integer.parseInt(name.trim());
-      } catch (NumberFormatException e) {
-        return 0;
-      }
-    }
   }
 
   private static int getIntField(JsonValue o, String a, String b) {
