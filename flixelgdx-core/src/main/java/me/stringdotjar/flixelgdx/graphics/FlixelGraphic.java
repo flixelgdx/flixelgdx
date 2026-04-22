@@ -70,7 +70,8 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
    * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
    * 
    * <p>This constructor is used to create a new {@link FlixelGraphic} with an owned texture.
-   * This is typically used by {@link me.stringdotjar.flixelgdx.FlixelSprite#makeGraphic(int, int, Color)} and {@link me.stringdotjar.flixelgdx.FlixelSprite#loadGraphic(Texture, int)}.
+   * This is typically used by {@link me.stringdotjar.flixelgdx.FlixelSprite#makeGraphic(int, int, Color)} 
+   * and other various methods.
    *
    * @param assetManager The parent asset manager.
    * @param assetKey The asset key.

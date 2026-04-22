@@ -976,8 +976,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
   }
 
   /**
-   * Bit flags for collision and touch sides. The same bit patterns are used for sprite facing in
-   * {@link FlixelSprite.Facing}.
+   * Bit flags for collision and touch sides.
    */
   public static final class DirectionFlags {
 

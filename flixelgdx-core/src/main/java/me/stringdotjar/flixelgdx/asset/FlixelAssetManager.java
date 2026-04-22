@@ -56,7 +56,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   void load(@NotNull String path);
 
   /**
-   * Like {@link #load(String)} but marks the asset key so the first {@link FlixelAsset} or {@link FlixelGraphic}
+   * Like {@link #load(String)} but marks the asset key so the first {@link FlixelAsset} or {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic}
    * handle created for that key uses {@code persist == true} (survives {@link #clearNonPersist()} when unreferenced).
    *
    * @param path Same as {@link #load(String)}.
