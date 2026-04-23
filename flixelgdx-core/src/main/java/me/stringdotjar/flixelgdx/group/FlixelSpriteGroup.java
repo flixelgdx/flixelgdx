@@ -72,7 +72,6 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private final Rectangle tmpBoundsRect = new Rectangle();
 
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
-  private boolean visible = true;
   private boolean antialiasing = false;
   private int facing = FlixelObject.DirectionFlags.RIGHT;
 
@@ -313,14 +312,6 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       s.flip(false, true);
     }
     members.end();
-  }
-
-  public boolean isVisible() {
-    return visible;
-  }
-
-  public void setVisible(boolean visible) {
-    this.visible = visible;
   }
 
   @Override

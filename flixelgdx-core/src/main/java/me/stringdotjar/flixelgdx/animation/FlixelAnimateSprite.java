@@ -80,9 +80,28 @@ public class FlixelAnimateSprite extends FlixelSpriteGroup {
     super.setCurrentFrameForAnimation(frame);
   }
 
+  /**
+   * With BTA active, {@link FlixelSprite#currentRegion} is cleared so the base implementation would
+   * return without updating the hitbox. This matches {@link FlixelSprite#updateHitbox()}'s
+   * current-frame path: size becomes anchor bounds times {@code |scaleX|} / {@code |scaleY|} so
+   * {@link #screenCenter()} and overlap use the same effective pixel size as the draw path.
+   */
+  @Override
+  public @NotNull FlixelSprite updateHitbox() {
+    if (bta == null) {
+      return super.updateHitbox();
+    }
+    if (currentRegion != null) {
+      return super.updateHitbox();
+    }
+    float effW = Math.abs(getScaleX()) * bta.anchorWidth;
+    float effH = Math.abs(getScaleY()) * bta.anchorHeight;
+    return updateHitbox(effW, effH);
+  }
+
   @Override
   public void draw(Batch batch) {
-    if (!isVisible() || !isOnDrawCamera()) {
+    if (!visible || !isOnDrawCamera()) {
       return;
     }
     if (bta == null) {

@@ -46,7 +46,6 @@ final class FlixelBtaCompositeLoader {
       fps = 24f;
     }
 
-    String anchorClip = "None";
     boolean haveIdle = false;
     for (int i = 0; i < layout.labelFr.size; i++) {
       JsonValue nn = layout.labelFr.get(i).get("N");
@@ -55,9 +54,13 @@ final class FlixelBtaCompositeLoader {
         break;
       }
     }
-    if (!haveIdle) {
+    @NotNull
+    String anchorClip;
+    if (haveIdle) {
+      anchorClip = "Idle";
+    } else {
       JsonValue n0 = layout.labelFr.get(0).get("N");
-      anchorClip = n0 != null ? n0.asString() : "None";
+      anchorClip = n0 != null ? n0.asString() : "Idle";
     }
 
     float[] anchorBbox = new float[] { Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY,
@@ -72,9 +75,16 @@ final class FlixelBtaCompositeLoader {
         continue;
       }
       JsonValue mainKf = layout.mainFr.get(c);
-      Array<RawPart> tmp = new Array<>();
-      buildKeyframeParts(layout, mainKf, 0, nameToIndex, tmp);
-      expandBboxForParts(tmp, atlas, anchorBbox);
+      int du0 = lab.getInt("DU");
+      for (int t = 0; t < du0; t++) {
+        Array<RawPart> tmp = new Array<>();
+        buildKeyframeParts(layout, mainKf, t, nameToIndex, tmp);
+        if (tmp.size == 0) {
+          continue;
+        }
+        expandBboxForParts(tmp, atlas, anchorBbox);
+        break;
+      }
       break;
     }
     if (anchorBbox[0] > anchorBbox[2] || anchorBbox[1] > anchorBbox[3]) {
