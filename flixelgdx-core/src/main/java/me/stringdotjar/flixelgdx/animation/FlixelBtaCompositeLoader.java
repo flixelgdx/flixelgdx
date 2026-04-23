@@ -140,6 +140,9 @@ final class FlixelBtaCompositeLoader {
 
     FlixelBtaCompositing comp = new FlixelBtaCompositing(clips, anchorClip, hitW, hitH);
     sprite.installBtaCompositing(comp, hitW, hitH);
+    // BTA draw uses the controller's current clip name. The default is an empty string` after applySparrowAtlas.clear()'s
+    // reset, so start the anchor (usually Idle) or nothing is drawn.
+    controller.playAnimation(anchorClip, true, true);
   }
 
   private static void buildKeyframeParts(

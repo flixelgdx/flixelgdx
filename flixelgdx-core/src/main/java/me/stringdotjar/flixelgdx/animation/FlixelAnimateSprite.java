@@ -114,7 +114,7 @@ public class FlixelAnimateSprite extends FlixelSpriteGroup {
     }
     String name = an.getCurrentAnim();
     if (name == null || name.isEmpty()) {
-      return;
+      name = bta.getAnchorClipName();
     }
     FlixelBtaCompositing.NamedClip clip = bta.getClip(name);
     if (clip == null) {
