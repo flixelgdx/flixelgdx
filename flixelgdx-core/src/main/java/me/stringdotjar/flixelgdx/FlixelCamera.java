@@ -1103,16 +1103,40 @@ public class FlixelCamera extends FlixelBasic {
    * Sets the zoom level. {@code 1} = 1:1, {@code 2} = 2x magnification (world appears larger).
    * Cameras always zoom toward their center.
    *
+   * <p>Scroll is nudged by the same delta {@link #scrollForFollowCenterAxis} would apply when only
+   * {@link #getViewWidth()} / {@link #getViewHeight()} change, so zoom matches the follow / draw
+   * contract ({@code tx - scroll * sx = view/2 + scroll} for non-unit factors). The old
+   * {@code (viewOld - viewNew) / 2} adjustment is only correct for the classic {@code sx = 1}
+   * branch; fractional scroll factors otherwise drift on zoom.
+   *
    * @param zoom The new zoom level.
    */
   public void setZoom(float zoom) {
     float oldZoom = this.zoom;
+    float vwOld = width / oldZoom;
+    float vhOld = height / oldZoom;
     this.zoom = zoom;
-    // Keep the center of the view fixed in world space so zoom happens from center, not from the left edge.
-    float centerX = scroll.x + width / (2f * oldZoom);
-    float centerY = scroll.y + height / (2f * oldZoom);
-    scroll.x = centerX - width / (2f * this.zoom);
-    scroll.y = centerY - height / (2f * this.zoom);
+    float vwNew = width / this.zoom;
+    float vhNew = height / this.zoom;
+
+    float fsx;
+    float fsy;
+    float ax;
+    float ay;
+    if (target != null) {
+      fsx = followScrollFactorX(target);
+      fsy = followScrollFactorY(target);
+      ax = target.getX() + target.getWidth() / 2f + targetOffset.x + followLead.x;
+      ay = target.getY() + target.getHeight() / 2f + targetOffset.y + followLead.y;
+    } else {
+      fsx = 1f;
+      fsy = 1f;
+      ax = scroll.x + vwOld / 2f;
+      ay = scroll.y + vhOld / 2f;
+    }
+    scroll.x += scrollForFollowCenterAxis(ax, vwNew, fsx) - scrollForFollowCenterAxis(ax, vwOld, fsx);
+    scroll.y += scrollForFollowCenterAxis(ay, vhNew, fsy) - scrollForFollowCenterAxis(ay, vhOld, fsy);
+
     applyZoom();
     if (target != null && style != null && style != FollowStyle.NO_DEAD_ZONE) {
       updateDeadzoneForStyle();
