@@ -153,6 +153,15 @@ public class FlixelSprite extends FlixelObject {
   }
 
   /**
+   * Clears the active Sparrow / atlas / animation display frame. {@link #draw} will draw nothing
+   * until a frame is set again (e.g. by {@link FlixelAnimationController} or {@link #applySparrowAtlas}).
+   */
+  public void clearAnimationDisplayFrame() {
+    currentFrame = null;
+    currentRegion = null;
+  }
+
+  /**
    * Load's a texture and automatically resizes the size of {@code this} sprite.
    *
    * @param path The directory of the {@code .png} to load onto {@code this} sprite.

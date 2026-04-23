@@ -172,8 +172,12 @@ public final class FlixelSpritemapJsonLoader {
       fps = 24f;
     }
     if (animRoot.get("SD") != null && spritemapNameToIndex.size > 0) {
-      FlixelBtaSymbolAnimationResolver.loadAnimations(
-        controller, animRoot, fps, spritemapNameToIndex, atlasFrames);
+      if (controller.getOwner() instanceof FlixelAnimateSprite animateSprite) {
+        FlixelBtaCompositeLoader.load(animateSprite, controller, animRoot, fps, spritemapNameToIndex, atlasFrames);
+      } else {
+        FlixelBtaSymbolAnimationResolver.loadAnimations(
+          controller, animRoot, fps, spritemapNameToIndex, atlasFrames);
+      }
       return;
     }
     JsonValue an = animRoot.get("AN");

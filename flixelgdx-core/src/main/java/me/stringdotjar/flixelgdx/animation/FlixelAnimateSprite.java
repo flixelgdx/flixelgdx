@@ -7,36 +7,47 @@
 
 package me.stringdotjar.flixelgdx.animation;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Affine2;
+import com.badlogic.gdx.math.Matrix3;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
 
+import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.group.FlixelSpriteGroup;
+import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * {@link FlixelSpriteGroup} intended for <strong>Adobe Animate / BTA-style</strong> spritemap + JSON
- * pipelines (FNF and similar). It behaves like a normal {@link FlixelSprite} for position, scale,
- * rotation, alpha, color, flip, and facing: those setters follow {@link FlixelSpriteGroup} rules and
- * propagate to any member parts when a multi-part compositor is used.
+ * {@link FlixelSpriteGroup} for <strong>Adobe Animate / BTA-style</strong> texture atlases: {@code spritemapX.json}
+ * (with {@code ATLAS.SPRITES}) plus {@code Animation.json} with a symbol dictionary ({@code SD}).
  *
- * <p>Today, loading a spritemap plus animation uses {@link FlixelSpritemapJsonLoader} on this object’s
- * {@link #ensureAnimation() animation} and draws the <strong>single-rig</strong> frame selection on the
- * group root (or the “largest cell” fallback when a symbol dictionary is present). Future work may
- * attach one {@link FlixelSprite} per layer for a true compositor; until then, an empty group still
- * shows the root atlas the loader applied via {@link FlixelSprite#applySparrowAtlas}.
+ * <p>When the animation JSON has {@code SD.S}, the loader composes <strong>every</strong> {@code ASI} (bitmap) using
+ * {@code main SI.MX} × nested {@code SI.MX} × {@code ASI.MX} (same idea as
+ * <a href="https://github.com/Dot-Stuff/flxanimate">flxanimate</a>), instead of a single “largest cell”
+ * per frame. Pass {@code me/.../spritemap1.png} as the {@code textureKey} and
+ * {@code me/.../spritemap1.json} + {@code me/.../Animation.json} as the paths.
  *
- * <p>Do <strong>not</strong> use {@link #loadGraphic} or {@link #makeGraphic} on groups: those are
- * disabled on {@link FlixelSpriteGroup}. Pre-load the texture with your asset key, then call
- * {@link #loadSpritemapAndAnimation(String, String, String)}.
+ * <p>Group position, scale, color, scroll, and offset behave like a normal {@link FlixelSprite}. The rig is
+ * drawn with {@link SpriteBatch} and {@link Affine2} (requires a {@code SpriteBatch} for this path).
  */
 public class FlixelAnimateSprite extends FlixelSpriteGroup {
 
-  /**
-   * Creates a sprite with no member cap and default group rotation parameters (same as
-   * {@link FlixelSpriteGroup#FlixelSpriteGroup()}).
-   */
+  @Nullable
+  private FlixelBtaCompositing bta;
+
+  private final Matrix3 m3Base = new Matrix3();
+  private final Matrix3 m3PartM = new Matrix3();
+  private final Matrix3 m3Combined = new Matrix3();
+  private final Matrix3 m3Scale = new Matrix3();
+  private final Affine2 drawAffine = new Affine2();
+
   public FlixelAnimateSprite() {
     super();
   }
@@ -53,14 +64,100 @@ public class FlixelAnimateSprite extends FlixelSpriteGroup {
   }
 
   /**
-   * When this group has no child sprites, the inherited {@link FlixelSpriteGroup#getBounds} would
-   * return a zero-size rect. Use the root sprite’s size (set by the atlas) so
-   * {@code screenCenter} and bounds queries match a {@link FlixelSprite} after
-   * {@link #loadSpritemapAndAnimation}.
+   * @return BTA multi-part data after a successful {@link #loadSpritemapAndAnimation} with {@code SD}, else
+   * {@code null}.
    */
+  @Nullable
+  public FlixelBtaCompositing getBtaCompositing() {
+    return bta;
+  }
+
+  @Override
+  public void setCurrentFrameForAnimation(@Nullable FlixelFrame frame) {
+    if (bta != null) {
+      return;
+    }
+    super.setCurrentFrameForAnimation(frame);
+  }
+
+  @Override
+  public void draw(Batch batch) {
+    if (!isVisible() || !isOnDrawCamera()) {
+      return;
+    }
+    if (bta == null) {
+      super.draw(batch);
+      return;
+    }
+    FlixelAnimationController an = animation;
+    if (an == null) {
+      return;
+    }
+    String name = an.getCurrentAnim();
+    if (name == null || name.isEmpty()) {
+      return;
+    }
+    FlixelBtaCompositing.NamedClip clip = bta.getClip(name);
+    if (clip == null) {
+      return;
+    }
+    int fi = an.getCurrentKeyframeIndex();
+    if (fi < 0 || fi >= clip.keyframes.length) {
+      fi = 0;
+    }
+    FlixelBtaCompositing.Keyframe kf = clip.keyframes[fi];
+    Array<FlixelFrame> atlas = getAtlasRegions();
+    if (atlas == null) {
+      return;
+    }
+    if (!(batch instanceof SpriteBatch)) {
+      return;
+    }
+    SpriteBatch sb = (SpriteBatch) batch;
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    float wx = getX() - cam.scroll.x * getScrollX() - getOffsetX();
+    float wy = getY() - cam.scroll.y * getScrollY() - getOffsetY();
+
+    m3Base.idt();
+    m3Base.val[Matrix3.M02] = wx;
+    m3Base.val[Matrix3.M12] = wy;
+    if (getScaleX() != 1f || getScaleY() != 1f) {
+      m3Scale.setToScaling(getScaleX(), getScaleY());
+      m3Base.mul(m3Scale);
+    }
+    Color c = getColor();
+    for (int i = 0; i < kf.parts.length; i++) {
+      FlixelBtaCompositing.Part p = kf.parts[i];
+      if (p.atlasIndex < 0 || p.atlasIndex >= atlas.size) {
+        continue;
+      }
+      FlixelFrame f = atlas.get(p.atlasIndex);
+      m3PartM.set(p.world);
+      m3Combined.set(m3Base);
+      m3Combined.mul(m3PartM);
+      drawAffine.set(m3Combined);
+      batch.setColor(c.r, c.g, c.b, c.a);
+      sb.draw(f.getRegion(), 0f, 0f, drawAffine);
+    }
+    batch.setColor(Color.WHITE);
+  }
+
+  void installBtaCompositing(@NotNull FlixelBtaCompositing comp, float hitboxWidth, float hitboxHeight) {
+    this.bta = comp;
+    clearAnimationDisplayFrame();
+    setSize(hitboxWidth, hitboxHeight);
+    updateHitbox();
+  }
+
+  @Override
+  public void destroy() {
+    bta = null;
+    super.destroy();
+  }
+
   @Override
   public Rectangle getBounds(@Nullable Rectangle out) {
-    if (members.size == 0) {
+    if (members.size == 0 && bta != null) {
       if (out == null) {
         out = new Rectangle();
       }
@@ -71,24 +168,13 @@ public class FlixelAnimateSprite extends FlixelSpriteGroup {
   }
 
   /**
-   * Reads spritemap and animation JSON, applies atlas frames, and registers named clips. Ensures
-   * {@link #animation} is non-null, then calls {@link FlixelSpritemapJsonLoader#load}.
-   *
-   * <p><b>Precondition:</b> {@code textureKey} must already be known to
-   * {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()} (the PNG is loadable for that key).
+   * Loads the spritemap and animation JSON files and installs the BTA compositing.
    * 
-   * <p><b>Postcondition:</b> this sprite’s graphic and {@link me.stringdotjar.flixelgdx.graphics.FlixelFrame}
-   * data match the files; you may call {@link FlixelSprite#updateHitbox()} and
-   * {@link FlixelAnimationController#playAnimation(String)} on {@link #animation} (after
-   * {@link #ensureAnimation()}) on the result.
-   * 
-   * <p><b>On failure</b> the loader throw. This sprite’s prior graphic is unchanged if the
-   * throw occurs before a successful install.
-   *
-   * @param textureKey Asset key for the shared texture (same as with a plain {@link FlixelSprite}).
-   * @param spritemapJsonPath Path to spritemap JSON (e.g. {@code shared/.../spritemap1.json}).
-   * @param animationJsonPath Path to animation JSON (e.g. {@code shared/.../Animation.json}).
-   * @return {@code this} for chaining.
+   * @param textureKey Asset key for the PNG (same as {@link FlixelSprite#loadGraphic(String)}), e.g. matching
+   *   {@code spritemap1.png} for a BF export.
+   * @param spritemapJsonPath e.g. {@code .../spritemap1.json}
+   * @param animationJsonPath e.g. {@code .../Animation.json}
+   * @return {@code this} sprite for chaining.
    */
   @NotNull
   public FlixelAnimateSprite loadSpritemapAndAnimation(
@@ -100,4 +186,5 @@ public class FlixelAnimateSprite extends FlixelSpriteGroup {
       controller, textureKey, spritemapJsonPath, animationJsonPath);
     return this;
   }
+
 }

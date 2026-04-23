@@ -417,6 +417,21 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return currentAnim;
   }
 
+  /**
+   * Zero-based key index in the current clip, matching {@code Animation.getKeyFrameIndex(stateTime)}.
+   * Useful for multi-part BTA / texture-atlas characters driven outside a single frame texture.
+   */
+  public int getCurrentKeyframeIndex() {
+    if (currentAnim == null || currentAnim.isEmpty()) {
+      return 0;
+    }
+    Animation<FlixelFrame> anim = animations.get(currentAnim);
+    if (anim == null) {
+      return 0;
+    }
+    return anim.getKeyFrameIndex(stateTime);
+  }
+
   public boolean isLooping() {
     return looping;
   }
