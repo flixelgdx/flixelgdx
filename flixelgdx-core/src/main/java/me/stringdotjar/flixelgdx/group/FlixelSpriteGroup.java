@@ -759,13 +759,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     }
   }
 
-  /**
-   * Draws all members in insertion order. The group itself does not render its own graphic;
-   * only its members are drawn. Nothing is rendered when {@link #isVisible()} is {@code false}.
-   */
   @Override
   public void draw(Batch batch) {
     if (!visible || !isOnDrawCamera()) {
+      return;
+    }
+
+    if (members.size == 0) {
+      super.draw(batch);
       return;
     }
 
