@@ -89,10 +89,8 @@ flixelgdx-*/bin/
 nbactions.xml
 nb-configuration.xml
 
-# VS Code/Cursor
+# VS Code
 .vscode/
-.cursor/
-.cursorrules
 
 ## OS-Specific:
 .DS_Store
