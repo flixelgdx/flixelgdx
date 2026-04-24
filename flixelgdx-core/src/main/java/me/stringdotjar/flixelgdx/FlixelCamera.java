@@ -1388,11 +1388,12 @@ public class FlixelCamera extends FlixelBasic {
     return 1;
   }
 
-  /** Target updates per second for follow lerp; matches {@link FlixelGame#getFramerate()} when in FlixelGDX. */
+  /** Target updates per second for follow lerp. Matches {@link FlixelGame#getFramerate()} when in FlixelGDX. */
   private static float resolveTargetFramerate() {
     FlixelGame game = Flixel.getGame();
     if (game != null) {
-      return game.getFramerate();
+      int framerate = game.getFramerate();
+      return (framerate > 0) ? framerate : 60; // Just in case the framerate is unlocked so that way following works!
     }
     if (Gdx.graphics != null) {
       int hz = Gdx.graphics.getDisplayMode().refreshRate;
