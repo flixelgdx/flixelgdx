@@ -82,6 +82,15 @@ import org.jetbrains.annotations.Nullable;
  * the resulting {@link FlixelAnimateRig.Keyframe#parts} array is already in back-to-front order and the
  * draw path can iterate forward without any extra bookkeeping. Elements within a single layer's
  * {@code E} array keep their declared order.
+ *
+ * <h2>Symbol-instance loop modes</h2>
+ * Every {@code SI} (symbol instance) carries an {@code FF} ("first frame") and an {@code LP} ("loop
+ * parameter") field. {@code FF} offsets where the child symbol's timeline starts; {@code LP} controls
+ * what happens when the parent's tick walks past the child symbol's last frame. The loader honours
+ * the three Flash modes ({@code "loop"}, {@code "playonce"}, {@code "singleframe"}, also accepted in
+ * abbreviated form as {@code "LP"}, {@code "PO"}, {@code "SF"}) so that, for example, a single-frame
+ * face plate stays put while the rig around it animates instead of "leaking" frames from a different
+ * sub-clip.
  */
 final class FlixelAnimateRigLoader {
 
@@ -96,6 +105,13 @@ final class FlixelAnimateRigLoader {
 
   /** Shared identity template for resetting {@link Affine2} instances cheaply. */
   private static final Affine2 IDENTITY = new Affine2();
+
+  /**
+   * Cache of {@code SN -> total timeline length} for every visited symbol. Used to evaluate the loop
+   * mode ({@code LP}) of a child symbol instance without re-walking its layer/frame tree on every
+   * keyframe of every clip.
+   */
+  private final ObjectMap<String, Integer> symbolDurations = new ObjectMap<>();
 
   /**
    * Loads the given spritemap/animation pair, builds a fully baked {@link FlixelAnimateRig}, and installs
@@ -499,32 +515,155 @@ final class FlixelAnimateRigLoader {
         if (childSnNode == null) {
           continue;
         }
+        String childSymbolName = childSnNode.asString();
 
         // FF (first frame) shifts the child's starting tick; used by looping sub-animations that begin
-        // part-way through their own timeline.
-        int firstFrame = 0;
-        JsonValue ffNode = si.get("FF");
-        if (ffNode != null && ffNode.isNumber()) {
-          firstFrame = ffNode.asInt();
-        }
+        // part-way through their own timeline. LP (loop parameter) controls how the child's timeline
+        // is sampled when the parent's tick walks past the child's last frame:
+        //   LP "loop"        -> wrap with modulo (default).
+        //   LP "playonce"    -> clamp to the child's last frame.
+        //   LP "singleframe" -> always show frame FF, ignoring the parent's tick entirely.
+        // Adobe Animate exports these as the long form; some third-party exports use the abbreviated
+        // form ("LP", "PO", "SF"). We accept both spellings.
+        int firstFrame = readIntOr(si, "FF", 0);
+        String loopMode = readStringOr(si, "LP", "loop");
 
         Affine2 childWorld = new Affine2().set(worldMatrix);
         matrixFromFlashMx(si.get("MX"), scratchMx);
         childWorld.mul(scratchMx);
 
-        int childLocalTime = frameLocalTime + firstFrame;
-        int sizeBefore = out.size;
-        visitSymbol(symbolsByName, nameToIndex, childSnNode.asString(), childLocalTime, childWorld, out, depth + 1);
-        if (out.size == sizeBefore) {
-          // The child timeline has no element at the computed local time. Fall back first to the parent's
-          // raw local time and then to tick zero so a statically-posed child still renders something.
-          visitSymbol(symbolsByName, nameToIndex, childSnNode.asString(), localTime, childWorld, out, depth + 1);
-        }
-        if (out.size == sizeBefore) {
-          visitSymbol(symbolsByName, nameToIndex, childSnNode.asString(), 0, childWorld, out, depth + 1);
+        int childSymDuration = computeSymbolDuration(symbolsByName, childSymbolName);
+        int childLocalTime = computeChildLocalTime(loopMode, firstFrame, frameLocalTime, childSymDuration);
+
+        // Recurse with the LP-corrected tick.
+        visitSymbol(symbolsByName, nameToIndex, childSymbolName, childLocalTime, childWorld, out, depth + 1);
+      }
+    }
+  }
+
+  /**
+   * Returns the tick that should be sampled inside a child symbol's timeline given Flash's
+   * {@code LP} (loop mode) and {@code FF} (first frame) parameters on the parent's symbol instance.
+   *
+   * @param loopMode The {@code LP} string. Accepted spellings are {@code "loop"}/{@code "LP"} (default),
+   *   {@code "playonce"}/{@code "PO"}, and {@code "singleframe"}/{@code "SF"}. Anything else is treated
+   *   as {@code "loop"}.
+   * @param firstFrame The {@code FF} field, the offset within the child's timeline at which this
+   *   instance starts displaying.
+   * @param frameLocalTime The number of ticks since the parent's enclosing {@code FR} began.
+   * @param childSymDuration The total length (in ticks) of the child symbol's longest layer; assumed
+   *   to be at least one. Pass the value returned by {@link #computeSymbolDuration}.
+   * @return The tick to pass into the recursive {@link #visitSymbol} call.
+   */
+  private static int computeChildLocalTime(
+      @NotNull String loopMode, int firstFrame, int frameLocalTime, int childSymDuration) {
+    if (childSymDuration <= 0) {
+      return Math.max(firstFrame, 0);
+    }
+    if (isLoopMode(loopMode, "singleframe", "SF")) {
+      int t = firstFrame % childSymDuration;
+      return t < 0 ? t + childSymDuration : t;
+    }
+    int raw = frameLocalTime + firstFrame;
+    if (isLoopMode(loopMode, "playonce", "PO")) {
+      if (raw < 0) {
+        return 0;
+      }
+      return Math.min(raw, childSymDuration - 1);
+    }
+    int wrapped = raw % childSymDuration;
+    return wrapped < 0 ? wrapped + childSymDuration : wrapped;
+  }
+
+  /**
+   * Case-insensitive equality check against either spelling of an LP value.
+   *
+   * @param loopMode The loop mode to check.
+   * @param longForm The long form of the loop mode.
+   * @param shortForm The short form of the loop mode.
+   * @return {@code true} if the loop mode is either the long form or the short form, {@code false} otherwise.
+   */
+  private static boolean isLoopMode(@NotNull String loopMode, @NotNull String longForm, @NotNull String shortForm) {
+    Objects.requireNonNull(loopMode, "Loop mode cannot be null.");
+    Objects.requireNonNull(longForm, "Long form cannot be null.");
+    Objects.requireNonNull(shortForm, "Short form cannot be null.");
+    return longForm.equalsIgnoreCase(loopMode) || shortForm.equalsIgnoreCase(loopMode);
+  }
+
+  /**
+   * Returns the total timeline length (in ticks) of a symbol, computed as the max of {@code I + DU}
+   * across every {@code FR} entry on every layer. The result is cached so repeated lookups during clip
+   * baking are constant-time.
+   *
+   * @param symbolsByName The {@code SD.S} lookup keyed on {@code SN}.
+   * @param symbolName The symbol whose duration to compute.
+   * @return The duration in ticks; always at least one even for empty/missing symbols, so the loop
+   *   modes can divide safely.
+   */
+  private int computeSymbolDuration(
+      @NotNull ObjectMap<String, JsonValue> symbolsByName, @NotNull String symbolName) {
+    Integer cached = symbolDurations.get(symbolName);
+    if (cached != null) {
+      return cached;
+    }
+    int dur = 1;
+    JsonValue symbol = symbolsByName.get(symbolName);
+    if (symbol != null) {
+      JsonValue timeline = symbol.get("TL");
+      JsonValue layers = (timeline != null) ? timeline.get("L") : null;
+      if (layers != null && layers.isArray()) {
+        for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
+          JsonValue frames = layer.get("FR");
+          if (frames == null || !frames.isArray()) {
+            continue;
+          }
+          for (JsonValue fr = frames.child; fr != null; fr = fr.next) {
+            int start = readIntOr(fr, "I", 0);
+            int frameDuration = readIntOr(fr, "DU", 1);
+            int end = start + frameDuration;
+            if (end > dur) {
+              dur = end;
+            }
+          }
         }
       }
     }
+    symbolDurations.put(symbolName, dur);
+    return dur;
+  }
+
+  /**
+   * Reads a numeric field from a JSON object. Returns {@code dflt} when the field is absent or not numeric.
+   *
+   * @param obj The JSON object to read from.
+   * @param key The field name.
+   * @param dflt The fallback value.
+   * @return The field's integer value, or {@code dflt}.
+   */
+  private static int readIntOr(@NotNull JsonValue obj, @NotNull String key, int dflt) {
+    JsonValue v = obj.get(key);
+    if (v == null || !v.isNumber()) {
+      return dflt;
+    }
+    return v.asInt();
+  }
+
+  /**
+   * Reads a string field from a JSON object. Returns {@code dflt} when the field is absent or not
+   * a string.
+   *
+   * @param obj The JSON object to read from.
+   * @param key The field name.
+   * @param dflt The fallback value.
+   * @return The field's string value, or {@code dflt}.
+   */
+  @NotNull
+  private static String readStringOr(@NotNull JsonValue obj, @NotNull String key, @NotNull String dflt) {
+    JsonValue v = obj.get(key);
+    if (v == null || !v.isString()) {
+      return dflt;
+    }
+    return v.asString();
   }
 
   /**
