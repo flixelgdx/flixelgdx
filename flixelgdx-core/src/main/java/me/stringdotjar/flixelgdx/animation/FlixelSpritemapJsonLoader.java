@@ -23,22 +23,38 @@ import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Helper class that loads Adobe/CreateJS-style spritemap JSON plus an animation definition JSON and applies them to
- * a {@link me.stringdotjar.flixelgdx.FlixelSprite} through a {@link FlixelAnimationController}. Kept out of
- * {@link FlixelAnimationController} so the controller file stays a thin timing and playback API.
+ * Helper class for spritemap-style JSON assets. Handles two separate shapes:
+ *
+ * <ol>
+ *   <li><strong>Simple animation index</strong> - a top-level {@code "animations": { name: { "frames":
+ *   [0, 1, 2] } }} block (with optional {@code framerate}). Frames may be declared as a JSON array of
+ *   {@code [x, y, w, h, ...]} rows, as an object map of frame name to {@code {"frame": {"x", "y", "w",
+ *   "h"}}}, or as an Adobe "TexturePacker" {@code ATLAS.SPRITES} block.</li>
+ *   <li><strong>Adobe Animate texture atlas</strong> - a top-level {@code "AN"} / {@code "SD"} / {@code
+ *   "MD"} structure as produced by Adobe Animate's texture-atlas export. These are routed to
+ *   {@link FlixelAnimateRigLoader}, which requires the owning sprite to be a
+ *   {@link FlixelAnimateSprite} so the multi-part rig can be attached.</li>
+ * </ol>
+ *
+ * <p>Game code does not usually call this helper directly. A {@link FlixelAnimateSprite} accepts a
+ * BTA/Animate pair through {@link FlixelAnimateSprite#loadSpritemapAndAnimation}, and a plain
+ * {@link me.stringdotjar.flixelgdx.FlixelSprite} accepts a simple-format pair through
+ * {@link FlixelAnimationController#loadSpritemapFromJson}.
  */
 public final class FlixelSpritemapJsonLoader {
 
   private FlixelSpritemapJsonLoader() {}
 
   /**
-   * Resolves a path the same way as other FlixelGDX file helpers, which is {@code internal} first, then
-   * {@code classpath}. Reads the file as UTF-8 text.
+   * Resolves an asset path the same way the rest of FlixelGDX does: first {@code Gdx.files.internal},
+   * then {@code Gdx.files.classpath}. The first hit that exists and is not a directory is returned.
    *
-   * @param path The path to resolve.
-   * @return The resolved file handle.
+   * @param path The path to resolve. Must not be {@code null} or empty.
+   * @return The resolved {@link FileHandle}. Never {@code null}.
+   * @throws IllegalArgumentException If the path resolves to nothing readable.
    */
   @NotNull
   public static FileHandle resolveAssetPath(@NotNull String path) {
@@ -58,8 +74,11 @@ public final class FlixelSpritemapJsonLoader {
   }
 
   /**
-   * Reads the file as UTF-8 and strips a leading BOM if present. Use for XML and JSON so the path does
-   * not fall back to the platform default charset.
+   * Reads a text file as UTF-8 and strips a leading byte-order mark if present. Use for XML and JSON so
+   * the path does not fall back to the platform default charset.
+   *
+   * @param f The file handle to read from. Must not be {@code null}.
+   * @return The text content; never {@code null} (an empty file yields the empty string).
    */
   @NotNull
   public static String readUtf8Text(@NotNull FileHandle f) {
@@ -71,58 +90,119 @@ public final class FlixelSpritemapJsonLoader {
   }
 
   /**
-   * Reads spritemap and animation JSON, applies atlas frames, then registers one clip per animation.
-   * 
-   * <p>Spritemap may list frames as a JSON array of numeric rows {@code [x, y, w, h, ...]} (first four
-   * values are the texture rect) or as an object map of frame name to
-   * {@code { "frame": { "x", "y", "w", "h" } } } (names become {@link FlixelFrame#name}).
-   * 
-   * <p>Animation files may be:
-   * <ul>
-   *   <li>Simple: {@code "animations": { "name": { "frames": [0, 1, 2] } } } with optional root {@code framerate}.</li>
-   *   <li>Adobe BTA: with {@code SD} (symbol dictionary), clips are resolved by walking
-   *   nested symbol timelines and {@code ASI.N} spritemap names; {@code ATLAS.SPRITES} order defines frame indices
-   *   (not numeric name sort). Without {@code SD}, a flat layer is used: {@code FR} with {@code N}, {@code I},
-   *   {@code DU}. Root {@code MD.FRT} is the frame rate.</li>
-   * </ul>
+   * Parses a spritemap JSON's {@code ATLAS.SPRITES} block (the Adobe Animate "BTA" shape) into a list of
+   * {@link FlixelFrame} instances, and fills {@code nameToIndexOut} with a lookup from sprite name to
+   * atlas index.
    *
-   * @param controller The animation controller to load the spritemap into.
-   * @param textureKey The key of the texture to load.
-   * @param spritemapJsonPath The path to the spritemap JSON file.
-   * @param animationJsonPath The path to the animation JSON file.
+   * <p>This method is shared between the simple and Animate loaders so that only one place knows how
+   * to unpack Adobe's {@code name}/{@code x}/{@code y}/{@code w}/{@code h} fields.
+   *
+   * @param spritemapRoot The root JSON value of the spritemap file. Must not be {@code null}.
+   * @param texture The backing texture to wrap each region around. Must not be {@code null}.
+   * @param nameToIndexOut An output map. Cleared on entry and filled with sprite name to atlas index
+   *   for each entry that has a non-empty {@code name}. Must not be {@code null}.
+   * @return The list of built {@link FlixelFrame} regions, in declaration order.
+   * @throws IllegalArgumentException If {@code ATLAS.SPRITES} is missing, not an array, or contains zero entries.
+   */
+  @NotNull
+  public static Array<FlixelFrame> parseAtlasSprites(
+      @NotNull JsonValue spritemapRoot,
+      @NotNull Texture texture,
+      @NotNull ObjectMap<String, Integer> nameToIndexOut) {
+    nameToIndexOut.clear();
+    JsonValue atlas = spritemapRoot.get("ATLAS");
+    JsonValue sprites = (atlas != null) ? atlas.get("SPRITES") : null;
+    if (sprites == null || !sprites.isArray()) {
+      throw new IllegalArgumentException("Spritemap JSON is missing an \"ATLAS.SPRITES\" array.");
+    }
+    Array<FlixelFrame> out = new Array<>();
+    for (JsonValue el = sprites.child; el != null; el = el.next) {
+      JsonValue sp = el.get("SPRITE");
+      if (sp == null) {
+        sp = el;
+      }
+      if (sp == null || !sp.isObject()) {
+        continue;
+      }
+      JsonValue nameNode = sp.get("name");
+      String name = (nameNode != null) ? nameNode.asString() : "";
+      int x = sp.getInt("x");
+      int y = sp.getInt("y");
+      int w = sp.getInt("w");
+      int h = sp.getInt("h");
+      int idx = out.size;
+      out.add(buildFrame(texture, x, y, w, h, name));
+      if (name != null && !name.isEmpty()) {
+        nameToIndexOut.put(name, idx);
+      }
+    }
+    if (out.size == 0) {
+      throw new IllegalArgumentException("ATLAS.SPRITES contained no valid SPRITE entries.");
+    }
+    return out;
+  }
+
+  /**
+   * Top-level entry point used by {@link FlixelAnimationController#loadSpritemapFromJson}. Reads both
+   * files, figures out which flavor the animation JSON is, and dispatches to the appropriate handler.
+   *
+   * @param controller The animation controller whose owning sprite should receive the loaded clips.
+   * Must not be {@code null}.
+   * @param textureKey The asset key of the backing PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @throws IllegalArgumentException If either file is malformed, or if an Adobe Animate JSON is being
+   * loaded onto a sprite that is not a {@link FlixelAnimateSprite}.
    */
   public static void load(
       @NotNull FlixelAnimationController controller,
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath) {
+    String animText = readUtf8Text(resolveAssetPath(animationJsonPath));
+    JsonValue animRoot = new JsonReader().parse(animText);
+
+    // Adobe Animate exports always expose an AN block. Route those through the rig loader, which also
+    // handles the spritemap parsing itself (it needs the name-to-index map that stays local to the rig).
+    if (animRoot.get("AN") != null) {
+      if (controller.getOwner() instanceof FlixelAnimateSprite animateSprite) {
+        FlixelAnimateRigLoader.load(animateSprite, controller, textureKey, spritemapJsonPath, animationJsonPath);
+        return;
+      }
+      throw new IllegalArgumentException(
+        "Adobe Animate texture-atlas JSON (with top-level \"AN\") can only be loaded onto a "
+          + "FlixelAnimateSprite, because it requires multi-part compositing. The current owner is "
+          + controller.getOwner().getClass().getName() + ".");
+    }
+
+    // Simple-format animation JSON. Parse the spritemap, apply it on the sprite, then register clips
+    // declared in the "animations" block.
     String smText = readUtf8Text(resolveAssetPath(spritemapJsonPath));
-    String anText = readUtf8Text(resolveAssetPath(animationJsonPath));
     JsonValue spritemapRoot = new JsonReader().parse(smText);
-    JsonValue animRoot = new JsonReader().parse(anText);
 
     FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
     Texture texture;
     try {
       texture = g.requireTexture();
-    } catch (IllegalStateException e) {
+    } catch (IllegalStateException notLoaded) {
       texture = g.loadNow();
     }
 
-    ObjectMap<String, Integer> spritemapNameToIndex = new ObjectMap<>();
-    Array<FlixelFrame> frames = buildFrames(spritemapRoot, texture, spritemapNameToIndex);
+    Array<FlixelFrame> frames = buildSimpleFrames(spritemapRoot, texture);
     controller.getOwner().applySparrowAtlas(g, frames);
 
-    if (animRoot.get("animations") != null) {
-      loadSimpleAnimationsJson(controller, animRoot);
-    } else if (animRoot.get("AN") != null) {
-      loadAdobeBtaAnJson(controller, animRoot, frames, spritemapNameToIndex);
-    } else {
+    if (animRoot.get("animations") == null) {
       throw new IllegalArgumentException(
-        "Animation JSON has no \"animations\" object and no \"AN\" (Adobe BTA) block. Unrecognized format.");
+        "Animation JSON has no \"animations\" object and no \"AN\" block. Unrecognized format.");
     }
+    loadSimpleAnimationsJson(controller, animRoot);
   }
 
+  /**
+   * Registers clips from a simple {@code "animations"} JSON onto {@code controller}. Each entry must
+   * have a {@code "frames"} array of integer indices into the atlas; optional per-clip {@code framerate}
+   * and {@code loop} fields are honoured.
+   */
   private static void loadSimpleAnimationsJson(
       @NotNull FlixelAnimationController controller, @NotNull JsonValue animRoot) {
     float defaultFps = readFloat(animRoot, "framerate", 24f);
@@ -138,7 +218,8 @@ public final class FlixelSpritemapJsonLoader {
       float fps = readFloat(anim, "framerate", defaultFps);
       JsonValue framesNode = anim.get("frames");
       if (framesNode == null || !framesNode.isArray()) {
-        throw new IllegalArgumentException("Animation \"" + name + "\" needs a \"frames\" array of indices.");
+        throw new IllegalArgumentException(
+          "Animation \"" + name + "\" needs a \"frames\" array of indices.");
       }
       int n = 0;
       for (JsonValue c = framesNode.child; c != null; c = c.next) {
@@ -158,84 +239,65 @@ public final class FlixelSpritemapJsonLoader {
   }
 
   /**
-   * Adobe Animate (Better TA) / FNF-style {@code Animation.json}: first timeline layer where {@code FR} entries
-   * include {@code N} (name), {@code I} (start index), {@code DU} (inclusive length).
+   * Builds an atlas frame list for the simple-format spritemap JSON (either an {@code ATLAS.SPRITES}
+   * block, a top-level {@code frames} array, or a top-level {@code frames} object keyed by name).
    */
-  private static void loadAdobeBtaAnJson(
-      @NotNull FlixelAnimationController controller,
-      @NotNull JsonValue animRoot,
-      @NotNull Array<FlixelFrame> atlasFrames,
-      @NotNull ObjectMap<String, Integer> spritemapNameToIndex) {
-    JsonValue md = animRoot.get("MD");
-    float fps = (md != null) ? readFloat(md, "FRT", 24f) : 24f;
-    if (fps <= 0f) {
-      fps = 24f;
+  @NotNull
+  private static Array<FlixelFrame> buildSimpleFrames(@NotNull JsonValue root, @NotNull Texture texture) {
+    JsonValue atlas = root.get("ATLAS");
+    if (atlas != null) {
+      ObjectMap<String, Integer> ignore = new ObjectMap<>();
+      return parseAtlasSprites(root, texture, ignore);
     }
-    if (animRoot.get("SD") != null && spritemapNameToIndex.size > 0) {
-      if (controller.getOwner() instanceof FlixelAnimateSprite animateSprite) {
-        FlixelBtaCompositeLoader.load(animateSprite, controller, animRoot, fps, spritemapNameToIndex, atlasFrames);
-      } else {
-        FlixelBtaSymbolAnimationResolver.loadAnimations(
-          controller, animRoot, fps, spritemapNameToIndex, atlasFrames);
-      }
-      return;
+    JsonValue framesNode = root.get("frames");
+    if (framesNode == null) {
+      throw new IllegalArgumentException(
+        "Spritemap JSON must contain \"ATLAS.SPRITES\" or a top-level \"frames\" field.");
     }
-    JsonValue an = animRoot.get("AN");
-    if (an == null) {
-      throw new IllegalArgumentException("Adobe BTA JSON missing \"AN\".");
-    }
-    JsonValue tl = an.get("TL");
-    if (tl == null) {
-      throw new IllegalArgumentException("Adobe BTA JSON missing \"AN.TL\".");
-    }
-    JsonValue layers = tl.get("L");
-    if (layers == null || !layers.isArray()) {
-      throw new IllegalArgumentException("Adobe BTA JSON missing \"AN.TL.L\" array.");
-    }
-    for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-      JsonValue frs = layer.get("FR");
-      if (frs == null || !frs.isArray()) {
-        continue;
-      }
-      boolean hasNamed = false;
-      for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-        if (fr.get("N") != null) {
-          hasNamed = true;
-          break;
+    Array<FlixelFrame> out = new Array<>();
+    if (framesNode.isArray()) {
+      int index = 0;
+      for (JsonValue row = framesNode.child; row != null; row = row.next) {
+        if (!row.isArray() || row.size < 4) {
+          throw new IllegalArgumentException(
+            "Each spritemap frame row must be an array with at least 4 numbers.");
         }
+        int x = row.get(0).asInt();
+        int y = row.get(1).asInt();
+        int w = row.get(2).asInt();
+        int h = row.get(3).asInt();
+        out.add(buildFrame(texture, x, y, w, h, "frame" + index));
+        index++;
       }
-      if (!hasNamed) {
-        continue;
-      }
-      for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-        JsonValue nameNode = fr.get("N");
-        if (nameNode == null) {
+      return out;
+    }
+    if (framesNode.isObject()) {
+      for (JsonValue v = framesNode.child; v != null; v = v.next) {
+        String fname = v.name;
+        if (fname == null || !v.isObject()) {
           continue;
         }
-        String name = nameNode.asString();
-        int start = fr.getInt("I");
-        int du = fr.getInt("DU");
-        if (du < 1) {
-          continue;
+        JsonValue fr = v.get("frame");
+        if (fr == null) {
+          fr = v;
         }
-        int[] indices = new int[du];
-        for (int i = 0; i < du; i++) {
-          indices[i] = start + i;
-        }
-        controller.addAnimationFromAtlas(name, indices, 1f / fps, true);
+        int x = getIntField(fr, "x");
+        int y = getIntField(fr, "y");
+        int w = getIntField(fr, "w", "width");
+        int h = getIntField(fr, "h", "height");
+        out.add(buildFrame(texture, x, y, w, h, fname));
       }
-      return;
+      return out;
     }
-    throw new IllegalArgumentException(
-      "Adobe BTA JSON: no layer in AN.TL.L with named FR entries (N, I, DU).");
+    throw new IllegalArgumentException("Spritemap \"frames\" must be a JSON array or object.");
   }
 
-  private static float readFloat(JsonValue o, String key, float dflt) {
+  private static float readFloat(@NotNull JsonValue o, @NotNull String key, float dflt) {
     JsonValue v = o.get(key);
     return (v == null) ? dflt : v.asFloat();
   }
 
-  private static boolean readBoolean(JsonValue o, String key, boolean dflt) {
+  private static boolean readBoolean(@NotNull JsonValue o, @NotNull String key, boolean dflt) {
     JsonValue v = o.get(key);
     if (v == null) {
       return dflt;
@@ -249,101 +311,7 @@ public final class FlixelSpritemapJsonLoader {
     return dflt;
   }
 
-  @NotNull
-  private static Array<FlixelFrame> buildFrames(
-      @NotNull JsonValue root,
-      @NotNull Texture texture,
-      @NotNull ObjectMap<String, Integer> spritemapNameToIndexOut) {
-    JsonValue atlas = root.get("ATLAS");
-    if (atlas != null) {
-      return buildAtlasFrames(atlas, texture, spritemapNameToIndexOut);
-    }
-    spritemapNameToIndexOut.clear();
-    JsonValue framesNode = root.get("frames");
-    if (framesNode == null) {
-      throw new IllegalArgumentException(
-        "Spritemap JSON must contain \"ATLAS.SPRITES\" (FNF) or a top-level \"frames\" field.");
-    }
-    Array<FlixelFrame> out = new Array<>();
-    if (framesNode.isArray()) {
-      int index = 0;
-      for (JsonValue row = framesNode.child; row != null; row = row.next) {
-        if (!row.isArray() || row.size < 4) {
-          throw new IllegalArgumentException("Each spritemap frame row must be an array with at least 4 numbers.");
-        }
-        int x = row.get(0).asInt();
-        int y = row.get(1).asInt();
-        int w = row.get(2).asInt();
-        int h = row.get(3).asInt();
-        FlixelFrame frame = buildFrame(texture, x, y, w, h, "frame" + index);
-        out.add(frame);
-        index++;
-      }
-      return out;
-    }
-    if (framesNode.isObject()) {
-      for (JsonValue v = framesNode.child; v != null; v = v.next) {
-        String fname = v.name;
-        if (fname == null) {
-          continue;
-        }
-        if (!v.isObject()) {
-          continue;
-        }
-        JsonValue fr = v.get("frame");
-        if (fr == null) {
-          fr = v;
-        }
-        int x = getIntField(fr, "x");
-        int y = getIntField(fr, "y");
-        int w = getIntField(fr, "w", "width");
-        int h2 = getIntField(fr, "h", "height");
-        FlixelFrame frame = buildFrame(texture, x, y, w, h2, fname);
-        out.add(frame);
-      }
-      return out;
-    }
-    throw new IllegalArgumentException("Spritemap \"frames\" must be a JSON array or object.");
-  }
-
-  @NotNull
-  private static Array<FlixelFrame> buildAtlasFrames(
-      @NotNull JsonValue atlas,
-      @NotNull Texture texture,
-      @NotNull ObjectMap<String, Integer> spritemapNameToIndexOut) {
-    spritemapNameToIndexOut.clear();
-    JsonValue sprites = atlas.get("SPRITES");
-    if (sprites == null || !sprites.isArray()) {
-      throw new IllegalArgumentException("ATLAS.SPRITES must be a JSON array.");
-    }
-    Array<FlixelFrame> out = new Array<>();
-    for (JsonValue el = sprites.child; el != null; el = el.next) {
-      JsonValue sp = el.get("SPRITE");
-      if (sp == null) {
-        sp = el;
-      }
-      if (sp == null || !sp.isObject()) {
-        continue;
-      }
-      JsonValue nameN = sp.get("name");
-      String name = (nameN != null) ? nameN.asString() : "";
-      int x = sp.getInt("x");
-      int y = sp.getInt("y");
-      int w = sp.getInt("w");
-      int h = sp.getInt("h");
-      int idx = out.size;
-      out.add(buildFrame(texture, x, y, w, h, name));
-      if (name != null && !name.isEmpty()) {
-        spritemapNameToIndexOut.put(name, idx);
-      }
-    }
-    if (out.size == 0) {
-      throw new IllegalArgumentException("ATLAS.SPRITES contained no valid SPRITE entries.");
-    }
-    return out;
-  }
-
-  private static int getIntField(JsonValue o, String a, String b) {
+  private static int getIntField(@NotNull JsonValue o, @NotNull String a, @NotNull String b) {
     JsonValue u = o.get(a);
     if (u == null) {
       u = o.get(b);
@@ -354,7 +322,7 @@ public final class FlixelSpritemapJsonLoader {
     return u.asInt();
   }
 
-  private static int getIntField(JsonValue o, String a) {
+  private static int getIntField(@NotNull JsonValue o, @NotNull String a) {
     JsonValue u = o.get(a);
     if (u == null) {
       throw new IllegalArgumentException("Missing int field: " + a);
@@ -364,19 +332,14 @@ public final class FlixelSpritemapJsonLoader {
 
   @NotNull
   private static FlixelFrame buildFrame(
-      @NotNull Texture texture,
-      int x, int y, int w, int h,
-      @org.jetbrains.annotations.Nullable String name) {
+      @NotNull Texture texture, int x, int y, int w, int h, @Nullable String name) {
     TextureRegion region = new TextureRegion(texture, x, y, w, h);
     FlixelFrame f = new FlixelFrame(region);
-    f.name = name;
+    f.name = (name != null && !name.isEmpty()) ? name : "frame";
     f.offsetX = 0;
     f.offsetY = 0;
     f.originalWidth = w;
     f.originalHeight = h;
-    if (f.name == null) {
-      f.name = "frame";
-    }
     return f;
   }
 }
