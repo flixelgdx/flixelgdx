@@ -20,6 +20,7 @@ import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
+import me.stringdotjar.flixelgdx.util.FlixelColor;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -608,6 +609,14 @@ public class FlixelSprite extends FlixelObject {
     this.scaleY = scaleY;
   }
 
+  public void setScaleX(float scaleX) {
+    this.scaleX = scaleX;
+  }
+
+  public void setScaleY(float scaleY) {
+    this.scaleY = scaleY;
+  }
+
   public float getOriginX() {
     return originX;
   }
@@ -684,6 +693,10 @@ public class FlixelSprite extends FlixelObject {
 
   public void setColor(float r, float g, float b, float a) {
     color.set(r, g, b, a);
+  }
+
+  public void setColor(@NotNull FlixelColor tint) {
+    color.set(tint.getGdxColor());
   }
 
   public void setAlpha(float a) {

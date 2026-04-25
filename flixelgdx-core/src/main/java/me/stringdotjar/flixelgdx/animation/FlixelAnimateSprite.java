@@ -180,18 +180,59 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * Rebuilds the hitbox so it exactly matches the drawn rig. With a rig installed, the hitbox is the
    * anchor bounding box scaled by {@link #getScaleX()} / {@link #getScaleY()}, so
    * {@link FlixelSprite#screenCenter()} and {@link Flixel#overlap} agree with what the player sees.
-   * Without a rig (or when the sprite falls back to an atlas region), the parent behaviour is used.
+   * Without a rig the parent behavior is used.
+   *
+   * <p>Unlike {@link FlixelSprite#updateHitbox}, this method does <strong>not</strong> reset
+   * {@link #setScale(float)} back to {@code 1}. The rig's part affines are baked at anchor-local size,
+   * so the absolute scale must remain on the sprite for the {@link #draw(Batch)} matrix chain to
+   * size the visible rig correctly. The {@link #draw(Batch)} method is fully aware of this and uses
+   * {@link #getOriginX()} / {@link #getOriginY()} together with {@code |scaleX|} / {@code |scaleY|}
+   * so the visible rig still coincides with the hitbox.
    *
    * @return {@code this} sprite, matching {@link FlixelSprite#updateHitbox}.
    */
   @Override
   public @NotNull FlixelSprite updateHitbox() {
-    if (rig == null || currentRegion != null) {
+    if (rig == null) {
       return super.updateHitbox();
     }
     float effW = Math.abs(getScaleX()) * rig.anchorWidth;
     float effH = Math.abs(getScaleY()) * rig.anchorHeight;
     return updateHitbox(effW, effH);
+  }
+
+  /**
+   * Sets how large the rig is drawn on screen (in pixels) without changing the underlying anchor
+   * data. With a rig installed this divides the requested dimensions by the rig's anchor bounding
+   * box to derive the matching {@link #setScale(float, float)}, then calls {@link #updateHitbox()} so
+   * the hitbox follows the new visual size. Without a rig, the parent behavior is used so plain
+   * atlas usage continues to work.
+   *
+   * <p>This is the recommended entry point when game code needs a character to occupy a fixed pixel
+   * size regardless of the resolution of the source export, because callers do not have to compute
+   * the anchor dimensions themselves or chain {@code setScale + updateHitbox} manually.
+   *
+   * @param width The drawn width in pixels (must be {@code > 0}).
+   * @param height The drawn height in pixels (must be {@code > 0}).
+   * @return {@code this} sprite for chaining.
+   */
+  @Override
+  public FlixelSprite setGraphicSize(int width, int height) {
+    FlixelAnimateRig activeRig = rig;
+    if (activeRig == null) {
+      return super.setGraphicSize(width, height);
+    }
+    if (width <= 0 || height <= 0) {
+      return this;
+    }
+    float aw = activeRig.anchorWidth;
+    float ah = activeRig.anchorHeight;
+    if (aw <= 0f || ah <= 0f) {
+      return this;
+    }
+    setScale(width / aw, height / ah);
+    updateHitbox();
+    return this;
   }
 
   /**
@@ -226,14 +267,16 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * (or with a non-sprite {@link Batch}), falls back to the inherited {@link FlixelSprite} draw path.
    *
    * <p>The rig draw composes the sprite's world transform once per frame as
-   * {@code T(wx-offsetX, wy-offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX, -originY)},
-   * matching {@link FlixelSprite#draw} for a single graphic. Per-part baked matrices are post-multiplied
-   * into this base, so rotation, scale, flip, origin, and offset all behave identically to a regular
-   * sprite.
+   * {@code T(wx-offsetX, wy-offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX/|sx|, -originY/|sy|)}.
+   * The asymmetric origin (scaled-world units before the scale, anchor-local units after the scale) is
+   * what makes the rig's visible bounding box exactly coincide with the hitbox after
+   * {@link #updateHitbox()} for any non-unit scale, while still pivoting rotations around the visual
+   * center. Per-part baked matrices are post-multiplied into this base, so rotation, scale, flip,
+   * origin, and offset all behave identically to a regular {@link FlixelSprite}.
    *
    * @param batch The active batch. The rig path requires a {@link SpriteBatch} (for
-   * {@link SpriteBatch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)});
-   * any other batch falls back to the inherited single-graphic draw path.
+    *   {@link SpriteBatch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)});
+    *   any other batch falls back to the inherited single-graphic draw path.
    */
   @Override
   public void draw(Batch batch) {
@@ -291,13 +334,29 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float ox = getOriginX();
     float oy = getOriginY();
 
-    // Build the world-space base transform: T(world) * T(origin) * R * S * T(-origin). Each builder
-    // call is a right-multiplication, so the resulting matrix applied to a part-local point first
-    // shifts by -origin, then scales/rotates, then re-shifts by origin, then translates to the world
-    // position. Identity branches are skipped so the no-rotation/no-scale fast path stays cheap.
+    // Origin/scale unit conversion: FlixelSprite stores originX/originY in the same coordinate space as
+    // getWidth()/getHeight() (i.e. scaled-world units, since updateHitbox() folds the absolute scale
+    // into the size and then re-centers the origin). The rig's part affines, however, place each part
+    // inside an anchor-local rectangle of size (anchorWidth, anchorHeight). To pivot rotation and
+    // scaling around the visual center we therefore translate by +origin in scaled-world units AFTER
+    // the scale, but by -origin/|scale| in anchor-local units BEFORE the scale. The two translates
+    // collapse to the no-op pair (+origin, -origin) when |scale| == 1, so the unit-scale path stays
+    // identical to FlixelSprite's standard transform chain.
+    float absSx = Math.abs(sx);
+    float absSy = Math.abs(sy);
+    float anchorOriginX = (absSx != 0f) ? ox / absSx : 0f;
+    float anchorOriginY = (absSy != 0f) ? oy / absSy : 0f;
+    boolean hasOrigin = (ox != 0f) || (oy != 0f);
+    boolean hasAnchorOrigin = (anchorOriginX != 0f) || (anchorOriginY != 0f);
+
+    // Build the world-space base transform:
+    //   T(world) * T(origin_world) * R * S * T(-origin_anchor)
+    // Each builder call is a right-multiplication, so the resulting matrix applied to a part-local
+    // (anchor-local) point first shifts by -origin_anchor, then scales/rotates, then re-shifts by
+    // +origin_world, then translates to the world position. Identity branches are skipped so the
+    // no-rotation/no-scale fast path stays cheap.
     baseAffine.idt();
     baseAffine.translate(wx, wy);
-    boolean hasOrigin = (ox != 0f) || (oy != 0f);
     if (hasOrigin) {
       baseAffine.translate(ox, oy);
     }
@@ -307,8 +366,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     if (sx != 1f || sy != 1f) {
       baseAffine.scale(sx, sy);
     }
-    if (hasOrigin) {
-      baseAffine.translate(-ox, -oy);
+    if (hasAnchorOrigin) {
+      baseAffine.translate(-anchorOriginX, -anchorOriginY);
     }
 
     Color tint = getColor();

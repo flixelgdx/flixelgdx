@@ -37,10 +37,12 @@ import org.jetbrains.annotations.Nullable;
  *   ({@code ATLAS.SPRITES[].SPRITE}: {@code name}, {@code x}, {@code y}, {@code w}, {@code h}).</li>
  *   <li>{@code Animation.json} - the scene graph, composed of three top-level blocks:
  *   <ul>
- *     <li>{@code AN.TL.L} - the main timeline's list of layers. One layer contains labelled frames
- *     ({@code FR[i].N}) that name each clip along with its start index {@code I} and duration
- *     {@code DU}. Another layer contains exactly one matching {@code FR} per clip whose {@code E}
- *     element holds a root symbol instance ({@code SI}).</li>
+ *     <li>{@code AN.TL.L} - the main timeline's list of layers. Exactly one layer is the
+ *     <strong>main</strong> layer: its {@code FR} entries hold a root symbol instance ({@code E.SI})
+ *     and they collectively cover the timeline. All <strong>other</strong> layers are treated as
+ *     label layers; any {@code FR} on a label layer that carries an {@code N} (name) field becomes a
+ *     playable clip with start index {@code I} and duration {@code DU}. This generalization supports
+ *     both simple exports (one label layer, one main layer, one-to-one alignment) and multi-label exports.</li>
  *     <li>{@code SD.S} - the symbol dictionary. Every named symbol ({@code "BF Head default"},
  *     {@code "bf face default"}, ...) has its own timeline of layers and frames, mirroring the
  *     {@code AN.TL.L} shape, which may in turn reference other symbols or leaf atlas sprite
@@ -225,7 +227,7 @@ final class FlixelAnimateRigLoader {
       Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
       Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY
     };
-    int anchorClipIndex = pickAnchorClipIndex(parsed.labelFrames, anchorClipName);
+    int anchorClipIndex = pickAnchorClipIndex(parsed.clipDefs, anchorClipName);
     computeAnchorBbox(parsed, anchorClipIndex, nameToIndex, atlas, anchorBox);
     if (anchorBox[0] > anchorBox[2] || anchorBox[1] > anchorBox[3]) {
       // Degenerate case (no parts in the anchor clip). Fall back to a 1x1 rectangle so the sprite still
@@ -241,22 +243,27 @@ final class FlixelAnimateRigLoader {
     float anchorHeight = anchorBox[3] - anchorMinY;
 
     // Bake every clip. Each keyframe's parts are stored back-to-front already (layers iterated in reverse),
-    // so the draw path can iterate forward with no extra work.
+    // so the draw path can iterate forward with no extra work. Clip definitions carry their absolute
+    // start tick on the main timeline; we look up the main-layer FR that owns each absolute tick rather
+    // than assuming a 1:1 alignment between the label layer and the main layer (which only holds for
+    // simple exports).
     ObjectMap<String, FlixelAnimateRig.Clip> clips = new ObjectMap<>();
     Array<RawPart> scratchRaw = new Array<>(32);
-    for (int clipIndex = 0; clipIndex < parsed.labelFrames.size; clipIndex++) {
-      JsonValue label = parsed.labelFrames.get(clipIndex);
-      String clipName = label.get("N").asString();
-      int duration = label.getInt("DU");
-      if (duration < 1) {
+    for (int clipIndex = 0; clipIndex < parsed.clipDefs.size; clipIndex++) {
+      ClipDef clip = parsed.clipDefs.get(clipIndex);
+      if (clip.duration < 1) {
         continue;
       }
-      JsonValue mainFrame = parsed.mainFrames.get(clipIndex);
 
-      FlixelAnimateRig.Keyframe[] kfs = new FlixelAnimateRig.Keyframe[duration];
-      for (int t = 0; t < duration; t++) {
+      FlixelAnimateRig.Keyframe[] kfs = new FlixelAnimateRig.Keyframe[clip.duration];
+      for (int t = 0; t < clip.duration; t++) {
         scratchRaw.clear();
-        collectKeyframeParts(parsed, mainFrame, t, nameToIndex, scratchRaw);
+        int absoluteTick = clip.startTick + t;
+        JsonValue mainFrame = findMainFrameAt(parsed.mainFrames, absoluteTick);
+        if (mainFrame != null) {
+          int frameLocalTime = absoluteTick - readIntOr(mainFrame, "I", 0);
+          collectKeyframeParts(parsed, mainFrame, frameLocalTime, nameToIndex, scratchRaw);
+        }
 
         FlixelAnimateRig.Part[] parts = new FlixelAnimateRig.Part[scratchRaw.size];
         for (int p = 0; p < scratchRaw.size; p++) {
@@ -268,16 +275,16 @@ final class FlixelAnimateRigLoader {
         }
         kfs[t] = new FlixelAnimateRig.Keyframe(parts);
       }
-      clips.put(clipName, new FlixelAnimateRig.Clip(clipName, kfs));
+      clips.put(clip.name, new FlixelAnimateRig.Clip(clip.name, kfs));
 
       // Register the clip with the animation controller so getCurrentKeyframeIndex() advances over time.
       // The actual frame indices are irrelevant (the draw path ignores them), but libGDX's Animation
       // requires at least one entry, so feed it a duplicate of atlas[0] per tick.
-      int[] dummyFrames = new int[duration];
-      controller.addAnimationFromAtlas(clipName, dummyFrames, 1f / fps, true);
+      int[] dummyFrames = new int[clip.duration];
+      controller.addAnimationFromAtlas(clip.name, dummyFrames, 1f / fps, true);
     }
 
-    String resolvedAnchorName = parsed.labelFrames.get(anchorClipIndex).get("N").asString();
+    String resolvedAnchorName = parsed.clipDefs.get(anchorClipIndex).name;
     FlixelAnimateRig rig = new FlixelAnimateRig(atlas, clips, resolvedAnchorName, anchorWidth, anchorHeight);
     sprite.installAnimateRig(rig);
 
@@ -292,19 +299,18 @@ final class FlixelAnimateRigLoader {
 
   /**
    * Selects which clip should define the anchor-space bounding box. When {@code requestedName} is
-   * non-{@code null} and matches a clip's {@code "N"} field, that clip is chosen; otherwise the first
-   * clip in {@code labelFrames} is used.
+   * non-{@code null} and matches a clip definition's name, that clip is chosen; otherwise the first
+   * clip in {@code clipDefs} is used.
    *
-   * @param labelFrames The label-layer frames as returned by {@link ParsedAnimation#parse}.
+   * @param clipDefs The clip definitions gathered by {@link ParsedAnimation#parse}.
    * @param requestedName Caller-supplied anchor clip name, or {@code null} to default to the first clip.
-   * @return The index into {@code labelFrames} whose {@code "N"} field is the chosen anchor clip name.
+   * @return The index into {@code clipDefs} whose name is the chosen anchor clip.
    */
   private static int pickAnchorClipIndex(
-      @NotNull Array<JsonValue> labelFrames, @Nullable String requestedName) {
+      @NotNull Array<ClipDef> clipDefs, @Nullable String requestedName) {
     if (requestedName != null && !requestedName.isEmpty()) {
-      for (int i = 0; i < labelFrames.size; i++) {
-        JsonValue name = labelFrames.get(i).get("N");
-        if (name != null && requestedName.equals(name.asString())) {
+      for (int i = 0; i < clipDefs.size; i++) {
+        if (requestedName.equals(clipDefs.get(i).name)) {
           return i;
         }
       }
@@ -315,9 +321,9 @@ final class FlixelAnimateRigLoader {
   /**
    * Walks the anchor clip's first keyframe to compute the axis-aligned bounding box of every bitmap in
    * Flash Y-down world space, storing the result as {@code [minX, minY, maxX, maxY]} in {@code out}.
-   * 
+   *
    * @param parsed The parsed animation layout (timelines and symbol dictionary).
-   * @param anchorClipIndex The index of the anchor clip in {@code parsed.mainFrames}.
+   * @param anchorClipIndex The index of the anchor clip in {@code parsed.clipDefs}.
    * @param nameToIndex The {@code ATLAS.SPRITES} name-to-index lookup.
    * @param atlas The atlas frames.
    * @param out The output bounding box.
@@ -328,9 +334,14 @@ final class FlixelAnimateRigLoader {
       @NotNull ObjectMap<String, Integer> nameToIndex,
       @NotNull Array<FlixelFrame> atlas,
       @NotNull float[] out) {
-    JsonValue mainFrame = parsed.mainFrames.get(anchorClipIndex);
+    ClipDef clip = parsed.clipDefs.get(anchorClipIndex);
+    JsonValue mainFrame = findMainFrameAt(parsed.mainFrames, clip.startTick);
+    if (mainFrame == null) {
+      return;
+    }
+    int frameLocalTime = clip.startTick - readIntOr(mainFrame, "I", 0);
     Array<RawPart> tmp = new Array<>(16);
-    collectKeyframeParts(parsed, mainFrame, 0, nameToIndex, tmp);
+    collectKeyframeParts(parsed, mainFrame, frameLocalTime, nameToIndex, tmp);
     for (int i = 0; i < tmp.size; i++) {
       RawPart p = tmp.get(i);
       FlixelFrame frame = atlas.get(p.atlasIndex);
@@ -341,6 +352,27 @@ final class FlixelAnimateRigLoader {
       accumulateTransformedCorner(p.flashMatrix, w, h, out);
       accumulateTransformedCorner(p.flashMatrix, 0f, h, out);
     }
+  }
+
+  /**
+   * Returns the main-layer {@code FR} entry whose tick range covers {@code absoluteTick}, or
+   * {@code null} when no FR matches (an intentional gap in the timeline).
+   *
+   * @param mainFrames The main-layer FR list, in declaration order.
+   * @param absoluteTick The tick on the main timeline to look up.
+   * @return The matching {@link JsonValue} FR, or {@code null} if no FR covers this tick.
+   */
+  @Nullable
+  private static JsonValue findMainFrameAt(@NotNull Array<JsonValue> mainFrames, int absoluteTick) {
+    for (int i = 0; i < mainFrames.size; i++) {
+      JsonValue fr = mainFrames.get(i);
+      int frI = readIntOr(fr, "I", 0);
+      int frDu = readIntOr(fr, "DU", 1);
+      if (absoluteTick >= frI && absoluteTick < frI + frDu) {
+        return fr;
+      }
+    }
+    return null;
   }
 
   /**
@@ -795,28 +827,52 @@ final class FlixelAnimateRigLoader {
   }
 
   /**
+   * A single named animation clip pulled from any label layer. Carries the absolute start tick and
+   * duration in the main timeline so the baker can sample the right main-layer {@code FR} per tick.
+   *
+   * @param name The name of the animation clip, never null.
+   * @param startTick The absolute start tick of the clip in the main timeline.
+   * @param duration The duration of the clip in ticks.
+   * @see FlixelAnimateRigLoader#findMainFrameAt
+   */
+  private record ClipDef(
+    @NotNull String name,
+    int startTick,
+    int duration
+  ) {}
+
+  /**
    * Parsed form of the {@code AN} / {@code SD} / {@code MD} blocks. Captured in one pass so the clip
    * baker can iterate without re-walking the JSON tree.
    */
   private static final class ParsedAnimation {
-    /** Label-layer {@code FR} entries (every entry has a {@code "N"} clip name). */
-    @NotNull final Array<JsonValue> labelFrames;
 
-    /** Main-layer {@code FR} entries, aligned one-to-one with {@link #labelFrames}. */
-    @NotNull final Array<JsonValue> mainFrames;
+    /**
+     * Every named clip discovered across every non-main layer, in order of appearance. Some Adobe
+     * Animate exports (like Darnell) split labels across multiple layers (one for the high-level pose
+     * names and one for shorter sub-segments such as "Left Flame Loop"); the loader treats them all
+     * as first-class clips so users can play either kind by name.
+     */
+    @NotNull
+    final Array<ClipDef> clipDefs;
+
+    /** Main-layer {@code FR} entries, in declaration order. */
+    @NotNull
+    final Array<JsonValue> mainFrames;
 
     /** {@code SD.S} lookup keyed on {@code SN}. */
-    @NotNull final ObjectMap<String, JsonValue> symbolsByName;
+    @NotNull
+    final ObjectMap<String, JsonValue> symbolsByName;
 
     /** Authoring frame rate, copied from {@code MD.FRT} (or the 24 fps default). */
     final float framesPerSecond;
 
     private ParsedAnimation(
-        @NotNull Array<JsonValue> labelFrames,
+        @NotNull Array<ClipDef> clipDefs,
         @NotNull Array<JsonValue> mainFrames,
         @NotNull ObjectMap<String, JsonValue> symbolsByName,
         float framesPerSecond) {
-      this.labelFrames = labelFrames;
+      this.clipDefs = clipDefs;
       this.mainFrames = mainFrames;
       this.symbolsByName = symbolsByName;
       this.framesPerSecond = framesPerSecond;
@@ -831,34 +887,48 @@ final class FlixelAnimateRigLoader {
         throw new IllegalArgumentException("Animation JSON is missing \"AN.TL.L\".");
       }
 
-      // The label layer holds one FR per clip, each with a "N" clip name. The main layer holds the root
-      // symbol instance for each clip. Flash exports commonly label these "Layer_3" and "Layer_1" but
-      // third-party exporters are inconsistent, so we detect them by structure.
-      JsonValue labelFrameList = findLabelFrameList(layers);
+      // The main layer is the only layer whose first FR carries a root symbol instance (E.SI). All
+      // other layers are label/marker layers where N entries describe playable clips. Flash exports
+      // commonly label the main layer "Layer_1" and label layers "Layer_3" / "Layer_4", but
+      // third-party exporters are inconsistent, so structure detection is the only reliable approach.
       JsonValue mainFrameList = findMainFrameList(layers);
-      if (labelFrameList == null || mainFrameList == null) {
+      if (mainFrameList == null) {
         throw new IllegalArgumentException(
-          "Animation JSON does not have a recognizable label layer (FR entries with N) and main layer "
-            + "(FR entries with E.SI pointing at a root symbol).");
+          "Animation JSON does not have a recognizable main layer (FR entries with E.SI pointing at "
+            + "a root symbol).");
       }
 
-      Array<JsonValue> labelFrames = new Array<>();
-      for (JsonValue fr = labelFrameList.child; fr != null; fr = fr.next) {
-        if (fr.get("N") != null) {
-          labelFrames.add(fr);
+      // Walk every non-main layer and harvest every FR that carries a clip name.
+      Array<ClipDef> clipDefs = new Array<>();
+      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
+        JsonValue frs = layer.get("FR");
+        if (frs == null || !frs.isArray() || frs == mainFrameList) {
+          continue;
+        }
+        for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
+          JsonValue n = fr.get("N");
+          if (n == null || !n.isString()) {
+            continue;
+          }
+          int startTick = readIntOr(fr, "I", 0);
+          int duration = readIntOr(fr, "DU", 1);
+          if (duration < 1) {
+            continue;
+          }
+          clipDefs.add(new ClipDef(n.asString(), startTick, duration));
         }
       }
+
       Array<JsonValue> mainFrames = new Array<>();
       for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
         mainFrames.add(fr);
       }
-      if (labelFrames.size == 0) {
-        throw new IllegalArgumentException("Animation JSON label layer contains zero named clips.");
-      }
-      if (labelFrames.size != mainFrames.size) {
+      if (clipDefs.size == 0) {
         throw new IllegalArgumentException(
-          "Animation JSON label layer has " + labelFrames.size + " clips but main layer has "
-            + mainFrames.size + " keyframes.");
+          "Animation JSON contains zero named clips across all label layers.");
+      }
+      if (mainFrames.size == 0) {
+        throw new IllegalArgumentException("Animation JSON main layer contains zero keyframes.");
       }
 
       ObjectMap<String, JsonValue> symbolsByName = new ObjectMap<>();
@@ -887,39 +957,15 @@ final class FlixelAnimateRigLoader {
         }
       }
 
-      return new ParsedAnimation(labelFrames, mainFrames, symbolsByName, fps);
-    }
-
-    /**
-     * Finds the layer whose {@code FR} array contains entries with {@code "N"} (clip name) fields. The
-     * first matching layer in declaration order is returned.
-     * 
-     * @param layers The layers to search. Must not be {@code null}.
-     * @return The first layer whose {@code FR} array contains entries with {@code "N"} (clip name) fields, or 
-     *   {@code null} if no such layer is found.
-     */
-    @Nullable
-    private static JsonValue findLabelFrameList(@NotNull JsonValue layers) {
-      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-        JsonValue frs = layer.get("FR");
-        if (frs == null || !frs.isArray() || frs.size == 0) {
-          continue;
-        }
-        for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-          if (fr.get("N") != null) {
-            return frs;
-          }
-        }
-      }
-      return null;
+      return new ParsedAnimation(clipDefs, mainFrames, symbolsByName, fps);
     }
 
     /**
      * Finds the layer whose first {@code FR} has an {@code E.SI} pointing at a root symbol. The first
      * matching layer in declaration order is returned.
-     * 
+     *
      * @param layers The layers to search. Must not be {@code null}.
-     * @return The first layer whose first {@code FR} has an {@code E.SI} pointing at a root symbol, or 
+     * @return The first layer whose first {@code FR} has an {@code E.SI} pointing at a root symbol, or
      *   {@code null} if no such layer is found.
      */
     @Nullable
