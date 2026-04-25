@@ -384,7 +384,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
 
     FlixelFrame frame = anim.getKeyFrame(stateTime, looping);
-    int frameIndex = anim.getKeyFrameIndex(stateTime);
+    int frameIndex = computeKeyframeIndex(anim);
     owner.setCurrentFrameForAnimation(frame);
 
     if (frameIndex != lastDispatchedFrameIndex) {
@@ -418,18 +418,70 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * Zero-based key index in the current clip, matching {@code Animation.getKeyFrameIndex(stateTime)}.
-   * Useful for multi-part BTA / texture-atlas characters driven outside a single frame texture.
+   * Zero-based key index in the current clip. Computed from {@link #getStateTime()} and the
+   * controller's {@link #isLooping() looping} flag rather than from the underlying libGDX
+   * {@link Animation}'s {@code PlayMode}, so the index always matches what {@link #update(float)}
+   * actually displays no matter how the clip was registered.
+   *
+   * <p>For non-looping playback that has already finished, this returns the <strong>last</strong>
+   * keyframe index ({@code keyframeCount - 1}). For looping playback, it returns the wrapped index
+   * inside {@code [0, keyframeCount)}. Useful for multi-part BTA/texture-atlas characters driven
+   * outside a single-frame texture (for example {@link FlixelAnimateSprite}).
+   *
+   * @return The current keyframe index. Always {@code >= 0}.
    */
   public int getCurrentKeyframeIndex() {
-    if (currentAnim == null || currentAnim.isEmpty()) {
+    if (currentAnim.isEmpty()) {
       return 0;
     }
     Animation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
       return 0;
     }
-    return anim.getKeyFrameIndex(stateTime);
+    return computeKeyframeIndex(anim);
+  }
+
+  /**
+   * Returns the keyframe index for {@code anim} at the current {@link #stateTime}, honouring the
+   * controller's runtime {@link #looping} flag. This deliberately bypasses
+   * {@link Animation#getKeyFrameIndex(float)} (which uses the {@link Animation#getPlayMode()
+   * registered PlayMode}) so that:
+   * <ul>
+   *   <li>Non-looping playback at the end of the clip returns the <strong>last</strong> keyframe
+   *   instead of wrapping back to the first (the latter is what libGDX's {@link Animation.PlayMode#LOOP
+   *   LOOP} does when {@code stateTime == duration}, and is the source of the "first frame appears at
+   *   the end" bug for clips registered with {@code loop = true} but played with looping disabled).</li>
+   *   <li>Looping playback always returns an in-range index, even right at the wrap point.</li>
+   * </ul>
+   *
+   * @param anim The clip to read the keyframe index from. Must not be {@code null}.
+   * @return A keyframe index in {@code [0, keyframeCount - 1]}, or {@code 0} for degenerate clips.
+   */
+  private int computeKeyframeIndex(@NotNull Animation<FlixelFrame> anim) {
+    Object[] keyframes = anim.getKeyFrames();
+    int total = (keyframes != null) ? keyframes.length : 0;
+    if (total <= 0) {
+      return 0;
+    }
+    float frameDuration = anim.getFrameDuration();
+    if (frameDuration <= 0f) {
+      return 0;
+    }
+    int idx = (int) (stateTime / frameDuration);
+    if (looping) {
+      idx %= total;
+      if (idx < 0) {
+        idx += total;
+      }
+      return idx;
+    }
+    if (idx < 0) {
+      return 0;
+    }
+    if (idx >= total) {
+      return total - 1;
+    }
+    return idx;
   }
 
   public boolean isLooping() {

@@ -46,6 +46,16 @@ import org.jetbrains.annotations.Nullable;
  * sprite's hitbox: parts are pre-shifted so the union of their rectangles on anchor-clip frame {@code 0}
  * fits exactly inside {@code (0, 0)} to {@code (anchorWidth, anchorHeight)}. All other clips are baked
  * in the same coordinate space, so switching clips does not move the rig relative to the sprite's hitbox.
+ *
+ * <h2>Merging multiple atlases</h2>
+ * A rig can grow at runtime by merging additional Adobe Animate exports through
+ * {@link FlixelAnimateRigLoader#append(FlixelAnimateSprite, FlixelAnimationController, String, String, String)}.
+ * Appended atlases share the original rig's anchor space (preserved on the rig as
+ * {@link #anchorMinX} / {@link #anchorMinY} / {@link #anchorHeight}), so a character's body stays
+ * visually pinned to the same world position when game code switches between, say, an "idle" atlas
+ * and a separate "miss" atlas. Frames from the appended atlas are appended to {@link #atlas} and the
+ * appended clip names are added to {@link #clips}, with later entries overwriting earlier ones on
+ * name collisions.
  */
 public final class FlixelAnimateRig {
 
@@ -76,11 +86,30 @@ public final class FlixelAnimateRig {
   public final float anchorHeight;
 
   /**
+   * Minimum X of the anchor clip's bounding box in <strong>Flash Y-down world space</strong>. Stored
+   * so that subsequent atlases merged through
+   * {@link FlixelAnimateRigLoader#append(FlixelAnimateSprite, FlixelAnimationController, String, String, String)}
+   * can bake their parts into the same anchor-local coordinate system as the first load. Internal
+   * use only; game code should not depend on this value.
+   */
+  final float anchorMinX;
+
+  /**
+   * Minimum Y of the anchor clip's bounding box in <strong>Flash Y-down world space</strong>. See
+   * {@link #anchorMinX} for why this is preserved on the rig.
+   */
+  final float anchorMinY;
+
+  /**
    * Creates a new rig. Called by {@link FlixelAnimateRigLoader} after all parts have been baked.
    *
    * @param atlas The shared atlas region list that {@link Part#atlasIndex} indexes into. Must not be {@code null}.
    * @param clips The map of clip name to {@link Clip}. Ownership transfers to the rig. Must not be {@code null}.
    * @param anchorClipName The name of the anchor clip (for example {@code "Idle"}). Must not be {@code null}.
+   * @param anchorMinX The X-coordinate of the anchor bounding box's top-left corner in Flash Y-down
+   *   world space. Used by the loader to bake additional atlases into the same coordinate system.
+   * @param anchorMinY The Y-coordinate of the anchor bounding box's top-left corner in Flash Y-down
+   *   world space. Used by the loader to bake additional atlases into the same coordinate system.
    * @param anchorWidth The width of the anchor bounding box in pixels.
    * @param anchorHeight The height of the anchor bounding box in pixels.
    */
@@ -88,6 +117,8 @@ public final class FlixelAnimateRig {
       @NotNull Array<FlixelFrame> atlas,
       @NotNull ObjectMap<String, Clip> clips,
       @NotNull String anchorClipName,
+      float anchorMinX,
+      float anchorMinY,
       float anchorWidth,
       float anchorHeight) {
     Objects.requireNonNull(atlas, "atlas cannot be null");
@@ -96,6 +127,8 @@ public final class FlixelAnimateRig {
     this.atlas = atlas;
     this.clips = clips;
     this.anchorClipName = anchorClipName;
+    this.anchorMinX = anchorMinX;
+    this.anchorMinY = anchorMinY;
     this.anchorWidth = anchorWidth;
     this.anchorHeight = anchorHeight;
   }

@@ -19,6 +19,7 @@ import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelObject;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
+import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,6 +59,16 @@ import org.jetbrains.annotations.Nullable;
  * add(fas);
  * </pre>
  *
+ * <h2>Merging multiple atlases</h2>
+ * Characters such as Friday Night Funkin's Pico are authored across more than one Adobe Animate
+ * export (one atlas for the basic singing animations, another for the playable miss animations,
+ * and so on). Call {@link #addSpritemapAndAnimation} after the initial
+ * {@link #loadSpritemapAndAnimation} to merge each additional atlas into the same sprite. The
+ * appended frames are added to the rig's shared atlas, the appended clips are baked into the
+ * existing rig's anchor coordinate system (so the body stays pinned to the same on-screen position
+ * when game code switches between atlases), and the appended clip names become available through
+ * the same {@link FlixelAnimationController#playAnimation} call.
+ *
  * <p>{@code FlixelAnimateSprite} only draws through a {@link SpriteBatch}; if a non-sprite
  * {@link Batch} implementation is passed in, the rig path silently returns and falls back to the
  * inherited {@link FlixelSprite} draw path so simple atlas usage still works.
@@ -84,6 +95,16 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * {@link SpriteBatch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)}.
    */
   private final Affine2 drawAffine = new Affine2();
+
+  /**
+   * Extra {@link FlixelGraphic} handles retained by {@link #addSpritemapAndAnimation} so the merged
+   * atlas's textures stay loaded for the lifetime of this sprite. The first (primary) graphic is
+   * still tracked by {@link FlixelSprite}'s own {@code graphic} field; this list only holds graphics
+   * appended <em>after</em> the initial load. Lazily allocated to avoid the per-instance footprint
+   * for sprites that only ever load a single atlas.
+   */
+  @Nullable
+  private Array<FlixelGraphic> secondaryGraphics;
 
   /** Creates an empty sprite at {@code (0, 0)}. Call {@link #loadSpritemapAndAnimation} before using it. */
   public FlixelAnimateSprite() {
@@ -157,6 +178,85 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @Nullable
   public FlixelAnimateRig getRig() {
     return rig;
+  }
+
+  /**
+   * Merges an additional Adobe Animate texture-atlas export into the rig that was already installed
+   * by {@link #loadSpritemapAndAnimation}. The new spritemap's frames are appended to the rig's
+   * shared atlas, the new label-layer clips are baked into the existing rig's anchor coordinate
+   * space, and the new clip names are registered on this sprite's {@link FlixelAnimationController}.
+   * On clip-name collisions the appended clip silently overwrites the existing one (matching the
+   * behaviour of the original {@code flxanimate} library), which lets later loads act as costume
+   * overrides.
+   *
+   * <p>This is useful for merging multiple atlases into a single sprite, such as when a character has 
+   * multiple costumes. For example, a character might have a basic singing atlas and a playable miss atlas,
+   * and a third might hold extra cinematic poses.
+   *
+   * <h2>Example</h2>
+   * <pre>
+   * FlixelAnimateSprite mergeSprite = new FlixelAnimateSprite();
+   * mergeSprite.loadSpritemapAndAnimation(
+   *     "characters/pico/spritemap1.png",
+   *     "characters/pico/spritemap1.json",
+   *     "characters/pico/Animation.json")
+   *   .addSpritemapAndAnimation(
+   *     "characters/picoPlayer/spritemap1.png",
+   *     "characters/picoPlayer/spritemap1.json",
+   *     "characters/picoPlayer/Animation.json")
+   *   .playAnimation("Pico Sing Right Miss");
+   * </pre>
+   *
+   * @param textureKey The asset key of the appended spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the appended spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the appended animation JSON. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalStateException If {@link #loadSpritemapAndAnimation} has not been called first
+   *   (because the merged clips need a rig anchor box to bake against).
+   * @throws IllegalArgumentException If any of the three appended files is missing, malformed, or
+   *   not a recognized Adobe Animate texture-atlas export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    FlixelAnimationController controller = ensureAnimation();
+    FlixelAnimateRigLoader.append(this, controller, textureKey, spritemapJsonPath, animationJsonPath);
+    return this;
+  }
+
+  /**
+   * Retains an additional {@link FlixelGraphic} so its texture stays loaded until this sprite is
+   * destroyed, and propagates the sprite's current antialiasing setting onto the new graphic's
+   * texture so an appended atlas matches the visual filter of the original. Called by
+   * {@link FlixelAnimateRigLoader#append} for every secondary atlas merged into the rig; not part
+   * of the public game-code API.
+   *
+   * <p>The graphic is assumed to have already been retained by the caller (typically via
+   * {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#obtainWrapper}, which retains
+   * automatically), so this method only stores the reference and does not call
+   * {@link FlixelGraphic#retain()} again.
+   *
+   * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.
+   */
+  void retainSecondaryGraphic(@NotNull FlixelGraphic graphic) {
+    if (secondaryGraphics == null) {
+      secondaryGraphics = new Array<>(2);
+    }
+    secondaryGraphics.add(graphic);
+
+    if (antialiasing) {
+      Texture texture;
+      try {
+        texture = graphic.requireTexture();
+      } catch (IllegalStateException notLoaded) {
+        texture = null;
+      }
+      if (texture != null) {
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+      }
+    }
   }
 
   /**
@@ -247,17 +347,36 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
-    Texture texture = (currentRegion != null) ? currentRegion.getTexture() : null;
-    if (texture == null && rig != null && rig.atlas.size > 0) {
-      FlixelFrame anyFrame = rig.atlas.first();
-      if (anyFrame != null) {
-        texture = anyFrame.getTexture();
+    Texture.TextureFilter filter =
+      antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+
+    // Without a rig, mirror FlixelSprite.setAntialiasing() exactly: filter only the current region's
+    // texture so plain atlas usage stays cheap.
+    if (rig == null) {
+      Texture texture = (currentRegion != null) ? currentRegion.getTexture() : null;
+      if (texture != null) {
+        texture.setFilter(filter, filter);
       }
+      return;
     }
-    if (texture != null) {
-      Texture.TextureFilter filter =
-        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+
+    // With a rig installed (potentially with multiple merged atlases), every atlas brings its own
+    // backing texture and currentRegion is null. Walk the rig's atlas list and set the filter on
+    // every unique texture. Adjacent frames usually share the same texture, so we dedupe by
+    // identity to avoid hammering glTexParameteri on the same texture once per region.
+    Texture lastTexture = null;
+    Array<FlixelFrame> atlas = rig.atlas;
+    for (int i = 0; i < atlas.size; i++) {
+      FlixelFrame frame = atlas.get(i);
+      if (frame == null) {
+        continue;
+      }
+      Texture texture = frame.getTexture();
+      if (texture == null || texture == lastTexture) {
+        continue;
+      }
       texture.setFilter(filter, filter);
+      lastTexture = texture;
     }
   }
 
@@ -419,6 +538,18 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @Override
   public void destroy() {
     rig = null;
+    if (secondaryGraphics != null) {
+      // Balance every retain incurred by addSpritemapAndAnimation() -> obtainWrapper(). The primary
+      // graphic is still released by FlixelSprite.destroy() through its own field.
+      for (int i = 0; i < secondaryGraphics.size; i++) {
+        FlixelGraphic g = secondaryGraphics.get(i);
+        if (g != null) {
+          g.release();
+        }
+      }
+      secondaryGraphics.clear();
+      secondaryGraphics = null;
+    }
     super.destroy();
   }
 }

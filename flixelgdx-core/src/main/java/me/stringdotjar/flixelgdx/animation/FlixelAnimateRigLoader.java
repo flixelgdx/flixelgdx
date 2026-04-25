@@ -178,6 +178,56 @@ final class FlixelAnimateRigLoader {
       sprite, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
   }
 
+  /**
+   * Appends an additional Adobe Animate texture-atlas export onto a sprite that already has a rig
+   * installed. The new atlas's frames are appended to the existing {@link FlixelAnimateRig#atlas},
+   * its clips are baked using the existing rig's anchor space (so the body stays pinned to the same
+   * world position when game code switches between atlases), and the new clip names are registered
+   * on the same {@link FlixelAnimationController}. Mirrors the multi-atlas character workflow used
+   * by the original {@code flxanimate} (and Friday Night Funkin') for characters whose animations
+   * are split across multiple Animate exports (for example Pico's basic singing animations versus
+   * his playable miss animations).
+   *
+   * <p>Clip-name collisions silently overwrite the previously registered clip on both the rig and
+   * the controller (matching {@link ObjectMap#put} semantics), allowing later loads to act as
+   * costume / behaviour overrides.
+   *
+   * @param sprite The sprite to append onto. Must already have a rig installed via
+   *   {@link #load(FlixelAnimateSprite, FlixelAnimationController, String, String, String, String) load(...)}.
+   *   Must not be {@code null}.
+   * @param controller The sprite's animation controller (used to register the new clip durations
+   *   for timing). Must not be {@code null}.
+   * @param textureKey The asset key of the appended spritemap {@link FlixelGraphic}. Must not be
+   *   {@code null}.
+   * @param spritemapJsonPath The resolver-relative path to the appended spritemap JSON. Must not
+   *   be {@code null}.
+   * @param animationJsonPath The resolver-relative path to the appended animation JSON. Must not
+   *   be {@code null}.
+   * @throws IllegalStateException If {@code sprite} has no rig installed.
+   * @throws IllegalArgumentException If any of the three files is missing, malformed, or fails a
+   *   structural precondition.
+   */
+  static void append(
+      @NotNull FlixelAnimateSprite sprite,
+      @NotNull FlixelAnimationController controller,
+      @NotNull String textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    Objects.requireNonNull(sprite, "sprite cannot be null");
+    Objects.requireNonNull(controller, "controller cannot be null");
+    Objects.requireNonNull(textureKey, "textureKey cannot be null");
+    Objects.requireNonNull(spritemapJsonPath, "spritemapJsonPath cannot be null");
+    Objects.requireNonNull(animationJsonPath, "animationJsonPath cannot be null");
+    FlixelAnimateRig existing = sprite.getRig();
+    if (existing == null) {
+      throw new IllegalStateException(
+        "Cannot append to a FlixelAnimateSprite that has no rig installed; call "
+          + "loadSpritemapAndAnimation(...) first to establish the anchor coordinate space.");
+    }
+    new FlixelAnimateRigLoader().appendInternal(
+      sprite, controller, existing, textureKey, spritemapJsonPath, animationJsonPath);
+  }
+
   private void loadInternal(
       @NotNull FlixelAnimateSprite sprite,
       @NotNull FlixelAnimationController controller,
@@ -242,12 +292,143 @@ final class FlixelAnimateRigLoader {
     float anchorWidth = anchorBox[2] - anchorMinX;
     float anchorHeight = anchorBox[3] - anchorMinY;
 
-    // Bake every clip. Each keyframe's parts are stored back-to-front already (layers iterated in reverse),
-    // so the draw path can iterate forward with no extra work. Clip definitions carry their absolute
-    // start tick on the main timeline; we look up the main-layer FR that owns each absolute tick rather
-    // than assuming a 1:1 alignment between the label layer and the main layer (which only holds for
-    // simple exports).
     ObjectMap<String, FlixelAnimateRig.Clip> clips = new ObjectMap<>();
+    bakeClipsInto(parsed, fps, atlas, nameToIndex, anchorMinX, anchorMinY, anchorHeight, controller, clips);
+
+    String resolvedAnchorName = parsed.clipDefs.get(anchorClipIndex).name;
+    FlixelAnimateRig rig = new FlixelAnimateRig(
+      atlas, clips, resolvedAnchorName, anchorMinX, anchorMinY, anchorWidth, anchorHeight);
+    sprite.installAnimateRig(rig);
+
+    // applySparrowAtlas() set a default currentFrame/region on the sprite. Now that the rig is installed,
+    // clear them so the rig's draw path takes over and the hitbox is sized from the anchor bbox.
+    sprite.clearAnimationDisplayFrame();
+    sprite.updateHitbox();
+
+    // Start the anchor clip so the sprite has a visible pose even before game code calls playAnimation.
+    controller.playAnimation(resolvedAnchorName, true, true);
+  }
+
+  /**
+   * Appends an additional Adobe Animate texture-atlas onto an existing rig. Reuses {@code existing}'s
+   * anchor coordinate system so newly baked parts sit in the same anchor-local space as the rig's
+   * original parts, which is what keeps the character's body pinned to the same on-screen position
+   * when game code switches between atlases.
+   *
+   * <p>The new spritemap's frames are appended to {@link FlixelAnimateRig#atlas} (which is shared
+   * by reference with the owning sprite, so {@link me.stringdotjar.flixelgdx.FlixelSprite#getAtlasRegions()}
+   * keeps working) and the new label-layer clips are added to {@link FlixelAnimateRig#clips}. Clip
+   * names that collide with existing ones are silently overwritten on both the rig and the controller,
+   * matching {@link ObjectMap#put}.
+   *
+   * @param sprite The owning sprite (used to retain the appended {@link FlixelGraphic}).
+   * @param controller The animation controller to register the new clips on.
+   * @param existing The rig that the new atlas is being appended to. Must already be installed on
+   *   {@code sprite}.
+   * @param textureKey Asset key for the appended PNG.
+   * @param spritemapJsonPath Resolver path for the appended spritemap JSON.
+   * @param animationJsonPath Resolver path for the appended animation JSON.
+   */
+  private void appendInternal(
+      @NotNull FlixelAnimateSprite sprite,
+      @NotNull FlixelAnimationController controller,
+      @NotNull FlixelAnimateRig existing,
+      @NotNull String textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    String spritemapText = FlixelSpritemapJsonLoader.readUtf8Text(
+      FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
+    String animationText = FlixelSpritemapJsonLoader.readUtf8Text(
+      FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
+    JsonValue spritemapRoot = new JsonReader().parse(spritemapText);
+    JsonValue animationRoot = new JsonReader().parse(animationText);
+
+    FlixelGraphic graphic = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
+    Texture texture;
+    try {
+      texture = graphic.requireTexture();
+    } catch (IllegalStateException notLoaded) {
+      texture = graphic.loadNow();
+    }
+
+    // Parse the new atlas with a fresh local lookup, then offset every entry so the indices point
+    // into the merged atlas (existing rig frames first, appended frames after). This lets the bake
+    // path reuse a single Array<FlixelFrame> without ever discriminating between "old" and "new"
+    // frames at runtime.
+    ObjectMap<String, Integer> localNameToIndex = new ObjectMap<>();
+    Array<FlixelFrame> newAtlasFrames =
+      FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, localNameToIndex);
+    if (newAtlasFrames.size == 0) {
+      throw new IllegalArgumentException("Appended spritemap JSON produced zero atlas regions.");
+    }
+    int atlasOffset = existing.atlas.size;
+    existing.atlas.addAll(newAtlasFrames);
+
+    ObjectMap<String, Integer> nameToIndex = new ObjectMap<>(localNameToIndex.size);
+    for (ObjectMap.Entry<String, Integer> e : localNameToIndex.entries()) {
+      nameToIndex.put(e.key, e.value + atlasOffset);
+    }
+
+    // Retain the appended graphic on the sprite so it does not get unloaded out from under us. Done
+    // through the sprite (rather than directly on the asset wrapper) so the retain count is balanced
+    // against the sprite's own destroy() / applySparrowAtlas() lifecycle.
+    sprite.retainSecondaryGraphic(graphic);
+
+    // Bake the appended clips into the existing rig's anchor coordinate system. Reusing the original
+    // anchor minX/minY/height ensures the body's pivot point in Flash space lands on the same spot
+    // in anchor-local space across both atlases, so the character does not visually jump when game
+    // code switches between an idle clip on atlas A and a miss clip on atlas B.
+    ParsedAnimation parsed = ParsedAnimation.parse(animationRoot);
+    float fps = parsed.framesPerSecond;
+    if (fps <= 0f) {
+      fps = 24f;
+    }
+
+    bakeClipsInto(
+      parsed,
+      fps,
+      existing.atlas,
+      nameToIndex,
+      existing.anchorMinX,
+      existing.anchorMinY,
+      existing.anchorHeight,
+      controller,
+      existing.clips);
+  }
+
+  /**
+   * Bakes every clip in {@code parsed} into {@code clipsOut} and registers each clip's duration with
+   * {@code controller}. Shared by both the initial-load and append paths so the per-clip baking
+   * algorithm stays in one place. Each keyframe's parts are stored back-to-front (layers iterated in
+   * reverse during {@link #visitSymbol}), so the draw path can iterate forward with no extra work.
+   *
+   * <p>Clip definitions carry their absolute start tick on the main timeline. The baker looks up the
+   * main-layer {@code FR} that owns each absolute tick rather than assuming a 1:1 alignment between
+   * the label layer and the main layer, since that alignment only holds for the simplest exports.
+   *
+   * @param parsed The parsed animation layout (timelines and symbol dictionary).
+   * @param fps Authoring frame rate (for the registered clip's per-frame duration).
+   * @param atlas The merged atlas list to look frames up from. {@link FlixelAnimateRig.Part#atlasIndex}
+   *   on every baked part will index into this array.
+   * @param nameToIndex Sprite name to atlas index lookup, already offset to point into {@code atlas}.
+   * @param anchorMinX Anchor bounding-box minimum X in Flash Y-down world space.
+   * @param anchorMinY Anchor bounding-box minimum Y in Flash Y-down world space.
+   * @param anchorHeight Anchor bounding-box height in pixels (used by the Y-flip in
+   *   {@link #bakePartAffine}).
+   * @param controller The controller to register clip durations on (one libGDX
+   *   {@link com.badlogic.gdx.graphics.g2d.Animation} per clip name).
+   * @param clipsOut The map to populate. Existing entries with the same name are overwritten.
+   */
+  private void bakeClipsInto(
+      @NotNull ParsedAnimation parsed,
+      float fps,
+      @NotNull Array<FlixelFrame> atlas,
+      @NotNull ObjectMap<String, Integer> nameToIndex,
+      float anchorMinX,
+      float anchorMinY,
+      float anchorHeight,
+      @NotNull FlixelAnimationController controller,
+      @NotNull ObjectMap<String, FlixelAnimateRig.Clip> clipsOut) {
     Array<RawPart> scratchRaw = new Array<>(32);
     for (int clipIndex = 0; clipIndex < parsed.clipDefs.size; clipIndex++) {
       ClipDef clip = parsed.clipDefs.get(clipIndex);
@@ -275,26 +456,18 @@ final class FlixelAnimateRigLoader {
         }
         kfs[t] = new FlixelAnimateRig.Keyframe(parts);
       }
-      clips.put(clip.name, new FlixelAnimateRig.Clip(clip.name, kfs));
+      clipsOut.put(clip.name, new FlixelAnimateRig.Clip(clip.name, kfs));
 
-      // Register the clip with the animation controller so getCurrentKeyframeIndex() advances over time.
-      // The actual frame indices are irrelevant (the draw path ignores them), but libGDX's Animation
-      // requires at least one entry, so feed it a duplicate of atlas[0] per tick.
+      // Register the clip with the animation controller so getCurrentKeyframeIndex() advances over
+      // time. The actual frame indices are irrelevant (the rig draw path ignores them), but libGDX's
+      // Animation requires at least one entry, so feed it a duplicate of atlas[0] per tick. We
+      // register with loop=false so the backing Animation's PlayMode is NORMAL; runtime looping is
+      // controlled entirely by FlixelAnimationController#playAnimation(name, loop, ...) and its own
+      // looping flag, and registering as NORMAL guarantees that a non-looping clip's last keyframe
+      // stays put instead of snapping back to the first when stateTime reaches the clip's duration.
       int[] dummyFrames = new int[clip.duration];
-      controller.addAnimationFromAtlas(clip.name, dummyFrames, 1f / fps, true);
+      controller.addAnimationFromAtlas(clip.name, dummyFrames, 1f / fps, false);
     }
-
-    String resolvedAnchorName = parsed.clipDefs.get(anchorClipIndex).name;
-    FlixelAnimateRig rig = new FlixelAnimateRig(atlas, clips, resolvedAnchorName, anchorWidth, anchorHeight);
-    sprite.installAnimateRig(rig);
-
-    // applySparrowAtlas() set a default currentFrame/region on the sprite. Now that the rig is installed,
-    // clear them so the rig's draw path takes over and the hitbox is sized from the anchor bbox.
-    sprite.clearAnimationDisplayFrame();
-    sprite.updateHitbox();
-
-    // Start the anchor clip so the sprite has a visible pose even before game code calls playAnimation.
-    controller.playAnimation(resolvedAnchorName, true, true);
   }
 
   /**
