@@ -193,7 +193,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * multiple costumes. For example, a character might have a basic singing atlas and a playable miss atlas,
    * and a third might hold extra cinematic poses.
    *
-   * <h2>Example</h2>
+   * <p>The following example shows how to merge two atlases into a single sprite:
    * <pre>
    * FlixelAnimateSprite mergeSprite = new FlixelAnimateSprite();
    * mergeSprite.loadSpritemapAndAnimation(
