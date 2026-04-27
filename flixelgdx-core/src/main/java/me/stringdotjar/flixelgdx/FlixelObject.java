@@ -923,12 +923,12 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
 
   @Override
   public float getDebugDrawX(FlixelCamera cam) {
-    return getX() - cam.scroll.x * getScrollX();
+    return cam.worldToViewX(getX(), getScrollX());
   }
 
   @Override
   public float getDebugDrawY(FlixelCamera cam) {
-    return getY() - cam.scroll.y * getScrollY();
+    return cam.worldToViewY(getY(), getScrollY());
   }
 
   @Override

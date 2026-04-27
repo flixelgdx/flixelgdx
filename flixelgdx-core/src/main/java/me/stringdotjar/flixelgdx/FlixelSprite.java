@@ -388,8 +388,8 @@ public class FlixelSprite extends FlixelObject {
       return;
     }
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
-    float wx = getX() - cam.scroll.x * scrollX;
-    float wy = getY() - cam.scroll.y * scrollY;
+    float wx = cam.worldToViewX(getX(), scrollX);
+    float wy = cam.worldToViewY(getY(), scrollY);
     if (currentFrame != null) {
       float oX = currentFrame.originalWidth / 2f;
       float oY = currentFrame.originalHeight / 2f;

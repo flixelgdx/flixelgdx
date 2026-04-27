@@ -665,8 +665,8 @@ public class FlixelBar extends FlixelSprite {
         py += cam.scroll.y * getScrollY();
       }
     } else if (cam != null) {
-      px -= cam.scroll.x * getScrollX();
-      py -= cam.scroll.y * getScrollY();
+      px = cam.worldToViewX(px, getScrollX());
+      py = cam.worldToViewY(py, getScrollY());
     }
 
     float w = getWidth();
