@@ -147,11 +147,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
   private static final String DEFAULT_INDEX_TEMPLATE = "/me/stringdotjar/flixelgdx/gradle/teavm/default-index.html";
-  /**
-   * Must start with {@code /} so {@link Class#getResourceAsStream(String)} resolves from the classpath
-   * root. Without a leading slash, the path is treated as relative to this class's package and becomes
-   * {@code .../teavm/me/stringdotjar/.../default-startup-logo.png}, which does not exist in the JAR.
-   */
+  private static final String DEFAULT_GENERATED_INDEX_SCRIPT_SRC = "js/teavm.js";
   private static final String DEFAULT_STARTUP_LOGO = "/me/stringdotjar/flixelgdx/gradle/teavm/default-startup-logo.png";
 
   @Override
@@ -241,14 +237,11 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
-          String teavmScript = ext.getTeavmScriptSrc().isPresent()
-            ? ext.getTeavmScriptSrc().get()
-            : inferTeavmScriptSrc(project);
           String html = template
             .replace("{{TITLE}}", ext.getTitle().get())
             .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
             .replace("{{FAVICON}}", faviconLink)
-            .replace("{{TEAVM_SCRIPT}}", teavmScript);
+            .replace("{{TEAVM_SCRIPT}}", DEFAULT_GENERATED_INDEX_SCRIPT_SRC);
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -637,46 +630,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Script {@code src} for the default index: {@code teavm.js} {@code relativePathInOutputDir} +
-   * {@code targetFileName}. Uses reflection so this plugin JAR does not depend on teavm-gradle-plugin types.
-   */
-  private static String inferTeavmScriptSrc(@NonNull Project project) {
-    String fallback = "js/" + project.getName() + ".js";
-    Object teavmExt = project.getExtensions().findByName("teavm");
-    if (teavmExt == null) {
-      return fallback;
-    }
-    try {
-      Object js = teavmExt.getClass().getMethod("getJs").invoke(teavmExt);
-      if (js == null) {
-        return fallback;
-      }
-      String rel = readGradlePropertyString(js, "getRelativePathInOutputDir");
-      String file = readGradlePropertyString(js, "getTargetFileName");
-      if (file == null || file.isEmpty()) {
-        return fallback;
-      }
-      if (rel == null || rel.isEmpty()) {
-        return file;
-      }
-      rel = rel.replace('\\', '/');
-      if (rel.endsWith("/")) {
-        return rel + file;
-      }
-      return rel + "/" + file;
-    } catch (Exception e) {
-      project
-        .getLogger()
-        .warn("FlixelGDX: could not read teavm.js script path (falling back to " + fallback + "): " + e);
-      return fallback;
-    }
-  }
-
-  /**
-   * Reads a Gradle {@link org.gradle.api.provider.Property Property} / {@link Provider} returned by TeaVM extension
-   * getters (for example {@code getTargetFileName()}). TeaVM 0.13+ exposes {@code Property<String>}; resolving via
-   * {@code property.getClass().getMethod("get")} is unreliable across Gradle implementations, so we unwrap with
-   * {@link Provider#getOrNull()}.
+   * Reads a Gradle {@link org.gradle.api.provider.Property Property} / {@link Provider} from TeaVM's {@code js} block
+   * (used only by {@code aliasTeaVmMainScript} to find the real bundle path). Unwraps with {@link Provider#getOrNull()}.
    */
   @Nullable
   private static String readGradlePropertyString(@NonNull Object owner, @NonNull String getterName) {

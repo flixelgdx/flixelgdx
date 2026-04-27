@@ -128,8 +128,8 @@ public interface FlixelTeaVMExtension {
    * Whether the plugin should generate a default {@code index.html} when none is found in {@link #getWebappDir()}.
    *
    * <p>The generated page includes a {@code <canvas>} with the ID from {@link #getCanvasId()} and
-   * a {@code <script>} tag that loads the TeaVM build (see {@link #getTeavmScriptSrc()}). Set to {@code false} to suppress
-   * generation entirely (you must then provide your own {@code index.html}). Defaults to {@code true}.
+   * a {@code <script src="js/teavm.js">} tag (the {@code aliasTeaVmMainScript} task keeps that path valid when TeaVM uses another file name). 
+   * Set to {@code false} to suppress generation entirely (you must then provide your own {@code index.html}). Defaults to {@code true}.
    *
    * @return The {@code generate-index-html} property.
    */
@@ -194,16 +194,4 @@ public interface FlixelTeaVMExtension {
    * @return The custom favicon file property.
    */
   RegularFileProperty getCustomFavicon();
-
-  /**
-   * URL for the main {@code <script src="...">} in the generated default {@code index.html} (for example
-   * {@code js/flixelgdx.js}).
-   *
-   * <p>If unset, the plugin derives the path from {@code teavm.js} ({@code relativePathInOutputDir} and
-   * {@code targetFileName}). If the {@code teavm} extension is missing, the fallback is
-   * {@code js/} plus the module project name and {@code .js} (TeaVM's usual default name pattern).
-   *
-   * @return Optional script path for the main {@code <script src="...">} tag.
-   */
-  Property<String> getTeavmScriptSrc();
 }
