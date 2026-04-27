@@ -85,7 +85,7 @@ public interface FlixelTeaVMExtension {
    * <p>Must match the {@code canvasID} field of {@code WebApplicationConfiguration} passed to
    * {@code FlixelTeaVMLauncher.launch()}. Defaults to {@value #DEFAULT_CANVAS_ID}.
    *
-   * @return the canvas element ID property.
+   * @return The canvas element ID property.
    */
   Property<String> getCanvasId();
 
@@ -99,7 +99,7 @@ public interface FlixelTeaVMExtension {
    * TeaVM (unusual). If the {@code teavm} extension is not present, the default path matches
    * TeaVM's own default: {@code "$buildDir/dist/webapp"}.
    *
-   * @return the output directory property.
+   * @return The output directory property.
    */
   DirectoryProperty getOutputDir();
 
@@ -111,7 +111,7 @@ public interface FlixelTeaVMExtension {
    * contains an {@code index.html}, the plugin skips automatic index generation. Defaults to
    * {@code src/main/webapp} relative to the web module.
    *
-   * @return the webapp source directory property.
+   * @return The webapp source directory property.
    */
   DirectoryProperty getWebappDir();
 
@@ -121,7 +121,7 @@ public interface FlixelTeaVMExtension {
    * <p>Defaults to the {@code assets/} directory at the root of the Gradle project (i.e. the
    * sibling of the core, desktop, and teavm modules).
    *
-   * @return the assets source directory property.
+   * @return The assets source directory property.
    */
   DirectoryProperty getAssetsDir();
 
@@ -133,7 +133,7 @@ public interface FlixelTeaVMExtension {
    * and {@code targetFileName}). Set to {@code false} to suppress generation entirely (you must then
    * provide your own {@code index.html}). Defaults to {@code true}.
    *
-   * @return the {@code generate-index-html} property.
+   * @return The {@code generate-index-html} property.
    */
   Property<Boolean> getGenerateDefaultIndexHtml();
 
@@ -144,7 +144,7 @@ public interface FlixelTeaVMExtension {
    * <p>It does this by copying the default file (located in the {@code resources} folder) into the user's
    * {@code <outputDir>/assets/} folder, as gdx-teavm expects a loading logo when the game is being prepared.
    *
-   * @return the {@code generate-default-startup-logo} property.
+   * @return The {@code generate-default-startup-logo} property.
    */
   Property<Boolean> getGenerateDefaultStartupLogo();
 
@@ -159,7 +159,7 @@ public interface FlixelTeaVMExtension {
    * }
    * }</pre>
    *
-   * @return the dev server port property.
+   * @return The dev server port property.
    */
   Property<Integer> getDevServerPort();
 
@@ -171,7 +171,7 @@ public interface FlixelTeaVMExtension {
    * {@link #getWebappDir()}. The canvas ID substitution ({@code {{CANVAS_ID}}}) is not applied.
    * The developer is responsible for the full HTML content.
    *
-   * @return the custom index.html file property.
+   * @return The custom index.html file property.
    */
   RegularFileProperty getCustomIndexHtml();
 
@@ -181,7 +181,7 @@ public interface FlixelTeaVMExtension {
    * <p>When set, this file is copied to {@code <outputDir>/assets/startup-logo.png}, replacing
    * both the built-in placeholder and any auto-generation. The file must be a valid PNG image.
    *
-   * @return the custom startup logo file property.
+   * @return The custom startup logo file property.
    */
   RegularFileProperty getCustomStartupLogo();
 
@@ -193,7 +193,16 @@ public interface FlixelTeaVMExtension {
    * {@code index.html} is provided via {@link #getCustomIndexHtml()} or {@link #getWebappDir()},
    * since those are copied verbatim.
    *
-   * @return the custom favicon file property.
+   * @return The custom favicon file property.
    */
   RegularFileProperty getCustomFavicon();
+
+  /**
+   * URL of the compiled TeaVM script in the generated page (for example {@code js/flixelgdx.js}).
+   * If unset, the plugin uses {@code js/} plus {@code teavm.js.targetFileName} from the
+   * {@code org.teavm} block when that extension exists, else {@code js/teavm.js}.
+   *
+   * @return Optional script path for the main {@code <script src="...">} tag.
+   */
+  Property<String> getTeavmScriptSrc();
 }

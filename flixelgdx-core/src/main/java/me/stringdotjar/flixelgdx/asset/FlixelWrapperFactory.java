@@ -34,9 +34,7 @@ public interface FlixelWrapperFactory<W> {
   @Nullable
   W peek(@NotNull FlixelAssetManager assets, @NotNull String key);
 
-  /**
-   * Inserts a caller-constructed wrapper (e.g. owned resource) into the pool under {@link FlixelPooledWrapper#getAssetKey()}.
-   */
+  /** Inserts a caller-constructed wrapper (e.g. owned resource) into the pool under {@link FlixelPooledWrapper#getAssetKey()}. */
   void registerInstance(@NotNull FlixelAssetManager assets, @NotNull W wrapper);
 
   /** Disposes all non-persistent wrapper objects. */
@@ -45,6 +43,11 @@ public interface FlixelWrapperFactory<W> {
   /** Accepts a {@link Consumer} and iterates through the cached objects in {@code this} factory. */
   void forEachWrappedAsset(Consumer<W> consumer);
 
-  /** Disposes all wrapper objects. */
-  void clearAll();
+  /**
+   * Disposes and evicts all wrapper objects. Path-keyed assets should be unloaded from the
+   * underlying {@link com.badlogic.gdx.assets.AssetManager} when applicable.
+   *
+   * @param assets The manager that owns this factory, used to reach the libGDX {@code AssetManager}.
+   */
+  void clearAll(@NotNull FlixelAssetManager assets);
 }

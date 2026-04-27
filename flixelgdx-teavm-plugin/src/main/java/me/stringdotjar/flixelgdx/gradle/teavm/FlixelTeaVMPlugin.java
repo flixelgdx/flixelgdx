@@ -230,6 +230,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
+          String teavmScript = ext.getTeavmScriptSrc().isPresent()
+            ? ext.getTeavmScriptSrc().get()
+            : inferTeavmScriptSrc(project);
           String html = template
             .replace("{{TITLE}}", ext.getTitle().get())
             .replace("{{CANVAS_ID}}", ext.getCanvasId().get())

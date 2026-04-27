@@ -25,7 +25,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
@@ -466,8 +465,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   @Override
   public final void render() {
-    float rawDelta = Gdx.graphics != null ? Gdx.graphics.getDeltaTime() : FlixelConstants.Graphics.MIN_ELAPSED;
-    float elapsed = Math.max(FlixelConstants.Graphics.MIN_ELAPSED, Math.min(rawDelta, FlixelConstants.Graphics.MAX_ELAPSED));
+    float rawDelta = Gdx.graphics != null ? Gdx.graphics.getDeltaTime() : Flixel.MIN_ELAPSED;
+    float elapsed = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
     Flixel.elapsed = elapsed;
 
     windowSize.x = Gdx.graphics.getWidth();
