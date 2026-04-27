@@ -137,13 +137,16 @@ public class FlixelKeyInputManager {
   }
 
   /**
-   * Returns whether the given key was just pressed this frame.
+   * Returns whether the given key was just pressed this frame. Uses the same
+   * {@code current} vs {@code previous} key sets as {@link #justReleased(int)} and
+   * {@link #firstJustPressed()} so "just" transitions stay reliable on all backends
+   * (for example, WebGL where {@code Gdx.input.isKeyJustPressed} is not dependable).
    *
    * @param key key code
    * @return {@code true} if the key was just pressed and input is enabled.
    */
   public boolean justPressed(int key) {
-    return enabled && Gdx.input.isKeyJustPressed(key);
+    return enabled && currentPressedKeys.contains(key) && !previousPressedKeys.contains(key);
   }
 
   /**
@@ -259,7 +262,7 @@ public class FlixelKeyInputManager {
    * @return true if any key in the array was just pressed and input is enabled
    */
   public boolean anyJustPressed(int k1) {
-    return enabled && Gdx.input.isKeyJustPressed(k1);
+    return enabled && justPressed(k1);
   }
 
   /**
@@ -270,7 +273,7 @@ public class FlixelKeyInputManager {
    * @return {@code true} if any key in the given list was just pressed and input is enabled.
    */
   public boolean anyJustPressed(int k1, int k2) {
-    return enabled && (Gdx.input.isKeyJustPressed(k1) || Gdx.input.isKeyJustPressed(k2));
+    return enabled && (justPressed(k1) || justPressed(k2));
   }
 
   /**
@@ -282,7 +285,7 @@ public class FlixelKeyInputManager {
    * @return {@code true} if any key in the given list was just pressed and input is enabled.
    */
   public boolean anyJustPressed(int k1, int k2, int k3) {
-    return enabled && (Gdx.input.isKeyJustPressed(k1) || Gdx.input.isKeyJustPressed(k2) || Gdx.input.isKeyJustPressed(k3));
+    return enabled && (justPressed(k1) || justPressed(k2) || justPressed(k3));
   }
 
   /**
@@ -296,7 +299,7 @@ public class FlixelKeyInputManager {
    */
   public boolean anyJustPressed(int k1, int k2, int k3, int k4) {
     return enabled
-      && (Gdx.input.isKeyJustPressed(k1) || Gdx.input.isKeyJustPressed(k2) || Gdx.input.isKeyJustPressed(k3) || Gdx.input.isKeyJustPressed(k4));
+      && (justPressed(k1) || justPressed(k2) || justPressed(k3) || justPressed(k4));
   }
 
   /**
@@ -311,11 +314,11 @@ public class FlixelKeyInputManager {
    */
   public boolean anyJustPressed(int k1, int k2, int k3, int k4, int k5) {
     return enabled
-      && (Gdx.input.isKeyJustPressed(k1)
-        || Gdx.input.isKeyJustPressed(k2)
-        || Gdx.input.isKeyJustPressed(k3)
-        || Gdx.input.isKeyJustPressed(k4)
-        || Gdx.input.isKeyJustPressed(k5));
+      && (justPressed(k1)
+        || justPressed(k2)
+        || justPressed(k3)
+        || justPressed(k4)
+        || justPressed(k5));
   }
 
   /**
@@ -331,12 +334,12 @@ public class FlixelKeyInputManager {
    */
   public boolean anyJustPressed(int k1, int k2, int k3, int k4, int k5, int k6) {
     return enabled
-      && (Gdx.input.isKeyJustPressed(k1)
-        || Gdx.input.isKeyJustPressed(k2)
-        || Gdx.input.isKeyJustPressed(k3)
-        || Gdx.input.isKeyJustPressed(k4)
-        || Gdx.input.isKeyJustPressed(k5)
-        || Gdx.input.isKeyJustPressed(k6));
+      && (justPressed(k1)
+        || justPressed(k2)
+        || justPressed(k3)
+        || justPressed(k4)
+        || justPressed(k5)
+        || justPressed(k6));
   }
 
   /**
@@ -350,7 +353,7 @@ public class FlixelKeyInputManager {
       return false;
     }
     for (int key : keys) {
-      if (Gdx.input.isKeyJustPressed(key)) {
+      if (justPressed(key)) {
         return true;
       }
     }

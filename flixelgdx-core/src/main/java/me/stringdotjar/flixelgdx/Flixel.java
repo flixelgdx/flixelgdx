@@ -31,6 +31,7 @@ import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
+import me.stringdotjar.flixelgdx.logging.FlixelLogConsoleSink;
 import me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -288,6 +289,13 @@ public final class Flixel {
   private static FlixelLogFileHandler logFileHandler;
 
   /**
+   * When non-null, {@link FlixelLogger} sends each console line here instead of {@code System.out} (for example, styled
+   * output in the browser). Set before {@link #initialize(FlixelGame)}.
+   */
+  @Nullable
+  private static FlixelLogConsoleSink logConsoleSink;
+
+  /**
    * Platform-specific factory for creating sounds, groups and effect nodes.
    * Set by the launcher before {@link #initialize(FlixelGame)}.
    */
@@ -473,6 +481,34 @@ public final class Flixel {
   @Nullable
   public static FlixelLogFileHandler getLogFileHandler() {
     return logFileHandler;
+  }
+
+  /**
+   * Sets a handler that receives every console log as structured data instead of the default
+   * ANSI stream on {@code System.out}. Intended for the web backend (for example, styled
+   * {@code console.log} in the browser).
+   *
+   * <p>Must be called before {@link #initialize(FlixelGame)}. Pass {@code null} to use the default
+   * terminal output.
+   *
+   * @param sink The sink, or {@code null} to clear.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setLogConsoleSink(@Nullable FlixelLogConsoleSink sink) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change the log console sink after Flixel has been initialized.");
+    }
+    logConsoleSink = sink;
+  }
+
+  /**
+   * Returns the registered log console sink, or {@code null} if the default {@code System.out} path is used.
+   *
+   * @return The sink, or {@code null}.
+   */
+  @Nullable
+  public static FlixelLogConsoleSink getLogConsoleSink() {
+    return logConsoleSink;
   }
 
   /**

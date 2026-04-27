@@ -11,8 +11,10 @@ import me.stringdotjar.flixelgdx.logging.FlixelStackFrame;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 
 /**
- * Implementation of {@link FlixelStackTraceProvider} for TeaVM.
- * Since TeaVM does not support stack traces, this implementation returns null.
+ * Implementation of {@link FlixelStackTraceProvider} for TeaVM. Stack walking is not available in the same
+ * way as on the JVM, so this implementation returns {@code null} for {@link #getCaller()}. The
+ * {@link me.stringdotjar.flixelgdx.logging.FlixelLogger} treats a missing caller as an unknown file/line
+ * and still emits logs, file output, and in-game log listeners.
  */
 public class TeaVMStackTraceProvider implements FlixelStackTraceProvider {
 
