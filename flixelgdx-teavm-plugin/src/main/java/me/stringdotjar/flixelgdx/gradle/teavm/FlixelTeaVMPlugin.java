@@ -15,6 +15,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Copy;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -33,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.lang.ReflectiveOperationException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -670,18 +672,36 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     }
   }
 
+  /**
+   * Reads a Gradle {@link org.gradle.api.provider.Property Property} / {@link Provider} returned by TeaVM extension
+   * getters (for example {@code getTargetFileName()}). TeaVM 0.13+ exposes {@code Property<String>}; resolving via
+   * {@code property.getClass().getMethod("get")} is unreliable across Gradle implementations, so we unwrap with
+   * {@link Provider#getOrNull()}.
+   */
   @Nullable
   private static String readGradlePropertyString(@NonNull Object owner, @NonNull String getterName) {
     try {
-      Object property = owner.getClass().getMethod(getterName).invoke(owner);
-      if (property == null) {
-        return null;
-      }
-      Object v = property.getClass().getMethod("get").invoke(property);
-      return v != null ? v.toString() : null;
-    } catch (Exception e) {
+      Object holder = owner.getClass().getMethod(getterName).invoke(owner);
+      return unwrapGradleProvider(holder);
+    } catch (ReflectiveOperationException e) {
       return null;
     }
+  }
+
+  /**
+   * Turns a Gradle {@link Provider} (including {@link org.gradle.api.provider.Property}) into a string, or
+   * {@code null} if unset.
+   */
+  @Nullable
+  private static String unwrapGradleProvider(@Nullable Object holder) {
+    if (holder == null) {
+      return null;
+    }
+    if (holder instanceof Provider) {
+      Object v = ((Provider<?>) holder).getOrNull();
+      return v != null ? v.toString() : null;
+    }
+    return holder.toString();
   }
 
   @Nullable
