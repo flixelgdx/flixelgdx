@@ -47,7 +47,8 @@ import java.util.jar.JarFile;
  * <p>Apply alongside {@code org.teavm} in the web module's {@code build.gradle}. The plugin
  * registers five helper tasks and wires them as dependencies of the TeaVM build tasks so that
  * every {@code generateJavaScript} or {@code javaScriptDevServer} run produces a complete,
- * browser-ready webapp directory.
+ * browser-ready webapp directory. Default {@code index.html} is emitted after TeaVM finishes so it 
+ * stays in sync with the JS bundle.
  *
  * <h2>What the plugin provides</h2>
  *
@@ -59,7 +60,8 @@ import java.util.jar.JarFile;
  *       {@code startup-logo.png}, which is placed under {@code assets/} by {@code copyDefaultStartupLogo}.</li>
  *   <li>{@code generateIndexHtml} - writes a default {@code index.html} into
  *       {@code <outputDir>/} when no {@code index.html} is present in the webapp directory.
- *       The generated page uses the canvas ID configured via {@link FlixelTeaVMExtension}.</li>
+ *       It runs <strong>after</strong> TeaVM emits JavaScript (and after {@code aliasTeaVmMainScript}) so the page
+ *       always references the current bundle path and is never overwritten by {@code copyWebApp}.</li>
  *   <li>{@code extractNativeScripts} - extracts native JavaScript files (e.g. {@code gdx.wasm.js},
  *       {@code howler.js}) from gdx-teavm dependency JARs into {@code <outputDir>/scripts/}.
  *       These are required at runtime by the gdx-teavm backend.</li>
@@ -584,14 +586,28 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       wireTo(p, "javaScriptDevServer");
       wireTo(p, "run");
 
+      Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
+      Task copyWebApp = p.getTasks().findByName("copyWebApp");
+      // Generate index after TeaVM writes JS (and after teavm.js alias). Otherwise Gradle may run
+      // copyWebApp after generateIndexHtml and overwrite a fresh index.html from src/main/webapp/, or leave a stale script src.
+      Task generateJs = p.getTasks().findByName("generateJavaScript");
+      Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
+      if (generateJs != null && generateIndexHtml != null) {
+        generateJs.finalizedBy(generateIndexHtml);
+      }
+      if (generateIndexHtml != null && copyWebApp != null) {
+        generateIndexHtml.mustRunAfter(copyWebApp);
+      }
+      if (generateIndexHtml != null && alias != null) {
+        generateIndexHtml.mustRunAfter(alias);
+      }
+
       // The run task must also trigger the full TeaVM compilation so the JS bundle from teavm.js exists
       // before the dev server starts serving files.
       Task runTask = p.getTasks().findByName("run");
-      Task generateJs = p.getTasks().findByName("generateJavaScript");
       if (runTask != null && generateJs != null) {
         runTask.dependsOn(generateJs);
       }
-      Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
       if (alias != null && generateJs != null) {
         generateJs.finalizedBy(alias);
         Task devServer = p.getTasks().findByName("javaScriptDevServer");
@@ -610,7 +626,6 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.dependsOn(
           project.getTasks().named("copyAssets"),
           project.getTasks().named("copyWebApp"),
-          project.getTasks().named("generateIndexHtml"),
           project.getTasks().named("extractNativeScripts"),
           project.getTasks().named("generatePreloadFile"),
           project.getTasks().named("copyDefaultStartupLogo"));
