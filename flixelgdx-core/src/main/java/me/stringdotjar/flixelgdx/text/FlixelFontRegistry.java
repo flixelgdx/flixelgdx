@@ -226,6 +226,9 @@ public final class FlixelFontRegistry {
     }
     FileHandle fnt = Gdx.files.classpath(DEFAULT_BITMAP_FNT);
     if (fnt == null || !fnt.exists()) {
+      fnt = Gdx.files.internal(DEFAULT_BITMAP_FNT);
+    }
+    if (fnt == null || !fnt.exists()) {
       font = new BitmapFont();
     } else {
       font = new BitmapFont(fnt);

@@ -68,6 +68,13 @@ import java.util.jar.JarFile;
  *       preloader to discover and download game assets at startup.</li>
  *   <li>{@code copyDefaultStartupLogo} - writes {@code startup-logo.png} into
  *       {@code <outputDir>/assets/} for gdx-teavm's preload screen.</li>
+ *   <li>{@code copyFlixelGdxDefaultBitmapFont} - copies {@code lsans-15.fnt} and {@code lsans-15.png} into
+ *       {@code <outputDir>/assets/me/stringdotjar/flixelgdx/bitmap/} so the web preloader and
+ *       {@code Gdx.files.internal} can find the default bitmap font (for example
+ *       {@code FlixelDebugOverlay}).</li>
+ *   <li>{@code aliasTeaVmMainScript} - when {@code teavm.js} {@code targetFileName} is not
+ *       {@code teavm.js}, copies the built bundle next to it as {@code teavm.js} for gdx-teavm
+ *       and other tooling that still expect that name.</li>
  * </ul>
  *
  * <p>All six helper tasks above are added as dependencies of {@code generateJavaScript},
@@ -339,11 +346,78 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       });
     });
 
+    // FlixelGDX default bitmap font (lsans-15) for FlixelFontRegistry and FlixelDebugOverlay on web:
+    // Gdx.files.classpath() is empty in the browser, so these files must live under assets/ for Gdx.files.internal().
+    project.getTasks().register("copyFlixelGdxDefaultBitmapFont", task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription(
+        "Copies the packaged lsans-15.fnt and lsans-15.png into assets/me/stringdotjar/flixelgdx/bitmap/ for web preload."
+      );
+      task.mustRunAfter(project.getTasks().named("copyAssets"));
+      task.doLast(t -> {
+        File out = new File(ext.getOutputDir().get().getAsFile(), "assets/me/stringdotjar/flixelgdx/bitmap");
+        out.mkdirs();
+        String[] names = { "lsans-15.fnt", "lsans-15.png" };
+        for (String n : names) {
+          String path = "/me/stringdotjar/flixelgdx/bitmap/" + n;
+          try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(path)) {
+            if (in == null) {
+              throw new IOException("FlixelGDX plugin JAR is missing resource at " + path);
+            }
+            Files.copy(in, new File(out, n).toPath(), StandardCopyOption.REPLACE_EXISTING);
+          } catch (IOException e) {
+            throw new RuntimeException("FlixelGDX: failed to copy default bitmap font: " + n, e);
+          }
+        }
+      });
+    });
+
+    // gdx-teavm / JMultiPlatform still expect a script named teavm.js. When targetFileName is custom, copy it.
+    project.getTasks().register("aliasTeaVmMainScript", task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription(
+        "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility)."
+      );
+      task.doLast(t -> {
+        try {
+          Object teavmExt = project.getExtensions().findByName("teavm");
+          if (teavmExt == null) {
+            return;
+          }
+          Object js = teavmExt.getClass().getMethod("getJs").invoke(teavmExt);
+          if (js == null) {
+            return;
+          }
+          String file = readGradlePropertyString(js, "getTargetFileName");
+          if (file == null || file.isEmpty() || "teavm.js".equalsIgnoreCase(file)) {
+            return;
+          }
+          String rel = readGradlePropertyString(js, "getRelativePathInOutputDir");
+          File root = ext.getOutputDir().get().getAsFile();
+          String sub = (rel == null || rel.isEmpty()) ? "" : rel.replace('\\', '/');
+          if (!sub.isEmpty() && !sub.endsWith("/")) {
+            sub = sub + "/";
+          }
+          File src = new File(root, sub + file);
+          File dst = new File(root, sub + "teavm.js");
+          if (src.isFile() && !src.getCanonicalFile().equals(dst.getCanonicalFile())) {
+            Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            project
+              .getLogger()
+              .info("[FlixelGDX] Wrote gdx-teavm compatibility copy: " + sub + "teavm.js (from " + file + ").");
+          }
+        } catch (Exception e) {
+          project.getLogger().warn("[FlixelGDX] Could not create teavm.js alias: {}", e.getMessage());
+        }
+      });
+    });
+
     // Generate preload.txt in the format gdx-teavm expects (fileType:assetType:path:size:overwrite).
     // This must run AFTER copyAssets and copyDefaultStartupLogo so assets/ includes startup-logo.png.
     project.getTasks().register("generatePreloadFile", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription("Generates preload.txt asset manifest required by gdx-teavm's runtime asset loader.");
+      task.dependsOn(project.getTasks().named("copyFlixelGdxDefaultBitmapFont"));
       task.mustRunAfter(project.getTasks().named("copyAssets"));
       task.mustRunAfter(project.getTasks().named("copyDefaultStartupLogo"));
       task.doLast(t -> {
@@ -480,7 +554,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           logger.quiet("Please navigate to " + url + " in your browser to test your game, as it has failed to open automatically.");
         }
 
-        // Block indefinitely until the build daemon is killed (Ctrl+C).
+        // Block indefinitely until the build daemon is killed (Ctrl+C or task killed).
         try {
           Thread.currentThread().join();
         } catch (InterruptedException e) {
@@ -498,10 +572,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         if (teavmOut != null) {
           ext.getOutputDir().convention(teavmOut);
         } else {
-          ext.getOutputDir().convention(p.getLayout().getBuildDirectory().dir("dist/webapp"));
+          ext.getOutputDir().convention(p.getLayout().getBuildDirectory().dir("generated/teavm"));
           p.getLogger()
             .warn(
-              "[FlixelGDX] org.teavm extension not found. flixelgdx.outputDir uses the same default as TeaVM (build/dist/webapp). "
+              "[FlixelGDX] org.teavm extension not found. flixelgdx.outputDir uses the same default as TeaVM (build/generated/teavm). "
                 + "Apply org.teavm before this plugin and set teavm.all.outputDir once for both TeaVM and FlixelGDX."
             );
         }
@@ -516,6 +590,16 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       Task generateJs = p.getTasks().findByName("generateJavaScript");
       if (runTask != null && generateJs != null) {
         runTask.dependsOn(generateJs);
+      }
+      Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
+      if (alias != null && generateJs != null) {
+        generateJs.finalizedBy(alias);
+        Task devServer = p.getTasks().findByName("javaScriptDevServer");
+        if (devServer != null) {
+          devServer.dependsOn(generateJs);
+          devServer.dependsOn(alias);
+          alias.mustRunAfter(generateJs);
+        }
       }
     });
   }
