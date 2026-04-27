@@ -4,12 +4,12 @@ alwaysApply: true
 
 When writing documentation (specifically for source code Javadocs or comments), follow these guidelines:
 
-- Use proper grammar. Use proper puncationation on everything, including comments, Javadoc parameter/returns/throws descriptions., etc.
+- Use proper grammar. Use proper punctuation on everything, including comments, Javadoc parameter/returns/throws descriptions., etc.
 - Avoid using special symbols, such as en dashes, em dashes, special arrows, etc. It is not necessary. Avoiding these helps keep the documentation simple and concise. Use pure ASCII characters instead.
 - Always include every tag for Javadocs, such as @param, @returns, @throws, etc.
 - Use null annotations where necessary, such as @Nullable or @NotNull. This allows IDEs to highlight when something could be null ahead of time and allow the user to add safeguards before compiling their code.
 - When using Javadoc features like @link, make sure it actually works. If there's a broken link, or if it's not a supported feature, modify it accordingly. This allows the documentation to be easily navigated and readable by users and developers alike.
-- Keep the tone simple and inviting. The documenation should be able to teach the users (especially beginners) how to use the framework, not just a dry manual. When needed, include code examples showing how to use a class or method.
-- When writing code, always use the `.editorconfig` file for formatting. This keeps the formatting of the code consistient and makes it looks like as if it was written by a single person.
+- Keep the tone simple and inviting. The documentation should be able to teach the users (especially beginners) how to use the framework, not just a dry manual. When needed, include code examples showing how to use a class or method.
+- When writing code, always use the `.editorconfig` file for formatting. This keeps the formatting of the code consistent and makes it looks like as if it was written by a single person.
 - Add brief comments in places where the code either might be complex or hard to read when there's too much going on.
 - Avoid adding Javadocs to methods or functions that have literal names. For example, if it's a simple getter/setter or a method named `calculateTotal()`, don't add a Javadoc unless necessary.

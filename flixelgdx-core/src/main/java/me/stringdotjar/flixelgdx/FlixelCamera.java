@@ -571,7 +571,7 @@ public class FlixelCamera extends FlixelBasic {
       }
     }
 
-    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * resolveTargetFramerate());
+    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * 60f);
     scroll.x = MathUtils.lerp(scroll.x, desiredX, lerpFactor);
     scroll.y = MathUtils.lerp(scroll.y, desiredY, lerpFactor);
   }
@@ -1388,21 +1388,6 @@ public class FlixelCamera extends FlixelBasic {
       return Math.max(1, Gdx.graphics.getHeight());
     }
     return 1;
-  }
-
-  /** Target updates per second for follow lerp; matches {@link FlixelGame#getFramerate()} when in FlixelGDX. */
-  private static float resolveTargetFramerate() {
-    FlixelGame game = Flixel.getGame();
-    if (game != null) {
-      return game.getFramerate();
-    }
-    if (Gdx.graphics != null) {
-      int hz = Gdx.graphics.getDisplayMode().refreshRate;
-      if (hz > 0) {
-        return hz;
-      }
-    }
-    return 60f;
   }
 
   /**
