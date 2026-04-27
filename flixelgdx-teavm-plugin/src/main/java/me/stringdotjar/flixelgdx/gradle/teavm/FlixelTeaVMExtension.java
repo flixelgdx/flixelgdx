@@ -26,13 +26,12 @@ import org.gradle.api.provider.Property;
  *   // Title of the game (default: "My FlixelGDX Game").
  *   title = 'My Game Title'
  *
- *   // Override the canvas element ID (default: "flixelgdx-canvas").
- *   canvasId = 'my-game-canvas'
- *
- *   // Change where the web app is assembled (default: "$buildDir/dist/webapp").
- *   // Must match teavm.js.outputDir! Otherwise, the generated index.html will not be found.
- *   outputDir = file("$buildDir/dist/webapp")
- *
+   *   // Override the canvas element ID (default: "flixelgdx-canvas").
+   *   canvasId = 'my-game-canvas'
+   *
+   *   // outputDir: omit to use the same directory as teavm.all.outputDir (set only in teavm { all { ... } }).
+   *   // Override here only if FlixelGDX tasks must use a different folder than TeaVM (unusual).
+   *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
  *
@@ -93,10 +92,12 @@ public interface FlixelTeaVMExtension {
   /**
    * Directory into which the assembled web application is written.
    *
-   * <p>This must match the value of {@code teavm.js.outputDir} in the {@code org.teavm} plugin
-   * block so that copied assets, web resources, and the generated {@code index.html} are placed
-   * alongside the compiled {@code teavm.js} file. Defaults to
-   * {@code "$buildDir/dist/webapp"}.
+   * <p>By default, this property {@linkplain org.gradle.api.provider.Property#convention conventions}
+   * to the same {@link org.gradle.api.file.DirectoryProperty} as {@code teavm.all.outputDir} from the
+   * {@code org.teavm} plugin, so you configure the build output in one place. Set a value on this
+   * property only if you need FlixelGDX (assets, index.html, etc.) in a different directory than
+   * TeaVM (unusual). If the {@code teavm} extension is not present, the default path matches
+   * TeaVM's own default: {@code "$buildDir/dist/webapp"}.
    *
    * @return the output directory property.
    */
@@ -128,8 +129,9 @@ public interface FlixelTeaVMExtension {
    * Whether the plugin should generate a default {@code index.html} when none is found in {@link #getWebappDir()}.
    *
    * <p>The generated page includes a {@code <canvas>} with the ID from {@link #getCanvasId()} and
-   * a {@code <script>} tag that loads {@code js/teavm.js}. Set to {@code false} to suppress
-   * generation entirely (you must then provide your own {@code index.html}). Defaults to {@code true}.
+   * a {@code <script>} tag that loads the bundle path from {@code teavm.js} ({@code relativePathInOutputDir}
+   * and {@code targetFileName}). Set to {@code false} to suppress generation entirely (you must then
+   * provide your own {@code index.html}). Defaults to {@code true}.
    *
    * @return the {@code generate-index-html} property.
    */

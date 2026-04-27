@@ -489,8 +489,9 @@ teavm {
   js {
     addedToWebApp = true
     targetFileName = 'teavm.js'
-    outputDir = file("$buildDir/dist/webapp")
   }
+  // Optional: set the web output root once (default: $buildDir/generated/teavm, same as TeaVM).
+  // all { outputDir = file("$buildDir/dist/webapp") }
 }
 
 dependencies {
@@ -502,7 +503,7 @@ dependencies {
 Include the module in your root `settings.gradle`:
 
 ```gradle
-include 'core', 'lwjgl3', 'teavm'
+include 'core', 'teavm'
 ```
 
 #### 3. Create the launcher class
@@ -525,13 +526,13 @@ That is the entire setup. The plugin automatically:
 
 #### 4. Run the game in the browser
 
-Running the game in the browser is as simple as running the `run` task:
+Running the game in your browser is as simple as executing the `run` task:
 
 ```bash
 ./gradlew :teavm:run
 ```
 
-The output in `teavm/build/dist/webapp/` is a self-contained folder you can serve with any HTTP server.
+The output under `teavm/build/dist/webapp` (or whatever you set as `teavm.all.outputDir`) is a self-contained folder you can serve with any HTTP server.
 
 ### Optional plugin customization
 
@@ -546,9 +547,7 @@ flixelgdx {
   // Must match WebApplicationConfiguration.canvasID in your launcher.
   canvasId = 'my-canvas'
 
-  // Where the assembled web app goes (default: "$buildDir/dist/webapp").
-  // Must match teavm.js.outputDir.
-  outputDir = file("$buildDir/dist/webapp")
+  // outputDir: omit; FlixelGDX uses teavm.all.outputDir by default. Set only to split outputs (rare).
 
   // Custom startup logo (optional).
   customStartupLogo = file('src/main/webapp/startup-logo.png')
