@@ -1,6 +1,5 @@
 ---
-description: Use this rule when prompted to teach a new concept, or when the user is brainstorming something with you.
-alwaysApply: false
+alwaysApply: true
 ---
 This framework isn't just meant for experts, it's designed and intended to be welcoming for new contributors who are new and want to learn how open source software works. When explaining code, completing a task, or introducing new patterns, you're requested to do the following:
 
