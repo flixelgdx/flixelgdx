@@ -13,9 +13,11 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Copy;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -116,7 +118,7 @@ import java.util.jar.JarFile;
  * flixelgdx {
  *   title = 'My Game Title'                                        // default: My FlixelGDX Game
  *   canvasId = 'my-canvas'                                         // default: 'flixelgdx-canvas'
- *   outputDir = file("$buildDir/dist/webapp")                      // default: same value
+ *   // outputDir: omit to use teavm.all.outputDir (see teavm block)
  *   devServerPort = 1234                                           // default: 8080
  *   assetsDir = file('../assets')                                  // default: rootProject/assets/
  *   webappDir = file('src/main/webapp')                            // default: same value
@@ -147,7 +149,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
     ext.getCanvasId().convention(FlixelTeaVMExtension.DEFAULT_CANVAS_ID);
     ext.getTitle().convention(FlixelTeaVMExtension.DEFAULT_TITLE);
-    ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("dist/webapp"));
+    // outputDir: convention set in afterEvaluate from teavm.all.outputDir when org.teavm is present.
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
     ext.getGenerateDefaultIndexHtml().convention(true);
@@ -491,11 +493,24 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // Connect the new tasks to automatically run when either the Java bytecode is being converted
     // to JavaScript or when a local developer server is created to test the game using the plugin.
     project.afterEvaluate(p -> {
+      if (!ext.getOutputDir().isPresent()) {
+        DirectoryProperty teavmOut = readTeaVmAllOutputDir(p);
+        if (teavmOut != null) {
+          ext.getOutputDir().convention(teavmOut);
+        } else {
+          ext.getOutputDir().convention(p.getLayout().getBuildDirectory().dir("dist/webapp"));
+          p.getLogger()
+            .warn(
+              "[FlixelGDX] org.teavm extension not found. flixelgdx.outputDir uses the same default as TeaVM (build/dist/webapp). "
+                + "Apply org.teavm before this plugin and set teavm.all.outputDir once for both TeaVM and FlixelGDX."
+            );
+        }
+      }
       wireTo(p, "generateJavaScript");
       wireTo(p, "javaScriptDevServer");
       wireTo(p, "run");
 
-      // The run task must also trigger the full TeaVM compilation so that teavm.js exists
+      // The run task must also trigger the full TeaVM compilation so the JS bundle from teavm.js exists
       // before the dev server starts serving files.
       Task runTask = p.getTasks().findByName("run");
       Task generateJs = p.getTasks().findByName("generateJavaScript");
@@ -521,26 +536,75 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Resolves {@code js/<teavm.js.targetFileName>} from the {@code org.teavm} extension when available.
+   * Script {@code src} for the default index: {@code teavm.js} {@code relativePathInOutputDir} +
+   * {@code targetFileName}. Uses reflection so this plugin JAR does not depend on teavm-gradle-plugin types.
    */
   private static String inferTeavmScriptSrc(@NonNull Project project) {
-    String fallback = "js/teavm.js";
+    String fallback = "js/" + project.getName() + ".js";
+    Object teavmExt = project.getExtensions().findByName("teavm");
+    if (teavmExt == null) {
+      return fallback;
+    }
     try {
-      Object teavm = project.getExtensions().findByName("teavm");
-      if (teavm == null) {
-        return fallback;
-      }
-      Object js = teavm.getClass().getMethod("getJs").invoke(teavm);
+      Object js = teavmExt.getClass().getMethod("getJs").invoke(teavmExt);
       if (js == null) {
         return fallback;
       }
-      Object name = js.getClass().getMethod("getTargetFileName").invoke(js);
-      if (name == null) {
+      String rel = readGradlePropertyString(js, "getRelativePathInOutputDir");
+      String file = readGradlePropertyString(js, "getTargetFileName");
+      if (file == null || file.isEmpty()) {
         return fallback;
       }
-      return "js/" + name;
+      if (rel == null || rel.isEmpty()) {
+        return file;
+      }
+      rel = rel.replace('\\', '/');
+      if (rel.endsWith("/")) {
+        return rel + file;
+      }
+      return rel + "/" + file;
     } catch (Exception e) {
+      project
+        .getLogger()
+        .warn("FlixelGDX: could not read teavm.js script path (falling back to " + fallback + "): " + e);
       return fallback;
     }
+  }
+
+  @Nullable
+  private static String readGradlePropertyString(@NonNull Object owner, @NonNull String getterName) {
+    try {
+      Object property = owner.getClass().getMethod(getterName).invoke(owner);
+      if (property == null) {
+        return null;
+      }
+      Object v = property.getClass().getMethod("get").invoke(property);
+      return v != null ? v.toString() : null;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  @Nullable
+  private static DirectoryProperty readTeaVmAllOutputDir(@NonNull Project project) {
+    Object teavmExt = project.getExtensions().findByName("teavm");
+    if (teavmExt == null) {
+      return null;
+    }
+    try {
+      Object all = teavmExt.getClass().getMethod("getAll").invoke(teavmExt);
+      if (all == null) {
+        return null;
+      }
+      Object out = all.getClass().getMethod("getOutputDir").invoke(all);
+      if (out instanceof DirectoryProperty) {
+        return (DirectoryProperty) out;
+      }
+    } catch (Exception e) {
+      project
+        .getLogger()
+        .debug("FlixelGDX: could not read teavm.all.outputDir for flixelgdx.outputDir: {}", e.toString());
+    }
+    return null;
   }
 }

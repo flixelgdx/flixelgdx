@@ -29,9 +29,8 @@ import org.gradle.api.provider.Property;
  *   // Override the canvas element ID (default: "flixelgdx-canvas").
  *   canvasId = 'my-game-canvas'
  *
- *   // Change where the web app is assembled (default: "$buildDir/dist/webapp").
- *   // Must match teavm.js.outputDir! Otherwise, the generated index.html will not be found.
- *   outputDir = file("$buildDir/dist/webapp")
+ *   // outputDir: omit to use the same directory as teavm.all.outputDir (set only in teavm { all { ... } }).
+ *   // Override only if FlixelGDX must use a different folder than TeaVM (unusual).
  *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
@@ -93,10 +92,11 @@ public interface FlixelTeaVMExtension {
   /**
    * Directory into which the assembled web application is written.
    *
-   * <p>This must match the value of {@code teavm.js.outputDir} in the {@code org.teavm} plugin
-   * block so that copied assets, web resources, and the generated {@code index.html} are placed
-   * alongside the compiled {@code teavm.js} file. Defaults to
-   * {@code "$buildDir/dist/webapp"}.
+   * <p>By default, this property {@linkplain org.gradle.api.provider.Property#convention conventions}
+   * to the same {@link org.gradle.api.file.DirectoryProperty} as {@code teavm.all.outputDir} from the
+   * {@code org.teavm} plugin. Set a value only if FlixelGDX assets and the TeaVM output must go to
+   * different roots (unusual). If the {@code teavm} extension is not present, the default matches
+   * TeaVM's: {@code "$buildDir/dist/webapp"}.
    *
    * @return The output directory property.
    */
@@ -196,9 +196,12 @@ public interface FlixelTeaVMExtension {
   RegularFileProperty getCustomFavicon();
 
   /**
-   * URL of the compiled TeaVM script in the generated page (for example {@code js/flixelgdx.js}).
-   * If unset, the plugin uses {@code js/} plus {@code teavm.js.targetFileName} from the
-   * {@code org.teavm} block when that extension exists, else {@code js/teavm.js}.
+   * URL for the main {@code <script src="...">} in the generated default {@code index.html} (for example
+   * {@code js/flixelgdx.js}).
+   *
+   * <p>If unset, the plugin derives the path from {@code teavm.js} ({@code relativePathInOutputDir} and
+   * {@code targetFileName}). If the {@code teavm} extension is missing, the fallback is
+   * {@code js/} plus the module project name and {@code .js} (TeaVM's usual default name pattern).
    *
    * @return Optional script path for the main {@code <script src="...">} tag.
    */
