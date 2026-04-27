@@ -68,6 +68,12 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   /** Default {@link FlixelTypedAsset#isPersist()} for handles created after construction; see {@link #getGlobalPersist()}. */
   private boolean globalPersist = false;
 
+  /**
+   * Asset keys for which the next created handle for that key should use {@code persist == true} after
+   * a matching {@link #load(String, boolean)} (or other {@code load(..., true)}) call.
+   */
+  private final Set<String> pendingPersistKeys = ConcurrentHashMap.newKeySet();
+
   /** FlixelString object to prevent allocation every time {@link #getDiagnostics()} is called. */
   private final FlixelString diagnosticsString = new FlixelString();
 
@@ -138,6 +144,20 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     return name.substring(dot).toLowerCase(Locale.ROOT);
   }
 
+  /**
+   * If a new {@link FlixelAsset} or {@link FlixelGraphic} handle is created for this key before the
+   * pending entry is consumed, that handle is marked persistent. Call {@code load(path, true)} to
+   * mark path-keyed assets that should survive {@link #clearNonPersist()}.
+   * 
+   * @param assetKey The asset key.
+   * @param handle The handle to apply the pending persist on.
+   */
+  public void applyPendingPersistOnNewHandle(@NotNull String assetKey, @NotNull FlixelAsset<?> handle) {
+    if (pendingPersistKeys.remove(assetKey)) {
+      handle.setPersist(true);
+    }
+  }
+
   @Override
   public void load(@NotNull String path) {
     if (path == null || path.isEmpty()) {
@@ -162,6 +182,30 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       throw new IllegalStateException("Extension factory for \"" + ext + "\" returned null for path \"" + path + "\".");
     }
     load(source);
+  }
+
+  @Override
+  public void load(@NotNull String path, boolean persist) {
+    if (persist) {
+      pendingPersistKeys.add(path);
+    }
+    load(path);
+  }
+
+  @Override
+  public void load(@NotNull FlixelSource<?> source, boolean persist) {
+    if (persist) {
+      pendingPersistKeys.add(source.getAssetKey());
+    }
+    load(source);
+  }
+
+  @Override
+  public <T> void load(@NotNull String fileName, @NotNull Class<T> type, boolean persist) {
+    if (persist) {
+      pendingPersistKeys.add(fileName);
+    }
+    load(fileName, type);
   }
 
   @Override
@@ -450,7 +494,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
     syntheticWrapperId = 0;
     for (FlixelWrapperFactory<?> f : wrapperFactories.values()) {
-      f.clearAll();
+      f.clearAll(this);
     }
     wrapperFactories.clear();
     typedAssetCache.clear();
@@ -537,6 +581,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       return (FlixelAsset<T>) existing;
     }
     FlixelTypedAsset<T> created = new FlixelTypedAsset<>(this, assetKey, type);
+    applyPendingPersistOnNewHandle(assetKey, created);
     typedAssetCache.put(id, created);
     return created;
   }
@@ -563,7 +608,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       }
     } else {
       for (FlixelWrapperFactory<?> f : wrapperFactories.values()) {
-        f.clearAll();
+        f.clearAll(this);
       }
     }
   }

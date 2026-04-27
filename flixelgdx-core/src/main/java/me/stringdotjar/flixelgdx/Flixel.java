@@ -33,7 +33,6 @@ import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
 import me.stringdotjar.flixelgdx.util.save.FlixelSave;
@@ -199,6 +198,18 @@ import java.util.function.Supplier;
  */
 public final class Flixel {
 
+  /**
+   * Minimum allowed elapsed time in seconds for one frame. {@link FlixelGame} clamps the raw libGDX delta to
+   * at least this value so a zero-delta does not break motion and timers.
+   */
+  public static final float MIN_ELAPSED = 0.000001f;
+
+  /**
+   * Maximum allowed elapsed time in seconds for one frame. {@link FlixelGame} clamps the raw libGDX delta
+   * to at most this value so a long hitch does not move physics too far in one step.
+   */
+  public static final float MAX_ELAPSED = 0.1f;
+
   /** The current {@code FlixelState} being displayed. */
   private static FlixelState state;
 
@@ -311,22 +322,22 @@ public final class Flixel {
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
   /** Current key used to toggle the debug overlay. */
-  private static int debugToggleKey = FlixelConstants.Debug.DEFAULT_TOGGLE_KEY;
+  private static int debugToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_TOGGLE_KEY;
 
   /** Current key used to toggle visual debug (bounding boxes). */
-  private static int debugDrawToggleKey = FlixelConstants.Debug.DEFAULT_DRAW_DEBUG_KEY;
+  private static int debugDrawToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_DRAW_DEBUG_KEY;
 
   /** Current key used to pause the game update loop (debug mode only). */
-  private static int debugPauseKey = FlixelConstants.Debug.DEFAULT_PAUSE_KEY;
+  private static int debugPauseKey = FlixelDebugOverlay.Keybinds.DEFAULT_PAUSE_KEY;
 
   /** Current button used to pan the debug camera. */
   private static int debugCameraPanButton = Input.Buttons.RIGHT;
 
   /** Current key used to cycle the debug camera to the left while paused (with Alt). */
-  private static int debugCameraCycleLeftKey = FlixelConstants.Debug.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
+  private static int debugCameraCycleLeftKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
 
   /** Current key used to cycle the debug camera to the right while paused (with Alt). */
-  private static int debugCameraCycleRightKey = FlixelConstants.Debug.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
+  private static int debugCameraCycleRightKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
 
   /**
    * Factory used to create the debug overlay when the game starts. Developers can replace
@@ -824,8 +835,7 @@ public final class Flixel {
 
   /**
    * Returns the capped elapsed time (in seconds) for the current frame. This value is clamped
-   * between {@link me.stringdotjar.flixelgdx.util.FlixelConstants.Graphics#MIN_ELAPSED} and
-   * {@link me.stringdotjar.flixelgdx.util.FlixelConstants.Graphics#MAX_ELAPSED} by
+   * between {@link #MIN_ELAPSED} and {@link #MAX_ELAPSED} by
    * {@link FlixelGame} each frame.
    */
   public static float getElapsed() {

@@ -15,8 +15,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.SnapshotArray;
 
+import me.stringdotjar.flixelgdx.FlixelObject;
 import me.stringdotjar.flixelgdx.FlixelSprite;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -72,9 +72,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private final Rectangle tmpBoundsRect = new Rectangle();
 
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
-  private boolean visible = true;
   private boolean antialiasing = false;
-  private int facing = FlixelConstants.Graphics.FACING_RIGHT;
+  private int facing = FlixelObject.DirectionFlags.RIGHT;
 
   /** Creates a sprite group with no member limit and default wheel radius {@code 100}. */
   public FlixelSpriteGroup() {
@@ -313,14 +312,6 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       s.flip(false, true);
     }
     members.end();
-  }
-
-  public boolean isVisible() {
-    return visible;
-  }
-
-  public void setVisible(boolean visible) {
-    this.visible = visible;
   }
 
   @Override
@@ -759,13 +750,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     }
   }
 
-  /**
-   * Draws all members in insertion order. The group itself does not render its own graphic;
-   * only its members are drawn. Nothing is rendered when {@link #isVisible()} is {@code false}.
-   */
   @Override
   public void draw(Batch batch) {
     if (!visible || !isOnDrawCamera()) {
+      return;
+    }
+
+    if (members.size == 0) {
+      super.draw(batch);
       return;
     }
 

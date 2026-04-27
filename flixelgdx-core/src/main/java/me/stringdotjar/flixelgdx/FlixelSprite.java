@@ -20,7 +20,7 @@ import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.util.FlixelColor;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -99,7 +99,7 @@ public class FlixelSprite extends FlixelObject {
   protected boolean flipY = false;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
-  protected int facing = FlixelConstants.Graphics.FACING_RIGHT;
+  protected int facing = FlixelObject.DirectionFlags.RIGHT;
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
@@ -151,6 +151,15 @@ public class FlixelSprite extends FlixelObject {
     if (frame != null) {
       currentRegion = frame;
     }
+  }
+
+  /**
+   * Clears the active Sparrow / atlas / animation display frame. {@link #draw} will draw nothing
+   * until a frame is set again (e.g. by {@link FlixelAnimationController} or {@link #applySparrowAtlas}).
+   */
+  public void clearAnimationDisplayFrame() {
+    currentFrame = null;
+    currentRegion = null;
   }
 
   /**
@@ -265,6 +274,27 @@ public class FlixelSprite extends FlixelObject {
    * Loads a graphic from a {@link FlixelGraphic}.
    *
    * @param g The {@link FlixelGraphic} to load.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g) {
+    return loadGraphic(g, g.requireTexture().getWidth(), g.requireTexture().getHeight());
+  }
+
+  /**
+   * Loads a graphic from a {@link FlixelGraphic}.
+   *
+   * @param g The {@link FlixelGraphic} to load.
+   * @param frameWidth The width of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g, int frameWidth) {
+    return loadGraphic(g, frameWidth, g.requireTexture().getHeight());
+  }
+
+  /**
+   * Loads a graphic from a {@link FlixelGraphic}.
+   *
+   * @param g The {@link FlixelGraphic} to load.
    * @param frameWidth The width of the graphic.
    * @param frameHeight The height of the graphic.
    * @return {@code this} sprite for chaining.
@@ -328,7 +358,8 @@ public class FlixelSprite extends FlixelObject {
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} only;
+   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link me.stringdotjar.flixelgdx.animation.FlixelSpritemapJsonLoader#load};
    * not a general API for game code.
    *
    * @param newGraphic Graphic from {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...)} (implicit retain).
@@ -366,7 +397,7 @@ public class FlixelSprite extends FlixelObject {
       float drawX = wx - offsetX + currentFrame.offsetX;
       float drawY = wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
 
-      boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       batch.setColor(color);
@@ -389,7 +420,7 @@ public class FlixelSprite extends FlixelObject {
         isFlippedY);
       batch.setColor(Color.WHITE);
     } else if (currentRegion != null) {
-      boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       float sx = isFlippedX ? -scaleX : scaleX;
@@ -578,6 +609,14 @@ public class FlixelSprite extends FlixelObject {
     this.scaleY = scaleY;
   }
 
+  public void setScaleX(float scaleX) {
+    this.scaleX = scaleX;
+  }
+
+  public void setScaleY(float scaleY) {
+    this.scaleY = scaleY;
+  }
+
   public float getOriginX() {
     return originX;
   }
@@ -654,6 +693,10 @@ public class FlixelSprite extends FlixelObject {
 
   public void setColor(float r, float g, float b, float a) {
     color.set(r, g, b, a);
+  }
+
+  public void setColor(@NotNull FlixelColor tint) {
+    color.set(tint.getGdxColor());
   }
 
   public void setAlpha(float a) {
