@@ -7,7 +7,7 @@ FlixelGDX aims to be an easily maintainable, beginner friendly and modernized ga
 - __***Never ever EVER allocate objects in a loop or method that gets called every frame.***__. This is the *most* important one and it's ***nonnegotiable***. We can and will not let the framework be the cause for garbage collection stutters for any game.
 - As a follow up to the rule just mentioned, reuse every object if it can be. Use pooling systems (both FlixelGDX's and libGDX's), indexed for loops, FlixelGDX and libGDX utilities (such as `FlixelString` from FlixelGDX or `ObjectMap` from libGDX) designed for performance, etc.
 - FlixelGDX is a multi-modular framework. The `flixelgdx-core` module is the heart of the entire system, which contains all of the main classes developers utilizing the framework will typically use. Avoid mixing backend logic with core logic. If something works differently on a different platform, use interfaces to abstract it away.
-- Keep your code simple and concise. It should be easily readable and changable without breaking other systems of the framework.
+- Keep your code simple and concise. It should be easily readable and changeable without breaking other systems of the framework.
 - Based on the given task, do not touch unrelated files unless it's absolutely necessary. Keep the goal focused on the specific context and goal provided.
 - This framework uses Java 17. Do not use old Java features, such as, for example, legacy switch statements.
-- When you are done with a provided task, you must explain in simple detail what you changed, your reasoning behind it, and how it incoporates with the system.
+- When you are done with a provided task, you must explain in simple detail what you changed, your reasoning behind it, and how it incorporates with the system.

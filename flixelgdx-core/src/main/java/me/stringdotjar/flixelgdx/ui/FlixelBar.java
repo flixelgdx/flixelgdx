@@ -94,7 +94,6 @@ public class FlixelBar extends FlixelSprite {
   // Value smoothing: 1 = snap, lower = smoother.
   private float lerp = 1f;
   private float lastElapsed = 1f / 60f;
-  private float cachedTargetFramerate = 60f;
 
   // Empty/fill rendering configuration.
   private final Color emptyColor = new Color(0f, 0f, 0f, 0.5f);
@@ -172,18 +171,12 @@ public class FlixelBar extends FlixelSprite {
     ensureWhitePixel();
   }
 
-  /**
-   * @throws UnsupportedOperationException always.
-   */
   @Override
   public final FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException(
       "FlixelBar does not use loadGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
   }
 
-  /**
-   * @throws UnsupportedOperationException always.
-   */
   @Override
   public final FlixelSprite makeGraphic(int width, int height, Color color) {
     throw new UnsupportedOperationException(
@@ -617,7 +610,6 @@ public class FlixelBar extends FlixelSprite {
   public void update(float elapsed) {
     super.update(elapsed);
     lastElapsed = elapsed;
-    cachedTargetFramerate = resolveTargetFramerate();
 
     if (maxSupplier != null) {
       float newMax = maxSupplier.getAsFloat();
@@ -981,7 +973,7 @@ public class FlixelBar extends FlixelSprite {
   private float resolveFrameRateIndependentLerp(float lerp, float elapsed) {
     // Copied conceptually from FlixelCamera.updateFollow. Converts lerp into a per-frame factor.
     elapsed = Math.max(0f, elapsed);
-    return 1f - (float) Math.pow(1f - lerp, elapsed * cachedTargetFramerate);
+    return 1f - (float) Math.pow(1f - lerp, elapsed * 60f);
   }
 
   private static float resolveTargetFramerate() {
