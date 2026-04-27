@@ -11,3 +11,4 @@ FlixelGDX aims to be an easily maintainable, beginner friendly and modernized ga
 - Based on the given task, do not touch unrelated files unless it's absolutely necessary. Keep the goal focused on the specific context and goal provided.
 - This framework uses Java 17. Do not use old Java features, such as, for example, legacy switch statements.
 - When you are done with a provided task, you must explain in simple detail what you changed, your reasoning behind it, and how it incorporates with the system.
+- When writing code for the `flixelgdx-core` module, avoid using utilites or classes that rely on access to threads. Since the framework is multi-modular and supports web via TeaVM, utilites such as `ConcurrentArrayList` or `ConcurrentHashMap` are explicity disallowed to be used in the core logic. If something requires access to threads, try to put it in a specific platform module (i.e., `flixelgdx-lwjgl3`) if possible and logically necessary.
