@@ -13,8 +13,13 @@ import org.teavm.jso.JSBody;
 
 /**
  * Routes {@link me.stringdotjar.flixelgdx.logging.FlixelLogConsoleSink} output to the browser
- * {@code console} with {@code %c} / {@code %s} styling so log levels and locations read clearly
- * in devtools (ANSI escapes from {@code System.out} are not used on web).
+ * {@code console} with {@code %c} styling so log levels and locations read clearly in devtools
+ * (ANSI escapes from {@code System.out} are not used on web).
+ *
+ * <p>The native script also picks the right {@code console} method per level (so the browser's
+ * own filter pills for warnings and errors work as expected): {@code console.log} for
+ * {@link FlixelLogLevel#INFO INFO}, {@code console.warn} for {@link FlixelLogLevel#WARN WARN},
+ * and {@code console.error} for {@link FlixelLogLevel#ERROR ERROR}.
  */
 public final class FlixelTeaVMLogConsole {
 
@@ -23,6 +28,15 @@ public final class FlixelTeaVMLogConsole {
   /**
    * Forwards one structured log to JavaScript. Matches {@code FlixelLogConsoleSink#emit} for use
    * with {@code Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit)}.
+   *
+   * @param level The log level to color and route on.
+   * @param tag The associated tag, may be empty.
+   * @param message The body text of the log line.
+   * @param simpleLocation The short {@code package/File.java:line:} prefix for simple mode.
+   * @param detailedFile The detailed {@code File.java:line} string used in detailed mode.
+   * @param methodLabel The method label such as {@code update()}.
+   * @param timestamp The pre-formatted timestamp string.
+   * @param detailed {@code true} to render in detailed mode (timestamp + tags + body).
    */
   public static void emit(
       FlixelLogLevel level,
@@ -49,6 +63,17 @@ public final class FlixelTeaVMLogConsole {
     return s != null ? s : "";
   }
 
+  // The script is intentionally one long concatenation of string literals (TeaVM @JSBody requires
+  // the script value to be a compile-time constant).
+  //
+  // Two important details:
+  //   1. The literal newline between the meta line and the body in detailed mode MUST be the JS
+  //      escape sequence '\\n'. Java compiles '\n' into a real 0x0A character at compile time,
+  //      which would land inside a single-quoted JavaScript string literal, crash the parser, and
+  //      silently take out every subsequent log call.
+  //   2. User-supplied strings (tag/message/etc.) are passed through positional %s substitutions
+  //      instead of being concatenated into the format string, so a stray '%' in a log message
+  //      does not eat the next argument or trigger console formatter quirks.
   @JSBody(
       params = {
         "l",
@@ -62,16 +87,21 @@ public final class FlixelTeaVMLogConsole {
       },
       script = ""
           + "var lv = l | 0;"
-          + "var locA = lv === 0 ? 'color:#5aa0e8;font-weight:600' : lv === 1 ? 'color:#c9a020;font-weight:600' : 'color:#e85555;font-weight:600';"
-          + "var msgA = lv === 0 ? 'color:#9ec8f5' : lv === 1 ? 'color:#e8c860' : 'color:#ff9a9a';"
-          + "var tA = 'color:#7a7a7a;';"
+          + "var sink = lv === 1 ? console.warn : (lv === 2 ? console.error : console.log);"
+          + "var locStyle = lv === 0 ? 'color:#5aa0e8;font-weight:600'"
+          + "  : lv === 1 ? 'color:#c9a020;font-weight:600'"
+          + "  : 'color:#e85555;font-weight:600';"
+          + "var msgStyle = lv === 0 ? 'color:#9ec8f5'"
+          + "  : lv === 1 ? 'color:#e8c860'"
+          + "  : 'color:#ff9a9a';"
+          + "var metaStyle = 'color:#7a7a7a';"
           + "if (!detailed) {"
-          + "  console.log('%c%s%c%s', locA, simpleLocation, msgA, message);"
+          + "  sink('%c%s %c%s', locStyle, simpleLocation, msgStyle, message);"
           + "  return;"
           + "}"
           + "var lvStr = lv === 0 ? 'INFO' : lv === 1 ? 'WARN' : 'ERROR';"
-          + "var meta = timestamp + ' [' + lvStr + '] [' + tag + '] [' + detailedFile + '] [' + methodLabel + ']\n';"
-          + "console.log('%c%s%c%s', tA, meta, msgA, message);"
+          + "var meta = timestamp + ' [' + lvStr + '] [' + tag + '] [' + detailedFile + '] [' + methodLabel + ']';"
+          + "sink('%c%s\\n%c%s', metaStyle, meta, msgStyle, message);"
   )
   private static native void emit0(
       int l,

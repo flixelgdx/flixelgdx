@@ -19,19 +19,29 @@ import com.badlogic.gdx.utils.IntSet;
  *
  * <p>Access via {@code Flixel.keys} after the framework is initialized.
  *
- * <p>Tracks pressed keys via an internal {@link InputProcessor}. If you use a custom
- * input processor, add the one from {@link #getInputProcessor()} first to a multiplexer
- * so key state stays correct.
+ * <p>Tracks pressed keys via an internal libGDX {@link InputProcessor}. The processor is the
+ * authoritative source of "is key X currently pressed", which keeps state correct across every
+ * libGDX backend (LWJGL3, Android, iOS, TeaVM). The TeaVM/web backend in particular does not
+ * always update {@link com.badlogic.gdx.Input#isKeyPressed(int) Gdx.input.isKeyPressed} for every
+ * keycode, so the framework cannot rebuild its set from polling each frame; doing so would erase
+ * any state the {@link InputProcessor} just wrote and break {@link #justPressed(int)} /
+ * {@link #justReleased(int)} on web. Instead, {@link #update()} simply records this frame's
+ * snapshot for "just" detection without ever touching {@link #currentPressedKeys}.
+ *
+ * <p>Make sure that the processor returned by {@link #getInputProcessor()} is added to the libGDX
+ * input chain (this is wired automatically in {@code FlixelGame.create()} via an
+ * {@link InputMultiplexer}). If you replace the input processor with your own, add this one first
+ * so key state still updates.
  */
 public class FlixelKeyInputManager {
 
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;
 
-  /** Keys currently pressed (updated by {@code this} manager's {@link InputProcessor}). */
+  /** Keys currently pressed (updated only by {@code this} manager's {@link InputProcessor}). */
   private final IntSet currentPressedKeys = new IntSet();
 
-  /** Keys that were pressed last frame, used to compute {@link #justPressed(int)} and {@link #justReleased()}. */
+  /** Keys that were pressed last frame, used to compute {@link #justPressed(int)} and {@link #justReleased(int)}. */
   private final IntSet previousPressedKeys = new IntSet();
 
   /** Order keys were pressed (chronological), so {@link #firstPressed()} returns the first key held. */
@@ -41,8 +51,10 @@ public class FlixelKeyInputManager {
   private final InputProcessor inputProcessor = new InputProcessor() {
     @Override
     public boolean keyDown(int keycode) {
-      currentPressedKeys.add(keycode);
-      if (pressedOrder.indexOf(keycode) < 0) {
+      if (keycode < 0) {
+        return false;
+      }
+      if (currentPressedKeys.add(keycode) && pressedOrder.indexOf(keycode) < 0) {
         pressedOrder.add(keycode);
       }
       return false;
@@ -50,6 +62,9 @@ public class FlixelKeyInputManager {
 
     @Override
     public boolean keyUp(int keycode) {
+      if (keycode < 0) {
+        return false;
+      }
       currentPressedKeys.remove(keycode);
       pressedOrder.removeValue(keycode);
       return false;
@@ -88,32 +103,21 @@ public class FlixelKeyInputManager {
   }
 
   /**
-   * Updates internal key state. Must be called once per frame (e.g. from the game loop)
-   * so that {@link #justReleased(int)} and {@link #firstJustPressed()} / {@link #firstJustReleased()} work correctly.
+   * Called once per frame from the game loop. Reserved for future polling-based fallbacks; today
+   * the {@link InputProcessor} keeps {@link #currentPressedKeys} up to date in real time, so this
+   * method intentionally does nothing.
    *
-   * <p>Syncs {@link #currentPressedKeys} from {@link com.badlogic.gdx.Gdx#input} so that
-   * {@link #firstPressed()}, {@link #firstJustPressed()} and {@link #firstJustReleased()} work
-   * even when the manager's {@link #getInputProcessor()} is not in the input chain. Call
-   * {@link #endFrame()} at the end of the frame so "just pressed/released" detection works next frame.
+   * <p>Earlier versions rebuilt {@link #currentPressedKeys} from
+   * {@link com.badlogic.gdx.Gdx#input Gdx.input.isKeyPressed} every frame, which clobbered any
+   * state the {@link InputProcessor} had just written and silently broke {@link #justPressed(int)},
+   * {@link #justReleased(int)}, and the "first" helpers on the TeaVM/web backend (where libGDX
+   * does not expose every key through {@code isKeyPressed}). The processor is now the only writer.
+   *
+   * <p>Call {@link #endFrame()} at the end of the frame so "just pressed/released" detection works
+   * next frame.
    */
   public void update() {
-    currentPressedKeys.clear();
-    for (int i = 0; i <= FlixelKey.MAX_KEYCODE; i++) {
-      if (Gdx.input.isKeyPressed(i)) {
-        currentPressedKeys.add(i);
-      }
-    }
-    // Keep pressedOrder in sync: remove released keys, add newly pressed (e.g. focus return) in keycode order.
-    for (int i = pressedOrder.size - 1; i >= 0; i--) {
-      if (!currentPressedKeys.contains(pressedOrder.get(i))) {
-        pressedOrder.removeIndex(i);
-      }
-    }
-    for (int i = 0; i <= FlixelKey.MAX_KEYCODE; i++) {
-      if (currentPressedKeys.contains(i) && pressedOrder.indexOf(i) < 0) {
-        pressedOrder.add(i);
-      }
-    }
+    // Intentionally empty: state is maintained by the InputProcessor.
   }
 
   /**

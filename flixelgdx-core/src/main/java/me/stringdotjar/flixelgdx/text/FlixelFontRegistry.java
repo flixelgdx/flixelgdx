@@ -20,6 +20,7 @@ import com.badlogic.gdx.utils.ObjectMap;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -212,26 +213,36 @@ public final class FlixelFontRegistry {
 
   /**
    * Returns a shared libGDX-style default {@link BitmapFont} (packaged {@code lsans-15}, scaled) so the same
-   * path works on desktop, mobile, and web. Multiple {@link FlixelText} instances with the same size reuse one
-   * font. Falls back to {@code new BitmapFont()} only if the packaged font is not on the classpath.
+   * path works on desktop, mobile, and web. Multiple callers asking for the same size reuse one font.
+   *
+   * <p>Lookup order:
+   * <ol>
+   *   <li>{@link com.badlogic.gdx.Files#internal Gdx.files.internal} (covers web/TeaVM, where the
+   *       FlixelGDX TeaVM plugin copies {@code lsans-15.fnt}/{@code lsans-15.png} into the
+   *       {@code assets/} folder, and JVM/Android layouts that ship the font in {@code assets/}).</li>
+   *   <li>{@link com.badlogic.gdx.Files#classpath Gdx.files.classpath} (covers JVM, where
+   *       {@code flixelgdx-core} bundles the font in its JAR resources).</li>
+   *   <li>libGDX's built-in {@code new BitmapFont()} (JVM only, fails gracefully on web).</li>
+   * </ol>
+   *
+   * <p>Each step is wrapped in a guard so a missing or unsupported lookup (for example,
+   * {@code Gdx.files.classpath} on TeaVM) does not crash the caller. If every fallback fails,
+   * the method returns {@code null} so debug code can keep running without a font.
    *
    * @param pixelSize The target font size in pixels (clamped to at least 1).
-   * @return A cached bitmap font. Do not {@link BitmapFont#dispose()} it, use {@link #dispose()} at shutdown.
+   * @return A cached bitmap font, or {@code null} if no default font could be loaded on the
+   *   current platform. Do not {@link BitmapFont#dispose()} it; use {@link #dispose()} at shutdown.
    */
+  @Nullable
   public static BitmapFont obtainDefaultBitmapFont(int pixelSize) {
     int size = Math.max(1, pixelSize);
     BitmapFont font = defaultBitmapFontsBySize.get(size);
     if (font != null) {
       return font;
     }
-    FileHandle fnt = Gdx.files.classpath(DEFAULT_BITMAP_FNT);
-    if (fnt == null || !fnt.exists()) {
-      fnt = Gdx.files.internal(DEFAULT_BITMAP_FNT);
-    }
-    if (fnt == null || !fnt.exists()) {
-      font = new BitmapFont();
-    } else {
-      font = new BitmapFont(fnt);
+    font = loadPackagedDefaultBitmapFont();
+    if (font == null) {
+      return null;
     }
     float defaultHeight = font.getLineHeight();
     if (defaultHeight > 0) {
@@ -241,6 +252,54 @@ public final class FlixelFontRegistry {
     font.setUseIntegerPositions(false);
     defaultBitmapFontsBySize.put(size, font);
     return font;
+  }
+
+  /**
+   * Walks the platform fallback list to load the packaged {@code lsans-15} bitmap font.
+   *
+   * @return A freshly constructed {@link BitmapFont}, or {@code null} if every fallback failed.
+   */
+  @Nullable
+  private static BitmapFont loadPackagedDefaultBitmapFont() {
+    BitmapFont font = tryLoadBitmapFont(true);
+    if (font != null) {
+      return font;
+    }
+    font = tryLoadBitmapFont(false);
+    if (font != null) {
+      return font;
+    }
+    // Final fallback: libGDX's built-in default. This works on JVM/Android but throws on TeaVM
+    // because gdx-teavm cannot read JAR-internal classpath resources at runtime.
+    try {
+      return new BitmapFont();
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  /**
+   * Attempts to load the packaged default bitmap font from a single {@link FileHandle} source.
+   *
+   * @param useInternal {@code true} to look the font up via {@link com.badlogic.gdx.Files#internal Gdx.files.internal}
+   *   (the {@code assets/} folder), {@code false} to use {@link com.badlogic.gdx.Files#classpath Gdx.files.classpath}
+   *   (JAR-internal resources).
+   * @return A constructed {@link BitmapFont}, or {@code null} if the file is missing or the
+   *   backend does not support that file type.
+   */
+  @Nullable
+  private static BitmapFont tryLoadBitmapFont(boolean useInternal) {
+    try {
+      FileHandle fnt = useInternal
+        ? Gdx.files.internal(DEFAULT_BITMAP_FNT)
+        : Gdx.files.classpath(DEFAULT_BITMAP_FNT);
+      if (fnt == null || !fnt.exists()) {
+        return null;
+      }
+      return new BitmapFont(fnt);
+    } catch (Throwable ignored) {
+      return null;
+    }
   }
 
   /**

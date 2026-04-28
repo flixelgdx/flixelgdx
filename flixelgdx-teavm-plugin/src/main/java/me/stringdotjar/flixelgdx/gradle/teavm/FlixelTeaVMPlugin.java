@@ -15,10 +15,13 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Copy;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.teavm.gradle.api.TeaVMCommonConfiguration;
+import org.teavm.gradle.api.TeaVMExtension;
+import org.teavm.gradle.api.TeaVMJSConfiguration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -35,7 +38,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.lang.ReflectiveOperationException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Enumeration;
@@ -379,20 +381,16 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility)."
       );
       task.doLast(t -> {
+        TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
+        if (js == null) {
+          return;
+        }
         try {
-          Object teavmExt = project.getExtensions().findByName("teavm");
-          if (teavmExt == null) {
-            return;
-          }
-          Object js = teavmExt.getClass().getMethod("getJs").invoke(teavmExt);
-          if (js == null) {
-            return;
-          }
-          String file = readGradlePropertyString(js, "getTargetFileName");
+          String file = unwrap(js.getTargetFileName());
           if (file == null || file.isEmpty() || "teavm.js".equalsIgnoreCase(file)) {
             return;
           }
-          String rel = readGradlePropertyString(js, "getRelativePathInOutputDir");
+          String rel = unwrap(js.getRelativePathInOutputDir());
           File root = ext.getOutputDir().get().getAsFile();
           String sub = (rel == null || rel.isEmpty()) ? "" : rel.replace('\\', '/');
           if (!sub.isEmpty() && !sub.endsWith("/")) {
@@ -406,7 +404,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
               .getLogger()
               .info("[FlixelGDX] Wrote gdx-teavm compatibility copy: " + sub + "teavm.js (from " + file + ").");
           }
-        } catch (Exception e) {
+        } catch (IOException e) {
           project.getLogger().warn("[FlixelGDX] Could not create teavm.js alias: {}", e.getMessage());
         }
       });
@@ -633,44 +631,42 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Reads a Gradle {@link org.gradle.api.provider.Property Property} / {@link Provider} from TeaVM's {@code js} block
-   * (used only by {@code aliasTeaVmMainScript} to find the real bundle path). Unwraps with {@link Provider#getOrNull()}.
+   * Reads the configured value of a Gradle {@link Property} or returns {@code null} if it is unset.
+   *
+   * @param property The Gradle property to unwrap.
+   * @return The current value, or {@code null} when no value has been set.
    */
   @Nullable
-  private static String readGradlePropertyString(@NonNull Object owner, @NonNull String getterName) {
-    try {
-      Object holder = owner.getClass().getMethod(getterName).invoke(owner);
-      return unwrapGradleProvider(holder);
-    } catch (ReflectiveOperationException e) {
+  private static String unwrap(@Nullable Property<String> property) {
+    if (property == null) {
       return null;
     }
+    return property.getOrNull();
   }
 
   /**
-   * Turns a Gradle {@link Provider} (including {@link org.gradle.api.provider.Property}) into a string, or
-   * {@code null} if unset.
+   * Looks up the {@code teavm} extension and returns its {@code js} block, or {@code null} when
+   * either is missing (for example, when the user forgot to apply {@code org.teavm} before this
+   * plugin).
+   *
+   * @param project The current Gradle project.
+   * @return The {@link TeaVMJSConfiguration}, or {@code null} when the extension is unavailable.
    */
   @Nullable
-  private static String unwrapGradleProvider(@Nullable Object holder) {
-    if (holder == null) {
-      return null;
-    }
-    if (holder instanceof Provider) {
-      Object v = ((Provider<?>) holder).getOrNull();
-      return v != null ? v.toString() : null;
-    }
-    return holder.toString();
+  private static TeaVMJSConfiguration findTeaVmJsConfiguration(@NonNull Project project) {
+    TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+    return teavm == null ? null : teavm.getJs();
   }
 
   /**
    * Resolves the {@code script src} for generated {@code index.html}.
    *
-   * <p>TeaVM 0.13 defaults to writing the bundle under a subfolder such as {@code js/}. Gradle
-   * provider values for {@code relativePathInOutputDir} are not always visible the same way
-   * across versions, so this method prefers a real file under {@code outputRoot} after
-   * {@code generateJavaScript} has run.
+   * <p>TeaVM 0.13 defaults to writing the bundle under a subfolder such as {@code js/}. We first
+   * trust the configured path on {@link TeaVMJSConfiguration} and only fall back to a directory
+   * scan when that file is not on disk yet (for example, when the user changed the layout
+   * mid-build).
    *
-   * @param project The Gradle project (TeaVM extension).
+   * @param project The Gradle project (used for logging).
    * @param outputRoot Web output directory (same as FlixelGDX {@code outputDir}).
    * @return Relative URL path using forward slashes (for example {@code js/teavm.js}).
    */
@@ -704,30 +700,49 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Builds the expected relative path {@code <relativePathInOutputDir>/teavm.js} from the TeaVM
-   * extension, or {@code teavm.js} when the relative path is unset.
+   * Builds the expected relative path {@code <relativePathInOutputDir>/<targetFileName>} from the
+   * TeaVM extension. Defaults to {@code teavm.js} when the user did not customize either field.
+   *
+   * <p>Pulling the real {@code targetFileName} (instead of always using {@code teavm.js}) means
+   * the generated {@code index.html} keeps working even if the {@code aliasTeaVmMainScript}
+   * compatibility copy has not run yet, which is the common path for fresh checkouts.
+   *
+   * @param project The Gradle project (used to access the {@code teavm} extension).
+   * @return The relative path of the TeaVM bundle from the output root, or {@code null} when the
+   *   {@code teavm} extension is not present.
    */
   @Nullable
   private static String buildConfiguredTeaVmScriptRelative(@NonNull Project project) {
-    String relative = readTeaVmJsRelativePathInOutputDir(project);
+    TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
+    if (js == null) {
+      return null;
+    }
+    String fileName = unwrap(js.getTargetFileName());
+    if (fileName == null || fileName.isBlank()) {
+      fileName = DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+    }
+    String relative = unwrap(js.getRelativePathInOutputDir());
     if (relative == null || relative.isBlank()) {
-      return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+      return fileName;
     }
     String normalized = relative.replace('\\', '/').trim();
     while (normalized.startsWith("/")) {
       normalized = normalized.substring(1);
     }
     if (normalized.isEmpty()) {
-      return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+      return fileName;
     }
     if (!normalized.endsWith("/")) {
       normalized = normalized + "/";
     }
-    return normalized + "teavm.js";
+    return normalized + fileName;
   }
 
   /**
    * Finds {@code teavm.js} under the output directory (shallowest match), or {@code null}.
+   *
+   * @param outputRoot The TeaVM output directory.
+   * @return The relative path of {@code teavm.js} (forward slashes), or {@code null}.
    */
   @Nullable
   private static String findTeaVmJsRelativeToOutput(@NonNull File outputRoot) {
@@ -778,46 +793,20 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     return chosen == null ? null : root.relativize(chosen).toString().replace('\\', '/');
   }
 
-  @Nullable
-  private static String readTeaVmJsRelativePathInOutputDir(@NonNull Project project) {
-    Object teavmExt = project.getExtensions().findByName("teavm");
-    if (teavmExt == null) {
-      return null;
-    }
-    try {
-      Object js = teavmExt.getClass().getMethod("getJs").invoke(teavmExt);
-      if (js == null) {
-        return null;
-      }
-      return readGradlePropertyString(js, "getRelativePathInOutputDir");
-    } catch (Exception e) {
-      project
-        .getLogger()
-        .debug("FlixelGDX: could not read teavm.js.relativePathInOutputDir for generated index.html: {}", e.toString());
-      return null;
-    }
-  }
-
+  /**
+   * Reads {@code teavm.all.outputDir} via the official extension types, returning {@code null}
+   * when the {@code org.teavm} plugin is not on the project.
+   *
+   * @param project The Gradle project.
+   * @return The TeaVM common output directory property, or {@code null}.
+   */
   @Nullable
   private static DirectoryProperty readTeaVmAllOutputDir(@NonNull Project project) {
-    Object teavmExt = project.getExtensions().findByName("teavm");
-    if (teavmExt == null) {
+    TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+    if (teavm == null) {
       return null;
     }
-    try {
-      Object all = teavmExt.getClass().getMethod("getAll").invoke(teavmExt);
-      if (all == null) {
-        return null;
-      }
-      Object out = all.getClass().getMethod("getOutputDir").invoke(all);
-      if (out instanceof DirectoryProperty) {
-        return (DirectoryProperty) out;
-      }
-    } catch (Exception e) {
-      project
-        .getLogger()
-        .debug("FlixelGDX: could not read teavm.all.outputDir for flixelgdx.outputDir: {}", e.toString());
-    }
-    return null;
+    TeaVMCommonConfiguration all = teavm.getAll();
+    return all == null ? null : all.getOutputDir();
   }
 }

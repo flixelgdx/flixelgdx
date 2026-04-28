@@ -41,6 +41,8 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * The in-game debug overlay drawn as a <strong>separate layer</strong> on top of the entire game
  * (including over the UI stage). It has its own {@link SpriteBatch}, {@link OrthographicCamera}
@@ -72,7 +74,14 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final ShapeRenderer shapeRenderer;
   private final OrthographicCamera camera;
   private final ScreenViewport viewport;
-  /** Shared registry font (15px default bitmap); do not {@link BitmapFont#dispose()}. */
+
+  /**
+   * Shared registry font (15px default bitmap). May be {@code null} on platforms where the
+   * packaged font cannot be loaded (for example, TeaVM builds that have not run the FlixelGDX
+   * TeaVM plugin's asset copy task). When {@code null}, all text drawing is skipped while the
+   * rest of the overlay (bounding boxes, etc.) keeps working. Do not {@link BitmapFont#dispose()}.
+   */
+  @Nullable
   private final BitmapFont font;
   private final Texture whitePixel;
 
@@ -145,8 +154,10 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     camera = new OrthographicCamera();
     viewport = new ScreenViewport(camera);
     font = FlixelFontRegistry.obtainDefaultBitmapFont(15);
-    font.setColor(Color.WHITE);
-    font.getData().markupEnabled = true;
+    if (font != null) {
+      font.setColor(Color.WHITE);
+      font.getData().markupEnabled = true;
+    }
 
     Pixmap px = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
     px.setColor(Color.WHITE);
@@ -511,6 +522,11 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     if (!visible) {
       return;
     }
+    // Without a font we have nothing to render. The overlay still draws bounding boxes via
+    // drawBoundingBoxes(), which does not depend on the font.
+    if (font == null) {
+      return;
+    }
 
     int dw = Gdx.graphics.getWidth();
     int dh = Gdx.graphics.getHeight();
@@ -624,10 +640,16 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   }
 
   private void drawText(CharSequence markup, float x, float y) {
+    if (font == null) {
+      return;
+    }
     font.draw(batch, markup, x, y);
   }
 
   private void drawTextRight(CharSequence markup, float rightEdge, float y) {
+    if (font == null) {
+      return;
+    }
     font.draw(batch, markup, 0, y, rightEdge, Align.right, false);
   }
 
