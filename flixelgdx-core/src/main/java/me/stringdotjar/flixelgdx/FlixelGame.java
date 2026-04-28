@@ -145,6 +145,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** When true, calls {@link #destroy()} and {@link #create()}, which resets the game. */
   protected volatile boolean resetRequested = false;
 
+  /** Prevents re-entrant fullscreen transitions from resize callbacks on desktop backends. */
+  private boolean fullscreenChangeInProgress = false;
+
   /** 2D array of saved camera scroll values when the game is paused for debugging. */
   @Nullable
   private float[][] debugPauseCameraScroll;
@@ -375,15 +378,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       debugOverlay.update(elapsed);
     }
 
-    // Capture key state at end of frame so firstJustPressed()/firstJustReleased() work next frame.
-    if (Flixel.keys != null) {
-      Flixel.keys.endFrame();
-    }
-
-    if (Flixel.mouse != null) {
-      Flixel.mouse.endFrame();
-    }
-
     postUpdateData.set(elapsed);
     Flixel.Signals.postUpdate.dispatch(postUpdateData);
   }
@@ -477,6 +471,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       update(elapsed);
     }
     draw(batch);
+
+    // Finalize input frame AFTER user update hooks run, so justPressed/justReleased checks
+    // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
+    if (Flixel.keys != null) {
+      Flixel.keys.endFrame();
+    }
+    if (Flixel.mouse != null) {
+      Flixel.mouse.endFrame();
+    }
   }
 
   /**
@@ -584,10 +587,21 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param enabled If the game's window should be in fullscreen mode.
    */
   public void setFullscreen(boolean enabled) {
-    if (enabled) {
-      Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
-    } else {
-      Gdx.graphics.setWindowedMode((int) viewSize.x, (int) viewSize.y);
+    boolean currentFullscreen = Gdx.graphics.isFullscreen();
+    if (enabled == currentFullscreen || fullscreenChangeInProgress) {
+      fullscreen = currentFullscreen;
+      return;
+    }
+    fullscreenChangeInProgress = true;
+    try {
+      if (enabled) {
+        Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+      } else {
+        Gdx.graphics.setWindowedMode((int) viewSize.x, (int) viewSize.y);
+      }
+    } finally {
+      fullscreenChangeInProgress = false;
+      fullscreen = Gdx.graphics.isFullscreen();
     }
   }
 

@@ -147,7 +147,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
   private static final String DEFAULT_INDEX_TEMPLATE = "/me/stringdotjar/flixelgdx/gradle/teavm/default-index.html";
-  private static final String DEFAULT_GENERATED_INDEX_SCRIPT_SRC = "js/teavm.js";
+  private static final String DEFAULT_GENERATED_INDEX_SCRIPT_SRC = "teavm.js";
   private static final String DEFAULT_STARTUP_LOGO = "/me/stringdotjar/flixelgdx/gradle/teavm/default-startup-logo.png";
 
   @Override
@@ -241,7 +241,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             .replace("{{TITLE}}", ext.getTitle().get())
             .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
             .replace("{{FAVICON}}", faviconLink)
-            .replace("{{TEAVM_SCRIPT}}", DEFAULT_GENERATED_INDEX_SCRIPT_SRC);
+            .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project));
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -657,6 +657,52 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       return v != null ? v.toString() : null;
     }
     return holder.toString();
+  }
+
+  /**
+   * Resolves the script src path for the generated index.html based on TeaVM's
+   * js.relativePathInOutputDir setting. The script name remains teavm.js because
+   * aliasTeaVmMainScript guarantees this compatibility name when needed.
+   * 
+   * @param project The project instance.
+   */
+  @NonNull
+  private static String resolveTeaVmScriptSrc(@NonNull Project project) {
+    String relative = readTeaVmJsRelativePathInOutputDir(project);
+    if (relative == null || relative.isBlank()) {
+      return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+    }
+    String normalized = relative.replace('\\', '/').trim();
+    while (normalized.startsWith("/")) {
+      normalized = normalized.substring(1);
+    }
+    if (normalized.isEmpty()) {
+      return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+    }
+    if (!normalized.endsWith("/")) {
+      normalized = normalized + "/";
+    }
+    return normalized + "teavm.js";
+  }
+
+  @Nullable
+  private static String readTeaVmJsRelativePathInOutputDir(@NonNull Project project) {
+    Object teavmExt = project.getExtensions().findByName("teavm");
+    if (teavmExt == null) {
+      return null;
+    }
+    try {
+      Object js = teavmExt.getClass().getMethod("getJs").invoke(teavmExt);
+      if (js == null) {
+        return null;
+      }
+      return readGradlePropertyString(js, "getRelativePathInOutputDir");
+    } catch (Exception e) {
+      project
+        .getLogger()
+        .debug("FlixelGDX: could not read teavm.js.relativePathInOutputDir for generated index.html: {}", e.toString());
+      return null;
+    }
   }
 
   @Nullable

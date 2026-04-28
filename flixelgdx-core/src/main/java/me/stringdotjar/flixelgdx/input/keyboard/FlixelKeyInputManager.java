@@ -133,7 +133,16 @@ public class FlixelKeyInputManager {
    * @return {@code true} if the key is pressed and input is enabled.
    */
   public boolean pressed(int key) {
-    return enabled && (currentPressedKeys.contains(key) || Gdx.input.isKeyPressed(key));
+    if (!enabled) {
+      return false;
+    }
+    if (key == FlixelKey.ANY) {
+      return currentPressedKeys.size > 0;
+    }
+    if (!isValidKeycode(key)) {
+      return false;
+    }
+    return currentPressedKeys.contains(key) || Gdx.input.isKeyPressed(key);
   }
 
   /**
@@ -146,7 +155,22 @@ public class FlixelKeyInputManager {
    * @return {@code true} if the key was just pressed and input is enabled.
    */
   public boolean justPressed(int key) {
-    return enabled && currentPressedKeys.contains(key) && !previousPressedKeys.contains(key);
+    if (!enabled) {
+      return false;
+    }
+    if (key == FlixelKey.ANY) {
+      for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext; ) {
+        int pressedKey = it.next();
+        if (!previousPressedKeys.contains(pressedKey)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (!isValidKeycode(key)) {
+      return false;
+    }
+    return currentPressedKeys.contains(key) && !previousPressedKeys.contains(key);
   }
 
   /**
@@ -157,6 +181,18 @@ public class FlixelKeyInputManager {
    */
   public boolean justReleased(int key) {
     if (!enabled) {
+      return false;
+    }
+    if (key == FlixelKey.ANY) {
+      for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext; ) {
+        int pressedKey = it.next();
+        if (!currentPressedKeys.contains(pressedKey)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    if (!isValidKeycode(key)) {
       return false;
     }
     return previousPressedKeys.contains(key) && !currentPressedKeys.contains(key);
@@ -511,5 +547,9 @@ public class FlixelKeyInputManager {
     currentPressedKeys.clear();
     previousPressedKeys.clear();
     pressedOrder.clear();
+  }
+
+  private static boolean isValidKeycode(int key) {
+    return key >= 0 && key <= FlixelKey.MAX_KEYCODE;
   }
 }
