@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -36,9 +37,11 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.lang.ReflectiveOperationException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -241,7 +244,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             .replace("{{TITLE}}", ext.getTitle().get())
             .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
             .replace("{{FAVICON}}", faviconLink)
-            .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project));
+            .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project, outputDir));
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -660,14 +663,52 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Resolves the script src path for the generated index.html based on TeaVM's
-   * js.relativePathInOutputDir setting. The script name remains teavm.js because
-   * aliasTeaVmMainScript guarantees this compatibility name when needed.
-   * 
-   * @param project The project instance.
+   * Resolves the {@code script src} for generated {@code index.html}.
+   *
+   * <p>TeaVM 0.13 defaults to writing the bundle under a subfolder such as {@code js/}. Gradle
+   * provider values for {@code relativePathInOutputDir} are not always visible the same way
+   * across versions, so this method prefers a real file under {@code outputRoot} after
+   * {@code generateJavaScript} has run.
+   *
+   * @param project The Gradle project (TeaVM extension).
+   * @param outputRoot Web output directory (same as FlixelGDX {@code outputDir}).
+   * @return Relative URL path using forward slashes (for example {@code js/teavm.js}).
    */
   @NonNull
-  private static String resolveTeaVmScriptSrc(@NonNull Project project) {
+  private static String resolveTeaVmScriptSrc(@NonNull Project project, @NonNull File outputRoot) {
+    String configured = buildConfiguredTeaVmScriptRelative(project);
+    if (configured != null) {
+      File candidate = new File(outputRoot, configured);
+      if (candidate.isFile()) {
+        return configured.replace('\\', '/');
+      }
+    }
+
+    String found = findTeaVmJsRelativeToOutput(outputRoot);
+    if (found != null) {
+      if (configured != null && !configured.replace("\\", "/").equals(found)) {
+        project
+          .getLogger()
+          .info("[FlixelGDX] index.html script src set to {} (configured path {} was missing).", found, configured);
+      }
+      return found;
+    }
+
+    project
+      .getLogger()
+      .warn(
+        "[FlixelGDX] teavm.js not found under {}. Using script src \"{}\".",
+        outputRoot.getAbsolutePath(),
+        DEFAULT_GENERATED_INDEX_SCRIPT_SRC);
+    return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+  }
+
+  /**
+   * Builds the expected relative path {@code <relativePathInOutputDir>/teavm.js} from the TeaVM
+   * extension, or {@code teavm.js} when the relative path is unset.
+   */
+  @Nullable
+  private static String buildConfiguredTeaVmScriptRelative(@NonNull Project project) {
     String relative = readTeaVmJsRelativePathInOutputDir(project);
     if (relative == null || relative.isBlank()) {
       return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
@@ -683,6 +724,58 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       normalized = normalized + "/";
     }
     return normalized + "teavm.js";
+  }
+
+  /**
+   * Finds {@code teavm.js} under the output directory (shallowest match), or {@code null}.
+   */
+  @Nullable
+  private static String findTeaVmJsRelativeToOutput(@NonNull File outputRoot) {
+    Path root = outputRoot.toPath();
+    if (!Files.isDirectory(root)) {
+      return null;
+    }
+    String[] quick = {
+      DEFAULT_GENERATED_INDEX_SCRIPT_SRC,
+      "js/teavm.js",
+      "webapp/teavm.js",
+      "webapp/js/teavm.js"
+    };
+    for (String rel : quick) {
+      Path p = root.resolve(rel);
+      if (Files.isRegularFile(p)) {
+        return rel;
+      }
+    }
+
+    AtomicReference<Path> best = new AtomicReference<>();
+    try {
+      Files.walkFileTree(
+        root,
+        EnumSet.noneOf(FileVisitOption.class),
+        12,
+        new SimpleFileVisitor<>() {
+          @Override
+          @NonNull
+          public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
+            if (!attrs.isRegularFile()) {
+              return FileVisitResult.CONTINUE;
+            }
+            if (!"teavm.js".equalsIgnoreCase(file.getFileName().toString())) {
+              return FileVisitResult.CONTINUE;
+            }
+            Path prev = best.get();
+            if (prev == null || root.relativize(file).getNameCount() < root.relativize(prev).getNameCount()) {
+              best.set(file);
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
+    } catch (IOException e) {
+      return null;
+    }
+    Path chosen = best.get();
+    return chosen == null ? null : root.relativize(chosen).toString().replace('\\', '/');
   }
 
   @Nullable
