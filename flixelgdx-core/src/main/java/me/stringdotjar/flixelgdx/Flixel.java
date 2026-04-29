@@ -10,14 +10,9 @@ package me.stringdotjar.flixelgdx;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Application.ApplicationType;
-import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectSet;
 
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
@@ -255,12 +250,6 @@ public final class Flixel {
 
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
-
-  // Helpers for getting approximate loaded texture bytes for memory tracking.
-  // These are reused so that the method allocates no new collections per call.
-  private static final Array<Texture> TEXTURE_BYTES_SCRATCH = new Array<>(false, 64);
-  private static final Array<TextureAtlas> TEXTURE_ATLAS_SCRATCH = new Array<>(false, 32);
-  private static final ObjectSet<Texture> TEXTURE_DEDUPE_SCRATCH = new ObjectSet<>();
 
   /** The static instance used to access the core elements of the game. */
   @NotNull
@@ -1187,90 +1176,6 @@ public final class Flixel {
    */
   public static float getNativeHeapUsedGigabytes() {
     return getNativeHeapUsedBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
-   * Approximate GPU-style memory for <strong>loaded</strong> textures reachable from the global
-   * {@link #assets} {@link AssetManager}: each {@link Texture} is counted at most once (deduplicated), including
-   * page textures referenced by managed {@link com.badlogic.gdx.graphics.g2d.TextureAtlas} instances.
-   *
-   * <p>Estimate is {@code width x height x bytesPerPixel} per distinct {@link Texture} (base level, uncompressed).
-   * Excludes framebuffers, mip level overhead, compressed GPU formats (heuristic bpp), and any
-   * texture not registered with the asset manager. Use for debug/trending only.
-   *
-   * <p>Uses internal synchronized scratch buffers; does not allocate per call.
-   *
-   * @return Sum in bytes, or {@code 0} when {@link #assets} is not initialized.
-   */
-  public static long getApproximateLoadedTextureBytes() {
-    FlixelAssetManager fam = assets;
-    if (fam == null) {
-      return 0L;
-    }
-    AssetManager manager = fam.getManager();
-    if (manager == null) {
-      return 0L;
-    }
-    synchronized (TEXTURE_BYTES_SCRATCH) {
-      TEXTURE_DEDUPE_SCRATCH.clear();
-      TEXTURE_BYTES_SCRATCH.clear();
-      manager.getAll(Texture.class, TEXTURE_BYTES_SCRATCH);
-      for (int i = 0, n = TEXTURE_BYTES_SCRATCH.size; i < n; i++) {
-        Texture tex = TEXTURE_BYTES_SCRATCH.get(i);
-        if (tex != null) {
-          TEXTURE_DEDUPE_SCRATCH.add(tex);
-        }
-      }
-      TEXTURE_ATLAS_SCRATCH.clear();
-      manager.getAll(TextureAtlas.class, TEXTURE_ATLAS_SCRATCH);
-      for (int i = 0, n = TEXTURE_ATLAS_SCRATCH.size; i < n; i++) {
-        TextureAtlas atlas = TEXTURE_ATLAS_SCRATCH.get(i);
-        if (atlas == null) {
-          continue;
-        }
-        ObjectSet<Texture> pages = atlas.getTextures();
-        for (Texture t : pages) {
-          if (t != null) {
-            TEXTURE_DEDUPE_SCRATCH.add(t);
-          }
-        }
-      }
-      long total = 0L;
-      for (Texture tex : TEXTURE_DEDUPE_SCRATCH) {
-        int w = tex.getWidth();
-        int h = tex.getHeight();
-        if (w <= 0 || h <= 0) {
-          continue;
-        }
-        int bpp = textureBytesPerPixel(tex);
-        total += (long) w * (long) h * (long) bpp;
-      }
-      return total;
-    }
-  }
-
-  private static int textureBytesPerPixel(Texture texture) {
-    try {
-      var data = texture.getTextureData();
-      if (data == null) {
-        return 4;
-      }
-      return pixmapFormatBytesPerPixel(data.getFormat());
-    } catch (Exception e) {
-      return 4;
-    }
-  }
-
-  private static int pixmapFormatBytesPerPixel(Pixmap.Format format) {
-    if (format == null) {
-      return 4;
-    }
-    return switch (format) {
-      case Alpha, Intensity -> 1;
-      case LuminanceAlpha -> 2;
-      case RGB888 -> 3;
-      case RGB565, RGBA4444, RGBA8888 -> 4;
-    };
   }
 
   /**

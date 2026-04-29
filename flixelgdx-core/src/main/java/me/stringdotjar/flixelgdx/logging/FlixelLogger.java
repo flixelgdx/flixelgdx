@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
+import com.badlogic.gdx.ApplicationLogger;
 import com.badlogic.gdx.utils.Array;
 
 /**
@@ -31,7 +32,7 @@ import com.badlogic.gdx.utils.Array;
  * <p>Console and file line assembly run when you log, not every frame. Shared formatters and buffers reduce
  * allocation churn versus building many small strings per line.
  */
-public class FlixelLogger {
+public class FlixelLogger implements ApplicationLogger {
 
   private static final DateTimeFormatter LOG_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -428,6 +429,13 @@ public class FlixelLogger {
 
   /**
    * Appends {@code text} to {@code out} with ANSI color and style codes for console output.
+   * 
+   * @param out The string to append the text to.
+   * @param text The text to append.
+   * @param color The color to append.
+   * @param bold Whether to append the bold code.
+   * @param italic Whether to append the italic code.
+   * @param underline Whether to append the underline code.
    */
   private void appendColored(
     FlixelString out, String text, String color, boolean bold, boolean italic, boolean underline) {
@@ -455,5 +463,35 @@ public class FlixelLogger {
 
   public void setDefaultTag(String defaultTag) {
     this.defaultTag = defaultTag != null ? defaultTag : "";
+  }
+
+  @Override
+  public void log(String tag, String message) {
+    info(tag, message);
+  }
+
+  @Override
+  public void log(String tag, String message, Throwable exception) {
+    error(tag, message, exception);
+  }
+
+  @Override
+  public void error(String tag, String message) {
+    error(tag, message, null);
+  }
+
+  @Override
+  public void error(String tag, String message, Throwable exception) {
+    error(tag, message, exception);
+  }
+
+  @Override
+  public void debug(String tag, String message) {
+    info(tag, message);
+  }
+
+  @Override
+  public void debug(String tag, String message, Throwable exception) {
+    error(tag, message, exception);
   }
 }

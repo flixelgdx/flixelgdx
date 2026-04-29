@@ -112,7 +112,6 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final FlixelString lineHeap = new FlixelString(48);
   private final FlixelString lineNative = new FlixelString(48);
   private final FlixelString lineObjects = new FlixelString(40);
-  private final FlixelString lineTexVram = new FlixelString(56);
   private final FlixelString lineVisDbg = new FlixelString(48);
   private final FlixelString linePaused = new FlixelString(48);
   private final FlixelString lineCamInspect = new FlixelString(72);
@@ -245,13 +244,11 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
       float heapMB = Flixel.getJavaHeapUsedMegabytes();
       float nativeMB = Flixel.getNativeHeapUsedMegabytes();
       int objectCount = FlixelDebugUtil.countActiveMembers();
-      float texMb = Flixel.getApproximateLoadedTextureBytes() / (1024f * 1024f);
 
       appendFpsLine(lineFps, fps);
       appendMbStatLine(lineHeap, "[#AAAAFF]Heap: ", heapMB);
       appendMbStatLine(lineNative, "[#AAAAFF]Native: ", nativeMB);
       appendObjectsLine(lineObjects, objectCount);
-      appendMbStatLine(lineTexVram, "[#FFAA66]TexVRAM (approx.): ", texMb);
       appendPausedLine(linePaused);
       appendCamInspectLine(lineCamInspect);
       maybeAppendKeybindsLine();
@@ -561,8 +558,6 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     drawText(lineNative, x, y);
     y -= lineH;
     drawText(lineObjects, x, y);
-    y -= lineH;
-    drawText(lineTexVram, x, y);
     y -= lineH;
     drawText(linePaused, x, y);
     y -= lineH;
