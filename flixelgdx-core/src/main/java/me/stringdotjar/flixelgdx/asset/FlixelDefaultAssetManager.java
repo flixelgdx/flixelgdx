@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import com.badlogic.gdx.graphics.Texture;
@@ -55,7 +54,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   private AssetManager manager;
 
-  private final ConcurrentHashMap<String, String> audioPathCache = new ConcurrentHashMap<>();
+  private final ObjectMap<String, String> audioPathCache = new ObjectMap<>();
 
   private final ObjectMap<Class<?>, FlixelWrapperFactory<?>> wrapperFactories = new ObjectMap<>();
   private int syntheticWrapperId;
@@ -63,7 +62,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   private final ObjectMap<AssetId, FlixelTypedAsset<?>> typedAssetCache = new ObjectMap<>();
 
   /** Per-instance extension (e.g. {@code .png}) to source factory for {@link #load(String)}. */
-  private final ConcurrentHashMap<String, Function<String, FlixelSource<?>>> extensionRegistry = new ConcurrentHashMap<>();
+  private final ObjectMap<String, Function<String, FlixelSource<?>>> extensionRegistry = new ObjectMap<>();
 
   /** Default {@link FlixelTypedAsset#isPersist()} for handles created after construction; see {@link #getGlobalPersist()}. */
   private boolean globalPersist = false;
@@ -72,7 +71,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
    * Asset keys for which the next created handle for that key should use {@code persist == true} after
    * a matching {@link #load(String, boolean)} (or other {@code load(..., true)}) call.
    */
-  private final Set<String> pendingPersistKeys = ConcurrentHashMap.newKeySet();
+  private final Set<String> pendingPersistKeys = new HashSet<>();
 
   /** FlixelString object to prevent allocation every time {@link #getDiagnostics()} is called. */
   private final FlixelString diagnosticsString = new FlixelString();
@@ -310,7 +309,13 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @NotNull
   @Override
   public String resolveAudioPath(@NotNull String path) {
-    return audioPathCache.computeIfAbsent(path, this::extractAssetPath);
+    String cached = audioPathCache.get(path);
+    if (cached != null) {
+      return cached;
+    }
+    String resolved = extractAssetPath(path);
+    audioPathCache.put(path, resolved);
+    return resolved;
   }
 
   @NotNull
@@ -500,6 +505,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     typedAssetCache.clear();
     audioPathCache.clear();
     extensionRegistry.clear();
+    pendingPersistKeys.clear();
   }
 
   @Override

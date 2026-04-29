@@ -384,6 +384,9 @@ public class FlixelSprite extends FlixelObject {
 
   @Override
   public void draw(Batch batch) {
+    if (!visible) {
+      return;
+    }
     if (!isOnDrawCamera()) {
       return;
     }
@@ -401,6 +404,8 @@ public class FlixelSprite extends FlixelObject {
       boolean isFlippedY = flipY;
 
       batch.setColor(color);
+      // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
+      // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
       batch.draw(
         currentFrame.getTexture(),
         drawX,
@@ -409,8 +414,8 @@ public class FlixelSprite extends FlixelObject {
         oY - (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY),
         currentFrame.getRegionWidth(),
         currentFrame.getRegionHeight(),
-        isFlippedX ? -scaleX : scaleX,
-        isFlippedY ? -scaleY : scaleY,
+        scaleX,
+        scaleY,
         getAngle(),
         currentFrame.getRegionX(),
         currentFrame.getRegionY(),

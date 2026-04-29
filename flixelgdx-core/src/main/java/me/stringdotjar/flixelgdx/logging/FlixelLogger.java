@@ -324,26 +324,28 @@ public class FlixelLogger {
   protected void outputLog(String tag, Object message, FlixelLogLevel level) {
     FlixelStackFrame caller = getCaller();
 
-    if (caller == null) {
-      return;
-    }
-
     String file;
     String simpleFile;
     String method;
 
-    // Convert the package path and replace the periods (.) with slashes (/)
-    // to replicate the familiar Haxe tracing.
-    file = (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
-    String className = caller.getClassName();
-    int lastDot = className != null ? className.lastIndexOf('.') : -1;
-    String packagePath = (lastDot > 0) ? className.substring(0, lastDot).replace('.', '/') : "";
+    if (caller == null) {
+      file = "UnknownFile.java:0";
+      simpleFile = "unknown:0";
+      method = "unknown()";
+    } else {
+      // Convert the package path and replace the periods (.) with slashes (/)
+      // to replicate the familiar Haxe tracing.
+      file = (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
+      String className = caller.getClassName();
+      int lastDot = className != null ? className.lastIndexOf('.') : -1;
+      String packagePath = (lastDot > 0) ? className.substring(0, lastDot).replace('.', '/') : "";
 
-    // Assemble the log location and concatenate it together.
-    simpleFile = packagePath.isEmpty()
-      ? (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber()
-      : packagePath + "/" + (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
-    method = (caller.getMethodName() != null ? caller.getMethodName() : "unknownMethod") + "()"; // For detailed mode only.
+      // Assemble the log location and concatenate it together.
+      simpleFile = packagePath.isEmpty()
+        ? (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber()
+        : packagePath + "/" + (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
+      method = (caller.getMethodName() != null ? caller.getMethodName() : "unknownMethod") + "()"; // For detailed mode only.
+    }
 
     // Apply the color and underlining based on the level.
     String rawMessage = evaluateMessage(message);
@@ -356,25 +358,31 @@ public class FlixelLogger {
 
     String ts = LocalDateTime.now().format(LOG_TIMESTAMP);
 
-    // Console: use current log mode.
-    consoleLine.clear();
-    if (logMode == FlixelLogMode.SIMPLE) {
-      appendColored(consoleLine, simpleFile + ":", color, true, false, underlineFile);
-      consoleLine.concat(' ');
-      appendColored(consoleLine, rawMessage, color, false, true, false);
+    FlixelLogConsoleSink consoleSink = Flixel.getLogConsoleSink();
+    if (consoleSink != null) {
+      String safeTag = tag != null ? tag : "";
+      consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts, logMode == FlixelLogMode.DETAILED);
     } else {
-      String levelTag = "[" + level + "]";
-      String tagPart = "[" + tag + "]";
-      String filePart = "[" + file + "]";
-      String methodPart = "[" + method + "]";
-      appendColored(consoleLine, ts + " ", color, false, false, false);
-      appendColored(consoleLine, levelTag + " ", color, true, false, false);
-      appendColored(consoleLine, tagPart + " ", color, true, false, false);
-      appendColored(consoleLine, filePart + " ", color, true, false, underlineFile);
-      appendColored(consoleLine, methodPart + " ", color, false, false, false);
-      appendColored(consoleLine, rawMessage, color, false, true, false);
+      // Console: use current log mode.
+      consoleLine.clear();
+      if (logMode == FlixelLogMode.SIMPLE) {
+        appendColored(consoleLine, simpleFile + ":", color, true, false, underlineFile);
+        consoleLine.concat(' ');
+        appendColored(consoleLine, rawMessage, color, false, true, false);
+      } else {
+        String levelTag = "[" + level + "]";
+        String tagPart = "[" + tag + "]";
+        String filePart = "[" + file + "]";
+        String methodPart = "[" + method + "]";
+        appendColored(consoleLine, ts + " ", color, false, false, false);
+        appendColored(consoleLine, levelTag + " ", color, true, false, false);
+        appendColored(consoleLine, tagPart + " ", color, true, false, false);
+        appendColored(consoleLine, filePart + " ", color, true, false, underlineFile);
+        appendColored(consoleLine, methodPart + " ", color, false, false, false);
+        appendColored(consoleLine, rawMessage, color, false, true, false);
+      }
+      System.out.println(consoleLine.toString());
     }
-    System.out.println(consoleLine.toString());
 
     // Notify in-game log listeners (e.g. the debug overlay console).
     if (!logListeners.isEmpty()) {

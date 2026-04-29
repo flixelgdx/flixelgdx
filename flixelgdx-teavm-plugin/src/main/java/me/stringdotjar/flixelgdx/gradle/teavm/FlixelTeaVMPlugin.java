@@ -13,9 +13,15 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Copy;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.teavm.gradle.api.TeaVMCommonConfiguration;
+import org.teavm.gradle.api.TeaVMExtension;
+import org.teavm.gradle.api.TeaVMJSConfiguration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -26,15 +32,18 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -45,7 +54,8 @@ import java.util.jar.JarFile;
  * <p>Apply alongside {@code org.teavm} in the web module's {@code build.gradle}. The plugin
  * registers five helper tasks and wires them as dependencies of the TeaVM build tasks so that
  * every {@code generateJavaScript} or {@code javaScriptDevServer} run produces a complete,
- * browser-ready webapp directory.
+ * browser-ready webapp directory. Default {@code index.html} is emitted after TeaVM finishes so it 
+ * stays in sync with the JS bundle.
  *
  * <h2>What the plugin provides</h2>
  *
@@ -57,7 +67,8 @@ import java.util.jar.JarFile;
  *       {@code startup-logo.png}, which is placed under {@code assets/} by {@code copyDefaultStartupLogo}.</li>
  *   <li>{@code generateIndexHtml} - writes a default {@code index.html} into
  *       {@code <outputDir>/} when no {@code index.html} is present in the webapp directory.
- *       The generated page uses the canvas ID configured via {@link FlixelTeaVMExtension}.</li>
+ *       It runs <strong>after</strong> TeaVM emits JavaScript (and after {@code aliasTeaVmMainScript}) so the page
+ *       always references the current bundle path and is never overwritten by {@code copyWebApp}.</li>
  *   <li>{@code extractNativeScripts} - extracts native JavaScript files (e.g. {@code gdx.wasm.js},
  *       {@code howler.js}) from gdx-teavm dependency JARs into {@code <outputDir>/scripts/}.
  *       These are required at runtime by the gdx-teavm backend.</li>
@@ -66,6 +77,13 @@ import java.util.jar.JarFile;
  *       preloader to discover and download game assets at startup.</li>
  *   <li>{@code copyDefaultStartupLogo} - writes {@code startup-logo.png} into
  *       {@code <outputDir>/assets/} for gdx-teavm's preload screen.</li>
+ *   <li>{@code copyFlixelGdxDefaultBitmapFont} - copies {@code lsans-15.fnt} and {@code lsans-15.png} into
+ *       {@code <outputDir>/assets/me/stringdotjar/flixelgdx/bitmap/} so the web preloader and
+ *       {@code Gdx.files.internal} can find the default bitmap font (for example
+ *       {@code FlixelDebugOverlay}).</li>
+ *   <li>{@code aliasTeaVmMainScript} - when {@code teavm.js} {@code targetFileName} is not
+ *       {@code teavm.js}, copies the built bundle next to it as {@code teavm.js} for gdx-teavm
+ *       and other tooling that still expect that name.</li>
  * </ul>
  *
  * <p>All six helper tasks above are added as dependencies of {@code generateJavaScript},
@@ -116,7 +134,7 @@ import java.util.jar.JarFile;
  * flixelgdx {
  *   title = 'My Game Title'                                        // default: My FlixelGDX Game
  *   canvasId = 'my-canvas'                                         // default: 'flixelgdx-canvas'
- *   outputDir = file("$buildDir/dist/webapp")                      // default: same value
+ *   // outputDir: omit to use teavm.all.outputDir (see teavm block)
  *   devServerPort = 1234                                           // default: 8080
  *   assetsDir = file('../assets')                                  // default: rootProject/assets/
  *   webappDir = file('src/main/webapp')                            // default: same value
@@ -134,11 +152,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
   private static final String DEFAULT_INDEX_TEMPLATE = "/me/stringdotjar/flixelgdx/gradle/teavm/default-index.html";
-  /**
-   * Must start with {@code /} so {@link Class#getResourceAsStream(String)} resolves from the classpath
-   * root. Without a leading slash, the path is treated as relative to this class's package and becomes
-   * {@code .../teavm/me/stringdotjar/.../default-startup-logo.png}, which does not exist in the JAR.
-   */
+  private static final String DEFAULT_GENERATED_INDEX_SCRIPT_SRC = "teavm.js";
   private static final String DEFAULT_STARTUP_LOGO = "/me/stringdotjar/flixelgdx/gradle/teavm/default-startup-logo.png";
 
   @Override
@@ -147,7 +161,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
     ext.getCanvasId().convention(FlixelTeaVMExtension.DEFAULT_CANVAS_ID);
     ext.getTitle().convention(FlixelTeaVMExtension.DEFAULT_TITLE);
-    ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("dist/webapp"));
+    // outputDir: convention set in afterEvaluate from teavm.all.outputDir when org.teavm is present.
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
     ext.getGenerateDefaultIndexHtml().convention(true);
@@ -228,14 +242,11 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
-          String teavmScript = ext.getTeavmScriptSrc().isPresent()
-            ? ext.getTeavmScriptSrc().get()
-            : inferTeavmScriptSrc(project);
           String html = template
             .replace("{{TITLE}}", ext.getTitle().get())
             .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
             .replace("{{FAVICON}}", faviconLink)
-            .replace("{{TEAVM_SCRIPT}}", teavmScript);
+            .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project, outputDir));
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -337,11 +348,74 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       });
     });
 
+    // FlixelGDX default bitmap font (lsans-15) for FlixelFontRegistry and FlixelDebugOverlay on web:
+    // Gdx.files.classpath() is empty in the browser, so these files must live under assets/ for Gdx.files.internal().
+    project.getTasks().register("copyFlixelGdxDefaultBitmapFont", task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription(
+        "Copies the packaged lsans-15.fnt and lsans-15.png into assets/me/stringdotjar/flixelgdx/bitmap/ for web preload."
+      );
+      task.mustRunAfter(project.getTasks().named("copyAssets"));
+      task.doLast(t -> {
+        File out = new File(ext.getOutputDir().get().getAsFile(), "assets/me/stringdotjar/flixelgdx/bitmap");
+        out.mkdirs();
+        String[] names = { "lsans-15.fnt", "lsans-15.png" };
+        for (String n : names) {
+          String path = "/me/stringdotjar/flixelgdx/bitmap/" + n;
+          try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(path)) {
+            if (in == null) {
+              throw new IOException("FlixelGDX plugin JAR is missing resource at " + path);
+            }
+            Files.copy(in, new File(out, n).toPath(), StandardCopyOption.REPLACE_EXISTING);
+          } catch (IOException e) {
+            throw new RuntimeException("FlixelGDX: failed to copy default bitmap font: " + n, e);
+          }
+        }
+      });
+    });
+
+    // gdx-teavm / JMultiPlatform still expect a script named teavm.js. When targetFileName is custom, copy it.
+    project.getTasks().register("aliasTeaVmMainScript", task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription(
+        "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility)."
+      );
+      task.doLast(t -> {
+        TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
+        if (js == null) {
+          return;
+        }
+        try {
+          String file = unwrap(js.getTargetFileName());
+          if (file == null || file.isEmpty() || "teavm.js".equalsIgnoreCase(file)) {
+            return;
+          }
+          String rel = unwrap(js.getRelativePathInOutputDir());
+          File root = ext.getOutputDir().get().getAsFile();
+          String sub = (rel == null || rel.isEmpty()) ? "" : rel.replace('\\', '/');
+          if (!sub.isEmpty() && !sub.endsWith("/")) {
+            sub = sub + "/";
+          }
+          File src = new File(root, sub + file);
+          File dst = new File(root, sub + "teavm.js");
+          if (src.isFile() && !src.getCanonicalFile().equals(dst.getCanonicalFile())) {
+            Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            project
+              .getLogger()
+              .info("[FlixelGDX] Wrote gdx-teavm compatibility copy: " + sub + "teavm.js (from " + file + ").");
+          }
+        } catch (IOException e) {
+          project.getLogger().warn("[FlixelGDX] Could not create teavm.js alias: {}", e.getMessage());
+        }
+      });
+    });
+
     // Generate preload.txt in the format gdx-teavm expects (fileType:assetType:path:size:overwrite).
     // This must run AFTER copyAssets and copyDefaultStartupLogo so assets/ includes startup-logo.png.
     project.getTasks().register("generatePreloadFile", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription("Generates preload.txt asset manifest required by gdx-teavm's runtime asset loader.");
+      task.dependsOn(project.getTasks().named("copyFlixelGdxDefaultBitmapFont"));
       task.mustRunAfter(project.getTasks().named("copyAssets"));
       task.mustRunAfter(project.getTasks().named("copyDefaultStartupLogo"));
       task.doLast(t -> {
@@ -478,7 +552,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           logger.quiet("Please navigate to " + url + " in your browser to test your game, as it has failed to open automatically.");
         }
 
-        // Block indefinitely until the build daemon is killed (Ctrl+C).
+        // Block indefinitely until the build daemon is killed (Ctrl+C or task killed).
         try {
           Thread.currentThread().join();
         } catch (InterruptedException e) {
@@ -491,16 +565,53 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // Connect the new tasks to automatically run when either the Java bytecode is being converted
     // to JavaScript or when a local developer server is created to test the game using the plugin.
     project.afterEvaluate(p -> {
+      if (!ext.getOutputDir().isPresent()) {
+        DirectoryProperty teavmOut = readTeaVmAllOutputDir(p);
+        if (teavmOut != null) {
+          ext.getOutputDir().convention(teavmOut);
+        } else {
+          ext.getOutputDir().convention(p.getLayout().getBuildDirectory().dir("generated/teavm"));
+          p.getLogger()
+            .warn(
+              "[FlixelGDX] org.teavm extension not found. flixelgdx.outputDir uses the same default as TeaVM (build/generated/teavm). "
+                + "Apply org.teavm before this plugin and set teavm.all.outputDir once for both TeaVM and FlixelGDX."
+            );
+        }
+      }
       wireTo(p, "generateJavaScript");
       wireTo(p, "javaScriptDevServer");
       wireTo(p, "run");
 
-      // The run task must also trigger the full TeaVM compilation so that teavm.js exists
+      Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
+      Task copyWebApp = p.getTasks().findByName("copyWebApp");
+      // Generate index after TeaVM writes JS (and after teavm.js alias). Otherwise Gradle may run
+      // copyWebApp after generateIndexHtml and overwrite a fresh index.html from src/main/webapp/, or leave a stale script src.
+      Task generateJs = p.getTasks().findByName("generateJavaScript");
+      Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
+      if (generateJs != null && generateIndexHtml != null) {
+        generateJs.finalizedBy(generateIndexHtml);
+      }
+      if (generateIndexHtml != null && copyWebApp != null) {
+        generateIndexHtml.mustRunAfter(copyWebApp);
+      }
+      if (generateIndexHtml != null && alias != null) {
+        generateIndexHtml.mustRunAfter(alias);
+      }
+
+      // The run task must also trigger the full TeaVM compilation so the JS bundle from teavm.js exists
       // before the dev server starts serving files.
       Task runTask = p.getTasks().findByName("run");
-      Task generateJs = p.getTasks().findByName("generateJavaScript");
       if (runTask != null && generateJs != null) {
         runTask.dependsOn(generateJs);
+      }
+      if (alias != null && generateJs != null) {
+        generateJs.finalizedBy(alias);
+        Task devServer = p.getTasks().findByName("javaScriptDevServer");
+        if (devServer != null) {
+          devServer.dependsOn(generateJs);
+          devServer.dependsOn(alias);
+          alias.mustRunAfter(generateJs);
+        }
       }
     });
   }
@@ -511,7 +622,6 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.dependsOn(
           project.getTasks().named("copyAssets"),
           project.getTasks().named("copyWebApp"),
-          project.getTasks().named("generateIndexHtml"),
           project.getTasks().named("extractNativeScripts"),
           project.getTasks().named("generatePreloadFile"),
           project.getTasks().named("copyDefaultStartupLogo"));
@@ -521,26 +631,182 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Resolves {@code js/<teavm.js.targetFileName>} from the {@code org.teavm} extension when available.
+   * Reads the configured value of a Gradle {@link Property} or returns {@code null} if it is unset.
+   *
+   * @param property The Gradle property to unwrap.
+   * @return The current value, or {@code null} when no value has been set.
    */
-  private static String inferTeavmScriptSrc(@NonNull Project project) {
-    String fallback = "js/teavm.js";
-    try {
-      Object teavm = project.getExtensions().findByName("teavm");
-      if (teavm == null) {
-        return fallback;
-      }
-      Object js = teavm.getClass().getMethod("getJs").invoke(teavm);
-      if (js == null) {
-        return fallback;
-      }
-      Object name = js.getClass().getMethod("getTargetFileName").invoke(js);
-      if (name == null) {
-        return fallback;
-      }
-      return "js/" + name;
-    } catch (Exception e) {
-      return fallback;
+  @Nullable
+  private static String unwrap(@Nullable Property<String> property) {
+    if (property == null) {
+      return null;
     }
+    return property.getOrNull();
+  }
+
+  /**
+   * Looks up the {@code teavm} extension and returns its {@code js} block, or {@code null} when
+   * either is missing (for example, when the user forgot to apply {@code org.teavm} before this
+   * plugin).
+   *
+   * @param project The current Gradle project.
+   * @return The {@link TeaVMJSConfiguration}, or {@code null} when the extension is unavailable.
+   */
+  @Nullable
+  private static TeaVMJSConfiguration findTeaVmJsConfiguration(@NonNull Project project) {
+    TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+    return teavm == null ? null : teavm.getJs();
+  }
+
+  /**
+   * Resolves the {@code script src} for generated {@code index.html}.
+   *
+   * <p>TeaVM 0.13 defaults to writing the bundle under a subfolder such as {@code js/}. We first
+   * trust the configured path on {@link TeaVMJSConfiguration} and only fall back to a directory
+   * scan when that file is not on disk yet (for example, when the user changed the layout
+   * mid-build).
+   *
+   * @param project The Gradle project (used for logging).
+   * @param outputRoot Web output directory (same as FlixelGDX {@code outputDir}).
+   * @return Relative URL path using forward slashes (for example {@code js/teavm.js}).
+   */
+  @NonNull
+  private static String resolveTeaVmScriptSrc(@NonNull Project project, @NonNull File outputRoot) {
+    String configured = buildConfiguredTeaVmScriptRelative(project);
+    if (configured != null) {
+      File candidate = new File(outputRoot, configured);
+      if (candidate.isFile()) {
+        return configured.replace('\\', '/');
+      }
+    }
+
+    String found = findTeaVmJsRelativeToOutput(outputRoot);
+    if (found != null) {
+      if (configured != null && !configured.replace("\\", "/").equals(found)) {
+        project
+          .getLogger()
+          .info("[FlixelGDX] index.html script src set to {} (configured path {} was missing).", found, configured);
+      }
+      return found;
+    }
+
+    project
+      .getLogger()
+      .warn(
+        "[FlixelGDX] teavm.js not found under {}. Using script src \"{}\".",
+        outputRoot.getAbsolutePath(),
+        DEFAULT_GENERATED_INDEX_SCRIPT_SRC);
+    return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+  }
+
+  /**
+   * Builds the expected relative path {@code <relativePathInOutputDir>/<targetFileName>} from the
+   * TeaVM extension. Defaults to {@code teavm.js} when the user did not customize either field.
+   *
+   * <p>Pulling the real {@code targetFileName} (instead of always using {@code teavm.js}) means
+   * the generated {@code index.html} keeps working even if the {@code aliasTeaVmMainScript}
+   * compatibility copy has not run yet, which is the common path for fresh checkouts.
+   *
+   * @param project The Gradle project (used to access the {@code teavm} extension).
+   * @return The relative path of the TeaVM bundle from the output root, or {@code null} when the
+   *   {@code teavm} extension is not present.
+   */
+  @Nullable
+  private static String buildConfiguredTeaVmScriptRelative(@NonNull Project project) {
+    TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
+    if (js == null) {
+      return null;
+    }
+    String fileName = unwrap(js.getTargetFileName());
+    if (fileName == null || fileName.isBlank()) {
+      fileName = DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
+    }
+    String relative = unwrap(js.getRelativePathInOutputDir());
+    if (relative == null || relative.isBlank()) {
+      return fileName;
+    }
+    String normalized = relative.replace('\\', '/').trim();
+    while (normalized.startsWith("/")) {
+      normalized = normalized.substring(1);
+    }
+    if (normalized.isEmpty()) {
+      return fileName;
+    }
+    if (!normalized.endsWith("/")) {
+      normalized = normalized + "/";
+    }
+    return normalized + fileName;
+  }
+
+  /**
+   * Finds {@code teavm.js} under the output directory (shallowest match), or {@code null}.
+   *
+   * @param outputRoot The TeaVM output directory.
+   * @return The relative path of {@code teavm.js} (forward slashes), or {@code null}.
+   */
+  @Nullable
+  private static String findTeaVmJsRelativeToOutput(@NonNull File outputRoot) {
+    Path root = outputRoot.toPath();
+    if (!Files.isDirectory(root)) {
+      return null;
+    }
+    String[] quick = {
+      DEFAULT_GENERATED_INDEX_SCRIPT_SRC,
+      "js/teavm.js",
+      "webapp/teavm.js",
+      "webapp/js/teavm.js"
+    };
+    for (String rel : quick) {
+      Path p = root.resolve(rel);
+      if (Files.isRegularFile(p)) {
+        return rel;
+      }
+    }
+
+    AtomicReference<Path> best = new AtomicReference<>();
+    try {
+      Files.walkFileTree(
+        root,
+        EnumSet.noneOf(FileVisitOption.class),
+        12,
+        new SimpleFileVisitor<>() {
+          @Override
+          @NonNull
+          public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
+            if (!attrs.isRegularFile()) {
+              return FileVisitResult.CONTINUE;
+            }
+            if (!"teavm.js".equalsIgnoreCase(file.getFileName().toString())) {
+              return FileVisitResult.CONTINUE;
+            }
+            Path prev = best.get();
+            if (prev == null || root.relativize(file).getNameCount() < root.relativize(prev).getNameCount()) {
+              best.set(file);
+            }
+            return FileVisitResult.CONTINUE;
+          }
+        });
+    } catch (IOException e) {
+      return null;
+    }
+    Path chosen = best.get();
+    return chosen == null ? null : root.relativize(chosen).toString().replace('\\', '/');
+  }
+
+  /**
+   * Reads {@code teavm.all.outputDir} via the official extension types, returning {@code null}
+   * when the {@code org.teavm} plugin is not on the project.
+   *
+   * @param project The Gradle project.
+   * @return The TeaVM common output directory property, or {@code null}.
+   */
+  @Nullable
+  private static DirectoryProperty readTeaVmAllOutputDir(@NonNull Project project) {
+    TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+    if (teavm == null) {
+      return null;
+    }
+    TeaVMCommonConfiguration all = teavm.getAll();
+    return all == null ? null : all.getOutputDir();
   }
 }
