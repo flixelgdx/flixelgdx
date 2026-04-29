@@ -232,7 +232,7 @@ void addAnimation(String name, int[] frameIndices, float frameDuration) {
 
 A good PR is easy to review and merge.
 
-- **Title**: Descriptive and brief (e.g. "Add FlixelSpriteGroup support", "Fix NPE in FlixelTween when settings are null").
+- **Title**: Descriptive and brief (e.g. "FlixelTween no longer throws a NullPointerException when the settings are null"). Your PR title will be used in the changelogs when a new release is made!
 - **Description**: Explain *what* was changed and *why*. If the PR relates to an issue, reference it (e.g. "Fixes #123"). For features, describe the intended use and any breaking changes.
 - **Self-review**: Before submitting, run `./gradlew classes` and `./gradlew :flixelgdx-test:test` (and any other relevant tasks) and fix build failures. Ensure formatting and style match the rest of the project; see [Editor setup (use EditorConfig in your editor)](#editor-setup-use-editorconfig-in-your-editor) above to enable EditorConfig in your editor.
 - **Tests**: If you add a new feature, include tests or clear steps to verify the behavior. For bug fixes, describe how to reproduce the bug and confirm the fix.
