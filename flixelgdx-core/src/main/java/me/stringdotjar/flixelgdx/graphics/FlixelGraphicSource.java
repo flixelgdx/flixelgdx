@@ -18,7 +18,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Cached graphic "source" (asset) that can provide a pooled {@link FlixelGraphic} wrapper.
  *
- * <p>Ownership is explicit: {@link #get()} does not retain, while {@link #acquire()} retains.
+ * <p>{@link #get()} uses {@link FlixelAssetManager#ensureWrapper} (no refcount change).
+ * {@link #acquire()} uses {@link FlixelAssetManager#obtainWrapper} (implicit {@link me.stringdotjar.flixelgdx.asset.FlixelAsset#retain()}).
  *
  * <p>Uses generic {@link FlixelAssetManager#obtainWrapper(String, Class)} via {@link FlixelWrapperSource};
  * the loaded texture is required with {@link #require(FlixelAssetManager)} (same as {@link #requireTexture(FlixelAssetManager)}).
@@ -50,16 +51,16 @@ public final class FlixelGraphicSource implements FlixelWrapperSource<Texture, F
     return FlixelGraphic.class;
   }
 
-  /** Returns the pooled wrapper for this asset key (does not retain). */
+  /** Returns the pooled wrapper for this asset key (does not change refcount). */
   @NotNull
   public FlixelGraphic get() {
-    return obtainWrapper(Flixel.ensureAssets());
+    return Flixel.ensureAssets().ensureWrapper(assetKey, FlixelGraphic.class);
   }
 
-  /** Returns the pooled wrapper and retains it (explicit ownership). */
+  /** Returns the pooled wrapper with implicit {@link me.stringdotjar.flixelgdx.asset.FlixelAsset#retain()}. */
   @NotNull
   public FlixelGraphic acquire() {
-    return obtainWrapper(Flixel.ensureAssets()).retain();
+    return Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
   }
 
   /**

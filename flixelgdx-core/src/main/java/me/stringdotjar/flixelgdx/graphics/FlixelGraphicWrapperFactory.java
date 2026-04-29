@@ -18,6 +18,8 @@ import me.stringdotjar.flixelgdx.asset.FlixelWrapperFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 /**
  * Pooled {@link FlixelGraphic} factory for {@link FlixelAssetManager#obtainWrapper(String, Class)}.
  */
@@ -60,7 +62,6 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
     for (ObjectMap.Entry<String, FlixelGraphic> e : cache) {
       FlixelGraphic g = e.value;
       if (g == null) continue;
-      if (g.isPersist()) continue;
       if (g.getRefCount() > 0) continue;
 
       if (g.isOwned()) {
@@ -68,8 +69,9 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
         if (t != null) {
           t.dispose();
         }
-      } else if (am != null) {
-        if (am.isLoaded(g.getAssetKey(), Texture.class)) {
+      } else {
+        if (g.isPersist()) continue;
+        if (am != null && am.isLoaded(g.getAssetKey(), Texture.class)) {
           am.unload(g.getAssetKey());
         }
       }
@@ -88,7 +90,31 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
   }
 
   @Override
-  public void clearAll() {
+  public void forEachWrappedAsset(Consumer<FlixelGraphic> consumer) {
+    for (FlixelGraphic graphic : cache.values()) {
+      consumer.accept(graphic);
+    }
+  }
+
+  @Override
+  public void clearAll(@NotNull FlixelAssetManager assets) {
+    AssetManager am = assets.getManager();
+    for (ObjectMap.Entry<String, FlixelGraphic> e : cache) {
+      FlixelGraphic g = e.value;
+      if (g == null) {
+        continue;
+      }
+      if (g.isOwned()) {
+        Texture t = g.getOwnedTexture();
+        if (t != null) {
+          t.dispose();
+        }
+      } else {
+        if (am != null && am.isLoaded(g.getAssetKey(), Texture.class)) {
+          am.unload(g.getAssetKey());
+        }
+      }
+    }
     cache.clear();
   }
 }

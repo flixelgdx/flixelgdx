@@ -32,10 +32,9 @@ import com.badlogic.gdx.utils.Array;
  * sounds).
  *
  * <p>This class implements {@link FlixelAsset}{@code <FlixelSoundBackend>} for
- * a shared refcount / {@code persist} contract. {@link #persist} controls
- * whether this {@code FlixelSound} is treated as long-lived in game state (e.g.
- * not killed on substate switches). Use {@link #retain()} / {@link #release()}
- * if you mirror pooled-asset semantics for sounds you manage manually.
+ * a refcount contract: each instance {@link #retain()}s once in the backend constructor,
+ * and {@link #destroy()} {@link #release()}s to balance it. Use extra {@link #retain()} /
+ * {@link #release()} for advanced sharing. {@link #persist} controls substate behavior.
  *
  * @see me.stringdotjar.flixelgdx.asset.FlixelAssetManager#resolveAudioPath(String)
  */
@@ -106,6 +105,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     super();
     this.sound = sound;
     this.assetKey = "__flixel_sound__/" + ID;
+    retain();
   }
 
   /**
@@ -665,6 +665,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   @Override
   public void destroy() {
+    release();
     super.destroy();
     clearAudioEffectChain();
     cancelFadeTween();

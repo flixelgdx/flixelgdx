@@ -33,7 +33,9 @@ public interface FlixelPooledWrapper {
   }
 
   /**
-   * Checks if {@code this} wrapper is owned.
+   * Whether this wrapper holds a dedicated resource the pool must dispose (for example {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic}
+   * with a pixmap or caller texture). This is structural, not the same as {@link FlixelAsset#isPersist()}; see
+   * {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic} and {@link FlixelAssetManager#getGlobalPersist()}.
    *
    * @return {@code true} if the wrapper is owned, {@code false} otherwise.
    */

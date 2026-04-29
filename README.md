@@ -1,5 +1,7 @@
 # FlixelGDX
 
+<img src="docs/readme/flxgdx ii.png" width="400">
+
 [![CI](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/stringdotjar/flixelgdx/actions/workflows/ci_build.yml)
 [![JitPack](https://jitpack.io/v/stringdotjar/flixelgdx.svg)](https://jitpack.io/#stringdotjar/flixelgdx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -123,8 +125,8 @@ In your core code, you can simply extend `FlixelGame` and start coding your game
 public class MyGame extends FlixelGame {
   
   // Make sure to create a constructor so you can use it in a launcher!  
-  public MyGame(String title, int width, int height, FlixelState initialState) {
-    super(title, width, height, initialState);
+  public MyGame() {
+    super("My Game", 1280, 720, new PlayState()); // PlayState is the initial state your game starts in!
   }
 
   @Override
@@ -146,8 +148,8 @@ public class MyGame extends FlixelGame {
   }
 
   @Override
-  public void close() {
-    super.close();
+  public void destroy() {
+    super.destroy();
     // Your game cleanup code here!
   }
 }
@@ -176,13 +178,13 @@ public class PlayState extends FlixelState {
 
     // Move the player with WASD!
     if (Flixel.keys.pressed(FlixelKey.W)) {
-      player.changeY(-10);
+      player.changeY(10);
     }
     if (Flixel.keys.pressed(FlixelKey.A)) {
       player.changeX(-10);
     }
     if (Flixel.keys.pressed(FlixelKey.S)) {
-      player.changeY(10);
+      player.changeY(-10);
     }
     if (Flixel.keys.pressed(FlixelKey.D)) {
       player.changeX(10);
@@ -300,7 +302,7 @@ The entity hierarchy mirrors HaxeFlixel:
 
 - **`FlixelBasic`** — The base for everything. It has no position or graphics, only lifecycle flags: `active` (whether `update()` runs), `exists` (whether it is updated and drawn), `alive` (for game logic), and `visible` (whether it is drawn). Override `update(float)` and `draw(Batch)` for custom behavior; use `kill()` / `revive()` to temporarily disable or bring back objects.
 - **`FlixelObject`** — Adds position (`x`, `y`), size (`width`, `height`), rotation (`angle`), and physics-style motion: velocity, acceleration, drag, and max velocity (X/Y and angular). Set `moves = true` (default) so `update()` calls `updateMotion()`, which applies velocity and acceleration each frame.
-- **`FlixelSprite`** — Adds rendering: textures, spritesheets, animations, scale, origin, offset, color tint, and flip. Use `loadGraphic()` for images, `makeGraphic()` for solid rectangles, or `loadSparrowFrames()` for XML-based atlases; then `addAnimation()` / `addAnimationByPrefix()` and `playAnimation()` for frame-based animation.
+- **`FlixelSprite`** — Adds rendering: textures, spritesheets, animations, scale, origin, offset, color tint, and flip. Use `loadGraphic()` for images, `makeGraphic()` for solid rectangles, or `loadSparrowFrames(textureKey, xmlPath)` for Sparrow XML atlases and `loadSpritemapFromJson(...)` for Adobe/CreateJS-style spritemap plus animation JSON; then `addAnimation()` / `addAnimationByPrefix()` and `playAnimation()` for frame-based animation.
 
 So you get a clear separation: logic and “does it exist?” in `FlixelBasic`, position and movement in `FlixelObject`, and drawing in `FlixelSprite`. That keeps code organized whether you’re prototyping or building a larger game.
 

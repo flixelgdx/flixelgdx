@@ -32,7 +32,7 @@ import me.stringdotjar.flixelgdx.input.keyboard.FlixelKey;
 import me.stringdotjar.flixelgdx.logging.FlixelDebugConsoleEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogEntry;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.util.FlixelDebugUtil;
 import me.stringdotjar.flixelgdx.util.FlixelString;
 
@@ -40,6 +40,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.function.Consumer;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The in-game debug overlay drawn as a <strong>separate layer</strong> on top of the entire game
@@ -55,11 +57,13 @@ import java.util.function.Consumer;
  *   <li>Optional visual debugging (bounding boxes around {@link me.stringdotjar.flixelgdx.FlixelObject} instances)</li>
  * </ul>
  *
- * <p>Toggle overlay visibility with {@link Flixel#getDebugToggleKey()} (default: {@link FlixelConstants.Debug#DEFAULT_TOGGLE_KEY}).
- * Toggle visual debug (hitboxes) with {@link Flixel#getDebugDrawToggleKey()} (default: {@link FlixelConstants.Debug#DEFAULT_DRAW_DEBUG_KEY}).
+ * <p>Toggle overlay visibility with {@link Flixel#getDebugToggleKey()} (default: {@link Keybinds#DEFAULT_TOGGLE_KEY}).
+ * Toggle visual debug (hitboxes) with {@link Flixel#getDebugDrawToggleKey()} (default: {@link Keybinds#DEFAULT_DRAW_DEBUG_KEY}).
  * In debug mode, {@link Flixel#getDebugPauseKey()} (default F4) pauses the game; inspect camera with Alt+arrows, RMB pan, wheel zoom.
  */
 public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
+
+  private static final float STATS_UPDATE_INTERVAL = 0.5f;
 
   private static final float[] FALLBACK_COLOR = { 1f, 0.2f, 0.2f, 0.6f };
 
@@ -70,6 +74,14 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final ShapeRenderer shapeRenderer;
   private final OrthographicCamera camera;
   private final ScreenViewport viewport;
+
+  /**
+   * Shared registry font (15px default bitmap). May be {@code null} on platforms where the
+   * packaged font cannot be loaded (for example, TeaVM builds that have not run the FlixelGDX
+   * TeaVM plugin's asset copy task). When {@code null}, all text drawing is skipped while the
+   * rest of the overlay (bounding boxes, etc.) keeps working. Do not {@link BitmapFont#dispose()}.
+   */
+  @Nullable
   private final BitmapFont font;
   private final Texture whitePixel;
 
@@ -100,7 +112,6 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private final FlixelString lineHeap = new FlixelString(48);
   private final FlixelString lineNative = new FlixelString(48);
   private final FlixelString lineObjects = new FlixelString(40);
-  private final FlixelString lineTexVram = new FlixelString(56);
   private final FlixelString lineVisDbg = new FlixelString(48);
   private final FlixelString linePaused = new FlixelString(48);
   private final FlixelString lineCamInspect = new FlixelString(72);
@@ -119,10 +130,18 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private boolean lastDrawDebugForVisLine = false;
 
   private final Deque<BufferedLogLine> logBuffer = new ArrayDeque<>();
+  /** Pooled log lines: reuse {@link FlixelString} storage instead of allocating per message. */
+  private final Array<BufferedLogLine> logLinePool = new Array<>();
   private final Consumer<FlixelLogEntry> logListener = this::onLogEntry;
 
   /** Reused when formatting {@link FlixelLogEntry} lines for the log buffer. */
   private final FlixelString logMarkupScratch = new FlixelString(128);
+
+  /** Recomputed only when a debug key binding changes (avoids {@link Input.Keys#toString} allocations every 0.5s). */
+  private int cachedKeybindsHash = Integer.MIN_VALUE;
+
+  private int lastDrawViewportW = -1;
+  private int lastDrawViewportH = -1;
 
   /** Mutable y-cursor used during watch panel rendering to avoid boxing a float. */
   private float watchDrawY;
@@ -133,9 +152,11 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     shapeRenderer = new ShapeRenderer();
     camera = new OrthographicCamera();
     viewport = new ScreenViewport(camera);
-    font = new BitmapFont();
-    font.setColor(Color.WHITE);
-    font.getData().markupEnabled = true;
+    font = FlixelFontRegistry.obtainDefaultBitmapFont(15);
+    if (font != null) {
+      font.setColor(Color.WHITE);
+      font.getData().markupEnabled = true;
+    }
 
     Pixmap px = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
     px.setColor(Color.WHITE);
@@ -164,7 +185,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     visible = !visible;
     if (visible && !was) {
       watchRefreshTimer = 0.11f;
-      statsTimer = FlixelConstants.Debug.STATS_UPDATE_INTERVAL;
+      statsTimer = STATS_UPDATE_INTERVAL;
     }
   }
 
@@ -217,22 +238,20 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     statsTimer += elapsed;
     watchRefreshTimer += elapsed;
 
-    if (statsTimer >= FlixelConstants.Debug.STATS_UPDATE_INTERVAL) {
+    if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
       int fps = Flixel.getFPS();
       float heapMB = Flixel.getJavaHeapUsedMegabytes();
       float nativeMB = Flixel.getNativeHeapUsedMegabytes();
       int objectCount = FlixelDebugUtil.countActiveMembers();
-      float texMb = Flixel.getApproximateLoadedTextureBytes() / (1024f * 1024f);
 
       appendFpsLine(lineFps, fps);
       appendMbStatLine(lineHeap, "[#AAAAFF]Heap: ", heapMB);
       appendMbStatLine(lineNative, "[#AAAAFF]Native: ", nativeMB);
       appendObjectsLine(lineObjects, objectCount);
-      appendMbStatLine(lineTexVram, "[#FFAA66]TexVRAM (approx.): ", texMb);
       appendPausedLine(linePaused);
       appendCamInspectLine(lineCamInspect);
-      appendKeybindsLine(lineKeybinds);
+      maybeAppendKeybindsLine();
     }
 
     // Refresh watch values at 10 Hz to avoid unnecessary per-frame allocations,
@@ -334,16 +353,26 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     }
   }
 
-  private static void appendKeybindsLine(FlixelString line) {
-    line.clear();
-    line.concat("[#AAAAAA]");
-    line.concat(Input.Keys.toString(Flixel.getDebugToggleKey())).concat("=ov ");
-    line.concat(Input.Keys.toString(Flixel.getDebugDrawToggleKey())).concat("=hit ");
-    line.concat(Input.Keys.toString(Flixel.getDebugPauseKey())).concat("=pause ");
-    line.concat("Alt+");
-    line.concat(Input.Keys.toString(Flixel.getDebugCameraCycleLeftKey())).concat('/');
-    line.concat(Input.Keys.toString(Flixel.getDebugCameraCycleRightKey())).concat("=cam ");
-    line.concat("RMB=pan Wh=zoom");
+  private void maybeAppendKeybindsLine() {
+    int kt = Flixel.getDebugToggleKey();
+    int kd = Flixel.getDebugDrawToggleKey();
+    int kp = Flixel.getDebugPauseKey();
+    int kl = Flixel.getDebugCameraCycleLeftKey();
+    int kr = Flixel.getDebugCameraCycleRightKey();
+    int h = kt ^ (kd << 5) ^ (kp << 10) ^ (kl << 15) ^ (kr << 20);
+    if (h == cachedKeybindsHash && lineKeybinds.length() > 0) {
+      return;
+    }
+    cachedKeybindsHash = h;
+    lineKeybinds.clear();
+    lineKeybinds.concat("[#AAAAAA]");
+    lineKeybinds.concat(Input.Keys.toString(kt)).concat("=ov ");
+    lineKeybinds.concat(Input.Keys.toString(kd)).concat("=hit ");
+    lineKeybinds.concat(Input.Keys.toString(kp)).concat("=pause ");
+    lineKeybinds.concat("Alt+");
+    lineKeybinds.concat(Input.Keys.toString(kl)).concat('/');
+    lineKeybinds.concat(Input.Keys.toString(kr)).concat("=cam ");
+    lineKeybinds.concat("RMB=pan Wh=zoom");
   }
 
   private void reclaimConsoleBlocksToPool() {
@@ -490,8 +519,19 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     if (!visible) {
       return;
     }
+    // Without a font we have nothing to render. The overlay still draws bounding boxes via
+    // drawBoundingBoxes(), which does not depend on the font.
+    if (font == null) {
+      return;
+    }
 
-    viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+    int dw = Gdx.graphics.getWidth();
+    int dh = Gdx.graphics.getHeight();
+    if (dw != lastDrawViewportW || dh != lastDrawViewportH) {
+      lastDrawViewportW = dw;
+      lastDrawViewportH = dh;
+      viewport.update(dw, dh, true);
+    }
     camera.update();
 
     batch.setProjectionMatrix(camera.combined);
@@ -518,8 +558,6 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     drawText(lineNative, x, y);
     y -= lineH;
     drawText(lineObjects, x, y);
-    y -= lineH;
-    drawText(lineTexVram, x, y);
     y -= lineH;
     drawText(linePaused, x, y);
     y -= lineH;
@@ -597,10 +635,16 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   }
 
   private void drawText(CharSequence markup, float x, float y) {
+    if (font == null) {
+      return;
+    }
     font.draw(batch, markup, x, y);
   }
 
   private void drawTextRight(CharSequence markup, float rightEdge, float y) {
+    if (font == null) {
+      return;
+    }
     font.draw(batch, markup, 0, y, rightEdge, Align.right, false);
   }
 
@@ -608,16 +652,21 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     synchronized (logBuffer) {
       synchronized (logMarkupScratch) {
         appendLogMarkup(logMarkupScratch, entry);
-        logBuffer.addLast(new BufferedLogLine(new FlixelString(logMarkupScratch)));
-      }
-      while (logBuffer.size() > FlixelConstants.Debug.MAX_LOG_ENTRIES) {
-        logBuffer.removeFirst();
+        while (logBuffer.size() >= FlixelLogger.MAX_LOG_ENTRIES) {
+          BufferedLogLine old = logBuffer.removeFirst();
+          logLinePool.add(old);
+        }
+        BufferedLogLine line = logLinePool.size > 0 ? logLinePool.pop() : new BufferedLogLine();
+        line.markup.set(logMarkupScratch);
+        logBuffer.addLast(line);
       }
     }
   }
 
   /** Call from {@link me.stringdotjar.flixelgdx.FlixelGame#resize(int, int)} to keep the overlay viewport in sync. */
   public void resize(int width, int height) {
+    lastDrawViewportW = -1;
+    lastDrawViewportH = -1;
     viewport.update(width, height, true);
   }
 
@@ -629,7 +678,6 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     destroyed = true;
     batch.dispose();
     shapeRenderer.dispose();
-    font.dispose();
     whitePixel.dispose();
   }
 
@@ -638,13 +686,23 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     destroy();
   }
 
-  /** One colored line in the log console; markup is built once when the log is received. */
-  private static final class BufferedLogLine {
-    final FlixelString markup;
+  /**
+   * Default key codes for the debug overlay. You can read these when rebinding in {@link Flixel}.
+   */
+  public static final class Keybinds {
 
-    BufferedLogLine(FlixelString markup) {
-      this.markup = markup;
-    }
+    public static final int DEFAULT_TOGGLE_KEY = FlixelKey.F2;
+    public static final int DEFAULT_DRAW_DEBUG_KEY = FlixelKey.F3;
+    public static final int DEFAULT_PAUSE_KEY = FlixelKey.F4;
+    public static final int DEFAULT_DEBUG_CAMERA_CYCLE_LEFT = FlixelKey.LEFT;
+    public static final int DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT = FlixelKey.RIGHT;
+
+    private Keybinds() {}
+  }
+
+  /** One colored line in the log console; buffer is recycled through {@link #logLinePool}. */
+  private static final class BufferedLogLine {
+    final FlixelString markup = new FlixelString(192);
   }
 
   /** Cached block for {@link FlixelDebugConsoleEntry} output (rebuilt at 10 Hz). */

@@ -231,7 +231,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
-    Array<FlixelTweenSettings.FlixelTweenVarGoal> varGoals = tweenSettings.getGoals();
+    Array<FlixelTweenSettings.FlixelTweenVarGoal> varGoals = tweenSettings.getVarGoals();
     Array<FlixelTweenSettings.FlixelTweenPropertyGoal> propGoals = tweenSettings.getPropertyGoals();
     boolean hasVar = varGoals != null && varGoals.size > 0;
     boolean hasProp = propGoals != null && propGoals.size > 0;
@@ -359,12 +359,12 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
-  public static FlixelTween colorRaw(
+  public static FlixelTween color(
       @Nullable FlixelSprite sprite,
       @Nullable Color from,
       @Nullable Color to,
       FlixelTweenSettings tweenSettings) {
-    return colorRaw(sprite, from, to, tweenSettings, null);
+    return color(sprite, from, to, tweenSettings, null);
   }
 
   /**
@@ -382,7 +382,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @param onColor The callback to run when the tween is complete.
    * @return The newly created and started tween.
    */
-  public static FlixelTween colorRaw(
+  public static FlixelTween color(
       @Nullable FlixelSprite sprite,
       @Nullable Color from,
       @Nullable Color to,
@@ -392,6 +392,50 @@ public abstract class FlixelTween implements Pool.Poolable {
     tween.setTweenSettings(tweenSettings);
     tween.setColorEndpointsRaw(sprite, from, to, onColor);
     return globalManager.addTween(tween);
+  }
+
+  /**
+   * Creates a new color tween using mixture of libGDX's {@link Color} and FlixelGDX's {@link FlixelColor} values with
+   * the provided settings and adds it to the global tween manager.
+   *
+   * <p>It's advised you use this method rather than directly changing the color of a sprite, as
+   * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
+   * than causing a flash or jump in color.
+   *
+   * @param sprite The sprite to tween the color of.
+   * @param from The starting color.
+   * @param to The ending color.
+   * @param tweenSettings The settings that configure and determine how the tween should animate.
+   * @return The newly created and started tween.
+   */
+  public static FlixelTween color(
+    @Nullable FlixelSprite sprite,
+    @Nullable FlixelColor from,
+    @Nullable Color to,
+    FlixelTweenSettings tweenSettings) {
+    return color(sprite, from.getGdxColor(), to, tweenSettings, null);
+  }
+
+  /**
+   * Creates a new color tween using mixture of libGDX's {@link Color} and FlixelGDX's {@link FlixelColor} values with
+   * the provided settings and adds it to the global tween manager.
+   *
+   * <p>It's advised you use this method rather than directly changing the color of a sprite, as
+   * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
+   * than causing a flash or jump in color.
+   *
+   * @param sprite The sprite to tween the color of.
+   * @param from The starting color.
+   * @param to The ending color.
+   * @param tweenSettings The settings that configure and determine how the tween should animate.
+   * @return The newly created and started tween.
+   */
+  public static FlixelTween color(
+    @Nullable FlixelSprite sprite,
+    @Nullable Color from,
+    @Nullable FlixelColor to,
+    FlixelTweenSettings tweenSettings) {
+    return color(sprite, from, to.getGdxColor(), tweenSettings, null);
   }
 
   /**
@@ -994,7 +1038,13 @@ public abstract class FlixelTween implements Pool.Poolable {
    * want a full reset (as {@link me.stringdotjar.flixelgdx.Flixel#switchState} does when {@code clearTweens} is true).
    */
   public static void cancelActiveTweens() {
-    globalManager.getActiveTweens().forEach(tween -> tween.cancel());
+    Array<FlixelTween> list = globalManager.getActiveTweens();
+    for (int i = list.size - 1; i >= 0; i--) {
+      FlixelTween t = list.get(i);
+      if (t != null) {
+        t.cancel();
+      }
+    }
   }
 
   public static FlixelTweenManager getGlobalManager() {

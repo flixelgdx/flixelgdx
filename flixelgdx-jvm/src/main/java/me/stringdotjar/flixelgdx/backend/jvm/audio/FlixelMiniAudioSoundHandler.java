@@ -28,7 +28,7 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
   private final MiniAudio engine;
 
-  /** Creates the handler and initialises the MiniAudio engine. */
+  /** Creates the handler and initializes the MiniAudio engine. */
   public FlixelMiniAudioSoundHandler() {
     engine = new MiniAudio();
   }
@@ -112,33 +112,27 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   /**
    * Wraps a MiniAudio {@link MANode} as a {@link FlixelSoundBackend.EffectNode}.
    */
-  private static final class MiniAudioEffectNode implements FlixelSoundBackend.EffectNode {
-
-    private final MANode node;
-
-    MiniAudioEffectNode(MANode node) {
-      this.node = node;
-    }
+  private record MiniAudioEffectNode(MANode node) implements FlixelSoundBackend.EffectNode {
 
     @Override
-    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-      MANode upstreamNode;
-      if (upstream instanceof FlixelMiniAudioSound mas) {
-        upstreamNode = mas.getMASound();
-      } else {
-        return;
+      public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
+        MANode upstreamNode;
+        if (upstream instanceof FlixelMiniAudioSound mas) {
+          upstreamNode = mas.getMASound();
+        } else {
+          return;
+        }
+        node.attachToThisNode(upstreamNode, bus);
       }
-      node.attachToThisNode(upstreamNode, bus);
-    }
 
-    @Override
-    public void detach(int bus) {
-      node.detach(bus);
-    }
+      @Override
+      public void detach(int bus) {
+        node.detach(bus);
+      }
 
-    @Override
-    public void dispose() {
-      node.dispose();
+      @Override
+      public void dispose() {
+        node.dispose();
+      }
     }
-  }
 }

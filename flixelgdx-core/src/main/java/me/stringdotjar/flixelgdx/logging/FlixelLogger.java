@@ -8,12 +8,14 @@
 package me.stringdotjar.flixelgdx.logging;
 
 import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.util.FlixelAsciiCodes;
+import me.stringdotjar.flixelgdx.util.FlixelString;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
+import com.badlogic.gdx.ApplicationLogger;
 import com.badlogic.gdx.utils.Array;
 
 /**
@@ -26,8 +28,18 @@ import com.badlogic.gdx.utils.Array;
  * it is the directory containing the JAR), {@link #setCanStoreLogs(boolean)} and
  * {@link #setMaxLogFiles(int)} to configure file logging, then {@link #startFileLogging()} to
  * start and {@link #stopFileLogging()} to shut down the log writer thread.
+ *
+ * <p>Console and file line assembly run when you log, not every frame. Shared formatters and buffers reduce
+ * allocation churn versus building many small strings per line.
  */
-public class FlixelLogger {
+public class FlixelLogger implements ApplicationLogger {
+
+  private static final DateTimeFormatter LOG_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+  /**
+   * Maximum number of lines the in-game debug console keeps. The overlay trims older lines when this is exceeded.
+   */
+  public static final int MAX_LOG_ENTRIES = 200;
 
   /**
    * Whether to write logs to a file when {@link #startFileLogging()} is called.
@@ -57,6 +69,12 @@ public class FlixelLogger {
 
   /** Registered debug console entries that supply custom lines to the overlay console. */
   private final Array<FlixelDebugConsoleEntry> consoleEntries = new Array<>(FlixelDebugConsoleEntry[]::new);
+
+  /** Reused for ANSI console lines (single game thread in practice). */
+  private final FlixelString consoleLine = new FlixelString(512);
+
+  /** Reused for plain file lines. */
+  private final FlixelString fileLine = new FlixelString(512);
 
   /**
    * Creates a logger that outputs to the console and optionally to a file
@@ -307,56 +325,65 @@ public class FlixelLogger {
   protected void outputLog(String tag, Object message, FlixelLogLevel level) {
     FlixelStackFrame caller = getCaller();
 
-    if (caller == null) {
-      return;
-    }
-
     String file;
     String simpleFile;
     String method;
 
-    // Convert the package path and replace the periods (.) with slashes (/)
-    // to replicate the familiar Haxe tracing.
-    file = (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
-    String className = caller.getClassName();
-    int lastDot = className != null ? className.lastIndexOf('.') : -1;
-    String packagePath = (lastDot > 0) ? className.substring(0, lastDot).replace('.', '/') : "";
+    if (caller == null) {
+      file = "UnknownFile.java:0";
+      simpleFile = "unknown:0";
+      method = "unknown()";
+    } else {
+      // Convert the package path and replace the periods (.) with slashes (/)
+      // to replicate the familiar Haxe tracing.
+      file = (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
+      String className = caller.getClassName();
+      int lastDot = className != null ? className.lastIndexOf('.') : -1;
+      String packagePath = (lastDot > 0) ? className.substring(0, lastDot).replace('.', '/') : "";
 
-    // Assemble the log location and concatenate it together.
-    simpleFile = packagePath.isEmpty()
-      ? (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber()
-      : packagePath + "/" + (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
-    method = (caller.getMethodName() != null ? caller.getMethodName() : "unknownMethod") + "()"; // For detailed mode only.
+      // Assemble the log location and concatenate it together.
+      simpleFile = packagePath.isEmpty()
+        ? (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber()
+        : packagePath + "/" + (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
+      method = (caller.getMethodName() != null ? caller.getMethodName() : "unknownMethod") + "()"; // For detailed mode only.
+    }
 
     // Apply the color and underlining based on the level.
     String rawMessage = evaluateMessage(message);
     String color = switch (level) {
-      case INFO -> FlixelConstants.AsciiCodes.WHITE;
-      case WARN -> FlixelConstants.AsciiCodes.YELLOW;
-      case ERROR -> FlixelConstants.AsciiCodes.RED;
+      case INFO -> FlixelAsciiCodes.WHITE;
+      case WARN -> FlixelAsciiCodes.YELLOW;
+      case ERROR -> FlixelAsciiCodes.RED;
     };
     boolean underlineFile = (level == FlixelLogLevel.ERROR);
 
-    // Console: use current log mode.
-    String coloredLog;
-    if (logMode == FlixelLogMode.SIMPLE) {
-      coloredLog = colorText(simpleFile + ":", color, true, false, underlineFile)
-        + " "
-        + colorText(rawMessage, color, false, true, false);
+    String ts = LocalDateTime.now().format(LOG_TIMESTAMP);
+
+    FlixelLogConsoleSink consoleSink = Flixel.getLogConsoleSink();
+    if (consoleSink != null) {
+      String safeTag = tag != null ? tag : "";
+      consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts, logMode == FlixelLogMode.DETAILED);
     } else {
-      String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-      String levelTag = "[" + level + "]";
-      String tagPart = "[" + tag + "]";
-      String filePart = "[" + file + "]";
-      String methodPart = "[" + method + "]";
-      coloredLog = colorText(timestamp + " ", color, false, false, false)
-        + colorText(levelTag + " ", color, true, false, false)
-        + colorText(tagPart + " ", color, true, false, false)
-        + colorText(filePart + " ", color, true, false, underlineFile)
-        + colorText(methodPart + " ", color, false, false, false)
-        + colorText(rawMessage, color, false, true, false);
+      // Console: use current log mode.
+      consoleLine.clear();
+      if (logMode == FlixelLogMode.SIMPLE) {
+        appendColored(consoleLine, simpleFile + ":", color, true, false, underlineFile);
+        consoleLine.concat(' ');
+        appendColored(consoleLine, rawMessage, color, false, true, false);
+      } else {
+        String levelTag = "[" + level + "]";
+        String tagPart = "[" + tag + "]";
+        String filePart = "[" + file + "]";
+        String methodPart = "[" + method + "]";
+        appendColored(consoleLine, ts + " ", color, false, false, false);
+        appendColored(consoleLine, levelTag + " ", color, true, false, false);
+        appendColored(consoleLine, tagPart + " ", color, true, false, false);
+        appendColored(consoleLine, filePart + " ", color, true, false, underlineFile);
+        appendColored(consoleLine, methodPart + " ", color, false, false, false);
+        appendColored(consoleLine, rawMessage, color, false, true, false);
+      }
+      System.out.println(consoleLine.toString());
     }
-    System.out.println(coloredLog);
 
     // Notify in-game log listeners (e.g. the debug overlay console).
     if (!logListeners.isEmpty()) {
@@ -369,13 +396,23 @@ public class FlixelLogger {
     // File: always detailed (plain, no ANSI).
     FlixelLogFileHandler fileHandler = Flixel.getLogFileHandler();
     if (fileHandler != null && fileHandler.isActive()) {
-      String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
       String levelTag = "[" + level + "]";
       String tagPart = "[" + tag + "]";
       String filePart = "[" + file + "]";
       String methodPart = "[" + method + "]";
-      String plainLog = timestamp + " " + levelTag + " " + tagPart + " " + filePart + " " + methodPart + " " + rawMessage;
-      fileHandler.write(plainLog);
+      fileLine.clear();
+      fileLine.concat(ts);
+      fileLine.concat(' ');
+      fileLine.concat(levelTag);
+      fileLine.concat(' ');
+      fileLine.concat(tagPart);
+      fileLine.concat(' ');
+      fileLine.concat(filePart);
+      fileLine.concat(' ');
+      fileLine.concat(methodPart);
+      fileLine.concat(' ');
+      fileLine.concat(rawMessage);
+      fileHandler.write(fileLine.toString());
     }
   }
 
@@ -391,23 +428,29 @@ public class FlixelLogger {
   }
 
   /**
-   * Wraps text with ANSI color/format codes for console output.
+   * Appends {@code text} to {@code out} with ANSI color and style codes for console output.
+   * 
+   * @param out The string to append the text to.
+   * @param text The text to append.
+   * @param color The color to append.
+   * @param bold Whether to append the bold code.
+   * @param italic Whether to append the italic code.
+   * @param underline Whether to append the underline code.
    */
-  protected String colorText(String text, String color, boolean bold, boolean italic, boolean underline) {
-    StringBuilder sb = new StringBuilder();
+  private void appendColored(
+    FlixelString out, String text, String color, boolean bold, boolean italic, boolean underline) {
     if (bold) {
-      sb.append(FlixelConstants.AsciiCodes.BOLD);
+      out.concat(FlixelAsciiCodes.BOLD);
     }
     if (italic) {
-      sb.append(FlixelConstants.AsciiCodes.ITALIC);
+      out.concat(FlixelAsciiCodes.ITALIC);
     }
     if (underline) {
-      sb.append(FlixelConstants.AsciiCodes.UNDERLINE);
+      out.concat(FlixelAsciiCodes.UNDERLINE);
     }
-    sb.append(color);
-    sb.append(text);
-    sb.append(FlixelConstants.AsciiCodes.RESET);
-    return sb.toString();
+    out.concat(color);
+    out.concat(text);
+    out.concat(FlixelAsciiCodes.RESET);
   }
 
   private String evaluateMessage(Object message) {
@@ -420,5 +463,35 @@ public class FlixelLogger {
 
   public void setDefaultTag(String defaultTag) {
     this.defaultTag = defaultTag != null ? defaultTag : "";
+  }
+
+  @Override
+  public void log(String tag, String message) {
+    info(tag, message);
+  }
+
+  @Override
+  public void log(String tag, String message, Throwable exception) {
+    error(tag, message, exception);
+  }
+
+  @Override
+  public void error(String tag, String message) {
+    error(tag, message, null);
+  }
+
+  @Override
+  public void error(String tag, String message, Throwable exception) {
+    error(tag, message, exception);
+  }
+
+  @Override
+  public void debug(String tag, String message) {
+    info(tag, message);
+  }
+
+  @Override
+  public void debug(String tag, String message, Throwable exception) {
+    error(tag, message, exception);
   }
 }

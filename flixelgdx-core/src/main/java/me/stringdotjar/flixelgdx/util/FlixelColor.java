@@ -15,8 +15,32 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Mutable color wrapper that owns a single {@link Color} instance for stable tinting
  * and tween endpoints without per-frame allocations.
+ *
+ * <p>Shared presets such as {@link #WHITE} and {@link #RED} point at the same instances as libGDX
+ * {@link Color} namesakes. Mutating a preset affects every place that uses that reference. For a
+ * private copy, use {@code new FlixelColor(FlixelColor.RED)} or {@link #set(FlixelColor)} on your
+ * own instance.
  */
-public final class FlixelColor {
+public class FlixelColor {
+
+  public static final FlixelColor WHITE = new FlixelColor(Color.WHITE);
+  public static final FlixelColor BLACK = new FlixelColor(Color.BLACK);
+  public static final FlixelColor RED = new FlixelColor(Color.RED);
+  public static final FlixelColor GREEN = new FlixelColor(Color.GREEN);
+  public static final FlixelColor BLUE = new FlixelColor(Color.BLUE);
+  public static final FlixelColor YELLOW = new FlixelColor(Color.YELLOW);
+  public static final FlixelColor CYAN = new FlixelColor(Color.CYAN);
+  public static final FlixelColor MAGENTA = new FlixelColor(Color.MAGENTA);
+  public static final FlixelColor GRAY = new FlixelColor(Color.GRAY);
+  public static final FlixelColor CLEAR = new FlixelColor(Color.CLEAR);
+  public static final FlixelColor ORANGE = new FlixelColor(Color.ORANGE);
+  public static final FlixelColor PINK = new FlixelColor(Color.PINK);
+  public static final FlixelColor PURPLE = new FlixelColor(Color.PURPLE);
+  public static final FlixelColor BROWN = new FlixelColor(Color.BROWN);
+  public static final FlixelColor OLIVE = new FlixelColor(Color.OLIVE);
+  public static final FlixelColor MAROON = new FlixelColor(Color.MAROON);
+  public static final FlixelColor NAVY = new FlixelColor(Color.NAVY);
+  public static final FlixelColor TEAL = new FlixelColor(Color.TEAL);
 
   @NotNull
   private final Color color;

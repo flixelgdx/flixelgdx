@@ -111,7 +111,7 @@ public class FlixelVarTween extends FlixelTween {
       return this;
     }
 
-    Array<FlixelTweenSettings.FlixelTweenVarGoal> goals = tweenSettings.getGoals();
+    Array<FlixelTweenSettings.FlixelTweenVarGoal> goals = tweenSettings.getVarGoals();
     if (goals == null || goals.isEmpty()) {
       return this;
     }
@@ -166,7 +166,7 @@ public class FlixelVarTween extends FlixelTween {
   @Override
   public void restart() {
     if (!internalRestart && tweenSettings != null && object != null && !goalPaths.isEmpty()) {
-      Array<FlixelTweenSettings.FlixelTweenVarGoal> goals = tweenSettings.getGoals();
+      Array<FlixelTweenSettings.FlixelTweenVarGoal> goals = tweenSettings.getVarGoals();
       if (goals != null && !goals.isEmpty()) {
         initialValues.clear();
         tweenSettings.forEachGoal((fieldName, value) -> {

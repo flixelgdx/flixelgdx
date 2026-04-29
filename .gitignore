@@ -61,6 +61,7 @@ www-test/
 .metadata/
 /android/bin/
 /core/bin/
+flixelgdx-*/bin/
 /lwjgl2/bin/
 /lwjgl3/bin/
 /html/bin/
@@ -88,10 +89,8 @@ www-test/
 nbactions.xml
 nb-configuration.xml
 
-# VS Code/Cursor
+# VS Code
 .vscode/
-.cursor/
-.cursorrules
 
 ## OS-Specific:
 .DS_Store

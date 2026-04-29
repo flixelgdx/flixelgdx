@@ -10,6 +10,7 @@ package me.stringdotjar.flixelgdx.graphics;
 import com.badlogic.gdx.graphics.Texture;
 
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
+import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.asset.FlixelSource;
 import me.stringdotjar.flixelgdx.asset.FlixelTypedAsset;
 import me.stringdotjar.flixelgdx.asset.FlixelPooledWrapper;
@@ -27,7 +28,19 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper instances are pooled in {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager} so
  * multiple sprites can share policy state.
  *
- * <p>Lifecycle ({@code persist}, refcount) is tracked here; keyed texture loading is implemented in
+ * <p><b>Owned versus persist</b>:
+ * <ul>
+ *   <li><b>Owned</b> - Structural. This graphic was built with a non-null dedicated {@link Texture} (for example
+ *     {@code makeGraphic} or {@code loadGraphic(Texture, ...)}). The framework disposes that texture when the wrapper
+ *     is evicted from the pool. {@code isOwned()} is true. Not a user toggle.</li>
+ *   <li><b>Persist</b> - Policy. For path-keyed pooled graphics, whether an unreferenced wrapper survives
+ *     {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#clearNonPersist()}. New non-owned graphics use
+ *     {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#getGlobalPersist()} by default. Owned graphics always
+ *     use {@code persist == false} and are always removed on {@code clearNonPersist()} when refcount is zero, so
+ *     {@code persist} does not block eviction of synthetic textures.</li>
+ * </ul>
+ *
+ * <p>Lifecycle ({@code persist}, refcount) is tracked here. Keyed texture loading is implemented in
  * {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager} ({@link me.stringdotjar.flixelgdx.Flixel#assets}).
  *
  * <p>Enqueue loads with {@link #queueLoad()} (or {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#load(FlixelSource)} /
@@ -43,20 +56,42 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
 
   private final boolean owned;
 
+  /**
+   * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
+   * 
+   * @param assetManager The parent asset manager.
+   * @param assetKey The asset key.
+   */
   public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey) {
     this(assetManager, assetKey, null);
   }
 
-  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String key, @Nullable Texture ownedTexture) {
-    super(assetManager, key, Texture.class);
+  /**
+   * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
+   * 
+   * <p>This constructor is used to create a new {@link FlixelGraphic} with an owned texture.
+   * This is typically used by {@link me.stringdotjar.flixelgdx.FlixelSprite#makeGraphic(int, int, Color)} 
+   * and some other various methods.
+   *
+   * @param assetManager The parent asset manager.
+   * @param assetKey The asset key.
+   * @param ownedTexture The owned texture.
+   */
+  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey, @Nullable Texture ownedTexture) {
+    super(assetManager, assetKey, Texture.class);
     this.owned = (ownedTexture != null);
     this.ownedTexture = ownedTexture;
+    if (this.owned) {
+      setPersist(false);
+    } else if (assetManager instanceof FlixelDefaultAssetManager m) {
+      m.applyPendingPersistOnNewHandle(assetKey, this);
+    }
   }
 
   @NotNull
   @Override
   public FlixelGraphic setPersist(boolean persist) {
-    super.setPersist(persist);
+    super.setPersist(!owned ? persist : false); // If the graphic is owned, then we don't want to change the persist state.
     return this;
   }
 
@@ -95,7 +130,7 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
   }
 
   /**
-   * Returns the loaded texture. Strict: the texture must already be loaded
+   * Returns the loaded texture. Note the texture must already be loaded
    * (typically via {@link #queueLoad()} plus {@link FlixelAssetManager#update()} in a loading state).
    */
   @NotNull

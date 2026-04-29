@@ -25,7 +25,6 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
@@ -43,7 +42,7 @@ import java.util.function.Supplier;
  * the methods you want to change.
  *
  * <p>It is strongly advised that you do <b>NOT</b> use this class to add the main gameplay logic to your game;
- * your code should go into your {@link FlixelState} or libGDX Screen classes instead.
+ * your code should go into your {@link FlixelState}s or libGDX {@link com.badlogic.gdx.Screen} implementations instead.
  *
  * <p>It is recommended for using this in the following way:
  *
@@ -94,9 +93,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   protected Vector2 windowSize;
 
   /**
-   * Produces the root {@link FlixelState} each time {@link #create()} runs (including after {@link Flixel#resetGame()}).
-   * Use {@code () -> new MyState()} for a fresh instance per session, or {@code () -> sharedState} to reuse one
-   * object (its {@link FlixelState#destroy()} / {@link FlixelState#create()} lifecycle still runs via {@link Flixel#switchState}).
+   * Produces the root {@link FlixelState} each time {@link #create()} runs. Use {@code () -> new MyState()} for a fresh
+   * instance per session, or {@code () -> sharedState} to reuse one object
+   * (its {@link FlixelState#destroy()} / {@link FlixelState#create()} lifecycle still runs via {@link Flixel#switchState}).
    */
   @NotNull
   protected Supplier<FlixelState> initialStateFactory;
@@ -143,6 +142,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** When true, skips gameplay/state/camera follow updates (debug pause). */
   private boolean gamePaused = false;
 
+  /** When true, calls {@link #destroy()} and {@link #create()}, which resets the game. */
+  protected volatile boolean resetRequested = false;
+
+  /** Prevents re-entrant fullscreen transitions from resize callbacks on desktop backends. */
+  private boolean fullscreenChangeInProgress = false;
+
   /** 2D array of saved camera scroll values when the game is paused for debugging. */
   @Nullable
   private float[][] debugPauseCameraScroll;
@@ -161,10 +166,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * Creates a new game instance with the details specified.
    *
    * @param title The title of the game's window.
-   * @param initialScreen The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    */
-  public FlixelGame(String title, FlixelState initialScreen) {
-    this(title, 640, 360, initialScreen, 60, true, false);
+  public FlixelGame(String title, FlixelState initialState) {
+    this(title, 640, 360, initialState, 60, true, false);
   }
 
   /**
@@ -173,10 +178,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialScreen The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialScreen) {
-    this(title, width, height, initialScreen, 60, true, false);
+  public FlixelGame(String title, int width, int height, FlixelState initialState) {
+    this(title, width, height, initialState, 60, true, false);
   }
 
   /**
@@ -185,11 +190,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialScreen The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    * @param framerate The framerate of how fast the game should update and render.
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialScreen, int framerate) {
-    this(title, width, height, initialScreen, framerate, true, false);
+  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate) {
+    this(title, width, height, initialState, framerate, true, false);
   }
 
   /**
@@ -198,12 +203,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialScreen The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use VSync to limit the framerate to the monitor's refresh rate?
+   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialScreen, int framerate, boolean vsync) {
-    this(title, width, height, initialScreen, framerate, vsync, false);
+  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync) {
+    this(title, width, height, initialState, framerate, vsync, false);
   }
 
   /**
@@ -212,20 +217,25 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialScreen The initial screen to load when the game starts.
+   * @param initialState The initial state to load when the game starts.
    * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use VSync to limit the framerate to the monitor's refresh rate?
+   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    * @param fullscreen Should the game start in fullscreen mode?
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialScreen, int framerate, boolean vsync, boolean fullscreen) {
-    this(title, width, height, () -> initialScreen, framerate, vsync, fullscreen);
+  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync, boolean fullscreen) {
+    this(title, width, height, () -> initialState, framerate, vsync, fullscreen);
   }
 
   /**
-   * Same as {@link #FlixelGame(String, int, int, FlixelState, int, boolean, boolean)} but supplies a new root state
-   * from a factory (recommended after {@link Flixel#resetGame()} so each cold start can use {@code new MyState()}).
+   * Creates a new game instance with the details specified.
    *
-   * @param initialStateFactory Non-null supplier; invoked from {@link #create()} to obtain the root state.
+   * @param title The title of the game's window.
+   * @param width The starting width of the game's window and how wide the camera should be.
+   * @param height The starting height of the game's window and how tall the camera should be.
+   * @param initialStateFactory The initial state to load when the game starts as a supplier factory.
+   * @param framerate The framerate of how fast the game should update and render.
+   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
+   * @param fullscreen Should the game start in fullscreen mode?
    */
   public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory, int framerate, boolean vsync, boolean fullscreen) {
     this.title = title;
@@ -241,7 +251,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * Called when the game is created. This is where you should initialize your game's resources.
    *
    * <p>This method configures the crash handler, sets up input processing, initializes the debug overlay, configures
-   * the ANSI system for color output in terminals, and then switches to the initial screen.
+   * the ANSI system for color output in terminals, and then switches to the initial state.
    *
    * <p>This method is called automatically by libGDX's {@link ApplicationListener#create()} method when the game is
    * created, so it is not necessary to call this method manually in most cases. However, it can be overridden to
@@ -252,6 +262,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Override
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
+
+    isClosed = false;
+    isClosing = false;
 
     batch = new SpriteBatch();
     cameras = new Array<>(FlixelCamera[]::new);
@@ -318,7 +331,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Updates the logic of the game's loop.
+   * Updates the logic of the game loop.
    *
    * @param elapsed The amount of time that occurred in the last frame.
    */
@@ -355,24 +368,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
 
       // Update all cameras.
-      FlixelCamera[] cameraItems = cameras.items;
-      for (int i = 0, n = cameras.size; i < n; i++) {
-        cameraItems[i].update(elapsed);
+      for (FlixelCamera camera : cameras) {
+        camera.update(elapsed);
       }
-    }
-
-    // Capture key state at end of frame so firstJustPressed/firstJustReleased work next frame.
-    if (Flixel.keys != null) {
-      Flixel.keys.endFrame();
     }
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null && Flixel.isDebugMode()) {
       debugOverlay.update(elapsed);
-    }
-
-    if (Flixel.mouse != null) {
-      Flixel.mouse.endFrame();
     }
 
     postUpdateData.set(elapsed);
@@ -447,33 +450,36 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * running, so it is not necessary to override this method in most cases. However, it can be overridden to
    * perform custom updating/rendering before the game is updated/rendered.
    *
-   * <p>This method is kept non-final for compatibility with existing projects that want to extend to this class
-   * and use its structured game loop. It's advised to override {@link #update(float)} and {@link #draw(Batch)} instead to
-   * perform custom updating and rendering.
+   * <p>You should not (and cannot) override this method. You are encouraged to override either {@link #update(float)}
+   * or {@link #draw(Batch)} instead, as they separate logic and rendering correctly.
    *
    * @see #update(float)
    * @see #draw(Batch)
    * @see ApplicationListener#render()
    */
   @Override
-  public void render() {
-    float rawDelta = Gdx.graphics.getDeltaTime();
-    float elapsed = Math.max(FlixelConstants.Graphics.MIN_ELAPSED, Math.min(rawDelta, FlixelConstants.Graphics.MAX_ELAPSED));
+  public final void render() {
+    float rawDelta = Gdx.graphics != null ? Gdx.graphics.getDeltaTime() : Flixel.MIN_ELAPSED;
+    float elapsed = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
     Flixel.elapsed = elapsed;
 
     windowSize.x = Gdx.graphics.getWidth();
     windowSize.y = Gdx.graphics.getHeight();
-
     fullscreen = Gdx.graphics.isFullscreen();
 
     if (!autoPause || isFocused) {
       update(elapsed);
     }
     draw(batch);
-  }
 
-  public boolean isGamePaused() {
-    return gamePaused;
+    // Finalize input frame AFTER user update hooks run, so justPressed/justReleased checks
+    // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
+    if (Flixel.keys != null) {
+      Flixel.keys.endFrame();
+    }
+    if (Flixel.mouse != null) {
+      Flixel.mouse.endFrame();
+    }
   }
 
   /**
@@ -543,6 +549,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     isFocused = true;
     if (autoPause && !isMinimized && !gamePaused) {
       Flixel.sound.resume();
+      Gdx.graphics.setContinuousRendering(true);
+      Gdx.graphics.requestRendering();
     }
     Flixel.Signals.windowFocused.dispatch();
   }
@@ -552,6 +560,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     isFocused = false;
     if (autoPause) {
       Flixel.sound.pause();
+      Gdx.graphics.setContinuousRendering(false);
     }
     Flixel.Signals.windowUnfocused.dispatch();
   }
@@ -560,13 +569,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * Called when the user minimizes the game's window.
    *
    * @param iconified Whether the window is iconified (minimized) or not. This parameter is provided
-   * for compatibility with the window listener in the LWJGL3 (desktop) launcher.
+   *   for compatibility with the window listener in the LWJGL3 (desktop) launcher.
    */
   public void onWindowMinimized(boolean iconified) {
     isMinimized = iconified;
     isFocused = false;
     if (autoPause) {
       Flixel.sound.pause();
+      Gdx.graphics.setContinuousRendering(false);
     }
     Flixel.Signals.windowMinimized.dispatch();
   }
@@ -577,10 +587,21 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param enabled If the game's window should be in fullscreen mode.
    */
   public void setFullscreen(boolean enabled) {
-    if (enabled) {
-      Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
-    } else {
-      Gdx.graphics.setWindowedMode((int) viewSize.x, (int) viewSize.y);
+    boolean currentFullscreen = Gdx.graphics.isFullscreen();
+    if (enabled == currentFullscreen || fullscreenChangeInProgress) {
+      fullscreen = currentFullscreen;
+      return;
+    }
+    fullscreenChangeInProgress = true;
+    try {
+      if (enabled) {
+        Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+      } else {
+        Gdx.graphics.setWindowedMode((int) viewSize.x, (int) viewSize.y);
+      }
+    } finally {
+      fullscreenChangeInProgress = false;
+      fullscreen = Gdx.graphics.isFullscreen();
     }
   }
 
@@ -599,13 +620,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return autoPause;
   }
 
-  /**
-   * Gets called when the game is closing to perform custom cleanup
-   * after core resources are disposed and before the log thread shuts down, so any
-   * logs written here (e.g., via {@link Flixel#info}) are persisted to the log file.
-   */
-  protected void close() {}
-
   /** @see #destroy() */
   @Override
   public void dispose() {
@@ -613,10 +627,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Destroys the game and all of its resources. Note that this closes the game entirely.
-   * If you want to reset the game without closing it, use {@link #reset()} instead.
-   *
-   * @see #reset()
+   * Destroys the game and all of its resources. Note that this doesn't close the game entirely, it just disposes
+   * of the game's resources. If you want to close the entire game, use {@link Application#exit()}.
    */
   @Override
   public void destroy() {
@@ -624,29 +636,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       return;
     }
     isClosing = true;
-    teardownSessionCore(true);
-    isClosed = true;
-  }
 
-  /**
-   * Tears down this session's cameras, state, stage, and batch without application-exit semantics.
-   * No {@link Flixel#stopFileLogging()}, ANSI uninstall, or {@code postGameClose} signal, and does not dispose
-   * {@link Flixel#assets} or {@link Flixel#sound} (callers such as {@link Flixel#resetGame()} own those). Leaves
-   * {@link #isClosed()} {@code false} so the process can call {@link Flixel#initialize(FlixelGame)} again.
-   */
-  public void reset() {
-    if (batch == null && stage == null) {
-      return;
-    }
-    teardownSessionCore(false);
-    isClosing = false;
-    isClosed = false;
-  }
+    Flixel.setDrawCamera(null);
 
-  private void teardownSessionCore(boolean permanentShutdown) {
-    if (permanentShutdown) {
-      Flixel.Signals.preGameClose.dispatch();
-    }
+    Flixel.Signals.preGameClose.dispatch();
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
@@ -656,6 +649,16 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       debugOverlay.destroy();
       Flixel.clearDebugOverlay();
     }
+
+    InputProcessor processor = Gdx.input.getInputProcessor();
+    if (processor instanceof InputMultiplexer multiplexer) {
+      multiplexer.clear();
+    }
+
+    FlixelTween.cancelActiveTweens();
+    FlixelTween.clearTweenPools();
+    FlixelTween.resetRegistry();
+    FlixelTimer.cancelAll();
 
     if (Flixel.getState() != null) {
       Flixel.getState().destroy();
@@ -673,15 +676,21 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       bgTexture = null;
     }
 
-    if (permanentShutdown) {
-      if (Flixel.assets != null) {
-        Flixel.assets.dispose();
-      }
-      if (Flixel.sound != null) {
+    if (Flixel.assets != null) {
+      Flixel.assets.dispose();
+      Flixel.assets = null;
+    }
+    if (Flixel.sound != null) {
+      if (Flixel.initialized) {
         Flixel.sound.destroy();
+      } else {
+        Flixel.sound.resetSession(); // Game will crash if Flixel.resetGame() used destroy() instead!
       }
     }
 
+    for (FlixelCamera camera : cameras) {
+      camera.destroy();
+    }
     cameras = null;
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
@@ -689,17 +698,16 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     FlixelFontRegistry.dispose();
 
-    if (permanentShutdown) {
-      close();
+    Flixel.Signals.postGameClose.dispatch();
 
-      Flixel.Signals.postGameClose.dispatch();
+    // Stop file logging after the whole game closes so that way any logs made can be stored!
+    Flixel.stopFileLogging();
 
-      Flixel.stopFileLogging();
-    }
+    isClosed = true;
   }
 
   /**
-   * Configures Flixel's crash handler to safely catch uncaught exceptions and gracefully close the game.
+   * Configures the framework's crash handler to safely catch uncaught exceptions and gracefully close the game.
    */
   protected void configureCrashHandler() {
     Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
@@ -707,7 +715,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       String msg = "There was an uncaught exception on thread \"" + thread.getName() + "\"!\n" + logs;
       Flixel.error(msg);
       Flixel.showErrorAlert("Uncaught Exception", msg);
-      dispose();
+      destroy();
       // Only use Gdx.app.exit() on non-iOS platforms to avoid App Store guideline violations!
       if (Gdx.app.getType() != Application.ApplicationType.iOS) {
         Gdx.app.exit();
@@ -808,6 +816,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       return;
     }
     this.bgColor.set(bgColor);
+  }
+
+  public boolean isGamePaused() {
+    return gamePaused;
   }
 
   public boolean isMinimized() {

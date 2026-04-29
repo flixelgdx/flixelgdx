@@ -149,7 +149,7 @@ public class FlixelTweenSettings {
     return onComplete;
   }
 
-  public FlixelTweenVarGoal getGoal(String field) {
+  public FlixelTweenVarGoal getVarGoal(String field) {
     for (FlixelTweenVarGoal goal : goals) {
       if (goal.field().equals(field)) {
         return goal;
@@ -158,7 +158,7 @@ public class FlixelTweenSettings {
     return null;
   }
 
-  public Array<FlixelTweenVarGoal> getGoals() {
+  public Array<FlixelTweenVarGoal> getVarGoals() {
     return goals;
   }
 

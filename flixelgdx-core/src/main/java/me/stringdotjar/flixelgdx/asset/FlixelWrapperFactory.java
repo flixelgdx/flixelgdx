@@ -10,9 +10,14 @@ package me.stringdotjar.flixelgdx.asset;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 /**
  * Creates and pools wrapper instances for a single wrapper type. Register with
  * {@link FlixelAssetManager#registerWrapperFactory(FlixelWrapperFactory)}.
+ *
+ * <p>Implementations for their object map should make its key type as {@link String}, and its
+ * value type as the wrapper object {@link W}.
  *
  * @param <W> Concrete wrapper type (e.g. {@link me.stringdotjar.flixelgdx.graphics.FlixelGraphic}).
  */
@@ -29,14 +34,20 @@ public interface FlixelWrapperFactory<W> {
   @Nullable
   W peek(@NotNull FlixelAssetManager assets, @NotNull String key);
 
-  /**
-   * Inserts a caller-constructed wrapper (e.g. owned resource) into the pool under {@link FlixelPooledWrapper#getAssetKey()}.
-   */
+  /** Inserts a caller-constructed wrapper (e.g. owned resource) into the pool under {@link FlixelPooledWrapper#getAssetKey()}. */
   void registerInstance(@NotNull FlixelAssetManager assets, @NotNull W wrapper);
 
   /** Disposes all non-persistent wrapper objects. */
   void clearNonPersist(@NotNull FlixelAssetManager assets);
 
-  /** Disposes all wrapper objects. */
-  void clearAll();
+  /** Accepts a {@link Consumer} and iterates through the cached objects in {@code this} factory. */
+  void forEachWrappedAsset(Consumer<W> consumer);
+
+  /**
+   * Disposes and evicts all wrapper objects. Path-keyed assets should be unloaded from the
+   * underlying {@link com.badlogic.gdx.assets.AssetManager} when applicable.
+   *
+   * @param assets The manager that owns this factory, used to reach the libGDX {@code AssetManager}.
+   */
+  void clearAll(@NotNull FlixelAssetManager assets);
 }

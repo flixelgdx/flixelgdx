@@ -20,7 +20,7 @@ import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
-import me.stringdotjar.flixelgdx.util.FlixelConstants;
+import me.stringdotjar.flixelgdx.util.FlixelColor;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
  * <strong>not</strong> allocated by default (saves memory for large sprite counts on the order of thousands of
- * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or {@link #setAnimation(FlixelAnimationController)}
+ * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or assign a controller directly
  * when you need clips, then use {@code sprite.ensureAnimation().playAnimation(...)}, {@code loadSparrowFrames(...)}, etc.
  *
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
@@ -48,7 +48,7 @@ public class FlixelSprite extends FlixelObject {
   protected Array<FlixelFrame> atlasFrames;
 
   /**
-   * Optional animation controller; {@code null} until {@link #ensureAnimation()} or {@link #setAnimation(FlixelAnimationController)}.
+   * Heavy controller object for handling animations. {@code null} until {@link #ensureAnimation()} or assigned directly.
    */
   @Nullable
   public FlixelAnimationController animation;
@@ -99,11 +99,22 @@ public class FlixelSprite extends FlixelObject {
   protected boolean flipY = false;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
-  protected int facing = FlixelConstants.Graphics.FACING_RIGHT;
+  protected int facing = FlixelObject.DirectionFlags.RIGHT;
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
-    super();
+    this(0, 0);
+  }
+
+  public FlixelSprite(float x,  float y) {
+    this(x, y, null);
+  }
+
+  public FlixelSprite(float x, float y, String graphicAssetKey) {
+    super(x, y);
+    if (graphicAssetKey != null && graphicAssetKey.isEmpty()) {
+      loadGraphic(graphicAssetKey);
+    }
   }
 
   /**
@@ -115,10 +126,6 @@ public class FlixelSprite extends FlixelObject {
       animation = new FlixelAnimationController(this);
     }
     return animation;
-  }
-
-  public void setAnimation(@Nullable FlixelAnimationController animation) {
-    this.animation = animation;
   }
 
   /**
@@ -144,6 +151,15 @@ public class FlixelSprite extends FlixelObject {
     if (frame != null) {
       currentRegion = frame;
     }
+  }
+
+  /**
+   * Clears the active Sparrow / atlas / animation display frame. {@link #draw} will draw nothing
+   * until a frame is set again (e.g. by {@link FlixelAnimationController} or {@link #applySparrowAtlas}).
+   */
+  public void clearAnimationDisplayFrame() {
+    currentFrame = null;
+    currentRegion = null;
   }
 
   /**
@@ -215,7 +231,7 @@ public class FlixelSprite extends FlixelObject {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
     Texture t = requireOrLoad(g);
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
@@ -232,14 +248,14 @@ public class FlixelSprite extends FlixelObject {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
     Texture t = requireOrLoad(g);
     return loadGraphic(g, frameWidth, t.getHeight());
   }
 
   /**
    * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@code Flixel.assets.update()} in a loading state.
+   * and {@link FlixelAssetManager#update()} in a loading state.
    *
    * <p>This method falls back to a synchronous load if the texture is not loaded yet.
    * Preloading is still strongly recommended to avoid mid-frame stalls.
@@ -250,8 +266,29 @@ public class FlixelSprite extends FlixelObject {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class).retain();
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
     return loadGraphic(g, frameWidth, frameHeight);
+  }
+
+  /**
+   * Loads a graphic from a {@link FlixelGraphic}.
+   *
+   * @param g The {@link FlixelGraphic} to load.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g) {
+    return loadGraphic(g, g.requireTexture().getWidth(), g.requireTexture().getHeight());
+  }
+
+  /**
+   * Loads a graphic from a {@link FlixelGraphic}.
+   *
+   * @param g The {@link FlixelGraphic} to load.
+   * @param frameWidth The width of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite loadGraphic(FlixelGraphic g, int frameWidth) {
+    return loadGraphic(g, frameWidth, g.requireTexture().getHeight());
   }
 
   /**
@@ -321,11 +358,12 @@ public class FlixelSprite extends FlixelObject {
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} only;
+   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link me.stringdotjar.flixelgdx.animation.FlixelSpritemapJsonLoader#load};
    * not a general API for game code.
    *
-   * @param newGraphic Graphic wrapper already {@code retain()}ed by the caller.
-   * @param parsedFrames Frames built from the XML (may be empty).
+   * @param newGraphic Graphic from {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...)} (implicit retain).
+   * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
     if (graphic != null) {
@@ -346,12 +384,15 @@ public class FlixelSprite extends FlixelObject {
 
   @Override
   public void draw(Batch batch) {
+    if (!visible) {
+      return;
+    }
     if (!isOnDrawCamera()) {
       return;
     }
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
-    float wx = getX() - cam.scroll.x * scrollX;
-    float wy = getY() - cam.scroll.y * scrollY;
+    float wx = cam.worldToViewX(getX(), scrollX);
+    float wy = cam.worldToViewY(getY(), scrollY);
     if (currentFrame != null) {
       float oX = currentFrame.originalWidth / 2f;
       float oY = currentFrame.originalHeight / 2f;
@@ -359,10 +400,12 @@ public class FlixelSprite extends FlixelObject {
       float drawX = wx - offsetX + currentFrame.offsetX;
       float drawY = wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
 
-      boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       batch.setColor(color);
+      // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
+      // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
       batch.draw(
         currentFrame.getTexture(),
         drawX,
@@ -371,8 +414,8 @@ public class FlixelSprite extends FlixelObject {
         oY - (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY),
         currentFrame.getRegionWidth(),
         currentFrame.getRegionHeight(),
-        isFlippedX ? -scaleX : scaleX,
-        isFlippedY ? -scaleY : scaleY,
+        scaleX,
+        scaleY,
         getAngle(),
         currentFrame.getRegionX(),
         currentFrame.getRegionY(),
@@ -382,7 +425,7 @@ public class FlixelSprite extends FlixelObject {
         isFlippedY);
       batch.setColor(Color.WHITE);
     } else if (currentRegion != null) {
-      boolean isFlippedX = flipX || (facing == FlixelConstants.Graphics.FACING_LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       float sx = isFlippedX ? -scaleX : scaleX;
@@ -405,8 +448,7 @@ public class FlixelSprite extends FlixelObject {
   }
 
   /**
-   * Sets how large the graphic is drawn on screen (in pixels), without changing which part of the
-   * texture is used.
+   * Sets how large the graphic is drawn on screen (in pixels), without changing which part of the texture is used.
    *
    * <p>This adjusts {@link #setScale(float, float)} so the full current frame/region maps to the
    * given size. It does <em>not</em> change {@link TextureRegion} bounds: {@code
@@ -572,6 +614,14 @@ public class FlixelSprite extends FlixelObject {
     this.scaleY = scaleY;
   }
 
+  public void setScaleX(float scaleX) {
+    this.scaleX = scaleX;
+  }
+
+  public void setScaleY(float scaleY) {
+    this.scaleY = scaleY;
+  }
+
   public float getOriginX() {
     return originX;
   }
@@ -648,6 +698,10 @@ public class FlixelSprite extends FlixelObject {
 
   public void setColor(float r, float g, float b, float a) {
     color.set(r, g, b, a);
+  }
+
+  public void setColor(@NotNull FlixelColor tint) {
+    color.set(tint.getGdxColor());
   }
 
   public void setAlpha(float a) {

@@ -29,9 +29,8 @@ import org.gradle.api.provider.Property;
  *   // Override the canvas element ID (default: "flixelgdx-canvas").
  *   canvasId = 'my-game-canvas'
  *
- *   // Change where the web app is assembled (default: "$buildDir/dist/webapp").
- *   // Must match teavm.js.outputDir! Otherwise, the generated index.html will not be found.
- *   outputDir = file("$buildDir/dist/webapp")
+ *   // outputDir: omit to use the same directory as teavm.all.outputDir (set only in teavm { all { ... } }).
+ *   // Override only if FlixelGDX must use a different folder than TeaVM (unusual).
  *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
@@ -86,19 +85,20 @@ public interface FlixelTeaVMExtension {
    * <p>Must match the {@code canvasID} field of {@code WebApplicationConfiguration} passed to
    * {@code FlixelTeaVMLauncher.launch()}. Defaults to {@value #DEFAULT_CANVAS_ID}.
    *
-   * @return the canvas element ID property.
+   * @return The canvas element ID property.
    */
   Property<String> getCanvasId();
 
   /**
    * Directory into which the assembled web application is written.
    *
-   * <p>This must match the value of {@code teavm.js.outputDir} in the {@code org.teavm} plugin
-   * block so that copied assets, web resources, and the generated {@code index.html} are placed
-   * alongside the compiled {@code teavm.js} file. Defaults to
-   * {@code "$buildDir/dist/webapp"}.
+   * <p>By default, this property {@linkplain org.gradle.api.provider.Property#convention conventions}
+   * to the same {@link org.gradle.api.file.DirectoryProperty} as {@code teavm.all.outputDir} from the
+   * {@code org.teavm} plugin. Set a value only if FlixelGDX assets and the TeaVM output must go to
+   * different roots (unusual). If the {@code teavm} extension is not present, the default matches
+   * TeaVM's: {@code "$buildDir/dist/webapp"}.
    *
-   * @return the output directory property.
+   * @return The output directory property.
    */
   DirectoryProperty getOutputDir();
 
@@ -110,7 +110,7 @@ public interface FlixelTeaVMExtension {
    * contains an {@code index.html}, the plugin skips automatic index generation. Defaults to
    * {@code src/main/webapp} relative to the web module.
    *
-   * @return the webapp source directory property.
+   * @return The webapp source directory property.
    */
   DirectoryProperty getWebappDir();
 
@@ -120,7 +120,7 @@ public interface FlixelTeaVMExtension {
    * <p>Defaults to the {@code assets/} directory at the root of the Gradle project (i.e. the
    * sibling of the core, desktop, and teavm modules).
    *
-   * @return the assets source directory property.
+   * @return The assets source directory property.
    */
   DirectoryProperty getAssetsDir();
 
@@ -128,10 +128,12 @@ public interface FlixelTeaVMExtension {
    * Whether the plugin should generate a default {@code index.html} when none is found in {@link #getWebappDir()}.
    *
    * <p>The generated page includes a {@code <canvas>} with the ID from {@link #getCanvasId()} and
-   * a {@code <script>} tag that loads {@code js/teavm.js}. Set to {@code false} to suppress
-   * generation entirely (you must then provide your own {@code index.html}). Defaults to {@code true}.
+   * a {@code <script src=".../teavm.js">} tag resolved from TeaVM's relative JS output path
+   * (the {@code aliasTeaVmMainScript} task keeps that name valid when TeaVM uses another file name).
+   * Set to {@code false} to suppress generation entirely (you must then provide your own {@code index.html}). 
+   * Defaults to {@code true}.
    *
-   * @return the {@code generate-index-html} property.
+   * @return The {@code generate-index-html} property.
    */
   Property<Boolean> getGenerateDefaultIndexHtml();
 
@@ -142,7 +144,7 @@ public interface FlixelTeaVMExtension {
    * <p>It does this by copying the default file (located in the {@code resources} folder) into the user's
    * {@code <outputDir>/assets/} folder, as gdx-teavm expects a loading logo when the game is being prepared.
    *
-   * @return the {@code generate-default-startup-logo} property.
+   * @return The {@code generate-default-startup-logo} property.
    */
   Property<Boolean> getGenerateDefaultStartupLogo();
 
@@ -157,7 +159,7 @@ public interface FlixelTeaVMExtension {
    * }
    * }</pre>
    *
-   * @return the dev server port property.
+   * @return The dev server port property.
    */
   Property<Integer> getDevServerPort();
 
@@ -169,7 +171,7 @@ public interface FlixelTeaVMExtension {
    * {@link #getWebappDir()}. The canvas ID substitution ({@code {{CANVAS_ID}}}) is not applied.
    * The developer is responsible for the full HTML content.
    *
-   * @return the custom index.html file property.
+   * @return The custom index.html file property.
    */
   RegularFileProperty getCustomIndexHtml();
 
@@ -179,7 +181,7 @@ public interface FlixelTeaVMExtension {
    * <p>When set, this file is copied to {@code <outputDir>/assets/startup-logo.png}, replacing
    * both the built-in placeholder and any auto-generation. The file must be a valid PNG image.
    *
-   * @return the custom startup logo file property.
+   * @return The custom startup logo file property.
    */
   RegularFileProperty getCustomStartupLogo();
 
@@ -191,7 +193,7 @@ public interface FlixelTeaVMExtension {
    * {@code index.html} is provided via {@link #getCustomIndexHtml()} or {@link #getWebappDir()},
    * since those are copied verbatim.
    *
-   * @return the custom favicon file property.
+   * @return The custom favicon file property.
    */
   RegularFileProperty getCustomFavicon();
 }

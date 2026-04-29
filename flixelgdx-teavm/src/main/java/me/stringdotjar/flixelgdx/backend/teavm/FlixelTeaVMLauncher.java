@@ -17,6 +17,7 @@ import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
 import me.stringdotjar.flixelgdx.backend.teavm.audio.FlixelDefaultSoundHandler;
+import me.stringdotjar.flixelgdx.backend.teavm.logging.FlixelTeaVMLogConsole;
 import me.stringdotjar.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
 
 import java.util.function.Consumer;
@@ -62,7 +63,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>File logging is intentionally disabled on the web backend because browsers do not expose a host filesystem.
  * The {@link me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler} is not registered, so {@link Flixel#startFileLogging()} is a safe no-op.
- * Console output still works through {@code System.out.println}, which TeaVM maps to {@code console.log}.
+ * Console output uses {@link Flixel#setLogConsoleSink} with a styled {@code console} writer so log lines appear with readable colors
+ * in the browser; ANSI {@code System.out} is not used on web.
  *
  * @see FlixelGame
  * @see WebApplicationConfiguration
@@ -107,6 +109,7 @@ public class FlixelTeaVMLauncher {
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, @Nullable Consumer<WebApplicationConfiguration> configCustomizer) {
     Flixel.setAlerter(new FlixelTeaVMAlerter());
     Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
+    Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit);
     Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setSoundBackendFactory(new FlixelDefaultSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);

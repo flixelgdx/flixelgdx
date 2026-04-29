@@ -741,10 +741,13 @@ public class FlixelText extends FlixelSprite {
       return;
     }
     rebuildIfDirty();
+    if (bitmapFont == null) {
+      return;
+    }
 
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
-    float wx = getX() - cam.scroll.x * getScrollX();
-    float wy = getY() - cam.scroll.y * getScrollY();
+    float wx = cam.worldToViewX(getX(), getScrollX());
+    float wy = cam.worldToViewY(getY(), getScrollY());
 
     float scaleX = getScaleX();
     float scaleY = getScaleY();
@@ -927,7 +930,13 @@ public class FlixelText extends FlixelSprite {
       oldFont.dispose();
     }
 
-    bitmapFont.setUseIntegerPositions(!antialiasing);
+    // bitmapFont can legitimately be null on platforms where the packaged default font
+    // is unavailable (for example, a TeaVM build that has not run the FlixelGDX TeaVM
+    // plugin's asset copy task). Skip the integer-position toggle so rendering simply
+    // becomes a no-op rather than crashing.
+    if (bitmapFont != null) {
+      bitmapFont.setUseIntegerPositions(!antialiasing);
+    }
   }
 
   /**
