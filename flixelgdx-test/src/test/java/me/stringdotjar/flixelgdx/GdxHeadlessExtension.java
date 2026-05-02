@@ -16,7 +16,7 @@ import com.badlogic.gdx.backends.headless.HeadlessApplication;
 import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration;
 
 /**
- * Starts a minimal libGDX headless application so {@link Gdx#app} and related statics are valid for tests.
+ * Starts a minimal libGDX headless application so {@link com.badlogic.gdx.Gdx#app} and related statics are valid for tests.
  */
 public final class GdxHeadlessExtension implements BeforeAllCallback, AfterAllCallback {
 
