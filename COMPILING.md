@@ -357,29 +357,30 @@ After the project is generated, add FlixelGDX and wire it in:
      ```java
      package com.example.flixeltest;
 
-    import com.example.flixeltest.MyTestState;
-    import com.example.flixeltest.FlixelTestGame;
-    import me.stringdotjar.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
+     import com.example.flixeltest.MyTestState;
+     import com.example.flixeltest.FlixelTestGame;
+     import me.stringdotjar.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
 
-    /** Launches the desktop (LWJGL3) application. */
-    public class Lwjgl3Launcher {
+     /** Launches the desktop (LWJGL3) application. */
+     public class Lwjgl3Launcher {
+ 
+       public static void main(String[] args) {
+         if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
+ 
+         // Create your game and pass the initial screen.
+         FlixelTestGame game = new FlixelTestGame(
+           "Flixel Test", 
+           800, 
+           600, 
+           new MyTestState()
+         );
+ 
+         // Launch the game using the FlixelGDX LWJGL3 launcher.
+         FlixelLwjgl3Launcher.launch(game);
+       }
+     }
+     ```
 
-      public static void main(String[] args) {
-        if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
-
-        // Create your game and pass the initial screen.
-        FlixelTestGame game = new FlixelTestGame(
-          "Flixel Test", 
-          800, 
-          600, 
-          new MyTestState()
-        );
-
-        // Launch the game using the FlixelGDX LWJGL3 launcher.
-        FlixelLwjgl3Launcher.launch(game);
-      }
-    }
-    ```
 7. **Refresh Gradle** in your IDE (e.g. “Reload All Gradle Projects” or Gradle sync). Resolve any import errors so that `FlixelGame`, `FlixelState`, and `Flixel` are found from `flixelgdx-core`, and `FlixelLwjgl3Launcher` from `flixelgdx-lwjgl3`.
 8. **Run the desktop launcher.**
   Run the **lwjgl3** run configuration with the main class set to your launcher (e.g. `FlixelTestLauncher`). You should see your state. If you added Android/iOS/HTML, run the corresponding launcher or Gradle task for that platform to test there as well.
