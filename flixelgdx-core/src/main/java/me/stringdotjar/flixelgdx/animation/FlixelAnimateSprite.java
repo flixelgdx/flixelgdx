@@ -25,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link FlixelSprite} that renders Adobe Animate ("BTA") multi-part rigs produced by an Animate
+ * A {@link FlixelSprite} that renders Adobe Animate ("BTA") multipart rigs produced by an Animate
  * texture-atlas export. The three input files ({@code spritemap1.png}, {@code spritemap1.json},
  * {@code Animation.json}) are loaded through {@link #loadSpritemapAndAnimation}, which hands them to
  * {@link FlixelAnimateRigLoader} for parsing and baking into a {@link FlixelAnimateRig}.
@@ -189,7 +189,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * behaviour of the original {@code flxanimate} library), which lets later loads act as costume
    * overrides.
    *
-   * <p>This is useful for merging multiple atlases into a single sprite, such as when a character has 
+   * <p>This is useful for merging multiple atlases into a single sprite, such as when a character has
    * multiple costumes. For example, a character might have a basic singing atlas and a playable miss atlas,
    * and a third might hold extra cinematic poses.
    *
