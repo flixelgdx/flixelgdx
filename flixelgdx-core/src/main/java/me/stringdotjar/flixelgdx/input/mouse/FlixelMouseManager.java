@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Vector2;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #endFrame()} clears it (same timing as other per-frame input you consume in your game loop).
  * </p>
  */
-public class FlixelMouseManager {
+public class FlixelMouseManager implements FlixelInputProcessorManager {
 
   private static final int MAX_BUTTON = 4;
 

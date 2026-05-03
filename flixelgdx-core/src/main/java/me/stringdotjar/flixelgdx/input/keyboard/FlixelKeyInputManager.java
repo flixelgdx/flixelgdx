@@ -14,6 +14,8 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.utils.IntArray;
 import com.badlogic.gdx.utils.IntSet;
 
+import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
+
 /**
  * Keyboard input manager backed by {@link com.badlogic.gdx.Gdx#input}.
  *
@@ -33,7 +35,7 @@ import com.badlogic.gdx.utils.IntSet;
  * {@link InputMultiplexer}). If you replace the input processor with your own, add this one first
  * so key state still updates.
  */
-public class FlixelKeyInputManager {
+public class FlixelKeyInputManager implements FlixelInputProcessorManager {
 
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;

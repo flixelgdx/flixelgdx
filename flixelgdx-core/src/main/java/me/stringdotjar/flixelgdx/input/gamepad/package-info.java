@@ -1,8 +1,10 @@
 /**
  * Gamepad input support for FlixelGDX.
  *
- * <p>This package contains gamepad input helpers and integration points for platforms that support
- * controllers. It is intended to complement keyboard input and to provide a consistent API across
- * backends where possible.
+ * <p>{@link me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadModel} describes the
+ * detected controller family; {@link me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadMapping}
+ * translates logical buttons and axes to native indices; {@link me.stringdotjar.flixelgdx.Flixel#gamepads}
+ * is the global {@link me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadManager} wired from
+ * {@link me.stringdotjar.flixelgdx.FlixelGame} each frame.
  */
 package me.stringdotjar.flixelgdx.input.gamepad;
