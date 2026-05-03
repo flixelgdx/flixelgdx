@@ -33,7 +33,7 @@ import me.stringdotjar.flixelgdx.FlixelDestroyable;
  *     move = new FlixelActionAnalog("move");
  *   }
  * }
- * }
+ * }</pre>
  */
 public class FlixelActionSet implements InputProcessor, FlixelDestroyable {
 
