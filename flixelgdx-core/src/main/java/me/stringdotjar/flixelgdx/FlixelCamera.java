@@ -452,7 +452,7 @@ public class FlixelCamera extends FlixelBasic {
    */
   public void follow(FlixelObject target, FollowStyle style, float lerp) {
     this.target = target;
-    this.style = style;
+    this.style = style != null ? style : FollowStyle.LOCKON;
     this.followLerp = lerp;
     updateDeadzoneForStyle();
   }
@@ -577,6 +577,10 @@ public class FlixelCamera extends FlixelBasic {
   }
 
   private void updateDeadzoneForStyle() {
+    if (style == null) {
+      return;
+    }
+
     float vw = getViewWidth();
     float vh = getViewHeight();
     float w, h;
