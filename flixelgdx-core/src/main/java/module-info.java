@@ -11,9 +11,10 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.graphics;
   exports me.stringdotjar.flixelgdx.text;
   exports me.stringdotjar.flixelgdx.group;
+  exports me.stringdotjar.flixelgdx.input.action;
+  exports me.stringdotjar.flixelgdx.input.gamepad;
   exports me.stringdotjar.flixelgdx.input.keyboard;
   exports me.stringdotjar.flixelgdx.input.mouse;
-  exports me.stringdotjar.flixelgdx.input.gamepad;
   exports me.stringdotjar.flixelgdx.logging;
   exports me.stringdotjar.flixelgdx.tween;
   exports me.stringdotjar.flixelgdx.tween.builders;

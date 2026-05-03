@@ -52,8 +52,8 @@ import java.util.function.Supplier;
  * // to the game's behavior.
  * public class MyGame extends FlixelGame {
  *
- *   public MyGame(String title, int width, int height, FlixelState initialState) {
- *     super(title, width, height, initialState);
+ *   public MyGame() {
+ *     super("My Game Title", 640, 360, new InitialState());
  *   }
  * }
  * }</pre>
@@ -69,14 +69,7 @@ import java.util.function.Supplier;
  *       return;
  *     }
  *
- *     MyGame game = new MyGame(
- *       "My Game",
- *       800,
- *       600,
- *       new InitialState() // The initial state the game enters when it starts!
- *     );
- *
- *     FlixelLwjgl3Launcher.launch(game);
+ *     FlixelLwjgl3Launcher.launch(new MyGame());
  *   }
  * }
  * }</pre>

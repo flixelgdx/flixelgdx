@@ -1,6 +1,7 @@
 package me.stringdotjar.flixelgdx.input.action;
 
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.utils.Array;
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
 
 /**
@@ -10,14 +11,14 @@ import me.stringdotjar.flixelgdx.FlixelDestroyable;
  * nightmare to maintain and expand upon. By using an action set, you can easily add new input types and actions without
  * having to change your game code.
  *
- * <p>It's as simple as creating a new action, adding it to the action set, and then checking if the action is triggered
- * in your game code. Not only does this make your code cleaner and more maintainable, but it also makes it incredibly
- * easier for the player, too.
+ * <p>It's as simple as creating a new action, adding it to the action set, and then registering it as an {@link InputProcessor}.
+ * Not only does this make your code cleaner and more maintainable, but it also makes it incredibly easier for the
+ * player, too.
  *
  * <p>Let's say for example, you are making a game, and you want to make a specific bind changeable by the player. If
  * you tried to directly access the input system, you would have to write a ton of unnecessary boilerplate code just to
- * make a simple bind changeable, which can lead to bugs and very messy to maintain; however, if you used an action set,
- * all you need to do is simply change a key from an action from an action set, and that's it.
+ * make a simple bind changeable, which can lead to bugs and become very messy to maintain; however, if you used an
+ * action set, all you need to do is simply change a key from an action in an action set, and that's it.
  *
  * <p>It is recommended to use this system in the following way:
  *
@@ -34,8 +35,28 @@ import me.stringdotjar.flixelgdx.FlixelDestroyable;
  *   }
  * }
  * }</pre>
+ *
+ * Then, you register the new action so it can actually be used:
+ *
+ * <pre>{@code
+ * // Add the new action set to the processor system on the libGDX layer.
+ * // It's recommended to check if the current processor is a multiplexer (usually it is)
+ * // because you still might want to keep the other processors you or the framework set.
+ * // FlixelGDX and libGDX usually add their own processors, so it's a good practice to not
+ * // remove or override them!
+ * InputProcessor current = Gdx.input.getInputProcessor();
+ * if (current instanceof InputMultiplexer m) {
+ *   m.addProcessor(new PlayerControls());
+ * }
+ * }</pre>
  */
 public class FlixelActionSet implements InputProcessor, FlixelDestroyable {
+
+  protected Array<FlixelAction> members;
+
+  public FlixelActionSet() {
+    members = new Array<>(FlixelAction[]::new);
+  }
 
   @Override
   public boolean keyDown(int keycode) {
