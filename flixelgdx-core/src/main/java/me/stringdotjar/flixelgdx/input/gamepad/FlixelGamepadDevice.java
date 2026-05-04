@@ -19,7 +19,7 @@ public final class FlixelGamepadDevice {
   private final FlixelGamepadManager manager;
   private final int id;
 
-  public FlixelGamepadDevice(@NotNull FlixelGamepadManager manager, int id) {
+  FlixelGamepadDevice(@NotNull FlixelGamepadManager manager, int id) {
     this.manager = manager;
     this.id = id;
   }

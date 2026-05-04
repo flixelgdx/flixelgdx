@@ -20,7 +20,7 @@ public interface FlixelInputManager {
   void update();
 
   /**
-   * Finalizes this frame after gameplay and draw hooks run. Typically copies the current snapshot
+   * Finalizes this frame after gameplay and draw hooks run. Typically, it copies the current snapshot
    * into the previous snapshot used on the next frame for edge detection.
    */
   void endFrame();

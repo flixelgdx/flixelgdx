@@ -127,6 +127,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * at the <i>end</i> of the update cycle (after all state updates) so that
    * {@link #firstJustPressed()} and {@link #firstJustReleased()} work correctly next frame.
    */
+  @Override
   public void endFrame() {
     previousPressedKeys.clear();
     previousPressedKeys.addAll(currentPressedKeys);
