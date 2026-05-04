@@ -25,9 +25,9 @@ import java.util.Arrays;
  * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
  * keyboard and mouse frame contract from {@link me.stringdotjar.flixelgdx.FlixelGame}.
  *
- * <p>Use logical button constants from {@link FlixelGamepadInput} (for example {@link FlixelGamepadInput#A})
- * with {@link #pressed(int, int)}. {@link FlixelGamepadDevice} is optional; call {@link #ensureDevice(int)}
- * once per slot you want a facade for.
+ * <p>Use logical button and axis constants from {@link FlixelGamepadInput} (for example {@link FlixelGamepadInput#A})
+ * with {@link #pressed(int, int)}; each {@link Controller#getMapping()} supplies native indices.
+ * {@link FlixelGamepadDevice} is optional; call {@link #ensureDevice(int)} once per slot you want a facade for.
  */
 public final class FlixelGamepadManager implements FlixelInputManager, ControllerListener {
 
@@ -94,7 +94,6 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   private final Controller[] slotController = new Controller[MAX_GAMEPADS];
   private final FlixelGamepadModel[] slotModel = new FlixelGamepadModel[MAX_GAMEPADS];
-  private final FlixelGamepadMapping[] slotMapping = new FlixelGamepadMapping[MAX_GAMEPADS];
 
   private final boolean[][] currentButtons = new boolean[MAX_GAMEPADS][MAX_BUTTONS];
   private final boolean[][] previousButtons = new boolean[MAX_GAMEPADS][MAX_BUTTONS];
@@ -143,7 +142,6 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     numActiveGamepads = 0;
     Arrays.fill(slotController, null);
     Arrays.fill(slotModel, FlixelGamepadModel.UNKNOWN);
-    Arrays.fill(slotMapping, null);
     Arrays.fill(ensuredDevices, null);
     for (int i = 0; i < MAX_GAMEPADS; i++) {
       Arrays.fill(currentButtons[i], false);
@@ -357,15 +355,14 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     }
 
     Controller c = slotController[gamepadId];
-    FlixelGamepadMapping map = slotMapping[gamepadId];
-    if (c == null || map == null) {
+    if (c == null) {
       return false;
     }
     if (logicalButton == FlixelGamepadInput.ANY) {
-      return slotAnyPhysicalButton(gamepadId, c) || slotHasAxisBeyondDeadzone(gamepadId, c, map);
+      return slotAnyPhysicalButton(gamepadId, c) || slotHasAxisBeyondDeadzone(gamepadId, c);
     }
 
-    int nativeCode = map.toNativeButton(c, logicalButton);
+    int nativeCode = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
     if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
@@ -378,8 +375,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     }
 
     Controller c = slotController[gamepadId];
-    FlixelGamepadMapping map = slotMapping[gamepadId];
-    if (c == null || map == null) {
+    if (c == null) {
       return false;
     }
 
@@ -394,7 +390,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return false;
     }
 
-    int nativeCode = map.toNativeButton(c, logicalButton);
+    int nativeCode = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
     if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
@@ -407,8 +403,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     }
 
     Controller c = slotController[gamepadId];
-    FlixelGamepadMapping map = slotMapping[gamepadId];
-    if (c == null || map == null) {
+    if (c == null) {
       return false;
     }
 
@@ -423,7 +418,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return false;
     }
 
-    int nativeCode = map.toNativeButton(c, logicalButton);
+    int nativeCode = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
     if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
@@ -502,12 +497,10 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
         if (newC != null) {
           FlixelGamepadModel model = FlixelGamepadDetector.detect(newC.getName());
           slotModel[i] = model;
-          slotMapping[i] = FlixelGamepadMapping.forModel(model);
           connectPayload.set(i, model);
           deviceConnected.dispatch(connectPayload);
         } else {
           slotModel[i] = FlixelGamepadModel.UNKNOWN;
-          slotMapping[i] = null;
         }
       }
     }
@@ -551,21 +544,21 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
-  private boolean slotHasAxisBeyondDeadzone(int slot, @NotNull Controller c, @NotNull FlixelGamepadMapping map) {
+  private boolean slotHasAxisBeyondDeadzone(int slot, @NotNull Controller c) {
     float dz = deadZoneValue();
-    int ax = map.toNativeAxis(c, FlixelGamepadInput.AXIS_LEFT_X);
+    int ax = FlixelGamepadInput.logicalAxisToNative(c, FlixelGamepadInput.AXIS_LEFT_X);
     if (isAxisActive(slot, ax, dz)) {
       return true;
     }
-    ax = map.toNativeAxis(c, FlixelGamepadInput.AXIS_LEFT_Y);
+    ax = FlixelGamepadInput.logicalAxisToNative(c, FlixelGamepadInput.AXIS_LEFT_Y);
     if (isAxisActive(slot, ax, dz)) {
       return true;
     }
-    ax = map.toNativeAxis(c, FlixelGamepadInput.AXIS_RIGHT_X);
+    ax = FlixelGamepadInput.logicalAxisToNative(c, FlixelGamepadInput.AXIS_RIGHT_X);
     if (isAxisActive(slot, ax, dz)) {
       return true;
     }
-    ax = map.toNativeAxis(c, FlixelGamepadInput.AXIS_RIGHT_Y);
+    ax = FlixelGamepadInput.logicalAxisToNative(c, FlixelGamepadInput.AXIS_RIGHT_Y);
     return isAxisActive(slot, ax, dz);
   }
 
@@ -578,11 +571,10 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   private boolean slotHasAnalogOrButtonActivity(int slot) {
     Controller c = slotController[slot];
-    FlixelGamepadMapping map = slotMapping[slot];
-    if (c == null || map == null) {
+    if (c == null) {
       return false;
     }
-    return slotAnyPhysicalButton(slot, c) || slotHasAxisBeyondDeadzone(slot, c, map);
+    return slotAnyPhysicalButton(slot, c) || slotHasAxisBeyondDeadzone(slot, c);
   }
 
   private float getAxisRaw(int gamepadId, int logicalAxis) {
@@ -590,11 +582,10 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return 0f;
     }
     Controller c = slotController[gamepadId];
-    FlixelGamepadMapping map = slotMapping[gamepadId];
-    if (c == null || map == null) {
+    if (c == null) {
       return 0f;
     }
-    int nat = map.toNativeAxis(c, logicalAxis);
+    int nat = FlixelGamepadInput.logicalAxisToNative(c, logicalAxis);
     if (nat == ControllerMapping.UNDEFINED || nat < 0 || nat >= MAX_AXES) {
       return 0f;
     }

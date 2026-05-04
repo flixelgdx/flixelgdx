@@ -8,8 +8,8 @@
 package me.stringdotjar.flixelgdx.input.gamepad;
 
 /**
- * High-level controller family used for UI prompts (for example "press A" vs "press X") and for
- * choosing a {@link FlixelGamepadMapping} instance.
+ * High-level controller family used for UI prompts (for example "press A" vs "press X") and
+ * telemetry. Input indices still come from each {@link com.badlogic.gdx.controllers.Controller#getMapping()}.
  */
 public enum FlixelGamepadModel {
 
@@ -35,8 +35,8 @@ public enum FlixelGamepadModel {
   OUYA,
 
   /**
-   * Family not recognized from the runtime name. Uses the same logical mapping as a standard
-   * gamepad (SDL "standard" layout via gdx {@link com.badlogic.gdx.controllers.ControllerMapping}).
+   * Family not recognized from the runtime name. Polling still uses that controller's
+   * {@link com.badlogic.gdx.controllers.Controller#getMapping()} like any other model.
    */
   UNKNOWN
 }

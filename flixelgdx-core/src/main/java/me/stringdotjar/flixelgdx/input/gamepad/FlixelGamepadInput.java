@@ -8,6 +8,8 @@
 package me.stringdotjar.flixelgdx.input.gamepad;
 
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.controllers.Controller;
+import com.badlogic.gdx.controllers.ControllerMapping;
 
 import java.util.Locale;
 
@@ -15,7 +17,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Logical gamepad button and axis identifiers shared across {@link FlixelGamepadMapping} and {@link FlixelGamepadManager}.
+ * Logical gamepad button and axis identifiers for {@link FlixelGamepadManager}, resolved to native
+ * indices through each {@link Controller#getMapping()} (gdx-controllers SDL-style layout).
  */
 public final class FlixelGamepadInput {
 
@@ -50,6 +53,93 @@ public final class FlixelGamepadInput {
   public static final int AXIS_LEFT_Y = 1;
   public static final int AXIS_RIGHT_X = 2;
   public static final int AXIS_RIGHT_Y = 3;
+
+  /**
+   * Resolves a logical button code to the native button index for the given controller.
+   *
+   * @param controller Controller whose {@link Controller#getMapping()} is used.
+   * @param logicalButton Value from this class, except {@link #ANY} and {@link #NONE}.
+   * @return Native index, or {@link ControllerMapping#UNDEFINED} when unsupported.
+   */
+  public static int logicalButtonToNative(@NotNull Controller controller, int logicalButton) {
+    ControllerMapping m = controller.getMapping();
+    if (logicalButton == A) {
+      return m.buttonA;
+    }
+    if (logicalButton == B) {
+      return m.buttonB;
+    }
+    if (logicalButton == X) {
+      return m.buttonX;
+    }
+    if (logicalButton == Y) {
+      return m.buttonY;
+    }
+    if (logicalButton == L1) {
+      return m.buttonL1;
+    }
+    if (logicalButton == R1) {
+      return m.buttonR1;
+    }
+    if (logicalButton == L2) {
+      return m.buttonL2;
+    }
+    if (logicalButton == R2) {
+      return m.buttonR2;
+    }
+    if (logicalButton == THUMBL) {
+      return m.buttonLeftStick;
+    }
+    if (logicalButton == THUMBR) {
+      return m.buttonRightStick;
+    }
+    if (logicalButton == START) {
+      return m.buttonStart;
+    }
+    if (logicalButton == SELECT) {
+      return m.buttonBack;
+    }
+    if (logicalButton == DPAD_UP) {
+      return m.buttonDpadUp;
+    }
+    if (logicalButton == DPAD_DOWN) {
+      return m.buttonDpadDown;
+    }
+    if (logicalButton == DPAD_LEFT) {
+      return m.buttonDpadLeft;
+    }
+    if (logicalButton == DPAD_RIGHT) {
+      return m.buttonDpadRight;
+    }
+    if (logicalButton == C || logicalButton == Z || logicalButton == CIRCLE || logicalButton == MODE) {
+      return ControllerMapping.UNDEFINED;
+    }
+    return ControllerMapping.UNDEFINED;
+  }
+
+  /**
+   * Resolves a logical axis constant to the native axis index for the given controller.
+   *
+   * @param controller Controller whose {@link Controller#getMapping()} is used.
+   * @param logicalAxis One of {@link #AXIS_LEFT_X}, {@link #AXIS_LEFT_Y}, {@link #AXIS_RIGHT_X}, or {@link #AXIS_RIGHT_Y}.
+   * @return Native axis index, or {@link ControllerMapping#UNDEFINED} when unsupported.
+   */
+  public static int logicalAxisToNative(@NotNull Controller controller, int logicalAxis) {
+    ControllerMapping m = controller.getMapping();
+    if (logicalAxis == AXIS_LEFT_X) {
+      return m.axisLeftX;
+    }
+    if (logicalAxis == AXIS_LEFT_Y) {
+      return m.axisLeftY;
+    }
+    if (logicalAxis == AXIS_RIGHT_X) {
+      return m.axisRightX;
+    }
+    if (logicalAxis == AXIS_RIGHT_Y) {
+      return m.axisRightY;
+    }
+    return ControllerMapping.UNDEFINED;
+  }
 
   /**
    * Resolves a button name to a logical button code.
