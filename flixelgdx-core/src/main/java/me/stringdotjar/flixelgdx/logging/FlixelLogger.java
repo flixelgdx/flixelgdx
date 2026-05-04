@@ -28,9 +28,6 @@ import com.badlogic.gdx.utils.Array;
  * it is the directory containing the JAR), {@link #setCanStoreLogs(boolean)} and
  * {@link #setMaxLogFiles(int)} to configure file logging, then {@link #startFileLogging()} to
  * start and {@link #stopFileLogging()} to shut down the log writer thread.
- *
- * <p>Console and file line assembly run when you log, not every frame. Shared formatters and buffers reduce
- * allocation churn versus building many small strings per line.
  */
 public class FlixelLogger implements ApplicationLogger {
 
@@ -429,7 +426,7 @@ public class FlixelLogger implements ApplicationLogger {
 
   /**
    * Appends {@code text} to {@code out} with ANSI color and style codes for console output.
-   * 
+   *
    * @param out The string to append the text to.
    * @param text The text to append.
    * @param color The color to append.
