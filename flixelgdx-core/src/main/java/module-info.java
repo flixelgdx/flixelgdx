@@ -11,6 +11,7 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.graphics;
   exports me.stringdotjar.flixelgdx.text;
   exports me.stringdotjar.flixelgdx.group;
+  exports me.stringdotjar.flixelgdx.input;
   exports me.stringdotjar.flixelgdx.input.keyboard;
   exports me.stringdotjar.flixelgdx.input.mouse;
   exports me.stringdotjar.flixelgdx.input.gamepad;
@@ -28,6 +29,7 @@ module me.stringdotjar.flixelgdx.core {
 
   // Automatic module names (from JAR filenames when on the module path).
   requires transitive gdx;
+  requires transitive gdx.controllers.core;
   requires transitive gdx.freetype;
   requires transitive anim8.gdx;
   requires transitive libgdx.utils;

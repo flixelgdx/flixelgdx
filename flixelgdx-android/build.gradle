@@ -17,7 +17,8 @@ if (reflectionProfile == "STANDARD" || reflectionProfile == "ALL") {
 if (reflectionProfile == "ALL") {
   reflectionPackagePrefixes += [
     "com.github.tommyettinger",
-    "games.rednblack.miniaudio"
+    "games.rednblack.miniaudio",
+    "com.badlogic.gdx.controllers"
   ]
 }
 reflectionPackagePrefixes += reflectionExtraPackages
@@ -96,6 +97,7 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
   api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+  api "com.badlogicgames.gdx-controllers:gdx-controllers-android:$gdxControllersVersion"
 }
 
 apply plugin: 'maven-publish'

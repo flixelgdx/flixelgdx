@@ -30,8 +30,8 @@ public class FlixelTweenSettings {
   private FlixelEase.FunkinEaseStartCallback onStart;
   private FlixelEase.FunkinEaseUpdateCallback onUpdate;
   private FlixelEase.FunkinEaseCompleteCallback onComplete;
-  private Array<FlixelTweenVarGoal> goals;
-  private Array<FlixelTweenPropertyGoal> propertyGoals;
+  private final Array<FlixelTweenVarGoal> goals;
+  private final Array<FlixelTweenPropertyGoal> propertyGoals;
 
   public FlixelTweenSettings() {
     this(FlixelTweenType.ONESHOT, FlixelEase::linear);
