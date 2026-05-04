@@ -20,12 +20,32 @@ java {
   targetCompatibility = 17
 }
 
+/**
+ * libGDX {@code gdx} depends on {@code gdx-jnigen-loader}; both ship classes under {@code com.badlogic.gdx.utils}.
+ * On the JPMS module path they become automatic modules {@code gdx} and {@code gdx.jnigen.loader}, which is an
+ * illegal split of the same package. Merge the loader into {@code gdx} via {@code --patch-module} and omit the
+ * loader JAR from {@code --module-path} (same approach as for {@code javadoc}).
+ */
+def gdxJnigenModulePathAndPatch = { Collection<File> classpathFiles ->
+  def jnigen = classpathFiles.findAll { it.name.startsWith('gdx-jnigen-loader-') }
+  def rest = classpathFiles.findAll { !it.name.startsWith('gdx-jnigen-loader-') }
+  def modulePath = rest.collect { it.absolutePath }.join(File.pathSeparator)
+  if (jnigen.isEmpty()) {
+    return [modulePath]
+  }
+  def patch = 'gdx=' + jnigen.collect { it.absolutePath }.join(File.pathSeparator)
+  return [modulePath, patch]
+}
+
 // Put dependencies on module path so module-info.java can resolve requires (automatic modules).
 tasks.named('compileJava') {
   doFirst {
-    options.compilerArgs = [
-      '--module-path', classpath.asPath,
-    ]
+    def mp = gdxJnigenModulePathAndPatch(classpath.files)
+    def args = ['--module-path', mp[0]]
+    if (mp.size() > 1) {
+      args += ['--patch-module', mp[1]]
+    }
+    options.compilerArgs = args
     classpath = files()
   }
 }
@@ -40,14 +60,10 @@ eclipse.classpath.file {
   }
 }
 
-// Avoid JPMS split-package error: gdx and gdx-jnigen-loader both expose com.badlogic.gdx.utils.
-configurations.configureEach {
-  exclude group: 'com.badlogicgames.gdx', module: 'gdx-jnigen-loader'
-}
-
 dependencies {
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+  api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
   api "com.github.tommyettinger:anim8-gdx:$anim8Version"
   api "com.github.tommyettinger:libgdx-utils:$utilsVersion"
 
@@ -64,5 +80,21 @@ dependencies {
 tasks.named('javadoc', Javadoc) {
   modularity.inferModulePath = false
   classpath = files()
-  (options as CoreJavadocOptions).modulePath = sourceSets.main.compileClasspath + sourceSets.main.output.classesDirs
+  doFirst {
+    def cpFiles = (sourceSets.main.compileClasspath + sourceSets.main.output.classesDirs).files
+    def modulePathFiles = cpFiles.findAll { !it.name.startsWith('gdx-jnigen-loader-') }
+    (options as CoreJavadocOptions).modulePath = layout.files(modulePathFiles)
+    def patchFile = layout.buildDirectory.file('tmp/javadoc-patch.options').get().asFile
+    def jnigen = cpFiles.findAll { it.name.startsWith('gdx-jnigen-loader-') }
+    if (!jnigen.isEmpty()) {
+      patchFile.parentFile.mkdirs()
+      patchFile.text = '--patch-module gdx=' + jnigen.collect { it.absolutePath }.join(File.pathSeparator) + '\n'
+      def opts = options as CoreJavadocOptions
+      if (opts.optionFiles != null && !opts.optionFiles.empty) {
+        opts.optionFiles = opts.optionFiles + files(patchFile)
+      } else {
+        opts.optionFiles = files(patchFile)
+      }
+    }
+  }
 }

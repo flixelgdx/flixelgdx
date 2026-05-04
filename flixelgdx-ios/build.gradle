@@ -19,4 +19,5 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
   api "com.mobidevelop.robovm:robovm-rt:$roboVMVersion"
   api "com.mobidevelop.robovm:robovm-cocoatouch:$roboVMVersion"
+  api "com.badlogicgames.gdx-controllers:gdx-controllers-ios:$gdxControllersVersion"
 }

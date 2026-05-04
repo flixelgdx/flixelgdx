@@ -29,6 +29,7 @@ module me.stringdotjar.flixelgdx.core {
 
   // Automatic module names (from JAR filenames when on the module path).
   requires transitive gdx;
+  requires transitive gdx.controllers.core;
   requires transitive gdx.freetype;
   requires transitive anim8.gdx;
   requires transitive libgdx.utils;

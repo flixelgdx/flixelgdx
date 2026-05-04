@@ -283,7 +283,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     if (Flixel.mouse == null) {
       return;
     }
-    Array<FlixelCamera> cams = Flixel.getCamerasArray();
+    Array<FlixelCamera> cams = Flixel.getCameras();
     if (cams == null || cams.size == 0) {
       return;
     }
@@ -332,7 +332,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
 
   private void appendCamInspectLine(FlixelString line) {
     line.clear();
-    Array<FlixelCamera> cams = Flixel.getCamerasArray();
+    Array<FlixelCamera> cams = Flixel.getCameras();
     int n = cams != null ? cams.size : 0;
     line.concat("[#CCCCCC]Cameras: ").concat(n).concat("  Inspect: ");
     if (n == 0) {

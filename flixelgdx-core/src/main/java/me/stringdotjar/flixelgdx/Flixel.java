@@ -29,6 +29,7 @@ import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelLogConsoleSink;
 import me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
+import me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadManager;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
 import me.stringdotjar.flixelgdx.util.save.FlixelSave;
@@ -240,6 +241,14 @@ public final class Flixel {
   @NotNull
   public static FlixelMouseManager mouse;
 
+  /**
+   * Gamepad manager (gdx-controllers). Use logical codes from
+   * {@link me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadInput} with {@code Flixel.gamepads.pressed(0, FlixelGamepadInput.A)}.
+   * Available after {@link #initialize(FlixelGame)}.
+   */
+  @NotNull
+  public static FlixelGamepadManager gamepads;
+
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   @NotNull
   public static FlixelLogger log;
@@ -383,6 +392,8 @@ public final class Flixel {
     watch = new FlixelDebugWatchManager();
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
+    gamepads = new FlixelGamepadManager();
+    gamepads.attach();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
@@ -773,7 +784,7 @@ public final class Flixel {
   }
 
   /**
-   * Starts file logging for the default logger (uses its current `canStoreLogs` and `maxLogFiles`).
+   * Starts file logging for the default logger (uses its current {@code canStoreLogs} and {@code maxLogFiles}).
    */
   public static void startFileLogging() {
     Objects.requireNonNull(log, "Cannot start file logging when the logger is not set!");
@@ -1192,14 +1203,7 @@ public final class Flixel {
     return game.getCamera();
   }
 
-  // TODO: When fully removed, rename getCamerasArray() to just getCameras(), since users can just access the items anyways.
-  @Deprecated(since = "0.1.1-beta", forRemoval = true)
-  public static FlixelCamera[] getCameras() {
-    Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
-    return game.getCameras().items;
-  }
-
-  public static Array<FlixelCamera> getCamerasArray() {
+  public static Array<FlixelCamera> getCameras() {
     Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
     return game.getCameras();
   }
@@ -1358,7 +1362,7 @@ public final class Flixel {
    * @param objectOrGroup2 Second object or group (may be {@code null} to use the current state).
    * @param notifyCallback Called for each overlapping pair. May be {@code null}.
    * @param processCallback If provided, must return {@code true} for the pair to count as overlapping.
-   * Pass {@code null} for simple AABB overlap.
+   *   Pass {@code null} for simple AABB overlap.
    * @return {@code true} if any overlaps were detected.
    */
   public static boolean overlap(@Nullable FlixelBasic objectOrGroup1,

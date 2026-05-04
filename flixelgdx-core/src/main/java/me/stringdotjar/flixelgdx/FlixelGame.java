@@ -26,6 +26,7 @@ import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
+import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 
@@ -271,7 +272,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     pixmap.dispose();
 
     // Keyboard + mouse processors first on the multiplexer (scroll, etc.)
-    if (Flixel.keys != null || Flixel.mouse != null) {
+    FlixelInputProcessorManager keysMgr = Flixel.keys;
+    FlixelInputProcessorManager mouseMgr = Flixel.mouse;
+    if (keysMgr != null || mouseMgr != null) {
       InputProcessor current = Gdx.input.getInputProcessor();
       InputMultiplexer m;
       if (current instanceof InputMultiplexer multiplexer) {
@@ -284,11 +287,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         Gdx.input.setInputProcessor(m);
       }
       int idx = 0;
-      if (Flixel.keys != null) {
-        m.addProcessor(idx++, Flixel.keys.getInputProcessor());
+      if (keysMgr != null) {
+        m.addProcessor(idx++, keysMgr.getInputProcessor());
       }
-      if (Flixel.mouse != null) {
-        m.addProcessor(idx, Flixel.mouse.getInputProcessor());
+      if (mouseMgr != null) {
+        m.addProcessor(idx, mouseMgr.getInputProcessor());
       }
     }
 
@@ -339,6 +342,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     if (Flixel.mouse != null) {
       Flixel.mouse.update();
+    }
+    if (Flixel.gamepads != null) {
+      Flixel.gamepads.update();
     }
 
     if (!gamePaused) {
@@ -472,6 +478,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     if (Flixel.mouse != null) {
       Flixel.mouse.endFrame();
+    }
+    if (Flixel.gamepads != null) {
+      Flixel.gamepads.endFrame();
     }
   }
 
@@ -646,6 +655,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     InputProcessor processor = Gdx.input.getInputProcessor();
     if (processor instanceof InputMultiplexer multiplexer) {
       multiplexer.clear();
+    }
+
+    if (Flixel.gamepads != null) {
+      Flixel.gamepads.detach();
     }
 
     FlixelTween.cancelActiveTweens();
