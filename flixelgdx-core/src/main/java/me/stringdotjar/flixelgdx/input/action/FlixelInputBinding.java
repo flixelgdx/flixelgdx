@@ -32,10 +32,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelInputBinding {
 
-  /** Use with {@link #GAMEPAD_BUTTON} when any active slot should count. */
+  /** Use with {@link #gamepadButton(int, int)} when any active slot should count. */
   public static final int GAMEPAD_SLOT_ANY = -1;
 
-  /** Use with {@link #POINTER_BUTTON} for the primary mouse pointer (left button typical). */
+  /** Use with {@link #pointerButton(int, int)} for the primary mouse pointer (left button typical). */
   public static final int POINTER_MOUSE = -1;
 
   public final FlixelInputBindingKind kind;
