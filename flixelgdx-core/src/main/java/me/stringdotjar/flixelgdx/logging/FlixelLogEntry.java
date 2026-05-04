@@ -7,6 +7,8 @@
 
 package me.stringdotjar.flixelgdx.logging;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Immutable snapshot of a single log message produced by {@link FlixelLogger}. Listeners
  * registered via {@link FlixelLogger#addLogListener} receive instances of this record so
@@ -15,6 +17,7 @@ package me.stringdotjar.flixelgdx.logging;
 public record FlixelLogEntry(FlixelLogLevel level, String tag, String message) {
 
   @Override
+  @NotNull
   public String toString() {
     return "[" + level + "] " + (tag.isEmpty() ? "" : "[" + tag + "] ") + message;
   }

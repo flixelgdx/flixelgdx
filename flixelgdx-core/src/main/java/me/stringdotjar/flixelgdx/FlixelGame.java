@@ -27,6 +27,7 @@ import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
+import me.stringdotjar.flixelgdx.input.action.FlixelActionSets;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 
@@ -53,8 +54,8 @@ import java.util.function.Supplier;
  * // to the game's behavior.
  * public class MyGame extends FlixelGame {
  *
- *   public MyGame(String title, int width, int height, FlixelState initialState) {
- *     super(title, width, height, initialState);
+ *   public MyGame() {
+ *     super("My Game Title", 640, 360, new InitialState());
  *   }
  * }
  * }</pre>
@@ -70,14 +71,7 @@ import java.util.function.Supplier;
  *       return;
  *     }
  *
- *     MyGame game = new MyGame(
- *       "My Game",
- *       800,
- *       600,
- *       new InitialState() // The initial state the game enters when it starts!
- *     );
- *
- *     FlixelLwjgl3Launcher.launch(game);
+ *     FlixelLwjgl3Launcher.launch(new MyGame());
  *   }
  * }
  * }</pre>
@@ -353,6 +347,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.gamepads != null) {
       Flixel.gamepads.update();
     }
+    FlixelActionSets.updateAll(elapsed);
 
     if (!gamePaused) {
       stage.act(elapsed);
@@ -489,6 +484,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.gamepads != null) {
       Flixel.gamepads.endFrame();
     }
+    FlixelActionSets.endFrameAll();
   }
 
   /**
