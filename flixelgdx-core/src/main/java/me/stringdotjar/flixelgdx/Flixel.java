@@ -837,10 +837,6 @@ public final class Flixel {
     return state;
   }
 
-  public static FlixelSound getMusic() {
-    return sound.getMusic();
-  }
-
   public static Vector2 getWindowSize() {
     return game.windowSize;
   }

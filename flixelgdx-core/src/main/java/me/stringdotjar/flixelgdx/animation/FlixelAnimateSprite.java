@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * player sees.
  *
  * <h2>Example</h2>
- * <pre>
+ * <pre>{@code
  * FlixelAnimateSprite fas = new FlixelAnimateSprite();
  * fas.loadSpritemapAndAnimation(
  *     "path/to/atlas/spritemap1.png",
@@ -57,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * fas.screenCenter();
  * fas.animation.playAnimation("Animation Name");
  * add(fas);
+ * }
  * </pre>
  *
  * <h2>Merging multiple atlases</h2>
@@ -440,8 +441,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
     // World position with scroll factor (matches FlixelSprite.draw() / FlixelObject.getDrawX()).
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
-    float wx = getX() - cam.scroll.x * getScrollX() - getOffsetX();
-    float wy = getY() - cam.scroll.y * getScrollY() - getOffsetY();
+    float wx = cam.worldToViewX(getX(), scrollX);
+    float wy = cam.worldToViewY(getY(), scrollY);
 
     // Match FlixelSprite's flip-into-scale convention: a negative scale on either axis mirrors the
     // sprite around its origin, and the facing flag piles on top of the user-set flipX.
@@ -475,7 +476,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     // +origin_world, then translates to the world position. Identity branches are skipped so the
     // no-rotation/no-scale fast path stays cheap.
     baseAffine.idt();
-    baseAffine.translate(wx, wy);
+    baseAffine.translate(wx - getOffsetX(), wy - getOffsetY());
     if (hasOrigin) {
       baseAffine.translate(ox, oy);
     }
