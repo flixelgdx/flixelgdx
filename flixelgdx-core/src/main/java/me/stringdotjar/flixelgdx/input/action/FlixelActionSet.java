@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>{@code
  * public class PlayerControls extends FlixelActionSet {
+ * 
  *   public final FlixelActionDigital jump;
  *   public final FlixelActionAnalog move;
  *
