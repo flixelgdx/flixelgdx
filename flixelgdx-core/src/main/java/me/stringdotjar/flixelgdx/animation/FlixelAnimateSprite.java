@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * player sees.
  *
  * <h2>Example</h2>
- * <pre>
+ * <pre>{@code
  * FlixelAnimateSprite fas = new FlixelAnimateSprite();
  * fas.loadSpritemapAndAnimation(
  *     "path/to/atlas/spritemap1.png",
@@ -57,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * fas.screenCenter();
  * fas.animation.playAnimation("Animation Name");
  * add(fas);
+ * }
  * </pre>
  *
  * <h2>Merging multiple atlases</h2>
