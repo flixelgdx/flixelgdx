@@ -1,41 +1,66 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.IntArray;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Generic base class for new action types to be made.
+ * Base type for a named logical control inside a {@link FlixelActionSet}.
+ *
+ * <p>Concrete types are {@link FlixelActionDigital} (boolean, many {@link FlixelInputBinding}s OR'd together) and
+ * {@link FlixelActionAnalog} (2D vector from keys and gamepad axes, optional Steam vector merge). Subclasses are updated
+ * by the owning set's {@link FlixelActionSet#update(float)} and finalized by {@link FlixelActionSet#endFrame()}.
+ *
+ * <p>The {@link #getName()} string is used for Steam Input alignment and logging; keep names stable if players rebind or
+ * use cloud profiles.
  */
 public abstract class FlixelAction {
 
-  /** The ID used to identify {@code this} action. */
-  private String name;
+  @NotNull
+  private final String name;
 
-  /** The numerical bindings that trigger {@code this} action. */
-  private IntArray binds;
+  @Nullable
+  FlixelActionSet owner;
 
-  /** Code that gets executed when {@code this} action is triggered. */
+  /** Optional edge callback; assign once to avoid per-frame allocations. */
   @Nullable
   public Runnable callback;
 
-  /** Whether {@code this} action should receive updates in the {@link FlixelActionSet} it's in. */
+  /** When {@code false}, this action stays inactive and reads false or zero. */
   public boolean active = true;
 
-  /**
-   * Adds a new key code that can trigger {@code this} action.
-   *
-   * @param key The key to add.
-   */
-  public void addKey(int key) {
-    binds.add(key);
+  protected FlixelAction(@Nullable String name) {
+    this.name = name != null ? name : "";
   }
 
   /**
-   * Adds a new gamepad button code that can trigger {@code this} action.
+   * Logical name for Steam manifest alignment and debugging.
    *
-   * @param button The gamepad button to add.
+   * @return Non-null name string.
    */
-  public void addGamepad(int button) {
-    binds.add(button);
+  @NotNull
+  public String getName() {
+    return name;
   }
+
+  @Nullable
+  public FlixelActionSet getOwner() {
+    return owner;
+  }
+
+  void setOwner(@Nullable FlixelActionSet set) {
+    this.owner = set;
+  }
+
+  abstract void updateAction(float elapsed);
+
+  abstract void endFrameAction();
+
+  abstract void resetAction();
 }

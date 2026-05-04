@@ -27,6 +27,7 @@ import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
+import me.stringdotjar.flixelgdx.input.action.FlixelActionSets;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 
@@ -346,6 +347,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.gamepads != null) {
       Flixel.gamepads.update();
     }
+    FlixelActionSets.updateAll(elapsed);
 
     if (!gamePaused) {
       stage.act(elapsed);
@@ -482,6 +484,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.gamepads != null) {
       Flixel.gamepads.endFrame();
     }
+    FlixelActionSets.endFrameAll();
   }
 
   /**

@@ -1,110 +1,173 @@
+/**********************************************************************************
+ * Copyright (c) 2025-2026 stringdotjar
+ *
+ * This file is part of the FlixelGDX framework, licensed under the MIT License.
+ * See the LICENSE file in the repository root for full license information.
+ **********************************************************************************/
+
 package me.stringdotjar.flixelgdx.input.action;
 
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.utils.Array;
+
 import me.stringdotjar.flixelgdx.FlixelDestroyable;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
- * Powerful and logical class for abstracting away input to be more generalized, regardless of input type.
+ * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
+ * contract as {@link me.stringdotjar.flixelgdx.input.FlixelInputManager}. Actions read {@link me.stringdotjar.flixelgdx.Flixel#keys},
+ * {@link me.stringdotjar.flixelgdx.Flixel#mouse}, {@link me.stringdotjar.flixelgdx.Flixel#gamepads}, and {@code Gdx.input}
+ * during {@link #update(float)}. This class is <strong>not</strong> an {@link com.badlogic.gdx.InputProcessor}: you do not add
+ * it to {@link com.badlogic.gdx.InputMultiplexer}. Framework keyboard and mouse processors stay the single libGDX entry
+ * points for those devices.
  *
- * <p>While directly accessing the input system is good for simplicity and prototyping, it can very quickly become a
- * nightmare to maintain and expand upon. By using an action set, you can easily add new input types and actions without
- * having to change your game code.
+ * <h2>Lifecycle (normal games)</h2>
  *
- * <p>It's as simple as creating a new action, adding it to the action set, and then registering it as an {@link InputProcessor}.
- * Not only does this make your code cleaner and more maintainable, but it also makes it incredibly easier for the
- * player, too.
+ * <ol>
+ *   <li>Construct a subclass (or this type) after {@link me.stringdotjar.flixelgdx.Flixel#initialize}.</li>
+ *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
+ *       call {@link #add(FlixelAction)} for each, and configure {@link FlixelInputBinding} / {@link FlixelAnalogAxisBinding}.</li>
+ *   <li>By default the set registers with {@link FlixelActionSets}; {@link me.stringdotjar.flixelgdx.FlixelGame} calls
+ *       {@link FlixelActionSets#updateAll(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
+ *       after keys, mouse, and gamepads {@code endFrame()} in {@code render()}.</li>
+ *   <li>From {@link me.stringdotjar.flixelgdx.FlixelState#update(float)} (or similar), read {@code jump.justPressed()},
+ *       {@code move.getX()}, etc.</li>
+ *   <li>When the screen or mode ends, call {@link #destroy()} so the set unregisters and clears members.</li>
+ * </ol>
  *
- * <p>Let's say for example, you are making a game, and you want to make a specific bind changeable by the player. If
- * you tried to directly access the input system, you would have to write a ton of unnecessary boilerplate code just to
- * make a simple bind changeable, which can lead to bugs and become very messy to maintain; however, if you used an
- * action set, all you need to do is simply change a key from an action in an action set, and that's it.
- *
- * <p>It is recommended to use this system in the following way:
+ * <h2>Example Usage</h2>
  *
  * <pre>{@code
- * // Define a new action set class. Use this for rebinding controls!
  * public class PlayerControls extends FlixelActionSet {
- *
- *   public FlixelActionDigital jump; // For simple boolean true/false checks.
- *   public FlixelActionAnalog move; // For more a float-ranged value of how hard the keys are pressed.
+ *   public final FlixelActionDigital jump;
+ *   public final FlixelActionAnalog move;
  *
  *   public PlayerControls() {
  *     jump = new FlixelActionDigital("jump");
+ *     jump.addBinding(FlixelInputBinding.key(FlixelKey.SPACE));
+ *     jump.addBinding(FlixelInputBinding.gamepadButton(0, FlixelGamepadInput.A));
+ *     add(jump);
+ *
  *     move = new FlixelActionAnalog("move");
+ *     move.addAxisBinding(FlixelAnalogAxisBinding.negXKey(FlixelKey.A));
+ *     move.addAxisBinding(FlixelAnalogAxisBinding.posXKey(FlixelKey.D));
+ *     move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+ *     move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ *     add(move);
  *   }
  * }
  * }</pre>
  *
- * Then, you register the new action so it can actually be used:
+ * <p>Then, in a state for your game:
  *
  * <pre>{@code
- * // Add the new action set to the processor system on the libGDX layer.
- * // It's recommended to check if the current processor is a multiplexer (usually it is)
- * // because you still might want to keep the other processors you or the framework set.
- * // FlixelGDX and libGDX usually add their own processors, so it's a good practice to not
- * // remove or override them!
- * InputProcessor current = Gdx.input.getInputProcessor();
- * if (current instanceof InputMultiplexer m) {
- *   m.addProcessor(new PlayerControls());
+ * public class PlayState extends FlixelState {
+ *
+ *   private final PlayerControls controls = new PlayerControls();
+ *
+ *   @Override
+ *   public void update(float elapsed) {
+ *     if (controls.jump.justPressed()) {
+ *       // fire jump once this frame
+ *     }
+ *     float mx = controls.move.getX();
+ *     float my = controls.move.getY();
+ *   }
+ *
+ *   @Override
+ *   public void destroy() {
+ *     controls.destroy();
+ *     super.destroy();
+ *   }
  * }
  * }</pre>
+ *
+ * <h2>Steam Input</h2>
+ *
+ * <p>Set {@link #steamReader} to an implementation that reads Steam Input API (for example via steamworks4j). Action
+ * {@link FlixelAction#getName()} strings should match your in-game actions manifest. Use {@link FlixelSteamActionReaders#EMPTY}
+ * when Steam is unavailable.
+ *
+ * <h2>Tests</h2>
+ *
+ * <p>Pass {@code false} to {@link #FlixelActionSet(boolean)} from an anonymous subclass so the set does not register globally,
+ * then call {@link #update(float)} and {@link #endFrame()} yourself.
  */
-public class FlixelActionSet implements InputProcessor, FlixelDestroyable {
+public class FlixelActionSet implements FlixelDestroyable {
 
-  protected Array<FlixelAction> members;
+  protected final Array<FlixelAction> members;
 
+  /**
+   * Optional Steam Input bridge; when non-null, digital and analog actions also read these values
+   * each {@link #update(float)}. Implement outside core with steamworks4j or similar.
+   */
+  @Nullable
+  public FlixelSteamActionReader steamReader;
+
+  private final boolean registerForGlobalLifecycle;
+
+  /**
+   * Registers this set with {@link FlixelActionSets} for automatic {@link #update(float)} and {@link #endFrame()}.
+   */
   public FlixelActionSet() {
-    members = new Array<>(FlixelAction[]::new);
+    this(true);
   }
 
-  @Override
-  public boolean keyDown(int keycode) {
-    return false;
+  /**
+   * @param registerForGlobalLifecycle When {@code true}, registers with {@link FlixelActionSets}. Tests may pass
+   *   {@code false} and call {@link #update(float)} / {@link #endFrame()} manually.
+   */
+  protected FlixelActionSet(boolean registerForGlobalLifecycle) {
+    this.members = new Array<>(16);
+    this.registerForGlobalLifecycle = registerForGlobalLifecycle;
+    if (registerForGlobalLifecycle) {
+      FlixelActionSets.register(this);
+    }
   }
 
-  @Override
-  public boolean keyUp(int keycode) {
-    return false;
+  /**
+   * Adds an action to this set and assigns ownership for Steam name resolution and lifecycle.
+   *
+   * @param action Non-null action instance.
+   */
+  protected void add(@NotNull FlixelAction action) {
+    members.add(action);
+    action.setOwner(this);
   }
 
-  @Override
-  public boolean keyTyped(char character) {
-    return false;
+  /**
+   * Steps all member actions. Called from {@link FlixelActionSets#updateAll(float)} after gamepads update.
+   *
+   * @param elapsed Frame delta in seconds.
+   */
+  public void update(float elapsed) {
+    for (int i = 0, n = members.size; i < n; i++) {
+      members.get(i).updateAction(elapsed);
+    }
   }
 
-  @Override
-  public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-    return false;
-  }
-
-  @Override
-  public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-    return false;
-  }
-
-  @Override
-  public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-    return false;
-  }
-
-  @Override
-  public boolean touchDragged(int screenX, int screenY, int pointer) {
-    return false;
-  }
-
-  @Override
-  public boolean mouseMoved(int screenX, int screenY) {
-    return false;
-  }
-
-  @Override
-  public boolean scrolled(float amountX, float amountY) {
-    return false;
+  /**
+   * Finalizes edge detection for digital and analog actions. Called from {@link FlixelActionSets#endFrameAll()}
+   * after keys, mouse, and gamepads {@code endFrame()}.
+   */
+  public void endFrame() {
+    for (int i = 0, n = members.size; i < n; i++) {
+      members.get(i).endFrameAction();
+    }
   }
 
   @Override
   public void destroy() {
-
+    if (registerForGlobalLifecycle) {
+      FlixelActionSets.unregister(this);
+    }
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelAction a = members.get(i);
+      a.setOwner(null);
+      a.resetAction();
+    }
+    members.clear();
+    steamReader = null;
   }
 }
