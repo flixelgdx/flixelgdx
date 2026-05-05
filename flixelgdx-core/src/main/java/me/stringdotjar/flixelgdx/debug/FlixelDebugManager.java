@@ -13,8 +13,6 @@ import com.badlogic.gdx.utils.ObjectMap;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelObject;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.RecordComponent;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -40,22 +38,14 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelDebugOverlay}, owns the registry of console commands, and tracks the
  * "currently inspected sprite" for the texture inspector window. The overlay itself (and the
  * platform-specific UI) reads from the manager rather than the other way around so the manager can
- * stay platform-agnostic and reflection-light.
+ * stay platform-agnostic and reflection-free.
  *
  * <h2>Custom commands</h2>
  *
- * <p>Two registration paths are provided:
- * <ol>
- *   <li>{@link #registerCommand(String, Consumer)} takes a handler that receives a
- *       {@link FlixelDebugCommandArgs} object. <strong>No reflection is used.</strong> This is the
- *       preferred form on platforms where reflection is restricted (TeaVM, R8/ProGuard-shrunk
- *       Android builds).</li>
- *   <li>{@link #registerCommand(String, Class, Consumer)} takes a record class and uses
- *       {@link Class#getRecordComponents()} plus the record's canonical constructor to assemble a
- *       fresh record instance from the console arguments. This is more convenient but
- *       <strong>does</strong> rely on Java reflection (records and {@code getRecordComponents} are
- *       only available on Java 16+ and platforms with full reflection support).</li>
- * </ol>
+ * <p>Use {@link #registerCommand(String, Consumer)} with a handler that receives
+ * {@link FlixelDebugCommandArgs}. That keeps parsing explicit and avoids reflection, which is
+ * important on platforms where reflection is restricted (TeaVM, R8/ProGuard-shrunk Android
+ * builds).
  *
  * <h2>Thread safety</h2>
  *
@@ -65,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
 public final class FlixelDebugManager {
 
   /**
-   * Internal handler form used after both registration paths have parsed their input. Kept
+   * Internal handler form used after registration has wrapped the raw consumer. Kept
    * package-private because external code never has a reason to construct one directly.
    */
   @FunctionalInterface
@@ -74,26 +64,12 @@ public final class FlixelDebugManager {
     void invoke(@NotNull FlixelDebugCommandArgs args);
   }
 
-  /**
-   * A registered command, with its raw handler and (optional) per-argument metadata for help.
-   *
-   * @param argLabels Pretty per-argument descriptors used for help output. May be {@code null}.
-   */
-  record RegisteredCommand(String name, CommandHandler handler, @Nullable String[] argLabels) {
-
-    RegisteredCommand(@NotNull String name, @NotNull CommandHandler handler, @Nullable String[] argLabels) {
-      this.name = name;
-      this.handler = handler;
-      this.argLabels = argLabels;
-    }
-  }
+  record RegisteredCommand(String name, CommandHandler handler) {}
 
   /**
-   * Regex enforced by {@link #registerCommand(String, Consumer)} and the record overload. A
-   * valid command name must consist of one or more letters and / or periods only. Periods are
-   * allowed so that namespaced commands like {@code flixel.sound.pause} or {@code watch.clear}
-   * stay valid; everything else (numbers, hyphens, underscores, whitespace, symbols, etc.)
-   * triggers an {@link IllegalArgumentException} from {@link #validateCommandName(String)}.
+   * Regex enforced by {@link #registerCommand(String, Consumer)}. A valid command name must
+   * consist of one or more letters and / or periods only; everything else (numbers, hyphens, underscores,
+   * whitespace, symbols, etc.) triggers an {@link IllegalArgumentException} from {@link #validateCommandName(String)}.
    */
   private static final Pattern VALID_COMMAND_NAME = Pattern.compile("^[a-zA-Z.]+$");
 
@@ -219,12 +195,8 @@ public final class FlixelDebugManager {
   }
 
   /**
-   * Registers a console command using the no-reflection form. The {@code handler} receives a
-   * {@link FlixelDebugCommandArgs} object that wraps the positional tokens the user typed after the
-   * command name.
-   *
-   * <p>Use this overload on platforms where reflection is unavailable or undesirable (web/TeaVM,
-   * heavily shrunk Android builds, etc.).
+   * Registers a console command. The {@code handler} receives a {@link FlixelDebugCommandArgs}
+   * object that wraps the positional tokens the user typed after the command name.
    *
    * <p>Example:
    * <pre>{@code
@@ -242,111 +214,7 @@ public final class FlixelDebugManager {
       return;
     }
     validateCommandName(name);
-    commands.put(name, new RegisteredCommand(name, handler::accept, null));
-  }
-
-  /**
-   * Registers a console command whose arguments are supplied as a {@link Record}. Uses
-   * reflection ({@link Class#getRecordComponents()} plus the canonical constructor) to assemble a
-   * fresh record instance from the console arguments and forward it to {@code handler}.
-   *
-   * <p>Supported record component types:
-   * <ul>
-   *   <li>{@code String}</li>
-   *   <li>{@code int}, {@code long}, {@code short}, {@code byte}</li>
-   *   <li>{@code float}, {@code double}</li>
-   *   <li>{@code boolean}</li>
-   * </ul>
-   *
-   * <p><strong>Reflection note:</strong> this overload uses {@link Class#getRecordComponents()},
-   * which is part of standard Java reflection (Java 16+). On platforms that disallow reflection
-   * (TeaVM, aggressively shrunk Android builds) prefer
-   * {@link #registerCommand(String, Consumer)} instead.
-   *
-   * <p>Example:
-   * <pre>{@code
-   * record SpawnParams(String graphicKey, float scale) {}
-   * Flixel.debug.registerCommand("spawn", SpawnParams.class, params -> {
-   *   // params.graphicKey(), params.scale()
-   * });
-   * }</pre>
-   *
-   * @param name The command name (the first token typed in the console).
-   * @param recordClass The record class describing the command's parameters.
-   * @param handler The handler invoked when the command runs.
-   * @param <R> The record type.
-   */
-  public <R extends Record> void registerCommand(@NotNull String name, @NotNull Class<R> recordClass,
-                                                 @NotNull Consumer<R> handler) {
-    if (recordClass == null || handler == null) {
-      return;
-    }
-    validateCommandName(name);
-    RecordComponent[] components = recordClass.getRecordComponents();
-    if (components == null) {
-      throw new IllegalArgumentException("Class " + recordClass.getName() + " is not a record.");
-    }
-    Class<?>[] paramTypes = new Class<?>[components.length];
-    String[] argLabels = new String[components.length];
-    for (int i = 0; i < components.length; i++) {
-      paramTypes[i] = components[i].getType();
-      argLabels[i] = components[i].getName() + ": " + components[i].getType().getSimpleName();
-    }
-    final Constructor<R> ctor;
-    try {
-      ctor = recordClass.getDeclaredConstructor(paramTypes);
-    } catch (NoSuchMethodException e) {
-      throw new IllegalArgumentException("No canonical constructor found for record "
-        + recordClass.getName(), e);
-    }
-    ctor.setAccessible(true);
-
-    CommandHandler runner = args -> {
-      Object[] values = new Object[paramTypes.length];
-      for (int i = 0; i < paramTypes.length; i++) {
-        values[i] = parseRecordArg(args, i, paramTypes[i]);
-      }
-      try {
-        R rec = ctor.newInstance(values);
-        handler.accept(rec);
-      } catch (ReflectiveOperationException e) {
-        Flixel.error("FlixelDebug", "Failed to instantiate record " + recordClass.getSimpleName()
-          + " for command \"" + name + "\": " + e.getMessage());
-      }
-    };
-    commands.put(name, new RegisteredCommand(name, runner, argLabels));
-  }
-
-  private static Object parseRecordArg(@NotNull FlixelDebugCommandArgs args, int index, @NotNull Class<?> type) {
-    if (type == String.class) {
-      return args.getString(index, "");
-    }
-    if (type == int.class || type == Integer.class) {
-      return args.getInt(index, 0);
-    }
-    if (type == long.class || type == Long.class) {
-      return args.getLong(index, 0L);
-    }
-    if (type == short.class || type == Short.class) {
-      return (short) args.getInt(index, 0);
-    }
-    if (type == byte.class || type == Byte.class) {
-      return (byte) args.getInt(index, 0);
-    }
-    if (type == float.class || type == Float.class) {
-      return args.getFloat(index, 0f);
-    }
-    if (type == double.class || type == Double.class) {
-      return args.getDouble(index, 0.0);
-    }
-    if (type == boolean.class || type == Boolean.class) {
-      return args.getBoolean(index, false);
-    }
-    if (type == char.class || type == Character.class) {
-      String s = args.getString(index, "");
-      return s.isEmpty() ? '\0' : s.charAt(0);
-    }
-    throw new IllegalArgumentException("Unsupported record component type: " + type.getName());
+    commands.put(name, new RegisteredCommand(name, handler::accept));
   }
 
   /**
@@ -461,19 +329,6 @@ public final class FlixelDebugManager {
     return commands.containsKey(name);
   }
 
-  /**
-   * Returns the labels for the arguments of a command registered via the record-based form, or
-   * {@code null} if the command does not exist or was registered via the free-form variant.
-   *
-   * @param name The command name.
-   * @return Per-argument labels (e.g. {@code "graphicKey: String"}), or {@code null}.
-   */
-  @Nullable
-  public String[] getCommandArgLabels(@NotNull String name) {
-    RegisteredCommand cmd = commands.get(name);
-    return cmd != null ? cmd.argLabels : null;
-  }
-
   private void registerBuiltinCommands() {
     registerCommand("help", args -> {
       String filter = args.getString(0, null);
@@ -484,17 +339,7 @@ public final class FlixelDebugManager {
         if (filter != null && !n.startsWith(filter)) {
           continue;
         }
-        String[] labels = getCommandArgLabels(n);
-        if (labels != null && labels.length > 0) {
-          StringBuilder sb = new StringBuilder(64);
-          sb.append("  ").append(n);
-          for (String label : labels) {
-            sb.append(" <").append(label).append(">");
-          }
-          Flixel.info("FlixelDebug", sb.toString());
-        } else {
-          Flixel.info("FlixelDebug", "  " + n);
-        }
+        Flixel.info("FlixelDebug", "  " + n);
       }
     });
 

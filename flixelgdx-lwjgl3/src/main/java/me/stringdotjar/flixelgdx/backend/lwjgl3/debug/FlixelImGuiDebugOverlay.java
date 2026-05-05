@@ -51,14 +51,7 @@ import me.stringdotjar.flixelgdx.logging.FlixelLogLevel;
  * resources) happens lazily on the first {@link #draw()} call. That keeps construction
  * cheap and only pays the cost when debug mode actually activates.
  *
- * <h2>Default layout</h2>
- *
- * <p>On first launch (and after {@code Reset Layout}) the windows are tiled into a fixed template
- * derived from the viewport work area: a left column for Stats, Performance, and Log; a right
- * column for Watch, Controls, and Texture Inspector; a Console strip in the middle gap above the
- * command line; and a full-width Command Line along the bottom edge. Resizing or toggling
- * fullscreen recomputes the same template on the next frame so panels track the window.
- * Once you move or resize a window, Dear ImGui remembers the change until the next forced layout.
+ * <p>Once you move or resize a window, Dear ImGui remembers the change until the next forced layout.
  * Window positions are not persisted across runs because we explicitly disable imgui's
  * {@code imgui.ini} file (the framework does not own a writable directory on every platform).
  *
@@ -85,6 +78,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_OK     = { 0.30f, 0.95f, 0.55f, 1f };
   private static final float[] COLOR_PAUSED = { 1.00f, 0.70f, 0.20f, 1f };
   private static final float[] COLOR_HINT   = { 0.65f, 0.65f, 0.65f, 1f };
+
+  /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
+  private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
 
   private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
   private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
@@ -131,6 +127,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * back to false after the override frame so manual window moves stick afterwards.
    */
   private boolean forceLayoutNextFrame = true;
+
+  /** When true, the Texture Inspector uses {@link ImGuiCond#Always} once so it snaps under Controls. */
+  private boolean textureInspectorSnapNextFrame;
+
+  /** Previous frame's Texture Inspector visibility (edge-detect open). */
+  private boolean textureInspectorOpenPrev;
 
   // Per-window default rectangles (work-area coordinates). Filled by computeDefaultLayoutRects()
   // each frame so resize and fullscreen keep the template sane; applyWindowLayout() consumes them
@@ -196,17 +198,22 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     // which is the "gray screen" symptom you would otherwise see after toggling the overlay.
     ImGui.dockSpaceOverViewport(0, ImGui.getMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
-    // Compute the default rectangles from the viewport work area each frame. The actual position
-    // hints are applied per-window inside drawXxxWindow() right before its begin() so each call
-    // pairs with its own begin (otherwise back-to-back setNextWindowPos calls overwrite each
-    // other and only the last one sticks).
+    drawMainMenuBar();
     computeDefaultLayoutRects();
 
-    drawMainMenuBar();
+    if (forceLayoutNextFrame && showTextureWindow.get()) {
+      textureInspectorSnapNextFrame = true;
+    }
+    boolean texInspectorOpen = showTextureWindow.get();
+    if (texInspectorOpen && !textureInspectorOpenPrev) {
+      textureInspectorSnapNextFrame = true;
+    }
+    textureInspectorOpenPrev = texInspectorOpen;
+
     drawStatsWindow();
     drawPerformanceWindow();
-    drawControlsWindow();
     drawWatchWindow();
+    drawControlsWindow();
     drawLogWindow();
     drawConsoleWindow();
     drawCommandWindow();
@@ -344,6 +351,17 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
   }
 
+  @Override
+  public void toggleVisible() {
+    super.toggleVisible();
+
+    // Make sure the game can capture input when the debugger is hidden.
+    if (imguiInitialized) {
+      ImGui.getIO().setWantCaptureKeyboard(isVisible());
+      ImGui.getIO().setWantCaptureMouse(isVisible());
+    }
+  }
+
   private void initImGui() {
     long windowHandle = resolveGlfwWindowHandle();
     if (windowHandle == 0L) {
@@ -387,18 +405,22 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Fills the per-window layout rectangles from the main viewport work area (already excludes
-   * the menu bar). The goal is a non-overlapping template that matches the stock FlixelGDX
-   * debugger: one narrow column on the left (Stats, Performance, Log), one on the right
-   * (Watch, Controls, Texture Inspector), a console strip above the command line in the gap
-   * between the columns, and a full-width command bar at the bottom.
+   * Fills the per-window layout rectangles from the main viewport work area. Call only after
+   * {@link ImGui#beginMainMenuBar()} / {@link ImGui#endMainMenuBar()} for this frame so work
+   * coordinates exclude the menu bar (see {@link #drawUI()}).
    */
   private void computeDefaultLayoutRects() {
     ImGuiViewport viewport = ImGui.getMainViewport();
     float ox = viewport.getWorkPosX();
     float oy = viewport.getWorkPosY();
     float workW = viewport.getWorkSizeX();
-    float workH = viewport.getWorkSizeY();
+    float workBottom = viewport.getWorkPosY() + viewport.getWorkSizeY();
+    // Fallback when work position still matches the raw window top (can happen on the very first
+    // imgui frame before menu-bar layout is applied).
+    if (oy <= viewport.getPosY() + 0.5f) {
+      oy = viewport.getPosY() + ImGui.getFrameHeight() + ImGui.getStyle().getFramePadding().y + 2f;
+    }
+    float workH = workBottom - oy;
 
     final float gap = 8f;
     float cmdH = 76f;
@@ -408,6 +430,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     float colW = Math.min(Math.max(workW * 0.175f, 220f), 338f);
     // Keep both columns plus the middle console strip inside the work area on small windows.
     colW = Math.min(colW, Math.max(200f, (workW - 3f * gap) * 0.48f));
+
+    float rightX = ox + workW - colW;
+    float logW = Math.min(colW * 1.75f, Math.max(colW, rightX - gap - ox));
 
     float yCmd = oy + workH - cmdH;
     float yCons = yCmd - consH - gap;
@@ -426,45 +451,76 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
     availH = Math.max(96f, availH);
 
-    // Left stack: Stats, Performance, Log (same X, stacked top to bottom).
-    float statsH = Math.min(172f, Math.max(96f, availH * 0.20f));
-    float perfH = Math.min(320f, Math.max(120f, availH * 0.38f));
-    float logH = availH - statsH - perfH - 2f * gap;
-    if (logH < 100f) {
-      float need = 100f - logH;
-      float fromPerf = Math.min(need, Math.max(0f, perfH - 110f));
+    // Left stack: Stats, Performance, then Log (wider/taller, vertically centered in the band
+    // above the console strip).
+    float statsH = Math.min(172f, Math.max(96f, availH * 0.19f));
+    // Taller performance panel so all four plot rows (including Native) fit comfortably.
+    float perfH = Math.min(380f, Math.max(148f, availH * 0.43f));
+    float logHBase = availH - statsH - perfH - 2f * gap;
+    if (logHBase < 100f) {
+      float need = 100f - logHBase;
+      float fromPerf = Math.min(need, Math.max(0f, perfH - 128f));
       perfH -= fromPerf;
       need -= fromPerf;
       if (need > 0f) {
         float fromStats = Math.min(need, Math.max(0f, statsH - 88f));
         statsH -= fromStats;
       }
-      logH = availH - statsH - perfH - 2f * gap;
+      logHBase = availH - statsH - perfH - 2f * gap;
     }
 
-    float used = statsH + perfH + logH + 2f * gap;
-    if (used > availH && used > 1f) {
-      float scale = (availH - 2f * gap) / (statsH + perfH + logH);
+    float usedLeft = statsH + perfH + logHBase + 2f * gap;
+    if (usedLeft > availH && usedLeft > 1f) {
+      float scale = (availH - 2f * gap) / (statsH + perfH + logHBase);
       statsH *= scale;
       perfH *= scale;
-      logH = availH - statsH - perfH - 2f * gap;
+      logHBase = availH - statsH - perfH - 2f * gap;
     }
 
-    // Right stack: Watch, Controls, Texture Inspector.
-    float watchH = statsH;
-    float controlsH = Math.min(360f, Math.max(168f, availH * 0.34f));
-    float textureH = availH - watchH - controlsH - 2f * gap;
-    if (textureH < 120f) {
-      float need = 120f - textureH;
-      float fromControls = Math.min(need, Math.max(0f, controlsH - 150f));
+    float logSlotTop = oy + statsH + gap + perfH + gap;
+    float logSlotBottom = yCons - gap;
+    float logSlotH = Math.max(0f, logSlotBottom - logSlotTop + 50);
+    float logH = Math.min(logHBase * 1.35f, logSlotH);
+
+    // Right stack: Watch, Controls, then Texture Inspector with its top edge flush under Controls
+    // so it never overlaps the controls panel. Heights clamp to the console strip (yCons).
+    float watchH = Math.min(statsH * 1.25f, availH * 0.28f);
+    final float minTextureStripe = 96f;
+    final float minControlsH = 400f;
+    float controlsTarget = Math.min(540f, Math.max(minControlsH, availH * 0.46f));
+    float maxControlsFit = availH - watchH - 2f * gap - minTextureStripe;
+    float controlsH = Math.min(controlsTarget, maxControlsFit);
+    if (controlsH < 260f) {
+      controlsH = Math.min(maxControlsFit, Math.max(220f, availH * 0.38f));
+    }
+
+    float textureHBase = availH - watchH - controlsH - 2f * gap;
+    if (textureHBase < 72f) {
+      float need = 72f - textureHBase;
+      float fromControls = Math.min(need, Math.max(0f, controlsH - minControlsH));
       controlsH -= fromControls;
-      textureH = availH - watchH - controlsH - 2f * gap;
+      need -= fromControls;
+      if (need > 0f) {
+        float fromWatch = Math.min(need, Math.max(0f, watchH - 56f));
+        watchH -= fromWatch;
+      }
+      textureHBase = availH - watchH - controlsH - 2f * gap;
     }
 
-    float rightX = ox + workW - colW;
     float midX = ox + colW + gap;
     float midW = workW - 2f * colW - 2f * gap;
     midW = Math.max(100f, midW);
+
+    float rightColMaxW = workW - logW - gap;
+    float watchW = Math.min(colW * 1.4f, rightColMaxW);
+    float controlsW = Math.min(Math.max(watchW, colW * 1.25f), rightColMaxW);
+
+    float textureTop = oy + watchH + gap + controlsH + gap;
+    float textureBottomLimit = yCons - gap + 120;
+    float maxTextureH = Math.max(72f, textureBottomLimit - textureTop);
+    float textureW = Math.min(colW * 1.8f, workW - colW - gap);
+    float textureHDesired = Math.min(480f, Math.max(140f, textureHBase * 1.75f));
+    float textureH = Math.min(textureHDesired, maxTextureH);
 
     layoutStatsX = ox;
     layoutStatsY = oy;
@@ -477,23 +533,23 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     layoutPerfH = perfH;
 
     layoutLogX = ox;
-    layoutLogY = oy + statsH + gap + perfH + gap;
-    layoutLogW = colW;
+    layoutLogY = logSlotTop + (logSlotH - logH) * 0.5f;
+    layoutLogW = logW;
     layoutLogH = logH;
 
-    layoutWatchX = rightX;
+    layoutWatchX = ox + workW - watchW;
     layoutWatchY = oy;
-    layoutWatchW = colW;
+    layoutWatchW = watchW;
     layoutWatchH = watchH;
 
-    layoutControlsX = rightX;
+    layoutControlsX = ox + workW - controlsW;
     layoutControlsY = oy + watchH + gap;
-    layoutControlsW = colW;
+    layoutControlsW = controlsW;
     layoutControlsH = controlsH;
 
-    layoutTextureX = rightX;
-    layoutTextureY = oy + watchH + gap + controlsH + gap;
-    layoutTextureW = colW;
+    layoutTextureX = ox + workW - textureW;
+    layoutTextureY = textureTop;
+    layoutTextureW = textureW;
     layoutTextureH = textureH;
 
     layoutConsoleX = midX;
@@ -512,7 +568,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * On the very first frame after a launch (or after {@code Reset Layout}), this returns
    * {@link ImGuiCond#Always} so the windows snap to their default rectangles even if they were
    * remembered at a previous position. After that frame it goes back to
-   * {@link ImGuiCond#FirstUseEver} so the user's manual moves stick afterwards.
+   * {@link ImGuiCond#FirstUseEver} so the user's manual moves stick afterward.
    */
   private int nextLayoutCond() {
     return forceLayoutNextFrame ? ImGuiCond.Always : ImGuiCond.FirstUseEver;
@@ -526,11 +582,18 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * @param y Default top-left Y in viewport coordinates.
    * @param w Default width in pixels.
    * @param h Default height in pixels.
+   * @param cond ImGui condition for {@link ImGui#setNextWindowPos} / {@link ImGui#setNextWindowSize}.
    */
-  private void applyWindowLayout(float x, float y, float w, float h) {
-    int cond = nextLayoutCond();
+  private void applyWindowLayout(float x, float y, float w, float h, int cond) {
     ImGui.setNextWindowPos(x, y, cond);
     ImGui.setNextWindowSize(w, h, cond);
+  }
+
+  /**
+   * Same as the five-argument overload using {@link #nextLayoutCond()} for {@code cond}.
+   */
+  private void applyWindowLayout(float x, float y, float w, float h) {
+    applyWindowLayout(x, y, w, h, nextLayoutCond());
   }
 
   private void snapshotLogBuffer() {
@@ -798,7 +861,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return;
     }
     if (watchCount == 0) {
-      ImGui.textDisabled("No watches registered. Use Flixel.watch.add(...) to track values.");
+      ImGui.textDisabled(WATCH_EMPTY_HINT);
       ImGui.end();
       return;
     }
@@ -918,12 +981,14 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       focusCommandLine = false;
     }
     boolean submitted = ImGui.inputText("##cmd", commandInputBuffer, inputFlags);
+    boolean cmdFieldFocused = ImGui.isItemFocused();
+    String commandSnapshot = commandInputBuffer.get();
     ImGui.popItemWidth();
     ImGui.sameLine();
     boolean clickedRun = ImGui.button("Run");
 
     // Manual history navigation since the imgui-java callback signature varies between versions.
-    if (ImGui.isItemFocused()) {
+    if (cmdFieldFocused) {
       if (ImGui.isKeyPressed(GLFW.GLFW_KEY_UP)) {
         navigateHistory(-1);
       } else if (ImGui.isKeyPressed(GLFW.GLFW_KEY_DOWN)) {
@@ -932,8 +997,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
 
     if (submitted || clickedRun) {
-      String line = commandInputBuffer.get();
-      if (line != null && !line.isBlank()) {
+      String line = commandSnapshot != null ? commandSnapshot.trim() : "";
+      if (!line.isEmpty()) {
         Flixel.info("FlixelDebug", "> " + line);
         Flixel.debug.executeCommand(line);
       }
@@ -980,7 +1045,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (!showTextureWindow.get()) {
       return;
     }
-    applyWindowLayout(layoutTextureX, layoutTextureY, layoutTextureW, layoutTextureH);
+    int layoutCond = textureInspectorSnapNextFrame ? ImGuiCond.Always : nextLayoutCond();
+    if (textureInspectorSnapNextFrame) {
+      textureInspectorSnapNextFrame = false;
+    }
+    applyWindowLayout(layoutTextureX, layoutTextureY, layoutTextureW, layoutTextureH, layoutCond);
     if (!ImGui.begin("Texture Inspector", showTextureWindow)) {
       ImGui.end();
       return;

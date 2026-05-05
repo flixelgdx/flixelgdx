@@ -195,9 +195,8 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   }
 
   public void toggleVisible() {
-    boolean was = visible;
     visible = !visible;
-    if (visible && !was) {
+    if (visible) {
       forceRefreshOnNextUpdate();
     }
   }
