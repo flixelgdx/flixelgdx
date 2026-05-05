@@ -19,6 +19,7 @@ import me.stringdotjar.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
+import me.stringdotjar.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.runtime.reflect.FlixelReflectASMHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
@@ -127,6 +128,9 @@ public class FlixelLwjgl3Launcher {
     Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    if (runtimeMode == FlixelRuntimeMode.DEBUG) {
+      Flixel.setDebugOverlay(FlixelImGuiDebugOverlay::new);
+    }
     Flixel.initialize(game);
 
     new Lwjgl3Application(game, configuration);

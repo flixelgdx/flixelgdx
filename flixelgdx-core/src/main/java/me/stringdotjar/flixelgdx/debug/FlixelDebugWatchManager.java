@@ -209,6 +209,10 @@ public class FlixelDebugWatchManager {
    * Formats all watch lines into {@code output}, reusing existing {@link FlixelString} slots and
    * shrinking the array when fewer watches are registered. Each line includes markup for the debug overlay.
    *
+   * <p>Prefer {@link #fillWatchEntries(Array, Array)} when the renderer (for example a Dear ImGui based
+   * overlay) is responsible for coloring keys and values separately, since that path avoids appending
+   * markup tokens that the renderer has to ignore anyway.
+   *
    * @param output Cleared and filled with one {@link FlixelString} per watch entry (order follows
    *   {@link Map#entrySet()}).
    */
@@ -224,6 +228,39 @@ public class FlixelDebugWatchManager {
       line.clear();
       line.concat("[#88CCFF]").concat(entry.getKey()).concat(":[#FFFFFF] ");
       entry.getValue().appendValue(line);
+    }
+  }
+
+  /**
+   * Fills two parallel arrays with each watch entry's name and its current value, reusing existing
+   * {@link FlixelString} slots so that no allocations happen on the steady-state path.
+   *
+   * <p>This is the preferred path when the debug renderer can color keys and values on its own
+   * (for example Dear ImGui's {@code TextColored}), since neither array contains color markup.
+   * Both arrays are guaranteed to have the same size on return.
+   *
+   * @param keys Cleared and filled with one entry per watch's display name.
+   * @param values Cleared and filled with one entry per watch's current value (no formatting prefix).
+   */
+  public void fillWatchEntries(@NotNull Array<FlixelString> keys, @NotNull Array<FlixelString> values) {
+    int n = watches.size();
+    while (keys.size < n) {
+      keys.add(new FlixelString(32));
+    }
+    while (values.size < n) {
+      values.add(new FlixelString(48));
+    }
+    keys.setSize(n);
+    values.setSize(n);
+    int i = 0;
+    for (Map.Entry<String, WatchEntry> entry : watches.entrySet()) {
+      FlixelString key = keys.get(i);
+      FlixelString value = values.get(i);
+      key.clear();
+      key.concat(entry.getKey());
+      value.clear();
+      entry.getValue().appendValue(value);
+      i++;
     }
   }
 
