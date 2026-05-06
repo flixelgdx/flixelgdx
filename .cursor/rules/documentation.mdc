@@ -1,4 +1,5 @@
 ---
+description: 
 alwaysApply: true
 ---
 
@@ -6,10 +7,15 @@ When writing documentation (specifically for source code Javadocs or comments), 
 
 - Use proper grammar. Use proper punctuation on everything, including comments, Javadoc parameter/returns/throws descriptions., etc.
 - Avoid using special symbols, such as en dashes, em dashes, special arrows, etc. It is not necessary. Avoiding these helps keep the documentation simple and concise. Use pure ASCII characters instead.
-- Always include every tag for Javadocs, such as @param, @returns, @throws, etc.
+- Always include every relevant tag for Javadocs, such as @param, @returns, @throws, etc.
 - Use null annotations where necessary, such as @Nullable or @NotNull. This allows IDEs to highlight when something could be null ahead of time and allow the user to add safeguards before compiling their code.
 - When using Javadoc features like @link, make sure it actually works. If there's a broken link, or if it's not a supported feature, modify it accordingly. This allows the documentation to be easily navigated and readable by users and developers alike.
-- Keep the tone simple and inviting. The documentation should be able to teach the users (especially beginners) how to use the framework, not just a dry manual. When needed, include code examples showing how to use a class or method.
+- Keep the tone simple and inviting. The documentation should be able to teach the users (especially beginners) how to use the framework.
 - When writing code, always use the `.editorconfig` file for formatting. This keeps the formatting of the code consistent and makes it looks like as if it was written by a single person.
 - Add brief comments in places where the code either might be complex or hard to read when there's too much going on.
 - Avoid adding Javadocs to methods or functions that have literal names. For example, if it's a simple getter/setter or a method named `calculateTotal()`, don't add a Javadoc unless necessary.
+- When writing comments, do not use markdown formatting characters (like double asterisks for bold or backticks for code snippets). Special formatting should be strictly kept in the Javadocs and Javadocs only.
+- For comments in code, if you come across needing to talk about a method, make sure to include parenthesis when writing it. If a method has at least one parameter, use `...` as a placeholder. Some examples of methods in comments might be `someMethod()`, `anotherMethod(...)`, or `SomeClass.someMethod(...)`.
+- Inside of comments when writing code, don't use hashtags to represent seperated fields or methods like how it's done in Javadocs (i.e., `SomeClass#someMethod(int)`). Use periods instead, as it keeps the comments clean and concise to read.
+- When writng documentation, remember one thing: the documentation should be a beginner friendly handbook, *not* a dry and expert only manual. ***This is the most important one, and there's no arguing with this rule***.
+- If there is a class, field or method that is used commonly (or if it's critical and important), inside of its Javadoc, include a code example of how to use the said class, field or method correctly. It should be simple and easy to infer how that said system should be implemented and used in the correct way.

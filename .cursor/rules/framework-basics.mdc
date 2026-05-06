@@ -4,6 +4,6 @@ alwaysApply: true
 
 This project is a general purposed, Java based framework called FlixelGDX. It is built on top of libGDX, utilizing its powerful performance and tools to make game development modernized, beginner friendly and accessible for all users.
 
-The ultimate goal of this framework is to take the beloved features from HaxeFlixel and rewriting them for Java's massive ecosystem. It is meant to be as memory efficient as possible without breaking or sacrificing any powerful features that may be required in a game.
+The ultimate goal of this framework is to take the beloved features from HaxeFlixel and rewriting them for Java's massive ecosystem, while also being as memory efficient as possible without breaking or sacrificing any powerful features that may be required in a game.
 
-Note that because this is a standalone framework, everything is tested in a *separate test project*, either using the framework locally via `publishToMavenLocal` or JitPack from a GitHub branch.
+Note that because this is a standalone framework, everything is tested in a *separate test project*, either using the framework locally via `publishToMavenLocal`, a composite build, or JitPack from a GitHub branch/commit.
