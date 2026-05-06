@@ -62,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  *   </tbody>
  * </table>
  */
-public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable, Disposable, Pool.Poolable {
+public abstract class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable, Disposable, Pool.Poolable {
 
   private static int idEnumerator = 0;
 
