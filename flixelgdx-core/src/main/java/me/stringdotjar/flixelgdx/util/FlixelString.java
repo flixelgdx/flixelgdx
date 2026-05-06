@@ -232,7 +232,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(@NotNull ByteSupplier supplier) {
     buffer.clear();
-    buffer.append((int) supplier.getAsByte());
+    buffer.append(supplier.getAsByte());
     return this;
   }
 
@@ -240,7 +240,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(@NotNull ShortSupplier supplier) {
     buffer.clear();
-    buffer.append((int) supplier.getAsShort());
+    buffer.append(supplier.getAsShort());
     return this;
   }
 

@@ -9,6 +9,7 @@ package me.stringdotjar.flixelgdx.debug;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -46,11 +47,10 @@ import org.jetbrains.annotations.Nullable;
  * watch values, log entries, and custom console blocks.
  *
  * <p>The class deliberately does <strong>not</strong> render any UI on its own. Doing so in the
- * core module would either pull a heavy GUI dependency into every platform (web/iOS/Android) or
- * force the framework to maintain a hand-rolled {@link com.badlogic.gdx.graphics.g2d.SpriteBatch}
- * UI that allocates strings every frame. Instead, backends extend this class and override
- * {@link #drawUI()} to render the panels with whatever toolkit fits the platform best (the
- * desktop/LWJGL3 backend uses Dear ImGui via {@code FlixelImGuiDebugOverlay} for example).
+ * core module would either pull a heavy GUI dependency into every platform (web/iOS/Android).
+ * Instead, backends extend this class and override {@link #drawUI()} to render the panels with
+ * whatever toolkit fits the platform best (the desktop/LWJGL3 backend uses Dear ImGui via
+ * {@code FlixelImGuiDebugOverlay} for example).
  *
  * <p>The default install path is:
  * <ol>
@@ -632,8 +632,8 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   }
 
   /**
-   * View-space hit test aligned with {@link FlixelSprite#draw}: uses world position plus each
-   * object's scroll factors so parallax sprites and grouped layers match what the player sees.
+   * View-space hit test aligned with {@link me.stringdotjar.flixelgdx.FlixelSprite#draw(Batch)}: uses world position
+   * plus each object's scroll factors so parallax sprites and grouped layers match what the player sees.
    */
   private static boolean overlapsObjectInView(@NotNull FlixelCamera cam, @NotNull FlixelObject obj,
                                             float viewX, float viewY) {
@@ -825,7 +825,7 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   }
 
   @Override
-  public void dispose() {
+  public final void dispose() {
     destroy();
   }
 
