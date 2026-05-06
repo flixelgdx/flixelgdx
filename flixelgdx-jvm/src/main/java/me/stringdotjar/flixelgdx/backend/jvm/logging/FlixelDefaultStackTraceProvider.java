@@ -9,7 +9,6 @@ package me.stringdotjar.flixelgdx.backend.jvm.logging;
 
 import me.stringdotjar.flixelgdx.logging.FlixelStackFrame;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
-import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 
 /**
  * Implementation of {@link FlixelStackTraceProvider} using Java's {@link StackWalker}.
@@ -17,20 +16,37 @@ import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
  */
 public class FlixelDefaultStackTraceProvider implements FlixelStackTraceProvider {
 
+  /**
+   * @return {@code true} if this frame may represent the real logging call site.
+   */
+  private static boolean isUsableCallerFrame(StackWalker.StackFrame f) {
+    String className = f.getClassName();
+    if ("me.stringdotjar.flixelgdx.logging.FlixelLogger".equals(className)) {
+      return false;
+    }
+    if ("me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider".equals(className)) {
+      return false;
+    }
+    if ("me.stringdotjar.flixelgdx.Flixel".equals(className)) {
+      // Skip static log facades so FlixelLogger sees the real caller (matches flixelgdx-logging-plugin skipping weaves there).
+      String method = f.getMethodName();
+      if ("info".equals(method) || "warn".equals(method) || "error".equals(method)) {
+        return false;
+      }
+    }
+    String pkg = f.getDeclaringClass().getPackageName();
+    if (pkg.startsWith("org.codehaus.groovy.")) return false;
+    if (pkg.startsWith("groovy.lang.")) return false;
+    if (className.contains("$_run_closure")) return false;
+    if (className.contains("$$Lambda$")) return false;
+    if (pkg.startsWith("sun.reflect.") || pkg.startsWith("java.lang.reflect.")) return false;
+    return true;
+  }
+
   @Override
   public FlixelStackFrame getCaller() {
     return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-      .walk(frames -> frames.filter(f -> {
-        // Filter packages to not log.
-        String pkg = f.getDeclaringClass().getPackageName();
-        if (pkg.startsWith(FlixelRuntimeUtil.getLibraryRoot())) return false; // Do not include FlixelGDX logs.
-        if (pkg.startsWith("org.codehaus.groovy.")) return false;
-        if (pkg.startsWith("groovy.lang.")) return false;
-        if (pkg.contains("$_run_closure")) return false;
-        if (pkg.contains("$$Lambda$")) return false;
-        if (pkg.startsWith("sun.reflect.") || pkg.startsWith("java.lang.reflect.")) return false;
-        return true;
-      }).findFirst())
+      .walk(frames -> frames.filter(FlixelDefaultStackTraceProvider::isUsableCallerFrame).findFirst())
       .map(StackWalkerFrame::new)
       .orElse(null);
   }

@@ -590,7 +590,7 @@ public final class Flixel {
    * Sets the current state to the provided state.
    *
    * @param newState The new {@code FlixelState} to set as the current state.
-   * @param clearTweens Should all active tweens be cancelled and their pools be cleared?
+   * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
    */

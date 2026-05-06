@@ -66,7 +66,10 @@ import me.stringdotjar.flixelgdx.logging.FlixelLogLevel;
  * <p>The imgui-java GLFW backend installs callbacks that <em>chain</em> with the existing
  * libGDX callbacks (using {@code installCallbacks=true}). Both libGDX and imgui see every
  * key, mouse, and scroll event, so {@link Flixel#getDebugToggleKey() F2}, {@link Flixel#getDebugDrawToggleKey() F3},
- * and {@link Flixel#getDebugPauseKey() F4} keep working even when an imgui window has focus.
+ * and {@link Flixel#getDebugPauseKey() F4} keep working even when an imgui window has focus. Keys that normally
+ * <em>type into</em> the command {@code InputText} (letters, punctuation such as backslash, arrows, Enter, Tab,
+ * Backspace, and so on) do not trigger debug bindings while that field is focused, so they do not fight the text box.
+ * Function keys, Escape, modifiers, and similar non-text keys still toggle the overlay and other debug actions.
  * When the cursor is hovering an imgui window we suppress the camera pan/zoom and the
  * sprite picker (via {@link #isMouseCapturedByUI()}) so scrolling inside an imgui list
  * does not also zoom the inspected camera or grab a sprite by accident.
@@ -177,6 +180,21 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   private boolean focusCommandLine = false;
 
+  /**
+   * Whether the command {@code InputText} had focus at the end of the last {@link #drawUI()} pass. Used in
+   * {@link #shouldSuppressDebugRawKeybind(int)} on the following frame (after {@link #update(float)}).
+   */
+  private boolean commandInputFocusedLastFrame;
+
+  /**
+   * When true, the next {@link #drawUI()} pass will clear the Dear ImGui IO input queues.
+   *
+   * <p>After the overlay is hidden, GLFW callbacks may still append keyboard and mouse events into Dear ImGui's IO.
+   * Those queues are only drained while {@link #drawUI()} runs. This clears them once on the next visible frame so
+   * gameplay keys typed while hidden do not flush into the command line when the overlay is reopened.
+   */
+  private boolean sanitizeImGuiInputBeforeNextDraw;
+
   /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
   private final byte[] commandLineUtf8Scratch = new byte[512];
   private int commandLineUtf8ScratchLen;
@@ -218,6 +236,14 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return;
     }
     snapshotLogBuffer();
+
+    if (sanitizeImGuiInputBeforeNextDraw) {
+      sanitizeImGuiInputBeforeNextDraw = false;
+      ImGuiIO io = ImGui.getIO();
+      io.clearInputKeys();
+      io.clearEventsQueue();
+      io.clearInputMouse();
+    }
 
     imGuiGl3.newFrame();
     imGuiGlfw.newFrame();
@@ -314,7 +340,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   @Override
   public boolean isMouseCapturedByUI() {
-    return imguiInitialized && ImGui.getIO().getWantCaptureMouse();
+    if (!isVisible() || !imguiInitialized) {
+      return false;
+    }
+    return ImGui.getIO().getWantCaptureMouse();
   }
 
   /**
@@ -324,13 +353,66 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * from capturing and processing input while the user is typing in the command console or
    * interacting with another widget.
    *
+   * <p>While the overlay is hidden, this always returns {@code false}. ImGui is not framed in that
+   * state, so the previous frame's {@code WantCaptureKeyboard} would otherwise stay stale and
+   * suppress gameplay input.
+   *
    * <p>Note that the debug overlay's own toggle keys (F2 by default, etc.) read raw input from
    * {@link me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)},
-   * so they continue to work even while a text field is focused.
+   * so they continue to work while a text field is focused except for keys that are suppressed as
+   * typable command-line input (see {@link #shouldSuppressDebugRawKeybind(int)} on this class).
    */
   @Override
   public boolean isKeyboardCapturedByUI() {
-    return imguiInitialized && ImGui.getIO().getWantCaptureKeyboard();
+    if (!isVisible() || !imguiInitialized) {
+      return false;
+    }
+    return ImGui.getIO().getWantCaptureKeyboard();
+  }
+
+  /**
+   * While the command line field is focused, blocks debug hotkeys for keys that normally type or edit text in that
+   * field. Function keys ({@code F1}-{@code F24}), Escape, modifiers, lock keys, Pause, Print Screen, and similar
+   * system keys still run debug bindings.
+   */
+  @Override
+  protected boolean shouldSuppressDebugRawKeybind(int keycode) {
+    if (!commandInputFocusedLastFrame) {
+      return false;
+    }
+    return !isNonTypableSystemDebugKey(keycode);
+  }
+
+  /**
+   * @return {@code true} for keys that should keep working as debug shortcuts while the command field is focused.
+   */
+  private static boolean isNonTypableSystemDebugKey(int keycode) {
+    if (keycode < 0) {
+      return true;
+    }
+    if (keycode >= Input.Keys.F1 && keycode <= Input.Keys.F24) {
+      return true;
+    }
+    return switch (keycode) {
+      case Input.Keys.ESCAPE,
+        Input.Keys.CONTROL_LEFT,
+        Input.Keys.CONTROL_RIGHT,
+        Input.Keys.ALT_LEFT,
+        Input.Keys.ALT_RIGHT,
+        Input.Keys.SHIFT_LEFT,
+        Input.Keys.SHIFT_RIGHT,
+        Input.Keys.SYM,
+        Input.Keys.CAPS_LOCK,
+        Input.Keys.NUM_LOCK,
+        Input.Keys.SCROLL_LOCK,
+        Input.Keys.PAUSE,
+        Input.Keys.PRINT_SCREEN,
+        Input.Keys.UNKNOWN,
+        Input.Keys.POWER,
+        Input.Keys.BUTTON_MODE,
+        Input.Keys.MEDIA_PLAY_PAUSE -> true;
+      default -> false;
+    };
   }
 
   @Override
@@ -383,14 +465,45 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   @Override
-  public void toggleVisible() {
-    super.toggleVisible();
+  public void setVisible(boolean visible) {
+    boolean wasVisible = isVisible();
+    super.setVisible(visible);
+    onImGuiHostVisibilityChanged(wasVisible, visible);
+  }
 
-    // Make sure the game can capture input when the debugger is hidden.
-    if (imguiInitialized) {
-      ImGui.getIO().setWantCaptureKeyboard(isVisible());
-      ImGui.getIO().setWantCaptureMouse(isVisible());
+  @Override
+  public void toggleVisible() {
+    boolean wasVisible = isVisible();
+    super.toggleVisible();
+    onImGuiHostVisibilityChanged(wasVisible, isVisible());
+  }
+
+  /**
+   * Runs when the overlay visibility actually changes. Dear ImGui does not receive {@link #drawUI()} while hidden,
+   * so capture flags and queued IO input must be reconciled here instead of forcing {@code WantCapture*} each toggle.
+   */
+  private void onImGuiHostVisibilityChanged(boolean wasVisible, boolean nowVisible) {
+    if (wasVisible == nowVisible) {
+      return;
     }
+    if (!nowVisible) {
+      flushImGuiIoAfterOverlayHidden();
+    } else {
+      sanitizeImGuiInputBeforeNextDraw = true;
+    }
+  }
+
+  private void flushImGuiIoAfterOverlayHidden() {
+    commandInputFocusedLastFrame = false;
+    if (!imguiInitialized) {
+      return;
+    }
+    ImGuiIO io = ImGui.getIO();
+    io.setWantCaptureKeyboard(false);
+    io.setWantCaptureMouse(false);
+    io.clearInputKeys();
+    io.clearEventsQueue();
+    io.clearInputMouse();
   }
 
   private void initImGui() {
@@ -1017,10 +1130,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    */
   private void drawCommandWindow() {
     if (!showCommandWindow.get()) {
+      commandInputFocusedLastFrame = false;
       return;
     }
     applyWindowLayout(layoutCommandX, layoutCommandY, layoutCommandW, layoutCommandH);
     if (!ImGui.begin("Command Line", showCommandWindow)) {
+      commandInputFocusedLastFrame = false;
       ImGui.end();
       return;
     }
@@ -1033,6 +1148,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       focusCommandLine = false;
     }
     boolean submitted = ImGui.inputText("##cmd", commandInputBuffer, inputFlags, commandHistoryCallback);
+    commandInputFocusedLastFrame = ImGui.isItemFocused();
     String commandSnapshot = commandInputBuffer.get();
     ImGui.popItemWidth();
     ImGui.sameLine();

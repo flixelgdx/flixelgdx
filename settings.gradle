@@ -25,6 +25,7 @@ def modules = [
   'flixelgdx-ios',
   'flixelgdx-teavm',
   'flixelgdx-teavm-plugin',
+  'flixelgdx-logging-plugin',
   'flixelgdx-test'
 ]
 if (gradle.ext.includeAndroid) {

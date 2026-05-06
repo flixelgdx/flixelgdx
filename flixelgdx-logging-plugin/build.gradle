@@ -1,0 +1,40 @@
+plugins {
+  id 'java-gradle-plugin'
+}
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-logging-plugin'
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
+}
+
+gradlePlugin {
+  plugins {
+    flixelLogging {
+      id = 'me.stringdotjar.flixelgdx.logging'
+      implementationClass = 'me.stringdotjar.flixelgdx.gradle.logging.FlixelLoggingPlugin'
+      displayName = 'FlixelGDX Logging Plugin'
+      description = 'Weaves explicit source file and line into FlixelLogger calls after compileJava for accurate traces (desktop, TeaVM, etc.).'
+    }
+  }
+}
+
+repositories {
+  mavenCentral()
+  gradlePluginPortal()
+}
+
+dependencies {
+  implementation 'org.ow2.asm:asm:9.7.1'
+  implementation 'org.ow2.asm:asm-tree:9.7.1'
+  testImplementation platform('org.junit:junit-bom:5.10.0')
+  testImplementation 'org.junit.jupiter:junit-jupiter'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  testImplementation project(':flixelgdx-core')
+}
+
+tasks.named('test') {
+  useJUnitPlatform()
+}

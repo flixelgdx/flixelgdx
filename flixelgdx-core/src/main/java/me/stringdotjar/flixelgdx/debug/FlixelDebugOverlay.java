@@ -246,8 +246,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     handleToggleKeys();
 
     if (Flixel.isDebugMode()) {
-      // Raw* so the game loop pause toggle keeps working even while an imgui text field is focused.
-      if (Flixel.keys.rawJustPressed(Flixel.getDebugPauseKey())) {
+      // Raw* so the game loop pause toggle keeps working even while an imgui text field is focused,
+      // unless a backend suppresses typable keys while a command field is active (see LWJGL ImGui overlay).
+      int pauseKey = Flixel.getDebugPauseKey();
+      if (Flixel.keys.rawJustPressed(pauseKey) && !shouldSuppressDebugRawKeybind(pauseKey)) {
         Flixel.setPaused(!Flixel.isPaused());
       }
       if (Flixel.isPaused()) {
@@ -347,12 +349,26 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // Use the raw* variants so the toggle keys still work even while a Dear ImGui text field
     // (for example, the debug command line) has keyboard focus and the regular justPressed
     // helpers are intentionally suppressed.
-    if (Flixel.keys.rawJustPressed(Flixel.getDebugToggleKey())) {
+    int toggleKey = Flixel.getDebugToggleKey();
+    if (Flixel.keys.rawJustPressed(toggleKey) && !shouldSuppressDebugRawKeybind(toggleKey)) {
       toggleVisible();
     }
-    if (Flixel.keys.rawJustPressed(Flixel.getDebugDrawToggleKey())) {
+    int drawKey = Flixel.getDebugDrawToggleKey();
+    if (Flixel.keys.rawJustPressed(drawKey) && !shouldSuppressDebugRawKeybind(drawKey)) {
       toggleDrawDebug();
     }
+  }
+
+  /**
+   * Backends that render a command-line {@code InputText} can override this to skip debug hotkeys for keys that would
+   * normally type into that field (letters, punctuation, arrows, Enter, and so on). Return {@code false} by default so
+   * {@link me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)} shortcuts keep working.
+   *
+   * @param keycode FlixelGDX {@link FlixelKey} or libGDX {@link Input.Keys} key code being handled by a debug binding.
+   * @return {@code true} to skip handling this key for debug shortcuts this frame.
+   */
+  protected boolean shouldSuppressDebugRawKeybind(int keycode) {
+    return false;
   }
 
   private void refreshWatchEntries() {
@@ -444,10 +460,12 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // input suppression we set up to protect the game's regular input).
     boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
       || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
-    if (alt && Flixel.keys.rawJustPressed(Flixel.getDebugCameraCycleLeftKey())) {
+    int cycleLeft = Flixel.getDebugCameraCycleLeftKey();
+    int cycleRight = Flixel.getDebugCameraCycleRightKey();
+    if (alt && Flixel.keys.rawJustPressed(cycleLeft) && !shouldSuppressDebugRawKeybind(cycleLeft)) {
       debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.size) % cams.size;
     }
-    if (alt && Flixel.keys.rawJustPressed(Flixel.getDebugCameraCycleRightKey())) {
+    if (alt && Flixel.keys.rawJustPressed(cycleRight) && !shouldSuppressDebugRawKeybind(cycleRight)) {
       debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.size;
     }
     FlixelCamera cam = cams.get(debugInspectCameraIndex);
@@ -514,7 +532,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     FlixelCamera cam = cams.get(idx);
-    // Defensive: make sure the camera matrix reflects the latest scroll / zoom values before we
+    // Make sure the camera matrix reflects the latest scroll / zoom values before we
     // unproject. handleInspectCameraTools also calls this (it runs first when both are active),
     // but calling it here too is cheap and guarantees correctness if the call order ever shifts.
     cam.applyLibCameraTransform();
