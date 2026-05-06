@@ -331,8 +331,7 @@ public class FlixelLogger implements ApplicationLogger {
       simpleFile = "unknown:0";
       method = "unknown()";
     } else {
-      // Convert the package path and replace the periods (.) with slashes (/)
-      // to replicate the familiar Haxe tracing.
+      // Convert the package path and replace the periods (.) with slashes (/) to replicate the familiar Haxe tracing.
       file = (caller.getFileName() != null ? caller.getFileName() : "UnknownFile.java") + ":" + caller.getLineNumber();
       String className = caller.getClassName();
       int lastDot = className != null ? className.lastIndexOf('.') : -1;
@@ -379,7 +378,7 @@ public class FlixelLogger implements ApplicationLogger {
         appendColored(consoleLine, methodPart + " ", color, false, false, false);
         appendColored(consoleLine, rawMessage, color, false, true, false);
       }
-      System.out.println(consoleLine.toString());
+      System.out.println(consoleLine);
     }
 
     // Notify in-game log listeners (e.g. the debug overlay console).

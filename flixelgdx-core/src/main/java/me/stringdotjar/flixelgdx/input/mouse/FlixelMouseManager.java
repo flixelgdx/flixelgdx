@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Vector2;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
 
 import org.jetbrains.annotations.NotNull;
@@ -233,16 +234,92 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
     return scrollDeltaY;
   }
 
+  /**
+   * Returns whether the given mouse button is held down. Returns {@code false} while the active
+   * debug overlay reports that another UI layer (typically the imgui debugger) is capturing
+   * mouse input, so clicking inside an imgui window cannot leak into game logic.
+   *
+   * <p>Use {@link #rawPressed(int)} when you specifically need the raw, unsuppressed state.
+   * The debug overlay's own sprite picker / camera tools use the raw variants so they can opt
+   * in to "ignore the suppression" when needed.
+   *
+   * @param button libGDX button index (e.g. {@code 0} for left mouse button).
+   * @return {@code true} if the button is pressed and input is enabled and not suppressed by UI.
+   */
   public boolean pressed(int button) {
+    if (isCapturedByDebugUI()) {
+      return false;
+    }
+    return rawPressed(button);
+  }
+
+  /**
+   * Same as {@link #pressed(int)} but bypasses the "captured by debug UI" check.
+   *
+   * @param button libGDX button index.
+   * @return {@code true} if the button is pressed and input is enabled, regardless of UI capture.
+   */
+  public boolean rawPressed(int button) {
     return enabled && button >= 0 && button <= MAX_BUTTON && Gdx.input.isButtonPressed(button);
   }
 
+  /**
+   * Returns whether the given mouse button was just pressed this frame. Returns {@code false}
+   * while the debug UI reports that another UI layer is capturing mouse input.
+   *
+   * @param button libGDX button index.
+   * @return {@code true} if the button was just pressed and input is enabled and not suppressed.
+   */
   public boolean justPressed(int button) {
+    if (isCapturedByDebugUI()) {
+      return false;
+    }
+    return rawJustPressed(button);
+  }
+
+  /**
+   * Same as {@link #justPressed(int)} but bypasses the "captured by debug UI" check.
+   *
+   * @param button libGDX button index.
+   * @return {@code true} if the button was just pressed and input is enabled, regardless of UI capture.
+   */
+  public boolean rawJustPressed(int button) {
     return enabled && button >= 0 && button <= MAX_BUTTON && justPressed[button];
   }
 
+  /**
+   * Returns whether the given mouse button was just released this frame. Returns {@code false}
+   * while the debug UI reports that another UI layer is capturing mouse input.
+   *
+   * @param button libGDX button index.
+   * @return {@code true} if the button was just released and input is enabled and not suppressed.
+   */
   public boolean justReleased(int button) {
+    if (isCapturedByDebugUI()) {
+      return false;
+    }
+    return rawJustReleased(button);
+  }
+
+  /**
+   * Same as {@link #justReleased(int)} but bypasses the "captured by debug UI" check.
+   *
+   * @param button libGDX button index.
+   * @return {@code true} if the button was just released and input is enabled, regardless of UI capture.
+   */
+  public boolean rawJustReleased(int button) {
     return enabled && button >= 0 && button <= MAX_BUTTON && justReleased[button];
+  }
+
+  /**
+   * Returns {@code true} when the active {@link FlixelDebugOverlay} reports that another UI
+   * layer is consuming mouse input. Used by {@link #pressed(int)}, {@link #justPressed(int)},
+   * and {@link #justReleased(int)} to suppress game-level input while the cursor is over a
+   * debug UI panel.
+   */
+  private static boolean isCapturedByDebugUI() {
+    FlixelDebugOverlay overlay = Flixel.getDebugOverlay();
+    return overlay != null && overlay.isMouseCapturedByUI();
   }
 
   public boolean overlap(@NotNull FlixelObject obj) {

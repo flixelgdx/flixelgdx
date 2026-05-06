@@ -19,6 +19,19 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Logical gamepad button and axis identifiers for {@link FlixelGamepadManager}, resolved to native
  * indices through each {@link Controller#getMapping()} (gdx-controllers SDL-style layout).
+ *
+ * <h2>Important Note for Desktop (LWJGL3) vs Web (TeaVM)</h2>
+ *
+ * <p>On LWJGL3, {@code gdx-controllers-desktop} uses SDL with a large
+ * controller database, so many USB pads are remapped to the same logical layout. On web,
+ * {@code gdx-controllers-teavm} reads the browser Gamepad API and always exposes the W3C
+ * standard face-button indices (south, east, west, north) through a fixed
+ * {@link ControllerMapping}. If a device reports non-standard button ordering but the browser still
+ * labels the mapping as standard (or the hardware wires two actions to overlapping reports), logical
+ * {@code A} and {@code Y} can disagree with what you see on desktop for the same physical pad.
+ * That is a platform and driver limitation, not something {@code logicalButtonToNative} can infer
+ * without per-device tables. Games that need perfect parity can offer a remap screen or branch on
+ * {@link com.badlogic.gdx.Application#getType()} and {@link Controller#getName()}.
  */
 public final class FlixelGamepadInput {
 
