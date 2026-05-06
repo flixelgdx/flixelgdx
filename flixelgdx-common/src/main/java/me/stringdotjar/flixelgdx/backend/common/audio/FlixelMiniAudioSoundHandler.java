@@ -5,7 +5,7 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.backend.jvm.audio;
+package me.stringdotjar.flixelgdx.backend.common.audio;
 
 import games.rednblack.miniaudio.MAGroup;
 import games.rednblack.miniaudio.MANode;
@@ -17,12 +17,12 @@ import games.rednblack.miniaudio.filter.MALowPassFilter;
 import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 
 /**
- * JVM implementation of {@link FlixelSoundBackend.Factory} backed by the
- * MiniAudio native library.
+ * JVM-family implementation of {@link FlixelSoundBackend.Factory} backed by the MiniAudio native
+ * library. Shared by desktop (LWJGL3), Android, and iOS launchers that load native MiniAudio.
  *
- * <p>This factory owns a single {@link MiniAudio} engine instance that is
- * created in the constructor and disposed when {@link #disposeEngine()} is
- * called. All sounds and groups are created through the engine.
+ * <p>This factory owns a single {@link MiniAudio} engine instance that is created in the
+ * constructor and disposed when {@link #disposeEngine()} is called. All sounds and groups are
+ * created through the engine.
  */
 public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
@@ -115,24 +115,24 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   private record MiniAudioEffectNode(MANode node) implements FlixelSoundBackend.EffectNode {
 
     @Override
-      public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-        MANode upstreamNode;
-        if (upstream instanceof FlixelMiniAudioSound mas) {
-          upstreamNode = mas.getMASound();
-        } else {
-          return;
-        }
-        node.attachToThisNode(upstreamNode, bus);
+    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
+      MANode upstreamNode;
+      if (upstream instanceof FlixelMiniAudioSound mas) {
+        upstreamNode = mas.getMASound();
+      } else {
+        return;
       }
-
-      @Override
-      public void detach(int bus) {
-        node.detach(bus);
-      }
-
-      @Override
-      public void dispose() {
-        node.dispose();
-      }
+      node.attachToThisNode(upstreamNode, bus);
     }
+
+    @Override
+    public void detach(int bus) {
+      node.detach(bus);
+    }
+
+    @Override
+    public void dispose() {
+      node.dispose();
+    }
+  }
 }

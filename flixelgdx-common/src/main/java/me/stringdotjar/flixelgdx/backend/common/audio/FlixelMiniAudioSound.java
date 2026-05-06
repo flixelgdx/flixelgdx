@@ -5,14 +5,13 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.backend.jvm.audio;
+package me.stringdotjar.flixelgdx.backend.common.audio;
 
 import games.rednblack.miniaudio.MASound;
 import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 
 /**
- * JVM implementation of {@link FlixelSoundBackend} that wraps a single
- * MiniAudio {@link MASound}.
+ * MiniAudio-backed {@link FlixelSoundBackend} that wraps a single {@link MASound}.
  */
 final class FlixelMiniAudioSound implements FlixelSoundBackend {
 

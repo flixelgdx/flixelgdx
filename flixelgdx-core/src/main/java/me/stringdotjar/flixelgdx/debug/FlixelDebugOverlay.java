@@ -41,16 +41,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Platform-agnostic <em>controller</em> for the FlixelGDX in-game debugger. This class is the
+ * Platform-agnostic <em>controller</em> for the FlixelGDX in-game debugger. This abstract class is the
  * baseline behavior that every FlixelGDX backend can rely on: it owns the visibility flags,
  * keybind handling, hitbox drawing, the pause/camera tools, and the pooled buffers that hold
  * watch values, log entries, and custom console blocks.
  *
  * <p>The class deliberately does <strong>not</strong> render any UI on its own. Doing so in the
  * core module would either pull a heavy GUI dependency into every platform (web/iOS/Android).
- * Instead, backends extend this class and override {@link #drawUI()} to render the panels with
- * whatever toolkit fits the platform best (the desktop/LWJGL3 backend uses Dear ImGui via
- * {@code FlixelImGuiDebugOverlay} for example).
+ * Instead, backends extend this abstract class and implement {@link #drawUI()} to render the
+ * panels with whatever toolkit suits the platform.
  *
  * <p>The default install path is:
  * <ol>
@@ -81,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>Reuses {@link CachedConsoleBlock} instances across rebuilds.</li>
  * </ul>
  */
-public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
+public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
 
   /** Seconds between automatic refreshes of cached primitive stats while the overlay is visible. */
   protected static final float STATS_UPDATE_INTERVAL = 0.5f;
@@ -174,8 +173,8 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
   private float dragOffsetX;
   private float dragOffsetY;
 
-  /** Constructs a new debug overlay controller. Subclasses can extend this constructor to set up renderer state. */
-  public FlixelDebugOverlay() {
+  /** Constructs the shared debug overlay state. Subclasses should call this before wiring platform UI. */
+  protected FlixelDebugOverlay() {
     shapeRenderer = new ShapeRenderer();
   }
 
@@ -718,8 +717,8 @@ public class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, D
     drawUI();
   }
 
-  /** Hook invoked from {@link #draw()} when the overlay is visible. Backends override to render their UI. */
-  protected void drawUI() {}
+  /** Hook invoked from {@link #draw()} when the overlay is visible. Each platform backend implements this. */
+  protected abstract void drawUI();
 
   /**
    * Called from {@link me.stringdotjar.flixelgdx.FlixelGame#resize(int, int)} so backends can keep

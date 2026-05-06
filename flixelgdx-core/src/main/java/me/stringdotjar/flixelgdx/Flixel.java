@@ -24,6 +24,7 @@ import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHand
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugManager;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
+import me.stringdotjar.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelLogConsoleSink;
@@ -360,7 +361,7 @@ public final class Flixel {
    * this with their own subclass via {@link #setDebugOverlay(Supplier)} before the game
    * starts (i.e. in the launcher, before {@link FlixelGame#create()} runs).
    */
-  private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelDebugOverlay::new;
+  private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelHeadlessDebugOverlay::new;
 
   /** The active debug overlay instance, created by {@link FlixelGame} during startup. */
   private static FlixelDebugOverlay debugOverlay;
@@ -696,7 +697,7 @@ public final class Flixel {
   }
 
   /**
-   * Logs a error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
    * This is for events that are typically not recoverable.
    *
    * @param message The message to log.
@@ -706,7 +707,7 @@ public final class Flixel {
   }
 
   /**
-   * Logs a error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
    * This is for events that are typically not recoverable.
    *
    * @param tag The tag to log the message under.
@@ -717,7 +718,7 @@ public final class Flixel {
   }
 
   /**
-   * Logs a error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
    * This is for events that are typically not recoverable.
    *
    * @param tag The tag to log the message under.
@@ -1050,6 +1051,10 @@ public final class Flixel {
    *
    * <p>A factory is used instead of a new instance directly for timing, so that way the
    * debug overlay can be set even before GL context is created.
+   *
+   * <p>The default factory builds {@link FlixelHeadlessDebugOverlay} (no extra UI panels). Desktop
+   * launchers normally replace this with a richer overlay (for example Dear ImGui) before
+   * {@link Flixel#initialize}.
    *
    * <p>Example:
    * <pre>{@code

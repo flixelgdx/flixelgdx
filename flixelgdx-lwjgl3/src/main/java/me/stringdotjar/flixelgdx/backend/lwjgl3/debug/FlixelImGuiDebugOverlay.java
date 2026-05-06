@@ -28,6 +28,8 @@ import imgui.glfw.ImGuiImplGlfw;
 import imgui.type.ImBoolean;
 import imgui.type.ImString;
 
+import java.nio.charset.StandardCharsets;
+
 import org.lwjgl.glfw.GLFW;
 
 import me.stringdotjar.flixelgdx.Flixel;
@@ -149,6 +151,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private final ImString commandInputBuffer = new ImString(256);
   private int commandHistoryCursor = -1;
   private boolean focusCommandLine = false;
+
+  /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
+  private final byte[] commandLineUtf8Scratch = new byte[512];
+  private int commandLineUtf8ScratchLen;
 
   private float textureViewerZoom = 1f;
   // Reused float buffer fed to ImGui.sliderFloat() so the zoom control stays allocation-free.
@@ -958,6 +964,28 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
+   * Refreshes the UTF-8 scratch from the live ImGui buffer when it has content; when empty, keeps
+   * the previous scratch if {@code clickedRun} is true so Run can still read the last typed line.
+   */
+  private void updateCommandLineScratchAfterInput(boolean clickedRun) {
+    byte[] src = commandInputBuffer.getData();
+    int cap = Math.min(src.length, commandLineUtf8Scratch.length);
+    int i = 0;
+    for (; i < cap && src[i] != 0; i++) {
+      commandLineUtf8Scratch[i] = src[i];
+    }
+    if (i > 0) {
+      commandLineUtf8ScratchLen = i;
+    } else if (!clickedRun) {
+      commandLineUtf8ScratchLen = 0;
+    }
+  }
+
+  private String decodeCommandLineScratchUtf8() {
+    return new String(commandLineUtf8Scratch, 0, commandLineUtf8ScratchLen, StandardCharsets.UTF_8).trim();
+  }
+
+  /**
    * Renders the runtime command line. Pressing Enter routes the input through
    * {@link Flixel#debug Flixel.debug.executeCommand(...)}, so the same parser is shared with
    * code-driven invocations.
@@ -974,8 +1002,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     text(COLOR_HINT, "Enter a command and press Enter. Type \"help\" for a list.");
     ImGui.pushItemWidth(-100f);
-    int inputFlags = ImGuiInputTextFlags.EnterReturnsTrue
-      | ImGuiInputTextFlags.CallbackHistory;
+    int inputFlags = ImGuiInputTextFlags.EnterReturnsTrue;
     if (focusCommandLine) {
       ImGui.setKeyboardFocusHere();
       focusCommandLine = false;
@@ -987,20 +1014,27 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.sameLine();
     boolean clickedRun = ImGui.button("Run");
 
-    // Manual history navigation since the imgui-java callback signature varies between versions.
+    updateCommandLineScratchAfterInput(clickedRun);
+
+    // History: use raw key edges so navigation works while the text field is focused (ImGui would
+    // otherwise consume Up/Down for caret movement).
     if (cmdFieldFocused) {
-      if (ImGui.isKeyPressed(GLFW.GLFW_KEY_UP)) {
+      if (Flixel.keys.rawJustPressed(GLFW.GLFW_KEY_UP)) {
         navigateHistory(-1);
-      } else if (ImGui.isKeyPressed(GLFW.GLFW_KEY_DOWN)) {
+      } else if (Flixel.keys.rawJustPressed(GLFW.GLFW_KEY_DOWN)) {
         navigateHistory(+1);
       }
     }
 
     if (submitted || clickedRun) {
       String line = commandSnapshot != null ? commandSnapshot.trim() : "";
+      if (line.isEmpty() && clickedRun && commandLineUtf8ScratchLen > 0) {
+        line = decodeCommandLineScratchUtf8();
+      }
       if (!line.isEmpty()) {
         Flixel.info("FlixelDebug", "> " + line);
         Flixel.debug.executeCommand(line);
+        commandLineUtf8ScratchLen = 0;
       }
       commandInputBuffer.set("");
       commandHistoryCursor = -1;

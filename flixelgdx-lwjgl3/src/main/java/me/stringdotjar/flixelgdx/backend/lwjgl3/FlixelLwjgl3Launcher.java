@@ -15,7 +15,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
-import me.stringdotjar.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
+import me.stringdotjar.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;

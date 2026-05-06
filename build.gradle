@@ -38,7 +38,9 @@ allprojects {
   }
 }
 
-configure(subprojects.findAll { p -> p.name == 'flixelgdx-core' || p.name == 'flixelgdx-jvm' }) {
+configure(subprojects.findAll { p ->
+  p.name == 'flixelgdx-core' || p.name == 'flixelgdx-common' || p.name == 'flixelgdx-jvm'
+}) {
   apply plugin: 'java-library'
   java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -93,7 +95,14 @@ configure(subprojects.findAll { !it.path.contains('flixelgdx-android') && it.nam
   }
 }
 
-configure(subprojects.findAll { p -> p.name != 'flixelgdx-core' && p.name != 'flixelgdx-jvm' && p.name != 'flixelgdx-teavm' && p.name != 'flixelgdx-test' && p.name != 'flixelgdx-teavm-plugin' }) {
+configure(subprojects.findAll { p ->
+  p.name != 'flixelgdx-core'
+    && p.name != 'flixelgdx-common'
+    && p.name != 'flixelgdx-jvm'
+    && p.name != 'flixelgdx-teavm'
+    && p.name != 'flixelgdx-test'
+    && p.name != 'flixelgdx-teavm-plugin'
+}) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
       dependencies {
@@ -240,6 +249,7 @@ tasks.register('javadocAll') {
   description = 'Runs Javadoc (with doclint) on all published Java library modules.'
   dependsOn(
     ':flixelgdx-core:javadoc',
+    ':flixelgdx-common:javadoc',
     ':flixelgdx-jvm:javadoc',
     ':flixelgdx-lwjgl3:javadoc',
     ':flixelgdx-ios:javadoc',
