@@ -18,7 +18,7 @@ import java.nio.file.Path;
 
 /**
  * Registers a finalize step after each {@link JavaCompile} task that rewrites
- * {@link me.stringdotjar.flixelgdx.logging.FlixelLogger} invocations to {@code *WithSite} overloads.
+ * {@code FlixelLogger} invocations to {@code *WithSite} overloads.
  */
 public class FlixelLoggingPlugin implements Plugin<Project> {
 
