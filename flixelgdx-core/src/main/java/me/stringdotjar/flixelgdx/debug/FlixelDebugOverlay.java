@@ -844,9 +844,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * Buffered, markup-free copy of a {@link FlixelLogEntry}. Stored in {@link #logBuffer} and pooled to
    * avoid per-log allocations when the overlay's renderer reads log lines.
    *
-   * <p>{@link #tagStr} and {@link #messageStr} cache the {@link String} references from the originating
-   * {@link FlixelLogEntry} so renderers that require {@link String} (such as Dear ImGui) do not have
-   * to call {@link FlixelString#toString()} every frame.
+   * <p>{@link #tagStr} and {@link #messageStr} are snapshots taken from the {@link #tag} and {@link #message}
+   * buffers after each {@link #set(FlixelLogEntry)} so renderers that require {@link String} (such as Dear ImGui)
+   * do not call {@link FlixelString#toString()} every frame. They match the copied buffer text, not a live
+   * view of any caller-owned {@link CharSequence}.
    */
   public static final class BufferedLogLine {
 
@@ -865,11 +866,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       String t = entry.tag() != null ? entry.tag() : "";
       tag.clear();
       tag.concat(t);
-      tagStr = t;
+      tagStr = tag.toString();
       String m = entry.message() != null ? entry.message() : "";
       message.clear();
       message.concat(m);
-      messageStr = m;
+      messageStr = message.toString();
     }
 
     void copyFrom(BufferedLogLine other) {

@@ -16,11 +16,15 @@ import com.badlogic.gdx.utils.Array;
 import imgui.ImFontAtlas;
 import imgui.ImGui;
 import imgui.ImGuiIO;
+import imgui.ImGuiInputTextCallbackData;
 import imgui.ImGuiViewport;
+import imgui.callback.ImGuiInputTextCallback;
+import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.flag.ImGuiDockNodeFlags;
 import imgui.flag.ImGuiInputTextFlags;
+import imgui.flag.ImGuiKey;
 import imgui.flag.ImGuiTableFlags;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.gl3.ImGuiImplGl3;
@@ -69,8 +73,8 @@ import me.stringdotjar.flixelgdx.logging.FlixelLogLevel;
  */
 public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
-  // Component-per-channel color constants. Dear ImGui's textColored takes either an ImVec4 or four
-  // floats; the four-float overload keeps us off the ImVec4 allocation path entirely.
+  // Component-per-channel color constants. Colored labels use pushStyleColor(ImGuiCol.Text, ...) plus
+  // textUnformatted so dynamic strings are never passed through printf-style formatting.
   private static final float[] COLOR_INFO   = { 0.85f, 0.85f, 0.85f, 1f };
   private static final float[] COLOR_WARN   = { 1.00f, 0.80f, 0.20f, 1f };
   private static final float[] COLOR_ERROR  = { 1.00f, 0.30f, 0.30f, 1f };
@@ -150,6 +154,27 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   private final ImString commandInputBuffer = new ImString(256);
   private int commandHistoryCursor = -1;
+
+  /**
+   * Dear ImGui consumes Up/Down on focused {@code InputText} for caret movement before libGDX sees
+   * them. {@link ImGuiInputTextFlags#CallbackHistory} runs inside the widget so history still works
+   * while the field stays focused.
+   */
+  private final ImGuiInputTextCallback commandHistoryCallback = new ImGuiInputTextCallback() {
+    @Override
+    public void accept(ImGuiInputTextCallbackData data) {
+      if (!data.hasEventFlag(ImGuiInputTextFlags.CallbackHistory)) {
+        return;
+      }
+      int key = data.getEventKey();
+      if (key == ImGuiKey.UpArrow) {
+        applyHistoryKeyInInputCallback(data, -1);
+      } else if (key == ImGuiKey.DownArrow) {
+        applyHistoryKeyInInputCallback(data, +1);
+      }
+    }
+  };
+
   private boolean focusCommandLine = false;
 
   /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
@@ -1002,29 +1027,18 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     text(COLOR_HINT, "Enter a command and press Enter. Type \"help\" for a list.");
     ImGui.pushItemWidth(-100f);
-    int inputFlags = ImGuiInputTextFlags.EnterReturnsTrue;
+    int inputFlags = ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CallbackHistory;
     if (focusCommandLine) {
       ImGui.setKeyboardFocusHere();
       focusCommandLine = false;
     }
-    boolean submitted = ImGui.inputText("##cmd", commandInputBuffer, inputFlags);
-    boolean cmdFieldFocused = ImGui.isItemFocused();
+    boolean submitted = ImGui.inputText("##cmd", commandInputBuffer, inputFlags, commandHistoryCallback);
     String commandSnapshot = commandInputBuffer.get();
     ImGui.popItemWidth();
     ImGui.sameLine();
     boolean clickedRun = ImGui.button("Run");
 
     updateCommandLineScratchAfterInput(clickedRun);
-
-    // History: use raw key edges so navigation works while the text field is focused (ImGui would
-    // otherwise consume Up/Down for caret movement).
-    if (cmdFieldFocused) {
-      if (Flixel.keys.rawJustPressed(GLFW.GLFW_KEY_UP)) {
-        navigateHistory(-1);
-      } else if (Flixel.keys.rawJustPressed(GLFW.GLFW_KEY_DOWN)) {
-        navigateHistory(+1);
-      }
-    }
 
     if (submitted || clickedRun) {
       String line = commandSnapshot != null ? commandSnapshot.trim() : "";
@@ -1044,11 +1058,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Walks the persistent command history. {@code direction} should be {@code -1} to go to an
-   * older entry (Up arrow) or {@code +1} to step toward the newest. Wrapping is intentionally
-   * disabled so the user can clear the field by pressing Down past the newest.
+   * Walks the persistent command history from an {@code InputText} history callback. {@code direction}
+   * is {@code -1} for Up (older) or {@code +1} for Down (newer). Wrapping is disabled so Down past the
+   * newest clears the buffer.
    */
-  private void navigateHistory(int direction) {
+  private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
     Array<String> history = Flixel.debug.getCommandHistory();
     if (history.size == 0) {
       return;
@@ -1059,15 +1073,19 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     int next = commandHistoryCursor + direction;
     if (next < 0) {
       next = 0;
-    } else if (next >= history.size) {
+    } else if (next > history.size) {
       next = history.size;
     }
     commandHistoryCursor = next;
-    if (next == history.size) {
-      commandInputBuffer.set("");
-    } else {
-      commandInputBuffer.set(history.get(next));
+    String line = next == history.size ? "" : history.get(next);
+    data.deleteChars(0, data.getBufTextLen());
+    if (!line.isEmpty()) {
+      data.insertChars(0, line);
     }
+    int end = data.getBufTextLen();
+    data.setSelectionStart(end);
+    data.setSelectionEnd(end);
+    data.setCursorPos(end);
   }
 
   /**
@@ -1147,9 +1165,15 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.end();
   }
 
-  /** Renders {@code message} colored by the supplied {@code [r, g, b, a]} tuple. */
+  /**
+   * Renders {@code message} colored by the supplied {@code [r, g, b, a]} tuple. Uses
+   * {@link ImGui#textUnformatted(String)} so a literal {@code %} (for example in {@code "67%"}) is not
+   * interpreted as a printf format sequence by the native Dear ImGui binding.
+   */
   private static void text(float[] color, String message) {
-    ImGui.textColored(color[0], color[1], color[2], color[3], message);
+    ImGui.pushStyleColor(ImGuiCol.Text, color[0], color[1], color[2], color[3]);
+    ImGui.textUnformatted(message != null ? message : "");
+    ImGui.popStyleColor();
   }
 
   private boolean isLogLevelVisible(FlixelLogLevel level) {
