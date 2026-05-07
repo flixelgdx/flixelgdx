@@ -1,0 +1,31 @@
+/**
+ * Repository list and Java toolchains for all subprojects.
+ */
+subprojects {
+  group = "$groupId"
+  version = "$projectVersion"
+  ext.appName = 'flixelgdx'
+
+  repositories {
+    mavenCentral()
+    gradlePluginPortal()
+    maven { url 'https://s01.oss.sonatype.org' }
+    mavenLocal()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
+    maven { url 'https://jitpack.io' }
+  }
+
+  // Java 17; Android sets compileOptions in its module (see CONTRIBUTING.md).
+  if (!project.path.contains('android')) {
+    plugins.withType(JavaPlugin).tap {
+      configureEach {
+        java {
+          toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+          }
+        }
+      }
+    }
+  }
+}

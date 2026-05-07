@@ -1,0 +1,45 @@
+/**
+ * Convention dependencies applied to framework modules so consumers get a consistent graph:
+ * most modules depend on {@code flixelgdx-core}; backend modules also pull {@code flixelgdx-jvm}.
+ *
+ * Exclusions exist where a module already replaces that role (core itself, common, jvm, TeaVM, tests, Gradle plugins).
+ */
+
+configure(subprojects.findAll { p ->
+  p.name != 'flixelgdx-core' && p.name != 'flixelgdx-test' && p.name != 'flixelgdx-teavm-plugin'
+    && p.name != 'flixelgdx-logging-plugin'
+}) {
+  afterEvaluate {
+    if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
+      dependencies {
+        api rootProject.project(':flixelgdx-core')
+      }
+    } else if (it.plugins.hasPlugin('java')) {
+      dependencies {
+        implementation rootProject.project(':flixelgdx-core')
+      }
+    }
+  }
+}
+
+configure(subprojects.findAll { p ->
+  p.name != 'flixelgdx-core'
+    && p.name != 'flixelgdx-common'
+    && p.name != 'flixelgdx-jvm'
+    && p.name != 'flixelgdx-teavm'
+    && p.name != 'flixelgdx-test'
+    && p.name != 'flixelgdx-teavm-plugin'
+    && p.name != 'flixelgdx-logging-plugin'
+}) {
+  afterEvaluate {
+    if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
+      dependencies {
+        api rootProject.project(':flixelgdx-jvm')
+      }
+    } else if (it.plugins.hasPlugin('java')) {
+      dependencies {
+        implementation rootProject.project(':flixelgdx-jvm')
+      }
+    }
+  }
+}

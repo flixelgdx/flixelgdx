@@ -1,0 +1,12 @@
+/**
+ * Java 17 language level for modules that declare {@code java-library} here instead of in their own {@code build.gradle}.
+ */
+configure(subprojects.findAll { p ->
+  p.name == 'flixelgdx-core' || p.name == 'flixelgdx-common' || p.name == 'flixelgdx-jvm'
+}) {
+  apply plugin: 'java-library'
+  java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+  }
+}

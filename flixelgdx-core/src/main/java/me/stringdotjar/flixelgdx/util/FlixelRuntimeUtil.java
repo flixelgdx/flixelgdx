@@ -7,114 +7,103 @@
 
 package me.stringdotjar.flixelgdx.util;
 
-import java.util.jar.JarFile;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class for handling operation related to the runtime environment, including OS detection,
  * extracting runtime information, obtaining information from exceptions, and other related tasks.
+ *
+ * <p>Behavior that depends on the JVM, classpath, or JAR layout is supplied by a pluggable
+ * {@link RuntimeProbe}. Desktop JVM builds register {@code FlixelJvmRuntimeProbe} from
+ * {@code flixelgdx-jvm} at startup. TeaVM and other targets keep the built-in default probe, which
+ * reports {@link RunEnvironment#UNKNOWN} for {@link #detectEnvironment()} (no {@code JarFile},
+ * no classpath heuristics).
  */
 public final class FlixelRuntimeUtil {
 
+  private static volatile RuntimeProbe instance;
+
+  private static final RuntimeProbe DEFAULT_PROBE = new RuntimeProbe() {
+    @Override
+    public boolean isRunningFromJar() {
+      return false;
+    }
+
+    @Override
+    public boolean isRunningInIDE() {
+      return false;
+    }
+
+    @Override
+    @Nullable
+    public String getWorkingDirectory() {
+      return defaultCodeSourcePath();
+    }
+
+    @Override
+    @Nullable
+    public String getDefaultLogsFolderPath() {
+      return defaultLogsFolderPathForClasspathLikeRuntime();
+    }
+  };
+
   /**
-   * Returns {@code true} when the application is running from the final packaged distribution JAR,
-   * and {@code false} when it is running from the IDE (even if the IDE loads individual module JARs
-   * on the classpath).
+   * Installs the probe used for {@link #isRunningFromJar()}, {@link #isRunningInIDE()},
+   * {@link #getWorkingDirectory()}, and {@link #getDefaultLogsFolderPath()}. Pass {@code null} to
+   * restore the default TeaVM-safe implementation.
    *
-   * <p>Gradle builds each module (e.g. {@code flixelgdx}) into its own module JAR inside
-   * {@code build/libs/} and puts that on the classpath during IDE runs. Checking only whether the
-   * code-source path ends with {@code .jar} therefore incorrectly returns {@code true} in the IDE.
-   * Instead, this method opens the JAR that contains this class and inspects its manifest for a
-   * {@code Main-Class} attribute. The only JAR in this project that carries that attribute is the
-   * fat distribution JAR produced by the {@code lwjgl3:jar} task. Individual module JARs do not
-   * have it.
+   * @param probe The implementation, or {@code null} for the default.
+   */
+  public static void setRuntimeProbe(@Nullable RuntimeProbe probe) {
+    instance = probe;
+  }
+
+  /**
+   * Returns the active runtime probe, or the default implementation when none was installed.
+   *
+   * @return The effective probe, never {@code null}.
+   */
+  public static RuntimeProbe getRuntimeProbe() {
+    return probe();
+  }
+
+  /**
+   * Returns {@code true} when the application is running from a packaged distribution JAR.
+   *
+   * <p>When using the JVM probe from {@code flixelgdx-jvm}, Gradle builds each module (e.g.
+   * {@code flixelgdx-core}) into its own module JAR inside {@code build/libs/} and puts that on the
+   * classpath during IDE runs. Checking only whether the code-source path ends with {@code .jar}
+   * therefore incorrectly returns {@code true} in the IDE. Instead, the probe opens the JAR that
+   * contains this class and inspects its manifest for a {@code Main-Class} attribute. The only JAR
+   * in this project that carries that attribute is the fat distribution JAR produced by the
+   * {@code lwjgl3:jar} task. Individual module JARs do not have it.
    *
    * @return {@code true} if running from the distribution JAR, {@code false} otherwise.
    */
   public static boolean isRunningFromJar() {
-    try {
-      String path = getWorkingDirectory();
-
-      if (path == null) {
-        // Failed to get the working directory, so we can't determine if we're running from a JAR or not.
-        return false;
-      }
-
-      if (!path.endsWith(".jar")) {
-        // Exploded class-file directory, which we can safely assume is from the IDE.
-        return false;
-      }
-      // The class is inside a JAR. Module JARs built during development have no Main-Class entry.
-      // The fat distribution JAR always does (set by the lwjgl3:jar manifest block).
-      try (JarFile jar = new JarFile(path)) {
-        var manifest = jar.getManifest();
-        return manifest != null && manifest.getMainAttributes().getValue("Main-Class") != null;
-      }
-    } catch (Exception e) {
-      return false;
-    }
+    return probe().isRunningFromJar();
   }
 
   /**
    * Returns {@code true} when the application is running inside an IDE (IntelliJ, Eclipse, Cursor,
    * VS Code, etc.), and {@code false} when running from the distribution JAR or plain classpath.
    *
-   * <p>Detection uses IDE-specific system properties, classpath hints, and the code source path.
-   * Gradle-based runs are detected via {@code build/classes} (exploded) or a JAR under
-   * {@code build/libs/} that is not the distribution JAR (no {@code Main-Class} in manifest).
-   *
    * @return {@code true} if running in an IDE, {@code false} otherwise.
    */
   public static boolean isRunningInIDE() {
-    // IntelliJ (run/debug).
-    if (System.getProperty("idea.launcher.port") != null) {
-      return true;
-    }
-    // IntelliJ fallback: idea_rt.jar on classpath (e.g. debug).
-    if (System.getProperty("java.class.path", "").contains("idea_rt.jar")) {
-      return true;
-    }
-    // Eclipse.
-    if (System.getProperty("eclipse.application") != null) {
-      return true;
-    }
-    var path = getWorkingDirectory();
-    if (path == null) {
-      return false;
-    }
-    // IntelliJ default output.
-    if (path.contains("out/production")) {
-      return true;
-    }
-    // Eclipse default output.
-    if (path.contains("bin/")) {
-      return true;
-    }
-    // Gradle: exploded classes (e.g. build/classes/java/main).
-    if (path.contains("build/classes")) {
-      return true;
-    }
-    // Gradle: module JAR on classpath (build/libs/*.jar without Main-Class); distribution JAR has Main-Class.
-    if (path.contains("build/libs") && path.endsWith(".jar") && !isRunningFromJar()) {
-      return true;
-    }
-    return false;
+    return probe().isRunningInIDE();
   }
 
   /**
-	 * Detects the current runtime environment.
-	 *
-	 * <p>This method is used to determine if the application is running in the IDE, from a JAR, or from the classpath.
-	 *
-	 * @return The detected environment.
-	 */
-	public static RunEnvironment detectEnvironment() {
-		if (isRunningInIDE()) {
-			return RunEnvironment.IDE;
-		}
-    if (isRunningFromJar()) {
-			return RunEnvironment.JAR;
-    }
-    return RunEnvironment.CLASSPATH;
+   * Detects the current runtime environment.
+   *
+   * <p>Uses {@link RuntimeProbe#detectEnvironment()}. The default probe (TeaVM and other non-JVM
+   * targets without a registered JVM probe) returns {@link RunEnvironment#UNKNOWN}.
+   *
+   * @return The detected environment.
+   */
+  public static RunEnvironment detectEnvironment() {
+    return probe().detectEnvironment();
   }
 
   /**
@@ -122,69 +111,25 @@ public final class FlixelRuntimeUtil {
    *
    * @return The working directory of the game. If an error occurs, {@code null} is returned.
    */
+  @Nullable
   public static String getWorkingDirectory() {
-    try {
-      return FlixelRuntimeUtil.class
-        .getProtectionDomain()
-        .getCodeSource()
-        .getLocation()
-        .toURI()
-        .getPath();
-    } catch (Exception e) {
-      return null;
-    }
+    return probe().getWorkingDirectory();
   }
 
   /**
    * Returns the default directory path where log files should be stored, depending on the runtime.
    * <ul>
-   *   <li>When running in an IDE: the project root directory, so logs go to {@code <project-root>/logs/}.</li>
+   *   <li>When running in an IDE: the project root directory (inferred from classpath when needed),
+   *       so logs go to {@code <project-root>/logs/}.</li>
    *   <li>When running from a JAR: the directory containing the JAR, so logs go to {@code <jar-dir>/logs/}.</li>
    *   <li>Otherwise (e.g. classpath): the current working directory, so logs go to {@code <user.dir>/logs/}.</li>
    * </ul>
    *
    * @return The absolute path to the logs folder (with no trailing separator), or {@code null} if it cannot be determined.
    */
+  @Nullable
   public static String getDefaultLogsFolderPath() {
-    String path = getWorkingDirectory();
-    if (path == null) {
-      return null;
-    }
-    path = path.replaceAll("/$", "");
-    if (isRunningInIDE()) {
-      // Project root: strip IDE/build output segments so we get the project root.
-      if (path.contains("build/classes")) {
-        path = path.substring(0, path.indexOf("build/classes"));
-      } else if (path.contains("out/production")) {
-        path = path.substring(0, path.indexOf("out/production"));
-      } else if (path.contains("/bin/")) {
-        path = path.substring(0, path.indexOf("/bin/"));
-      }
-      path = path.replaceAll("/$", "");
-      // In many libGDX projects, the working directory is the assets folder; if so,
-      // trim the trailing /assets segment so logs go to the project root instead of assets/.
-      if (path.endsWith("/assets")) {
-        path = path.substring(0, path.length() - "/assets".length());
-      }
-      return path + "/logs";
-    }
-    if (isRunningFromJar()) {
-      // Directory containing the JAR.
-      int lastSlash = path.lastIndexOf('/');
-      if (lastSlash > 0) {
-        path = path.substring(0, lastSlash);
-      }
-      return path.replaceAll("/$", "") + "/logs";
-    }
-    // CLASSPATH or other: use current working directory.
-    String cwd = System.getProperty("user.dir", "");
-    String base = (cwd.isEmpty() ? path : cwd).replaceAll("/$", "");
-    // If the working directory is the assets folder, move one level up so logs land in the
-    // project root rather than under assets/.
-    if (base.endsWith("/assets")) {
-      base = base.substring(0, base.length() - "/assets".length());
-    }
-    return base + "/logs";
+    return probe().getDefaultLogsFolderPath();
   }
 
   /**
@@ -250,13 +195,76 @@ public final class FlixelRuntimeUtil {
     return messageBuilder.toString();
   }
 
+  private static String defaultCodeSourcePath() {
+    try {
+      return FlixelRuntimeUtil.class
+        .getProtectionDomain()
+        .getCodeSource()
+        .getLocation()
+        .toURI()
+        .getPath();
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   /**
-   * Enum representing the environment in which the game is running in.
+   * Logs next to {@code user.dir} when IDE and JAR detection are unavailable (browser / TeaVM).
+   */
+  private static String defaultLogsFolderPathForClasspathLikeRuntime() {
+    String path = defaultCodeSourcePath();
+    if (path == null) {
+      path = "";
+    }
+    path = path.replaceAll("/$", "");
+    String cwd = System.getProperty("user.dir", "");
+    String base = (cwd.isEmpty() ? path : cwd).replaceAll("/$", "");
+    if (base.endsWith("/assets")) {
+      base = base.substring(0, base.length() - "/assets".length());
+    }
+    return base + "/logs";
+  }
+
+  private static RuntimeProbe probe() {
+    RuntimeProbe p = instance;
+    return p != null ? p : DEFAULT_PROBE;
+  }
+
+  /**
+   * Supplies environment detection for the current platform. Desktop JVM games should install an
+   * implementation from {@code flixelgdx-jvm} (see {@code FlixelJvmRuntimeProbe}) at startup.
+   */
+  public interface RuntimeProbe {
+    boolean isRunningFromJar();
+
+    boolean isRunningInIDE();
+
+    @Nullable
+    String getWorkingDirectory();
+
+    @Nullable
+    String getDefaultLogsFolderPath();
+
+    /**
+     * Returns IDE, JAR, or classpath when the probe can classify the JVM layout; otherwise
+     * {@link RunEnvironment#UNKNOWN} (default implementation for non-desktop probes).
+     *
+     * @return The detected environment for this probe.
+     */
+    default RunEnvironment detectEnvironment() {
+      return RunEnvironment.UNKNOWN;
+    }
+  }
+
+  /**
+   * High-level runtime classification for logging and tooling. {@link #UNKNOWN} is used when the
+   * platform does not support JVM-style detection (default {@link RuntimeProbe}).
    */
   public enum RunEnvironment {
     IDE,
     JAR,
-    CLASSPATH
+    CLASSPATH,
+    UNKNOWN
   }
 
   private FlixelRuntimeUtil() {}

@@ -1,0 +1,73 @@
+/**
+ * Attaches {@code sourcesJar} / {@code javadocJar} and Javadoc settings for published libraries.
+ */
+subprojects { Project p ->
+  p.pluginManager.withPlugin('java-library') {
+    p.apply from: rootProject.file('gradle/flixelgdx-library-publish.gradle')
+  }
+}
+
+/**
+ * JitPack rewrites Gradle module metadata (.module) and drops classifier-related compatibility data.
+ * Consumers then resolve wrong libGDX variants. POMs remain correct; omit .module so metadata comes from the POM.
+ */
+subprojects {
+  tasks.matching { it.name.startsWith('generateMetadataFileFor') }.configureEach {
+    enabled = false
+  }
+}
+
+configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-teavm-plugin'
+  && it.name != 'flixelgdx-logging-plugin' }) {
+  apply plugin: 'maven-publish'
+  afterEvaluate {
+    publishing {
+      publications {
+        if (project.plugins.hasPlugin('java-library') || project.plugins.hasPlugin('java')) {
+          maven(MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId = project.name
+            version = project.version
+            rootProject.configureFlixelMavenPom(delegate)
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Gradle plugin modules use {@code java-gradle-plugin}, which creates {@code pluginMaven}. Avoid duplicating the {@code maven} publication.
+ */
+configure(subprojects.findAll { it.name == 'flixelgdx-teavm-plugin' || it.name == 'flixelgdx-logging-plugin' }) {
+  apply plugin: 'maven-publish'
+  afterEvaluate {
+    publishing {
+      publications.withType(MavenPublication).configureEach {
+        rootProject.configureFlixelMavenPom(delegate)
+      }
+    }
+  }
+}
+
+subprojects {
+  afterEvaluate { Project p ->
+    if (!p.plugins.hasPlugin('maven-publish')) {
+      return
+    }
+    def pubs = p.publishing.publications.withType(MavenPublication)
+    if (pubs.isEmpty()) {
+      return
+    }
+    def signingExplicit = p.findProperty('flixel.signing.enabled')?.toString() == 'true'
+    def signingKeys = p.findProperty('signing.keyId') != null && p.findProperty('signing.secretKeyRingFile') != null
+    if (!signingExplicit && !signingKeys) {
+      return
+    }
+    p.apply plugin: 'signing'
+    pubs.configureEach { pub ->
+      p.signing.sign(pub)
+    }
+  }
+}

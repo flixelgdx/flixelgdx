@@ -1,0 +1,31 @@
+/**
+ * Shared Maven POM fields for all {@code maven-publish} publications (JitPack, Maven Central).
+ * Referenced as {@code rootProject.configureFlixelMavenPom(delegate)} from subprojects.
+ */
+ext.configureFlixelMavenPom = { MavenPublication publication ->
+  publication.pom {
+    name = rootProject.findProperty('pomName') ?: 'FlixelGDX'
+    description = rootProject.findProperty('pomDescription')
+      ?: 'High-level and powerful game development framework that brings the Flixel philosophy to Java and libGDX.'
+    url = rootProject.findProperty('pomUrl') ?: 'https://github.com/flixelgdx/flixelgdx'
+    licenses {
+      license {
+        name = rootProject.findProperty('pomLicenseName') ?: 'MIT License'
+        url = rootProject.findProperty('pomLicenseUrl') ?: 'https://opensource.org/licenses/MIT'
+        distribution = 'repo'
+      }
+    }
+    developers {
+      developer {
+        id = rootProject.findProperty('pomDeveloperId') ?: 'stringdotjar'
+        name = rootProject.findProperty('pomDeveloperName') ?: 'String'
+      }
+    }
+    scm {
+      connection = rootProject.findProperty('pomScmConnection') ?: 'scm:git:git://github.com/flixelgdx/flixelgdx.git'
+      developerConnection = rootProject.findProperty('pomScmDeveloperConnection')
+        ?: 'scm:git:ssh://git@github.com/flixelgdx/flixelgdx.git'
+      url = rootProject.findProperty('pomScmUrl') ?: 'https://github.com/flixelgdx/flixelgdx'
+    }
+  }
+}

@@ -1,0 +1,14 @@
+tasks.register('javadocAll') {
+  group = 'verification'
+  description = 'Runs Javadoc (with doclint) on all published Java library modules.'
+  dependsOn(
+    ':flixelgdx-core:javadoc',
+    ':flixelgdx-common:javadoc',
+    ':flixelgdx-jvm:javadoc',
+    ':flixelgdx-lwjgl3:javadoc',
+    ':flixelgdx-ios:javadoc',
+    ':flixelgdx-teavm:javadoc',
+    ':flixelgdx-teavm-plugin:javadoc',
+    ':flixelgdx-logging-plugin:javadoc'
+  )
+}
