@@ -1,0 +1,18 @@
+/**
+ * IDE metadata and coordinates shared by every project (including the root aggregator).
+ */
+allprojects {
+  apply plugin: 'eclipse'
+  apply plugin: 'idea'
+
+  group = groupId
+  version = projectVersion
+
+  // Matches IntelliJ "Build and run using Gradle" output layout (Settings | Build, Execution, Deployment).
+  idea {
+    module {
+      outputDir file('build/classes/java/main')
+      testOutputDir file('build/classes/java/test')
+    }
+  }
+}

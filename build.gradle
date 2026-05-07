@@ -1,3 +1,8 @@
+/**********************************************************************************
+ * Root aggregator for the FlixelGDX multi-module build. Keeps subproject wiring in
+ * {@code gradle/flixelgdx-*.gradle} scripts so each file stays focused (dependencies vs publishing vs IDE).
+ **********************************************************************************/
+
 buildscript {
   repositories {
     mavenCentral()
@@ -10,7 +15,7 @@ buildscript {
   }
   dependencies {
     if (gradle.ext.get('includeAndroid') == true) {
-      classpath "com.android.tools.build:gradle:8.7.3"
+      classpath 'com.android.tools.build:gradle:8.7.3'
     }
   }
 }
@@ -19,219 +24,16 @@ plugins {
   id 'java-library'
 }
 
-// Root is an aggregator only (no src/). Do not apply the Java plugin here: it would create
-// :processResources while generateAssetList is registered only on library subprojects.
+// Root is an aggregator only (no src/). Do not apply tasks like processResources at this level.
+// Put in a script instead, as it keeps it more organized.
 
-allprojects {
-  apply plugin: 'eclipse'
-  apply plugin: 'idea'
-
-  group = groupId
-  version = projectVersion
-
-  // This allows you to "Build and run using IntelliJ IDEA", an option in IDEA's Settings.
-  idea {
-    module {
-      outputDir file('build/classes/java/main')
-      testOutputDir file('build/classes/java/test')
-    }
-  }
-}
-
-configure(subprojects.findAll { p ->
-  p.name == 'flixelgdx-core' || p.name == 'flixelgdx-common' || p.name == 'flixelgdx-jvm'
-}) {
-  apply plugin: 'java-library'
-  java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-  }
-}
-
-// These modules are currently NOT configured in the root build.gradle for java-library
-// but they apply it themselves.
-
-configure(subprojects.findAll { p ->
-  p.name != 'flixelgdx-core' && p.name != 'flixelgdx-test' && p.name != 'flixelgdx-teavm-plugin'
-    && p.name != 'flixelgdx-logging-plugin'
-}) {
-  afterEvaluate {
-    if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
-      dependencies {
-        api rootProject.project(':flixelgdx-core')
-      }
-    } else if (it.plugins.hasPlugin('java')) {
-      dependencies {
-        implementation rootProject.project(':flixelgdx-core')
-      }
-    }
-  }
-}
-
-configure(subprojects.findAll { p ->
-  p.name != 'flixelgdx-core'
-    && p.name != 'flixelgdx-common'
-    && p.name != 'flixelgdx-jvm'
-    && p.name != 'flixelgdx-teavm'
-    && p.name != 'flixelgdx-test'
-    && p.name != 'flixelgdx-teavm-plugin'
-    && p.name != 'flixelgdx-logging-plugin'
-}) {
-  afterEvaluate {
-    if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
-      dependencies {
-        api rootProject.project(':flixelgdx-jvm')
-      }
-    } else if (it.plugins.hasPlugin('java')) {
-      dependencies {
-        implementation rootProject.project(':flixelgdx-jvm')
-      }
-    }
-  }
-}
-
-subprojects {
-  // JitPack serves artifacts as com.github.<user>.<repo>; POMs must use the same groupId for
-  // transitive flixelgdx modules or Gradle looks up me.stringdotjar.flixelgdx on other repos and fails.
-  group = "$groupId"
-  version = "$projectVersion"
-  ext.appName = 'flixelgdx'
-  repositories {
-    mavenCentral()
-    gradlePluginPortal()
-    maven { url 'https://s01.oss.sonatype.org' }
-    // You may want to remove the following line if you have errors downloading dependencies.
-    mavenLocal()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
-    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
-    maven { url 'https://jitpack.io' }
-  }
-
-  // Java 17; prefer Eclipse OpenJ9 for compilation/tests (see CONTRIBUTING.md). Android uses compileOptions in its module.
-  if (!project.path.contains('android')) {
-    plugins.withType(JavaPlugin).tap {
-      configureEach {
-        java {
-          toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
-          }
-        }
-      }
-    }
-  }
-}
-
-ext.configureFlixelMavenPom = { MavenPublication publication ->
-  publication.pom {
-    name = rootProject.findProperty('pomName') ?: 'FlixelGDX'
-    description = rootProject.findProperty('pomDescription') ?: 'High-level and powerful game development framework that brings the Flixel philosophy to Java and libGDX.'
-    url = rootProject.findProperty('pomUrl') ?: 'https://github.com/stringdotjar/flixelgdx'
-    licenses {
-      license {
-        name = rootProject.findProperty('pomLicenseName') ?: 'MIT License'
-        url = rootProject.findProperty('pomLicenseUrl') ?: 'https://opensource.org/licenses/MIT'
-        distribution = 'repo'
-      }
-    }
-    developers {
-      developer {
-        id = rootProject.findProperty('pomDeveloperId') ?: 'stringdotjar'
-        name = rootProject.findProperty('pomDeveloperName') ?: 'String'
-      }
-    }
-    scm {
-      connection = rootProject.findProperty('pomScmConnection') ?: 'scm:git:git://github.com/stringdotjar/flixelgdx.git'
-      developerConnection = rootProject.findProperty('pomScmDeveloperConnection') ?: 'scm:git:ssh://git@github.com/stringdotjar/flixelgdx.git'
-      url = rootProject.findProperty('pomScmUrl') ?: 'https://github.com/stringdotjar/flixelgdx'
-    }
-  }
-}
-
-subprojects { Project p ->
-  p.pluginManager.withPlugin('java-library') {
-    p.apply from: rootProject.file('gradle/flixelgdx-library-publish.gradle')
-  }
-}
-
-// JitPack rewrites published Gradle module metadata (.module) and drops thirdPartyCompatibility
-// entries (artifactSelector / classifiers like natives-desktop). Gradle then resolves the wrong
-// libGDX artifacts. POMs still declare classifiers correctly; skip publishing .module so consumers
-// use the POM (and are not misled by JitPack-stripped metadata).
-subprojects {
-  tasks.matching { it.name.startsWith('generateMetadataFileFor') }.configureEach {
-    enabled = false
-  }
-}
-
-configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-teavm-plugin'
-  && it.name != 'flixelgdx-logging-plugin' }) {
-  apply plugin: 'maven-publish'
-  afterEvaluate {
-    publishing {
-      publications {
-        if (project.plugins.hasPlugin('java-library') || project.plugins.hasPlugin('java')) {
-          maven(MavenPublication) {
-            from components.java
-            groupId = project.group
-            artifactId = project.name
-            version = project.version
-            rootProject.configureFlixelMavenPom(delegate)
-          }
-        }
-      }
-    }
-  }
-}
-
-// The plugin module uses java-gradle-plugin which auto-creates the pluginMaven publication
-// (including the plugin marker artifact). We apply maven-publish and configure the POM there
-// separately to avoid a duplicate 'maven' publication.
-configure(subprojects.findAll { it.name == 'flixelgdx-teavm-plugin' || it.name == 'flixelgdx-logging-plugin' }) {
-  apply plugin: 'maven-publish'
-  afterEvaluate {
-    publishing {
-      publications.withType(MavenPublication).configureEach {
-        rootProject.configureFlixelMavenPom(delegate)
-      }
-    }
-  }
-}
-
-subprojects {
-  afterEvaluate { Project p ->
-    if (!p.plugins.hasPlugin('maven-publish')) {
-      return
-    }
-    def pubs = p.publishing.publications.withType(MavenPublication)
-    if (pubs.isEmpty()) {
-      return
-    }
-    def signingExplicit = p.findProperty('flixel.signing.enabled')?.toString() == 'true'
-    def signingKeys = p.findProperty('signing.keyId') != null && p.findProperty('signing.secretKeyRingFile') != null
-    if (!signingExplicit && !signingKeys) {
-      return
-    }
-    p.apply plugin: 'signing'
-    pubs.configureEach { pub ->
-      p.signing.sign(pub)
-    }
-  }
-}
-
-// Aggregate API documentation for CI and local checks (Java library modules only).
-tasks.register('javadocAll') {
-  group = 'verification'
-  description = 'Runs Javadoc (with doclint) on all published Java library modules.'
-  dependsOn(
-    ':flixelgdx-core:javadoc',
-    ':flixelgdx-common:javadoc',
-    ':flixelgdx-jvm:javadoc',
-    ':flixelgdx-lwjgl3:javadoc',
-    ':flixelgdx-ios:javadoc',
-    ':flixelgdx-teavm:javadoc',
-    ':flixelgdx-teavm-plugin:javadoc',
-    ':flixelgdx-logging-plugin:javadoc'
-  )
-}
+apply from: 'gradle/flixelgdx-allprojects.gradle'
+apply from: 'gradle/flixelgdx-java-language-version.gradle'
+apply from: 'gradle/flixelgdx-injected-dependencies.gradle'
+apply from: 'gradle/flixelgdx-subprojects-repositories.gradle'
+apply from: 'gradle/flixelgdx-maven-pom.gradle'
+apply from: 'gradle/flixelgdx-publish-stack.gradle'
+apply from: 'gradle/flixelgdx-eclipse-ide-support.gradle'
+apply from: 'gradle/flixelgdx-javadoc-aggregator.gradle'
 
 eclipse.project.name = 'flixelgdx' + '-parent'
