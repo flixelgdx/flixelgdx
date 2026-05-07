@@ -29,9 +29,6 @@ import org.gradle.api.provider.Property;
  *   // Override the canvas element ID (default: "flixelgdx-canvas").
  *   canvasId = 'my-game-canvas'
  *
- *   // outputDir: omit to use the same directory as teavm.all.outputDir (set only in teavm { all { ... } }).
- *   // Override only if FlixelGDX must use a different folder than TeaVM (unusual).
- *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
  *
@@ -90,23 +87,11 @@ public interface FlixelTeaVMExtension {
   Property<String> getCanvasId();
 
   /**
-   * Directory into which the assembled web application is written.
-   *
-   * <p>By default, this property {@linkplain org.gradle.api.provider.Property#convention conventions}
-   * to the same {@link org.gradle.api.file.DirectoryProperty} as {@code teavm.all.outputDir} from the
-   * {@code org.teavm} plugin. Set a value only if FlixelGDX assets and the TeaVM output must go to
-   * different roots (unusual). If the {@code teavm} extension is not present, the default matches
-   * TeaVM's: {@code "$buildDir/dist/webapp"}.
-   *
-   * @return The output directory property.
-   */
-  DirectoryProperty getOutputDir();
-
-  /**
    * Directory that contains user-provided web resources such as a custom {@code index.html},
    * favicon, or additional scripts.
    *
-   * <p>All files found here are copied verbatim into {@link #getOutputDir()}. If this directory
+   * <p>All files found here are copied verbatim into the TeaVM JS output directory ({@code teavm.js.outputDir},
+   * which inherits from {@code teavm.all.outputDir} when you only configure the {@code all} block). If this directory
    * contains an {@code index.html}, the plugin skips automatic index generation. Defaults to
    * {@code src/main/webapp} relative to the web module.
    *
@@ -115,7 +100,7 @@ public interface FlixelTeaVMExtension {
   DirectoryProperty getWebappDir();
 
   /**
-   * Directory whose contents are copied to {@code <outputDir>/assets/} before each build.
+   * Directory whose contents are copied to {@code <teavm.js.outputDir>/assets/} before each build.
    *
    * <p>Defaults to the {@code assets/} directory at the root of the Gradle project (i.e. the
    * sibling of the core, desktop, and teavm modules).
@@ -142,7 +127,7 @@ public interface FlixelTeaVMExtension {
    * none is found in {@link #getWebappDir()}.
    *
    * <p>It does this by copying the default file (located in the {@code resources} folder) into the user's
-   * {@code <outputDir>/assets/} folder, as gdx-teavm expects a loading logo when the game is being prepared.
+   * {@code <teavm.js.outputDir>/assets/} folder, as gdx-teavm expects a loading logo when the game is being prepared.
    *
    * @return The {@code generate-default-startup-logo} property.
    */
@@ -166,7 +151,7 @@ public interface FlixelTeaVMExtension {
   /**
    * Optional path to a custom {@code index.html} file.
    *
-   * <p>When set, this file is copied verbatim to {@link #getOutputDir()} as {@code index.html},
+   * <p>When set, this file is copied verbatim into the TeaVM JS output directory ({@code teavm.js.outputDir}) as {@code index.html},
    * bypassing both the default template generator and any {@code index.html} found in
    * {@link #getWebappDir()}. The canvas ID substitution ({@code {{CANVAS_ID}}}) is not applied.
    * The developer is responsible for the full HTML content.
@@ -178,7 +163,7 @@ public interface FlixelTeaVMExtension {
   /**
    * Optional path to a custom {@code startup-logo.png} file.
    *
-   * <p>When set, this file is copied to {@code <outputDir>/assets/startup-logo.png}, replacing
+   * <p>When set, this file is copied to {@code <teavm.js.outputDir>/assets/startup-logo.png}, replacing
    * both the built-in placeholder and any auto-generation. The file must be a valid PNG image.
    *
    * @return The custom startup logo file property.
@@ -188,7 +173,7 @@ public interface FlixelTeaVMExtension {
   /**
    * Optional path to a favicon file (any format supported by browsers, e.g. {@code .ico}, {@code .png}).
    *
-   * <p>When set, the file is copied to {@link #getOutputDir()} and a {@code <link rel="icon">} tag
+   * <p>When set, the file is copied into the TeaVM JS output directory ({@code teavm.js.outputDir}) and a {@code <link rel="icon">} tag
    * referencing it is injected into the generated {@code index.html}. Has no effect when a custom
    * {@code index.html} is provided via {@link #getCustomIndexHtml()} or {@link #getWebappDir()},
    * since those are copied verbatim.
