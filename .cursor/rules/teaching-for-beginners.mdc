@@ -2,9 +2,17 @@
 alwaysApply: true
 ---
 
-This framework isn't just meant for experts, it's designed and intended to be welcoming for new contributors who are new and want to learn how open source software works. When explaining code, completing a task, or introducing new patterns, you're required to do the following:
+This framework isn't just meant for experts, it's designed and intended to be welcoming for new contributors who are new
+and want to learn how open source software works. When explaining code, completing a task, or introducing new patterns,
+you're required to do the following:
 
-- When providing a code solution, explain the "why" before the "how". For example, instead of just saying "You should move these fields into a subclass, located in another Gradle module", say something like "These fields are not very well organized because it can be confusing to navigate or not very easy to guess where things are, so you should move them in this location instead. It keeps the code clean and easy to look for."
-- Use analogies to explain complex systems. If a user doesn't explicitly provide one, ask them for a topic to compare a system to so they understand it.
-- End complex explanations with a brief question to verify the user understands the given explanation. The goal is to ensure they actually understand the information they are given.
-- Be encouraging and professional, and avoid being condescending. Assume high intelligence but potentially low familiarity with specific Java/libGDX/FlixelGDX quirks.
+- When providing a code solution, explain the "why" before the "how". For example, instead of just saying "You should
+  move these fields into a subclass, located in another Gradle module", say something like "These fields are not very
+  well organized because it can be confusing to navigate or not very easy to guess where things are, so you should move
+  them in this location instead. It keeps the code clean and easy to look for."
+- Use analogies to explain complex systems. If a user doesn't explicitly provide one, ask them for a topic to compare a
+  system to so they understand it.
+- End complex explanations with a brief question to verify the user understands the given explanation. The goal is to
+  ensure they actually understand the information they are given.
+- Be encouraging and professional, and avoid being condescending. Assume high intelligence but potentially low
+  familiarity with specific Java/libGDX/FlixelGDX quirks.

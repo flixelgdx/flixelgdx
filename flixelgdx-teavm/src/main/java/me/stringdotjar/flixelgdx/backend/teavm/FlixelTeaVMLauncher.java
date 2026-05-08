@@ -137,6 +137,7 @@ public class FlixelTeaVMLauncher {
       @Override
       protected void init() {
         super.init();
+        Flixel.mouse.setMouseIconManager(new FlixelTeaVMMouseIconManager(configuration.canvasID));
         addInitQueue();
         AssetInstance.getLoaderInstance().loadScript("freetype.js", new AssetLoaderListener<>() {
           @Override

@@ -13,6 +13,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -34,6 +35,7 @@ import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -104,6 +106,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Should the game start in fullscreen mode? */
   protected boolean fullscreen;
 
+  /**
+   * When {@code true} (the default), the LWJGL3 launcher requests an alpha-capable framebuffer so
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} can composite with the desktop.
+   * Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
+   */
+  protected boolean transparentFramebufferRequested = true;
+
   /** Should the game pause update calls and audio when the window loses focus or is minimized? */
   public boolean autoPause = true;
 
@@ -156,6 +165,30 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
+
+  /**
+   * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#isDesktopTransparencyActive()}.
+   */
+  private boolean desktopTransparencyActive;
+
+  /**
+   * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
+   * this session. Cleared when transparency is turned off.
+   */
+  private final float[] desktopTransparencyRestoreGameRgba = new float[4];
+
+  /**
+   * Packed per-camera backdrop data: {@code r, g, b, a, useBgAlphaBlending ? 1f : 0f} for each camera index.
+   * Reused across toggles to avoid allocations.
+   */
+  private float[] desktopTransparencyRestoreCamerasPacked = new float[20];
+
+  private int desktopTransparencyRestoreCameraCount;
+
+  private boolean desktopTransparencyRestoreSnapshotValid;
+
+  private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
 
   /**
    * Creates a new game instance with the details specified.
@@ -441,6 +474,34 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
 
     Flixel.Signals.postDraw.dispatch();
+
+    squashFramebufferAlphaWhenDesktopNotSeeThrough();
+  }
+
+  /**
+   * When the window was created with a transparent-capable framebuffer but desktop see-through is off, the compositor
+   * still blends using framebuffer alpha. Sprite draws that write alpha < 1 would incorrectly show the real desktop.
+   * This clears only the alpha channel to {@code 1} over the full framebuffer after all rendering.
+   */
+  private void squashFramebufferAlphaWhenDesktopNotSeeThrough() {
+    if (desktopTransparencyActive || !transparentFramebufferRequested) {
+      return;
+    }
+    if (Gdx.app.getType() != Application.ApplicationType.Desktop) {
+      return;
+    }
+    GL20 gl = Gdx.gl;
+    boolean scissorWasOn = gl.glIsEnabled(GL20.GL_SCISSOR_TEST);
+    if (scissorWasOn) {
+      gl.glDisable(GL20.GL_SCISSOR_TEST);
+    }
+    gl.glColorMask(false, false, false, true);
+    gl.glClearColor(0f, 0f, 0f, 1f);
+    gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    gl.glColorMask(true, true, true, true);
+    if (scissorWasOn) {
+      gl.glEnable(GL20.GL_SCISSOR_TEST);
+    }
   }
 
   /**
@@ -646,6 +707,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     Flixel.Signals.preGameClose.dispatch();
 
+    if (Flixel.initialized) {
+      Flixel.host.removeTrayIcon();
+    }
+
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       if (Flixel.getLogger() != null) {
@@ -770,6 +835,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(camera);
     stage.setViewport(camera.getViewport());
+    if (desktopTransparencyActive) {
+      applyDesktopTransparencyBackdropOnly();
+    }
   }
 
   public String getTitle() {
@@ -825,6 +893,154 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       return;
     }
     this.bgColor.set(bgColor);
+  }
+
+  public boolean isTransparentFramebufferRequested() {
+    return transparentFramebufferRequested;
+  }
+
+  /**
+   * Requests an alpha-capable GLFW framebuffer on LWJGL3 before the desktop launcher runs. Default {@code true}. Set {@code false}
+   * if you must avoid framebuffer alpha (some drivers) or never want desktop compositing. When {@code false}, toggling
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
+   *
+   * @param transparentFramebufferRequested {@code false} to force an opaque default framebuffer at launch.
+   */
+  public void setTransparentFramebufferRequested(boolean transparentFramebufferRequested) {
+    this.transparentFramebufferRequested = transparentFramebufferRequested;
+  }
+
+  /**
+   * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
+   */
+  public boolean isDesktopTransparencyActive() {
+    return desktopTransparencyActive;
+  }
+
+  /**
+   * Updates global and per-camera backdrop drawing for desktop compositing. Called from
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow}. When desktop see-through is off but the GLFW window
+   * was created with a transparent-capable framebuffer, {@link #draw} also forces framebuffer alpha to {@code 1} after
+   * rendering so tinted sprites do not composite through the real desktop.
+   *
+   * @param active {@code true} for transparent clears and camera fills; {@code false} restores colors
+   * captured the first time transparency was enabled this session (then clears that cache), or opaque black
+   * if transparency was never enabled.
+   */
+  public void applyBackdropForDesktopTransparency(boolean active) {
+    desktopTransparencyActive = active;
+    if (active) {
+      captureDesktopTransparency();
+      applyDesktopTransparencyBackdropOnly();
+      return;
+    }
+    restoreDesktopTransparencyBackdrop();
+    clearDesktopTransparencyRestoreSnapshot();
+  }
+
+  /**
+   * Applies transparent full-window clear and per-camera backdrop without touching the restore snapshot.
+   * Used after {@link #resetCameras()} while transparency stays enabled.
+   */
+  private void applyDesktopTransparencyBackdropOnly() {
+    bgColor.a = 0f;
+    if (cameras == null) {
+      return;
+    }
+    FlixelCamera[] camItems = cameras.items;
+    for (int i = 0, n = cameras.size; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      if (cam == null) {
+        continue;
+      }
+      cam.useBgAlphaBlending = true;
+      cam.bgColor.a = 0f;
+    }
+  }
+
+  private void captureDesktopTransparency() {
+    if (desktopTransparencyRestoreSnapshotValid) {
+      return;
+    }
+    float[] g = desktopTransparencyRestoreGameRgba;
+    g[0] = bgColor.r;
+    g[1] = bgColor.g;
+    g[2] = bgColor.b;
+    g[3] = bgColor.a;
+    int n = cameras == null ? 0 : cameras.size;
+    ensureDesktopTransparencyCameraSnapshotCapacity(n);
+    FlixelCamera[] camItems = n == 0 ? null : cameras.items;
+    float[] p = desktopTransparencyRestoreCamerasPacked;
+    for (int i = 0; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      int o = i * FLOATS_PER_CAMERA_BACKDROP;
+      if (cam == null) {
+        p[o] = 0f;
+        p[o + 1] = 0f;
+        p[o + 2] = 0f;
+        p[o + 3] = 1f;
+        p[o + 4] = 0f;
+        continue;
+      }
+      p[o] = cam.bgColor.r;
+      p[o + 1] = cam.bgColor.g;
+      p[o + 2] = cam.bgColor.b;
+      p[o + 3] = cam.bgColor.a;
+      p[o + 4] = cam.useBgAlphaBlending ? 1f : 0f;
+    }
+    desktopTransparencyRestoreCameraCount = n;
+    desktopTransparencyRestoreSnapshotValid = true;
+  }
+
+  private void ensureDesktopTransparencyCameraSnapshotCapacity(int cameraCount) {
+    int need = cameraCount * FLOATS_PER_CAMERA_BACKDROP;
+    if (desktopTransparencyRestoreCamerasPacked.length >= need) {
+      return;
+    }
+    desktopTransparencyRestoreCamerasPacked = new float[Math.max(need, desktopTransparencyRestoreCamerasPacked.length * 2)];
+  }
+
+  private void restoreDesktopTransparencyBackdrop() {
+    float[] g = desktopTransparencyRestoreGameRgba;
+    if (desktopTransparencyRestoreSnapshotValid) {
+      bgColor.r = g[0];
+      bgColor.g = g[1];
+      bgColor.b = g[2];
+      bgColor.a = g[3];
+    } else {
+      bgColor.set(Color.BLACK);
+    }
+    if (cameras == null) {
+      return;
+    }
+    FlixelCamera[] camItems = cameras.items;
+    int n = cameras.size;
+    int saved = desktopTransparencyRestoreCameraCount;
+    float[] p = desktopTransparencyRestoreCamerasPacked;
+    for (int i = 0; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      if (cam == null) {
+        continue;
+      }
+      if (desktopTransparencyRestoreSnapshotValid && i < saved) {
+        int o = i * FLOATS_PER_CAMERA_BACKDROP;
+        cam.bgColor.r = p[o];
+        cam.bgColor.g = p[o + 1];
+        cam.bgColor.b = p[o + 2];
+        cam.bgColor.a = p[o + 3];
+        cam.useBgAlphaBlending = p[o + 4] != 0f;
+      } else {
+        cam.useBgAlphaBlending = false;
+        cam.bgColor.set(Color.BLACK);
+      }
+    }
+  }
+
+  private void clearDesktopTransparencyRestoreSnapshot() {
+    desktopTransparencyRestoreSnapshotValid = false;
+    desktopTransparencyRestoreCameraCount = 0;
+    Arrays.fill(desktopTransparencyRestoreGameRgba, 0f);
+    Arrays.fill(desktopTransparencyRestoreCamerasPacked, 0f);
   }
 
   public boolean isGamePaused() {

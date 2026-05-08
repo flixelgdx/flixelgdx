@@ -19,9 +19,13 @@ import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
+import me.stringdotjar.flixelgdx.backend.host.FlixelHostIntegration;
+import me.stringdotjar.flixelgdx.backend.host.FlixelNoopHostIntegration;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import me.stringdotjar.flixelgdx.backend.window.FlixelNoopWindow;
+import me.stringdotjar.flixelgdx.backend.window.FlixelWindow;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugManager;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelHeadlessDebugOverlay;
@@ -104,8 +108,16 @@ import java.util.function.Supplier;
  *     <b>Asset Loading:</b>
  *     Offers a unified {@link #assets} interface for loading, caching, and retrieving textures, sounds, and data.
  *   </li>
- *   <li>
- *     <b>Logging and Debugging:</b>
+   *   <li>
+   *     <b>Host integration:</b>
+   *     Desktop notifications, task attention, and tray icons via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
+   *   </li>
+   *   <li>
+   *     <b>Window control:</b>
+   *     Transparency helpers and desktop window tweaks via {@link #window}.
+   *   </li>
+   *   <li>
+   *     <b>Logging and Debugging:</b>
  *     Centralizes log output through {@link #log}, and supplies tools for in-game watches and performance tracking.
  *   </li>
  *   <li>
@@ -283,6 +295,18 @@ public final class Flixel {
   @NotNull
   private static FlixelAlerter alerter;
 
+  /**
+   * Desktop window integration (transparency helpers, opacity, decorations). LWJGL3 replaces the default no-op at launch.
+   */
+  @NotNull
+  public static FlixelWindow window = FlixelNoopWindow.INSTANCE;
+
+  /**
+   * Host OS integration (toast notifications, task attention, tray). LWJGL3 replaces the default no-op at launch.
+   */
+  @NotNull
+  public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
+
   /** Has the global manager been initialized yet? */
   protected static boolean initialized = false;
 
@@ -443,6 +467,32 @@ public final class Flixel {
       throw new IllegalArgumentException("Alert system cannot be null.");
     }
     alerter = alertSystem;
+  }
+
+  /**
+   * Sets the desktop window integration implementation before {@link #initialize(FlixelGame)}.
+   *
+   * @param windowAccess Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setWindow(@NotNull FlixelWindow windowAccess) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change window integration after Flixel has been initialized.");
+    }
+    window = Objects.requireNonNull(windowAccess, "window cannot be null.");
+  }
+
+  /**
+   * Sets the host OS integration implementation before {@link #initialize(FlixelGame)}.
+   *
+   * @param hostIntegration Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setHost(@NotNull FlixelHostIntegration hostIntegration) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change host integration after Flixel has been initialized.");
+    }
+    host = Objects.requireNonNull(hostIntegration, "host cannot be null.");
   }
 
   /**
