@@ -23,14 +23,83 @@ import org.lwjgl.glfw.GLFW;
  * default {@link FlixelWindow#setDesktopTransparencyActive(boolean)} implementation. Do not call
  * {@code glfwSetWindowAttrib(GLFW_TRANSPARENT_FRAMEBUFFER, ...)}: GLFW reports {@code GLFW_INVALID_ENUM} and it is not a supported
  * dynamic attribute on common platforms.
+ *
+ * <p>Window position updates use a single logical {@code (x, y)} pair and at most one {@code postRunnable} per frame batch so
+ * separate {@link #setX(int)} and {@link #setY(int)} calls (for example from independent tween goals) still produce one consistent
+ * {@code glfwSetWindowPos} snapshot without stale axis readbacks.
  */
 public final class FlixelLwjgl3Window implements FlixelWindow {
 
   @Nullable
   private static volatile FlixelLwjgl3ChainingWindowListener closeHook;
 
+  private int logicalX, logicalY;
+
+  /** {@code false} until the first mutation seeds logical coordinates from the live window position. */
+  private boolean logicalPositionInitialized;
+
+  /**
+   * When {@code true}, a runnable is already queued to apply {@link #logicalX} and {@link #logicalY}.
+   */
+  private boolean positionFlushPosted;
+
   static void configureCloseHandlingHook(@Nullable FlixelLwjgl3ChainingWindowListener hook) {
     closeHook = hook;
+  }
+
+  /**
+   * Copies the OS window position into the logical pair whenever this is not the middle of a pending flush burst, so manual
+   * drags stay visible before the next driven move.
+   */
+  private void prepareLogicalForMutation(Lwjgl3Graphics graphics) {
+    if (!logicalPositionInitialized || !positionFlushPosted) {
+      logicalX = graphics.getWindow().getPositionX();
+      logicalY = graphics.getWindow().getPositionY();
+      logicalPositionInitialized = true;
+    }
+  }
+
+  /**
+   * Queues exactly one GLFW position apply for this frame burst. Repeated calls mutate {@link #logicalX} /
+   * {@link #logicalY} only until the runnable runs.
+   *
+   * @param graphics Backing LWJGL3 graphics handle.
+   */
+  private void scheduleMergedPositionFlush(Lwjgl3Graphics graphics) {
+    if (positionFlushPosted) {
+      return;
+    }
+    positionFlushPosted = true;
+    graphics.getWindow().postRunnable(() -> {
+      positionFlushPosted = false;
+      if (!(Gdx.graphics instanceof Lwjgl3Graphics latest)) {
+        return;
+      }
+      latest.getWindow().setPosition(logicalX, logicalY);
+    });
+  }
+
+  /**
+   * @param graphics Backend handle.
+   * @return Preferred X for {@link #getX()} while a flush is still pending ({@linkplain #logicalX logical coordinates} stay aligned
+   * with pending writes).
+   */
+  private int readPositionX(Lwjgl3Graphics graphics) {
+    if (logicalPositionInitialized && positionFlushPosted) {
+      return logicalX;
+    }
+    return graphics.getWindow().getPositionX();
+  }
+
+  /**
+   * @param graphics Backend handle.
+   * @return Preferred Y for {@link #getY()} while a flush is still pending.
+   */
+  private int readPositionY(Lwjgl3Graphics graphics) {
+    if (logicalPositionInitialized && positionFlushPosted) {
+      return logicalY;
+    }
+    return graphics.getWindow().getPositionY();
   }
 
   @Override
@@ -67,7 +136,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return 0;
     }
-    return g.getWindow().getPositionX();
+    return readPositionX(g);
   }
 
   @Override
@@ -75,7 +144,27 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return 0;
     }
-    return g.getWindow().getPositionY();
+    return readPositionY(g);
+  }
+
+  @Override
+  public void setX(int x) {
+    if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
+      return;
+    }
+    prepareLogicalForMutation(g);
+    logicalX = x;
+    scheduleMergedPositionFlush(g);
+  }
+
+  @Override
+  public void setY(int y) {
+    if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
+      return;
+    }
+    prepareLogicalForMutation(g);
+    logicalY = y;
+    scheduleMergedPositionFlush(g);
   }
 
   @Override
@@ -83,7 +172,10 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return;
     }
-    g.getWindow().postRunnable(() -> g.getWindow().setPosition(x, y));
+    prepareLogicalForMutation(g);
+    logicalX = x;
+    logicalY = y;
+    scheduleMergedPositionFlush(g);
   }
 
   @Override
@@ -91,11 +183,9 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return;
     }
-    g.getWindow().postRunnable(() -> {
-      int nx = g.getWindow().getPositionX() + deltaX;
-      int ny = g.getWindow().getPositionY();
-      g.getWindow().setPosition(nx, ny);
-    });
+    prepareLogicalForMutation(g);
+    logicalX += deltaX;
+    scheduleMergedPositionFlush(g);
   }
 
   @Override
@@ -103,11 +193,9 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return;
     }
-    g.getWindow().postRunnable(() -> {
-      int nx = g.getWindow().getPositionX();
-      int ny = g.getWindow().getPositionY() + deltaY;
-      g.getWindow().setPosition(nx, ny);
-    });
+    prepareLogicalForMutation(g);
+    logicalY += deltaY;
+    scheduleMergedPositionFlush(g);
   }
 
   @Override

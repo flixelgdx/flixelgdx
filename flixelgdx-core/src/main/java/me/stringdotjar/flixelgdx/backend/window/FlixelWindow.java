@@ -126,6 +126,20 @@ public interface FlixelWindow {
   }
 
   /**
+   * Sets the window's X position in screen coordinates, when supported.
+   *
+   * @param x Target X in screen coordinates.
+   */
+  default void setX(int x) {}
+
+  /**
+   * Sets the window's Y position in screen coordinates, when supported.
+   *
+   * @param y Target Y in screen coordinates.
+   */
+  default void setY(int y) {}
+
+  /**
    * Moves the window so its client area origin is placed at the given screen coordinates, when supported.
    *
    * @param x Target X in screen coordinates.

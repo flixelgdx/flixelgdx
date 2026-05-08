@@ -357,6 +357,8 @@ After the project is generated, add FlixelGDX and wire it in:
      }
      ```
 
+   If you launch with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
+
 7. **Refresh Gradle** in your IDE (e.g. “Reload All Gradle Projects” or Gradle sync). Resolve any import errors so that `FlixelGame`, `FlixelState`, and `Flixel` are found from `flixelgdx-core`, and `FlixelLwjgl3Launcher` from `flixelgdx-lwjgl3`.
 8. **Run the desktop launcher.**
   Run the **lwjgl3** run configuration with the main class set to your launcher (e.g. `FlixelTestLauncher`). You should see your state. If you added Android/iOS/HTML, run the corresponding launcher or Gradle task for that platform to test there as well.

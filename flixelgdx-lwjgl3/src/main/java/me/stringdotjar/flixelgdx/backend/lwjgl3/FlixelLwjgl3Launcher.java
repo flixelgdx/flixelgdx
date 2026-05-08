@@ -11,12 +11,8 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 
-import java.lang.reflect.Field;
-
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowConfiguration;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
@@ -40,29 +36,12 @@ public class FlixelLwjgl3Launcher {
   private static volatile boolean linuxAwtCompatibilityPrepared;
 
   /**
-   * Ensures Flixel window notifications, optional user {@link Lwjgl3WindowListener}, and close-absorption wrapping
-   * are installed. Idempotent when the configuration already uses {@link FlixelLwjgl3ChainingWindowListener}.
+   * Ensures Flixel window notifications, optional user {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener},
+   * and close-absorption wrapping are installed. Only {@link FlixelLwjgl3ApplicationConfiguration} is supported so the
+   * user listener can be captured without reflection, which allows AOT compilers like GraalVM to not scream at you.
    */
-  public static void attachFlixelWindowListener(Lwjgl3ApplicationConfiguration configuration) {
-    Lwjgl3WindowListener current = readConfigurationWindowListener(configuration);
-    if (current instanceof FlixelLwjgl3ChainingWindowListener existing) {
-      FlixelLwjgl3Window.configureCloseHandlingHook(existing);
-      return;
-    }
-    FlixelLwjgl3NotifyWindowListener notify = new FlixelLwjgl3NotifyWindowListener(current);
-    FlixelLwjgl3ChainingWindowListener chain = new FlixelLwjgl3ChainingWindowListener(notify);
-    configuration.setWindowListener(chain);
-    FlixelLwjgl3Window.configureCloseHandlingHook(chain);
-  }
-
-  private static Lwjgl3WindowListener readConfigurationWindowListener(Lwjgl3ApplicationConfiguration configuration) {
-    try {
-      Field field = Lwjgl3WindowConfiguration.class.getDeclaredField("windowListener");
-      field.setAccessible(true);
-      return (Lwjgl3WindowListener) field.get(configuration);
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("Unable to read Lwjgl3 windowListener from configuration.", e);
-    }
+  public static void attachFlixelWindowListener(FlixelLwjgl3ApplicationConfiguration configuration) {
+    configuration.attachFlixelWindowListenerChain();
   }
 
   /**
@@ -113,7 +92,7 @@ public class FlixelLwjgl3Launcher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, String... icons) {
     Objects.requireNonNull(game, "The game object provided cannot be null!");
-    Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
+    FlixelLwjgl3ApplicationConfiguration configuration = new FlixelLwjgl3ApplicationConfiguration();
     configuration.setTitle(game.getTitle());
     configuration.useVsync(game.isVsync());
     configuration.setForegroundFPS(game.getFramerate());
@@ -145,9 +124,11 @@ public class FlixelLwjgl3Launcher {
    *
    * @param game The game instance to launch.
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   * @param configuration The {@link Lwjgl3ApplicationConfiguration} to use.
+   * @param configuration The {@link FlixelLwjgl3ApplicationConfiguration} to use. Use this type (not a raw
+   * {@link Lwjgl3ApplicationConfiguration}) so a custom {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener}
+   * can be preserved without reflection.
    */
-  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, Lwjgl3ApplicationConfiguration configuration) {
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, FlixelLwjgl3ApplicationConfiguration configuration) {
     prepareLinuxAwtCompatibility();
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
