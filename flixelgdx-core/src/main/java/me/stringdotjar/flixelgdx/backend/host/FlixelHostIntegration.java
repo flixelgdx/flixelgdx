@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
  * dialog popups. Use {@link me.stringdotjar.flixelgdx.Flixel#host} from game code.
  *
  * <p>Desktop LWJGL3 ships a full implementation (freedesktop {@code notify-send} on Linux rather than AWT for toasts,
- * AWT {@link java.awt.SystemTray} for tray icons, GLFW plus AWT {@link java.awt.Taskbar} for attention where available).
+ * AWT {@code java.awt.SystemTray} for tray icons, GLFW plus AWT {@code java.awt.Taskbar} for attention where available).
  * Mobile and web builds keep the safe no-op implementation.
  *
  * <p>Example:
