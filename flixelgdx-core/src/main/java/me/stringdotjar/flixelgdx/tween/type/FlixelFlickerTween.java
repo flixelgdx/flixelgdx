@@ -10,18 +10,18 @@ package me.stringdotjar.flixelgdx.tween.type;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.functional.FlixelVisible;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Toggles {@link FlixelBasic#visible} over time; restores visibility on completion.
+ * Toggles {@link FlixelVisible#isVisible()} over time; restores visibility on completion.
  */
 public class FlixelFlickerTween extends FlixelTween {
 
-  protected @Nullable FlixelBasic basic;
+  protected @Nullable FlixelVisible flickerTarget;
   protected float period = 0.08f;
   protected float ratio = 0.5f;
   protected boolean endVisibility = true;
@@ -32,12 +32,12 @@ public class FlixelFlickerTween extends FlixelTween {
   }
 
   public FlixelFlickerTween setFlicker(
-      @Nullable FlixelBasic basic,
+      @Nullable FlixelVisible flickerTarget,
       float period,
       float ratio,
       boolean endVisibility,
       @Nullable Predicate<FlixelFlickerTween> tweenFunction) {
-    this.basic = basic;
+    this.flickerTarget = flickerTarget;
     this.period = period > 0f ? period : 1f / 60f;
     this.ratio = Math.max(0f, Math.min(1f, ratio));
     this.endVisibility = endVisibility;
@@ -65,7 +65,7 @@ public class FlixelFlickerTween extends FlixelTween {
 
   @Override
   protected void updateTweenValues() {
-    if (basic == null || tweenSettings == null) {
+    if (flickerTarget == null || tweenSettings == null) {
       return;
     }
     float delay = tweenSettings.getStartDelay();
@@ -74,8 +74,8 @@ public class FlixelFlickerTween extends FlixelTween {
     }
     Predicate<FlixelFlickerTween> fn = tweenFunction != null ? tweenFunction : FlixelFlickerTween::defaultTweenFunction;
     boolean vis = fn.test(this);
-    if (basic.visible != vis) {
-      basic.visible = vis;
+    if (flickerTarget.isVisible() != vis) {
+      flickerTarget.setVisible(vis);
     }
   }
 
@@ -83,27 +83,27 @@ public class FlixelFlickerTween extends FlixelTween {
   public void finish() {
     boolean looping = tweenSettings != null && tweenSettings.getType().isLooping();
     super.finish();
-    if (!looping && basic != null) {
-      basic.visible = endVisibility;
+    if (!looping && flickerTarget != null) {
+      flickerTarget.setVisible(endVisibility);
     }
   }
 
   @Override
   public boolean isTweenOf(Object object, String field) {
-    if (basic == null) {
+    if (flickerTarget == null) {
       return false;
     }
     if (field == null || field.isEmpty()) {
-      return Objects.equals(object, basic);
+      return Objects.equals(object, flickerTarget);
     }
-    return Objects.equals(object, basic)
+    return Objects.equals(object, flickerTarget)
         && ("visible".equals(field) || "flicker".equals(field));
   }
 
   @Override
   public void reset() {
     super.reset();
-    basic = null;
+    flickerTarget = null;
     period = 0.08f;
     ratio = 0.5f;
     endVisibility = true;

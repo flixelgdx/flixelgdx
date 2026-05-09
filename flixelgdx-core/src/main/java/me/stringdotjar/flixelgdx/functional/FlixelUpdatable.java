@@ -5,12 +5,12 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx;
+package me.stringdotjar.flixelgdx.functional;
 
 /**
  * Interface for Flixel-based objects that can be updated.
  *
- * @see FlixelBasic
+ * @see me.stringdotjar.flixelgdx.FlixelBasic
  */
 public interface FlixelUpdatable {
 

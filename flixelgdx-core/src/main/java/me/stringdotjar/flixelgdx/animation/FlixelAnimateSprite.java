@@ -354,7 +354,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     FlixelAnimateRig activeRig = rig;
-    if (activeRig == null || !(batch instanceof SpriteBatch)) {
+    if (activeRig == null || !(batch instanceof SpriteBatch sb)) {
       // No rig (or batch type does not support Affine2 draws): fall back to the standard sprite path
       // so at least the inherited currentRegion / currentFrame still renders.
       super.draw(batch);
@@ -439,9 +439,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
       baseAffine.translate(-anchorOriginX, -anchorOriginY);
     }
 
-    Color tint = getColor();
-    SpriteBatch sb = (SpriteBatch) batch;
-    sb.setColor(tint.r, tint.g, tint.b, tint.a);
+    sb.setColor(getGdxColor());
 
     Array<FlixelFrame> atlas = activeRig.atlas;
     FlixelAnimateRig.Part[] parts = keyframe.parts;

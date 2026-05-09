@@ -9,7 +9,7 @@ package me.stringdotjar.flixelgdx.tween.builders;
 
 import java.util.function.Predicate;
 
-import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.functional.FlixelVisible;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
 
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 /** Builder for {@link FlixelFlickerTween}. */
 public final class FlixelFlickerTweenBuilder extends FlixelAbstractTweenBuilder<FlixelFlickerTween, FlixelFlickerTweenBuilder> {
 
-  private @Nullable FlixelBasic basic;
+  private @Nullable FlixelVisible target;
   private float period = 0.08f;
   private float ratio = 0.5f;
   private boolean endVisibility = true;
@@ -29,8 +29,8 @@ public final class FlixelFlickerTweenBuilder extends FlixelAbstractTweenBuilder<
     return this;
   }
 
-  public FlixelFlickerTweenBuilder setBasic(@Nullable FlixelBasic basic) {
-    this.basic = basic;
+  public FlixelFlickerTweenBuilder setTarget(@Nullable FlixelVisible target) {
+    this.target = target;
     return this;
   }
 
@@ -61,7 +61,7 @@ public final class FlixelFlickerTweenBuilder extends FlixelAbstractTweenBuilder<
     FlixelFlickerTween tween =
         manager.obtainTween(FlixelFlickerTween.class, () -> new FlixelFlickerTween(settings));
     tween.setTweenSettings(settings);
-    tween.setFlicker(basic, period, ratio, endVisibility, tweenFunction);
+    tween.setFlicker(target, period, ratio, endVisibility, tweenFunction);
     return (FlixelFlickerTween) manager.addTween(tween);
   }
 }

@@ -8,6 +8,8 @@
 package me.stringdotjar.flixelgdx;
 
 import me.stringdotjar.flixelgdx.debug.FlixelDebugDrawable;
+import me.stringdotjar.flixelgdx.functional.FlixelPositional;
+import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
 
 /**
  * The base class for all visual/spatial objects in Flixel. Extends {@link FlixelBasic} with
@@ -25,7 +27,7 @@ import me.stringdotjar.flixelgdx.debug.FlixelDebugDrawable;
  * by adjusting positions and velocities.
  *
  */
-public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
+public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, FlixelPositional, FlixelShakeable {
 
   /**
    * Maximum number of pixels two objects can intersect before {@link #separate(FlixelObject, FlixelObject)} gives up
@@ -244,234 +246,320 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     debugColorOverride = null;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getScrollX() {
     return scrollX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getScrollY() {
     return scrollY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setScrollFactor(float scrollX, float scrollY) {
     this.scrollX = scrollX;
     this.scrollY = scrollY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getX() {
     return x;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setX(float x) {
     this.x = x;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getY() {
     return y;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setY(float y) {
     this.y = y;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getWidth() {
     return width;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setWidth(float width) {
     this.width = width;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getHeight() {
     return height;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setHeight(float height) {
     this.height = height;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getAngle() {
     return angle;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAngle(float angle) {
     this.angle = angle;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getLastX() {
     return lastX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getLastY() {
     return lastY;
   }
 
-  /**
-   * Helper function to set the coordinates of this object.
-   *
-   * @param x The new x position.
-   * @param y The new y position.
-   */
+  /** {@inheritDoc} */
+  @Override
   public void setPosition(float x, float y) {
     this.x = x;
     this.y = y;
   }
 
-  /**
-   * Shortcut for setting both {@link #width} and {@link #height}.
-   *
-   * @param width The new width.
-   * @param height The new height.
-   */
+  /** {@inheritDoc} */
+  @Override
   public void setSize(float width, float height) {
     this.width = width;
     this.height = height;
   }
 
-  /** Adds {@code dx} to the current X position. */
+  /** {@inheritDoc} */
+  @Override
   public void changeX(float dx) {
     setX(x + dx);
   }
 
-  /** Adds {@code dy} to the current Y position. */
+  /** {@inheritDoc} */
+  @Override
   public void changeY(float dy) {
     setY(y + dy);
   }
 
-  /** Adds {@code dr} degrees to the current rotation angle. */
-  public void changeRotation(float dr) {
-    setAngle(angle + dr);
+  @Override
+  public void changeAngle(float deltaDegrees) {
+    setAngle(angle + deltaDegrees);
   }
 
-  /** Returns the center X coordinate of this object. */
+  /** {@inheritDoc} */
+  @Override
   public float getMidpointX() {
     return x + width / 2f;
   }
 
-  /** Returns the center Y coordinate of this object. */
+  /** {@inheritDoc} */
+  @Override
   public float getMidpointY() {
     return y + height / 2f;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getVelocityX() {
     return velocityX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setVelocityX(float velocityX) {
     this.velocityX = velocityX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getVelocityY() {
     return velocityY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setVelocityY(float velocityY) {
     this.velocityY = velocityY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setVelocity(float vx, float vy) {
     this.velocityX = vx;
     this.velocityY = vy;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getAccelerationX() {
     return accelerationX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAccelerationX(float ax) {
     this.accelerationX = ax;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getAccelerationY() {
     return accelerationY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAccelerationY(float ay) {
     this.accelerationY = ay;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAcceleration(float ax, float ay) {
     this.accelerationX = ax;
     this.accelerationY = ay;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getDragX() {
     return dragX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setDragX(float dx) {
     this.dragX = dx;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getDragY() {
     return dragY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setDragY(float dy) {
     this.dragY = dy;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setDrag(float dx, float dy) {
     this.dragX = dx;
     this.dragY = dy;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getMaxVelocityX() {
     return maxVelocityX;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setMaxVelocityX(float mvx) {
     this.maxVelocityX = mvx;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getMaxVelocityY() {
     return maxVelocityY;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setMaxVelocityY(float mvy) {
     this.maxVelocityY = mvy;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setMaxVelocity(float mvx, float mvy) {
     this.maxVelocityX = mvx;
     this.maxVelocityY = mvy;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getAngularVelocity() {
     return angularVelocity;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAngularVelocity(float av) {
     this.angularVelocity = av;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getAngularAcceleration() {
     return angularAcceleration;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAngularAcceleration(float aa) {
     this.angularAcceleration = aa;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getAngularDrag() {
     return angularDrag;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setAngularDrag(float ad) {
     this.angularDrag = ad;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public float getMaxAngularVelocity() {
     return maxAngularVelocity;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setMaxAngularVelocity(float mav) {
     this.maxAngularVelocity = mav;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public boolean getMoves() {
     return moves;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setMoves(boolean moves) {
     this.moves = moves;
   }
@@ -508,12 +596,46 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable {
     return wasTouching;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public boolean isImmovable() {
     return immovable;
   }
 
+  /** {@inheritDoc} */
+  @Override
   public void setImmovable(boolean immovable) {
     this.immovable = immovable;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeX() {
+    return getX();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeY() {
+    return getY();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setShake(float x, float y) {
+    setPosition(x, y);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeWidth() {
+    return getWidth();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeHeight() {
+    return getHeight();
   }
 
   public float getElasticity() {

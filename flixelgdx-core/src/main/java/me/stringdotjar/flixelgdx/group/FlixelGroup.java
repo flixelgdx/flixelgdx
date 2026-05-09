@@ -20,7 +20,8 @@ import org.jetbrains.annotations.Nullable;
  * loop with <em>any</em> member type ({@code FlixelGroup<Actor>}, {@code FlixelGroup<YourEntity>}, etc.): call
  * {@link #add}, {@link #remove}, and {@link #forEachMember} yourself; there is no automatic {@code update}/{@code draw}.
  *
- * <p>For FlixelGDX objects that extend {@link me.stringdotjar.flixelgdx.FlixelBasic}, use {@link FlixelBasicGroup} or
+ * <p>For gameplay objects that implement {@link me.stringdotjar.flixelgdx.functional.IFlixelBasic} (including
+ * {@link me.stringdotjar.flixelgdx.FlixelBasic} subclasses), use {@link FlixelBasicGroup} or
  * {@link me.stringdotjar.flixelgdx.FlixelState} instead so members receive the usual update/draw/recycle lifecycle.
  *
  * @param <T> Member type (unconstrained).

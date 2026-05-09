@@ -5,15 +5,21 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx;
+package me.stringdotjar.flixelgdx.functional;
+
+import com.badlogic.gdx.graphics.g2d.Batch;
 
 /**
- * Interface for Flixel-based objects that can be destroyed.
+ * Interface for Flixel-based visible objects that can be drawn.
+ *
+ * @see me.stringdotjar.flixelgdx.FlixelBasic
  */
-public interface FlixelDestroyable {
+public interface FlixelDrawable {
 
   /**
-   * Destroys the object and releases all resources.
+   * Draws the visible object.
+   *
+   * @param batch The batch used for rendering.
    */
-  void destroy();
+  void draw(Batch batch);
 }

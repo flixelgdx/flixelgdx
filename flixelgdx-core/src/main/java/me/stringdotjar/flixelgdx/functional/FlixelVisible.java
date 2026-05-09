@@ -5,21 +5,18 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx;
-
-import com.badlogic.gdx.graphics.g2d.Batch;
+package me.stringdotjar.flixelgdx.functional;
 
 /**
- * Interface for Flixel-based visible objects that can be drawn.
- *
- * @see FlixelBasic
+ * Something that can be shown or hidden for drawing. Matches the usual {@code visible} flag on
+ * {@link me.stringdotjar.flixelgdx.FlixelBasic}.
  */
-public interface FlixelDrawable {
+public interface FlixelVisible {
 
-  /**
-   * Draws the visible object.
-   *
-   * @param batch The batch used for rendering.
-   */
-  void draw(Batch batch);
+  boolean isVisible();
+
+  void setVisible(boolean visible);
+
+  /** Flips between visible and hidden. */
+  void toggleVisible();
 }

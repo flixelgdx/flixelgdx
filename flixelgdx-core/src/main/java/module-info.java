@@ -29,8 +29,9 @@ module me.stringdotjar.flixelgdx.core {
   exports me.stringdotjar.flixelgdx.util.save;
   exports me.stringdotjar.flixelgdx.util.signal;
   exports me.stringdotjar.flixelgdx.util.timer;
+    exports me.stringdotjar.flixelgdx.functional;
 
-  // Automatic module names (from JAR filenames when on the module path).
+    // Automatic module names (from JAR filenames when on the module path).
   requires transitive gdx;
   requires transitive gdx.controllers.core;
   requires transitive gdx.freetype;

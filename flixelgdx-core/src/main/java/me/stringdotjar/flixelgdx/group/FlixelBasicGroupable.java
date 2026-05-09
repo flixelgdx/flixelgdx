@@ -9,27 +9,27 @@ package me.stringdotjar.flixelgdx.group;
 
 import com.badlogic.gdx.utils.SnapshotArray;
 
-import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.functional.IFlixelBasic;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link FlixelGroupable} whose members are {@link FlixelBasic} instances. Engine code (overlap checks, debug
+ * A {@link FlixelGroupable} whose members are {@link IFlixelBasic} instances. Engine code (overlap checks, debug
  * traversal, {@link FlixelBasicGroup}) can depend on this marker and the helpers below without forcing generic
- * {@link FlixelGroup} users to extend {@link FlixelBasic}.
+ * {@link FlixelGroup} users to extend {@link me.stringdotjar.flixelgdx.FlixelBasic}.
  *
- * <p>For lifecycle guidance ({@code kill}/{@code revive}/{@code destroy}), see {@link FlixelBasic}.
+ * <p>For lifecycle guidance ({@code kill}/{@code revive}/{@code destroy}), see {@link me.stringdotjar.flixelgdx.FlixelBasic}.
  *
  * @param <T> Member type.
  */
-public interface FlixelBasicGroupable<T extends FlixelBasic> extends FlixelGroupable<T> {
+public interface FlixelBasicGroupable<T extends IFlixelBasic> extends FlixelGroupable<T> {
 
   /**
-   * Removes the member from the group; if {@code destroy} is {@code true}, also calls {@link FlixelBasic#destroy()} on it
+   * Removes the member from the group; if {@code destroy} is {@code true}, also calls {@link me.stringdotjar.flixelgdx.functional.FlixelDestroyable#destroy()} on it
    * after removal.
    *
    * @param member The member to remove.
-   * @param destroy If {@code true}, call {@link FlixelBasic#destroy()} after unlinking.
+   * @param destroy If {@code true}, call {@link me.stringdotjar.flixelgdx.functional.FlixelDestroyable#destroy()} after unlinking.
    */
   default void removeMember(T member, boolean destroy) {
     if (member == null) {
@@ -58,7 +58,7 @@ public interface FlixelBasicGroupable<T extends FlixelBasic> extends FlixelGroup
     try {
       for (int i = 0, n = members.size; i < n; i++) {
         T m = items[i];
-        if (m != null && !m.exists) {
+        if (m != null && !m.isExists()) {
           return m;
         }
       }

@@ -9,8 +9,8 @@ package me.stringdotjar.flixelgdx.util.timer;
 
 import com.badlogic.gdx.utils.Pool;
 
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
-import me.stringdotjar.flixelgdx.FlixelUpdatable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelUpdatable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

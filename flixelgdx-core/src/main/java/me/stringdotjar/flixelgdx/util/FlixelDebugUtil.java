@@ -10,9 +10,10 @@ package me.stringdotjar.flixelgdx.util;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.FlixelBasic;
 import me.stringdotjar.flixelgdx.FlixelState;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugDrawable;
+import me.stringdotjar.flixelgdx.functional.FlixelVisible;
+import me.stringdotjar.flixelgdx.functional.IFlixelBasic;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 
 import java.util.function.Consumer;
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Recursion descends into any member that implements {@link FlixelGroupable}, which
  * covers {@link me.stringdotjar.flixelgdx.group.FlixelBasicGroup}, {@link me.stringdotjar.flixelgdx.group.FlixelSpriteGroup},
- * and nested {@link me.stringdotjar.flixelgdx.group.FlixelGroup} instances whose elements are {@link FlixelBasic}.
+ * and nested {@link me.stringdotjar.flixelgdx.group.FlixelGroup} instances whose elements are {@link IFlixelBasic}.
  */
 public final class FlixelDebugUtil {
 
@@ -33,7 +34,7 @@ public final class FlixelDebugUtil {
 
   /**
    * Recursively counts all active members in the current state's object tree. A member is
-   * counted when {@code exists == true}.
+   * counted when {@link IFlixelBasic#isExists()} is {@code true}.
    *
    * @return The number of active members, or {@code 0} if no state is loaded.
    */
@@ -50,10 +51,10 @@ public final class FlixelDebugUtil {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       Object o = items[i];
-      if (!(o instanceof FlixelBasic member)) {
+      if (!(o instanceof IFlixelBasic member)) {
         continue;
       }
-      if (member.exists) {
+      if (member.isExists()) {
         count++;
       }
       if (member instanceof FlixelGroupable<?> group) {
@@ -69,7 +70,7 @@ public final class FlixelDebugUtil {
 
   /**
    * Iterates all visible {@link FlixelDebugDrawable} instances in the current state's
-   * object tree (where {@code exists} and {@code visible} are both {@code true}),
+   * object tree (where {@link IFlixelBasic#isExists()} and {@link FlixelVisible#isVisible()} are both {@code true}),
    * invoking the callback for each one. No intermediate collection is created.
    *
    * @param callback Invoked once per visible {@link FlixelDebugDrawable}.
@@ -87,10 +88,10 @@ public final class FlixelDebugUtil {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       Object o = items[i];
-      if (!(o instanceof FlixelBasic member)) {
+      if (!(o instanceof IFlixelBasic member)) {
         continue;
       }
-      if (member instanceof FlixelDebugDrawable drawable && member.exists) {
+      if (member instanceof FlixelDebugDrawable drawable && member.isExists() && member.isVisible()) {
         callback.accept(drawable);
       }
       if (member instanceof FlixelGroupable<?> group) {

@@ -11,7 +11,7 @@ import java.util.Objects;
 
 import com.badlogic.gdx.graphics.Color;
 
-import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.functional.FlixelColorable;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.util.FlixelColor;
@@ -19,7 +19,7 @@ import me.stringdotjar.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interpolates between two colors and optionally applies tint to a {@link FlixelSprite}.
+ * Interpolates between two colors and optionally applies tint to a {@link FlixelColorable}.
  */
 public class FlixelColorTween extends FlixelTween {
 
@@ -27,10 +27,10 @@ public class FlixelColorTween extends FlixelTween {
   protected final Color workTo = new Color();
   protected final Color workOut = new Color();
 
-  @Nullable  protected FlixelColor fromFlixel;
+  @Nullable protected FlixelColor fromFlixel;
   @Nullable protected FlixelColor toFlixel;
   protected boolean useRawColor;
-  @Nullable protected FlixelSprite sprite;
+  @Nullable protected FlixelColorable colorTarget;
   @Nullable protected Runnable onColor;
 
   public FlixelColorTween(@Nullable FlixelTweenSettings settings) {
@@ -40,15 +40,15 @@ public class FlixelColorTween extends FlixelTween {
   /**
    * Tween between two {@link FlixelColor} endpoints.
    *
-   * @param sprite The sprite to tween.
+   * @param target The tint target to tween.
    * @param from The starting color.
    * @param to The ending color.
    * @param onColor The callback to run when the tween is complete.
    * @return {@code this} for chaining.
    */
-  public FlixelColorTween setColorEndpoints(@Nullable FlixelSprite sprite, @Nullable FlixelColor from, @Nullable FlixelColor to, @Nullable Runnable onColor) {
+  public FlixelColorTween setColorEndpoints(@Nullable FlixelColorable target, @Nullable FlixelColor from, @Nullable FlixelColor to, @Nullable Runnable onColor) {
     this.useRawColor = false;
-    this.sprite = sprite;
+    this.colorTarget = target;
     this.fromFlixel = from;
     this.toFlixel = to;
     this.onColor = onColor;
@@ -58,15 +58,15 @@ public class FlixelColorTween extends FlixelTween {
   /**
    * Tween between two libGDX {@link Color} values (copied into internal buffers).
    *
-   * @param sprite The sprite to tween.
+   * @param target The tint target to tween.
    * @param from The starting color.
    * @param to The ending color.
    * @param onColor The callback to run when the tween is complete.
    * @return {@code this} for chaining.
    */
-  public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelSprite sprite, @Nullable Color from, @Nullable Color to, @Nullable Runnable onColor) {
+  public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelColorable target, @Nullable Color from, @Nullable Color to, @Nullable Runnable onColor) {
     this.useRawColor = true;
-    this.sprite = sprite;
+    this.colorTarget = target;
     this.fromFlixel = null;
     this.toFlixel = null;
     this.onColor = onColor;
@@ -90,8 +90,8 @@ public class FlixelColorTween extends FlixelTween {
       workOut.set(fromFlixel.getGdxColor()).lerp(toFlixel.getGdxColor(), scale);
     }
 
-    if (sprite != null) {
-      sprite.setColor(workOut);
+    if (colorTarget != null) {
+      colorTarget.setColor(workOut);
     }
     if (onColor != null) {
       onColor.run();
@@ -100,19 +100,19 @@ public class FlixelColorTween extends FlixelTween {
 
   @Override
   public boolean isTweenOf(Object object, String field) {
-    if (sprite == null) {
+    if (colorTarget == null) {
       return false;
     }
     if (field == null || field.isEmpty()) {
-      return Objects.equals(object, sprite);
+      return Objects.equals(object, colorTarget);
     }
-    return Objects.equals(object, sprite) && "color".equals(field);
+    return Objects.equals(object, colorTarget) && "color".equals(field);
   }
 
   @Override
   public void reset() {
     super.reset();
-    sprite = null;
+    colorTarget = null;
     fromFlixel = null;
     toFlixel = null;
     onColor = null;

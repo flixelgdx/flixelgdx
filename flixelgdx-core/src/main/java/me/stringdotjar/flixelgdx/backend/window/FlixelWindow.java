@@ -9,6 +9,7 @@ package me.stringdotjar.flixelgdx.backend.window;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
+import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
 
 /**
  * Desktop window controls that stay safe on every platform.
@@ -28,9 +29,42 @@ import me.stringdotjar.flixelgdx.FlixelGame;
  * Flixel.window.setDesktopTransparencyActive(false); // Normal opaque letterboxing again.
  * }</pre>
  *
+ * <p>This interface extends {@link me.stringdotjar.flixelgdx.functional.FlixelShakeable} so you can pass {@code Flixel.window} to
+ * {@link me.stringdotjar.flixelgdx.tween.FlixelTween#shake} when you want the OS window itself to jitter.
+ *
  * @see me.stringdotjar.flixelgdx.Flixel#window
  */
-public interface FlixelWindow {
+public interface FlixelWindow extends FlixelShakeable {
+
+  /** {@inheritDoc} */
+  @Override
+  default float getShakeX() {
+    return (float) getX();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  default float getShakeY() {
+    return (float) getY();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  default void setShake(float x, float y) {
+    setPosition(Math.round(x), Math.round(y));
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  default float getShakeWidth() {
+    return shakeFractionWidthFromGraphics();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  default float getShakeHeight() {
+    return shakeFractionHeightFromGraphics();
+  }
 
   /**
    * When {@code true}, the LWJGL3 launcher enables {@code Lwjgl3ApplicationConfiguration#setTransparentFramebuffer(boolean)}.

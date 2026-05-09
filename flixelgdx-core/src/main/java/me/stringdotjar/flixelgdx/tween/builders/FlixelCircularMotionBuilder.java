@@ -7,7 +7,7 @@
 
 package me.stringdotjar.flixelgdx.tween.builders;
 
-import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.functional.FlixelPositional;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCircularMotion;
 
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 /** Builder for {@link FlixelCircularMotion}. */
 public final class FlixelCircularMotionBuilder extends FlixelAbstractTweenBuilder<FlixelCircularMotion, FlixelCircularMotionBuilder> {
 
-  private @Nullable FlixelObject target;
+  private @Nullable FlixelPositional target;
   private float centerX;
   private float centerY;
   private float radius = 50f;
@@ -30,7 +30,7 @@ public final class FlixelCircularMotionBuilder extends FlixelAbstractTweenBuilde
     return this;
   }
 
-  public FlixelCircularMotionBuilder setTarget(@Nullable FlixelObject target) {
+  public FlixelCircularMotionBuilder setTarget(@Nullable FlixelPositional target) {
     this.target = target;
     return this;
   }

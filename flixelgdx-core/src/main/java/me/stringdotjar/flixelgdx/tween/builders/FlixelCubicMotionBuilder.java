@@ -7,7 +7,7 @@
 
 package me.stringdotjar.flixelgdx.tween.builders;
 
-import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.functional.FlixelPositional;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCubicMotion;
 
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 /** Builder for {@link FlixelCubicMotion}. */
 public final class FlixelCubicMotionBuilder extends FlixelAbstractTweenBuilder<FlixelCubicMotion, FlixelCubicMotionBuilder> {
 
-  private @Nullable FlixelObject target;
+  private @Nullable FlixelPositional target;
   private float p0x;
   private float p0y;
   private float p1x;
@@ -33,7 +33,7 @@ public final class FlixelCubicMotionBuilder extends FlixelAbstractTweenBuilder<F
     return this;
   }
 
-  public FlixelCubicMotionBuilder setTarget(@Nullable FlixelObject target) {
+  public FlixelCubicMotionBuilder setTarget(@Nullable FlixelPositional target) {
     this.target = target;
     return this;
   }
