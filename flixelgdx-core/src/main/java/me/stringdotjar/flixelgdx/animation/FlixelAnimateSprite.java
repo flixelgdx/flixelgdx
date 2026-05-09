@@ -25,10 +25,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link FlixelSprite} that renders Adobe Animate ("BTA") multipart rigs produced by an Animate
- * texture-atlas export. The three input files ({@code spritemap1.png}, {@code spritemap1.json},
- * {@code Animation.json}) are loaded through {@link #addSpritesheetAndAnimation}. The first call builds a rig with
- * {@link FlixelAnimateRigLoader}; further calls merge additional Adobe exports into that rig automatically.
+ * A {@link FlixelSprite} that renders Adobe Animate texture-atlas rigs. The three input files
+ * ({@code spritemap1.png}, {@code spritemap1.json}, {@code Animation.json}) are loaded through
+ * {@link #addSpritesheetAndAnimation}. The first call builds a rig with {@link FlixelAnimateRigLoader};
+ * further calls merge additional Adobe exports into that rig automatically. Both nested symbol exports
+ * (Better Texture Atlas style with {@code E.SI} + {@code SD.S}) and flat document timelines (direct
+ * {@code E.ASI} keyframes) use the same API.
  *
  * <p>Rendering is fully data-driven by the rig: every draw call looks up the clip that the inherited
  * {@link FlixelAnimationController} is currently playing, grabs the keyframe at
@@ -120,10 +122,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Adds a BTA spritesheet ({@code PNG} plus spritemap JSON and {@code Animation.json}). If this sprite has no rig yet,
-   * {@link FlixelAnimateRigLoader#load} builds one and starts the anchor clip. If a rig is already installed, the same
-   * triple is merged with {@link FlixelAnimateRigLoader#append}. The {@code anchorClipName} argument is read only on
-   * the first successful load; it is ignored on merges.
+   * Adds an Adobe Animate texture atlas ({@code PNG} plus spritemap JSON and {@code Animation.json}). If
+   * this sprite has no rig yet, {@link FlixelAnimateRigLoader#load} builds one and starts the anchor
+   * clip. If a rig is already installed, the same triple is merged with {@link FlixelAnimateRigLoader#append}.
+   * The {@code anchorClipName} argument is read only on the first successful load; it is ignored on merges.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -140,10 +142,11 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Adds a BTA spritesheet with an explicit anchor clip on first load. When no rig exists yet, {@code anchorClipName}
-   * selects the clip whose first keyframe defines the hitbox anchor and which auto-plays after load; pass {@code null}
-   * (or a non-matching name) to use the first clip from the timeline label layer. When merging into an existing rig,
-   * {@code anchorClipName} is ignored.
+   * Adds an Adobe Animate texture atlas with an explicit anchor clip on first load. When no rig exists yet,
+   * {@code anchorClipName} selects the clip whose first keyframe defines the hitbox anchor and which
+   * auto-plays after load; pass {@code null} (or a non-matching name) to use the first clip from the
+   * timeline (for document exports with no labels, this is the synthesized default clip). When merging
+   * into an existing rig, {@code anchorClipName} is ignored.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
