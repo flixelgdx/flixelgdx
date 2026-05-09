@@ -52,6 +52,9 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
 
   private static final int MAX_BUTTON = 4;
 
+  @NotNull
+  private FlixelMouseIconManager iconManager = FlixelNoopMouseIconManager.INSTANCE;
+
   public boolean enabled = true;
 
   private int screenX;
@@ -122,6 +125,24 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
   };
 
   public FlixelMouseManager() {}
+
+  /**
+   * Replaces the active {@link FlixelMouseIconManager}, for example with an LWJGL3 or web backend.
+   * Pass {@code null} to force the shared no-op implementation.
+   *
+   * @param iconManager The {@link FlixelMouseIconManager} to implement.
+   */
+  public void setMouseIconManager(@Nullable FlixelMouseIconManager iconManager) {
+    this.iconManager = iconManager != null ? iconManager : FlixelNoopMouseIconManager.INSTANCE;
+  }
+
+  /**
+   * @return Native cursor integration for this session (never null).
+   */
+  @NotNull
+  public FlixelMouseIconManager icons() {
+    return iconManager;
+  }
 
   @NotNull
   public InputProcessor getInputProcessor() {

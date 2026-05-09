@@ -8,11 +8,12 @@
 package me.stringdotjar.flixelgdx.backend.lwjgl3;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
+
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
@@ -31,6 +32,31 @@ import org.fusesource.jansi.AnsiConsole;
  * Launches the desktop (LWJGL3) version of the Flixel game.
  */
 public class FlixelLwjgl3Launcher {
+
+  private static volatile boolean linuxAwtCompatibilityPrepared;
+
+  /**
+   * Ensures Flixel window notifications, optional user {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener},
+   * and close-absorption wrapping are installed. Only {@link FlixelLwjgl3ApplicationConfiguration} is supported so the
+   * user listener can be captured without reflection, which allows AOT compilers like GraalVM to not scream at you.
+   */
+  public static void attachFlixelWindowListener(FlixelLwjgl3ApplicationConfiguration configuration) {
+    configuration.attachFlixelWindowListenerChain();
+  }
+
+  /**
+   * Linux AWT uses GTK for dialogs. Prefer GTK3 before any AWT class loads to reduce broken embeddings
+   * (orphan windows, wrong icons) on Cinnamon and other GTK3 desktops.
+   */
+  private static void prepareLinuxAwtCompatibility() {
+    if (linuxAwtCompatibilityPrepared) {
+      return;
+    }
+    linuxAwtCompatibilityPrepared = true;
+    if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("linux")) {
+      System.setProperty("jdk.gtk.version", "3");
+    }
+  }
 
   /**
    * Launches the LWJGL3 version of the Flixel game in {@link FlixelRuntimeMode#RELEASE RELEASE}
@@ -66,7 +92,7 @@ public class FlixelLwjgl3Launcher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, String... icons) {
     Objects.requireNonNull(game, "The game object provided cannot be null!");
-    Lwjgl3ApplicationConfiguration configuration = new Lwjgl3ApplicationConfiguration();
+    FlixelLwjgl3ApplicationConfiguration configuration = new FlixelLwjgl3ApplicationConfiguration();
     configuration.setTitle(game.getTitle());
     configuration.useVsync(game.isVsync());
     configuration.setForegroundFPS(game.getFramerate());
@@ -81,27 +107,10 @@ public class FlixelLwjgl3Launcher {
       .map(String::trim)
       .filter(s -> !s.isEmpty())
       .toArray(String[]::new));
-    configuration.setWindowListener(new Lwjgl3WindowAdapter() {
-      @Override
-      public void focusGained() {
-        super.focusGained();
-        Flixel.getGame().onWindowFocused();
-      }
-
-      @Override
-      public void focusLost() {
-        if (!Flixel.getGame().isMinimized()) {
-          super.focusLost();
-          Flixel.getGame().onWindowUnfocused();
-        }
-      }
-
-      @Override
-      public void iconified(boolean isIconified) {
-        super.iconified(isIconified);
-        Flixel.getGame().onWindowMinimized(isIconified);
-      }
-    });
+    if (game.isTransparentFramebufferRequested()) {
+      configuration.setTransparentFramebuffer(true);
+    }
+    attachFlixelWindowListener(configuration);
 
     launch(game, runtimeMode, configuration);
   }
@@ -115,15 +124,24 @@ public class FlixelLwjgl3Launcher {
    *
    * @param game The game instance to launch.
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   * @param configuration The {@link Lwjgl3ApplicationConfiguration} to use.
+   * @param configuration The {@link FlixelLwjgl3ApplicationConfiguration} to use. Use this type (not a raw
+   * {@link Lwjgl3ApplicationConfiguration}) so a custom {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener}
+   * can be preserved without reflection.
    */
-  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, Lwjgl3ApplicationConfiguration configuration) {
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, FlixelLwjgl3ApplicationConfiguration configuration) {
+    prepareLinuxAwtCompatibility();
+    if (game.isTransparentFramebufferRequested()) {
+      configuration.setTransparentFramebuffer(true);
+    }
+    attachFlixelWindowListener(configuration);
     FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe());
     if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
     }
 
     Flixel.setAlerter(new FlixelLwjgl3Alerter());
+    Flixel.setWindow(new FlixelLwjgl3Window());
+    Flixel.setHost(new FlixelLwjgl3HostIntegration());
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setReflection(new FlixelReflectASMHandler());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
@@ -134,6 +152,7 @@ public class FlixelLwjgl3Launcher {
       Flixel.setDebugOverlay(FlixelImGuiDebugOverlay::new);
     }
     Flixel.initialize(game);
+    Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
     new Lwjgl3Application(game, configuration);
 

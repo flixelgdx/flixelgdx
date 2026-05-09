@@ -27,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A {@link FlixelSprite} that renders Adobe Animate ("BTA") multipart rigs produced by an Animate
  * texture-atlas export. The three input files ({@code spritemap1.png}, {@code spritemap1.json},
- * {@code Animation.json}) are loaded through {@link #loadSpritemapAndAnimation}, which hands them to
- * {@link FlixelAnimateRigLoader} for parsing and baking into a {@link FlixelAnimateRig}.
+ * {@code Animation.json}) are loaded through {@link #addSpritesheetAndAnimation}. The first call builds a rig with
+ * {@link FlixelAnimateRigLoader}; further calls merge additional Adobe exports into that rig automatically.
  *
  * <p>Rendering is fully data-driven by the rig: every draw call looks up the clip that the inherited
  * {@link FlixelAnimationController} is currently playing, grabs the keyframe at
@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Example</h2>
  * <pre>{@code
  * FlixelAnimateSprite fas = new FlixelAnimateSprite();
- * fas.loadSpritemapAndAnimation(
+ * fas.addSpritesheetAndAnimation(
  *     "path/to/atlas/spritemap1.png",
  *     "path/to/atlas/spritemap1.json",
  *     "path/to/animation/Animation.json");
@@ -61,14 +61,10 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  *
  * <h2>Merging multiple atlases</h2>
- * Characters such as Friday Night Funkin's Pico are authored across more than one Adobe Animate
- * export (one atlas for the basic singing animations, another for the playable miss animations,
- * and so on). Call {@link #addSpritemapAndAnimation} after the initial
- * {@link #loadSpritemapAndAnimation} to merge each additional atlas into the same sprite. The
- * appended frames are added to the rig's shared atlas, the appended clips are baked into the
- * existing rig's anchor coordinate system (so the body stays pinned to the same on-screen position
- * when game code switches between atlases), and the appended clip names become available through
- * the same {@link FlixelAnimationController#playAnimation} call.
+ * Call {@link #addSpritesheetAndAnimation} again with another export triple. Subsequent loads append frames to the
+ * shared atlas, bake clips into the existing anchor space (the body stays pinned when you switch atlases),
+ * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
+ * override earlier registrations on collisions.
  *
  * <p>{@code FlixelAnimateSprite} only draws through a {@link SpriteBatch}; if a non-sprite
  * {@link Batch} implementation is passed in, the rig path silently returns and falls back to the
@@ -78,7 +74,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * The rig that drives this sprite's rendering. {@code null} until
-   * {@link #loadSpritemapAndAnimation} has successfully built one (or after {@link #destroy()}).
+   * {@link #addSpritesheetAndAnimation} has successfully built one (or after {@link #destroy()}).
    */
   @Nullable
   private FlixelAnimateRig rig;
@@ -98,8 +94,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
   private final Affine2 drawAffine = new Affine2();
 
   /**
-   * Extra {@link FlixelGraphic} handles retained by {@link #addSpritemapAndAnimation} so the merged
-   * atlas's textures stay loaded for the lifetime of this sprite. The first (primary) graphic is
+   * Extra {@link FlixelGraphic} handles retained when additional spritesheets are merged so those atlases' textures stay
+   * loaded for the lifetime of this sprite. The first (primary) graphic is
    * still tracked by {@link FlixelSprite}'s own {@code graphic} field; this list only holds graphics
    * appended <em>after</em> the initial load. Lazily allocated to avoid the per-instance footprint
    * for sprites that only ever load a single atlas.
@@ -107,13 +103,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @Nullable
   private Array<FlixelGraphic> secondaryGraphics;
 
-  /** Creates an empty sprite at {@code (0, 0)}. Call {@link #loadSpritemapAndAnimation} before using it. */
+  /** Creates an empty sprite at {@code (0, 0)}. Call {@link #addSpritesheetAndAnimation} before using BTA rigs. */
   public FlixelAnimateSprite() {
     super();
   }
 
   /**
-   * Creates an empty sprite at the given world position. Call {@link #loadSpritemapAndAnimation}
+   * Creates an empty sprite at the given world position. Call {@link #addSpritesheetAndAnimation}
    * before using it.
    *
    * @param x The x-coordinate of the sprite's position.
@@ -124,107 +120,57 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Loads a spritemap and animation pair and installs the resulting rig. Equivalent to
-   * {@link #loadSpritemapAndAnimation(String, String, String, String)} with a {@code null} anchor clip
-   * name, so the first clip declared in the timeline's label layer is used as the bounding-box anchor
-   * and is the one auto-played after loading.
+   * Adds a BTA spritesheet ({@code PNG} plus spritemap JSON and {@code Animation.json}). If this sprite has no rig yet,
+   * {@link FlixelAnimateRigLoader#load} builds one and starts the anchor clip. If a rig is already installed, the same
+   * triple is merged with {@link FlixelAnimateRigLoader#append}. The {@code anchorClipName} argument is read only on
+   * the first successful load; it is ignored on merges.
    *
-   * @param textureKey The asset key of the spritemap PNG, matching the key used by
-   *   {@link FlixelSprite#loadGraphic(String)} (for example
-   *   {@code "shared/images/characters/bf/spritemap1.png"}). Must not be {@code null}.
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
    * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
    * @return {@code this} sprite, for chaining.
-   * @throws IllegalArgumentException If either file is missing, malformed, or not a recognized Adobe
-   *   Animate texture-atlas export.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
    */
   @NotNull
-  public FlixelAnimateSprite loadSpritemapAndAnimation(
+  public FlixelAnimateSprite addSpritesheetAndAnimation(
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath) {
-    return loadSpritemapAndAnimation(textureKey, spritemapJsonPath, animationJsonPath, null);
+    return addSpritesheetAndAnimation(textureKey, spritemapJsonPath, animationJsonPath, null);
   }
 
   /**
-   * Loads a spritemap and animation pair and installs the resulting rig. Delegates to
-   * {@link FlixelAnimateRigLoader#load}, which parses the Adobe JSON, bakes every clip and keyframe,
-   * populates this sprite's {@link FlixelAnimationController} with one clip per label, and starts
-   * playing the anchor clip.
+   * Adds a BTA spritesheet with an explicit anchor clip on first load. When no rig exists yet, {@code anchorClipName}
+   * selects the clip whose first keyframe defines the hitbox anchor and which auto-plays after load; pass {@code null}
+   * (or a non-matching name) to use the first clip from the timeline label layer. When merging into an existing rig,
+   * {@code anchorClipName} is ignored.
    *
-   * @param textureKey The asset key of the spritemap PNG, matching the key used by
-   *   {@link FlixelSprite#loadGraphic(String)} (for example
-   *   {@code "shared/images/characters/bf/spritemap1.png"}). Must not be {@code null}.
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
    * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
-   * @param anchorClipName Name of the clip whose first keyframe defines the rig's bounding box and
-   *   which is auto-played after loading. Pass {@code null} (or a name that does not exist in the
-   *   export) to default to the first clip declared in the timeline's label layer.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
    * @return {@code this} sprite, for chaining.
-   * @throws IllegalArgumentException If either file is missing, malformed, or not a recognized Adobe
-   *   Animate texture-atlas export.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
    */
   @NotNull
-  public FlixelAnimateSprite loadSpritemapAndAnimation(
+  public FlixelAnimateSprite addSpritesheetAndAnimation(
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath,
       @Nullable String anchorClipName) {
     FlixelAnimationController controller = ensureAnimation();
-    FlixelAnimateRigLoader.load(
-      this, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
+    if (rig == null) {
+      FlixelAnimateRigLoader.load(
+        this, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
+    } else {
+      FlixelAnimateRigLoader.append(this, controller, textureKey, spritemapJsonPath, animationJsonPath);
+    }
     return this;
   }
 
   @Nullable
   public FlixelAnimateRig getRig() {
     return rig;
-  }
-
-  /**
-   * Merges an additional Adobe Animate texture-atlas export into the rig that was already installed
-   * by {@link #loadSpritemapAndAnimation}. The new spritemap's frames are appended to the rig's
-   * shared atlas, the new label-layer clips are baked into the existing rig's anchor coordinate
-   * space, and the new clip names are registered on this sprite's {@link FlixelAnimationController}.
-   * On clip-name collisions the appended clip silently overwrites the existing one (matching the
-   * behaviour of the original {@code flxanimate} library), which lets later loads act as costume
-   * overrides.
-   *
-   * <p>This is useful for merging multiple atlases into a single sprite, such as when a character has
-   * multiple costumes. For example, a character might have a basic singing atlas and a playable miss atlas,
-   * and a third might hold extra cinematic poses.
-   *
-   * <p>The following example shows how to merge two atlases into a single sprite:
-   * <pre>
-   * FlixelAnimateSprite mergeSprite = new FlixelAnimateSprite();
-   * mergeSprite.loadSpritemapAndAnimation(
-   *     "characters/pico/spritemap1.png",
-   *     "characters/pico/spritemap1.json",
-   *     "characters/pico/Animation.json")
-   *   .addSpritemapAndAnimation(
-   *     "characters/picoPlayer/spritemap1.png",
-   *     "characters/picoPlayer/spritemap1.json",
-   *     "characters/picoPlayer/Animation.json")
-   *   .playAnimation("Pico Sing Right Miss");
-   * </pre>
-   *
-   * @param textureKey The asset key of the appended spritemap PNG. Must not be {@code null}.
-   * @param spritemapJsonPath The path to the appended spritemap JSON. Must not be {@code null}.
-   * @param animationJsonPath The path to the appended animation JSON. Must not be {@code null}.
-   * @return {@code this} sprite, for chaining.
-   * @throws IllegalStateException If {@link #loadSpritemapAndAnimation} has not been called first
-   *   (because the merged clips need a rig anchor box to bake against).
-   * @throws IllegalArgumentException If any of the three appended files is missing, malformed, or
-   *   not a recognized Adobe Animate texture-atlas export.
-   */
-  @NotNull
-  public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull String textureKey,
-      @NotNull String spritemapJsonPath,
-      @NotNull String animationJsonPath) {
-    FlixelAnimationController controller = ensureAnimation();
-    FlixelAnimateRigLoader.append(this, controller, textureKey, spritemapJsonPath, animationJsonPath);
-    return this;
   }
 
   /**
@@ -515,8 +461,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Installs a rig built by {@link FlixelAnimateRigLoader}. Callers must go through
-   * {@link #loadSpritemapAndAnimation}. Sets the sprite's logical size to the anchor bounding box and,
+   * Installs a rig built by {@link FlixelAnimateRigLoader}. Callers normally use
+   * {@link #addSpritesheetAndAnimation}. Sets the sprite's logical size to the anchor bounding box and,
    * if the user has already toggled antialiasing on, applies the matching texture filter to the rig's
    * spritemap so the setting carries across the load.
    *
@@ -540,7 +486,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   public void destroy() {
     rig = null;
     if (secondaryGraphics != null) {
-      // Balance every retain incurred by addSpritemapAndAnimation() -> obtainWrapper(). The primary
+      // Balance every retain from merged sheets (obtainWrapper()). The primary
       // graphic is still released by FlixelSprite.destroy() through its own field.
       for (int i = 0; i < secondaryGraphics.size; i++) {
         FlixelGraphic g = secondaryGraphics.get(i);

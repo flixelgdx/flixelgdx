@@ -2,12 +2,65 @@
 alwaysApply: true
 ---
 
-FlixelGDX aims to be an easily maintainable, beginner friendly and modernized game development framework for Java. When writing code, you're required to do the following:
+FlixelGDX aims to be an easily maintainable, beginner friendly and modernized game development framework for Java.
+When writing code, you're required to do the following:
 
-- ***Never ever EVER allocate objects in a loop or method that gets called every frame.***. This is the *most* important one and it's ***nonnegotiable***. We can and will not let the framework be the cause for garbage collection stutters for any game.
-- As a follow up to the rule just mentioned, reuse every object if it can be. Use pooling systems (both FlixelGDX's and libGDX's), indexed for-loops, FlixelGDX and libGDX utilities (such as `FlixelString` from FlixelGDX or `ObjectMap` from libGDX) designed for performance, etc.
-- FlixelGDX is a multi-modular framework. The `flixelgdx-core` module is the heart of the entire system, which contains all of the main classes developers utilizing the framework will typically use. Avoid mixing backend logic with core logic. If something works differently on a different platform, use interfaces to abstract it away.
+- ***Never ever EVER allocate objects in a loop or method that gets called every frame.***. This is the *most* important
+  one and it's ***nonnegotiable***. We can and will not let the framework be the cause for garbage collection stutters for any game.
+- As a follow up to the rule just mentioned, reuse every object if it can be. Use pooling systems (both FlixelGDX's and libGDX's),
+  indexed for-loops, FlixelGDX and libGDX utilities (such as `FlixelString` from FlixelGDX or `ObjectMap` from libGDX) designed for performance, etc.
+- FlixelGDX is a multi-modular framework. The `flixelgdx-core` module is the heart of the entire system, which contains
+  all of the main classes developers utilizing the framework will typically use. Avoid mixing backend logic with core logic.
+  If something works differently on a different platform, use interfaces to abstract it away.
 - Keep your code simple and concise. It should be easily readable and changeable without breaking other systems of the framework.
-- Based on the given task, do not touch unrelated files unless it's absolutely necessary. Keep the goal focused on the specific context and goal provided.
-- This framework uses Java 17. Do not use old Java features, such as, for example, legacy switch statements. Use records, lambdas, etc. where necessary.
-- When you are done with a provided task, you must explain in simple detail what you changed, your reasoning behind it, and how it incorporates with the system.
+- Based on the given task, do not touch unrelated files unless it's absolutely necessary. Keep the goal focused on the
+  specific context and goal provided.
+- This framework uses Java 17. Do not use old Java features, such as, for example, legacy switch statements.
+  Use records, lambdas, modern switch statements, etc. where necessary.
+- When you are done with a provided task, you must explain in simple detail what you changed, your reasoning behind it,
+  and how it incorporates with the system.
+- When referencing classes, import EVERYTHING that you will use. Do not use package references directly when using a class, method, etc.,
+  import it and then use it in code.
+- Never use star imports (`*`). It's necessary and can be hard to tell what specific classes/methods/enums/etc. are
+  being used in the said source code file.
+- As shown in the `.editorconfig` file, put all empty and void-returning methods with their braces on the same line.
+- Keep your field and method names short. They shouldn't be multiple characters long. If a method name gets too long,
+  rename it to be shorter, and add a Javadoc to describe what it is instead.
+
+# Examples of Good and Bad Code
+
+## Good Code Examples
+
+```java
+public SomeObject reusedObject = new SomeObject(); // This object is reused, with its values just reassigned.
+
+// ...
+
+reusedObject.setValue(value); // Reassigns the value to be used somewhere in code.
+```
+
+```java
+import java.util.Objects;
+
+Objects.requireNonNull(object); // Simple, readable code.
+```
+
+```java
+public void emptyMethod() {} // Methods like hooks, no-ops, etc. should have their brace on the same line.
+```
+
+## Bad Examples
+
+```java
+@Override
+public void update(float elapsed) {
+  SomeObject object = new SomeObject(); // THIS IS BAD. This creates garbage and pressure for the GC.
+  // ...
+}
+```
+
+```java
+// This is NOT okay, especially if it's used multiple times.
+// This can cause the code to become unreadable, especially when it's a long package.
+java.util.Objects.requireNonNull(object);
+```

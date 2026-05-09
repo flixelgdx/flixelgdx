@@ -19,9 +19,13 @@ import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
 import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
+import me.stringdotjar.flixelgdx.backend.host.FlixelHostIntegration;
+import me.stringdotjar.flixelgdx.backend.host.FlixelNoopHostIntegration;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import me.stringdotjar.flixelgdx.backend.window.FlixelNoopWindow;
+import me.stringdotjar.flixelgdx.backend.window.FlixelWindow;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugManager;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelHeadlessDebugOverlay;
@@ -103,6 +107,14 @@ import java.util.function.Supplier;
  *   <li>
  *     <b>Asset Loading:</b>
  *     Offers a unified {@link #assets} interface for loading, caching, and retrieving textures, sounds, and data.
+ *   </li>
+ *   <li>
+ *     <b>Host integration:</b>
+ *     Desktop notifications and task attention via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
+ *   </li>
+ *   <li>
+ *     <b>Window control:</b>
+ *     Transparency helpers and desktop window tweaks via {@link #window}.
  *   </li>
  *   <li>
  *     <b>Logging and Debugging:</b>
@@ -283,6 +295,18 @@ public final class Flixel {
   @NotNull
   private static FlixelAlerter alerter;
 
+  /**
+   * Desktop window integration (transparency helpers, opacity, decorations). LWJGL3 replaces the default no-op at launch.
+   */
+  @NotNull
+  public static FlixelWindow window = FlixelNoopWindow.INSTANCE;
+
+  /**
+   * Host OS integration (toast notifications and task attention). LWJGL3 replaces the default no-op at launch.
+   */
+  @NotNull
+  public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
+
   /** Has the global manager been initialized yet? */
   protected static boolean initialized = false;
 
@@ -443,6 +467,32 @@ public final class Flixel {
       throw new IllegalArgumentException("Alert system cannot be null.");
     }
     alerter = alertSystem;
+  }
+
+  /**
+   * Sets the desktop window integration implementation before {@link #initialize(FlixelGame)}.
+   *
+   * @param windowAccess Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setWindow(@NotNull FlixelWindow windowAccess) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change window integration after Flixel has been initialized.");
+    }
+    window = Objects.requireNonNull(windowAccess, "window cannot be null.");
+  }
+
+  /**
+   * Sets the host OS integration implementation before {@link #initialize(FlixelGame)}.
+   *
+   * @param hostIntegration Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setHost(@NotNull FlixelHostIntegration hostIntegration) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change host integration after Flixel has been initialized.");
+    }
+    host = Objects.requireNonNull(hostIntegration, "host cannot be null.");
   }
 
   /**
@@ -1202,19 +1252,21 @@ public final class Flixel {
   }
 
   /**
-   * Returns the current frames-per-second as reported by the graphics backend.
+   * Returns the average frames-per-second as reported by the graphics backend.
    *
-   * @return The current frames-per-second as reported by the graphics backend.
+   * @return The average frames-per-second as reported by the graphics backend.
    */
   public static int getFPS() {
     return Gdx.graphics != null ? Gdx.graphics.getFramesPerSecond() : 0;
   }
 
+  /** @see FlixelGame#getCamera() */
   public static FlixelCamera getCamera() {
     Objects.requireNonNull(game, "Cannot get the camera when the game object is not initialized!");
     return game.getCamera();
   }
 
+  /** @see FlixelGame#getCameras() */
   public static Array<FlixelCamera> getCameras() {
     Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
     return game.getCameras();

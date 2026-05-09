@@ -192,9 +192,8 @@ final class FlixelAnimateRigLoader {
    * the controller (matching {@link ObjectMap#put} semantics), allowing later loads to act as
    * costume / behaviour overrides.
    *
-   * @param sprite The sprite to append onto. Must already have a rig installed via
-   *   {@link #load(FlixelAnimateSprite, FlixelAnimationController, String, String, String, String) load(...)}.
-   *   Must not be {@code null}.
+   * @param sprite The sprite to append onto. Must already have a rig (for example the first triple loaded through
+   *   {@link FlixelAnimateSprite#addSpritesheetAndAnimation}). Must not be {@code null}.
    * @param controller The sprite's animation controller (used to register the new clip durations
    *   for timing). Must not be {@code null}.
    * @param textureKey The asset key of the appended spritemap {@link FlixelGraphic}. Must not be
@@ -222,7 +221,7 @@ final class FlixelAnimateRigLoader {
     if (existing == null) {
       throw new IllegalStateException(
         "Cannot append to a FlixelAnimateSprite that has no rig installed; call "
-          + "loadSpritemapAndAnimation(...) first to establish the anchor coordinate space.");
+          + "addSpritesheetAndAnimation(...) first to establish the anchor coordinate space.");
     }
     new FlixelAnimateRigLoader().appendInternal(
       sprite, controller, existing, textureKey, spritemapJsonPath, animationJsonPath);
