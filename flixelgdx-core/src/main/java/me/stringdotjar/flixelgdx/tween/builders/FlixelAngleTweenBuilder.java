@@ -7,7 +7,7 @@
 
 package me.stringdotjar.flixelgdx.tween.builders;
 
-import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.functional.FlixelAngleable;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
 
@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 /** Builder for {@link FlixelAngleTween}. */
 public final class FlixelAngleTweenBuilder extends FlixelAbstractTweenBuilder<FlixelAngleTween, FlixelAngleTweenBuilder> {
 
-  private @Nullable FlixelObject sprite;
+  private @Nullable FlixelAngleable target;
   private float fromAngle = Float.NaN;
   private float toAngle = 0f;
 
@@ -25,8 +25,8 @@ public final class FlixelAngleTweenBuilder extends FlixelAbstractTweenBuilder<Fl
     return this;
   }
 
-  public FlixelAngleTweenBuilder setSprite(@Nullable FlixelObject sprite) {
-    this.sprite = sprite;
+  public FlixelAngleTweenBuilder setTarget(@Nullable FlixelAngleable target) {
+    this.target = target;
     return this;
   }
 
@@ -47,7 +47,7 @@ public final class FlixelAngleTweenBuilder extends FlixelAbstractTweenBuilder<Fl
     FlixelAngleTween tween =
         manager.obtainTween(FlixelAngleTween.class, () -> new FlixelAngleTween(settings));
     tween.setTweenSettings(settings);
-    tween.setAngles(sprite, fromAngle, toAngle);
+    tween.setAngles(target, fromAngle, toAngle);
     return (FlixelAngleTween) manager.addTween(tween);
   }
 }

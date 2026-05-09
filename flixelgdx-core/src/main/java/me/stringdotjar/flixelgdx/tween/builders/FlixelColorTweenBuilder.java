@@ -9,7 +9,7 @@ package me.stringdotjar.flixelgdx.tween.builders;
 
 import com.badlogic.gdx.graphics.Color;
 
-import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.functional.FlixelColorable;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
 import me.stringdotjar.flixelgdx.util.FlixelColor;
@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 /** Builder for {@link FlixelColorTween}. */
 public final class FlixelColorTweenBuilder extends FlixelAbstractTweenBuilder<FlixelColorTween, FlixelColorTweenBuilder> {
 
-  private @Nullable FlixelSprite sprite;
+  private @Nullable FlixelColorable target;
   private @Nullable FlixelColor fromFlixel;
   private @Nullable FlixelColor toFlixel;
   private @Nullable Color fromRaw;
@@ -32,8 +32,8 @@ public final class FlixelColorTweenBuilder extends FlixelAbstractTweenBuilder<Fl
     return this;
   }
 
-  public FlixelColorTweenBuilder setSprite(@Nullable FlixelSprite sprite) {
-    this.sprite = sprite;
+  public FlixelColorTweenBuilder setTarget(@Nullable FlixelColorable target) {
+    this.target = target;
     return this;
   }
 
@@ -64,9 +64,9 @@ public final class FlixelColorTweenBuilder extends FlixelAbstractTweenBuilder<Fl
         manager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(settings));
     tween.setTweenSettings(settings);
     if (useRaw) {
-      tween.setColorEndpointsRaw(sprite, fromRaw, toRaw, onColor);
+      tween.setColorEndpointsRaw(target, fromRaw, toRaw, onColor);
     } else {
-      tween.setColorEndpoints(sprite, fromFlixel, toFlixel, onColor);
+      tween.setColorEndpoints(target, fromFlixel, toFlixel, onColor);
     }
     return (FlixelColorTween) manager.addTween(tween);
   }

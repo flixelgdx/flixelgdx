@@ -5,15 +5,19 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx;
+package me.stringdotjar.flixelgdx.functional;
 
 /**
- * Interface for Flixel-based objects that can be destroyed.
+ * Interface for Flixel-based objects that can be updated.
+ *
+ * @see me.stringdotjar.flixelgdx.FlixelBasic
  */
-public interface FlixelDestroyable {
+public interface FlixelUpdatable {
 
   /**
-   * Destroys the object and releases all resources.
+   * Updates the object for the given elapsed time.
+   *
+   * @param elapsed The elapsed time since the last frame update.
    */
-  void destroy();
+  void update(float elapsed);
 }

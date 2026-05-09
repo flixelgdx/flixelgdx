@@ -11,7 +11,7 @@ import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.utils.Disposable;
 
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
 
 import java.util.function.Function;
 
@@ -92,7 +92,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
 
   /**
    * Like {@link #load(String, Class)} with a pending persist flag for the first handle (see {@link #load(String, boolean)}).
-   * 
+   *
    * @param fileName The asset key/path passed to libGDX.
    * @param type The concrete type registered with {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@link com.badlogic.gdx.graphics.Texture}.class).
    * @param persist The pending persist flag for the first handle.

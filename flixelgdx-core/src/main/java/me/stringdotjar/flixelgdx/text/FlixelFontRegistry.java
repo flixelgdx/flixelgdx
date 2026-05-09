@@ -17,7 +17,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.ObjectMap;
 
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

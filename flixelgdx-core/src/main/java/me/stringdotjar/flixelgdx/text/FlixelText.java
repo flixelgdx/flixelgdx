@@ -1006,7 +1006,7 @@ public class FlixelText extends FlixelSprite {
    * @param y The y coordinate of the text's <em>top</em> edge (BitmapFont convention).
    */
   private void drawTextContent(Batch batch, float x, float y) {
-    Color spriteColor = getColor();
+    Color spriteColor = getGdxColor();
 
     if (borderStyle != BorderStyle.NONE && borderColor.a > 0 && borderSize > 0) {
       drawBorder(batch, x, y);

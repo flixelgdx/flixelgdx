@@ -1480,7 +1480,7 @@ public final class Flixel {
       Array<?> members = group1.getMembers();
       if (members != null) {
         for (Object o : members) {
-          if (o instanceof FlixelBasic member && member.exists) {
+          if (o instanceof FlixelBasic member && member.isExists()) {
             result |= overlapInternal(member, obj2, notifyCallback, processCallback);
           }
         }
@@ -1492,7 +1492,7 @@ public final class Flixel {
       Array<?> members = group2.getMembers();
       if (members != null) {
         for (Object o : members) {
-          if (o instanceof FlixelBasic member && member.exists) {
+          if (o instanceof FlixelBasic member && member.isExists()) {
             result |= overlapInternal(obj1, member, notifyCallback, processCallback);
           }
         }

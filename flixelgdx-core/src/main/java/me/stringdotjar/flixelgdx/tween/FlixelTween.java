@@ -15,9 +15,11 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 
-import me.stringdotjar.flixelgdx.FlixelBasic;
-import me.stringdotjar.flixelgdx.FlixelObject;
-import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.functional.FlixelAngleable;
+import me.stringdotjar.flixelgdx.functional.FlixelColorable;
+import me.stringdotjar.flixelgdx.functional.FlixelPositional;
+import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
+import me.stringdotjar.flixelgdx.functional.FlixelVisible;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelAbstractTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -75,11 +77,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Subclasses of {@code FlixelTween} implement specialized behavior:
  * <ul>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween} — interpolates properties of objects using lambda getters and setters.</li>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelNumTween} — tweens a simple numeric value using reflection.</li>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelColorTween} — tweens between colors</li>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween} — smoothly rotates a value</li>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion} and others — for advanced motion paths</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}: interpolates properties of objects using lambda getters and setters.</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value using reflection.</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelColorTween}: tweens between colors</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween}: smoothly rotates a value</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion} and others: for advanced motion paths</li>
  * </ul>
  *
  * <h2>Key Fields</h2>
@@ -273,28 +275,28 @@ public abstract class FlixelTween implements Pool.Poolable {
   /**
    * Creates a new angle tween with the provided settings and adds it to the global tween manager.
    *
-   * @param sprite The sprite to tween the angle of.
+   * @param target The object to tween the angle of.
    * @param toAngle The ending angle (degrees).
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
-  public static FlixelTween angle(@Nullable FlixelObject sprite, float toAngle, FlixelTweenSettings tweenSettings) {
-    return angle(sprite, Float.NaN, toAngle, tweenSettings);
+  public static FlixelTween angle(@Nullable FlixelAngleable target, float toAngle, FlixelTweenSettings tweenSettings) {
+    return angle(target, Float.NaN, toAngle, tweenSettings);
   }
 
   /**
    * Creates a new angle tween with the provided settings and adds it to the global tween manager.
    *
-   * @param sprite The sprite to tween the angle of.
+   * @param target The object to tween the angle of.
    * @param fromAngle The starting angle (degrees).
    * @param toAngle The ending angle (degrees).
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
-  public static FlixelTween angle(@Nullable FlixelObject sprite, float fromAngle, float toAngle, FlixelTweenSettings tweenSettings) {
+  public static FlixelTween angle(@Nullable FlixelAngleable target, float fromAngle, float toAngle, FlixelTweenSettings tweenSettings) {
     FlixelAngleTween tween = globalManager.obtainTween(FlixelAngleTween.class, () -> new FlixelAngleTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
-    tween.setAngles(sprite, fromAngle, toAngle);
+    tween.setAngles(target, fromAngle, toAngle);
     return globalManager.addTween(tween);
   }
 
@@ -305,18 +307,18 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param sprite The sprite to tween the color of.
+   * @param colorable The tint target; often a {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-      @Nullable FlixelSprite sprite,
+      @Nullable FlixelColorable colorable,
       @Nullable FlixelColor from,
       @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings) {
-    return color(sprite, from, to, tweenSettings, null);
+    return color(colorable, from, to, tweenSettings, null);
   }
 
   /**
@@ -326,7 +328,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param sprite The sprite to tween the color of.
+   * @param colorable The tint target; often a {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -334,14 +336,14 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-      @Nullable FlixelSprite sprite,
+      @Nullable FlixelColorable colorable,
       @Nullable FlixelColor from,
       @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings,
       @Nullable Runnable onColor) {
     FlixelColorTween tween = globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
-    tween.setColorEndpoints(sprite, from, to, onColor);
+    tween.setColorEndpoints(colorable, from, to, onColor);
     return globalManager.addTween(tween);
   }
 
@@ -353,18 +355,18 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param sprite The sprite to tween the color of.
+   * @param colorable The tint target; often a {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-      @Nullable FlixelSprite sprite,
+      @Nullable FlixelColorable colorable,
       @Nullable Color from,
       @Nullable Color to,
       FlixelTweenSettings tweenSettings) {
-    return color(sprite, from, to, tweenSettings, null);
+    return color(colorable, from, to, tweenSettings, null);
   }
 
   /**
@@ -375,7 +377,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param sprite The sprite to tween the color of.
+   * @param colorable The tint target; often a {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -383,14 +385,14 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-      @Nullable FlixelSprite sprite,
+      @Nullable FlixelColorable colorable,
       @Nullable Color from,
       @Nullable Color to,
       FlixelTweenSettings tweenSettings,
       @Nullable Runnable onColor) {
     FlixelColorTween tween = globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
-    tween.setColorEndpointsRaw(sprite, from, to, onColor);
+    tween.setColorEndpointsRaw(colorable, from, to, onColor);
     return globalManager.addTween(tween);
   }
 
@@ -402,18 +404,18 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param sprite The sprite to tween the color of.
+   * @param colorable The tint target; often a {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-    @Nullable FlixelSprite sprite,
+    @Nullable FlixelColorable colorable,
     @Nullable FlixelColor from,
     @Nullable Color to,
     FlixelTweenSettings tweenSettings) {
-    return color(sprite, from.getGdxColor(), to, tweenSettings, null);
+    return color(colorable, from.getGdxColor(), to, tweenSettings, null);
   }
 
   /**
@@ -424,18 +426,18 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param sprite The sprite to tween the color of.
+   * @param colorable The tint target; often a {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-    @Nullable FlixelSprite sprite,
+    @Nullable FlixelColorable colorable,
     @Nullable Color from,
     @Nullable FlixelColor to,
     FlixelTweenSettings tweenSettings) {
-    return color(sprite, from, to.getGdxColor(), tweenSettings, null);
+    return color(colorable, from, to.getGdxColor(), tweenSettings, null);
   }
 
   /**
@@ -443,25 +445,25 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@code fadeOut == false} (full strength each frame until the tween ends). Pooled instances
    * are reset to those defaults before configuration.
    *
-   * @param sprite The sprite to shake.
-   * @param axes Axes that receive offset jitter.
+   * @param shakeable The shake channel to jitter (sprite offset, object position, window, etc.).
+   * @param axes Axes that receive position jitter.
    * @param intensity With {@link FlixelShakeTween.ShakeUnit#FRACTION}, use a small value (for example 0.05f).
    * @param tweenSettings Duration, ease, and callbacks.
    * @return The new tween, already added to the global manager.
    */
   public static FlixelTween shake(
-      @Nullable FlixelSprite sprite,
+      @Nullable FlixelShakeable shakeable,
       FlixelAxes axes,
       float intensity,
       FlixelTweenSettings tweenSettings) {
-    return shake(sprite, axes, intensity, tweenSettings, FlixelShakeTween.ShakeUnit.FRACTION, false);
+    return shake(shakeable, axes, intensity, tweenSettings, FlixelShakeTween.ShakeUnit.FRACTION, false);
   }
 
   /**
    * Creates a shake tween with explicit {@link FlixelShakeTween.ShakeUnit} and fade-out taper.
    *
-   * @param sprite The sprite to shake.
-   * @param axes Axes that receive offset jitter.
+   * @param shakeable The shake channel to jitter.
+   * @param axes Axes that receive position jitter.
    * @param intensity Interpretation depends on {@code shakeUnit}.
    * @param tweenSettings Duration, ease, and callbacks.
    * @param shakeUnit {@link FlixelShakeTween.ShakeUnit#FRACTION} or {@link FlixelShakeTween.ShakeUnit#PIXELS}.
@@ -469,7 +471,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The new tween, already added to the global manager.
    */
   public static FlixelTween shake(
-      @Nullable FlixelSprite sprite,
+      @Nullable FlixelShakeable shakeable,
       FlixelAxes axes,
       float intensity,
       FlixelTweenSettings tweenSettings,
@@ -477,7 +479,7 @@ public abstract class FlixelTween implements Pool.Poolable {
       boolean fadeOut) {
     FlixelShakeTween tween = globalManager.obtainTween(FlixelShakeTween.class, () -> new FlixelShakeTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
-    tween.setShake(sprite, axes, intensity);
+    tween.setShake(shakeable, axes, intensity);
     tween.setShakeUnit(shakeUnit);
     tween.setFadeOut(fadeOut);
     return globalManager.addTween(tween);
@@ -486,18 +488,18 @@ public abstract class FlixelTween implements Pool.Poolable {
   /**
    * Creates a new flicker tween with the provided settings and adds it to the global tween manager.
    *
-   * @param basic The basic to flicker.
+   * @param visible The visibility target to flicker.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
-  public static FlixelTween flicker(@Nullable FlixelBasic basic, FlixelTweenSettings tweenSettings) {
-    return flicker(basic, 0.08f, 0.5f, true, tweenSettings, null);
+  public static FlixelTween flicker(@Nullable FlixelVisible visible, FlixelTweenSettings tweenSettings) {
+    return flicker(visible, 0.08f, 0.5f, true, tweenSettings, null);
   }
 
   /**
    * Creates a new flicker tween with the provided settings and adds it to the global tween manager.
    *
-   * @param basic The basic to flicker.
+   * @param visible The visibility target to flicker.
    * @param period The period of the flicker.
    * @param ratio The ratio of the flicker.
    * @param endVisibility The visibility of the flicker at the end.
@@ -506,7 +508,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween flicker(
-      @Nullable FlixelBasic basic,
+      @Nullable FlixelVisible visible,
       float period,
       float ratio,
       boolean endVisibility,
@@ -514,7 +516,7 @@ public abstract class FlixelTween implements Pool.Poolable {
       @Nullable Predicate<FlixelFlickerTween> tweenFunction) {
     FlixelFlickerTween tween = globalManager.obtainTween(FlixelFlickerTween.class, () -> new FlixelFlickerTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
-    tween.setFlicker(basic, period, ratio, endVisibility, tweenFunction);
+    tween.setFlicker(visible, period, ratio, endVisibility, tweenFunction);
     return globalManager.addTween(tween);
   }
 
@@ -532,7 +534,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween linearMotion(
-      @Nullable FlixelObject target,
+      @Nullable FlixelPositional target,
       float fromX,
       float fromY,
       float toX,
@@ -562,7 +564,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween circularMotion(
-      @Nullable FlixelObject target,
+      @Nullable FlixelPositional target,
       float centerX,
       float centerY,
       float radius,
@@ -593,7 +595,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @param useDuration Whether to use the duration or speed.
    */
   public static FlixelTween quadMotion(
-      @Nullable FlixelObject target,
+      @Nullable FlixelPositional target,
       float fromX,
       float fromY,
       float cx,
@@ -629,7 +631,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween cubicMotion(
-      @Nullable FlixelObject target,
+      @Nullable FlixelPositional target,
       float p0x,
       float p0y,
       float p1x,
@@ -659,7 +661,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween linearPath(
-      @Nullable FlixelObject target,
+      @Nullable FlixelPositional target,
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings,
@@ -690,7 +692,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween quadPath(
-      @Nullable FlixelObject target,
+      @Nullable FlixelPositional target,
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings,

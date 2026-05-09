@@ -11,7 +11,7 @@ import java.util.Objects;
 
 import com.badlogic.gdx.math.MathUtils;
 
-import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
@@ -19,42 +19,46 @@ import me.stringdotjar.flixelgdx.util.FlixelAxes;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Random shake applied to a sprite by adjusting {@link FlixelSprite#getOffsetX()} and
- * {@link FlixelSprite#getOffsetY()}. Initial offsets are stored at {@link #start()} and restored on
- * {@link #reset()}, {@link #cancel()}, and when the tween is pooled.
+ * Random shake applied to a {@link FlixelShakeable} target by jittering its shake channel (for example sprite graphic
+ * offset or world position) around values captured at {@link #start()}. Values are restored on {@link #reset()},
+ * {@link #cancel()}, and when the tween is pooled.
  *
- * <p>Intensity can be interpreted as a fraction of the sprite size (HaxeFlixel-style) or as plain
- * pixels (similar to Unity or Godot). Use {@link #setShakeUnit(ShakeUnit)} and {@link #setFadeOut(boolean)} to configure
- * behavior after {@link #setShake(FlixelSprite, FlixelAxes, float)} or alongside it.
+ * <p>Intensity can be interpreted as a fraction of {@link FlixelShakeable#getShakeWidth()} /
+ * {@link FlixelShakeable#getShakeHeight()} (HaxeFlixel-style when those return positive sizes), or as plain
+ * pixels (Unity or Godot style). When {@link ShakeUnit#FRACTION} is used and a size hook returns {@code 0} or less on an
+ * axis, that axis falls back to treating intensity like {@link ShakeUnit#PIXELS}. Use {@link #setShakeUnit(ShakeUnit)} and
+ * {@link #setFadeOut(boolean)} to configure behavior after {@link #setShake(FlixelShakeable, FlixelAxes, float)} or alongside
+ * it.
  */
 public class FlixelShakeTween extends FlixelTween {
 
-  protected @Nullable FlixelSprite sprite;
+  protected @Nullable FlixelShakeable target;
   protected FlixelAxes axes = FlixelAxes.XY;
   protected ShakeUnit shakeUnit = ShakeUnit.FRACTION;
   protected float intensity = 0.05f;
   protected boolean fadeOut = false;
-  protected float savedOffsetX;
-  protected float savedOffsetY;
+  protected float savedX;
+  protected float savedY;
 
   public FlixelShakeTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }
 
   /**
-   * Sets sprite, axes, and intensity. Does not change {@link #shakeUnit} or {@link #fadeOut}; those
+   * Sets target, axes, and intensity. Does not change {@link #shakeUnit} or {@link #fadeOut}; those
    * stay at defaults from {@link #reset()} ({@link ShakeUnit#FRACTION}, fade out false) until you set
    * them with {@link #setShakeUnit(ShakeUnit)} or {@link #setFadeOut(boolean)}. Call order is free:
    * you may chain before or after this method.
    *
-   * @param sprite The sprite whose offsets are jittered.
+   * @param target The object whose shake channel is jittered.
    * @param axes Which axes receive random offset.
-   * @param intensity With {@link ShakeUnit#FRACTION}, use a small value (for example 0.05f). With
-   *     {@link ShakeUnit#PIXELS}, use half-range in pixels.
+   * @param intensity With {@link ShakeUnit#FRACTION} and positive {@link FlixelShakeable#getShakeWidth()} /
+   *   {@link FlixelShakeable#getShakeHeight()}, use a small value (for example 0.05f). With
+   *   {@link ShakeUnit#PIXELS}, use half-range in pixels.
    * @return this tween for chaining.
    */
-  public FlixelShakeTween setShake(@Nullable FlixelSprite sprite, FlixelAxes axes, float intensity) {
-    this.sprite = sprite;
+  public FlixelShakeTween setShake(@Nullable FlixelShakeable target, FlixelAxes axes, float intensity) {
+    this.target = target;
     this.axes = axes != null ? axes : FlixelAxes.XY;
     this.intensity = intensity;
     return this;
@@ -92,16 +96,16 @@ public class FlixelShakeTween extends FlixelTween {
   @Override
   public FlixelTween start() {
     super.start();
-    if (sprite != null) {
-      savedOffsetX = sprite.getOffsetX();
-      savedOffsetY = sprite.getOffsetY();
+    if (target != null) {
+      savedX = target.getShakeX();
+      savedY = target.getShakeY();
     }
     return this;
   }
 
   @Override
   protected void updateTweenValues() {
-    if (sprite == null) {
+    if (target == null) {
       return;
     }
     float taper = fadeOut ? (1f - scale) : 1f;
@@ -109,7 +113,7 @@ public class FlixelShakeTween extends FlixelTween {
     float halfY = halfRangePixelsY();
     float ix = (axes == FlixelAxes.Y) ? 0f : MathUtils.random(-halfX, halfX) * taper;
     float iy = (axes == FlixelAxes.X) ? 0f : MathUtils.random(-halfY, halfY) * taper;
-    sprite.setOffset(savedOffsetX + ix, savedOffsetY + iy);
+    target.setShake(savedX + ix, savedY + iy);
   }
 
   /** Half-range in pixels for horizontal shake (0 if axis disabled). */
@@ -120,7 +124,14 @@ public class FlixelShakeTween extends FlixelTween {
     if (shakeUnit == ShakeUnit.PIXELS) {
       return Math.max(0f, intensity);
     }
-    return Math.max(0f, intensity) * Math.max(0f, sprite.getWidth());
+    if (target == null) {
+      return Math.max(0f, intensity);
+    }
+    float w = target.getShakeWidth();
+    if (w > 0f) {
+      return Math.max(0f, intensity) * w;
+    }
+    return Math.max(0f, intensity);
   }
 
   /** Half-range in pixels for vertical shake (0 if axis disabled). */
@@ -131,59 +142,66 @@ public class FlixelShakeTween extends FlixelTween {
     if (shakeUnit == ShakeUnit.PIXELS) {
       return Math.max(0f, intensity);
     }
-    return Math.max(0f, intensity) * Math.max(0f, sprite.getHeight());
+    if (target == null) {
+      return Math.max(0f, intensity);
+    }
+    float h = target.getShakeHeight();
+    if (h > 0f) {
+      return Math.max(0f, intensity) * h;
+    }
+    return Math.max(0f, intensity);
   }
 
   @Override
   public void reset() {
-    restoreOffset();
+    restoreShake();
     super.reset();
-    sprite = null;
+    target = null;
     axes = FlixelAxes.XY;
     shakeUnit = ShakeUnit.FRACTION;
     intensity = 0.05f;
     fadeOut = false;
-    savedOffsetX = 0f;
-    savedOffsetY = 0f;
+    savedX = 0f;
+    savedY = 0f;
   }
 
-  protected void restoreOffset() {
-    if (sprite != null) {
-      sprite.setOffset(savedOffsetX, savedOffsetY);
+  protected void restoreShake() {
+    if (target != null) {
+      target.setShake(savedX, savedY);
     }
   }
 
   @Override
   public FlixelTween cancel() {
-    restoreOffset();
+    restoreShake();
     return super.cancel();
   }
 
   @Override
   public boolean isTweenOf(Object object, String field) {
-    if (sprite == null) {
+    if (target == null) {
       return false;
     }
     if (field == null || field.isEmpty()) {
-      return Objects.equals(object, sprite);
+      return Objects.equals(object, target);
     }
-    return Objects.equals(object, sprite) && "shake".equals(field);
+    return Objects.equals(object, target) && "shake".equals(field);
   }
 
   /**
    * How {@link FlixelShakeTween#intensity} maps to maximum offset per axis.
    *
-   * <p>{@link #FRACTION} is the default and horizontal range is roughly
-   * {@code intensity * sprite width} and vertical range is {@code intensity * sprite height} (per
-   * axis enabled by {@link FlixelAxes}). Typical values are small, for example {@code 0.05f}.
+   * <p>{@link #FRACTION} scales horizontal range by {@link FlixelShakeable#getShakeWidth()} and vertical range by
+   * {@link FlixelShakeable#getShakeHeight()} when those return values greater than zero (per axis enabled by
+   * {@link FlixelAxes}). Typical values are small, for example {@code 0.05f}.
    *
-   * <p>{@link #PIXELS} is used to directly set the half-range in pixels on each active
-   * axis (random offset in {@code [-intensity, +intensity]}).
+   * <p>{@link #PIXELS} sets the half-range in pixels on each active axis (random offset in {@code [-intensity, +intensity]}).
    */
   public enum ShakeUnit {
 
     /**
-     * Scale intensity by sprite width (X) and height (Y). This is the default value.
+     * Scale intensity by {@link FlixelShakeable#getShakeWidth()} (X) and
+     * {@link FlixelShakeable#getShakeHeight()} (Y) when positive. This is the default value.
      *
      * <p>Use this if you're familiar with HaxeFlixel and want to use the same behavior.
      */

@@ -9,7 +9,7 @@ package me.stringdotjar.flixelgdx.input.action;
 
 import com.badlogic.gdx.utils.Array;
 
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>{@code
  * public class PlayerControls extends FlixelActionSet {
- * 
+ *
  *   public final FlixelActionDigital jump;
  *   public final FlixelActionAnalog move;
  *

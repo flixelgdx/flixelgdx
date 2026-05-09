@@ -12,25 +12,26 @@ import com.badlogic.gdx.utils.ArraySupplier;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.FlixelBasic;
+import me.stringdotjar.flixelgdx.functional.IFlixelBasic;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link FlixelBasic} that owns a {@link FlixelGroup} of other {@link FlixelBasic} members, with batch
+ * A {@link me.stringdotjar.flixelgdx.FlixelBasic} that owns a {@link FlixelGroup} of {@link IFlixelBasic} members, with batch
  * {@link #update(float)} / {@link #draw(Batch)}, {@link #recycle()}, and {@link #destroy()} that tears down members.
  *
  * <p>Member list operations are delegated to an internal {@link FlixelGroup}; {@link #getMemberList()} exposes it when
  * you need the raw container.
  *
- * <p>{@link #remove} and {@link #detach} only unlink members; they do not call {@link FlixelBasic#destroy()}. Prefer
- * {@link FlixelBasic#kill()} / {@link #recycle()} for reuse. See {@link FlixelBasic} for lifecycle guidance.
+ * <p>{@link #remove} and {@link #detach} only unlink members; they do not call {@link me.stringdotjar.flixelgdx.FlixelBasic#destroy()}. Prefer
+ * {@link me.stringdotjar.flixelgdx.FlixelBasic#kill()} / {@link #recycle()} for reuse. See {@link me.stringdotjar.flixelgdx.FlixelBasic} for lifecycle guidance.
  *
  * @param <T> Member type.
  * @see FlixelGroup
  * @see me.stringdotjar.flixelgdx.FlixelState
  */
-public abstract class FlixelBasicGroup<T extends FlixelBasic> extends FlixelBasic implements FlixelBasicGroupable<T> {
+public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBasic implements FlixelBasicGroupable<T> {
 
   private final FlixelGroup<T> memberList;
 
@@ -91,7 +92,7 @@ public abstract class FlixelBasicGroup<T extends FlixelBasic> extends FlixelBasi
         if (member == null) {
           continue;
         }
-        if (!member.exists || !member.active) {
+        if (!member.isExists() || !member.isActive()) {
           continue;
         }
         member.update(elapsed);
@@ -114,7 +115,7 @@ public abstract class FlixelBasicGroup<T extends FlixelBasic> extends FlixelBasi
         if (member == null) {
           continue;
         }
-        if (!member.exists || !member.visible) {
+        if (!member.isExists() || !member.isVisible()) {
           continue;
         }
         member.draw(batch);
@@ -156,8 +157,8 @@ public abstract class FlixelBasicGroup<T extends FlixelBasic> extends FlixelBasi
     T dead = getFirstDead();
     if (dead != null) {
       dead.revive();
-      dead.active = true;
-      dead.visible = true;
+      dead.setActive(true);
+      dead.setVisible(true);
       return dead;
     }
     if (memberList.getMaxSize() > 0 && memberList.getMembers() != null && memberList.getMembers().size >= memberList.getMaxSize()) {
@@ -168,8 +169,8 @@ public abstract class FlixelBasicGroup<T extends FlixelBasic> extends FlixelBasi
       return null;
     }
     fresh.revive();
-    fresh.active = true;
-    fresh.visible = true;
+    fresh.setActive(true);
+    fresh.setVisible(true);
     memberList.add(fresh);
     return fresh;
   }

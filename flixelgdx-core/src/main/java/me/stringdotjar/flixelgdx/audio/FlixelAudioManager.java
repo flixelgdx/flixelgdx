@@ -8,7 +8,7 @@
 package me.stringdotjar.flixelgdx.audio;
 
 import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

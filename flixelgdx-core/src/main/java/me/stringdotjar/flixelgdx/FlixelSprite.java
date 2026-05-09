@@ -19,6 +19,7 @@ import me.stringdotjar.flixelgdx.animation.FlixelAnimationController;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
+import me.stringdotjar.flixelgdx.functional.FlixelColorable;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
 import me.stringdotjar.flixelgdx.util.FlixelColor;
 
@@ -37,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
  */
-public class FlixelSprite extends FlixelObject {
+public class FlixelSprite extends FlixelObject implements FlixelColorable {
 
   /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
   @Nullable
@@ -688,20 +689,64 @@ public class FlixelSprite extends FlixelObject {
     this.facing = facing;
   }
 
-  public Color getColor() {
+  /** {@inheritDoc} */
+  @Override
+  public int getColor() {
+    return Color.rgba8888(color);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @NotNull
+  public Color getGdxColor() {
     return color;
   }
 
-  public void setColor(Color tint) {
+  /** {@inheritDoc} */
+  @Override
+  public void setColor(@NotNull Color tint) {
     color.set(tint);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setColor(@NotNull FlixelColor tint) {
+    color.set(tint.getGdxColor());
   }
 
   public void setColor(float r, float g, float b, float a) {
     color.set(r, g, b, a);
   }
 
-  public void setColor(@NotNull FlixelColor tint) {
-    color.set(tint.getGdxColor());
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeX() {
+    return offsetX;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeY() {
+    return offsetY;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setShake(float x, float y) {
+    offsetX = x;
+    offsetY = y;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeWidth() {
+    return getWidth();
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public float getShakeHeight() {
+    return getHeight();
   }
 
   public void setAlpha(float a) {

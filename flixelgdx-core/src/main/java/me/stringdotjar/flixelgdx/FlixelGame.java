@@ -24,6 +24,9 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDrawable;
+import me.stringdotjar.flixelgdx.functional.FlixelUpdatable;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
@@ -107,11 +110,16 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   protected boolean fullscreen;
 
   /**
-   * When {@code true} (the default), the LWJGL3 launcher requests an alpha-capable framebuffer so
-   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} can composite with the desktop.
-   * Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
+   * When {@code true}, the LWJGL3 launcher requests an alpha-capable framebuffer so
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} can composite
+   * with the desktop.
+   *
+   * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
+   *
+   * <p><b>WARNING</b>: This can cause some minor performance issues on low-end PCs, so only enable this at launch time
+   * if you truly need to!
    */
-  protected boolean transparentFramebufferRequested = true;
+  protected boolean transparentFramebufferRequested = false;
 
   /** Should the game pause update calls and audio when the window loses focus or is minimized? */
   public boolean autoPause = true;

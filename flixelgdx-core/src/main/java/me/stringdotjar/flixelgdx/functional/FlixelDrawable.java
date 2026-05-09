@@ -5,19 +5,21 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx;
+package me.stringdotjar.flixelgdx.functional;
+
+import com.badlogic.gdx.graphics.g2d.Batch;
 
 /**
- * Interface for Flixel-based objects that can be updated.
+ * Interface for Flixel-based visible objects that can be drawn.
  *
  * @see FlixelBasic
  */
-public interface FlixelUpdatable {
+public interface FlixelDrawable {
 
   /**
-   * Updates the object for the given elapsed time.
+   * Draws the visible object.
    *
-   * @param elapsed The elapsed time since the last frame update.
+   * @param batch The batch used for rendering.
    */
-  void update(float elapsed);
+  void draw(Batch batch);
 }

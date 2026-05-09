@@ -21,20 +21,20 @@ class FlixelColorTest {
   void lerpHalfwayBetweenRedAndBlue() {
     FlixelColor a = new FlixelColor(1f, 0f, 0f, 1f);
     FlixelColor b = new FlixelColor(0f, 0f, 1f, 1f);
-    a.lerp(b, 0.5f);
-    assertEquals(0.5f, a.red(), 2e-2f);
-    assertEquals(0f, a.green(), 2e-2f);
-    assertEquals(0.5f, a.blue(), 2e-2f);
+    a.getGdxColor().lerp(b.getGdxColor(), 0.5f);
+    assertEquals(0.5f, a.getGdxColor().r, 2e-2f);
+    assertEquals(0f, a.getGdxColor().g, 2e-2f);
+    assertEquals(0.5f, a.getGdxColor().b, 2e-2f);
   }
 
   @Test
   void packRoundTrip() {
     FlixelColor c = new FlixelColor(1f, 0.5f, 0.25f, 1f);
-    int packed = c.pack();
+    int packed = c.getColor();
     FlixelColor fromPacked = new FlixelColor(packed);
-    assertEquals(c.red(), fromPacked.red(), 2e-2f);
-    assertEquals(c.green(), fromPacked.green(), 2e-2f);
-    assertEquals(c.blue(), fromPacked.blue(), 2e-2f);
-    assertEquals(c.alpha(), fromPacked.alpha(), 2e-2f);
+    assertEquals(c.getGdxColor().r, fromPacked.getGdxColor().r, 2e-2f);
+    assertEquals(c.getGdxColor().g, fromPacked.getGdxColor().g, 2e-2f);
+    assertEquals(c.getGdxColor().b, fromPacked.getGdxColor().b, 2e-2f);
+    assertEquals(c.getGdxColor().a, fromPacked.getGdxColor().a, 2e-2f);
   }
 }

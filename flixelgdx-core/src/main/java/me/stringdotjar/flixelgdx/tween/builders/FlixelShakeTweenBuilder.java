@@ -7,7 +7,7 @@
 
 package me.stringdotjar.flixelgdx.tween.builders;
 
-import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween.ShakeUnit;
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelShakeTweenBuilder extends FlixelAbstractTweenBuilder<FlixelShakeTween, FlixelShakeTweenBuilder> {
 
-  private @Nullable FlixelSprite sprite;
+  private @Nullable FlixelShakeable target;
   private FlixelAxes axes = FlixelAxes.XY;
   private float intensity = 0.05f;
   private ShakeUnit shakeUnit = ShakeUnit.FRACTION;
@@ -32,8 +32,8 @@ public final class FlixelShakeTweenBuilder extends FlixelAbstractTweenBuilder<Fl
     return this;
   }
 
-  public FlixelShakeTweenBuilder setSprite(@Nullable FlixelSprite sprite) {
-    this.sprite = sprite;
+  public FlixelShakeTweenBuilder setTarget(@Nullable FlixelShakeable target) {
+    this.target = target;
     return self();
   }
 
@@ -44,7 +44,8 @@ public final class FlixelShakeTweenBuilder extends FlixelAbstractTweenBuilder<Fl
 
   /**
    * Maximum shake amount. Meaning depends on the {@link #setShakeUnit(ShakeUnit)} setting.
-   * Default {@code 0.05f} is appropriate for {@link ShakeUnit#FRACTION}.
+   * Default {@code 0.05f} is appropriate for {@link ShakeUnit#FRACTION} when the target is a
+   * {@link me.stringdotjar.flixelgdx.FlixelObject} or {@link me.stringdotjar.flixelgdx.FlixelSprite}.
    */
   public FlixelShakeTweenBuilder setIntensity(float intensity) {
     this.intensity = intensity;
@@ -52,8 +53,8 @@ public final class FlixelShakeTweenBuilder extends FlixelAbstractTweenBuilder<Fl
   }
 
   /**
-   * {@link ShakeUnit#FRACTION} by default (sprite size scaled). Use {@link ShakeUnit#PIXELS} for
-   * absolute pixel half-range.
+   * {@link ShakeUnit#FRACTION} by default (see {@link me.stringdotjar.flixelgdx.functional.FlixelShakeable#getShakeWidth()}).
+   * Use {@link ShakeUnit#PIXELS} for absolute pixel half-range.
    */
   public FlixelShakeTweenBuilder setShakeUnit(ShakeUnit shakeUnit) {
     this.shakeUnit = shakeUnit != null ? shakeUnit : ShakeUnit.FRACTION;
@@ -76,7 +77,7 @@ public final class FlixelShakeTweenBuilder extends FlixelAbstractTweenBuilder<Fl
     FlixelShakeTween tween =
         manager.obtainTween(FlixelShakeTween.class, () -> new FlixelShakeTween(settings));
     tween.setTweenSettings(settings);
-    tween.setShake(sprite, axes, intensity);
+    tween.setShake(target, axes, intensity);
     tween.setShakeUnit(shakeUnit);
     tween.setFadeOut(fadeOut);
     return (FlixelShakeTween) manager.addTween(tween);

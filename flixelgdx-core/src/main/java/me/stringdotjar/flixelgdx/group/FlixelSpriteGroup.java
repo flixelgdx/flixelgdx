@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import me.stringdotjar.flixelgdx.FlixelObject;
 import me.stringdotjar.flixelgdx.FlixelSprite;
+import me.stringdotjar.flixelgdx.util.FlixelColor;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -197,7 +198,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   public float getAlpha() {
-    return getColor().a;
+    return getGdxColor().a;
   }
 
   /** Sets a color tint on the group and propagates it to all current members. */
@@ -223,6 +224,20 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       FlixelSprite s = items[i];
       if (s != null) {
         s.setColor(r, g, b, a);
+      }
+    }
+    members.end();
+  }
+
+  /** Sets a color tint on the group and propagates it to all current members. */
+  @Override
+  public void setColor(@NotNull FlixelColor tint) {
+    super.setColor(tint);
+    FlixelSprite[] items = members.begin();
+    for (int i = 0, n = members.size; i < n; i++) {
+      FlixelSprite s = items[i];
+      if (s != null) {
+        s.setColor(tint);
       }
     }
     members.end();
@@ -804,7 +819,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private void preAdd(FlixelSprite sprite) {
     sprite.setX(sprite.getX() + getX());
     sprite.setY(sprite.getY() + getY());
-    sprite.setAlpha(sprite.getColor().a * getColor().a);
+    sprite.setAlpha(sprite.getGdxColor().a * getGdxColor().a);
     sprite.setAntialiasing(antialiasing);
     sprite.setFacing(facing);
   }

@@ -9,7 +9,7 @@ package me.stringdotjar.flixelgdx.tween.builders;
 
 import com.badlogic.gdx.utils.Array;
 
-import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.functional.FlixelPositional;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelQuadPath;
 
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
 /** Builder for {@link FlixelQuadPath}. */
 public final class FlixelQuadPathBuilder extends FlixelAbstractTweenBuilder<FlixelQuadPath, FlixelQuadPathBuilder> {
 
-  private @Nullable FlixelObject target;
+  private @Nullable FlixelPositional target;
   private final Array<float[]> pointList = new Array<>();
   private float durationOrSpeed = 1f;
   private boolean useDuration = true;
@@ -28,7 +28,7 @@ public final class FlixelQuadPathBuilder extends FlixelAbstractTweenBuilder<Flix
     return this;
   }
 
-  public FlixelQuadPathBuilder setTarget(@Nullable FlixelObject target) {
+  public FlixelQuadPathBuilder setTarget(@Nullable FlixelPositional target) {
     this.target = target;
     return this;
   }
