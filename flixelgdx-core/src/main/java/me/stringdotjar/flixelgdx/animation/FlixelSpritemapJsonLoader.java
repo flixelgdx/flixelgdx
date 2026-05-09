@@ -33,14 +33,14 @@ import org.jetbrains.annotations.Nullable;
  *   [0, 1, 2] } }} block (with optional {@code framerate}). Frames may be declared as a JSON array of
  *   {@code [x, y, w, h, ...]} rows, as an object map of frame name to {@code {"frame": {"x", "y", "w",
  *   "h"}}}, or as an Adobe "TexturePacker" {@code ATLAS.SPRITES} block.</li>
- *   <li><strong>Adobe Animate texture atlas</strong> - a top-level {@code "AN"} / {@code "SD"} / {@code
- *   "MD"} structure as produced by Adobe Animate's texture-atlas export. These are routed to
- *   {@link FlixelAnimateRigLoader}, which requires the owning sprite to be a
- *   {@link FlixelAnimateSprite} so the multi-part rig can be attached.</li>
+ *   <li><strong>Adobe Animate texture atlas</strong> - the usual Animate export shape: top-level
+ *   {@code "AN"} in {@code Animation.json} plus {@code ATLAS.SPRITES} in the spritemap file. Nested
+ *   symbol rigs and flat document timelines are routed to {@link FlixelAnimateRigLoader}, which
+ *   requires the owning sprite to be a {@link FlixelAnimateSprite}.</li>
  * </ol>
  *
- * <p>Game code does not usually call this helper directly. A {@link FlixelAnimateSprite} accepts a
- * BTA/Animate pair through {@link FlixelAnimateSprite#addSpritesheetAndAnimation}, and a plain
+ * <p>Game code does not usually call this helper directly. A {@link FlixelAnimateSprite} accepts an
+ * Animate atlas triple through {@link FlixelAnimateSprite#addSpritesheetAndAnimation}, and a plain
  * {@link me.stringdotjar.flixelgdx.FlixelSprite} accepts a simple-format pair through
  * {@link FlixelAnimationController#loadSpritemapFromJson}.
  */

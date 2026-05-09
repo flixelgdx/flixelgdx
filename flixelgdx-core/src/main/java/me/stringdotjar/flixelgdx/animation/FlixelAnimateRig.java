@@ -20,8 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Immutable, pre-resolved multi-part rig for an Adobe Animate (BTA/"Better Texture Atlas") character. Built by
- * {@link FlixelAnimateRigLoader} and consumed by {@link FlixelAnimateSprite}.
+ * Immutable, pre-resolved multi-part rig for an Adobe Animate texture-atlas character. Built by
+ * {@link FlixelAnimateRigLoader} and consumed by {@link FlixelAnimateSprite}. The same rig structure
+ * represents both nested symbol timelines (Better Texture Atlas style) and flat document timelines that
+ * place {@code ASI} instances directly on the stage timeline.
  *
  * <h2>Data shape</h2>
  * The rig is a dictionary of named {@link Clip clips} (for example {@code "Idle"}, {@code "Left"}). Each clip
@@ -32,8 +34,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>Each {@link Part} stores:
  * <ul>
  *   <li>An integer index into {@link #atlas} selecting which bitmap slice to draw.</li>
- *   <li>A fully baked {@link Affine2} that already contains (a) the Flash {@code MX} matrix chain from
- *   the root symbol down to the leaf bitmap, (b) a Y-axis flip that converts Adobe Animate's Y-down
+ *   <li>A fully baked {@link Affine2} that already contains (a) the Flash {@code MX} or {@code M3D}
+ *   matrix chain from the root symbol or stage down to the leaf bitmap, (b) a Y-axis flip that converts Adobe Animate's Y-down
  *   bitmap space into libGDX's Y-up texture-region space, and (c) an anchor translation that shifts the
  *   whole rig so the anchor-clip bounding box starts at {@code (0, 0)}.</li>
  * </ul>
@@ -74,7 +76,8 @@ public final class FlixelAnimateRig {
 
   /**
    * Name of the clip whose frame-zero bounding box defines the rig's anchor-space rectangle. Usually the
-   * string {@code "Idle"} if present, otherwise the first clip declared on the label layer.
+   * string {@code "Idle"} if present, otherwise the first clip from the loaded data (for example the
+   * default clip synthesized when an export has no label layer).
    */
   @NotNull
   public final String anchorClipName;
