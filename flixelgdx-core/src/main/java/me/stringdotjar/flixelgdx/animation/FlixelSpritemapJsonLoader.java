@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  * </ol>
  *
  * <p>Game code does not usually call this helper directly. A {@link FlixelAnimateSprite} accepts a
- * BTA/Animate pair through {@link FlixelAnimateSprite#loadSpritemapAndAnimation}, and a plain
+ * BTA/Animate pair through {@link FlixelAnimateSprite#addSpritesheetAndAnimation}, and a plain
  * {@link me.stringdotjar.flixelgdx.FlixelSprite} accepts a simple-format pair through
  * {@link FlixelAnimationController#loadSpritemapFromJson}.
  */

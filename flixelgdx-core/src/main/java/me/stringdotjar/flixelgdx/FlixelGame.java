@@ -707,10 +707,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     Flixel.Signals.preGameClose.dispatch();
 
-    if (Flixel.initialized) {
-      Flixel.host.removeTrayIcon();
-    }
-
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       if (Flixel.getLogger() != null) {

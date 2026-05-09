@@ -238,4 +238,28 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   public boolean supportsAbsorbCloseRequests() {
     return closeHook != null;
   }
+
+  @Override
+  public boolean isAbsorbCloseRequestsEnabled() {
+    FlixelLwjgl3ChainingWindowListener hook = closeHook;
+    return hook != null && hook.isAbsorbCloseRequests();
+  }
+
+  @Override
+  public boolean isWindowFloating() {
+    if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
+      return false;
+    }
+    long handle = g.getWindow().getWindowHandle();
+    return GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_FLOATING) == GLFW.GLFW_TRUE;
+  }
+
+  @Override
+  public boolean isWindowDecorated() {
+    if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
+      return true;
+    }
+    long handle = g.getWindow().getWindowHandle();
+    return GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_DECORATED) == GLFW.GLFW_TRUE;
+  }
 }

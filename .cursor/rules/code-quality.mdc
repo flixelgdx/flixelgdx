@@ -24,6 +24,8 @@ When writing code, you're required to do the following:
 - Never use star imports (`*`). It's necessary and can be hard to tell what specific classes/methods/enums/etc. are
   being used in the said source code file.
 - As shown in the `.editorconfig` file, put all empty and void-returning methods with their braces on the same line.
+- Keep your field and method names short. They shouldn't be multiple characters long. If a method name gets too long,
+  rename it to be shorter, and add a Javadoc to describe what it is instead.
 
 # Examples of Good and Bad Code
 

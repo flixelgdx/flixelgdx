@@ -11,21 +11,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Host operating system integration, which allows desktop notifications, taskbar attention, and tray icons.
+ * Host operating system integration, which allows desktop notifications and taskbar attention.
  *
  * <p>This is separate from {@link me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter}, which shows blocking
  * dialog popups. Use {@link me.stringdotjar.flixelgdx.Flixel#host} from game code.
  *
  * <p>Desktop LWJGL3 ships a full implementation (freedesktop {@code notify-send} on Linux rather than AWT for toasts,
- * AWT {@code java.awt.SystemTray} for tray icons, GLFW plus AWT {@code java.awt.Taskbar} for attention where available).
- * Mobile and web builds keep the safe no-op implementation.
+ * GLFW plus AWT {@code java.awt.Taskbar} for attention where available). Mobile and web builds keep the safe no-op implementation.
  *
  * <p>Example:
  *
  * <pre>{@code
  * Flixel.host.sendDesktopNotification("Ready", "Your level finished loading.");
  * Flixel.host.requestUserAttention();
- * Flixel.host.addTrayIcon("ui/tray.png", "My Game");
  * }</pre>
  *
  * @see me.stringdotjar.flixelgdx.Flixel#host
@@ -47,23 +45,7 @@ public interface FlixelHostIntegration {
   void requestUserAttention();
 
   /**
-   * Adds a tray icon using an internal asset path resolved like other game assets.
-   *
-   * @param internalAssetPath Path passed to {@link me.stringdotjar.flixelgdx.asset.FlixelAssetManager#extractAssetPath(String)}.
-   * @param tooltip Optional tooltip; may be {@code null}.
-   */
-  void addTrayIcon(@NotNull String internalAssetPath, @Nullable String tooltip);
-
-  /** Removes the tray icon installed by {@link #addTrayIcon(String, String)}, if any. */
-  void removeTrayIcon();
-
-  /**
    * @return {@code true} if {@link #sendDesktopNotification(String, String)} is expected to do useful work on this platform session.
    */
   boolean supportsDesktopNotification();
-
-  /**
-   * @return {@code true} if {@link #addTrayIcon(String, String)} is expected to work on this platform session.
-   */
-  boolean supportsTrayIcon();
 }

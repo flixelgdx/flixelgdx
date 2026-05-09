@@ -108,16 +108,16 @@ import java.util.function.Supplier;
  *     <b>Asset Loading:</b>
  *     Offers a unified {@link #assets} interface for loading, caching, and retrieving textures, sounds, and data.
  *   </li>
-   *   <li>
-   *     <b>Host integration:</b>
-   *     Desktop notifications, task attention, and tray icons via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
-   *   </li>
-   *   <li>
-   *     <b>Window control:</b>
-   *     Transparency helpers and desktop window tweaks via {@link #window}.
-   *   </li>
-   *   <li>
-   *     <b>Logging and Debugging:</b>
+ *   <li>
+ *     <b>Host integration:</b>
+ *     Desktop notifications and task attention via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
+ *   </li>
+ *   <li>
+ *     <b>Window control:</b>
+ *     Transparency helpers and desktop window tweaks via {@link #window}.
+ *   </li>
+ *   <li>
+ *     <b>Logging and Debugging:</b>
  *     Centralizes log output through {@link #log}, and supplies tools for in-game watches and performance tracking.
  *   </li>
  *   <li>
@@ -302,7 +302,7 @@ public final class Flixel {
   public static FlixelWindow window = FlixelNoopWindow.INSTANCE;
 
   /**
-   * Host OS integration (toast notifications, task attention, tray). LWJGL3 replaces the default no-op at launch.
+   * Host OS integration (toast notifications and task attention). LWJGL3 replaces the default no-op at launch.
    */
   @NotNull
   public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
@@ -1252,19 +1252,21 @@ public final class Flixel {
   }
 
   /**
-   * Returns the current frames-per-second as reported by the graphics backend.
+   * Returns the average frames-per-second as reported by the graphics backend.
    *
-   * @return The current frames-per-second as reported by the graphics backend.
+   * @return The average frames-per-second as reported by the graphics backend.
    */
   public static int getFPS() {
     return Gdx.graphics != null ? Gdx.graphics.getFramesPerSecond() : 0;
   }
 
+  /** @see FlixelGame#getCamera() */
   public static FlixelCamera getCamera() {
     Objects.requireNonNull(game, "Cannot get the camera when the game object is not initialized!");
     return game.getCamera();
   }
 
+  /** @see FlixelGame#getCameras() */
   public static Array<FlixelCamera> getCameras() {
     Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
     return game.getCameras();

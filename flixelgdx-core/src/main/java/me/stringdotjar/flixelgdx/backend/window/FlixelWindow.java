@@ -35,7 +35,7 @@ public interface FlixelWindow {
   /**
    * When {@code true}, the LWJGL3 launcher enables {@code Lwjgl3ApplicationConfiguration#setTransparentFramebuffer(boolean)}.
    * This is {@code true} by default so runtime transparency can work; set {@code false} before launch only if you need a classic
-   * opaque framebuffer or hit a driver issue (then {@link #setDesktopTransparencyActive(boolean)} cannot composites with the desktop).
+   * opaque framebuffer or hit a driver issue (then {@link #setDesktopTransparencyActive(boolean)} cannot composite with the desktop).
    *
    * @return current launch-time request for an alpha-capable default framebuffer.
    */
@@ -195,7 +195,7 @@ public interface FlixelWindow {
 
   /**
    * When {@code true}, the GLFW close event is absorbed so the window does not exit until you stop absorbing or call
-   * {@code Gdx.app.exit()} yourself.
+   * {@link com.badlogic.gdx.Gdx#app#exit()} yourself.
    *
    * <p><b>CAUTION:</b> Players expect the window close control to quit. If you absorb close requests, you must
    * explain that ahead of time (splash text, settings, store description) and always provide another obvious way to exit.
@@ -209,5 +209,29 @@ public interface FlixelWindow {
    */
   default boolean supportsAbsorbCloseRequests() {
     return false;
+  }
+
+  /**
+   * @return {@code true} while close absorption is enabled and the listener chain is active.
+   *   When {@link #supportsAbsorbCloseRequests()} is {@code false}, this is always {@code false}.
+   */
+  default boolean isAbsorbCloseRequestsEnabled() {
+    return false;
+  }
+
+  /**
+   * @return {@code true} when the window is currently floating (always on top), if the backend can query it.
+   *   When unsupported, returns {@code false}.
+   */
+  default boolean isWindowFloating() {
+    return false;
+  }
+
+  /**
+   * @return {@code true} when the window has native decorations (title bar and border), if the backend can query it.
+   *   When unsupported, returns {@code true} so game code treats the common case as decorated.
+   */
+  default boolean isWindowDecorated() {
+    return true;
   }
 }

@@ -8,30 +8,17 @@
 package me.stringdotjar.flixelgdx.backend.lwjgl3;
 
 import java.awt.EventQueue;
-import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.awt.RenderingHints;
-import java.awt.SystemTray;
 import java.awt.Taskbar;
-import java.awt.TrayIcon;
-import java.awt.image.BaseMultiResolutionImage;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.imageio.ImageIO;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 
-import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.backend.host.FlixelHostIntegration;
 
 import org.jetbrains.annotations.NotNull;
@@ -41,13 +28,11 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * Desktop {@link FlixelHostIntegration}: freedesktop or Zenity notifications on Linux, {@code osascript} on macOS,
- * WinRT toasts via PowerShell on Windows, GLFW window attention, and AWT {@link SystemTray} icons.
+ * WinRT toasts via PowerShell on Windows, GLFW window attention, and AWT {@link Taskbar} attention where available.
  */
 public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration {
 
   private static final int MAX_NOTIFY_ARG_LEN = 6000;
-
-  private final AtomicReference<TrayIcon> trayIcon = new AtomicReference<>();
 
   @Override
   public void sendDesktopNotification(@Nullable String title, @NotNull String message) {
@@ -90,142 +75,8 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   }
 
   @Override
-  public void addTrayIcon(@NotNull String internalAssetPath, @Nullable String tooltip) {
-    Objects.requireNonNull(internalAssetPath, "internalAssetPath");
-    if (!supportsTrayIcon()) {
-      Flixel.warn("FlixelHost", "Tray icon is not supported in this desktop session (for example pure Wayland or no system tray).");
-      return;
-    }
-    Runnable work = () -> {
-      removeTrayIconOnEdt();
-      try {
-        String path = Flixel.ensureAssets().extractAssetPath(internalAssetPath);
-        Image image = ImageIO.read(new File(path));
-        if (image == null) {
-          Flixel.warn("FlixelHost", "Tray icon could not be decoded: " + internalAssetPath);
-          return;
-        }
-        Image trayImage = normalizeTrayImage(image);
-        TrayIcon icon = new TrayIcon(trayImage, trayTooltipText(tooltip));
-        icon.setImageAutoSize(false);
-        SystemTray.getSystemTray().add(icon);
-        trayIcon.set(icon);
-      } catch (Exception ex) {
-        Flixel.warn("FlixelHost", "Tray icon failed: " + ex.getMessage());
-      }
-    };
-    if (EventQueue.isDispatchThread()) {
-      work.run();
-    } else {
-      EventQueue.invokeLater(work);
-    }
-  }
-
-  @Override
-  public void removeTrayIcon() {
-    runOnEdtAndWait(this::removeTrayIconOnEdt);
-  }
-
-  @Override
   public boolean supportsDesktopNotification() {
     return !GraphicsEnvironment.isHeadless();
-  }
-
-  @Override
-  public boolean supportsTrayIcon() {
-    if (GraphicsEnvironment.isHeadless() || !SystemTray.isSupported()) {
-      return false;
-    }
-    return !isLinuxAwtTrayLikelyBroken();
-  }
-
-  private static boolean isLinuxAwtTrayLikelyBroken() {
-    if (!System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("linux")) {
-      return false;
-    }
-    String sessionType = System.getenv("XDG_SESSION_TYPE");
-    return sessionType != null && sessionType.equalsIgnoreCase("wayland");
-  }
-
-  private static String trayTooltipText(@Nullable String tooltip) {
-    if (tooltip != null && !tooltip.isEmpty()) {
-      return tooltip;
-    }
-    return "";
-  }
-
-  /**
-   * Builds a multi-resolution tray image and normalizes pixel format so GTK-based trays (for example Cinnamon under X11)
-   * can pick a size without corrupt thumbnails or stray popup shells from an unused AWT {@code PopupMenu}.
-   *
-   * @param raw The raw image icon to be normalized.
-   */
-  private static Image normalizeTrayImage(Image raw) {
-    BufferedImage src = toBufferedImageArgb(raw);
-    BufferedImage s16 = scaleTrayArgb(src, 16);
-    BufferedImage s24 = scaleTrayArgb(src, 24);
-    BufferedImage s32 = scaleTrayArgb(src, 32);
-    return new BaseMultiResolutionImage(s16, s24, s32);
-  }
-
-  private static BufferedImage scaleTrayArgb(BufferedImage src, int target) {
-    int w = src.getWidth();
-    int h = src.getHeight();
-    if (w == target && h == target) {
-      return src;
-    }
-    BufferedImage scaled = new BufferedImage(target, target, BufferedImage.TYPE_INT_ARGB);
-    Graphics2D g2 = scaled.createGraphics();
-    g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-    g2.drawImage(src, 0, 0, target, target, null);
-    g2.dispose();
-    return scaled;
-  }
-
-  private static BufferedImage toBufferedImageArgb(Image raw) {
-    if (raw instanceof BufferedImage bi) {
-      int t = bi.getType();
-      if (t == BufferedImage.TYPE_INT_ARGB || t == BufferedImage.TYPE_INT_ARGB_PRE) {
-        return bi;
-      }
-      BufferedImage converted = new BufferedImage(bi.getWidth(), bi.getHeight(), BufferedImage.TYPE_INT_ARGB);
-      Graphics2D gc = converted.createGraphics();
-      gc.drawImage(bi, 0, 0, null);
-      gc.dispose();
-      return converted;
-    }
-    int w = Math.max(1, raw.getWidth(null));
-    int h = Math.max(1, raw.getHeight(null));
-    BufferedImage tmp = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-    Graphics2D g0 = tmp.createGraphics();
-    g0.drawImage(raw, 0, 0, null);
-    g0.dispose();
-    return tmp;
-  }
-
-  private void removeTrayIconOnEdt() {
-    TrayIcon icon = trayIcon.getAndSet(null);
-    if (icon == null) {
-      return;
-    }
-    try {
-      SystemTray.getSystemTray().remove(icon);
-    } catch (IllegalArgumentException ignored) {
-    }
-  }
-
-  private static void runOnEdtAndWait(Runnable work) {
-    if (EventQueue.isDispatchThread()) {
-      work.run();
-    } else {
-      try {
-        EventQueue.invokeAndWait(work);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (InvocationTargetException e) {
-        Flixel.warn("Flixel.host", "Host UI task failed: " + e.getCause());
-      }
-    }
   }
 
   private static void notifyLinux(@Nullable String title, String message) {

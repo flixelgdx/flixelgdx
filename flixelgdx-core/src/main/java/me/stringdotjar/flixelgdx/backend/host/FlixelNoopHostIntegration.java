@@ -29,20 +29,7 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   public void requestUserAttention() {}
 
   @Override
-  public void addTrayIcon(@NotNull String internalAssetPath, @Nullable String tooltip) {
-    Objects.requireNonNull(internalAssetPath, "internalAssetPath");
-  }
-
-  @Override
-  public void removeTrayIcon() {}
-
-  @Override
   public boolean supportsDesktopNotification() {
-    return false;
-  }
-
-  @Override
-  public boolean supportsTrayIcon() {
     return false;
   }
 }

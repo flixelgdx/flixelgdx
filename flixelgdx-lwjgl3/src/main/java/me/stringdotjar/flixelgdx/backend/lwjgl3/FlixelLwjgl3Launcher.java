@@ -45,7 +45,7 @@ public class FlixelLwjgl3Launcher {
   }
 
   /**
-   * Linux AWT uses GTK for tray icons and dialogs. Prefer GTK3 before any AWT class loads to reduce broken embeddings
+   * Linux AWT uses GTK for dialogs. Prefer GTK3 before any AWT class loads to reduce broken embeddings
    * (orphan windows, wrong icons) on Cinnamon and other GTK3 desktops.
    */
   private static void prepareLinuxAwtCompatibility() {
