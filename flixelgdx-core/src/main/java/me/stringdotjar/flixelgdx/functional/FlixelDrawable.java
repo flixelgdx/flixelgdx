@@ -12,7 +12,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 /**
  * Interface for Flixel-based visible objects that can be drawn.
  *
- * @see FlixelBasic
+ * @see me.stringdotjar.flixelgdx.FlixelBasic
  */
 public interface FlixelDrawable {
 
