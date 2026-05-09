@@ -195,7 +195,7 @@ public interface FlixelWindow {
 
   /**
    * When {@code true}, the GLFW close event is absorbed so the window does not exit until you stop absorbing or call
-   * {@link com.badlogic.gdx.Gdx#app#exit()} yourself.
+   * {@code Gdx.app.exit()} yourself.
    *
    * <p><b>CAUTION:</b> Players expect the window close control to quit. If you absorb close requests, you must
    * explain that ahead of time (splash text, settings, store description) and always provide another obvious way to exit.
