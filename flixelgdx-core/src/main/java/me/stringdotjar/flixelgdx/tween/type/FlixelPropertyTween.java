@@ -129,9 +129,8 @@ public class FlixelPropertyTween extends FlixelTween {
   @Override
   public FlixelTween start() {
     if (tweenObject == null) {
-      throw new IllegalStateException(
-          "FlixelPropertyTween requires setObject(Object) before start(). "
-              + "Use FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class) and call setObject on the builder.");
+      throw new IllegalStateException("FlixelPropertyTween requires setObject(Object) before start(). "
+        + "Use FlixelTween.tween(object, new FlixelTweenSettings()...) or call setObject(...) after obtaining the tween from the pool.");
     }
     super.start();
 
