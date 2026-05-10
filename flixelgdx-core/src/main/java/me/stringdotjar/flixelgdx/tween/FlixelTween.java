@@ -22,6 +22,7 @@ import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
 import me.stringdotjar.flixelgdx.functional.FlixelVisible;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelAbstractTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.settings.FlixelShakeUnit;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
@@ -441,13 +442,13 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Creates a shake tween using defaults {@link FlixelShakeTween.ShakeUnit#FRACTION} and
+   * Creates a shake tween using defaults {@link FlixelShakeUnit#FRACTION} and
    * {@code fadeOut == false} (full strength each frame until the tween ends). Pooled instances
    * are reset to those defaults before configuration.
    *
    * @param shakeable The shake channel to jitter (sprite offset, object position, window, etc.).
    * @param axes Axes that receive position jitter.
-   * @param intensity With {@link FlixelShakeTween.ShakeUnit#FRACTION}, use a small value (for example 0.05f).
+   * @param intensity With {@link FlixelShakeUnit#FRACTION}, use a small value (for example 0.05f).
    * @param tweenSettings Duration, ease, and callbacks.
    * @return The new tween, already added to the global manager.
    */
@@ -456,17 +457,17 @@ public abstract class FlixelTween implements Pool.Poolable {
       FlixelAxes axes,
       float intensity,
       FlixelTweenSettings tweenSettings) {
-    return shake(shakeable, axes, intensity, tweenSettings, FlixelShakeTween.ShakeUnit.FRACTION, false);
+    return shake(shakeable, axes, intensity, tweenSettings, FlixelShakeUnit.FRACTION, false);
   }
 
   /**
-   * Creates a shake tween with explicit {@link FlixelShakeTween.ShakeUnit} and fade-out taper.
+   * Creates a shake tween with explicit {@link FlixelShakeUnit} and fade-out taper.
    *
    * @param shakeable The shake channel to jitter.
    * @param axes Axes that receive position jitter.
    * @param intensity Interpretation depends on {@code shakeUnit}.
    * @param tweenSettings Duration, ease, and callbacks.
-   * @param shakeUnit {@link FlixelShakeTween.ShakeUnit#FRACTION} or {@link FlixelShakeTween.ShakeUnit#PIXELS}.
+   * @param shakeUnit {@link FlixelShakeUnit#FRACTION} or {@link FlixelShakeUnit#PIXELS}.
    * @param fadeOut If true, amplitude is scaled by {@code (1 - scale)} toward the end of the tween.
    * @return The new tween, already added to the global manager.
    */
@@ -475,7 +476,7 @@ public abstract class FlixelTween implements Pool.Poolable {
       FlixelAxes axes,
       float intensity,
       FlixelTweenSettings tweenSettings,
-      FlixelShakeTween.ShakeUnit shakeUnit,
+      FlixelShakeUnit shakeUnit,
       boolean fadeOut) {
     FlixelShakeTween tween = globalManager.obtainTween(FlixelShakeTween.class, () -> new FlixelShakeTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
