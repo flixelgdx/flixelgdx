@@ -44,19 +44,6 @@ import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelAngleTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelCircularMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelColorTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelCubicMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelFlickerTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelLinearMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelLinearPathBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelNumTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelQuadMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelQuadPathBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelShakeTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelVarTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
@@ -434,20 +421,20 @@ public final class Flixel {
       assets = new FlixelDefaultAssetManager();
     }
 
-    // Register default tween types with explicit builder factories (no reflection for TeaVM compatibility).
-    FlixelTween.registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, FlixelPropertyTweenBuilder::new, () -> new FlixelPropertyTween(null))
-      .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, FlixelVarTweenBuilder::new, () -> new FlixelVarTween(null, null))
-      .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null))
-      .registerTweenType(FlixelAngleTween.class, FlixelAngleTweenBuilder.class, FlixelAngleTweenBuilder::new, () -> new FlixelAngleTween(null))
-      .registerTweenType(FlixelColorTween.class, FlixelColorTweenBuilder.class, FlixelColorTweenBuilder::new, () -> new FlixelColorTween(null))
-      .registerTweenType(FlixelShakeTween.class, FlixelShakeTweenBuilder.class, FlixelShakeTweenBuilder::new, () -> new FlixelShakeTween(null))
-      .registerTweenType(FlixelFlickerTween.class, FlixelFlickerTweenBuilder.class, FlixelFlickerTweenBuilder::new, () -> new FlixelFlickerTween(null))
-      .registerTweenType(FlixelLinearMotion.class, FlixelLinearMotionBuilder.class, FlixelLinearMotionBuilder::new, () -> new FlixelLinearMotion(null))
-      .registerTweenType(FlixelCircularMotion.class, FlixelCircularMotionBuilder.class, FlixelCircularMotionBuilder::new, () -> new FlixelCircularMotion(null))
-      .registerTweenType(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class, FlixelQuadMotionBuilder::new, () -> new FlixelQuadMotion(null))
-      .registerTweenType(FlixelCubicMotion.class, FlixelCubicMotionBuilder.class, FlixelCubicMotionBuilder::new, () -> new FlixelCubicMotion(null))
-      .registerTweenType(FlixelLinearPath.class, FlixelLinearPathBuilder.class, FlixelLinearPathBuilder::new, () -> new FlixelLinearPath(null))
-      .registerTweenType(FlixelQuadPath.class, FlixelQuadPathBuilder.class, FlixelQuadPathBuilder::new, () -> new FlixelQuadPath(null));
+    // Register default tween pools (pool factories avoid reflection on constrained runtimes).
+    FlixelTween.registerTweenType(FlixelPropertyTween.class, () -> new FlixelPropertyTween(null))
+      .registerTweenType(FlixelVarTween.class, () -> new FlixelVarTween(null, null))
+      .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
+      .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
+      .registerTweenType(FlixelColorTween.class, () -> new FlixelColorTween(null))
+      .registerTweenType(FlixelShakeTween.class, () -> new FlixelShakeTween(null))
+      .registerTweenType(FlixelFlickerTween.class, () -> new FlixelFlickerTween(null))
+      .registerTweenType(FlixelLinearMotion.class, () -> new FlixelLinearMotion(null))
+      .registerTweenType(FlixelCircularMotion.class, () -> new FlixelCircularMotion(null))
+      .registerTweenType(FlixelQuadMotion.class, () -> new FlixelQuadMotion(null))
+      .registerTweenType(FlixelCubicMotion.class, () -> new FlixelCubicMotion(null))
+      .registerTweenType(FlixelLinearPath.class, () -> new FlixelLinearPath(null))
+      .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
 
     initialized = true;
   }

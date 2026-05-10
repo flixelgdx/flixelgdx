@@ -20,8 +20,6 @@ import me.stringdotjar.flixelgdx.functional.FlixelColorable;
 import me.stringdotjar.flixelgdx.functional.FlixelPositional;
 import me.stringdotjar.flixelgdx.functional.FlixelShakeable;
 import me.stringdotjar.flixelgdx.functional.FlixelVisible;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelAbstractTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelShakeUnit;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
@@ -97,22 +95,11 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Usage Example</h2>
  * <pre>{@code
  * // Start a tween that moves a sprite's x value from 0 to 100 over 1 second.
- *
- * // Example with a property tween and a generic helper.
  * FlixelTween tween = FlixelTween.tween(sprite, new FlixelTweenSettings()
  *   .addGoal(sprite::getX, 100f, sprite::setX)
  *   .setDuration(1f)
  *   .setEase(FlixelEase::cubicInOut)
- *   .onComplete(() -> Flixel.info("Done!"))
- *   .start());
- *
- * // Example with a property tween and a builder.
- * FlixelTween tween = FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
- *   .addGoal(sprite::getX, 100f, sprite::setX)
- *   .setDuration(1f)
- *   .setEase(FlixelEase::cubicInOut)
- *   .onComplete(() -> Flixel.info("Done!"))
- *   .start();
+ *   .setOnComplete(tween -> Flixel.info("Done!")));
  * }</pre>
  *
  * <h2>Lifecycle and Pooling</h2>
@@ -129,7 +116,6 @@ import org.jetbrains.annotations.Nullable;
  * </p>
  *
  * @see FlixelTweenManager
- * @see FlixelAbstractTweenBuilder
  * @see me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings
  *
  * @author stringdotjar
@@ -183,49 +169,12 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Returns a fluent builder for the given tween type.
-   *
-   * <p>The tween type must be registered (e.g. via {@link FlixelTweenManager#registerTweenType}); if not, then
-   * this method will throw an {@link IllegalArgumentException}.
-   *
-   * <p>Pass both the tween class and its builder class so the
-   * return type is the concrete builder ({@code B}), giving full IDE support for type-specific methods
-   * ({@code addGoal()}, {@code from()}, {@code to()}, etc.) and common ones ({@code setDuration},
-   * {@code setEase}), then {@link FlixelAbstractTweenBuilder#start()}.
-   *
-   * <p>Example (property):
-   * <pre>{@code
-   * FlixelPropertyTween tween = FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
-   *   .addGoal(sprite::getX, 100f, sprite::setX)
-   *   .setDuration(1f)
-   *   .start();
-   * }</pre>
-   *
-   * @param tweenType The tween class (e.g. {@link FlixelPropertyTween}.class). Must be registered.
-   * @param builderType The corresponding builder class (e.g. {@link FlixelPropertyTweenBuilder}.class).
-   * @return A new builder instance of type {@code B} for chaining.
-   * @throws IllegalArgumentException If {@code tweenType} is not registered, or the registered builder could not be instantiated.
-   */
-  public static <T extends FlixelTween, B extends FlixelAbstractTweenBuilder<T, B>> B tween(Class<T> tweenType, Class<B> builderType) {
-    Class<?> registeredBuilderClass = globalManager.getBuilderClass(tweenType);
-    if (!builderType.isAssignableFrom(registeredBuilderClass)) {
-      throw new IllegalArgumentException(
-          "Registered builder for " + tweenType.getName() + " is " + registeredBuilderClass.getName()
-              + ", which is not assignable to " + builderType.getName());
-    }
-    return globalManager.createBuilder(tweenType);
-  }
-
-  /**
    * Creates a tween with the provided settings and adds it to the global tween manager (which starts it automatically).
    *
    * <p>If {@code tweenSettings} contains var goals ({@link FlixelTweenSettings#addGoal(String, float)}), a
    * {@link FlixelVarTween} is created: values are applied via {@link me.stringdotjar.flixelgdx.Flixel#reflect} ({@code property} / {@code setProperty}).
    * If it contains only property goals (getter/setter overloads of {@link FlixelTweenSettings#addGoal}), a {@link FlixelPropertyTween} is used.
    * Mixing both kinds of goals on the same settings instance is not allowed.
-   *
-   * <p>For fluent setup, use {@link #tween(Class, Class)} with
-   * {@link me.stringdotjar.flixelgdx.tween.builders.FlixelVarTweenBuilder} or {@link me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder}.
    *
    * @param object The target (var tween root for dotted paths; property tween logical subject for {@link FlixelPropertyTween#isTweenOf(Object, String)}).
    * @param tweenSettings Settings including goals appropriate to the tween type.
@@ -926,26 +875,21 @@ public abstract class FlixelTween implements Pool.Poolable {
   }
 
   /**
-   * Registers a tween type with its builder factory and pool factory on the global manager.
+   * Registers a tween type with a pool factory on the global manager.
    * Returns the manager so calls can be chained when registering several types at startup.
    *
    * @param tweenClass The tween class to register.
-   * @param builderClass The builder class, used for type verification.
-   * @param builderFactory A no-arg supplier that creates a fresh builder instance without reflection.
    * @param poolFactory A supplier for new tween instances when the pool is empty.
    * @param <T> The tween type.
    * @return The global manager, for chaining.
-   * @throws NullPointerException If {@code poolFactory} or {@code builderFactory} is {@code null}.
-   * @see FlixelTweenManager#registerTweenType(Class, Class, Supplier, Supplier)
+   * @throws NullPointerException If {@code poolFactory} is {@code null}.
+   * @see FlixelTweenManager#registerTweenType(Class, Supplier)
    */
   public static <T extends FlixelTween> FlixelTweenManager registerTweenType(
       @NotNull Class<T> tweenClass,
-      @NotNull Class<? extends FlixelAbstractTweenBuilder<T, ?>> builderClass,
-      @NotNull Supplier<? extends FlixelAbstractTweenBuilder<T, ?>> builderFactory,
       @NotNull Supplier<T> poolFactory) {
-    Objects.requireNonNull(builderFactory, "builderFactory");
     Objects.requireNonNull(poolFactory, "poolFactory");
-    return globalManager.registerTweenType(tweenClass, builderClass, builderFactory, poolFactory);
+    return globalManager.registerTweenType(tweenClass, poolFactory);
   }
 
   /**

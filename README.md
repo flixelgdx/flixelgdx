@@ -452,7 +452,7 @@ Use an array factory matching your type (`Enemy[]::new`, `Actor[]::new`, etc.).
 
 ### Tweening
 
-FlixelGDX includes a tweening system inspired by Flixel/HaxeFlixel. You can use a **fluent builder** (`FlixelTween.tween(tweenClass, builderClass)`), **static factories** on `FlixelTween` (motion, color, shake, and more), or **`FlixelTween.tween(object, settings)`** when goals are already on `FlixelTweenSettings`.
+FlixelGDX includes a tweening system inspired by Flixel/HaxeFlixel. Use **static factories** on `FlixelTween` (motion, color, shake, numbers, and more) and **`FlixelTween.tween(object, settings)`** when you build goals on `FlixelTweenSettings`. For a **non-global** `FlixelTweenManager`, call `registerTweenType` on that manager, then `obtainTween`, configure, and `addTween`.
 
 #### FlixelGDX vs Universal Tween Engine (UTE)
 
@@ -474,18 +474,17 @@ FlixelGDX avoids per-type accessors. You declare *what* to tween at the call sit
 3. Later: Tween.to(sprite, SpriteAccessor.XY, 0.5f).target(400f, 200f).start();
 ```
 
-**FlixelGDX with a builder:**
+**FlixelGDX with `FlixelTweenSettings`:**
 
 ```java
-FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+FlixelTween.tween(player, new FlixelTweenSettings()
   .setDuration(0.5f)
   .setEase(FlixelEase::quadOut)
   .addGoal(player::getX, 400f, player::setX)
-  .addGoal(player::getY, 200f, player::setY)
-  .start();
+  .addGoal(player::getY, 200f, player::setY));
 ```
 
-No accessor class or index map: duration, ease, delays, and callbacks chain on the builder. The same `tween(Class, Class)` pattern works for every **registered** tween type (property, var, motion, color, paths, etc.).
+No accessor class or index map: duration, ease, delays, and callbacks are set on `FlixelTweenSettings`.
 
 #### Static factory methods on `FlixelTween`
 
@@ -507,66 +506,60 @@ These add a started tween to the **global** manager (same as `addTween` after `o
 | `linearPath(target, durationOrSpeed, useDuration, settings, x0, y0, x1, y1, …)`                                 | Polyline path; varargs are vertex pairs (at least two points).                                                                                                                                                     |
 | `quadPath(target, durationOrSpeed, useDuration, settings, x0, y0, …)`                                           | Chain of quad segments: **odd** vertex count, at least three points (`start, control, end, control, end, …`).                                                                                                      |
 
-
-For complex easing, delays, or extra configuration, you can still use **`FlixelTween.tween(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class)`** (and the other motion/path builder pairs) for a fluent chain.
+Motion, path, and effect tweens expose the same options through these static methods; configure duration, ease, and callbacks on the `FlixelTweenSettings` you pass in.
 
 #### Registry and built-in types
 
-Tween classes are paired with builder classes in a **registry** on `FlixelTweenManager`. `FlixelTween.tween(tweenType, builderType)` loads the builder registered for `tweenType`; the builder class you pass must match (otherwise you get a clear error). After `Flixel.initialize()`, all built-in pairs below are already registered:
+Each concrete tween class can be **registered** on a `FlixelTweenManager` with a **pool factory** (no reflection required). After `Flixel.initialize()`, the built-in types listed below are already registered on the global manager:
 
 **Values and properties**
 
-- `FlixelPropertyTween` ↔ `FlixelPropertyTweenBuilder`
-- `FlixelVarTween` ↔ `FlixelVarTweenBuilder`
-- `FlixelNumTween` ↔ `FlixelNumTweenBuilder`
+- `FlixelPropertyTween`
+- `FlixelVarTween`
+- `FlixelNumTween`
 
 **Sprite / object effects**
 
-- `FlixelAngleTween` ↔ `FlixelAngleTweenBuilder`
-- `FlixelColorTween` ↔ `FlixelColorTweenBuilder`
-- `FlixelShakeTween` ↔ `FlixelShakeTweenBuilder`
-- `FlixelFlickerTween` ↔ `FlixelFlickerTweenBuilder`
+- `FlixelAngleTween`
+- `FlixelColorTween`
+- `FlixelShakeTween`
+- `FlixelFlickerTween`
 
 **Motion** (package `tween.type.motion`)
 
-- `FlixelLinearMotion` ↔ `FlixelLinearMotionBuilder`
-- `FlixelCircularMotion` ↔ `FlixelCircularMotionBuilder`
-- `FlixelQuadMotion` ↔ `FlixelQuadMotionBuilder`
-- `FlixelCubicMotion` ↔ `FlixelCubicMotionBuilder`
-- `FlixelLinearPath` ↔ `FlixelLinearPathBuilder`
-- `FlixelQuadPath` ↔ `FlixelQuadPathBuilder`
+- `FlixelLinearMotion`
+- `FlixelCircularMotion`
+- `FlixelQuadMotion`
+- `FlixelCubicMotion`
+- `FlixelLinearPath`
+- `FlixelQuadPath`
 
 **Custom types** — register once (e.g. at startup), with a **pool factory** so empty pools can create new instances:
 
 ```java
-FlixelTween.registerTweenType(
-    MyTween.class,
-    MyTweenBuilder.class,
-    () -> new MyTween(null)); // match your tween's pooled empty constructor
+FlixelTween.registerTweenType(MyTween.class, () -> new MyTween(null));
 ```
 
 > #### Why a registry? Is it necessary?
 >
 > Yes. Each registered tween type gets its own pool so `obtainTween` returns the correct concrete type for reuse. That keeps allocation low when many tweens start and finish every frame.
 
-#### Builder API at a glance
+#### Goals and settings at a glance
 
-- **Property** — `FlixelPropertyTweenBuilder`: `addGoal(getter, toValue, setter)`; fastest when you can close over methods.
-- **Var** — `FlixelVarTweenBuilder`: `setObject`, `addGoal(fieldName, value)`; names go through `Flixel.reflect` (optional dotted paths from the root object).
-- **Num** — `FlixelNumTweenBuilder`: `from` / `to`, `setCallback`.
-- **Angle / color / shake / flicker** — matching `*Builder` classes; mirror the static `FlixelTween.angle` / `color` / `shake` / `flicker` options with full chaining for duration, ease, and callbacks.
-- **Motion** — Static `linearMotion`, `circularMotion`, `quadMotion`, `cubicMotion` mirror the main builder geometry; builders add fluent chaining for the same types.
-- **Paths** — Static `linearPath` / `quadPath` accept vertex coordinates as varargs after `durationOrSpeed`, `useDuration`, and `settings`; builders use `setTarget` + repeated `addPoint` instead.
+- **Property** — On `FlixelTweenSettings`, `addGoal(getter, toValue, setter)` drives `FlixelPropertyTween` via `FlixelTween.tween(object, settings)`; fastest when you can close over methods.
+- **Var** — `addGoal(fieldName, value)` on settings and `FlixelTween.tween(root, settings)`; field names go through `Flixel.reflect` (optional dotted paths from the root object).
+- **Num** — `FlixelTween.num(from, to, settings, callback)`.
+- **Angle / color / shake / flicker / motion / paths** — use the matching static method on `FlixelTween`, or obtain from a custom manager and configure the tween type directly if you need full control.
 
 #### Global manager shortcuts (`FlixelTween`)
 
-Most games use the single global tween manager. These static methods forward to it so you rarely need `FlixelTween.getGlobalManager()` in gameplay code (use `getGlobalManager()` when you called `setManager(...)` on a builder for a custom manager):
+Most games use the single global tween manager. These static methods forward to it so you rarely need `FlixelTween.getGlobalManager()` in gameplay code (use `getGlobalManager()` when you use a **local** `FlixelTweenManager` for a screen or state):
 
 
 | Method                                                                 | Purpose                                                                       |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `FlixelTween.updateTweens(delta)`                                      | Advance all active tweens (what `FlixelGame` calls each frame).               |
-| `FlixelTween.registerTweenType(tweenClass, builderClass, poolFactory)` | Register a custom tween type; returns the manager for chaining.               |
+| `FlixelTween.registerTweenType(tweenClass, poolFactory)`               | Register a custom tween type; returns the manager for chaining.               |
 | `FlixelTween.cancelTweensOf(object, fieldPaths...)`                    | Cancel tweens targeting `object` (optional field/path filters, OR semantics). |
 | `FlixelTween.completeTweensOf(object, fieldPaths...)`                  | Snap matching **non-looping** tweens to their end in one step.                |
 | `FlixelTween.completeAllTweens()`                                      | Complete all non-looping tweens.                                              |
@@ -591,15 +584,14 @@ public class PlayState extends FlixelState {
     add(player);
 
     // Fade the player in over 1 second (alpha: 0 -> 1).
-    FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+    FlixelTween.tween(player, new FlixelTweenSettings()
       .setDuration(1.0f)
-      .addGoal(() -> player.getColor().a, 1.0f, player::setAlpha)
-      .start();
+      .addGoal(() -> player.getColor().a, 1.0f, player::setAlpha));
   }
 }
 ```
 
-Here `addGoal` uses the `FlixelPropertyTween` path under the hood, so your sprite's setters run on every step, which keeps collision bounds, listeners, or other side effects in sync with the animation.
+Property goals use the sprite's setters on every step, which keeps collision bounds, listeners, or other side effects in sync with the animation.
 
 #### Using FlixelGDX tweens in a regular libGDX project
 
@@ -613,11 +605,10 @@ public class MyLibGdxScreen implements Screen {
   public void show() {
     player.makeGraphic(16, 16, Color.WHITE);
 
-    FlixelTween.tween(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class)
+    FlixelTween.tween(player, new FlixelTweenSettings()
       .setDuration(0.75f)
       .setEase(FlixelEase::sineInOut)
-      .addGoal(player::getScaleX, 2.0f, value -> player.setScale(value, value))
-      .start();
+      .addGoal(player::getScaleX, 2.0f, value -> player.setScale(value, value)));
   }
 
   @Override

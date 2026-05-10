@@ -5,7 +5,7 @@
  * See the LICENSE file in the repository root for full license information.
  **********************************************************************************/
 
-package me.stringdotjar.flixelgdx.backend.lwjgl3;
+package me.stringdotjar.flixelgdx.backend.lwjgl3.input;
 
 import java.util.Locale;
 import java.util.Objects;

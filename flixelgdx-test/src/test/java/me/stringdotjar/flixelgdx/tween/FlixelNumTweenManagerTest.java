@@ -8,7 +8,7 @@
 package me.stringdotjar.flixelgdx.tween;
 
 import me.stringdotjar.flixelgdx.GdxHeadlessExtension;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelNumTweenBuilder;
+import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,24 +26,22 @@ class FlixelNumTweenManagerTest {
   @Test
   void duplicateRegistrationThrows() {
     FlixelTweenManager manager = new FlixelTweenManager();
-    manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null));
+    manager.registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null));
     assertThrows(IllegalArgumentException.class, () ->
-      manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null)));
+      manager.registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null)));
   }
 
   @Test
   void numTweenReachesEndValueLinear() {
     FlixelTweenManager manager = new FlixelTweenManager();
-    manager.registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null));
+    manager.registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null));
 
     AtomicReference<Float> last = new AtomicReference<>(Float.NaN);
-    new FlixelNumTweenBuilder()
-      .setManager(manager)
-      .from(0f)
-      .to(10f)
-      .setCallback(last::set)
-      .setDuration(1f)
-      .start();
+    FlixelTweenSettings settings = new FlixelTweenSettings().setDuration(1f);
+    FlixelNumTween tween = manager.obtainTween(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null));
+    tween.setTweenSettings(settings);
+    tween.setTarget(0f, 10f, last::set);
+    manager.addTween(tween);
 
     manager.update(0.5f);
     assertEquals(5f, last.get(), 1e-4f);

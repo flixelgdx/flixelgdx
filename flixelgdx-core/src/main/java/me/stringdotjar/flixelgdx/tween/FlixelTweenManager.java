@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 
-import me.stringdotjar.flixelgdx.tween.builders.FlixelAbstractTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 
@@ -28,8 +27,8 @@ import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
  * {@link FlixelTween#updateTweens}, {@link FlixelTween#registerTweenType}) rather than instantiating separately.
  * Adding a tween via {@link #addTween(FlixelTween)} automatically starts it.
  *
- * <p>Uses a registry: each tween type is registered with its builder class and a pool factory.
- * Only registered types can be used with {@link FlixelTween#tween(Class, Class)}. Call
+ * <p>Uses a registry: each tween type is registered with a pool factory. Registered types can be
+ * obtained via {@link #obtainTween(Class, Supplier)}. Call
  * {@link #clearPools()} when clearing state (e.g. on state switch) to release pooled instances.
  *
  * <p>Active tweens use an unordered {@link Array}: removals swap with the last element (no
@@ -39,30 +38,24 @@ import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 public class FlixelTweenManager {
 
   /**
-   * Registry entry for a tween type. Contains the builder class (for type verification), a factory that
-   * creates new builder instances without reflection, and the pool used for tween reuse.
+   * Registry entry for a tween type: the object pool used for tween reuse.
    *
-   * @param builderClass The builder class, used for assignability checks in {@link FlixelTween#tween(Class, Class)}.
-   * @param builderFactory A no-arg supplier that creates a new builder instance.
-   *   This avoids reflective {@code newInstance()} calls that fail on platforms without full reflection support (for example TeaVM/web).
    * @param pool The object pool for recycling tween instances.
    */
-  public static record TweenTypeRegistration(Class<?> builderClass, Supplier<? extends FlixelAbstractTweenBuilder<?, ?>> builderFactory, Pool<FlixelTween> pool) {}
+  public record TweenTypeRegistration(Pool<FlixelTween> pool) {}
 
-  /** Registry: tween type -> (builder class, pool). */
+  /** Registry: tween class to its pool registration. */
   private final Map<Class<? extends FlixelTween>, TweenTypeRegistration> registry = new HashMap<>();
 
   /** Active tweens; unordered so {@link #removeTween} is O(1) without snapshot copies. */
   protected final Array<FlixelTween> activeTweens = new Array<>(false, 16, FlixelTween[]::new);
 
   /**
-   * Registers a tween type with its builder factory and a pool factory for creating new tween instances when the pool is empty.
-   * Register all tween types (including custom ones) before using {@link FlixelTween#tween(Class, Class)}.
+   * Registers a tween type with a pool factory for creating new tween instances when the pool is empty.
+   * Register all tween types (including custom ones) before using {@link #obtainTween(Class, Supplier)} with
+   * that tween class.
    *
    * @param tweenClass The tween class (e.g. {@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}{@code .class}).
-   * @param builderClass The corresponding builder class, used for type verification when {@link FlixelTween#tween(Class, Class)} is called.
-   * @param builderFactory A no-arg supplier that creates a fresh builder instance. Using an explicit factory avoids
-   *   reflective {@code newInstance()} calls that fail on platforms without full reflection support (for example TeaVM).
    * @param poolFactory A supplier that creates a new tween instance when the pool is empty.
    * @param <T> The tween type.
    * @return The same manager, for chaining.
@@ -70,8 +63,6 @@ public class FlixelTweenManager {
    */
   public <T extends FlixelTween> FlixelTweenManager registerTweenType(
       Class<T> tweenClass,
-      Class<? extends FlixelAbstractTweenBuilder<T, ?>> builderClass,
-      Supplier<? extends FlixelAbstractTweenBuilder<T, ?>> builderFactory,
       Supplier<T> poolFactory) {
     Pool<FlixelTween> pool = new Pool<FlixelTween>() {
       @Override
@@ -82,35 +73,8 @@ public class FlixelTweenManager {
     if (registry.containsKey(tweenClass)) {
       throw new IllegalArgumentException("Tween type " + tweenClass.getName() + " is already registered.");
     }
-    registry.put(tweenClass, new TweenTypeRegistration(builderClass, builderFactory, pool));
+    registry.put(tweenClass, new TweenTypeRegistration(pool));
     return this;
-  }
-
-  /**
-   * Returns the builder class registered for the given tween type.
-   *
-   * @param tweenClass The registered tween class to look up.
-   * @return The registered builder class.
-   * @throws IllegalArgumentException if the tween type is not registered.
-   */
-  public Class<?> getBuilderClass(Class<? extends FlixelTween> tweenClass) {
-    return getRegistration(tweenClass).builderClass();
-  }
-
-  /**
-   * Creates a new builder instance for the given tween type using the registered builder factory.
-   * This avoids reflective {@code getDeclaredConstructor().newInstance()} calls that are incompatible with
-   * platforms lacking full reflection support (for example TeaVM/web).
-   *
-   * @param tweenType The tween class whose builder should be created.
-   * @param <T> The tween type.
-   * @param <B> The builder type.
-   * @return A new builder instance, cast to the requested builder type.
-   * @throws IllegalArgumentException if the tween type is not registered.
-   */
-  @SuppressWarnings("unchecked")
-  public <T extends FlixelTween, B extends FlixelAbstractTweenBuilder<T, B>> B createBuilder(Class<T> tweenType) {
-    return (B) getRegistration(tweenType).builderFactory().get();
   }
 
   /**

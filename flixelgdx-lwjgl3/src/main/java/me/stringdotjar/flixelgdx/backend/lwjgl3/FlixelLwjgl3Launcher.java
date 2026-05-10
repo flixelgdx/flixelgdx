@@ -22,6 +22,7 @@ import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProv
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
+import me.stringdotjar.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.runtime.reflect.FlixelReflectASMHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;

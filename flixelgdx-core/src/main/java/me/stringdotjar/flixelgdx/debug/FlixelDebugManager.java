@@ -52,7 +52,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>All public methods are intended to be called from the libGDX main thread. Reading the
  * registered commands map outside the main thread is unsupported.
  */
-public final class FlixelDebugManager {
+public class FlixelDebugManager {
 
   /**
    * Internal handler form used after registration has wrapped the raw consumer. Kept
@@ -60,7 +60,6 @@ public final class FlixelDebugManager {
    */
   @FunctionalInterface
   interface CommandHandler {
-
     void invoke(@NotNull FlixelDebugCommandArgs args);
   }
 
