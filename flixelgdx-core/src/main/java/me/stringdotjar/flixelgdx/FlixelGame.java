@@ -19,7 +19,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -129,9 +128,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Is the game's window currently minimized? */
   private boolean isMinimized = false;
-
-  /** The main stage used for rendering all screens and sprites on screen. */
-  protected Stage stage;
 
   /** The main sprite batch used for rendering all sprites on screen. */
   protected SpriteBatch batch;
@@ -305,7 +301,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     batch = new SpriteBatch();
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
-    stage = new Stage(getCamera().getViewport(), batch);
 
     Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
     pixmap.setColor(Color.WHITE);
@@ -391,7 +386,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     FlixelActionSets.updateAll(elapsed);
 
     if (!gamePaused) {
-      stage.act(elapsed);
       FlixelTween.updateTweens(elapsed);
       FlixelTimer.getGlobalManager().update(elapsed * Flixel.getTimeScale());
 
@@ -472,8 +466,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         Flixel.setDrawCamera(null);
       }
     }
-
-    stage.draw();
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
@@ -741,10 +733,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.getState() != null) {
       Flixel.getState().destroy();
     }
-    if (stage != null) {
-      stage.dispose();
-      stage = null;
-    }
     if (batch != null) {
       batch.dispose();
       batch = null;
@@ -825,7 +813,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (cameras.isEmpty()) {
       cameras.add(new FlixelCamera((int) windowSize.x, (int) windowSize.y));
       cameras.first().apply();
-      stage.setViewport(cameras.first().getViewport());
     }
     return cameras.first();
   }
@@ -838,7 +825,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     camera.update((int) windowSize.x, (int) windowSize.y, camera.centerCameraOnResize);
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(camera);
-    stage.setViewport(camera.getViewport());
     if (desktopTransparencyActive) {
       applyDesktopTransparencyBackdropOnly();
     }
@@ -874,10 +860,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   public boolean isFocused() {
     return isFocused;
-  }
-
-  public Stage getStage() {
-    return stage;
   }
 
   public Array<FlixelCamera> getCameras() {

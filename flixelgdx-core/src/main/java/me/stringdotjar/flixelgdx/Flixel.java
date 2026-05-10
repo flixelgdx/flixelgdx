@@ -11,7 +11,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
@@ -889,10 +888,6 @@ public final class Flixel {
 
   public static FlixelGame getGame() {
     return game;
-  }
-
-  public static Stage getStage() {
-    return game.stage;
   }
 
   public static FlixelState getState() {
