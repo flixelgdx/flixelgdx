@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.asset.FlixelAssetPaths;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 
@@ -62,6 +63,7 @@ public final class FlixelSpritemapJsonLoader {
     if (path.isEmpty()) {
       throw new IllegalArgumentException("path cannot be empty.");
     }
+    path = FlixelAssetPaths.normalizeAssetPath(path);
     FileHandle f = Gdx.files.internal(path);
     if (f.exists() && !f.isDirectory()) {
       return f;

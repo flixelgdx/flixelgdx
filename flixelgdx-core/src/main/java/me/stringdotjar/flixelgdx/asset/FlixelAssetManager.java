@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  * ambiguous if extensions collide or custom content is used—register mappings with
  * {@link #registerExtension(String, Function)} or use {@link #load(FlixelSource)} instead.
  *
+ * <p>The default implementation canonicalizes path-shaped keys (see {@link FlixelAssetPaths#normalizeAssetPath(String)})
+ * so duplicate slashes or mixed separators do not break lookups on backends that compare paths literally (such as web manifests).
+ *
  * <p><b>If you ever forget which method to use when it comes to handles, here's a quick reminder:</b>
  * <ul>
  *   <li><b>{@code peek...}</b>: “Is there already a handle for this key?” This should be read only; it may return {@code null}.
