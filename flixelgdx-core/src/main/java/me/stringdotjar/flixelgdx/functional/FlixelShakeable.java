@@ -8,6 +8,7 @@
 package me.stringdotjar.flixelgdx.functional;
 
 import com.badlogic.gdx.Gdx;
+import me.stringdotjar.flixelgdx.tween.settings.FlixelShakeUnit;
 
 /**
  * Something {@link me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween} can jitter and restore without caring whether
@@ -45,7 +46,7 @@ public interface FlixelShakeable {
   void setShake(float x, float y);
 
   /**
-   * Width used to scale {@link me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween.ShakeUnit#FRACTION} on the X axis.
+   * Width used to scale {@link FlixelShakeUnit#FRACTION} on the X axis.
    * Values {@code 0} or less mean the tween treats intensity like plain pixels on that axis.
    *
    * @return Reference width for fractional shake, or non-positive to fall back.
@@ -55,7 +56,7 @@ public interface FlixelShakeable {
   }
 
   /**
-   * Height used to scale {@link me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween.ShakeUnit#FRACTION} on the Y axis.
+   * Height used to scale {@link FlixelShakeUnit#FRACTION} on the Y axis.
    * Values {@code 0} or less mean the tween treats intensity like plain pixels on that axis.
    *
    * @return Reference height for fractional shake, or non-positive to fall back.
