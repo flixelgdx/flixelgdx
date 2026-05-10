@@ -147,7 +147,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
    * If a new {@link FlixelAsset} or {@link FlixelGraphic} handle is created for this key before the
    * pending entry is consumed, that handle is marked persistent. Call {@code load(path, true)} to
    * mark path-keyed assets that should survive {@link #clearNonPersist()}.
-   * 
+   *
    * @param assetKey The asset key.
    * @param handle The handle to apply the pending persist on.
    */
@@ -157,11 +157,26 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
   }
 
-  @Override
-  public void load(@NotNull String path) {
-    if (path == null || path.isEmpty()) {
+  /**
+   * Normalizes an incoming asset path (collapse redundant slashes, unify separators) and rejects empty keys.
+   *
+   * @param path Raw path from callers.
+   * @return Canonical internal-style path.
+   */
+  @NotNull
+  private static String requireNormalizedAssetPath(@NotNull String path) {
+    Objects.requireNonNull(path, "path cannot be null.");
+    path = FlixelAssetPaths.normalizeAssetPath(path);
+    if (path.isEmpty()) {
       throw new IllegalArgumentException("path cannot be null/empty.");
     }
+    return path;
+  }
+
+  /**
+   * Infers a {@link FlixelSource} from the extension registry and enqueues it. {@code path} must already be normalized.
+   */
+  private void loadByInferExtension(@NotNull String path) {
     String ext = fileExtensionFromPath(path);
     if (ext.isEmpty()) {
       throw new IllegalArgumentException(
@@ -184,43 +199,62 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   @Override
+  public void load(@NotNull String path) {
+    loadByInferExtension(requireNormalizedAssetPath(path));
+  }
+
+  @Override
   public void load(@NotNull String path, boolean persist) {
+    path = requireNormalizedAssetPath(path);
     if (persist) {
       pendingPersistKeys.add(path);
     }
-    load(path);
+    loadByInferExtension(path);
   }
 
   @Override
   public void load(@NotNull FlixelSource<?> source, boolean persist) {
+    Objects.requireNonNull(source, "source cannot be null.");
+    String key = requireNormalizedAssetPath(source.getAssetKey());
     if (persist) {
-      pendingPersistKeys.add(source.getAssetKey());
+      pendingPersistKeys.add(key);
     }
-    load(source);
+    manager.load(key, source.getType());
   }
 
   @Override
   public <T> void load(@NotNull String fileName, @NotNull Class<T> type, boolean persist) {
+    Objects.requireNonNull(fileName, "fileName cannot be null.");
+    Objects.requireNonNull(type, "type cannot be null.");
+    fileName = requireNormalizedAssetPath(fileName);
     if (persist) {
       pendingPersistKeys.add(fileName);
     }
-    load(fileName, type);
+    manager.load(fileName, type);
   }
 
   @Override
   public <T> void load(@NotNull String fileName, @NotNull Class<T> type) {
-    manager.load(fileName, type);
+    Objects.requireNonNull(fileName, "fileName cannot be null.");
+    Objects.requireNonNull(type, "type cannot be null.");
+    manager.load(requireNormalizedAssetPath(fileName), type);
   }
 
   @Override
   public void load(@NotNull FlixelSource<?> source) {
     Objects.requireNonNull(source, "source cannot be null.");
-    load(source.getAssetKey(), source.getType());
+    manager.load(requireNormalizedAssetPath(source.getAssetKey()), source.getType());
   }
 
   @Override
   public void load(@NotNull AssetDescriptor<?> assetDescriptor) {
-    manager.load(assetDescriptor);
+    Objects.requireNonNull(assetDescriptor, "assetDescriptor cannot be null.");
+    String fn = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
+    if (fn.equals(assetDescriptor.fileName)) {
+      manager.load(assetDescriptor);
+    } else {
+      manager.load(new AssetDescriptor<>(fn, assetDescriptor.type, assetDescriptor.params));
+    }
   }
 
   @Override
@@ -266,12 +300,13 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public boolean isLoaded(@NotNull String fileName) {
-    return manager.isLoaded(fileName);
+    return manager.isLoaded(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
   }
 
   @Override
   public boolean isLoaded(@NotNull String fileName, @NotNull Class<?> type) {
-    return manager.isLoaded(fileName, type);
+    Objects.requireNonNull(type, "type cannot be null.");
+    return manager.isLoaded(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")), type);
   }
 
   @Override
@@ -285,7 +320,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @NotNull
   @Override
   public <T> T get(@NotNull String fileName, @NotNull Class<T> type) {
-    return manager.get(fileName, type);
+    Objects.requireNonNull(fileName, "fileName cannot be null.");
+    Objects.requireNonNull(type, "type cannot be null.");
+    return manager.get(FlixelAssetPaths.normalizeAssetPath(fileName), type);
   }
 
   @NotNull
@@ -309,6 +346,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @NotNull
   @Override
   public String resolveAudioPath(@NotNull String path) {
+    path = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(path, "path cannot be null."));
     String cached = audioPathCache.get(path);
     if (cached != null) {
       return cached;
@@ -321,7 +359,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @NotNull
   @Override
   public String extractAssetPath(@NotNull String path) {
-    // On web/TeaVM, audio is loaded via Gdx.files.internal() which reads from
+    path = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(path, "path cannot be null."));
+    // On web/TeaVM, audio is loaded via Gdx.files.internal(...) which reads from
     // the virtual filesystem populated by the preloader, which does not require filesystem extraction.
     // This is because browsers don't actually have a real filesystem, so we simply return the path as is.
     if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
@@ -353,7 +392,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public void unload(@NotNull String fileName) {
-    manager.unload(fileName);
+    manager.unload(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
   }
 
   @Override
@@ -363,7 +402,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public void finishLoadingAsset(@NotNull String fileName) {
-    manager.finishLoadingAsset(fileName);
+    manager.finishLoadingAsset(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
   }
 
   @NotNull
@@ -458,12 +497,13 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
    * {@link FlixelTypedAsset} if present, else {@link FlixelGraphic} for textures.
    */
   private int flixelRefCountForLoadedAsset(@NotNull String fileName, @NotNull Class<?> type) {
-    FlixelAsset<?> typed = peekTypedAsset(fileName, type);
+    String key = FlixelAssetPaths.normalizeAssetPath(fileName);
+    FlixelAsset<?> typed = peekTypedAsset(key, type);
     if (typed != null) {
       return typed.getRefCount();
     }
     if (type == Texture.class) {
-      FlixelGraphic g = peekWrapper(fileName, FlixelGraphic.class);
+      FlixelGraphic g = peekWrapper(key, FlixelGraphic.class);
       return g != null ? g.getRefCount() : 0;
     }
     return 0;
@@ -549,6 +589,11 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   @SuppressWarnings("unchecked")
   public <W> W ensureWrapper(@NotNull String key, @NotNull Class<W> wrapperType) {
+    Objects.requireNonNull(key, "key cannot be null.");
+    key = FlixelAssetPaths.normalizeAssetPath(key);
+    if (key.isEmpty()) {
+      throw new IllegalArgumentException("key cannot be null/empty.");
+    }
     FlixelWrapperFactory<?> f = wrapperFactories.get(wrapperType);
     if (f == null) {
       throw new IllegalArgumentException("No wrapper factory registered for: " + wrapperType.getName());
@@ -574,13 +619,19 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (f == null) {
       throw new IllegalArgumentException("No wrapper factory registered for: " + wrapperType.getName());
     }
-    return ((FlixelWrapperFactory<W>) f).peek(this, key);
+    return ((FlixelWrapperFactory<W>) f).peek(this, FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(key, "key cannot be null.")));
   }
 
   @NotNull
   @Override
   @SuppressWarnings("unchecked")
   public <T> FlixelAsset<T> ensureTypedAsset(@NotNull String assetKey, @NotNull Class<T> type) {
+    Objects.requireNonNull(assetKey, "assetKey cannot be null.");
+    Objects.requireNonNull(type, "type cannot be null.");
+    assetKey = FlixelAssetPaths.normalizeAssetPath(assetKey);
+    if (assetKey.isEmpty()) {
+      throw new IllegalArgumentException("assetKey cannot be null/empty.");
+    }
     AssetId id = new AssetId(assetKey, type);
     FlixelTypedAsset<?> existing = typedAssetCache.get(id);
     if (existing != null) {
@@ -603,7 +654,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Nullable
   @Override
   public FlixelAsset<?> peekTypedAsset(@NotNull String assetKey, @NotNull Class<?> type) {
-    return typedAssetCache.get(new AssetId(assetKey, type));
+    Objects.requireNonNull(assetKey, "assetKey cannot be null.");
+    Objects.requireNonNull(type, "type cannot be null.");
+    return typedAssetCache.get(new AssetId(FlixelAssetPaths.normalizeAssetPath(assetKey), type));
   }
 
   @Override

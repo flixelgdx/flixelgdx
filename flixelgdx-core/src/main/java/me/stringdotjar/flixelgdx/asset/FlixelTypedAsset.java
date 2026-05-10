@@ -7,6 +7,10 @@
 
 package me.stringdotjar.flixelgdx.asset;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Application.ApplicationType;
+import com.badlogic.gdx.assets.AssetManager;
+
 import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
