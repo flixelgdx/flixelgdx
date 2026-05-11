@@ -24,6 +24,11 @@ plugins {
   id 'java-library'
 }
 
+java {
+  sourceCompatibility = JavaVersion.VERSION_17
+  targetCompatibility = JavaVersion.VERSION_17
+}
+
 // Root is an aggregator only (no src/). Do not apply tasks like processResources at this level.
 // Put in a script instead, as it keeps it more organized.
 

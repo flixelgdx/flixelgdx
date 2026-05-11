@@ -193,10 +193,115 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
       return roots.get(0);
     }
     String common = longestCommonDirectoryPrefix(roots);
-    if (common != null && !common.isEmpty()) {
+    if (common != null && !common.isEmpty() && !isTrivialFilesystemRoot(common)) {
       return common;
     }
-    return longestModuleRootMatchingUserDir(roots, System.getProperty("user.dir", ""));
+    String userDir = System.getProperty("user.dir", "");
+    String mostRootsUnderWalk = deepestUserDirAncestorCoveringMostModuleRoots(userDir, roots);
+    if (mostRootsUnderWalk != null && !mostRootsUnderWalk.isEmpty() && !isTrivialFilesystemRoot(mostRootsUnderWalk)) {
+      return mostRootsUnderWalk;
+    }
+    return longestModuleRootMatchingUserDir(roots, userDir);
+  }
+
+  /**
+   * Walks {@code user.dir} upward and selects the deepest directory that matches the greatest number
+   * of IDE classpath module roots as descendants. Stabilizes Gradle sibling layouts ({@code core},
+   * {@code desktop}) whose roots share neither prefix nor a usable shallow common directory prefix with a
+   * stray composite-build framework checkout or Gradle caches entry on the classpath.
+   *
+   * @param userDir Current {@code user.dir}.
+   * @param roots Normalized module root directories derived from classpath entries (never {@code null}).
+   * @return The suggested multi-module project directory, or {@code null} if no ancestor matched any root.
+   */
+  @Nullable
+  private static String deepestUserDirAncestorCoveringMostModuleRoots(String userDir, ArrayList<String> roots) {
+    if (userDir == null || userDir.isEmpty()) {
+      return null;
+    }
+    String cursor = normalizePathForCompare(userDir);
+    if (cursor.isEmpty()) {
+      return null;
+    }
+
+    String best = null;
+    int bestCount = -1;
+
+    for (int guard = 0; guard < 64 && cursor != null && !cursor.isEmpty(); guard++) {
+      if (isTrivialFilesystemRoot(cursor)) {
+        break;
+      }
+      int count = countRootsUnderAncestor(cursor, roots);
+      if (count > bestCount) {
+        bestCount = count;
+        best = cursor;
+      } else if (count == bestCount && count > 0 && best != null && cursor.length() > best.length()) {
+        best = cursor;
+      }
+      cursor = parentDirectory(cursor);
+    }
+    return bestCount > 0 ? best : null;
+  }
+
+  private static int countRootsUnderAncestor(String ancestor, ArrayList<String> roots) {
+    int count = 0;
+    for (int i = 0, n = roots.size(); i < n; i++) {
+      if (pathAncestorMatches(ancestor, roots.get(i))) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * {@code true} when {@code path} equals {@code ancestor} or is contained under it ({@code ancestor/sub/...}).
+   */
+  private static boolean pathAncestorMatches(String ancestor, String path) {
+    if (ancestor.isEmpty()) {
+      return false;
+    }
+    String a = normalizePathForCompare(ancestor);
+    String p = normalizePathForCompare(path);
+    if (p.equals(a)) {
+      return true;
+    }
+    return p.startsWith(a + "/");
+  }
+
+  /**
+   * Parent directory of a normalized POSIX-ish path, or {@code null} when absent or already at root.
+   */
+  @Nullable
+  private static String parentDirectory(String path) {
+    if (path == null || path.isEmpty()) {
+      return null;
+    }
+    String p = normalizePathForCompare(path);
+    if (p.isEmpty()) {
+      return null;
+    }
+    if ("/".equals(p)) {
+      return null;
+    }
+    int slash = p.lastIndexOf('/');
+    if (slash < 0) {
+      return null;
+    }
+    if (slash == 0) {
+      return "/";
+    }
+    return p.substring(0, slash);
+  }
+
+  /**
+   * {@code true} for filesystem roots such as {@code /} or a lone Windows drive letter segment where resolving logs would be meaningless.
+   */
+  private static boolean isTrivialFilesystemRoot(@Nullable String path) {
+    if (path == null || path.isEmpty()) {
+      return true;
+    }
+    String p = normalizePathForCompare(path);
+    return "/".equals(p) || (p.length() == 2 && p.charAt(1) == ':');
   }
 
   private static char classpathSeparatorChar() {
