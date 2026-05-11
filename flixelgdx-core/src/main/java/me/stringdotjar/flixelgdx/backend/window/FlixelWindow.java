@@ -116,11 +116,18 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
+   * @return The current opacity level of the game's window.
+   */
+  default float getWindowOpacity() {
+    return 1;
+  }
+
+  /**
    * Sets whole-window opacity where the backend supports it (GLFW 3.4+, LWJGL3 desktop).
    *
    * @param opacity Opacity in {@code [0, 1]}; non-finite values are ignored.
    */
-  void setWindowOpacity(float opacity);
+  default void setWindowOpacity(float opacity) {}
 
   /**
    * @return {@code true} if {@link #setWindowOpacity(float)} can affect the window on this session.

@@ -310,7 +310,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull boolean value) {
+  public FlixelString concat(boolean value) {
     buffer.append(value);
     return this;
   }
@@ -322,7 +322,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull char value) {
+  public FlixelString concat(char value) {
     buffer.append(value);
     return this;
   }
@@ -334,7 +334,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull byte value) {
+  public FlixelString concat(byte value) {
     buffer.append((int) value);
     return this;
   }
@@ -346,7 +346,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull short value) {
+  public FlixelString concat(short value) {
     buffer.append((int) value);
     return this;
   }
@@ -358,7 +358,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull int value) {
+  public FlixelString concat(int value) {
     buffer.append(value);
     return this;
   }
@@ -370,7 +370,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull long value) {
+  public FlixelString concat(long value) {
     buffer.append(value);
     return this;
   }
@@ -382,7 +382,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull float value) {
+  public FlixelString concat(float value) {
     buffer.append(value);
     return this;
   }
@@ -394,7 +394,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull double value) {
+  public FlixelString concat(double value) {
     buffer.append(value);
     return this;
   }

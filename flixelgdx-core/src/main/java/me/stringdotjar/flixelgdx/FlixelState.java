@@ -193,11 +193,60 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   @Override
   public void resize(int width, int height) {}
 
+  /**
+   * Called by the framework when the application is paused by the OS (for example Android backgrounding) or when the
+   * desktop window loses focus or is minimized. Do not override this method. Override {@link #onFocusLost()} instead.
+   *
+   * <p>The call walks from {@code this} state down through {@link #getSubState()} so every state in the chain is
+   * notified, parent before child.
+   *
+   * @see FlixelGame#pause()
+   * @see FlixelGame#onWindowUnfocused()
+   * @see Screen#pause()
+   */
   @Override
-  public void pause() {}
+  public final void pause() {
+    onFocusLost();
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.pause();
+    }
+  }
 
+  /**
+   * Called by the framework when the application resumes or when the desktop window regains focus or is restored from
+   * minimized. Do not override this method. Override {@link #onFocus()} instead.
+   *
+   * <p>The call walks {@link #getSubState()} first so the deepest substate runs {@link #onFocus()} before its parents.
+   *
+   * @see FlixelGame#resume()
+   * @see FlixelGame#onWindowFocused()
+   * @see Screen#resume()
+   */
   @Override
-  public void resume() {}
+  public final void resume() {
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.resume();
+    }
+    onFocus();
+  }
+
+  /**
+   * Hook for when {@code this} state should treat the game as inactive: window unfocused, minimized, OS-level pause,
+   * or other cases where {@link FlixelGame} dispatches {@link #pause()} to the current state chain.
+   *
+   * <p>Parent states run this hook before substates during {@link #pause()}.
+   */
+  protected void onFocusLost() {}
+
+  /**
+   * Hook for when {@code this} state should treat the game as active again after {@link #onFocusLost()}: window
+   * focused again, restored from minimized, OS-level resume, or matching {@link #resume()} from {@link FlixelGame}.
+   *
+   * <p>Substates run this hook before their parent states during {@link #resume()}.
+   */
+  protected void onFocus() {}
 
   @Override
   public void hide() {}

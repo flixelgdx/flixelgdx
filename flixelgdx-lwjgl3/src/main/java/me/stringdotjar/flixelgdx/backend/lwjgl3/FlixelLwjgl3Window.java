@@ -103,6 +103,15 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
+  public float getWindowOpacity() {
+    if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
+      return 1;
+    }
+    long handle = g.getWindow().getWindowHandle();
+    return GLFW.glfwGetWindowOpacity(handle);
+  }
+
+  @Override
   public void setWindowOpacity(float opacity) {
     if (!supportsWindowOpacity() || !Float.isFinite(opacity)) {
       return;
