@@ -78,8 +78,8 @@ Logging system (JVM file logging and consoles)
 
 Gradle bytecode logging plugin (optional consumer tooling)
 - Module: flixelgdx-logging-plugin.
-- Rewrites FlixelLogger info/warn/error calls to *WithSite variants so file and line come from
-  bytecode constants instead of stack walking (especially helpful under TeaVM).
+- Rewrites FlixelLogger info/warn/error calls to *WithSite variants and static Flixel.info/warn/error calls to
+  bytecode hooks so file and line come from bytecode constants instead of stack walking (TeaVM).
 - Consumers apply me.stringdotjar.flixelgdx.logging on modules where logs originate.
 
 Module map (what each published-ish piece is for)
