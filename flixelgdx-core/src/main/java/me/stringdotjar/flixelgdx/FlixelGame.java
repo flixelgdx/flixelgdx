@@ -473,9 +473,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       debugOverlay.draw();
     }
 
-    Flixel.Signals.postDraw.dispatch();
-
     squashFramebufferAlphaWhenDesktopNotSeeThrough();
+
+    Flixel.Signals.postDraw.dispatch();
   }
 
   /**
