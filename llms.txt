@@ -69,9 +69,9 @@ Logging system (JVM file logging and consoles)
   is null.
 - Default logs directory resolution uses FlixelRuntimeUtil.RuntimeProbe. FlixelJvmRuntimeProbe
   classifies RunEnvironment as IDE, JAR, or CLASSPATH and computes a .../logs folder:
-  - IDE: infer Gradle module roots from java.class.path, avoid collapsing sibling modules into
-    unrelated directories (for example composite builds mixing framework checkouts with game
-    modules).
+  - IDE: infer Gradle module roots from java.class.path, walk user.dir upward to cover sibling
+    modules, and reject inferred roots that do not line up with user.dir (avoids dropping logs
+    under only the framework module, a composite-build checkout, or another unrelated folder).
   - JAR distribution: logs beside the fat jar after validating Main-Class manifest semantics.
 - Override with FlixelGame.setLogsFolder(absolutePath) or Flixel.setLogsFolder before create().
 - Rotation: FlixelLogger supports max log files; handler prunes oldest timestamped files.
@@ -126,7 +126,7 @@ Testing expectations for contributors and CI-minded assistants
   COMPILING.md.
 
 Common pitfalls for AI-generated patches
-- Calling Flixel.initialize twice or registering backends after initialization (methods guard
+- Calling Flixel.initialize() twice or registering backends after initialization (methods guard
   against this with IllegalStateException).
 - Assuming java.class.path layout identical across Gradle, IntelliJ, Eclipse, or composite
   includes when deriving filesystem roots (always route path discovery through FlixelRuntimeUtil).

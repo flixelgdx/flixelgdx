@@ -7,11 +7,15 @@
 
 package me.stringdotjar.flixelgdx.backend.jvm.runtime;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.jar.JarFile;
 
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil.RunEnvironment;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,19 +91,19 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
   @Nullable
   public String getWorkingDirectory() {
     try {
-      return FlixelRuntimeUtil.class
-        .getProtectionDomain()
+      URI uri = FlixelRuntimeUtil.class.getProtectionDomain()
         .getCodeSource()
         .getLocation()
-        .toURI()
-        .getPath();
+        .toURI();
+      Path normalized = Paths.get(uri).toAbsolutePath().normalize();
+      return normalized.toString().replace('\\', '/');
     } catch (Exception e) {
       return null;
     }
   }
 
   @Override
-  @Nullable
+  @NotNull
   public String getDefaultLogsFolderPath() {
     String path = getWorkingDirectory();
     if (path == null) {
@@ -107,12 +111,19 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     }
     path = path.replaceAll("/$", "");
     if (isRunningInIDE()) {
+      String userDirRaw = System.getProperty("user.dir", "");
       String projectRoot = inferIdeProjectRootDirectory();
+      if (!ideLogsRootCompatibleWithUserDir(projectRoot, userDirRaw)) {
+        projectRoot = null;
+      }
       if (projectRoot == null || projectRoot.isEmpty()) {
         projectRoot = stripIdeOutputSegments(path);
       }
+      if (!ideLogsRootCompatibleWithUserDir(projectRoot, userDirRaw)) {
+        projectRoot = null;
+      }
       if (projectRoot == null || projectRoot.isEmpty()) {
-        projectRoot = System.getProperty("user.dir", "");
+        projectRoot = userDirRaw;
       }
       projectRoot = projectRoot.replaceAll("/$", "");
       if (projectRoot.endsWith("/assets")) {
@@ -133,6 +144,26 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
       base = base.substring(0, base.length() - "/assets".length());
     }
     return base + "/logs";
+  }
+
+  /**
+   * {@code true} when {@code candidate} is plausibly the IDE project directory for log files relative to
+   * {@code user.dir}. Rejects unrelated folders (for example a lone framework module on the classpath while the game
+   * runs from another directory).
+   */
+  private static boolean ideLogsRootCompatibleWithUserDir(@Nullable String candidate, String userDir) {
+    if (candidate == null || candidate.isEmpty()) {
+      return false;
+    }
+    if (userDir == null || userDir.isEmpty()) {
+      return !isTrivialFilesystemRoot(candidate);
+    }
+    String c = normalizePathForCompare(candidate);
+    String u = normalizePathForCompare(userDir);
+    if (isTrivialFilesystemRoot(c)) {
+      return false;
+    }
+    return pathAncestorMatches(c, u) || pathAncestorMatches(u, c);
   }
 
   private static boolean classpathContainsIdeStyleOutput() {
@@ -189,9 +220,6 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     if (roots.isEmpty()) {
       return null;
     }
-    if (roots.size() == 1) {
-      return roots.get(0);
-    }
     String common = longestCommonDirectoryPrefix(roots);
     if (common != null && !common.isEmpty() && !isTrivialFilesystemRoot(common)) {
       return common;
@@ -201,7 +229,8 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     if (mostRootsUnderWalk != null && !mostRootsUnderWalk.isEmpty() && !isTrivialFilesystemRoot(mostRootsUnderWalk)) {
       return mostRootsUnderWalk;
     }
-    return longestModuleRootMatchingUserDir(roots, userDir);
+    String matched = longestModuleRootMatchingUserDir(roots, userDir);
+    return matched;
   }
 
   /**
@@ -339,9 +368,10 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     return trimTrailingPathSeparators(path.replace('\\', '/'));
   }
 
+  @Nullable
   private static String longestModuleRootMatchingUserDir(ArrayList<String> roots, String userDir) {
     if (userDir == null || userDir.isEmpty()) {
-      return roots.get(0);
+      return null;
     }
     String ud = normalizePathForCompare(userDir);
     String best = null;
@@ -353,7 +383,7 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
         best = r;
       }
     }
-    return best != null ? best : roots.get(0);
+    return best;
   }
 
   private static boolean pathPrefixMatches(String path, String prefix) {

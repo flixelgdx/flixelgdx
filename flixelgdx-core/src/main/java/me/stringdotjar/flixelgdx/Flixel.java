@@ -595,7 +595,7 @@ public final class Flixel {
    * Sets the current state to the provided state, triggers garbage collection and
    * clears all active tweens by default.
    *
-   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param newState The new {@link FlixelState} to set as the current state.
    */
   public static void switchState(FlixelState newState) {
     switchState(newState, true, true, () -> newState);
