@@ -171,6 +171,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
 
   /**
+   * When {@code true}, {@link Flixel#getState()} was sent {@link FlixelState#pause()} for a paired app or window pause
+   * and {@link FlixelState#resume()} has not yet been dispatched. Used so duplicate callbacks (such as minimize plus
+   * focus lost) only run state hooks once.
+   */
+  private boolean stateLifecyclePauseDispatched;
+
+  /**
    * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
    * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#isDesktopTransparencyActive()}.
    */
@@ -297,6 +304,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     isClosed = false;
     isClosing = false;
+    stateLifecyclePauseDispatched = false;
 
     batch = new SpriteBatch();
     cameras = new Array<>(FlixelCamera[]::new);
@@ -534,7 +542,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     draw(batch);
 
-    // Finalize input frame AFTER user update hooks run, so justPressed/justReleased checks
+    // Finalize input frame AFTER user update hooks run, so justPressed()/justReleased() checks
     // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
     if (Flixel.keys != null) {
       Flixel.keys.endFrame();
@@ -605,14 +613,47 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   @Override
-  public void pause() {}
+  public void pause() {
+    dispatchStateLifecyclePause();
+  }
 
   @Override
-  public void resume() {}
+  public void resume() {
+    dispatchStateLifecycleResume();
+  }
+
+  /**
+   * Notifies the current {@link FlixelState} chain once per pause cycle (see {@link #stateLifecyclePauseDispatched}).
+   */
+  private void dispatchStateLifecyclePause() {
+    if (stateLifecyclePauseDispatched) {
+      return;
+    }
+    stateLifecyclePauseDispatched = true;
+    FlixelState state = Flixel.getState();
+    if (state != null) {
+      state.pause();
+    }
+  }
+
+  /**
+   * Clears the pause latch and notifies the current {@link FlixelState} chain, if a matching pause was dispatched.
+   */
+  private void dispatchStateLifecycleResume() {
+    if (!stateLifecyclePauseDispatched) {
+      return;
+    }
+    stateLifecyclePauseDispatched = false;
+    FlixelState state = Flixel.getState();
+    if (state != null) {
+      state.resume();
+    }
+  }
 
   /** Called when the user regains focus on the game's window. */
   public void onWindowFocused() {
     isFocused = true;
+    dispatchStateLifecycleResume();
     if (autoPause && !isMinimized && !gamePaused) {
       Flixel.sound.resume();
       Gdx.graphics.setContinuousRendering(true);
@@ -624,6 +665,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Called when the user loses focus on the game's window, while also not being minimized. */
   public void onWindowUnfocused() {
     isFocused = false;
+    dispatchStateLifecyclePause();
     if (autoPause) {
       Flixel.sound.pause();
       Gdx.graphics.setContinuousRendering(false);
@@ -639,10 +681,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   public void onWindowMinimized(boolean iconified) {
     isMinimized = iconified;
-    isFocused = false;
-    if (autoPause) {
-      Flixel.sound.pause();
-      Gdx.graphics.setContinuousRendering(false);
+    if (iconified) {
+      isFocused = false;
+      dispatchStateLifecyclePause();
+      if (autoPause) {
+        Flixel.sound.pause();
+        Gdx.graphics.setContinuousRendering(false);
+      }
+    } else {
+      dispatchStateLifecycleResume();
     }
     Flixel.Signals.windowMinimized.dispatch();
   }
@@ -688,7 +735,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** @see #destroy() */
   @Override
-  public void dispose() {
+  public final void dispose() {
     destroy();
   }
 
@@ -761,6 +808,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
     gamePaused = false;
+    stateLifecyclePauseDispatched = false;
 
     FlixelFontRegistry.dispose();
 
@@ -1071,5 +1119,4 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     viewSize = newSize;
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
   }
-
 }
