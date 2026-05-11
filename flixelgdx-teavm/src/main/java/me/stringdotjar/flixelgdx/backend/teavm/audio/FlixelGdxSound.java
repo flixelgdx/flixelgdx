@@ -68,7 +68,7 @@ final class FlixelGdxSound implements FlixelSoundBackend {
 
   @Override
   public void setPitch(float pitch) {
-    throw new UnsupportedOperationException("Pitch is not supported on TeaVM");
+    // No-op.
   }
 
   @Override
@@ -88,7 +88,7 @@ final class FlixelGdxSound implements FlixelSoundBackend {
 
   @Override
   public float getLength() {
-    throw new UnsupportedOperationException("Duration is not supported on TeaVM");
+    return 0;
   }
 
   @Override
@@ -103,7 +103,7 @@ final class FlixelGdxSound implements FlixelSoundBackend {
 
   @Override
   public void setPosition(float x, float y, float z) {
-    throw new UnsupportedOperationException("Spatial audio is not supported on TeaVM");
+    // No-op.
   }
 
   @Override

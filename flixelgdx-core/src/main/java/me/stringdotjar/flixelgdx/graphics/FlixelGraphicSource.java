@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.Texture;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
+import me.stringdotjar.flixelgdx.asset.FlixelAssetPaths;
 import me.stringdotjar.flixelgdx.asset.FlixelWrapperSource;
 
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +34,7 @@ public final class FlixelGraphicSource implements FlixelWrapperSource<Texture, F
     if (assetKey == null || assetKey.isEmpty()) {
       throw new IllegalArgumentException("Asset key cannot be null/empty.");
     }
-    this.assetKey = assetKey;
+    this.assetKey = FlixelAssetPaths.normalizeAssetPath(assetKey);
   }
 
   @Override

@@ -18,7 +18,7 @@ import com.badlogic.gdx.utils.XmlReader;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelSprite;
-import me.stringdotjar.flixelgdx.FlixelUpdatable;
+import me.stringdotjar.flixelgdx.functional.FlixelUpdatable;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;

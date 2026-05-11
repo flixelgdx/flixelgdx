@@ -9,6 +9,7 @@ package me.stringdotjar.flixelgdx.audio;
 
 import com.badlogic.gdx.files.FileHandle;
 import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.asset.FlixelAssetPaths;
 import me.stringdotjar.flixelgdx.asset.FlixelSource;
 import me.stringdotjar.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +48,7 @@ public final class FlixelSoundSource implements FlixelSource<FlixelSoundSource> 
     if (assetKey == null || assetKey.isEmpty()) {
       throw new IllegalArgumentException("assetKey cannot be null/empty");
     }
-    this.assetKey = assetKey;
+    this.assetKey = external ? assetKey : FlixelAssetPaths.normalizeAssetPath(assetKey);
     this.external = external;
   }
 

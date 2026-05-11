@@ -1,0 +1,20 @@
+/**
+ * Eclipse JDT (used by VS Code / Cursor Java) reads Gradle Eclipse classpath entries. Mark library JARs as JPMS
+ * modules so automatic modules from libGDX resolve consistently with {@code flixelgdx-core}'s module-path compile setup.
+ *
+ * {@code flixelgdx-core} configures Eclipse in its own {@code build.gradle}; skip here to avoid duplicate hooks.
+ */
+subprojects { Project p ->
+  p.plugins.withId('java-library') {
+    if (p.name == 'flixelgdx-core') {
+      return
+    }
+    p.eclipse.classpath.file {
+      whenMerged {
+        entries.findAll { it instanceof org.gradle.plugins.ide.eclipse.model.Library }.each {
+          it.entryAttributes['module'] = 'true'
+        }
+      }
+    }
+  }
+}

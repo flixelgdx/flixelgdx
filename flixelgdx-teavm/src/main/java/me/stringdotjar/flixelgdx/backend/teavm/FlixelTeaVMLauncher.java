@@ -17,6 +17,7 @@ import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
 import me.stringdotjar.flixelgdx.backend.teavm.audio.FlixelDefaultSoundHandler;
+import me.stringdotjar.flixelgdx.backend.teavm.debug.FlixelTeaVMDebugOverlay;
 import me.stringdotjar.flixelgdx.backend.teavm.logging.FlixelTeaVMLogConsole;
 import me.stringdotjar.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
 
@@ -114,6 +115,9 @@ public class FlixelTeaVMLauncher {
     Flixel.setSoundBackendFactory(new FlixelDefaultSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    if (runtimeMode == FlixelRuntimeMode.DEBUG) {
+      Flixel.setDebugOverlay(FlixelTeaVMDebugOverlay::new);
+    }
     Flixel.initialize(game);
 
     Flixel.setCanStoreLogs(false);
@@ -133,6 +137,7 @@ public class FlixelTeaVMLauncher {
       @Override
       protected void init() {
         super.init();
+        Flixel.mouse.setMouseIconManager(new FlixelTeaVMMouseIconManager(configuration.canvasID));
         addInitQueue();
         AssetInstance.getLoaderInstance().loadScript("freetype.js", new AssetLoaderListener<>() {
           @Override

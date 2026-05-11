@@ -8,7 +8,7 @@
 package me.stringdotjar.flixelgdx.audio;
 
 import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +35,9 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   private Object musicGroup;
 
   private float masterVolume = 1f;
-  private FlixelSound music;
+
+  @Nullable
+  public FlixelSound music;
 
   /**
    * Constructs a new audio manager using the given backend factory.
@@ -110,16 +112,6 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   @NotNull
   public Object getSoundsGroup() {
     return sfxGroup;
-  }
-
-  /**
-   * Returns the currently playing music, or {@code null} if none.
-   *
-   * @return The current music sound, or {@code null}.
-   */
-  @Nullable
-  public FlixelSound getMusic() {
-    return music;
   }
 
   /**
@@ -350,7 +342,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
   }
 
   @Override
-  public void dispose() {
+  public final void dispose() {
     destroy();
   }
 }

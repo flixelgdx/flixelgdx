@@ -9,18 +9,18 @@ package me.stringdotjar.flixelgdx.tween.type;
 
 import java.util.Objects;
 
-import me.stringdotjar.flixelgdx.FlixelObject;
+import me.stringdotjar.flixelgdx.functional.FlixelAngleable;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Tweens {@link FlixelObject#getAngle()} toward an end angle (degrees).
+ * Tweens {@link FlixelAngleable#getAngle()} toward an end angle (degrees).
  */
 public class FlixelAngleTween extends FlixelTween {
 
-  protected @Nullable FlixelObject sprite;
+  protected @Nullable FlixelAngleable angleTarget;
   protected float fromAngle;
   protected float toAngle;
 
@@ -29,12 +29,14 @@ public class FlixelAngleTween extends FlixelTween {
   }
 
   /**
-   * Sets the {@link FlixelObject} and angles to tween.
+   * Sets the {@link FlixelAngleable} and angles to tween.
    *
-   * @param fromAngle Use {@link Float#NaN} to take the sprite's current angle at {@link #start()}.
+   * @param angleTarget The object whose angle is driven.
+   * @param fromAngle Use {@link Float#NaN} to take the target's current angle at {@link #start()}.
+   * @param toAngle The ending angle in degrees.
    */
-  public FlixelAngleTween setAngles(@Nullable FlixelObject sprite, float fromAngle, float toAngle) {
-    this.sprite = sprite;
+  public FlixelAngleTween setAngles(@Nullable FlixelAngleable angleTarget, float fromAngle, float toAngle) {
+    this.angleTarget = angleTarget;
     this.fromAngle = fromAngle;
     this.toAngle = toAngle;
     return this;
@@ -43,36 +45,36 @@ public class FlixelAngleTween extends FlixelTween {
   @Override
   public FlixelTween start() {
     super.start();
-    if (sprite != null && Float.isNaN(fromAngle)) {
-      fromAngle = sprite.getAngle();
+    if (angleTarget != null && Float.isNaN(fromAngle)) {
+      fromAngle = angleTarget.getAngle();
     }
     return this;
   }
 
   @Override
   protected void updateTweenValues() {
-    if (sprite == null) {
+    if (angleTarget == null) {
       return;
     }
     float a = fromAngle + (toAngle - fromAngle) * scale;
-    sprite.setAngle(a);
+    angleTarget.setAngle(a);
   }
 
   @Override
   public boolean isTweenOf(Object object, String field) {
-    if (sprite == null) {
+    if (angleTarget == null) {
       return false;
     }
     if (field == null || field.isEmpty()) {
-      return Objects.equals(object, sprite);
+      return Objects.equals(object, angleTarget);
     }
-    return Objects.equals(object, sprite) && "angle".equals(field);
+    return Objects.equals(object, angleTarget) && "angle".equals(field);
   }
 
   @Override
   public void reset() {
     super.reset();
-    sprite = null;
+    angleTarget = null;
     fromAngle = 0f;
     toAngle = 0f;
   }

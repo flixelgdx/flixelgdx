@@ -11,24 +11,29 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 
 import me.stringdotjar.flixelgdx.asset.FlixelAssetManager;
 import me.stringdotjar.flixelgdx.asset.FlixelDefaultAssetManager;
 import me.stringdotjar.flixelgdx.audio.FlixelAudioManager;
-import me.stringdotjar.flixelgdx.audio.FlixelSound;
 import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
+import me.stringdotjar.flixelgdx.backend.host.FlixelHostIntegration;
+import me.stringdotjar.flixelgdx.backend.host.FlixelNoopHostIntegration;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import me.stringdotjar.flixelgdx.backend.window.FlixelNoopWindow;
+import me.stringdotjar.flixelgdx.backend.window.FlixelWindow;
+import me.stringdotjar.flixelgdx.debug.FlixelDebugManager;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
+import me.stringdotjar.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import me.stringdotjar.flixelgdx.debug.FlixelDebugWatchManager;
 import me.stringdotjar.flixelgdx.group.FlixelGroupable;
 import me.stringdotjar.flixelgdx.logging.FlixelLogConsoleSink;
 import me.stringdotjar.flixelgdx.logging.FlixelLogFileHandler;
 import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
+import me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadManager;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
 import me.stringdotjar.flixelgdx.util.save.FlixelSave;
@@ -39,19 +44,6 @@ import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import me.stringdotjar.flixelgdx.logging.FlixelLogMode;
 import me.stringdotjar.flixelgdx.logging.FlixelLogger;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelAngleTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelCircularMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelColorTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelCubicMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelFlickerTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelLinearMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelLinearPathBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelNumTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelPropertyTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelQuadMotionBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelQuadPathBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelShakeTweenBuilder;
-import me.stringdotjar.flixelgdx.tween.builders.FlixelVarTweenBuilder;
 import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
@@ -101,6 +93,14 @@ import java.util.function.Supplier;
  *   <li>
  *     <b>Asset Loading:</b>
  *     Offers a unified {@link #assets} interface for loading, caching, and retrieving textures, sounds, and data.
+ *   </li>
+ *   <li>
+ *     <b>Host integration:</b>
+ *     Desktop notifications and task attention via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
+ *   </li>
+ *   <li>
+ *     <b>Window control:</b>
+ *     Transparency helpers and desktop window tweaks via {@link #window}.
  *   </li>
  *   <li>
  *     <b>Logging and Debugging:</b>
@@ -232,6 +232,16 @@ public final class Flixel {
   @NotNull
   public static FlixelDebugWatchManager watch;
 
+  /**
+   * Central facade for the debugger. Use {@code Flixel.debug.toggleVisible()},
+   * {@code Flixel.debug.setDrawDebug(true)}, {@code Flixel.debug.registerCommand(...)}, and similar
+   * methods to drive the debugger from your game code. Always non-{@code null} after
+   * {@link #initialize(FlixelGame)} runs (even when the active overlay is {@code null} because
+   * the game is not running in debug mode), so calling its methods is safe in any build.
+   */
+  @NotNull
+  public static FlixelDebugManager debug;
+
   /** Preferences-based save helper. Call {@link FlixelSave#bind(String, String)} before use. */
   @NotNull
   public static FlixelSave save;
@@ -239,6 +249,14 @@ public final class Flixel {
   /** Mouse/pointer input manager. Use after {@link #initialize(FlixelGame)}. */
   @NotNull
   public static FlixelMouseManager mouse;
+
+  /**
+   * Gamepad manager (gdx-controllers). Use logical codes from
+   * {@link me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadInput} with {@code Flixel.gamepads.pressed(0, FlixelGamepadInput.A)}.
+   * Available after {@link #initialize(FlixelGame)}.
+   */
+  @NotNull
+  public static FlixelGamepadManager gamepads;
 
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   @NotNull
@@ -262,6 +280,18 @@ public final class Flixel {
   /** The system to use for displaying alert notifications to the user. */
   @NotNull
   private static FlixelAlerter alerter;
+
+  /**
+   * Desktop window integration (transparency helpers, opacity, decorations). LWJGL3 replaces the default no-op at launch.
+   */
+  @NotNull
+  public static FlixelWindow window = FlixelNoopWindow.INSTANCE;
+
+  /**
+   * Host OS integration (toast notifications and task attention). LWJGL3 replaces the default no-op at launch.
+   */
+  @NotNull
+  public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
 
   /** Has the global manager been initialized yet? */
   protected static boolean initialized = false;
@@ -341,7 +371,7 @@ public final class Flixel {
    * this with their own subclass via {@link #setDebugOverlay(Supplier)} before the game
    * starts (i.e. in the launcher, before {@link FlixelGame#create()} runs).
    */
-  private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelDebugOverlay::new;
+  private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelHeadlessDebugOverlay::new;
 
   /** The active debug overlay instance, created by {@link FlixelGame} during startup. */
   private static FlixelDebugOverlay debugOverlay;
@@ -381,27 +411,30 @@ public final class Flixel {
       sound.resetSession();
     }
     watch = new FlixelDebugWatchManager();
+    debug = new FlixelDebugManager();
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
+    gamepads = new FlixelGamepadManager();
+    gamepads.attach();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
     }
 
-    // Register default tween types with explicit builder factories (no reflection for TeaVM compatibility).
-    FlixelTween.registerTweenType(FlixelPropertyTween.class, FlixelPropertyTweenBuilder.class, FlixelPropertyTweenBuilder::new, () -> new FlixelPropertyTween(null))
-      .registerTweenType(FlixelVarTween.class, FlixelVarTweenBuilder.class, FlixelVarTweenBuilder::new, () -> new FlixelVarTween(null, null))
-      .registerTweenType(FlixelNumTween.class, FlixelNumTweenBuilder.class, FlixelNumTweenBuilder::new, () -> new FlixelNumTween(0, 0, null, null))
-      .registerTweenType(FlixelAngleTween.class, FlixelAngleTweenBuilder.class, FlixelAngleTweenBuilder::new, () -> new FlixelAngleTween(null))
-      .registerTweenType(FlixelColorTween.class, FlixelColorTweenBuilder.class, FlixelColorTweenBuilder::new, () -> new FlixelColorTween(null))
-      .registerTweenType(FlixelShakeTween.class, FlixelShakeTweenBuilder.class, FlixelShakeTweenBuilder::new, () -> new FlixelShakeTween(null))
-      .registerTweenType(FlixelFlickerTween.class, FlixelFlickerTweenBuilder.class, FlixelFlickerTweenBuilder::new, () -> new FlixelFlickerTween(null))
-      .registerTweenType(FlixelLinearMotion.class, FlixelLinearMotionBuilder.class, FlixelLinearMotionBuilder::new, () -> new FlixelLinearMotion(null))
-      .registerTweenType(FlixelCircularMotion.class, FlixelCircularMotionBuilder.class, FlixelCircularMotionBuilder::new, () -> new FlixelCircularMotion(null))
-      .registerTweenType(FlixelQuadMotion.class, FlixelQuadMotionBuilder.class, FlixelQuadMotionBuilder::new, () -> new FlixelQuadMotion(null))
-      .registerTweenType(FlixelCubicMotion.class, FlixelCubicMotionBuilder.class, FlixelCubicMotionBuilder::new, () -> new FlixelCubicMotion(null))
-      .registerTweenType(FlixelLinearPath.class, FlixelLinearPathBuilder.class, FlixelLinearPathBuilder::new, () -> new FlixelLinearPath(null))
-      .registerTweenType(FlixelQuadPath.class, FlixelQuadPathBuilder.class, FlixelQuadPathBuilder::new, () -> new FlixelQuadPath(null));
+    // Register default tween pools (pool factories avoid reflection on constrained runtimes).
+    FlixelTween.registerTweenType(FlixelPropertyTween.class, () -> new FlixelPropertyTween(null))
+      .registerTweenType(FlixelVarTween.class, () -> new FlixelVarTween(null, null))
+      .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
+      .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
+      .registerTweenType(FlixelColorTween.class, () -> new FlixelColorTween(null))
+      .registerTweenType(FlixelShakeTween.class, () -> new FlixelShakeTween(null))
+      .registerTweenType(FlixelFlickerTween.class, () -> new FlixelFlickerTween(null))
+      .registerTweenType(FlixelLinearMotion.class, () -> new FlixelLinearMotion(null))
+      .registerTweenType(FlixelCircularMotion.class, () -> new FlixelCircularMotion(null))
+      .registerTweenType(FlixelQuadMotion.class, () -> new FlixelQuadMotion(null))
+      .registerTweenType(FlixelCubicMotion.class, () -> new FlixelCubicMotion(null))
+      .registerTweenType(FlixelLinearPath.class, () -> new FlixelLinearPath(null))
+      .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
 
     initialized = true;
   }
@@ -420,6 +453,32 @@ public final class Flixel {
       throw new IllegalArgumentException("Alert system cannot be null.");
     }
     alerter = alertSystem;
+  }
+
+  /**
+   * Sets the desktop window integration implementation before {@link #initialize(FlixelGame)}.
+   *
+   * @param windowAccess Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setWindow(@NotNull FlixelWindow windowAccess) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change window integration after Flixel has been initialized.");
+    }
+    window = Objects.requireNonNull(windowAccess, "window cannot be null.");
+  }
+
+  /**
+   * Sets the host OS integration implementation before {@link #initialize(FlixelGame)}.
+   *
+   * @param hostIntegration Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setHost(@NotNull FlixelHostIntegration hostIntegration) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change host integration after Flixel has been initialized.");
+    }
+    host = Objects.requireNonNull(hostIntegration, "host cannot be null.");
   }
 
   /**
@@ -536,7 +595,7 @@ public final class Flixel {
    * Sets the current state to the provided state, triggers garbage collection and
    * clears all active tweens by default.
    *
-   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param newState The new {@link FlixelState} to set as the current state.
    */
   public static void switchState(FlixelState newState) {
     switchState(newState, true, true, () -> newState);
@@ -567,7 +626,7 @@ public final class Flixel {
    * Sets the current state to the provided state.
    *
    * @param newState The new {@code FlixelState} to set as the current state.
-   * @param clearTweens Should all active tweens be cancelled and their pools be cleared?
+   * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
    */
@@ -674,7 +733,7 @@ public final class Flixel {
   }
 
   /**
-   * Logs a error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
    * This is for events that are typically not recoverable.
    *
    * @param message The message to log.
@@ -684,7 +743,7 @@ public final class Flixel {
   }
 
   /**
-   * Logs a error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
    * This is for events that are typically not recoverable.
    *
    * @param tag The tag to log the message under.
@@ -695,7 +754,7 @@ public final class Flixel {
   }
 
   /**
-   * Logs a error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
    * This is for events that are typically not recoverable.
    *
    * @param tag The tag to log the message under.
@@ -773,7 +832,7 @@ public final class Flixel {
   }
 
   /**
-   * Starts file logging for the default logger (uses its current `canStoreLogs` and `maxLogFiles`).
+   * Starts file logging for the default logger (uses its current {@code canStoreLogs} and {@code maxLogFiles}).
    */
   public static void startFileLogging() {
     Objects.requireNonNull(log, "Cannot start file logging when the logger is not set!");
@@ -818,16 +877,8 @@ public final class Flixel {
     return game;
   }
 
-  public static Stage getStage() {
-    return game.stage;
-  }
-
   public static FlixelState getState() {
     return state;
-  }
-
-  public static FlixelSound getMusic() {
-    return sound.getMusic();
   }
 
   public static Vector2 getWindowSize() {
@@ -1033,6 +1084,10 @@ public final class Flixel {
    * <p>A factory is used instead of a new instance directly for timing, so that way the
    * debug overlay can be set even before GL context is created.
    *
+   * <p>The default factory builds {@link FlixelHeadlessDebugOverlay} (no extra UI panels). Desktop
+   * launchers normally replace this with a richer overlay (for example Dear ImGui) before
+   * {@link Flixel#initialize}.
+   *
    * <p>Example:
    * <pre>{@code
    * Flixel.setDebugOverlay(MyCustomOverlay::new);
@@ -1179,27 +1234,22 @@ public final class Flixel {
   }
 
   /**
-   * Returns the current frames-per-second as reported by the graphics backend.
+   * Returns the average frames-per-second as reported by the graphics backend.
    *
-   * @return The current frames-per-second as reported by the graphics backend.
+   * @return The average frames-per-second as reported by the graphics backend.
    */
   public static int getFPS() {
     return Gdx.graphics != null ? Gdx.graphics.getFramesPerSecond() : 0;
   }
 
+  /** @see FlixelGame#getCamera() */
   public static FlixelCamera getCamera() {
     Objects.requireNonNull(game, "Cannot get the camera when the game object is not initialized!");
     return game.getCamera();
   }
 
-  // TODO: When fully removed, rename getCamerasArray() to just getCameras(), since users can just access the items anyways.
-  @Deprecated(since = "0.1.1-beta", forRemoval = true)
-  public static FlixelCamera[] getCameras() {
-    Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
-    return game.getCameras().items;
-  }
-
-  public static Array<FlixelCamera> getCamerasArray() {
+  /** @see FlixelGame#getCameras() */
+  public static Array<FlixelCamera> getCameras() {
     Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
     return game.getCameras();
   }
@@ -1358,7 +1408,7 @@ public final class Flixel {
    * @param objectOrGroup2 Second object or group (may be {@code null} to use the current state).
    * @param notifyCallback Called for each overlapping pair. May be {@code null}.
    * @param processCallback If provided, must return {@code true} for the pair to count as overlapping.
-   * Pass {@code null} for simple AABB overlap.
+   *   Pass {@code null} for simple AABB overlap.
    * @return {@code true} if any overlaps were detected.
    */
   public static boolean overlap(@Nullable FlixelBasic objectOrGroup1,
@@ -1412,7 +1462,7 @@ public final class Flixel {
       Array<?> members = group1.getMembers();
       if (members != null) {
         for (Object o : members) {
-          if (o instanceof FlixelBasic member && member.exists) {
+          if (o instanceof FlixelBasic member && member.isExists()) {
             result |= overlapInternal(member, obj2, notifyCallback, processCallback);
           }
         }
@@ -1424,7 +1474,7 @@ public final class Flixel {
       Array<?> members = group2.getMembers();
       if (members != null) {
         for (Object o : members) {
-          if (o instanceof FlixelBasic member && member.exists) {
+          if (o instanceof FlixelBasic member && member.isExists()) {
             result |= overlapInternal(obj1, member, notifyCallback, processCallback);
           }
         }

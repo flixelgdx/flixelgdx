@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.SnapshotArray;
 
+import me.stringdotjar.flixelgdx.functional.IFlixelBasic;
 import me.stringdotjar.flixelgdx.group.FlixelBasicGroup;
 
 import org.jetbrains.annotations.NotNull;
@@ -20,23 +21,24 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The core building block for every FlixelGDX game.
  *
- * <p>A state is a collection of {@link FlixelBasic} objects that can be used for any
+ * <p>A state is a collection of {@link IFlixelBasic} objects that can be used for any
  * important part of your game. This can be a level, a menu, or anything else.
  *
  * <p>Members are not pooled by the engine: {@link #remove} only unlinks objects. Prefer {@link FlixelBasic#kill()} /
  * {@link FlixelBasic#revive()} or {@link FlixelBasicGroup#recycle()} for reuse. {@link #createMemberForRecycle()} supplies
  * new {@link FlixelSprite} instances when {@link FlixelBasicGroup#recycle()} has no dead member to revive. Override it if
- * your state recycles another {@link FlixelBasic} subtype.
+ * your state recycles another {@link IFlixelBasic} implementation.
  *
  * <p>A state can open a {@link FlixelSubState} on top of itself.
  * By default, when a substate is active the parent state will continue to be drawn
  * ({@link #persistentDraw} = {@code true}) but will stop updating
  * ({@link #persistentUpdate} = {@code false}).
  *
+ * @see IFlixelBasic
  * @see FlixelBasic
  * @see FlixelBasicGroup
  */
-public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implements Screen {
+public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> implements Screen {
 
   /** Should {@code this} state update its logic even when a substate is currently opened? */
   public boolean persistentUpdate = false;
@@ -55,7 +57,7 @@ public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implemen
 
   /** Creates a new state with no limit on member count. */
   protected FlixelState() {
-    super(FlixelBasic[]::new);
+    super(IFlixelBasic[]::new);
   }
 
   /**
@@ -64,17 +66,17 @@ public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implemen
    * @param maxSize Maximum members ({@code 0} = unlimited).
    */
   protected FlixelState(int maxSize) {
-    super(FlixelBasic[]::new, maxSize);
+    super(IFlixelBasic[]::new, maxSize);
   }
 
   @Override
-  protected FlixelBasic createMemberForRecycle() {
+  protected IFlixelBasic createMemberForRecycle() {
     return new FlixelSprite();
   }
 
   @Override
-  public FlixelBasic recycle() {
-    FlixelBasic member = super.recycle();
+  public IFlixelBasic recycle() {
+    IFlixelBasic member = super.recycle();
     if (member instanceof FlixelSprite sprite) {
       sprite.setAntialiasing(Flixel.globalAntialiasing());
     }
@@ -102,6 +104,7 @@ public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implemen
    *
    * @param elapsed The amount of time that's occurred since the last frame.
    */
+  @Override
   public void update(float elapsed) {
     super.update(elapsed);
   }
@@ -111,6 +114,7 @@ public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implemen
    *
    * @param batch The batch that's used to draw {@code this} state's members.
    */
+  @Override
   public void draw(Batch batch) {
     super.draw(batch);
   }
@@ -189,11 +193,60 @@ public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implemen
   @Override
   public void resize(int width, int height) {}
 
+  /**
+   * Called by the framework when the application is paused by the OS (for example Android backgrounding) or when the
+   * desktop window loses focus or is minimized. Do not override this method. Override {@link #onFocusLost()} instead.
+   *
+   * <p>The call walks from {@code this} state down through {@link #getSubState()} so every state in the chain is
+   * notified, parent before child.
+   *
+   * @see FlixelGame#pause()
+   * @see FlixelGame#onWindowUnfocused()
+   * @see Screen#pause()
+   */
   @Override
-  public void pause() {}
+  public final void pause() {
+    onFocusLost();
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.pause();
+    }
+  }
 
+  /**
+   * Called by the framework when the application resumes or when the desktop window regains focus or is restored from
+   * minimized. Do not override this method. Override {@link #onFocus()} instead.
+   *
+   * <p>The call walks {@link #getSubState()} first so the deepest substate runs {@link #onFocus()} before its parents.
+   *
+   * @see FlixelGame#resume()
+   * @see FlixelGame#onWindowFocused()
+   * @see Screen#resume()
+   */
   @Override
-  public void resume() {}
+  public final void resume() {
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.resume();
+    }
+    onFocus();
+  }
+
+  /**
+   * Hook for when {@code this} state should treat the game as inactive: window unfocused, minimized, OS-level pause,
+   * or other cases where {@link FlixelGame} dispatches {@link #pause()} to the current state chain.
+   *
+   * <p>Parent states run this hook before substates during {@link #pause()}.
+   */
+  protected void onFocusLost() {}
+
+  /**
+   * Hook for when {@code this} state should treat the game as active again after {@link #onFocusLost()}: window
+   * focused again, restored from minimized, OS-level resume, or matching {@link #resume()} from {@link FlixelGame}.
+   *
+   * <p>Substates run this hook before their parent states during {@link #resume()}.
+   */
+  protected void onFocus() {}
 
   @Override
   public void hide() {}
@@ -213,7 +266,7 @@ public abstract class FlixelState extends FlixelBasicGroup<FlixelBasic> implemen
    * @param basic The object to add to the state.
    */
   @Override
-  public void add(@NotNull FlixelBasic basic) {
+  public void add(@NotNull IFlixelBasic basic) {
     super.add(basic);
     if (basic instanceof FlixelSprite sprite) {
       sprite.setAntialiasing(Flixel.globalAntialiasing());

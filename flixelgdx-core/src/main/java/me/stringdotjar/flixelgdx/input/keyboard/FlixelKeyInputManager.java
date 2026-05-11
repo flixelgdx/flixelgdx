@@ -14,6 +14,10 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.utils.IntArray;
 import com.badlogic.gdx.utils.IntSet;
 
+import me.stringdotjar.flixelgdx.Flixel;
+import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
+import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
+
 /**
  * Keyboard input manager backed by {@link com.badlogic.gdx.Gdx#input}.
  *
@@ -33,7 +37,7 @@ import com.badlogic.gdx.utils.IntSet;
  * {@link InputMultiplexer}). If you replace the input processor with your own, add this one first
  * so key state still updates.
  */
-public class FlixelKeyInputManager {
+public class FlixelKeyInputManager implements FlixelInputProcessorManager {
 
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;
@@ -125,18 +129,41 @@ public class FlixelKeyInputManager {
    * at the <i>end</i> of the update cycle (after all state updates) so that
    * {@link #firstJustPressed()} and {@link #firstJustReleased()} work correctly next frame.
    */
+  @Override
   public void endFrame() {
     previousPressedKeys.clear();
     previousPressedKeys.addAll(currentPressedKeys);
   }
 
   /**
-   * Returns whether the given key is currently held down.
+   * Returns whether the given key is currently held down. Returns {@code false} when the active
+   * debug overlay reports that another UI layer (typically the imgui debugger console) is
+   * capturing keyboard input, so typing in a debug text field cannot leak into game-side input
+   * (e.g. an {@code ui_accept} action bound to {@code ENTER}).
+   *
+   * <p>Use {@link #rawPressed(int)} when you specifically need the raw, unsuppressed state
+   * (the debug overlay itself uses this for its toggle keys so they keep working even when a
+   * text field is focused).
    *
    * @param key The key to check if it is pressed. (e.g. {@link FlixelKey#A}, {@link Input.Keys})
-   * @return {@code true} if the key is pressed and input is enabled.
+   * @return {@code true} if the key is pressed and input is enabled and not suppressed by UI.
    */
   public boolean pressed(int key) {
+    if (isCapturedByDebugUI()) {
+      return false;
+    }
+    return rawPressed(key);
+  }
+
+  /**
+   * Same as {@link #pressed(int)} but bypasses the "captured by debug UI" check. Intended for
+   * the debug overlay's own toggle keys and tools, which must keep responding even while a
+   * Dear ImGui text input has focus.
+   *
+   * @param key The key to check if it is pressed.
+   * @return {@code true} if the key is pressed and input is enabled, regardless of UI capture.
+   */
+  public boolean rawPressed(int key) {
     if (!enabled) {
       return false;
     }
@@ -150,15 +177,30 @@ public class FlixelKeyInputManager {
   }
 
   /**
-   * Returns whether the given key was just pressed this frame. Uses the same
-   * {@code current} vs {@code previous} key sets as {@link #justReleased(int)} and
-   * {@link #firstJustPressed()} so "just" transitions stay reliable on all backends
-   * (for example, WebGL where {@code Gdx.input.isKeyJustPressed} is not dependable).
+   * Returns whether the given key was just pressed this frame. Returns {@code false} while the
+   * active debug overlay reports that another UI layer is capturing keyboard input. Uses the
+   * same {@code current} vs {@code previous} key sets as {@link #justReleased(int)} and
+   * {@link #firstJustPressed()} so "just" transitions stay reliable on all backends (for
+   * example, WebGL where {@code Gdx.input.isKeyJustPressed} is not dependable).
    *
    * @param key key code
-   * @return {@code true} if the key was just pressed and input is enabled.
+   * @return {@code true} if the key was just pressed and input is enabled and not suppressed by UI.
    */
   public boolean justPressed(int key) {
+    if (isCapturedByDebugUI()) {
+      return false;
+    }
+    return rawJustPressed(key);
+  }
+
+  /**
+   * Same as {@link #justPressed(int)} but bypasses the "captured by debug UI" check. Use this
+   * for input that must keep working regardless of UI capture.
+   *
+   * @param key key code
+   * @return {@code true} if the key was just pressed and input is enabled, regardless of UI capture.
+   */
+  public boolean rawJustPressed(int key) {
     if (!enabled) {
       return false;
     }
@@ -178,12 +220,27 @@ public class FlixelKeyInputManager {
   }
 
   /**
-   * Returns whether the given key was just released this frame.
+   * Returns whether the given key was just released this frame. Returns {@code false} while the
+   * active debug overlay reports that another UI layer is capturing keyboard input.
    *
    * @param key key code
-   * @return {@code true} if the key was pressed last frame and is not pressed now, and input is enabled.
+   * @return {@code true} if the key was pressed last frame and is not pressed now, and input is
+   *   enabled and not suppressed by UI.
    */
   public boolean justReleased(int key) {
+    if (isCapturedByDebugUI()) {
+      return false;
+    }
+    return rawJustReleased(key);
+  }
+
+  /**
+   * Same as {@link #justReleased(int)} but bypasses the "captured by debug UI" check.
+   *
+   * @param key The key code to check if it was just released.
+   * @return {@code true} if the key was just released and input is enabled, regardless of UI capture.
+   */
+  public boolean rawJustReleased(int key) {
     if (!enabled) {
       return false;
     }
@@ -200,6 +257,17 @@ public class FlixelKeyInputManager {
       return false;
     }
     return previousPressedKeys.contains(key) && !currentPressedKeys.contains(key);
+  }
+
+  /**
+   * Returns {@code true} when the active {@link FlixelDebugOverlay} reports that another UI
+   * layer is consuming keyboard input. Used by {@link #pressed(int)},
+   * {@link #justPressed(int)}, and {@link #justReleased(int)} to suppress game-level input
+   * while debug UI text fields are focused.
+   */
+  private static boolean isCapturedByDebugUI() {
+    FlixelDebugOverlay overlay = Flixel.getDebugOverlay();
+    return overlay != null && overlay.isKeyboardCapturedByUI();
   }
 
   /**
@@ -496,12 +564,13 @@ public class FlixelKeyInputManager {
 
   /**
    * Returns the key code that was pressed first (chronologically) among those currently held,
-   * or {@link FlixelKey#NONE} if none.
+   * or {@link FlixelKey#NONE} if none. Returns {@link FlixelKey#NONE} while the active debug
+   * overlay reports that another UI layer is capturing keyboard input.
    *
    * @return First pressed key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstPressed() {
-    if (!enabled || pressedOrder.size == 0) {
+    if (isCapturedByDebugUI() || !enabled || pressedOrder.size == 0) {
       return FlixelKey.NONE;
     }
     return pressedOrder.first();
@@ -509,11 +578,12 @@ public class FlixelKeyInputManager {
 
   /**
    * Returns the first key code that was just pressed this frame, or {@link FlixelKey#NONE} if none.
+   * Returns {@link FlixelKey#NONE} while the debug UI is capturing keyboard input.
    *
    * @return First just-pressed key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstJustPressed() {
-    if (!enabled) {
+    if (isCapturedByDebugUI() || !enabled) {
       return FlixelKey.NONE;
     }
     for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext; ) {
@@ -527,11 +597,12 @@ public class FlixelKeyInputManager {
 
   /**
    * Returns the first key code that was just released this frame, or {@link FlixelKey#NONE} if none.
+   * Returns {@link FlixelKey#NONE} while the debug UI is capturing keyboard input.
    *
    * @return First just-released key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstJustReleased() {
-    if (!enabled) {
+    if (isCapturedByDebugUI() || !enabled) {
       return FlixelKey.NONE;
     }
     for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext; ) {

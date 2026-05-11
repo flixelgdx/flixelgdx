@@ -1,15 +1,141 @@
 ---
+description:
 alwaysApply: true
 ---
 
 When writing documentation (specifically for source code Javadocs or comments), follow these guidelines:
 
 - Use proper grammar. Use proper punctuation on everything, including comments, Javadoc parameter/returns/throws descriptions., etc.
-- Avoid using special symbols, such as en dashes, em dashes, special arrows, etc. It is not necessary. Avoiding these helps keep the documentation simple and concise. Use pure ASCII characters instead.
-- Always include every tag for Javadocs, such as @param, @returns, @throws, etc.
-- Use null annotations where necessary, such as @Nullable or @NotNull. This allows IDEs to highlight when something could be null ahead of time and allow the user to add safeguards before compiling their code.
-- When using Javadoc features like @link, make sure it actually works. If there's a broken link, or if it's not a supported feature, modify it accordingly. This allows the documentation to be easily navigated and readable by users and developers alike.
-- Keep the tone simple and inviting. The documentation should be able to teach the users (especially beginners) how to use the framework, not just a dry manual. When needed, include code examples showing how to use a class or method.
-- When writing code, always use the `.editorconfig` file for formatting. This keeps the formatting of the code consistent and makes it looks like as if it was written by a single person.
+- Avoid using special symbols, such as en dashes, em dashes, special arrows, etc. It is not necessary. Avoiding these
+  helps keep the documentation simple and concise. Use pure ASCII characters instead.
+- Always include every relevant tag for Javadocs, such as @param, @returns, @throws, etc.
+- Use null annotations where necessary, such as @Nullable or @NotNull. This allows IDEs to highlight when something
+  could be null ahead of time and allow the user to add safeguards before compiling their code.
+- When using Javadoc features like @link, make sure it actually works. If there's a broken link, or if it's not a
+  supported feature, modify it accordingly. This allows the documentation to be easily navigated and readable by users
+  and developers alike.
+- Keep the tone simple and inviting. The documentation should be able to teach the users (especially beginners) how to
+  use the framework.
+- When writing code, always use the `.editorconfig` file for formatting. This keeps the formatting of the code
+  consistent and makes it looks like as if it was written by a single person.
 - Add brief comments in places where the code either might be complex or hard to read when there's too much going on.
-- Avoid adding Javadocs to methods or functions that have literal names. For example, if it's a simple getter/setter or a method named `calculateTotal()`, don't add a Javadoc unless necessary.
+- Avoid adding Javadocs to methods or functions that have literal names. For example, if it's a simple getter/setter or
+  a method named `calculateTotal()`, don't add a Javadoc unless necessary.
+- When writing comments, do not use markdown formatting characters (like double asterisks for bold or backticks for
+  code snippets). Special formatting should be strictly kept in the Javadocs and Javadocs only.
+- For comments in code, if you come across needing to talk about a method, make sure to include parenthesis when writing
+  it. If a method has at least one parameter, use `...` as a placeholder. Some examples of methods in comments might be
+  `someMethod()`, `anotherMethod(...)`, or `SomeClass.someMethod(...)`.
+- Inside of comments when writing code, don't use hashtags to represent separated fields or methods like how it's done
+  in Javadocs (i.e., `SomeClass#someMethod(int)`). Use periods instead, as it keeps the comments clean and concise to read.
+- When writing documentation, remember one thing: the documentation should be a beginner friendly handbook, *not* a dry
+  and expert only manual. ***This is the most important one, and there's no arguing with this rule***.
+- If there is a class, field or method that is used commonly (or if it's critical and important), inside of its Javadoc,
+  include a code example of how to use the said class, field or method correctly. It should be simple and easy to infer
+  how that said system should be implemented and used in the correct way.
+- When you change code and have completed a task, ***always*** check the markdown files to ensure all relevant information is up-to-date.
+- All documentation should be written in **American english**. This keeps the documentation universally consistent and predictable.
+- Put the same copyright notice comment in all `.java` files (excluding `package-info.java` or `module-info.java` files).
+
+# Good vs Bad Documentation
+
+## Good Docs
+
+```java
+/**
+ * Immutable, pre-resolved multi-part rig for an Adobe Animate (BTA/"Better Texture Atlas") character. Built by
+ * {@link FlixelAnimateRigLoader} and consumed by {@link FlixelAnimateSprite}.
+ *
+ * <h2>Data shape</h2>
+ * The rig is a dictionary of named {@link Clip clips} (for example {@code "Idle"}, {@code "Left"}). Each clip
+ * holds an array of {@link Keyframe keyframes}, one per visible frame of the animation. Each keyframe holds
+ * an ordered array of {@link Part parts}, which are the individual bitmap slices that must be drawn in
+ * back-to-front order to produce the final composited image for that moment in time.
+ *
+ * <p>Each {@link Part} stores:
+ * <ul>
+ *   <li>An integer index into {@link #atlas} selecting which bitmap slice to draw.</li>
+ *   <li>A fully baked {@link Affine2} that already contains (a) the Flash {@code MX} matrix chain from
+ *   the root symbol down to the leaf bitmap, (b) a Y-axis flip that converts Adobe Animate's Y-down
+ *   bitmap space into libGDX's Y-up texture-region space, and (c) an anchor translation that shifts the
+ *   whole rig so the anchor-clip bounding box starts at {@code (0, 0)}.</li>
+ * </ul>
+ *
+ * <p>Because every matrix is baked at load time, the per-frame draw path is reduced to one translate, one
+ * scale, and one affine concatenation per visible bitmap.
+ *
+ * <h2>Anchor space</h2>
+ * The <strong>anchor clip</strong> defines the bounding box used to size the
+ * sprite's hitbox: parts are pre-shifted so the union of their rectangles on anchor-clip frame {@code 0}
+ * fits exactly inside {@code (0, 0)} to {@code (anchorWidth, anchorHeight)}. All other clips are baked
+ * in the same coordinate space, so switching clips does not move the rig relative to the sprite's hitbox.
+ *
+ * <h2>Merging multiple atlases</h2>
+ * A rig can grow at runtime by merging additional Adobe Animate exports through
+ * {@link FlixelAnimateRigLoader#append(FlixelAnimateSprite, FlixelAnimationController, String, String, String)}.
+ * Appended atlases share the original rig's anchor space (preserved on the rig as
+ * {@link #anchorMinX} / {@link #anchorMinY} / {@link #anchorHeight}), so a character's body stays
+ * visually pinned to the same world position when game code switches between, say, an "idle" atlas
+ * and a separate "miss" atlas. Frames from the appended atlas are appended to {@link #atlas} and the
+ * appended clip names are added to {@link #clips}, with later entries overwriting earlier ones on
+ * name collisions.
+ */
+```
+
+```java
+/**
+ * Creates a new rig. Called by {@link FlixelAnimateRigLoader} after all parts have been baked.
+ *
+ * @param atlas The shared atlas region list that {@link Part#atlasIndex} indexes into. Must not be {@code null}.
+ * @param clips The map of clip name to {@link Clip}. Ownership transfers to the rig. Must not be {@code null}.
+ * @param anchorClipName The name of the anchor clip (for example {@code "Idle"}). Must not be {@code null}.
+ * @param anchorMinX The X-coordinate of the anchor bounding box's top-left corner in Flash Y-down
+ *   world space. Used by the loader to bake additional atlases into the same coordinate system.
+ * @param anchorMinY The Y-coordinate of the anchor bounding box's top-left corner in Flash Y-down
+ *   world space. Used by the loader to bake additional atlases into the same coordinate system.
+ * @param anchorWidth The width of the anchor bounding box in pixels.
+ * @param anchorHeight The height of the anchor bounding box in pixels.
+ */
+FlixelAnimateRig(
+    @NotNull Array<FlixelFrame> atlas,
+    @NotNull ObjectMap<String, Clip> clips,
+    @NotNull String anchorClipName,
+    float anchorMinX,
+    float anchorMinY,
+    float anchorWidth,
+    float anchorHeight) { ... }
+```
+
+```java
+// Notice how this comment is very detailed, with proper grammar as well.
+// It's written in American English, and it's nice and readable. Note that comments
+// should never be too long nor too short: length doesn't matter. What DOES matter
+// is that it conveys the correct information to the reader and it simply explains
+// what the code below the comment does.
+```
+
+## Bad Docs
+
+```java
+// No docs at all, unless it's a simpler getter/setter than can be inferred on what it does.
+```
+
+```java
+/**
+ * oh, uuhhhhh.. thsi clas does sm,th, idk what it is though :p
+ */
+```
+
+### Too Many Comments
+
+```java
+// this checks to see if somerhing si null.
+Objects.requireNonNull(object);
+
+// this loops through a number 10 times
+for (int i = 0; i < 10; i++) { ... }
+```
+
+```java
+// erm. funny note here haha. dont even know what im doign anymore lolz. TwT
+```

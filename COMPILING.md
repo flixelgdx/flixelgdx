@@ -128,30 +128,6 @@ Configure your editor so it uses JDK 17 and the project’s Gradle build. Enabli
   - **View → Tool Windows → Gradle**. Under **flixelgdx → Tasks → publishing**, run **publishToMavenLocal**.  
   - Or use the terminal inside IntelliJ: `./gradlew publishToMavenLocal` (on Windows: `gradlew.bat publishToMavenLocal`).
 
-### VS Code / Cursor
-
-- **Install**  
-  - [code.visualstudio.com](https://code.visualstudio.com/) or [cursor.com](https://cursor.com).  
-  - Windows/macOS: run the installer.  
-  - Linux: .deb / .rpm from the site, or install via Snap/Flatpak.
-
-- **Extensions**  
-  - Install **“Extension Pack for Java”** (Microsoft) — it includes language support and Gradle.  
-  - Optionally **“Gradle for Java”** (Microsoft) for Gradle tasks in the sidebar.  
-  - For consistent style: **“EditorConfig for VS Code”** (EditorConfig.EditorConfig).
-
-
-- **Open the project**  
-  - **File → Open Folder** → select the **flixelgdx** root directory.
-- **Select JDK 17**  
-  - **Ctrl+Shift+P** (or **Cmd+Shift+P** on macOS) → **“Java: Configure Java Runtime”**.  
-  - Point to JDK 17 (e.g. the path you used for `JAVA_HOME`). If needed, add a JDK 17 download from the same screen.
-
-- **Build**  
-  - Open the integrated terminal (**Ctrl+`** / **Cmd+`**) and run:  
-  `./gradlew publishToMavenLocal`  
-  - On Windows use `.\gradlew.bat publishToMavenLocal` if `./gradlew` is not available.
-
 ### Eclipse
 
 - **Install**  
@@ -381,6 +357,8 @@ After the project is generated, add FlixelGDX and wire it in:
      }
      ```
 
+   If you launch with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
+
 7. **Refresh Gradle** in your IDE (e.g. “Reload All Gradle Projects” or Gradle sync). Resolve any import errors so that `FlixelGame`, `FlixelState`, and `Flixel` are found from `flixelgdx-core`, and `FlixelLwjgl3Launcher` from `flixelgdx-lwjgl3`.
 8. **Run the desktop launcher.**
   Run the **lwjgl3** run configuration with the main class set to your launcher (e.g. `FlixelTestLauncher`). You should see your state. If you added Android/iOS/HTML, run the corresponding launcher or Gradle task for that platform to test there as well.
@@ -547,8 +525,6 @@ flixelgdx {
   // Canvas element ID (default: "flixelgdx-canvas").
   // Must match WebApplicationConfiguration.canvasID in your launcher.
   canvasId = 'my-canvas'
-
-  // outputDir: omit; FlixelGDX uses teavm.all.outputDir by default. Set only to split outputs (rare).
 
   // Custom startup logo (optional).
   customStartupLogo = file('src/main/webapp/startup-logo.png')

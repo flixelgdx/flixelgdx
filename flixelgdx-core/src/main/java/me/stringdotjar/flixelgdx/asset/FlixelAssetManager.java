@@ -11,7 +11,7 @@ import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.utils.Disposable;
 
-import me.stringdotjar.flixelgdx.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
 
 import java.util.function.Function;
 
@@ -28,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
  * infers a source from the file extension via the per-manager extension registry; it is convenient but
  * ambiguous if extensions collide or custom content is used—register mappings with
  * {@link #registerExtension(String, Function)} or use {@link #load(FlixelSource)} instead.
+ *
+ * <p>The default implementation canonicalizes path-shaped keys (see {@link FlixelAssetPaths#normalizeAssetPath(String)})
+ * so duplicate slashes or mixed separators do not break lookups on backends that compare paths literally (such as web manifests).
  *
  * <p><b>If you ever forget which method to use when it comes to handles, here's a quick reminder:</b>
  * <ul>
@@ -92,7 +95,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
 
   /**
    * Like {@link #load(String, Class)} with a pending persist flag for the first handle (see {@link #load(String, boolean)}).
-   * 
+   *
    * @param fileName The asset key/path passed to libGDX.
    * @param type The concrete type registered with {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@link com.badlogic.gdx.graphics.Texture}.class).
    * @param persist The pending persist flag for the first handle.

@@ -12,7 +12,7 @@ import com.badlogic.gdx.backends.iosrobovm.IOSApplicationConfiguration;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.backend.ios.alert.FlixelIOSAlerter;
-import me.stringdotjar.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
+import me.stringdotjar.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;

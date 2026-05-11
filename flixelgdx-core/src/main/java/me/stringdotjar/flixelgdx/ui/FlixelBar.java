@@ -976,20 +976,6 @@ public class FlixelBar extends FlixelSprite {
     return 1f - (float) Math.pow(1f - lerp, elapsed * 60f);
   }
 
-  private static float resolveTargetFramerate() {
-    FlixelGame game = Flixel.getGame();
-    if (game != null) {
-      return game.getFramerate();
-    }
-    if (Gdx.graphics != null) {
-      int hz = Gdx.graphics.getDisplayMode().refreshRate;
-      if (hz > 0) {
-        return hz;
-      }
-    }
-    return 60f;
-  }
-
   /**
    * One entry in a piecewise-linear threshold color ramp. At fill percent {@link #percent} the bar uses
    * {@link #color}, interpolating between stops for values in between.

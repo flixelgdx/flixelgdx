@@ -13,25 +13,31 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import me.stringdotjar.flixelgdx.debug.FlixelDebugOverlay;
+import me.stringdotjar.flixelgdx.functional.FlixelDestroyable;
+import me.stringdotjar.flixelgdx.functional.FlixelDrawable;
+import me.stringdotjar.flixelgdx.functional.FlixelUpdatable;
 import me.stringdotjar.flixelgdx.text.FlixelFontRegistry;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
+import me.stringdotjar.flixelgdx.input.FlixelInputProcessorManager;
+import me.stringdotjar.flixelgdx.input.action.FlixelActionSets;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -52,8 +58,8 @@ import java.util.function.Supplier;
  * // to the game's behavior.
  * public class MyGame extends FlixelGame {
  *
- *   public MyGame(String title, int width, int height, FlixelState initialState) {
- *     super(title, width, height, initialState);
+ *   public MyGame() {
+ *     super("My Game Title", 640, 360, new InitialState());
  *   }
  * }
  * }</pre>
@@ -69,14 +75,7 @@ import java.util.function.Supplier;
  *       return;
  *     }
  *
- *     MyGame game = new MyGame(
- *       "My Game",
- *       800,
- *       600,
- *       new InitialState() // The initial state the game enters when it starts!
- *     );
- *
- *     FlixelLwjgl3Launcher.launch(game);
+ *     FlixelLwjgl3Launcher.launch(new MyGame());
  *   }
  * }
  * }</pre>
@@ -109,6 +108,18 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Should the game start in fullscreen mode? */
   protected boolean fullscreen;
 
+  /**
+   * When {@code true}, the LWJGL3 launcher requests an alpha-capable framebuffer so
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} can composite
+   * with the desktop.
+   *
+   * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
+   *
+   * <p><b>WARNING</b>: This can cause some minor performance issues on low-end PCs, so only enable this at launch time
+   * if you truly need to!
+   */
+  protected boolean transparentFramebufferRequested = false;
+
   /** Should the game pause update calls and audio when the window loses focus or is minimized? */
   public boolean autoPause = true;
 
@@ -117,9 +128,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Is the game's window currently minimized? */
   private boolean isMinimized = false;
-
-  /** The main stage used for rendering all screens and sprites on screen. */
-  protected Stage stage;
 
   /** The main sprite batch used for rendering all sprites on screen. */
   protected SpriteBatch batch;
@@ -161,6 +169,37 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
+
+  /**
+   * When {@code true}, {@link Flixel#getState()} was sent {@link FlixelState#pause()} for a paired app or window pause
+   * and {@link FlixelState#resume()} has not yet been dispatched. Used so duplicate callbacks (such as minimize plus
+   * focus lost) only run state hooks once.
+   */
+  private boolean stateLifecyclePauseDispatched;
+
+  /**
+   * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#isDesktopTransparencyActive()}.
+   */
+  private boolean desktopTransparencyActive;
+
+  /**
+   * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
+   * this session. Cleared when transparency is turned off.
+   */
+  private final float[] desktopTransparencyRestoreGameRgba = new float[4];
+
+  /**
+   * Packed per-camera backdrop data: {@code r, g, b, a, useBgAlphaBlending ? 1f : 0f} for each camera index.
+   * Reused across toggles to avoid allocations.
+   */
+  private float[] desktopTransparencyRestoreCamerasPacked = new float[20];
+
+  private int desktopTransparencyRestoreCameraCount;
+
+  private boolean desktopTransparencyRestoreSnapshotValid;
+
+  private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
 
   /**
    * Creates a new game instance with the details specified.
@@ -265,11 +304,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     isClosed = false;
     isClosing = false;
+    stateLifecyclePauseDispatched = false;
 
     batch = new SpriteBatch();
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
-    stage = new Stage(getCamera().getViewport(), batch);
 
     Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
     pixmap.setColor(Color.WHITE);
@@ -278,7 +317,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     pixmap.dispose();
 
     // Keyboard + mouse processors first on the multiplexer (scroll, etc.)
-    if (Flixel.keys != null || Flixel.mouse != null) {
+    FlixelInputProcessorManager keysMgr = Flixel.keys;
+    FlixelInputProcessorManager mouseMgr = Flixel.mouse;
+    if (keysMgr != null || mouseMgr != null) {
       InputProcessor current = Gdx.input.getInputProcessor();
       InputMultiplexer m;
       if (current instanceof InputMultiplexer multiplexer) {
@@ -291,11 +332,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         Gdx.input.setInputProcessor(m);
       }
       int idx = 0;
-      if (Flixel.keys != null) {
-        m.addProcessor(idx++, Flixel.keys.getInputProcessor());
+      if (keysMgr != null) {
+        m.addProcessor(idx++, keysMgr.getInputProcessor());
       }
-      if (Flixel.mouse != null) {
-        m.addProcessor(idx, Flixel.mouse.getInputProcessor());
+      if (mouseMgr != null) {
+        m.addProcessor(idx, mouseMgr.getInputProcessor());
       }
     }
 
@@ -347,9 +388,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.mouse != null) {
       Flixel.mouse.update();
     }
+    if (Flixel.gamepads != null) {
+      Flixel.gamepads.update();
+    }
+    FlixelActionSets.updateAll(elapsed);
 
     if (!gamePaused) {
-      stage.act(elapsed);
       FlixelTween.updateTweens(elapsed);
       FlixelTimer.getGlobalManager().update(elapsed * Flixel.getTimeScale());
 
@@ -431,15 +475,41 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    stage.draw();
-
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
       debugOverlay.drawBoundingBoxes(cameras.items);
       debugOverlay.draw();
     }
 
+    squashFramebufferAlphaWhenDesktopNotSeeThrough();
+
     Flixel.Signals.postDraw.dispatch();
+  }
+
+  /**
+   * When the window was created with a transparent-capable framebuffer but desktop see-through is off, the compositor
+   * still blends using framebuffer alpha. Sprite draws that write alpha < 1 would incorrectly show the real desktop.
+   * This clears only the alpha channel to {@code 1} over the full framebuffer after all rendering.
+   */
+  private void squashFramebufferAlphaWhenDesktopNotSeeThrough() {
+    if (desktopTransparencyActive || !transparentFramebufferRequested) {
+      return;
+    }
+    if (Gdx.app.getType() != Application.ApplicationType.Desktop) {
+      return;
+    }
+    GL20 gl = Gdx.gl;
+    boolean scissorWasOn = gl.glIsEnabled(GL20.GL_SCISSOR_TEST);
+    if (scissorWasOn) {
+      gl.glDisable(GL20.GL_SCISSOR_TEST);
+    }
+    gl.glColorMask(false, false, false, true);
+    gl.glClearColor(0f, 0f, 0f, 1f);
+    gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    gl.glColorMask(true, true, true, true);
+    if (scissorWasOn) {
+      gl.glEnable(GL20.GL_SCISSOR_TEST);
+    }
   }
 
   /**
@@ -472,7 +542,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     draw(batch);
 
-    // Finalize input frame AFTER user update hooks run, so justPressed/justReleased checks
+    // Finalize input frame AFTER user update hooks run, so justPressed()/justReleased() checks
     // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
     if (Flixel.keys != null) {
       Flixel.keys.endFrame();
@@ -480,6 +550,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.mouse != null) {
       Flixel.mouse.endFrame();
     }
+    if (Flixel.gamepads != null) {
+      Flixel.gamepads.endFrame();
+    }
+    FlixelActionSets.endFrameAll();
   }
 
   /**
@@ -539,14 +613,47 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   @Override
-  public void pause() {}
+  public void pause() {
+    dispatchStateLifecyclePause();
+  }
 
   @Override
-  public void resume() {}
+  public void resume() {
+    dispatchStateLifecycleResume();
+  }
+
+  /**
+   * Notifies the current {@link FlixelState} chain once per pause cycle (see {@link #stateLifecyclePauseDispatched}).
+   */
+  private void dispatchStateLifecyclePause() {
+    if (stateLifecyclePauseDispatched) {
+      return;
+    }
+    stateLifecyclePauseDispatched = true;
+    FlixelState state = Flixel.getState();
+    if (state != null) {
+      state.pause();
+    }
+  }
+
+  /**
+   * Clears the pause latch and notifies the current {@link FlixelState} chain, if a matching pause was dispatched.
+   */
+  private void dispatchStateLifecycleResume() {
+    if (!stateLifecyclePauseDispatched) {
+      return;
+    }
+    stateLifecyclePauseDispatched = false;
+    FlixelState state = Flixel.getState();
+    if (state != null) {
+      state.resume();
+    }
+  }
 
   /** Called when the user regains focus on the game's window. */
   public void onWindowFocused() {
     isFocused = true;
+    dispatchStateLifecycleResume();
     if (autoPause && !isMinimized && !gamePaused) {
       Flixel.sound.resume();
       Gdx.graphics.setContinuousRendering(true);
@@ -558,6 +665,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Called when the user loses focus on the game's window, while also not being minimized. */
   public void onWindowUnfocused() {
     isFocused = false;
+    dispatchStateLifecyclePause();
     if (autoPause) {
       Flixel.sound.pause();
       Gdx.graphics.setContinuousRendering(false);
@@ -573,10 +681,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   public void onWindowMinimized(boolean iconified) {
     isMinimized = iconified;
-    isFocused = false;
-    if (autoPause) {
-      Flixel.sound.pause();
-      Gdx.graphics.setContinuousRendering(false);
+    if (iconified) {
+      isFocused = false;
+      dispatchStateLifecyclePause();
+      if (autoPause) {
+        Flixel.sound.pause();
+        Gdx.graphics.setContinuousRendering(false);
+      }
+    } else {
+      dispatchStateLifecycleResume();
     }
     Flixel.Signals.windowMinimized.dispatch();
   }
@@ -622,7 +735,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** @see #destroy() */
   @Override
-  public void dispose() {
+  public final void dispose() {
     destroy();
   }
 
@@ -655,6 +768,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       multiplexer.clear();
     }
 
+    if (Flixel.gamepads != null) {
+      Flixel.gamepads.detach();
+    }
+
     FlixelTween.cancelActiveTweens();
     FlixelTween.clearTweenPools();
     FlixelTween.resetRegistry();
@@ -662,10 +779,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     if (Flixel.getState() != null) {
       Flixel.getState().destroy();
-    }
-    if (stage != null) {
-      stage.dispose();
-      stage = null;
     }
     if (batch != null) {
       batch.dispose();
@@ -695,6 +808,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
     gamePaused = false;
+    stateLifecyclePauseDispatched = false;
 
     FlixelFontRegistry.dispose();
 
@@ -747,7 +861,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (cameras.isEmpty()) {
       cameras.add(new FlixelCamera((int) windowSize.x, (int) windowSize.y));
       cameras.first().apply();
-      stage.setViewport(cameras.first().getViewport());
     }
     return cameras.first();
   }
@@ -760,7 +873,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     camera.update((int) windowSize.x, (int) windowSize.y, camera.centerCameraOnResize);
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(camera);
-    stage.setViewport(camera.getViewport());
+    if (desktopTransparencyActive) {
+      applyDesktopTransparencyBackdropOnly();
+    }
   }
 
   public String getTitle() {
@@ -795,10 +910,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return isFocused;
   }
 
-  public Stage getStage() {
-    return stage;
-  }
-
   public Array<FlixelCamera> getCameras() {
     return cameras;
   }
@@ -816,6 +927,154 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       return;
     }
     this.bgColor.set(bgColor);
+  }
+
+  public boolean isTransparentFramebufferRequested() {
+    return transparentFramebufferRequested;
+  }
+
+  /**
+   * Requests an alpha-capable GLFW framebuffer on LWJGL3 before the desktop launcher runs. Default {@code true}. Set {@code false}
+   * if you must avoid framebuffer alpha (some drivers) or never want desktop compositing. When {@code false}, toggling
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
+   *
+   * @param transparentFramebufferRequested {@code false} to force an opaque default framebuffer at launch.
+   */
+  public void setTransparentFramebufferRequested(boolean transparentFramebufferRequested) {
+    this.transparentFramebufferRequested = transparentFramebufferRequested;
+  }
+
+  /**
+   * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
+   */
+  public boolean isDesktopTransparencyActive() {
+    return desktopTransparencyActive;
+  }
+
+  /**
+   * Updates global and per-camera backdrop drawing for desktop compositing. Called from
+   * {@link me.stringdotjar.flixelgdx.backend.window.FlixelWindow}. When desktop see-through is off but the GLFW window
+   * was created with a transparent-capable framebuffer, {@link #draw} also forces framebuffer alpha to {@code 1} after
+   * rendering so tinted sprites do not composite through the real desktop.
+   *
+   * @param active {@code true} for transparent clears and camera fills; {@code false} restores colors
+   * captured the first time transparency was enabled this session (then clears that cache), or opaque black
+   * if transparency was never enabled.
+   */
+  public void applyBackdropForDesktopTransparency(boolean active) {
+    desktopTransparencyActive = active;
+    if (active) {
+      captureDesktopTransparency();
+      applyDesktopTransparencyBackdropOnly();
+      return;
+    }
+    restoreDesktopTransparencyBackdrop();
+    clearDesktopTransparencyRestoreSnapshot();
+  }
+
+  /**
+   * Applies transparent full-window clear and per-camera backdrop without touching the restore snapshot.
+   * Used after {@link #resetCameras()} while transparency stays enabled.
+   */
+  private void applyDesktopTransparencyBackdropOnly() {
+    bgColor.a = 0f;
+    if (cameras == null) {
+      return;
+    }
+    FlixelCamera[] camItems = cameras.items;
+    for (int i = 0, n = cameras.size; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      if (cam == null) {
+        continue;
+      }
+      cam.useBgAlphaBlending = true;
+      cam.bgColor.a = 0f;
+    }
+  }
+
+  private void captureDesktopTransparency() {
+    if (desktopTransparencyRestoreSnapshotValid) {
+      return;
+    }
+    float[] g = desktopTransparencyRestoreGameRgba;
+    g[0] = bgColor.r;
+    g[1] = bgColor.g;
+    g[2] = bgColor.b;
+    g[3] = bgColor.a;
+    int n = cameras == null ? 0 : cameras.size;
+    ensureDesktopTransparencyCameraSnapshotCapacity(n);
+    FlixelCamera[] camItems = n == 0 ? null : cameras.items;
+    float[] p = desktopTransparencyRestoreCamerasPacked;
+    for (int i = 0; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      int o = i * FLOATS_PER_CAMERA_BACKDROP;
+      if (cam == null) {
+        p[o] = 0f;
+        p[o + 1] = 0f;
+        p[o + 2] = 0f;
+        p[o + 3] = 1f;
+        p[o + 4] = 0f;
+        continue;
+      }
+      p[o] = cam.bgColor.r;
+      p[o + 1] = cam.bgColor.g;
+      p[o + 2] = cam.bgColor.b;
+      p[o + 3] = cam.bgColor.a;
+      p[o + 4] = cam.useBgAlphaBlending ? 1f : 0f;
+    }
+    desktopTransparencyRestoreCameraCount = n;
+    desktopTransparencyRestoreSnapshotValid = true;
+  }
+
+  private void ensureDesktopTransparencyCameraSnapshotCapacity(int cameraCount) {
+    int need = cameraCount * FLOATS_PER_CAMERA_BACKDROP;
+    if (desktopTransparencyRestoreCamerasPacked.length >= need) {
+      return;
+    }
+    desktopTransparencyRestoreCamerasPacked = new float[Math.max(need, desktopTransparencyRestoreCamerasPacked.length * 2)];
+  }
+
+  private void restoreDesktopTransparencyBackdrop() {
+    float[] g = desktopTransparencyRestoreGameRgba;
+    if (desktopTransparencyRestoreSnapshotValid) {
+      bgColor.r = g[0];
+      bgColor.g = g[1];
+      bgColor.b = g[2];
+      bgColor.a = g[3];
+    } else {
+      bgColor.set(Color.BLACK);
+    }
+    if (cameras == null) {
+      return;
+    }
+    FlixelCamera[] camItems = cameras.items;
+    int n = cameras.size;
+    int saved = desktopTransparencyRestoreCameraCount;
+    float[] p = desktopTransparencyRestoreCamerasPacked;
+    for (int i = 0; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      if (cam == null) {
+        continue;
+      }
+      if (desktopTransparencyRestoreSnapshotValid && i < saved) {
+        int o = i * FLOATS_PER_CAMERA_BACKDROP;
+        cam.bgColor.r = p[o];
+        cam.bgColor.g = p[o + 1];
+        cam.bgColor.b = p[o + 2];
+        cam.bgColor.a = p[o + 3];
+        cam.useBgAlphaBlending = p[o + 4] != 0f;
+      } else {
+        cam.useBgAlphaBlending = false;
+        cam.bgColor.set(Color.BLACK);
+      }
+    }
+  }
+
+  private void clearDesktopTransparencyRestoreSnapshot() {
+    desktopTransparencyRestoreSnapshotValid = false;
+    desktopTransparencyRestoreCameraCount = 0;
+    Arrays.fill(desktopTransparencyRestoreGameRgba, 0f);
+    Arrays.fill(desktopTransparencyRestoreCamerasPacked, 0f);
   }
 
   public boolean isGamePaused() {
@@ -860,5 +1119,4 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     viewSize = newSize;
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
   }
-
 }

@@ -7,12 +7,14 @@ FlixelGDX is organized into multiple Gradle modules to separate the core framewo
 The project is split into several modules, each serving a specific purpose:
 
 - **`flixelgdx-core`**: This is the heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent.
+- **`flixelgdx-common`**: Shared code that multiple JVM-family backends can use without pulling in LWJGL3 or TeaVM. This includes the MiniAudio-based sound handler used by desktop, Android, and iOS launchers.
 - **`flixelgdx-lwjgl3`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**. When you create a desktop launcher with FlixelGDX, this is the module that provides the actual `Lwjgl3Application`.
 - **`flixelgdx-android`**: The backend for Android devices. This integrates FlixelGDX with libGDX's Android launcher and lifecycle.
 - **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM).
 - **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript.
 - **`flixelgdx-teavm-plugin`**: A custom plugin to automate the workflow for web games.
-- **`flixelgdx-jvm`**: Contains common logic for all JVM-based backends (Desktop, Android, etc.). This is primarily an internal module; most games will not depend on it directly.
+- **`flixelgdx-logging-plugin`**: Optional Gradle plugin that runs after `compileJava` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on TeaVM and helpful on the JVM). Apply `me.stringdotjar.flixelgdx.logging` on each game module that compiles logging calls (typically your `core` module). Use `flixelLogging { enabled = true }` (default) or `verbose = true` to print each rewritten class file. TeaVM and other bytecode transpilers consume the woven JVM bytecode; ensure your TeaVM task runs after `compileJava` so it sees transformed classes. Stack walking on the JVM is still improved without the plugin via `FlixelDefaultStackTraceProvider`, which skips only logging plumbing instead of the entire framework package.
+- **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for TeaVM or other non-JVM targets (stack traces, optional log files, etc.). It depends on **`flixelgdx-common`** for shared native-friendly pieces such as MiniAudio.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, reflection, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
 ### Which module should my game depend on?

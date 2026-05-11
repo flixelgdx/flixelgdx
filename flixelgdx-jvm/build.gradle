@@ -6,7 +6,6 @@ plugins {
 eclipse.project.name = appName + '-jvm'
 
 dependencies {
-  api project(':flixelgdx-core')
-  api "games.rednblack.miniaudio:miniaudio:$miniaudioVersion"
+  api project(':flixelgdx-common')
   implementation 'org.jetbrains:annotations:15.0'
 }

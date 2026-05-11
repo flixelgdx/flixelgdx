@@ -1,0 +1,13 @@
+---
+description: Only if the given task requires research and needs more relevant information.
+alwaysApply: false
+---
+When executing a task given by the user, navigate the following websites for researching how to implement a new system:
+
+https://api.haxeflixel.com/flixel/index.html
+https://libgdx.com/wiki/
+https://github.com/HaxeFlixel/flixel
+https://github.com/libgdx/libgdx
+
+If one of the provided documentation sites or GitHub repositories aren't enough, or if they aren't relevant to the given
+task, search online elsewhere. Search deep and wide for important information related to the given task.

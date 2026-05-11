@@ -437,7 +437,7 @@ public final class FlixelSpriteUtil {
   public static void setBrightness(@NotNull FlixelSprite sprite, float brightness) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     brightness = MathUtils.clamp(brightness, -1f, 1f);
-    Color c = sprite.getColor();
+    Color c = sprite.getGdxColor();
     float r = c.r;
     float g = c.g;
     float b = c.b;

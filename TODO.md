@@ -17,6 +17,7 @@
   - [ ] Create beginner-friendly and easy-to-navigate API documentation pages (use Docusaurus and maybe Dokka?)
   - [ ] Use the created demos, compile them to web, and create a page for those demos (with GitHub links to the source code)
   - [ ] Create a "Your First Game" tutorial page for complete beginners wanting to code a game with FlixelGDX
-- [ ] Develop an ahead-of-time compiling plugin using Kotlin to solve the reflection problem for Java build compiling
+- [x] Develop an ahead-of-time compiling plugin using Kotlin to solve the reflection problem for Java by compiling
       reflection at build time and catching errors before a game (or program) starts, with a `Reflect` class modeled after [Haxe's `Reflect` class](https://api.haxe.org/Reflect.html)
+  - [ ] Remove the current reflection system (which would break for mobile) and replace it with the new plugin.
 - [ ] Switch out `flixelgdx-teavm` back from JavaScript to WebAssembly by default(?)

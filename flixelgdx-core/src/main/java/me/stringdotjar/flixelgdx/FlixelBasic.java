@@ -11,11 +11,14 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.Pool;
 
+import me.stringdotjar.flixelgdx.functional.IFlixelBasic;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * This is the most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
  * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
+ * It implements {@link me.stringdotjar.flixelgdx.functional.IFlixelBasic}, the full contract
+ * used by {@link me.stringdotjar.flixelgdx.FlixelState} and {@link me.stringdotjar.flixelgdx.group.FlixelBasicGroup}.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
  * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
@@ -62,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  *   </tbody>
  * </table>
  */
-public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable, Disposable, Pool.Poolable {
+public abstract class FlixelBasic implements IFlixelBasic {
 
   private static int idEnumerator = 0;
 
@@ -75,13 +78,19 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
   /**
    * Whether this object is alive. {@link #kill()} and {@link #revive()} both flip this
    * switch (along with {@link #exists}).
+   *
+   * @see #isExists()
    */
   public boolean alive = true;
 
   /** Controls whether {@link #update(float)} and {@link #draw(Batch)} are automatically called. */
   public boolean exists = true;
 
-  /** Controls whether {@code this} object should be displayed on the screen. */
+  /**
+   * Controls whether {@code this} object should be displayed on the screen.
+   *
+   * @see #isVisible()
+   */
   public boolean visible = true;
 
   /** Cameras this object may render on. {@code null} or an empty array means every camera. */
@@ -120,6 +129,64 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
     return Flixel.isOnDrawCamera(cameras);
   }
 
+  @Override
+  public boolean isExists() {
+    return exists;
+  }
+
+  @Override
+  public void setExists(boolean exists) {
+    this.exists = exists;
+  }
+
+  @Override
+  public boolean isActive() {
+    return active;
+  }
+
+  @Override
+  public void setActive(boolean active) {
+    this.active = active;
+  }
+
+  @Override
+  public boolean isVisible() {
+    return visible;
+  }
+
+  @Override
+  public void setVisible(boolean visible) {
+    this.visible = visible;
+  }
+
+  @Override
+  public void toggleVisible() {
+    visible = !visible;
+  }
+
+  @Override
+  public boolean isKilled() {
+    return !exists;
+  }
+
+  @Override
+  public void setKilled(boolean killed) {
+    if (killed) {
+      kill();
+    } else {
+      revive();
+    }
+  }
+
+  @Override
+  public void toggleKilled() {
+    if (isKilled()) {
+      revive();
+    } else {
+      kill();
+    }
+  }
+
   /**
    * Cleans up this object so it can be garbage-collected. A destroyed {@code FlixelBasic}
    * should not be used anymore. Use {@link #kill()} if you only want to disable it
@@ -147,6 +214,7 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
    * Flags this object as nonexistent and dead. Default behavior sets both {@link #alive}
    * and {@link #exists} to {@code false}. Use {@link #revive()} to bring it back.
    */
+  @Override
   public void kill() {
     alive = false;
     exists = false;
@@ -155,6 +223,7 @@ public class FlixelBasic implements FlixelUpdatable, FlixelDrawable, FlixelDestr
   /**
    * Brings this object back to life by setting {@link #alive} and {@link #exists} to {@code true}.
    */
+  @Override
   public void revive() {
     alive = true;
     exists = true;

@@ -24,7 +24,7 @@ public final class FlixelStringAssetSource implements FlixelSource<String> {
     if (assetKey == null || assetKey.isEmpty()) {
       throw new IllegalArgumentException("assetKey cannot be null/empty.");
     }
-    this.assetKey = assetKey;
+    this.assetKey = FlixelAssetPaths.normalizeAssetPath(assetKey);
   }
 
   @Override
