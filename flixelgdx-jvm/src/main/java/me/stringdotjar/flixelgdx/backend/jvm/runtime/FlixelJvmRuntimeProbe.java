@@ -7,11 +7,15 @@
 
 package me.stringdotjar.flixelgdx.backend.jvm.runtime;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.jar.JarFile;
 
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil.RunEnvironment;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,19 +91,19 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
   @Nullable
   public String getWorkingDirectory() {
     try {
-      return FlixelRuntimeUtil.class
-        .getProtectionDomain()
+      URI uri = FlixelRuntimeUtil.class.getProtectionDomain()
         .getCodeSource()
         .getLocation()
-        .toURI()
-        .getPath();
+        .toURI();
+      Path normalized = Paths.get(uri).toAbsolutePath().normalize();
+      return normalized.toString().replace('\\', '/');
     } catch (Exception e) {
       return null;
     }
   }
 
   @Override
-  @Nullable
+  @NotNull
   public String getDefaultLogsFolderPath() {
     String path = getWorkingDirectory();
     if (path == null) {
@@ -107,12 +111,19 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     }
     path = path.replaceAll("/$", "");
     if (isRunningInIDE()) {
+      String userDirRaw = System.getProperty("user.dir", "");
       String projectRoot = inferIdeProjectRootDirectory();
+      if (!ideLogsRootCompatibleWithUserDir(projectRoot, userDirRaw)) {
+        projectRoot = null;
+      }
       if (projectRoot == null || projectRoot.isEmpty()) {
         projectRoot = stripIdeOutputSegments(path);
       }
+      if (!ideLogsRootCompatibleWithUserDir(projectRoot, userDirRaw)) {
+        projectRoot = null;
+      }
       if (projectRoot == null || projectRoot.isEmpty()) {
-        projectRoot = System.getProperty("user.dir", "");
+        projectRoot = userDirRaw;
       }
       projectRoot = projectRoot.replaceAll("/$", "");
       if (projectRoot.endsWith("/assets")) {
@@ -133,6 +144,26 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
       base = base.substring(0, base.length() - "/assets".length());
     }
     return base + "/logs";
+  }
+
+  /**
+   * {@code true} when {@code candidate} is plausibly the IDE project directory for log files relative to
+   * {@code user.dir}. Rejects unrelated folders (for example a lone framework module on the classpath while the game
+   * runs from another directory).
+   */
+  private static boolean ideLogsRootCompatibleWithUserDir(@Nullable String candidate, String userDir) {
+    if (candidate == null || candidate.isEmpty()) {
+      return false;
+    }
+    if (userDir == null || userDir.isEmpty()) {
+      return !isTrivialFilesystemRoot(candidate);
+    }
+    String c = normalizePathForCompare(candidate);
+    String u = normalizePathForCompare(userDir);
+    if (isTrivialFilesystemRoot(c)) {
+      return false;
+    }
+    return pathAncestorMatches(c, u) || pathAncestorMatches(u, c);
   }
 
   private static boolean classpathContainsIdeStyleOutput() {
@@ -189,14 +220,117 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     if (roots.isEmpty()) {
       return null;
     }
-    if (roots.size() == 1) {
-      return roots.get(0);
-    }
     String common = longestCommonDirectoryPrefix(roots);
-    if (common != null && !common.isEmpty()) {
+    if (common != null && !common.isEmpty() && !isTrivialFilesystemRoot(common)) {
       return common;
     }
-    return longestModuleRootMatchingUserDir(roots, System.getProperty("user.dir", ""));
+    String userDir = System.getProperty("user.dir", "");
+    String mostRootsUnderWalk = deepestUserDirAncestorCoveringMostModuleRoots(userDir, roots);
+    if (mostRootsUnderWalk != null && !mostRootsUnderWalk.isEmpty() && !isTrivialFilesystemRoot(mostRootsUnderWalk)) {
+      return mostRootsUnderWalk;
+    }
+    String matched = longestModuleRootMatchingUserDir(roots, userDir);
+    return matched;
+  }
+
+  /**
+   * Walks {@code user.dir} upward and selects the deepest directory that matches the greatest number
+   * of IDE classpath module roots as descendants. Stabilizes Gradle sibling layouts ({@code core},
+   * {@code desktop}) whose roots share neither prefix nor a usable shallow common directory prefix with a
+   * stray composite-build framework checkout or Gradle caches entry on the classpath.
+   *
+   * @param userDir Current {@code user.dir}.
+   * @param roots Normalized module root directories derived from classpath entries (never {@code null}).
+   * @return The suggested multi-module project directory, or {@code null} if no ancestor matched any root.
+   */
+  @Nullable
+  private static String deepestUserDirAncestorCoveringMostModuleRoots(String userDir, ArrayList<String> roots) {
+    if (userDir == null || userDir.isEmpty()) {
+      return null;
+    }
+    String cursor = normalizePathForCompare(userDir);
+    if (cursor.isEmpty()) {
+      return null;
+    }
+
+    String best = null;
+    int bestCount = -1;
+
+    for (int guard = 0; guard < 64 && cursor != null && !cursor.isEmpty(); guard++) {
+      if (isTrivialFilesystemRoot(cursor)) {
+        break;
+      }
+      int count = countRootsUnderAncestor(cursor, roots);
+      if (count > bestCount) {
+        bestCount = count;
+        best = cursor;
+      } else if (count == bestCount && count > 0 && best != null && cursor.length() > best.length()) {
+        best = cursor;
+      }
+      cursor = parentDirectory(cursor);
+    }
+    return bestCount > 0 ? best : null;
+  }
+
+  private static int countRootsUnderAncestor(String ancestor, ArrayList<String> roots) {
+    int count = 0;
+    for (int i = 0, n = roots.size(); i < n; i++) {
+      if (pathAncestorMatches(ancestor, roots.get(i))) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * {@code true} when {@code path} equals {@code ancestor} or is contained under it ({@code ancestor/sub/...}).
+   */
+  private static boolean pathAncestorMatches(String ancestor, String path) {
+    if (ancestor.isEmpty()) {
+      return false;
+    }
+    String a = normalizePathForCompare(ancestor);
+    String p = normalizePathForCompare(path);
+    if (p.equals(a)) {
+      return true;
+    }
+    return p.startsWith(a + "/");
+  }
+
+  /**
+   * Parent directory of a normalized POSIX-ish path, or {@code null} when absent or already at root.
+   */
+  @Nullable
+  private static String parentDirectory(String path) {
+    if (path == null || path.isEmpty()) {
+      return null;
+    }
+    String p = normalizePathForCompare(path);
+    if (p.isEmpty()) {
+      return null;
+    }
+    if ("/".equals(p)) {
+      return null;
+    }
+    int slash = p.lastIndexOf('/');
+    if (slash < 0) {
+      return null;
+    }
+    if (slash == 0) {
+      return "/";
+    }
+    return p.substring(0, slash);
+  }
+
+  /**
+   * {@code true} for filesystem roots such as {@code /} or a lone Windows drive letter segment where resolving logs would be meaningless.
+   */
+  private static boolean isTrivialFilesystemRoot(@Nullable String path) {
+    if (path == null || path.isEmpty()) {
+      return true;
+    }
+    String p = normalizePathForCompare(path);
+    return "/".equals(p) || (p.length() == 2 && p.charAt(1) == ':');
   }
 
   private static char classpathSeparatorChar() {
@@ -234,9 +368,10 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     return trimTrailingPathSeparators(path.replace('\\', '/'));
   }
 
+  @Nullable
   private static String longestModuleRootMatchingUserDir(ArrayList<String> roots, String userDir) {
     if (userDir == null || userDir.isEmpty()) {
-      return roots.get(0);
+      return null;
     }
     String ud = normalizePathForCompare(userDir);
     String best = null;
@@ -248,7 +383,7 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
         best = r;
       }
     }
-    return best != null ? best : roots.get(0);
+    return best;
   }
 
   private static boolean pathPrefixMatches(String path, String prefix) {

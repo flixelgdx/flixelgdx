@@ -24,21 +24,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Rewrites {@code FlixelLogger} {@code info}, {@code warn}, and {@code error} calls to {@code *WithSite} overloads
- * using the enclosing class {@code SourceFile} attribute and {@link LineNumberNode} data.
+ * Rewrites {@code FlixelLogger} {@code info}, {@code warn}, and {@code error} calls to {@code *WithSite} overloads,
+ * and {@code Flixel} static logging helpers to {@code FlixelLoggingBytecodeHooks}, using the enclosing class
+ * {@code SourceFile} attribute and {@link LineNumberNode} data.
  */
 public final class FlixelLoggerBytecodeWeaver {
 
   private static final String LOGGER_OWNER = "me/stringdotjar/flixelgdx/logging/FlixelLogger";
 
   /**
-   * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Weaving those
-   * invokes would attribute every caller to the delegate lines in {@code Flixel.java}; skipping lets runtime caller
-   * resolution see the real call site (with matching skips in {@code FlixelDefaultStackTraceProvider} on the JVM).
+   * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Rewriting
+   * {@code Flixel} itself would only capture {@code Flixel.java} line numbers, so {@link #weave(ClassNode)} skips that
+   * class. Call sites in game bytecode use {@code INVOKESTATIC Flixel...}; those are rewritten to
+   * {@code FlixelLoggingBytecodeHooks} so line metadata comes from the caller class (critical for TeaVM where stack walking is unavailable).
    */
   private static final String FLIXEL_STATIC_FACADE_INTERNAL = "me/stringdotjar/flixelgdx/Flixel";
 
+  private static final String HOOKS_OWNER = "me/stringdotjar/flixelgdx/logging/FlixelLoggingBytecodeHooks";
+
   private static final Map<String, Replacement> REPLACEMENTS = new HashMap<>();
+
+  private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = new HashMap<>();
 
   static {
     REPLACEMENTS.put(
@@ -75,6 +81,37 @@ public final class FlixelLoggerBytecodeWeaver {
       new Replacement(
         "errorWithSite",
         "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "info(Ljava/lang/Object;)V",
+      new Replacement(
+        "bcInfo0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "info(Ljava/lang/String;Ljava/lang/Object;)V",
+      new Replacement(
+        "bcInfo1", "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "warn(Ljava/lang/Object;)V",
+      new Replacement(
+        "bcWarn0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "warn(Ljava/lang/String;Ljava/lang/Object;)V",
+      new Replacement(
+        "bcWarn1", "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "error(Ljava/lang/String;)V",
+      new Replacement(
+        "bcErr0", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "error(Ljava/lang/String;Ljava/lang/Object;)V",
+      new Replacement(
+        "bcErr1",
+        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
+      "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
+      new Replacement(
+        "bcErr2",
+        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
   }
 
   private record Replacement(String newName, String newDescriptor) {}
@@ -105,6 +142,21 @@ public final class FlixelLoggerBytecodeWeaver {
           continue;
         }
         int op = min.getOpcode();
+        int line = currentLine >= 0 ? currentLine : 0;
+
+        if (op == Opcodes.INVOKESTATIC && FLIXEL_STATIC_FACADE_INTERNAL.equals(min.owner)) {
+          Replacement facadeReplacement = FLIXEL_STATIC_REPLACEMENTS.get(min.name + min.desc);
+          if (facadeReplacement != null) {
+            insertSiteArguments(method.instructions, min, sourceFile, line, classNameDots, method.name);
+            min.owner = HOOKS_OWNER;
+            min.name = facadeReplacement.newName();
+            min.desc = facadeReplacement.newDescriptor();
+            min.itf = false;
+            changed = true;
+          }
+          continue;
+        }
+
         if (op != Opcodes.INVOKEVIRTUAL && op != Opcodes.INVOKEINTERFACE) {
           continue;
         }
@@ -115,10 +167,9 @@ public final class FlixelLoggerBytecodeWeaver {
         if (replacement == null) {
           continue;
         }
-        int line = currentLine >= 0 ? currentLine : 0;
         insertSiteArguments(method.instructions, min, sourceFile, line, classNameDots, method.name);
-        min.name = replacement.newName;
-        min.desc = replacement.newDescriptor;
+        min.name = replacement.newName();
+        min.desc = replacement.newDescriptor();
         min.itf = false;
         min.setOpcode(Opcodes.INVOKEVIRTUAL);
         changed = true;
@@ -129,6 +180,8 @@ public final class FlixelLoggerBytecodeWeaver {
 
   /**
    * Inserts {@code sourceFile, line, classNameDots, methodName} immediately before {@code invoke}, after the original args.
+   * Instructions must execute in that order so the operand stack ends as {@code ...; sourceFile; line; class; method} with
+   * {@code method} on top, matching JVM parameter popping for {@code *WithSite} and hook signatures (rightmost parameter first).
    */
   private static void insertSiteArguments(
     InsnList list,
@@ -137,10 +190,10 @@ public final class FlixelLoggerBytecodeWeaver {
     int line,
     String classNameDots,
     String methodName) {
-    list.insertBefore(invoke, new LdcInsnNode(methodName));
-    list.insertBefore(invoke, new LdcInsnNode(classNameDots));
-    list.insertBefore(invoke, pushInt(line));
     list.insertBefore(invoke, new LdcInsnNode(sourceFile));
+    list.insertBefore(invoke, pushInt(line));
+    list.insertBefore(invoke, new LdcInsnNode(classNameDots));
+    list.insertBefore(invoke, new LdcInsnNode(methodName));
   }
 
   static AbstractInsnNode pushInt(int v) {

@@ -86,6 +86,63 @@ class FlixelLoggerBytecodeWeaverTest {
   }
 
   @Test
+  void weaveRewritesFlixelStaticInfoCall() throws Exception {
+    Path tmp = Files.createTempDirectory("flixel-log-weave-facade");
+    Path srcDir = tmp.resolve("flixel/weavetestfacade");
+    Files.createDirectories(srcDir);
+    Path source = srcDir.resolve("FacadeCaller.java");
+    Files.writeString(
+      source,
+      """
+        package flixel.weavetestfacade;
+        import me.stringdotjar.flixelgdx.Flixel;
+        public class FacadeCaller {
+          public static void run() {
+            Flixel.info("hello");
+          }
+        }
+        """);
+
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    assertNotNull(compiler);
+    Path out = tmp.resolve("classes");
+    Files.createDirectories(out);
+    String classpath = System.getProperty("java.class.path");
+    try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
+      Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(source.toFile());
+      boolean ok = compiler
+        .getTask(
+          null,
+          fileManager,
+          null,
+          List.of("-classpath", classpath, "-parameters", "-g", "-d", out.toString()),
+          null,
+          units)
+        .call();
+      assertTrue(ok, "JavaCompiler failed; check test runtime classpath includes flixelgdx-core");
+    }
+
+    Path classFile = out.resolve("flixel/weavetestfacade/FacadeCaller.class");
+    assertTrue(Files.exists(classFile));
+    byte[] bytes = Files.readAllBytes(classFile);
+    ClassReader reader = new ClassReader(bytes);
+    ClassNode classNode = new ClassNode();
+    reader.accept(classNode, ClassReader.SKIP_FRAMES);
+    assertTrue(FlixelLoggerBytecodeWeaver.weave(classNode));
+
+    boolean foundBcHook = false;
+    for (MethodNode method : classNode.methods) {
+      for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+        if (insn instanceof MethodInsnNode min && "bcInfo0".equals(min.name)) {
+          assertTrue(min.owner.contains("FlixelLoggingBytecodeHooks"));
+          foundBcHook = true;
+        }
+      }
+    }
+    assertTrue(foundBcHook);
+  }
+
+  @Test
   void weaveSkipsFlixelStaticFacadeClass() throws Exception {
     byte[] bytes;
     try (InputStream in =

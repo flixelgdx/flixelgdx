@@ -675,7 +675,7 @@ public class FlixelLogger implements ApplicationLogger {
       fileLine.concat(methodPart);
       fileLine.concat(' ');
       fileLine.concat(rawMessage);
-      fileHandler.write(fileLine.toString());
+      fileHandler.write(fileLine.copyContentToNewString());
     }
   }
 

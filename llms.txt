@@ -1,0 +1,150 @@
+# What FlixelGDX is
+
+FlixelGDX is a Java 17 game framework built on libGDX. Its API philosophy closely follows
+HaxeFlixel (and classic ActionScript Flixel): states, sprites, groups, cameras, tweens,
+timers, and approachable helpers for beginners. It is not officially affiliated with
+HaxeFlixel or libGDX.
+
+Primary sources of truth in the repo
+- PROJECT.md: Gradle modules and responsibilities.
+- COMPILING.md: Developer workflows, IDE setup, TeaVM notes, consumer Gradle wiring.
+- CONTRIBUTING.md: Contribution expectations.
+- README.md: Quick orientation and JitPack coordinates.
+- Published Javadoc (GitHub Pages): API-level detail.
+
+Java and tooling baseline
+- Language level: Java 17 (records, modern switch, lambdas where appropriate).
+- Build: Gradle (wrapper-driven). Root project aggregates modules; most logic lives in
+  scripts under gradle/.
+- Group ID for published artifacts in this repo: me.stringdotjar.flixelgdx (JitPack uses
+  com.github.flixelgdx.flixel... transforms for consumers; see README).
+
+Relationship to libGDX
+- FlixelGDX depends on libGDX for windowing, graphics, input, filesystem abstraction,
+  and asset plumbing.
+- Game subclasses extend Flixel types that mirror Flixel/HaxeFlixel patterns while still
+  drawing through libGDX batches and textures where relevant.
+
+# High-level architecture analogy
+
+Think of libGDX as the engine room (window, OpenGL, files, audio backends). FlixelGDX is
+the studio layout built on top: scenes are states, actors are sprites and groups, and the
+global Flixel singleton wires managers so gameplay code reads similarly across projects.
+
+Core gameplay vocabulary (names game developers see most)
+- FlixelGame: Application listener subclass that owns the main loop split into update(float)
+  and draw(Batch). Implements lifecycle hooks aligned with libGDX plus Flixel-specific flow.
+- FlixelState: Stackable scene/state object (switch states through Flixel.switchState).
+- FlixelSprite / FlixelObject / FlixelBasic: Entity hierarchy with update/draw/destroy.
+- FlixelCamera: Camera wrapper integrating scroll, zoom, FX hooks, and viewport behavior.
+- Flixel: Static facade for globals (input managers, audio manager, logger, signals,
+  runtime mode, debug overlay hooks, etc.). Initialized once via Flixel.initialize(game).
+- Groups: FlixelBasicGroup, FlixelSpriteGroup for ordered membership and batch updates.
+
+Lifecycle conventions (critical for correct suggestions)
+- Prefer update(float elapsed) for logic and draw(Batch batch) for rendering on gameplay types
+  that integrate with FlixelGame routing.
+- destroy() tears down native resources and registrations; distinguish kill/revive semantics
+  documented on FlixelBasic when pooling or recycling objects.
+- FlixelGame.destroy/dispose stops subsystems and signals end-of-game cleanup.
+
+# Static initialization and launch order (desktop LWJGL3 example)
+
+Typical desktop bootstrap inside FlixelLwjgl3Launcher.launch:
+1. FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe())
+2. Backend bindings: alerter, window, host integration, stack trace provider, reflection,
+   log file handler, sound backend factory, runtime mode, optional debug overlay factory.
+3. Flixel.initialize(game)
+4. Construct Lwjgl3Application(game, configuration)
+Inside FlixelGame.create():
+- configureCrashHandler runs first.
+- When Flixel.canStoreLogs() is true and a log file handler exists, Flixel.startFileLogging()
+  runs so JVM file logging begins after Gdx.files is available.
+
+Logging system (JVM file logging and consoles)
+- FlixelLogger formats console lines according to FlixelLogMode and optionally mirrors plain,
+  detailed lines to FlixelLogFileHandler when active.
+- Desktop/Android JVM backends register FlixelJvmLogFileHandler before initialize().
+- Web (TeaVM) omits a file handler; Flixel.startFileLogging() remains safe because the handler
+  is null.
+- Default logs directory resolution uses FlixelRuntimeUtil.RuntimeProbe. FlixelJvmRuntimeProbe
+  classifies RunEnvironment as IDE, JAR, or CLASSPATH and computes a .../logs folder:
+  - IDE: infer Gradle module roots from java.class.path, walk user.dir upward to cover sibling
+    modules, and reject inferred roots that do not line up with user.dir (avoids dropping logs
+    under only the framework module, a composite-build checkout, or another unrelated folder).
+  - JAR distribution: logs beside the fat jar after validating Main-Class manifest semantics.
+- Override with FlixelGame.setLogsFolder(absolutePath) or Flixel.setLogsFolder before create().
+- Rotation: FlixelLogger supports max log files; handler prunes oldest timestamped files.
+
+Gradle bytecode logging plugin (optional consumer tooling)
+- Module: flixelgdx-logging-plugin.
+- Rewrites FlixelLogger info/warn/error calls to *WithSite variants and static Flixel.info/warn/error calls to
+  bytecode hooks so file and line come from bytecode constants instead of stack walking (TeaVM).
+- Consumers apply me.stringdotjar.flixelgdx.logging on modules where logs originate.
+
+Module map (what each published-ish piece is for)
+- flixelgdx-core: Framework heart (entities, states, cameras, tweens, timers, input action sets,
+  saves, debug overlay plumbing, asset helpers). Exports me.stringdotjar.flixelgdx.logging API.
+- flixelgdx-common: Shared JVM-friendly helpers consumed by multiple backends (MiniAudio-based
+  sound handler wiring shared across desktop/Android/iOS launch paths).
+- flixelgdx-jvm: JVM-only utilities not suitable for TeaVM (stack traces, FlixelJvmLogFileHandler,
+  FlixelJvmRuntimeProbe).
+- flixelgdx-lwjgl3: Desktop LWJGL3 launcher glue (window listener chaining, debug overlays using
+  ImGui optional paths, mouse icons, host integrations).
+- flixelgdx-android: Android launcher integration with libGDX AndroidApplication lifecycle.
+- flixelgdx-ios: iOS bootstrap targeting MobiVM/RoboVM-style workflows described in COMPILING.md.
+- flixelgdx-teavm: TeaVM web backend (console sinks instead of ANSI terminals; filesystem limits).
+- flixelgdx-teavm-plugin: Gradle automation around TeaVM builds for games targeting browsers.
+- flixelgdx-logging-plugin: bytecode weaving described above.
+- flixelgdx-test: Internal JUnit harness for framework tests (not shipped as game dependency).
+
+Runtime classification helpers
+- FlixelRuntimeMode (RELEASE/DEBUG/TEST-style distinctions used by launchers).
+- FlixelRuntimeUtil.RunEnvironment from JVM probe separates IDE vs packaged jar vs generic
+  classpath for paths and diagnostics.
+
+Performance and memory rules assistants must respect when editing framework code
+- Never allocate per frame inside hot paths unless unavoidable; reuse buffers and pooled types.
+- Prefer Flixel/libGDX collections (Array, ObjectMap) where the codebase already does.
+- Follow project EditorConfig (brace rules differ slightly for empty methods).
+- No star imports; import concrete types explicitly.
+- Avoid needless widening refactors: align changes with existing naming and documentation tone.
+
+Signals and global hooks
+- Flixel.Signals exposes coarse lifecycle broadcasts (pre/post update/draw, window focus, etc.).
+  Prefer these when extending framework behavior without subclassing FlixelGame everywhere.
+
+Asset and animation highlights (for context when reading issues)
+- Bitmap fonts and registry helpers live alongside libGDX asset handles.
+- Adobe Animate-style rigs use FlixelAnimateRigLoader output consumed by FlixelAnimateSprite;
+  baked affine transforms aim to keep draw paths lightweight.
+
+Testing expectations for contributors and CI-minded assistants
+- Framework functionality is validated via flixelgdx-test and manual integration in separate
+  consumer libGDX projects using Maven Local, composite builds, or JitPack snapshots.
+- TeaVM builds require reflection profiles declared via gradle.properties keys documented in
+  COMPILING.md.
+
+Common pitfalls for AI-generated patches
+- Calling Flixel.initialize() twice or registering backends after initialization (methods guard
+  against this with IllegalStateException).
+- Assuming java.class.path layout identical across Gradle, IntelliJ, Eclipse, or composite
+  includes when deriving filesystem roots (always route path discovery through FlixelRuntimeUtil).
+- Using desktop-only APIs on TeaVM (process spawning, arbitrary filesystem writes).
+- Adding heavy reflection on paths executed every frame.
+
+Documentation tone when editing Javadoc or comments in-repo
+- Use beginner-friendly language with concrete examples on heavily used APIs.
+- Prefer ASCII punctuation in narrative comments; keep richer formatting structured inside
+  Javadoc HTML tags where required.
+
+Where to start reading source code
+- Launch glue: flixelgdx-lwjgl3/.../FlixelLwjgl3Launcher.java
+- Global facade: flixelgdx-core/.../Flixel.java
+- Game loop host: flixelgdx-core/.../FlixelGame.java
+- Logging: flixelgdx-core/.../logging plus flixelgdx-jvm/.../logging
+- Runtime probe: flixelgdx-jvm/.../FlixelJvmRuntimeProbe.java
+
+Contact points for dependency coordinates
+- internal Gradle publications use me.stringdotjar.flixelgdx artifacts.
+- JitPack coordinates mirror GitHub organization naming; verify README before advising consumers.
