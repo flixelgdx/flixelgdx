@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"me.stringdotjar.flixelgdx.backend.jvm.logging","l":"FlixelDefaultStackTraceProvider"},{"p":"me.stringdotjar.flixelgdx.backend.jvm.logging","l":"FlixelJvmLogFileHandler"},{"p":"me.stringdotjar.flixelgdx.backend.jvm.runtime","l":"FlixelJvmRuntimeProbe"}];updateSearchResults();

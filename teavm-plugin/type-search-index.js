@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"me.stringdotjar.flixelgdx.gradle.teavm","l":"FlixelTeaVMExtension"},{"p":"me.stringdotjar.flixelgdx.gradle.teavm","l":"FlixelTeaVMPlugin"}];updateSearchResults();

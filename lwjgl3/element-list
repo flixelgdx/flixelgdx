@@ -1,0 +1,5 @@
+me.stringdotjar.flixelgdx.backend.lwjgl3
+me.stringdotjar.flixelgdx.backend.lwjgl3.alert
+me.stringdotjar.flixelgdx.backend.lwjgl3.debug
+me.stringdotjar.flixelgdx.backend.lwjgl3.input
+me.stringdotjar.flixelgdx.backend.lwjgl3.runtime.reflect

@@ -1,0 +1,6 @@
+$dokka.format:javadoc-v1
+$dokka.linkExtension:html
+
+me.stringdotjar.flixelgdx.backend.android
+me.stringdotjar.flixelgdx.backend.android.alert
+
