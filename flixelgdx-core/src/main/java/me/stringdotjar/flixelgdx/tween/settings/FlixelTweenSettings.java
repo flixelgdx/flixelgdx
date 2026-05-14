@@ -9,10 +9,9 @@ package me.stringdotjar.flixelgdx.tween.settings;
 
 import com.badlogic.gdx.utils.Array;
 
-import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
+import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.FlixelEase;
-import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +29,6 @@ public class FlixelTweenSettings {
   private FlixelEase.FunkinEaseStartCallback onStart;
   private FlixelEase.FunkinEaseUpdateCallback onUpdate;
   private FlixelEase.FunkinEaseCompleteCallback onComplete;
-  private final Array<FlixelTweenVarGoal> goals;
   private final Array<FlixelTweenPropertyGoal> propertyGoals;
 
   public FlixelTweenSettings() {
@@ -60,27 +58,12 @@ public class FlixelTweenSettings {
     this.onStart = null;
     this.onUpdate = null;
     this.onComplete = null;
-    this.goals = new Array<>();
     this.propertyGoals = new Array<>();
   }
 
   /**
-   * Adds a new goal to tween an objects field value to using reflection.
-   *
-   * <p>Note that this is only used on a {@link me.stringdotjar.flixelgdx.tween.type.FlixelVarTween}.
-   *
-   * @param field The field to tween.
-   * @param value The value to tween the field to.
-   * @return {@code this} tween settings object for chaining.
-   */
-  public FlixelTweenSettings addGoal(String field, float value) {
-    goals.add(new FlixelTweenVarGoal(field, value));
-    return this;
-  }
-
-  /**
-   * Adds a new property goal that tweens a value via a getter and setter rather than direct field
-   * access. This allows side effects (bounds updates, listeners, etc.) to fire naturally through
+   * Adds a new property goal that tweens a value via a getter and setter rather than indirect name
+   * resolution. This allows side effects (bounds updates, listeners, and so on) to fire naturally through
    * the setter on every interpolated step.
    *
    * <p>The getter is called once at tween start to capture the initial value. Each subsequent
@@ -149,19 +132,6 @@ public class FlixelTweenSettings {
     return onComplete;
   }
 
-  public FlixelTweenVarGoal getVarGoal(String field) {
-    for (FlixelTweenVarGoal goal : goals) {
-      if (goal.field().equals(field)) {
-        return goal;
-      }
-    }
-    return null;
-  }
-
-  public Array<FlixelTweenVarGoal> getVarGoals() {
-    return goals;
-  }
-
   public Array<FlixelTweenPropertyGoal> getPropertyGoals() {
     return propertyGoals;
   }
@@ -174,16 +144,6 @@ public class FlixelTweenSettings {
     return startDelay;
   }
 
-  public void forEachGoal(FlixelTweenGoalVisitor visitor) {
-    for (int i = 0; i < goals.size; i++) {
-      var goal = goals.get(i);
-      if (goal == null) {
-        continue;
-      }
-      visitor.visit(goal.field(), goal.value());
-    }
-  }
-
   public float getFramerate() {
     return framerate;
   }
@@ -194,7 +154,6 @@ public class FlixelTweenSettings {
   }
 
   public void clearGoals() {
-    goals.clear();
     propertyGoals.clear();
   }
 
@@ -234,18 +193,7 @@ public class FlixelTweenSettings {
   }
 
   /**
-   * A record containing basic info for a {@link FlixelVarTween} goal (aka a field to tween a numeric value to).
-   *
-   * @param field The field to tween.
-   * @param value The value to tween the field to.
-   */
-  public record FlixelTweenVarGoal(@NotNull String field, float value) {}
-
-  /**
    * A record containing a getter, a target value, and a setter for a property-based tween goal.
-   * Unlike {@link FlixelTweenVarGoal}, this does not rely on reflection; the caller supplies how to
-   * read the initial value and how to apply each interpolated step, so setter side-effects fire
-   * naturally on every update.
    *
    * @param getter Supplies the initial value of the property when the tween starts.
    * @param toValue The value to tween the property to.
@@ -269,10 +217,5 @@ public class FlixelTweenSettings {
     public interface FlixelTweenPropertyFloatSetter {
       void set(float value);
     }
-  }
-
-  @FunctionalInterface
-  public interface FlixelTweenGoalVisitor {
-    void visit(String field, float value);
   }
 }

@@ -15,7 +15,6 @@ import me.stringdotjar.flixelgdx.backend.ios.alert.FlixelIOSAlerter;
 import me.stringdotjar.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
-import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 
 /**
@@ -68,7 +67,6 @@ public class FlixelIOSLauncher {
   public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
     Flixel.setAlerter(new FlixelIOSAlerter());
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
-    Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
     Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);

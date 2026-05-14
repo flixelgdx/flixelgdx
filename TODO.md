@@ -19,5 +19,5 @@
   - [ ] Create a "Your First Game" tutorial page for complete beginners wanting to code a game with FlixelGDX
 - [x] Develop an ahead-of-time compiling plugin using Kotlin to solve the reflection problem for Java by compiling
       reflection at build time and catching errors before a game (or program) starts, with a `Reflect` class modeled after [Haxe's `Reflect` class](https://api.haxe.org/Reflect.html)
-  - [ ] Remove the current reflection system (which would break for mobile) and replace it with the new plugin.
+  - [x] Remove the current reflection system (which would break for mobile) from the core framework (use [ReflectAOT](https://github.com/flixelgdx/ReflectAOT) in game projects instead).
 - [ ] Switch out `flixelgdx-teavm` back from JavaScript to WebAssembly by default(?)

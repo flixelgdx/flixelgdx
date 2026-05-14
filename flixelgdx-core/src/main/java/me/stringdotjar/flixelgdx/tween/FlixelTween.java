@@ -29,7 +29,7 @@ import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
-import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCircularMotion;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCubicMotion;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion;
@@ -77,7 +77,7 @@ import org.jetbrains.annotations.Nullable;
  * Subclasses of {@code FlixelTween} implement specialized behavior:
  * <ul>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}: interpolates properties of objects using lambda getters and setters.</li>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value using reflection.</li>
+ *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value via a callback.</li>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelColorTween}: tweens between colors</li>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween}: smoothly rotates a value</li>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion} and others: for advanced motion paths</li>
@@ -171,34 +171,25 @@ public abstract class FlixelTween implements Pool.Poolable {
   /**
    * Creates a tween with the provided settings and adds it to the global tween manager (which starts it automatically).
    *
-   * <p>If {@code tweenSettings} contains var goals ({@link FlixelTweenSettings#addGoal(String, float)}), a
-   * {@link FlixelVarTween} is created: values are applied via {@link me.stringdotjar.flixelgdx.Flixel#reflect} ({@code property} / {@code setProperty}).
-   * If it contains only property goals (getter/setter overloads of {@link FlixelTweenSettings#addGoal}), a {@link FlixelPropertyTween} is used.
-   * Mixing both kinds of goals on the same settings instance is not allowed.
+   * <p>Goals must be {@linkplain FlixelTweenSettings#addGoal property goals} (getter and setter references). The
+   * legacy string-based var goals API has been removed from the framework; use explicit getter and setter pairs so
+   * tweens stay compatible with ahead-of-time targets, or integrate a third-party reflection helper in your game
+   * project if you still need name-driven access (for example the ReflectAOT Gradle plugin).
    *
-   * @param object The target (var tween root for dotted paths; property tween logical subject for {@link FlixelPropertyTween#isTweenOf(Object, String)}).
-   * @param tweenSettings Settings including goals appropriate to the tween type.
+   * @param object The logical tween subject for {@link FlixelPropertyTween#setObject(Object)} and
+   *     {@link FlixelPropertyTween#isTweenOf(Object, String)}.
+   * @param tweenSettings Settings including property goals.
    * @return The newly created and started tween.
-   * @throws IllegalArgumentException If both var goals and property goals are present on {@code tweenSettings}.
+   * @throws IllegalArgumentException If no property goals are present.
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
-    Array<FlixelTweenSettings.FlixelTweenVarGoal> varGoals = tweenSettings.getVarGoals();
     Array<FlixelTweenSettings.FlixelTweenPropertyGoal> propGoals = tweenSettings.getPropertyGoals();
-    boolean hasVar = varGoals != null && varGoals.size > 0;
-    boolean hasProp = propGoals != null && propGoals.size > 0;
-
-    if (hasVar && hasProp) {
+    if (propGoals == null || propGoals.size == 0) {
       throw new IllegalArgumentException(
-          "FlixelTweenSettings cannot mix var goals (addGoal(String, float)) and property goals (addGoal(getter, to, setter)).");
+          "FlixelTweenSettings requires at least one property goal from addGoal(getter, toValue, setter).");
     }
 
-    if (hasVar) {
-      FlixelVarTween varTween = globalManager.obtainTween(FlixelVarTween.class, () -> new FlixelVarTween(object, tweenSettings));
-      varTween.setTweenSettings(tweenSettings);
-      varTween.setObject(object);
-      return globalManager.addTween(varTween);
-    }
     FlixelPropertyTween propTween = globalManager.obtainTween(FlixelPropertyTween.class, () -> new FlixelPropertyTween(tweenSettings));
     propTween.setTweenSettings(tweenSettings);
     propTween.setObject(object);

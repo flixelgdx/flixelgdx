@@ -23,7 +23,6 @@ import me.stringdotjar.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
 import me.stringdotjar.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
-import me.stringdotjar.flixelgdx.backend.lwjgl3.runtime.reflect.FlixelReflectASMHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.util.FlixelRuntimeUtil;
 
@@ -144,7 +143,6 @@ public class FlixelLwjgl3Launcher {
     Flixel.setWindow(new FlixelLwjgl3Window());
     Flixel.setHost(new FlixelLwjgl3HostIntegration());
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
-    Flixel.setReflection(new FlixelReflectASMHandler());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
     Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);

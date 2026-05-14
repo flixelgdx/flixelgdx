@@ -52,7 +52,7 @@ Lifecycle conventions (critical for correct suggestions)
 
 Typical desktop bootstrap inside FlixelLwjgl3Launcher.launch:
 1. FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe())
-2. Backend bindings: alerter, window, host integration, stack trace provider, reflection,
+2. Backend bindings: alerter, window, host integration, stack trace provider,
    log file handler, sound backend factory, runtime mode, optional debug overlay factory.
 3. Flixel.initialize(game)
 4. Construct Lwjgl3Application(game, configuration)
@@ -122,7 +122,7 @@ Asset and animation highlights (for context when reading issues)
 Testing expectations for contributors and CI-minded assistants
 - Framework functionality is validated via flixelgdx-test and manual integration in separate
   consumer libGDX projects using Maven Local, composite builds, or JitPack snapshots.
-- TeaVM builds require reflection profiles declared via gradle.properties keys documented in
+- TeaVM builds require `teavm.json` metadata profiles declared via `gradle.properties` keys documented in
   COMPILING.md.
 
 Common pitfalls for AI-generated patches
@@ -131,7 +131,7 @@ Common pitfalls for AI-generated patches
 - Assuming java.class.path layout identical across Gradle, IntelliJ, Eclipse, or composite
   includes when deriving filesystem roots (always route path discovery through FlixelRuntimeUtil).
 - Using desktop-only APIs on TeaVM (process spawning, arbitrary filesystem writes).
-- Adding heavy reflection on paths executed every frame.
+- Adding heavy dynamic dispatch or allocations on paths executed every frame.
 
 Documentation tone when editing Javadoc or comments in-repo
 - Use beginner-friendly language with concrete examples on heavily used APIs.

@@ -568,13 +568,14 @@ FlixelTeaVMLauncher.launch(
 );
 ```
 
-### Reflection metadata
+### TeaVM metadata (`teavm.json`)
 
-FlixelGDX's TeaVM build auto-generates a `teavm.json` reflection metadata file during the
-`processResources` phase. This file preserves class/field/method information that TeaVM's
-ahead-of-time compiler would otherwise strip.
+FlixelGDX's TeaVM build auto-generates a `teavm.json` metadata file during the
+`processResources` phase. This file preserves class, field, and method information that TeaVM's
+ahead-of-time compiler would otherwise strip when your game or dependencies still rely on
+`java.lang.reflect` or similar features.
 
-The reflection profile is controlled by `flixelReflectionProfile` in `gradle.properties`:
+The metadata profile is controlled by `flixelReflectionProfile` in `gradle.properties`:
 
 | Profile    | What is preserved |
 |------------|-------------------|
@@ -589,6 +590,12 @@ To include your own game packages in the metadata, set `flixelReflectionExtraPac
 flixelReflectionExtraPackages=com.mygame,org.example.tools
 ```
 
+### Optional ReflectAOT for game code
+
+The core framework no longer exposes `Flixel.reflect`. If your game still wants a small `Reflect`-style
+API with Gradle-time validation, use the separate **ReflectAOT** plugin maintained alongside FlixelGDX:
+[https://github.com/flixelgdx/ReflectAOT](https://github.com/flixelgdx/ReflectAOT).
+
 ### Platform limitations on web
 
 The web backend intentionally omits several features that are unavailable in a browser
@@ -598,8 +605,7 @@ environment:
   a safe no-op. Console output (`System.out.println`) maps to `console.log` in the browser.
 - **Jansi / ANSI colors** are not installed. Terminal color codes are irrelevant in a browser
   console.
-- **`FlixelVarTween`** relies on runtime reflection and may exhibit slower performance on
-  TeaVM. Prefer `FlixelPropertyTween` (getter/setter lambdas) for web-targeted games.
+- **Property tweens** use explicit getter and setter lambdas and are the recommended path on TeaVM.
 - **`FlixelGitUtil`** and other `ProcessBuilder`-based utilities are unavailable (no subprocess
   support in browsers).
 - **`FlixelDefaultAssetManager.extractAssetPath()`** uses `java.io.File` for temp file
@@ -613,7 +619,7 @@ Before shipping a web build, verify the following:
 1. The game boots and the initial state renders in the browser.
 2. No `ClassNotFoundException` or `NoSuchMethodException` in the browser console (indicates
    missing reflection metadata; widen the profile or add extra packages).
-3. Tweens animate correctly (prefer `FlixelPropertyTween` over `FlixelVarTween`).
+3. Tweens animate correctly (use `FlixelPropertyTween` style goals with lambdas).
 4. Audio plays in the browser (uses the Web Audio API via libGDX's backend).
 5. Input (keyboard, mouse/touch) responds as expected.
 

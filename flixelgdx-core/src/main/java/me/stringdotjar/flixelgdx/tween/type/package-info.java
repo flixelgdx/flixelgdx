@@ -1,11 +1,11 @@
 /**
  * Tween type implementations.
  *
- * <p>Concrete tween classes (numeric, property, var, misc). Motion/path tweens are under
+ * <p>Concrete tween classes (numeric, property, misc). Motion/path tweens are under
  * {@link me.stringdotjar.flixelgdx.tween.type.motion}.
  *
- * <p>Dotted field paths and nested {@link me.stringdotjar.flixelgdx.tween.FlixelTween#isTweenOf(Object, String)}
- * matching require a configured {@link me.stringdotjar.flixelgdx.Flixel#reflect} implementation via
- * {@link me.stringdotjar.flixelgdx.Flixel#setReflection(me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection)}.
+ * <p>For {@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}, dotted paths passed to
+ * {@link me.stringdotjar.flixelgdx.tween.FlixelTween#isTweenOf(Object, String)} use a lightweight
+ * suffix match without walking nested objects (see that method's Javadoc).
  */
 package me.stringdotjar.flixelgdx.tween.type;

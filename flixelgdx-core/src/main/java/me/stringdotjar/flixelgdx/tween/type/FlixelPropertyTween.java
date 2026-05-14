@@ -12,8 +12,6 @@ import java.util.Objects;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
 
-import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.backend.reflect.FlixelPropertyPath;
 import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -21,26 +19,20 @@ import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Tween type for animating values via getter/setter pairs (property goals)
- * rather than reflection. Use this when you need setter side effects (for
- * example, bounds updates or listeners) to run on every interpolated step.
- * Configure property goals with
+ * Tween type for animating values via getter and setter pairs (property goals). Use this when you
+ * need setter side effects (for example, bounds updates or listeners) to run on every interpolated
+ * step. Configure property goals with
  * {@link FlixelTweenSettings#addGoal(FloatSupplier, float, FlixelTweenSettings.FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter)}.
  *
- * <p>This tween type is faster than {@link FlixelVarTween}, which resolves
- * property names through {@link Flixel#reflect} on each frame. Both can
- * invoke JavaBean setters on every step when configured that way; prefer this
- * type when you can close over getter/setter references and avoid reflection.
+ * <p>This tween type is the supported path for {@link FlixelTween#tween(Object, FlixelTweenSettings)}
+ * because it avoids indirect name resolution and works well on ahead-of-time targets such as TeaVM.
  *
  * <h2>Recommended for Web / TeaVM Targets</h2>
  *
- * <p><strong>This is the recommended tween type for games targeting the web
- * (TeaVM) backend.</strong> Because it uses explicit getter/setter lambda
- * references instead of runtime reflection, it is fully compatible with
- * ahead-of-time compilation targets such as TeaVM. If your game targets the
- * web, always prefer this type over {@link FlixelVarTween}.
+ * <p><strong>This is the recommended tween type for games targeting the web (TeaVM) backend.</strong>
+ * Because it uses explicit getter and setter lambda references, it stays compatible with
+ * ahead-of-time compilation toolchains.
  *
- * @see FlixelVarTween
  * @see FlixelTweenSettings
  */
 public class FlixelPropertyTween extends FlixelTween {
@@ -183,6 +175,23 @@ public class FlixelPropertyTween extends FlixelTween {
     fieldLabel = null;
   }
 
+  /**
+   * Returns whether this tween matches the given object and optional field path.
+   *
+   * <p>When {@code field} contains no {@code '.'}, the match requires object identity with
+   * {@link #setObject(Object)} and, if {@link #setFieldLabel(String)} was used, equality between
+   * {@code field} and that label.
+   *
+   * <p>When {@code field} is dotted, the framework no longer walks nested objects. Matching succeeds
+   * only when {@code o} is the same instance as the logical tween object and the segment after the
+   * final {@code '.'} equals {@code fieldLabel} when a label is configured (or any suffix when the
+   * label is {@code null}). Callers that cancel tweens using a root object and a long dotted path
+   * should pass the same object reference that was passed to {@code setObject(...)}.
+   *
+   * @param o Candidate object from the manager query.
+   * @param field Optional path string (may contain dots).
+   * @return {@code true} when this tween should be treated as a match.
+   */
   @Override
   public boolean isTweenOf(Object o, String field) {
     if (tweenObject == null) {
@@ -194,9 +203,10 @@ public class FlixelPropertyTween extends FlixelTween {
     if (field.indexOf('.') < 0) {
       return Objects.equals(o, tweenObject) && (fieldLabel == null || fieldLabel.equals(field));
     }
-    FlixelPropertyPath path = Flixel.reflect.resolvePropertyPath(o, field);
-    return Objects.equals(path.leafObject(), tweenObject)
-        && (fieldLabel == null || fieldLabel.equals(path.leafName()));
+    int lastDot = field.lastIndexOf('.');
+    String leaf = field.substring(lastDot + 1);
+    boolean leafOk = fieldLabel == null || fieldLabel.equals(leaf);
+    return leafOk && Objects.equals(o, tweenObject);
   }
 
   private void resetGoals() {
