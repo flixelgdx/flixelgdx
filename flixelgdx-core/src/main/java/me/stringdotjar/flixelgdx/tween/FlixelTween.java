@@ -183,7 +183,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
-    Array<FlixelTweenSettings.FlixelTweenGoal> propGoals = tweenSettings.getPropertyGoals();
+    Array<FlixelTweenSettings.FlixelTweenGoal> propGoals = tweenSettings.getGoals();
     if (propGoals == null || propGoals.size == 0) {
       throw new IllegalArgumentException(
           "FlixelTweenSettings requires at least one property goal from addGoal(getter, toValue, setter).");

@@ -27,10 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * FlixelTween.tween(myObject, new FlixelTweenSettings()
  *   .addGoal(myObject::getFoo, 100f, myObject::setFoo)
  *   .addGoal(myObject::getBar, 200f, myObject::setBar));
- * }
+ * }</pre>
  *
  * <p>If you need to cancel a specific tween of an object, you can add a label to the tween
- * via {@link #setFieldLabel(String)} and use that label in the query:
+ * via {@link #setFieldLabel(String)} and use that label in your game's code to cancel or complete that tween:
  *
  * <pre>{@code
  * FlixelGoalTween t = (FlixelGoalTween) FlixelTween.tween(myObject, new FlixelTweenSettings()
@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  * // Later in your game's code...
  * FlixelTween.cancelTweensOf(myObject, "yourLabel");
  * FlixelTween.completeTweensOf(myObject, "yourLabel");
- * }
+ * }</pre>
  *
  * @see FlixelTweenSettings
  */
@@ -141,7 +141,7 @@ public class FlixelGoalTween extends FlixelTween {
       return this;
     }
 
-    var propertyGoals = tweenSettings.getPropertyGoals();
+    var propertyGoals = tweenSettings.getGoals();
     if (propertyGoals == null || propertyGoals.isEmpty()) {
       return this;
     }
@@ -169,7 +169,7 @@ public class FlixelGoalTween extends FlixelTween {
     // restarts, keep the original start values so the animation stays between the
     // original endpoints.
     if (!internalRestart && tweenSettings != null) {
-      var propertyGoals = tweenSettings.getPropertyGoals();
+      var propertyGoals = tweenSettings.getGoals();
       if (propertyGoals != null && !propertyGoals.isEmpty()) {
         resetGoals();
       }
@@ -221,7 +221,7 @@ public class FlixelGoalTween extends FlixelTween {
   }
 
   private void resetGoals() {
-    var propertyGoals = tweenSettings.getPropertyGoals();
+    var propertyGoals = tweenSettings.getGoals();
     cachedPropertyGoals.clear();
     propertyGoalStartValues.clear();
     for (int i = 0; i < propertyGoals.size; i++) {

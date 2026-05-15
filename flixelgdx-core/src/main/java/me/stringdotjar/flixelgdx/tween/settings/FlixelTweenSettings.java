@@ -29,7 +29,7 @@ public class FlixelTweenSettings {
   private FlixelEase.FunkinEaseStartCallback onStart;
   private FlixelEase.FunkinEaseUpdateCallback onUpdate;
   private FlixelEase.FunkinEaseCompleteCallback onComplete;
-  private final Array<FlixelTweenGoal> propertyGoals;
+  private final Array<FlixelTweenGoal> goals;
 
   public FlixelTweenSettings() {
     this(FlixelTweenType.ONESHOT, FlixelEase::linear);
@@ -58,7 +58,7 @@ public class FlixelTweenSettings {
     this.onStart = null;
     this.onUpdate = null;
     this.onComplete = null;
-    this.propertyGoals = new Array<>(false, 16);
+    this.goals = new Array<>(false, 16);
   }
 
   /**
@@ -76,7 +76,7 @@ public class FlixelTweenSettings {
   public FlixelTweenSettings addGoal(@NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalGetter getter,
                                      float toValue,
                                      @NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalSetter setter) {
-    propertyGoals.add(new FlixelTweenGoal(getter, toValue, setter));
+    goals.add(new FlixelTweenGoal(getter, toValue, setter));
     return this;
   }
 
@@ -115,8 +115,8 @@ public class FlixelTweenSettings {
     return onComplete;
   }
 
-  public Array<FlixelTweenGoal> getPropertyGoals() {
-    return propertyGoals;
+  public Array<FlixelTweenGoal> getGoals() {
+    return goals;
   }
 
   public float getLoopDelay() {
@@ -137,7 +137,7 @@ public class FlixelTweenSettings {
   }
 
   public void clearGoals() {
-    propertyGoals.clear();
+    goals.clear();
   }
 
   public FlixelTweenSettings setStartDelay(float startDelay) {
@@ -175,6 +175,13 @@ public class FlixelTweenSettings {
     return this;
   }
 
+  public FlixelTweenSettings forEachGoal(FlixelTweenGoalVisitor visitor) {
+    for (FlixelTweenGoal goal : goals) {
+      visitor.visit(goal);
+    }
+    return this;
+  }
+
   /**
    * A record containing a getter, a target value, and a setter for a property-based tween goal.
    *
@@ -200,5 +207,13 @@ public class FlixelTweenSettings {
     public interface FlixelTweenGoalSetter {
       void set(float value);
     }
+  }
+
+  /**
+   * A functional interface for visiting each goal in {@code this} tween settings object.
+   */
+  @FunctionalInterface
+  public interface FlixelTweenGoalVisitor {
+    void visit(FlixelTweenGoal goal);
   }
 }
