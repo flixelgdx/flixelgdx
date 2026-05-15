@@ -592,9 +592,9 @@ flixelReflectionExtraPackages=com.mygame,org.example.tools
 
 ### Optional ReflectAOT for game code
 
-The core framework no longer exposes `Flixel.reflect`. If your game still wants a small `Reflect`-style
-API with Gradle-time validation, use the separate **ReflectAOT** plugin maintained alongside FlixelGDX:
-[https://github.com/flixelgdx/ReflectAOT](https://github.com/flixelgdx/ReflectAOT).
+In order to keep the core of the framework platform-agnostic, it does not expose a reflection API. If your 
+game still wants a small `Reflect`-style API with Gradle-time validation, use the separate **ReflectAOT** 
+plugin maintained alongside FlixelGDX: [https://github.com/flixelgdx/ReflectAOT](https://github.com/flixelgdx/ReflectAOT).
 
 ### Platform limitations on web
 
@@ -605,7 +605,6 @@ environment:
   a safe no-op. Console output (`System.out.println`) maps to `console.log` in the browser.
 - **Jansi / ANSI colors** are not installed. Terminal color codes are irrelevant in a browser
   console.
-- **Property tweens** use explicit getter and setter lambdas and are the recommended path on TeaVM.
 - **`FlixelGitUtil`** and other `ProcessBuilder`-based utilities are unavailable (no subprocess
   support in browsers).
 - **`FlixelDefaultAssetManager.extractAssetPath()`** uses `java.io.File` for temp file

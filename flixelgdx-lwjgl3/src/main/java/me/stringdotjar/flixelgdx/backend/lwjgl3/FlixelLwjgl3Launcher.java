@@ -147,11 +147,11 @@ public class FlixelLwjgl3Launcher {
     Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {
       Flixel.setDebugOverlay(FlixelImGuiDebugOverlay::new);
     }
     Flixel.initialize(game);
-    Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
     new Lwjgl3Application(game, configuration);
 
