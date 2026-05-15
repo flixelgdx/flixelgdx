@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import me.stringdotjar.flixelgdx.tween.type.FlixelGoalTween;
 import org.jetbrains.annotations.NotNull;
 
 import com.badlogic.gdx.utils.Array;
@@ -55,7 +56,7 @@ public class FlixelTweenManager {
    * Register all tween types (including custom ones) before using {@link #obtainTween(Class, Supplier)} with
    * that tween class.
    *
-   * @param tweenClass The tween class (e.g. {@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}{@code .class}).
+   * @param tweenClass The tween class (e.g. {@link FlixelGoalTween}{@code .class}).
    * @param poolFactory A supplier that creates a new tween instance when the pool is empty.
    * @param <T> The tween type.
    * @return The same manager, for chaining.
@@ -126,11 +127,11 @@ public class FlixelTweenManager {
   /**
    * Obtains a tween of the given type from the registry's pool. The returned instance is reset;
    * the caller must set {@link FlixelTween#setTweenSettings} and any type-specific state (for
-   * example {@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween#setObject(Object)})
+   * example {@link FlixelGoalTween#setObject(Object)})
    * before {@link #addTween(FlixelTween)}. The {@code factory} is only used when the type is not
    * registered; registered types ignore the supplier and use the pool's {@code newObject()} method.
    *
-   * @param type The tween class (e.g. {@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}.class).
+   * @param type The tween class (e.g. {@link FlixelGoalTween}.class).
    * @param factory Fallback factory when the type is not registered or the pool is empty.
    * @return A reset tween of type {@code T}, either from the pool or from {@code factory}.
    */

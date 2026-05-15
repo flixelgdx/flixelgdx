@@ -34,6 +34,7 @@ import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadManager;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
+import me.stringdotjar.flixelgdx.tween.type.FlixelGoalTween;
 import me.stringdotjar.flixelgdx.util.save.FlixelSave;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
@@ -46,7 +47,6 @@ import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
-import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCircularMotion;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCubicMotion;
@@ -406,7 +406,7 @@ public final class Flixel {
     }
 
     // Register default tween pools (pool factories avoid extra allocations when pooling tweens).
-    FlixelTween.registerTweenType(FlixelPropertyTween.class, () -> new FlixelPropertyTween(null))
+    FlixelTween.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null))
       .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
       .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
       .registerTweenType(FlixelColorTween.class, () -> new FlixelColorTween(null))
