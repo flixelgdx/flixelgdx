@@ -26,9 +26,8 @@ import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenType;
 import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
+import me.stringdotjar.flixelgdx.tween.type.FlixelGoalTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
-import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
-import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCircularMotion;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCubicMotion;
@@ -76,7 +75,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Subclasses of {@code FlixelTween} implement specialized behavior:
  * <ul>
- *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween}: interpolates properties of objects using lambda getters and setters.</li>
+ *   <li>{@link FlixelGoalTween}: interpolates properties of objects using lambda getters and setters.</li>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value via a callback.</li>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelColorTween}: tweens between colors</li>
  *   <li>{@link me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween}: smoothly rotates a value</li>
@@ -176,21 +175,21 @@ public abstract class FlixelTween implements Pool.Poolable {
    * tweens stay compatible with ahead-of-time targets, or integrate a third-party reflection helper in your game
    * project if you still need name-driven access (for example the ReflectAOT Gradle plugin).
    *
-   * @param object The logical tween subject for {@link FlixelPropertyTween#setObject(Object)} and
-   *     {@link FlixelPropertyTween#isTweenOf(Object, String)}.
+   * @param object The logical tween subject for {@link FlixelGoalTween#setObject(Object)} and
+   *     {@link FlixelGoalTween#isTweenOf(Object, String)}.
    * @param tweenSettings Settings including property goals.
    * @return The newly created and started tween.
    * @throws IllegalArgumentException If no property goals are present.
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
-    Array<FlixelTweenSettings.FlixelTweenPropertyGoal> propGoals = tweenSettings.getPropertyGoals();
+    Array<FlixelTweenSettings.FlixelTweenGoal> propGoals = tweenSettings.getPropertyGoals();
     if (propGoals == null || propGoals.size == 0) {
       throw new IllegalArgumentException(
           "FlixelTweenSettings requires at least one property goal from addGoal(getter, toValue, setter).");
     }
 
-    FlixelPropertyTween propTween = globalManager.obtainTween(FlixelPropertyTween.class, () -> new FlixelPropertyTween(tweenSettings));
+    FlixelGoalTween propTween = globalManager.obtainTween(FlixelGoalTween.class, () -> new FlixelGoalTween(tweenSettings));
     propTween.setTweenSettings(tweenSettings);
     propTween.setObject(object);
     return globalManager.addTween(propTween);

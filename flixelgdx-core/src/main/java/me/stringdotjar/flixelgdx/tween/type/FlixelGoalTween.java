@@ -12,30 +12,41 @@ import java.util.Objects;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
 
-import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Tween type for animating values via getter and setter pairs (property goals). Use this when you
- * need setter side effects (for example, bounds updates or listeners) to run on every interpolated
- * step. Configure property goals with
- * {@link FlixelTweenSettings#addGoal(FloatSupplier, float, FlixelTweenSettings.FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter)}.
+ * Tween type for animating any object via lambda getters and setters.
  *
- * <p>This tween type is the supported path for {@link FlixelTween#tween(Object, FlixelTweenSettings)}
- * because it avoids indirect name resolution and works well on ahead-of-time targets such as TeaVM.
+ * <p>It's intended to be used the following way:
  *
- * <h2>Recommended for Web / TeaVM Targets</h2>
+ * <pre>{@code
+ * // Use the FlixelTween class to use this type.
+ * FlixelTween.tween(myObject, new FlixelTweenSettings()
+ *   .addGoal(myObject::getFoo, 100f, myObject::setFoo)
+ *   .addGoal(myObject::getBar, 200f, myObject::setBar));
+ * }
  *
- * <p><strong>This is the recommended tween type for games targeting the web (TeaVM) backend.</strong>
- * Because it uses explicit getter and setter lambda references, it stays compatible with
- * ahead-of-time compilation toolchains.
+ * <p>If you need to cancel a specific tween of an object, you can add a label to the tween
+ * via {@link #setFieldLabel(String)} and use that label in the query:
+ *
+ * <pre>{@code
+ * FlixelGoalTween t = (FlixelGoalTween) FlixelTween.tween(myObject, new FlixelTweenSettings()
+ *   .addGoal(myObject::getFoo, 100f, myObject::setFoo)
+ *   .addGoal(myObject::getBar, 200f, myObject::setBar));
+ *
+ * t.setFieldLabel("yourLabel");
+ *
+ * // Later in your game's code...
+ * FlixelTween.cancelTweensOf(myObject, "yourLabel");
+ * FlixelTween.completeTweensOf(myObject, "yourLabel");
+ * }
  *
  * @see FlixelTweenSettings
  */
-public class FlixelPropertyTween extends FlixelTween {
+public class FlixelGoalTween extends FlixelTween {
 
   /**
    * Logical subject for {@link #isTweenOf(Object, String)}; must be set before {@link #start()} /
@@ -50,7 +61,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * Cached property goals captured at {@link #start()} to avoid re-allocating the list every
    * frame inside {@link #updateTweenValues()}.
    */
-  protected Array<FlixelTweenSettings.FlixelTweenPropertyGoal> cachedPropertyGoals = new Array<>();
+  protected Array<FlixelTweenSettings.FlixelTweenGoal> cachedPropertyGoals = new Array<>();
 
   /**
    * Initial values of each property goal, captured from their getter at {@link #start()}, indexed
@@ -64,7 +75,7 @@ public class FlixelPropertyTween extends FlixelTween {
    *
    * @param settings The settings that configure and determine how the tween should animate.
    */
-  public FlixelPropertyTween(FlixelTweenSettings settings) {
+  public FlixelGoalTween(FlixelTweenSettings settings) {
     super(settings);
   }
 
@@ -78,7 +89,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * @param tweenObject The object to tween.
    * @return {@code this} for chaining.
    */
-  public FlixelPropertyTween setObject(@Nullable Object tweenObject) {
+  public FlixelGoalTween setObject(@Nullable Object tweenObject) {
     this.tweenObject = tweenObject;
     return this;
   }
@@ -91,7 +102,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * @param fieldLabel The field label to associate with this tween, or {@code null} to clear any previously set label.
    * @return This tween instance for method chaining.
    */
-  public FlixelPropertyTween setFieldLabel(@Nullable String fieldLabel) {
+  public FlixelGoalTween setFieldLabel(@Nullable String fieldLabel) {
     this.fieldLabel = fieldLabel;
     return this;
   }
@@ -121,7 +132,7 @@ public class FlixelPropertyTween extends FlixelTween {
   @Override
   public FlixelTween start() {
     if (tweenObject == null) {
-      throw new IllegalStateException("FlixelPropertyTween requires setObject(Object) before start(). "
+      throw new IllegalStateException("FlixelGoalTween requires setObject(Object) before start(). "
         + "Use FlixelTween.tween(object, new FlixelTweenSettings()...) or call setObject(...) after obtaining the tween from the pool.");
     }
     super.start();
