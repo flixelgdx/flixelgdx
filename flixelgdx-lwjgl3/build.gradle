@@ -16,8 +16,6 @@ dependencies {
   api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
   api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
-  api "com.esotericsoftware:reflectasm:$reflectasmVersion"
-
   // Dear ImGui Java bindings used by FlixelImGuiDebugOverlay. The "binding" jar holds the Java
   // surface, the "lwjgl3" jar wires it into LWJGL3/GLFW, and the three "natives-*" jars supply
   // the platform-specific shared libraries pulled at runtime.

@@ -13,7 +13,6 @@ import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetInstance;
 import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetLoaderListener;
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelGame;
-import me.stringdotjar.flixelgdx.backend.reflect.FlixelDefaultReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
 import me.stringdotjar.flixelgdx.backend.teavm.audio.FlixelDefaultSoundHandler;
@@ -111,7 +110,6 @@ public class FlixelTeaVMLauncher {
     Flixel.setAlerter(new FlixelTeaVMAlerter());
     Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
     Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit);
-    Flixel.setReflection(new FlixelDefaultReflectionHandler());
     Flixel.setSoundBackendFactory(new FlixelDefaultSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);

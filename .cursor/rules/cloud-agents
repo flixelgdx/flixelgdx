@@ -1,0 +1,16 @@
+---
+description: Only if you are working in a virtualized cloud environment.
+alwaysApply: false
+---
+
+When you are completing a task in a cloud environment, you are required to do the following:
+
+- Keep your commits small and focused. Your commits shouldn't be large. When finishing a task, commit your changes
+  in small chunks as you go. This allows the commit history to be more traceable.
+- Keep all of your code inside **one** pull request and **one** branch unless the user explicitly instructs you to
+  create multiple. A common reason the user might instruct you to create more than one branch (or pull request) is if you
+  are working on a feature that is dependent on another feature, or if a sub-issue is dependent on another sub-issue, etc.
+- For pull requests and commits, follow the exact rules in the `CONTRIBUTING.md` file. Make sure you stay true to all guidelines
+  when it comes to commit titles/messages, pull request titles and guidelines. This also includes following the template
+  `PULL_REQUEST_TEMPLATE.md` file.
+- If the user, at any point, changes the title of the pull request, **do not change it**. Leave it as it is.

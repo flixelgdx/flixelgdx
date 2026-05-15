@@ -568,13 +568,20 @@ FlixelTeaVMLauncher.launch(
 );
 ```
 
-### Reflection metadata
+### TeaVM metadata (`teavm.json`)
 
-FlixelGDX's TeaVM build auto-generates a `teavm.json` reflection metadata file during the
-`processResources` phase. This file preserves class/field/method information that TeaVM's
-ahead-of-time compiler would otherwise strip.
+FlixelGDX's TeaVM build auto-generates a `teavm.json` metadata file during the
+`processResources` phase. This file lists classes (and related reflective surface) that TeaVM's
+ahead-of-time compiler should keep when your game or a dependency still uses
+`java.lang.reflect`, serialization, annotation introspection, or other patterns that need
+type information at runtime.
 
-The reflection profile is controlled by `flixelReflectionProfile` in `gradle.properties`:
+The **size** of that list is controlled by a profile in `gradle.properties`. The Gradle keys
+`flixelReflectionProfile` and `flixelReflectionExtraPackages` keep these historical names, but
+they only drive this TeaVM metadata step. They are **not** a FlixelGDX reflection API (the core
+framework does not ship one; see [Optional ReflectAOT for game code](#optional-reflectaot-for-game-code) below).
+
+`flixelReflectionProfile` selects a preset:
 
 | Profile    | What is preserved |
 |------------|-------------------|
@@ -582,12 +589,18 @@ The reflection profile is controlled by `flixelReflectionProfile` in `gradle.pro
 | `STANDARD` | FlixelGDX + libGDX classes (recommended). |
 | `ALL`      | FlixelGDX + libGDX + visible dependencies (anim8, miniaudio). |
 
-To include your own game packages in the metadata, set `flixelReflectionExtraPackages` in
-`gradle.properties`:
+To add your own packages (for example your `core` module's root package), list them in
+`flixelReflectionExtraPackages` (comma-separated):
 
 ```properties
 flixelReflectionExtraPackages=com.mygame,org.example.tools
 ```
+
+### Optional ReflectAOT for game code
+
+In order to keep the core of the framework platform-agnostic, it does not expose a reflection API. If your 
+game still wants a small `Reflect`-style API with Gradle-time validation, use the separate **ReflectAOT** 
+plugin maintained alongside FlixelGDX: [https://github.com/flixelgdx/ReflectAOT](https://github.com/flixelgdx/ReflectAOT).
 
 ### Platform limitations on web
 
@@ -598,8 +611,6 @@ environment:
   a safe no-op. Console output (`System.out.println`) maps to `console.log` in the browser.
 - **Jansi / ANSI colors** are not installed. Terminal color codes are irrelevant in a browser
   console.
-- **`FlixelVarTween`** relies on runtime reflection and may exhibit slower performance on
-  TeaVM. Prefer `FlixelPropertyTween` (getter/setter lambdas) for web-targeted games.
 - **`FlixelGitUtil`** and other `ProcessBuilder`-based utilities are unavailable (no subprocess
   support in browsers).
 - **`FlixelDefaultAssetManager.extractAssetPath()`** uses `java.io.File` for temp file
@@ -611,9 +622,11 @@ environment:
 Before shipping a web build, verify the following:
 
 1. The game boots and the initial state renders in the browser.
-2. No `ClassNotFoundException` or `NoSuchMethodException` in the browser console (indicates
-   missing reflection metadata; widen the profile or add extra packages).
-3. Tweens animate correctly (prefer `FlixelPropertyTween` over `FlixelVarTween`).
+2. No `ClassNotFoundException` or `NoSuchMethodException` in the browser console (often means
+   TeaVM metadata is too narrow; widen `flixelReflectionProfile` or add packages in
+   `flixelReflectionExtraPackages`).
+3. Tweens animate correctly (`FlixelTween.tween(...)` with `FlixelTweenSettings` goals; the
+   default tween implementation is `FlixelGoalTween`).
 4. Audio plays in the browser (uses the Web Audio API via libGDX's backend).
 5. Input (keyboard, mouse/touch) responds as expected.
 

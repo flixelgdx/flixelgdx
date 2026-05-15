@@ -12,38 +12,41 @@ import java.util.Objects;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
 
-import me.stringdotjar.flixelgdx.Flixel;
-import me.stringdotjar.flixelgdx.backend.reflect.FlixelPropertyPath;
-import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.tween.FlixelTween;
 import me.stringdotjar.flixelgdx.tween.settings.FlixelTweenSettings;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Tween type for animating values via getter/setter pairs (property goals)
- * rather than reflection. Use this when you need setter side effects (for
- * example, bounds updates or listeners) to run on every interpolated step.
- * Configure property goals with
- * {@link FlixelTweenSettings#addGoal(FloatSupplier, float, FlixelTweenSettings.FlixelTweenPropertyGoal.FlixelTweenPropertyFloatSetter)}.
+ * Tween type for animating any object via lambda getters and setters.
  *
- * <p>This tween type is faster than {@link FlixelVarTween}, which resolves
- * property names through {@link Flixel#reflect} on each frame. Both can
- * invoke JavaBean setters on every step when configured that way; prefer this
- * type when you can close over getter/setter references and avoid reflection.
+ * <p>It's intended to be used the following way:
  *
- * <h2>Recommended for Web / TeaVM Targets</h2>
+ * <pre>{@code
+ * // Use the FlixelTween class to use this type.
+ * FlixelTween.tween(myObject, new FlixelTweenSettings()
+ *   .addGoal(myObject::getFoo, 100f, myObject::setFoo)
+ *   .addGoal(myObject::getBar, 200f, myObject::setBar));
+ * }</pre>
  *
- * <p><strong>This is the recommended tween type for games targeting the web
- * (TeaVM) backend.</strong> Because it uses explicit getter/setter lambda
- * references instead of runtime reflection, it is fully compatible with
- * ahead-of-time compilation targets such as TeaVM. If your game targets the
- * web, always prefer this type over {@link FlixelVarTween}.
+ * <p>If you need to cancel a specific tween of an object, you can add a label to the tween
+ * via {@link #setFieldLabel(String)} and use that label in your game's code to cancel or complete that tween:
  *
- * @see FlixelVarTween
+ * <pre>{@code
+ * FlixelGoalTween t = (FlixelGoalTween) FlixelTween.tween(myObject, new FlixelTweenSettings()
+ *   .addGoal(myObject::getFoo, 100f, myObject::setFoo)
+ *   .addGoal(myObject::getBar, 200f, myObject::setBar));
+ *
+ * t.setFieldLabel("yourLabel");
+ *
+ * // Later in your game's code...
+ * FlixelTween.cancelTweensOf(myObject, "yourLabel");
+ * FlixelTween.completeTweensOf(myObject, "yourLabel");
+ * }</pre>
+ *
  * @see FlixelTweenSettings
  */
-public class FlixelPropertyTween extends FlixelTween {
+public class FlixelGoalTween extends FlixelTween {
 
   /**
    * Logical subject for {@link #isTweenOf(Object, String)}; must be set before {@link #start()} /
@@ -58,7 +61,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * Cached property goals captured at {@link #start()} to avoid re-allocating the list every
    * frame inside {@link #updateTweenValues()}.
    */
-  protected Array<FlixelTweenSettings.FlixelTweenPropertyGoal> cachedPropertyGoals = new Array<>();
+  protected Array<FlixelTweenSettings.FlixelTweenGoal> cachedPropertyGoals = new Array<>();
 
   /**
    * Initial values of each property goal, captured from their getter at {@link #start()}, indexed
@@ -67,12 +70,12 @@ public class FlixelPropertyTween extends FlixelTween {
   protected FloatArray propertyGoalStartValues = new FloatArray();
 
   /**
-   * Constructs a new property tween with the given settings. Property goals must be added via
+   * Constructs a new goal tween with the given settings. Goals must be added via
    * {@link FlixelTweenSettings#addGoal} before starting.
    *
    * @param settings The settings that configure and determine how the tween should animate.
    */
-  public FlixelPropertyTween(FlixelTweenSettings settings) {
+  public FlixelGoalTween(FlixelTweenSettings settings) {
     super(settings);
   }
 
@@ -86,7 +89,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * @param tweenObject The object to tween.
    * @return {@code this} for chaining.
    */
-  public FlixelPropertyTween setObject(@Nullable Object tweenObject) {
+  public FlixelGoalTween setObject(@Nullable Object tweenObject) {
     this.tweenObject = tweenObject;
     return this;
   }
@@ -99,7 +102,7 @@ public class FlixelPropertyTween extends FlixelTween {
    * @param fieldLabel The field label to associate with this tween, or {@code null} to clear any previously set label.
    * @return This tween instance for method chaining.
    */
-  public FlixelPropertyTween setFieldLabel(@Nullable String fieldLabel) {
+  public FlixelGoalTween setFieldLabel(@Nullable String fieldLabel) {
     this.fieldLabel = fieldLabel;
     return this;
   }
@@ -129,7 +132,7 @@ public class FlixelPropertyTween extends FlixelTween {
   @Override
   public FlixelTween start() {
     if (tweenObject == null) {
-      throw new IllegalStateException("FlixelPropertyTween requires setObject(Object) before start(). "
+      throw new IllegalStateException("FlixelGoalTween requires setObject(Object) before start(). "
         + "Use FlixelTween.tween(object, new FlixelTweenSettings()...) or call setObject(...) after obtaining the tween from the pool.");
     }
     super.start();
@@ -138,7 +141,7 @@ public class FlixelPropertyTween extends FlixelTween {
       return this;
     }
 
-    var propertyGoals = tweenSettings.getPropertyGoals();
+    var propertyGoals = tweenSettings.getGoals();
     if (propertyGoals == null || propertyGoals.isEmpty()) {
       return this;
     }
@@ -166,7 +169,7 @@ public class FlixelPropertyTween extends FlixelTween {
     // restarts, keep the original start values so the animation stays between the
     // original endpoints.
     if (!internalRestart && tweenSettings != null) {
-      var propertyGoals = tweenSettings.getPropertyGoals();
+      var propertyGoals = tweenSettings.getGoals();
       if (propertyGoals != null && !propertyGoals.isEmpty()) {
         resetGoals();
       }
@@ -183,6 +186,23 @@ public class FlixelPropertyTween extends FlixelTween {
     fieldLabel = null;
   }
 
+  /**
+   * Returns whether this tween matches the given object and optional field path.
+   *
+   * <p>When {@code field} contains no {@code '.'}, the match requires object identity with
+   * {@link #setObject(Object)} and, if {@link #setFieldLabel(String)} was used, equality between
+   * {@code field} and that label.
+   *
+   * <p>When {@code field} is dotted, the framework no longer walks nested objects. Matching succeeds
+   * only when {@code o} is the same instance as the logical tween object and the segment after the
+   * final {@code '.'} equals {@code fieldLabel} when a label is configured (or any suffix when the
+   * label is {@code null}). Callers that cancel tweens using a root object and a long dotted path
+   * should pass the same object reference that was passed to {@code setObject(...)}.
+   *
+   * @param o Candidate object from the manager query.
+   * @param field Optional path string (may contain dots).
+   * @return {@code true} when this tween should be treated as a match.
+   */
   @Override
   public boolean isTweenOf(Object o, String field) {
     if (tweenObject == null) {
@@ -194,13 +214,14 @@ public class FlixelPropertyTween extends FlixelTween {
     if (field.indexOf('.') < 0) {
       return Objects.equals(o, tweenObject) && (fieldLabel == null || fieldLabel.equals(field));
     }
-    FlixelPropertyPath path = Flixel.reflect.resolvePropertyPath(o, field);
-    return Objects.equals(path.leafObject(), tweenObject)
-        && (fieldLabel == null || fieldLabel.equals(path.leafName()));
+    int lastDot = field.lastIndexOf('.');
+    String leaf = field.substring(lastDot + 1);
+    boolean leafOk = fieldLabel == null || fieldLabel.equals(leaf);
+    return leafOk && Objects.equals(o, tweenObject);
   }
 
   private void resetGoals() {
-    var propertyGoals = tweenSettings.getPropertyGoals();
+    var propertyGoals = tweenSettings.getGoals();
     cachedPropertyGoals.clear();
     propertyGoalStartValues.clear();
     for (int i = 0; i < propertyGoals.size; i++) {

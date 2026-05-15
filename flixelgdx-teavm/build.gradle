@@ -93,7 +93,7 @@ def generateTeaVmReflectionConfig = tasks.register("generateTeaVmReflectionConfi
     }.join(",\n")
 
     out.text = """{
-  "comment": "Auto-generated reflection metadata for FlixelDefaultReflectionHandler (${reflectionProfile}).",
+  "comment": "Auto-generated reflection metadata for TeaVM (${reflectionProfile}).",
   "reflection": {
     "classes": [
 ${classesJson}

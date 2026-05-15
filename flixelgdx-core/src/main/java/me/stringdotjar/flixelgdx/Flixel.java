@@ -20,8 +20,6 @@ import me.stringdotjar.flixelgdx.audio.FlixelSoundBackend;
 import me.stringdotjar.flixelgdx.backend.alert.FlixelAlerter;
 import me.stringdotjar.flixelgdx.backend.host.FlixelHostIntegration;
 import me.stringdotjar.flixelgdx.backend.host.FlixelNoopHostIntegration;
-import me.stringdotjar.flixelgdx.backend.reflect.FlixelReflection;
-import me.stringdotjar.flixelgdx.backend.reflect.FlixelUnsupportedReflectionHandler;
 import me.stringdotjar.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import me.stringdotjar.flixelgdx.backend.window.FlixelNoopWindow;
 import me.stringdotjar.flixelgdx.backend.window.FlixelWindow;
@@ -36,6 +34,7 @@ import me.stringdotjar.flixelgdx.logging.FlixelStackTraceProvider;
 import me.stringdotjar.flixelgdx.input.gamepad.FlixelGamepadManager;
 import me.stringdotjar.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import me.stringdotjar.flixelgdx.input.mouse.FlixelMouseManager;
+import me.stringdotjar.flixelgdx.tween.type.FlixelGoalTween;
 import me.stringdotjar.flixelgdx.util.save.FlixelSave;
 import me.stringdotjar.flixelgdx.util.timer.FlixelTimer;
 import me.stringdotjar.flixelgdx.util.signal.FlixelSignal;
@@ -48,9 +47,7 @@ import me.stringdotjar.flixelgdx.tween.type.FlixelAngleTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelColorTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelFlickerTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelNumTween;
-import me.stringdotjar.flixelgdx.tween.type.FlixelPropertyTween;
 import me.stringdotjar.flixelgdx.tween.type.FlixelShakeTween;
-import me.stringdotjar.flixelgdx.tween.type.FlixelVarTween;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCircularMotion;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelCubicMotion;
 import me.stringdotjar.flixelgdx.tween.type.motion.FlixelLinearMotion;
@@ -107,10 +104,6 @@ import java.util.function.Supplier;
  *     Centralizes log output through {@link #log}, and supplies tools for in-game watches and performance tracking.
  *   </li>
  *   <li>
- *     <b>Reflection Utility:</b>
- *     Simplifies cross-platform field and method access with {@link #reflect}.
- *   </li>
- *   <li>
  *     <b>Camera and Drawing Context:</b>
  *     Handles the active camera selection and global antialiasing options.
  *   </li>
@@ -152,11 +145,6 @@ import java.util.function.Supplier;
  *
  * // Load an asset.
  * Flixel.assets.load("player.png");
- *
- * // Use the reflection utility.
- * if (Flixel.reflect.hasField(player, "health")) {
- *   player.health = 100;
- * }
  *
  * // Use the global signal system.
  * Flixel.Signals.preStateSwitch.add(data -> {
@@ -261,10 +249,6 @@ public final class Flixel {
   /** The default logger used by {@link #info}, {@link #warn}, and {@link #error}. */
   @NotNull
   public static FlixelLogger log;
-
-  /** Global reflection service. Use {@code Flixel.reflect.hasField(target, fieldName)}, etc. */
-  @NotNull
-  public static FlixelReflection reflect = new FlixelUnsupportedReflectionHandler();
 
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
@@ -421,9 +405,8 @@ public final class Flixel {
       assets = new FlixelDefaultAssetManager();
     }
 
-    // Register default tween pools (pool factories avoid reflection on constrained runtimes).
-    FlixelTween.registerTweenType(FlixelPropertyTween.class, () -> new FlixelPropertyTween(null))
-      .registerTweenType(FlixelVarTween.class, () -> new FlixelVarTween(null, null))
+    // Register default tween pools (pool factories avoid extra allocations when pooling tweens).
+    FlixelTween.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null))
       .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
       .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
       .registerTweenType(FlixelColorTween.class, () -> new FlixelColorTween(null))
@@ -1303,16 +1286,6 @@ public final class Flixel {
 
   public static FlixelStackTraceProvider getStackTraceProvider() {
     return stackTraceProvider;
-  }
-
-  /**
-   * Sets the runtime reflection service implementation.
-   *
-   * @param reflection Reflection service to expose as {@link #reflect}.
-   */
-  public static void setReflection(FlixelReflection reflection) {
-    Objects.requireNonNull(reflection, "Reflection service cannot be null.");
-    Flixel.reflect = reflection;
   }
 
   /**

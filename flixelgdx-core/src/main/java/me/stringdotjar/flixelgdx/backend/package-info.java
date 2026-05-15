@@ -23,7 +23,7 @@
  * <ul>
  *   <li>Platform bridges and facades</li>
  *   <li>Native functionality wrappers</li>
- *   <li>Reflection-based utilities</li>
+ *   <li>Runtime host and window hooks</li>
  *   <li>Interfacing with application lifecycle events</li>
  *   <li>Graphics surface/context management</li>
  *   <li>File, asset, or save data handling</li>
