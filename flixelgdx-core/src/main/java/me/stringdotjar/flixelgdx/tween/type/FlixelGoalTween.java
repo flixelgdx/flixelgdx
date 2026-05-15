@@ -70,7 +70,7 @@ public class FlixelGoalTween extends FlixelTween {
   protected FloatArray propertyGoalStartValues = new FloatArray();
 
   /**
-   * Constructs a new property tween with the given settings. Property goals must be added via
+   * Constructs a new goal tween with the given settings. Goals must be added via
    * {@link FlixelTweenSettings#addGoal} before starting.
    *
    * @param settings The settings that configure and determine how the tween should animate.
