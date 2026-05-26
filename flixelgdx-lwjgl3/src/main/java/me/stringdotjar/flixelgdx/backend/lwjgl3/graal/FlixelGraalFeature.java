@@ -8,6 +8,7 @@
 package me.stringdotjar.flixelgdx.backend.lwjgl3.graal;
 
 import games.rednblack.miniaudio.MiniAudio;
+
 import imgui.ImFontAtlas;
 import imgui.ImGuiViewport;
 import imgui.ImVec2;
@@ -27,6 +28,7 @@ import imgui.callback.ImStrConsumer;
 import imgui.callback.ImStrSupplier;
 import imgui.internal.ImRect;
 import imgui.type.ImString;
+
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
 import org.lwjgl.system.CallbackI;
@@ -62,10 +64,12 @@ public class FlixelGraalFeature implements Feature {
     }
   }
 
-  // imgui-java 1.90.x JNI registration.
-  // nInitJni() caches every field and method ID listed here at startup.
-  // GraalVM returns null for anything unregistered, causing a NullPointerException
-  // inside GetFieldID that surfaces as ExceptionInInitializerError.
+  /**
+   * Registers imgui-java 1.90.x JNI fields and callbacks.
+   * {@code nInitJni()} caches every field and method ID listed here at startup.
+   * GraalVM returns null for anything unregistered, causing a NullPointerException
+   * inside {@code GetFieldID} that surfaces as {@code ExceptionInInitializerError}.
+   */
   private void registerImGui() throws NoSuchFieldException, NoSuchMethodException {
     // Base native pointer inherited by every imgui wrapper object.
     RuntimeJNIAccess.register(ImGuiStruct.class.getDeclaredField("ptr"));
@@ -109,8 +113,11 @@ public class FlixelGraalFeature implements Feature {
     RuntimeJNIAccess.register(ImStrSupplier.class.getDeclaredMethod("get"));
   }
 
-  // gdx-miniaudio ships no GraalVM metadata. The native audio engine calls
-  // GetMethodID for these three callbacks at startup via JNI.
+  /**
+   * Registers gdx-miniaudio JNI callbacks.
+   * gdx-miniaudio ships no GraalVM metadata; the native audio engine calls
+   * {@code GetMethodID} for these three methods at startup.
+   */
   private void registerMiniAudio() throws NoSuchMethodException {
     RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_notification", int.class));
     RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_sound_end", long.class));
