@@ -49,71 +49,71 @@ import org.lwjgl.system.CallbackI;
  */
 public class FlixelGraalFeature implements Feature {
 
-    @Override
-    public void beforeAnalysis(BeforeAnalysisAccess access) {
-        try {
-            registerImGui();
-            registerMiniAudio();
-        } catch (NoSuchFieldException | NoSuchMethodException e) {
-            // A missing entry means a library version change introduced or removed a field/method.
-            // The build will not fail here, but the resulting binary may crash at the call site.
-            System.err.println("[FlixelGDX] Warning: native image JNI registration failed: " + e);
-            System.err.println("[FlixelGDX] Re-run the tracing agent and update FlixelGraalFeature.");
-        }
+  @Override
+  public void beforeAnalysis(BeforeAnalysisAccess access) {
+    try {
+      registerImGui();
+      registerMiniAudio();
+    } catch (NoSuchFieldException | NoSuchMethodException e) {
+      // A missing entry means a library version change introduced or removed a field/method.
+      // The build will not fail here, but the resulting binary may crash at the call site.
+      System.err.println("[FlixelGDX] Warning: native image JNI registration failed: " + e);
+      System.err.println("[FlixelGDX] Re-run the tracing agent and update FlixelGraalFeature.");
     }
+  }
 
-    // imgui-java 1.90.x JNI registration.
-    // nInitJni() caches every field and method ID listed here at startup.
-    // GraalVM returns null for anything unregistered, causing a NullPointerException
-    // inside GetFieldID that surfaces as ExceptionInInitializerError.
-    private void registerImGui() throws NoSuchFieldException, NoSuchMethodException {
-        // Base native pointer inherited by every imgui wrapper object.
-        RuntimeJNIAccess.register(ImGuiStruct.class.getDeclaredField("ptr"));
+  // imgui-java 1.90.x JNI registration.
+  // nInitJni() caches every field and method ID listed here at startup.
+  // GraalVM returns null for anything unregistered, causing a NullPointerException
+  // inside GetFieldID that surfaces as ExceptionInInitializerError.
+  private void registerImGui() throws NoSuchFieldException, NoSuchMethodException {
+    // Base native pointer inherited by every imgui wrapper object.
+    RuntimeJNIAccess.register(ImGuiStruct.class.getDeclaredField("ptr"));
 
-        RuntimeJNIAccess.register(ImVec2.class.getDeclaredField("x"));
-        RuntimeJNIAccess.register(ImVec2.class.getDeclaredField("y"));
+    RuntimeJNIAccess.register(ImVec2.class.getDeclaredField("x"));
+    RuntimeJNIAccess.register(ImVec2.class.getDeclaredField("y"));
 
-        RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("x"));
-        RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("y"));
-        RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("z"));
-        RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("w"));
+    RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("x"));
+    RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("y"));
+    RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("z"));
+    RuntimeJNIAccess.register(ImVec4.class.getDeclaredField("w"));
 
-        RuntimeJNIAccess.register(ImRect.class.getDeclaredField("min"));
-        RuntimeJNIAccess.register(ImRect.class.getDeclaredField("max"));
+    RuntimeJNIAccess.register(ImRect.class.getDeclaredField("min"));
+    RuntimeJNIAccess.register(ImRect.class.getDeclaredField("max"));
 
-        RuntimeJNIAccess.register(ImFontAtlas.class.getDeclaredMethod("createAlpha8Pixels", int.class));
-        RuntimeJNIAccess.register(ImFontAtlas.class.getDeclaredMethod("createRgba32Pixels", int.class));
+    RuntimeJNIAccess.register(ImFontAtlas.class.getDeclaredMethod("createAlpha8Pixels", int.class));
+    RuntimeJNIAccess.register(ImFontAtlas.class.getDeclaredMethod("createRgba32Pixels", int.class));
 
-        RuntimeJNIAccess.register(ImString.class.getDeclaredMethod("resizeInternal", int.class));
+    RuntimeJNIAccess.register(ImString.class.getDeclaredMethod("resizeInternal", int.class));
 
-        Class<?> inputData = ImString.InputData.class;
-        RuntimeJNIAccess.register(inputData.getDeclaredField("isDirty"));
-        RuntimeJNIAccess.register(inputData.getDeclaredField("isResized"));
-        RuntimeJNIAccess.register(inputData.getDeclaredField("size"));
+    Class<?> inputData = ImString.InputData.class;
+    RuntimeJNIAccess.register(inputData.getDeclaredField("isDirty"));
+    RuntimeJNIAccess.register(inputData.getDeclaredField("isResized"));
+    RuntimeJNIAccess.register(inputData.getDeclaredField("size"));
 
-        RuntimeJNIAccess.register(Boolean.class.getDeclaredMethod("getBoolean", String.class));
-        RuntimeJNIAccess.register(CallbackI.class.getDeclaredMethod("callback", long.class, long.class));
+    RuntimeJNIAccess.register(Boolean.class.getDeclaredMethod("getBoolean", String.class));
+    RuntimeJNIAccess.register(CallbackI.class.getDeclaredMethod("callback", long.class, long.class));
 
-        // Runtime callbacks invoked by the imgui native layer.
-        RuntimeJNIAccess.register(ImAssertCallback.class.getDeclaredMethod("imAssert", String.class, int.class, String.class));
-        RuntimeJNIAccess.register(ImGuiInputTextCallback.class.getDeclaredMethod("accept", long.class));
-        RuntimeJNIAccess.register(ImListClipperCallback.class.getDeclaredMethod("accept", int.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewport.class.getDeclaredMethod("accept", ImGuiViewport.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewportFloat.class.getDeclaredMethod("accept", ImGuiViewport.class, float.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewportImVec2.class.getDeclaredMethod("accept", ImGuiViewport.class, ImVec2.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewportString.class.getDeclaredMethod("accept", ImGuiViewport.class, String.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewportSuppBoolean.class.getDeclaredMethod("get", ImGuiViewport.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewportSuppFloat.class.getDeclaredMethod("get", ImGuiViewport.class));
-        RuntimeJNIAccess.register(ImPlatformFuncViewportSuppImVec2.class.getDeclaredMethod("get", ImGuiViewport.class, ImVec2.class));
-        RuntimeJNIAccess.register(ImStrConsumer.class.getDeclaredMethod("accept", String.class));
-        RuntimeJNIAccess.register(ImStrSupplier.class.getDeclaredMethod("get"));
-    }
+    // Runtime callbacks invoked by the imgui native layer.
+    RuntimeJNIAccess.register(ImAssertCallback.class.getDeclaredMethod("imAssert", String.class, int.class, String.class));
+    RuntimeJNIAccess.register(ImGuiInputTextCallback.class.getDeclaredMethod("accept", long.class));
+    RuntimeJNIAccess.register(ImListClipperCallback.class.getDeclaredMethod("accept", int.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewport.class.getDeclaredMethod("accept", ImGuiViewport.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewportFloat.class.getDeclaredMethod("accept", ImGuiViewport.class, float.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewportImVec2.class.getDeclaredMethod("accept", ImGuiViewport.class, ImVec2.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewportString.class.getDeclaredMethod("accept", ImGuiViewport.class, String.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewportSuppBoolean.class.getDeclaredMethod("get", ImGuiViewport.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewportSuppFloat.class.getDeclaredMethod("get", ImGuiViewport.class));
+    RuntimeJNIAccess.register(ImPlatformFuncViewportSuppImVec2.class.getDeclaredMethod("get", ImGuiViewport.class, ImVec2.class));
+    RuntimeJNIAccess.register(ImStrConsumer.class.getDeclaredMethod("accept", String.class));
+    RuntimeJNIAccess.register(ImStrSupplier.class.getDeclaredMethod("get"));
+  }
 
-    // gdx-miniaudio ships no GraalVM metadata. The native audio engine calls
-    // GetMethodID for these three callbacks at startup via JNI.
-    private void registerMiniAudio() throws NoSuchMethodException {
-        RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_notification", int.class));
-        RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_sound_end", long.class));
-        RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_log", int.class, String.class));
-    }
+  // gdx-miniaudio ships no GraalVM metadata. The native audio engine calls
+  // GetMethodID for these three callbacks at startup via JNI.
+  private void registerMiniAudio() throws NoSuchMethodException {
+    RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_notification", int.class));
+    RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_sound_end", long.class));
+    RuntimeJNIAccess.register(MiniAudio.class.getDeclaredMethod("on_native_log", int.class, String.class));
+  }
 }
