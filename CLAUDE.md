@@ -279,6 +279,10 @@ Refer to `.cursor/rules/documentation.mdc` in the repo for full good versus bad 
 - If the current branch is set to either `master`, `develop` or something else, **create a new branch off of the latest changes from `develop`**.
 - When you're done with a task (and you haven't yet made one), **create a pull request**. Make sure it follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
   exactly with all of your changes.
+- Pull request titles should be read as **past tense**, in the format as if it was a new update to a game. Examples:
+    - "Added experimental controller/gamepad support for games to be playable on more platforms such as console"
+    - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
+    - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
 
 ---
 
