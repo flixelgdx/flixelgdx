@@ -33,6 +33,13 @@ public class FlixelLwjgl3Alerter implements FlixelAlerter {
 
   private void showAlert(String title, Object message, int type) {
     String msg = message != null ? message.toString() : "null";
+    // AWT is unavailable in GraalVM native image. The property is set to "runtime"
+    // when the binary runs as a compiled native executable. Attempting to access
+    // java.awt.EventQueue in that context calls Toolkit.<clinit>, which tries to
+    // load native AWT libraries and crashes with a JNI FatalError.
+    if (System.getProperty("org.graalvm.nativeimage.imagecode") != null) {
+      return;
+    }
     if (EventQueue.isDispatchThread()) {
       JOptionPane.showMessageDialog(null, msg, title, type);
     } else {

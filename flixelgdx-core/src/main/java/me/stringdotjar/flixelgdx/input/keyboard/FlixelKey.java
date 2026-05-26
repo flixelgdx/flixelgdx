@@ -193,7 +193,7 @@ public final class FlixelKey {
    * {@link Input.Keys#toString(int)}) to a key code.
    *
    * @param keyname Key name from {@link FlixelKey#toString(int)}.
-   * @return The key code, or {@link NONE} if not found.
+   * @return The key code, or {@link #NONE} if not found.
    */
   public static int fromString(String keyname) {
     if (keyname == null || keyname.equalsIgnoreCase("NONE")) {

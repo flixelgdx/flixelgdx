@@ -192,6 +192,16 @@ public final class FlixelRuntimeUtil {
     for (StackTraceElement element : exception.getStackTrace()) {
       messageBuilder.append("\tat ").append(element.toString()).append("\n");
     }
+    Throwable cause = exception.getCause();
+    int depth = 0;
+    while (cause != null && depth < 8) {
+      messageBuilder.append("Caused by: ").append(cause).append("\n");
+      for (StackTraceElement element : cause.getStackTrace()) {
+        messageBuilder.append("\tat ").append(element.toString()).append("\n");
+      }
+      cause = cause.getCause();
+      depth++;
+    }
     return messageBuilder.toString();
   }
 
