@@ -66,7 +66,8 @@ public class FlixelGraalFeature implements Feature {
 
   /**
    * Registers imgui-java 1.90.x JNI fields and callbacks.
-   * {@code nInitJni()} caches every field and method ID listed here at startup.
+   *
+   * <p>{@code nInitJni()} caches every field and method ID listed here at startup.
    * GraalVM returns null for anything unregistered, causing a NullPointerException
    * inside {@code GetFieldID} that surfaces as {@code ExceptionInInitializerError}.
    */
@@ -115,7 +116,8 @@ public class FlixelGraalFeature implements Feature {
 
   /**
    * Registers gdx-miniaudio JNI callbacks.
-   * gdx-miniaudio ships no GraalVM metadata; the native audio engine calls
+   *
+   * <p>gdx-miniaudio ships no GraalVM metadata; the native audio engine calls
    * {@code GetMethodID} for these three methods at startup.
    */
   private void registerMiniAudio() throws NoSuchMethodException {
