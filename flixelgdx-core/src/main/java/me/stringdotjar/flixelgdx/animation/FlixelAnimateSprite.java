@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A {@link FlixelSprite} that renders Adobe Animate texture-atlas rigs. The three input files
  * ({@code spritemap1.png}, {@code spritemap1.json}, {@code Animation.json}) are loaded through
- * {@link #addSpritesheetAndAnimation}. The first call builds a rig with {@link FlixelAnimateRigLoader};
+ * {@link #addSpritemapAndAnimation}. The first call builds a rig with {@link FlixelAnimateRigLoader};
  * further calls merge additional Adobe exports into that rig automatically. Both nested symbol exports
  * (Better Texture Atlas style with {@code E.SI} + {@code SD.S}) and flat document timelines (direct
  * {@code E.ASI} keyframes) use the same API.
@@ -65,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Example</h2>
  * <pre>{@code
  * FlixelAnimateSprite fas = new FlixelAnimateSprite();
- * fas.addSpritesheetAndAnimation(
+ * fas.addSpritemapAndAnimation(
  *     "path/to/atlas/spritemap1.png",
  *     "path/to/atlas/spritemap1.json",
  *     "path/to/animation/Animation.json");
@@ -79,7 +79,7 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  *
  * <h2>Merging multiple atlases</h2>
- * Call {@link #addSpritesheetAndAnimation} again with another export triple. Subsequent loads append frames to the
+ * Call {@link #addSpritemapAndAnimation} again with another export triple. Subsequent loads append frames to the
  * shared atlas, bake clips into the existing anchor space (the body stays pinned when you switch atlases),
  * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
  * override earlier registrations on collisions.
@@ -92,7 +92,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * The rig that drives this sprite's rendering. {@code null} until
-   * {@link #addSpritesheetAndAnimation} has successfully built one (or after {@link #destroy()}).
+   * {@link #addSpritemapAndAnimation} has successfully built one (or after {@link #destroy()}).
    */
   @Nullable
   private FlixelAnimateRig rig;
@@ -121,13 +121,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @Nullable
   private Array<FlixelGraphic> secondaryGraphics;
 
-  /** Creates an empty sprite at {@code (0, 0)}. Call {@link #addSpritesheetAndAnimation} before using BTA rigs. */
+  /** Creates an empty sprite at {@code (0, 0)}. Call {@link #addSpritemapAndAnimation} before using BTA rigs. */
   public FlixelAnimateSprite() {
     super();
   }
 
   /**
-   * Creates an empty sprite at the given world position. Call {@link #addSpritesheetAndAnimation}
+   * Creates an empty sprite at the given world position. Call {@link #addSpritemapAndAnimation}
    * before using it.
    *
    * @param x The x-coordinate of the sprite's position.
@@ -150,18 +150,19 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
    */
   @NotNull
-  public FlixelAnimateSprite addSpritesheetAndAnimation(
+  public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath) {
-    return addSpritesheetAndAnimation(textureKey, spritemapJsonPath, animationJsonPath, null);
+    return addSpritemapAndAnimation(textureKey, spritemapJsonPath, animationJsonPath, null);
   }
 
   /**
-   * Adds an Adobe Animate texture atlas with an explicit anchor clip on first load. When no rig exists yet,
-   * {@code anchorClipName} selects the clip whose first keyframe defines the hitbox anchor and which
-   * auto-plays after load; pass {@code null} (or a non-matching name) to use the first clip from the
-   * timeline (for document exports with no labels, this is the synthesized default clip). When merging
+   * Adds an Adobe Animate texture atlas with an explicit anchor clip on the first load.
+   *
+   * <p>When no rig exists yet, {@code anchorClipName} selects the clip whose first keyframe defines the hitbox
+   * anchor and which autoplays after load; pass {@code null} (or a non-matching name) to use the first clip
+   * from the timeline (for document exports with no labels, this is the synthesized default clip). When merging
    * into an existing rig, {@code anchorClipName} is ignored.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
@@ -172,7 +173,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
    */
   @NotNull
-  public FlixelAnimateSprite addSpritesheetAndAnimation(
+  public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath,
@@ -479,7 +480,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Installs a rig built by {@link FlixelAnimateRigLoader}. Callers normally use
-   * {@link #addSpritesheetAndAnimation}. Sets the sprite's logical size to the anchor bounding box and,
+   * {@link #addSpritemapAndAnimation}. Sets the sprite's logical size to the anchor bounding box and,
    * if the user has already toggled antialiasing on, applies the matching texture filter to the rig's
    * spritemap so the setting carries across the load.
    *
