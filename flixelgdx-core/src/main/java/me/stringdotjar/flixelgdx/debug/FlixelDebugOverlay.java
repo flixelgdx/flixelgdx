@@ -509,8 +509,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         cam.getViewport().unproject(panUnprojectA);
         panUnprojectB.set(sx, sy);
         cam.getViewport().unproject(panUnprojectB);
-        cam.scroll.x -= panUnprojectB.x - panUnprojectA.x;
-        cam.scroll.y -= panUnprojectB.y - panUnprojectA.y;
+        cam.scrollX -= panUnprojectB.x - panUnprojectA.x;
+        cam.scrollY -= panUnprojectB.y - panUnprojectA.y;
         lastPanScreenX = sx;
         lastPanScreenY = sy;
       }
@@ -565,8 +565,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // and sprite groups where siblings overlap in world AABB but render at different parallax).
     float viewPickX = pickUnproject.x;
     float viewPickY = pickUnproject.y;
-    float worldX = viewPickX + cam.scroll.x + cam.getViewMarginX();
-    float worldY = viewPickY + cam.scroll.y + cam.getViewMarginY();
+    float worldX = viewPickX + cam.scrollX + cam.getViewMarginX();
+    float worldY = viewPickY + cam.scrollY + cam.getViewMarginY();
 
     // Use the raw* helpers so the picker keeps reading the actual mouse state (Flixel.mouse.pressed
     // is suppressed when the cursor is over an imgui window, and we still want the uncovered
