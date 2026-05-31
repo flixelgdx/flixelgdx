@@ -72,9 +72,10 @@ Follow the orders below:
 1. Fields (following the alignment padding rule!)
 2. Constructors, with smallest to largest parameters top to bottom
 3. Methods (if there are overloads, order them smallest to largest parameters top to bottom)
-4. Inner classes
-5. Inner interfaces
-6. Inner enums
+4. Simple Getter/Setter methods (below every other method)
+5. Inner classes
+6. Inner interfaces
+7. Inner enums
 
 #### Example
 
@@ -86,7 +87,7 @@ package me.stringdotjar.flixelgdx.example;
 
 /**
  * Rich and detailed Javadoc here.
- * 
+ *
  * <p>Other details here.
  */
 public class PerformanceObject {
@@ -112,7 +113,7 @@ public class PerformanceObject {
   
   
   // 1. FIELDS (Block 2: Instance Fields - Ordered by memory alignment padding rules)
-
+  
   // Longs and doubles (8 bytes)
   public final long createdAt;
   private double sensorValue;
@@ -162,31 +163,39 @@ public class PerformanceObject {
   // ---
   
   // 3. METHODS (Overloads ordered smallest to largest, reusing logic)
-    
+  
   public static void sayHello() {
     System.out.println("Hello, world!");
   }
-
+  
   public void logMessage() {
     logMessage("Default system heartbeat check.");
   }
-
+  
   public void logMessage(String msg) {
     logMessage(msg, 1);
   }
-
+  
   public void logMessage(String msg, int level) {
     System.out.println("[" + level + "] " + msg);
   }
-
+  
   protected void processData() {
     this.checksum = 0x00;
+  }
+  
+  private float addNum(float f1, float f2) {
+    return f1 + f2;
+  }
+  
+  public String getDisplayName() {
+    return displayName;
   }
   
   // ---
 
   // 4. TYPES (Class, Interface, Enum)
-
+  
   private static final class InternalConfig {
     private long timeout;
     private int bufferSize;
@@ -195,7 +204,7 @@ public class PerformanceObject {
   public interface StateListener {
     void onTransition(boolean success);
   }
-
+  
   public enum Priority {
     LOW,
     MEDIUM,
