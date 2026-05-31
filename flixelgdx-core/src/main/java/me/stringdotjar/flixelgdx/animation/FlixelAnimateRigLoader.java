@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@code spritemap1.json} - a map describing where each named bitmap lives on the PNG
  *   ({@code ATLAS.SPRITES[].SPRITE}: {@code name}, {@code x}, {@code y}, {@code w}, {@code h}).</li>
  *   <li>{@code Animation.json} - timeline data. The loader supports two Adobe export shapes that share
- *   the same {@link FlixelAnimateSprite#addSpritesheetAndAnimation} entry point:
+ *   the same {@link FlixelAnimateSprite#addSpritemapAndAnimation} entry point:
  *   <ul>
  *     <li><strong>Symbol / nested rig</strong> (common with the "Better Texture Atlas" extension and
  *     complex characters): {@code AN.TL.L} contains exactly one <strong>main</strong> layer whose
@@ -107,10 +107,10 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Symbol-instance loop modes</h2>
  * Every {@code SI} (symbol instance) carries an {@code FF} ("first frame") and an {@code LP} ("loop
  * parameter") field. {@code FF} offsets where the child symbol's timeline starts; {@code LP} controls
- * what happens when the parent's tick walks past the child symbol's last frame. The loader honours
+ * what happens when the parent's tick walks past the child symbol's last frame. The loader honors
  * the three Flash modes ({@code "loop"}, {@code "playonce"}, {@code "singleframe"}, also accepted in
  * abbreviated form as {@code "LP"}, {@code "PO"}, {@code "SF"}) so that, for example, a single-frame
- * face plate stays put while the rig around it animates instead of "leaking" frames from a different
+ * faceplate stays put while the surrounding rig animates instead of "leaking" frames from a different
  * sub-clip.
  */
 final class FlixelAnimateRigLoader {
@@ -136,9 +136,10 @@ final class FlixelAnimateRigLoader {
 
   /**
    * Loads the given spritemap/animation pair, builds a fully baked {@link FlixelAnimateRig}, and installs
-   * it on {@code sprite}. Equivalent to calling
-   * {@link #load(FlixelAnimateSprite, FlixelAnimationController, String, String, String, String)} with a
-   * {@code null} {@code anchorClipName}, which means the first clip in the timeline's label layer is used
+   * it on {@code sprite}.
+   *
+   * Equivalent to calling {@link #load(FlixelAnimateSprite, FlixelAnimationController, String, String, String, String)}
+   * with a {@code null} {@code anchorClipName}, which means the first clip in the timeline's label layer is used
    * as the anchor.
    *
    * @param sprite The {@link FlixelAnimateSprite} that will own the rig. Must not be {@code null}.
@@ -204,15 +205,15 @@ final class FlixelAnimateRigLoader {
    * world position when game code switches between atlases), and the new clip names are registered
    * on the same {@link FlixelAnimationController}. Mirrors the multi-atlas character workflow used
    * by the original {@code flxanimate} (and Friday Night Funkin') for characters whose animations
-   * are split across multiple Animate exports (for example Pico's basic singing animations versus
+   * are split across multiple Animate exports (for example, Pico's basic singing animations versus
    * his playable miss animations).
    *
    * <p>Clip-name collisions silently overwrite the previously registered clip on both the rig and
    * the controller (matching {@link ObjectMap#put} semantics), allowing later loads to act as
-   * costume / behaviour overrides.
+   * costume / behavior overrides.
    *
    * @param sprite The sprite to append onto. Must already have a rig (for example the first triple loaded through
-   *   {@link FlixelAnimateSprite#addSpritesheetAndAnimation}). Must not be {@code null}.
+   *   {@link FlixelAnimateSprite#addSpritemapAndAnimation}). Must not be {@code null}.
    * @param controller The sprite's animation controller (used to register the new clip durations
    *   for timing). Must not be {@code null}.
    * @param textureKey The asset key of the appended spritemap {@link FlixelGraphic}. Must not be
@@ -388,7 +389,7 @@ final class FlixelAnimateRigLoader {
     }
 
     // Retain the appended graphic on the sprite so it does not get unloaded out from under us. Done
-    // through the sprite (rather than directly on the asset wrapper) so the retain count is balanced
+    // through the sprite (rather than directly on the asset wrapper), so the retained count is balanced
     // against the sprite's own destroy() / applySparrowAtlas() lifecycle.
     sprite.retainSecondaryGraphic(graphic);
 
@@ -416,7 +417,7 @@ final class FlixelAnimateRigLoader {
 
   /**
    * Bakes every clip in {@code parsed} into {@code clipsOut} and registers each clip's duration with
-   * {@code controller}. Shared by both the initial-load and append paths so the per-clip baking
+   * {@code controller}. Shared by both the initial-load and append paths, so the per-clip baking
    * algorithm stays in one place. Each keyframe's parts are stored back-to-front (layers iterated in
    * reverse during {@link #visitSymbol}), so the draw path can iterate forward with no extra work.
    *
@@ -479,9 +480,9 @@ final class FlixelAnimateRigLoader {
       // Register the clip with the animation controller so getCurrentKeyframeIndex() advances over
       // time. The actual frame indices are irrelevant (the rig draw path ignores them), but libGDX's
       // Animation requires at least one entry, so feed it a duplicate of atlas[0] per tick. We
-      // register with loop=false so the backing Animation's PlayMode is NORMAL; runtime looping is
-      // controlled entirely by FlixelAnimationController#playAnimation(name, loop, ...) and its own
-      // looping flag, and registering as NORMAL guarantees that a non-looping clip's last keyframe
+      // register with loop=false, so the backing Animation's PlayMode is NORMAL; runtime looping is
+      // controlled entirely by FlixelAnimationController.playAnimation(...) and its own looping
+      // flag, and registering as NORMAL guarantees that a non-looping clip's last keyframe
       // stays put instead of snapping back to the first when stateTime reaches the clip's duration.
       int[] dummyFrames = new int[clip.duration];
       controller.addAnimationFromAtlas(clip.name, dummyFrames, 1f / fps, false);
@@ -707,7 +708,7 @@ final class FlixelAnimateRigLoader {
     }
 
     // Build a fixed-order layer array so the loop can walk it in reverse. JsonValue's sibling list is a
-    // singly-linked chain with no random access, so we have to snapshot it once.
+    // singly linked chain with no random access, so we have to snapshot it once.
     int layerCount = 0;
     for (JsonValue l = layers.child; l != null; l = l.next) {
       layerCount++;
@@ -748,7 +749,7 @@ final class FlixelAnimateRigLoader {
         continue;
       }
 
-      // Elements within a single FR are visited forward so their declared order is preserved in the
+      // Elements within a single FR are visited forward, so their declared order is preserved in the
       // output list. Callers use that order as within-layer z-order.
       for (JsonValue element = elements.child; element != null; element = element.next) {
         JsonValue asi = element.get("ASI");
@@ -853,7 +854,7 @@ final class FlixelAnimateRigLoader {
 
   /**
    * Returns the total timeline length (in ticks) of a symbol, computed as the max of {@code I + DU}
-   * across every {@code FR} entry on every layer. The result is cached so repeated lookups during clip
+   * across every {@code FR} entry on every layer. The result is cached, so repeated lookups during clip
    * baking are constant-time.
    *
    * @param symbolsByName The {@code SD.S} lookup keyed on {@code SN}.
@@ -1057,19 +1058,17 @@ final class FlixelAnimateRigLoader {
     float p11 = flashWorld.m11;
     float p12 = flashWorld.m12;
 
-    float fw00 = p00;
     float fw01 = -p01;
     float fw02 = p01 * regionHeight + p02;
-    float fw10 = p10;
     float fw11 = -p11;
     float fw12 = p11 * regionHeight + p12;
 
     // anchorShift * flipRig = [1, 0, -anchorMinX; 0, -1, anchorMinY + anchorHeight] applied on the left.
     float shiftY = anchorMinY + anchorHeight;
-    out.m00 = fw00;
+    out.m00 = p00;
     out.m01 = fw01;
     out.m02 = fw02 - anchorMinX;
-    out.m10 = -fw10;
+    out.m10 = -p10;
     out.m11 = -fw11;
     out.m12 = shiftY - fw12;
   }
@@ -1119,202 +1118,202 @@ final class FlixelAnimateRigLoader {
    * @param usesSymbolGraph {@code true} when the main layer uses root {@code E.SI} entries and {@link #symbolsByName()} defines
    * nested timelines. {@code false} for direct {@code E.ASI} document timelines.
    */
-    private record ParsedAnimation(@NotNull Array<ClipDef> clipDefs, @NotNull Array<JsonValue> mainFrames,
-                                   @NotNull ObjectMap<String, JsonValue> symbolsByName, float framesPerSecond,
-                                   boolean usesSymbolGraph) {
-      @NotNull
-      static ParsedAnimation parse(@NotNull JsonValue animationRoot) {
-        JsonValue an = animationRoot.get("AN");
-        JsonValue tl = (an != null) ? an.get("TL") : null;
-        JsonValue layers = (tl != null) ? tl.get("L") : null;
-        if (layers == null || !layers.isArray()) {
-          throw new IllegalArgumentException("Animation JSON is missing \"AN.TL.L\".");
-        }
+  private record ParsedAnimation(@NotNull Array<ClipDef> clipDefs, @NotNull Array<JsonValue> mainFrames,
+                                 @NotNull ObjectMap<String, JsonValue> symbolsByName, float framesPerSecond,
+                                 boolean usesSymbolGraph) {
+    @NotNull
+    static ParsedAnimation parse(@NotNull JsonValue animationRoot) {
+      JsonValue an = animationRoot.get("AN");
+      JsonValue tl = (an != null) ? an.get("TL") : null;
+      JsonValue layers = (tl != null) ? tl.get("L") : null;
+      if (layers == null || !layers.isArray()) {
+        throw new IllegalArgumentException("Animation JSON is missing \"AN.TL.L\".");
+      }
 
-        JsonValue mainFrameList = findSymbolRootMainFrameList(layers);
-        boolean usesSymbolGraph = mainFrameList != null;
-        if (mainFrameList == null) {
-          mainFrameList = findDirectAsiMainFrameList(layers);
+      JsonValue mainFrameList = findSymbolRootMainFrameList(layers);
+      boolean usesSymbolGraph = mainFrameList != null;
+      if (mainFrameList == null) {
+        mainFrameList = findDirectAsiMainFrameList(layers);
+      }
+      if (mainFrameList == null) {
+        throw new IllegalArgumentException(
+          "Animation JSON does not have a recognizable main layer. Expected either a timeline whose "
+            + "keyframes use a root symbol instance (\"E\".\"SI\"), or a flat export whose keyframes "
+            + "list atlas sprite instances (\"E\".\"ASI\").");
+      }
+
+      Array<ClipDef> clipDefs = new Array<>();
+      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
+        JsonValue frs = layer.get("FR");
+        if (frs == null || !frs.isArray() || frs == mainFrameList) {
+          continue;
         }
-        if (mainFrameList == null) {
+        for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
+          JsonValue n = fr.get("N");
+          if (n == null || !n.isString()) {
+            continue;
+          }
+          int startTick = readIntOr(fr, "I", 0);
+          int duration = readIntOr(fr, "DU", 1);
+          if (duration < 1) {
+            continue;
+          }
+          clipDefs.add(new ClipDef(n.asString(), startTick, duration));
+        }
+      }
+
+      Array<JsonValue> mainFrames = new Array<>();
+      for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
+        mainFrames.add(fr);
+      }
+      if (mainFrames.size == 0) {
+        throw new IllegalArgumentException("Animation JSON main layer contains zero keyframes.");
+      }
+
+      if (clipDefs.size == 0) {
+        if (an == null) {
           throw new IllegalArgumentException(
-            "Animation JSON does not have a recognizable main layer. Expected either a timeline whose "
-              + "keyframes use a root symbol instance (\"E\".\"SI\"), or a flat export whose keyframes "
-              + "list atlas sprite instances (\"E\".\"ASI\").");
+            "Animation JSON has no named clips and no \"AN\" block to derive a default clip name from.");
         }
+        clipDefs.add(
+          new ClipDef(deriveDefaultClipName(an), 0, computeExclusiveTimelineEnd(mainFrameList)));
+      }
 
-        Array<ClipDef> clipDefs = new Array<>();
-        for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-          JsonValue frs = layer.get("FR");
-          if (frs == null || !frs.isArray() || frs == mainFrameList) {
-            continue;
-          }
-          for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-            JsonValue n = fr.get("N");
-            if (n == null || !n.isString()) {
-              continue;
-            }
-            int startTick = readIntOr(fr, "I", 0);
-            int duration = readIntOr(fr, "DU", 1);
-            if (duration < 1) {
-              continue;
-            }
-            clipDefs.add(new ClipDef(n.asString(), startTick, duration));
-          }
-        }
-
-        Array<JsonValue> mainFrames = new Array<>();
-        for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
-          mainFrames.add(fr);
-        }
-        if (mainFrames.size == 0) {
-          throw new IllegalArgumentException("Animation JSON main layer contains zero keyframes.");
-        }
-
-        if (clipDefs.size == 0) {
-          if (an == null) {
-            throw new IllegalArgumentException(
-              "Animation JSON has no named clips and no \"AN\" block to derive a default clip name from.");
-          }
-          clipDefs.add(
-            new ClipDef(deriveDefaultClipName(an), 0, computeExclusiveTimelineEnd(mainFrameList)));
-        }
-
-        ObjectMap<String, JsonValue> symbolsByName = new ObjectMap<>();
-        JsonValue sd = animationRoot.get("SD");
-        if (sd != null) {
-          JsonValue s = sd.get("S");
-          if (s != null && s.isArray()) {
-            for (JsonValue sym = s.child; sym != null; sym = sym.next) {
-              JsonValue sn = sym.get("SN");
-              if (sn != null) {
-                symbolsByName.put(sn.asString(), sym);
-              }
+      ObjectMap<String, JsonValue> symbolsByName = new ObjectMap<>();
+      JsonValue sd = animationRoot.get("SD");
+      if (sd != null) {
+        JsonValue s = sd.get("S");
+        if (s != null && s.isArray()) {
+          for (JsonValue sym = s.child; sym != null; sym = sym.next) {
+            JsonValue sn = sym.get("SN");
+            if (sn != null) {
+              symbolsByName.put(sn.asString(), sym);
             }
           }
         }
-
-        if (usesSymbolGraph && symbolsByName.size == 0) {
-          throw new IllegalArgumentException(
-            "Animation JSON uses root symbol instances (\"E\".\"SI\") but \"SD.S\" is empty or missing.");
-        }
-
-        float fps = 24f;
-        JsonValue md = animationRoot.get("MD");
-        if (md != null) {
-          JsonValue frt = md.get("FRT");
-          if (frt != null && frt.isNumber()) {
-            fps = frt.asFloat();
-          }
-        }
-
-        return new ParsedAnimation(clipDefs, mainFrames, symbolsByName, fps, usesSymbolGraph);
       }
 
-      /**
-       * Chooses a beginner-friendly default clip name for document exports with no label layers.
-       * Prefers {@code AN.SN}, then {@code AN.N}, then {@code "animation"}.
-       *
-       * @param an The {@code AN} object from the animation JSON. Must not be {@code null}.
-       * @return A non-empty clip name.
-       */
-      @NotNull
-      private static String deriveDefaultClipName(@NotNull JsonValue an) {
-        JsonValue sn = an.get("SN");
-        if (sn != null && sn.isString()) {
-          String s = sn.asString().trim();
-          if (!s.isEmpty()) {
-            return s;
-          }
-        }
-        JsonValue n = an.get("N");
-        if (n != null && n.isString()) {
-          String s = n.asString().trim();
-          if (!s.isEmpty()) {
-            return s;
-          }
-        }
-        return "animation";
+      if (usesSymbolGraph && symbolsByName.size == 0) {
+        throw new IllegalArgumentException(
+          "Animation JSON uses root symbol instances (\"E\".\"SI\") but \"SD.S\" is empty or missing.");
       }
 
-      /**
-       * Returns the exclusive end tick of the main timeline (max of every {@code I + DU}). The clip
-       * duration in ticks is this value when the clip starts at {@code 0}.
-       *
-       * @param mainFrameList The main layer's {@code FR} array. Must not be {@code null}.
-       * @return At least {@code 1}.
-       */
-      private static int computeExclusiveTimelineEnd(@NotNull JsonValue mainFrameList) {
-        int maxExclusiveEnd = 0;
-        for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
-          int i = readIntOr(fr, "I", 0);
-          int du = readIntOr(fr, "DU", 1);
-          int end = i + du;
-          if (end > maxExclusiveEnd) {
-            maxExclusiveEnd = end;
-          }
+      float fps = 24f;
+      JsonValue md = animationRoot.get("MD");
+      if (md != null) {
+        JsonValue frt = md.get("FRT");
+        if (frt != null && frt.isNumber()) {
+          fps = frt.asFloat();
         }
-        return Math.max(1, maxExclusiveEnd);
       }
 
-      /**
-       * Finds the layer whose first {@code FR} begins with a root {@code E.SI}. The first matching layer
-       * in declaration order wins (Better Texture Atlas / nested symbol rigs).
-       *
-       * @param layers The layers to search. Must not be {@code null}.
-       * @return That layer's {@code FR} array, or {@code null}.
-       */
-      @Nullable
-      private static JsonValue findSymbolRootMainFrameList(@NotNull JsonValue layers) {
-        for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-          JsonValue frs = layer.get("FR");
-          if (frs == null || !frs.isArray() || frs.size == 0) {
-            continue;
-          }
-          JsonValue firstFrame = frs.child;
-          if (firstFrame == null) {
-            continue;
-          }
-          JsonValue firstE = firstFrame.get("E");
-          if (firstE == null || !firstE.isArray() || firstE.size == 0) {
-            continue;
-          }
-          JsonValue firstEv = firstE.child;
-          if (firstEv == null || firstEv.get("SI") == null) {
-            continue;
-          }
-          return frs;
-        }
-        return null;
-      }
-
-      /**
-       * Finds the first layer that places at least one {@code E.ASI} on the timeline, which stock Adobe
-       * Animate often uses for a flat sequence of bitmaps without a symbol dictionary.
-       *
-       * @param layers The layers to search. Must not be {@code null}.
-       * @return That layer's {@code FR} array, or {@code null}.
-       */
-      @Nullable
-      private static JsonValue findDirectAsiMainFrameList(@NotNull JsonValue layers) {
-        for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-          JsonValue frs = layer.get("FR");
-          if (frs == null || !frs.isArray() || frs.size == 0) {
-            continue;
-          }
-          for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-            JsonValue stageElements = fr.get("E");
-            if (stageElements == null || !stageElements.isArray()) {
-              continue;
-            }
-            for (JsonValue el = stageElements.child; el != null; el = el.next) {
-              if (el.get("ASI") != null) {
-                return frs;
-              }
-            }
-          }
-        }
-        return null;
-      }
+      return new ParsedAnimation(clipDefs, mainFrames, symbolsByName, fps, usesSymbolGraph);
     }
+
+    /**
+     * Chooses a beginner-friendly default clip name for document exports with no label layers.
+     * Prefers {@code AN.SN}, then {@code AN.N}, then {@code "animation"}.
+     *
+     * @param an The {@code AN} object from the animation JSON. Must not be {@code null}.
+     * @return A non-empty clip name.
+     */
+    @NotNull
+    private static String deriveDefaultClipName(@NotNull JsonValue an) {
+      JsonValue sn = an.get("SN");
+      if (sn != null && sn.isString()) {
+        String s = sn.asString().trim();
+        if (!s.isEmpty()) {
+          return s;
+        }
+      }
+      JsonValue n = an.get("N");
+      if (n != null && n.isString()) {
+        String s = n.asString().trim();
+        if (!s.isEmpty()) {
+          return s;
+        }
+      }
+      return "animation";
+    }
+
+    /**
+     * Returns the exclusive end tick of the main timeline (max of every {@code I + DU}). The clip
+     * duration in ticks is this value when the clip starts at {@code 0}.
+     *
+     * @param mainFrameList The main layer's {@code FR} array. Must not be {@code null}.
+     * @return At least {@code 1}.
+     */
+    private static int computeExclusiveTimelineEnd(@NotNull JsonValue mainFrameList) {
+      int maxExclusiveEnd = 0;
+      for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
+        int i = readIntOr(fr, "I", 0);
+        int du = readIntOr(fr, "DU", 1);
+        int end = i + du;
+        if (end > maxExclusiveEnd) {
+          maxExclusiveEnd = end;
+        }
+      }
+      return Math.max(1, maxExclusiveEnd);
+    }
+
+    /**
+     * Finds the layer whose first {@code FR} begins with a root {@code E.SI}. The first matching layer
+     * in declaration order wins (Better Texture Atlas / nested symbol rigs).
+     *
+     * @param layers The layers to search. Must not be {@code null}.
+     * @return That layer's {@code FR} array, or {@code null}.
+     */
+    @Nullable
+    private static JsonValue findSymbolRootMainFrameList(@NotNull JsonValue layers) {
+      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
+        JsonValue frs = layer.get("FR");
+        if (frs == null || !frs.isArray() || frs.size == 0) {
+          continue;
+        }
+        JsonValue firstFrame = frs.child;
+        if (firstFrame == null) {
+          continue;
+        }
+        JsonValue firstE = firstFrame.get("E");
+        if (firstE == null || !firstE.isArray() || firstE.size == 0) {
+          continue;
+        }
+        JsonValue firstEv = firstE.child;
+        if (firstEv == null || firstEv.get("SI") == null) {
+          continue;
+        }
+        return frs;
+      }
+      return null;
+    }
+
+    /**
+     * Finds the first layer that places at least one {@code E.ASI} on the timeline, which stock Adobe
+     * Animate often uses for a flat sequence of bitmaps without a symbol dictionary.
+     *
+     * @param layers The layers to search. Must not be {@code null}.
+     * @return That layer's {@code FR} array, or {@code null}.
+     */
+    @Nullable
+    private static JsonValue findDirectAsiMainFrameList(@NotNull JsonValue layers) {
+      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
+        JsonValue frs = layer.get("FR");
+        if (frs == null || !frs.isArray() || frs.size == 0) {
+          continue;
+        }
+        for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
+          JsonValue stageElements = fr.get("E");
+          if (stageElements == null || !stageElements.isArray()) {
+            continue;
+          }
+          for (JsonValue el = stageElements.child; el != null; el = el.next) {
+            if (el.get("ASI") != null) {
+              return frs;
+            }
+          }
+        }
+      }
+      return null;
+    }
+  }
 }
