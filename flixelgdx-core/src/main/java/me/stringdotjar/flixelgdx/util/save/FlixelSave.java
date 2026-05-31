@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  * loading persistent game data within the FlixelGDX framework using libGDX's Preferences API.
  *
  * <p>This utility abstracts away the complexities of serialization and platform-specific details,
- * allowing you to bind to a uniquely-identified save slot, manipulate a structured {@link ObjectMap}
+ * allowing you to bind to a uniquely identified save slot, manipulate a structured {@link ObjectMap}
  * of key-value pairs (which can contain nested structures compatible with libGDX's {@link Json} API),
  * and safely flush or clear saved progress.
  *
@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  *     <li><b>Slot-based Save Management:</b> Bind to a specific save "slot" using {@link #bind}, supporting multiple profiles or manual slots.</li>
  *     <li><b>Automatic JSON Serialization:</b> All data stored is serialized to JSON transparently via {@link Json}, enabling nested objects, numeric arrays, etc.</li>
- *     <li><b>Safe</b>: Handles error states and empty preferences files systematically—check {@link #getStatus()} and {@link #isBound()} for reliability.</li>
+ *     <li><b>Safe</b>: Handles error states and empty preferences files systematically. Check {@link #getStatus()} and {@link #isBound()} for reliability.</li>
  *     <li><b>Merging and Flushing:</b> Easily merge external data with conflict resolution, and flush changes immediately to disk.</li>
  *     <li><b>Destroy/Clear:</b> Data can be programmatically wiped for a "reset save" experience.</li>
  * </ul>
@@ -66,8 +66,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Threading and Platform Notes:</h2>
  * <ul>
  *     <li>This class operates on the main thread. Use after libGDX's application context is initialized.</li>
- *     <li>Data is written using {@link Preferences#flush()} and may be lost if not explicitly flushed.</li>
- *     <li>All keys and nested data should be JSON-serializable and compatible with libGDX's expectations.</li>
+ *     <li>Data is written using libGDX's {@link Preferences#flush()} to work in harmony with the libGDX ecosystem.</li>
  *     <li>Intended for small to medium-sized game progress data, not binary assets or large files.</li>
  * </ul>
  *
@@ -112,7 +111,7 @@ public class FlixelSave implements FlixelDestroyable {
    *
    * @param name Primary preferences name (no spaces; safe for file names).
    * @param slot Optional suffix, e.g. {@code "slot1"} -> {@code name_slot1}.
-   * @return {@code true} if bind succeeded and data was loaded (or empty new save).
+   * @return {@code true} if bind succeeded, and data was loaded (or empty new save).
    */
   public boolean bind(@NotNull String name, @Nullable String slot) {
     if (name.isEmpty()) {
@@ -170,24 +169,6 @@ public class FlixelSave implements FlixelDestroyable {
       status = FlixelSaveStatus.ERROR;
     }
 
-  }
-
-  /** Merges legacy flat string keys (excluding blob key) into {@link #data} for backwards compatibility. */
-  private void legacyMergeFlatStringKeys() {
-    if (preferences == null) {
-      return;
-    }
-    Map<String, ?> all = preferences.get();
-    if (all == null) {
-      return;
-    }
-    for (Map.Entry<String, ?> e : all.entrySet()) {
-      if (DATA_KEY.equals(e.getKey())) {
-        continue;
-      }
-      Object v = e.getValue();
-      data.put(e.getKey(), v != null ? v.toString() : "");
-    }
   }
 
   /**
@@ -262,5 +243,23 @@ public class FlixelSave implements FlixelDestroyable {
 
   public boolean close(int minFileSize) {
     return flush();
+  }
+
+  /** Merges legacy flat string keys (excluding blob key) into {@link #data} for backwards compatibility. */
+  private void legacyMergeFlatStringKeys() {
+    if (preferences == null) {
+      return;
+    }
+    Map<String, ?> all = preferences.get();
+    if (all == null) {
+      return;
+    }
+    for (Map.Entry<String, ?> e : all.entrySet()) {
+      if (DATA_KEY.equals(e.getKey())) {
+        continue;
+      }
+      Object v = e.getValue();
+      data.put(e.getKey(), v != null ? v.toString() : "");
+    }
   }
 }

@@ -605,8 +605,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     debugPauseCameraZoom = new float[n];
     for (int i = 0; i < n; i++) {
       FlixelCamera c = cameras.get(i);
-      debugPauseCameraScroll[i][0] = c.scroll.x;
-      debugPauseCameraScroll[i][1] = c.scroll.y;
+      debugPauseCameraScroll[i][0] = c.scrollX;
+      debugPauseCameraScroll[i][1] = c.scrollY;
       debugPauseCameraZoom[i] = c.getZoom();
     }
   }
