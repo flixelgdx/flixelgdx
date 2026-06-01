@@ -374,6 +374,18 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
   }
 
   /**
+   * Creates a solid color rectangular texture on the fly.
+   *
+   * @param width The width of the graphic.
+   * @param height The height of the graphic.
+   * @param color The color of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite makeGraphic(int width, int height, @NotNull FlixelColor color) {
+    return makeGraphic(width, height, color.getGdxColor());
+  }
+
+  /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
    * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
    * {@link me.stringdotjar.flixelgdx.animation.FlixelSpritemapJsonLoader#load};

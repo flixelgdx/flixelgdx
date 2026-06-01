@@ -37,7 +37,9 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import me.stringdotjar.flixelgdx.functional.FlixelColorable;
 import me.stringdotjar.flixelgdx.util.FlixelAxes;
+import me.stringdotjar.flixelgdx.util.FlixelColor;
 
 /**
  * A powerful camera class that controls world-to-screen projection, parallax scrolling, zoom,
@@ -59,7 +61,7 @@ import me.stringdotjar.flixelgdx.util.FlixelAxes;
  * you draw through this pipeline (FlixelGDX does this for {@link me.stringdotjar.flixelgdx.text.FlixelText}
  * and registry fonts automatically).
  */
-public class FlixelCamera extends FlixelBasic {
+public class FlixelCamera extends FlixelBasic implements FlixelColorable {
 
   /**
    * Any {@code FlixelCamera} with a zoom of {@code <= 0} (the default constructor value) will
@@ -613,6 +615,37 @@ public class FlixelCamera extends FlixelBasic {
     flashOnComplete = onComplete;
   }
 
+  /**
+   * Flashes the given color for 1 second.
+   *
+   * @param color The color to flash.
+   */
+  public void flash(@NotNull FlixelColor color) {
+    flash(color.getGdxColor(), 1f, null, false);
+  }
+
+  /**
+   * Flashes the given color for the specified duration.
+   *
+   * @param color The color to flash.
+   * @param duration How long the flash takes to fade out, in seconds.
+   */
+  public void flash(@NotNull FlixelColor color, float duration) {
+    flash(color.getGdxColor(), duration, null, false);
+  }
+
+  /**
+   * Fills the screen with the given color and gradually fades it back to normal.
+   *
+   * @param color The color to flash.
+   * @param duration How long the flash takes to fade out, in seconds.
+   * @param onComplete Callback invoked when the flash finishes, or {@code null}.
+   * @param force If {@code true}, resets any currently running flash.
+   */
+  public void flash(@NotNull FlixelColor color, float duration, Runnable onComplete, boolean force) {
+    flash(color.getGdxColor(), duration, onComplete, force);
+  }
+
   /** Fades to black over 1 second. */
   public void fade() {
     fade(Color.BLACK, 1f, false, null, false);
@@ -668,6 +701,49 @@ public class FlixelCamera extends FlixelBasic {
     this.fadeIn = fadeIn;
     fadeAlpha = fadeIn ? 1f : 0f;
     fadeOnComplete = onComplete;
+  }
+
+  /**
+   * Fades to the given color over 1 second.
+   *
+   * @param color The color to fade to.
+   */
+  public void fade(@NotNull FlixelColor color) {
+    fade(color.getGdxColor(), 1f, false, null, false);
+  }
+
+  /**
+   * Fades to the given color over the specified duration.
+   *
+   * @param color The color to fade to.
+   * @param duration How long the fade takes, in seconds.
+   */
+  public void fade(@NotNull FlixelColor color, float duration) {
+    fade(color.getGdxColor(), duration, false, null, false);
+  }
+
+  /**
+   * Fades to or from the given color.
+   *
+   * @param color The color to fade to or from.
+   * @param duration How long the fade takes, in seconds.
+   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
+   */
+  public void fade(@NotNull FlixelColor color, float duration, boolean fadeIn) {
+    fade(color.getGdxColor(), duration, fadeIn, null, false);
+  }
+
+  /**
+   * Gradually fills the screen with or clears it of the given color.
+   *
+   * @param color The color to fade to or from.
+   * @param duration How long the fade takes, in seconds.
+   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
+   * @param onComplete Callback invoked when the fade finishes, or {@code null}.
+   * @param force If {@code true}, resets any currently running fade.
+   */
+  public void fade(@NotNull FlixelColor color, float duration, boolean fadeIn, Runnable onComplete, boolean force) {
+    fade(color.getGdxColor(), duration, fadeIn, onComplete, force);
   }
 
   /** Shakes with default intensity ({@code 0.05}) for {@code 0.5} seconds on both axes. */
@@ -1553,6 +1629,49 @@ public class FlixelCamera extends FlixelBasic {
   /** Returns the current fade overlay alpha, from {@code 0.0} to {@code 1.0}. */
   public float getFadeAlpha() {
     return fadeAlpha;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public int getColor() {
+    return Color.rgba8888(color);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  @NotNull
+  public Color getGdxColor() {
+    return color;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setColor(@NotNull Color tint) {
+    color.set(tint);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void setColor(@NotNull FlixelColor tint) {
+    color.set(tint.getGdxColor());
+  }
+
+  /**
+   * Sets the background color of this camera.
+   *
+   * @param tint The background color to set. Must not be {@code null}.
+   */
+  public void setBgColor(@NotNull Color tint) {
+    bgColor.set(tint);
+  }
+
+  /**
+   * Sets the background color of this camera.
+   *
+   * @param tint The background color to set. Must not be {@code null}.
+   */
+  public void setBgColor(@NotNull FlixelColor tint) {
+    bgColor.set(tint.getGdxColor());
   }
 
   /**
