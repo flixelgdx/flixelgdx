@@ -84,6 +84,28 @@ import java.util.function.Supplier;
  * field and reused across frames. If the supplier is created at the call site on every frame (as a
  * lambda literal), the allocation just moves to the supplier itself, so store suppliers as fields
  * to get the full benefit.
+ *
+ * <h2>Example Usage</h2>
+ *
+ * <pre>{@code
+ * // Create a new FlixelString with a capacity of 32 characters.
+ * // Because it implements CharSequence, it can be used as a parameter
+ * // for methods that expect a CharSequence, like FlixelText!
+ * FlixelString fs = new FlixelString(32);
+ * FlixelText ft = new FlixelText();
+ *
+ * // In your update loop...
+ * @Override
+ * public void update(float elapsed) {
+ *   // Below would be the same equivalent of doing ft.setText("Score: " + 100),
+ *   // except it doesn't allocate new strings every frame and keeps your
+ *   // framerate silky smooth!
+ *   fs.clear();
+ *   fs.append("Score: ");
+ *   fs.append(100);
+ *   ft.setText(fs);
+ * }
+ * }</pre>
  */
 public class FlixelString implements CharSequence {
 
