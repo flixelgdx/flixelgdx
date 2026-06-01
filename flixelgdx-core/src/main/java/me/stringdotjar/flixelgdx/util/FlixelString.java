@@ -40,26 +40,72 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
- * Reusable mutable text buffer backed by libGDX {@link CharArray}, implementing {@link CharSequence}
- * so it can be passed directly to libGDX text APIs (for example {@link com.badlogic.gdx.graphics.g2d.BitmapFont#draw})
- * without building a temporary {@link String} on each frame.
+ * Reusable mutable text buffer backed by libGDX {@link CharArray}, designed to display changing
+ * values (health, FPS, velocity) every frame without allocating garbage.
  *
- * <p>libGDX 1.14 replaced the legacy {@code com.badlogic.gdx.utils.StringBuilder} type with {@link CharArray},
- * which provides appenders for primitives that avoid boxing and implements {@link CharSequence}. This class
- * wraps a single {@link CharArray} instance and exposes {@link #set} overloads that clear the buffer then append
- * new content, which matches common HUD and debug-overlay usage patterns.
+ * <h2>Why not StringBuilder?</h2>
  *
- * <p>Prefer passing {@code this} (as a {@link CharSequence}) into drawing and layout
- * calls. Avoid {@link #toString()} in per-frame code: it allocates a new {@link String} from the backing buffer.
- * The same applies to string concatenation that implicitly calls {@code toString()} on this type.
+ * <p>{@link StringBuilder#append(float)} internally calls {@link Float#toString(float)}, which
+ * allocates a new {@link String} on every invocation. At 60 frames per second, even a single HUD
+ * counter can produce hundreds of short-lived strings per second that pressure the garbage
+ * collector. {@link CharArray} writes digits directly into its backing {@code char[]} with no
+ * intermediate {@link String}, so {@link #set(float)}, {@link #concat(float)}, and all other
+ * primitive overloads on this class are allocation-free on the hot path.
  *
- * <p>Primitive {@link #set} overloads and supplier-based overloads use {@link CharArray} appenders or supplier
- * {@code getAs*} methods so primitive watches and counters do not box values before formatting.
+ * <p>The same applies to {@code int}, {@code long}, {@code double}, {@code boolean}, {@code char},
+ * {@code byte}, and {@code short}: every primitive {@link #set} and {@link #concat} overload goes
+ * through {@link CharArray} appenders rather than {@link Object#toString()}.
  *
- * <p>Java 9 and later give {@link CharSequence} a default {@code chars()} method that returns an {@code IntStream}
- * of UTF-16 code units; this class does not replace that API. Prefer {@link #clear()} plus {@link #concat} overloads
- * to build text without touching {@link CharArray} at call sites. {@link #charBuffer()} remains available for
- * advanced interop with libGDX APIs that require a raw {@link CharArray}.
+ * <h2>Allocation-free float formatting</h2>
+ *
+ * <p>{@link #setFloatRoundedOneDecimal(float)} and {@link #concatFloatRoundedOneDecimal(float)}
+ * delegate to {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}, which
+ * formats a float to one decimal place using only integer arithmetic - no {@link String} is
+ * created at any point.
+ *
+ * <h2>Passing to libGDX drawing APIs</h2>
+ *
+ * <p>This class implements {@link CharSequence}, so instances can be passed directly to APIs such
+ * as {@link com.badlogic.gdx.graphics.g2d.BitmapFont#draw} without building a temporary
+ * {@link String}. Avoid calling {@link #toString()} or using string concatenation on this type in
+ * per-frame code: both allocate. Pass {@code this} as a {@link CharSequence} instead.
+ *
+ * <h2>set() vs concat()</h2>
+ *
+ * <p>{@link #set} clears the buffer and writes new content in one call, which is the typical
+ * pattern for a HUD label that shows a single changing value. {@link #concat} appends without
+ * clearing, which is useful when building a line from multiple parts. {@link #charBuffer()} exposes
+ * the raw {@link CharArray} for advanced interop with libGDX APIs that require it directly.
+ *
+ * <h2>Supplier overloads</h2>
+ *
+ * <p>Supplier-based {@link #set} and {@link #concat} overloads (for example
+ * {@link #set(java.util.function.IntSupplier)}) avoid boxing when the supplier is stored as a
+ * field and reused across frames. If the supplier is created at the call site on every frame (as a
+ * lambda literal), the allocation just moves to the supplier itself, so store suppliers as fields
+ * to get the full benefit.
+ *
+ * <h2>Example Usage</h2>
+ *
+ * <pre>{@code
+ * // Create a new FlixelString with a capacity of 32 characters.
+ * // Because it implements CharSequence, it can be used as a parameter
+ * // for methods that expect a CharSequence, like FlixelText!
+ * FlixelString fs = new FlixelString(32);
+ * FlixelText ft = new FlixelText();
+ *
+ * // In your update loop...
+ * @Override
+ * public void update(float elapsed) {
+ *   // Below would be the same equivalent of doing ft.setText("Score: " + 100),
+ *   // except it doesn't allocate new strings every frame and keeps your
+ *   // framerate silky smooth!
+ *   fs.clear();
+ *   fs.append("Score: ");
+ *   fs.append(100);
+ *   ft.setText(fs);
+ * }
+ * }</pre>
  */
 public class FlixelString implements CharSequence {
 
