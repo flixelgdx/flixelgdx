@@ -146,7 +146,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   @Override
-  public final FlixelSprite makeGraphic(int width, int height, Color color) {
+  public final FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
     throw new UnsupportedOperationException("Creating a graphic for a group is not supported. Use add() instead.");
   }
 
