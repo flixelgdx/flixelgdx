@@ -1,4 +1,4 @@
-# FlixelGDX — project instructions for Claude Code
+# FlixelGDX (project instructions for Claude Code)
 
 ---
 
@@ -92,66 +92,45 @@ package me.stringdotjar.flixelgdx.example;
  */
 public class PerformanceObject {
 
-  // 1. FIELDS (Block 1: Statics - Ordered by Modifiers then Types)
-  
-  // Public Statics
   public static final long GLOBAL_LIMIT = 5000L;
   public static final int MAX_RETRIES = 5;
   public static String systemNodeName = "PRIMARY_NODE";
   public static char systemMode = 'V';
-  
-  // Protected Statics
+
   protected static double internalWeight = 42.42;
-  
-  // Package-Private / Default Statics
+
   static final double VERSION_STABILITY = 1.0;
   static final float GRAVITY_CONSTANT = 9.81f;
-  
-  // Private Statics
+
   private static Object sharedLock = new Object();
   private static byte systemHeader = 0x1;
-  
-  
-  // 1. FIELDS (Block 2: Instance Fields - Ordered by memory alignment padding rules)
-  
-  // Longs and doubles (8 bytes)
+
   public final long createdAt;
   private double sensorValue;
-  
-  // Ints, floats, and object references (4 bytes)
+
   public int instanceId;
   protected float velocity;
   private String displayName;
   private List<String> metadata;
-  
-  // Shorts and chars (2 bytes)
+
   public short localFlags;
   private char categoryCode;
-  
-  // Booleans and bytes (1 byte)
+
   public boolean isActive;
   private byte checksum;
-  
-  // ---
-  
-  // 2. CONSTRUCTORS (Smallest to largest, chaining downwards via this())
-  
-  // 0 parameters - passes default values to the 1-parameter constructor
+
   public PerformanceObject() {
     this(-1);
   }
-  
-  // 1 parameter - passes defaults along to the 3-parameter constructor
+
   public PerformanceObject(int instanceId) {
     this(instanceId, "GENERIC_INSTANCE", 0.0f);
   }
-  
-  // 3 parameters - passes defaults along to the final 4-parameter constructor
+
   public PerformanceObject(int instanceId, String displayName, float velocity) {
     this(instanceId, displayName, velocity, false);
   }
-  
-  // 4 parameters - The "master" constructor that actually assigns the fields
+
   public PerformanceObject(int instanceId, String displayName, float velocity, boolean isActive) {
     this.createdAt = System.currentTimeMillis(); // Final field assigned here
     this.instanceId = instanceId;
@@ -159,43 +138,35 @@ public class PerformanceObject {
     this.velocity = velocity;
     this.isActive = isActive;
   }
-  
-  // ---
-  
-  // 3. METHODS (Overloads ordered smallest to largest, reusing logic)
-  
+
   public static void sayHello() {
     System.out.println("Hello, world!");
   }
-  
+
   public void logMessage() {
     logMessage("Default system heartbeat check.");
   }
-  
+
   public void logMessage(String msg) {
     logMessage(msg, 1);
   }
-  
+
   public void logMessage(String msg, int level) {
     System.out.println("[" + level + "] " + msg);
   }
-  
+
   protected void processData() {
     this.checksum = 0x00;
   }
-  
+
   private float addNum(float f1, float f2) {
     return f1 + f2;
   }
-  
+
   public String getDisplayName() {
     return displayName;
   }
-  
-  // ---
 
-  // 4. TYPES (Class, Interface, Enum)
-  
   private static final class InternalConfig {
     private long timeout;
     private int bufferSize;
@@ -230,7 +201,8 @@ public class PerformanceObject {
 
 Summarize edits in plain language: what changed, why, and how it fits the system.
 
-Before considering a coding task finished, **run unit tests** and **Javadoc lint**; fix failures.
+Before considering a coding task finished, **run unit tests** and **Javadoc lint**; fix failures. **All** unit tests live
+in the `flixelgdx-test` module, not scattered around multiple modules.
 
 ---
 
@@ -256,18 +228,18 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - `.java` files should carry the project's standard copyright header (exceptions: `package-info.java`, `module-info.java`).
 - Prefer **American English** in docs. (e.g., "behavior" instead of "behaviour")
 - After code changes that affect public behavior or APIs, **update relevant Markdown docs** in the repo.
+- Don't use section comments (like `// ---`). The code should be easily navigable simply by how it's organized; section comments are just noise.
 
 ### Comments versus Javadocs
 
 - **In line comments**, do **not** use Markdown tricks (bold with `**`, backticks around snippets, etc.). Reserve richer formatting for Javadoc.
-- When naming methods inside comments, include parentheses (`someMethod()`). If parameters exist but you are not spelling them out, use `anotherMethod(...)`. Example class-qualified form: `SomeClass.someMethod(...)`.
+- When naming methods inside comments, include parentheses (`someMethod()`). If parameters exist, but you are not spelling them out, use `anotherMethod(...)`. Example class-qualified form: `SomeClass.someMethod(...)`.
 - **In comments**, prefer `SomeClass.someMethod(...)` instead of Javadoc-style `SomeClass#someMethod(int)`.
 
 ### Heavily used or critical APIs
 
-For widely used classes, fields, or methods — or anything central to correctness — include a **small usage example** in Javadoc showing correct typical use.
+For widely used classes, fields, methods, or anything central to correctness, include a **small usage example** in Javadoc showing correct typical use.
 
-Refer to `.cursor/rules/documentation.mdc` in the repo for full good versus bad examples if you need longer samples while editing.
 
 ---
 
@@ -278,8 +250,8 @@ Refer to `.cursor/rules/documentation.mdc` in the repo for full good versus bad 
 - Use **one branch and one pull request** unless the user explicitly asks for more (for example, stacked features or dependent work).
 - Follow `CONTRIBUTING.md`, `PULL_REQUEST_TEMPLATE.md`, and project PR or commit conventions.
 - If the user renames a pull request, **do not rename it back**; respect their title.
-- Your commit titles should be **short and descriptive**, and not contain **keywords in front (e.g. `fix`, `feat`, `refactor`, etc.)**. 
-  They should also be **present** tense. Examples:
+- Your commit titles should be **short and descriptive**, not exceeding **72 characters**, and should not contain 
+  **keywords in front (e.g. `fix`, `feat`, `refactor`, etc.)**. They should also be **present** tense. Examples:
     - "Update README with more descriptive content"
     - "Fix typos in documentation and refactor FlixelSprite"
     - "Fix rendering bug in FlixelCamera"
@@ -292,6 +264,7 @@ Refer to `.cursor/rules/documentation.mdc` in the repo for full good versus bad 
     - "Added experimental controller/gamepad support for games to be playable on more platforms such as console"
     - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
     - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
+- All pull requests should target the **`develop`** branch, **never** the `master` branch unless it's absolutely necessary and explicity asked by the user.
 
 ---
 
@@ -307,10 +280,3 @@ If the task needs external reference beyond this repo:
    - `https://github.com/libgdx/libgdx`
 
 2. If those are not enough or off-topic for the question, broaden the search thoughtfully.
-
----
-
-## Source of truth
-
-The living Cursor rule files remain under `.cursor/rules/*.mdc`. If you need to know more about a rule,
-you can always consult those files, as they go into much more detail than this file.

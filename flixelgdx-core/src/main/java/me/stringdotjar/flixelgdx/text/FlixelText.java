@@ -39,6 +39,7 @@ import me.stringdotjar.flixelgdx.FlixelCamera;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.graphics.FlixelFrame;
 import me.stringdotjar.flixelgdx.graphics.FlixelGraphic;
+import me.stringdotjar.flixelgdx.util.FlixelColor;
 import me.stringdotjar.flixelgdx.util.FlixelString;
 import me.stringdotjar.flixelgdx.util.FlixelStringUtil;
 
@@ -605,6 +606,31 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
+   * Sets the border style and color with default size (1) and quality (1).
+   *
+   * @param style The border style.
+   * @param color The border color.
+   * @return This instance for chaining.
+   */
+  public FlixelText setBorderStyle(BorderStyle style, @NotNull FlixelColor color) {
+    return setBorderStyle(style, color.getGdxColor(), 1, 1);
+  }
+
+  /**
+   * Sets the border style, color, size, and quality in one call.
+   *
+   * @param style The border style.
+   * @param color The border color. Pass {@code null} for transparent.
+   * @param size The border size in pixels.
+   * @param quality Rendering quality. {@code 0}: single iteration, {@code 1}: one
+   * iteration per pixel in {@code size}.
+   * @return This instance for chaining.
+   */
+  public FlixelText setBorderStyle(BorderStyle style, @NotNull FlixelColor color, float size, float quality) {
+    return setBorderStyle(style, color.getGdxColor(), size, quality);
+  }
+
+  /**
    * Sets the border style with a default black color, size of 1, and quality of 1.
    *
    * @param style The border style.
@@ -662,6 +688,39 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
+   * Convenience method to set many text properties at once using a {@link FlixelColor}.
+   * Pass {@code null} or {@code 0} for any parameter to keep its current value.
+   *
+   * @param fontFile The {@code .ttf}/{@code .otf} font file, or {@code null} to keep current.
+   * @param size The font size, or {@code 0} to keep current.
+   * @param color The text color, or {@code null} to keep current.
+   * @param alignment The text alignment, or {@code null} to keep current.
+   * @param borderStyle The border style, or {@code null} to keep current.
+   * @param borderColor The border color, or {@code null} to keep current.
+   * @return This instance for chaining.
+   */
+  public FlixelText setFormat(FileHandle fontFile, int size, FlixelColor color,
+                              Alignment alignment, BorderStyle borderStyle,
+                              FlixelColor borderColor) {
+    return setFormat(fontFile, size,
+      color != null ? color.getGdxColor() : null,
+      alignment, borderStyle,
+      borderColor != null ? borderColor.getGdxColor() : null);
+  }
+
+  /**
+   * Simplified format setter with font file, size, and a {@link FlixelColor}.
+   *
+   * @param fontFile The font file, or {@code null} to keep current.
+   * @param size The font size, or {@code 0} to keep current.
+   * @param color The text color, or {@code null} to keep current.
+   * @return This instance for chaining.
+   */
+  public FlixelText setFormat(FileHandle fontFile, int size, @NotNull FlixelColor color) {
+    return setFormat(fontFile, size, color.getGdxColor(), null, null, null);
+  }
+
+  /**
    * Convenience format setter using a {@link FlixelFontRegistry} font ID.
    * Pass {@code null} for any parameter to keep its current value.
    *
@@ -709,6 +768,39 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
+   * Convenience format setter using a {@link FlixelFontRegistry} font ID and a {@link FlixelColor}.
+   * Pass {@code null} or {@code 0} for any parameter to keep its current value.
+   *
+   * @param fontId The registered font ID, or {@code null} to keep current.
+   * @param size The font size, or {@code 0} to keep current.
+   * @param color The text color, or {@code null} to keep current.
+   * @param alignment The text alignment, or {@code null} to keep current.
+   * @param borderStyle The border style, or {@code null} to keep current.
+   * @param borderColor The border color, or {@code null} to keep current.
+   * @return This instance for chaining.
+   */
+  public FlixelText setFormat(String fontId, int size, FlixelColor color,
+                              Alignment alignment, BorderStyle borderStyle,
+                              FlixelColor borderColor) {
+    return setFormat(fontId, size,
+      color != null ? color.getGdxColor() : null,
+      alignment, borderStyle,
+      borderColor != null ? borderColor.getGdxColor() : null);
+  }
+
+  /**
+   * Simplified format setter with a registry font ID, size, and a {@link FlixelColor}.
+   *
+   * @param fontId The registered font ID, or {@code null} to keep current.
+   * @param size The font size, or {@code 0} to keep current.
+   * @param color The text color, or {@code null} to keep current.
+   * @return This instance for chaining.
+   */
+  public FlixelText setFormat(String fontId, int size, @NotNull FlixelColor color) {
+    return setFormat(fontId, size, color.getGdxColor(), null, null, null);
+  }
+
+  /**
    * Simplified format setter with size and color only.
    *
    * @param size The font size, or {@code 0} to keep current.
@@ -717,6 +809,17 @@ public class FlixelText extends FlixelSprite {
    */
   public FlixelText setFormat(int size, Color color) {
     return setFormat((FileHandle) null, size, color, null, null, null);
+  }
+
+  /**
+   * Simplified format setter with size and a {@link FlixelColor} only.
+   *
+   * @param size The font size, or {@code 0} to keep current.
+   * @param color The text color, or {@code null} to keep current.
+   * @return This instance for chaining.
+   */
+  public FlixelText setFormat(int size, @NotNull FlixelColor color) {
+    return setFormat((FileHandle) null, size, color.getGdxColor(), null, null, null);
   }
 
   /**

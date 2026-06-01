@@ -27,13 +27,11 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 import me.stringdotjar.flixelgdx.Flixel;
 import me.stringdotjar.flixelgdx.FlixelCamera;
-import me.stringdotjar.flixelgdx.FlixelGame;
 import me.stringdotjar.flixelgdx.FlixelSprite;
 import me.stringdotjar.flixelgdx.functional.supplier.FloatSupplier;
 import me.stringdotjar.flixelgdx.text.FlixelText;
@@ -194,7 +192,7 @@ public class FlixelBar extends FlixelSprite {
   }
 
   @Override
-  public final FlixelSprite makeGraphic(int width, int height, Color color) {
+  public final FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
     throw new UnsupportedOperationException(
       "FlixelBar does not use makeGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
   }

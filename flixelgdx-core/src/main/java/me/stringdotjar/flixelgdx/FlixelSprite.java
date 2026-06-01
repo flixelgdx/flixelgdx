@@ -364,7 +364,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
    * @param color The color of the graphic.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite makeGraphic(int width, int height, Color color) {
+  public FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
     Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
     pixmap.setColor(color);
     pixmap.fill();
@@ -374,12 +374,24 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
   }
 
   /**
+   * Creates a solid color rectangular texture on the fly.
+   *
+   * @param width The width of the graphic.
+   * @param height The height of the graphic.
+   * @param color The color of the graphic.
+   * @return {@code this} sprite for chaining.
+   */
+  public FlixelSprite makeGraphic(int width, int height, @NotNull FlixelColor color) {
+    return makeGraphic(width, height, color.getGdxColor());
+  }
+
+  /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
    * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
    * {@link me.stringdotjar.flixelgdx.animation.FlixelSpritemapJsonLoader#load};
    * not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...)} (implicit retain).
+   * @param newGraphic Graphic from {@link me.stringdotjar.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...) (implicit retain).
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
@@ -553,16 +565,14 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite screenCenter(FlixelAxes axes) {
+    float halfWidth = getWidth() / 2f;
+    float halfHeight = getHeight() / 2f;
+    float halfViewWidth = Flixel.getViewWidth() / 2f;
+    float halfViewHeight = Flixel.getViewHeight() / 2f;
     switch (axes) {
-      case X -> {
-        setPosition(Flixel.getViewWidth() / 2f - getWidth() / 2f, getY());
-      }
-      case Y -> {
-        setPosition(getX(), Flixel.getViewHeight() / 2f - getHeight() / 2f);
-      }
-      case XY -> {
-        setPosition(Flixel.getViewWidth() / 2f - getWidth() / 2f, Flixel.getViewHeight() / 2f - getHeight() / 2f);
-      }
+      case X -> setPosition(halfViewWidth - halfWidth, getY());
+      case Y -> setPosition(getX(), halfViewHeight - halfHeight);
+      case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
     }
     return this;
   }
