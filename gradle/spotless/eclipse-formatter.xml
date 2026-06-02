@@ -22,8 +22,8 @@
 
   <!-- Line wrapping: 120 characters -->
   <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="120"/>
-  <setting id="org.eclipse.jdt.core.formatter.join_lines_in_comments" value="true"/>
-  <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="true"/>
+  <setting id="org.eclipse.jdt.core.formatter.join_lines_in_comments" value="false"/>
+  <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="false"/>
 
   <!-- Braces: always end-of-line -->
   <setting id="org.eclipse.jdt.core.formatter.brace_position_for_annotation_type_declaration" value="end_of_line"/>
