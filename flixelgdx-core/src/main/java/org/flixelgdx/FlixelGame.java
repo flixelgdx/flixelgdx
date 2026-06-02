@@ -126,7 +126,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * When {@code true}, the LWJGL3 launcher requests an alpha-capable framebuffer so
-   * {@link org.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} can composite
+   * {@link org.flixelgdx.backend.window.FlixelWindow#setTransparencyActive(boolean)} can composite
    * with the desktop.
    *
    * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
@@ -195,7 +195,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
-   * {@link org.flixelgdx.backend.window.FlixelWindow#isDesktopTransparencyActive()}.
+   * {@link org.flixelgdx.backend.window.FlixelWindow#isTransparencyActive()}.
    */
   private boolean desktopTransparencyActive;
 
@@ -359,8 +359,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     // Create the debug overlay when debug mode is enabled.
     if (Flixel.isDebugMode()) {
       FlixelDebugOverlay overlay = Flixel.createDebugOverlay();
-      if (Flixel.getLogger() != null) {
-        Flixel.getLogger().addLogListener(overlay.getLogListener());
+      if (Flixel.log != null) {
+        Flixel.log.addLogListener(overlay.getLogListener());
       }
     }
 
@@ -411,7 +411,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     if (!gamePaused) {
       FlixelTween.updateTweens(elapsed);
-      FlixelTimer.getGlobalManager().update(elapsed * Flixel.getTimeScale());
+      FlixelTimer.getGlobalManager().update(elapsed * Flixel.timeScale);
 
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.
@@ -736,7 +736,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Toggles fullscreen mode on or off, depending on the current state. */
   public void toggleFullscreen() {
-    setFullscreen(!Flixel.isFullscreen());
+    setFullscreen(!Gdx.graphics.isFullscreen());
   }
 
   /**
@@ -772,8 +772,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
-      if (Flixel.getLogger() != null) {
-        Flixel.getLogger().removeLogListener(debugOverlay.getLogListener());
+      if (Flixel.log != null) {
+        Flixel.log.removeLogListener(debugOverlay.getLogListener());
       }
       debugOverlay.destroy();
       Flixel.clearDebugOverlay();
@@ -831,7 +831,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.Signals.postGameClose.dispatch();
 
     // Stop file logging after the whole game closes so that way any logs made can be stored!
-    Flixel.stopFileLogging();
+    Flixel.log.stopFileLogging();
 
     isClosed = true;
   }
@@ -860,7 +860,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param absolutePathToLogsFolder Absolute path to the logs folder, or {@code null} to use the default.
    */
   public void setLogsFolder(String absolutePathToLogsFolder) {
-    Flixel.setLogsFolder(absolutePathToLogsFolder);
+    Flixel.log.setLogsFolder(absolutePathToLogsFolder);
   }
 
   /**
@@ -870,7 +870,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @return The first camera in the list.
    */
   public FlixelCamera getCamera() {
-    Vector2 windowSize = Flixel.getViewSize();
+    Vector2 windowSize = viewSize;
     if (cameras == null) {
       cameras = new Array<>(FlixelCamera[]::new);
     }
@@ -952,7 +952,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Requests an alpha-capable GLFW framebuffer on LWJGL3 before the desktop launcher runs. Default {@code true}. Set {@code false}
    * if you must avoid framebuffer alpha (some drivers) or never want desktop compositing. When {@code false}, toggling
-   * {@link org.flixelgdx.backend.window.FlixelWindow#setDesktopTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
+   * {@link org.flixelgdx.backend.window.FlixelWindow#setTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
    *
    * @param transparentFramebufferRequested {@code false} to force an opaque default framebuffer at launch.
    */
@@ -963,7 +963,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
    */
-  public boolean isDesktopTransparencyActive() {
+  public boolean isTransparencyActive() {
     return desktopTransparencyActive;
   }
 

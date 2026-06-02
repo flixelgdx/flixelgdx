@@ -8,7 +8,7 @@
  * {@link org.flixelgdx.Flixel#setStackTraceProvider(org.flixelgdx.logging.FlixelStackTraceProvider)}
  * before calling {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame)}.
  *
- * <p>The default logger is {@link org.flixelgdx.logging.FlixelLogger}, although it can be replaced with a custom logger
- * through the {@link org.flixelgdx.Flixel#setLogger(org.flixelgdx.logging.FlixelLogger)} method.
+ * <p>The default logger is {@link org.flixelgdx.logging.FlixelLogger}, which is exposed as the
+ * public {@code Flixel.log} field and can be replaced by assigning a new instance to that field.
  */
 package org.flixelgdx.logging;

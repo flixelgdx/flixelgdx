@@ -299,7 +299,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
     if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
-      cachedFps = Flixel.getFPS();
+      cachedFps = Gdx.graphics.getFramesPerSecond();
       cachedHeapMegabytes = Flixel.getJavaHeapUsedMegabytes();
       cachedNativeMegabytes = Flixel.getNativeHeapUsedMegabytes();
       cachedObjectCount = FlixelDebugUtil.countActiveMembers();
@@ -325,7 +325,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     perfFrameMs[idx] = elapsed * 1000f;
     perfHeapMb[idx] = Flixel.getJavaHeapUsedMegabytes();
     perfNativeMb[idx] = Flixel.getNativeHeapUsedMegabytes();
-    perfFps[idx] = Flixel.getFPS();
+    perfFps[idx] = Gdx.graphics.getFramesPerSecond();
     perfHead = (idx + 1) % PERF_HISTORY_SIZE;
     if (perfCount < PERF_HISTORY_SIZE) {
       perfCount++;
@@ -778,7 +778,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   private void rebuildCachedConsoleBlocks() {
     reclaimConsoleBlocksToPool();
-    FlixelLogger logger = Flixel.getLogger();
+    FlixelLogger logger = Flixel.log;
     if (logger == null) {
       return;
     }

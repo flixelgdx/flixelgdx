@@ -51,7 +51,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   private static final int MAX_NOTIFY_ARG_LEN = 6000;
 
   @Override
-  public void sendDesktopNotification(@Nullable String title, @NotNull String message) {
+  public void sendNotification(@Nullable String title, @NotNull String message) {
     Objects.requireNonNull(message, "message");
     if (!supportsDesktopNotification()) {
       return;
@@ -67,7 +67,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   }
 
   @Override
-  public void requestUserAttention() {
+  public void requestAttention() {
     if (Gdx.graphics instanceof Lwjgl3Graphics g) {
       g.getWindow().postRunnable(() -> GLFW.glfwRequestWindowAttention(g.getWindow().getWindowHandle()));
     }

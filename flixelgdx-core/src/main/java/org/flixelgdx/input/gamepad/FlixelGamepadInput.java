@@ -173,7 +173,7 @@ public final class FlixelGamepadInput {
   /**
    * Resolves a button name to a logical button code.
    *
-   * @param name Human-readable name (case insensitive), for example {@code "A"} or {@code "START"}.
+   * @param name Human-readable name (case-insensitive), for example {@code "A"} or {@code "START"}.
    * @return A logical code from this class, or {@link Input.Keys#UNKNOWN} when not recognized.
    */
   public static int fromString(@Nullable String name) {
