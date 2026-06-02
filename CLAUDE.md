@@ -83,7 +83,7 @@ Follow the orders below:
 /*
  * Copyright notice here...
  */
-package me.stringdotjar.flixelgdx.example;
+package org.flixelgdx.example;
 
 /**
  * Rich and detailed Javadoc here.

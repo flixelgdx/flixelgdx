@@ -13,8 +13,8 @@ java {
 gradlePlugin {
   plugins {
     flixelTeavm {
-      id = 'me.stringdotjar.flixelgdx.teavm'
-      implementationClass = 'me.stringdotjar.flixelgdx.gradle.teavm.FlixelTeaVMPlugin'
+      id = 'org.flixelgdx.teavm'
+      implementationClass = 'org.flixelgdx.gradle.teavm.FlixelTeaVMPlugin'
       displayName = 'FlixelGDX TeaVM Plugin'
       description = 'Automates web asset copying, index.html generation, and task wiring for FlixelGDX TeaVM web builds.'
     }
