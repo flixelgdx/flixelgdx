@@ -12,7 +12,7 @@ def generateFlixelVersion = tasks.register('generateFlixelVersion', WritePropert
   property("version", project.version)
 }
 processResources.from(generateFlixelVersion) {
-  into "me/stringdotjar/flixelgdx"
+  into "org/flixelgdx"
 }
 
 java {

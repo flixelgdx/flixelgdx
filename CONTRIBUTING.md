@@ -35,7 +35,7 @@ Full installation steps for Windows, macOS, and Linux are in [COMPILING.md](COMP
 
 ## Automated tests
 
-Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx-test:test`). Add new tests next to the area they cover (packages under `me.stringdotjar.flixelgdx`). They depend on **`flixelgdx-core`** and use JUnit 5; tests that need libGDX statics use the headless backend (see `GdxHeadlessExtension` in that module).
+Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx-test:test`). Add new tests next to the area they cover (packages under `org.flixelgdx`). They depend on **`flixelgdx-core`** and use JUnit 5; tests that need libGDX statics use the headless backend (see `GdxHeadlessExtension` in that module).
 
 ## Workflow
 

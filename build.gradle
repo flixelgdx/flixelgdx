@@ -14,6 +14,7 @@ buildscript {
     maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots/' }
   }
   dependencies {
+    classpath 'com.vanniktech:gradle-maven-publish-plugin:0.30.0'
     if (gradle.ext.get('includeAndroid') == true) {
       classpath 'com.android.tools.build:gradle:8.7.3'
     }
@@ -36,7 +37,6 @@ apply from: 'gradle/flixelgdx-allprojects.gradle'
 apply from: 'gradle/flixelgdx-java-language-version.gradle'
 apply from: 'gradle/flixelgdx-injected-dependencies.gradle'
 apply from: 'gradle/flixelgdx-subprojects-repositories.gradle'
-apply from: 'gradle/flixelgdx-maven-pom.gradle'
 apply from: 'gradle/flixelgdx-publish-stack.gradle'
 apply from: 'gradle/flixelgdx-eclipse-ide-support.gradle'
 apply from: 'gradle/flixelgdx-javadoc-aggregator.gradle'

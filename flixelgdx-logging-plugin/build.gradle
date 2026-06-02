@@ -13,8 +13,8 @@ java {
 gradlePlugin {
   plugins {
     flixelLogging {
-      id = 'me.stringdotjar.flixelgdx.logging'
-      implementationClass = 'me.stringdotjar.flixelgdx.gradle.logging.FlixelLoggingPlugin'
+      id = 'org.flixelgdx.logging'
+      implementationClass = 'org.flixelgdx.gradle.logging.FlixelLoggingPlugin'
       displayName = 'FlixelGDX Logging Plugin'
       description = 'Weaves explicit source file and line into FlixelLogger calls after compileJava for accurate traces (desktop, TeaVM, etc.).'
     }

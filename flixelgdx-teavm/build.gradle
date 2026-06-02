@@ -14,7 +14,7 @@ java {
 
 teavm {
   all {
-    mainClass = "me.stringdotjar.flixelgdx.backend.teavm.FlixelTeaVMLauncher"
+    mainClass = "org.flixelgdx.backend.teavm.FlixelTeaVMLauncher"
   }
   js {
     addedToWebApp = true
@@ -57,7 +57,7 @@ def generateTeaVmReflectionConfig = tasks.register("generateTeaVmReflectionConfi
     }
 
     // Add core classes and profile-selected dependencies.
-    def interestingPrefixes = ["me/stringdotjar/flixelgdx/"]
+    def interestingPrefixes = ["org/flixelgdx/"]
     if (reflectionProfile == "STANDARD" || reflectionProfile == "ALL") {
       interestingPrefixes += "com/badlogic/gdx/"
     }

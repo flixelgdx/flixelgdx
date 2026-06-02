@@ -165,11 +165,11 @@ The first run may take longer while Gradle downloads the wrapper and dependencie
 
 **Published coordinates:**
 
-- **Group**: `me.stringdotjar.flixelgdx`
+- **Group**: `org.flixelgdx`
 - **Artifact**: `flixelgdx-core` (the library your game’s `core` module depends on)
 - **Version**: from this repo’s `gradle.properties` (e.g. `projectVersion=1.0.0`)
 
-So the dependency is: `me.stringdotjar.flixelgdx:flixelgdx-core:<version>`.
+So the dependency is: `org.flixelgdx:flixelgdx-core:<version>`.
 
 ---
 
@@ -239,7 +239,7 @@ Many backend modules already depend on `flixelgdx-core`; you typically depend on
 
 ```gradle
 dependencies {
-  implementation 'me.stringdotjar.flixelgdx:flixelgdx-core:1.0.0'
+  implementation 'org.flixelgdx:flixelgdx-core:1.0.0'
 }
 ```
 
@@ -247,7 +247,7 @@ And then you would place the following in your **lwjgl3** (desktop) module:
 
 ```gradle
 dependencies {
-  implementation 'me.stringdotjar.flixelgdx:flixelgdx-lwjgl3:1.0.0'
+  implementation 'org.flixelgdx:flixelgdx-lwjgl3:1.0.0'
 }
 ```
 
@@ -277,7 +277,7 @@ After the project is generated, add FlixelGDX and wire it in:
    Open the **core** module’s `build.gradle` (e.g. `core/build.gradle`). In the `dependencies { }` block, add:
    ```gradle
    dependencies {
-     implementation "me.stringdotjar.flixelgdx:flixelgdx-core:1.0.0"  // Use the version from FlixelGDX’s gradle.properties
+     implementation "org.flixelgdx:flixelgdx-core:1.0.0"  // Use the version from FlixelGDX’s gradle.properties
      // ... existing dependencies (e.g. libgdx)
    }
    ```
@@ -287,9 +287,9 @@ After the project is generated, add FlixelGDX and wire it in:
    ```java
    package com.example.flixeltest;
 
-   import me.stringdotjar.flixelgdx.Flixel;
-   import me.stringdotjar.flixelgdx.FlixelGame;
-   import me.stringdotjar.flixelgdx.FlixelState;
+   import org.flixelgdx.Flixel;
+   import org.flixelgdx.FlixelGame;
+   import org.flixelgdx.FlixelState;
 
    public class FlixelTestGame extends FlixelGame {
      
@@ -305,7 +305,7 @@ After the project is generated, add FlixelGDX and wire it in:
    ```java
    package com.example.flixeltest;
 
-   import me.stringdotjar.flixelgdx.FlixelState;
+   import org.flixelgdx.FlixelState;
 
    public class MyTestState extends FlixelState {
 
@@ -323,7 +323,7 @@ After the project is generated, add FlixelGDX and wire it in:
    - **Add the FlixelGDX LWJGL3 dependency** to the **lwjgl3** module’s `build.gradle` (e.g. `lwjgl3/build.gradle`), not the root or core module:
      ```gradle
      dependencies {
-       implementation "me.stringdotjar.flixelgdx:flixelgdx-lwjgl3:1.0.0"  // same version as flixelgdx-core
+       implementation "org.flixelgdx:flixelgdx-lwjgl3:1.0.0"  // same version as flixelgdx-core
        // ... existing dependencies (e.g. libGDX lwjgl3 backend, core project)
      }
      ```
@@ -335,7 +335,7 @@ After the project is generated, add FlixelGDX and wire it in:
 
      import com.example.flixeltest.MyTestState;
      import com.example.flixeltest.FlixelTestGame;
-     import me.stringdotjar.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
+     import org.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
 
      /** Launches the desktop (LWJGL3) application. */
      public class Lwjgl3Launcher {
@@ -374,7 +374,7 @@ Composite build lets the test project use your local FlixelGDX source so changes
 
    includeBuild('/path/to/flixelgdx') {
      dependencySubstitution {
-       substitute module('me.stringdotjar.flixelgdx:flixelgdx-core') using project(':flixelgdx-core')
+       substitute module('org.flixelgdx:flixelgdx-core') using project(':flixelgdx-core')
      }
    }
   ```
@@ -384,7 +384,7 @@ Composite build lets the test project use your local FlixelGDX source so changes
 3. **Declare the dependency in the test project’s core `build.gradle`** (no version needed; the composite supplies the project):
   ```gradle
    dependencies {
-     implementation 'me.stringdotjar.flixelgdx:flixelgdx-core'
+     implementation 'org.flixelgdx:flixelgdx-core'
      // ... other dependencies
    }
   ```
@@ -460,7 +460,7 @@ Add a `teavm/` directory (or any name you prefer) to your project. A minimal
 ```gradle
 plugins {
   id 'org.teavm' version '0.13.0'
-  id 'me.stringdotjar.flixelgdx.teavm' version '0.1.0-beta'
+  id 'org.flixelgdx.teavm' version '0.1.0-beta'
 }
 
 teavm {
@@ -474,7 +474,7 @@ teavm {
 }
 
 dependencies {
-  implementation 'me.stringdotjar.flixelgdx:flixelgdx-teavm:0.1.0-beta'
+  implementation 'org.flixelgdx:flixelgdx-teavm:0.1.0-beta'
   implementation project(':core')
 }
 ```
@@ -809,7 +809,7 @@ Then run `./gradlew publishToMavenLocal` again.
 - **Symptom**: Gradle or scripts fail when the project path contains spaces (e.g. `C:\Users\My Name\flixelgdx`).
 - **Fix**: Prefer a path without spaces (e.g. `C:\dev\flixelgdx`). If you must use spaces, quote the path in scripts and in composite build: `includeBuild('C:/Users/My Name/flixelgdx') { ... }`.
 
-### Dependency not found: `me.stringdotjar.flixelgdx:flixelgdx-core`
+### Dependency not found: `org.flixelgdx:flixelgdx-core`
 
 - **Symptom**: The test project fails to resolve the FlixelGDX dependency.
 - **Fix**:  
