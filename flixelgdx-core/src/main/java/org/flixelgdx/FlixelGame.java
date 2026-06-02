@@ -497,7 +497,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       debugOverlay.draw();
     }
 
-    squashFramebufferAlphaWhenDesktopNotSeeThrough();
+    squashFramebufferAlpha();
 
     Flixel.Signals.postDraw.dispatch();
   }
@@ -507,7 +507,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * still blends using framebuffer alpha. Sprite draws that write alpha < 1 would incorrectly show the real desktop.
    * This clears only the alpha channel to {@code 1} over the full framebuffer after all rendering.
    */
-  private void squashFramebufferAlphaWhenDesktopNotSeeThrough() {
+  private void squashFramebufferAlpha() {
     if (desktopTransparencyActive || !transparentFramebufferRequested) {
       return;
     }
@@ -756,8 +756,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Destroys the game and all of its resources. Note that this doesn't close the game entirely, it just disposes
-   * of the game's resources. If you want to close the entire game, use {@link Application#exit()}.
+   * Destroys the game and all of its resources.
+   *
+   * <p>Note that this doesn't close the game entirely; it just disposes
+   * of the game's resources. If you want to close the entire game, use libGDX's {@link Application#exit()}.
    */
   @Override
   public void destroy() {

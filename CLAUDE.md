@@ -215,8 +215,8 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - Use correct grammar and punctuation everywhere (comments, `@param`, `@return`, `@throws`, and so on).
 - Stick to **ASCII** in prose when practical; avoid decorative punctuation like en dash, em dash, fancy arrows, or emojis. This applies
   to both source comments and Javadoc. Use a plain hyphen (-) only for compound adjectives; never use it as a sentence separator or
-  stand-in for an em dash. This rule also applies to inline comments in Groovy/Gradle files.
-  This allows the docs to be read easily on every device and requires you to use clarity over brevity.
+  stand-in for an em dash. This rule also applies to inline comments in Groovy/Gradle files. This allows the docs to be read easily 
+- on every device and requires you to use clarity over brevity. The Markdown docs are the only exception to this rule.
 - Use **consistent capitalization and grammar** in prose and code.
 - Every doc comment should always start with a single sentence, with detailed paragraphs following.
 - Include the right Javadoc tags (`@param`, `@return`, `@throws`, …) wherever they apply.
@@ -239,7 +239,6 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 ### Heavily used or critical APIs
 
 For widely used classes, fields, methods, or anything central to correctness, include a **small usage example** in Javadoc showing correct typical use.
-
 
 ---
 

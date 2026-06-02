@@ -176,7 +176,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   public Color color = new Color(Color.WHITE);
 
   /**
-   * The dead zone rectangle, measured from the camera's upper-left corner in game pixels.
+   * The dead zone rectangle, measured from the camera's bottom-left corner in game pixels.
    *
    * <p>The camera always keeps the follow target inside this zone, unless bumping against scroll
    * bounds. For rapid prototyping, use the preset styles via
@@ -886,8 +886,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   /**
    * Checks whether this camera's display area overlaps a rectangle at the given screen position.
    *
-   * @param px Top-left X of the rectangle in screen coordinates.
-   * @param py Top-left Y of the rectangle in screen coordinates.
+   * @param px Bottom-left X of the rectangle in screen coordinates.
+   * @param py Bottom-left Y of the rectangle in screen coordinates.
    * @param w Width of the rectangle.
    * @param h Height of the rectangle.
    * @return {@code true} if any part of the rectangle overlaps the camera display.

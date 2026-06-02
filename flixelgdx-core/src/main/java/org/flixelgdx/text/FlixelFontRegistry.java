@@ -105,7 +105,7 @@ public final class FlixelFontRegistry {
 
   /**
    * Registers a TrueType font under the given identifier. If an entry with the same
-   * ID already exists, it is replaced (and its cached generator is disposed).
+   * ID already exists, it is replaced (and its cached generator is disposed of).
    *
    * @param id A unique identifier for this font (e.g. {@code "pixel"}, {@code "main"}, {@code "bold"}).
    * @param fontFile A libGDX {@link FileHandle} pointing to the {@code .ttf} or {@code .otf} asset.
@@ -125,7 +125,7 @@ public final class FlixelFontRegistry {
   }
 
   /**
-   * Removes a previously registered font and disposes its cached generator.
+   * Removes a previously registered font and disposes of its cached generator.
    * Does nothing if the ID is not registered. If the removed font was the
    * {@linkplain #setDefault(String) default}, the default is cleared.
    *
@@ -407,7 +407,7 @@ public final class FlixelFontRegistry {
     return entry;
   }
 
-  /** Holds the file handle and a lazily-created generator for a single registered font. */
+  /** Holds the file handle and a lazily created generator for a single registered font. */
   private static final class Entry implements FlixelDestroyable {
 
     final FileHandle fontFile;
