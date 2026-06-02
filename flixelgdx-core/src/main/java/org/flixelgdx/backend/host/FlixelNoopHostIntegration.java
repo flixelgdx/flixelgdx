@@ -37,12 +37,12 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   INSTANCE;
 
   @Override
-  public void sendDesktopNotification(@Nullable String title, @NotNull String message) {
+  public void sendNotification(@Nullable String title, @NotNull String message) {
     Objects.requireNonNull(message, "message");
   }
 
   @Override
-  public void requestUserAttention() {}
+  public void requestAttention() {}
 
   @Override
   public boolean supportsDesktopNotification() {

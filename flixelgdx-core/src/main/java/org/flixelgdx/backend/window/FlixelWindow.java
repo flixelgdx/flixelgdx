@@ -35,7 +35,7 @@ import org.flixelgdx.functional.FlixelShakeable;
  * alpha fix so normal gameplay is not composited through the desktop unless this mode is on.
  *
  * <p>Desktop games default to an alpha-capable framebuffer (see {@link FlixelGame#isTransparentFramebufferRequested()}).
- * Call {@link #setDesktopTransparencyActive(boolean)} any time to show the real desktop through unused pixels, or turn it back off.
+ * Call {@link #setTransparencyActive(boolean)} any time to show the real desktop through unused pixels, or turn it back off.
  *
  * <p>Example:
  *
@@ -85,7 +85,7 @@ public interface FlixelWindow extends FlixelShakeable {
   /**
    * When {@code true}, the LWJGL3 launcher enables {@code Lwjgl3ApplicationConfiguration#setTransparentFramebuffer(boolean)}.
    * This is {@code true} by default so runtime transparency can work; set {@code false} before launch only if you need a classic
-   * opaque framebuffer or hit a driver issue (then {@link #setDesktopTransparencyActive(boolean)} cannot composite with the desktop).
+   * opaque framebuffer or hit a driver issue (then {@link #setTransparencyActive(boolean)} cannot composite with the desktop).
    *
    * @return current launch-time request for an alpha-capable default framebuffer.
    */
@@ -95,14 +95,16 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * Turns desktop-composited transparency on or off. When {@code true}, clears and camera backdrop fills use alpha zero so unchanged
+   * Turns desktop-composited transparency on or off.
+   *
+   * <p>When {@code true}, clears and camera backdrop fills use alpha zero so unchanged
    * pixels show whatever is behind the window (when the framebuffer was created with transparency support).
-   * When {@code false}, restores backdrop colors cached the first time transparency was enabled this session, or falls back to
-   * opaque {@link com.badlogic.gdx.graphics.Color#BLACK} if transparency was never enabled.
+   * When {@code false}, restores backdrop colors cached the first time transparency was enabled this session,
+   * or falls back to opaque {@link com.badlogic.gdx.graphics.Color#BLACK} if transparency was never enabled.
    *
    * @param active {@code true} to composite with the desktop through alpha; {@code false} for a normal opaque window interior.
    */
-  default void setDesktopTransparencyActive(boolean active) {
+  default void setTransparencyActive(boolean active) {
     FlixelGame g = Flixel.getGame();
     if (g != null) {
       g.applyBackdropForDesktopTransparency(active);
@@ -110,31 +112,17 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * @return last value applied by {@link #setDesktopTransparencyActive(boolean)} for this game session.
+   * @return last value applied by {@link #setTransparencyActive(boolean)} for this game session.
    */
-  default boolean isDesktopTransparencyActive() {
+  default boolean isTransparencyActive() {
     FlixelGame g = Flixel.getGame();
-    return g != null && g.isDesktopTransparencyActive();
-  }
-
-  /**
-   * Same as {@linkplain #setDesktopTransparencyActive(boolean) setDesktopTransparencyActive(true)}.
-   */
-  default void applyTransparentWorldBackdrop() {
-    setDesktopTransparencyActive(true);
-  }
-
-  /**
-   * Same as {@linkplain #setDesktopTransparencyActive(boolean) setDesktopTransparencyActive(false)}.
-   */
-  default void clearDesktopTransparency() {
-    setDesktopTransparencyActive(false);
+    return g != null && g.isTransparencyActive();
   }
 
   /**
    * @return The current opacity level of the game's window.
    */
-  default float getWindowOpacity() {
+  default float getOpacity() {
     return 1;
   }
 
@@ -143,10 +131,10 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param opacity Opacity in {@code [0, 1]}; non-finite values are ignored.
    */
-  default void setWindowOpacity(float opacity) {}
+  default void setOpacity(float opacity) {}
 
   /**
-   * @return {@code true} if {@link #setWindowOpacity(float)} can affect the window on this session.
+   * @return {@code true} if {@link #setOpacity(float)} can affect the window on this session.
    */
   boolean supportsWindowOpacity();
 
@@ -155,12 +143,12 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param decorated {@code false} for a borderless window.
    */
-  default void setWindowDecorated(boolean decorated) {}
+  default void setDecorated(boolean decorated) {}
 
   /**
-   * @return {@code true} if {@link #setWindowDecorated(boolean)} is supported on this session.
+   * @return {@code true} if {@link #setDecorated(boolean)} is supported on this session.
    */
-  default boolean supportsSetWindowDecorated() {
+  default boolean supportsDecorated() {
     return false;
   }
 
@@ -224,12 +212,12 @@ public interface FlixelWindow extends FlixelShakeable {
    * <p><b>CAUTION:</b> Pulling focus away from another application is disruptive. It's advised you warn players ahead of
    * time on your store page, in a first-run dialog, or in an in-game settings label before calling this from normal gameplay.
    */
-  default void bringWindowToForeground() {}
+  default void bringToForeground() {}
 
   /**
-   * @return {@code true} if {@link #bringWindowToForeground()} can run on this session.
+   * @return {@code true} if {@link #bringToForeground()} can run on this session.
    */
-  default boolean supportsBringWindowToForeground() {
+  default boolean supportsBringToForeground() {
     return false;
   }
 
@@ -241,12 +229,12 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param floating {@code true} to keep the window above normal stacking, {@code false} for default stacking.
    */
-  default void setWindowFloating(boolean floating) {}
+  default void setFloating(boolean floating) {}
 
   /**
-   * @return {@code true} if {@link #setWindowFloating(boolean)} may take effect on this session.
+   * @return {@code true} if {@link #setFloating(boolean)} may take effect on this session.
    */
-  default boolean supportsSetWindowFloating() {
+  default boolean supportsFloating() {
     return false;
   }
 
@@ -272,7 +260,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} while close absorption is enabled and the listener chain is active.
    *   When {@link #supportsAbsorbCloseRequests()} is {@code false}, this is always {@code false}.
    */
-  default boolean isAbsorbCloseRequestsEnabled() {
+  default boolean isAbsorbCloseRequests() {
     return false;
   }
 
@@ -280,7 +268,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when the window is currently floating (always on top), if the backend can query it.
    *   When unsupported, returns {@code false}.
    */
-  default boolean isWindowFloating() {
+  default boolean isFloating() {
     return false;
   }
 
@@ -288,7 +276,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when the window has native decorations (title bar and border), if the backend can query it.
    *   When unsupported, returns {@code true} so game code treats the common case as decorated.
    */
-  default boolean isWindowDecorated() {
+  default boolean isDecorated() {
     return true;
   }
 }

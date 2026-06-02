@@ -94,7 +94,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   public IFlixelBasic recycle() {
     IFlixelBasic member = super.recycle();
     if (member instanceof FlixelSprite sprite) {
-      sprite.setAntialiasing(Flixel.globalAntialiasing());
+      sprite.setAntialiasing(Flixel.isAntialiasing());
     }
     return member;
   }
@@ -285,7 +285,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   public void add(@NotNull IFlixelBasic basic) {
     super.add(basic);
     if (basic instanceof FlixelSprite sprite) {
-      sprite.setAntialiasing(Flixel.globalAntialiasing());
+      sprite.setAntialiasing(Flixel.isAntialiasing());
     }
   }
 

@@ -134,7 +134,7 @@ public class FlixelTeaVMLauncher {
     }
     Flixel.initialize(game);
 
-    Flixel.setCanStoreLogs(false);
+    Flixel.log.setCanStoreLogs(false);
 
     WebApplicationConfiguration configuration = new WebApplicationConfiguration();
     configuration.canvasID = DEFAULT_CANVAS_ID;

@@ -36,7 +36,7 @@ import org.lwjgl.glfw.GLFW;
  * GLFW-backed {@link FlixelWindow} for the LWJGL3 backend.
  *
  * <p>Desktop see-through uses {@link org.flixelgdx.FlixelGame#applyBackdropForDesktopTransparency(boolean)} from the
- * default {@link FlixelWindow#setDesktopTransparencyActive(boolean)} implementation. Do not call
+ * default {@link FlixelWindow#setTransparencyActive(boolean)} implementation. Do not call
  * {@code glfwSetWindowAttrib(GLFW_TRANSPARENT_FRAMEBUFFER, ...)}: GLFW reports {@code GLFW_INVALID_ENUM} and it is not a supported
  * dynamic attribute on common platforms.
  *
@@ -119,7 +119,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public float getWindowOpacity() {
+  public float getOpacity() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return 1;
     }
@@ -128,7 +128,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public void setWindowOpacity(float opacity) {
+  public void setOpacity(float opacity) {
     if (!supportsWindowOpacity() || !Float.isFinite(opacity)) {
       return;
     }
@@ -143,8 +143,8 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public void setWindowDecorated(boolean decorated) {
-    if (!supportsSetWindowDecorated()) {
+  public void setDecorated(boolean decorated) {
+    if (!supportsDecorated()) {
       return;
     }
     Lwjgl3Graphics g = (Lwjgl3Graphics) Gdx.graphics;
@@ -152,7 +152,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public boolean supportsSetWindowDecorated() {
+  public boolean supportsDecorated() {
     return Gdx.graphics instanceof Lwjgl3Graphics;
   }
 
@@ -224,7 +224,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public void bringWindowToForeground() {
+  public void bringToForeground() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return;
     }
@@ -232,13 +232,13 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public boolean supportsBringWindowToForeground() {
+  public boolean supportsBringToForeground() {
     return Gdx.graphics instanceof Lwjgl3Graphics;
   }
 
   @Override
-  public void setWindowFloating(boolean floating) {
-    if (!supportsSetWindowFloating()) {
+  public void setFloating(boolean floating) {
+    if (!supportsFloating()) {
       return;
     }
     Lwjgl3Graphics g = (Lwjgl3Graphics) Gdx.graphics;
@@ -247,7 +247,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public boolean supportsSetWindowFloating() {
+  public boolean supportsFloating() {
     return Gdx.graphics instanceof Lwjgl3Graphics;
   }
 
@@ -265,13 +265,13 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public boolean isAbsorbCloseRequestsEnabled() {
+  public boolean isAbsorbCloseRequests() {
     FlixelLwjgl3ChainingWindowListener hook = closeHook;
     return hook != null && hook.isAbsorbCloseRequests();
   }
 
   @Override
-  public boolean isWindowFloating() {
+  public boolean isFloating() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return false;
     }
@@ -280,7 +280,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
   }
 
   @Override
-  public boolean isWindowDecorated() {
+  public boolean isDecorated() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics g)) {
       return true;
     }
