@@ -16,8 +16,9 @@ subprojects {
       // Eclipse JDT formatter: GJF style, 120-char lines, 2-space indent.
       eclipse('4.33').configFile("$rootDir/gradle/spotless/eclipse-formatter.xml")
 
-      // Static imports first, then a blank line, then regular imports -- alphabetical within each group.
-      importOrder('\\#', '')
+      // Import groups, each separated by a blank line:
+      // static | java/javax | com | org | everything else
+      importOrder('\\#', 'java', 'javax', 'com', 'org', '')
 
       removeUnusedImports()
       endWithNewline()
