@@ -273,4 +273,4 @@ For full wiring (launchers, composite builds, TeaVM setup), see **[COMPILING.md]
 - **[Contributing Guide](CONTRIBUTING.md)**: Coding standards, PR requirements, and how to contribute.
 - **[Project Structure](PROJECT.md)**: The multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
-- **API docs (Javadoc)**: Built from `master` via GitHub Actions and published at `https://flixelgdx.org/`. Run `./gradlew javadocAll` locally to generate HTML under each module's `build/docs/javadoc`.
+- **API docs (Javadoc)**: Run `./gradlew javadocAll` locally to generate HTML under each module's `build/docs/javadoc`.
