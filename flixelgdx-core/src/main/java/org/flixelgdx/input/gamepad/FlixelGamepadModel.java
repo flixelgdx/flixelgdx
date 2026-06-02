@@ -51,7 +51,7 @@ public enum FlixelGamepadModel {
   OUYA,
 
   /**
-   * Family not recognized from the runtime name. Polling still uses that controller's
+   * Family isn't recognized from the runtime name. Polling still uses that controller's
    * {@link com.badlogic.gdx.controllers.Controller#getMapping()} like any other model.
    */
   UNKNOWN

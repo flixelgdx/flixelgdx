@@ -6,13 +6,15 @@
 [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-FlixelGDX is a Java game framework built on top of [libGDX](https://libgdx.com/). It brings a clean, state-based game architecture inspired by [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/) into the Java ecosystem, while keeping the full platform reach and rendering power of libGDX underneath.
+## [flixelgdx.org](https://flixelgdx.org)
+
+FlixelGDX is a featherweight powerhouse of a Java game framework built on top of [libGDX](https://libgdx.com/). It brings a clean, state-based game architecture inspired by [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/) into the Java ecosystem, while keeping the full platform reach and rendering power of libGDX underneath.
 
 > [!NOTE]
 > FlixelGDX is an independent project and is not officially affiliated with HaxeFlixel or libGDX.
 
 > [!IMPORTANT]
-> FlixelGDX is still relatively new and currently supports desktop and web. Mobile support is coming soon.
+> FlixelGDX is still relatively new and currently supports desktop and web. Mobile support is coming soon!
 
 ---
 
@@ -20,7 +22,7 @@ FlixelGDX is a Java game framework built on top of [libGDX](https://libgdx.com/)
 
 Raw libGDX is powerful but low-level. You manage `SpriteBatch`, call `begin()` and `end()` every frame, clear the screen manually, wire up your own delta-time calculations, and pull in separate libraries for tweens, timers, and animations. FlixelGDX builds all of that infrastructure into one cohesive framework so your code stays focused on game logic rather than plumbing.
 
-The result is dramatically less boilerplate – especially for small-to-medium games – and a developer experience that closely mirrors HaxeFlixel while remaining fully idiomatic Java or Kotlin.
+The result is dramatically less boilerplate and a developer experience that closely mirrors HaxeFlixel (especially when paired with Kotlin) while remaining fully idiomatic.
 
 ---
 
@@ -30,7 +32,7 @@ FlixelGDX is built specifically for people who want to have the features of a mo
 We believe that **everyone** – regardless of hardware or financial limitations – should be able to have access to powerful tools.
 Nobody's creativity (and access to their favorite games) should be limited and diminished just because their computer can't handle it.
 
-This framework is designed to be a featherweight powerhouse for everyone without having to pay a single penny. Developers should be able to
+This framework is designed to be powerful yet approachable for everyone – all without having to pay a single penny. Developers should be able to
 make beautiful and amazing creations and shouldn't be stopped or discouraged by a greedy fee. Games are an art form that should be accessible to everyone, not just
 people with a lot of money and an expensive gaming rig.
 
@@ -47,12 +49,13 @@ people with a lot of money and an expensive gaming rig.
 - **Text and fonts** - `FlixelText` with `FlixelFontRegistry` for bitmap fonts and runtime font loading.
 - **Camera** - `FlixelCamera` with built-in shake, flash, fade, and follow modes.
 - **Collision** - `Flixel.overlap(a, b)` and `Flixel.collide(a, b)` work on single objects or entire groups, with optional per-pair callbacks.
-- **Animation** - `FlixelAnimationController` for spritemaps and `FlixelAnimateSprite` for Adobe Animate-exported rigs.
+- **Animation** - Full animation support for Sparrow spritesheets and spritemap atlases via `FlixelAnimateSprite` for Adobe Animate-exported rigs (including out-of-the-box support for the [Better Texture Atlas](https://github.com/Dot-Stuff/BetterTextureAtlas) extension).
 - **Assets** - `FlixelAssetManager` and `FlixelAssetPaths` for path-safe, typed asset loading across all platforms.
 - **Saves** - `FlixelSave` for cross-platform persistent game data.
 - **Debug overlay** - `FlixelImGuiDebugOverlay` (desktop) provides a live, in-game debug panel powered by Dear ImGui.
 - **Logging** - `FlixelLogger` with accurate stack traces via a compile-time bytecode plugin, multiple log levels, console and file sinks.
-- **Multi-platform** - desktop via LWJGL3 and browser via TeaVM. Android and iOS support is in progress.
+- **Multi-platform** - desktop via LWJGL3 and browser via TeaVM. (Android and iOS support is in progress!)
+- **and much more!**
 
 ---
 
@@ -71,6 +74,8 @@ public class MyGame extends ApplicationAdapter {
 
   @Override
   public void create() {
+    // Here, we have to manually manage a batching object, a texture, and its coordinates.
+    // If we forget to dispose of any resources, we can leak memory and cause performance issues.
     batch = new SpriteBatch();
     texture = new Texture("player.png");
     x = 100;
@@ -85,6 +90,7 @@ public class MyGame extends ApplicationAdapter {
     if (Gdx.input.isKeyPressed(Input.Keys.S)) y -= 200f * dt;
     if (Gdx.input.isKeyPressed(Input.Keys.D)) x += 200f * dt;
 
+    // Manually handle rendering and sprite batching.
     ScreenUtils.clear(0, 0, 0, 1);
     batch.begin();
     batch.draw(texture, x, y);
@@ -109,6 +115,8 @@ public class PlayState extends FlixelState {
   @Override
   public void create() {
     super.create();
+    // Create a simple sprite at (100, 100), load an image, and add it to the state.
+    // That's it, everything else is handled and tracked by the framework!
     player = new FlixelSprite(100, 100);
     player.loadGraphic("player.png");
     add(player);
@@ -129,7 +137,7 @@ The `SpriteBatch`, screen clearing, manual disposal, and delta-time calculation 
 
 ### Tweening
 
-libGDX has no built-in tween system. You must implement animation manually or pull in a third-party library. FlixelGDX ships a full tween engine:
+FlixelGDX provides a very flexible and simple yet robust tweening engine:
 
 ```java
 // Slide a sprite to x=500, y=300 over 1.5 seconds with a bounce-out ease.
@@ -139,29 +147,67 @@ FlixelTween.tween(player, new FlixelTweenSettings()
   .setDuration(1.5f)
   .setEase(FlixelEase::bounceOut));
 
-// Shake the camera for 0.4 seconds on a hit.
-FlixelTween.shake(Flixel.camera, 0.4f, new FlixelTweenSettings());
+// Shake a sprite for 0.4 seconds on a hit.
+FlixelTween.shake(enemy, FlixelAxes.XY, 0.008f, new FlixelTweenSettings().setDuration(0.4f));
 
-// Flicker a sprite for 1.2 seconds after taking damage.
-FlixelTween.flicker(player, 1.2f, 0.04f, new FlixelTweenSettings());
+// Flicker a sprite for 1.2 seconds after taking damage (default period and ratio).
+FlixelTween.flicker(player, new FlixelTweenSettings().setDuration(1.2f));
 ```
 
 ### Groups and collision
 
+**`FlixelGroup<T>`** is a framework-agnostic container with no automatic lifecycle. Use it when your members are not `IFlixelBasic` / `FlixelBasic` objects, or when you need a type outside the FlixelGDX framework:
+
 ```java
-// Create a group of enemies.
-FlixelGroup enemies = new FlixelGroup();
+// FlixelGroup<T> requires an array factory and manages no lifecycle itself.
+FlixelGroup<MyActor> actors = new FlixelGroup<>(MyActor[]::new);
+for (int i = 0; i < 10; i++) {
+  actors.add(new MyActor(i * 60f, 100f));
+}
+
+// update() and draw() are your responsibility.
+actors.forEachMember(e -> e.act(elapsed));
+actors.forEachMember(e -> e.draw(batch));
+```
+
+**`FlixelBasicGroup<T>`** is abstract and gives you a group with full `FlixelBasic` lifecycle (automatic `update`, `draw`, and `destroy` for all members). Subclass it and supply the array factory:
+
+```java
+// Subclass FlixelBasicGroup to add group-level logic (wave spawning, shared state, etc.).
+public class EnemyGroup extends FlixelBasicGroup<FlixelSprite> {
+
+  public EnemyGroup() {
+    super(FlixelSprite[]::new);
+  }
+}
+
+// Then use it in a state like any other FlixelBasic.
+EnemyGroup enemies = new EnemyGroup();
+for (int i = 0; i < 10; i++) {
+  FlixelSprite enemy = new FlixelSprite(i * 60f, 200f);
+  enemy.makeGraphic(32, 32, FlixelColor.RED);
+  enemies.add(enemy);
+}
+add(enemies); // update() and draw() propagate to all members automatically.
+```
+
+**`FlixelSpriteGroup`** (a concrete `FlixelBasicGroup`) gives members the full FlixelGDX lifecycle automatically and works with `Flixel.overlap` and `Flixel.collide`:
+
+```java
+// FlixelSpriteGroup handles update, draw, and destroy for every member.
+FlixelSpriteGroup enemies = new FlixelSpriteGroup();
 for (int i = 0; i < 10; i++) {
   FlixelSprite e = new FlixelSprite(i * 60f, 100f);
-  e.makeGraphic(32, 32, Color.RED);
+  e.makeGraphic(32, 32, FlixelColor.RED);
   enemies.add(e);
 }
 add(enemies);
 
-// Check one bullet against every enemy in a single call.
-if (Flixel.overlap(bullet, enemies)) {
-  bullet.kill();
-}
+// Check one bullet against every enemy. Callback fires for each overlapping pair.
+Flixel.overlap(bullet, enemies, (b, e) -> {
+  b.kill();
+  e.kill();
+});
 ```
 
 ---
