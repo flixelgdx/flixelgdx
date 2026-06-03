@@ -136,6 +136,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float perfScaleMaxFrameMs = 1f;
   private float perfScaleMaxHeapMb = 1f;
   private float perfScaleMaxNativeMb = 1f;
+  private float perfScaleMaxRenderCalls = 1f;
 
   private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
   private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
@@ -867,6 +868,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawStatRow("Heap (MB)", cachedHeapMegabytes);
     drawStatRow("Native (MB)", cachedNativeMegabytes);
     drawStatRow("Active members", cachedObjectCount);
+    drawStatRow("Assets loaded", cachedAssetCount);
     drawStatRow("Render calls", cachedRenderCalls);
 
     ImGui.separator();
@@ -888,6 +890,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       text(COLOR_VALUE, "0 (none)");
     } else {
       text(COLOR_VALUE, (inspect + 1) + " / " + camCount);
+      FlixelCamera cam = cams.get(inspect);
+      drawStatRow("  Scroll X", cam.scrollX);
+      drawStatRow("  Scroll Y", cam.scrollY);
+      drawStatRow("  Zoom", cam.getZoom());
     }
     ImGui.end();
   }
@@ -943,6 +949,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     perfScaleMaxFrameMs = Math.max(ringMax(getPerfFrameMs(), count) * 1.15f, perfScaleMaxFrameMs * 0.997f);
     perfScaleMaxHeapMb = Math.max(ringMax(getPerfHeapMb(), count) * 1.15f, perfScaleMaxHeapMb * 0.997f);
     perfScaleMaxNativeMb = Math.max(ringMax(getPerfNativeMb(), count) * 1.15f, perfScaleMaxNativeMb * 0.997f);
+    perfScaleMaxRenderCalls = Math.max(ringMax(getPerfRenderCalls(), count) * 1.15f, perfScaleMaxRenderCalls * 0.997f);
 
     float graphWidth = ImGui.getContentRegionAvailX();
     float graphHeight = 60f;
@@ -975,6 +982,14 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", 0f, perfScaleMaxNativeMb, graphWidth,
           graphHeight);
     }
+
+    // Render calls plot.
+    text(COLOR_KEY, "Render calls");
+    ImGui.sameLine();
+    text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfRenderCalls()))));
+    ImGui.plotLines("##rendercalls", getPerfRenderCalls(), count, offset, "", 0f, perfScaleMaxRenderCalls, graphWidth,
+        graphHeight);
+
     ImGui.end();
   }
 

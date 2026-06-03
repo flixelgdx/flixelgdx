@@ -161,6 +161,19 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   float getProgress();
 
   /**
+   * Returns the number of assets currently loaded in the underlying {@link AssetManager}. Reads a
+   * single integer field and does not allocate.
+   *
+   * <p>Useful for tracking memory leaks: a steadily climbing count across state switches often
+   * means assets are being loaded without a matching unload or {@link #clearNonPersist()} call.
+   *
+   * @return Number of loaded assets, or {@code 0} if not available.
+   */
+  default int getLoadedAssetCount() {
+    return 0;
+  }
+
+  /**
    * @param fileName Asset file name/key.
    * @return Whether any type of asset with that name is loaded (libGDX {@link AssetManager#isLoaded(String)}).
    */

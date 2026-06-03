@@ -131,6 +131,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected float cachedHeapMegabytes;
   protected float cachedNativeMegabytes;
   protected int cachedObjectCount;
+  protected int cachedAssetCount;
 
   /**
    * Total render-call count snapshotted at the start of each {@link #draw()} call, after the
@@ -152,6 +153,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /** FPS as reported by libGDX per sample. */
   protected final float[] perfFps = new float[PERF_HISTORY_SIZE];
+
+  /**
+   * Render-call count per sample. Sampled in {@link #pushPerfSample(float)} after the
+   * previous frame's batch has been ended but before the next frame's {@code begin()} resets the
+   * counter, so it always reflects a complete frame even when the overlay is hidden.
+   */
+  protected final float[] perfRenderCalls = new float[PERF_HISTORY_SIZE];
 
   /** Index of the next sample to write (rolls over once the ring is full). */
   protected int perfHead = 0;
@@ -310,6 +318,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       cachedHeapMegabytes = Flixel.getJavaHeapUsedMegabytes();
       cachedNativeMegabytes = Flixel.getNativeHeapUsedMegabytes();
       cachedObjectCount = FlixelDebugUtil.countActiveMembers();
+      cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
 
     if (watchRefreshTimer >= WATCH_REFRESH_INTERVAL) {
@@ -333,10 +342,38 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     perfHeapMb[idx] = Flixel.getJavaHeapUsedMegabytes();
     perfNativeMb[idx] = Flixel.getNativeHeapUsedMegabytes();
     perfFps[idx] = Gdx.graphics.getFramesPerSecond();
+    perfRenderCalls[idx] = sampleRenderCallsNow();
     perfHead = (idx + 1) % PERF_HISTORY_SIZE;
     if (perfCount < PERF_HISTORY_SIZE) {
       perfCount++;
     }
+  }
+
+  /**
+   * Reads the current total render-call count from the framework batch and any user-registered
+   * batches. Safe to call from {@link #pushPerfSample(float)} in {@link #update(float)} because
+   * the game loop ends the previous frame's batch before calling {@code update}, so the counter
+   * reflects the just-completed frame and has not yet been reset by the next {@code begin()}.
+   */
+  private int sampleRenderCallsNow() {
+    int total = 0;
+    if (Flixel.game != null) {
+      SpriteBatch frameworkBatch = Flixel.game.getBatch();
+      if (frameworkBatch != null) {
+        total += frameworkBatch.renderCalls;
+      }
+    }
+    FlixelDebugManager mgr = Flixel.debug;
+    if (mgr != null) {
+      Array<SpriteBatch> extra = mgr.getTrackedBatches();
+      for (int i = 0, n = extra.size; i < n; i++) {
+        SpriteBatch b = extra.get(i);
+        if (b != null) {
+          total += b.renderCalls;
+        }
+      }
+    }
+    return total;
   }
 
   /** Returns the index immediately after the latest sample (where the next write will go). */
@@ -363,6 +400,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   public final float[] getPerfFps() {
     return perfFps;
+  }
+
+  public final float[] getPerfRenderCalls() {
+    return perfRenderCalls;
   }
 
   /** Hook for subclass UI state updates that should happen every frame while the overlay is visible. */
