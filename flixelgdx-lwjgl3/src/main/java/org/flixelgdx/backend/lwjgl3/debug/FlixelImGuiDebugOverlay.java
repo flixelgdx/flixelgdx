@@ -484,6 +484,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    *
    * <pre>{@code
    * public class MyOverlay extends FlixelImGuiDebugOverlay {
+   *
    *   protected void onDrawImGui() {
    *     // New standalone window.
    *     if (ImGui.begin("My Panel")) {
@@ -510,8 +511,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * }
    * }</pre>
    */
-  protected void onDrawImGui() {
-  }
+  protected void onDrawImGui() {}
 
   private static long resolveGlfwWindowHandle() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
