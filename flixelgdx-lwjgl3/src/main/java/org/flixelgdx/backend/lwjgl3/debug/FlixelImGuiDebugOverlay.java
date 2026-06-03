@@ -106,25 +106,42 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
 
+  private int watchCount;
+  private int consoleBlockCount;
+  private int commandHistoryCursor = -1;
+  private int commandLineUtf8ScratchLen;
+  private int cachedToggleKey = -1;
+  private int cachedHitboxKey = -1;
+  private int cachedPauseKey = -1;
+  private int cachedCycleLeftKey = -1;
+  private int cachedCycleRightKey = -1;
+
+  // Per-window default rectangles (work-area coordinates). Filled by computeDefaultLayoutRects()
+  // each frame so resize and fullscreen keep the template sane; applyWindowLayout() consumes them
+  // right before each begin().
+  private float layoutStatsX, layoutStatsY, layoutStatsW, layoutStatsH;
+  private float layoutPerfX, layoutPerfY, layoutPerfW, layoutPerfH;
+  private float layoutLogX, layoutLogY, layoutLogW, layoutLogH;
+  private float layoutWatchX, layoutWatchY, layoutWatchW, layoutWatchH;
+  private float layoutControlsX, layoutControlsY, layoutControlsW, layoutControlsH;
+  private float layoutTextureX, layoutTextureY, layoutTextureW, layoutTextureH;
+  private float layoutConsoleX, layoutConsoleY, layoutConsoleW, layoutConsoleH;
+  private float layoutCommandX, layoutCommandY, layoutCommandW, layoutCommandH;
+  private float textureViewerZoom = 1f;
+
+  // Per-series Y-axis scale maxima for the performance graphs. Each value grows immediately when a
+  // new peak is observed and decays slowly toward the current ring-buffer max so the graphs stay
+  // visually stable without sudden rescaling when old extreme samples roll off the ring.
+  private float perfScaleMaxFps = 1f;
+  private float perfScaleMaxFrameMs = 1f;
+  private float perfScaleMaxHeapMb = 1f;
+  private float perfScaleMaxNativeMb = 1f;
+
   private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
   private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
 
-  private boolean imguiInitialized = false;
-  private boolean imguiShutdown = false;
-
   // Snapshot of the log buffer taken once per frame to avoid holding logBuffer during draw.
   private final Array<BufferedLogLine> logSnapshot = new Array<>();
-
-  // Watch caches mirroring cachedWatchKeys / cachedWatchValues as java String.
-  private String[] watchKeyStr = new String[0];
-  private String[] watchValueStr = new String[0];
-  private int watchCount;
-
-  // Console caches mirroring cachedConsoleBlocks as String arrays.
-  private String[] consoleNameStr = new String[0];
-  private String[][] consoleBodyStrs = new String[0][];
-  private int[] consoleBodyCounts = new int[0];
-  private int consoleBlockCount;
 
   // Window visibility flags (toggled from the debug menu).
   private final ImBoolean showStatsWindow = new ImBoolean(true);
@@ -142,36 +159,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private final ImBoolean logShowError = new ImBoolean(true);
   private final ImBoolean logAutoScroll = new ImBoolean(true);
 
-  // When true, request the next draw to send the log scroll to the bottom regardless of logAutoScroll.
-  private boolean scrollLogToBottom = false;
-
-  /**
-   * One-shot flag that swaps the layout condition to {@link ImGuiCond#Always} for the next frame
-   * (used the first time the overlay is shown and after the user runs {@code Reset Layout}). Reset
-   * back to false after the override frame so manual window moves stick afterwards.
-   */
-  private boolean forceLayoutNextFrame = true;
-
-  /** When true, the Texture Inspector uses {@link ImGuiCond#Always} once so it snaps under Controls. */
-  private boolean textureInspectorSnapNextFrame;
-
-  /** Previous frame's Texture Inspector visibility (edge-detect open). */
-  private boolean textureInspectorOpenPrev;
-
-  // Per-window default rectangles (work-area coordinates). Filled by computeDefaultLayoutRects()
-  // each frame so resize and fullscreen keep the template sane; applyWindowLayout() consumes them
-  // right before each begin().
-  private float layoutStatsX, layoutStatsY, layoutStatsW, layoutStatsH;
-  private float layoutPerfX, layoutPerfY, layoutPerfW, layoutPerfH;
-  private float layoutLogX, layoutLogY, layoutLogW, layoutLogH;
-  private float layoutWatchX, layoutWatchY, layoutWatchW, layoutWatchH;
-  private float layoutControlsX, layoutControlsY, layoutControlsW, layoutControlsH;
-  private float layoutTextureX, layoutTextureY, layoutTextureW, layoutTextureH;
-  private float layoutConsoleX, layoutConsoleY, layoutConsoleW, layoutConsoleH;
-  private float layoutCommandX, layoutCommandY, layoutCommandW, layoutCommandH;
-
   private final ImString commandInputBuffer = new ImString(256);
-  private int commandHistoryCursor = -1;
 
   /**
    * Dear ImGui consumes Up/Down on focused {@code InputText} for caret movement before libGDX sees
@@ -193,6 +181,44 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
   };
 
+  /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
+  private final byte[] commandLineUtf8Scratch = new byte[512];
+
+  // Reused float buffer fed to ImGui.sliderFloat() so the zoom control stays allocation-free.
+  private final float[] textureViewerZoomBuf = new float[1];
+
+  // Watch caches mirroring cachedWatchKeys / cachedWatchValues as java String.
+  private String[] watchKeyStr = new String[0];
+  private String[] watchValueStr = new String[0];
+
+  // Console caches mirroring cachedConsoleBlocks as String arrays.
+  private String[] consoleNameStr = new String[0];
+  private String[][] consoleBodyStrs = new String[0][];
+  private int[] consoleBodyCounts = new int[0];
+
+  private String keybindToggleLabel;
+  private String keybindHitboxLabel;
+  private String keybindPauseLabel;
+  private String keybindCycleLeftLabel;
+  private String keybindCycleRightLabel;
+
+  private boolean imguiInitialized = false;
+  private boolean imguiShutdown = false;
+  private boolean scrollLogToBottom = false;
+
+  /**
+   * One-shot flag that swaps the layout condition to {@link ImGuiCond#Always} for the next frame
+   * (used the first time the overlay is shown and after the user runs {@code Reset Layout}). Reset
+   * back to false after the override frame so manual window moves stick afterwards.
+   */
+  private boolean forceLayoutNextFrame = true;
+
+  /** When true, the Texture Inspector uses {@link ImGuiCond#Always} once so it snaps under Controls. */
+  private boolean textureInspectorSnapNextFrame;
+
+  /** Previous frame's Texture Inspector visibility (edge-detect open). */
+  private boolean textureInspectorOpenPrev;
+
   private boolean focusCommandLine = false;
 
   /**
@@ -210,34 +236,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    */
   private boolean sanitizeImGuiInputBeforeNextDraw;
 
-  /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
-  private final byte[] commandLineUtf8Scratch = new byte[512];
-  private int commandLineUtf8ScratchLen;
-
-  private float textureViewerZoom = 1f;
-
-  // Per-series Y-axis scale maxima for the performance graphs. Each value grows immediately when a
-  // new peak is observed and decays slowly toward the current ring-buffer max so the graphs stay
-  // visually stable without sudden rescaling when old extreme samples roll off the ring.
-  private float perfScaleMaxFps = 1f;
-  private float perfScaleMaxFrameMs = 1f;
-  private float perfScaleMaxHeapMb = 1f;
-  private float perfScaleMaxNativeMb = 1f;
-
-  // Reused float buffer fed to ImGui.sliderFloat() so the zoom control stays allocation-free.
-  private final float[] textureViewerZoomBuf = new float[1];
-
-  private String keybindToggleLabel;
-  private String keybindHitboxLabel;
-  private String keybindPauseLabel;
-  private String keybindCycleLeftLabel;
-  private String keybindCycleRightLabel;
-  private int cachedToggleKey = -1;
-  private int cachedHitboxKey = -1;
-  private int cachedPauseKey = -1;
-  private int cachedCycleLeftKey = -1;
-  private int cachedCycleRightKey = -1;
-
   @Override
   public void draw() {
     if (!isVisible() || imguiShutdown) {
@@ -252,6 +250,97 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       }
     }
     super.draw();
+  }
+
+  @Override
+  public void resize(int width, int height) {
+    super.resize(width, height);
+    if (!imguiInitialized || imguiShutdown) {
+      return;
+    }
+    // Dear ImGui's display size must track the framebuffer explicitly; relying only on GLFW
+    // callbacks can leave panels mis-scaled after libGDX toggles fullscreen or resizes the
+    // backing window.
+    ImGui.getIO().setDisplaySize(width, height);
+    forceLayoutNextFrame = true;
+  }
+
+  /**
+   * Tears down the Dear ImGui resources in the safe order: GL3 renderer first (which detaches
+   * GL state), then the GLFW backend (which removes its callback chain), and finally the imgui
+   * context itself. Each call is wrapped in its own try/catch because the LWJGL window is
+   * already partway through its own destruction by the time libGDX invokes
+   * {@link com.badlogic.gdx.ApplicationListener#dispose()}, and a stray crash here was triggering
+   * the framework's uncaught-exception handler with the audio system still alive (the symptom:
+   * "OK" closes the alert but music keeps playing).
+   */
+  @Override
+  public void destroy() {
+    if (!imguiShutdown && imguiInitialized) {
+      imguiShutdown = true;
+      try {
+        imGuiGl3.shutdown();
+      } catch (Throwable t) {
+        // Ignore.
+      }
+      try {
+        imGuiGlfw.shutdown();
+      } catch (Throwable t) {
+        // Ignore.
+      }
+      try {
+        ImGui.destroyContext();
+      } catch (Throwable t) {
+        // Ignore.
+      }
+    }
+    super.destroy();
+  }
+
+  @Override
+  public void setVisible(boolean visible) {
+    boolean wasVisible = isVisible();
+    super.setVisible(visible);
+    onImGuiHostVisibilityChanged(wasVisible, visible);
+  }
+
+  @Override
+  public void toggleVisible() {
+    boolean wasVisible = isVisible();
+    super.toggleVisible();
+    onImGuiHostVisibilityChanged(wasVisible, isVisible());
+  }
+
+  @Override
+  public boolean isMouseCapturedByUI() {
+    if (!isVisible() || !imguiInitialized) {
+      return false;
+    }
+    return ImGui.getIO().getWantCaptureMouse();
+  }
+
+  /**
+   * Reports keyboard capture by routing through Dear ImGui's {@code WantCaptureKeyboard} flag.
+   * Imgui sets this flag whenever any of its widgets has keyboard focus (text input, modal
+   * popup, drag spinner, etc.), so returning that value here prevents a game's input
+   * from capturing and processing input while the user is typing in the command console or
+   * interacting with another widget.
+   *
+   * <p>While the overlay is hidden, this always returns {@code false}. ImGui is not framed in that
+   * state, so the previous frame's {@code WantCaptureKeyboard} would otherwise stay stale and
+   * suppress gameplay input.
+   *
+   * <p>Note that the debug overlay's own toggle keys (F2 by default, etc.) read raw input from
+   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)},
+   * so they continue to work while a text field is focused except for keys that are suppressed as
+   * typable command-line input (see {@link #shouldSuppressDebugRawKeybind(int)} on this class).
+   */
+  @Override
+  public boolean isKeyboardCapturedByUI() {
+    if (!isVisible() || !imguiInitialized) {
+      return false;
+    }
+    return ImGui.getIO().getWantCaptureKeyboard();
   }
 
   @Override
@@ -317,83 +406,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
   }
 
-  @Override
-  public void resize(int width, int height) {
-    super.resize(width, height);
-    if (!imguiInitialized || imguiShutdown) {
-      return;
-    }
-    // Dear ImGui's display size must track the framebuffer explicitly; relying only on GLFW
-    // callbacks can leave panels mis-scaled after libGDX toggles fullscreen or resizes the
-    // backing window.
-    ImGui.getIO().setDisplaySize(width, height);
-    forceLayoutNextFrame = true;
-  }
-
-  /**
-   * Tears down the Dear ImGui resources in the safe order: GL3 renderer first (which detaches
-   * GL state), then the GLFW backend (which removes its callback chain), and finally the imgui
-   * context itself. Each call is wrapped in its own try/catch because the LWJGL window is
-   * already partway through its own destruction by the time libGDX invokes
-   * {@link com.badlogic.gdx.ApplicationListener#dispose()}, and a stray crash here was triggering
-   * the framework's uncaught-exception handler with the audio system still alive (the symptom:
-   * "OK" closes the alert but music keeps playing).
-   */
-  @Override
-  public void destroy() {
-    if (!imguiShutdown && imguiInitialized) {
-      imguiShutdown = true;
-      try {
-        imGuiGl3.shutdown();
-      } catch (Throwable t) {
-        // Ignore.
-      }
-      try {
-        imGuiGlfw.shutdown();
-      } catch (Throwable t) {
-        // Ignore.
-      }
-      try {
-        ImGui.destroyContext();
-      } catch (Throwable t) {
-        // Ignore.
-      }
-    }
-    super.destroy();
-  }
-
-  @Override
-  public boolean isMouseCapturedByUI() {
-    if (!isVisible() || !imguiInitialized) {
-      return false;
-    }
-    return ImGui.getIO().getWantCaptureMouse();
-  }
-
-  /**
-   * Reports keyboard capture by routing through Dear ImGui's {@code WantCaptureKeyboard} flag.
-   * Imgui sets this flag whenever any of its widgets has keyboard focus (text input, modal
-   * popup, drag spinner, etc.), so returning that value here prevents a game's input
-   * from capturing and processing input while the user is typing in the command console or
-   * interacting with another widget.
-   *
-   * <p>While the overlay is hidden, this always returns {@code false}. ImGui is not framed in that
-   * state, so the previous frame's {@code WantCaptureKeyboard} would otherwise stay stale and
-   * suppress gameplay input.
-   *
-   * <p>Note that the debug overlay's own toggle keys (F2 by default, etc.) read raw input from
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)},
-   * so they continue to work while a text field is focused except for keys that are suppressed as
-   * typable command-line input (see {@link #shouldSuppressDebugRawKeybind(int)} on this class).
-   */
-  @Override
-  public boolean isKeyboardCapturedByUI() {
-    if (!isVisible() || !imguiInitialized) {
-      return false;
-    }
-    return ImGui.getIO().getWantCaptureKeyboard();
-  }
-
   /**
    * While the command line field is focused, blocks debug hotkeys for keys that normally type or edit text in that
    * field. Function keys ({@code F1}-{@code F24}), Escape, modifiers, lock keys, Pause, Print Screen, and similar
@@ -405,38 +417,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return false;
     }
     return !isNonTypableSystemDebugKey(keycode);
-  }
-
-  /**
-   * @return {@code true} for keys that should keep working as debug shortcuts while the command field is focused.
-   */
-  private static boolean isNonTypableSystemDebugKey(int keycode) {
-    if (keycode < 0) {
-      return true;
-    }
-    if (keycode >= Input.Keys.F1 && keycode <= Input.Keys.F24) {
-      return true;
-    }
-    return switch (keycode) {
-    case Input.Keys.ESCAPE,
-        Input.Keys.CONTROL_LEFT,
-        Input.Keys.CONTROL_RIGHT,
-        Input.Keys.ALT_LEFT,
-        Input.Keys.ALT_RIGHT,
-        Input.Keys.SHIFT_LEFT,
-        Input.Keys.SHIFT_RIGHT,
-        Input.Keys.SYM,
-        Input.Keys.CAPS_LOCK,
-        Input.Keys.SCROLL_LOCK,
-        Input.Keys.PAUSE,
-        Input.Keys.PRINT_SCREEN,
-        Input.Keys.UNKNOWN,
-        Input.Keys.POWER,
-        Input.Keys.BUTTON_MODE,
-        Input.Keys.MEDIA_PLAY_PAUSE ->
-      true;
-    default -> false;
-    };
   }
 
   @Override
@@ -488,46 +468,100 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
   }
 
-  @Override
-  public void setVisible(boolean visible) {
-    boolean wasVisible = isVisible();
-    super.setVisible(visible);
-    onImGuiHostVisibilityChanged(wasVisible, visible);
-  }
-
-  @Override
-  public void toggleVisible() {
-    boolean wasVisible = isVisible();
-    super.toggleVisible();
-    onImGuiHostVisibilityChanged(wasVisible, isVisible());
+  private static long resolveGlfwWindowHandle() {
+    if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
+      return 0L;
+    }
+    return graphics.getWindow().getWindowHandle();
   }
 
   /**
-   * Runs when the overlay visibility actually changes. Dear ImGui does not receive {@link #drawUI()} while hidden,
-   * so capture flags and queued IO input must be reconciled here instead of forcing {@code WantCapture*} each toggle.
+   * Picks a GLSL version string compatible with the OpenGL context libGDX created. macOS only
+   * exposes core profiles (>= 3.2), so we always feed it {@code "#version 150"}; on Linux/Windows
+   * the same string works against the default libGDX 3.2 context as well.
    */
-  private void onImGuiHostVisibilityChanged(boolean wasVisible, boolean nowVisible) {
-    if (wasVisible == nowVisible) {
-      return;
-    }
-    if (!nowVisible) {
-      flushImGuiIoAfterOverlayHidden();
-    } else {
-      sanitizeImGuiInputBeforeNextDraw = true;
-    }
+  private static String resolveGlslVersion() {
+    return "#version 150";
   }
 
-  private void flushImGuiIoAfterOverlayHidden() {
-    commandInputFocusedLastFrame = false;
-    if (!imguiInitialized) {
-      return;
+  /**
+   * @return {@code true} for keys that should keep working as debug shortcuts while the command field is focused.
+   */
+  private static boolean isNonTypableSystemDebugKey(int keycode) {
+    if (keycode < 0) {
+      return true;
     }
-    ImGuiIO io = ImGui.getIO();
-    io.setWantCaptureKeyboard(false);
-    io.setWantCaptureMouse(false);
-    io.clearInputKeys();
-    io.clearEventsQueue();
-    io.clearInputMouse();
+    if (keycode >= Input.Keys.F1 && keycode <= Input.Keys.F24) {
+      return true;
+    }
+    return switch (keycode) {
+    case Input.Keys.ESCAPE,
+        Input.Keys.CONTROL_LEFT,
+        Input.Keys.CONTROL_RIGHT,
+        Input.Keys.ALT_LEFT,
+        Input.Keys.ALT_RIGHT,
+        Input.Keys.SHIFT_LEFT,
+        Input.Keys.SHIFT_RIGHT,
+        Input.Keys.SYM,
+        Input.Keys.CAPS_LOCK,
+        Input.Keys.SCROLL_LOCK,
+        Input.Keys.PAUSE,
+        Input.Keys.PRINT_SCREEN,
+        Input.Keys.UNKNOWN,
+        Input.Keys.POWER,
+        Input.Keys.BUTTON_MODE,
+        Input.Keys.MEDIA_PLAY_PAUSE -> true;
+    default -> false;
+    };
+  }
+
+  private static float[] colorForLevel(FlixelLogLevel level) {
+    return switch (level) {
+    case INFO -> COLOR_INFO;
+    case WARN -> COLOR_WARN;
+    case ERROR -> COLOR_ERROR;
+    };
+  }
+
+  /**
+   * Formats {@code value} with one decimal place. Allocates a small {@link String} but only runs
+   * twice in the stats panel each time the cached stats refresh (every half-second by default),
+   * so the cost is negligible.
+   */
+  private static String formatOneDecimal(float value) {
+    int whole = (int) value;
+    int tenths = Math.abs((int) ((value - whole) * 10f));
+    return whole + "." + tenths;
+  }
+
+  /**
+   * Returns the maximum value across the first {@code count} elements of {@code buf}.
+   *
+   * <p>Used to drive the per-series Y-axis scale max without allocating a sorted copy of the ring buffer.
+   * Returns {@code 0} when {@code count} is zero.
+   *
+   * @param buf The buffer to search.
+   * @param count The number of elements to consider.
+   */
+  private static float ringMax(float[] buf, int count) {
+    float m = 0f;
+    for (int i = 0; i < count; i++) {
+      if (buf[i] > m) {
+        m = buf[i];
+      }
+    }
+    return m;
+  }
+
+  /**
+   * Renders {@code message} colored by the supplied {@code [r, g, b, a]} tuple. Uses
+   * {@link ImGui#textUnformatted(String)} so a literal {@code %} (for example in {@code "67%"}) is not
+   * interpreted as a printf format sequence by the native Dear ImGui binding.
+   */
+  private static void text(float[] color, String message) {
+    ImGui.pushStyleColor(ImGuiCol.Text, color[0], color[1], color[2], color[3]);
+    ImGui.textUnformatted(message != null ? message : "");
+    ImGui.popStyleColor();
   }
 
   private void initImGui() {
@@ -556,20 +590,32 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     forceRefreshOnNextUpdate();
   }
 
-  private static long resolveGlfwWindowHandle() {
-    if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
-      return 0L;
+  private void flushImGuiIoAfterOverlayHidden() {
+    commandInputFocusedLastFrame = false;
+    if (!imguiInitialized) {
+      return;
     }
-    return graphics.getWindow().getWindowHandle();
+    ImGuiIO io = ImGui.getIO();
+    io.setWantCaptureKeyboard(false);
+    io.setWantCaptureMouse(false);
+    io.clearInputKeys();
+    io.clearEventsQueue();
+    io.clearInputMouse();
   }
 
   /**
-   * Picks a GLSL version string compatible with the OpenGL context libGDX created. macOS only
-   * exposes core profiles (>= 3.2), so we always feed it {@code "#version 150"}; on Linux/Windows
-   * the same string works against the default libGDX 3.2 context as well.
+   * Runs when the overlay visibility actually changes. Dear ImGui does not receive {@link #drawUI()} while hidden,
+   * so capture flags and queued IO input must be reconciled here instead of forcing {@code WantCapture*} each toggle.
    */
-  private static String resolveGlslVersion() {
-    return "#version 150";
+  private void onImGuiHostVisibilityChanged(boolean wasVisible, boolean nowVisible) {
+    if (wasVisible == nowVisible) {
+      return;
+    }
+    if (!nowVisible) {
+      flushImGuiIoAfterOverlayHidden();
+    } else {
+      sanitizeImGuiInputBeforeNextDraw = true;
+    }
   }
 
   /**
@@ -743,6 +789,13 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
+   * Same as the five-argument overload using {@link #nextLayoutCond()} for {@code cond}.
+   */
+  private void applyWindowLayout(float x, float y, float w, float h) {
+    applyWindowLayout(x, y, w, h, nextLayoutCond());
+  }
+
+  /**
    * Applies the default position and size for a single window. Must be called from inside a
    * {@code drawXxxWindow()} method right before the corresponding {@link ImGui#begin}.
    *
@@ -755,13 +808,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private void applyWindowLayout(float x, float y, float w, float h, int cond) {
     ImGui.setNextWindowPos(x, y, cond);
     ImGui.setNextWindowSize(w, h, cond);
-  }
-
-  /**
-   * Same as the five-argument overload using {@link #nextLayoutCond()} for {@code cond}.
-   */
-  private void applyWindowLayout(float x, float y, float w, float h) {
-    applyWindowLayout(x, y, w, h, nextLayoutCond());
   }
 
   private void snapshotLogBuffer() {
@@ -928,36 +974,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
           graphHeight);
     }
     ImGui.end();
-  }
-
-  /** Returns the most-recent sample written into {@code buffer}, accounting for ring rollover. */
-  private float latestSample(float[] buffer) {
-    int count = getPerfCount();
-    if (count == 0 || buffer.length == 0) {
-      return 0f;
-    }
-    int head = getPerfHead();
-    int last = (head - 1 + buffer.length) % buffer.length;
-    return buffer[last];
-  }
-
-  /**
-   * Returns the maximum value across the first {@code count} elements of {@code buf}.
-   *
-   * <p>Used to drive the per-series Y-axis scale max without allocating a sorted copy of the ring buffer.
-   * Returns {@code 0} when {@code count} is zero.
-   *
-   * @param buf The buffer to search.
-   * @param count The number of elements to consider.
-   */
-  private static float ringMax(float[] buf, int count) {
-    float m = 0f;
-    for (int i = 0; i < count; i++) {
-      if (buf[i] > m) {
-        m = buf[i];
-      }
-    }
-    return m;
   }
 
   private void drawControlsWindow() {
@@ -1153,28 +1169,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Refreshes the UTF-8 scratch from the live ImGui buffer when it has content; when empty, keeps
-   * the previous scratch if {@code clickedRun} is true so Run can still read the last typed line.
-   */
-  private void updateCommandLineScratchAfterInput(boolean clickedRun) {
-    byte[] src = commandInputBuffer.getData();
-    int cap = Math.min(src.length, commandLineUtf8Scratch.length);
-    int i = 0;
-    for (; i < cap && src[i] != 0; i++) {
-      commandLineUtf8Scratch[i] = src[i];
-    }
-    if (i > 0) {
-      commandLineUtf8ScratchLen = i;
-    } else if (!clickedRun) {
-      commandLineUtf8ScratchLen = 0;
-    }
-  }
-
-  private String decodeCommandLineScratchUtf8() {
-    return new String(commandLineUtf8Scratch, 0, commandLineUtf8ScratchLen, StandardCharsets.UTF_8).trim();
-  }
-
-  /**
    * Renders the runtime command line. Pressing Enter routes the input through
    * {@link Flixel#debug Flixel.debug.executeCommand(...)}, so the same parser is shared with
    * code-driven invocations.
@@ -1222,37 +1216,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       focusCommandLine = true;
     }
     ImGui.end();
-  }
-
-  /**
-   * Walks the persistent command history from an {@code InputText} history callback. {@code direction}
-   * is {@code -1} for Up (older) or {@code +1} for Down (newer). Wrapping is disabled so Down past the
-   * newest clears the buffer.
-   */
-  private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
-    Array<String> history = Flixel.debug.getCommandHistory();
-    if (history.size == 0) {
-      return;
-    }
-    if (commandHistoryCursor < 0) {
-      commandHistoryCursor = history.size;
-    }
-    int next = commandHistoryCursor + direction;
-    if (next < 0) {
-      next = 0;
-    } else if (next > history.size) {
-      next = history.size;
-    }
-    commandHistoryCursor = next;
-    String line = next == history.size ? "" : history.get(next);
-    data.deleteChars(0, data.getBufTextLen());
-    if (!line.isEmpty()) {
-      data.insertChars(0, line);
-    }
-    int end = data.getBufTextLen();
-    data.setSelectionStart(end);
-    data.setSelectionEnd(end);
-    data.setCursorPos(end);
   }
 
   /**
@@ -1333,14 +1296,56 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Renders {@code message} colored by the supplied {@code [r, g, b, a]} tuple. Uses
-   * {@link ImGui#textUnformatted(String)} so a literal {@code %} (for example in {@code "67%"}) is not
-   * interpreted as a printf format sequence by the native Dear ImGui binding.
+   * Refreshes the UTF-8 scratch from the live ImGui buffer when it has content; when empty, keeps
+   * the previous scratch if {@code clickedRun} is true so Run can still read the last typed line.
    */
-  private static void text(float[] color, String message) {
-    ImGui.pushStyleColor(ImGuiCol.Text, color[0], color[1], color[2], color[3]);
-    ImGui.textUnformatted(message != null ? message : "");
-    ImGui.popStyleColor();
+  private void updateCommandLineScratchAfterInput(boolean clickedRun) {
+    byte[] src = commandInputBuffer.getData();
+    int cap = Math.min(src.length, commandLineUtf8Scratch.length);
+    int i = 0;
+    for (; i < cap && src[i] != 0; i++) {
+      commandLineUtf8Scratch[i] = src[i];
+    }
+    if (i > 0) {
+      commandLineUtf8ScratchLen = i;
+    } else if (!clickedRun) {
+      commandLineUtf8ScratchLen = 0;
+    }
+  }
+
+  private String decodeCommandLineScratchUtf8() {
+    return new String(commandLineUtf8Scratch, 0, commandLineUtf8ScratchLen, StandardCharsets.UTF_8).trim();
+  }
+
+  /**
+   * Walks the persistent command history from an {@code InputText} history callback. {@code direction}
+   * is {@code -1} for Up (older) or {@code +1} for Down (newer). Wrapping is disabled so Down past the
+   * newest clears the buffer.
+   */
+  private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
+    Array<String> history = Flixel.debug.getCommandHistory();
+    if (history.size == 0) {
+      return;
+    }
+    if (commandHistoryCursor < 0) {
+      commandHistoryCursor = history.size;
+    }
+    int next = commandHistoryCursor + direction;
+    if (next < 0) {
+      next = 0;
+    } else if (next > history.size) {
+      next = history.size;
+    }
+    commandHistoryCursor = next;
+    String line = next == history.size ? "" : history.get(next);
+    data.deleteChars(0, data.getBufTextLen());
+    if (!line.isEmpty()) {
+      data.insertChars(0, line);
+    }
+    int end = data.getBufTextLen();
+    data.setSelectionStart(end);
+    data.setSelectionEnd(end);
+    data.setCursorPos(end);
   }
 
   private boolean isLogLevelVisible(FlixelLogLevel level) {
@@ -1351,22 +1356,14 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     };
   }
 
-  private static float[] colorForLevel(FlixelLogLevel level) {
-    return switch (level) {
-    case INFO -> COLOR_INFO;
-    case WARN -> COLOR_WARN;
-    case ERROR -> COLOR_ERROR;
-    };
-  }
-
-  /**
-   * Formats {@code value} with one decimal place. Allocates a small {@link String} but only runs
-   * twice in the stats panel each time the cached stats refresh (every half-second by default),
-   * so the cost is negligible.
-   */
-  private static String formatOneDecimal(float value) {
-    int whole = (int) value;
-    int tenths = Math.abs((int) ((value - whole) * 10f));
-    return whole + "." + tenths;
+  /** Returns the most-recent sample written into {@code buffer}, accounting for ring rollover. */
+  private float latestSample(float[] buffer) {
+    int count = getPerfCount();
+    if (count == 0 || buffer.length == 0) {
+      return 0f;
+    }
+    int head = getPerfHead();
+    int last = (head - 1 + buffer.length) % buffer.length;
+    return buffer[last];
   }
 }
