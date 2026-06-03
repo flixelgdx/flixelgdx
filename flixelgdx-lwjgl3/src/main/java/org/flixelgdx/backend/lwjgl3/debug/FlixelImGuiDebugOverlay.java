@@ -215,6 +215,15 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private int commandLineUtf8ScratchLen;
 
   private float textureViewerZoom = 1f;
+
+  // Per-series Y-axis scale maxima for the performance graphs. Each value grows immediately when a
+  // new peak is observed and decays slowly toward the current ring-buffer max so the graphs stay
+  // visually stable without sudden rescaling when old extreme samples roll off the ring.
+  private float perfScaleMaxFps = 1f;
+  private float perfScaleMaxFrameMs = 1f;
+  private float perfScaleMaxHeapMb = 1f;
+  private float perfScaleMaxNativeMb = 1f;
+
   // Reused float buffer fed to ImGui.sliderFloat() so the zoom control stays allocation-free.
   private final float[] textureViewerZoomBuf = new float[1];
 
@@ -418,15 +427,13 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         Input.Keys.SHIFT_RIGHT,
         Input.Keys.SYM,
         Input.Keys.CAPS_LOCK,
-        Input.Keys.NUM_LOCK,
         Input.Keys.SCROLL_LOCK,
         Input.Keys.PAUSE,
         Input.Keys.PRINT_SCREEN,
         Input.Keys.UNKNOWN,
         Input.Keys.POWER,
         Input.Keys.BUTTON_MODE,
-        Input.Keys.MEDIA_PLAY_PAUSE ->
-      true;
+        Input.Keys.MEDIA_PLAY_PAUSE -> true;
     default -> false;
     };
   }
@@ -850,8 +857,13 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   /**
    * Real-time graphs of the perf ring buffers owned by {@link FlixelDebugOverlay}. Each graph is
-   * a simple {@link ImGui#plotLines(String, float[], int)} call against the parent's primitive
-   * sample arrays, so we never copy the data into a temporary buffer.
+   * a {@link ImGui#plotLines(String, float[], int)} call against the parent's primitive sample
+   * arrays, so we never copy the data into a temporary buffer.
+   *
+   * <p>The Y-axis for each series uses a per-series scale max that grows immediately when a new
+   * peak appears and decays slowly toward the current ring-buffer max (15% headroom, 0.3% decay
+   * per frame). This keeps the graphs visually stable and prevents sudden rescaling when old
+   * extreme samples roll off the ring and the auto-scale would otherwise jump.
    */
   private void drawPerformanceWindow() {
     if (!showPerformanceWindow.get()) {
@@ -875,42 +887,43 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return;
     }
 
+    // Grow the per-series scale max when new peaks arrive; decay it slowly (0.3% per frame)
+    // toward the current ring-buffer max so the Y-axis never jumps when old extreme samples
+    // roll off. The 1.15x headroom keeps the latest value from sitting flush at the top edge.
+    perfScaleMaxFps = Math.max(ringMax(getPerfFps(), count) * 1.15f, perfScaleMaxFps * 0.997f);
+    perfScaleMaxFrameMs = Math.max(ringMax(getPerfFrameMs(), count) * 1.15f, perfScaleMaxFrameMs * 0.997f);
+    perfScaleMaxHeapMb = Math.max(ringMax(getPerfHeapMb(), count) * 1.15f, perfScaleMaxHeapMb * 0.997f);
+    perfScaleMaxNativeMb = Math.max(ringMax(getPerfNativeMb(), count) * 1.15f, perfScaleMaxNativeMb * 0.997f);
+
     float graphWidth = ImGui.getContentRegionAvailX();
     float graphHeight = 60f;
-
-    // Float.MAX_VALUE asks Dear ImGui to auto-scale each graph from the sample min/max. Passing
-    // 0f, 0f pins both ends at zero, which produces flat lines whenever every sample is > 0
-    // (FPS, heap, frame time, etc.).
-    float scaleAutoMin = Float.MAX_VALUE;
-    float scaleAutoMax = Float.MAX_VALUE;
 
     // FPS plot.
     text(COLOR_KEY, "FPS");
     ImGui.sameLine();
     text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfFps()))));
-    ImGui.plotLines("##fps", getPerfFps(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth, graphHeight);
+    ImGui.plotLines("##fps", getPerfFps(), count, offset, "", 0f, perfScaleMaxFps, graphWidth, graphHeight);
 
     // Frame time plot.
     text(COLOR_KEY, "Frame (ms)");
     ImGui.sameLine();
     text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfFrameMs())));
-    ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth,
-        graphHeight);
+    ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", 0f, perfScaleMaxFrameMs, graphWidth, graphHeight);
 
     // Java heap plot.
     text(COLOR_KEY, "Heap (MB)");
     ImGui.sameLine();
     text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfHeapMb())));
-    ImGui.plotLines("##heap", getPerfHeapMb(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth, graphHeight);
+    ImGui.plotLines("##heap", getPerfHeapMb(), count, offset, "", 0f, perfScaleMaxHeapMb, graphWidth, graphHeight);
 
-    // Native heap plot. Skip if libGDX always returns zero on this platform; an entirely-flat zero
+    // Native heap plot. Skip if libGDX always returns zero on this platform; an entirely flat zero
     // line just wastes vertical space.
     float nativePeek = latestSample(getPerfNativeMb());
     if (nativePeek > 0f) {
       text(COLOR_KEY, "Native (MB)");
       ImGui.sameLine();
       text(COLOR_VALUE, formatOneDecimal(nativePeek));
-      ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth,
+      ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", 0f, perfScaleMaxNativeMb, graphWidth,
           graphHeight);
     }
     ImGui.end();
@@ -925,6 +938,25 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     int head = getPerfHead();
     int last = (head - 1 + buffer.length) % buffer.length;
     return buffer[last];
+  }
+
+  /**
+   * Returns the maximum value across the first {@code count} elements of {@code buf}.
+   *
+   * <p>Used to drive the per-series Y-axis scale max without allocating a sorted copy of the ring buffer.
+   * Returns {@code 0} when {@code count} is zero.
+   *
+   * @param buf The buffer to search.
+   * @param count The number of elements to consider.
+   */
+  private static float ringMax(float[] buf, int count) {
+    float m = 0f;
+    for (int i = 0; i < count; i++) {
+      if (buf[i] > m) {
+        m = buf[i];
+      }
+    }
+    return m;
   }
 
   private void drawControlsWindow() {
