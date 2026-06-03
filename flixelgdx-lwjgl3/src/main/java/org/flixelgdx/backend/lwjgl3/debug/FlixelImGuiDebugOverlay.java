@@ -389,6 +389,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawConsoleWindow();
     drawCommandWindow();
     drawTextureWindow();
+    onDrawExtraWindows();
 
     // The forced-layout pass only lasts one frame; subsequent frames use FirstUseEver so the
     // user's manual window moves stick.
@@ -467,6 +468,74 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (logAutoScroll.get()) {
       scrollLogToBottom = true;
     }
+  }
+
+  /**
+   * Hook for subclasses that want to add extra Dear ImGui windows to the overlay.
+   *
+   * <p>Called once per frame from {@link #drawUI()} after all built-in panels have been submitted
+   * ({@code drawStatsWindow()}, {@code drawPerformanceWindow()}, and so on) but before
+   * {@code ImGui.render()} is called. At the call site the Dear ImGui frame is open and a
+   * full-screen passthrough dockspace is active, so you can call any combination of
+   * {@code ImGui.begin()} / {@code ImGui.end()} blocks here and they will be docked or floated
+   * exactly like the built-in windows.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * public class MyOverlay extends FlixelImGuiDebugOverlay {
+   *   protected void onDrawExtraWindows() {
+   *     if (ImGui.begin("My Custom Panel")) {
+   *       ImGui.textUnformatted("Hello from a custom panel!");
+   *     }
+   *     ImGui.end();
+   *   }
+   * }
+   * }</pre>
+   */
+  protected void onDrawExtraWindows() {
+  }
+
+  /**
+   * Hook for subclasses that want to add extra entries to the main menu bar.
+   *
+   * <p>Called from {@code drawMainMenuBar()} after the built-in "Debug" and "Game" menus have been
+   * added and before {@code ImGui.endMainMenuBar()} is called. The menu bar is open and
+   * ready to accept additional {@code ImGui.beginMenu()} / {@code ImGui.endMenu()} blocks.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * public class MyOverlay extends FlixelImGuiDebugOverlay {
+   *   protected void onDrawMainMenuBarExtras() {
+   *     if (ImGui.beginMenu("My Tools")) {
+   *       if (ImGui.menuItem("Spawn enemy")) { spawnEnemy(); }
+   *       ImGui.endMenu();
+   *     }
+   *   }
+   * }
+   * }</pre>
+   */
+  protected void onDrawMainMenuBarExtras() {
+  }
+
+  /**
+   * Hook for subclasses that want to append extra rows to the Stats panel.
+   *
+   * <p>Called from {@code drawStatsWindow()} after all built-in stat rows (FPS, heap, cameras,
+   * and so on) have been drawn and before {@code ImGui.end()} closes the window. You can call
+   * {@code ImGui.separator()}, {@code ImGui.textUnformatted()}, or any other Dear ImGui calls
+   * to append more content to the window.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * public class MyOverlay extends FlixelImGuiDebugOverlay {
+   *   protected void onDrawStatsExtras() {
+   *     ImGui.separator();
+   *     ImGui.textUnformatted("My custom stat: " + myValue);
+   *   }
+   * }
+   * }</pre>
+   */
+  protected void onDrawStatsExtras() {
   }
 
   private static long resolveGlfwWindowHandle() {
@@ -852,6 +921,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       }
       ImGui.endMenu();
     }
+    onDrawMainMenuBarExtras();
     ImGui.endMainMenuBar();
   }
 
@@ -895,6 +965,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       drawStatRow("  Scroll Y", cam.scrollY);
       drawStatRow("  Zoom", cam.getZoom());
     }
+    onDrawStatsExtras();
     ImGui.end();
   }
 
