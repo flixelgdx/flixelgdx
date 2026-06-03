@@ -1,12 +1,13 @@
 # FlixelGDX
 
-<img src="docs/readme/flxgdx ii.png" width="400" alt="FlixelGDX logo">
+<img src="docs/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
+
+### Website: [flixelgdx.org](https://flixelgdx.org)
+### Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)
 
 [![CI](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml)
 [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## [flixelgdx.org](https://flixelgdx.org)
 
 FlixelGDX is a featherweight powerhouse of a Java game framework built on top of [libGDX](https://libgdx.com/). It brings a clean, state-based game architecture inspired by [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/) into the Java ecosystem, while keeping the full platform reach and rendering power of libGDX underneath.
 
@@ -55,7 +56,6 @@ people with a lot of money and an expensive gaming rig.
 - **Debug overlay** - `FlixelImGuiDebugOverlay` (desktop) provides a live, in-game debug panel powered by Dear ImGui.
 - **Logging** - `FlixelLogger` with accurate stack traces via a compile-time bytecode plugin, multiple log levels, console and file sinks.
 - **Multi-platform** - desktop via LWJGL3 and browser via TeaVM. (Android and iOS support is in progress!)
-- **and much more!**
 
 ---
 
@@ -191,7 +191,7 @@ for (int i = 0; i < 10; i++) {
 add(enemies); // update() and draw() propagate to all members automatically.
 ```
 
-**`FlixelSpriteGroup`** (a concrete `FlixelBasicGroup`) gives members the full FlixelGDX lifecycle automatically and works with `Flixel.overlap` and `Flixel.collide`:
+**`FlixelSpriteGroup`** gives members the full FlixelGDX lifecycle automatically and works with `Flixel.overlap` and `Flixel.collide`:
 
 ```java
 // FlixelSpriteGroup handles update, draw, and destroy for every member.
@@ -220,10 +220,14 @@ FlixelGDX is built for low memory usage:
 - Indexed `for` loops are used throughout the framework to avoid iterator allocation.
 - Internal class field layouts follow strict padding rules to minimize struct size.
 
-When compiled to a native binary with **GraalVM Native Image**, the JVM heap for a typical or even complex FlixelGDX game sits at roughly **40-50 MB of system RAM**.
+The JVM heap for a typical or even complex FlixelGDX game sits at roughly **4-8MB on average**.
+
+It gets even better. When compiled to a native binary with GraalVM Native Image, the total system RAM (including the embedded garbage collector Graal provides) stays around **40-50MB of system RAM**.
+
+For context, a similarly sized game built on raw libGDX typically uses 30-80MB of managed heap before significant game logic is added. A similarly sized HaxeFlixel game commonly reaches several hundred megabytes of system RAM, because HaxeFlixel tends to keep assets (textures, audio) resident in managed memory rather than properly handing them off to native buffers.
 
 > [!NOTE]
-> The 40-50 MB figure covers managed heap only. Native memory - which includes GPU textures, audio tracks, and other OS-managed resources - is outside the JVM heap and outside what the framework can control. How efficiently your game uses native memory depends entirely on how big your assets are and managed.
+> The 4-8MB figure covers managed heap only. Native memory - which includes GPU textures, audio tracks, and other OS-managed resources - is outside the JVM heap and outside what the framework can control. How efficiently your game uses native memory depends entirely on how big your assets are and managed.
 
 ---
 
