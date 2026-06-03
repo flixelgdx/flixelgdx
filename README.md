@@ -1,12 +1,13 @@
 # FlixelGDX
 
-<img src="docs/readme/flxgdx ii.png" width="400" alt="FlixelGDX logo">
+<img src="docs/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
+
+### Website: [flixelgdx.org](https://flixelgdx.org)
+### Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)
 
 [![CI](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml)
 [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## [flixelgdx.org](https://flixelgdx.org)
 
 FlixelGDX is a featherweight powerhouse of a Java game framework built on top of [libGDX](https://libgdx.com/). It brings a clean, state-based game architecture inspired by [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/) into the Java ecosystem, while keeping the full platform reach and rendering power of libGDX underneath.
 
