@@ -56,7 +56,6 @@ people with a lot of money and an expensive gaming rig.
 - **Debug overlay** - `FlixelImGuiDebugOverlay` (desktop) provides a live, in-game debug panel powered by Dear ImGui.
 - **Logging** - `FlixelLogger` with accurate stack traces via a compile-time bytecode plugin, multiple log levels, console and file sinks.
 - **Multi-platform** - desktop via LWJGL3 and browser via TeaVM. (Android and iOS support is in progress!)
-- **and much more!**
 
 ---
 
