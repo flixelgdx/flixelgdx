@@ -82,12 +82,45 @@ public class FlixelIOSLauncher {
    * @return The configured {@link IOSApplication} to return from {@code createApplication()}.
    */
   public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
+    return launch(game, runtimeMode, null);
+  }
+
+  /**
+   * Launches the iOS version of the game with an optional pre-initialization callback.
+   *
+   * <p>{@code onBeforeInitialize} fires after all default FlixelGDX backend services (alerter,
+   * audio, etc.) have been registered but before {@link Flixel#initialize} is called. Use it to
+   * override any of those defaults without needing to duplicate the rest of the launcher wiring:
+   *
+   * <pre>{@code
+   * public class MyIOSLauncher extends IOSApplication.Delegate {
+   *   protected IOSApplication createApplication() {
+   *     return FlixelIOSLauncher.launch(
+   *         new MyGame("My Game", 800, 600, new InitialState()),
+   *         FlixelRuntimeMode.DEBUG,
+   *         () -> Flixel.setAlerter(myCustomAlerter)
+   *     );
+   *   }
+   * }
+   * }</pre>
+   *
+   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
+   * @param onBeforeInitialize Optional callback invoked just before {@link Flixel#initialize}.
+   *     Pass {@code null} to skip.
+   * @return The configured {@link IOSApplication} to return from {@code createApplication()}.
+   */
+  public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
+      Runnable onBeforeInitialize) {
     Flixel.setAlerter(new FlixelIOSAlerter());
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
     Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    if (onBeforeInitialize != null) {
+      onBeforeInitialize.run();
+    }
     Flixel.initialize(game);
 
     IOSApplicationConfiguration configuration = new IOSApplicationConfiguration();

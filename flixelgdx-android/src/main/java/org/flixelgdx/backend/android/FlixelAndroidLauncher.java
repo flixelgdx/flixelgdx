@@ -65,12 +65,47 @@ public class FlixelAndroidLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode) {
+    launch(game, activity, runtimeMode, null);
+  }
+
+  /**
+   * Launches the Android version of the game with an optional pre-initialization callback.
+   *
+   * <p>{@code onBeforeInitialize} fires after all default FlixelGDX backend services (alerter,
+   * audio, etc.) have been registered but before {@link Flixel#initialize} is called. Use it to
+   * override any of those defaults without needing to duplicate the rest of the launcher wiring:
+   *
+   * <pre>{@code
+   * public class MyAndroidLauncher extends AndroidApplication {
+   *   protected void onCreate(Bundle savedInstanceState) {
+   *     super.onCreate(savedInstanceState);
+   *     FlixelAndroidLauncher.launch(
+   *         new MyGame("My Game", 800, 600, new InitialState()),
+   *         this,
+   *         FlixelRuntimeMode.RELEASE,
+   *         () -> Flixel.setAlerter(myCustomAlerter)
+   *     );
+   *   }
+   * }
+   * }</pre>
+   *
+   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
+   * @param activity The Android application activity (must extend {@link AndroidApplication}).
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
+   * @param onBeforeInitialize Optional callback invoked just before {@link Flixel#initialize}.
+   *     Pass {@code null} to skip.
+   */
+  public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
+      Runnable onBeforeInitialize) {
     Flixel.setAlerter(new FlixelAndroidAlerter(activity));
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
     Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    if (onBeforeInitialize != null) {
+      onBeforeInitialize.run();
+    }
     Flixel.initialize(game);
 
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
