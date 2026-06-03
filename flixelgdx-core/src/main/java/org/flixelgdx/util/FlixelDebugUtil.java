@@ -45,8 +45,7 @@ import java.util.function.Consumer;
  */
 public final class FlixelDebugUtil {
 
-  private FlixelDebugUtil() {
-  }
+  private FlixelDebugUtil() {}
 
   /**
    * Recursively counts all active members in the current state's object tree. A member is

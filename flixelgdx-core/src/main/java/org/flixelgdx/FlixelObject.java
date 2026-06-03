@@ -1144,7 +1144,6 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     public static final int CEILING = UP;
     public static final int WALL = LEFT | RIGHT;
 
-    private DirectionFlags() {
-    }
+    private DirectionFlags() {}
   }
 }

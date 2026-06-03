@@ -40,6 +40,5 @@ public final class FlixelMathUtil {
     return Math.round(value * scale) / scale;
   }
 
-  private FlixelMathUtil() {
-  }
+  private FlixelMathUtil() {}
 }

@@ -51,8 +51,7 @@ import java.util.Locale;
  */
 public final class FlixelGamepadInput {
 
-  private FlixelGamepadInput() {
-  }
+  private FlixelGamepadInput() {}
 
   public static final int NONE = -2;
   public static final int ANY = -1;

@@ -126,8 +126,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     }
   };
 
-  public FlixelKeyInputManager() {
-  }
+  public FlixelKeyInputManager() {}
 
   /**
    * Returns the input processor that tracks key state. Add this first to an

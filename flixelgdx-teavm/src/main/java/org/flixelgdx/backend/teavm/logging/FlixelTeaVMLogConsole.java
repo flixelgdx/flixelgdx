@@ -38,8 +38,7 @@ import org.teavm.jso.JSBody;
  */
 public final class FlixelTeaVMLogConsole {
 
-  private FlixelTeaVMLogConsole() {
-  }
+  private FlixelTeaVMLogConsole() {}
 
   /**
    * Forwards one structured log to JavaScript. Matches {@code FlixelLogConsoleSink#emit} for use

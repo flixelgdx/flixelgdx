@@ -37,8 +37,7 @@ public final class FlixelEase {
   private static final float ELASTIC_AMPLITUDE = 1;
   private static final float ELASTIC_PERIOD = 0.4f;
 
-  private FlixelEase() {
-  }
+  private FlixelEase() {}
 
   public static float linear(float t) {
     return t;

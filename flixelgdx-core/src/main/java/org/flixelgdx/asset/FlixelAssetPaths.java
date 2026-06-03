@@ -40,8 +40,7 @@ import java.util.Objects;
  */
 public final class FlixelAssetPaths {
 
-  private FlixelAssetPaths() {
-  }
+  private FlixelAssetPaths() {}
 
   /**
    * Returns the same path with redundant slashes collapsed and backslashes converted to forward slashes.

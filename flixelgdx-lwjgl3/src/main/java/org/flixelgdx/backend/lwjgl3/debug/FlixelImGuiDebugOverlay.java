@@ -136,6 +136,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float perfScaleMaxFrameMs = 1f;
   private float perfScaleMaxHeapMb = 1f;
   private float perfScaleMaxNativeMb = 1f;
+  private float perfScaleMaxRenderCalls = 1f;
 
   private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
   private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
@@ -388,6 +389,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawConsoleWindow();
     drawCommandWindow();
     drawTextureWindow();
+    onDrawImGui();
 
     // The forced-layout pass only lasts one frame; subsequent frames use FirstUseEver so the
     // user's manual window moves stick.
@@ -467,6 +469,49 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       scrollLogToBottom = true;
     }
   }
+
+  /**
+   * Hook for subclasses that want to add custom Dear ImGui content to the overlay.
+   *
+   * <p>Called once per frame from {@link #drawUI()} after all built-in panels have been submitted
+   * but before {@code ImGui.render()} is called. The Dear ImGui frame is fully open, so any
+   * standard Dear ImGui call is valid here.
+   *
+   * <p>Because Dear ImGui is an immediate-mode API, a second {@code ImGui.begin()} call with the
+   * same window title as an existing panel appends content to that panel rather than creating a
+   * new one. This means a single override can both add new windows and inject content into any
+   * built-in window without needing a separate hook for each one:
+   *
+   * <pre>{@code
+   * public class MyOverlay extends FlixelImGuiDebugOverlay {
+   *
+   *   protected void onDrawImGui() {
+   *     // New standalone window.
+   *     if (ImGui.begin("My Panel")) {
+   *       ImGui.textUnformatted("Custom content here.");
+   *     }
+   *     ImGui.end();
+   *
+   *     // Append extra rows to the built-in Stats panel.
+   *     if (ImGui.begin("Stats")) {
+   *       ImGui.separator();
+   *       ImGui.textUnformatted("My stat: " + myValue);
+   *     }
+   *     ImGui.end();
+   *
+   *     // Add a menu to the main menu bar.
+   *     if (ImGui.beginMainMenuBar()) {
+   *       if (ImGui.beginMenu("My Tools")) {
+   *         if (ImGui.menuItem("Spawn enemy")) { spawnEnemy(); }
+   *         ImGui.endMenu();
+   *       }
+   *       ImGui.endMainMenuBar();
+   *     }
+   *   }
+   * }
+   * }</pre>
+   */
+  protected void onDrawImGui() {}
 
   private static long resolveGlfwWindowHandle() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
@@ -867,6 +912,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawStatRow("Heap (MB)", cachedHeapMegabytes);
     drawStatRow("Native (MB)", cachedNativeMegabytes);
     drawStatRow("Active members", cachedObjectCount);
+    drawStatRow("Assets loaded", cachedAssetCount);
+    drawStatRow("Render calls", cachedRenderCalls);
 
     ImGui.separator();
     boolean paused = Flixel.isPaused();
@@ -887,6 +934,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       text(COLOR_VALUE, "0 (none)");
     } else {
       text(COLOR_VALUE, (inspect + 1) + " / " + camCount);
+      FlixelCamera cam = cams.get(inspect);
+      drawStatRow("  Scroll X", cam.scrollX);
+      drawStatRow("  Scroll Y", cam.scrollY);
+      drawStatRow("  Zoom", cam.getZoom());
     }
     ImGui.end();
   }
@@ -942,6 +993,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     perfScaleMaxFrameMs = Math.max(ringMax(getPerfFrameMs(), count) * 1.15f, perfScaleMaxFrameMs * 0.997f);
     perfScaleMaxHeapMb = Math.max(ringMax(getPerfHeapMb(), count) * 1.15f, perfScaleMaxHeapMb * 0.997f);
     perfScaleMaxNativeMb = Math.max(ringMax(getPerfNativeMb(), count) * 1.15f, perfScaleMaxNativeMb * 0.997f);
+    perfScaleMaxRenderCalls = Math.max(ringMax(getPerfRenderCalls(), count) * 1.15f, perfScaleMaxRenderCalls * 0.997f);
 
     float graphWidth = ImGui.getContentRegionAvailX();
     float graphHeight = 60f;
@@ -974,6 +1026,14 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", 0f, perfScaleMaxNativeMb, graphWidth,
           graphHeight);
     }
+
+    // Render calls plot.
+    text(COLOR_KEY, "Render calls");
+    ImGui.sameLine();
+    text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfRenderCalls()))));
+    ImGui.plotLines("##rendercalls", getPerfRenderCalls(), count, offset, "", 0f, perfScaleMaxRenderCalls, graphWidth,
+        graphHeight);
+
     ImGui.end();
   }
 

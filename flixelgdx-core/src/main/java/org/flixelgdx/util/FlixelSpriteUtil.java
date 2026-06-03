@@ -60,8 +60,7 @@ import java.util.Objects;
  */
 public final class FlixelSpriteUtil {
 
-  private FlixelSpriteUtil() {
-  }
+  private FlixelSpriteUtil() {}
 
   private static final Vector2 TMP_V2 = new Vector2();
 

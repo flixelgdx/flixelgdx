@@ -315,6 +315,11 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   @Override
+  public int getLoadedAssetCount() {
+    return manager.getLoadedAssets();
+  }
+
+  @Override
   public boolean isLoaded(@NotNull String fileName) {
     return manager
         .isLoaded(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));

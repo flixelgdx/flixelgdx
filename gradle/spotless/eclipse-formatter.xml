@@ -331,6 +331,7 @@
   <setting id="org.eclipse.jdt.core.formatter.keep_code_on_same_line_as_closing_brace_for_empty_type_declaration" value="false"/>
   <setting id="org.eclipse.jdt.core.formatter.keep_else_statement_on_same_line" value="false"/>
   <setting id="org.eclipse.jdt.core.formatter.keep_empty_array_initializer_on_one_line" value="false"/>
+  <setting id="org.eclipse.jdt.core.formatter.keep_method_body_on_one_line" value="one_line_if_empty"/>
   <setting id="org.eclipse.jdt.core.formatter.keep_simple_class_on_one_line" value="false"/>
   <setting id="org.eclipse.jdt.core.formatter.keep_simple_getter_setter_on_one_line" value="false"/>
   <setting id="org.eclipse.jdt.core.formatter.keep_then_statement_on_same_line" value="false"/>

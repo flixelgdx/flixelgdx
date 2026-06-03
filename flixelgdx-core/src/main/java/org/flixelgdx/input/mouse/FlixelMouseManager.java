@@ -139,8 +139,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
     }
   };
 
-  public FlixelMouseManager() {
-  }
+  public FlixelMouseManager() {}
 
   /**
    * Replaces the active {@link FlixelMouseIconManager}, for example with an LWJGL3 or web backend.

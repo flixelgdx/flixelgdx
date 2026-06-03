@@ -293,6 +293,5 @@ public final class FlixelRuntimeUtil {
     UNKNOWN
   }
 
-  private FlixelRuntimeUtil() {
-  }
+  private FlixelRuntimeUtil() {}
 }
