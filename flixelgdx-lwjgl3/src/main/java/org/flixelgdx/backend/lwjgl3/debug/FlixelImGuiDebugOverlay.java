@@ -389,7 +389,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawConsoleWindow();
     drawCommandWindow();
     drawTextureWindow();
-    onDrawExtraWindows();
+    onDrawImGui();
 
     // The forced-layout pass only lasts one frame; subsequent frames use FirstUseEver so the
     // user's manual window moves stick.
@@ -471,71 +471,46 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Hook for subclasses that want to add extra Dear ImGui windows to the overlay.
+   * Hook for subclasses that want to add custom Dear ImGui content to the overlay.
    *
    * <p>Called once per frame from {@link #drawUI()} after all built-in panels have been submitted
-   * ({@code drawStatsWindow()}, {@code drawPerformanceWindow()}, and so on) but before
-   * {@code ImGui.render()} is called. At the call site the Dear ImGui frame is open and a
-   * full-screen passthrough dockspace is active, so you can call any combination of
-   * {@code ImGui.begin()} / {@code ImGui.end()} blocks here and they will be docked or floated
-   * exactly like the built-in windows.
+   * but before {@code ImGui.render()} is called. The Dear ImGui frame is fully open, so any
+   * standard Dear ImGui call is valid here.
    *
-   * <p>Example usage:
+   * <p>Because Dear ImGui is an immediate-mode API, a second {@code ImGui.begin()} call with the
+   * same window title as an existing panel appends content to that panel rather than creating a
+   * new one. This means a single override can both add new windows and inject content into any
+   * built-in window without needing a separate hook for each one:
+   *
    * <pre>{@code
    * public class MyOverlay extends FlixelImGuiDebugOverlay {
-   *   protected void onDrawExtraWindows() {
-   *     if (ImGui.begin("My Custom Panel")) {
-   *       ImGui.textUnformatted("Hello from a custom panel!");
+   *   protected void onDrawImGui() {
+   *     // New standalone window.
+   *     if (ImGui.begin("My Panel")) {
+   *       ImGui.textUnformatted("Custom content here.");
    *     }
    *     ImGui.end();
-   *   }
-   * }
-   * }</pre>
-   */
-  protected void onDrawExtraWindows() {
-  }
-
-  /**
-   * Hook for subclasses that want to add extra entries to the main menu bar.
    *
-   * <p>Called from {@code drawMainMenuBar()} after the built-in "Debug" and "Game" menus have been
-   * added and before {@code ImGui.endMainMenuBar()} is called. The menu bar is open and
-   * ready to accept additional {@code ImGui.beginMenu()} / {@code ImGui.endMenu()} blocks.
+   *     // Append extra rows to the built-in Stats panel.
+   *     if (ImGui.begin("Stats")) {
+   *       ImGui.separator();
+   *       ImGui.textUnformatted("My stat: " + myValue);
+   *     }
+   *     ImGui.end();
    *
-   * <p>Example usage:
-   * <pre>{@code
-   * public class MyOverlay extends FlixelImGuiDebugOverlay {
-   *   protected void onDrawMainMenuBarExtras() {
-   *     if (ImGui.beginMenu("My Tools")) {
-   *       if (ImGui.menuItem("Spawn enemy")) { spawnEnemy(); }
-   *       ImGui.endMenu();
+   *     // Add a menu to the main menu bar.
+   *     if (ImGui.beginMainMenuBar()) {
+   *       if (ImGui.beginMenu("My Tools")) {
+   *         if (ImGui.menuItem("Spawn enemy")) { spawnEnemy(); }
+   *         ImGui.endMenu();
+   *       }
+   *       ImGui.endMainMenuBar();
    *     }
    *   }
    * }
    * }</pre>
    */
-  protected void onDrawMainMenuBarExtras() {
-  }
-
-  /**
-   * Hook for subclasses that want to append extra rows to the Stats panel.
-   *
-   * <p>Called from {@code drawStatsWindow()} after all built-in stat rows (FPS, heap, cameras,
-   * and so on) have been drawn and before {@code ImGui.end()} closes the window. You can call
-   * {@code ImGui.separator()}, {@code ImGui.textUnformatted()}, or any other Dear ImGui calls
-   * to append more content to the window.
-   *
-   * <p>Example usage:
-   * <pre>{@code
-   * public class MyOverlay extends FlixelImGuiDebugOverlay {
-   *   protected void onDrawStatsExtras() {
-   *     ImGui.separator();
-   *     ImGui.textUnformatted("My custom stat: " + myValue);
-   *   }
-   * }
-   * }</pre>
-   */
-  protected void onDrawStatsExtras() {
+  protected void onDrawImGui() {
   }
 
   private static long resolveGlfwWindowHandle() {
@@ -921,7 +896,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       }
       ImGui.endMenu();
     }
-    onDrawMainMenuBarExtras();
     ImGui.endMainMenuBar();
   }
 
@@ -965,7 +939,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       drawStatRow("  Scroll Y", cam.scrollY);
       drawStatRow("  Zoom", cam.getZoom());
     }
-    onDrawStatsExtras();
     ImGui.end();
   }
 
