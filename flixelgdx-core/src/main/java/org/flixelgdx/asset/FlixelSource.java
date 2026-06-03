@@ -73,10 +73,8 @@ public interface FlixelSource<T> {
   default T require(@NotNull FlixelAssetManager assets) {
     if (!isLoaded(assets)) {
       throw new IllegalStateException(
-        "Asset not loaded: \"" + getAssetKey() + "\" (" + getType().getSimpleName() + ")."
-      );
+          "Asset not loaded: \"" + getAssetKey() + "\" (" + getType().getSimpleName() + ").");
     }
     return assets.get(getAssetKey(), getType());
   }
 }
-

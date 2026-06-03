@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.backend.common.audio;
 
+import org.flixelgdx.audio.FlixelSoundBackend;
+
 import games.rednblack.miniaudio.MAGroup;
 import games.rednblack.miniaudio.MANode;
 import games.rednblack.miniaudio.MASound;
@@ -30,7 +32,6 @@ import games.rednblack.miniaudio.MiniAudio;
 import games.rednblack.miniaudio.effect.MADelayNode;
 import games.rednblack.miniaudio.effect.MAReverbNode;
 import games.rednblack.miniaudio.filter.MALowPassFilter;
-import org.flixelgdx.audio.FlixelSoundBackend;
 
 /**
  * JVM-family implementation of {@link FlixelSoundBackend.Factory} backed by the MiniAudio native

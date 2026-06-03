@@ -23,13 +23,12 @@
  */
 package org.flixelgdx.tween.type;
 
-import java.util.Objects;
-
 import org.flixelgdx.functional.FlixelAngleable;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Tweens {@link FlixelAngleable#getAngle()} toward an end angle (degrees).

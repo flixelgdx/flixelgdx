@@ -26,10 +26,11 @@ package org.flixelgdx.asset;
 import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetLoaderParameters;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.assets.loaders.SynchronousAssetLoader;
 import com.badlogic.gdx.assets.loaders.FileHandleResolver;
+import com.badlogic.gdx.assets.loaders.SynchronousAssetLoader;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Array;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -38,7 +39,8 @@ import org.jetbrains.annotations.NotNull;
  * <p>This is intended for caching data files (JSON, YAML, config, etc.) as raw text. Parsing can be
  * layered on top without forcing a dependency choice into the core.
  */
-public final class FlixelStringAssetLoader extends SynchronousAssetLoader<String, FlixelStringAssetLoader.StringParameter> {
+public final class FlixelStringAssetLoader
+    extends SynchronousAssetLoader<String, FlixelStringAssetLoader.StringParameter> {
 
   public static final class StringParameter extends AssetLoaderParameters<String> {
     @NotNull
@@ -51,9 +53,9 @@ public final class FlixelStringAssetLoader extends SynchronousAssetLoader<String
 
   @Override
   public String load(AssetManager assetManager,
-                     String fileName,
-                     FileHandle file,
-                     StringParameter parameter) {
+      String fileName,
+      FileHandle file,
+      StringParameter parameter) {
     String charset = (parameter != null && parameter.charset != null) ? parameter.charset : "UTF-8";
     return file.readString(charset);
   }
@@ -64,4 +66,3 @@ public final class FlixelStringAssetLoader extends SynchronousAssetLoader<String
     return null;
   }
 }
-

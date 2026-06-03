@@ -27,7 +27,6 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
 import org.flixelgdx.Flixel;
-
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -91,28 +91,43 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     }
 
     @Override
-    public boolean keyTyped(char character) { return false; }
+    public boolean keyTyped(char character) {
+      return false;
+    }
 
     @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
+    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+      return false;
+    }
 
     @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
+    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+      return false;
+    }
 
     @Override
-    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }
+    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+      return false;
+    }
 
     @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
+    public boolean touchDragged(int screenX, int screenY, int pointer) {
+      return false;
+    }
 
     @Override
-    public boolean mouseMoved(int screenX, int screenY) { return false; }
+    public boolean mouseMoved(int screenX, int screenY) {
+      return false;
+    }
 
     @Override
-    public boolean scrolled(float amountX, float amountY) { return false; }
+    public boolean scrolled(float amountX, float amountY) {
+      return false;
+    }
   };
 
-  public FlixelKeyInputManager() {}
+  public FlixelKeyInputManager() {
+  }
 
   /**
    * Returns the input processor that tracks key state. Add this first to an
@@ -221,7 +236,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext; ) {
+      for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
         int pressedKey = it.next();
         if (!previousPressedKeys.contains(pressedKey)) {
           return true;
@@ -261,7 +276,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext; ) {
+      for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
         int pressedKey = it.next();
         if (!currentPressedKeys.contains(pressedKey)) {
           return true;
@@ -423,7 +438,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    */
   public boolean anyJustPressed(int k1, int k2, int k3, int k4) {
     return enabled
-      && (justPressed(k1) || justPressed(k2) || justPressed(k3) || justPressed(k4));
+        && (justPressed(k1) || justPressed(k2) || justPressed(k3) || justPressed(k4));
   }
 
   /**
@@ -438,11 +453,11 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    */
   public boolean anyJustPressed(int k1, int k2, int k3, int k4, int k5) {
     return enabled
-      && (justPressed(k1)
-        || justPressed(k2)
-        || justPressed(k3)
-        || justPressed(k4)
-        || justPressed(k5));
+        && (justPressed(k1)
+            || justPressed(k2)
+            || justPressed(k3)
+            || justPressed(k4)
+            || justPressed(k5));
   }
 
   /**
@@ -458,12 +473,12 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    */
   public boolean anyJustPressed(int k1, int k2, int k3, int k4, int k5, int k6) {
     return enabled
-      && (justPressed(k1)
-        || justPressed(k2)
-        || justPressed(k3)
-        || justPressed(k4)
-        || justPressed(k5)
-        || justPressed(k6));
+        && (justPressed(k1)
+            || justPressed(k2)
+            || justPressed(k3)
+            || justPressed(k4)
+            || justPressed(k5)
+            || justPressed(k6));
   }
 
   /**
@@ -541,7 +556,8 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * @return {@code true} if any key in the given list was just released and input is enabled.
    */
   public boolean anyJustReleased(int k1, int k2, int k3, int k4, int k5) {
-    return enabled && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4) || justReleased(k5));
+    return enabled
+        && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4) || justReleased(k5));
   }
 
   /**
@@ -557,7 +573,8 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    */
   public boolean anyJustReleased(int k1, int k2, int k3, int k4, int k5, int k6) {
     return enabled
-      && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4) || justReleased(k5) || justReleased(k6));
+        && (justReleased(k1) || justReleased(k2) || justReleased(k3) || justReleased(k4) || justReleased(k5)
+            || justReleased(k6));
   }
 
   /**
@@ -602,7 +619,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     if (isCapturedByDebugUI() || !enabled) {
       return FlixelKey.NONE;
     }
-    for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext; ) {
+    for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
       int key = it.next();
       if (!previousPressedKeys.contains(key)) {
         return key;
@@ -621,7 +638,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     if (isCapturedByDebugUI() || !enabled) {
       return FlixelKey.NONE;
     }
-    for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext; ) {
+    for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
       int key = it.next();
       if (!currentPressedKeys.contains(key)) {
         return key;

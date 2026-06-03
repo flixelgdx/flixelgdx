@@ -27,7 +27,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
 
 import org.flixelgdx.backend.alert.FlixelAlerter;
-
 import org.robovm.apple.dispatch.DispatchQueue;
 import org.robovm.apple.uikit.UIAlertAction;
 import org.robovm.apple.uikit.UIAlertActionStyle;
@@ -67,8 +66,7 @@ public class FlixelIOSAlerter implements FlixelAlerter {
       UIAlertController alert = new UIAlertController(
           title,
           message != null ? message : "",
-          UIAlertControllerStyle.Alert
-      );
+          UIAlertControllerStyle.Alert);
       alert.addAction(new UIAlertAction("OK", UIAlertActionStyle.Default, null));
       root.presentViewController(alert, true, null);
     });

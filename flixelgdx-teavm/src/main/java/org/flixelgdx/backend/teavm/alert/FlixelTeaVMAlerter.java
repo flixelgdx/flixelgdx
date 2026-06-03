@@ -23,9 +23,8 @@
  */
 package org.flixelgdx.backend.teavm.alert;
 
-import org.teavm.jso.JSBody;
-
 import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.teavm.jso.JSBody;
 
 /**
  * Web (TeaVM) implementation of {@link FlixelAlerter} using JavaScript's {@code alert()} function.

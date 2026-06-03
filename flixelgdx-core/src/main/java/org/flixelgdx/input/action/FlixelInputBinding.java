@@ -26,7 +26,6 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.Input;
 
 import org.flixelgdx.input.gamepad.FlixelGamepadInput;
-
 import org.jetbrains.annotations.NotNull;
 
 /**

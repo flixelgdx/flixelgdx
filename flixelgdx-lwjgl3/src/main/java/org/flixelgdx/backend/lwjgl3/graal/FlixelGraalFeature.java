@@ -23,8 +23,11 @@
  */
 package org.flixelgdx.backend.lwjgl3.graal;
 
-import games.rednblack.miniaudio.MiniAudio;
+import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
+import org.lwjgl.system.CallbackI;
 
+import games.rednblack.miniaudio.MiniAudio;
 import imgui.ImFontAtlas;
 import imgui.ImGuiViewport;
 import imgui.ImVec2;
@@ -44,10 +47,6 @@ import imgui.callback.ImStrConsumer;
 import imgui.callback.ImStrSupplier;
 import imgui.internal.ImRect;
 import imgui.type.ImString;
-
-import org.graalvm.nativeimage.hosted.Feature;
-import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
-import org.lwjgl.system.CallbackI;
 
 /**
  * GraalVM native image Feature that registers all JNI entries for FlixelGDX's
@@ -116,16 +115,21 @@ public class FlixelGraalFeature implements Feature {
     RuntimeJNIAccess.register(CallbackI.class.getDeclaredMethod("callback", long.class, long.class));
 
     // Runtime callbacks invoked by the imgui native layer.
-    RuntimeJNIAccess.register(ImAssertCallback.class.getDeclaredMethod("imAssert", String.class, int.class, String.class));
+    RuntimeJNIAccess
+        .register(ImAssertCallback.class.getDeclaredMethod("imAssert", String.class, int.class, String.class));
     RuntimeJNIAccess.register(ImGuiInputTextCallback.class.getDeclaredMethod("accept", long.class));
     RuntimeJNIAccess.register(ImListClipperCallback.class.getDeclaredMethod("accept", int.class));
     RuntimeJNIAccess.register(ImPlatformFuncViewport.class.getDeclaredMethod("accept", ImGuiViewport.class));
-    RuntimeJNIAccess.register(ImPlatformFuncViewportFloat.class.getDeclaredMethod("accept", ImGuiViewport.class, float.class));
-    RuntimeJNIAccess.register(ImPlatformFuncViewportImVec2.class.getDeclaredMethod("accept", ImGuiViewport.class, ImVec2.class));
-    RuntimeJNIAccess.register(ImPlatformFuncViewportString.class.getDeclaredMethod("accept", ImGuiViewport.class, String.class));
+    RuntimeJNIAccess
+        .register(ImPlatformFuncViewportFloat.class.getDeclaredMethod("accept", ImGuiViewport.class, float.class));
+    RuntimeJNIAccess
+        .register(ImPlatformFuncViewportImVec2.class.getDeclaredMethod("accept", ImGuiViewport.class, ImVec2.class));
+    RuntimeJNIAccess
+        .register(ImPlatformFuncViewportString.class.getDeclaredMethod("accept", ImGuiViewport.class, String.class));
     RuntimeJNIAccess.register(ImPlatformFuncViewportSuppBoolean.class.getDeclaredMethod("get", ImGuiViewport.class));
     RuntimeJNIAccess.register(ImPlatformFuncViewportSuppFloat.class.getDeclaredMethod("get", ImGuiViewport.class));
-    RuntimeJNIAccess.register(ImPlatformFuncViewportSuppImVec2.class.getDeclaredMethod("get", ImGuiViewport.class, ImVec2.class));
+    RuntimeJNIAccess
+        .register(ImPlatformFuncViewportSuppImVec2.class.getDeclaredMethod("get", ImGuiViewport.class, ImVec2.class));
     RuntimeJNIAccess.register(ImStrConsumer.class.getDeclaredMethod("accept", String.class));
     RuntimeJNIAccess.register(ImStrSupplier.class.getDeclaredMethod("get"));
   }

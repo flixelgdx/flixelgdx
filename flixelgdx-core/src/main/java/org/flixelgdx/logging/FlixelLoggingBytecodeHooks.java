@@ -35,58 +35,62 @@ import org.flixelgdx.Flixel;
  */
 public final class FlixelLoggingBytecodeHooks {
 
-  private FlixelLoggingBytecodeHooks() {}
+  private FlixelLoggingBytecodeHooks() {
+  }
 
-  public static void bcInfo0(Object message, String sourceFile, int line, String declaringClass, String declaringMethod) {
+  public static void bcInfo0(Object message, String sourceFile, int line, String declaringClass,
+      String declaringMethod) {
     Flixel.log.infoWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
   public static void bcInfo1(
-    String tag,
-    Object message,
-    String sourceFile,
-    int line,
-    String declaringClass,
-    String declaringMethod) {
+      String tag,
+      Object message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
     Flixel.log.infoWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcWarn0(Object message, String sourceFile, int line, String declaringClass, String declaringMethod) {
+  public static void bcWarn0(Object message, String sourceFile, int line, String declaringClass,
+      String declaringMethod) {
     Flixel.log.warnWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
   public static void bcWarn1(
-    String tag,
-    Object message,
-    String sourceFile,
-    int line,
-    String declaringClass,
-    String declaringMethod) {
+      String tag,
+      Object message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
     Flixel.log.warnWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr0(String message, String sourceFile, int line, String declaringClass, String declaringMethod) {
+  public static void bcErr0(String message, String sourceFile, int line, String declaringClass,
+      String declaringMethod) {
     Flixel.log.errorWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
   public static void bcErr1(
-    String tag,
-    Object message,
-    String sourceFile,
-    int line,
-    String declaringClass,
-    String declaringMethod) {
+      String tag,
+      Object message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
     Flixel.log.errorWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
   public static void bcErr2(
-    String tag,
-    Object message,
-    Throwable throwable,
-    String sourceFile,
-    int line,
-    String declaringClass,
-    String declaringMethod) {
+      String tag,
+      Object message,
+      Throwable throwable,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
     Flixel.log.errorWithSite(tag, message, throwable, sourceFile, line, declaringClass, declaringMethod);
   }
 }

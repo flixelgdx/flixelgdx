@@ -28,7 +28,6 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 
 import org.flixelgdx.FlixelBasic;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,7 +103,8 @@ public class FlixelTimerManager extends FlixelBasic {
   }
 
   @Override
-  public final void draw(Batch batch) {}
+  public final void draw(Batch batch) {
+  }
 
   @Override
   public void destroy() {

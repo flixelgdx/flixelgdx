@@ -31,7 +31,8 @@ import com.badlogic.gdx.Input;
  */
 public final class FlixelKey {
 
-  private FlixelKey() {}
+  private FlixelKey() {
+  }
 
   public static final int NONE = -2; // In HaxeFlixel, this is -1, but we use -2 to avoid confusion with ANY.
   public static final int ANY = -1;

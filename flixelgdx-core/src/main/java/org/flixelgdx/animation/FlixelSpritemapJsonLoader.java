@@ -36,11 +36,10 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Helper class for spritemap-style JSON assets. Handles two separate shapes:
@@ -63,7 +62,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelSpritemapJsonLoader {
 
-  private FlixelSpritemapJsonLoader() {}
+  private FlixelSpritemapJsonLoader() {
+  }
 
   /**
    * Resolves an asset path the same way the rest of FlixelGDX does: first {@code Gdx.files.internal},
@@ -188,9 +188,9 @@ public final class FlixelSpritemapJsonLoader {
         return;
       }
       throw new IllegalArgumentException(
-        "Adobe Animate texture-atlas JSON (with top-level \"AN\") can only be loaded onto a "
-          + "FlixelAnimateSprite, because it requires multi-part compositing. The current owner is "
-          + controller.getOwner().getClass().getName() + ".");
+          "Adobe Animate texture-atlas JSON (with top-level \"AN\") can only be loaded onto a "
+              + "FlixelAnimateSprite, because it requires multi-part compositing. The current owner is "
+              + controller.getOwner().getClass().getName() + ".");
     }
 
     // Simple-format animation JSON. Parse the spritemap, apply it on the sprite, then register clips
@@ -211,7 +211,7 @@ public final class FlixelSpritemapJsonLoader {
 
     if (animRoot.get("animations") == null) {
       throw new IllegalArgumentException(
-        "Animation JSON has no \"animations\" object and no \"AN\" block. Unrecognized format.");
+          "Animation JSON has no \"animations\" object and no \"AN\" block. Unrecognized format.");
     }
     loadSimpleAnimationsJson(controller, animRoot);
   }
@@ -237,7 +237,7 @@ public final class FlixelSpritemapJsonLoader {
       JsonValue framesNode = anim.get("frames");
       if (framesNode == null || !framesNode.isArray()) {
         throw new IllegalArgumentException(
-          "Animation \"" + name + "\" needs a \"frames\" array of indices.");
+            "Animation \"" + name + "\" needs a \"frames\" array of indices.");
       }
       int n = 0;
       for (JsonValue c = framesNode.child; c != null; c = c.next) {
@@ -270,7 +270,7 @@ public final class FlixelSpritemapJsonLoader {
     JsonValue framesNode = root.get("frames");
     if (framesNode == null) {
       throw new IllegalArgumentException(
-        "Spritemap JSON must contain \"ATLAS.SPRITES\" or a top-level \"frames\" field.");
+          "Spritemap JSON must contain \"ATLAS.SPRITES\" or a top-level \"frames\" field.");
     }
     Array<FlixelFrame> out = new Array<>();
     if (framesNode.isArray()) {
@@ -278,7 +278,7 @@ public final class FlixelSpritemapJsonLoader {
       for (JsonValue row = framesNode.child; row != null; row = row.next) {
         if (!row.isArray() || row.size < 4) {
           throw new IllegalArgumentException(
-            "Each spritemap frame row must be an array with at least 4 numbers.");
+              "Each spritemap frame row must be an array with at least 4 numbers.");
         }
         int x = row.get(0).asInt();
         int y = row.get(1).asInt();

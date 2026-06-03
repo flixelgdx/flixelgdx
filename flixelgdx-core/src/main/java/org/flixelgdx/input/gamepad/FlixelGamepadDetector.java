@@ -23,10 +23,10 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import java.util.Locale;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Locale;
 
 /**
  * Maps a controller name string (for example from {@link com.badlogic.gdx.controllers.Controller#getName()})
@@ -39,7 +39,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelGamepadDetector {
 
-  private FlixelGamepadDetector() {}
+  private FlixelGamepadDetector() {
+  }
 
   /**
    * Detects the best {@link FlixelGamepadModel} for the given controller name.

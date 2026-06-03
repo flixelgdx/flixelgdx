@@ -30,14 +30,15 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -52,16 +53,16 @@ class FlixelLoggerBytecodeWeaverTest {
     Files.createDirectories(srcDir);
     Path source = srcDir.resolve("Caller.java");
     Files.writeString(
-      source,
-      """
-        package flixel.weavetest;
-        import org.flixelgdx.logging.*;
-        public class Caller {
-          public static void run(FlixelLogger log) {
-            log.info("hello");
-          }
-        }
-        """);
+        source,
+        """
+            package flixel.weavetest;
+            import org.flixelgdx.logging.*;
+            public class Caller {
+              public static void run(FlixelLogger log) {
+                log.info("hello");
+              }
+            }
+            """);
 
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     assertNotNull(compiler);
@@ -71,14 +72,14 @@ class FlixelLoggerBytecodeWeaverTest {
     try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
       Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(source.toFile());
       boolean ok = compiler
-        .getTask(
-          null,
-          fileManager,
-          null,
-          List.of("-classpath", classpath, "-d", out.toString()),
-          null,
-          units)
-        .call();
+          .getTask(
+              null,
+              fileManager,
+              null,
+              List.of("-classpath", classpath, "-d", out.toString()),
+              null,
+              units)
+          .call();
       assertTrue(ok, "JavaCompiler failed; check test runtime classpath includes flixelgdx-core");
     }
 
@@ -108,16 +109,16 @@ class FlixelLoggerBytecodeWeaverTest {
     Files.createDirectories(srcDir);
     Path source = srcDir.resolve("FacadeCaller.java");
     Files.writeString(
-      source,
-      """
-        package flixel.weavetestfacade;
-        import org.flixelgdx.Flixel;
-        public class FacadeCaller {
-          public static void run() {
-            Flixel.info("hello");
-          }
-        }
-        """);
+        source,
+        """
+            package flixel.weavetestfacade;
+            import org.flixelgdx.Flixel;
+            public class FacadeCaller {
+              public static void run() {
+                Flixel.info("hello");
+              }
+            }
+            """);
 
     JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     assertNotNull(compiler);
@@ -127,14 +128,14 @@ class FlixelLoggerBytecodeWeaverTest {
     try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
       Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(source.toFile());
       boolean ok = compiler
-        .getTask(
-          null,
-          fileManager,
-          null,
-          List.of("-classpath", classpath, "-parameters", "-g", "-d", out.toString()),
-          null,
-          units)
-        .call();
+          .getTask(
+              null,
+              fileManager,
+              null,
+              List.of("-classpath", classpath, "-parameters", "-g", "-d", out.toString()),
+              null,
+              units)
+          .call();
       assertTrue(ok, "JavaCompiler failed; check test runtime classpath includes flixelgdx-core");
     }
 
@@ -162,7 +163,7 @@ class FlixelLoggerBytecodeWeaverTest {
   void weaveSkipsFlixelStaticFacadeClass() throws Exception {
     byte[] bytes;
     try (InputStream in =
-           FlixelLoggerBytecodeWeaverTest.class.getClassLoader().getResourceAsStream("org/flixelgdx/Flixel.class")) {
+        FlixelLoggerBytecodeWeaverTest.class.getClassLoader().getResourceAsStream("org/flixelgdx/Flixel.class")) {
       assertNotNull(in, "Flixel.class must be on the test classpath via flixelgdx-core");
       bytes = in.readAllBytes();
     }

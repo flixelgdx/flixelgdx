@@ -23,8 +23,9 @@
  */
 package org.flixelgdx.backend.common.audio;
 
-import games.rednblack.miniaudio.MASound;
 import org.flixelgdx.audio.FlixelSoundBackend;
+
+import games.rednblack.miniaudio.MASound;
 
 /**
  * MiniAudio-backed {@link FlixelSoundBackend} that wraps a single {@link MASound}.

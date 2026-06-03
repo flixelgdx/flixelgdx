@@ -25,6 +25,7 @@ package org.flixelgdx.backend.teavm.audio;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
+
 import org.flixelgdx.audio.FlixelSoundBackend;
 
 /**

@@ -31,7 +31,6 @@ import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.util.signal.FlixelSignal;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,7 +120,8 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   private boolean listenerAttached;
 
-  public FlixelGamepadManager() {}
+  public FlixelGamepadManager() {
+  }
 
   /**
    * Registers a {@link ControllerListener} with gdx-controllers. Safe to call more than once.

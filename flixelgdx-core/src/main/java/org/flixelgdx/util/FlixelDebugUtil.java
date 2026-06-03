@@ -31,10 +31,9 @@ import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.functional.FlixelVisible;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.group.FlixelGroupable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
-
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility methods used by the debug overlay for recursively traversing the state's object
@@ -46,7 +45,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelDebugUtil {
 
-  private FlixelDebugUtil() {}
+  private FlixelDebugUtil() {
+  }
 
   /**
    * Recursively counts all active members in the current state's object tree. A member is
@@ -100,7 +100,7 @@ public final class FlixelDebugUtil {
   }
 
   private static void forEachDebugDrawableRecursive(@NotNull SnapshotArray<?> members,
-                                                    @NotNull Consumer<FlixelDebugDrawable> callback) {
+      @NotNull Consumer<FlixelDebugDrawable> callback) {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       Object o = items[i];

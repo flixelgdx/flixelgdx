@@ -88,5 +88,6 @@ public final class FlixelStringUtil {
     out.append((char) ('0' + frac));
   }
 
-  private FlixelStringUtil() {}
+  private FlixelStringUtil() {
+  }
 }

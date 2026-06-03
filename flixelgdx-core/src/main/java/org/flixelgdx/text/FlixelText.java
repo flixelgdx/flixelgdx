@@ -34,6 +34,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
+
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
@@ -42,7 +43,6 @@ import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelString;
 import org.flixelgdx.util.FlixelStringUtil;
-
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -480,7 +480,7 @@ public class FlixelText extends FlixelSprite {
    */
   public boolean isEmbedded() {
     return fontFile != null || fontRegistryId != null
-      || FlixelFontRegistry.getDefault() != null;
+        || FlixelFontRegistry.getDefault() != null;
   }
 
   /**
@@ -653,8 +653,8 @@ public class FlixelText extends FlixelSprite {
    * @return This instance for chaining.
    */
   public FlixelText setFormat(FileHandle fontFile, int size, Color color,
-                              Alignment alignment, BorderStyle borderStyle,
-                              Color borderColor) {
+      Alignment alignment, BorderStyle borderStyle,
+      Color borderColor) {
     if (fontFile != null) {
       setFont(fontFile);
     }
@@ -700,12 +700,12 @@ public class FlixelText extends FlixelSprite {
    * @return This instance for chaining.
    */
   public FlixelText setFormat(FileHandle fontFile, int size, FlixelColor color,
-                              Alignment alignment, BorderStyle borderStyle,
-                              FlixelColor borderColor) {
+      Alignment alignment, BorderStyle borderStyle,
+      FlixelColor borderColor) {
     return setFormat(fontFile, size,
-      color != null ? color.getGdxColor() : null,
-      alignment, borderStyle,
-      borderColor != null ? borderColor.getGdxColor() : null);
+        color != null ? color.getGdxColor() : null,
+        alignment, borderStyle,
+        borderColor != null ? borderColor.getGdxColor() : null);
   }
 
   /**
@@ -733,8 +733,8 @@ public class FlixelText extends FlixelSprite {
    * @return This instance for chaining.
    */
   public FlixelText setFormat(String fontId, int size, Color color,
-                              Alignment alignment, BorderStyle borderStyle,
-                              Color borderColor) {
+      Alignment alignment, BorderStyle borderStyle,
+      Color borderColor) {
     if (fontId != null) {
       setFont(fontId);
     }
@@ -780,12 +780,12 @@ public class FlixelText extends FlixelSprite {
    * @return This instance for chaining.
    */
   public FlixelText setFormat(String fontId, int size, FlixelColor color,
-                              Alignment alignment, BorderStyle borderStyle,
-                              FlixelColor borderColor) {
+      Alignment alignment, BorderStyle borderStyle,
+      FlixelColor borderColor) {
     return setFormat(fontId, size,
-      color != null ? color.getGdxColor() : null,
-      alignment, borderStyle,
-      borderColor != null ? borderColor.getGdxColor() : null);
+        color != null ? color.getGdxColor() : null,
+        alignment, borderStyle,
+        borderColor != null ? borderColor.getGdxColor() : null);
   }
 
   /**
@@ -983,8 +983,8 @@ public class FlixelText extends FlixelSprite {
   @Override
   public String toString() {
     return "FlixelText(textLen=" + textBuffer.length() + ", size=" + size
-      + ", x=" + getX() + ", y=" + getY()
-      + ", fieldWidth=" + fieldWidth + ", autoSize=" + autoSize + ")";
+        + ", x=" + getX() + ", y=" + getY()
+        + ", fieldWidth=" + fieldWidth + ", autoSize=" + autoSize + ")";
   }
 
   /**
@@ -1100,7 +1100,7 @@ public class FlixelText extends FlixelSprite {
 
     if (fixedWidth) {
       glyphLayout.setText(bitmapFont, textBuffer, Color.WHITE, fieldWidth,
-        alignment.gdxAlign, wordWrap);
+          alignment.gdxAlign, wordWrap);
     } else if (alignment != Alignment.LEFT) {
       glyphLayout.setText(bitmapFont, textBuffer);
       float naturalWidth = glyphLayout.width;
@@ -1140,36 +1140,36 @@ public class FlixelText extends FlixelSprite {
     updateLayoutColors(borderColor);
 
     switch (borderStyle) {
-      case SHADOW -> {
-        bitmapFont.draw(batch, glyphLayout, x + borderSize, y - borderSize);
-      }
+    case SHADOW -> {
+      bitmapFont.draw(batch, glyphLayout, x + borderSize, y - borderSize);
+    }
 
-      case OUTLINE_FAST -> {
-        bitmapFont.draw(batch, glyphLayout, x - borderSize, y);
-        bitmapFont.draw(batch, glyphLayout, x + borderSize, y);
-        bitmapFont.draw(batch, glyphLayout, x, y - borderSize);
-        bitmapFont.draw(batch, glyphLayout, x, y + borderSize);
-      }
+    case OUTLINE_FAST -> {
+      bitmapFont.draw(batch, glyphLayout, x - borderSize, y);
+      bitmapFont.draw(batch, glyphLayout, x + borderSize, y);
+      bitmapFont.draw(batch, glyphLayout, x, y - borderSize);
+      bitmapFont.draw(batch, glyphLayout, x, y + borderSize);
+    }
 
-      case OUTLINE -> {
-        int iterations = Math.max(1, (int) (borderSize * borderQuality));
-        float step = borderSize / iterations;
-        for (int i = 1; i <= iterations; i++) {
-          float offset = step * i;
-          bitmapFont.draw(batch, glyphLayout, x - offset, y - offset);
-          bitmapFont.draw(batch, glyphLayout, x, y - offset);
-          bitmapFont.draw(batch, glyphLayout, x + offset, y - offset);
-          bitmapFont.draw(batch, glyphLayout, x - offset, y);
-          bitmapFont.draw(batch, glyphLayout, x + offset, y);
-          bitmapFont.draw(batch, glyphLayout, x - offset, y + offset);
-          bitmapFont.draw(batch, glyphLayout, x, y + offset);
-          bitmapFont.draw(batch, glyphLayout, x + offset, y + offset);
-        }
+    case OUTLINE -> {
+      int iterations = Math.max(1, (int) (borderSize * borderQuality));
+      float step = borderSize / iterations;
+      for (int i = 1; i <= iterations; i++) {
+        float offset = step * i;
+        bitmapFont.draw(batch, glyphLayout, x - offset, y - offset);
+        bitmapFont.draw(batch, glyphLayout, x, y - offset);
+        bitmapFont.draw(batch, glyphLayout, x + offset, y - offset);
+        bitmapFont.draw(batch, glyphLayout, x - offset, y);
+        bitmapFont.draw(batch, glyphLayout, x + offset, y);
+        bitmapFont.draw(batch, glyphLayout, x - offset, y + offset);
+        bitmapFont.draw(batch, glyphLayout, x, y + offset);
+        bitmapFont.draw(batch, glyphLayout, x + offset, y + offset);
       }
+    }
 
-      default -> {
-        throw new IllegalArgumentException("Unexpected value: " + borderStyle);
-      }
+    default -> {
+      throw new IllegalArgumentException("Unexpected value: " + borderStyle);
+    }
     }
   }
 
@@ -1218,26 +1218,26 @@ public class FlixelText extends FlixelSprite {
 
     public static Alignment fromInt(int value) {
       return switch (value) {
-        case 0 -> LEFT;
-        case 1 -> CENTER;
-        case 2 -> RIGHT;
-        default -> throw new IllegalArgumentException("Invalid alignment value: " + value);
+      case 0 -> LEFT;
+      case 1 -> CENTER;
+      case 2 -> RIGHT;
+      default -> throw new IllegalArgumentException("Invalid alignment value: " + value);
       };
     }
 
     public int toInt() {
       return switch (this) {
-        case LEFT -> 0;
-        case CENTER -> 1;
-        case RIGHT -> 2;
+      case LEFT -> 0;
+      case CENTER -> 1;
+      case RIGHT -> 2;
       };
     }
 
     public int toGdxAlign() {
       return switch (this) {
-        case LEFT -> Align.left;
-        case CENTER -> Align.center;
-        case RIGHT -> Align.right;
+      case LEFT -> Align.left;
+      case CENTER -> Align.center;
+      case RIGHT -> Align.right;
       };
     }
   }

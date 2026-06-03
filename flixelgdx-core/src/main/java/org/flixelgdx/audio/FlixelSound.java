@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.audio;
 
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.utils.Array;
+
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.asset.FlixelAsset;
@@ -31,12 +34,8 @@ import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
 import org.flixelgdx.util.FlixelPathsUtil;
 import org.flixelgdx.util.signal.FlixelSignal;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.utils.Array;
 
 /**
  * Flixel sound object that wraps a platform-specific {@link FlixelSoundBackend}.
@@ -448,8 +447,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     cancelFadeTween();
     setVolume(from);
     FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
-      .setDuration(durationSeconds)
-      .addGoal(this::getVolume, to, this::setVolume);
+        .setDuration(durationSeconds)
+        .addGoal(this::getVolume, to, this::setVolume);
     fadeTween = FlixelTween.tween(this, settings);
     return this;
   }
@@ -476,8 +475,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   public FlixelSound fadeOut(float durationSeconds, float to) {
     cancelFadeTween();
     FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
-      .setDuration(durationSeconds)
-      .addGoal(this::getVolume, to, this::setVolume);
+        .setDuration(durationSeconds)
+        .addGoal(this::getVolume, to, this::setVolume);
     fadeTween = FlixelTween.tween(this, settings);
     return this;
   }
@@ -614,7 +613,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @NotNull
   public FlixelSound addReverb(float wetAmount) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
-    if (factory == null) return this;
+    if (factory == null)
+      return this;
     FlixelSoundBackend.EffectNode node = factory.createReverbNode(wetAmount);
     attachEffectNode(node);
     return this;
@@ -630,7 +630,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @NotNull
   public FlixelSound addEcho(float delaySeconds, float decay) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
-    if (factory == null) return this;
+    if (factory == null)
+      return this;
     FlixelSoundBackend.EffectNode node = factory.createDelayNode(delaySeconds, decay);
     attachEffectNode(node);
     return this;
@@ -645,7 +646,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @NotNull
   public FlixelSound addLowPassMuffle(double cutoffHz) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
-    if (factory == null) return this;
+    if (factory == null)
+      return this;
     FlixelSoundBackend.EffectNode node = factory.createLowPassFilter(cutoffHz, 2);
     attachEffectNode(node);
     return this;
@@ -668,8 +670,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   private void attachEffectNode(@NotNull FlixelSoundBackend.EffectNode node) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
     FlixelSoundBackend upstream = audioEffectNodes.size == 0
-      ? sound
-      : null;
+        ? sound
+        : null;
     if (upstream != null) {
       node.attachToUpstream(upstream, 0);
     }

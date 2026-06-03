@@ -23,15 +23,14 @@
  */
 package org.flixelgdx.tween.type;
 
-import java.util.Objects;
-
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.FloatArray;
 
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Tween type for animating any object via lambda getters and setters.
@@ -149,7 +148,7 @@ public class FlixelGoalTween extends FlixelTween {
   public FlixelTween start() {
     if (tweenObject == null) {
       throw new IllegalStateException("FlixelGoalTween requires setObject(Object) before start(). "
-        + "Use FlixelTween.tween(object, new FlixelTweenSettings()...) or call setObject(...) after obtaining the tween from the pool.");
+          + "Use FlixelTween.tween(object, new FlixelTweenSettings()...) or call setObject(...) after obtaining the tween from the pool.");
     }
     super.start();
 

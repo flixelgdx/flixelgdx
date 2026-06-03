@@ -28,7 +28,6 @@ import com.badlogic.gdx.Input;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.GdxHeadlessExtension;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,8 @@ class FlixelActionSystemTest {
 
   @Test
   void digitalJustPressedFollowsEndFrameOrdering() {
-    FlixelActionSet set = new FlixelActionSet(false) {};
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
     FlixelActionDigital fire = new FlixelActionDigital("fire");
     fire.addBinding(FlixelInputBinding.key(Input.Keys.F));
     set.add(fire);
@@ -85,7 +85,8 @@ class FlixelActionSystemTest {
 
   @Test
   void overlappingOrBindings() {
-    FlixelActionSet set = new FlixelActionSet(false) {};
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
     FlixelActionDigital any = new FlixelActionDigital("any");
     any.addBinding(FlixelInputBinding.key(Input.Keys.A));
     any.addBinding(FlixelInputBinding.key(Input.Keys.B));
@@ -102,7 +103,8 @@ class FlixelActionSystemTest {
 
   @Test
   void touchRegionBindingFalseWhenNoPointers() {
-    FlixelActionSet set = new FlixelActionSet(false) {};
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
     FlixelActionDigital zone = new FlixelActionDigital("zone");
     zone.addBinding(FlixelInputBinding.touchRegion(0f, 0f, 0.5f, 0.5f));
     set.add(zone);
@@ -112,7 +114,8 @@ class FlixelActionSystemTest {
 
   @Test
   void analogFromKeysAndNormalizeDiagonal() {
-    FlixelActionSet set = new FlixelActionSet(false) {};
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
     FlixelActionAnalog move = new FlixelActionAnalog("move");
     move.addAxisBinding(FlixelAnalogAxisBinding.negXKey(Input.Keys.LEFT));
     move.addAxisBinding(FlixelAnalogAxisBinding.posXKey(Input.Keys.RIGHT));
@@ -129,7 +132,8 @@ class FlixelActionSystemTest {
 
   @Test
   void registryRegistersOnConstructAndClearsOnDestroy() {
-    FlixelActionSet set = new FlixelActionSet(true) {};
+    FlixelActionSet set = new FlixelActionSet(true) {
+    };
     assertEquals(1, FlixelActionSets.registeredCountForTests());
     set.destroy();
     assertEquals(0, FlixelActionSets.registeredCountForTests());
@@ -137,7 +141,8 @@ class FlixelActionSystemTest {
 
   @Test
   void steamReaderMergesDigital() {
-    FlixelActionSet set = new FlixelActionSet(false) {};
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
     set.steamReader = new FlixelSteamActionReader() {
       @Override
       public boolean getDigital(String actionName) {

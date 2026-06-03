@@ -34,14 +34,13 @@ import com.badlogic.gdx.utils.SnapshotArray;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.util.FlixelColor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Predicate;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A special {@link FlixelSprite} that can be treated like a single sprite even when
@@ -170,9 +169,10 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
     if (delta != 0) {
       switch (rotationMode) {
-        case INDIVIDUAL -> transformMembersIndividualRotation(delta);
-        case ORBIT -> orbitMembersAroundCenter(delta);
-        case WHEEL -> { /* Wheel rotation is applied during update. */ }
+      case INDIVIDUAL -> transformMembersIndividualRotation(delta);
+      case ORBIT -> orbitMembersAroundCenter(delta);
+      case WHEEL -> {
+        /* Wheel rotation is applied during update. */ }
       }
     }
   }
@@ -738,10 +738,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       float sw = s.getWidth() * Math.abs(s.getScaleX());
       float sh = s.getHeight() * Math.abs(s.getScaleY());
 
-      if (sx < minX) minX = sx;
-      if (sy < minY) minY = sy;
-      if (sx + sw > maxX) maxX = sx + sw;
-      if (sy + sh > maxY) maxY = sy + sh;
+      if (sx < minX)
+        minX = sx;
+      if (sy < minY)
+        minY = sy;
+      if (sx + sw > maxX)
+        maxX = sx + sw;
+      if (sy + sh > maxY)
+        maxY = sy + sh;
     }
 
     out.set(minX, minY, maxX - minX, maxY - minY);

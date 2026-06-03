@@ -33,12 +33,11 @@ import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,7 +122,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     this(0, 0);
   }
 
-  public FlixelSprite(float x,  float y) {
+  public FlixelSprite(float x, float y) {
     this(x, y, null);
   }
 
@@ -427,7 +426,8 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
       float oY = currentFrame.originalHeight / 2f;
 
       float drawX = wx - offsetX + currentFrame.offsetX;
-      float drawY = wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
+      float drawY =
+          wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
 
       boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
@@ -436,22 +436,22 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
       // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
       // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
       batch.draw(
-        currentFrame.getTexture(),
-        drawX,
-        drawY,
-        oX - currentFrame.offsetX,
-        oY - (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY),
-        currentFrame.getRegionWidth(),
-        currentFrame.getRegionHeight(),
-        scaleX,
-        scaleY,
-        getAngle(),
-        currentFrame.getRegionX(),
-        currentFrame.getRegionY(),
-        currentFrame.getRegionWidth(),
-        currentFrame.getRegionHeight(),
-        isFlippedX,
-        isFlippedY);
+          currentFrame.getTexture(),
+          drawX,
+          drawY,
+          oX - currentFrame.offsetX,
+          oY - (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY),
+          currentFrame.getRegionWidth(),
+          currentFrame.getRegionHeight(),
+          scaleX,
+          scaleY,
+          getAngle(),
+          currentFrame.getRegionX(),
+          currentFrame.getRegionY(),
+          currentFrame.getRegionWidth(),
+          currentFrame.getRegionHeight(),
+          isFlippedX,
+          isFlippedY);
       batch.setColor(Color.WHITE);
     } else if (currentRegion != null) {
       boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
@@ -462,16 +462,16 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
 
       batch.setColor(color);
       batch.draw(
-        currentRegion.getRegion(),
-        wx - offsetX,
-        wy - offsetY,
-        originX,
-        originY,
-        getWidth(),
-        getHeight(),
-        sx,
-        sy,
-        getAngle());
+          currentRegion.getRegion(),
+          wx - offsetX,
+          wy - offsetY,
+          originX,
+          originY,
+          getWidth(),
+          getHeight(),
+          sx,
+          sy,
+          getAngle());
       batch.setColor(Color.WHITE);
     }
   }
@@ -570,9 +570,9 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     float halfViewWidth = Flixel.getViewWidth() / 2f;
     float halfViewHeight = Flixel.getViewHeight() / 2f;
     switch (axes) {
-      case X -> setPosition(halfViewWidth - halfWidth, getY());
-      case Y -> setPosition(getX(), halfViewHeight - halfHeight);
-      case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
+    case X -> setPosition(halfViewWidth - halfWidth, getY());
+    case Y -> setPosition(getX(), halfViewHeight - halfHeight);
+    case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
     }
     return this;
   }
@@ -697,9 +697,8 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     Texture texture = currentRegion != null ? currentRegion.getTexture() : null;
     if (texture != null) {
       texture.setFilter(
-        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest
-      );
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 

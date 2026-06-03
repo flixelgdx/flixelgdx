@@ -28,7 +28,6 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.graphics.FlixelFrame;
-
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -36,7 +35,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelAnimationSources {
 
-  private FlixelAnimationSources() {}
+  private FlixelAnimationSources() {
+  }
 
   /**
    * Adds an animation using named regions from an atlas (order preserved).
@@ -49,12 +49,12 @@ public final class FlixelAnimationSources {
    * @param loop Whether to loop the animation.
    */
   public static void addFromTextureAtlas(
-    @NotNull FlixelAnimationController controller,
-    @NotNull String name,
-    @NotNull TextureAtlas atlas,
-    @NotNull String[] regionNames,
-    float frameDuration,
-    boolean loop) {
+      @NotNull FlixelAnimationController controller,
+      @NotNull String name,
+      @NotNull TextureAtlas atlas,
+      @NotNull String[] regionNames,
+      float frameDuration,
+      boolean loop) {
     Array<FlixelFrame> frames = new Array<>(regionNames.length);
     for (String regionName : regionNames) {
       if (atlas.findRegion(regionName) != null) {
@@ -65,10 +65,10 @@ public final class FlixelAnimationSources {
       return;
     }
     Animation<FlixelFrame> anim =
-      new Animation<>(
-        frameDuration,
-        frames,
-        loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL);
+        new Animation<>(
+            frameDuration,
+            frames,
+            loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL);
     controller.getAnimations().put(name, anim);
   }
 }

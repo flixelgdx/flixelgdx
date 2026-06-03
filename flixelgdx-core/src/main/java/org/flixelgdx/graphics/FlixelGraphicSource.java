@@ -29,7 +29,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.asset.FlixelWrapperSource;
-
 import org.jetbrains.annotations.NotNull;
 
 /**

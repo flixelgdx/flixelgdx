@@ -29,7 +29,6 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.functional.IFlixelBasic;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -177,7 +176,8 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
       dead.setVisible(true);
       return dead;
     }
-    if (memberList.getMaxSize() > 0 && memberList.getMembers() != null && memberList.getMembers().size >= memberList.getMaxSize()) {
+    if (memberList.getMaxSize() > 0 && memberList.getMembers() != null
+        && memberList.getMembers().size >= memberList.getMaxSize()) {
       return null;
     }
     T fresh = createMemberForRecycle();

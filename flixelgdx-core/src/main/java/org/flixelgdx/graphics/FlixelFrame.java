@@ -25,6 +25,7 @@ package org.flixelgdx.graphics;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,4 +95,3 @@ public final class FlixelFrame {
     return region.getRegionHeight();
   }
 }
-

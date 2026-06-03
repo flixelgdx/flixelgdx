@@ -36,4 +36,3 @@ public interface ShortSupplier {
    */
   short getAsShort();
 }
-

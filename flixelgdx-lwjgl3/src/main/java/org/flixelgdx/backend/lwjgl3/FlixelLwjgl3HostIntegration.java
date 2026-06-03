@@ -23,6 +23,14 @@
  */
 package org.flixelgdx.backend.lwjgl3;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
+
+import org.flixelgdx.backend.host.FlixelHostIntegration;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
+
 import java.awt.EventQueue;
 import java.awt.GraphicsEnvironment;
 import java.awt.Taskbar;
@@ -31,16 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Objects;
-
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
-
-import org.flixelgdx.backend.host.FlixelHostIntegration;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Desktop {@link FlixelHostIntegration}: freedesktop or Zenity notifications on Linux, {@code osascript} on macOS,
@@ -115,15 +113,16 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
     try {
       String t = title == null ? "" : title;
       ProcessBuilder pb = new ProcessBuilder(
-        "powershell.exe",
-        "-NoProfile",
-        "-NonInteractive",
-        "-WindowStyle",
-        "Hidden",
-        "-Command",
-        windowsToastCommand());
+          "powershell.exe",
+          "-NoProfile",
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
+          "-Command",
+          windowsToastCommand());
       pb.environment().put("FGX_TITLE_B64", Base64.getEncoder().encodeToString(t.getBytes(StandardCharsets.UTF_8)));
-      pb.environment().put("FGX_BODY_B64", Base64.getEncoder().encodeToString(message.getBytes(StandardCharsets.UTF_8)));
+      pb.environment().put("FGX_BODY_B64",
+          Base64.getEncoder().encodeToString(message.getBytes(StandardCharsets.UTF_8)));
       tryStartProcess(pb);
     } catch (Exception ignored) {
     }
@@ -131,17 +130,17 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
 
   private static String windowsToastCommand() {
     return "$t=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:FGX_TITLE_B64));"
-      + "$b=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:FGX_BODY_B64));"
-      + "$t=$t -replace '[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]',' ';"
-      + "$b=$b -replace '[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]',' ';"
-      + "$xe=[System.Security.SecurityElement]::Escape($t);"
-      + "$be=[System.Security.SecurityElement]::Escape($b);"
-      + "[void][Windows.UI.Notifications.ToastNotificationManager,Windows.UI.Notifications,ContentType=WindowsRuntime];"
-      + "[void][Windows.Data.Xml.Dom.XmlDocument,Windows.Data.Xml.Dom,ContentType=WindowsRuntime];"
-      + "$d=New-Object Windows.Data.Xml.Dom.XmlDocument;"
-      + "$d.LoadXml(\"<toast><visual><binding template=\\\"ToastText02\\\"><text id=\\\"1\\\">$xe</text><text id=\\\"2\\\">$be</text></binding></visual></toast>\");"
-      + "$n=[Windows.UI.Notifications.ToastNotification]::new($d);"
-      + "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('FlixelGDX').Show($n);";
+        + "$b=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($env:FGX_BODY_B64));"
+        + "$t=$t -replace '[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]',' ';"
+        + "$b=$b -replace '[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]',' ';"
+        + "$xe=[System.Security.SecurityElement]::Escape($t);"
+        + "$be=[System.Security.SecurityElement]::Escape($b);"
+        + "[void][Windows.UI.Notifications.ToastNotificationManager,Windows.UI.Notifications,ContentType=WindowsRuntime];"
+        + "[void][Windows.Data.Xml.Dom.XmlDocument,Windows.Data.Xml.Dom,ContentType=WindowsRuntime];"
+        + "$d=New-Object Windows.Data.Xml.Dom.XmlDocument;"
+        + "$d.LoadXml(\"<toast><visual><binding template=\\\"ToastText02\\\"><text id=\\\"1\\\">$xe</text><text id=\\\"2\\\">$be</text></binding></visual></toast>\");"
+        + "$n=[Windows.UI.Notifications.ToastNotification]::new($d);"
+        + "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('FlixelGDX').Show($n);";
   }
 
   private static boolean tryStartProcess(ProcessBuilder pb) {

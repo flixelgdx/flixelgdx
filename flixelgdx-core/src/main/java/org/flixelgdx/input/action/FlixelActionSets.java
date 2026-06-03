@@ -53,7 +53,8 @@ public final class FlixelActionSets {
 
   private static final Array<FlixelActionSet> registered = new Array<>(8);
 
-  private FlixelActionSets() {}
+  private FlixelActionSets() {
+  }
 
   static void register(@NotNull FlixelActionSet set) {
     for (int i = 0, n = registered.size; i < n; i++) {

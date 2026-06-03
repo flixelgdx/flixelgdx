@@ -26,7 +26,6 @@ package org.flixelgdx.animation;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.util.signal.FlixelSignal;
-
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -148,10 +147,10 @@ public class FlixelAnimationStateMachine {
    * @param forceRestart Forwarded to {@code playAnimation}; use {@code false} when polling the same state every frame.
    */
   public void setState(
-    @NotNull String newState,
-    @NotNull FlixelAnimationController controller,
-    boolean loop,
-    boolean forceRestart) {
+      @NotNull String newState,
+      @NotNull FlixelAnimationController controller,
+      boolean loop,
+      boolean forceRestart) {
     if (state.equals(newState)) {
       return;
     }

@@ -24,7 +24,6 @@
 package org.flixelgdx.backend.teavm.logging;
 
 import org.flixelgdx.logging.FlixelLogLevel;
-
 import org.teavm.jso.JSBody;
 
 /**
@@ -39,7 +38,8 @@ import org.teavm.jso.JSBody;
  */
 public final class FlixelTeaVMLogConsole {
 
-  private FlixelTeaVMLogConsole() {}
+  private FlixelTeaVMLogConsole() {
+  }
 
   /**
    * Forwards one structured log to JavaScript. Matches {@code FlixelLogConsoleSink#emit} for use
@@ -92,14 +92,14 @@ public final class FlixelTeaVMLogConsole {
   //      does not eat the next argument or trigger console formatter quirks.
   @JSBody(
       params = {
-        "l",
-        "tag",
-        "message",
-        "simpleLocation",
-        "detailedFile",
-        "methodLabel",
-        "timestamp",
-        "detailed"
+          "l",
+          "tag",
+          "message",
+          "simpleLocation",
+          "detailedFile",
+          "methodLabel",
+          "timestamp",
+          "detailed"
       },
       script = ""
           + "var lv = l | 0;"
@@ -117,8 +117,7 @@ public final class FlixelTeaVMLogConsole {
           + "}"
           + "var lvStr = lv === 0 ? 'INFO' : lv === 1 ? 'WARN' : 'ERROR';"
           + "var meta = timestamp + ' [' + lvStr + '] [' + tag + '] [' + detailedFile + '] [' + methodLabel + ']';"
-          + "sink('%c%s\\n%c%s', metaStyle, meta, msgStyle, message);"
-  )
+          + "sink('%c%s\\n%c%s', metaStyle, meta, msgStyle, message);")
   private static native void emit0(
       int l,
       String tag,

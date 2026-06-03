@@ -77,5 +77,6 @@ public final class FlixelPathsUtil {
     return Flixel.ensureAssets().resolveAudioPath(path);
   }
 
-  private FlixelPathsUtil() {}
+  private FlixelPathsUtil() {
+  }
 }

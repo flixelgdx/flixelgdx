@@ -26,7 +26,6 @@ package org.flixelgdx.tween.type.motion;
 import com.badlogic.gdx.math.MathUtils;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
 
 /** Motion along a circular arc (angles in degrees for the API, radians internally). */

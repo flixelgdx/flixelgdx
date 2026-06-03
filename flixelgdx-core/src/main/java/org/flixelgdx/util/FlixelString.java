@@ -29,7 +29,6 @@ import org.flixelgdx.functional.supplier.ByteSupplier;
 import org.flixelgdx.functional.supplier.CharSupplier;
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.functional.supplier.ShortSupplier;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

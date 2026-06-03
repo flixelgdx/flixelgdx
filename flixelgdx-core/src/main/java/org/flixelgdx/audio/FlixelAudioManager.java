@@ -23,13 +23,13 @@
  */
 package org.flixelgdx.audio;
 
+import com.badlogic.gdx.utils.Disposable;
+
 import org.flixelgdx.Flixel;
-import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import com.badlogic.gdx.utils.Disposable;
 
 /**
  * Central manager for all audio. {@link FlixelSound} instances, master volume,
@@ -224,7 +224,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    */
   @NotNull
   public FlixelSound play(@NotNull String path, float volume, boolean looping,
-                           @Nullable Object group, boolean external) {
+      @Nullable Object group, boolean external) {
     Object targetGroup = (group != null) ? group : sfxGroup;
     return createAndPlaySoundFromPath(path, external, volume, looping, targetGroup);
   }
@@ -300,12 +300,11 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    */
   @NotNull
   private FlixelSound createAndPlaySoundFromPath(
-    @NotNull String path,
-    boolean external,
-    float volume,
-    boolean looping,
-    @NotNull Object targetGroup
-  ) {
+      @NotNull String path,
+      boolean external,
+      float volume,
+      boolean looping,
+      @NotNull Object targetGroup) {
     if (external) {
       FlixelSoundBackend backend = factory.createSound(path, (short) 0, targetGroup, true);
       FlixelSound s = new FlixelSound(backend);

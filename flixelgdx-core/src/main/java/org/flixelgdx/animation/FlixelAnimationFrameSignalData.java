@@ -24,7 +24,6 @@
 package org.flixelgdx.animation;
 
 import org.flixelgdx.graphics.FlixelFrame;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,13 +77,17 @@ public class FlixelAnimationFrameSignalData {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
 
     FlixelAnimationFrameSignalData that = (FlixelAnimationFrameSignalData) o;
 
-    if (frameIndex != that.frameIndex) return false;
-    if (!animationName.equals(that.animationName)) return false;
+    if (frameIndex != that.frameIndex)
+      return false;
+    if (!animationName.equals(that.animationName))
+      return false;
     return frame != null ? frame.equals(that.frame) : that.frame == null;
   }
 
@@ -99,7 +102,7 @@ public class FlixelAnimationFrameSignalData {
   @Override
   public String toString() {
     return "FlixelAnimationFrameSignalData(animationName=" + animationName +
-           ", frameIndex=" + frameIndex +
-           ", frame=" + frame + ")";
+        ", frameIndex=" + frameIndex +
+        ", frame=" + frame + ")";
   }
 }

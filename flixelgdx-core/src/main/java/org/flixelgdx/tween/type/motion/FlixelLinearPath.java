@@ -29,7 +29,6 @@ import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
 
 /** Piecewise-linear path through a polyline. */

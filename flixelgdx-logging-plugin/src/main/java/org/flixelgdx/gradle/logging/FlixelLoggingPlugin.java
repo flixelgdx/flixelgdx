@@ -49,15 +49,14 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
       if (!ext.getEnabled().get()) {
         return;
       }
-      pr.getTasks().withType(JavaCompile.class).configureEach(compile ->
-        compile.doLast(task -> {
-          Path root = compile.getDestinationDirectory().get().getAsFile().toPath();
-          try {
-            FlixelTransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), task.getLogger());
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        }));
+      pr.getTasks().withType(JavaCompile.class).configureEach(compile -> compile.doLast(task -> {
+        Path root = compile.getDestinationDirectory().get().getAsFile().toPath();
+        try {
+          FlixelTransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), task.getLogger());
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
+      }));
     });
   }
 }

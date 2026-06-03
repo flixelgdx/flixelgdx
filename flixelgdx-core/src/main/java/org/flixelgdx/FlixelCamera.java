@@ -23,8 +23,6 @@
  */
 package org.flixelgdx;
 
-import org.jetbrains.annotations.NotNull;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
@@ -40,6 +38,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A powerful camera class that controls world-to-screen projection, parallax scrolling, zoom,
@@ -894,9 +893,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    */
   public boolean containsPoint(float px, float py, float w, float h) {
     return px + w > x
-      && px < x + this.width
-      && py + h > y
-      && py < y + this.height;
+        && px < x + this.width
+        && py + h > y
+        && py < y + this.height;
   }
 
   /**
@@ -1209,30 +1208,30 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     float vh = getViewHeight();
     float w, h;
     switch (style) {
-      case LOCKON -> {
-        w = 1;
-        h = 1;
-      }
-      case PLATFORMER -> {
-        w = vw / 8f;
-        h = vh / 3f;
-      }
-      case TOPDOWN -> {
-        w = vw / 3f;
-        h = vh / 3f;
-      }
-      case TOPDOWN_TIGHT -> {
-        w = vw / 8f;
-        h = vh / 8f;
-      }
-      case SCREEN_BY_SCREEN -> {
-        w = vw;
-        h = vh;
-      }
-      default -> {
-        deadzone = null;
-        return;
-      }
+    case LOCKON -> {
+      w = 1;
+      h = 1;
+    }
+    case PLATFORMER -> {
+      w = vw / 8f;
+      h = vh / 3f;
+    }
+    case TOPDOWN -> {
+      w = vw / 3f;
+      h = vh / 3f;
+    }
+    case TOPDOWN_TIGHT -> {
+      w = vw / 8f;
+      h = vh / 8f;
+    }
+    case SCREEN_BY_SCREEN -> {
+      w = vw;
+      h = vh;
+    }
+    default -> {
+      deadzone = null;
+      return;
+    }
     }
     deadzone = new Rectangle((vw - w) / 2f, (vh - h) / 2f, w, h);
   }
@@ -1285,10 +1284,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     int fittedH = viewport.getScreenHeight();
 
     viewport.setScreenBounds(
-      rx + fittedX,
-      regionBottomY + fittedY,
-      fittedW,
-      fittedH);
+        rx + fittedX,
+        regionBottomY + fittedY,
+        fittedW,
+        fittedH);
     viewport.apply(centerCamera);
   }
 
@@ -1320,11 +1319,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    */
   private void resolveScreenRegionTopLeft(int screenWidth, int screenHeight, Rectangle out) {
     int resolvedRegionWidth = hasCustomPixelRegion
-      ? regionWidth
-      : ((width > 0) ? width : screenWidth);
+        ? regionWidth
+        : ((width > 0) ? width : screenWidth);
     int resolvedRegionHeight = hasCustomPixelRegion
-      ? regionHeight
-      : ((height > 0) ? height : screenHeight);
+        ? regionHeight
+        : ((height > 0) ? height : screenHeight);
     resolvedRegionWidth = Math.max(1, resolvedRegionWidth);
     resolvedRegionHeight = Math.max(1, resolvedRegionHeight);
     float px = hasCustomPixelRegion ? regionX : x;
@@ -1334,30 +1333,30 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     float topLeftY;
 
     switch (regionMode) {
-      case PIXEL_BOTTOM_LEFT -> {
-        topLeftX = px;
-        topLeftY = screenHeight - py - resolvedRegionHeight;
-      }
-      case PIXEL_CENTERED -> {
-        topLeftX = px - (resolvedRegionWidth / 2f);
-        topLeftY = py - (resolvedRegionHeight / 2f);
-      }
-      case NORMALIZED_RECT -> {
-        float nx = MathUtils.clamp(normalizedRegionX, 0f, 1f);
-        float ny = MathUtils.clamp(normalizedRegionY, 0f, 1f);
-        float nw = MathUtils.clamp(normalizedRegionWidth, 0f, 1f);
-        float nh = MathUtils.clamp(normalizedRegionHeight, 0f, 1f);
-        float resolvedW = Math.max(1f, nw * screenWidth);
-        float resolvedH = Math.max(1f, nh * screenHeight);
-        topLeftX = nx * screenWidth;
-        topLeftY = ny * screenHeight;
-        out.set(topLeftX, topLeftY, resolvedW, resolvedH);
-        return;
-      }
-      default -> {
-        topLeftX = px;
-        topLeftY = py;
-      }
+    case PIXEL_BOTTOM_LEFT -> {
+      topLeftX = px;
+      topLeftY = screenHeight - py - resolvedRegionHeight;
+    }
+    case PIXEL_CENTERED -> {
+      topLeftX = px - (resolvedRegionWidth / 2f);
+      topLeftY = py - (resolvedRegionHeight / 2f);
+    }
+    case NORMALIZED_RECT -> {
+      float nx = MathUtils.clamp(normalizedRegionX, 0f, 1f);
+      float ny = MathUtils.clamp(normalizedRegionY, 0f, 1f);
+      float nw = MathUtils.clamp(normalizedRegionWidth, 0f, 1f);
+      float nh = MathUtils.clamp(normalizedRegionHeight, 0f, 1f);
+      float resolvedW = Math.max(1f, nw * screenWidth);
+      float resolvedH = Math.max(1f, nh * screenHeight);
+      topLeftX = nx * screenWidth;
+      topLeftY = ny * screenHeight;
+      out.set(topLeftX, topLeftY, resolvedW, resolvedH);
+      return;
+    }
+    default -> {
+      topLeftX = px;
+      topLeftY = py;
+    }
     }
 
     out.set(topLeftX, topLeftY, resolvedRegionWidth, resolvedRegionHeight);

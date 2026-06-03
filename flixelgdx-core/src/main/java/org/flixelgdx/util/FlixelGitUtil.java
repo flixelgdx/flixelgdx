@@ -100,5 +100,6 @@ public final class FlixelGitUtil {
     }
   }
 
-  private FlixelGitUtil() {}
+  private FlixelGitUtil() {
+  }
 }

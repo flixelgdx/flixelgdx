@@ -75,4 +75,3 @@ public class FlixelSpriteUtilTest {
     assertTrue(Math.abs(actual.a - expected.a) <= eps, "a differs");
   }
 }
-

@@ -36,4 +36,3 @@ public interface ByteSupplier {
    */
   byte getAsByte();
 }
-

@@ -23,16 +23,16 @@
  */
 package org.flixelgdx.backend.jvm.runtime;
 
+import org.flixelgdx.util.FlixelRuntimeUtil;
+import org.flixelgdx.util.FlixelRuntimeUtil.RunEnvironment;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.jar.JarFile;
-
-import org.flixelgdx.util.FlixelRuntimeUtil;
-import org.flixelgdx.util.FlixelRuntimeUtil.RunEnvironment;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * JVM desktop implementation of {@link FlixelRuntimeUtil.RuntimeProbe}: classpath and JAR checks,
@@ -108,9 +108,9 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
   public String getWorkingDirectory() {
     try {
       URI uri = FlixelRuntimeUtil.class.getProtectionDomain()
-        .getCodeSource()
-        .getLocation()
-        .toURI();
+          .getCodeSource()
+          .getLocation()
+          .toURI();
       Path normalized = Paths.get(uri).toAbsolutePath().normalize();
       return normalized.toString().replace('\\', '/');
     } catch (Exception e) {
@@ -189,8 +189,8 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
     }
     String normalized = cp.replace('\\', '/');
     return normalized.contains("build/classes")
-      || normalized.contains("out/production")
-      || normalized.contains("/bin/");
+        || normalized.contains("out/production")
+        || normalized.contains("/bin/");
   }
 
   @Nullable

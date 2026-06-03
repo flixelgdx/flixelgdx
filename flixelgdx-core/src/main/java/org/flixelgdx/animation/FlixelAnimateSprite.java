@@ -36,7 +36,6 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -181,7 +180,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     FlixelAnimationController controller = ensureAnimation();
     if (rig == null) {
       FlixelAnimateRigLoader.load(
-        this, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
+          this, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
     } else {
       FlixelAnimateRigLoader.append(this, controller, textureKey, spritemapJsonPath, animationJsonPath);
     }
@@ -315,7 +314,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
     Texture.TextureFilter filter =
-      antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
 
     // Without a rig, mirror FlixelSprite.setAntialiasing() exactly: filter only the current region's
     // texture so plain atlas usage stays cheap.

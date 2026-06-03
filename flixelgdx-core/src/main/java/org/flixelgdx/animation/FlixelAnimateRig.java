@@ -29,11 +29,10 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.graphics.FlixelFrame;
-
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Immutable, pre-resolved multi-part rig for an Adobe Animate texture-atlas character. Built by

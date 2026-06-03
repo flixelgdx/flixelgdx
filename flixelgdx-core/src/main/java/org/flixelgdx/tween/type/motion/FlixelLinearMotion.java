@@ -26,7 +26,6 @@ package org.flixelgdx.tween.type.motion;
 import com.badlogic.gdx.math.MathUtils;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
 
 /** Straight-line motion from ({@code fromX}, {@code fromY}) to ({@code toX}, {@code toY}). */

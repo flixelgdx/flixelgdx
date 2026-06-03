@@ -17,8 +17,8 @@ subprojects {
       eclipse('4.33').configFile("$rootDir/gradle/spotless/eclipse-formatter.xml")
 
       // Import groups, each separated by a blank line:
-      // static | java/javax | com | org | everything else
-      importOrder('\\#', 'java', 'javax', 'com', 'org', '')
+      // | com | org | io | java/javax/jdk | everything else | static |
+      importOrder('com', 'org', 'io', 'java', 'javax', 'jdk', '', '\\#')
 
       removeUnusedImports()
       endWithNewline()

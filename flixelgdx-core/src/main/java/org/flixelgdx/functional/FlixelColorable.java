@@ -26,7 +26,6 @@ package org.flixelgdx.functional;
 import com.badlogic.gdx.graphics.Color;
 
 import org.flixelgdx.util.FlixelColor;
-
 import org.jetbrains.annotations.NotNull;
 
 /**
