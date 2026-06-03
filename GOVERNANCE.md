@@ -23,8 +23,10 @@ direction, releases, and all decisions that affect the framework and its communi
 ## Current Project Leaders
 
 <p>
-  <img src="https://github.com/stringdotjar.png" width="75" align="center" style="border-radius: 12px; margin-right: 10px;" alt="String GitHub PFP">
-  <strong><font size="4">String (Framework Founder)</font></strong>
+  <a href="https://github.com/stringdotjar" style="border-radius: 12px; display: inline-block; overflow: hidden; vertical-align: middle; margin-right: 10px;">
+    <img src="https://github.com/stringdotjar.png" width="75" style="display: block;" alt="String GitHub PFP">
+  </a>
+  <strong><font size="5">String (Framework Founder)</font></strong>
 </p>
 
 <p>
