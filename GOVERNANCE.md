@@ -22,25 +22,30 @@ direction, releases, and all decisions that affect the framework and its communi
 
 ## Current Project Leaders
 
-<div align="left">
-  <!-- Header and PFP on the same line -->
-  <h3 style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-    <img src="https://github.com/stringdotjar.png" width="50" style="border-radius: 12px;" alt="String GitHub PFP">
-    String (Framework Founder)
-  </h3>
+<table border="0" cellpadding="0" cellspacing="0">
+  <tr style="border: none;">
+    <!-- Image Cell -->
+    <td style="border: none; padding-right: 3px; vertical-align: middle;">
+      <img src="https://github.com/stringdotjar.png" width="75" style="border-radius: 12px; display: block;" alt="String GitHub PFP">
+    </td>
+    <!-- Header Text Cell -->
+    <td style="border: none; vertical-align: middle;">
+      <h3 style="margin: 0; padding: 0; border: none;">String (Framework Founder)</h3>
+    </td>
+  </tr>
+</table>
 
-  <!-- Contact Info -->
-  <p>
-    <strong>GitHub</strong>: <a href="https://github.com/stringdotjar">@stringdotjar</a><br>
-    <strong>Email</strong>: <a href="mailto:stringfromjava@gmail.com">stringfromjava@gmail.com</a><br>
-    <strong>Discord</strong>: <a href="https://discord.com/users/1303562708758695937">publicstaticstring</a>
-  </p>
+<!-- Contact Info -->
+<p>
+  <strong>GitHub</strong>: <a href="https://github.com/stringdotjar">@stringdotjar</a><br>
+  <strong>Email</strong>: <a href="mailto:stringfromjava@gmail.com">stringfromjava@gmail.com</a><br>
+  <strong>Discord</strong>: <a href="https://discord.com/users/1303562708758695937">publicstaticstring</a>
+</p>
 
-  <!-- Discord Presence Widget -->
-  <a href="https://discord.com/users/1303562708758695937">
-    <img src="https://lanyard.cnrad.dev/api/1303562708758695937?showDisplayName=true&borderRadius=0" alt="Discord Presence">
-  </a>
-</div>
+<!-- Discord Presence Widget -->
+<a href="https://discord.com/users/1303562708758695937">
+  <img src="https://lanyard.cnrad.dev/api/1303562708758695937?showDisplayName=true&borderRadius=0" alt="Discord Presence">
+</a>
 
 ---
 
