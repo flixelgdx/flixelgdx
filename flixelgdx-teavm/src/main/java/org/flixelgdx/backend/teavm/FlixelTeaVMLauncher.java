@@ -97,7 +97,7 @@ public class FlixelTeaVMLauncher {
    * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
    */
   public static void launch(FlixelGame game) {
-    launch(game, FlixelRuntimeMode.RELEASE, null);
+    launch(game, FlixelRuntimeMode.RELEASE, (Runnable) null);
   }
 
   /**
