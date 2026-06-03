@@ -42,6 +42,5 @@ public interface FlixelInputManager {
   void endFrame();
 
   /** Clears internal state. Default implementation does nothing. */
-  default void reset() {
-  }
+  default void reset() {}
 }

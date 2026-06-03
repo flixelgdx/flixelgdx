@@ -125,8 +125,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * @param elapsed Seconds elapsed since the last frame.
    */
   @Override
-  public void update(float elapsed) {
-  }
+  public void update(float elapsed) {}
 
   /**
    * Override this function to control how the object is drawn. Doing so is rarely necessary
@@ -135,8 +134,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * @param batch The batch used for rendering.
    */
   @Override
-  public void draw(Batch batch) {
-  }
+  public void draw(Batch batch) {}
 
   /**
    * Whether this object should render in the current {@link FlixelGame} camera pass.

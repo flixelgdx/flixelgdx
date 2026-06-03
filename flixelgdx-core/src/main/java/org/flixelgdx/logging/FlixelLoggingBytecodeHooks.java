@@ -35,8 +35,7 @@ import org.flixelgdx.Flixel;
  */
 public final class FlixelLoggingBytecodeHooks {
 
-  private FlixelLoggingBytecodeHooks() {
-  }
+  private FlixelLoggingBytecodeHooks() {}
 
   public static void bcInfo0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {

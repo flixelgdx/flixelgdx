@@ -1686,10 +1686,8 @@ public final class Flixel {
     public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
     public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
 
-    private Signals() {
-    }
+    private Signals() {}
   }
 
-  private Flixel() {
-  }
+  private Flixel() {}
 }

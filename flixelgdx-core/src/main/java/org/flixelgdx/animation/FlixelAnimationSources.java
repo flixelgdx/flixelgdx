@@ -35,8 +35,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelAnimationSources {
 
-  private FlixelAnimationSources() {
-  }
+  private FlixelAnimationSources() {}
 
   /**
    * Adds an animation using named regions from an atlas (order preserved).

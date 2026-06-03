@@ -62,8 +62,7 @@ import java.util.Objects;
  */
 public final class FlixelSpritemapJsonLoader {
 
-  private FlixelSpritemapJsonLoader() {
-  }
+  private FlixelSpritemapJsonLoader() {}
 
   /**
    * Resolves an asset path the same way the rest of FlixelGDX does: first {@code Gdx.files.internal},

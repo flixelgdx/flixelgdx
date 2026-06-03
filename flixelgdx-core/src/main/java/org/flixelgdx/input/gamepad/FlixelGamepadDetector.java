@@ -39,8 +39,7 @@ import java.util.Locale;
  */
 public final class FlixelGamepadDetector {
 
-  private FlixelGamepadDetector() {
-  }
+  private FlixelGamepadDetector() {}
 
   /**
    * Detects the best {@link FlixelGamepadModel} for the given controller name.

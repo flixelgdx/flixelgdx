@@ -171,8 +171,7 @@ public abstract class FlixelTween implements Pool.Poolable {
   protected boolean internalRestart = false;
 
   /** Default constructor for pooling purposes. */
-  protected FlixelTween() {
-  }
+  protected FlixelTween() {}
 
   /**
    * Constructs a new tween with the provided settings.

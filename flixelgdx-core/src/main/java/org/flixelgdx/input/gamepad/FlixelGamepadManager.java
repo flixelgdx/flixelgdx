@@ -120,8 +120,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   private boolean listenerAttached;
 
-  public FlixelGamepadManager() {
-  }
+  public FlixelGamepadManager() {}
 
   /**
    * Registers a {@link ControllerListener} with gdx-controllers. Safe to call more than once.

@@ -131,8 +131,7 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param opacity Opacity in {@code [0, 1]}; non-finite values are ignored.
    */
-  default void setOpacity(float opacity) {
-  }
+  default void setOpacity(float opacity) {}
 
   /**
    * @return {@code true} if {@link #setOpacity(float)} can affect the window on this session.
@@ -144,8 +143,7 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param decorated {@code false} for a borderless window.
    */
-  default void setDecorated(boolean decorated) {
-  }
+  default void setDecorated(boolean decorated) {}
 
   /**
    * @return {@code true} if {@link #setDecorated(boolean)} is supported on this session.
@@ -177,16 +175,14 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param x Target X in screen coordinates.
    */
-  default void setX(int x) {
-  }
+  default void setX(int x) {}
 
   /**
    * Sets the window's Y position in screen coordinates, when supported.
    *
    * @param y Target Y in screen coordinates.
    */
-  default void setY(int y) {
-  }
+  default void setY(int y) {}
 
   /**
    * Moves the window so its client area origin is placed at the given screen coordinates, when supported.
@@ -194,24 +190,21 @@ public interface FlixelWindow extends FlixelShakeable {
    * @param x Target X in screen coordinates.
    * @param y Target Y in screen coordinates.
    */
-  default void setPosition(int x, int y) {
-  }
+  default void setPosition(int x, int y) {}
 
   /**
    * Moves the window horizontally by a delta in screen pixels.
    *
    * @param deltaX Pixels to add to the current X position (negative values move left).
    */
-  default void changeX(int deltaX) {
-  }
+  default void changeX(int deltaX) {}
 
   /**
    * Moves the window vertically by a delta in screen pixels.
    *
    * @param deltaY Pixels to add to the current Y position (negative values move up on backends that use upper-left origin).
    */
-  default void changeY(int deltaY) {
-  }
+  default void changeY(int deltaY) {}
 
   /**
    * Asks the OS to focus this game window (desktop only where GLFW allows it).
@@ -219,8 +212,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * <p><b>CAUTION:</b> Pulling focus away from another application is disruptive. It's advised you warn players ahead of
    * time on your store page, in a first-run dialog, or in an in-game settings label before calling this from normal gameplay.
    */
-  default void bringToForeground() {
-  }
+  default void bringToForeground() {}
 
   /**
    * @return {@code true} if {@link #bringToForeground()} can run on this session.
@@ -237,8 +229,7 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param floating {@code true} to keep the window above normal stacking, {@code false} for default stacking.
    */
-  default void setFloating(boolean floating) {
-  }
+  default void setFloating(boolean floating) {}
 
   /**
    * @return {@code true} if {@link #setFloating(boolean)} may take effect on this session.
@@ -256,8 +247,7 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param absorb {@code true} to cancel the default close handling from the windowing system.
    */
-  default void setAbsorbCloseRequests(boolean absorb) {
-  }
+  default void setAbsorbCloseRequests(boolean absorb) {}
 
   /**
    * @return {@code true} if {@link #setAbsorbCloseRequests(boolean)} is wired for this session.

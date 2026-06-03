@@ -100,8 +100,7 @@ public final class FlixelFontRegistry {
    */
   private static final ObjectMap<String, BitmapFont> freeTypeBitmapFonts = new ObjectMap<>();
 
-  private FlixelFontRegistry() {
-  }
+  private FlixelFontRegistry() {}
 
   /**
    * Registers a TrueType font under the given identifier. If an entry with the same

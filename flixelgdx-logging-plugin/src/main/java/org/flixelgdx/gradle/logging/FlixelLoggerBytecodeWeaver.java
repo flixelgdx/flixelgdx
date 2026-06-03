@@ -138,8 +138,7 @@ public final class FlixelLoggerBytecodeWeaver {
   private record Replacement(String newName, String newDescriptor) {
   }
 
-  private FlixelLoggerBytecodeWeaver() {
-  }
+  private FlixelLoggerBytecodeWeaver() {}
 
   /**
    * @return {@code true} if at least one invocation was rewritten.

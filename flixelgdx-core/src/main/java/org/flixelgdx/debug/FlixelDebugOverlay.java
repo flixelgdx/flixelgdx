@@ -407,8 +407,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   /** Hook for subclass UI state updates that should happen every frame while the overlay is visible. */
-  protected void onUpdateUI(float elapsed) {
-  }
+  protected void onUpdateUI(float elapsed) {}
 
   private void handleToggleKeys() {
     // Use the raw* variants so the toggle keys still work even while a Dear ImGui text field
@@ -452,15 +451,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * in renderer subclasses that need to keep a parallel cache (for example a {@code String[]} for
    * Dear ImGui calls that only accept {@link String}).
    */
-  protected void onWatchEntriesRefreshed() {
-  }
+  protected void onWatchEntriesRefreshed() {}
 
   /**
    * Hook fired after {@link #cachedConsoleBlocks} has been rebuilt. Override in renderer subclasses
    * that need to keep a parallel cache (for example a {@code String[]} for Dear ImGui).
    */
-  protected void onConsoleBlocksRebuilt() {
-  }
+  protected void onConsoleBlocksRebuilt() {}
 
   /**
    * Hook fired right after a new {@link FlixelLogEntry} has been pushed into {@link #logBuffer}.
@@ -470,8 +467,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    *
    * @param line The pooled buffer that was just populated.
    */
-  protected void onLogEntryAppended(BufferedLogLine line) {
-  }
+  protected void onLogEntryAppended(BufferedLogLine line) {}
 
   /**
    * Override to tell the framework's input layer that another UI layer (typically the imgui
@@ -840,8 +836,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * @param width New window width in pixels.
    * @param height New window height in pixels.
    */
-  public void resize(int width, int height) {
-  }
+  public void resize(int width, int height) {}
 
   private void reclaimConsoleBlocksToPool() {
     for (int i = 0; i < cachedConsoleBlocks.size; i++) {
@@ -951,8 +946,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     public static final int DEFAULT_DEBUG_CAMERA_CYCLE_LEFT = FlixelKey.LEFT;
     public static final int DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT = FlixelKey.RIGHT;
 
-    private Keybinds() {
-    }
+    private Keybinds() {}
   }
 
   /**

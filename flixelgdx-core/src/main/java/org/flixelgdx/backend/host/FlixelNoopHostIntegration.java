@@ -42,8 +42,7 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   }
 
   @Override
-  public void requestAttention() {
-  }
+  public void requestAttention() {}
 
   @Override
   public boolean supportsDesktopNotification() {

@@ -103,8 +103,7 @@ public class FlixelTimerManager extends FlixelBasic {
   }
 
   @Override
-  public final void draw(Batch batch) {
-  }
+  public final void draw(Batch batch) {}
 
   @Override
   public void destroy() {
