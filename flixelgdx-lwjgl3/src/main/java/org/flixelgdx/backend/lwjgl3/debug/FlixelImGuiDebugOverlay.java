@@ -510,7 +510,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         Input.Keys.UNKNOWN,
         Input.Keys.POWER,
         Input.Keys.BUTTON_MODE,
-        Input.Keys.MEDIA_PLAY_PAUSE -> true;
+        Input.Keys.MEDIA_PLAY_PAUSE ->
+      true;
     default -> false;
     };
   }
