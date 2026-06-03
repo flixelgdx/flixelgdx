@@ -38,6 +38,7 @@ import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
 import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -145,6 +146,32 @@ public class FlixelLwjgl3Launcher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
       FlixelLwjgl3ApplicationConfiguration configuration) {
+    launch(game, runtimeMode, configuration, null);
+  }
+
+  /**
+   * Launches the LWJGL3 version of the Flixel game with an optional pre-initialization callback.
+   *
+   * <p>This is the most flexible overload. {@code onBeforeInitialize} fires after all default
+   * FlixelGDX backend services (alerter, audio, debug overlay, etc.) have been registered but
+   * before {@link Flixel#initialize} is called. Use it to override any of those defaults without
+   * needing to duplicate the rest of the launcher wiring:
+   *
+   * <pre>{@code
+   * FlixelLwjgl3Launcher.launch(game, FlixelRuntimeMode.DEBUG, config, () -> {
+   *     Flixel.setDebugOverlay(MyCustomOverlay::new);
+   *     Flixel.setAlerter(myCustomAlerter);
+   * });
+   * }</pre>
+   *
+   * @param game The game instance to launch.
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
+   * @param configuration The {@link FlixelLwjgl3ApplicationConfiguration} to use.
+   * @param onBeforeInitialize Optional callback invoked just before {@link Flixel#initialize}.
+   *     Pass {@code null} to skip.
+   */
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
+      FlixelLwjgl3ApplicationConfiguration configuration, @Nullable Runnable onBeforeInitialize) {
     prepareLinuxAwtCompatibility();
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
@@ -165,6 +192,9 @@ public class FlixelLwjgl3Launcher {
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {
       Flixel.setDebugOverlay(FlixelImGuiDebugOverlay::new);
+    }
+    if (onBeforeInitialize != null) {
+      onBeforeInitialize.run();
     }
     Flixel.initialize(game);
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());

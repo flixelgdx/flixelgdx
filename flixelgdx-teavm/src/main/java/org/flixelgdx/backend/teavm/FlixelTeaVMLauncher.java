@@ -124,6 +124,32 @@ public class FlixelTeaVMLauncher {
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
       @Nullable Consumer<WebApplicationConfiguration> configCustomizer) {
+    launch(game, runtimeMode, configCustomizer, null);
+  }
+
+  /**
+   * Launches the web version of the game with an optional pre-initialization callback.
+   *
+   * <p>{@code onBeforeInitialize} fires after all default FlixelGDX backend services (alerter,
+   * audio, debug overlay, etc.) have been registered but before {@link Flixel#initialize} is
+   * called. Use it to override any of those defaults without needing to duplicate the rest of
+   * the launcher wiring:
+   *
+   * <pre>{@code
+   * FlixelTeaVMLauncher.launch(game, FlixelRuntimeMode.DEBUG, null, () -> {
+   *     Flixel.setDebugOverlay(MyCustomOverlay::new);
+   * });
+   * }</pre>
+   *
+   * @param game The game instance to launch.
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session.
+   * @param configCustomizer Optional consumer that can modify the web configuration before the application starts.
+   * @param onBeforeInitialize Optional callback invoked just before {@link Flixel#initialize}.
+   *     Pass {@code null} to skip.
+   */
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
+      @Nullable Consumer<WebApplicationConfiguration> configCustomizer,
+      @Nullable Runnable onBeforeInitialize) {
     Flixel.setAlerter(new FlixelTeaVMAlerter());
     Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
     Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit);
@@ -132,6 +158,9 @@ public class FlixelTeaVMLauncher {
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {
       Flixel.setDebugOverlay(FlixelTeaVMDebugOverlay::new);
+    }
+    if (onBeforeInitialize != null) {
+      onBeforeInitialize.run();
     }
     Flixel.initialize(game);
 
