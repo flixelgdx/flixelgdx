@@ -22,23 +22,20 @@ direction, releases, and all decisions that affect the framework and its communi
 
 ## Current Project Leaders
 
-<div>
-  <img src="https://github.com/stringdotjar.png" width="75" align="left" style="border-radius: 12px; margin-right: 15px;" alt="String GitHub PFP">
-  <h3>String (Framework Founder)</h3>
-  <br clear="left"/>
+<p>
+  <img src="https://github.com/stringdotjar.png" width="75" align="center" style="border-radius: 12px; margin-right: 10px;" alt="String GitHub PFP">
+  <strong><font size="4">String (Framework Founder)</font></strong>
+</p>
 
-  <!-- Contact Info -->
-  <p>
-    <strong>GitHub</strong>: <a href="https://github.com/stringdotjar">@stringdotjar</a><br>
-    <strong>Email</strong>: <a href="mailto:stringfromjava@gmail.com">stringfromjava@gmail.com</a><br>
-    <strong>Discord</strong>: <a href="https://discord.com/users/1303562708758695937">publicstaticstring</a>
-  </p>
+<p>
+  <strong>GitHub</strong>: <a href="https://github.com/stringdotjar">@stringdotjar</a><br>
+  <strong>Email</strong>: <a href="mailto:stringfromjava@gmail.com">stringfromjava@gmail.com</a><br>
+  <strong>Discord</strong>: <a href="https://discord.com/users/1303562708758695937">publicstaticstring</a>
+</p>
 
-  <!-- Discord Presence Widget -->
-  <a href="https://discord.com/users/1303562708758695937">
-    <img src="https://lanyard.cnrad.dev/api/1303562708758695937?showDisplayName=true&borderRadius=0" alt="Discord Presence">
-  </a>
-</div>
+<a href="https://discord.com/users/1303562708758695937">
+  <img src="https://lanyard.cnrad.dev/api/1303562708758695937?showDisplayName=true&borderRadius=0" alt="Discord Presence">
+</a>
 
 ---
 
