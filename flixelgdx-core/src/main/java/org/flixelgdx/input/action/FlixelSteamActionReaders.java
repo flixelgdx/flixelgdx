@@ -50,5 +50,6 @@ public final class FlixelSteamActionReaders {
     }
   };
 
-  private FlixelSteamActionReaders() {}
+  private FlixelSteamActionReaders() {
+  }
 }

@@ -23,10 +23,10 @@
  */
 package org.flixelgdx.asset;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Default pooled implementation of {@link FlixelAsset}; constructed only via
@@ -55,10 +55,9 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
    * {@link org.flixelgdx.graphics.FlixelGraphic}.
    */
   protected FlixelTypedAsset(
-    @NotNull FlixelAssetManager assetManager,
-    @NotNull String assetKey,
-    @NotNull Class<T> type
-  ) {
+      @NotNull FlixelAssetManager assetManager,
+      @NotNull String assetKey,
+      @NotNull Class<T> type) {
     Objects.requireNonNull(assetManager, "Asset manager cannot be null.");
     Objects.requireNonNull(assetKey, "Asset key cannot be null/empty.");
     Objects.requireNonNull(type, "Type cannot be null.");
@@ -127,9 +126,8 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
   public T require() {
     if (!assetManager.isLoaded(assetKey, type)) {
       throw new IllegalStateException(
-        "Asset not loaded: \"" + assetKey + "\" (" + type.getSimpleName() + "). "
-          + "Preload it in a loading state (Flixel.assets.load + Flixel.assets.update), or call loadNow() explicitly."
-      );
+          "Asset not loaded: \"" + assetKey + "\" (" + type.getSimpleName() + "). "
+              + "Preload it in a loading state (Flixel.assets.load + Flixel.assets.update), or call loadNow() explicitly.");
     }
     return assetManager.get(assetKey, type);
   }

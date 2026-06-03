@@ -28,7 +28,6 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.math.MathUtils;
 
 import org.flixelgdx.backend.window.FlixelWindow;
-
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -243,7 +242,8 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
     }
     Lwjgl3Graphics g = (Lwjgl3Graphics) Gdx.graphics;
     long handle = g.getWindow().getWindowHandle();
-    g.getWindow().postRunnable(() -> GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_FLOATING, floating ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE));
+    g.getWindow().postRunnable(
+        () -> GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_FLOATING, floating ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE));
   }
 
   @Override

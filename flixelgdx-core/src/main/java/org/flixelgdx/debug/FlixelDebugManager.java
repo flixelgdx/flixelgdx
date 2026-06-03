@@ -28,12 +28,11 @@ import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelObject;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The single entry point for everything related to the FlixelGDX debugger.
@@ -79,7 +78,8 @@ public class FlixelDebugManager {
     void invoke(@NotNull FlixelDebugCommandArgs args);
   }
 
-  record RegisteredCommand(String name, CommandHandler handler) {}
+  record RegisteredCommand(String name, CommandHandler handler) {
+  }
 
   /**
    * Regex enforced by {@link #registerCommand(String, Consumer)}. A valid command name must
@@ -251,9 +251,9 @@ public class FlixelDebugManager {
     }
     if (!VALID_COMMAND_NAME.matcher(name).matches()) {
       throw new IllegalArgumentException(
-        "Invalid command name '" + name
-          + "'. Command names may only contain letters and periods (regex: "
-          + VALID_COMMAND_NAME.pattern() + ").");
+          "Invalid command name '" + name
+              + "'. Command names may only contain letters and periods (regex: "
+              + VALID_COMMAND_NAME.pattern() + ").");
     }
   }
 
@@ -291,7 +291,7 @@ public class FlixelDebugManager {
     RegisteredCommand cmd = commands.get(name);
     if (cmd == null) {
       Flixel.error("FlixelDebug", "Unknown command \"" + name + "\". Type \"help\" to see "
-        + "the registered commands.");
+          + "the registered commands.");
       return false;
     }
     String[] argv = new String[tokens.length - 1];
@@ -300,7 +300,7 @@ public class FlixelDebugManager {
       cmd.handler.invoke(new FlixelDebugCommandArgs(argv));
     } catch (Throwable t) {
       Flixel.error("FlixelDebug", "Command \"" + name + "\" threw " + t.getClass().getSimpleName()
-        + ": " + t.getMessage());
+          + ": " + t.getMessage());
       return false;
     }
     return true;

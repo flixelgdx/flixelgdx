@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.logging;
 
+import com.badlogic.gdx.ApplicationLogger;
+import com.badlogic.gdx.utils.Array;
+
 import org.flixelgdx.Flixel;
 import org.flixelgdx.util.FlixelAsciiCodes;
 import org.flixelgdx.util.FlixelString;
@@ -30,9 +33,6 @@ import org.flixelgdx.util.FlixelString;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
-
-import com.badlogic.gdx.ApplicationLogger;
-import com.badlogic.gdx.utils.Array;
 
 /**
  * Logger instance for Flixel that formats and outputs log messages to the console and optionally
@@ -150,8 +150,8 @@ public class FlixelLogger implements ApplicationLogger {
    */
   public void setLogsFolder(String absolutePathToLogsFolder) {
     this.customLogsFolderPath = (absolutePathToLogsFolder == null || absolutePathToLogsFolder.isEmpty())
-      ? null
-      : absolutePathToLogsFolder.replaceAll("/$", "");
+        ? null
+        : absolutePathToLogsFolder.replaceAll("/$", "");
   }
 
   public String getLogsFolder() {
@@ -283,11 +283,11 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site (no suffix).
    */
   public void infoWithSite(
-    Object message,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     infoWithSite(defaultTag, message, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
   }
 
@@ -306,21 +306,21 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void infoWithSite(
-    String tag,
-    Object message,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      String tag,
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     outputLog(
-      tag,
-      evaluateMessage(message),
-      FlixelLogLevel.INFO,
-      true,
-      sourceFileName,
-      lineNumber,
-      declaringClassName,
-      declaringMethodName);
+        tag,
+        evaluateMessage(message),
+        FlixelLogLevel.INFO,
+        true,
+        sourceFileName,
+        lineNumber,
+        declaringClassName,
+        declaringMethodName);
   }
 
   /**
@@ -356,11 +356,11 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void warnWithSite(
-    Object message,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     warnWithSite(defaultTag, message, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
   }
 
@@ -379,21 +379,21 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void warnWithSite(
-    String tag,
-    Object message,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      String tag,
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     outputLog(
-      tag,
-      evaluateMessage(message),
-      FlixelLogLevel.WARN,
-      true,
-      sourceFileName,
-      lineNumber,
-      declaringClassName,
-      declaringMethodName);
+        tag,
+        evaluateMessage(message),
+        FlixelLogLevel.WARN,
+        true,
+        sourceFileName,
+        lineNumber,
+        declaringClassName,
+        declaringMethodName);
   }
 
   /**
@@ -435,7 +435,8 @@ public class FlixelLogger implements ApplicationLogger {
    * @param throwable The exception to append to the log output, or {@code null} if none.
    */
   public void error(String tag, Object message, Throwable throwable) {
-    String msg = (throwable != null) ? (evaluateMessage(message) + " | Exception: " + throwable) : evaluateMessage(message);
+    String msg =
+        (throwable != null) ? (evaluateMessage(message) + " | Exception: " + throwable) : evaluateMessage(message);
     outputLog(tag, msg, FlixelLogLevel.ERROR, false, null, 0, null, null);
   }
 
@@ -453,11 +454,11 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void errorWithSite(
-    Object message,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     errorWithSite(defaultTag, message, null, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
   }
 
@@ -476,12 +477,12 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void errorWithSite(
-    Object message,
-    Throwable throwable,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      Object message,
+      Throwable throwable,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     errorWithSite(defaultTag, message, throwable, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
   }
 
@@ -500,12 +501,12 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void errorWithSite(
-    String tag,
-    Object message,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      String tag,
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
     errorWithSite(tag, message, null, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
   }
 
@@ -525,23 +526,24 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName The simple name of the method containing the call site.
    */
   public void errorWithSite(
-    String tag,
-    Object message,
-    Throwable throwable,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
-    String msg = (throwable != null) ? (evaluateMessage(message) + " | Exception: " + throwable) : evaluateMessage(message);
+      String tag,
+      Object message,
+      Throwable throwable,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
+    String msg =
+        (throwable != null) ? (evaluateMessage(message) + " | Exception: " + throwable) : evaluateMessage(message);
     outputLog(
-      tag,
-      msg,
-      FlixelLogLevel.ERROR,
-      true,
-      sourceFileName,
-      lineNumber,
-      declaringClassName,
-      declaringMethodName);
+        tag,
+        msg,
+        FlixelLogLevel.ERROR,
+        true,
+        sourceFileName,
+        lineNumber,
+        declaringClassName,
+        declaringMethodName);
   }
 
   /**
@@ -565,14 +567,14 @@ public class FlixelLogger implements ApplicationLogger {
    * @param declaringMethodName Simple method name when explicit; ignored when not explicit.
    */
   protected void outputLog(
-    String tag,
-    String rawMessage,
-    FlixelLogLevel level,
-    boolean explicitSite,
-    String sourceFileName,
-    int lineNumber,
-    String declaringClassName,
-    String declaringMethodName) {
+      String tag,
+      String rawMessage,
+      FlixelLogLevel level,
+      boolean explicitSite,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
 
     String file;
     String simpleFile;
@@ -590,12 +592,12 @@ public class FlixelLogger implements ApplicationLogger {
       // Extract the package path for a more detailed "simpleFile" path.
       int lastDot = safeClass.lastIndexOf('.');
       String packagePath = (lastDot > 0)
-        ? safeClass.substring(0, lastDot).replace('.', '/')
-        : "";
+          ? safeClass.substring(0, lastDot).replace('.', '/')
+          : "";
 
       simpleFile = packagePath.isEmpty()
-        ? safeFile + ":" + safeLine
-        : packagePath + "/" + safeFile + ":" + safeLine;
+          ? safeFile + ":" + safeLine
+          : packagePath + "/" + safeFile + ":" + safeLine;
 
       method = safeMethodName + "()";
     } else {
@@ -616,12 +618,12 @@ public class FlixelLogger implements ApplicationLogger {
         String className = caller.getClassName();
         int lastDot = (className != null) ? className.lastIndexOf('.') : -1;
         String packagePath = (lastDot > 0)
-          ? className.substring(0, lastDot).replace('.', '/')
-          : "";
+            ? className.substring(0, lastDot).replace('.', '/')
+            : "";
 
         simpleFile = packagePath.isEmpty()
-          ? callerFile + ":" + caller.getLineNumber()
-          : packagePath + "/" + callerFile + ":" + caller.getLineNumber();
+            ? callerFile + ":" + caller.getLineNumber()
+            : packagePath + "/" + callerFile + ":" + caller.getLineNumber();
 
         // Use method name from the stack frame, or "unknownMethod" as a fallback.
         method = ((caller.getMethodName() != null) ? caller.getMethodName() : "unknownMethod") + "()";
@@ -630,9 +632,9 @@ public class FlixelLogger implements ApplicationLogger {
 
     // Apply the color and underlining based on the level.
     String color = switch (level) {
-      case INFO -> FlixelAsciiCodes.WHITE;
-      case WARN -> FlixelAsciiCodes.YELLOW;
-      case ERROR -> FlixelAsciiCodes.RED;
+    case INFO -> FlixelAsciiCodes.WHITE;
+    case WARN -> FlixelAsciiCodes.YELLOW;
+    case ERROR -> FlixelAsciiCodes.RED;
     };
     boolean underlineFile = (level == FlixelLogLevel.ERROR);
 
@@ -641,7 +643,8 @@ public class FlixelLogger implements ApplicationLogger {
     FlixelLogConsoleSink consoleSink = Flixel.getLogConsoleSink();
     if (consoleSink != null) {
       String safeTag = tag != null ? tag : "";
-      consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts, logMode == FlixelLogMode.DETAILED);
+      consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts,
+          logMode == FlixelLogMode.DETAILED);
     } else {
       // Console: use current log mode.
       consoleLine.clear();
@@ -717,7 +720,7 @@ public class FlixelLogger implements ApplicationLogger {
    * @param underline Whether to append the underline code.
    */
   private void appendColored(
-    FlixelString out, String text, String color, boolean bold, boolean italic, boolean underline) {
+      FlixelString out, String text, String color, boolean bold, boolean italic, boolean underline) {
     if (bold) {
       out.concat(FlixelAsciiCodes.BOLD);
     }

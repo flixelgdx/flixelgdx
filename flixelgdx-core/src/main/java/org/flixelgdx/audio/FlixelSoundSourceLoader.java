@@ -36,7 +36,8 @@ import com.badlogic.gdx.utils.Array;
  *
  * <p>No file IO is performed here; the source spawns {@link FlixelSound} instances when played.
  */
-public final class FlixelSoundSourceLoader extends SynchronousAssetLoader<FlixelSoundSource, FlixelSoundSourceLoader.FlixelSoundSourceParameter> {
+public final class FlixelSoundSourceLoader
+    extends SynchronousAssetLoader<FlixelSoundSource, FlixelSoundSourceLoader.FlixelSoundSourceParameter> {
 
   public static final class FlixelSoundSourceParameter extends AssetLoaderParameters<FlixelSoundSource> {
     public boolean external = false;
@@ -48,17 +49,17 @@ public final class FlixelSoundSourceLoader extends SynchronousAssetLoader<Flixel
 
   @Override
   public FlixelSoundSource load(AssetManager assetManager,
-                                String fileName,
-                                FileHandle file,
-                                FlixelSoundSourceParameter parameter) {
+      String fileName,
+      FileHandle file,
+      FlixelSoundSourceParameter parameter) {
     boolean external = parameter != null && parameter.external;
     return new FlixelSoundSource(fileName, external);
   }
 
   @Override
   @SuppressWarnings("rawtypes")
-  public Array<AssetDescriptor> getDependencies(String fileName, FileHandle file, FlixelSoundSourceParameter parameter) {
+  public Array<AssetDescriptor> getDependencies(String fileName, FileHandle file,
+      FlixelSoundSourceParameter parameter) {
     return null;
   }
 }
-

@@ -23,13 +23,13 @@
  */
 package org.flixelgdx;
 
-import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.backends.headless.HeadlessApplication;
 import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration;
+
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * Starts a minimal libGDX headless application so {@link com.badlogic.gdx.Gdx#app} and related statics are valid for tests.
@@ -43,7 +43,8 @@ public final class GdxHeadlessExtension implements BeforeAllCallback, AfterAllCa
   public synchronized void beforeAll(ExtensionContext context) {
     if (refCount == 0) {
       HeadlessApplicationConfiguration configuration = new HeadlessApplicationConfiguration();
-      application = new HeadlessApplication(new ApplicationAdapter() {}, configuration);
+      application = new HeadlessApplication(new ApplicationAdapter() {
+      }, configuration);
     }
     refCount++;
   }

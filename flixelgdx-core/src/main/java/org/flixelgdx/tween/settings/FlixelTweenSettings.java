@@ -26,8 +26,8 @@ package org.flixelgdx.tween.settings;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.functional.supplier.FloatSupplier;
-import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.FlixelEase;
+import org.flixelgdx.tween.FlixelTween;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,8 +63,8 @@ public class FlixelTweenSettings {
    * @param ease The easer function the tween should use (aka how it should be animated).
    */
   public FlixelTweenSettings(
-    @NotNull FlixelTweenType type,
-    @Nullable FlixelEase.FunkinEaseFunction ease) {
+      @NotNull FlixelTweenType type,
+      @Nullable FlixelEase.FunkinEaseFunction ease) {
     this.duration = 1.0f;
     this.startDelay = 0.0f;
     this.loopDelay = 0.0f;
@@ -90,8 +90,8 @@ public class FlixelTweenSettings {
    * @return {@code this} tween settings object for chaining.
    */
   public FlixelTweenSettings addGoal(@NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalGetter getter,
-                                     float toValue,
-                                     @NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalSetter setter) {
+      float toValue,
+      @NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalSetter setter) {
     goals.add(new FlixelTweenGoal(getter, toValue, setter));
     return this;
   }
@@ -205,7 +205,8 @@ public class FlixelTweenSettings {
    * @param toValue The value to tween the property to.
    * @param setter Consumes the interpolated value on every tween update.
    */
-  public record FlixelTweenGoal(@NotNull FloatSupplier getter, float toValue, @NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalSetter setter) {
+  public record FlixelTweenGoal(@NotNull FloatSupplier getter, float toValue,
+      @NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalSetter setter) {
 
     /** Supplies a primitive {@code float} without boxing. */
     @FunctionalInterface

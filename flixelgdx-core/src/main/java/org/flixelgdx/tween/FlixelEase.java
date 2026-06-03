@@ -37,7 +37,8 @@ public final class FlixelEase {
   private static final float ELASTIC_AMPLITUDE = 1;
   private static final float ELASTIC_PERIOD = 0.4f;
 
-  private FlixelEase() {}
+  private FlixelEase() {
+  }
 
   public static float linear(float t) {
     return t;
@@ -132,9 +133,12 @@ public final class FlixelEase {
   }
 
   public static float bounceOut(float t) {
-    if (t < B1) return (float) (7.5625 * t * t);
-    if (t < B2) return (float) (7.5625 * (t - B3) * (t - B3) + .75);
-    if (t < B4) return (float) (7.5625 * (t - B5) * (t - B5) + .9375);
+    if (t < B1)
+      return (float) (7.5625 * t * t);
+    if (t < B2)
+      return (float) (7.5625 * (t - B3) * (t - B3) + .75);
+    if (t < B4)
+      return (float) (7.5625 * (t - B5) * (t - B5) + .9375);
     return (float) (7.5625 * (t - B6) * (t - B6) + .984375);
   }
 
@@ -151,8 +155,7 @@ public final class FlixelEase {
   }
 
   public static float circInOut(float t) {
-    return (float)
-      (t <= .5
+    return (float) (t <= .5
         ? (Math.sqrt(1 - t * t * 4) - 1) / -2
         : (Math.sqrt(1 - (t * 2 - 2) * (t * 2 - 2)) + 1) / 2);
   }
@@ -166,8 +169,7 @@ public final class FlixelEase {
   }
 
   public static float expoInOut(float t) {
-    return (float)
-      (t < .5 ? Math.pow(2, 10 * (t * 2 - 1)) / 2 : (-Math.pow(2, -10 * (t * 2 - 1)) + 2) / 2);
+    return (float) (t < .5 ? Math.pow(2, 10 * (t * 2 - 1)) / 2 : (-Math.pow(2, -10 * (t * 2 - 1)) + 2) / 2);
   }
 
   public static float backIn(float t) {
@@ -180,41 +182,38 @@ public final class FlixelEase {
 
   public static float backInOut(float t) {
     t *= 2;
-    if (t < 1) return (float) (t * t * (2.70158 * t - 1.70158) / 2);
+    if (t < 1)
+      return (float) (t * t * (2.70158 * t - 1.70158) / 2);
     t--;
     return (float) ((1 - (--t) * (t) * (-2.70158 * t - 1.70158)) / 2 + .5);
   }
 
   public static float elasticIn(float t) {
-    return (float)
-      -(ELASTIC_AMPLITUDE
+    return (float) -(ELASTIC_AMPLITUDE
         * Math.pow(2, 10 * (t -= 1))
         * Math.sin(
-        (t - (ELASTIC_PERIOD / (2 * Math.PI) * Math.asin(1 / ELASTIC_AMPLITUDE)))
-          * (2 * Math.PI)
-          / ELASTIC_PERIOD));
+            (t - (ELASTIC_PERIOD / (2 * Math.PI) * Math.asin(1 / ELASTIC_AMPLITUDE)))
+                * (2 * Math.PI)
+                / ELASTIC_PERIOD));
   }
 
   public static float elasticOut(float t) {
-    return (float)
-      (ELASTIC_AMPLITUDE
+    return (float) (ELASTIC_AMPLITUDE
         * Math.pow(2, -10 * t)
         * Math.sin(
-        (t - (ELASTIC_PERIOD / (2 * Math.PI) * Math.asin(1 / ELASTIC_AMPLITUDE)))
-          * (2 * Math.PI)
-          / ELASTIC_PERIOD)
+            (t - (ELASTIC_PERIOD / (2 * Math.PI) * Math.asin(1 / ELASTIC_AMPLITUDE)))
+                * (2 * Math.PI)
+                / ELASTIC_PERIOD)
         + 1);
   }
 
   public static float elasticInOut(float t) {
     if (t < 0.5) {
-      return (float)
-        (-0.5
+      return (float) (-0.5
           * (Math.pow(2, 10 * (t -= 0.5f))
-          * Math.sin((t - (ELASTIC_PERIOD / 4)) * (2 * Math.PI) / ELASTIC_PERIOD)));
+              * Math.sin((t - (ELASTIC_PERIOD / 4)) * (2 * Math.PI) / ELASTIC_PERIOD)));
     }
-    return (float)
-      (Math.pow(2, -10 * (t -= 0.5f))
+    return (float) (Math.pow(2, -10 * (t -= 0.5f))
         * Math.sin((t - (ELASTIC_PERIOD / 4)) * (2 * Math.PI) / ELASTIC_PERIOD)
         * 0.5
         + 1);

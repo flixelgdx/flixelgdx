@@ -30,7 +30,6 @@ import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelWrapperFactory;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,8 +76,10 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
     Array<String> toRemove = null;
     for (ObjectMap.Entry<String, FlixelGraphic> e : cache) {
       FlixelGraphic g = e.value;
-      if (g == null) continue;
-      if (g.getRefCount() > 0) continue;
+      if (g == null)
+        continue;
+      if (g.getRefCount() > 0)
+        continue;
 
       if (g.isOwned()) {
         Texture t = g.getOwnedTexture();
@@ -86,7 +87,8 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
           t.dispose();
         }
       } else {
-        if (g.isPersist()) continue;
+        if (g.isPersist())
+          continue;
         if (am != null && am.isLoaded(g.getAssetKey(), Texture.class)) {
           am.unload(g.getAssetKey());
         }

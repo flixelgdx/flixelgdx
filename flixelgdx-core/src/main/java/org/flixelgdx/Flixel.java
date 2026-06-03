@@ -40,27 +40,22 @@ import org.flixelgdx.backend.window.FlixelNoopWindow;
 import org.flixelgdx.backend.window.FlixelWindow;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
-import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
+import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.logging.FlixelLogConsoleSink;
-import org.flixelgdx.logging.FlixelLogFileHandler;
-import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
-import org.flixelgdx.tween.type.FlixelGoalTween;
-import org.flixelgdx.util.save.FlixelSave;
-import org.flixelgdx.util.timer.FlixelTimer;
-import org.flixelgdx.util.signal.FlixelSignal;
-import org.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
-import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
+import org.flixelgdx.logging.FlixelLogConsoleSink;
+import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.type.FlixelAngleTween;
 import org.flixelgdx.tween.type.FlixelColorTween;
 import org.flixelgdx.tween.type.FlixelFlickerTween;
+import org.flixelgdx.tween.type.FlixelGoalTween;
 import org.flixelgdx.tween.type.FlixelNumTween;
 import org.flixelgdx.tween.type.FlixelShakeTween;
 import org.flixelgdx.tween.type.motion.FlixelCircularMotion;
@@ -69,7 +64,11 @@ import org.flixelgdx.tween.type.motion.FlixelLinearMotion;
 import org.flixelgdx.tween.type.motion.FlixelLinearPath;
 import org.flixelgdx.tween.type.motion.FlixelQuadMotion;
 import org.flixelgdx.tween.type.motion.FlixelQuadPath;
-
+import org.flixelgdx.util.save.FlixelSave;
+import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
+import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
+import org.flixelgdx.util.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -727,13 +726,16 @@ public final class Flixel {
     // Set the game and backend systems.
     game = gameInstance;
     if (alerter == null) {
-      throw new IllegalStateException("Flixel alerter not set. Call Flixel.setAlerter(...) before Flixel.initialize(...).");
+      throw new IllegalStateException(
+          "Flixel alerter not set. Call Flixel.setAlerter(...) before Flixel.initialize(...).");
     }
     if (stackTraceProvider == null) {
-      throw new IllegalStateException("Flixel stack trace provider not set. Call Flixel.setStackTraceProvider(...) before Flixel.initialize(...).");
+      throw new IllegalStateException(
+          "Flixel stack trace provider not set. Call Flixel.setStackTraceProvider(...) before Flixel.initialize(...).");
     }
     if (soundFactory == null) {
-      throw new IllegalStateException("Flixel sound backend factory not set. Call Flixel.setSoundBackendFactory(...) before Flixel.initialize(...).");
+      throw new IllegalStateException(
+          "Flixel sound backend factory not set. Call Flixel.setSoundBackendFactory(...) before Flixel.initialize(...).");
     }
 
     // Initialize the core systems.
@@ -756,17 +758,17 @@ public final class Flixel {
 
     // Register default tween pools (pool factories avoid extra allocations when pooling tweens).
     FlixelTween.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null))
-      .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
-      .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
-      .registerTweenType(FlixelColorTween.class, () -> new FlixelColorTween(null))
-      .registerTweenType(FlixelShakeTween.class, () -> new FlixelShakeTween(null))
-      .registerTweenType(FlixelFlickerTween.class, () -> new FlixelFlickerTween(null))
-      .registerTweenType(FlixelLinearMotion.class, () -> new FlixelLinearMotion(null))
-      .registerTweenType(FlixelCircularMotion.class, () -> new FlixelCircularMotion(null))
-      .registerTweenType(FlixelQuadMotion.class, () -> new FlixelQuadMotion(null))
-      .registerTweenType(FlixelCubicMotion.class, () -> new FlixelCubicMotion(null))
-      .registerTweenType(FlixelLinearPath.class, () -> new FlixelLinearPath(null))
-      .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
+        .registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null))
+        .registerTweenType(FlixelAngleTween.class, () -> new FlixelAngleTween(null))
+        .registerTweenType(FlixelColorTween.class, () -> new FlixelColorTween(null))
+        .registerTweenType(FlixelShakeTween.class, () -> new FlixelShakeTween(null))
+        .registerTweenType(FlixelFlickerTween.class, () -> new FlixelFlickerTween(null))
+        .registerTweenType(FlixelLinearMotion.class, () -> new FlixelLinearMotion(null))
+        .registerTweenType(FlixelCircularMotion.class, () -> new FlixelCircularMotion(null))
+        .registerTweenType(FlixelQuadMotion.class, () -> new FlixelQuadMotion(null))
+        .registerTweenType(FlixelCubicMotion.class, () -> new FlixelCubicMotion(null))
+        .registerTweenType(FlixelLinearPath.class, () -> new FlixelLinearPath(null))
+        .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
 
     initialized = true;
   }
@@ -930,7 +932,8 @@ public final class Flixel {
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC, Supplier<FlixelState> stateFactory) {
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC,
+      Supplier<FlixelState> stateFactory) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
     if (!initialized) {
       throw new IllegalStateException("Flixel has not been initialized yet!");
@@ -1533,12 +1536,15 @@ public final class Flixel {
    * @return {@code true} if any overlaps were detected.
    */
   public static boolean overlap(@Nullable FlixelBasic objectOrGroup1,
-                                @Nullable FlixelBasic objectOrGroup2,
-                                @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
-                                @Nullable BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
-    if (objectOrGroup1 == null) objectOrGroup1 = state;
-    if (objectOrGroup2 == null) objectOrGroup2 = state;
-    if (objectOrGroup1 == null || objectOrGroup2 == null) return false;
+      @Nullable FlixelBasic objectOrGroup2,
+      @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
+      @Nullable BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
+    if (objectOrGroup1 == null)
+      objectOrGroup1 = state;
+    if (objectOrGroup2 == null)
+      objectOrGroup2 = state;
+    if (objectOrGroup1 == null || objectOrGroup2 == null)
+      return false;
     return overlapInternal(objectOrGroup1, objectOrGroup2, notifyCallback, processCallback);
   }
 
@@ -1560,8 +1566,8 @@ public final class Flixel {
    * @return {@code true} if any objects were separated.
    */
   public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
-                                @Nullable FlixelBasic objectOrGroup2,
-                                @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback) {
+      @Nullable FlixelBasic objectOrGroup2,
+      @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback) {
     return overlap(objectOrGroup1, objectOrGroup2, notifyCallback, FlixelObject::separate);
   }
 
@@ -1570,13 +1576,13 @@ public final class Flixel {
    * no {@code notifyCallback}.
    */
   public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
-                                @Nullable FlixelBasic objectOrGroup2) {
+      @Nullable FlixelBasic objectOrGroup2) {
     return collide(objectOrGroup1, objectOrGroup2, null);
   }
 
   private static boolean overlapInternal(FlixelBasic obj1, FlixelBasic obj2,
-                                         BiConsumer<FlixelObject, FlixelObject> notifyCallback,
-                                         BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
+      BiConsumer<FlixelObject, FlixelObject> notifyCallback,
+      BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
     boolean result = false;
 
     if (obj1 instanceof FlixelGroupable<?> group1) {
@@ -1603,14 +1609,17 @@ public final class Flixel {
       return result;
     }
 
-    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2)) return false;
-    if (obj1 == obj2) return false;
-    if (!fo1.exists || !fo2.exists) return false;
+    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2))
+      return false;
+    if (obj1 == obj2)
+      return false;
+    if (!fo1.exists || !fo2.exists)
+      return false;
 
     boolean overlaps = fo1.getX() < fo2.getX() + fo2.getWidth()
-      && fo1.getX() + fo1.getWidth() > fo2.getX()
-      && fo1.getY() < fo2.getY() + fo2.getHeight()
-      && fo1.getY() + fo1.getHeight() > fo2.getY();
+        && fo1.getX() + fo1.getWidth() > fo2.getX()
+        && fo1.getY() < fo2.getY() + fo2.getHeight()
+        && fo1.getY() + fo1.getHeight() > fo2.getY();
 
     if (!overlaps) {
       return false;
@@ -1644,7 +1653,8 @@ public final class Flixel {
         Properties p = new Properties();
         p.load(in);
         String v = p.getProperty("version");
-        if (v != null && !v.isEmpty()) return v;
+        if (v != null && !v.isEmpty())
+          return v;
       }
     } catch (Exception ignored) {
       // Ignored.
@@ -1676,8 +1686,10 @@ public final class Flixel {
     public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
     public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
 
-    private Signals() {}
+    private Signals() {
+    }
   }
 
-  private Flixel() {}
+  private Flixel() {
+  }
 }

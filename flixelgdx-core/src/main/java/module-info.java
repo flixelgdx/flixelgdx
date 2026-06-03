@@ -29,7 +29,7 @@ module org.flixelgdx.core {
   exports org.flixelgdx.util.signal;
   exports org.flixelgdx.util.timer;
 
-    // Automatic module names (from JAR filenames when on the module path).
+  // Automatic module names (from JAR filenames when on the module path).
   requires transitive gdx;
   requires transitive gdx.controllers.core;
   requires transitive gdx.freetype;

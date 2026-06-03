@@ -27,14 +27,13 @@ import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelDefaultAssetManager;
+import org.flixelgdx.asset.FlixelPooledWrapper;
 import org.flixelgdx.asset.FlixelSource;
 import org.flixelgdx.asset.FlixelTypedAsset;
-import org.flixelgdx.asset.FlixelPooledWrapper;
-
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Graphic container and wrapper around a libGDX {@link Texture}, implementing {@link org.flixelgdx.asset.FlixelAsset}{@code <Texture>}
@@ -74,7 +73,7 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
 
   /**
    * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
-   * 
+   *
    * @param assetManager The parent asset manager.
    * @param assetKey The asset key.
    */
@@ -84,16 +83,17 @@ public final class FlixelGraphic extends FlixelTypedAsset<Texture> implements Fl
 
   /**
    * Creates a new {@link FlixelGraphic} with the given parent asset manager and asset key.
-   * 
+   *
    * <p>This constructor is used to create a new {@link FlixelGraphic} with an owned texture.
-   * This is typically used by {@link org.flixelgdx.FlixelSprite#makeGraphic(int, int, Color)} 
+   * This is typically used by {@link org.flixelgdx.FlixelSprite#makeGraphic(int, int, Color)}
    * and some other various methods.
    *
    * @param assetManager The parent asset manager.
    * @param assetKey The asset key.
    * @param ownedTexture The owned texture.
    */
-  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey, @Nullable Texture ownedTexture) {
+  public FlixelGraphic(@NotNull FlixelAssetManager assetManager, @NotNull String assetKey,
+      @Nullable Texture ownedTexture) {
     super(assetManager, assetKey, Texture.class);
     this.owned = (ownedTexture != null);
     this.ownedTexture = ownedTexture;

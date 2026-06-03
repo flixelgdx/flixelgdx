@@ -131,7 +131,7 @@ public interface FlixelTeaVMExtension {
    * <p>The generated page includes a {@code <canvas>} with the ID from {@link #getCanvasId()} and
    * a {@code <script src=".../teavm.js">} tag resolved from TeaVM's relative JS output path
    * (the {@code aliasTeaVmMainScript} task keeps that name valid when TeaVM uses another file name).
-   * Set to {@code false} to suppress generation entirely (you must then provide your own {@code index.html}). 
+   * Set to {@code false} to suppress generation entirely (you must then provide your own {@code index.html}).
    * Defaults to {@code true}.
    *
    * @return The {@code generate-index-html} property.

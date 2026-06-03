@@ -45,7 +45,8 @@ public final class FlixelSignalData {
   public static final class UpdateSignalData {
     private float elapsed;
 
-    public UpdateSignalData() {}
+    public UpdateSignalData() {
+    }
 
     public UpdateSignalData(float elapsed) {
       this.elapsed = elapsed;
@@ -60,7 +61,9 @@ public final class FlixelSignalData {
     }
   }
 
-  public record StateSwitchSignalData(FlixelState state) {}
+  public record StateSwitchSignalData(FlixelState state) {
+  }
 
-  private FlixelSignalData() {}
+  private FlixelSignalData() {
+  }
 }

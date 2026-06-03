@@ -25,9 +25,9 @@ package org.flixelgdx.group;
 
 import com.badlogic.gdx.utils.SnapshotArray;
 
-import java.util.function.Consumer;
-
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
 
 /**
  * Group-like containers with a typed member list. This interface is intentionally generic so libGDX projects can use

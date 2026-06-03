@@ -36,4 +36,3 @@ public interface FloatSupplier {
    */
   float getAsFloat();
 }
-

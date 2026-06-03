@@ -182,13 +182,13 @@ public final class FlixelRuntimeUtil {
     }
     StackTraceElement element = stackTrace[0];
     return "FILE="
-      + element.getFileName()
-      + ", CLASS="
-      + element.getClassName()
-      + ", METHOD="
-      + element.getMethodName()
-      + "(), LINE="
-      + element.getLineNumber();
+        + element.getFileName()
+        + ", CLASS="
+        + element.getClassName()
+        + ", METHOD="
+        + element.getMethodName()
+        + "(), LINE="
+        + element.getLineNumber();
   }
 
   /**
@@ -224,11 +224,11 @@ public final class FlixelRuntimeUtil {
   private static String defaultCodeSourcePath() {
     try {
       return FlixelRuntimeUtil.class
-        .getProtectionDomain()
-        .getCodeSource()
-        .getLocation()
-        .toURI()
-        .getPath();
+          .getProtectionDomain()
+          .getCodeSource()
+          .getLocation()
+          .toURI()
+          .getPath();
     } catch (Exception e) {
       return null;
     }
@@ -293,5 +293,6 @@ public final class FlixelRuntimeUtil {
     UNKNOWN
   }
 
-  private FlixelRuntimeUtil() {}
+  private FlixelRuntimeUtil() {
+  }
 }

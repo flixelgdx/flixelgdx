@@ -25,10 +25,10 @@ package org.flixelgdx.debug;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.SnapshotArray;
@@ -36,9 +36,9 @@ import com.badlogic.gdx.utils.SnapshotArray;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
+import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
@@ -48,13 +48,12 @@ import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelDebugUtil;
 import org.flixelgdx.util.FlixelString;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Platform-agnostic <em>controller</em> for the FlixelGDX in-game debugger. This abstract class is the
@@ -359,7 +358,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   /** Hook for subclass UI state updates that should happen every frame while the overlay is visible. */
-  protected void onUpdateUI(float elapsed) {}
+  protected void onUpdateUI(float elapsed) {
+  }
 
   private void handleToggleKeys() {
     // Use the raw* variants so the toggle keys still work even while a Dear ImGui text field
@@ -403,13 +403,15 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * in renderer subclasses that need to keep a parallel cache (for example a {@code String[]} for
    * Dear ImGui calls that only accept {@link String}).
    */
-  protected void onWatchEntriesRefreshed() {}
+  protected void onWatchEntriesRefreshed() {
+  }
 
   /**
    * Hook fired after {@link #cachedConsoleBlocks} has been rebuilt. Override in renderer subclasses
    * that need to keep a parallel cache (for example a {@code String[]} for Dear ImGui).
    */
-  protected void onConsoleBlocksRebuilt() {}
+  protected void onConsoleBlocksRebuilt() {
+  }
 
   /**
    * Hook fired right after a new {@link FlixelLogEntry} has been pushed into {@link #logBuffer}.
@@ -419,7 +421,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    *
    * @param line The pooled buffer that was just populated.
    */
-  protected void onLogEntryAppended(BufferedLogLine line) {}
+  protected void onLogEntryAppended(BufferedLogLine line) {
+  }
 
   /**
    * Override to tell the framework's input layer that another UI layer (typically the imgui
@@ -475,7 +478,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // imgui debugger is focused (otherwise our own debug controls would be filtered out by the
     // input suppression we set up to protect the game's regular input).
     boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
-      || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+        || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
     int cycleLeft = Flixel.getDebugCameraCycleLeftKey();
     int cycleRight = Flixel.getDebugCameraCycleRightKey();
     if (alt && Flixel.keys.rawJustPressed(cycleLeft) && !shouldSuppressDebugRawKeybind(cycleLeft)) {
@@ -627,7 +630,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   @Nullable
   private FlixelObject pickRecursive(@Nullable SnapshotArray<?> members, @NotNull FlixelCamera cam,
-                                     float viewX, float viewY) {
+      float viewX, float viewY) {
     if (members == null || members.size == 0) {
       return null;
     }
@@ -669,7 +672,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * plus each object's scroll factors so parallax sprites and grouped layers match what the player sees.
    */
   private static boolean overlapsObjectInView(@NotNull FlixelCamera cam, @NotNull FlixelObject obj,
-                                            float viewX, float viewY) {
+      float viewX, float viewY) {
     float vx = cam.worldToViewX(obj.getX(), obj.getScrollX());
     float vy = cam.worldToViewY(obj.getY(), obj.getScrollY());
     float w = obj.getWidth();
@@ -728,7 +731,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         }
         shapeRenderer.setColor(c[0], c[1], c[2], c[3]);
         shapeRenderer.rect(drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
-          drawable.getDebugWidth(), drawable.getDebugHeight());
+            drawable.getDebugWidth(), drawable.getDebugHeight());
       });
       shapeRenderer.end();
     }
@@ -761,7 +764,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * @param width New window width in pixels.
    * @param height New window height in pixels.
    */
-  public void resize(int width, int height) {}
+  public void resize(int width, int height) {
+  }
 
   private void reclaimConsoleBlocksToPool() {
     for (int i = 0; i < cachedConsoleBlocks.size; i++) {
@@ -772,8 +776,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   private CachedConsoleBlock obtainConsoleBlock() {
     return cachedConsoleBlockPool.size > 0
-      ? cachedConsoleBlockPool.pop()
-      : new CachedConsoleBlock();
+        ? cachedConsoleBlockPool.pop()
+        : new CachedConsoleBlock();
   }
 
   private void rebuildCachedConsoleBlocks() {
@@ -871,7 +875,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     public static final int DEFAULT_DEBUG_CAMERA_CYCLE_LEFT = FlixelKey.LEFT;
     public static final int DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT = FlixelKey.RIGHT;
 
-    private Keybinds() {}
+    private Keybinds() {
+    }
   }
 
   /**

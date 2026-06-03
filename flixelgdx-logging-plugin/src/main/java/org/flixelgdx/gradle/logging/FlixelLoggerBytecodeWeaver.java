@@ -64,75 +64,82 @@ public final class FlixelLoggerBytecodeWeaver {
 
   static {
     REPLACEMENTS.put(
-      "info(Ljava/lang/Object;)V",
-      new Replacement("infoWithSite", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "info(Ljava/lang/Object;)V",
+        new Replacement("infoWithSite",
+            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "info(Ljava/lang/String;Ljava/lang/Object;)V",
-      new Replacement(
-        "infoWithSite",
-        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "info(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "infoWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "warn(Ljava/lang/Object;)V",
-      new Replacement("warnWithSite", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "warn(Ljava/lang/Object;)V",
+        new Replacement("warnWithSite",
+            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "warn(Ljava/lang/String;Ljava/lang/Object;)V",
-      new Replacement(
-        "warnWithSite",
-        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "warn(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "warnWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "error(Ljava/lang/Object;)V",
-      new Replacement("errorWithSite", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/Object;)V",
+        new Replacement("errorWithSite",
+            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "error(Ljava/lang/Object;Ljava/lang/Throwable;)V",
-      new Replacement(
-        "errorWithSite",
-        "(Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/Object;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "errorWithSite",
+            "(Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "error(Ljava/lang/String;Ljava/lang/Object;)V",
-      new Replacement(
-        "errorWithSite",
-        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "errorWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
-      "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
-      new Replacement(
-        "errorWithSite",
-        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "errorWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
 
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "info(Ljava/lang/Object;)V",
-      new Replacement(
-        "bcInfo0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "info(Ljava/lang/Object;)V",
+        new Replacement(
+            "bcInfo0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "info(Ljava/lang/String;Ljava/lang/Object;)V",
-      new Replacement(
-        "bcInfo1", "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "info(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "bcInfo1",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "warn(Ljava/lang/Object;)V",
-      new Replacement(
-        "bcWarn0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "warn(Ljava/lang/Object;)V",
+        new Replacement(
+            "bcWarn0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "warn(Ljava/lang/String;Ljava/lang/Object;)V",
-      new Replacement(
-        "bcWarn1", "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "warn(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "bcWarn1",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "error(Ljava/lang/String;)V",
-      new Replacement(
-        "bcErr0", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/String;)V",
+        new Replacement(
+            "bcErr0", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "error(Ljava/lang/String;Ljava/lang/Object;)V",
-      new Replacement(
-        "bcErr1",
-        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "bcErr1",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     FLIXEL_STATIC_REPLACEMENTS.put(
-      "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
-      new Replacement(
-        "bcErr2",
-        "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+        "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcErr2",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
   }
 
-  private record Replacement(String newName, String newDescriptor) {}
+  private record Replacement(String newName, String newDescriptor) {
+  }
 
-  private FlixelLoggerBytecodeWeaver() {}
+  private FlixelLoggerBytecodeWeaver() {
+  }
 
   /**
    * @return {@code true} if at least one invocation was rewritten.
@@ -200,12 +207,12 @@ public final class FlixelLoggerBytecodeWeaver {
    * {@code method} on top, matching JVM parameter popping for {@code *WithSite} and hook signatures (rightmost parameter first).
    */
   private static void insertSiteArguments(
-    InsnList list,
-    MethodInsnNode invoke,
-    String sourceFile,
-    int line,
-    String classNameDots,
-    String methodName) {
+      InsnList list,
+      MethodInsnNode invoke,
+      String sourceFile,
+      int line,
+      String classNameDots,
+      String methodName) {
     list.insertBefore(invoke, new LdcInsnNode(sourceFile));
     list.insertBefore(invoke, pushInt(line));
     list.insertBefore(invoke, new LdcInsnNode(classNameDots));
@@ -214,28 +221,28 @@ public final class FlixelLoggerBytecodeWeaver {
 
   static AbstractInsnNode pushInt(int v) {
     switch (v) {
-      case -1:
-        return new InsnNode(Opcodes.ICONST_M1);
-      case 0:
-        return new InsnNode(Opcodes.ICONST_0);
-      case 1:
-        return new InsnNode(Opcodes.ICONST_1);
-      case 2:
-        return new InsnNode(Opcodes.ICONST_2);
-      case 3:
-        return new InsnNode(Opcodes.ICONST_3);
-      case 4:
-        return new InsnNode(Opcodes.ICONST_4);
-      case 5:
-        return new InsnNode(Opcodes.ICONST_5);
-      default:
-        if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE) {
-          return new IntInsnNode(Opcodes.BIPUSH, v);
-        }
-        if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE) {
-          return new IntInsnNode(Opcodes.SIPUSH, v);
-        }
-        return new LdcInsnNode(v);
+    case -1:
+      return new InsnNode(Opcodes.ICONST_M1);
+    case 0:
+      return new InsnNode(Opcodes.ICONST_0);
+    case 1:
+      return new InsnNode(Opcodes.ICONST_1);
+    case 2:
+      return new InsnNode(Opcodes.ICONST_2);
+    case 3:
+      return new InsnNode(Opcodes.ICONST_3);
+    case 4:
+      return new InsnNode(Opcodes.ICONST_4);
+    case 5:
+      return new InsnNode(Opcodes.ICONST_5);
+    default :
+      if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE) {
+        return new IntInsnNode(Opcodes.BIPUSH, v);
+      }
+      if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE) {
+        return new IntInsnNode(Opcodes.SIPUSH, v);
+      }
+      return new LdcInsnNode(v);
     }
   }
 

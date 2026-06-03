@@ -23,19 +23,18 @@
  */
 package org.flixelgdx.backend.lwjgl3.input;
 
-import java.util.Locale;
-import java.util.Objects;
-
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
+import com.badlogic.gdx.graphics.Cursor;
 
 import org.flixelgdx.input.mouse.FlixelMouseIconManager;
 import org.flixelgdx.input.mouse.FlixelNativeMouseCursor;
-
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
+
+import java.util.Locale;
+import java.util.Objects;
 
 /**
  * LWJGL3 mapping for {@link FlixelMouseIconManager} using libGDX system cursors.
@@ -55,8 +54,7 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
       return;
     }
-    graphics.getWindow().postRunnable(() ->
-      setSystemCursorSwallowCursorUnavailable(mapToBestSystemCursor(cursor)));
+    graphics.getWindow().postRunnable(() -> setSystemCursorSwallowCursorUnavailable(mapToBestSystemCursor(cursor)));
   }
 
   @Override
@@ -64,8 +62,7 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
       return;
     }
-    graphics.getWindow().postRunnable(() ->
-      setSystemCursorSwallowCursorUnavailable(Cursor.SystemCursor.Arrow));
+    graphics.getWindow().postRunnable(() -> setSystemCursorSwallowCursorUnavailable(Cursor.SystemCursor.Arrow));
   }
 
   @Override
@@ -105,29 +102,29 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
 
   private static Cursor.SystemCursor mapToBestSystemCursor(FlixelNativeMouseCursor cursor) {
     if (cursor == FlixelNativeMouseCursor.WAIT
-      || cursor == FlixelNativeMouseCursor.GRAB
-      || cursor == FlixelNativeMouseCursor.GRABBING) {
+        || cursor == FlixelNativeMouseCursor.GRAB
+        || cursor == FlixelNativeMouseCursor.GRABBING) {
       return Cursor.SystemCursor.Arrow;
     }
     if (likelyLinuxOs()) {
       if (cursor == FlixelNativeMouseCursor.NORTH_WEST_SOUTH_EAST_RESIZE
-        || cursor == FlixelNativeMouseCursor.NORTH_EAST_SOUTH_WEST_RESIZE
-        || cursor == FlixelNativeMouseCursor.NOT_ALLOWED) {
+          || cursor == FlixelNativeMouseCursor.NORTH_EAST_SOUTH_WEST_RESIZE
+          || cursor == FlixelNativeMouseCursor.NOT_ALLOWED) {
         return Cursor.SystemCursor.Arrow;
       }
     }
     return switch (cursor) {
-      case ARROW, WAIT, GRAB, GRABBING -> Cursor.SystemCursor.Arrow;
-      case IBEAM -> Cursor.SystemCursor.Ibeam;
-      case CROSSHAIR -> Cursor.SystemCursor.Crosshair;
-      case HAND -> Cursor.SystemCursor.Hand;
-      case HORIZONTAL_RESIZE -> Cursor.SystemCursor.HorizontalResize;
-      case VERTICAL_RESIZE -> Cursor.SystemCursor.VerticalResize;
-      case NORTH_WEST_SOUTH_EAST_RESIZE -> Cursor.SystemCursor.NWSEResize;
-      case NORTH_EAST_SOUTH_WEST_RESIZE -> Cursor.SystemCursor.NESWResize;
-      case ALL_RESIZE -> Cursor.SystemCursor.AllResize;
-      case NOT_ALLOWED -> Cursor.SystemCursor.NotAllowed;
-      case NONE -> Cursor.SystemCursor.None;
+    case ARROW, WAIT, GRAB, GRABBING -> Cursor.SystemCursor.Arrow;
+    case IBEAM -> Cursor.SystemCursor.Ibeam;
+    case CROSSHAIR -> Cursor.SystemCursor.Crosshair;
+    case HAND -> Cursor.SystemCursor.Hand;
+    case HORIZONTAL_RESIZE -> Cursor.SystemCursor.HorizontalResize;
+    case VERTICAL_RESIZE -> Cursor.SystemCursor.VerticalResize;
+    case NORTH_WEST_SOUTH_EAST_RESIZE -> Cursor.SystemCursor.NWSEResize;
+    case NORTH_EAST_SOUTH_WEST_RESIZE -> Cursor.SystemCursor.NESWResize;
+    case ALL_RESIZE -> Cursor.SystemCursor.AllResize;
+    case NOT_ALLOWED -> Cursor.SystemCursor.NotAllowed;
+    case NONE -> Cursor.SystemCursor.None;
     };
   }
 }

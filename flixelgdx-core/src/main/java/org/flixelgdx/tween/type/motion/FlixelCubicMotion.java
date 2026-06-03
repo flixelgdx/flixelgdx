@@ -26,7 +26,6 @@ package org.flixelgdx.tween.type.motion;
 import com.badlogic.gdx.math.MathUtils;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
 
 /** Cubic Bézier motion (two control points). */

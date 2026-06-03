@@ -38,7 +38,6 @@ import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.signal.FlixelSignal;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.io.StringReader;
@@ -247,10 +246,10 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param loop Whether the animation should loop.
    */
   public void addAnimationByPrefix(
-    @NotNull String name,
-    @NotNull String prefix,
-    int frameRate,
-    boolean loop) {
+      @NotNull String name,
+      @NotNull String prefix,
+      int frameRate,
+      boolean loop) {
     Array<FlixelFrame> atlas = owner.getAtlasRegions();
     if (atlas == null) {
       return;
@@ -266,11 +265,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
     clipFrames.sort(Comparator.comparing(f -> f.name));
     animations.put(
-      name,
-      new Animation<>(
-        1f / frameRate,
-        clipFrames,
-        loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
+        name,
+        new Animation<>(
+            1f / frameRate,
+            clipFrames,
+            loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
   }
 
   /**
@@ -283,7 +282,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param loop Whether the clip loops.
    */
   public void addAnimationFromAtlas(
-    @NotNull String name, @NotNull int[] atlasFrameIndices, float frameDuration, boolean loop) {
+      @NotNull String name, @NotNull int[] atlasFrameIndices, float frameDuration, boolean loop) {
     Array<FlixelFrame> atlas = owner.getAtlasRegions();
     if (atlas == null || atlas.size == 0) {
       return;
@@ -298,11 +297,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
       return;
     }
     animations.put(
-      name,
-      new Animation<>(
-        frameDuration,
-        clipFrames,
-        loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
+        name,
+        new Animation<>(
+            frameDuration,
+            clipFrames,
+            loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
   }
 
   /**

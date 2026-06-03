@@ -42,14 +42,13 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
-import org.flixelgdx.text.FlixelFontRegistry;
-import org.flixelgdx.tween.FlixelTween;
-import org.flixelgdx.util.timer.FlixelTimer;
 import org.flixelgdx.input.FlixelInputProcessorManager;
 import org.flixelgdx.input.action.FlixelActionSets;
+import org.flixelgdx.text.FlixelFontRegistry;
+import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
-
+import org.flixelgdx.util.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -277,7 +276,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    * @param fullscreen Should the game start in fullscreen mode?
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync, boolean fullscreen) {
+  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync,
+      boolean fullscreen) {
     this(title, width, height, () -> initialState, framerate, vsync, fullscreen);
   }
 
@@ -292,7 +292,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
    * @param fullscreen Should the game start in fullscreen mode?
    */
-  public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory, int framerate, boolean vsync, boolean fullscreen) {
+  public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory,
+      int framerate, boolean vsync, boolean fullscreen) {
     this.title = title;
     this.viewSize = new Vector2(width, height);
     this.windowSize = new Vector2(width, height);
@@ -1049,7 +1050,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (desktopTransparencyRestoreCamerasPacked.length >= need) {
       return;
     }
-    desktopTransparencyRestoreCamerasPacked = new float[Math.max(need, desktopTransparencyRestoreCamerasPacked.length * 2)];
+    desktopTransparencyRestoreCamerasPacked =
+        new float[Math.max(need, desktopTransparencyRestoreCamerasPacked.length * 2)];
   }
 
   private void restoreDesktopTransparencyBackdrop() {

@@ -25,7 +25,6 @@ package org.flixelgdx.backend.teavm;
 
 import org.flixelgdx.input.mouse.FlixelMouseIconManager;
 import org.flixelgdx.input.mouse.FlixelNativeMouseCursor;
-
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 
@@ -57,24 +56,24 @@ public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager
 
   private static String cssFor(FlixelNativeMouseCursor cursor) {
     return switch (cursor) {
-      case ARROW -> "default";
-      case IBEAM -> "text";
-      case WAIT -> "wait";
-      case CROSSHAIR -> "crosshair";
-      case HAND -> "pointer";
-      case GRAB -> "grab";
-      case GRABBING -> "grabbing";
-      case HORIZONTAL_RESIZE -> "ew-resize";
-      case VERTICAL_RESIZE -> "ns-resize";
-      case NORTH_WEST_SOUTH_EAST_RESIZE -> "nwse-resize";
-      case NORTH_EAST_SOUTH_WEST_RESIZE -> "nesw-resize";
-      case ALL_RESIZE -> "move";
-      case NOT_ALLOWED -> "not-allowed";
-      case NONE -> "none";
+    case ARROW -> "default";
+    case IBEAM -> "text";
+    case WAIT -> "wait";
+    case CROSSHAIR -> "crosshair";
+    case HAND -> "pointer";
+    case GRAB -> "grab";
+    case GRABBING -> "grabbing";
+    case HORIZONTAL_RESIZE -> "ew-resize";
+    case VERTICAL_RESIZE -> "ns-resize";
+    case NORTH_WEST_SOUTH_EAST_RESIZE -> "nwse-resize";
+    case NORTH_EAST_SOUTH_WEST_RESIZE -> "nesw-resize";
+    case ALL_RESIZE -> "move";
+    case NOT_ALLOWED -> "not-allowed";
+    case NONE -> "none";
     };
   }
 
-  @JSBody(params = {"canvasId", "css"}, script = "var e=document.getElementById(canvasId);\n"
+  @JSBody(params = { "canvasId", "css" }, script = "var e=document.getElementById(canvasId);\n"
       + "if (e !== null) {\n"
       + "  e.style.cursor = css;\n"
       + "}\n")

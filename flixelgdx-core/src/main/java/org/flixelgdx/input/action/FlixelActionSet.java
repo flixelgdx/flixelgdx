@@ -26,7 +26,6 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.functional.FlixelDestroyable;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

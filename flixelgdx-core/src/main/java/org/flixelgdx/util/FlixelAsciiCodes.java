@@ -42,5 +42,6 @@ public final class FlixelAsciiCodes {
   public static final String CYAN = "\u001B[36m";
   public static final String WHITE = "\u001B[37m";
 
-  private FlixelAsciiCodes() {}
+  private FlixelAsciiCodes() {
+  }
 }

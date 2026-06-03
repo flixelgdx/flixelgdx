@@ -26,11 +26,10 @@ package org.flixelgdx.tween;
 import org.flixelgdx.GdxHeadlessExtension;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.type.FlixelNumTween;
-
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,8 +42,8 @@ class FlixelNumTweenManagerTest {
   void duplicateRegistrationThrows() {
     FlixelTweenManager manager = new FlixelTweenManager();
     manager.registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null));
-    assertThrows(IllegalArgumentException.class, () ->
-      manager.registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null)));
+    assertThrows(IllegalArgumentException.class,
+        () -> manager.registerTweenType(FlixelNumTween.class, () -> new FlixelNumTween(0, 0, null, null)));
   }
 
   @Test

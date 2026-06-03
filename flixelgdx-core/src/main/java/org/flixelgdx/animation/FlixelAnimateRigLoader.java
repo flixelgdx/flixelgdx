@@ -34,11 +34,10 @@ import com.badlogic.gdx.utils.ObjectMap;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Loader that converts a pair of Adobe Animate texture-atlas JSON files plus a spritemap PNG into a
@@ -138,7 +137,7 @@ final class FlixelAnimateRigLoader {
    * Loads the given spritemap/animation pair, builds a fully baked {@link FlixelAnimateRig}, and installs
    * it on {@code sprite}.
    *
-   * Equivalent to calling {@link #load(FlixelAnimateSprite, FlixelAnimationController, String, String, String, String)}
+   * <p>Equivalent to calling {@link #load(FlixelAnimateSprite, FlixelAnimationController, String, String, String, String)}
    * with a {@code null} {@code anchorClipName}, which means the first clip in the timeline's label layer is used
    * as the anchor.
    *
@@ -195,7 +194,7 @@ final class FlixelAnimateRigLoader {
     Objects.requireNonNull(spritemapJsonPath, "spritemapJsonPath cannot be null");
     Objects.requireNonNull(animationJsonPath, "animationJsonPath cannot be null");
     new FlixelAnimateRigLoader().loadInternal(
-      sprite, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
+        sprite, controller, textureKey, spritemapJsonPath, animationJsonPath, anchorClipName);
   }
 
   /**
@@ -216,12 +215,9 @@ final class FlixelAnimateRigLoader {
    *   {@link FlixelAnimateSprite#addSpritemapAndAnimation}). Must not be {@code null}.
    * @param controller The sprite's animation controller (used to register the new clip durations
    *   for timing). Must not be {@code null}.
-   * @param textureKey The asset key of the appended spritemap {@link FlixelGraphic}. Must not be
-   *   {@code null}.
-   * @param spritemapJsonPath The resolver-relative path to the appended spritemap JSON. Must not
-   *   be {@code null}.
-   * @param animationJsonPath The resolver-relative path to the appended animation JSON. Must not
-   *   be {@code null}.
+   * @param textureKey The asset key of the appended spritemap {@link FlixelGraphic}. Must not be {@code null}.
+   * @param spritemapJsonPath The resolver-relative path to the appended spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The resolver-relative path to the appended animation JSON. Must not be {@code null}.
    * @throws IllegalStateException If {@code sprite} has no rig installed.
    * @throws IllegalArgumentException If any of the three files is missing, malformed, or fails a
    *   structural precondition.
@@ -240,11 +236,11 @@ final class FlixelAnimateRigLoader {
     FlixelAnimateRig existing = sprite.getRig();
     if (existing == null) {
       throw new IllegalStateException(
-        "Cannot append to a FlixelAnimateSprite that has no rig installed; call "
-          + "addSpritesheetAndAnimation(...) first to establish the anchor coordinate space.");
+          "Cannot append to a FlixelAnimateSprite that has no rig installed; call "
+              + "addSpritesheetAndAnimation(...) first to establish the anchor coordinate space.");
     }
     new FlixelAnimateRigLoader().appendInternal(
-      sprite, controller, existing, textureKey, spritemapJsonPath, animationJsonPath);
+        sprite, controller, existing, textureKey, spritemapJsonPath, animationJsonPath);
   }
 
   private void loadInternal(
@@ -257,9 +253,9 @@ final class FlixelAnimateRigLoader {
 
     // Read and parse both JSON files up-front. libGDX's JsonReader owns no file handles after this call.
     String spritemapText = FlixelSpritemapJsonLoader.readUtf8Text(
-      FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
+        FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
     String animationText = FlixelSpritemapJsonLoader.readUtf8Text(
-      FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
+        FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
     JsonValue spritemapRoot = new JsonReader().parse(spritemapText);
     JsonValue animationRoot = new JsonReader().parse(animationText);
 
@@ -293,8 +289,8 @@ final class FlixelAnimateRigLoader {
     // Compute the anchor-clip bounding box in Flash Y-down world space. This is required up-front so that
     // every part in every clip can be baked into the same rig-local coordinate system.
     float[] anchorBox = new float[] {
-      Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
-      Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY
+        Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY,
+        Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY
     };
     int anchorClipIndex = pickAnchorClipIndex(parsed.clipDefs, anchorClipName);
     computeAnchorBbox(parsed, anchorClipIndex, nameToIndex, atlas, anchorBox);
@@ -316,7 +312,7 @@ final class FlixelAnimateRigLoader {
 
     String resolvedAnchorName = parsed.clipDefs.get(anchorClipIndex).name;
     FlixelAnimateRig rig = new FlixelAnimateRig(
-      atlas, clips, resolvedAnchorName, anchorMinX, anchorMinY, anchorWidth, anchorHeight);
+        atlas, clips, resolvedAnchorName, anchorMinX, anchorMinY, anchorWidth, anchorHeight);
     sprite.installAnimateRig(rig);
 
     // applySparrowAtlas() set a default currentFrame/region on the sprite. Now that the rig is installed,
@@ -356,9 +352,9 @@ final class FlixelAnimateRigLoader {
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath) {
     String spritemapText = FlixelSpritemapJsonLoader.readUtf8Text(
-      FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
+        FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
     String animationText = FlixelSpritemapJsonLoader.readUtf8Text(
-      FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
+        FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
     JsonValue spritemapRoot = new JsonReader().parse(spritemapText);
     JsonValue animationRoot = new JsonReader().parse(animationText);
 
@@ -376,7 +372,7 @@ final class FlixelAnimateRigLoader {
     // frames at runtime.
     ObjectMap<String, Integer> localNameToIndex = new ObjectMap<>();
     Array<FlixelFrame> newAtlasFrames =
-      FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, localNameToIndex);
+        FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, localNameToIndex);
     if (newAtlasFrames.size == 0) {
       throw new IllegalArgumentException("Appended spritemap JSON produced zero atlas regions.");
     }
@@ -404,15 +400,15 @@ final class FlixelAnimateRigLoader {
     }
 
     bakeClipsInto(
-      parsed,
-      fps,
-      existing.atlas,
-      nameToIndex,
-      existing.anchorMinX,
-      existing.anchorMinY,
-      existing.anchorHeight,
-      controller,
-      existing.clips);
+        parsed,
+        fps,
+        existing.atlas,
+        nameToIndex,
+        existing.anchorMinX,
+        existing.anchorMinY,
+        existing.anchorHeight,
+        controller,
+        existing.clips);
   }
 
   /**
@@ -579,10 +575,14 @@ final class FlixelAnimateRigLoader {
   private static void accumulateTransformedCorner(@NotNull Affine2 m, float x, float y, @NotNull float[] out) {
     float tx = m.m00 * x + m.m01 * y + m.m02;
     float ty = m.m10 * x + m.m11 * y + m.m12;
-    if (tx < out[0]) out[0] = tx;
-    if (ty < out[1]) out[1] = ty;
-    if (tx > out[2]) out[2] = tx;
-    if (ty > out[3]) out[3] = ty;
+    if (tx < out[0])
+      out[0] = tx;
+    if (ty < out[1])
+      out[1] = ty;
+    if (tx > out[2])
+      out[2] = tx;
+    if (ty > out[3])
+      out[3] = ty;
   }
 
   /**
@@ -1079,7 +1079,8 @@ final class FlixelAnimateRigLoader {
    */
   private static final class RawPart {
     final int atlasIndex;
-    @NotNull final Affine2 flashMatrix = new Affine2();
+    @NotNull
+    final Affine2 flashMatrix = new Affine2();
 
     RawPart(int atlasIndex) {
       this.atlasIndex = atlasIndex;
@@ -1096,10 +1097,10 @@ final class FlixelAnimateRigLoader {
    * @see FlixelAnimateRigLoader#findMainFrameAt
    */
   private record ClipDef(
-    @NotNull String name,
-    int startTick,
-    int duration
-  ) {}
+      @NotNull String name,
+      int startTick,
+      int duration) {
+  }
 
   /**
    * Parsed form of the {@code AN} / optional {@code SD} / optional {@code MD} blocks. Captured in one
@@ -1119,8 +1120,8 @@ final class FlixelAnimateRigLoader {
    * nested timelines. {@code false} for direct {@code E.ASI} document timelines.
    */
   private record ParsedAnimation(@NotNull Array<ClipDef> clipDefs, @NotNull Array<JsonValue> mainFrames,
-                                 @NotNull ObjectMap<String, JsonValue> symbolsByName, float framesPerSecond,
-                                 boolean usesSymbolGraph) {
+      @NotNull ObjectMap<String, JsonValue> symbolsByName, float framesPerSecond,
+      boolean usesSymbolGraph) {
     @NotNull
     static ParsedAnimation parse(@NotNull JsonValue animationRoot) {
       JsonValue an = animationRoot.get("AN");
@@ -1137,9 +1138,9 @@ final class FlixelAnimateRigLoader {
       }
       if (mainFrameList == null) {
         throw new IllegalArgumentException(
-          "Animation JSON does not have a recognizable main layer. Expected either a timeline whose "
-            + "keyframes use a root symbol instance (\"E\".\"SI\"), or a flat export whose keyframes "
-            + "list atlas sprite instances (\"E\".\"ASI\").");
+            "Animation JSON does not have a recognizable main layer. Expected either a timeline whose "
+                + "keyframes use a root symbol instance (\"E\".\"SI\"), or a flat export whose keyframes "
+                + "list atlas sprite instances (\"E\".\"ASI\").");
       }
 
       Array<ClipDef> clipDefs = new Array<>();
@@ -1173,10 +1174,10 @@ final class FlixelAnimateRigLoader {
       if (clipDefs.size == 0) {
         if (an == null) {
           throw new IllegalArgumentException(
-            "Animation JSON has no named clips and no \"AN\" block to derive a default clip name from.");
+              "Animation JSON has no named clips and no \"AN\" block to derive a default clip name from.");
         }
         clipDefs.add(
-          new ClipDef(deriveDefaultClipName(an), 0, computeExclusiveTimelineEnd(mainFrameList)));
+            new ClipDef(deriveDefaultClipName(an), 0, computeExclusiveTimelineEnd(mainFrameList)));
       }
 
       ObjectMap<String, JsonValue> symbolsByName = new ObjectMap<>();
@@ -1195,7 +1196,7 @@ final class FlixelAnimateRigLoader {
 
       if (usesSymbolGraph && symbolsByName.size == 0) {
         throw new IllegalArgumentException(
-          "Animation JSON uses root symbol instances (\"E\".\"SI\") but \"SD.S\" is empty or missing.");
+            "Animation JSON uses root symbol instances (\"E\".\"SI\") but \"SD.S\" is empty or missing.");
       }
 
       float fps = 24f;

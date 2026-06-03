@@ -28,8 +28,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
+
+import org.flixelgdx.audio.FlixelSoundSource;
+import org.flixelgdx.audio.FlixelSoundSourceLoader;
+import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelGraphicSource;
+import org.flixelgdx.graphics.FlixelGraphicWrapperFactory;
+import org.flixelgdx.util.FlixelString;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,18 +48,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-
-import com.badlogic.gdx.graphics.Texture;
-
-import org.flixelgdx.audio.FlixelSoundSource;
-import org.flixelgdx.audio.FlixelSoundSourceLoader;
-import org.flixelgdx.graphics.FlixelGraphic;
-import org.flixelgdx.graphics.FlixelGraphicSource;
-import org.flixelgdx.graphics.FlixelGraphicWrapperFactory;
-
-import org.flixelgdx.util.FlixelString;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Default concrete asset manager for FlixelGDX.
@@ -95,8 +93,10 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   private record AssetId(@NotNull String key, @NotNull Class<?> type) {
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof AssetId other)) return false;
+      if (this == o)
+        return true;
+      if (!(o instanceof AssetId other))
+        return false;
       return key.equals(other.key) && type.equals(other.type);
     }
 
@@ -196,16 +196,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     String ext = fileExtensionFromPath(path);
     if (ext.isEmpty()) {
       throw new IllegalArgumentException(
-        "Cannot infer asset type from path (no extension): \"" + path + "\". "
-          + "Use load(FlixelSource) or registerExtension(...) for extensionless paths."
-      );
+          "Cannot infer asset type from path (no extension): \"" + path + "\". "
+              + "Use load(FlixelSource) or registerExtension(...) for extensionless paths.");
     }
     Function<String, FlixelSource<?>> factory = extensionRegistry.get(ext);
     if (factory == null) {
       throw new IllegalArgumentException(
-        "No source factory registered for extension \"" + ext + "\" (path: \"" + path + "\"). "
-          + "Call registerExtension(\"" + ext + "\", factory) or use load(FlixelSource) explicitly."
-      );
+          "No source factory registered for extension \"" + ext + "\" (path: \"" + path + "\"). "
+              + "Call registerExtension(\"" + ext + "\", factory) or use load(FlixelSource) explicitly.");
     }
     FlixelSource<?> source = factory.apply(path);
     if (source == null) {
@@ -265,7 +263,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public void load(@NotNull AssetDescriptor<?> assetDescriptor) {
     Objects.requireNonNull(assetDescriptor, "assetDescriptor cannot be null.");
-    String fn = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
+    String fn = FlixelAssetPaths
+        .normalizeAssetPath(
+            Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
     if (fn.equals(assetDescriptor.fileName)) {
       manager.load(assetDescriptor);
     } else {
@@ -316,13 +316,15 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public boolean isLoaded(@NotNull String fileName) {
-    return manager.isLoaded(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
+    return manager
+        .isLoaded(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
   }
 
   @Override
   public boolean isLoaded(@NotNull String fileName, @NotNull Class<?> type) {
     Objects.requireNonNull(type, "type cannot be null.");
-    return manager.isLoaded(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")), type);
+    return manager.isLoaded(
+        FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")), type);
   }
 
   @Override
@@ -418,7 +420,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public void finishLoadingAsset(@NotNull String fileName) {
-    manager.finishLoadingAsset(FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
+    manager.finishLoadingAsset(
+        FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(fileName, "fileName cannot be null.")));
   }
 
   @NotNull
@@ -442,14 +445,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         int libRefs = manager.getReferenceCount(fileName);
         int flixelRefs = type != null ? flixelRefCountForLoadedAsset(fileName, type) : 0;
         diagnosticsString
-          .concat("\tKey: ")
-          .concat(fileName)
-          .concat(", Type: ")
-          .concat(type != null ? type.getName() : "?")
-          .concat(", Flixel refs: ")
-          .concat(flixelRefs)
-          .concat(", libGDX refs: ")
-          .concat(libRefs);
+            .concat("\tKey: ")
+            .concat(fileName)
+            .concat(", Type: ")
+            .concat(type != null ? type.getName() : "?")
+            .concat(", Flixel refs: ")
+            .concat(flixelRefs)
+            .concat(", libGDX refs: ")
+            .concat(libRefs);
         Array<String> deps = manager.getDependencies(fileName);
         if (deps != null && deps.size > 0) {
           diagnosticsString.concat(", deps: [");
@@ -477,14 +480,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
           return;
         }
         diagnosticsString
-          .concat("\tKey: ")
-          .concat(a.getAssetKey())
-          .concat(", Type: ")
-          .concat(a.getType().getName())
-          .concat(", Flixel refs: ")
-          .concat(a.getRefCount())
-          .concat(", libGDX refs: n/a")
-          .concat("\n");
+            .concat("\tKey: ")
+            .concat(a.getAssetKey())
+            .concat(", Type: ")
+            .concat(a.getType().getName())
+            .concat(", Flixel refs: ")
+            .concat(a.getRefCount())
+            .concat(", libGDX refs: n/a")
+            .concat("\n");
       });
     }
 
@@ -495,14 +498,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         continue;
       }
       diagnosticsString
-        .concat("\tKey: ")
-        .concat(asset.getAssetKey())
-        .concat(", Type: ")
-        .concat(asset.getType().getName())
-        .concat(", Flixel refs: ")
-        .concat(asset.getRefCount())
-        .concat(", libGDX refs: n/a")
-        .concat("\n");
+          .concat("\tKey: ")
+          .concat(asset.getAssetKey())
+          .concat(", Type: ")
+          .concat(asset.getType().getName())
+          .concat(", Flixel refs: ")
+          .concat(asset.getRefCount())
+          .concat(", libGDX refs: n/a")
+          .concat("\n");
     }
 
     return diagnosticsString.toString();
@@ -580,9 +583,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     FlixelWrapperFactory<?> factory = wrapperFactories.get(wrapper.wrapperRegistrationClass());
     if (factory == null) {
       throw new IllegalArgumentException(
-        "No wrapper factory registered for: " + wrapper.wrapperRegistrationClass().getName()
-          + ". Call registerWrapperFactory(...) first."
-      );
+          "No wrapper factory registered for: " + wrapper.wrapperRegistrationClass().getName()
+              + ". Call registerWrapperFactory(...) first.");
     }
     registerWrapperUnchecked(factory, wrapper);
   }
@@ -597,7 +599,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   @SuppressWarnings("unchecked")
-  private <W> void registerWrapperUnchecked(@NotNull FlixelWrapperFactory<W> factory, @NotNull FlixelPooledWrapper wrapper) {
+  private <W> void registerWrapperUnchecked(@NotNull FlixelWrapperFactory<W> factory,
+      @NotNull FlixelPooledWrapper wrapper) {
     factory.registerInstance(this, (W) wrapper);
   }
 
@@ -635,7 +638,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (f == null) {
       throw new IllegalArgumentException("No wrapper factory registered for: " + wrapperType.getName());
     }
-    return ((FlixelWrapperFactory<W>) f).peek(this, FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(key, "key cannot be null.")));
+    return ((FlixelWrapperFactory<W>) f).peek(this,
+        FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(key, "key cannot be null.")));
   }
 
   @NotNull
@@ -693,9 +697,12 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     Array<AssetId> toRemove = null;
     for (ObjectMap.Entry<AssetId, FlixelTypedAsset<?>> e : typedAssetCache) {
       FlixelAsset<?> a = e.value;
-      if (a == null) continue;
-      if (respectPersist && a.isPersist()) continue;
-      if (a.getRefCount() > 0) continue;
+      if (a == null)
+        continue;
+      if (respectPersist && a.isPersist())
+        continue;
+      if (a.getRefCount() > 0)
+        continue;
 
       if (manager.isLoaded(a.getAssetKey(), a.getType())) {
         manager.unload(a.getAssetKey());

@@ -30,7 +30,6 @@ import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.group.FlixelBasicGroup;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,7 +104,8 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   }
 
   @Override
-  public void render(float delta) {}
+  public void render(float delta) {
+  }
 
   /**
    * Called when the state is first created. This is where you want to assign your
@@ -113,7 +113,8 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
    *
    * <p>Make sure to override this, NOT the constructor!
    */
-  public void create() {}
+  public void create() {
+  }
 
   /**
    * Updates the logic of {@code this} state.
@@ -207,7 +208,8 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   }
 
   @Override
-  public void resize(int width, int height) {}
+  public void resize(int width, int height) {
+  }
 
   /**
    * Called by the framework when the application is paused by the OS (for example Android backgrounding) or when the
@@ -254,7 +256,8 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
    *
    * <p>Parent states run this hook before substates during {@link #pause()}.
    */
-  protected void onFocusLost() {}
+  protected void onFocusLost() {
+  }
 
   /**
    * Hook for when {@code this} state should treat the game as active again after {@link #onFocusLost()}: window
@@ -262,10 +265,12 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
    *
    * <p>Substates run this hook before their parent states during {@link #resume()}.
    */
-  protected void onFocus() {}
+  protected void onFocus() {
+  }
 
   @Override
-  public void hide() {}
+  public void hide() {
+  }
 
   @Override
   public void destroy() {

@@ -24,8 +24,8 @@
 package org.flixelgdx.util.save;
 
 import com.badlogic.gdx.utils.ObjectMap;
-import org.flixelgdx.GdxHeadlessExtension;
 
+import org.flixelgdx.GdxHeadlessExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

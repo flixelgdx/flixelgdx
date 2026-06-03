@@ -29,11 +29,10 @@ import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.functional.FlixelDestroyable;
-
-import java.util.Map;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
 
 /**
  * Utility class that provides a high-level, cross-platform mechanism for saving and

@@ -27,6 +27,7 @@ import com.github.xpenatan.gdx.teavm.backends.web.WebApplication;
 import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
 import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetInstance;
 import com.github.xpenatan.gdx.teavm.backends.web.assetloader.AssetLoaderListener;
+
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
@@ -35,10 +36,9 @@ import org.flixelgdx.backend.teavm.audio.FlixelDefaultSoundHandler;
 import org.flixelgdx.backend.teavm.debug.FlixelTeaVMDebugOverlay;
 import org.flixelgdx.backend.teavm.logging.FlixelTeaVMLogConsole;
 import org.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
-
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Launches the web (TeaVM) version of a FlixelGDX game.
@@ -122,7 +122,8 @@ public class FlixelTeaVMLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session.
    * @param configCustomizer Optional consumer that can modify the web configuration before the application starts.
    */
-  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, @Nullable Consumer<WebApplicationConfiguration> configCustomizer) {
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
+      @Nullable Consumer<WebApplicationConfiguration> configCustomizer) {
     Flixel.setAlerter(new FlixelTeaVMAlerter());
     Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
     Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit);

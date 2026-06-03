@@ -51,20 +51,25 @@ public class FlixelDefaultStackTraceProvider implements FlixelStackTraceProvider
       }
     }
     String pkg = f.getDeclaringClass().getPackageName();
-    if (pkg.startsWith("org.codehaus.groovy.")) return false;
-    if (pkg.startsWith("groovy.lang.")) return false;
-    if (className.contains("$_run_closure")) return false;
-    if (className.contains("$$Lambda$")) return false;
-    if (pkg.startsWith("sun.reflect.") || pkg.startsWith("java.lang.reflect.")) return false;
+    if (pkg.startsWith("org.codehaus.groovy."))
+      return false;
+    if (pkg.startsWith("groovy.lang."))
+      return false;
+    if (className.contains("$_run_closure"))
+      return false;
+    if (className.contains("$$Lambda$"))
+      return false;
+    if (pkg.startsWith("sun.reflect.") || pkg.startsWith("java.lang.reflect."))
+      return false;
     return true;
   }
 
   @Override
   public FlixelStackFrame getCaller() {
     return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-      .walk(frames -> frames.filter(FlixelDefaultStackTraceProvider::isUsableCallerFrame).findFirst())
-      .map(StackWalkerFrame::new)
-      .orElse(null);
+        .walk(frames -> frames.filter(FlixelDefaultStackTraceProvider::isUsableCallerFrame).findFirst())
+        .map(StackWalkerFrame::new)
+        .orElse(null);
   }
 
   private record StackWalkerFrame(StackWalker.StackFrame frame) implements FlixelStackFrame {

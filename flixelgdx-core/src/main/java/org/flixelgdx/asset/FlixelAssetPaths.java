@@ -23,9 +23,9 @@
  */
 package org.flixelgdx.asset;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 /**
  * Canonical path helpers for internal asset keys used with {@link FlixelAssetManager} and libGDX file APIs.
@@ -40,7 +40,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelAssetPaths {
 
-  private FlixelAssetPaths() {}
+  private FlixelAssetPaths() {
+  }
 
   /**
    * Returns the same path with redundant slashes collapsed and backslashes converted to forward slashes.

@@ -716,9 +716,9 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
       return false;
     }
     return x < other.x + other.width
-      && x + width > other.x
-      && y < other.y + other.height
-      && y + height > other.y;
+        && x + width > other.x
+        && y < other.y + other.height
+        && y + height > other.y;
   }
 
   /**
@@ -739,9 +739,9 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   public boolean inWorldBounds() {
     float[] wb = Flixel.getWorldBounds();
     return x + width > wb[0]
-      && x < wb[0] + wb[2]
-      && y + height > wb[1]
-      && y < wb[1] + wb[3];
+        && x < wb[0] + wb[2]
+        && y + height > wb[1]
+        && y < wb[1] + wb[3];
   }
 
   /**
@@ -752,7 +752,9 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
    */
   public void updateMotion(float elapsed) {
     // Angular motion.
-    float velocityDelta = 0.5f * (computeVelocity(angularVelocity, angularAcceleration, angularDrag, maxAngularVelocity, elapsed) - angularVelocity);
+    float velocityDelta =
+        0.5f * (computeVelocity(angularVelocity, angularAcceleration, angularDrag, maxAngularVelocity, elapsed)
+            - angularVelocity);
     angularVelocity += velocityDelta;
     angle += angularVelocity * elapsed;
     angularVelocity += velocityDelta;
@@ -950,7 +952,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     float rect2h = object2.height;
 
     if (rect1x + rect1w <= rect2x || rect1x >= rect2x + rect2w
-      || rect1y + rect1h <= rect2y || rect1y >= rect2y + rect2h) {
+        || rect1y + rect1h <= rect2y || rect1y >= rect2y + rect2h) {
       return 0;
     }
 
@@ -959,16 +961,20 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
 
     if (obj1delta > obj2delta) {
       overlap = object1.x + object1.width - object2.x;
-      if (checkMaxOverlap && overlap > maxOverlap) return 0;
+      if (checkMaxOverlap && overlap > maxOverlap)
+        return 0;
       if ((object1.allowCollisions & DirectionFlags.RIGHT) == 0
-        || (object2.allowCollisions & DirectionFlags.LEFT) == 0) return 0;
+          || (object2.allowCollisions & DirectionFlags.LEFT) == 0)
+        return 0;
       object1.touching |= DirectionFlags.RIGHT;
       object2.touching |= DirectionFlags.LEFT;
     } else {
       overlap = object1.x - object2.width - object2.x;
-      if (checkMaxOverlap && -overlap > maxOverlap) return 0;
+      if (checkMaxOverlap && -overlap > maxOverlap)
+        return 0;
       if ((object1.allowCollisions & DirectionFlags.LEFT) == 0
-        || (object2.allowCollisions & DirectionFlags.RIGHT) == 0) return 0;
+          || (object2.allowCollisions & DirectionFlags.RIGHT) == 0)
+        return 0;
       object1.touching |= DirectionFlags.LEFT;
       object2.touching |= DirectionFlags.RIGHT;
     }
@@ -1007,7 +1013,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     float rect2h = object2.height + obj2deltaAbs;
 
     if (rect1x + rect1w <= rect2x || rect1x >= rect2x + rect2w
-      || rect1y + rect1h <= rect2y || rect1y >= rect2y + rect2h) {
+        || rect1y + rect1h <= rect2y || rect1y >= rect2y + rect2h) {
       return 0;
     }
 
@@ -1017,16 +1023,20 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     // libGDX Y-up: positive delta = moving up -> object1's top hits object2's bottom.
     if (obj1delta > obj2delta) {
       overlap = object1.y + object1.height - object2.y;
-      if (checkMaxOverlap && overlap > maxOverlap) return 0;
+      if (checkMaxOverlap && overlap > maxOverlap)
+        return 0;
       if ((object1.allowCollisions & DirectionFlags.UP) == 0
-        || (object2.allowCollisions & DirectionFlags.DOWN) == 0) return 0;
+          || (object2.allowCollisions & DirectionFlags.DOWN) == 0)
+        return 0;
       object1.touching |= DirectionFlags.UP;
       object2.touching |= DirectionFlags.DOWN;
     } else {
       overlap = object1.y - object2.height - object2.y;
-      if (checkMaxOverlap && -overlap > maxOverlap) return 0;
+      if (checkMaxOverlap && -overlap > maxOverlap)
+        return 0;
       if ((object1.allowCollisions & DirectionFlags.DOWN) == 0
-        || (object2.allowCollisions & DirectionFlags.UP) == 0) return 0;
+          || (object2.allowCollisions & DirectionFlags.UP) == 0)
+        return 0;
       object1.touching |= DirectionFlags.DOWN;
       object2.touching |= DirectionFlags.UP;
     }
@@ -1090,9 +1100,12 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
    */
   @Override
   public float[] getDebugBoundingBoxColor() {
-    if (debugColorOverride != null) return debugColorOverride;
-    if (allowCollisions == DirectionFlags.NONE) return debugColorNoCollision;
-    if (immovable || allowCollisions != DirectionFlags.ANY) return debugColorImmovable;
+    if (debugColorOverride != null)
+      return debugColorOverride;
+    if (allowCollisions == DirectionFlags.NONE)
+      return debugColorNoCollision;
+    if (immovable || allowCollisions != DirectionFlags.ANY)
+      return debugColorImmovable;
     return debugColorSolid;
   }
 
@@ -1109,8 +1122,8 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(ID=" + ID
-      + ", x=" + x + ", y=" + y
-      + ", w=" + width + ", h=" + height + ")";
+        + ", x=" + x + ", y=" + y
+        + ", w=" + width + ", h=" + height + ")";
   }
 
   /**
@@ -1131,6 +1144,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     public static final int CEILING = UP;
     public static final int WALL = LEFT | RIGHT;
 
-    private DirectionFlags() {}
+    private DirectionFlags() {
+    }
   }
 }

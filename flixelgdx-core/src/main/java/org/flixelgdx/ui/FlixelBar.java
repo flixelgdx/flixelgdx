@@ -39,7 +39,6 @@ import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelSpriteUtil;
 import org.flixelgdx.util.FlixelString;
 import org.flixelgdx.util.FlixelStringUtil;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +83,7 @@ import java.util.function.Consumer;
 public class FlixelBar extends FlixelSprite {
 
   private static final Comparator<ThresholdStop> THRESHOLD_BY_PERCENT =
-    (a, b) -> Float.compare(a.percent, b.percent);
+      (a, b) -> Float.compare(a.percent, b.percent);
 
   public static final float DEFAULT_MIN = 0f;
   public static final float DEFAULT_MAX = 100f;
@@ -188,13 +187,13 @@ public class FlixelBar extends FlixelSprite {
   @Override
   public final FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException(
-      "FlixelBar does not use loadGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
+        "FlixelBar does not use loadGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
   }
 
   @Override
   public final FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
     throw new UnsupportedOperationException(
-      "FlixelBar does not use makeGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
+        "FlixelBar does not use makeGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
   }
 
   /**
@@ -846,16 +845,16 @@ public class FlixelBar extends FlixelSprite {
     float fh = h;
 
     switch (fillDirection) {
-      case LEFT_TO_RIGHT -> fw = w * percent;
-      case RIGHT_TO_LEFT -> {
-        fw = w * percent;
-        fx = x + (w - fw);
-      }
-      case TOP_TO_BOTTOM -> {
-        fh = h * percent;
-        fy = y + (h - fh);
-      }
-      case BOTTOM_TO_TOP -> fh = h * percent;
+    case LEFT_TO_RIGHT -> fw = w * percent;
+    case RIGHT_TO_LEFT -> {
+      fw = w * percent;
+      fx = x + (w - fw);
+    }
+    case TOP_TO_BOTTOM -> {
+      fh = h * percent;
+      fy = y + (h - fh);
+    }
+    case BOTTOM_TO_TOP -> fh = h * percent;
     }
 
     batch.draw(Objects.requireNonNull(whitePixel), fx, fy, fw, fh);
@@ -873,28 +872,28 @@ public class FlixelBar extends FlixelSprite {
     float v2 = region.getV2();
 
     switch (fillDirection) {
-      case LEFT_TO_RIGHT -> {
-        fw = w * percent;
-        float du = (u2 - u) * percent;
-        u2 = u + du;
-      }
-      case RIGHT_TO_LEFT -> {
-        fw = w * percent;
-        fx = x + (w - fw);
-        float du = (u2 - u) * percent;
-        u = u2 - du;
-      }
-      case TOP_TO_BOTTOM -> {
-        fh = h * percent;
-        fy = y + (h - fh);
-        float dv = (v2 - v) * percent;
-        v = v2 - dv;
-      }
-      case BOTTOM_TO_TOP -> {
-        fh = h * percent;
-        float dv = (v2 - v) * percent;
-        v2 = v + dv;
-      }
+    case LEFT_TO_RIGHT -> {
+      fw = w * percent;
+      float du = (u2 - u) * percent;
+      u2 = u + du;
+    }
+    case RIGHT_TO_LEFT -> {
+      fw = w * percent;
+      fx = x + (w - fw);
+      float du = (u2 - u) * percent;
+      u = u2 - du;
+    }
+    case TOP_TO_BOTTOM -> {
+      fh = h * percent;
+      fy = y + (h - fh);
+      float dv = (v2 - v) * percent;
+      v = v2 - dv;
+    }
+    case BOTTOM_TO_TOP -> {
+      fh = h * percent;
+      float dv = (v2 - v) * percent;
+      v2 = v + dv;
+    }
     }
 
     Texture tex = region.getTexture();
@@ -903,7 +902,8 @@ public class FlixelBar extends FlixelSprite {
 
   private void drawBorder(Batch batch, float x, float y, float w, float h, Color c, float t) {
     t = Math.max(0f, t);
-    if (t <= 0f) return;
+    if (t <= 0f)
+      return;
     batch.setColor(c);
     Texture px = Objects.requireNonNull(whitePixel);
     // Top.
@@ -950,7 +950,8 @@ public class FlixelBar extends FlixelSprite {
     int desiredW = 1;
     int desiredH = 1;
 
-    boolean horizontal = (fillDirection == BarFillDirection.LEFT_TO_RIGHT || fillDirection == BarFillDirection.RIGHT_TO_LEFT);
+    boolean horizontal =
+        (fillDirection == BarFillDirection.LEFT_TO_RIGHT || fillDirection == BarFillDirection.RIGHT_TO_LEFT);
     if (horizontal) {
       desiredW = Math.max(2, Math.min(256, Math.round(getWidth())));
     } else {
@@ -958,7 +959,7 @@ public class FlixelBar extends FlixelSprite {
     }
 
     if (MathUtils.isEqual(lastGradientBasisW, getWidth()) && MathUtils.isEqual(lastGradientBasisH, getHeight())
-      && gradientTexture != null && desiredW == gradientTexW && desiredH == gradientTexH) {
+        && gradientTexture != null && desiredW == gradientTexW && desiredH == gradientTexH) {
       return;
     }
 
@@ -971,12 +972,11 @@ public class FlixelBar extends FlixelSprite {
     }
 
     gradientTexture = FlixelSpriteUtil.createLinearGradientTexture(
-      desiredW,
-      desiredH,
-      gradientStart,
-      gradientEnd,
-      horizontal
-    );
+        desiredW,
+        desiredH,
+        gradientStart,
+        gradientEnd,
+        horizontal);
     gradientRegion = new TextureRegion(gradientTexture);
     gradientTexW = desiredW;
     gradientTexH = desiredH;

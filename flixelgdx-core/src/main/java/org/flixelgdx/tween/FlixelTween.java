@@ -23,10 +23,6 @@
  */
 package org.flixelgdx.tween;
 
-import java.util.Objects;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
@@ -53,9 +49,12 @@ import org.flixelgdx.tween.type.motion.FlixelQuadMotion;
 import org.flixelgdx.tween.type.motion.FlixelQuadPath;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Base class for all FlixelGDX tweens and motion interpolators.
@@ -172,7 +171,8 @@ public abstract class FlixelTween implements Pool.Poolable {
   protected boolean internalRestart = false;
 
   /** Default constructor for pooling purposes. */
-  protected FlixelTween() {}
+  protected FlixelTween() {
+  }
 
   /**
    * Constructs a new tween with the provided settings.
@@ -205,7 +205,8 @@ public abstract class FlixelTween implements Pool.Poolable {
           "FlixelTweenSettings requires at least one property goal from addGoal(getter, toValue, setter).");
     }
 
-    FlixelGoalTween propTween = globalManager.obtainTween(FlixelGoalTween.class, () -> new FlixelGoalTween(tweenSettings));
+    FlixelGoalTween propTween =
+        globalManager.obtainTween(FlixelGoalTween.class, () -> new FlixelGoalTween(tweenSettings));
     propTween.setTweenSettings(tweenSettings);
     propTween.setObject(object);
     return globalManager.addTween(propTween);
@@ -221,8 +222,10 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @param updateCallback Callback function for updating any variable(s) that needs the current value when the tween updates.
    * @return The newly created and started tween.
    */
-  public static FlixelTween num(float from, float to, FlixelTweenSettings tweenSettings, FlixelNumTween.FlixelNumTweenUpdateCallback updateCallback) {
-    FlixelNumTween tween = globalManager.obtainTween(FlixelNumTween.class, () -> new FlixelNumTween(from, to, tweenSettings, updateCallback));
+  public static FlixelTween num(float from, float to, FlixelTweenSettings tweenSettings,
+      FlixelNumTween.FlixelNumTweenUpdateCallback updateCallback) {
+    FlixelNumTween tween = globalManager.obtainTween(FlixelNumTween.class,
+        () -> new FlixelNumTween(from, to, tweenSettings, updateCallback));
     tween.setTweenSettings(tweenSettings);
     tween.setTarget(from, to, updateCallback);
     return globalManager.addTween(tween);
@@ -249,8 +252,10 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @return The newly created and started tween.
    */
-  public static FlixelTween angle(@Nullable FlixelAngleable target, float fromAngle, float toAngle, FlixelTweenSettings tweenSettings) {
-    FlixelAngleTween tween = globalManager.obtainTween(FlixelAngleTween.class, () -> new FlixelAngleTween(tweenSettings));
+  public static FlixelTween angle(@Nullable FlixelAngleable target, float fromAngle, float toAngle,
+      FlixelTweenSettings tweenSettings) {
+    FlixelAngleTween tween =
+        globalManager.obtainTween(FlixelAngleTween.class, () -> new FlixelAngleTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setAngles(target, fromAngle, toAngle);
     return globalManager.addTween(tween);
@@ -297,7 +302,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings,
       @Nullable Runnable onColor) {
-    FlixelColorTween tween = globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
+    FlixelColorTween tween =
+        globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setColorEndpoints(colorable, from, to, onColor);
     return globalManager.addTween(tween);
@@ -346,7 +352,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       @Nullable Color to,
       FlixelTweenSettings tweenSettings,
       @Nullable Runnable onColor) {
-    FlixelColorTween tween = globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
+    FlixelColorTween tween =
+        globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setColorEndpointsRaw(colorable, from, to, onColor);
     return globalManager.addTween(tween);
@@ -367,10 +374,10 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-    @Nullable FlixelColorable colorable,
-    @Nullable FlixelColor from,
-    @Nullable Color to,
-    FlixelTweenSettings tweenSettings) {
+      @Nullable FlixelColorable colorable,
+      @Nullable FlixelColor from,
+      @Nullable Color to,
+      FlixelTweenSettings tweenSettings) {
     return color(colorable, from.getGdxColor(), to, tweenSettings, null);
   }
 
@@ -389,10 +396,10 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween color(
-    @Nullable FlixelColorable colorable,
-    @Nullable Color from,
-    @Nullable FlixelColor to,
-    FlixelTweenSettings tweenSettings) {
+      @Nullable FlixelColorable colorable,
+      @Nullable Color from,
+      @Nullable FlixelColor to,
+      FlixelTweenSettings tweenSettings) {
     return color(colorable, from, to.getGdxColor(), tweenSettings, null);
   }
 
@@ -433,7 +440,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       FlixelTweenSettings tweenSettings,
       FlixelShakeUnit shakeUnit,
       boolean fadeOut) {
-    FlixelShakeTween tween = globalManager.obtainTween(FlixelShakeTween.class, () -> new FlixelShakeTween(tweenSettings));
+    FlixelShakeTween tween =
+        globalManager.obtainTween(FlixelShakeTween.class, () -> new FlixelShakeTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setShake(shakeable, axes, intensity);
     tween.setShakeUnit(shakeUnit);
@@ -470,7 +478,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       boolean endVisibility,
       FlixelTweenSettings tweenSettings,
       @Nullable Predicate<FlixelFlickerTween> tweenFunction) {
-    FlixelFlickerTween tween = globalManager.obtainTween(FlixelFlickerTween.class, () -> new FlixelFlickerTween(tweenSettings));
+    FlixelFlickerTween tween =
+        globalManager.obtainTween(FlixelFlickerTween.class, () -> new FlixelFlickerTween(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setFlicker(visible, period, ratio, endVisibility, tweenFunction);
     return globalManager.addTween(tween);
@@ -498,7 +507,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings) {
-    FlixelLinearMotion tween = globalManager.obtainTween(FlixelLinearMotion.class, () -> new FlixelLinearMotion(tweenSettings));
+    FlixelLinearMotion tween =
+        globalManager.obtainTween(FlixelLinearMotion.class, () -> new FlixelLinearMotion(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setMotion(fromX, fromY, toX, toY, durationOrSpeed, useDuration);
     tween.setMotionObject(target);
@@ -529,7 +539,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings) {
-    FlixelCircularMotion tween = globalManager.obtainTween(FlixelCircularMotion.class, () -> new FlixelCircularMotion(tweenSettings));
+    FlixelCircularMotion tween =
+        globalManager.obtainTween(FlixelCircularMotion.class, () -> new FlixelCircularMotion(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setMotion(centerX, centerY, radius, angleDeg, clockwise, durationOrSpeed, useDuration);
     tween.setMotionObject(target);
@@ -561,7 +572,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings) {
-    FlixelQuadMotion tween = globalManager.obtainTween(FlixelQuadMotion.class, () -> new FlixelQuadMotion(tweenSettings));
+    FlixelQuadMotion tween =
+        globalManager.obtainTween(FlixelQuadMotion.class, () -> new FlixelQuadMotion(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setMotion(fromX, fromY, cx, cy, toX, toY, durationOrSpeed, useDuration);
     tween.setMotionObject(target);
@@ -599,7 +611,8 @@ public abstract class FlixelTween implements Pool.Poolable {
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings) {
-    FlixelCubicMotion tween = globalManager.obtainTween(FlixelCubicMotion.class, () -> new FlixelCubicMotion(tweenSettings));
+    FlixelCubicMotion tween =
+        globalManager.obtainTween(FlixelCubicMotion.class, () -> new FlixelCubicMotion(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     tween.setMotion(p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, durationOrSpeed, useDuration);
     tween.setMotionObject(target);
@@ -624,9 +637,11 @@ public abstract class FlixelTween implements Pool.Poolable {
       float... xy) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
     if (xy == null || xy.length < 4 || (xy.length & 1) != 0) {
-      throw new IllegalArgumentException("linearPath requires an even number of floats with at least four values (two points).");
+      throw new IllegalArgumentException(
+          "linearPath requires an even number of floats with at least four values (two points).");
     }
-    FlixelLinearPath tween = globalManager.obtainTween(FlixelLinearPath.class, () -> new FlixelLinearPath(tweenSettings));
+    FlixelLinearPath tween =
+        globalManager.obtainTween(FlixelLinearPath.class, () -> new FlixelLinearPath(tweenSettings));
     tween.setTweenSettings(tweenSettings);
     for (int i = 0; i < xy.length; i += 2) {
       tween.addPoint(xy[i], xy[i + 1]);

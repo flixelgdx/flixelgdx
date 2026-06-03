@@ -23,14 +23,13 @@
  */
 package org.flixelgdx.tween.type;
 
-import java.util.Objects;
-import java.util.function.Predicate;
-
 import org.flixelgdx.functional.FlixelVisible;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
-
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * Toggles {@link FlixelVisible#isVisible()} over time; restores visibility on completion.

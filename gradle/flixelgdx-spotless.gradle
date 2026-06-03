@@ -1,0 +1,28 @@
+/**
+ * Spotless formatting rules for all Java subprojects.
+ *
+ * <p>Run {@code ./gradlew spotlessCheck} to verify formatting (used in CI).
+ * Run {@code ./gradlew spotlessApply} to auto-format the entire codebase locally.
+ *
+ * <p>The Eclipse JDT formatter profile at {@code gradle/spotless/eclipse-formatter.xml}
+ * defines the style: Google Java Format conventions with 120-character line limit and
+ * 2-space indentation.
+ */
+subprojects {
+  apply plugin: 'com.diffplug.spotless'
+
+  spotless {
+    java {
+      // Eclipse JDT formatter: GJF style, 120-char lines, 2-space indent.
+      eclipse('4.33').configFile("$rootDir/gradle/spotless/eclipse-formatter.xml")
+
+      // Import groups, each separated by a blank line:
+      // | com | org | io | java/javax/jdk | everything else | static |
+      importOrder('com', 'org', 'io', 'java', 'javax', 'jdk', '', '\\#')
+
+      removeUnusedImports()
+      endWithNewline()
+      trimTrailingWhitespace()
+    }
+  }
+}

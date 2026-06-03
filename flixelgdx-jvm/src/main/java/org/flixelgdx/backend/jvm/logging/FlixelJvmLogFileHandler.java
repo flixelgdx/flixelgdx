@@ -28,7 +28,6 @@ import com.badlogic.gdx.files.FileHandle;
 
 import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.util.FlixelRuntimeUtil;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

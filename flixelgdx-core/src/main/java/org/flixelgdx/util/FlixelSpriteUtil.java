@@ -38,11 +38,10 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Helper class related to {@link org.flixelgdx.FlixelSprite}.
@@ -61,7 +60,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelSpriteUtil {
 
-  private FlixelSpriteUtil() {}
+  private FlixelSpriteUtil() {
+  }
 
   private static final Vector2 TMP_V2 = new Vector2();
 
@@ -125,12 +125,12 @@ public final class FlixelSpriteUtil {
    * @param color The color of the rectangle.
    */
   public static void drawRect(@NotNull Batch batch,
-                              @NotNull Texture whitePixel,
-                              float x,
-                              float y,
-                              float w,
-                              float h,
-                              @NotNull Color color) {
+      @NotNull Texture whitePixel,
+      float x,
+      float y,
+      float w,
+      float h,
+      @NotNull Color color) {
     Objects.requireNonNull(batch, "The batch provided cannot be null!");
     Objects.requireNonNull(whitePixel, "The white pixel texture provided cannot be null!");
     Objects.requireNonNull(color, "The color provided cannot be null!");
@@ -152,13 +152,13 @@ public final class FlixelSpriteUtil {
    * @param color The color of the border.
    */
   public static void drawBorder(@NotNull Batch batch,
-                                @NotNull Texture whitePixel,
-                                float x,
-                                float y,
-                                float w,
-                                float h,
-                                float thickness,
-                                @NotNull Color color) {
+      @NotNull Texture whitePixel,
+      float x,
+      float y,
+      float w,
+      float h,
+      float thickness,
+      @NotNull Color color) {
     Objects.requireNonNull(batch, "The batch provided cannot be null!");
     Objects.requireNonNull(whitePixel, "The white pixel texture provided cannot be null!");
     Objects.requireNonNull(color, "The color provided cannot be null!");
@@ -191,10 +191,10 @@ public final class FlixelSpriteUtil {
    * @return The created gradient Pixmap.
    */
   public static Pixmap createLinearGradientPixmap(int width,
-                                                  int height,
-                                                  @NotNull Color start,
-                                                  @NotNull Color end,
-                                                  boolean horizontal) {
+      int height,
+      @NotNull Color start,
+      @NotNull Color end,
+      boolean horizontal) {
     Objects.requireNonNull(start, "The start color provided cannot be null!");
     Objects.requireNonNull(end, "The end color provided cannot be null!");
     width = Math.max(1, width);
@@ -233,10 +233,10 @@ public final class FlixelSpriteUtil {
    * @return The created gradient Texture.
    */
   public static Texture createLinearGradientTexture(int width,
-                                                    int height,
-                                                    @NotNull Color start,
-                                                    @NotNull Color end,
-                                                    boolean horizontal) {
+      int height,
+      @NotNull Color start,
+      @NotNull Color end,
+      boolean horizontal) {
     Objects.requireNonNull(start, "The start color provided cannot be null!");
     Objects.requireNonNull(end, "The end color provided cannot be null!");
     Pixmap pm = createLinearGradientPixmap(width, height, start, end, horizontal);
@@ -246,15 +246,14 @@ public final class FlixelSpriteUtil {
   }
 
   private static void setInterpolatedColor(Pixmap pm, int position, int dimension,
-                                    float r0, float r1, float g0, float g1,
-                                    float b0, float b1, float a0, float a1) {
+      float r0, float r1, float g0, float g1,
+      float b0, float b1, float a0, float a1) {
     float t = dimension <= 1 ? 1f : (position / (float) (dimension - 1));
     pm.setColor(
-      MathUtils.lerp(r0, r1, t),
-      MathUtils.lerp(g0, g1, t),
-      MathUtils.lerp(b0, b1, t),
-      MathUtils.lerp(a0, a1, t)
-    );
+        MathUtils.lerp(r0, r1, t),
+        MathUtils.lerp(g0, g1, t),
+        MathUtils.lerp(b0, b1, t),
+        MathUtils.lerp(a0, a1, t));
   }
 
   /**
@@ -270,10 +269,10 @@ public final class FlixelSpriteUtil {
    */
   @NotNull
   public static FlixelSprite bound(@NotNull FlixelSprite sprite,
-                                   float minX,
-                                   float maxX,
-                                   float minY,
-                                   float maxY) {
+      float minX,
+      float maxX,
+      float minY,
+      float maxY) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     float maxXb = maxX > 0f ? maxX : Flixel.getViewWidth();
     float maxYb = maxY > 0f ? maxY : Flixel.getViewHeight();
@@ -306,10 +305,10 @@ public final class FlixelSpriteUtil {
    */
   @NotNull
   public static FlixelSprite screenWrap(@NotNull FlixelSprite sprite,
-                                        boolean left,
-                                        boolean right,
-                                        boolean top,
-                                        boolean bottom) {
+      boolean left,
+      boolean right,
+      boolean top,
+      boolean bottom) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     float maxXb = Flixel.getViewWidth();
     float maxYb = Flixel.getViewHeight();
@@ -345,11 +344,11 @@ public final class FlixelSpriteUtil {
    */
   @NotNull
   public static FlixelSprite cameraBound(@NotNull FlixelSprite sprite,
-                                         @Nullable FlixelCamera camera,
-                                         boolean left,
-                                         boolean right,
-                                         boolean top,
-                                         boolean bottom) {
+      @Nullable FlixelCamera camera,
+      boolean left,
+      boolean right,
+      boolean top,
+      boolean bottom) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     FlixelCamera cam = camera != null ? camera : Flixel.getCamera();
     float minX = cam.getViewLeft();
@@ -386,11 +385,11 @@ public final class FlixelSpriteUtil {
    */
   @NotNull
   public static FlixelSprite cameraWrap(@NotNull FlixelSprite sprite,
-                                        @Nullable FlixelCamera camera,
-                                        boolean left,
-                                        boolean right,
-                                        boolean top,
-                                        boolean bottom) {
+      @Nullable FlixelCamera camera,
+      boolean left,
+      boolean right,
+      boolean top,
+      boolean bottom) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     FlixelCamera cam = camera != null ? camera : Flixel.getCamera();
     float minX = cam.getViewLeft();
@@ -551,13 +550,13 @@ public final class FlixelSpriteUtil {
    * @param color The color of the line.
    */
   public static void drawLine(@NotNull Batch batch,
-                              @NotNull Texture whitePixel,
-                              float startX,
-                              float startY,
-                              float endX,
-                              float endY,
-                              float thickness,
-                              @NotNull Color color) {
+      @NotNull Texture whitePixel,
+      float startX,
+      float startY,
+      float endX,
+      float endY,
+      float thickness,
+      @NotNull Color color) {
     Objects.requireNonNull(batch, "The batch provided cannot be null!");
     Objects.requireNonNull(whitePixel, "The white pixel texture provided cannot be null!");
     Objects.requireNonNull(color, "The color provided cannot be null!");
@@ -573,7 +572,8 @@ public final class FlixelSpriteUtil {
     }
     float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
     batch.setColor(color);
-    batch.draw(whitePixel, startX, startY - thickness * 0.5f, 0f, thickness * 0.5f, len, thickness, 1f, 1f, angle, 0, 0, 1, 1, false, false);
+    batch.draw(whitePixel, startX, startY - thickness * 0.5f, 0f, thickness * 0.5f, len, thickness, 1f, 1f, angle, 0, 0,
+        1, 1, false, false);
     batch.setColor(Color.WHITE);
   }
 

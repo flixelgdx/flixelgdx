@@ -26,10 +26,10 @@ package org.flixelgdx.group;
 import com.badlogic.gdx.utils.ArraySupplier;
 import com.badlogic.gdx.utils.SnapshotArray;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Framework-agnostic member list backed by a {@link SnapshotArray}. Use this in a plain libGDX {@code Screen} or game

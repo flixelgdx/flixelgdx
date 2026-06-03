@@ -32,6 +32,7 @@ import org.flixelgdx.functional.supplier.CharSupplier;
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.functional.supplier.ShortSupplier;
 import org.flixelgdx.util.FlixelString;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,8 +42,6 @@ import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Manages the variable watch list for the debug overlay. Watch entries are getter-based

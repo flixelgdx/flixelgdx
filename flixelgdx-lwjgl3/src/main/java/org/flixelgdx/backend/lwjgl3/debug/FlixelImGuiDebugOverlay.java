@@ -29,6 +29,16 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelObject;
+import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.logging.FlixelLogLevel;
+import org.lwjgl.glfw.GLFW;
+
+import java.nio.charset.StandardCharsets;
+
 import imgui.ImFontAtlas;
 import imgui.ImGui;
 import imgui.ImGuiIO;
@@ -47,17 +57,6 @@ import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.type.ImBoolean;
 import imgui.type.ImString;
-
-import java.nio.charset.StandardCharsets;
-
-import org.lwjgl.glfw.GLFW;
-
-import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.FlixelObject;
-import org.flixelgdx.FlixelSprite;
-import org.flixelgdx.debug.FlixelDebugOverlay;
-import org.flixelgdx.logging.FlixelLogLevel;
 
 /**
  * Dear ImGui based debug overlay for the LWJGL3 backend.
@@ -94,15 +93,15 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   // Component-per-channel color constants. Colored labels use pushStyleColor(ImGuiCol.Text, ...) plus
   // textUnformatted so dynamic strings are never passed through printf-style formatting.
-  private static final float[] COLOR_INFO   = { 0.85f, 0.85f, 0.85f, 1f };
-  private static final float[] COLOR_WARN   = { 1.00f, 0.80f, 0.20f, 1f };
-  private static final float[] COLOR_ERROR  = { 1.00f, 0.30f, 0.30f, 1f };
-  private static final float[] COLOR_KEY    = { 0.55f, 0.85f, 1.00f, 1f };
-  private static final float[] COLOR_VALUE  = { 0.95f, 0.95f, 0.95f, 1f };
+  private static final float[] COLOR_INFO = { 0.85f, 0.85f, 0.85f, 1f };
+  private static final float[] COLOR_WARN = { 1.00f, 0.80f, 0.20f, 1f };
+  private static final float[] COLOR_ERROR = { 1.00f, 0.30f, 0.30f, 1f };
+  private static final float[] COLOR_KEY = { 0.55f, 0.85f, 1.00f, 1f };
+  private static final float[] COLOR_VALUE = { 0.95f, 0.95f, 0.95f, 1f };
   private static final float[] COLOR_HEADER = { 0.65f, 0.85f, 1.00f, 1f };
-  private static final float[] COLOR_OK     = { 0.30f, 0.95f, 0.55f, 1f };
+  private static final float[] COLOR_OK = { 0.30f, 0.95f, 0.55f, 1f };
   private static final float[] COLOR_PAUSED = { 1.00f, 0.70f, 0.20f, 1f };
-  private static final float[] COLOR_HINT   = { 0.65f, 0.65f, 0.65f, 1f };
+  private static final float[] COLOR_HINT = { 0.65f, 0.65f, 0.65f, 1f };
 
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
@@ -410,7 +409,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return true;
     }
     return switch (keycode) {
-      case Input.Keys.ESCAPE,
+    case Input.Keys.ESCAPE,
         Input.Keys.CONTROL_LEFT,
         Input.Keys.CONTROL_RIGHT,
         Input.Keys.ALT_LEFT,
@@ -426,8 +425,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         Input.Keys.UNKNOWN,
         Input.Keys.POWER,
         Input.Keys.BUTTON_MODE,
-        Input.Keys.MEDIA_PLAY_PAUSE -> true;
-      default -> false;
+        Input.Keys.MEDIA_PLAY_PAUSE ->
+      true;
+    default -> false;
     };
   }
 
@@ -894,7 +894,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     text(COLOR_KEY, "Frame (ms)");
     ImGui.sameLine();
     text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfFrameMs())));
-    ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth, graphHeight);
+    ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth,
+        graphHeight);
 
     // Java heap plot.
     text(COLOR_KEY, "Heap (MB)");
@@ -909,7 +910,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       text(COLOR_KEY, "Native (MB)");
       ImGui.sameLine();
       text(COLOR_VALUE, formatOneDecimal(nativePeek));
-      ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth, graphHeight);
+      ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", scaleAutoMin, scaleAutoMax, graphWidth,
+          graphHeight);
     }
     ImGui.end();
   }
@@ -1252,11 +1254,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     text(COLOR_KEY, "Position");
     ImGui.sameLine();
     text(COLOR_VALUE, "(" + formatOneDecimal(inspected.getX()) + ", "
-      + formatOneDecimal(inspected.getY()) + ")");
+        + formatOneDecimal(inspected.getY()) + ")");
     text(COLOR_KEY, "Size");
     ImGui.sameLine();
     text(COLOR_VALUE, "(" + formatOneDecimal(inspected.getWidth()) + ", "
-      + formatOneDecimal(inspected.getHeight()) + ")");
+        + formatOneDecimal(inspected.getHeight()) + ")");
 
     if (!(inspected instanceof FlixelSprite sprite)) {
       ImGui.separator();
@@ -1310,17 +1312,17 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   private boolean isLogLevelVisible(FlixelLogLevel level) {
     return switch (level) {
-      case INFO -> logShowInfo.get();
-      case WARN -> logShowWarn.get();
-      case ERROR -> logShowError.get();
+    case INFO -> logShowInfo.get();
+    case WARN -> logShowWarn.get();
+    case ERROR -> logShowError.get();
     };
   }
 
   private static float[] colorForLevel(FlixelLogLevel level) {
     return switch (level) {
-      case INFO -> COLOR_INFO;
-      case WARN -> COLOR_WARN;
-      case ERROR -> COLOR_ERROR;
+    case INFO -> COLOR_INFO;
+    case WARN -> COLOR_WARN;
+    case ERROR -> COLOR_ERROR;
     };
   }
 

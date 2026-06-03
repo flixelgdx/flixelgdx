@@ -28,11 +28,10 @@ import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.utils.Disposable;
 
 import org.flixelgdx.functional.FlixelDestroyable;
-
-import java.util.function.Function;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Function;
 
 /**
  * Asset manager interface for FlixelGDX.

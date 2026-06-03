@@ -54,7 +54,8 @@ public class FlixelNumTween extends FlixelTween {
    * @param settings The settings that configure and determine how the tween should animate.
    * @param updateCallback Callback function for updating any variable that needs the current value when the tween updates.
    */
-  public FlixelNumTween(float start, float end, FlixelTweenSettings settings, FlixelNumTweenUpdateCallback updateCallback) {
+  public FlixelNumTween(float start, float end, FlixelTweenSettings settings,
+      FlixelNumTweenUpdateCallback updateCallback) {
     super(settings);
     this.start = start;
     this.end = end;

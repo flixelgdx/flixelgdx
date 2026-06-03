@@ -25,12 +25,11 @@ package org.flixelgdx.signal;
 
 import org.flixelgdx.GdxHeadlessExtension;
 import org.flixelgdx.util.signal.FlixelSignal;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

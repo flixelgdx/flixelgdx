@@ -25,6 +25,7 @@ package org.flixelgdx.gradle.teavm;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -46,8 +47,8 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -194,7 +195,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // Copy any user-made web config files into the build output.
     project.getTasks().register("copyWebApp", Copy.class, task -> {
       task.setGroup(TASK_GROUP);
-      task.setDescription("Copies user-provided web resources (e.g. a custom index.html) into the web output directory.");
+      task
+          .setDescription(
+              "Copies user-provided web resources (e.g. a custom index.html) into the web output directory.");
       task.onlyIf(t -> ext.getWebappDir().get().getAsFile().exists());
       task.from(ext.getWebappDir());
       task.into(teaVmWebRoot);
@@ -204,7 +207,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // Create a task that automatically runs if no index.html file is detected.
     project.getTasks().register("generateIndexHtml", task -> {
       task.setGroup(TASK_GROUP);
-      task.setDescription("Writes index.html to the output directory. Copies a custom file if provided, otherwise generates a default from the built-in template.");
+      task.setDescription(
+          "Writes index.html to the output directory. Copies a custom file if provided, otherwise generates a default from the built-in template.");
       task.onlyIf(t -> {
         if (!ext.getGenerateDefaultIndexHtml().get()) {
           return false;
@@ -226,7 +230,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           File custom = ext.getCustomIndexHtml().getAsFile().get();
           if (custom.exists()) {
             try {
-              Files.copy(custom.toPath(), new File(outputDir, "index.html").toPath(), StandardCopyOption.REPLACE_EXISTING);
+              Files.copy(custom.toPath(), new File(outputDir, "index.html").toPath(),
+                  StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
               throw new RuntimeException("FlixelGDX: failed to copy custom index.html.", e);
             }
@@ -240,7 +245,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           File favicon = ext.getCustomFavicon().getAsFile().get();
           if (favicon.exists()) {
             try {
-              Files.copy(favicon.toPath(), new File(outputDir, favicon.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+              Files.copy(favicon.toPath(), new File(outputDir, favicon.getName()).toPath(),
+                  StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
               project.getLogger().warn("[FlixelGDX] Could not copy favicon: {}", e.getMessage());
             }
@@ -258,10 +264,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
           String html = template
-            .replace("{{TITLE}}", ext.getTitle().get())
-            .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
-            .replace("{{FAVICON}}", faviconLink)
-            .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project, outputDir));
+              .replace("{{TITLE}}", ext.getTitle().get())
+              .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
+              .replace("{{FAVICON}}", faviconLink)
+              .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project, outputDir));
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -273,7 +279,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // dependency JARs into teavm.js.outputDir/scripts/ where the runtime expects them.
     project.getTasks().register("extractNativeScripts", task -> {
       task.setGroup(TASK_GROUP);
-      task.setDescription("Extracts native JavaScript files from gdx-teavm dependency JARs into the scripts directory.");
+      task
+          .setDescription(
+              "Extracts native JavaScript files from gdx-teavm dependency JARs into the scripts directory.");
       task.doLast(t -> {
         File scriptsDir = new File(teaVmWebRoot.get().getAsFile(), "scripts");
         scriptsDir.mkdirs();
@@ -308,7 +316,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // for the preload sequence. Uses a custom file if provided, otherwise falls back to the built-in placeholder.
     project.getTasks().register("copyDefaultStartupLogo", task -> {
       task.setGroup(TASK_GROUP);
-      task.setDescription("Copies startup-logo.png into the assets output directory. Uses a custom file if provided, otherwise falls back to the built-in placeholder.");
+      task.setDescription(
+          "Copies startup-logo.png into the assets output directory. Uses a custom file if provided, otherwise falls back to the built-in placeholder.");
       task.mustRunAfter(project.getTasks().named("copyAssets"));
       task.onlyIf(t -> {
         if (ext.getCustomStartupLogo().isPresent() && ext.getCustomStartupLogo().getAsFile().get().exists()) {
@@ -368,8 +377,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     project.getTasks().register("copyFlixelGdxDefaultBitmapFont", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription(
-        "Copies the packaged lsans-15.fnt and lsans-15.png into assets/org/flixelgdx/bitmap/ for web preload."
-      );
+          "Copies the packaged lsans-15.fnt and lsans-15.png into assets/org/flixelgdx/bitmap/ for web preload.");
       task.mustRunAfter(project.getTasks().named("copyAssets"));
       task.doLast(t -> {
         File out = new File(teaVmWebRoot.get().getAsFile(), "assets/org/flixelgdx/bitmap");
@@ -393,8 +401,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     project.getTasks().register("aliasTeaVmMainScript", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription(
-        "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility)."
-      );
+          "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility).");
       task.doLast(t -> {
         TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
         if (js == null) {
@@ -416,8 +423,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           if (src.isFile() && !src.getCanonicalFile().equals(dst.getCanonicalFile())) {
             Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
             project
-              .getLogger()
-              .info("[FlixelGDX] Wrote gdx-teavm compatibility copy: " + sub + "teavm.js (from " + file + ").");
+                .getLogger()
+                .info("[FlixelGDX] Wrote gdx-teavm compatibility copy: " + sub + "teavm.js (from " + file + ").");
           }
         } catch (IOException e) {
           project.getLogger().warn("[FlixelGDX] Could not create teavm.js alias: {}", e.getMessage());
@@ -462,9 +469,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
           });
           Files.writeString(
-            new File(assetsOutputDir, "preload.txt").toPath(),
-            String.join("\n", lines) + "\n",
-            StandardCharsets.UTF_8);
+              new File(assetsOutputDir, "preload.txt").toPath(),
+              String.join("\n", lines) + "\n",
+              StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate preload.txt.", e);
         }
@@ -484,21 +491,21 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         try {
           server = HttpServer.create(new InetSocketAddress(port), 0);
         } catch (IOException e) {
-          throw new RuntimeException("[FlixelGDX] Could not start dev server on port " + port + ": " + e.getMessage(), e);
+          throw new RuntimeException("[FlixelGDX] Could not start dev server on port " + port + ": " + e.getMessage(),
+              e);
         }
 
         // MIME type map for common web assets.
         Map<String, String> mimeTypes = Map.of(
             "html", "text/html; charset=utf-8",
-            "js",   "application/javascript",
-            "css",  "text/css",
-            "png",  "image/png",
-            "jpg",  "image/jpeg",
+            "js", "application/javascript",
+            "css", "text/css",
+            "png", "image/png",
+            "jpg", "image/jpeg",
             "jpeg", "image/jpeg",
-            "gif",  "image/gif",
-            "txt",  "text/plain",
-            "wasm", "application/wasm"
-        );
+            "gif", "image/gif",
+            "txt", "text/plain",
+            "wasm", "application/wasm");
 
         server.createContext("/", (HttpExchange exchange) -> {
           URI requestUri = exchange.getRequestURI();
@@ -553,9 +560,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         String os = System.getProperty("os.name", "").toLowerCase();
         try {
           if (os.contains("linux")) {
-            Runtime.getRuntime().exec(new String[]{"xdg-open", url});
+            Runtime.getRuntime().exec(new String[] { "xdg-open", url });
           } else if (os.contains("mac")) {
-            Runtime.getRuntime().exec(new String[]{"open", url});
+            Runtime.getRuntime().exec(new String[] { "open", url });
           } else {
             Desktop desktop = Desktop.getDesktop();
             if (desktop.isSupported(Desktop.Action.BROWSE)) {
@@ -564,7 +571,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           }
         } catch (Exception ignored) {
           // If all else fails the developer can just navigate to the URL printed above.
-          logger.quiet("Please navigate to " + url + " in your browser to test your game, as it has failed to open automatically.");
+          logger.quiet("Please navigate to " + url
+              + " in your browser to test your game, as it has failed to open automatically.");
         }
 
         // Block indefinitely until the build daemon is killed (Ctrl+C or task killed).
@@ -628,7 +636,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           project.getTasks().named("generatePreloadFile"),
           project.getTasks().named("copyDefaultStartupLogo"));
     } else {
-      project.getLogger().warn("[FlixelGDX] Task '{}' not found. Make sure 'org.teavm' is applied before 'flixelgdx.teavm'.", taskName);
+      project.getLogger()
+          .warn("[FlixelGDX] Task '{}' not found. Make sure 'org.teavm' is applied before 'flixelgdx.teavm'.",
+              taskName);
     }
   }
 
@@ -686,18 +696,18 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     if (found != null) {
       if (configured != null && !configured.replace("\\", "/").equals(found)) {
         project
-          .getLogger()
-          .info("[FlixelGDX] index.html script src set to {} (configured path {} was missing).", found, configured);
+            .getLogger()
+            .info("[FlixelGDX] index.html script src set to {} (configured path {} was missing).", found, configured);
       }
       return found;
     }
 
     project
-      .getLogger()
-      .warn(
-        "[FlixelGDX] teavm.js not found under {}. Using script src \"{}\".",
-        outputRoot.getAbsolutePath(),
-        DEFAULT_GENERATED_INDEX_SCRIPT_SRC);
+        .getLogger()
+        .warn(
+            "[FlixelGDX] teavm.js not found under {}. Using script src \"{}\".",
+            outputRoot.getAbsolutePath(),
+            DEFAULT_GENERATED_INDEX_SCRIPT_SRC);
     return DEFAULT_GENERATED_INDEX_SCRIPT_SRC;
   }
 
@@ -753,10 +763,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       return null;
     }
     String[] quick = {
-      DEFAULT_GENERATED_INDEX_SCRIPT_SRC,
-      "js/teavm.js",
-      "webapp/teavm.js",
-      "webapp/js/teavm.js"
+        DEFAULT_GENERATED_INDEX_SCRIPT_SRC,
+        "js/teavm.js",
+        "webapp/teavm.js",
+        "webapp/js/teavm.js"
     };
     for (String rel : quick) {
       Path p = root.resolve(rel);
@@ -768,26 +778,26 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     AtomicReference<Path> best = new AtomicReference<>();
     try {
       Files.walkFileTree(
-        root,
-        EnumSet.noneOf(FileVisitOption.class),
-        12,
-        new SimpleFileVisitor<>() {
-          @Override
-          @NonNull
-          public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
-            if (!attrs.isRegularFile()) {
+          root,
+          EnumSet.noneOf(FileVisitOption.class),
+          12,
+          new SimpleFileVisitor<>() {
+            @Override
+            @NonNull
+            public FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) {
+              if (!attrs.isRegularFile()) {
+                return FileVisitResult.CONTINUE;
+              }
+              if (!"teavm.js".equalsIgnoreCase(file.getFileName().toString())) {
+                return FileVisitResult.CONTINUE;
+              }
+              Path prev = best.get();
+              if (prev == null || root.relativize(file).getNameCount() < root.relativize(prev).getNameCount()) {
+                best.set(file);
+              }
               return FileVisitResult.CONTINUE;
             }
-            if (!"teavm.js".equalsIgnoreCase(file.getFileName().toString())) {
-              return FileVisitResult.CONTINUE;
-            }
-            Path prev = best.get();
-            if (prev == null || root.relativize(file).getNameCount() < root.relativize(prev).getNameCount()) {
-              best.set(file);
-            }
-            return FileVisitResult.CONTINUE;
-          }
-        });
+          });
     } catch (IOException e) {
       return null;
     }
@@ -811,11 +821,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       return teavm.getJs().getOutputDir();
     }
     project
-      .getLogger()
-      .warn(
-        "[FlixelGDX] org.teavm extension not found. Helper tasks use build/generated/teavm as the web root. "
-          + "Apply org.teavm before this plugin and set outputDir under teavm.js or teavm.all."
-      );
+        .getLogger()
+        .warn(
+            "[FlixelGDX] org.teavm extension not found. Helper tasks use build/generated/teavm as the web root. "
+                + "Apply org.teavm before this plugin and set outputDir under teavm.js or teavm.all.");
     DirectoryProperty fallback = project.getObjects().directoryProperty();
     fallback.convention(project.getLayout().getBuildDirectory().dir("generated/teavm"));
     return fallback;

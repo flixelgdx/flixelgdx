@@ -24,6 +24,7 @@
 package org.flixelgdx.functional;
 
 import com.badlogic.gdx.Gdx;
+
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
 
 /**

@@ -23,26 +23,25 @@
  */
 package org.flixelgdx.backend.lwjgl3;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Objects;
-
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
-import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
+import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
 import org.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
 import org.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
 import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import org.flixelgdx.util.FlixelRuntimeUtil;
-
 import org.fusesource.jansi.AnsiConsole;
+
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Launches the desktop (LWJGL3) version of the Flixel game.
@@ -119,10 +118,10 @@ public class FlixelLwjgl3Launcher {
     }
     // Ensure the icons are not null, empty, or whitespace only.
     configuration.setWindowIcon(Arrays.stream(icons)
-      .filter(Objects::nonNull)
-      .map(String::trim)
-      .filter(s -> !s.isEmpty())
-      .toArray(String[]::new));
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .toArray(String[]::new));
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
     }
@@ -144,7 +143,8 @@ public class FlixelLwjgl3Launcher {
    * {@link Lwjgl3ApplicationConfiguration}) so a custom {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener}
    * can be preserved without reflection.
    */
-  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode, FlixelLwjgl3ApplicationConfiguration configuration) {
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
+      FlixelLwjgl3ApplicationConfiguration configuration) {
     prepareLinuxAwtCompatibility();
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);

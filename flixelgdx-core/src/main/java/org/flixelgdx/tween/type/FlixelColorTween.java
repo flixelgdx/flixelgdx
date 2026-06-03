@@ -23,16 +23,15 @@
  */
 package org.flixelgdx.tween.type;
 
-import java.util.Objects;
-
 import com.badlogic.gdx.graphics.Color;
 
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.util.FlixelColor;
-
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Interpolates between two colors and optionally applies tint to a {@link FlixelColorable}.
@@ -43,11 +42,15 @@ public class FlixelColorTween extends FlixelTween {
   protected final Color workTo = new Color();
   protected final Color workOut = new Color();
 
-  @Nullable protected FlixelColor fromFlixel;
-  @Nullable protected FlixelColor toFlixel;
+  @Nullable
+  protected FlixelColor fromFlixel;
+  @Nullable
+  protected FlixelColor toFlixel;
   protected boolean useRawColor;
-  @Nullable protected FlixelColorable colorTarget;
-  @Nullable protected Runnable onColor;
+  @Nullable
+  protected FlixelColorable colorTarget;
+  @Nullable
+  protected Runnable onColor;
 
   public FlixelColorTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
@@ -62,7 +65,8 @@ public class FlixelColorTween extends FlixelTween {
    * @param onColor The callback to run when the tween is complete.
    * @return {@code this} for chaining.
    */
-  public FlixelColorTween setColorEndpoints(@Nullable FlixelColorable target, @Nullable FlixelColor from, @Nullable FlixelColor to, @Nullable Runnable onColor) {
+  public FlixelColorTween setColorEndpoints(@Nullable FlixelColorable target, @Nullable FlixelColor from,
+      @Nullable FlixelColor to, @Nullable Runnable onColor) {
     this.useRawColor = false;
     this.colorTarget = target;
     this.fromFlixel = from;
@@ -80,7 +84,8 @@ public class FlixelColorTween extends FlixelTween {
    * @param onColor The callback to run when the tween is complete.
    * @return {@code this} for chaining.
    */
-  public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelColorable target, @Nullable Color from, @Nullable Color to, @Nullable Runnable onColor) {
+  public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelColorable target, @Nullable Color from,
+      @Nullable Color to, @Nullable Runnable onColor) {
     this.useRawColor = true;
     this.colorTarget = target;
     this.fromFlixel = null;

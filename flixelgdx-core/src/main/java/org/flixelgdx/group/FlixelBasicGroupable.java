@@ -26,7 +26,6 @@ package org.flixelgdx.group;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.functional.IFlixelBasic;
-
 import org.jetbrains.annotations.Nullable;
 
 /**

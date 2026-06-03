@@ -32,7 +32,6 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.input.FlixelInputProcessorManager;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -140,7 +139,8 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
     }
   };
 
-  public FlixelMouseManager() {}
+  public FlixelMouseManager() {
+  }
 
   /**
    * Replaces the active {@link FlixelMouseIconManager}, for example with an LWJGL3 or web backend.
@@ -363,8 +363,8 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
     float x = getWorldX();
     float y = getWorldY();
     return x >= obj.getX()
-      && x <= obj.getX() + obj.getWidth()
-      && y >= obj.getY()
-      && y <= obj.getY() + obj.getHeight();
+        && x <= obj.getX() + obj.getWidth()
+        && y >= obj.getY()
+        && y <= obj.getY() + obj.getHeight();
   }
 }

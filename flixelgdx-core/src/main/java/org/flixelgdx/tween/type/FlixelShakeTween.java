@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.tween.type;
 
-import java.util.Objects;
-
 import com.badlogic.gdx.math.MathUtils;
 
 import org.flixelgdx.functional.FlixelShakeable;
@@ -32,8 +30,9 @@ import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.util.FlixelAxes;
-
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Random shake applied to a {@link FlixelShakeable} target by jittering its shake channel (for example sprite graphic

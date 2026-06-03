@@ -24,8 +24,8 @@
 package org.flixelgdx.input.mouse;
 
 import com.badlogic.gdx.Input;
-import org.flixelgdx.GdxHeadlessExtension;
 
+import org.flixelgdx.GdxHeadlessExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

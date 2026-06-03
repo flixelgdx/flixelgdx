@@ -34,7 +34,6 @@ import com.badlogic.gdx.utils.IntMap;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.functional.FlixelDestroyable;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,7 +100,8 @@ public final class FlixelFontRegistry {
    */
   private static final ObjectMap<String, BitmapFont> freeTypeBitmapFonts = new ObjectMap<>();
 
-  private FlixelFontRegistry() {}
+  private FlixelFontRegistry() {
+  }
 
   /**
    * Registers a TrueType font under the given identifier. If an entry with the same
@@ -307,8 +307,8 @@ public final class FlixelFontRegistry {
   private static BitmapFont tryLoadBitmapFont(boolean useInternal) {
     try {
       FileHandle fnt = useInternal
-        ? Gdx.files.internal(DEFAULT_BITMAP_FNT)
-        : Gdx.files.classpath(DEFAULT_BITMAP_FNT);
+          ? Gdx.files.internal(DEFAULT_BITMAP_FNT)
+          : Gdx.files.classpath(DEFAULT_BITMAP_FNT);
       if (fnt == null || !fnt.exists()) {
         return null;
       }

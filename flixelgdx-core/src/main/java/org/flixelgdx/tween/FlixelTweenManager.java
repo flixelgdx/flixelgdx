@@ -23,19 +23,18 @@
  */
 package org.flixelgdx.tween;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import org.flixelgdx.tween.type.FlixelGoalTween;
-import org.jetbrains.annotations.NotNull;
-
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
+import org.flixelgdx.tween.type.FlixelGoalTween;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Manager class for handling a list of active {@link FlixelTween}s.
@@ -59,7 +58,8 @@ public class FlixelTweenManager {
    *
    * @param pool The object pool for recycling tween instances.
    */
-  public record TweenTypeRegistration(Pool<FlixelTween> pool) {}
+  public record TweenTypeRegistration(Pool<FlixelTween> pool) {
+  }
 
   /** Registry: tween class to its pool registration. */
   private final Map<Class<? extends FlixelTween>, TweenTypeRegistration> registry = new HashMap<>();

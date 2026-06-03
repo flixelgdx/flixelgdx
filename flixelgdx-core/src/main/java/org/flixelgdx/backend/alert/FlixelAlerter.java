@@ -28,6 +28,8 @@ package org.flixelgdx.backend.alert;
  */
 public interface FlixelAlerter {
   void showInfoAlert(String title, String message);
+
   void showWarningAlert(String title, String message);
+
   void showErrorAlert(String title, String message);
 }

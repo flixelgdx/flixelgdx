@@ -15,6 +15,7 @@ buildscript {
   }
   dependencies {
     classpath 'com.vanniktech:gradle-maven-publish-plugin:0.30.0'
+    classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.25.0'
     if (gradle.ext.get('includeAndroid') == true) {
       classpath 'com.android.tools.build:gradle:8.7.3'
     }
@@ -40,5 +41,6 @@ apply from: 'gradle/flixelgdx-subprojects-repositories.gradle'
 apply from: 'gradle/flixelgdx-publish-stack.gradle'
 apply from: 'gradle/flixelgdx-eclipse-ide-support.gradle'
 apply from: 'gradle/flixelgdx-javadoc-aggregator.gradle'
+apply from: 'gradle/flixelgdx-spotless.gradle'
 
 eclipse.project.name = 'flixelgdx' + '-parent'
