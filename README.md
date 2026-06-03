@@ -192,7 +192,7 @@ for (int i = 0; i < 10; i++) {
 add(enemies); // update() and draw() propagate to all members automatically.
 ```
 
-**`FlixelSpriteGroup`** (a concrete `FlixelBasicGroup`) gives members the full FlixelGDX lifecycle automatically and works with `Flixel.overlap` and `Flixel.collide`:
+**`FlixelSpriteGroup`** gives members the full FlixelGDX lifecycle automatically and works with `Flixel.overlap` and `Flixel.collide`:
 
 ```java
 // FlixelSpriteGroup handles update, draw, and destroy for every member.
@@ -221,10 +221,14 @@ FlixelGDX is built for low memory usage:
 - Indexed `for` loops are used throughout the framework to avoid iterator allocation.
 - Internal class field layouts follow strict padding rules to minimize struct size.
 
-When compiled to a native binary with **GraalVM Native Image**, the JVM heap for a typical or even complex FlixelGDX game sits at roughly **40-50 MB of system RAM**.
+The JVM heap for a typical or even complex FlixelGDX game sits at roughly **4-8MB on average**.
+
+It gets even better. When compiled to a native binary with GraalVM Native Image, the total system RAM (including the embedded garbage collector Graal provides) stays around **40-50MB of system RAM**.
+
+For context, a similarly sized game built on raw libGDX typically uses 30-80MB of managed heap before significant game logic is added. A similarly sized HaxeFlixel game commonly reaches several hundred megabytes of system RAM, because HaxeFlixel tends to keep assets (textures, audio) resident in managed memory rather than properly handing them off to native buffers.
 
 > [!NOTE]
-> The 40-50 MB figure covers managed heap only. Native memory - which includes GPU textures, audio tracks, and other OS-managed resources - is outside the JVM heap and outside what the framework can control. How efficiently your game uses native memory depends entirely on how big your assets are and managed.
+> The 4-8MB figure covers managed heap only. Native memory - which includes GPU textures, audio tracks, and other OS-managed resources - is outside the JVM heap and outside what the framework can control. How efficiently your game uses native memory depends entirely on how big your assets are and managed.
 
 ---
 
