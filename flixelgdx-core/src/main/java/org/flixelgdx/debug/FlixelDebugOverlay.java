@@ -27,6 +27,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
@@ -130,6 +131,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected float cachedHeapMegabytes;
   protected float cachedNativeMegabytes;
   protected int cachedObjectCount;
+
+  /**
+   * Total render-call count snapshotted at the start of each {@link #draw()} call, after the
+   * game's {@link SpriteBatch} has been ended for the frame. Sums the framework's own batch and
+   * any batches registered via {@link FlixelDebugManager#trackBatch(SpriteBatch)}.
+   */
+  protected int cachedRenderCalls;
 
   private float perfSampleTimer = 0f;
 
@@ -751,7 +759,34 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (!visible) {
       return;
     }
+    snapshotRenderCalls();
     drawUI();
+  }
+
+  /**
+   * Sums {@code renderCalls} from the framework's own batch and all user-registered batches.
+   * Called from {@link #draw()} after the game's batch has been ended for the frame, so the
+   * count reflects the full just-completed frame rather than a partial in-progress one.
+   */
+  private void snapshotRenderCalls() {
+    int total = 0;
+    if (Flixel.game != null) {
+      SpriteBatch frameworkBatch = Flixel.game.getBatch();
+      if (frameworkBatch != null) {
+        total += frameworkBatch.renderCalls;
+      }
+    }
+    FlixelDebugManager mgr = Flixel.debug;
+    if (mgr != null) {
+      Array<SpriteBatch> extra = mgr.getTrackedBatches();
+      for (int i = 0, n = extra.size; i < n; i++) {
+        SpriteBatch b = extra.get(i);
+        if (b != null) {
+          total += b.renderCalls;
+        }
+      }
+    }
+    cachedRenderCalls = total;
   }
 
   /** Hook invoked from {@link #draw()} when the overlay is visible. Each platform backend implements this. */

@@ -867,6 +867,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawStatRow("Heap (MB)", cachedHeapMegabytes);
     drawStatRow("Native (MB)", cachedNativeMegabytes);
     drawStatRow("Active members", cachedObjectCount);
+    drawStatRow("Render calls", cachedRenderCalls);
 
     ImGui.separator();
     boolean paused = Flixel.isPaused();
