@@ -108,7 +108,30 @@ public class FlixelTeaVMLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
-    launch(game, runtimeMode, null);
+    launch(game, runtimeMode, null, null);
+  }
+
+  /**
+   * Launches the web version of the game with the given runtime mode, default configuration, and
+   * an optional pre-initialization callback.
+   *
+   * <p>Use this when you want to inject custom services without supplying a configuration
+   * customizer:
+   *
+   * <pre>{@code
+   * FlixelTeaVMLauncher.launch(game, FlixelRuntimeMode.DEBUG, () -> {
+   *   Flixel.setDebugOverlay(MyCustomOverlay::new);
+   * });
+   * }</pre>
+   *
+   * @param game The game instance to launch.
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
+   * @param onBeforeInitialize Optional callback invoked just before {@link Flixel#initialize}.
+   *     Pass {@code null} to skip.
+   */
+  public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
+      @Nullable Runnable onBeforeInitialize) {
+    launch(game, runtimeMode, null, onBeforeInitialize);
   }
 
   /**
