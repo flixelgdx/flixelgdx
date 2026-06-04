@@ -103,8 +103,8 @@ class FlixelAnimationStateMachineTest {
   @Test
   void forcedReentryReplaysWithoutExiting() {
     FlixelAnimationStateMachine fsm = new FlixelAnimationStateMachine(new FlixelSprite());
-    int[] enters = {0};
-    int[] exits = {0};
+    int[] enters = { 0 };
+    int[] exits = { 0 };
     fsm.addState("attack", "attack").onEnter(() -> enters[0]++).onExit(() -> exits[0]++);
 
     fsm.setState("attack");

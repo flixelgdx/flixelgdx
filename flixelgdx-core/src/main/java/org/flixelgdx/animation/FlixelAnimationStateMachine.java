@@ -26,8 +26,8 @@ package org.flixelgdx.animation;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
 
-import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +80,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FlixelAnimationController
  * @see org.flixelgdx.FlixelSprite#ensureAnimation()
  */
-public class FlixelAnimationStateMachine {
+public class FlixelAnimationStateMachine implements FlixelDestroyable {
 
   /** The controller whose clips this machine plays. */
   @NotNull
@@ -212,10 +212,6 @@ public class FlixelAnimationStateMachine {
     State next = states.get(newState);
 
     if (!sameState && enforceLegality && current != null && !current.canTransitionTo(newState)) {
-      if (Flixel.log != null) {
-        Flixel.log.warn("FlixelAnimationStateMachine",
-            "Illegal transition from '" + state + "' to '" + newState + "'; ignoring.");
-      }
       return false;
     }
 
@@ -270,6 +266,7 @@ public class FlixelAnimationStateMachine {
    * Detaches this machine from its controller and clears all states. Call when the owning sprite is
    * destroyed so the machine does not keep receiving {@code onAnimationFinished} callbacks.
    */
+  @Override
   public void destroy() {
     controller.onAnimationFinished.remove(finishListener);
     states.clear();
