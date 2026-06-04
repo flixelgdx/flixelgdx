@@ -43,24 +43,24 @@ class FlixelFrameGeometryTest {
     // identical or the character's feet would bob up and down as the clip loops.
     int darnellSourceHeight = 665;
     int[][] darnellIdle = {
-        {374, 471, 44, 79},
-        {391, 482, 47, 68},
-        {388, 487, 47, 63},
+        { 374, 471, 44, 79 },
+        { 391, 482, 47, 68 },
+        { 388, 487, 47, 63 },
     };
     assertConstantBottomInset(darnellSourceHeight, darnellIdle, 115);
 
     // Pico "Idle Dance": planted one pixel above the source box bottom.
     assertConstantBottomInset(475, new int[][] {
-        {435, 461, 18, 13},
-        {435, 461, 18, 13},
-        {442, 468, 11, 6},
+        { 435, 461, 18, 13 },
+        { 435, 461, 18, 13 },
+        { 442, 468, 11, 6 },
     }, 1);
 
     // Boyfriend "Note Left": planted flush with the source box bottom.
     assertConstantBottomInset(406, new int[][] {
-        {383, 406, 0, 0},
-        {383, 406, 0, 0},
-        {374, 404, 11, 2},
+        { 383, 406, 0, 0 },
+        { 383, 406, 0, 0 },
+        { 374, 404, 11, 2 },
     }, 0);
   }
 

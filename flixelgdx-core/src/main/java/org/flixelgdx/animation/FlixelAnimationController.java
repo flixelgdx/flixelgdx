@@ -59,8 +59,9 @@ public class FlixelAnimationController implements FlixelUpdatable {
   private final ObjectMap<String, Animation<FlixelFrame>> animations = new ObjectMap<>();
 
   /**
-   * Per-animation pixel offsets applied to the owner when a clip starts (Friday Night Funkin' style).
-   * Each entry is a {@code {x, y}} pair. Empty until {@link #addOffset(String, float, float)} is used,
+   * Per-animation pixel offsets applied to the owner when a clip starts.
+   *
+   * <p>Each entry is a {@code {x, y}} pair. Empty until {@link #addOffset(String, float, float)} is used,
    * which keeps the feature opt-in and out of the way of manual {@link FlixelSprite#setOffset} calls.
    */
   @NotNull
@@ -180,7 +181,6 @@ public class FlixelAnimationController implements FlixelUpdatable {
     Array<FlixelFrame> atlasFrames = new Array<>(FlixelFrame[]::new);
 
     Array<XmlReader.Element> subTextures = xmlRoot.getChildrenByName("SubTexture");
-    int skipped = 0;
     for (int i = 0; i < subTextures.size; i++) {
       XmlReader.Element subTexture = subTextures.get(i);
 
@@ -193,7 +193,6 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
       // A zero-area or off-texture region cannot be rendered; drop it rather than emit garbage UVs.
       if (width <= 0 || height <= 0 || x < 0 || y < 0 || x >= texW || y >= texH) {
-        skipped++;
         continue;
       }
 
@@ -234,16 +233,6 @@ public class FlixelAnimationController implements FlixelUpdatable {
       atlasFrames.add(frame);
     }
 
-    if (Flixel.log != null) {
-      if (atlasFrames.size == 0) {
-        Flixel.log.warn("FlixelAnimationController",
-            "Sparrow atlas for '" + textureKey + "' produced no usable frames.");
-      } else if (skipped > 0) {
-        Flixel.log.warn("FlixelAnimationController",
-            "Skipped " + skipped + " malformed SubTexture entries while loading '" + textureKey + "'.");
-      }
-    }
-
     owner.applySparrowAtlas(g, atlasFrames);
     return owner;
   }
@@ -267,10 +256,9 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * <p>A Sparrow atlas keeps each frame planted within its own untrimmed source box, but different
    * clips are usually authored on differently sized canvases, so their anchors do not line up when
-   * you switch between them. This is the Friday Night Funkin' style fix: nudge each clip by a
-   * hand-tuned amount so they all share a common ground line. The offset is <em>subtracted</em> from
-   * the draw position, so positive {@code x} moves the graphic left and positive {@code y} moves it
-   * up (matching {@link FlixelSprite#setOffset}).
+   * you switch between them. Nudge each clip by a hand-tuned amount so they all share a common ground
+   * line. The offset is <em>subtracted</em> from the draw position, so positive {@code x} moves the
+   * graphic left and positive {@code y} moves it up (matching {@link FlixelSprite#setOffset}).
    *
    * <p>The feature is opt-in. Until the first {@code addOffset} call the controller never touches the
    * sprite's offset; afterwards it owns it, and playing a clip with no registered offset resets the
