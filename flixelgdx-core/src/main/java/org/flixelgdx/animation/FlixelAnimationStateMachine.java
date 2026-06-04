@@ -78,7 +78,10 @@ import org.jetbrains.annotations.Nullable;
  * its {@link FlixelAnimationController#onAnimationFinished} signal, which is what powers
  * auto-advance. You must still call {@code sprite.update(...)} every frame so the controller advances
  * animation time and reports when clips end. If any state uses a {@link State#delay(float) delayed}
- * auto-advance, also call this machine's {@link #update(float)} each frame so the delay can elapse.
+ * auto-advance, the machine's {@link #update(float)} must also be called each frame so the delay can
+ * elapse. The easiest way to satisfy that requirement is to link the machine to the controller with
+ * {@link FlixelAnimationController#setStateMachine}, which makes {@code sprite.update(...)} tick both
+ * automatically. Alternatively, call {@link #update(float)} yourself each frame.
  *
  * <h2>Typical usage</h2>
  * <pre>{@code
@@ -90,6 +93,9 @@ import org.jetbrains.annotations.Nullable;
  *    .autoAdvanceTo("idle")          // one-shot: snaps back to idle when the clip ends
  *    .onEnter(() -> sword.swing());
  * fsm.setState("idle");
+ *
+ * // Link the machine so player.update(...) ticks it automatically - no separate fsm.update() needed:
+ * player.ensureAnimation().setStateMachine(fsm);
  *
  * // Each frame, just describe the situation; calling setState with the current state is a no-op:
  * if (attackPressed)        fsm.setState("attack");

@@ -39,6 +39,7 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.StringReader;
 import java.util.Comparator;
@@ -47,6 +48,10 @@ import java.util.Comparator;
  * Playback state and clip registration for {@link FlixelSprite} animations. Obtain a controller with
  * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().loadSparrowFrames(...)},
  * {@code .playAnimation(...)}, etc. Decouples animation timing from rendering and physics.
+ *
+ * <p>Optionally link a {@link FlixelAnimationStateMachine} via {@link #setStateMachine} so the
+ * machine is ticked automatically inside {@link #update(float)} - no separate machine update call
+ * needed in your game loop.
  */
 public class FlixelAnimationController implements FlixelUpdatable {
 
@@ -66,6 +71,13 @@ public class FlixelAnimationController implements FlixelUpdatable {
    */
   @NotNull
   private final ObjectMap<String, float[]> animationOffsets = new ObjectMap<>();
+
+  /**
+   * Optional state machine to update automatically alongside this controller. When non-null,
+   * {@link #update(float)} ticks the machine so callers only need to update the sprite.
+   */
+  @Nullable
+  private FlixelAnimationStateMachine stateMachine;
 
   /** The current state time of the animation. */
   private float stateTime;
@@ -585,6 +597,10 @@ public class FlixelAnimationController implements FlixelUpdatable {
       onAnimationFinished.dispatch(data);
     }
     lastFinished = finished;
+
+    if (stateMachine != null) {
+      stateMachine.update(elapsed);
+    }
   }
 
   @NotNull
@@ -680,5 +696,33 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
   public boolean isLooping() {
     return looping;
+  }
+
+  /**
+   * @return The linked {@link FlixelAnimationStateMachine}, or {@code null} if none is set.
+   */
+  @Nullable
+  public FlixelAnimationStateMachine getStateMachine() {
+    return stateMachine;
+  }
+
+  /**
+   * Links a {@link FlixelAnimationStateMachine} to this controller so it is ticked automatically by
+   * {@link #update(float)}. Pass {@code null} to detach a previously linked machine.
+   *
+   * <p>This is the recommended way to drive an FSM: link it once and update only the sprite each
+   * frame. The machine still works independently if you prefer to call its own
+   * {@link FlixelAnimationStateMachine#update(float)} by hand - just do not link it here.
+   *
+   * <pre>{@code
+   * var fsm = new FlixelAnimationStateMachine(player);
+   * player.ensureAnimation().setStateMachine(fsm);
+   * // From now on player.update(elapsed) advances both the controller and the FSM.
+   * }</pre>
+   *
+   * @param stateMachine The machine to auto-tick, or {@code null} to clear the link.
+   */
+  public void setStateMachine(@Nullable FlixelAnimationStateMachine stateMachine) {
+    this.stateMachine = stateMachine;
   }
 }
