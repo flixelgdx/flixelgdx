@@ -67,6 +67,9 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @Nullable
   private FlixelAudioManager manager;
 
+  @Nullable
+  private FlixelAsset<FlixelSoundSource> sourceAsset;
+
   private int refCount;
 
   /** Cached pitch (some backends have no getPitch). */
@@ -156,6 +159,21 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     return this;
   }
 
+  /**
+   * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
+   * retained when this sound was created through {@link FlixelAudioManager}. The handle is
+   * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
+   * active {@link org.flixelgdx.asset.FlixelAssetMode}.
+   *
+   * @param sourceAsset The retained source handle, or {@code null} to clear it.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelSound setSourceAsset(@Nullable FlixelAsset<FlixelSoundSource> sourceAsset) {
+    this.sourceAsset = sourceAsset;
+    return this;
+  }
+
   @NotNull
   @Override
   public String getAssetKey() {
@@ -183,10 +201,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @NotNull
   @Override
   public FlixelSound release() {
-    refCount--;
-    if (refCount < 0) {
+    if (refCount <= 0) {
       refCount = 0;
+      return this;
     }
+    refCount--;
     return this;
   }
 
@@ -684,6 +703,10 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @Override
   public void destroy() {
     release();
+    if (sourceAsset != null) {
+      sourceAsset.release();
+      sourceAsset = null;
+    }
     super.destroy();
     clearAudioEffectChain();
     cancelFadeTween();

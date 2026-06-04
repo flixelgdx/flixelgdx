@@ -307,6 +307,25 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    */
   void setGlobalPersist(boolean globalPersist);
 
+  /**
+   * Returns the active asset management mode, which controls when non-persistent assets are reclaimed.
+   *
+   * @return The current {@link FlixelAssetMode}; never {@code null}.
+   * @see FlixelAssetMode
+   */
+  @NotNull
+  FlixelAssetMode getAssetMode();
+
+  /**
+   * Sets the active asset management mode. The change takes effect immediately on the next
+   * {@link FlixelAsset#release()} call or the next {@link org.flixelgdx.Flixel#switchState} call,
+   * whichever comes first.
+   *
+   * @param mode The new mode; must not be {@code null}.
+   * @see FlixelAssetMode
+   */
+  void setAssetMode(@NotNull FlixelAssetMode mode);
+
   /** Clears all cached assets, regardless if {@link FlixelAsset#isPersist()} is true or not. */
   void clear();
 
@@ -436,6 +455,20 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * @param respectPersist If {@link FlixelAsset#isPersist()} should be taken into consideration or should be ignored.
    */
   void clearTypedAssets(boolean respectPersist);
+
+  /**
+   * Called by {@link FlixelAsset#release()} on the exact transition from reference count 1 to 0.
+   *
+   * <p>In {@link FlixelAssetMode#AGGRESSIVE} mode the default implementation triggers an immediate
+   * eviction - unloading the asset from libGDX and removing the handle from the manager cache. In
+   * all other modes this is a no-op; cleanup happens at state-switch time via {@link #clearNonPersist()}.
+   *
+   * <p>Custom {@link FlixelAssetManager} implementations that do not extend {@link FlixelDefaultAssetManager}
+   * may override this to hook into the release lifecycle.
+   *
+   * @param handle The asset handle whose reference count just reached zero.
+   */
+  default void onAssetReleased(@NotNull FlixelAsset<?> handle) {}
 
   /**
    * @return The underlying libGDX {@link AssetManager} for advanced use (loaders, descriptors, raw APIs).

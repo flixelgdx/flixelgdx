@@ -29,6 +29,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.asset.FlixelDefaultAssetManager;
 import org.flixelgdx.audio.FlixelAudioManager;
 import org.flixelgdx.audio.FlixelSoundBackend;
@@ -948,8 +949,14 @@ public final class Flixel {
       state.destroy();
     }
 
-    if (assets != null) {
-      assets.clearNonPersist();
+    FlixelAssetMode mode = assets != null ? assets.getAssetMode() : FlixelAssetMode.STANDARD;
+    if (mode == FlixelAssetMode.STANDARD || mode == FlixelAssetMode.AGGRESSIVE) {
+      if (sound != null) {
+        sound.clearNonPersist();
+      }
+      if (assets != null) {
+        assets.clearNonPersist();
+      }
     }
     if (clearTweens) {
       FlixelTween.cancelActiveTweens();

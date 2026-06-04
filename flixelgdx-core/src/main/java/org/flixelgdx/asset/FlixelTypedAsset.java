@@ -107,9 +107,13 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
   @NotNull
   @Override
   public FlixelTypedAsset<T> release() {
-    refCount--;
-    if (refCount < 0) {
+    if (refCount <= 0) {
       refCount = 0;
+      return this;
+    }
+    refCount--;
+    if (refCount == 0) {
+      assetManager.onAssetReleased(this);
     }
     return this;
   }
