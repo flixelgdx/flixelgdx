@@ -242,7 +242,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
       return false;
     }
 
-    // Any real (or forced) transition cancels an auto-advance that was waiting on a delay.
+    // Any real (or forced) transition cancels an auto-advance waiting on a delay.
     pendingState = null;
     pendingTimer = 0f;
 

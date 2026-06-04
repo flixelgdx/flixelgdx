@@ -98,7 +98,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
   public final FlixelSignal<FlixelAnimationFrameSignalData> onAnimationFinished = new FlixelSignal<>();
 
   /** The current frame signal data to prevent allocation of a new object every time. */
-  private FlixelAnimationFrameSignalData currentFrameSignalData = new FlixelAnimationFrameSignalData("", -1, null);
+  private final FlixelAnimationFrameSignalData currentFrameSignalData =
+      new FlixelAnimationFrameSignalData("", -1, null);
 
   /**
    * Creates a new animation controller for the given sprite.
@@ -477,9 +478,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     lastFinished = false;
 
     // Show this clip's first keyframe immediately so a freshly played animation does not flash the
-    // previous frame for a tick, and size the sprite to the clip's source frame. getKeyFrames() is
-    // typed FlixelFrame[] but is often backed by an Object[] at runtime (clips built from a default
-    // libGDX Array), so cast per element rather than casting the whole array.
+    // previous frame for a tick, and size the sprite to the clip's source frame.
     Object[] keyframes = anim.getKeyFrames();
     if (keyframes.length > 0) {
       owner.setCurrentFrameForAnimation((FlixelFrame) keyframes[0]);
@@ -643,8 +642,6 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @return A keyframe index in {@code [0, keyframeCount - 1]}, or {@code 0} for degenerate clips.
    */
   private int computeKeyframeIndex(@NotNull Animation<FlixelFrame> anim) {
-    // getKeyFrames() only gives the count here; read it as Object[] to avoid an array-type cast that
-    // would fail when the clip is backed by an Object[] at runtime.
     Object[] keyframes = anim.getKeyFrames();
     return keyframeIndex(stateTime, anim.getFrameDuration(), keyframes.length, looping);
   }
