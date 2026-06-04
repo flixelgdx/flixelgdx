@@ -167,24 +167,55 @@ public class FlixelAnimationController implements FlixelUpdatable {
       texture = g.loadNow();
     }
 
+    int texW = texture.getWidth();
+    int texH = texture.getHeight();
     Array<FlixelFrame> atlasFrames = new Array<>(FlixelFrame[]::new);
 
-    for (XmlReader.Element subTexture : xmlRoot.getChildrenByName("SubTexture")) {
-      String name = subTexture.getAttribute("name", null);
-      int x = subTexture.getInt("x");
-      int y = subTexture.getInt("y");
-      int width = subTexture.getInt("width");
-      int height = subTexture.getInt("height");
+    Array<XmlReader.Element> subTextures = xmlRoot.getChildrenByName("SubTexture");
+    int skipped = 0;
+    for (int i = 0; i < subTextures.size; i++) {
+      XmlReader.Element subTexture = subTextures.get(i);
+
+      // Sparrow always supplies x/y/width/height, but a hand-edited or truncated atlas might not.
+      // Defaulting to 0 keeps a single broken entry from throwing and aborting the whole load.
+      int x = subTexture.getInt("x", 0);
+      int y = subTexture.getInt("y", 0);
+      int width = subTexture.getInt("width", 0);
+      int height = subTexture.getInt("height", 0);
+
+      // A zero-area or off-texture region cannot be rendered; drop it rather than emit garbage UVs.
+      if (width <= 0 || height <= 0 || x < 0 || y < 0 || x >= texW || y >= texH) {
+        skipped++;
+        continue;
+      }
+
+      // Clamp regions that spill past the texture edge so a slightly oversized rectangle still draws.
+      if (x + width > texW) {
+        width = texW - x;
+      }
+      if (y + height > texH) {
+        height = texH - y;
+      }
 
       TextureRegion region = new TextureRegion(texture, x, y, width, height);
       FlixelFrame frame = new FlixelFrame(region);
-      frame.name = name;
 
-      if (subTexture.hasAttribute("frameX")) {
-        frame.offsetX = Math.abs(subTexture.getInt("frameX"));
-        frame.offsetY = Math.abs(subTexture.getInt("frameY"));
-        frame.originalWidth = subTexture.getInt("frameWidth");
-        frame.originalHeight = subTexture.getInt("frameHeight");
+      String name = subTexture.getAttribute("name", null);
+      // Prefix animations look frames up by name, so a missing name gets a stable synthetic one
+      // instead of a null that would break sorting and lookups later.
+      frame.name = (name != null && !name.isEmpty()) ? name : "frame" + i;
+
+      if (subTexture.hasAttribute("frameX") || subTexture.hasAttribute("frameY")) {
+        // Sparrow stores frameX/frameY as negative offsets; negate them to get the trim offset
+        // measured from the source frame's top-left corner.
+        frame.offsetX = -subTexture.getInt("frameX", 0);
+        frame.offsetY = -subTexture.getInt("frameY", 0);
+        int sourceWidth = subTexture.getInt("frameWidth", width);
+        int sourceHeight = subTexture.getInt("frameHeight", height);
+        // The source box can never be smaller than the trimmed region it contains; guard against
+        // malformed atlases that would otherwise place art outside its own frame.
+        frame.originalWidth = Math.max(sourceWidth, width);
+        frame.originalHeight = Math.max(sourceHeight, height);
       } else {
         frame.offsetX = 0;
         frame.offsetY = 0;
@@ -193,6 +224,16 @@ public class FlixelAnimationController implements FlixelUpdatable {
       }
 
       atlasFrames.add(frame);
+    }
+
+    if (Flixel.log != null) {
+      if (atlasFrames.size == 0) {
+        Flixel.log.warn("FlixelAnimationController",
+            "Sparrow atlas for '" + textureKey + "' produced no usable frames.");
+      } else if (skipped > 0) {
+        Flixel.log.warn("FlixelAnimationController",
+            "Skipped " + skipped + " malformed SubTexture entries while loading '" + textureKey + "'.");
+      }
     }
 
     owner.applySparrowAtlas(g, atlasFrames);
@@ -355,6 +396,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param forceRestart Whether the animation should restart.
    */
   public void playAnimation(@NotNull String name, boolean loop, boolean forceRestart) {
+    Animation<FlixelFrame> anim = animations.get(name);
+    if (anim == null) {
+      // Unknown clip name: leave whatever is currently displayed untouched instead of blanking out.
+      return;
+    }
     if (currentAnim.equals(name) && !forceRestart) {
       return;
     }
@@ -365,6 +411,19 @@ public class FlixelAnimationController implements FlixelUpdatable {
       playDirection = 1;
       lastDispatchedFrameIndex = -1;
       lastFinished = false;
+
+      // Show this clip's first keyframe immediately so a freshly played animation does not flash the
+      // previous frame for a tick, and size the sprite to the clip's source frame.
+      FlixelFrame first = anim.getKeyFrame(0f, false);
+      if (first != null) {
+        owner.setCurrentFrameForAnimation(first);
+        // Sparrow/atlas characters: snap the hitbox to this clip's untrimmed frame so the debug box
+        // and collision bounds frame whichever animation is playing. Grid-frame sprites keep their
+        // hitbox untouched, since it may be a deliberately customized collision box.
+        if (owner.getAtlasRegions() != null) {
+          owner.updateHitbox();
+        }
+      }
     }
   }
 

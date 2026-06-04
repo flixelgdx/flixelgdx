@@ -406,7 +406,11 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     if (parsedFrames.size > 0) {
       FlixelFrame first = parsedFrames.first();
       setCurrentFrameForAnimation(first);
-      setSize(first.getRegionWidth(), first.getRegionHeight());
+      // Size to the untrimmed source frame, not the trimmed region, so the hitbox and debug box
+      // frame the artwork. Playing an animation re-snaps this to that clip's own source frame, so
+      // this is just a sensible default for the very first frame.
+      setSize(first.originalWidth, first.originalHeight);
+      setOriginCenter();
     }
   }
 
@@ -422,34 +426,47 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
     if (currentFrame != null) {
-      float oX = currentFrame.originalWidth / 2f;
-      float oY = currentFrame.originalHeight / 2f;
-
-      float drawX = wx - offsetX + currentFrame.offsetX;
-      float drawY =
-          wy - offsetY + (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY);
+      FlixelFrame f = currentFrame;
+      int srcW = f.originalWidth;
+      int srcH = f.originalHeight;
+      int regW = f.getRegionWidth();
+      int regH = f.getRegionHeight();
 
       boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
       boolean isFlippedY = flipY;
+
+      // Place the trimmed region inside its untrimmed source box, then anchor that box at the
+      // sprite's position. Mirroring is computed around the source box (not the trimmed region) so a
+      // left-facing pose lines up with its right-facing counterpart and feet stay planted.
+      int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
+      int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
+
+      float drawX = wx - offsetX + insetX;
+      float drawY = wy - offsetY + insetY;
+
+      // Rotate/scale around the source box's center, expressed relative to the region's bottom-left
+      // corner (the origin that the batch.draw overload below measures from).
+      float originXParam = srcW / 2f - insetX;
+      float originYParam = srcH / 2f - insetY;
 
       batch.setColor(color);
       // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
       // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
       batch.draw(
-          currentFrame.getTexture(),
+          f.getTexture(),
           drawX,
           drawY,
-          oX - currentFrame.offsetX,
-          oY - (currentFrame.originalHeight - currentFrame.getRegionHeight() - currentFrame.offsetY),
-          currentFrame.getRegionWidth(),
-          currentFrame.getRegionHeight(),
+          originXParam,
+          originYParam,
+          regW,
+          regH,
           scaleX,
           scaleY,
           getAngle(),
-          currentFrame.getRegionX(),
-          currentFrame.getRegionY(),
-          currentFrame.getRegionWidth(),
-          currentFrame.getRegionHeight(),
+          f.getRegionX(),
+          f.getRegionY(),
+          regW,
+          regH,
           isFlippedX,
           isFlippedY);
       batch.setColor(Color.WHITE);
@@ -496,8 +513,9 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     int rw;
     int rh;
     if (currentFrame != null) {
-      rw = currentFrame.getRegionWidth();
-      rh = currentFrame.getRegionHeight();
+      // Atlas frames draw the whole untrimmed source box scaled, so scale relative to that size.
+      rw = currentFrame.originalWidth;
+      rh = currentFrame.originalHeight;
     } else {
       rw = currentRegion.getRegionWidth();
       rh = currentRegion.getRegionHeight();
@@ -516,8 +534,10 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
    * <p>For textures drawn via {@link #currentRegion}, {@link #draw} uses {@code getWidth() *
    * |scaleX|} (and height), so this folds scale into {@link #setSize(float, float)} and resets
    * scale to {@code 1} to avoid double-scaling. Sparrow/atlas frames ({@link #currentFrame}) keep
-   * scale because {@link #draw} sizes that path from the frame {@code region * scale}, while hitbox
-   * dimensions are still set to the same effective pixel size for {@link Flixel#overlap}.
+   * scale because {@link #draw} sizes that path from the frame and scale separately; the hitbox is
+   * set to the frame's untrimmed <em>source</em> size times {@code |scale|} so the box frames the
+   * whole drawn artwork (matching HaxeFlixel's {@code frameWidth}/{@code frameHeight}), not just the
+   * trimmed pixels.
    */
   public FlixelSprite updateHitbox() {
     if (currentRegion == null) {
@@ -526,8 +546,8 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     float effW;
     float effH;
     if (currentFrame != null) {
-      effW = Math.abs(scaleX) * currentFrame.getRegionWidth();
-      effH = Math.abs(scaleY) * currentFrame.getRegionHeight();
+      effW = Math.abs(scaleX) * currentFrame.originalWidth;
+      effH = Math.abs(scaleY) * currentFrame.originalHeight;
       return updateHitbox(effW, effH);
     }
     effW = Math.abs(scaleX) * getWidth();
