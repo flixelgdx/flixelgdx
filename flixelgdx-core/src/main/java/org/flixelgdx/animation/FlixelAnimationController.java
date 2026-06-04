@@ -58,6 +58,15 @@ public class FlixelAnimationController implements FlixelUpdatable {
   @NotNull
   private final ObjectMap<String, Animation<FlixelFrame>> animations = new ObjectMap<>();
 
+  /**
+   * Per-animation pixel offsets applied to the owner when a clip starts.
+   *
+   * <p>Each entry is a {@code {x, y}} pair. Empty until {@link #addOffset(String, float, float)} is used,
+   * which keeps the feature opt-in and out of the way of manual {@link FlixelSprite#setOffset} calls.
+   */
+  @NotNull
+  private final ObjectMap<String, float[]> animationOffsets = new ObjectMap<>();
+
   /** The current state time of the animation. */
   private float stateTime;
 
@@ -167,24 +176,53 @@ public class FlixelAnimationController implements FlixelUpdatable {
       texture = g.loadNow();
     }
 
+    int texW = texture.getWidth();
+    int texH = texture.getHeight();
     Array<FlixelFrame> atlasFrames = new Array<>(FlixelFrame[]::new);
 
-    for (XmlReader.Element subTexture : xmlRoot.getChildrenByName("SubTexture")) {
-      String name = subTexture.getAttribute("name", null);
-      int x = subTexture.getInt("x");
-      int y = subTexture.getInt("y");
-      int width = subTexture.getInt("width");
-      int height = subTexture.getInt("height");
+    Array<XmlReader.Element> subTextures = xmlRoot.getChildrenByName("SubTexture");
+    for (int i = 0; i < subTextures.size; i++) {
+      XmlReader.Element subTexture = subTextures.get(i);
+
+      // Sparrow always supplies x/y/width/height, but a hand-edited or truncated atlas might not.
+      // Defaulting to 0 keeps a single broken entry from throwing and aborting the whole load.
+      int x = subTexture.getInt("x", 0);
+      int y = subTexture.getInt("y", 0);
+      int width = subTexture.getInt("width", 0);
+      int height = subTexture.getInt("height", 0);
+
+      // A zero-area or off-texture region cannot be rendered; drop it rather than emit garbage UVs.
+      if (width <= 0 || height <= 0 || x < 0 || y < 0 || x >= texW || y >= texH) {
+        continue;
+      }
+
+      // Clamp regions that spill past the texture edge so a slightly oversized rectangle still draws.
+      if (x + width > texW) {
+        width = texW - x;
+      }
+      if (y + height > texH) {
+        height = texH - y;
+      }
 
       TextureRegion region = new TextureRegion(texture, x, y, width, height);
       FlixelFrame frame = new FlixelFrame(region);
-      frame.name = name;
 
-      if (subTexture.hasAttribute("frameX")) {
-        frame.offsetX = Math.abs(subTexture.getInt("frameX"));
-        frame.offsetY = Math.abs(subTexture.getInt("frameY"));
-        frame.originalWidth = subTexture.getInt("frameWidth");
-        frame.originalHeight = subTexture.getInt("frameHeight");
+      String name = subTexture.getAttribute("name", null);
+      // Prefix animations look frames up by name, so a missing name gets a stable synthetic one
+      // instead of a null that would break sorting and lookups later.
+      frame.name = (name != null && !name.isEmpty()) ? name : "frame" + i;
+
+      if (subTexture.hasAttribute("frameX") || subTexture.hasAttribute("frameY")) {
+        // Sparrow stores frameX/frameY as negative offsets; negate them to get the trim offset
+        // measured from the source frame's top-left corner.
+        frame.offsetX = -subTexture.getInt("frameX", 0);
+        frame.offsetY = -subTexture.getInt("frameY", 0);
+        int sourceWidth = subTexture.getInt("frameWidth", width);
+        int sourceHeight = subTexture.getInt("frameHeight", height);
+        // The source box can never be smaller than the trimmed region it contains; guard against
+        // malformed atlases that would otherwise place art outside its own frame.
+        frame.originalWidth = Math.max(sourceWidth, width);
+        frame.originalHeight = Math.max(sourceHeight, height);
       } else {
         frame.offsetX = 0;
         frame.offsetY = 0;
@@ -199,9 +237,10 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return owner;
   }
 
-  /** Clears all clips and resets playback state. */
+  /** Clears all clips, per-animation offsets, and resets playback state. */
   public void clear() {
     animations.clear();
+    animationOffsets.clear();
     stateTime = 0f;
     currentAnim = "";
     looping = true;
@@ -209,6 +248,69 @@ public class FlixelAnimationController implements FlixelUpdatable {
     playDirection = 1;
     lastDispatchedFrameIndex = -1;
     lastFinished = true;
+  }
+
+  /**
+   * Registers a per-animation pixel offset, applied to the owning sprite's
+   * {@link FlixelSprite#setOffset(float, float) offset} every time that clip starts.
+   *
+   * <p>A Sparrow atlas keeps each frame planted within its own untrimmed source box, but different
+   * clips are usually authored on differently sized canvases, so their anchors do not line up when
+   * you switch between them. Nudge each clip by a hand-tuned amount so they all share a common ground
+   * line. The offset is <em>subtracted</em> from the draw position, so positive {@code x} moves the
+   * graphic left and positive {@code y} moves it up (matching {@link FlixelSprite#setOffset}).
+   *
+   * <p>The feature is opt-in. Until the first {@code addOffset} call the controller never touches the
+   * sprite's offset; afterwards it owns it, and playing a clip with no registered offset resets the
+   * offset to {@code (0, 0)}. Avoid mixing manual {@link FlixelSprite#setOffset} with this API.
+   *
+   * <pre>{@code
+   * var anim = sprite.ensureAnimation();
+   * anim.addAnimationByPrefix("idle", "BF idle dance", 24, true);
+   * anim.addAnimationByPrefix("singLEFT", "BF NOTE LEFT", 24, false);
+   * anim.addOffset("idle", 0, 0);
+   * anim.addOffset("singLEFT", 12, -6);
+   * anim.playAnimation("idle"); // offset snaps to (0, 0)
+   * }</pre>
+   *
+   * @param name The animation name, as registered with one of the {@code addAnimation*} methods.
+   * @param x Horizontal offset in pixels (positive moves the graphic left).
+   * @param y Vertical offset in pixels (positive moves the graphic up).
+   */
+  public void addOffset(@NotNull String name, float x, float y) {
+    float[] offset = animationOffsets.get(name);
+    if (offset == null) {
+      animationOffsets.put(name, new float[] { x, y });
+    } else {
+      offset[0] = x;
+      offset[1] = y;
+    }
+    // If the offset for the clip currently playing changed, reflect it right away.
+    if (currentAnim.equals(name)) {
+      owner.setOffset(x, y);
+    }
+  }
+
+  /**
+   * Removes a previously registered per-animation offset.
+   *
+   * @param name The animation name to clear the offset for.
+   */
+  public void removeOffset(@NotNull String name) {
+    animationOffsets.remove(name);
+  }
+
+  /** Removes every registered per-animation offset without affecting the registered clips. */
+  public void clearOffsets() {
+    animationOffsets.clear();
+  }
+
+  /**
+   * @param name The animation name to check.
+   * @return {@code true} if a per-animation offset is registered for {@code name}.
+   */
+  public boolean hasOffset(@NotNull String name) {
+    return animationOffsets.containsKey(name);
   }
 
   public void pause() {
@@ -355,6 +457,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param forceRestart Whether the animation should restart.
    */
   public void playAnimation(@NotNull String name, boolean loop, boolean forceRestart) {
+    Animation<FlixelFrame> anim = animations.get(name);
+    if (anim == null) {
+      // Unknown clip name: leave whatever is currently displayed untouched instead of blanking out.
+      return;
+    }
     if (currentAnim.equals(name) && !forceRestart) {
       return;
     }
@@ -365,6 +472,41 @@ public class FlixelAnimationController implements FlixelUpdatable {
       playDirection = 1;
       lastDispatchedFrameIndex = -1;
       lastFinished = false;
+
+      // Show this clip's first keyframe immediately so a freshly played animation does not flash the
+      // previous frame for a tick, and size the sprite to the clip's source frame.
+      FlixelFrame first = anim.getKeyFrame(0f, false);
+      if (first != null) {
+        owner.setCurrentFrameForAnimation(first);
+        // Sparrow/atlas characters: snap the hitbox to this clip's untrimmed frame so the debug box
+        // and collision bounds frame whichever animation is playing. Grid-frame sprites keep their
+        // hitbox untouched, since it may be a deliberately customized collision box.
+        if (owner.getAtlasRegions() != null) {
+          owner.updateHitbox();
+        }
+      }
+      applyAnimationOffset(name);
+    }
+  }
+
+  /**
+   * Applies the registered {@link #addOffset(String, float, float) per-animation offset} for
+   * {@code name} to the owning sprite. Does nothing when no offsets are registered, so sprites that
+   * never opt into the feature keep whatever {@link FlixelSprite#setOffset} value they were given.
+   * Once at least one offset exists, playing a clip with no registered offset resets the sprite back
+   * to {@code (0, 0)} so a previous clip's nudge does not leak forward.
+   *
+   * @param name The animation that is starting.
+   */
+  private void applyAnimationOffset(@NotNull String name) {
+    if (animationOffsets.size == 0) {
+      return;
+    }
+    float[] offset = animationOffsets.get(name);
+    if (offset != null) {
+      owner.setOffset(offset[0], offset[1]);
+    } else {
+      owner.setOffset(0f, 0f);
     }
   }
 
