@@ -156,6 +156,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Where all the global cameras are stored. */
   protected Array<FlixelCamera> cameras;
 
+  /**
+   * Total render calls issued by the framework {@link SpriteBatch} during the most recently
+   * completed draw pass, summed across all camera loops. Derived from the delta of
+   * {@link SpriteBatch#totalRenderCalls} so multiple {@link SpriteBatch#begin()} resets within
+   * a single frame do not erase earlier cameras' counts.
+   */
+  private int frameRenderCalls;
+
   /** Is the game currently closing? */
   private boolean isClosing = false;
 
@@ -455,6 +463,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     ScreenUtils.clear(bgColor); // Clear the screen to refresh the screen.
     FlixelState state = Flixel.getState();
 
+    int totalRenderCallsBefore = this.batch != null ? this.batch.totalRenderCalls : 0;
+
     // Loop through all cameras and draw the state/substate chain onto each camera.
     FlixelCamera[] cameraItems = cameras.items;
     for (int ci = 0, cn = cameras.size; ci < cn; ci++) {
@@ -491,6 +501,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         Flixel.setDrawCamera(null);
       }
     }
+
+    frameRenderCalls = this.batch != null ? this.batch.totalRenderCalls - totalRenderCallsBefore : 0;
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
@@ -935,6 +947,18 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   public SpriteBatch getBatch() {
     return batch;
+  }
+
+  /**
+   * Returns the total number of {@link SpriteBatch} render calls issued during the most recently
+   * completed frame, summed across all camera passes. Unlike {@link SpriteBatch#renderCalls},
+   * this value is not reset by intermediate {@link SpriteBatch#begin()} calls, so it correctly
+   * reflects the full per-frame cost when multiple cameras are active.
+   *
+   * @return Per-frame render call count from the last completed draw pass.
+   */
+  public int getFrameRenderCalls() {
+    return frameRenderCalls;
   }
 
   public Color getBgColor() {
