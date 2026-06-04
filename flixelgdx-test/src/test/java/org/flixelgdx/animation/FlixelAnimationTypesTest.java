@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.animation;
 
+import org.flixelgdx.FlixelSprite;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,9 +37,10 @@ class FlixelAnimationTypesTest {
   }
 
   @Test
-  void stateMachineTracksStateWithoutControllerSideEffects() {
-    FlixelAnimationStateMachine sm = new FlixelAnimationStateMachine();
+  void stateMachineStartsEmptyAndClears() {
+    FlixelAnimationStateMachine sm = new FlixelAnimationStateMachine(new FlixelSprite());
     assertEquals("", sm.getState());
+    sm.addState("idle", "idle");
     sm.clear();
     assertEquals("", sm.getState());
   }
