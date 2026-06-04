@@ -477,10 +477,12 @@ public class FlixelAnimationController implements FlixelUpdatable {
     lastFinished = false;
 
     // Show this clip's first keyframe immediately so a freshly played animation does not flash the
-    // previous frame for a tick, and size the sprite to the clip's source frame.
-    FlixelFrame[] keyframes = anim.getKeyFrames();
+    // previous frame for a tick, and size the sprite to the clip's source frame. getKeyFrames() is
+    // typed FlixelFrame[] but is often backed by an Object[] at runtime (clips built from a default
+    // libGDX Array), so cast per element rather than casting the whole array.
+    Object[] keyframes = anim.getKeyFrames();
     if (keyframes.length > 0) {
-      owner.setCurrentFrameForAnimation(keyframes[0]);
+      owner.setCurrentFrameForAnimation((FlixelFrame) keyframes[0]);
       // Sparrow/atlas characters: snap the hitbox to this clip's untrimmed frame so the debug box
       // and collision bounds frame whichever animation is playing. Grid-frame sprites keep their
       // hitbox untouched, since it may be a deliberately customized collision box.
@@ -559,14 +561,15 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
     int frameIndex = computeKeyframeIndex(anim);
     // Pick the displayed frame by the same index the controller reports elsewhere, rather than
-    // anim.getKeyFrame(stateTime, looping). That libGDX call honors the clip's *registered* PlayMode,
+    // anim.getKeyFrame(stateTime, looping). That libGDX call honors the clip's REGISTERED PlayMode,
     // so a clip registered to loop but played non-looping wraps back to frame 0 when it finishes;
     // indexing the keyframes directly keeps a finished non-looping clip parked on its last frame.
-    FlixelFrame[] keyframes = anim.getKeyFrames();
+    // Typed FlixelFrame[] but may be an Object[] at runtime, so cast the element, not the array.
+    Object[] keyframes = anim.getKeyFrames();
     if (keyframes.length == 0) {
       return;
     }
-    FlixelFrame frame = keyframes[frameIndex];
+    FlixelFrame frame = (FlixelFrame) keyframes[frameIndex];
     owner.setCurrentFrameForAnimation(frame);
 
     if (frameIndex != lastDispatchedFrameIndex) {
@@ -640,7 +643,9 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @return A keyframe index in {@code [0, keyframeCount - 1]}, or {@code 0} for degenerate clips.
    */
   private int computeKeyframeIndex(@NotNull Animation<FlixelFrame> anim) {
-    FlixelFrame[] keyframes = anim.getKeyFrames();
+    // getKeyFrames() only gives the count here; read it as Object[] to avoid an array-type cast that
+    // would fail when the clip is backed by an Object[] at runtime.
+    Object[] keyframes = anim.getKeyFrames();
     return keyframeIndex(stateTime, anim.getFrameDuration(), keyframes.length, looping);
   }
 

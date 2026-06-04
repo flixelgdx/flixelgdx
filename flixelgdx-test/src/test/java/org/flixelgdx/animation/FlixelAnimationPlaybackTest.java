@@ -23,10 +23,18 @@
  */
 package org.flixelgdx.animation;
 
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.utils.Array;
+
+import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.graphics.FlixelFrame;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -70,5 +78,27 @@ class FlixelAnimationPlaybackTest {
     assertTrue(FlixelAnimationController.shouldRestart(false, true, true));
     // Same clip still mid-play and not forced: leave it running.
     assertFalse(FlixelAnimationController.shouldRestart(false, true, false));
+  }
+
+  @Test
+  void playingAndUpdatingAnObjectBackedClipDoesNotThrow() {
+    // Clips registered through addAnimationByPrefix use a default libGDX Array, whose backing store
+    // is an Object[]. getKeyFrames() is typed FlixelFrame[], so casting the whole array (rather than
+    // each element) throws a ClassCastException at runtime. Empty TextureRegions keep this GPU-free.
+    FlixelSprite sprite = new FlixelSprite();
+    FlixelAnimationController controller = sprite.ensureAnimation();
+
+    Array<FlixelFrame> frames = new Array<>();
+    for (int i = 0; i < 3; i++) {
+      frames.add(new FlixelFrame(new TextureRegion()));
+    }
+    controller.getAnimations().put("test", new Animation<>(0.1f, frames, Animation.PlayMode.NORMAL));
+
+    assertDoesNotThrow(() -> {
+      controller.playAnimation("test", false);
+      controller.update(0.05f);
+      controller.update(0.5f); // advance past the end of the clip
+    });
+    assertNotNull(sprite.getCurrentFrame());
   }
 }
