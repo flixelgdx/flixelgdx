@@ -462,31 +462,48 @@ public class FlixelAnimationController implements FlixelUpdatable {
       // Unknown clip name: leave whatever is currently displayed untouched instead of blanking out.
       return;
     }
-    if (currentAnim.equals(name) && !forceRestart) {
+    // Keep playing only when this exact clip is already mid-play and the caller did not force a
+    // restart. A clip that has finished (or a different clip) always (re)starts, so a non-looping
+    // clip can be replayed once it ends and switching clips never silently no-ops.
+    if (!shouldRestart(forceRestart, currentAnim.equals(name), isAnimationFinished())) {
       return;
     }
-    if (isAnimationFinished() || forceRestart) {
-      currentAnim = name;
-      looping = loop;
-      stateTime = 0f;
-      playDirection = 1;
-      lastDispatchedFrameIndex = -1;
-      lastFinished = false;
 
-      // Show this clip's first keyframe immediately so a freshly played animation does not flash the
-      // previous frame for a tick, and size the sprite to the clip's source frame.
-      FlixelFrame first = anim.getKeyFrame(0f, false);
-      if (first != null) {
-        owner.setCurrentFrameForAnimation(first);
-        // Sparrow/atlas characters: snap the hitbox to this clip's untrimmed frame so the debug box
-        // and collision bounds frame whichever animation is playing. Grid-frame sprites keep their
-        // hitbox untouched, since it may be a deliberately customized collision box.
-        if (owner.getAtlasRegions() != null) {
-          owner.updateHitbox();
-        }
+    currentAnim = name;
+    looping = loop;
+    stateTime = 0f;
+    playDirection = 1;
+    lastDispatchedFrameIndex = -1;
+    lastFinished = false;
+
+    // Show this clip's first keyframe immediately so a freshly played animation does not flash the
+    // previous frame for a tick, and size the sprite to the clip's source frame.
+    FlixelFrame[] keyframes = anim.getKeyFrames();
+    if (keyframes.length > 0) {
+      owner.setCurrentFrameForAnimation(keyframes[0]);
+      // Sparrow/atlas characters: snap the hitbox to this clip's untrimmed frame so the debug box
+      // and collision bounds frame whichever animation is playing. Grid-frame sprites keep their
+      // hitbox untouched, since it may be a deliberately customized collision box.
+      if (owner.getAtlasRegions() != null) {
+        owner.updateHitbox();
       }
-      applyAnimationOffset(name);
     }
+    applyAnimationOffset(name);
+  }
+
+  /**
+   * Pure decision for whether a {@code playAnimation} call should (re)start the clip, split out so it
+   * can be unit tested. A clip restarts when the caller forces it, when it is a different clip than
+   * the one playing, or when the current clip has already finished; only a still-playing same clip
+   * without a force is left alone.
+   *
+   * @param forceRestart Whether the caller forced a restart.
+   * @param sameClip Whether the requested clip is the one already current.
+   * @param finished Whether the current clip has finished.
+   * @return {@code true} if playback should (re)start from frame zero.
+   */
+  static boolean shouldRestart(boolean forceRestart, boolean sameClip, boolean finished) {
+    return forceRestart || !sameClip || finished;
   }
 
   /**
@@ -540,8 +557,16 @@ public class FlixelAnimationController implements FlixelUpdatable {
       stateTime = MathUtils.clamp(stateTime, 0f, duration);
     }
 
-    FlixelFrame frame = anim.getKeyFrame(stateTime, looping);
     int frameIndex = computeKeyframeIndex(anim);
+    // Pick the displayed frame by the same index the controller reports elsewhere, rather than
+    // anim.getKeyFrame(stateTime, looping). That libGDX call honors the clip's *registered* PlayMode,
+    // so a clip registered to loop but played non-looping wraps back to frame 0 when it finishes;
+    // indexing the keyframes directly keeps a finished non-looping clip parked on its last frame.
+    FlixelFrame[] keyframes = anim.getKeyFrames();
+    if (keyframes.length == 0) {
+      return;
+    }
+    FlixelFrame frame = keyframes[frameIndex];
     owner.setCurrentFrameForAnimation(frame);
 
     if (frameIndex != lastDispatchedFrameIndex) {
@@ -615,13 +640,23 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @return A keyframe index in {@code [0, keyframeCount - 1]}, or {@code 0} for degenerate clips.
    */
   private int computeKeyframeIndex(@NotNull Animation<FlixelFrame> anim) {
-    Object[] keyframes = anim.getKeyFrames();
-    int total = (keyframes != null) ? keyframes.length : 0;
-    if (total <= 0) {
-      return 0;
-    }
-    float frameDuration = anim.getFrameDuration();
-    if (frameDuration <= 0f) {
+    FlixelFrame[] keyframes = anim.getKeyFrames();
+    return keyframeIndex(stateTime, anim.getFrameDuration(), keyframes.length, looping);
+  }
+
+  /**
+   * Pure keyframe-index math, split out from {@link #computeKeyframeIndex} so it can be unit tested
+   * without a GPU texture. Non-looping playback past the end returns the <strong>last</strong> index
+   * ({@code total - 1}), never wrapping back to {@code 0}; looping playback wraps into range.
+   *
+   * @param stateTime Elapsed playback time in seconds.
+   * @param frameDuration Seconds per keyframe.
+   * @param total Number of keyframes in the clip.
+   * @param looping Whether playback wraps.
+   * @return A keyframe index in {@code [0, total - 1]}, or {@code 0} for degenerate clips.
+   */
+  static int keyframeIndex(float stateTime, float frameDuration, int total, boolean looping) {
+    if (total <= 0 || frameDuration <= 0f) {
       return 0;
     }
     int idx = (int) (stateTime / frameDuration);
