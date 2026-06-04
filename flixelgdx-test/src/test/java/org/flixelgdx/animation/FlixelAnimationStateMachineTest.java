@@ -164,4 +164,42 @@ class FlixelAnimationStateMachineTest {
     assertEquals("", fsm.getState(), "A detached machine must not auto-advance to idle.");
     assertFalse(fsm.hasState("idle"), "destroy() should clear registered states.");
   }
+
+  @Test
+  void delayedAutoAdvanceWaitsForTheDelayToElapse() {
+    FlixelSprite sprite = new FlixelSprite();
+    FlixelAnimationStateMachine fsm = new FlixelAnimationStateMachine(sprite);
+    fsm.addState("idle", "idle");
+    fsm.addState("attack", "attack").autoAdvanceTo("idle").delay(0.5f);
+    fsm.setState("attack");
+
+    // The clip finishes, but the delay means the machine should hold "attack" for now.
+    sprite.ensureAnimation().onAnimationFinished
+        .dispatch(new FlixelAnimationFrameSignalData("attack", 0, null));
+    assertEquals("attack", fsm.getState());
+
+    fsm.update(0.3f);
+    assertEquals("attack", fsm.getState(), "Still inside the delay window.");
+
+    fsm.update(0.3f); // 0.6s total, past the 0.5s delay
+    assertEquals("idle", fsm.getState(), "Delay elapsed, so it should auto-advance.");
+  }
+
+  @Test
+  void manualTransitionCancelsAPendingDelayedAdvance() {
+    FlixelSprite sprite = new FlixelSprite();
+    FlixelAnimationStateMachine fsm = new FlixelAnimationStateMachine(sprite);
+    fsm.addState("idle", "idle");
+    fsm.addState("run", "run");
+    fsm.addState("attack", "attack").autoAdvanceTo("idle").delay(0.5f);
+    fsm.setState("attack");
+    sprite.ensureAnimation().onAnimationFinished
+        .dispatch(new FlixelAnimationFrameSignalData("attack", 0, null));
+
+    // The player interrupts before the delay elapses; the queued auto-advance must be dropped.
+    fsm.setState("run");
+    fsm.update(1.0f);
+
+    assertEquals("run", fsm.getState());
+  }
 }

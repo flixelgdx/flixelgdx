@@ -28,6 +28,7 @@ import com.badlogic.gdx.utils.ObjectSet;
 
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,17 +49,36 @@ import org.jetbrains.annotations.Nullable;
  *   <li>the animation clip to play (or none, for an invisible logic-only state),</li>
  *   <li>whether that clip loops,</li>
  *   <li>an {@link State#autoAdvanceTo(String) auto-advance} target, so a one-shot clip (such as an
- *       attack) automatically returns to another state the moment it finishes,</li>
+ *       attack) automatically returns to another state the moment it finishes, optionally after a
+ *       {@link State#delay(float) delay},</li>
  *   <li>{@link State#onEnter(Runnable) onEnter} / {@link State#onExit(Runnable) onExit} hooks for
  *       side effects, and</li>
  *   <li>the set of {@link State#allowTo(String...) legal transitions} out of it.</li>
+ * </ul>
+ *
+ * <h2>Concepts and terminology</h2>
+ * <ul>
+ *   <li><strong>State</strong>: one named mode the sprite can be in, such as {@code "idle"} or
+ *       {@code "attack"}. The machine is in exactly one state at a time. Register states with
+ *       {@link #addState(String, String)}.</li>
+ *   <li><strong>Transition</strong>: a move from one state to another, requested with
+ *       {@link #setState(String)}. Asking for the state that is already active is a no-op.</li>
+ *   <li><strong>Guard</strong>: a rule that decides whether a transition is allowed. Configured per
+ *       source state with {@link State#allowTo(String...)}; a state with no rule allows any move.</li>
+ *   <li><strong>Entry / exit actions</strong>: callbacks run when a state is entered or left
+ *       ({@link State#onEnter(Runnable)} / {@link State#onExit(Runnable)}).</li>
+ *   <li><strong>Auto-advance</strong>: an automatic transition that fires when a one-shot clip
+ *       finishes ({@link State#autoAdvanceTo(String)}), optionally after a delay.</li>
+ *   <li><strong>Self-transition</strong>: deliberately re-entering the current state with
+ *       {@link #setState(String, boolean) setState(name, true)}, which replays its clip.</li>
  * </ul>
  *
  * <h2>How it drives the sprite</h2>
  * The machine holds a reference to the sprite's {@link FlixelAnimationController} and subscribes to
  * its {@link FlixelAnimationController#onAnimationFinished} signal, which is what powers
  * auto-advance. You must still call {@code sprite.update(...)} every frame so the controller advances
- * animation time and reports when clips end.
+ * animation time and reports when clips end. If any state uses a {@link State#delay(float) delayed}
+ * auto-advance, also call this machine's {@link #update(float)} each frame so the delay can elapse.
  *
  * <h2>Typical usage</h2>
  * <pre>{@code
@@ -80,7 +100,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FlixelAnimationController
  * @see org.flixelgdx.FlixelSprite#ensureAnimation()
  */
-public class FlixelAnimationStateMachine implements FlixelDestroyable {
+public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpdatable {
 
   /** The controller whose clips this machine plays. */
   @NotNull
@@ -97,6 +117,13 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
   /** The current logical state, or {@code ""} before the first {@link #setState}. */
   @NotNull
   private String state = "";
+
+  /** Target of a delayed auto-advance waiting on {@link #update(float)}, or {@code null} when idle. */
+  @Nullable
+  private String pendingState;
+
+  /** Seconds remaining before {@link #pendingState} is entered. */
+  private float pendingTimer;
 
   /**
    * Fired with the new state name whenever the machine moves to a different state. Not fired for a
@@ -215,6 +242,10 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
       return false;
     }
 
+    // Any real (or forced) transition cancels an auto-advance that was waiting on a delay.
+    pendingState = null;
+    pendingTimer = 0f;
+
     // Leaving the old state (skipped on a forced self-replay, where the machine never actually left).
     if (!sameState && current != null && current.onExit != null) {
       current.onExit.run();
@@ -251,8 +282,36 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
     }
     // Only advance when the clip that finished is the one this state drives, so an unrelated
     // animation ending cannot bounce the machine forward.
-    if (current.clipName.equals(data.getAnimationName())) {
+    if (!current.clipName.equals(data.getAnimationName())) {
+      return;
+    }
+    if (current.delay > 0f) {
+      // Hold on the final frame; update(float) counts the delay down and then advances.
+      pendingState = current.autoNext;
+      pendingTimer = current.delay;
+    } else {
       transition(current.autoNext, false, false);
+    }
+  }
+
+  /**
+   * Advances a pending {@link State#delay(float) delayed} auto-advance. Only needed when a state uses
+   * a delay; immediate auto-advance and manual {@link #setState} calls work without it. Safe to call
+   * every frame regardless.
+   *
+   * @param elapsed Seconds since the last frame.
+   */
+  @Override
+  public void update(float elapsed) {
+    if (pendingState == null) {
+      return;
+    }
+    pendingTimer -= elapsed;
+    if (pendingTimer <= 0f) {
+      String target = pendingState;
+      pendingState = null;
+      pendingTimer = 0f;
+      transition(target, false, false);
     }
   }
 
@@ -260,6 +319,8 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
   public void clear() {
     states.clear();
     state = "";
+    pendingState = null;
+    pendingTimer = 0f;
   }
 
   /**
@@ -271,6 +332,8 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
     controller.onAnimationFinished.remove(finishListener);
     states.clear();
     state = "";
+    pendingState = null;
+    pendingTimer = 0f;
     onStateChanged.clear();
   }
 
@@ -299,7 +362,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
   public static final class State {
 
     @Nullable
-    private String clipName;
+    private final String clipName;
 
     @Nullable
     private String autoNext;
@@ -313,6 +376,9 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
     /** Allowed transition targets, or {@code null} when transitions out of this state are unrestricted. */
     @Nullable
     private ObjectSet<String> allowed;
+
+    /** Seconds to hold the final frame before auto-advancing. {@code 0} advances immediately. */
+    private float delay;
 
     /** Whether the clip loops. Defaults to {@code true}; auto-advance sets it to {@code false}. */
     private boolean loop = true;
@@ -334,7 +400,8 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
 
     /**
      * Makes this state automatically transition to {@code target} as soon as its clip finishes. This
-     * implies a non-looping clip, so it also sets {@link #loop(boolean) loop} to {@code false}.
+     * implies a non-looping clip, so it also sets {@link #loop(boolean) loop} to {@code false}. Pair
+     * with {@link #delay(float)} to hold the final frame for a moment before advancing.
      *
      * @param target The state to enter when this state's clip finishes.
      * @return This state, for chaining.
@@ -342,6 +409,24 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable {
     public State autoAdvanceTo(@NotNull String target) {
       this.autoNext = target;
       this.loop = false;
+      return this;
+    }
+
+    /**
+     * Sets how long, in seconds, to wait after this state's clip finishes before
+     * {@link #autoAdvanceTo(String) auto-advancing}. Useful for letting a finished pose linger (for
+     * example, holding the last frame of an attack before returning to idle).
+     *
+     * <p>This only affects the auto-advance transition, so it does nothing unless
+     * {@link #autoAdvanceTo(String)} is also set. The owning machine's
+     * {@link FlixelAnimationStateMachine#update(float)} must be called each frame for the delay to
+     * elapse.
+     *
+     * @param seconds The hold time in seconds; values {@code <= 0} advance immediately.
+     * @return This state, for chaining.
+     */
+    public State delay(float seconds) {
+      this.delay = seconds;
       return this;
     }
 
