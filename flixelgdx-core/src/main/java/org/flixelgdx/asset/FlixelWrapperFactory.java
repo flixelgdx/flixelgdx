@@ -60,6 +60,21 @@ public interface FlixelWrapperFactory<W> {
   void forEachWrappedAsset(Consumer<W> consumer);
 
   /**
+   * Disposes and evicts a single wrapper by key. For owned wrappers, the dedicated resource is
+   * disposed immediately. For path-keyed wrappers, the asset is unloaded from the underlying
+   * {@link com.badlogic.gdx.assets.AssetManager} if it is currently loaded.
+   *
+   * <p>This is the targeted single-entry counterpart to {@link #clearNonPersist(FlixelAssetManager)}.
+   * It is called by {@link FlixelAssetManager#onAssetReleased(FlixelAsset)} in
+   * {@link FlixelAssetMode#AGGRESSIVE} mode to evict a wrapper the moment its reference count
+   * reaches zero, without scanning the whole cache.
+   *
+   * @param assets The manager that owns this factory.
+   * @param key The asset key of the wrapper to evict.
+   */
+  void evict(@NotNull FlixelAssetManager assets, @NotNull String key);
+
+  /**
    * Disposes and evicts all wrapper objects. Path-keyed assets should be unloaded from the
    * underlying {@link com.badlogic.gdx.assets.AssetManager} when applicable.
    *

@@ -78,6 +78,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   /** Per-instance extension (e.g. {@code .png}) to source factory for {@link #load(String)}. */
   private final ObjectMap<String, Function<String, FlixelSource<?>>> extensionRegistry = new ObjectMap<>();
 
+  private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
+
   /** Default {@link FlixelTypedAsset#isPersist()} for handles created after construction; see {@link #getGlobalPersist()}. */
   private boolean globalPersist = false;
 
@@ -438,6 +440,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       return diagnosticsString.toString();
     }
 
+    diagnosticsString.concat("Mode: ").concat(assetMode.name()).concat("\n");
+
     // Output loaded assets in the libGDX AssetManager.
     diagnosticsString.concat("------------------------- LOADED ASSETS -------------------------\n");
     Array<String> assetNames = manager.getAssetNames();
@@ -543,6 +547,40 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     this.globalPersist = globalPersist;
   }
 
+  @NotNull
+  @Override
+  public FlixelAssetMode getAssetMode() {
+    return assetMode;
+  }
+
+  @Override
+  public void setAssetMode(@NotNull FlixelAssetMode mode) {
+    this.assetMode = Objects.requireNonNull(mode, "mode cannot be null.");
+  }
+
+  @Override
+  public void onAssetReleased(@NotNull FlixelAsset<?> handle) {
+    if (assetMode != FlixelAssetMode.AGGRESSIVE) {
+      return;
+    }
+    if (handle.isPersist()) {
+      return;
+    }
+    String key = handle.getAssetKey();
+    if (handle instanceof FlixelPooledWrapper wrapper) {
+      FlixelWrapperFactory<?> factory = wrapperFactories.get(wrapper.wrapperRegistrationClass());
+      if (factory != null) {
+        factory.evict(this, key);
+      }
+      return;
+    }
+    Class<?> type = handle.getType();
+    typedAssetCache.remove(new AssetId(key, type));
+    if (manager != null && manager.isLoaded(key, type)) {
+      manager.unload(key);
+    }
+  }
+
   @Override
   public void clearNonPersist() {
     clearWrapperAssets(true);
@@ -562,6 +600,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       manager = null;
     }
     syntheticWrapperId = 0;
+    assetMode = FlixelAssetMode.STANDARD;
     for (FlixelWrapperFactory<?> f : wrapperFactories.values()) {
       f.clearAll(this);
     }

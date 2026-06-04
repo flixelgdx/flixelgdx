@@ -23,9 +23,11 @@
  */
 package org.flixelgdx.audio;
 
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 public class FlixelAudioManager implements FlixelDestroyable, Disposable {
 
   private final FlixelSoundBackend.Factory factory;
+  private final Array<FlixelSound> activeSounds = new Array<>(false, 8);
   private Object sfxGroup;
   private Object musicGroup;
 
@@ -78,6 +81,13 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       music.dispose();
       music = null;
     }
+    for (int i = 0; i < activeSounds.size; i++) {
+      FlixelSound s = activeSounds.get(i);
+      if (s.isExists()) {
+        s.destroy();
+      }
+    }
+    activeSounds.clear();
     if (sfxGroup != null) {
       factory.disposeGroup(sfxGroup);
     }
@@ -87,6 +97,34 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
     sfxGroup = factory.createGroup();
     musicGroup = factory.createGroup();
     factory.setMasterVolume(masterVolume);
+  }
+
+  /**
+   * Destroys all non-persistent {@link FlixelSound} instances tracked by this manager, including
+   * the current music track if it is not persistent.
+   *
+   * <p>Called automatically by {@link org.flixelgdx.Flixel#switchState} on every state switch
+   * when the asset mode is {@link org.flixelgdx.asset.FlixelAssetMode#STANDARD} or
+   * {@link org.flixelgdx.asset.FlixelAssetMode#AGGRESSIVE}. Sounds whose {@link FlixelSound#isPersist()}
+   * flag is set survive the switch unchanged.
+   *
+   * <p>Sounds that were already destroyed (for example, via {@link FlixelSound#setAutoDestroy}) are
+   * pruned from the tracking list without being double-destroyed.
+   */
+  public void clearNonPersist() {
+    for (int i = activeSounds.size - 1; i >= 0; i--) {
+      FlixelSound s = activeSounds.get(i);
+      if (!s.isExists()) {
+        activeSounds.removeIndex(i);
+      } else if (!s.isPersist()) {
+        s.destroy();
+        activeSounds.removeIndex(i);
+      }
+    }
+    if (music != null && !music.isPersist()) {
+      music.destroy();
+      music = null;
+    }
   }
 
   /**
@@ -311,6 +349,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       s.setVolume(volume);
       s.setLooped(looping);
       s.play();
+      activeSounds.add(s);
       return s;
     }
     FlixelAssetManager assets = Flixel.ensureAssets();
@@ -318,11 +357,14 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       assets.load(path, FlixelSoundSource.class);
       assets.finishLoadingAsset(path);
     }
+    FlixelAsset<FlixelSoundSource> sourceHandle = assets.obtainTypedAsset(path, FlixelSoundSource.class);
     FlixelSoundSource source = assets.get(path, FlixelSoundSource.class);
     FlixelSound flixelSound = source.create(targetGroup);
+    flixelSound.setSourceAsset(sourceHandle);
     flixelSound.setVolume(volume);
     flixelSound.setLooped(looping);
     flixelSound.play();
+    activeSounds.add(flixelSound);
     return flixelSound;
   }
 
@@ -351,6 +393,13 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
       music.dispose();
       music = null;
     }
+    for (int i = 0; i < activeSounds.size; i++) {
+      FlixelSound s = activeSounds.get(i);
+      if (s.isExists()) {
+        s.destroy();
+      }
+    }
+    activeSounds.clear();
     factory.disposeGroup(sfxGroup);
     factory.disposeGroup(musicGroup);
     factory.disposeEngine();

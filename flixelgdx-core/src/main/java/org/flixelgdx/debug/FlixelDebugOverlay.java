@@ -358,10 +358,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private int sampleRenderCallsNow() {
     int total = 0;
     if (Flixel.game != null) {
-      SpriteBatch frameworkBatch = Flixel.game.getBatch();
-      if (frameworkBatch != null) {
-        total += frameworkBatch.renderCalls;
-      }
+      total += Flixel.game.getFrameRenderCalls();
     }
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
@@ -808,10 +805,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private void snapshotRenderCalls() {
     int total = 0;
     if (Flixel.game != null) {
-      SpriteBatch frameworkBatch = Flixel.game.getBatch();
-      if (frameworkBatch != null) {
-        total += frameworkBatch.renderCalls;
-      }
+      total += Flixel.game.getFrameRenderCalls();
     }
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {

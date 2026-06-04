@@ -108,6 +108,26 @@ public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<F
   }
 
   @Override
+  public void evict(@NotNull FlixelAssetManager assets, @NotNull String key) {
+    FlixelGraphic g = cache.get(key);
+    if (g == null) {
+      return;
+    }
+    if (g.isOwned()) {
+      Texture t = g.getOwnedTexture();
+      if (t != null) {
+        t.dispose();
+      }
+    } else {
+      AssetManager am = assets.getManager();
+      if (am != null && am.isLoaded(key, Texture.class)) {
+        am.unload(key);
+      }
+    }
+    cache.remove(key);
+  }
+
+  @Override
   public void forEachWrappedAsset(Consumer<FlixelGraphic> consumer) {
     for (FlixelGraphic graphic : cache.values()) {
       consumer.accept(graphic);
