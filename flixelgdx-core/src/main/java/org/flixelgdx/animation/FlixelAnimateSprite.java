@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.math.Affine2;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
@@ -402,8 +403,22 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
     // Conservative culling using the anchor-clip hitbox. Multi-part rigs may extend beyond this box
     // but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
-    if (!cam.isInView(wx - getOffsetX(), wy - getOffsetY(),
-        getWidth() * Math.abs(scaleX), getHeight() * Math.abs(scaleY))) {
+    float rigCullW = getWidth() * Math.abs(scaleX);
+    float rigCullH = getHeight() * Math.abs(scaleY);
+    float rigLeft = wx - getOffsetX();
+    float rigBottom = wy - getOffsetY();
+    float rigAngle = getAngle();
+    if (rigAngle != 0f) {
+      float cos = Math.abs(MathUtils.cosDeg(rigAngle));
+      float sin = Math.abs(MathUtils.sinDeg(rigAngle));
+      float rotW = cos * rigCullW + sin * rigCullH;
+      float rotH = sin * rigCullW + cos * rigCullH;
+      rigLeft -= (rotW - rigCullW) * 0.5f;
+      rigBottom -= (rotH - rigCullH) * 0.5f;
+      rigCullW = rotW;
+      rigCullH = rotH;
+    }
+    if (!cam.isInView(rigLeft, rigBottom, rigCullW, rigCullH)) {
       return;
     }
 

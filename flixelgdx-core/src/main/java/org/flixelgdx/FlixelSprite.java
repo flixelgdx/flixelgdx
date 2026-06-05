@@ -29,6 +29,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
@@ -436,6 +437,17 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     float cullH = currentFrame != null
         ? currentFrame.originalHeight * Math.abs(scaleY)
         : getHeight() * Math.abs(scaleY);
+    float angle = getAngle();
+    if (angle != 0f) {
+      float cos = Math.abs(MathUtils.cosDeg(angle));
+      float sin = Math.abs(MathUtils.sinDeg(angle));
+      float rotW = cos * cullW + sin * cullH;
+      float rotH = sin * cullW + cos * cullH;
+      drawLeft -= (rotW - cullW) * 0.5f;
+      drawBottom -= (rotH - cullH) * 0.5f;
+      cullW = rotW;
+      cullH = rotH;
+    }
     if (!cam.isInView(drawLeft, drawBottom, cullW, cullH)) {
       return;
     }
