@@ -134,7 +134,7 @@ public class FlixelBatch implements Batch {
 
     short[] indices = new short[maxQuads * INDICES_PER_QUAD];
     for (int i = 0, j = 0, v = 0; i < maxQuads; i++, j += 6, v += 4) {
-      indices[j]     = (short) v;
+      indices[j] = (short) v;
       indices[j + 1] = (short) (v + 1);
       indices[j + 2] = (short) (v + 2);
       indices[j + 3] = (short) (v + 2);
@@ -240,15 +240,19 @@ public class FlixelBatch implements Batch {
 
     float invW = 1f / texture.getWidth();
     float invH = 1f / texture.getHeight();
-    float u  = srcX * invW;
+    float u = srcX * invW;
     float u2 = (srcX + srcW) * invW;
-    float v  = (srcY + srcH) * invH;
+    float v = (srcY + srcH) * invH;
     float v2 = srcY * invH;
     if (flipX) {
-      float t = u; u = u2; u2 = t;
+      float t = u;
+      u = u2;
+      u2 = t;
     }
     if (flipY) {
-      float t = v; v = v2; v2 = t;
+      float t = v;
+      v = v2;
+      v2 = t;
     }
 
     writeRotatedQuad(x, y, originX, originY, w, h, scaleX, scaleY, rotation, tidx, u, v, u2, v2);
@@ -262,23 +266,27 @@ public class FlixelBatch implements Batch {
 
     float invW = 1f / texture.getWidth();
     float invH = 1f / texture.getHeight();
-    float u  = srcX * invW;
+    float u = srcX * invW;
     float u2 = (srcX + srcW) * invW;
-    float v  = (srcY + srcH) * invH;
+    float v = (srcY + srcH) * invH;
     float v2 = srcY * invH;
     if (flipX) {
-      float t = u; u = u2; u2 = t;
+      float t = u;
+      u = u2;
+      u2 = t;
     }
     if (flipY) {
-      float t = v; v = v2; v2 = t;
+      float t = v;
+      v = v2;
+      v2 = t;
     }
 
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  u,  v2, tidx);
-    putVertex(x,  y2, u,  v,  tidx);
-    putVertex(x2, y2, u2, v,  tidx);
-    putVertex(x2, y,  u2, v2, tidx);
+    putVertex(x, y, u, v2, tidx);
+    putVertex(x, y2, u, v, tidx);
+    putVertex(x2, y2, u2, v, tidx);
+    putVertex(x2, y, u2, v2, tidx);
   }
 
   @Override
@@ -292,10 +300,10 @@ public class FlixelBatch implements Batch {
     float tidx = (float) getOrAssignSlot(texture);
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  u,  v2, tidx);
-    putVertex(x,  y2, u,  v,  tidx);
-    putVertex(x2, y2, u2, v,  tidx);
-    putVertex(x2, y,  u2, v2, tidx);
+    putVertex(x, y, u, v2, tidx);
+    putVertex(x, y2, u, v, tidx);
+    putVertex(x2, y2, u2, v, tidx);
+    putVertex(x2, y, u2, v2, tidx);
   }
 
   @Override
@@ -304,10 +312,10 @@ public class FlixelBatch implements Batch {
     float tidx = (float) getOrAssignSlot(texture);
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  0f, 0f, tidx);
-    putVertex(x,  y2, 0f, 1f, tidx);
+    putVertex(x, y, 0f, 0f, tidx);
+    putVertex(x, y2, 0f, 1f, tidx);
     putVertex(x2, y2, 1f, 1f, tidx);
-    putVertex(x2, y,  1f, 0f, tidx);
+    putVertex(x2, y, 1f, 0f, tidx);
   }
 
   @Override
@@ -317,8 +325,27 @@ public class FlixelBatch implements Batch {
 
   @Override
   public void draw(Texture texture, float[] spriteVertices, int offset, int count) {
-    throw new UnsupportedOperationException(
-        "Raw float[] draws use SpriteBatch's 5-float vertex format; FlixelBatch uses 6 floats.");
+    // spriteVertices uses SpriteBatch's 5-float-per-vertex format: x, y, color, u, v.
+    // Expand each vertex to 6 floats by appending the texture slot index.
+    int end = offset + count;
+    int si = offset;
+    while (si < end) {
+      if (vertexIdx + FLOATS_PER_VERTEX * VERTICES_PER_QUAD > vertices.length) {
+        flush();
+      }
+      float tidx = (float) getOrAssignSlot(texture);
+      int remaining = (end - si) / 5;
+      int capacity = (vertices.length - vertexIdx) / FLOATS_PER_VERTEX;
+      int toProcess = Math.min(remaining, capacity);
+      for (int i = 0; i < toProcess; i++, si += 5) {
+        vertices[vertexIdx++] = spriteVertices[si];
+        vertices[vertexIdx++] = spriteVertices[si + 1];
+        vertices[vertexIdx++] = spriteVertices[si + 2];
+        vertices[vertexIdx++] = spriteVertices[si + 3];
+        vertices[vertexIdx++] = spriteVertices[si + 4];
+        vertices[vertexIdx++] = tidx;
+      }
+    }
   }
 
   @Override
@@ -331,17 +358,17 @@ public class FlixelBatch implements Batch {
     checkSpace();
     float tidx = (float) getOrAssignSlot(region.getTexture());
 
-    float u  = region.getU();
+    float u = region.getU();
     float u2 = region.getU2();
-    float v  = region.getV2();
+    float v = region.getV2();
     float v2 = region.getV();
 
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  u,  v2, tidx);
-    putVertex(x,  y2, u,  v,  tidx);
-    putVertex(x2, y2, u2, v,  tidx);
-    putVertex(x2, y,  u2, v2, tidx);
+    putVertex(x, y, u, v2, tidx);
+    putVertex(x, y2, u, v, tidx);
+    putVertex(x2, y2, u2, v, tidx);
+    putVertex(x2, y, u2, v2, tidx);
   }
 
   @Override
@@ -350,9 +377,9 @@ public class FlixelBatch implements Batch {
     checkSpace();
     float tidx = (float) getOrAssignSlot(region.getTexture());
 
-    float u  = region.getU();
+    float u = region.getU();
     float u2 = region.getU2();
-    float v  = region.getV2();
+    float v = region.getV2();
     float v2 = region.getV();
 
     writeRotatedQuad(x, y, originX, originY, w, h, scaleX, scaleY, rotation, tidx, u, v, u2, v2);
@@ -367,11 +394,15 @@ public class FlixelBatch implements Batch {
     // Clockwise atlas-packed sprite: UV corners are reassigned to undo the 90-degree CW rotation.
     float u, u2, v, v2;
     if (clockwise) {
-      u  = region.getU2(); u2 = region.getU();
-      v  = region.getV2(); v2 = region.getV();
+      u = region.getU2();
+      u2 = region.getU();
+      v = region.getV2();
+      v2 = region.getV();
     } else {
-      u  = region.getU();  u2 = region.getU2();
-      v  = region.getV2(); v2 = region.getV();
+      u = region.getU();
+      u2 = region.getU2();
+      v = region.getV2();
+      v2 = region.getV();
     }
 
     writeRotatedQuad(x, y, originX, originY, w, h, scaleX, scaleY, rotation, tidx, u, v, u2, v2);
@@ -394,14 +425,14 @@ public class FlixelBatch implements Batch {
     float x4 = m00 * width + m02;
     float y4 = m10 * width + m12;
 
-    float u  = region.getU();
+    float u = region.getU();
     float u2 = region.getU2();
-    float v  = region.getV2();
+    float v = region.getV2();
     float v2 = region.getV();
 
-    putVertex(x1, y1, u,  v2, tidx);
-    putVertex(x2, y2, u,  v,  tidx);
-    putVertex(x3, y3, u2, v,  tidx);
+    putVertex(x1, y1, u, v2, tidx);
+    putVertex(x2, y2, u, v, tidx);
+    putVertex(x3, y3, u2, v, tidx);
     putVertex(x4, y4, u2, v2, tidx);
   }
 
@@ -579,39 +610,53 @@ public class FlixelBatch implements Batch {
       float scaleX, float scaleY, float rotation, float tidx, float u, float v, float u2, float v2) {
     float worldOriginX = x + originX;
     float worldOriginY = y + originY;
-    float fx  = -originX;
-    float fy  = -originY;
+    float fx = -originX;
+    float fy = -originY;
     float fx2 = w - originX;
     float fy2 = h - originY;
 
     if (scaleX != 1f || scaleY != 1f) {
-      fx  *= scaleX; fy  *= scaleY;
-      fx2 *= scaleX; fy2 *= scaleY;
+      fx *= scaleX;
+      fy *= scaleY;
+      fx2 *= scaleX;
+      fy2 *= scaleY;
     }
 
     float x1, y1, x2, y2, x3, y3, x4, y4;
     if (rotation != 0f) {
       float cos = MathUtils.cosDeg(rotation);
       float sin = MathUtils.sinDeg(rotation);
-      x1 = cos * fx  - sin * fy;  y1 = sin * fx  + cos * fy;
-      x2 = cos * fx  - sin * fy2; y2 = sin * fx  + cos * fy2;
-      x3 = cos * fx2 - sin * fy2; y3 = sin * fx2 + cos * fy2;
-      x4 = cos * fx2 - sin * fy;  y4 = sin * fx2 + cos * fy;
+      x1 = cos * fx - sin * fy;
+      y1 = sin * fx + cos * fy;
+      x2 = cos * fx - sin * fy2;
+      y2 = sin * fx + cos * fy2;
+      x3 = cos * fx2 - sin * fy2;
+      y3 = sin * fx2 + cos * fy2;
+      x4 = cos * fx2 - sin * fy;
+      y4 = sin * fx2 + cos * fy;
     } else {
-      x1 = fx; y1 = fy;
-      x2 = fx; y2 = fy2;
-      x3 = fx2; y3 = fy2;
-      x4 = fx2; y4 = fy;
+      x1 = fx;
+      y1 = fy;
+      x2 = fx;
+      y2 = fy2;
+      x3 = fx2;
+      y3 = fy2;
+      x4 = fx2;
+      y4 = fy;
     }
 
-    x1 += worldOriginX; y1 += worldOriginY;
-    x2 += worldOriginX; y2 += worldOriginY;
-    x3 += worldOriginX; y3 += worldOriginY;
-    x4 += worldOriginX; y4 += worldOriginY;
+    x1 += worldOriginX;
+    y1 += worldOriginY;
+    x2 += worldOriginX;
+    y2 += worldOriginY;
+    x3 += worldOriginX;
+    y3 += worldOriginY;
+    x4 += worldOriginX;
+    y4 += worldOriginY;
 
-    putVertex(x1, y1, u,  v2, tidx);
-    putVertex(x2, y2, u,  v,  tidx);
-    putVertex(x3, y3, u2, v,  tidx);
+    putVertex(x1, y1, u, v2, tidx);
+    putVertex(x2, y2, u, v, tidx);
+    putVertex(x3, y3, u2, v, tidx);
     putVertex(x4, y4, u2, v2, tidx);
   }
 

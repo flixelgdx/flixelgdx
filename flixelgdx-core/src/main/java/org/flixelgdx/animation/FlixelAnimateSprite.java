@@ -26,7 +26,6 @@ package org.flixelgdx.animation;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.utils.Array;
 
@@ -52,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelAnimationController#getCurrentKeyframeIndex()}, and walks the keyframe's pre-baked
  * parts back-to-front. Every part carries a fully composed {@link Affine2}, so the inner loop is a
  * single {@link Affine2#setToProduct} plus one
- * {@link SpriteBatch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} per
+ * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} per
  * visible bitmap.
  *
  * <p>Position, scale, rotation, color tint, flip, origin, offset, antialiasing, scroll factor, and
@@ -83,9 +82,6 @@ import org.jetbrains.annotations.Nullable;
  * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
  * override earlier registrations on collisions.
  *
- * <p>{@code FlixelAnimateSprite} only draws through a {@link SpriteBatch}; if a non-sprite
- * {@link Batch} implementation is passed in, the rig path silently returns and falls back to the
- * inherited {@link FlixelSprite} draw path so simple atlas usage still works.
  */
 public class FlixelAnimateSprite extends FlixelSprite {
 
@@ -100,13 +96,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * Preallocated affine reused by {@link #draw(Batch)} so we never allocate on the hot path. At the
    * start of each draw call it is set to a translate, rotate, scale, and origin pivot composing the
    * sprite's world transform; each part's baked affine is then post-multiplied into {@link #drawAffine}
-   * for the {@link SpriteBatch#draw} call.
+   * for the {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call.
    */
   private final Affine2 baseAffine = new Affine2();
 
   /**
    * Scratch affine used to hold the per-part composed matrix passed to
-   * {@link SpriteBatch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)}.
+   * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)}.
    */
   private final Affine2 drawAffine = new Affine2();
 
@@ -359,9 +355,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * center. Per-part baked matrices are post-multiplied into this base, so rotation, scale, flip,
    * origin, and offset all behave identically to a regular {@link FlixelSprite}.
    *
-   * @param batch The active batch. The rig path requires a {@link SpriteBatch} (for
-    *   {@link SpriteBatch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)});
-    *   any other batch falls back to the inherited single-graphic draw path.
+   * @param batch The active batch.
    */
   @Override
   public void draw(Batch batch) {
@@ -370,9 +364,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     FlixelAnimateRig activeRig = rig;
-    if (activeRig == null || !(batch instanceof SpriteBatch sb)) {
-      // No rig (or batch type does not support Affine2 draws): fall back to the standard sprite path
-      // so at least the inherited currentRegion / currentFrame still renders.
+    if (activeRig == null) {
       super.draw(batch);
       return;
     }
@@ -455,7 +447,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
       baseAffine.translate(-anchorOriginX, -anchorOriginY);
     }
 
-    sb.setColor(getGdxColor());
+    batch.setColor(getGdxColor());
 
     Array<FlixelFrame> atlas = activeRig.atlas;
     FlixelAnimateRig.Part[] parts = keyframe.parts;
@@ -468,13 +460,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
       // Compose the final affine for this part. setToProduct() keeps us allocation-free and rewrites
       // all six fields in a single call. The resulting matrix acts on the quad corners (0, 0),
-      // (w, 0), (w, h), (0, h) that SpriteBatch.draw() will emit, where (w, h) are the region's
+      // (w, 0), (w, h), (0, h) that Batch.draw() will emit, where (w, h) are the region's
       // pixel dimensions.
       drawAffine.setToProduct(baseAffine, part.local);
-      sb.draw(frame.getRegion(), frame.getRegionWidth(), frame.getRegionHeight(), drawAffine);
+      batch.draw(frame.getRegion(), frame.getRegionWidth(), frame.getRegionHeight(), drawAffine);
     }
 
-    sb.setColor(Color.WHITE);
+    batch.setColor(Color.WHITE);
   }
 
   /**
