@@ -1441,6 +1441,27 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   }
 
   /**
+   * Returns {@code true} if an axis-aligned rectangle in view space overlaps this camera's visible
+   * region.
+   *
+   * <p>The coordinates must already be in view space - that is, converted by
+   * {@link #worldToViewX(float, float)} and {@link #worldToViewY(float, float)} before being
+   * passed here. The check is a simple AABB overlap against {@code [0, viewWidth] x [0, viewHeight]}
+   * and does not account for sprite rotation, making it a conservative test that errs on the side
+   * of drawing.
+   *
+   * @param viewX Left edge of the rectangle in view space.
+   * @param viewY Bottom edge of the rectangle in view space.
+   * @param width Width of the rectangle.
+   * @param height Height of the rectangle.
+   * @return {@code true} if the rectangle is at least partially visible.
+   */
+  public boolean isInView(float viewX, float viewY, float width, float height) {
+    return viewX + width > 0f && viewX < getViewWidth()
+        && viewY + height > 0f && viewY < getViewHeight();
+  }
+
+  /**
    * Returns the horizontal margin between the camera buffer edge and the visible view area,
    * in world units. This margin grows as zoom increases above {@code 1}.
    */
