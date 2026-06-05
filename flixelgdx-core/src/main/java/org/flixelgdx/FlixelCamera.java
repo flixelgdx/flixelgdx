@@ -1208,30 +1208,30 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     float vh = getViewHeight();
     float w, h;
     switch (style) {
-    case LOCKON -> {
-      w = 1;
-      h = 1;
-    }
-    case PLATFORMER -> {
-      w = vw / 8f;
-      h = vh / 3f;
-    }
-    case TOPDOWN -> {
-      w = vw / 3f;
-      h = vh / 3f;
-    }
-    case TOPDOWN_TIGHT -> {
-      w = vw / 8f;
-      h = vh / 8f;
-    }
-    case SCREEN_BY_SCREEN -> {
-      w = vw;
-      h = vh;
-    }
-    default -> {
-      deadzone = null;
-      return;
-    }
+      case LOCKON -> {
+        w = 1;
+        h = 1;
+      }
+      case PLATFORMER -> {
+        w = vw / 8f;
+        h = vh / 3f;
+      }
+      case TOPDOWN -> {
+        w = vw / 3f;
+        h = vh / 3f;
+      }
+      case TOPDOWN_TIGHT -> {
+        w = vw / 8f;
+        h = vh / 8f;
+      }
+      case SCREEN_BY_SCREEN -> {
+        w = vw;
+        h = vh;
+      }
+      default -> {
+        deadzone = null;
+        return;
+      }
     }
     deadzone = new Rectangle((vw - w) / 2f, (vh - h) / 2f, w, h);
   }
@@ -1333,30 +1333,30 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     float topLeftY;
 
     switch (regionMode) {
-    case PIXEL_BOTTOM_LEFT -> {
-      topLeftX = px;
-      topLeftY = screenHeight - py - resolvedRegionHeight;
-    }
-    case PIXEL_CENTERED -> {
-      topLeftX = px - (resolvedRegionWidth / 2f);
-      topLeftY = py - (resolvedRegionHeight / 2f);
-    }
-    case NORMALIZED_RECT -> {
-      float nx = MathUtils.clamp(normalizedRegionX, 0f, 1f);
-      float ny = MathUtils.clamp(normalizedRegionY, 0f, 1f);
-      float nw = MathUtils.clamp(normalizedRegionWidth, 0f, 1f);
-      float nh = MathUtils.clamp(normalizedRegionHeight, 0f, 1f);
-      float resolvedW = Math.max(1f, nw * screenWidth);
-      float resolvedH = Math.max(1f, nh * screenHeight);
-      topLeftX = nx * screenWidth;
-      topLeftY = ny * screenHeight;
-      out.set(topLeftX, topLeftY, resolvedW, resolvedH);
-      return;
-    }
-    default -> {
-      topLeftX = px;
-      topLeftY = py;
-    }
+      case PIXEL_BOTTOM_LEFT -> {
+        topLeftX = px;
+        topLeftY = screenHeight - py - resolvedRegionHeight;
+      }
+      case PIXEL_CENTERED -> {
+        topLeftX = px - (resolvedRegionWidth / 2f);
+        topLeftY = py - (resolvedRegionHeight / 2f);
+      }
+      case NORMALIZED_RECT -> {
+        float nx = MathUtils.clamp(normalizedRegionX, 0f, 1f);
+        float ny = MathUtils.clamp(normalizedRegionY, 0f, 1f);
+        float nw = MathUtils.clamp(normalizedRegionWidth, 0f, 1f);
+        float nh = MathUtils.clamp(normalizedRegionHeight, 0f, 1f);
+        float resolvedW = Math.max(1f, nw * screenWidth);
+        float resolvedH = Math.max(1f, nh * screenHeight);
+        topLeftX = nx * screenWidth;
+        topLeftY = ny * screenHeight;
+        out.set(topLeftX, topLeftY, resolvedW, resolvedH);
+        return;
+      }
+      default -> {
+        topLeftX = px;
+        topLeftY = py;
+      }
     }
 
     out.set(topLeftX, topLeftY, resolvedRegionWidth, resolvedRegionHeight);
@@ -1438,6 +1438,27 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   /** Returns the bottom world coordinate of the visible region. */
   public float getViewBottom() {
     return getViewY() + getViewHeight();
+  }
+
+  /**
+   * Returns {@code true} if an axis-aligned rectangle in view space overlaps this camera's visible
+   * region.
+   *
+   * <p>The coordinates must already be in view space - that is, converted by
+   * {@link #worldToViewX(float, float)} and {@link #worldToViewY(float, float)} before being
+   * passed here. The check is a simple AABB overlap against {@code [0, viewWidth] x [0, viewHeight]}
+   * and does not account for sprite rotation, making it a conservative test that errs on the side
+   * of drawing.
+   *
+   * @param viewX Left edge of the rectangle in view space.
+   * @param viewY Bottom edge of the rectangle in view space.
+   * @param width Width of the rectangle.
+   * @param height Height of the rectangle.
+   * @return {@code true} if the rectangle is at least partially visible.
+   */
+  public boolean isInView(float viewX, float viewY, float width, float height) {
+    return viewX + width > 0f && viewX < getViewWidth()
+        && viewY + height > 0f && viewY < getViewHeight();
   }
 
   /**

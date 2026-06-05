@@ -105,38 +105,38 @@ public final class FlixelActionAnalog extends FlixelAction {
 
   private static void accumulate(@NotNull FlixelAnalogAxisBinding b, @NotNull Vector2 out) {
     switch (b.kind) {
-    case KEY_NEG_X:
-      if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-        out.x -= 1f;
+      case KEY_NEG_X -> {
+        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
+          out.x -= 1f;
+        }
       }
-      break;
-    case KEY_POS_X:
-      if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-        out.x += 1f;
+      case KEY_POS_X -> {
+        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
+          out.x += 1f;
+        }
       }
-      break;
-    case KEY_NEG_Y:
-      if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-        out.y -= 1f;
+      case KEY_NEG_Y -> {
+        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
+          out.y -= 1f;
+        }
       }
-      break;
-    case KEY_POS_Y:
-      if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-        out.y += 1f;
+      case KEY_POS_Y -> {
+        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
+          out.y += 1f;
+        }
       }
-      break;
-    case GAMEPAD_AXIS_X:
-      if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-        out.x += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+      case GAMEPAD_AXIS_X -> {
+        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
+          out.x += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+        }
       }
-      break;
-    case GAMEPAD_AXIS_Y:
-      if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-        out.y += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+      case GAMEPAD_AXIS_Y -> {
+        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
+          out.y += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+        }
       }
-      break;
-    default :
-      break;
+      default -> {
+      }
     }
   }
 

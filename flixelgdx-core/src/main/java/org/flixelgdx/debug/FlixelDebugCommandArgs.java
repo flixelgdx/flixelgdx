@@ -193,9 +193,9 @@ public final class FlixelDebugCommandArgs {
     }
     String lower = s.toLowerCase();
     return switch (lower) {
-    case "true", "1", "yes", "on" -> true;
-    case "false", "0", "no", "off" -> false;
-    default -> defaultValue;
+      case "true", "1", "yes", "on" -> true;
+      case "false", "0", "no", "off" -> false;
+      default -> defaultValue;
     };
   }
 

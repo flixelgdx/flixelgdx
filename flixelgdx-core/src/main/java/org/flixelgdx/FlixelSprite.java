@@ -29,6 +29,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
@@ -425,6 +426,32 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
+
+    float drawLeft = wx - offsetX;
+    float drawBottom = wy - offsetY;
+    // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
+    // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
+    float cullW = currentFrame != null
+        ? currentFrame.originalWidth * Math.abs(scaleX)
+        : getWidth() * Math.abs(scaleX);
+    float cullH = currentFrame != null
+        ? currentFrame.originalHeight * Math.abs(scaleY)
+        : getHeight() * Math.abs(scaleY);
+    float angle = getAngle();
+    if (angle != 0f) {
+      float cos = Math.abs(MathUtils.cosDeg(angle));
+      float sin = Math.abs(MathUtils.sinDeg(angle));
+      float rotW = cos * cullW + sin * cullH;
+      float rotH = sin * cullW + cos * cullH;
+      drawLeft -= (rotW - cullW) * 0.5f;
+      drawBottom -= (rotH - cullH) * 0.5f;
+      cullW = rotW;
+      cullH = rotH;
+    }
+    if (!cam.isInView(drawLeft, drawBottom, cullW, cullH)) {
+      return;
+    }
+
     if (currentFrame != null) {
       FlixelFrame f = currentFrame;
       int srcW = f.originalWidth;
@@ -590,9 +617,9 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     float halfViewWidth = Flixel.getViewWidth() / 2f;
     float halfViewHeight = Flixel.getViewHeight() / 2f;
     switch (axes) {
-    case X -> setPosition(halfViewWidth - halfWidth, getY());
-    case Y -> setPosition(getX(), halfViewHeight - halfHeight);
-    case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
+      case X -> setPosition(halfViewWidth - halfWidth, getY());
+      case Y -> setPosition(getX(), halfViewHeight - halfHeight);
+      case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
     }
     return this;
   }

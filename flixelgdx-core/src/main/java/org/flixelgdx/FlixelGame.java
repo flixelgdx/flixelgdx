@@ -33,7 +33,6 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -42,6 +41,7 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.input.FlixelInputProcessorManager;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -144,23 +144,23 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Is the game's window currently minimized? */
   private boolean isMinimized = false;
 
-  /** The main sprite batch used for rendering all sprites on screen. */
-  protected SpriteBatch batch;
+  /** The main batch used for rendering all sprites on screen. */
+  protected FlixelBatch batch;
 
   /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
   protected Color bgColor = new Color(Color.BLACK);
 
-  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link SpriteBatch#setColor}. */
+  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelBatch#setColor(Color)}. */
   protected Texture bgTexture;
 
   /** Where all the global cameras are stored. */
   protected Array<FlixelCamera> cameras;
 
   /**
-   * Total render calls issued by the framework {@link SpriteBatch} during the most recently
+   * Total render calls issued by the framework {@link FlixelBatch} during the most recently
    * completed draw pass, summed across all camera loops. Derived from the delta of
-   * {@link SpriteBatch#totalRenderCalls} so multiple {@link SpriteBatch#begin()} resets within
-   * a single frame do not erase earlier cameras' counts.
+   * {@link FlixelBatch#totalRenderCalls} so multiple begin/end cycles within a single frame
+   * do not erase earlier cameras' counts.
    */
   private int frameRenderCalls;
 
@@ -331,7 +331,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     isClosing = false;
     stateLifecyclePauseDispatched = false;
 
-    batch = new SpriteBatch();
+    batch = new FlixelBatch();
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
 
@@ -945,15 +945,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return cameras;
   }
 
-  public SpriteBatch getBatch() {
+  public FlixelBatch getBatch() {
     return batch;
   }
 
   /**
-   * Returns the total number of {@link SpriteBatch} render calls issued during the most recently
-   * completed frame, summed across all camera passes. Unlike {@link SpriteBatch#renderCalls},
-   * this value is not reset by intermediate {@link SpriteBatch#begin()} calls, so it correctly
-   * reflects the full per-frame cost when multiple cameras are active.
+   * Returns the total number of {@link FlixelBatch} render calls issued during the most recently
+   * completed frame, summed across all camera passes. This value is not reset by intermediate
+   * begin/end cycles, so it correctly reflects the full per-frame cost when multiple cameras
+   * are active.
    *
    * @return Per-frame render call count from the last completed draw pass.
    */

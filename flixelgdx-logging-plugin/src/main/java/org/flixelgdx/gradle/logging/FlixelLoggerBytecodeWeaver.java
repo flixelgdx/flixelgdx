@@ -219,30 +219,24 @@ public final class FlixelLoggerBytecodeWeaver {
   }
 
   static AbstractInsnNode pushInt(int v) {
-    switch (v) {
-    case -1:
-      return new InsnNode(Opcodes.ICONST_M1);
-    case 0:
-      return new InsnNode(Opcodes.ICONST_0);
-    case 1:
-      return new InsnNode(Opcodes.ICONST_1);
-    case 2:
-      return new InsnNode(Opcodes.ICONST_2);
-    case 3:
-      return new InsnNode(Opcodes.ICONST_3);
-    case 4:
-      return new InsnNode(Opcodes.ICONST_4);
-    case 5:
-      return new InsnNode(Opcodes.ICONST_5);
-    default :
-      if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE) {
-        return new IntInsnNode(Opcodes.BIPUSH, v);
+    return switch (v) {
+      case -1 -> new InsnNode(Opcodes.ICONST_M1);
+      case 0 -> new InsnNode(Opcodes.ICONST_0);
+      case 1 -> new InsnNode(Opcodes.ICONST_1);
+      case 2 -> new InsnNode(Opcodes.ICONST_2);
+      case 3 -> new InsnNode(Opcodes.ICONST_3);
+      case 4 -> new InsnNode(Opcodes.ICONST_4);
+      case 5 -> new InsnNode(Opcodes.ICONST_5);
+      default -> {
+        if (v >= Byte.MIN_VALUE && v <= Byte.MAX_VALUE) {
+          yield new IntInsnNode(Opcodes.BIPUSH, v);
+        }
+        if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE) {
+          yield new IntInsnNode(Opcodes.SIPUSH, v);
+        }
+        yield new LdcInsnNode(v);
       }
-      if (v >= Short.MIN_VALUE && v <= Short.MAX_VALUE) {
-        return new IntInsnNode(Opcodes.SIPUSH, v);
-      }
-      return new LdcInsnNode(v);
-    }
+    };
   }
 
   public static ClassWriter newClassWriter(ClassReader reader) {

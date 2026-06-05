@@ -181,29 +181,29 @@ public final class FlixelGamepadInput {
       return Input.Keys.UNKNOWN;
     }
     return switch (name.trim().toUpperCase(Locale.ROOT)) {
-    case "A" -> A;
-    case "B" -> B;
-    case "C" -> C;
-    case "X" -> X;
-    case "Y" -> Y;
-    case "Z" -> Z;
-    case "L1" -> L1;
-    case "R1" -> R1;
-    case "L2" -> L2;
-    case "R2" -> R2;
-    case "THUMBL", "LEFT_THUMB", "LEFTSTICK" -> THUMBL;
-    case "THUMBR", "RIGHT_THUMB", "RIGHTSTICK" -> THUMBR;
-    case "START" -> START;
-    case "SELECT", "BACK" -> SELECT;
-    case "MODE", "GUIDE" -> MODE;
-    case "CIRCLE" -> CIRCLE;
-    case "DPAD_UP", "UP" -> DPAD_UP;
-    case "DPAD_DOWN", "DOWN" -> DPAD_DOWN;
-    case "DPAD_LEFT", "LEFT" -> DPAD_LEFT;
-    case "DPAD_RIGHT", "RIGHT" -> DPAD_RIGHT;
-    case "ANY" -> ANY;
-    case "NONE" -> NONE;
-    default -> Input.Keys.UNKNOWN;
+      case "A" -> A;
+      case "B" -> B;
+      case "C" -> C;
+      case "X" -> X;
+      case "Y" -> Y;
+      case "Z" -> Z;
+      case "L1" -> L1;
+      case "R1" -> R1;
+      case "L2" -> L2;
+      case "R2" -> R2;
+      case "THUMBL", "LEFT_THUMB", "LEFTSTICK" -> THUMBL;
+      case "THUMBR", "RIGHT_THUMB", "RIGHTSTICK" -> THUMBR;
+      case "START" -> START;
+      case "SELECT", "BACK" -> SELECT;
+      case "MODE", "GUIDE" -> MODE;
+      case "CIRCLE" -> CIRCLE;
+      case "DPAD_UP", "UP" -> DPAD_UP;
+      case "DPAD_DOWN", "DOWN" -> DPAD_DOWN;
+      case "DPAD_LEFT", "LEFT" -> DPAD_LEFT;
+      case "DPAD_RIGHT", "RIGHT" -> DPAD_RIGHT;
+      case "ANY" -> ANY;
+      case "NONE" -> NONE;
+      default -> Input.Keys.UNKNOWN;
     };
   }
 

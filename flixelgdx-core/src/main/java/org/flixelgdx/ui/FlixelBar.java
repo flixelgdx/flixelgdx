@@ -845,16 +845,16 @@ public class FlixelBar extends FlixelSprite {
     float fh = h;
 
     switch (fillDirection) {
-    case LEFT_TO_RIGHT -> fw = w * percent;
-    case RIGHT_TO_LEFT -> {
-      fw = w * percent;
-      fx = x + (w - fw);
-    }
-    case TOP_TO_BOTTOM -> {
-      fh = h * percent;
-      fy = y + (h - fh);
-    }
-    case BOTTOM_TO_TOP -> fh = h * percent;
+      case LEFT_TO_RIGHT -> fw = w * percent;
+      case RIGHT_TO_LEFT -> {
+        fw = w * percent;
+        fx = x + (w - fw);
+      }
+      case TOP_TO_BOTTOM -> {
+        fh = h * percent;
+        fy = y + (h - fh);
+      }
+      case BOTTOM_TO_TOP -> fh = h * percent;
     }
 
     batch.draw(Objects.requireNonNull(whitePixel), fx, fy, fw, fh);
@@ -872,28 +872,28 @@ public class FlixelBar extends FlixelSprite {
     float v2 = region.getV2();
 
     switch (fillDirection) {
-    case LEFT_TO_RIGHT -> {
-      fw = w * percent;
-      float du = (u2 - u) * percent;
-      u2 = u + du;
-    }
-    case RIGHT_TO_LEFT -> {
-      fw = w * percent;
-      fx = x + (w - fw);
-      float du = (u2 - u) * percent;
-      u = u2 - du;
-    }
-    case TOP_TO_BOTTOM -> {
-      fh = h * percent;
-      fy = y + (h - fh);
-      float dv = (v2 - v) * percent;
-      v = v2 - dv;
-    }
-    case BOTTOM_TO_TOP -> {
-      fh = h * percent;
-      float dv = (v2 - v) * percent;
-      v2 = v + dv;
-    }
+      case LEFT_TO_RIGHT -> {
+        fw = w * percent;
+        float du = (u2 - u) * percent;
+        u2 = u + du;
+      }
+      case RIGHT_TO_LEFT -> {
+        fw = w * percent;
+        fx = x + (w - fw);
+        float du = (u2 - u) * percent;
+        u = u2 - du;
+      }
+      case TOP_TO_BOTTOM -> {
+        fh = h * percent;
+        fy = y + (h - fh);
+        float dv = (v2 - v) * percent;
+        v = v2 - dv;
+      }
+      case BOTTOM_TO_TOP -> {
+        fh = h * percent;
+        float dv = (v2 - v) * percent;
+        v2 = v + dv;
+      }
     }
 
     Texture tex = region.getTexture();
