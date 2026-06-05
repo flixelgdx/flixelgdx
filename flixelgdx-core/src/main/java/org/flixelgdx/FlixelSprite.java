@@ -425,6 +425,16 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
+
+    float vw = cam.getViewWidth();
+    float vh = cam.getViewHeight();
+    float drawLeft = wx - offsetX;
+    float drawBottom = wy - offsetY;
+    if (drawLeft + getWidth() * Math.abs(scaleX) < 0f || drawLeft > vw
+        || drawBottom + getHeight() * Math.abs(scaleY) < 0f || drawBottom > vh) {
+      return;
+    }
+
     if (currentFrame != null) {
       FlixelFrame f = currentFrame;
       int srcW = f.originalWidth;
