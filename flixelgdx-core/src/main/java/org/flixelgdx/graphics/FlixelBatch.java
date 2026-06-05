@@ -283,10 +283,10 @@ public class FlixelBatch implements Batch {
 
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  u,  v,  tidx);
-    putVertex(x,  y2, u,  v2, tidx);
+    putVertex(x, y, u, v, tidx);
+    putVertex(x, y2, u, v2, tidx);
     putVertex(x2, y2, u2, v2, tidx);
-    putVertex(x2, y,  u2, v,  tidx);
+    putVertex(x2, y, u2, v, tidx);
   }
 
   @Override
@@ -300,10 +300,10 @@ public class FlixelBatch implements Batch {
     float tidx = (float) getOrAssignSlot(texture);
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  u,  v,  tidx);
-    putVertex(x,  y2, u,  v2, tidx);
+    putVertex(x, y, u, v, tidx);
+    putVertex(x, y2, u, v2, tidx);
     putVertex(x2, y2, u2, v2, tidx);
-    putVertex(x2, y,  u2, v,  tidx);
+    putVertex(x2, y, u2, v, tidx);
   }
 
   @Override
@@ -312,10 +312,10 @@ public class FlixelBatch implements Batch {
     float tidx = (float) getOrAssignSlot(texture);
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  0f, 1f, tidx);
-    putVertex(x,  y2, 0f, 0f, tidx);
+    putVertex(x, y, 0f, 1f, tidx);
+    putVertex(x, y2, 0f, 0f, tidx);
     putVertex(x2, y2, 1f, 0f, tidx);
-    putVertex(x2, y,  1f, 1f, tidx);
+    putVertex(x2, y, 1f, 1f, tidx);
   }
 
   @Override
@@ -365,10 +365,10 @@ public class FlixelBatch implements Batch {
 
     float x2 = x + w;
     float y2 = y + h;
-    putVertex(x,  y,  u,  v,  tidx);
-    putVertex(x,  y2, u,  v2, tidx);
+    putVertex(x, y, u, v, tidx);
+    putVertex(x, y2, u, v2, tidx);
     putVertex(x2, y2, u2, v2, tidx);
-    putVertex(x2, y,  u2, v,  tidx);
+    putVertex(x2, y, u2, v, tidx);
   }
 
   @Override
@@ -430,10 +430,10 @@ public class FlixelBatch implements Batch {
     float v = region.getV2();
     float v2 = region.getV();
 
-    putVertex(x1, y1, u,  v,  tidx);
-    putVertex(x2, y2, u,  v2, tidx);
+    putVertex(x1, y1, u, v, tidx);
+    putVertex(x2, y2, u, v2, tidx);
     putVertex(x3, y3, u2, v2, tidx);
-    putVertex(x4, y4, u2, v,  tidx);
+    putVertex(x4, y4, u2, v, tidx);
   }
 
   @Override
@@ -654,10 +654,10 @@ public class FlixelBatch implements Batch {
     x4 += worldOriginX;
     y4 += worldOriginY;
 
-    putVertex(x1, y1, u,  v,  tidx);
-    putVertex(x2, y2, u,  v2, tidx);
+    putVertex(x1, y1, u, v, tidx);
+    putVertex(x2, y2, u, v2, tidx);
     putVertex(x3, y3, u2, v2, tidx);
-    putVertex(x4, y4, u2, v,  tidx);
+    putVertex(x4, y4, u2, v, tidx);
   }
 
   private static ShaderProgram buildShader(int slots) {

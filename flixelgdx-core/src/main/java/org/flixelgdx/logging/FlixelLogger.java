@@ -632,9 +632,9 @@ public class FlixelLogger implements ApplicationLogger {
 
     // Apply the color and underlining based on the level.
     String color = switch (level) {
-    case INFO -> FlixelAsciiCodes.WHITE;
-    case WARN -> FlixelAsciiCodes.YELLOW;
-    case ERROR -> FlixelAsciiCodes.RED;
+      case INFO -> FlixelAsciiCodes.WHITE;
+      case WARN -> FlixelAsciiCodes.YELLOW;
+      case ERROR -> FlixelAsciiCodes.RED;
     };
     boolean underlineFile = (level == FlixelLogLevel.ERROR);
 

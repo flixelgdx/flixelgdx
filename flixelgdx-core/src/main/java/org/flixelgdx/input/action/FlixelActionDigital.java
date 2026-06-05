@@ -134,22 +134,22 @@ public final class FlixelActionDigital extends FlixelAction {
 
   private boolean evalBinding(@NotNull FlixelInputBinding b) {
     switch (b.kind) {
-    case KEY:
-      return Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.a);
-    case GAMEPAD_BUTTON:
-      if (Flixel.gamepads == null || !Flixel.gamepads.enabled) {
+      case KEY:
+        return Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.a);
+      case GAMEPAD_BUTTON:
+        if (Flixel.gamepads == null || !Flixel.gamepads.enabled) {
+          return false;
+        }
+        if (b.b == FlixelInputBinding.GAMEPAD_SLOT_ANY) {
+          return Flixel.gamepads.anyPressed(b.a);
+        }
+        return Flixel.gamepads.pressed(b.b, b.a);
+      case POINTER_BUTTON:
+        return evalPointer(b.a, b.b);
+      case TOUCH_REGION:
+        return evalTouchRegion(b.normX, b.normY, b.normW, b.normH);
+      default :
         return false;
-      }
-      if (b.b == FlixelInputBinding.GAMEPAD_SLOT_ANY) {
-        return Flixel.gamepads.anyPressed(b.a);
-      }
-      return Flixel.gamepads.pressed(b.b, b.a);
-    case POINTER_BUTTON:
-      return evalPointer(b.a, b.b);
-    case TOUCH_REGION:
-      return evalTouchRegion(b.normX, b.normY, b.normW, b.normH);
-    default :
-      return false;
     }
   }
 

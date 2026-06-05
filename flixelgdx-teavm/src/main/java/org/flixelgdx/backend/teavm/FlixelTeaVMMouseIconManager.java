@@ -56,20 +56,20 @@ public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager
 
   private static String cssFor(FlixelNativeMouseCursor cursor) {
     return switch (cursor) {
-    case ARROW -> "default";
-    case IBEAM -> "text";
-    case WAIT -> "wait";
-    case CROSSHAIR -> "crosshair";
-    case HAND -> "pointer";
-    case GRAB -> "grab";
-    case GRABBING -> "grabbing";
-    case HORIZONTAL_RESIZE -> "ew-resize";
-    case VERTICAL_RESIZE -> "ns-resize";
-    case NORTH_WEST_SOUTH_EAST_RESIZE -> "nwse-resize";
-    case NORTH_EAST_SOUTH_WEST_RESIZE -> "nesw-resize";
-    case ALL_RESIZE -> "move";
-    case NOT_ALLOWED -> "not-allowed";
-    case NONE -> "none";
+      case ARROW -> "default";
+      case IBEAM -> "text";
+      case WAIT -> "wait";
+      case CROSSHAIR -> "crosshair";
+      case HAND -> "pointer";
+      case GRAB -> "grab";
+      case GRABBING -> "grabbing";
+      case HORIZONTAL_RESIZE -> "ew-resize";
+      case VERTICAL_RESIZE -> "ns-resize";
+      case NORTH_WEST_SOUTH_EAST_RESIZE -> "nwse-resize";
+      case NORTH_EAST_SOUTH_WEST_RESIZE -> "nesw-resize";
+      case ALL_RESIZE -> "move";
+      case NOT_ALLOWED -> "not-allowed";
+      case NONE -> "none";
     };
   }
 

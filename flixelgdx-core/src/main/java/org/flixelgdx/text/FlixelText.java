@@ -1214,26 +1214,26 @@ public class FlixelText extends FlixelSprite {
 
     public static Alignment fromInt(int value) {
       return switch (value) {
-      case 0 -> LEFT;
-      case 1 -> CENTER;
-      case 2 -> RIGHT;
-      default -> throw new IllegalArgumentException("Invalid alignment value: " + value);
+        case 0 -> LEFT;
+        case 1 -> CENTER;
+        case 2 -> RIGHT;
+        default -> throw new IllegalArgumentException("Invalid alignment value: " + value);
       };
     }
 
     public int toInt() {
       return switch (this) {
-      case LEFT -> 0;
-      case CENTER -> 1;
-      case RIGHT -> 2;
+        case LEFT -> 0;
+        case CENTER -> 1;
+        case RIGHT -> 2;
       };
     }
 
     public int toGdxAlign() {
       return switch (this) {
-      case LEFT -> Align.left;
-      case CENTER -> Align.center;
-      case RIGHT -> Align.right;
+        case LEFT -> Align.left;
+        case CENTER -> Align.center;
+        case RIGHT -> Align.right;
       };
     }
   }

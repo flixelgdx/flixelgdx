@@ -114,17 +114,17 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
       }
     }
     return switch (cursor) {
-    case ARROW, WAIT, GRAB, GRABBING -> Cursor.SystemCursor.Arrow;
-    case IBEAM -> Cursor.SystemCursor.Ibeam;
-    case CROSSHAIR -> Cursor.SystemCursor.Crosshair;
-    case HAND -> Cursor.SystemCursor.Hand;
-    case HORIZONTAL_RESIZE -> Cursor.SystemCursor.HorizontalResize;
-    case VERTICAL_RESIZE -> Cursor.SystemCursor.VerticalResize;
-    case NORTH_WEST_SOUTH_EAST_RESIZE -> Cursor.SystemCursor.NWSEResize;
-    case NORTH_EAST_SOUTH_WEST_RESIZE -> Cursor.SystemCursor.NESWResize;
-    case ALL_RESIZE -> Cursor.SystemCursor.AllResize;
-    case NOT_ALLOWED -> Cursor.SystemCursor.NotAllowed;
-    case NONE -> Cursor.SystemCursor.None;
+      case ARROW, WAIT, GRAB, GRABBING -> Cursor.SystemCursor.Arrow;
+      case IBEAM -> Cursor.SystemCursor.Ibeam;
+      case CROSSHAIR -> Cursor.SystemCursor.Crosshair;
+      case HAND -> Cursor.SystemCursor.Hand;
+      case HORIZONTAL_RESIZE -> Cursor.SystemCursor.HorizontalResize;
+      case VERTICAL_RESIZE -> Cursor.SystemCursor.VerticalResize;
+      case NORTH_WEST_SOUTH_EAST_RESIZE -> Cursor.SystemCursor.NWSEResize;
+      case NORTH_EAST_SOUTH_WEST_RESIZE -> Cursor.SystemCursor.NESWResize;
+      case ALL_RESIZE -> Cursor.SystemCursor.AllResize;
+      case NOT_ALLOWED -> Cursor.SystemCursor.NotAllowed;
+      case NONE -> Cursor.SystemCursor.None;
     };
   }
 }

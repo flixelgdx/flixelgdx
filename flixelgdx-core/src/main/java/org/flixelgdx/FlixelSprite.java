@@ -600,9 +600,9 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     float halfViewWidth = Flixel.getViewWidth() / 2f;
     float halfViewHeight = Flixel.getViewHeight() / 2f;
     switch (axes) {
-    case X -> setPosition(halfViewWidth - halfWidth, getY());
-    case Y -> setPosition(getX(), halfViewHeight - halfHeight);
-    case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
+      case X -> setPosition(halfViewWidth - halfWidth, getY());
+      case Y -> setPosition(getX(), halfViewHeight - halfHeight);
+      case XY -> setPosition(halfViewWidth - halfWidth, halfViewHeight - halfHeight);
     }
     return this;
   }

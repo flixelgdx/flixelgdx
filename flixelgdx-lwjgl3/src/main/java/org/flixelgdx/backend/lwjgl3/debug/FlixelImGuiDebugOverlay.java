@@ -540,32 +540,32 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return true;
     }
     return switch (keycode) {
-    case Input.Keys.ESCAPE,
-        Input.Keys.CONTROL_LEFT,
-        Input.Keys.CONTROL_RIGHT,
-        Input.Keys.ALT_LEFT,
-        Input.Keys.ALT_RIGHT,
-        Input.Keys.SHIFT_LEFT,
-        Input.Keys.SHIFT_RIGHT,
-        Input.Keys.SYM,
-        Input.Keys.CAPS_LOCK,
-        Input.Keys.SCROLL_LOCK,
-        Input.Keys.PAUSE,
-        Input.Keys.PRINT_SCREEN,
-        Input.Keys.UNKNOWN,
-        Input.Keys.POWER,
-        Input.Keys.BUTTON_MODE,
-        Input.Keys.MEDIA_PLAY_PAUSE ->
-      true;
-    default -> false;
+      case Input.Keys.ESCAPE,
+          Input.Keys.CONTROL_LEFT,
+          Input.Keys.CONTROL_RIGHT,
+          Input.Keys.ALT_LEFT,
+          Input.Keys.ALT_RIGHT,
+          Input.Keys.SHIFT_LEFT,
+          Input.Keys.SHIFT_RIGHT,
+          Input.Keys.SYM,
+          Input.Keys.CAPS_LOCK,
+          Input.Keys.SCROLL_LOCK,
+          Input.Keys.PAUSE,
+          Input.Keys.PRINT_SCREEN,
+          Input.Keys.UNKNOWN,
+          Input.Keys.POWER,
+          Input.Keys.BUTTON_MODE,
+          Input.Keys.MEDIA_PLAY_PAUSE ->
+        true;
+      default -> false;
     };
   }
 
   private static float[] colorForLevel(FlixelLogLevel level) {
     return switch (level) {
-    case INFO -> COLOR_INFO;
-    case WARN -> COLOR_WARN;
-    case ERROR -> COLOR_ERROR;
+      case INFO -> COLOR_INFO;
+      case WARN -> COLOR_WARN;
+      case ERROR -> COLOR_ERROR;
     };
   }
 
@@ -1411,9 +1411,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   private boolean isLogLevelVisible(FlixelLogLevel level) {
     return switch (level) {
-    case INFO -> logShowInfo.get();
-    case WARN -> logShowWarn.get();
-    case ERROR -> logShowError.get();
+      case INFO -> logShowInfo.get();
+      case WARN -> logShowWarn.get();
+      case ERROR -> logShowError.get();
     };
   }
 

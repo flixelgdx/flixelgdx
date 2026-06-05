@@ -169,10 +169,10 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
     if (delta != 0) {
       switch (rotationMode) {
-      case INDIVIDUAL -> transformMembersIndividualRotation(delta);
-      case ORBIT -> orbitMembersAroundCenter(delta);
-      case WHEEL -> {
-        /* Wheel rotation is applied during update. */ }
+        case INDIVIDUAL -> transformMembersIndividualRotation(delta);
+        case ORBIT -> orbitMembersAroundCenter(delta);
+        case WHEEL -> {
+          /* Wheel rotation is applied during update. */ }
       }
     }
   }
