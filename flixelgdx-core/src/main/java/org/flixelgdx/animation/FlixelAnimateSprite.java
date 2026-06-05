@@ -81,7 +81,6 @@ import org.jetbrains.annotations.Nullable;
  * shared atlas, bake clips into the existing anchor space (the body stays pinned when you switch atlases),
  * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
  * override earlier registrations on collisions.
- *
  */
 public class FlixelAnimateSprite extends FlixelSprite {
 
