@@ -428,7 +428,15 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
 
     float drawLeft = wx - offsetX;
     float drawBottom = wy - offsetY;
-    if (!cam.isInView(drawLeft, drawBottom, getWidth() * Math.abs(scaleX), getHeight() * Math.abs(scaleY))) {
+    // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
+    // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
+    float cullW = currentFrame != null
+        ? currentFrame.originalWidth * Math.abs(scaleX)
+        : getWidth() * Math.abs(scaleX);
+    float cullH = currentFrame != null
+        ? currentFrame.originalHeight * Math.abs(scaleY)
+        : getHeight() * Math.abs(scaleY);
+    if (!cam.isInView(drawLeft, drawBottom, cullW, cullH)) {
       return;
     }
 

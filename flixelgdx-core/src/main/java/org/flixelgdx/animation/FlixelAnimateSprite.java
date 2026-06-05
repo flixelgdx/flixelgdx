@@ -400,6 +400,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
+    // Conservative culling using the anchor-clip hitbox. Multi-part rigs may extend beyond this box
+    // but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
+    if (!cam.isInView(wx - getOffsetX(), wy - getOffsetY(),
+        getWidth() * Math.abs(scaleX), getHeight() * Math.abs(scaleY))) {
+      return;
+    }
+
     // Match FlixelSprite's flip-into-scale convention: a negative scale on either axis mirrors the
     // sprite around its origin, and the facing flag piles on top of the user-set flipX.
     boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);

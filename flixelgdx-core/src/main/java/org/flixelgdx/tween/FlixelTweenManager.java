@@ -24,6 +24,7 @@
 package org.flixelgdx.tween;
 
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.IdentityMap;
 import com.badlogic.gdx.utils.Pool;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -31,8 +32,6 @@ import org.flixelgdx.tween.settings.FlixelTweenType;
 import org.flixelgdx.tween.type.FlixelGoalTween;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -62,7 +61,8 @@ public class FlixelTweenManager {
   }
 
   /** Registry: tween class to its pool registration. */
-  private final Map<Class<? extends FlixelTween>, TweenTypeRegistration> registry = new HashMap<>();
+  private final IdentityMap<Class<? extends FlixelTween>, TweenTypeRegistration> registry =
+      new IdentityMap<>();
 
   /** Active tweens; unordered so {@link #removeTween} is O(1) without snapshot copies. */
   protected final Array<FlixelTween> activeTweens = new Array<>(false, 16, FlixelTween[]::new);
