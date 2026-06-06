@@ -82,7 +82,7 @@ public class FlixelSpriteBatch implements FlixelBatch {
   private static final int DEFAULT_MAX_QUADS = 1000;
   private static final int MAX_SLOTS_DESKTOP = 16;
 
-  private int maxTextureSlots;
+  private final int maxTextureSlots;
   private int renderCalls;
   private int totalRenderCalls;
   private int vertexIdx;
@@ -693,7 +693,10 @@ public class FlixelSpriteBatch implements FlixelBatch {
     frag.append("void main() {\n    vec4 tex;\n");
     for (int i = 0; i < slots; i++) {
       frag.append(i == 0 ? "    if" : "    else if");
-      frag.append(" (v_texIndex < ").append(i).append(".5) tex = texture2D(u_texture").append(i)
+      frag.append(" (v_texIndex < ")
+          .append(i)
+          .append(".5) tex = texture2D(u_texture")
+          .append(i)
           .append(", v_texCoord);\n");
     }
     frag.append("    gl_FragColor = v_color * tex;\n}\n");

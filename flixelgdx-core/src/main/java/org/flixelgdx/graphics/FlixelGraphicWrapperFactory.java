@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 /**
  * Pooled {@link FlixelGraphic} factory for {@link FlixelAssetManager#obtainWrapper(String, Class)}.
  */
-public final class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<FlixelGraphic> {
+public class FlixelGraphicWrapperFactory implements FlixelWrapperFactory<FlixelGraphic> {
 
   private final ObjectMap<String, FlixelGraphic> cache = new ObjectMap<>();
 

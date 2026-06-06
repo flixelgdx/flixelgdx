@@ -224,7 +224,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   /**
    * When a rig is installed we render directly from its pre-baked parts and never touch
    * {@link FlixelSprite#currentRegion}, so we swallow the animation controller's per-frame "current
-   * keyframe" callback. Without a rig, behaviour falls through to the normal
+   * keyframe" callback. Without a rig, behavior falls through to the normal
    * {@link FlixelSprite#setCurrentFrameForAnimation} path so the sprite still works for simple atlases.
    *
    * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored when a rig

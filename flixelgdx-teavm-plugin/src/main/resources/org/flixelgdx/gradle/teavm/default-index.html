@@ -34,8 +34,8 @@
 
       function scaleCanvas() {
         if (!canvas.width || !canvas.height) return;
-        var scaleX = window.innerWidth / canvas.width;
-        var scaleY = window.innerHeight / canvas.height;
+        const scaleX = window.innerWidth / canvas.width;
+        const scaleY = window.innerHeight / canvas.height;
         canvas.style.transform = 'scale(' + Math.min(scaleX, scaleY) + ')';
       }
 
