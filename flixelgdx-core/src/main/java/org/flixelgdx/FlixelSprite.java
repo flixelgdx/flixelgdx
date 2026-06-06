@@ -39,6 +39,7 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,7 +117,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
   protected boolean flipY = false;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
-  protected int facing = FlixelObject.DirectionFlags.RIGHT;
+  protected int facing = FlixelDirectionFlags.RIGHT;
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
@@ -459,7 +460,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
       int regW = f.getRegionWidth();
       int regH = f.getRegionHeight();
 
-      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelDirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       // Place the trimmed region inside its untrimmed source box, then anchor that box at the
@@ -498,7 +499,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
           isFlippedY);
       batch.setColor(Color.WHITE);
     } else if (currentRegion != null) {
-      boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
+      boolean isFlippedX = flipX || (facing == FlixelDirectionFlags.LEFT);
       boolean isFlippedY = flipY;
 
       float sx = isFlippedX ? -scaleX : scaleX;

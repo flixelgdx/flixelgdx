@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Advance time by calling {@link FlixelTimerManager#update(float)} once per frame (done automatically for
  * {@link #getGlobalManager()}). The elapsed argument should already include
- * {@link org.flixelgdx.Flixel#getTimeScale()}.
+ * {@link org.flixelgdx.Flixel#timeScale}.
  *
  * <p>Prefer {@link FlixelTimerManager#start(float, FlixelTimerListener, int)}, {@link FlixelTimer#wait(float, FlixelTimerListener)},
  * or {@link FlixelTimer#loop(float, FlixelTimerListener, int)} so pooled instances are reused.

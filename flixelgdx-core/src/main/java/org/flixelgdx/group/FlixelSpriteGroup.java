@@ -31,9 +31,9 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.SnapshotArray;
 
-import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -89,7 +89,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
   private boolean antialiasing = false;
-  private int facing = FlixelObject.DirectionFlags.RIGHT;
+  private int facing = FlixelDirectionFlags.RIGHT;
 
   /** Creates a sprite group with no member limit and default wheel radius {@code 100}. */
   public FlixelSpriteGroup() {

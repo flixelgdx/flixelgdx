@@ -26,6 +26,7 @@ package org.flixelgdx;
 import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.functional.FlixelShakeable;
+import org.flixelgdx.util.FlixelDirectionFlags;
 
 /**
  * The base class for all visual/spatial objects in Flixel. Extends {@link FlixelBasic} with
@@ -113,25 +114,25 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
 
   /**
    * Bit field of direction flags indicating which sides allow collision.
-   * Use {@link DirectionFlags#ANY} (default) for full collision,
-   * {@link DirectionFlags#NONE} for no collision, or combine
+   * Use {@link FlixelDirectionFlags#ANY} (default) for full collision,
+   * {@link FlixelDirectionFlags#NONE} for no collision, or combine
    * individual flags.
    *
-   * @see DirectionFlags
+   * @see FlixelDirectionFlags
    */
-  protected int allowCollisions = DirectionFlags.ANY;
+  protected int allowCollisions = FlixelDirectionFlags.ANY;
 
   /**
    * Bit field indicating which surfaces this object is currently touching.
    * Set by {@link #separate} and reset at the start of each {@link #update}.
    */
-  protected int touching = DirectionFlags.NONE;
+  protected int touching = FlixelDirectionFlags.NONE;
 
   /**
    * Copy of {@link #touching} from the previous frame, useful for detecting
    * the moment an object lands ({@link #justTouched}).
    */
-  protected int wasTouching = DirectionFlags.NONE;
+  protected int wasTouching = FlixelDirectionFlags.NONE;
 
   /**
    * When {@code true}, this object will not be moved by collision resolution.
@@ -231,7 +232,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     }
 
     wasTouching = touching;
-    touching = DirectionFlags.NONE;
+    touching = FlixelDirectionFlags.NONE;
   }
 
   @Override
@@ -251,9 +252,9 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     angularDrag = 0f;
     maxAngularVelocity = 10000f;
     moves = true;
-    allowCollisions = DirectionFlags.ANY;
-    touching = DirectionFlags.NONE;
-    wasTouching = DirectionFlags.NONE;
+    allowCollisions = FlixelDirectionFlags.ANY;
+    touching = FlixelDirectionFlags.NONE;
+    wasTouching = FlixelDirectionFlags.NONE;
     immovable = false;
     elasticity = 0f;
     mass = 1f;
@@ -589,10 +590,10 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   }
 
   /**
-   * Convenience accessor, returns {@code true} when {@code allowCollisions} is not {@link DirectionFlags#NONE}.
+   * Convenience accessor, returns {@code true} when {@code allowCollisions} is not {@link FlixelDirectionFlags#NONE}.
    */
   public boolean isSolid() {
-    return allowCollisions != DirectionFlags.NONE;
+    return allowCollisions != FlixelDirectionFlags.NONE;
   }
 
   /**
@@ -601,7 +602,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
    * @param solid Whether the object should be solid.
    */
   public void setSolid(boolean solid) {
-    allowCollisions = solid ? DirectionFlags.ANY : DirectionFlags.NONE;
+    allowCollisions = solid ? FlixelDirectionFlags.ANY : FlixelDirectionFlags.NONE;
   }
 
   public int getTouching() {
@@ -702,7 +703,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     lastX = x;
     lastY = y;
     velocityX = velocityY = 0f;
-    touching = wasTouching = DirectionFlags.NONE;
+    touching = wasTouching = FlixelDirectionFlags.NONE;
   }
 
   /**
@@ -963,20 +964,20 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
       overlap = object1.x + object1.width - object2.x;
       if (checkMaxOverlap && overlap > maxOverlap)
         return 0;
-      if ((object1.allowCollisions & DirectionFlags.RIGHT) == 0
-          || (object2.allowCollisions & DirectionFlags.LEFT) == 0)
+      if ((object1.allowCollisions & FlixelDirectionFlags.RIGHT) == 0
+          || (object2.allowCollisions & FlixelDirectionFlags.LEFT) == 0)
         return 0;
-      object1.touching |= DirectionFlags.RIGHT;
-      object2.touching |= DirectionFlags.LEFT;
+      object1.touching |= FlixelDirectionFlags.RIGHT;
+      object2.touching |= FlixelDirectionFlags.LEFT;
     } else {
       overlap = object1.x - object2.width - object2.x;
       if (checkMaxOverlap && -overlap > maxOverlap)
         return 0;
-      if ((object1.allowCollisions & DirectionFlags.LEFT) == 0
-          || (object2.allowCollisions & DirectionFlags.RIGHT) == 0)
+      if ((object1.allowCollisions & FlixelDirectionFlags.LEFT) == 0
+          || (object2.allowCollisions & FlixelDirectionFlags.RIGHT) == 0)
         return 0;
-      object1.touching |= DirectionFlags.LEFT;
-      object2.touching |= DirectionFlags.RIGHT;
+      object1.touching |= FlixelDirectionFlags.LEFT;
+      object2.touching |= FlixelDirectionFlags.RIGHT;
     }
 
     return overlap;
@@ -1025,20 +1026,20 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
       overlap = object1.y + object1.height - object2.y;
       if (checkMaxOverlap && overlap > maxOverlap)
         return 0;
-      if ((object1.allowCollisions & DirectionFlags.UP) == 0
-          || (object2.allowCollisions & DirectionFlags.DOWN) == 0)
+      if ((object1.allowCollisions & FlixelDirectionFlags.UP) == 0
+          || (object2.allowCollisions & FlixelDirectionFlags.DOWN) == 0)
         return 0;
-      object1.touching |= DirectionFlags.UP;
-      object2.touching |= DirectionFlags.DOWN;
+      object1.touching |= FlixelDirectionFlags.UP;
+      object2.touching |= FlixelDirectionFlags.DOWN;
     } else {
       overlap = object1.y - object2.height - object2.y;
       if (checkMaxOverlap && -overlap > maxOverlap)
         return 0;
-      if ((object1.allowCollisions & DirectionFlags.DOWN) == 0
-          || (object2.allowCollisions & DirectionFlags.UP) == 0)
+      if ((object1.allowCollisions & FlixelDirectionFlags.DOWN) == 0
+          || (object2.allowCollisions & FlixelDirectionFlags.UP) == 0)
         return 0;
-      object1.touching |= DirectionFlags.DOWN;
-      object2.touching |= DirectionFlags.UP;
+      object1.touching |= FlixelDirectionFlags.DOWN;
+      object2.touching |= FlixelDirectionFlags.UP;
     }
 
     return overlap;
@@ -1102,9 +1103,9 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   public float[] getDebugBoundingBoxColor() {
     if (debugColorOverride != null)
       return debugColorOverride;
-    if (allowCollisions == DirectionFlags.NONE)
+    if (allowCollisions == FlixelDirectionFlags.NONE)
       return debugColorNoCollision;
-    if (immovable || allowCollisions != DirectionFlags.ANY)
+    if (immovable || allowCollisions != FlixelDirectionFlags.ANY)
       return debugColorImmovable;
     return debugColorSolid;
   }
@@ -1124,26 +1125,5 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     return getClass().getSimpleName() + "(ID=" + ID
         + ", x=" + x + ", y=" + y
         + ", w=" + width + ", h=" + height + ")";
-  }
-
-  /**
-   * Bit flags for collision and touch sides.
-   */
-  public static final class DirectionFlags {
-
-    // Facing flags.
-    public static final int NONE = 0x0000;
-    public static final int LEFT = 0x0001;
-    public static final int RIGHT = 0x0010;
-    public static final int UP = 0x0100;
-    public static final int DOWN = 0x1000;
-    public static final int ANY = LEFT | RIGHT | UP | DOWN;
-
-    // Collision flags.
-    public static final int FLOOR = DOWN;
-    public static final int CEILING = UP;
-    public static final int WALL = LEFT | RIGHT;
-
-    private DirectionFlags() {}
   }
 }

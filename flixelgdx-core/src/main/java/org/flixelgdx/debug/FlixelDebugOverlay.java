@@ -27,7 +27,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
@@ -41,6 +40,7 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.logging.FlixelDebugConsoleEntry;
@@ -135,8 +135,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /**
    * Total render-call count snapshotted at the start of each {@link #draw()} call, after the
-   * game's {@link SpriteBatch} has been ended for the frame. Sums the framework's own batch and
-   * any batches registered via {@link FlixelDebugManager#trackBatch(SpriteBatch)}.
+   * game's batch has been ended for the frame. Sums the framework's own batch and
+   * any batches registered via {@link FlixelDebugManager#trackBatch(FlixelBatch)}.
    */
   protected int cachedRenderCalls;
 
@@ -362,11 +362,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
-      Array<SpriteBatch> extra = mgr.getTrackedBatches();
+      Array<FlixelBatch> extra = mgr.getTrackedBatches();
       for (int i = 0, n = extra.size; i < n; i++) {
-        SpriteBatch b = extra.get(i);
+        FlixelBatch b = extra.get(i);
         if (b != null) {
-          total += b.renderCalls;
+          total += b.getRenderCalls();
         }
       }
     }
@@ -809,11 +809,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
-      Array<SpriteBatch> extra = mgr.getTrackedBatches();
+      Array<FlixelBatch> extra = mgr.getTrackedBatches();
       for (int i = 0, n = extra.size; i < n; i++) {
-        SpriteBatch b = extra.get(i);
+        FlixelBatch b = extra.get(i);
         if (b != null) {
-          total += b.renderCalls;
+          total += b.getRenderCalls();
         }
       }
     }
