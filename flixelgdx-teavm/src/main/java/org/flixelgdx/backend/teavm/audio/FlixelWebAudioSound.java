@@ -58,6 +58,9 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
   private double startContextTime;
   private double pauseOffset;
   private double totalLength;
+  // Context time recorded when play() is called before decode completes. Used to
+  // compensate for decode lag so tracks started together stay in sync.
+  private double pendingStartContextTime = -1.0;
 
   private final JSObject context;
   private final JSObject gainNode;
@@ -147,6 +150,7 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
     ended = false;
     if (!decoded) {
       pendingPlay = true;
+      pendingStartContextTime = jsCurrentTime(context);
       return;
     }
     playInternal();
@@ -169,6 +173,7 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
     playing = false;
     ended = false;
     pendingPlay = false;
+    pendingStartContextTime = -1.0;
   }
 
   @Override
@@ -256,8 +261,20 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
     jsConnect(sourceNode, gainNode);
     jsSetOnEnded(sourceNode, this::onEnded);
     jsResumeIfSuspended(context);
-    jsStartAt(sourceNode, pauseOffset);
-    startContextTime = jsCurrentTime(context) - pauseOffset;
+
+    // If play() was called before decoding finished, compensate for how long decoding
+    // took by skipping that many seconds into the audio. Every track that was started
+    // in the same game frame records the same pendingStartContextTime, so they all skip
+    // ahead by their individual decode lag and land at the same audio position.
+    double startOffset = pauseOffset;
+    if (pendingStartContextTime >= 0.0) {
+      double lag = jsCurrentTime(context) - pendingStartContextTime;
+      startOffset = pauseOffset + Math.max(0.0, lag);
+      pendingStartContextTime = -1.0;
+    }
+
+    jsStartAt(sourceNode, startOffset);
+    startContextTime = jsCurrentTime(context) - startOffset;
     playing = true;
   }
 
