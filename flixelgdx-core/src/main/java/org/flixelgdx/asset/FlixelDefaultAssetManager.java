@@ -211,7 +211,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public void load(@NotNull AssetDescriptor<?> assetDescriptor) {
     Objects.requireNonNull(assetDescriptor, "assetDescriptor cannot be null.");
     String fn = FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
+        Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
     if (fn.equals(assetDescriptor.fileName)) {
       manager.load(assetDescriptor);
     } else {
@@ -774,14 +774,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     String ext = fileExtensionFromPath(path);
     if (ext.isEmpty()) {
       throw new IllegalArgumentException(
-        "Cannot infer asset type from path (no extension): \"" + path + "\". "
-          + "Use load(FlixelSource) or registerExtension(...) for extensionless paths.");
+          "Cannot infer asset type from path (no extension): \"" + path + "\". "
+              + "Use load(FlixelSource) or registerExtension(...) for extensionless paths.");
     }
     Function<String, FlixelSource<?>> factory = extensionRegistry.get(ext);
     if (factory == null) {
       throw new IllegalArgumentException(
-        "No source factory registered for extension \"" + ext + "\" (path: \"" + path + "\"). "
-          + "Call registerExtension(\"" + ext + "\", factory) or use load(FlixelSource) explicitly.");
+          "No source factory registered for extension \"" + ext + "\" (path: \"" + path + "\"). "
+              + "Call registerExtension(\"" + ext + "\", factory) or use load(FlixelSource) explicitly.");
     }
     FlixelSource<?> source = factory.apply(path);
     if (source == null) {

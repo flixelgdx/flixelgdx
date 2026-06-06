@@ -25,7 +25,6 @@ package org.flixelgdx.backend.teavm.audio;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.ObjectMap;
-
 import com.github.xpenatan.gdx.teavm.backends.web.dom.typedarray.TypedArrays;
 
 import org.flixelgdx.audio.FlixelSoundBackend;
@@ -207,33 +206,33 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native JSObject jsCreateContext();
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createGain();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
 
-  @JSBody(params = {"node", "v"}, script = "node.gain.value = v;")
+  @JSBody(params = { "node", "v" }, script = "node.gain.value = v;")
   private static native void jsSetGain(JSObject node, float v);
 
-  @JSBody(params = {"ctx"}, script = "return ctx.destination;")
+  @JSBody(params = { "ctx" }, script = "return ctx.destination;")
   private static native JSObject jsDestination(JSObject ctx);
 
-  @JSBody(params = {"a", "b"}, script = "a.connect(b);")
+  @JSBody(params = { "a", "b" }, script = "a.connect(b);")
   private static native void jsConnect(JSObject a, JSObject b);
 
-  @JSBody(params = {"ctx"}, script = "ctx.suspend();")
+  @JSBody(params = { "ctx" }, script = "ctx.suspend();")
   private static native void jsSuspend(JSObject ctx);
 
-  @JSBody(params = {"ctx"}, script = "ctx.resume();")
+  @JSBody(params = { "ctx" }, script = "ctx.resume();")
   private static native void jsResume(JSObject ctx);
 
-  @JSBody(params = {"ctx"}, script = "ctx.close();")
+  @JSBody(params = { "ctx" }, script = "ctx.close();")
   private static native void jsClose(JSObject ctx);
 
-  @JSBody(params = {"ctx", "buf", "onOk", "onErr"},
+  @JSBody(params = { "ctx", "buf", "onOk", "onErr" },
       script = "ctx.decodeAudioData(buf, onOk, onErr);")
   private static native void jsDecodeAudioData(JSObject ctx, ArrayBuffer buf,
       PrewarmSuccessHandler onOk, PrewarmErrorHandler onErr);
 
-  @JSBody(params = {"buf"}, script = "return buf.duration;")
+  @JSBody(params = { "buf" }, script = "return buf.duration;")
   private static native double jsGetBufferDuration(JSObject buf);
 
   /** Singleton no-op effect node for platforms that do not support audio graphs. */

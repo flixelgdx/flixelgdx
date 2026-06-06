@@ -127,7 +127,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend {
    * @param masterGainNode The factory-owned master gain node to connect into.
    */
   FlixelTeaVMSound(String path, JSObject audioBuffer, double length,
-                   JSObject context, JSObject masterGainNode) {
+      JSObject context, JSObject masterGainNode) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -164,7 +164,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend {
    *                  or {@code null} if no notification is needed.
    */
   FlixelTeaVMSound(String path, byte[] data, JSObject context, JSObject masterGainNode,
-                   AudioBufferCallback onDecoded) {
+      AudioBufferCallback onDecoded) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -357,57 +357,57 @@ final class FlixelTeaVMSound implements FlixelSoundBackend {
     return pauseOffset;
   }
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createGain();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createStereoPanner();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createStereoPanner();")
   private static native JSObject jsCreateStereoPanner(JSObject ctx);
 
-  @JSBody(params = {"node", "v"}, script = "node.gain.value = v;")
+  @JSBody(params = { "node", "v" }, script = "node.gain.value = v;")
   private static native void jsSetGain(JSObject node, float v);
 
-  @JSBody(params = {"node", "v"}, script = "node.pan.value = v;")
+  @JSBody(params = { "node", "v" }, script = "node.pan.value = v;")
   private static native void jsSetPan(JSObject node, float v);
 
-  @JSBody(params = {"a", "b"}, script = "a.connect(b);")
+  @JSBody(params = { "a", "b" }, script = "a.connect(b);")
   private static native void jsConnect(JSObject a, JSObject b);
 
-  @JSBody(params = {"node"}, script = "try { node.disconnect(); } catch(e) {}")
+  @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
   private static native void jsDisconnect(JSObject node);
 
-  @JSBody(params = {"ctx", "buf", "onOk", "onErr"},
+  @JSBody(params = { "ctx", "buf", "onOk", "onErr" },
       script = "ctx.decodeAudioData(buf, onOk, onErr);")
   private static native void jsDecodeAudioData(JSObject ctx, ArrayBuffer buf,
       DecodeSuccessHandler onOk, DecodeErrorHandler onErr);
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createBufferSource();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createBufferSource();")
   private static native JSObject jsCreateBufferSource(JSObject ctx);
 
-  @JSBody(params = {"src", "buf"}, script = "src.buffer = buf;")
+  @JSBody(params = { "src", "buf" }, script = "src.buffer = buf;")
   private static native void jsSetBuffer(JSObject src, JSObject buf);
 
-  @JSBody(params = {"src", "loop"}, script = "src.loop = loop;")
+  @JSBody(params = { "src", "loop" }, script = "src.loop = loop;")
   private static native void jsSetLoop(JSObject src, boolean loop);
 
-  @JSBody(params = {"src", "rate"}, script = "src.playbackRate.value = rate;")
+  @JSBody(params = { "src", "rate" }, script = "src.playbackRate.value = rate;")
   private static native void jsSetPlaybackRate(JSObject src, float rate);
 
-  @JSBody(params = {"src", "cb"}, script = "src.onended = cb;")
+  @JSBody(params = { "src", "cb" }, script = "src.onended = cb;")
   private static native void jsSetOnEnded(JSObject src, EndedHandler cb);
 
-  @JSBody(params = {"src", "offset"}, script = "src.start(0, offset);")
+  @JSBody(params = { "src", "offset" }, script = "src.start(0, offset);")
   private static native void jsStartAt(JSObject src, double offset);
 
-  @JSBody(params = {"src"}, script = "try { src.stop(); } catch(e) {}")
+  @JSBody(params = { "src" }, script = "try { src.stop(); } catch(e) {}")
   private static native void jsStop(JSObject src);
 
-  @JSBody(params = {"ctx"}, script = "return ctx.currentTime;")
+  @JSBody(params = { "ctx" }, script = "return ctx.currentTime;")
   private static native double jsCurrentTime(JSObject ctx);
 
-  @JSBody(params = {"buf"}, script = "return buf.duration;")
+  @JSBody(params = { "buf" }, script = "return buf.duration;")
   private static native double jsGetBufferDuration(JSObject buf);
 
-  @JSBody(params = {"ctx"}, script = "if (ctx.state === 'suspended') ctx.resume();")
+  @JSBody(params = { "ctx" }, script = "if (ctx.state === 'suspended') ctx.resume();")
   private static native void jsResumeIfSuspended(JSObject ctx);
 
   /**
