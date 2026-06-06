@@ -36,6 +36,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import org.flixelgdx.functional.FlixelColorable;
+import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
@@ -179,18 +180,19 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    *
    * <p>The camera always keeps the follow target inside this zone, unless bumping against scroll
    * bounds. For rapid prototyping, use the preset styles via
-   * {@link #follow(FlixelObject, FollowStyle, float)}.
+   * {@link #follow(FlixelPositional, FollowStyle, float)}.
    */
   public Rectangle deadzone;
 
   /** The current follow style used when a {@link #target} is set. */
   public FollowStyle style = FollowStyle.LOCKON;
 
-  /** The {@link FlixelObject} this camera follows.
+  /**
+   * The {@link FlixelPositional} this camera follows.
    *
-   * <p>You can set this value via {@link #follow(FlixelObject)}.
+   * <p>You can set this value via {@link #follow(FlixelPositional)}.
    */
-  public FlixelObject target;
+  public FlixelPositional target;
 
   private float fadeAlpha = 0f;
   private float fadeDuration = 1f;
@@ -445,7 +447,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    *
    * @param target The object to follow. Pass {@code null} to stop following.
    */
-  public void follow(FlixelObject target) {
+  public void follow(FlixelPositional target) {
     follow(target, FollowStyle.LOCKON, 1.0f);
   }
 
@@ -455,7 +457,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    * @param target The object to follow. Pass {@code null} to stop following.
    * @param style One of the preset {@link FollowStyle} dead zone presets.
    */
-  public void follow(FlixelObject target, FollowStyle style) {
+  public void follow(FlixelPositional target, FollowStyle style) {
     follow(target, style, 1.0f);
   }
 
@@ -466,7 +468,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    * @param style One of the preset {@link FollowStyle} dead zone presets.
    * @param lerp How much lag the camera has. {@code 1.0f} = snap, lower = smoother.
    */
-  public void follow(FlixelObject target, FollowStyle style, float lerp) {
+  public void follow(FlixelPositional target, FollowStyle style, float lerp) {
     this.target = target;
     this.style = style != null ? style : FollowStyle.LOCKON;
     this.followLerp = lerp;
@@ -1119,12 +1121,12 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     }
   }
 
-  private float followScrollFactorX(FlixelObject t) {
+  private float followScrollFactorX(FlixelPositional t) {
     float s = t.getScrollX();
     return (s > 0f && !Float.isNaN(s)) ? s : 1f;
   }
 
-  private float followScrollFactorY(FlixelObject t) {
+  private float followScrollFactorY(FlixelPositional t) {
     float s = t.getScrollY();
     return (s > 0f && !Float.isNaN(s)) ? s : 1f;
   }
@@ -1695,7 +1697,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   }
 
   /**
-   * Determines how a {@link FlixelCamera} follows a {@link FlixelObject}.
+   * Determines how a {@link FlixelCamera} follows a {@link FlixelPositional}.
    */
   public enum FollowStyle {
 
