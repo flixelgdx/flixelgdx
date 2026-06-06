@@ -354,7 +354,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
     }
     FlixelAssetManager assets = Flixel.ensureAssets();
     if (!assets.isLoaded(path, FlixelSoundSource.class)) {
-      assets.load(path, FlixelSoundSource.class);
+      assets.load(new FlixelSoundSource(path));
       assets.finishLoadingAsset(path);
     }
     FlixelAsset<FlixelSoundSource> sourceHandle = assets.obtainTypedAsset(path, FlixelSoundSource.class);

@@ -186,9 +186,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (persist) {
       pendingPersistKeys.add(fileName);
     }
-    if (FlixelSoundSource.class.isAssignableFrom(type)) {
-      maybePrewarmAudio(fileName);
-    }
     manager.load(fileName, type);
   }
 
@@ -197,9 +194,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     Objects.requireNonNull(fileName, "fileName cannot be null.");
     Objects.requireNonNull(type, "type cannot be null.");
     String normalized = requireNormalizedAssetPath(fileName);
-    if (FlixelSoundSource.class.isAssignableFrom(type)) {
-      maybePrewarmAudio(normalized);
-    }
     manager.load(normalized, type);
   }
 
@@ -218,9 +212,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     Objects.requireNonNull(assetDescriptor, "assetDescriptor cannot be null.");
     String fn = FlixelAssetPaths.normalizeAssetPath(
             Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
-    if (FlixelSoundSource.class.isAssignableFrom(assetDescriptor.type)) {
-      maybePrewarmAudio(fn);
-    }
     if (fn.equals(assetDescriptor.fileName)) {
       manager.load(assetDescriptor);
     } else {
