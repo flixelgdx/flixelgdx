@@ -24,22 +24,33 @@
 package org.flixelgdx.backend.teavm.audio;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.ObjectMap;
+
+import com.github.xpenatan.gdx.teavm.backends.web.dom.typedarray.TypedArrays;
 
 import org.flixelgdx.audio.FlixelSoundBackend;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
+import org.teavm.jso.typedarrays.ArrayBuffer;
 
 /**
  * TeaVM/web implementation of {@link FlixelSoundBackend.Factory} backed by the Web Audio API.
  *
  * <p>A single {@code AudioContext} and master {@code GainNode} are shared across all sounds.
- * Both are created lazily on the first {@link #createSound} call to respect browser policies
- * that require an active user gesture before audio can play.
+ * Both are created lazily on the first {@link #createSound} or {@link #prewarmSound} call to
+ * respect browser policies that require an active user gesture before audio can play.
  *
  * <p>Audio data is read synchronously from the virtual filesystem (which is fully preloaded
  * before the game starts) and decoded asynchronously via {@code AudioContext.decodeAudioData}.
  * This removes the HTML5 {@code <audio>} element limit that restricted concurrent playback to
  * roughly three or four tracks.
+ *
+ * <p>Decoded {@code AudioBuffer} objects are cached by path. Once a path has been decoded
+ * (either by a previous {@link #createSound} call or by an explicit {@link #prewarmSound}
+ * call), subsequent {@link #createSound} calls for that path use the cached buffer and start
+ * playback immediately with no decode lag. This is the mechanism that keeps multiple tracks
+ * started in the same frame in perfect sync without skipping into the audio.
  *
  * <p>Focus-based pause and resume are implemented via {@code AudioContext.suspend()} and
  * {@code AudioContext.resume()}, which atomically halts or continues every active sound with no
@@ -53,6 +64,8 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
 
   private JSObject context;
   private JSObject masterGainNode;
+  private final ObjectMap<String, JSObject> bufferCache = new ObjectMap<>();
+  private final ObjectMap<String, Double> lengthCache = new ObjectMap<>();
 
   private float masterVolume = 1f;
 
@@ -61,8 +74,8 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
   /**
    * Initializes the shared {@code AudioContext} and master {@code GainNode} on first use.
    *
-   * <p>Deferred to the first {@link #createSound} call so that the context is only created
-   * after a user gesture, satisfying browser autoplay policies.
+   * <p>Deferred to the first {@link #createSound} or {@link #prewarmSound} call so that the
+   * context is only created after a user gesture, satisfying browser autoplay policies.
    */
   private void ensureContext() {
     if (context != null) {
@@ -77,10 +90,35 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
   @Override
   public FlixelSoundBackend createSound(String path, short flags, Object group, boolean external) {
     ensureContext();
+    if (!external && bufferCache.containsKey(path)) {
+      JSObject buf = bufferCache.get(path);
+      double len = lengthCache.get(path);
+      return new FlixelWebAudioSound(path, buf, len, context, masterGainNode);
+    }
     byte[] data = external
         ? Gdx.files.absolute(path).readBytes()
         : Gdx.files.internal(path).readBytes();
-    return new FlixelWebAudioSound(path, data, context, masterGainNode);
+    return new FlixelWebAudioSound(path, data, context, masterGainNode,
+        external ? null : (buf, len) -> {
+          bufferCache.put(path, buf);
+          lengthCache.put(path, len);
+        });
+  }
+
+  @Override
+  public void prewarmSound(String path) {
+    ensureContext();
+    if (bufferCache.containsKey(path)) {
+      return;
+    }
+    byte[] data = Gdx.files.internal(path).readBytes();
+    ArrayBuffer buffer = TypedArrays.getInt8Array(data).getBuffer();
+    jsDecodeAudioData(context, buffer,
+        decoded -> {
+          bufferCache.put(path, decoded);
+          lengthCache.put(path, jsGetBufferDuration(decoded));
+        },
+        () -> System.err.println("[FlixelGDX] Failed to pre-decode audio: " + path));
   }
 
   @Override
@@ -132,6 +170,8 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
       jsClose(context);
       context = null;
       masterGainNode = null;
+      bufferCache.clear();
+      lengthCache.clear();
     }
   }
 
@@ -181,6 +221,14 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
   @JSBody(params = {"ctx"}, script = "ctx.close();")
   private static native void jsClose(JSObject ctx);
 
+  @JSBody(params = {"ctx", "buf", "onOk", "onErr"},
+      script = "ctx.decodeAudioData(buf, onOk, onErr);")
+  private static native void jsDecodeAudioData(JSObject ctx, ArrayBuffer buf,
+      PrewarmSuccessHandler onOk, PrewarmErrorHandler onErr);
+
+  @JSBody(params = {"buf"}, script = "return buf.duration;")
+  private static native double jsGetBufferDuration(JSObject buf);
+
   /** Singleton no-op effect node for platforms that do not support audio graphs. */
   private static final class NoOpEffectNode implements FlixelSoundBackend.EffectNode {
 
@@ -200,5 +248,19 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
     public void dispose() {
       // No-op.
     }
+  }
+
+  /** JS-callable success callback used by {@link #prewarmSound}. */
+  @JSFunctor
+  @FunctionalInterface
+  private interface PrewarmSuccessHandler extends JSObject {
+    void onDecoded(JSObject audioBuffer);
+  }
+
+  /** JS-callable error callback used by {@link #prewarmSound}. */
+  @JSFunctor
+  @FunctionalInterface
+  private interface PrewarmErrorHandler extends JSObject {
+    void onError();
   }
 }

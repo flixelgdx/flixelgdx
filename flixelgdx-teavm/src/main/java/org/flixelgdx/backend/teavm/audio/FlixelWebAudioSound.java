@@ -113,6 +113,33 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
   }
 
   /**
+   * Creates a new sound from a pre-decoded {@code AudioBuffer} obtained from the factory cache.
+   *
+   * <p>Because the buffer is already decoded, this constructor never blocks and the
+   * sound is ready to play immediately. Use {@link FlixelDefaultSoundHandler#prewarmSound}
+   * (via {@link org.flixelgdx.audio.FlixelAudioManager#prewarmSound}) to populate the
+   * cache before calling play.
+   *
+   * @param path The asset path, used only for error messages.
+   * @param audioBuffer A decoded {@code AudioBuffer} returned by {@code decodeAudioData}.
+   * @param length Duration of the audio in seconds.
+   * @param context The shared {@code AudioContext} created by the factory.
+   * @param masterGainNode The factory-owned master gain node to connect into.
+   */
+  FlixelWebAudioSound(String path, JSObject audioBuffer, double length,
+      JSObject context, JSObject masterGainNode) {
+    this.path = path;
+    this.context = context;
+    this.gainNode = jsCreateGain(context);
+    this.pannerNode = jsCreateStereoPanner(context);
+    jsConnect(gainNode, pannerNode);
+    jsConnect(pannerNode, masterGainNode);
+    this.audioBuffer = audioBuffer;
+    this.totalLength = length;
+    this.decoded = true;
+  }
+
+  /**
    * Creates a new sound and begins async decoding of the provided audio data.
    *
    * @param path The asset path, used only for error messages.
@@ -121,6 +148,23 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
    * @param masterGainNode The factory-owned master gain node to connect into.
    */
   FlixelWebAudioSound(String path, byte[] data, JSObject context, JSObject masterGainNode) {
+    this(path, data, context, masterGainNode, null);
+  }
+
+  /**
+   * Creates a new sound, begins async decoding, and notifies {@code onDecoded} when the
+   * buffer is ready. The factory uses this callback to populate its cache so subsequent
+   * calls for the same path skip decoding entirely.
+   *
+   * @param path The asset path, used only for error messages.
+   * @param data Raw audio file bytes (e.g. MP3, OGG) from the virtual filesystem.
+   * @param context The shared {@code AudioContext} created by the factory.
+   * @param masterGainNode The factory-owned master gain node to connect into.
+   * @param onDecoded Called once with the decoded buffer when decoding succeeds,
+   *                  or {@code null} if no notification is needed.
+   */
+  FlixelWebAudioSound(String path, byte[] data, JSObject context, JSObject masterGainNode,
+      AudioBufferCallback onDecoded) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -134,6 +178,9 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
           this.audioBuffer = decoded;
           this.totalLength = jsGetBufferDuration(decoded);
           this.decoded = true;
+          if (onDecoded != null) {
+            onDecoded.onDecoded(decoded, this.totalLength);
+          }
           if (pendingPlay) {
             pendingPlay = false;
             playInternal();
@@ -364,4 +411,21 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
 
   @JSBody(params = {"ctx"}, script = "if (ctx.state === 'suspended') ctx.resume();")
   private static native void jsResumeIfSuspended(JSObject ctx);
+
+  /**
+   * Callback fired once when async decoding of an {@code AudioBuffer} finishes.
+   *
+   * <p>Implemented by {@link FlixelDefaultSoundHandler} to populate its per-path cache
+   * so subsequent {@code createSound} calls for the same path skip decoding entirely.
+   */
+  interface AudioBufferCallback {
+
+    /**
+     * Called with the fully decoded buffer and its duration in seconds.
+     *
+     * @param buffer The decoded {@code AudioBuffer}.
+     * @param length Duration of the audio in seconds.
+     */
+    void onDecoded(JSObject buffer, double length);
+  }
 }

@@ -29,7 +29,9 @@ import com.badlogic.gdx.utils.Disposable;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -320,6 +322,34 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
     }
     music = createAndPlaySoundFromPath(path, external, volume, looping, musicGroup);
     return music;
+  }
+
+  /**
+   * Pre-warms audio decoding for the given path so the first {@link #play} call for
+   * that path starts instantly with no decode lag.
+   *
+   * <p>On web, audio must be decoded by the browser before it can play. Decoding is
+   * asynchronous and can take one to three seconds for large files. Calling this method
+   * during a loading state gives the browser time to decode in the background. When
+   * {@link #play} is later called in the game state, the decoded buffer is ready and
+   * all tracks start from position zero in sync.
+   *
+   * <p>Example (Kotlin, loading state):
+   * <pre>{@code
+   * override fun create() {
+   *     Flixel.sound.prewarmSound("music/inst.mp3")
+   *     Flixel.sound.prewarmSound("music/voices.mp3")
+   * }
+   * }</pre>
+   *
+   * <p>On desktop and Android, decoding is synchronous and this call is a no-op.
+   *
+   * @param path Internal asset path to pre-decode.
+   */
+  public void prewarmSound(@NotNull String path) {
+    String normalized = FlixelAssetPaths.normalizeAssetPath(path);
+    String resolved = FlixelPathsUtil.resolveAudioPath(normalized);
+    factory.prewarmSound(resolved);
   }
 
   /**
