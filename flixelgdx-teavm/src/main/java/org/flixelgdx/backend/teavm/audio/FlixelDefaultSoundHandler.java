@@ -23,22 +23,64 @@
  */
 package org.flixelgdx.backend.teavm.audio;
 
+import com.badlogic.gdx.Gdx;
+
 import org.flixelgdx.audio.FlixelSoundBackend;
+import org.teavm.jso.JSBody;
+import org.teavm.jso.JSObject;
 
 /**
- * TeaVM/web implementation of {@link FlixelSoundBackend.Factory} that falls
- * back to libGDX {@code Gdx.audio} for sound playback.
+ * TeaVM/web implementation of {@link FlixelSoundBackend.Factory} backed by the Web Audio API.
  *
- * <p>Groups and effect nodes are no-ops because Web Audio does not expose the
- * same graph-based API as MiniAudio.
+ * <p>A single {@code AudioContext} and master {@code GainNode} are shared across all sounds.
+ * Both are created lazily on the first {@link #createSound} call to respect browser policies
+ * that require an active user gesture before audio can play.
+ *
+ * <p>Audio data is read synchronously from the virtual filesystem (which is fully preloaded
+ * before the game starts) and decoded asynchronously via {@code AudioContext.decodeAudioData}.
+ * This removes the HTML5 {@code <audio>} element limit that restricted concurrent playback to
+ * roughly three or four tracks.
+ *
+ * <p>Focus-based pause and resume are implemented via {@code AudioContext.suspend()} and
+ * {@code AudioContext.resume()}, which atomically halts or continues every active sound with no
+ * per-instance bookkeeping.
+ *
+ * <p>Groups are no-ops beyond triggering context-level suspend/resume: the Web Audio API does
+ * not expose per-group routing without a dedicated graph, and the engine's SFX and music groups
+ * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager}.
  */
 public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
 
+  private JSObject context;
+  private JSObject masterGainNode;
+
   private float masterVolume = 1f;
+
+  private boolean contextSuspended;
+
+  /**
+   * Initializes the shared {@code AudioContext} and master {@code GainNode} on first use.
+   *
+   * <p>Deferred to the first {@link #createSound} call so that the context is only created
+   * after a user gesture, satisfying browser autoplay policies.
+   */
+  private void ensureContext() {
+    if (context != null) {
+      return;
+    }
+    context = jsCreateContext();
+    masterGainNode = jsCreateGain(context);
+    jsConnect(masterGainNode, jsDestination(context));
+    jsSetGain(masterGainNode, masterVolume);
+  }
 
   @Override
   public FlixelSoundBackend createSound(String path, short flags, Object group, boolean external) {
-    return new FlixelGdxSound(path, external);
+    ensureContext();
+    byte[] data = external
+        ? Gdx.files.absolute(path).readBytes()
+        : Gdx.files.internal(path).readBytes();
+    return new FlixelWebAudioSound(path, data, context, masterGainNode);
   }
 
   @Override
@@ -53,17 +95,26 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void groupPause(Object group) {
-    // No-op on web.
+    if (context != null && !contextSuspended) {
+      contextSuspended = true;
+      jsSuspend(context);
+    }
   }
 
   @Override
   public void groupPlay(Object group) {
-    // No-op on web.
+    if (context != null && contextSuspended) {
+      contextSuspended = false;
+      jsResume(context);
+    }
   }
 
   @Override
   public void setMasterVolume(float volume) {
     masterVolume = Math.max(0f, Math.min(1f, volume));
+    if (masterGainNode != null) {
+      jsSetGain(masterGainNode, masterVolume);
+    }
   }
 
   /**
@@ -77,7 +128,11 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void disposeEngine() {
-    // No native engine to dispose on web.
+    if (context != null) {
+      jsClose(context);
+      context = null;
+      masterGainNode = null;
+    }
   }
 
   @Override
@@ -99,6 +154,32 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
   public FlixelSoundBackend.EffectNode createLowPassFilter(double cutoffHz, int order) {
     return NoOpEffectNode.INSTANCE;
   }
+
+  // --- Web Audio API JS bridge ---
+
+  @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
+  private static native JSObject jsCreateContext();
+
+  @JSBody(params = {"ctx"}, script = "return ctx.createGain();")
+  private static native JSObject jsCreateGain(JSObject ctx);
+
+  @JSBody(params = {"node", "v"}, script = "node.gain.value = v;")
+  private static native void jsSetGain(JSObject node, float v);
+
+  @JSBody(params = {"ctx"}, script = "return ctx.destination;")
+  private static native JSObject jsDestination(JSObject ctx);
+
+  @JSBody(params = {"a", "b"}, script = "a.connect(b);")
+  private static native void jsConnect(JSObject a, JSObject b);
+
+  @JSBody(params = {"ctx"}, script = "ctx.suspend();")
+  private static native void jsSuspend(JSObject ctx);
+
+  @JSBody(params = {"ctx"}, script = "ctx.resume();")
+  private static native void jsResume(JSObject ctx);
+
+  @JSBody(params = {"ctx"}, script = "ctx.close();")
+  private static native void jsClose(JSObject ctx);
 
   /** Singleton no-op effect node for platforms that do not support audio graphs. */
   private static final class NoOpEffectNode implements FlixelSoundBackend.EffectNode {
