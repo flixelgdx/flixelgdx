@@ -26,6 +26,7 @@ package org.flixelgdx.graphics;
 import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.asset.FlixelWrapperSource;
@@ -35,15 +36,12 @@ import org.jetbrains.annotations.NotNull;
  * Cached graphic "source" (asset) that can provide a pooled {@link FlixelGraphic} wrapper.
  *
  * <p>{@link #get()} uses {@link FlixelAssetManager#ensureWrapper} (no refcount change).
- * {@link #acquire()} uses {@link FlixelAssetManager#obtainWrapper} (implicit {@link org.flixelgdx.asset.FlixelAsset#retain()}).
+ * {@link #acquire()} uses {@link FlixelAssetManager#obtainWrapper} (implicit {@link FlixelAsset#retain()}).
  *
  * <p>Uses generic {@link FlixelAssetManager#obtainWrapper(String, Class)} via {@link FlixelWrapperSource};
  * the loaded texture is required with {@link #require(FlixelAssetManager)} (same as {@link #requireTexture(FlixelAssetManager)}).
  */
-public final class FlixelGraphicSource implements FlixelWrapperSource<Texture, FlixelGraphic> {
-
-  @NotNull
-  private final String assetKey;
+public record FlixelGraphicSource(@NotNull String assetKey) implements FlixelWrapperSource<Texture, FlixelGraphic> {
 
   public FlixelGraphicSource(@NotNull String assetKey) {
     if (assetKey == null || assetKey.isEmpty()) {
@@ -73,7 +71,7 @@ public final class FlixelGraphicSource implements FlixelWrapperSource<Texture, F
     return Flixel.ensureAssets().ensureWrapper(assetKey, FlixelGraphic.class);
   }
 
-  /** Returns the pooled wrapper with implicit {@link org.flixelgdx.asset.FlixelAsset#retain()}. */
+  /** Returns the pooled wrapper with implicit {@link FlixelAsset#retain()}. */
   @NotNull
   public FlixelGraphic acquire() {
     return Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);

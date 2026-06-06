@@ -32,10 +32,10 @@ import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -224,7 +224,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   /**
    * When a rig is installed we render directly from its pre-baked parts and never touch
    * {@link FlixelSprite#currentRegion}, so we swallow the animation controller's per-frame "current
-   * keyframe" callback. Without a rig, behaviour falls through to the normal
+   * keyframe" callback. Without a rig, behavior falls through to the normal
    * {@link FlixelSprite#setCurrentFrameForAnimation} path so the sprite still works for simple atlases.
    *
    * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored when a rig
@@ -344,8 +344,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Draws the sprite. With a rig installed, walks the current clip's current keyframe and draws each
-   * part through the shared {@link SpriteBatch} with a preallocated {@link Affine2}. Without a rig
-   * (or with a non-sprite {@link Batch}), falls back to the inherited {@link FlixelSprite} draw path.
+   * part through the shared {@link org.flixelgdx.graphics.FlixelSpriteBatch} with a preallocated
+   * {@link Affine2}. Without a rig (or with a non-sprite {@link Batch}), falls back to the inherited
+   * {@link FlixelSprite} draw path.
    *
    * <p>The rig draw composes the sprite's world transform once per frame as
    * {@code T(wx-offsetX, wy-offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX/|sx|, -originY/|sy|)}.
@@ -375,7 +376,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     // Resolve the clip the controller is currently playing. Fall back to the rig's anchor clip if the
-    // controller has not had a clip chosen yet (for example right after destroy-and-reload).
+    // controller has not had a clip chosen yet (for example, right after destroy-and-reload).
     String clipName = controller.getCurrentAnim();
     if (clipName == null || clipName.isEmpty()) {
       clipName = activeRig.anchorClipName;
@@ -424,7 +425,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
     // Match FlixelSprite's flip-into-scale convention: a negative scale on either axis mirrors the
     // sprite around its origin, and the facing flag piles on top of the user-set flipX.
-    boolean isFlippedX = flipX || (facing == FlixelObject.DirectionFlags.LEFT);
+    boolean isFlippedX = flipX || (facing == FlixelDirectionFlags.LEFT);
     boolean isFlippedY = flipY;
     float sx = isFlippedX ? -getScaleX() : getScaleX();
     float sy = isFlippedY ? -getScaleY() : getScaleY();
@@ -436,8 +437,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     // getWidth()/getHeight() (i.e. scaled-world units, since updateHitbox() folds the absolute scale
     // into the size and then re-centers the origin). The rig's part affines, however, place each part
     // inside an anchor-local rectangle of size (anchorWidth, anchorHeight). To pivot rotation and
-    // scaling around the visual center we therefore translate by +origin in scaled-world units AFTER
-    // the scale, but by -origin/|scale| in anchor-local units BEFORE the scale. The two translates
+    // scaling around the visual center, we therefore translate by +origin in scaled-world units AFTER
+    // the scale, but by -origin/|scale| in anchor-local units BEFORE the scale. The two translations
     // collapse to the no-op pair (+origin, -origin) when |scale| == 1, so the unit-scale path stays
     // identical to FlixelSprite's standard transform chain.
     float absSx = Math.abs(sx);

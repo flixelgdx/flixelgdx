@@ -42,6 +42,7 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelSpriteBatch;
 import org.flixelgdx.input.FlixelInputProcessorManager;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -150,7 +151,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
   protected Color bgColor = new Color(Color.BLACK);
 
-  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelBatch#setColor(Color)}. */
+  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelSpriteBatch#setColor(Color)}. */
   protected Texture bgTexture;
 
   /** Where all the global cameras are stored. */
@@ -159,7 +160,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Total render calls issued by the framework {@link FlixelBatch} during the most recently
    * completed draw pass, summed across all camera loops. Derived from the delta of
-   * {@link FlixelBatch#totalRenderCalls} so multiple begin/end cycles within a single frame
+   * {@link FlixelBatch#getTotalRenderCalls()} so multiple begin/end cycles within a single frame
    * do not erase earlier cameras' counts.
    */
   private int frameRenderCalls;
@@ -331,7 +332,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     isClosing = false;
     stateLifecyclePauseDispatched = false;
 
-    batch = new FlixelBatch();
+    batch = new FlixelSpriteBatch();
     cameras = new Array<>(FlixelCamera[]::new);
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
 
@@ -463,7 +464,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     ScreenUtils.clear(bgColor); // Clear the screen to refresh the screen.
     FlixelState state = Flixel.getState();
 
-    int totalRenderCallsBefore = this.batch != null ? this.batch.totalRenderCalls : 0;
+    int totalRenderCallsBefore = this.batch != null ? this.batch.getTotalRenderCalls() : 0;
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
     FlixelCamera[] cameraItems = cameras.items;
@@ -502,7 +503,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    frameRenderCalls = this.batch != null ? this.batch.totalRenderCalls - totalRenderCallsBefore : 0;
+    frameRenderCalls = this.batch != null ? this.batch.getTotalRenderCalls() - totalRenderCallsBefore : 0;
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {

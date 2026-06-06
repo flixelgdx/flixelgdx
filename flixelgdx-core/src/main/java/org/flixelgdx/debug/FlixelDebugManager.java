@@ -23,12 +23,12 @@
  */
 package org.flixelgdx.debug;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelObject;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,11 +96,11 @@ public class FlixelDebugManager {
   private final Array<String> commandHistory = new Array<>(MAX_HISTORY_ENTRIES);
 
   /**
-   * Extra {@link SpriteBatch} instances registered by game code via {@link #trackBatch(SpriteBatch)}.
+   * Extra {@link FlixelBatch} instances registered by game code via {@link #trackBatch(FlixelBatch)}.
    * The framework's own batch is counted separately in {@link FlixelDebugOverlay}, so only user-supplied
    * batches live here.
    */
-  private final Array<SpriteBatch> trackedBatches = new Array<>(false, 4);
+  private final Array<FlixelBatch> trackedBatches = new Array<>(false, 4);
 
   /** The sprite currently selected by the LMB picker, or {@code null}. */
   @Nullable
@@ -218,23 +218,23 @@ public class FlixelDebugManager {
   }
 
   /**
-   * Registers a {@link SpriteBatch} whose {@code renderCalls} will be included in the debugger's
-   * total render-call count shown in the Stats panel. The framework's own batch is already counted
-   * automatically; call this for any additional batches your game creates.
+   * Registers a {@link FlixelBatch} whose {@link FlixelBatch#getRenderCalls()} will be included in
+   * the debugger's total render-call count shown in the Stats panel. The framework's own batch is
+   * already counted automatically; call this for any additional batches your game creates.
    *
    * <p>Registering a batch that is already tracked is a no-op. The batch must remain valid (not
-   * disposed) for as long as it is registered. Call {@link #untrackBatch(SpriteBatch)} before
+   * disposed) for as long as it is registered. Call {@link #untrackBatch(FlixelBatch)} before
    * disposing a tracked batch.
    *
    * <p>Example:
    * <pre>{@code
-   * SpriteBatch uiBatch = new SpriteBatch();
+   * FlixelBatch uiBatch = new FlixelSpriteBatch();
    * Flixel.debug.trackBatch(uiBatch);
    * }</pre>
    *
    * @param batch The batch to track. Must not be {@code null}.
    */
-  public void trackBatch(@NotNull SpriteBatch batch) {
+  public void trackBatch(@NotNull FlixelBatch batch) {
     if (batch == null || trackedBatches.contains(batch, true)) {
       return;
     }
@@ -242,19 +242,19 @@ public class FlixelDebugManager {
   }
 
   /**
-   * Removes a batch that was previously registered via {@link #trackBatch(SpriteBatch)}.
+   * Removes a batch that was previously registered via {@link #trackBatch(FlixelBatch)}.
    * Passing a batch that was never registered is a no-op.
    *
    * @param batch The batch to stop tracking.
    */
-  public void untrackBatch(@NotNull SpriteBatch batch) {
+  public void untrackBatch(@NotNull FlixelBatch batch) {
     if (batch != null) {
       trackedBatches.removeValue(batch, true);
     }
   }
 
   /** Returns the live array of user-registered batches. Package-private; consumed by the debug overlay. */
-  Array<SpriteBatch> getTrackedBatches() {
+  Array<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
   }
 
