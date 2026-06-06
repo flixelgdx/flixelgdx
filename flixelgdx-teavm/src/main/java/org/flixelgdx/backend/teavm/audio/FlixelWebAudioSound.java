@@ -357,8 +357,6 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
     return pauseOffset;
   }
 
-  // --- Web Audio API JS bridge ---
-
   @JSBody(params = {"ctx"}, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
 
