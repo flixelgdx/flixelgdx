@@ -201,6 +201,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public void load(@NotNull FlixelSource<?> source) {
     Objects.requireNonNull(source, "source cannot be null.");
     String key = requireNormalizedAssetPath(source.getAssetKey());
+    Flixel.info("is it a the sound source?: " + (source instanceof FlixelSoundSource));
     if (source instanceof FlixelSoundSource) {
       maybePrewarmAudio(key);
     }
@@ -247,12 +248,12 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public boolean update() {
-    return manager.update();
+    return manager.update() && !Flixel.getSoundFactory().isPrewarmPending();
   }
 
   @Override
   public boolean update(int millis) {
-    return manager.update(millis);
+    return manager.update(millis) && !Flixel.getSoundFactory().isPrewarmPending();
   }
 
   @Override

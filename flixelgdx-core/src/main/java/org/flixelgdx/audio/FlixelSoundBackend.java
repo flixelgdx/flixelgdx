@@ -211,6 +211,20 @@ public interface FlixelSoundBackend {
     default void prewarmSound(String path) {}
 
     /**
+     * Returns {@code true} while at least one {@link #prewarmSound} decode is still in progress.
+     *
+     * <p>On platforms where decoding is synchronous (desktop, Android) this always returns
+     * {@code false}. On the web platform, {@link org.flixelgdx.asset.FlixelAssetManager#update()}
+     * consults this method and continues returning {@code false} until all pending decodes
+     * resolve, keeping the loading-state loop alive until audio is truly ready to play.
+     *
+     * @return {@code true} if one or more background decodes have not yet completed.
+     */
+    default boolean isPrewarmPending() {
+      return false;
+    }
+
+    /**
      * Attaches a sound (or effect node output) to the engine endpoint.
      * Implementations that do not support an audio graph should no-op.
      *

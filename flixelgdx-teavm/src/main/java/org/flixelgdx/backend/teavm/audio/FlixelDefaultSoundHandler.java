@@ -68,6 +68,7 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
   private final ObjectMap<String, Double> lengthCache = new ObjectMap<>();
 
   private float masterVolume = 1f;
+  private int pendingPrewarmCount;
 
   private boolean contextSuspended;
 
@@ -111,14 +112,24 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
     if (bufferCache.containsKey(path)) {
       return;
     }
+    pendingPrewarmCount++;
     byte[] data = Gdx.files.internal(path).readBytes();
     ArrayBuffer buffer = TypedArrays.getInt8Array(data).getBuffer();
     jsDecodeAudioData(context, buffer,
         decoded -> {
           bufferCache.put(path, decoded);
           lengthCache.put(path, jsGetBufferDuration(decoded));
+          pendingPrewarmCount--;
         },
-        () -> System.err.println("[FlixelGDX] Failed to pre-decode audio: " + path));
+        () -> {
+          System.err.println("[FlixelGDX] Failed to pre-decode audio: " + path);
+          pendingPrewarmCount--;
+        });
+  }
+
+  @Override
+  public boolean isPrewarmPending() {
+    return pendingPrewarmCount > 0;
   }
 
   @Override
