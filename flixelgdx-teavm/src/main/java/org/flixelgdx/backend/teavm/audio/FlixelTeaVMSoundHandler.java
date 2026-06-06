@@ -189,6 +189,11 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   @Override
+  public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
+    // No-op on web.
+  }
+
+  @Override
   public FlixelSoundBackend.EffectNode createReverbNode(float wet) {
     return NoOpEffectNode.INSTANCE;
   }
@@ -242,6 +247,11 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
     @Override
     public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
+      // No-op.
+    }
+
+    @Override
+    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
       // No-op.
     }
 

@@ -225,13 +225,25 @@ public interface FlixelSoundBackend {
     }
 
     /**
-     * Attaches a sound (or effect node output) to the engine endpoint.
+     * Attaches a sound directly to the engine endpoint, bypassing any effect
+     * chain. Used to restore direct routing after clearing effects.
      * Implementations that do not support an audio graph should no-op.
      *
      * @param sound The sound backend whose output to route.
      * @param outputBusIndex Output bus index (typically 0).
      */
     void attachToEngineOutput(FlixelSoundBackend sound, int outputBusIndex);
+
+    /**
+     * Attaches the tail effect node in a chain to the engine endpoint so that
+     * processed audio reaches the output. Must be called each time a new node
+     * is appended to the chain.
+     * Implementations that do not support an audio graph should no-op.
+     *
+     * @param node The tail effect node whose output to route.
+     * @param outputBusIndex Output bus index (typically 0).
+     */
+    void attachEffectToEngineOutput(EffectNode node, int outputBusIndex);
 
     /**
      * Creates a reverb effect node.
@@ -269,12 +281,21 @@ public interface FlixelSoundBackend {
   interface EffectNode {
 
     /**
-     * Wires an upstream source into this node.
+     * Wires a sound source into this node's input.
      *
-     * @param upstream The upstream sound or node output.
+     * @param upstream The upstream sound backend.
      * @param bus Input bus index (typically 0).
      */
     void attachToUpstream(FlixelSoundBackend upstream, int bus);
+
+    /**
+     * Wires another effect node into this node's input, allowing effects to be
+     * chained together (e.g. reverb feeding into a low-pass filter).
+     *
+     * @param upstream The upstream effect node.
+     * @param bus Input bus index (typically 0).
+     */
+    void attachToUpstreamNode(EffectNode upstream, int bus);
 
     /**
      * Detaches this node from its input bus.

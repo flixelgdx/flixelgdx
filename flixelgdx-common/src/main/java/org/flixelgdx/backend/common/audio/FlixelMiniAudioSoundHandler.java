@@ -106,6 +106,13 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   @Override
+  public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
+    if (node instanceof MiniAudioEffectNode n) {
+      engine.attachToEngineOutput(n.node(), outputBusIndex);
+    }
+  }
+
+  @Override
   public FlixelSoundBackend.EffectNode createReverbNode(float wet) {
     MAReverbNode rev = new MAReverbNode(engine);
     float w = Math.max(0f, Math.min(1f, wet));
@@ -133,13 +140,16 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
     @Override
     public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-      MANode upstreamNode;
       if (upstream instanceof FlixelMiniAudioSound mas) {
-        upstreamNode = mas.getMASound();
-      } else {
-        return;
+        node.attachToThisNode(mas.getMASound(), bus);
       }
-      node.attachToThisNode(upstreamNode, bus);
+    }
+
+    @Override
+    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
+      if (upstream instanceof MiniAudioEffectNode upstreamNode) {
+        node.attachToThisNode(upstreamNode.node(), bus);
+      }
     }
 
     @Override
