@@ -545,7 +545,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
     if (anim == null) {
       return true;
     }
-    return anim.isAnimationFinished(stateTime);
+    float duration = anim.getAnimationDuration();
+    return !looping && duration > 0f && stateTime >= duration;
   }
 
   @Override
@@ -591,7 +592,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
       onFrameChanged.dispatch(currentFrameSignalData);
     }
 
-    boolean finished = anim.isAnimationFinished(stateTime);
+    boolean finished = !looping && duration > 0f && stateTime >= duration;
     if (finished && !lastFinished) {
       FlixelAnimationFrameSignalData data = new FlixelAnimationFrameSignalData(currentAnim, frameIndex, frame);
       onAnimationFinished.dispatch(data);
