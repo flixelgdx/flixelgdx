@@ -195,6 +195,36 @@ public interface FlixelSoundBackend {
     void disposeEngine();
 
     /**
+     * Pre-decodes the audio at the given path and caches the result so the next
+     * {@link #createSound} call for the same path can start playback immediately with no
+     * decode lag.
+     *
+     * <p>This is an internal hook called automatically by
+     * {@link org.flixelgdx.asset.FlixelDefaultAssetManager} whenever a
+     * {@link org.flixelgdx.audio.FlixelSoundSource} is enqueued on the web platform.
+     * Do not call it directly; load audio through {@code Flixel.assets.load(path)} instead.
+     *
+     * <p>On platforms where decoding is synchronous (desktop, Android) this is a no-op.
+     *
+     * @param path The resolved internal asset path to pre-decode.
+     */
+    default void prewarmSound(String path) {}
+
+    /**
+     * Returns {@code true} while at least one {@link #prewarmSound} decode is still in progress.
+     *
+     * <p>On platforms where decoding is synchronous (desktop, Android) this always returns
+     * {@code false}. On the web platform, {@link org.flixelgdx.asset.FlixelAssetManager#update()}
+     * consults this method and continues returning {@code false} until all pending decodes
+     * resolve, keeping the loading-state loop alive until audio is truly ready to play.
+     *
+     * @return {@code true} if one or more background decodes have not yet completed.
+     */
+    default boolean isPrewarmPending() {
+      return false;
+    }
+
+    /**
      * Attaches a sound (or effect node output) to the engine endpoint.
      * Implementations that do not support an audio graph should no-op.
      *

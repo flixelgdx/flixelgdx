@@ -32,7 +32,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import org.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
-import org.flixelgdx.backend.teavm.audio.FlixelDefaultSoundHandler;
+import org.flixelgdx.backend.teavm.audio.FlixelTeaVMSoundHandler;
 import org.flixelgdx.backend.teavm.debug.FlixelTeaVMDebugOverlay;
 import org.flixelgdx.backend.teavm.logging.FlixelTeaVMLogConsole;
 import org.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
@@ -176,7 +176,7 @@ public class FlixelTeaVMLauncher {
     Flixel.setAlerter(new FlixelTeaVMAlerter());
     Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
     Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit);
-    Flixel.setSoundBackendFactory(new FlixelDefaultSoundHandler());
+    Flixel.setSoundBackendFactory(new FlixelTeaVMSoundHandler());
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {

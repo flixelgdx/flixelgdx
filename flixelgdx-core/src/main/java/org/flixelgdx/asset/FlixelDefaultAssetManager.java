@@ -32,6 +32,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.audio.FlixelSoundSourceLoader;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -60,6 +61,23 @@ import java.util.function.Function;
  *
  * <p><b>Path loading:</b> {@link #load(String)} infers a {@link FlixelSource} from the file extension using
  * {@link #registerExtension(String, Function)}. Prefer {@link #load(FlixelSource)} when the asset type must be explicit.
+ *
+ * <p><b>Web audio pre-decoding:</b> any {@link #load} call that enqueues a {@link org.flixelgdx.audio.FlixelSoundSource}
+ * automatically triggers background audio decoding on the web platform ({@link Application.ApplicationType#WebGL}).
+ * By the time the loading state finishes and the game state starts, the decoded buffer is cached and
+ * {@link org.flixelgdx.audio.FlixelAudioManager#play} returns instantly with no decode lag. On desktop and Android
+ * this is a no-op.
+ *
+ * <pre>{@code
+ * // Loading state - load audio alongside every other asset as usual.
+ * Flixel.assets.load("music/inst.mp3");
+ * Flixel.assets.load("music/voices.mp3");
+ * Flixel.assets.finishLoading();
+ *
+ * // Game state - buffers already decoded; all tracks start from position zero in sync.
+ * Flixel.sound.play("music/inst.mp3");
+ * Flixel.sound.play("music/voices.mp3");
+ * }</pre>
  *
  * <p><b>Experts:</b> {@link #getManager()} exposes the underlying {@link AssetManager} for custom
  * loaders, {@link AssetDescriptor} batches, or APIs not wrapped here.
@@ -92,22 +110,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   /** FlixelString object to prevent allocation every time {@link #getDiagnostics()} is called. */
   private final FlixelString diagnosticsString = new FlixelString();
 
-  private record AssetId(@NotNull String key, @NotNull Class<?> type) {
-    @Override
-    public boolean equals(Object o) {
-      if (this == o)
-        return true;
-      if (!(o instanceof AssetId other))
-        return false;
-      return key.equals(other.key) && type.equals(other.type);
-    }
-
-    @Override
-    public int hashCode() {
-      return 31 * key.hashCode() + type.hashCode();
-    }
-  }
-
   /** Constructs a new asset manager with the default loaders for strings and sound sources. */
   public FlixelDefaultAssetManager() {
     manager = new AssetManager();
@@ -135,32 +137,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     registerWrapperFactory(new FlixelGraphicWrapperFactory());
   }
 
-  @NotNull
-  private static String normalizeExtension(@NotNull String extension) {
-    String e = extension.trim().toLowerCase(Locale.ROOT);
-    if (e.isEmpty()) {
-      throw new IllegalArgumentException("extension cannot be empty.");
-    }
-    if (!e.startsWith(".")) {
-      e = "." + e;
-    }
-    return e;
-  }
-
-  /**
-   * Returns the last path segment's extension including the dot (e.g. {@code .png}), or empty if none.
-   */
-  @NotNull
-  private static String fileExtensionFromPath(@NotNull String path) {
-    int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-    String name = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
-    int dot = name.lastIndexOf('.');
-    if (dot < 0 || dot == name.length() - 1) {
-      return "";
-    }
-    return name.substring(dot).toLowerCase(Locale.ROOT);
-  }
-
   /**
    * If a new {@link FlixelAsset} or {@link FlixelGraphic} handle is created for this key before the
    * pending entry is consumed, that handle is marked persistent. Call {@code load(path, true)} to
@@ -173,45 +149,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (pendingPersistKeys.remove(assetKey)) {
       handle.setPersist(true);
     }
-  }
-
-  /**
-   * Normalizes an incoming asset path (collapse redundant slashes, unify separators) and rejects empty keys.
-   *
-   * @param path Raw path from callers.
-   * @return Canonical internal-style path.
-   */
-  @NotNull
-  private static String requireNormalizedAssetPath(@NotNull String path) {
-    Objects.requireNonNull(path, "path cannot be null.");
-    path = FlixelAssetPaths.normalizeAssetPath(path);
-    if (path.isEmpty()) {
-      throw new IllegalArgumentException("path cannot be null/empty.");
-    }
-    return path;
-  }
-
-  /**
-   * Infers a {@link FlixelSource} from the extension registry and enqueues it. {@code path} must already be normalized.
-   */
-  private void loadByInferExtension(@NotNull String path) {
-    String ext = fileExtensionFromPath(path);
-    if (ext.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Cannot infer asset type from path (no extension): \"" + path + "\". "
-              + "Use load(FlixelSource) or registerExtension(...) for extensionless paths.");
-    }
-    Function<String, FlixelSource<?>> factory = extensionRegistry.get(ext);
-    if (factory == null) {
-      throw new IllegalArgumentException(
-          "No source factory registered for extension \"" + ext + "\" (path: \"" + path + "\"). "
-              + "Call registerExtension(\"" + ext + "\", factory) or use load(FlixelSource) explicitly.");
-    }
-    FlixelSource<?> source = factory.apply(path);
-    if (source == null) {
-      throw new IllegalStateException("Extension factory for \"" + ext + "\" returned null for path \"" + path + "\".");
-    }
-    load(source);
   }
 
   @Override
@@ -235,6 +172,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (persist) {
       pendingPersistKeys.add(key);
     }
+    if (source instanceof FlixelSoundSource) {
+      maybePrewarmAudio(key);
+    }
     manager.load(key, source.getType());
   }
 
@@ -253,21 +193,25 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public <T> void load(@NotNull String fileName, @NotNull Class<T> type) {
     Objects.requireNonNull(fileName, "fileName cannot be null.");
     Objects.requireNonNull(type, "type cannot be null.");
-    manager.load(requireNormalizedAssetPath(fileName), type);
+    String normalized = requireNormalizedAssetPath(fileName);
+    manager.load(normalized, type);
   }
 
   @Override
   public void load(@NotNull FlixelSource<?> source) {
     Objects.requireNonNull(source, "source cannot be null.");
-    manager.load(requireNormalizedAssetPath(source.getAssetKey()), source.getType());
+    String key = requireNormalizedAssetPath(source.getAssetKey());
+    if (source instanceof FlixelSoundSource) {
+      maybePrewarmAudio(key);
+    }
+    manager.load(key, source.getType());
   }
 
   @Override
   public void load(@NotNull AssetDescriptor<?> assetDescriptor) {
     Objects.requireNonNull(assetDescriptor, "assetDescriptor cannot be null.");
-    String fn = FlixelAssetPaths
-        .normalizeAssetPath(
-            Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
+    String fn = FlixelAssetPaths.normalizeAssetPath(
+        Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
     if (fn.equals(assetDescriptor.fileName)) {
       manager.load(assetDescriptor);
     } else {
@@ -303,12 +247,12 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public boolean update() {
-    return manager.update();
+    return manager.update() && !Flixel.getSoundFactory().isPrewarmPending();
   }
 
   @Override
   public boolean update(int millis) {
-    return manager.update(millis);
+    return manager.update(millis) && !Flixel.getSoundFactory().isPrewarmPending();
   }
 
   @Override
@@ -762,6 +706,103 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       for (int i = 0; i < toRemove.size; i++) {
         typedAssetCache.remove(toRemove.get(i));
       }
+    }
+  }
+
+  @NotNull
+  private static String normalizeExtension(@NotNull String extension) {
+    String e = extension.trim().toLowerCase(Locale.ROOT);
+    if (e.isEmpty()) {
+      throw new IllegalArgumentException("extension cannot be empty.");
+    }
+    if (!e.startsWith(".")) {
+      e = "." + e;
+    }
+    return e;
+  }
+
+  /**
+   * Returns the last path segment's extension including the dot (e.g. {@code .png}), or empty if none.
+   */
+  @NotNull
+  private static String fileExtensionFromPath(@NotNull String path) {
+    int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+    String name = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+    int dot = name.lastIndexOf('.');
+    if (dot < 0 || dot == name.length() - 1) {
+      return "";
+    }
+    return name.substring(dot).toLowerCase(Locale.ROOT);
+  }
+
+  /**
+   * Normalizes an incoming asset path (collapse redundant slashes, unify separators) and rejects empty keys.
+   *
+   * @param path Raw path from callers.
+   * @return Canonical internal-style path.
+   */
+  @NotNull
+  private static String requireNormalizedAssetPath(@NotNull String path) {
+    Objects.requireNonNull(path, "path cannot be null.");
+    path = FlixelAssetPaths.normalizeAssetPath(path);
+    if (path.isEmpty()) {
+      throw new IllegalArgumentException("path cannot be null/empty.");
+    }
+    return path;
+  }
+
+  /**
+   * Triggers background audio decoding on the web platform for the given path.
+   *
+   * <p>Callers are responsible for checking that the asset type is a {@link FlixelSoundSource}
+   * before calling this method. On all non-WebGL platforms {@code Gdx.app.getType()} is not
+   * {@link Application.ApplicationType#WebGL} and this method returns immediately.
+   *
+   * @param normalizedPath Normalized asset path, used to resolve the absolute path for the decoder.
+   */
+  private void maybePrewarmAudio(@NotNull String normalizedPath) {
+    if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
+      return;
+    }
+    Flixel.getSoundFactory().prewarmSound(resolveAudioPath(normalizedPath));
+  }
+
+  /**
+   * Infers a {@link FlixelSource} from the extension registry and enqueues it. {@code path} must already be normalized.
+   */
+  private void loadByInferExtension(@NotNull String path) {
+    String ext = fileExtensionFromPath(path);
+    if (ext.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Cannot infer asset type from path (no extension): \"" + path + "\". "
+              + "Use load(FlixelSource) or registerExtension(...) for extensionless paths.");
+    }
+    Function<String, FlixelSource<?>> factory = extensionRegistry.get(ext);
+    if (factory == null) {
+      throw new IllegalArgumentException(
+          "No source factory registered for extension \"" + ext + "\" (path: \"" + path + "\"). "
+              + "Call registerExtension(\"" + ext + "\", factory) or use load(FlixelSource) explicitly.");
+    }
+    FlixelSource<?> source = factory.apply(path);
+    if (source == null) {
+      throw new IllegalStateException("Extension factory for \"" + ext + "\" returned null for path \"" + path + "\".");
+    }
+    load(source);
+  }
+
+  private record AssetId(@NotNull String key, @NotNull Class<?> type) {
+    @Override
+    public boolean equals(Object o) {
+      if (this == o)
+        return true;
+      if (!(o instanceof AssetId other))
+        return false;
+      return key.equals(other.key) && type.equals(other.type);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * key.hashCode() + type.hashCode();
     }
   }
 }
