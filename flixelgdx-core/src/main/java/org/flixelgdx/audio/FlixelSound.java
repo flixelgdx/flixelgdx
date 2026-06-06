@@ -688,15 +688,14 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   private void attachEffectNode(@NotNull FlixelSoundBackend.EffectNode node) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
-    FlixelSoundBackend upstream = audioEffectNodes.size == 0
-        ? sound
-        : null;
-    if (upstream != null) {
-      node.attachToUpstream(upstream, 0);
+    if (audioEffectNodes.size == 0) {
+      node.attachToUpstream(sound, 0);
+    } else {
+      node.attachToUpstreamNode(audioEffectNodes.peek(), 0);
     }
     audioEffectNodes.add(node);
     if (factory != null) {
-      factory.attachToEngineOutput(sound, 0);
+      factory.attachEffectToEngineOutput(node, 0);
     }
   }
 
