@@ -199,9 +199,10 @@ public interface FlixelSoundBackend {
      * {@link #createSound} call for the same path can start playback immediately with no
      * decode lag.
      *
-     * <p>This is an internal hook called by
-     * {@link org.flixelgdx.audio.FlixelAudioManager#load FlixelAudioManager.load()}. Do not
-     * call it directly; use {@code Flixel.sound.load(path)} instead.
+     * <p>This is an internal hook called automatically by
+     * {@link org.flixelgdx.asset.FlixelDefaultAssetManager} whenever a
+     * {@link org.flixelgdx.audio.FlixelSoundSource} is enqueued on the web platform.
+     * Do not call it directly; load audio through {@code Flixel.assets.load(path)} instead.
      *
      * <p>On platforms where decoding is synchronous (desktop, Android) this is a no-op.
      *

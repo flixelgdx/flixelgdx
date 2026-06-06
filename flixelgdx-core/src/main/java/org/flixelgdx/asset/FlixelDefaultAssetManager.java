@@ -32,6 +32,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.audio.FlixelSoundSourceLoader;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -60,6 +61,12 @@ import java.util.function.Function;
  *
  * <p><b>Path loading:</b> {@link #load(String)} infers a {@link FlixelSource} from the file extension using
  * {@link #registerExtension(String, Function)}. Prefer {@link #load(FlixelSource)} when the asset type must be explicit.
+ *
+ * <p><b>Web audio pre-decoding:</b> any {@link #load} call that enqueues a {@link org.flixelgdx.audio.FlixelSoundSource}
+ * automatically triggers background audio decoding on the web platform ({@link Application.ApplicationType#WebGL}).
+ * By the time the loading state finishes and the game state starts, the decoded buffer is cached and
+ * {@link org.flixelgdx.audio.FlixelAudioManager#play} returns instantly with no decode lag. On desktop and Android
+ * this is a no-op.
  *
  * <p><b>Experts:</b> {@link #getManager()} exposes the underlying {@link AssetManager} for custom
  * loaders, {@link AssetDescriptor} batches, or APIs not wrapped here.
@@ -192,6 +199,26 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   /**
+   * Triggers background audio decoding on web when {@code type} is {@link FlixelSoundSource}.
+   *
+   * <p>On all other platforms {@code Gdx.app.getType()} is not {@link Application.ApplicationType#WebGL}
+   * and this method returns immediately. The check lives here so callers never need to know which
+   * platform they are on.
+   *
+   * @param normalizedPath Normalized asset path, used to resolve the absolute path for the decoder.
+   * @param type Runtime asset type being loaded.
+   */
+  private void maybePrwarmAudio(@NotNull String normalizedPath, @NotNull Class<?> type) {
+    if (type != FlixelSoundSource.class) {
+      return;
+    }
+    if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
+      return;
+    }
+    Flixel.getSoundFactory().prewarmSound(resolveAudioPath(normalizedPath));
+  }
+
+  /**
    * Infers a {@link FlixelSource} from the extension registry and enqueues it. {@code path} must already be normalized.
    */
   private void loadByInferExtension(@NotNull String path) {
@@ -235,6 +262,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (persist) {
       pendingPersistKeys.add(key);
     }
+    maybePrwarmAudio(key, source.getType());
     manager.load(key, source.getType());
   }
 
@@ -246,6 +274,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (persist) {
       pendingPersistKeys.add(fileName);
     }
+    maybePrwarmAudio(fileName, type);
     manager.load(fileName, type);
   }
 
@@ -253,13 +282,17 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public <T> void load(@NotNull String fileName, @NotNull Class<T> type) {
     Objects.requireNonNull(fileName, "fileName cannot be null.");
     Objects.requireNonNull(type, "type cannot be null.");
-    manager.load(requireNormalizedAssetPath(fileName), type);
+    String normalized = requireNormalizedAssetPath(fileName);
+    maybePrwarmAudio(normalized, type);
+    manager.load(normalized, type);
   }
 
   @Override
   public void load(@NotNull FlixelSource<?> source) {
     Objects.requireNonNull(source, "source cannot be null.");
-    manager.load(requireNormalizedAssetPath(source.getAssetKey()), source.getType());
+    String key = requireNormalizedAssetPath(source.getAssetKey());
+    maybePrwarmAudio(key, source.getType());
+    manager.load(key, source.getType());
   }
 
   @Override
@@ -268,6 +301,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     String fn = FlixelAssetPaths
         .normalizeAssetPath(
             Objects.requireNonNull(assetDescriptor.fileName, "assetDescriptor.fileName cannot be null."));
+    maybePrwarmAudio(fn, assetDescriptor.type);
     if (fn.equals(assetDescriptor.fileName)) {
       manager.load(assetDescriptor);
     } else {
