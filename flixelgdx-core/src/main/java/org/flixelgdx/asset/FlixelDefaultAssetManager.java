@@ -201,7 +201,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public void load(@NotNull FlixelSource<?> source) {
     Objects.requireNonNull(source, "source cannot be null.");
     String key = requireNormalizedAssetPath(source.getAssetKey());
-    Flixel.info("is it a the sound source?: " + (source instanceof FlixelSoundSource));
     if (source instanceof FlixelSoundSource) {
       maybePrewarmAudio(key);
     }

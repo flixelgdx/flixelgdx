@@ -43,8 +43,6 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  *
  * <p>Audio data is read synchronously from the virtual filesystem (which is fully preloaded
  * before the game starts) and decoded asynchronously via {@code AudioContext.decodeAudioData}.
- * This removes the HTML5 {@code <audio>} element limit that restricted concurrent playback to
- * roughly three or four tracks.
  *
  * <p>Decoded {@code AudioBuffer} objects are cached by path. Once a path has been decoded
  * (either by a previous {@link #createSound} call or by an explicit {@link #prewarmSound}
@@ -60,7 +58,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * not expose per-group routing without a dedicated graph, and the engine's SFX and music groups
  * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager}.
  */
-public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
+public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   private JSObject context;
   private JSObject masterGainNode;
@@ -94,12 +92,12 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
     if (!external && bufferCache.containsKey(path)) {
       JSObject buf = bufferCache.get(path);
       double len = lengthCache.get(path);
-      return new FlixelWebAudioSound(path, buf, len, context, masterGainNode);
+      return new FlixelTeaVMSound(path, buf, len, context, masterGainNode);
     }
     byte[] data = external
         ? Gdx.files.absolute(path).readBytes()
         : Gdx.files.internal(path).readBytes();
-    return new FlixelWebAudioSound(path, data, context, masterGainNode,
+    return new FlixelTeaVMSound(path, data, context, masterGainNode,
         external ? null : (buf, len) -> {
           bufferCache.put(path, buf);
           lengthCache.put(path, len);
@@ -205,8 +203,6 @@ public class FlixelDefaultSoundHandler implements FlixelSoundBackend.Factory {
   public FlixelSoundBackend.EffectNode createLowPassFilter(double cutoffHz, int order) {
     return NoOpEffectNode.INSTANCE;
   }
-
-  // --- Web Audio API JS bridge ---
 
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native JSObject jsCreateContext();

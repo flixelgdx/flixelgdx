@@ -53,7 +53,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * Flixel.sound.play("music/song.mp3");
  * }</pre>
  */
-final class FlixelWebAudioSound implements FlixelSoundBackend {
+final class FlixelTeaVMSound implements FlixelSoundBackend {
 
   private double startContextTime;
   private double pauseOffset;
@@ -116,7 +116,7 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
    * Creates a new sound from a pre-decoded {@code AudioBuffer} obtained from the factory cache.
    *
    * <p>Because the buffer is already decoded, this constructor never blocks and the
-   * sound is ready to play immediately. Use {@link FlixelDefaultSoundHandler#prewarmSound}
+   * sound is ready to play immediately. Use {@link FlixelTeaVMSoundHandler#prewarmSound}
    * (via {@link org.flixelgdx.audio.FlixelAudioManager#prewarmSound}) to populate the
    * cache before calling play.
    *
@@ -126,8 +126,8 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
    * @param context The shared {@code AudioContext} created by the factory.
    * @param masterGainNode The factory-owned master gain node to connect into.
    */
-  FlixelWebAudioSound(String path, JSObject audioBuffer, double length,
-      JSObject context, JSObject masterGainNode) {
+  FlixelTeaVMSound(String path, JSObject audioBuffer, double length,
+                   JSObject context, JSObject masterGainNode) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -147,7 +147,7 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
    * @param context The shared {@code AudioContext} created by the factory.
    * @param masterGainNode The factory-owned master gain node to connect into.
    */
-  FlixelWebAudioSound(String path, byte[] data, JSObject context, JSObject masterGainNode) {
+  FlixelTeaVMSound(String path, byte[] data, JSObject context, JSObject masterGainNode) {
     this(path, data, context, masterGainNode, null);
   }
 
@@ -163,8 +163,8 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
    * @param onDecoded Called once with the decoded buffer when decoding succeeds,
    *                  or {@code null} if no notification is needed.
    */
-  FlixelWebAudioSound(String path, byte[] data, JSObject context, JSObject masterGainNode,
-      AudioBufferCallback onDecoded) {
+  FlixelTeaVMSound(String path, byte[] data, JSObject context, JSObject masterGainNode,
+                   AudioBufferCallback onDecoded) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -413,7 +413,7 @@ final class FlixelWebAudioSound implements FlixelSoundBackend {
   /**
    * Callback fired once when async decoding of an {@code AudioBuffer} finishes.
    *
-   * <p>Implemented by {@link FlixelDefaultSoundHandler} to populate its per-path cache
+   * <p>Implemented by {@link FlixelTeaVMSoundHandler} to populate its per-path cache
    * so subsequent {@code createSound} calls for the same path skip decoding entirely.
    */
   interface AudioBufferCallback {
