@@ -199,12 +199,9 @@ public interface FlixelSoundBackend {
      * {@link #createSound} call for the same path can start playback immediately with no
      * decode lag.
      *
-     * <p>On platforms that support asynchronous decoding (such as TeaVM/web) this is the
-     * recommended approach for music-heavy games: call this method for every track that
-     * will be played together during a loading state, wait for the loading state to
-     * complete, then call {@link org.flixelgdx.audio.FlixelAudioManager#play play()} in
-     * the game state. All tracks will be fully decoded by then and will start from
-     * position zero in perfect sync.
+     * <p>This is an internal hook called by
+     * {@link org.flixelgdx.audio.FlixelAudioManager#load FlixelAudioManager.load()}. Do not
+     * call it directly; use {@code Flixel.sound.load(path)} instead.
      *
      * <p>On platforms where decoding is synchronous (desktop, Android) this is a no-op.
      *
