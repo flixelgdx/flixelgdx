@@ -52,14 +52,6 @@ import java.util.function.Supplier;
  */
 public class FlixelTweenManager {
 
-  /**
-   * Registry entry for a tween type: the object pool used for tween reuse.
-   *
-   * @param pool The object pool for recycling tween instances.
-   */
-  public record TweenTypeRegistration(Pool<FlixelTween> pool) {
-  }
-
   /** Registry: tween class to its pool registration. */
   private final IdentityMap<Class<? extends FlixelTween>, TweenTypeRegistration> registry =
       new IdentityMap<>();
@@ -380,5 +372,13 @@ public class FlixelTweenManager {
           + "Register it with FlixelTween.registerTweenType(...) or FlixelTweenManager.registerTweenType(...).");
     }
     return reg;
+  }
+
+  /**
+   * Registry entry for a tween type: the object pool used for tween reuse.
+   *
+   * @param pool The object pool for recycling tween instances.
+   */
+  public record TweenTypeRegistration(Pool<FlixelTween> pool) {
   }
 }

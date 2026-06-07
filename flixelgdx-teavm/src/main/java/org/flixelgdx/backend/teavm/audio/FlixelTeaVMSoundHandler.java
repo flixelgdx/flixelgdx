@@ -56,6 +56,13 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * <p>Groups are no-ops beyond triggering context-level suspend/resume: the Web Audio API does
  * not expose per-group routing without a dedicated graph, and the engine's SFX and music groups
  * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager}.
+ *
+ * <p>Audio-graph effects ({@link org.flixelgdx.audio.FlixelSoundBackend.ReverbNode},
+ * {@link org.flixelgdx.audio.FlixelSoundBackend.EchoNode},
+ * {@link org.flixelgdx.audio.FlixelSoundBackend.LowPassNode}) are fully supported on web
+ * using native Web Audio API nodes. Reverb uses a {@code ConvolverNode} driven by a
+ * procedurally generated impulse response; echo uses a {@code DelayNode} with a feedback
+ * {@code GainNode}; low-pass uses a {@code BiquadFilterNode}.
  */
 public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
@@ -185,31 +192,45 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void attachToEngineOutput(FlixelSoundBackend sound, int outputBusIndex) {
-    // No-op on web.
+    if (masterGainNode == null || !(sound instanceof FlixelTeaVMAudioNode n)) {
+      return;
+    }
+    jsDisconnect(n.getOutputNode());
+    jsConnect(n.getOutputNode(), masterGainNode);
   }
 
   @Override
   public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
-    // No-op on web.
+    if (masterGainNode == null || !(node instanceof FlixelTeaVMAudioNode n)) {
+      return;
+    }
+    jsDisconnect(n.getOutputNode());
+    jsConnect(n.getOutputNode(), masterGainNode);
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createReverbNode(float wet) {
-    return NoOpEffectNode.INSTANCE;
+  public FlixelSoundBackend.ReverbNode createReverbNode(float wet) {
+    ensureContext();
+    return new FlixelTeaVMReverbNode(context, wet);
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createDelayNode(float delaySeconds, float decay) {
-    return NoOpEffectNode.INSTANCE;
+  public FlixelSoundBackend.EchoNode createDelayNode(float delaySeconds, float decay) {
+    ensureContext();
+    return new FlixelTeaVMEchoNode(context, delaySeconds, decay);
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createLowPassFilter(double cutoffHz, int order) {
-    return NoOpEffectNode.INSTANCE;
+  public FlixelSoundBackend.LowPassNode createLowPassFilter(double cutoffHz, int order) {
+    ensureContext();
+    return new FlixelTeaVMLowPassNode(context, cutoffHz);
   }
 
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native JSObject jsCreateContext();
+
+  @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
+  private static native void jsDisconnect(JSObject node);
 
   @JSBody(params = { "ctx" }, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
@@ -239,32 +260,6 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   @JSBody(params = { "buf" }, script = "return buf.duration;")
   private static native double jsGetBufferDuration(JSObject buf);
-
-  /** Singleton no-op effect node for platforms that do not support audio graphs. */
-  private static final class NoOpEffectNode implements FlixelSoundBackend.EffectNode {
-
-    static final NoOpEffectNode INSTANCE = new NoOpEffectNode();
-
-    @Override
-    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-      // No-op.
-    }
-
-    @Override
-    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
-      // No-op.
-    }
-
-    @Override
-    public void detach(int bus) {
-      // No-op.
-    }
-
-    @Override
-    public void dispose() {
-      // No-op.
-    }
-  }
 
   /** JS-callable success callback used by {@link #prewarmSound}. */
   @JSFunctor

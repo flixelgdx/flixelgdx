@@ -43,8 +43,10 @@ import org.jetbrains.annotations.Nullable;
  * <p>Provides volume, pitch, pan, play/pause/stop/resume, fade-in/fade-out,
  * position (time), optional audio-graph effects ({@link #addReverb},
  * {@link #addEcho}, {@link #addLowPassMuffle}, {@link #attachCustomNode}),
- * and an {@link #onComplete} signal when the sound finishes (for non-looping
- * sounds).
+ * and an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
+ *
+ * <p>The effect methods return typed node handles rather than {@code this}, so holding
+ * the returned reference lets you modify parameters live without rebuilding the effect chain.
  *
  * <p>This class implements {@link FlixelAsset}{@code <FlixelSoundBackend>} for
  * a refcount contract: each instance {@link #retain()}s once in the backend constructor,
@@ -605,6 +607,21 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   }
 
   /**
+   * Returns the list of effect nodes currently attached to this sound's audio graph, in
+   * chain order (index 0 is closest to the sound source, last index is closest to the output).
+   *
+   * <p>Typed nodes ({@link FlixelSoundBackend.ReverbNode}, {@link FlixelSoundBackend.EchoNode},
+   * {@link FlixelSoundBackend.LowPassNode}) can be cast from elements in this list if needed,
+   * though it is simpler to keep references returned by {@link #addReverb},
+   * {@link #addEcho}, and {@link #addLowPassMuffle} directly.
+   *
+   * @return A read-only view of the effect chain.
+   */
+  public Array<FlixelSoundBackend.EffectNode> getEffectNodes() {
+    return audioEffectNodes;
+  }
+
+  /**
    * Detaches and disposes every node in the effect chain (reverse order).
    * Called from {@link #destroy()}.
    */
@@ -623,53 +640,73 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   /**
    * Appends a reverb node with the given wet amount in {@code [0, 1]}
-   * (dry is set to {@code 1 - wet}). Build effect chains in load/setup
-   * code, not every frame.
+   * (dry is set to {@code 1 - wet}). Build effect chains in load/setup code, not every frame.
+   *
+   * <p>Hold the returned node to adjust reverb parameters at runtime without rebuilding
+   * the chain:
+   *
+   * <pre>{@code
+   * FlixelSoundBackend.ReverbNode reverb = sound.addReverb(0.4f);
+   * // Later, on entering a cave:
+   * reverb.setRoomSize(0.9f);
+   * reverb.setWet(0.7f);
+   * }</pre>
    *
    * @param wetAmount Wet signal level in [0, 1].
-   * @return {@code this} for chaining.
+   * @return The attached reverb node. Hold this reference to modify parameters later.
    */
   @NotNull
-  public FlixelSound addReverb(float wetAmount) {
+  public FlixelSoundBackend.ReverbNode addReverb(float wetAmount) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
     if (factory == null)
-      return this;
-    FlixelSoundBackend.EffectNode node = factory.createReverbNode(wetAmount);
+      return FlixelSoundBackend.ReverbNode.NOOP;
+    FlixelSoundBackend.ReverbNode node = factory.createReverbNode(wetAmount);
     attachEffectNode(node);
-    return this;
+    return node;
   }
 
   /**
    * Appends a stereo delay/echo node.
    *
+   * <p>Delay time and decay are fixed at construction. To change them, call
+   * {@link #clearAudioEffectChain()} and rebuild, or dispose the specific node and add a new one.
+   *
    * @param delaySeconds Delay time in seconds.
    * @param decay Decay factor for the delayed signal.
-   * @return {@code this} for chaining.
+   * @return The attached echo node.
    */
   @NotNull
-  public FlixelSound addEcho(float delaySeconds, float decay) {
+  public FlixelSoundBackend.EchoNode addEcho(float delaySeconds, float decay) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
     if (factory == null)
-      return this;
-    FlixelSoundBackend.EffectNode node = factory.createDelayNode(delaySeconds, decay);
+      return FlixelSoundBackend.EchoNode.NOOP;
+    FlixelSoundBackend.EchoNode node = factory.createDelayNode(delaySeconds, decay);
     attachEffectNode(node);
-    return this;
+    return node;
   }
 
   /**
    * Appends a 2nd-order low-pass filter (muffled / distant sound).
    *
+   * <p>Hold the returned node to adjust the cutoff frequency at runtime:
+   *
+   * <pre>{@code
+   * FlixelSoundBackend.LowPassNode muffle = sound.addLowPassMuffle(8000.0);
+   * // Tighten the filter as the player moves deeper:
+   * muffle.setCutoff(2000.0);
+   * }</pre>
+   *
    * @param cutoffHz Cutoff frequency in Hz.
-   * @return {@code this} for chaining.
+   * @return The attached low-pass node. Hold this reference to adjust cutoff later.
    */
   @NotNull
-  public FlixelSound addLowPassMuffle(double cutoffHz) {
+  public FlixelSoundBackend.LowPassNode addLowPassMuffle(double cutoffHz) {
     FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
     if (factory == null)
-      return this;
-    FlixelSoundBackend.EffectNode node = factory.createLowPassFilter(cutoffHz, 2);
+      return FlixelSoundBackend.LowPassNode.NOOP;
+    FlixelSoundBackend.LowPassNode node = factory.createLowPassFilter(cutoffHz, 2);
     attachEffectNode(node);
-    return this;
+    return node;
   }
 
   /**
@@ -695,7 +732,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     }
     audioEffectNodes.add(node);
     if (factory != null) {
-      factory.attachEffectToEngineOutput(node, 0);
+      factory.attachEffectToEngineOutput(node, 0, sound);
     }
   }
 
