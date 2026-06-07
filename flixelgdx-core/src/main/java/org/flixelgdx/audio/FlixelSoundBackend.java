@@ -354,17 +354,29 @@ public interface FlixelSoundBackend {
 
       public void dispose() {}
 
-      public float getWet() { return 0f; }
+      public float getWet() {
+        return 0f;
+      }
 
-      public float getDry() { return 0f; }
+      public float getDry() {
+        return 0f;
+      }
 
-      public float getRoomSize() { return 0f; }
+      public float getRoomSize() {
+        return 0f;
+      }
 
-      public float getDamping() { return 0f; }
+      public float getDamping() {
+        return 0f;
+      }
 
-      public float getWidth() { return 0f; }
+      public float getWidth() {
+        return 0f;
+      }
 
-      public boolean isFrozen() { return false; }
+      public boolean isFrozen() {
+        return false;
+      }
 
       public void setWet(float v) {}
 
@@ -558,7 +570,9 @@ public interface FlixelSoundBackend {
 
       public void dispose() {}
 
-      public double getCutoff() { return 0.0; }
+      public double getCutoff() {
+        return 0.0;
+      }
 
       public void setCutoff(double v) {}
     };
