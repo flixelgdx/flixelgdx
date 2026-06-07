@@ -194,17 +194,17 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createReverbNode(float wet) {
+  public FlixelSoundBackend.ReverbNode createReverbNode(float wet) {
     return NoOpEffectNode.INSTANCE;
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createDelayNode(float delaySeconds, float decay) {
+  public FlixelSoundBackend.EchoNode createDelayNode(float delaySeconds, float decay) {
     return NoOpEffectNode.INSTANCE;
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createLowPassFilter(double cutoffHz, int order) {
+  public FlixelSoundBackend.LowPassNode createLowPassFilter(double cutoffHz, int order) {
     return NoOpEffectNode.INSTANCE;
   }
 
@@ -240,30 +240,50 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
   @JSBody(params = { "buf" }, script = "return buf.duration;")
   private static native double jsGetBufferDuration(JSObject buf);
 
-  /** Singleton no-op effect node for platforms that do not support audio graphs. */
-  private static final class NoOpEffectNode implements FlixelSoundBackend.EffectNode {
+  /**
+   * Singleton no-op effect node returned by all effect factories until Web Audio API
+   * effect support is implemented. Implements all typed effect interfaces so the same
+   * stub can be returned from every factory method without casting.
+   */
+  private static final class NoOpEffectNode
+      implements FlixelSoundBackend.ReverbNode,
+                 FlixelSoundBackend.EchoNode,
+                 FlixelSoundBackend.LowPassNode {
 
     static final NoOpEffectNode INSTANCE = new NoOpEffectNode();
 
     @Override
-    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-      // No-op.
-    }
+    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {}
 
     @Override
-    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
-      // No-op.
-    }
+    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {}
 
     @Override
-    public void detach(int bus) {
-      // No-op.
-    }
+    public void detach(int bus) {}
 
     @Override
-    public void dispose() {
-      // No-op.
-    }
+    public void dispose() {}
+
+    @Override
+    public void setWet(float wet) {}
+
+    @Override
+    public void setDry(float dry) {}
+
+    @Override
+    public void setRoomSize(float size) {}
+
+    @Override
+    public void setDamping(float damping) {}
+
+    @Override
+    public void setWidth(float width) {}
+
+    @Override
+    public void setFrozen(boolean frozen) {}
+
+    @Override
+    public void setCutoff(double hz) {}
   }
 
   /** JS-callable success callback used by {@link #prewarmSound}. */

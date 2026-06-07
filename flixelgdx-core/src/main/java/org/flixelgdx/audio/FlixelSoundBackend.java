@@ -249,34 +249,35 @@ public interface FlixelSoundBackend {
      * Creates a reverb effect node.
      *
      * @param wet Wet amount in [0, 1].
-     * @return A new effect node, or a no-op stub on unsupported platforms.
+     * @return A new reverb node, or a no-op stub on unsupported platforms.
      */
-    EffectNode createReverbNode(float wet);
+    ReverbNode createReverbNode(float wet);
 
     /**
      * Creates a delay / echo effect node.
      *
      * @param delaySeconds Delay time in seconds.
      * @param decay Decay factor for the delayed signal.
-     * @return A new effect node, or a no-op stub on unsupported platforms.
+     * @return A new echo node, or a no-op stub on unsupported platforms.
      */
-    EffectNode createDelayNode(float delaySeconds, float decay);
+    EchoNode createDelayNode(float delaySeconds, float decay);
 
     /**
      * Creates a low-pass filter effect node.
      *
      * @param cutoffHz Cutoff frequency in hertz.
      * @param order Filter order (e.g. 2 for a second-order filter).
-     * @return A new effect node, or a no-op stub on unsupported platforms.
+     * @return A new low-pass node, or a no-op stub on unsupported platforms.
      */
-    EffectNode createLowPassFilter(double cutoffHz, int order);
+    LowPassNode createLowPassFilter(double cutoffHz, int order);
   }
 
   /**
    * An opaque handle to an audio-graph effect node (reverb, delay, low-pass, etc.).
    *
-   * <p>On platforms that do not support an audio graph (e.g. TeaVM) the returned
-   * instances are no-op stubs.
+   * <p>On platforms that do not support an audio graph the returned instances are no-op stubs.
+   * Typed subtypes ({@link ReverbNode}, {@link EchoNode}, {@link LowPassNode}) expose
+   * live parameter setters for the effects that support them.
    */
   interface EffectNode {
 
@@ -306,5 +307,130 @@ public interface FlixelSoundBackend {
 
     /** Releases native resources held by this effect node. */
     void dispose();
+  }
+
+  /**
+   * A live-controllable reverb effect node.
+   *
+   * <p>All setters take effect immediately without rebuilding the audio graph.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * ReverbNode reverb = sound.addReverb(0.4f);
+   * // Later, when the player enters a cave:
+   * reverb.setRoomSize(0.9f);
+   * reverb.setWet(0.7f);
+   * }</pre>
+   */
+  interface ReverbNode extends EffectNode {
+
+    /** No-op sentinel returned when no sound factory is available. */
+    ReverbNode NOOP = new ReverbNode() {
+      public void attachToUpstream(FlixelSoundBackend u, int b) {}
+      public void attachToUpstreamNode(EffectNode u, int b) {}
+      public void detach(int b) {}
+      public void dispose() {}
+      public void setWet(float v) {}
+      public void setDry(float v) {}
+      public void setRoomSize(float v) {}
+      public void setDamping(float v) {}
+      public void setWidth(float v) {}
+      public void setFrozen(boolean v) {}
+    };
+
+    /**
+     * Sets the wet (processed) signal level.
+     *
+     * @param wet Level in [0, 1].
+     */
+    void setWet(float wet);
+
+    /**
+     * Sets the dry (unprocessed) signal level.
+     *
+     * @param dry Level in [0, 1].
+     */
+    void setDry(float dry);
+
+    /**
+     * Sets the simulated room size.
+     *
+     * @param size Room size in [0, 1]; larger values produce longer reverb tails.
+     */
+    void setRoomSize(float size);
+
+    /**
+     * Sets the high-frequency damping amount.
+     *
+     * @param damping Damping in [0, 1]; higher values absorb treble faster.
+     */
+    void setDamping(float damping);
+
+    /**
+     * Sets the stereo width of the reverb tail.
+     *
+     * @param width Width in [0, 1]; 0 is mono, 1 is full stereo spread.
+     */
+    void setWidth(float width);
+
+    /**
+     * Freezes or unfreezes the reverb tail.
+     *
+     * <p>When frozen the tail recirculates indefinitely, producing an infinite-sustain effect.
+     *
+     * @param frozen {@code true} to freeze, {@code false} for normal decay.
+     */
+    void setFrozen(boolean frozen);
+  }
+
+  /**
+   * A delay / echo effect node.
+   *
+   * <p>Delay time and decay are fixed at construction on platforms backed by MiniAudio.
+   * To change them, dispose the current node and add a new one via
+   * {@link FlixelSound#addEcho(float, float)}.
+   */
+  interface EchoNode extends EffectNode {
+
+    /** No-op sentinel returned when no sound factory is available. */
+    EchoNode NOOP = new EchoNode() {
+      public void attachToUpstream(FlixelSoundBackend u, int b) {}
+      public void attachToUpstreamNode(EffectNode u, int b) {}
+      public void detach(int b) {}
+      public void dispose() {}
+    };
+  }
+
+  /**
+   * A live-controllable low-pass filter effect node.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * LowPassNode muffle = sound.addLowPassMuffle(8000.0);
+   * // Smoothly tighten the filter as the player goes deeper underground:
+   * muffle.setCutoff(2000.0);
+   * }</pre>
+   */
+  interface LowPassNode extends EffectNode {
+
+    /** No-op sentinel returned when no sound factory is available. */
+    LowPassNode NOOP = new LowPassNode() {
+      public void attachToUpstream(FlixelSoundBackend u, int b) {}
+      public void attachToUpstreamNode(EffectNode u, int b) {}
+      public void detach(int b) {}
+      public void dispose() {}
+      public void setCutoff(double v) {}
+    };
+
+    /**
+     * Sets the filter cutoff frequency.
+     *
+     * <p>Frequencies above the cutoff are progressively attenuated.
+     *
+     * @param hz Cutoff frequency in hertz; must be positive and below the Nyquist frequency.
+     */
+    void setCutoff(double hz);
   }
 }

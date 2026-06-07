@@ -107,36 +107,76 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
-    if (node instanceof MiniAudioEffectNode n) {
-      engine.attachToEngineOutput(n.node(), outputBusIndex);
+    MANode n = nodeOf(node);
+    if (n != null) {
+      engine.attachToEngineOutput(n, outputBusIndex);
     }
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createReverbNode(float wet) {
+  public FlixelSoundBackend.ReverbNode createReverbNode(float wet) {
     MAReverbNode rev = new MAReverbNode(engine);
     float w = Math.max(0f, Math.min(1f, wet));
     rev.setWet(w);
     rev.setDry(1f - w);
-    return new MiniAudioEffectNode(rev);
+    return new MiniAudioReverbNode(rev);
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createDelayNode(float delaySeconds, float decay) {
-    MADelayNode node = new MADelayNode(engine, delaySeconds, decay);
-    return new MiniAudioEffectNode(node);
+  public FlixelSoundBackend.EchoNode createDelayNode(float delaySeconds, float decay) {
+    return new MiniAudioEchoNode(new MADelayNode(engine, delaySeconds, decay));
   }
 
   @Override
-  public FlixelSoundBackend.EffectNode createLowPassFilter(double cutoffHz, int order) {
-    MALowPassFilter lp = new MALowPassFilter(engine, cutoffHz, order);
-    return new MiniAudioEffectNode(lp);
+  public FlixelSoundBackend.LowPassNode createLowPassFilter(double cutoffHz, int order) {
+    return new MiniAudioLowPassNode(new MALowPassFilter(engine, cutoffHz, order), order);
   }
 
-  /**
-   * Wraps a MiniAudio {@link MANode} as a {@link FlixelSoundBackend.EffectNode}.
-   */
-  private record MiniAudioEffectNode(MANode node) implements FlixelSoundBackend.EffectNode {
+  private static MANode nodeOf(FlixelSoundBackend.EffectNode n) {
+    if (n instanceof MiniAudioReverbNode r) return r.node;
+    if (n instanceof MiniAudioEchoNode e) return e.node;
+    if (n instanceof MiniAudioLowPassNode lp) return lp.node;
+    return null;
+  }
+
+  /** Reverb effect node backed by {@link MAReverbNode}. */
+  private static final class MiniAudioReverbNode implements FlixelSoundBackend.ReverbNode {
+
+    private final MAReverbNode node;
+
+    private MiniAudioReverbNode(MAReverbNode node) {
+      this.node = node;
+    }
+
+    @Override
+    public void setWet(float wet) {
+      node.setWet(Math.max(0f, Math.min(1f, wet)));
+    }
+
+    @Override
+    public void setDry(float dry) {
+      node.setDry(Math.max(0f, Math.min(1f, dry)));
+    }
+
+    @Override
+    public void setRoomSize(float size) {
+      node.setRoomSize(Math.max(0f, Math.min(1f, size)));
+    }
+
+    @Override
+    public void setDamping(float damping) {
+      node.setDumping(Math.max(0f, Math.min(1f, damping)));
+    }
+
+    @Override
+    public void setWidth(float width) {
+      node.setWidth(Math.max(0f, Math.min(1f, width)));
+    }
+
+    @Override
+    public void setFrozen(boolean frozen) {
+      node.setMode(frozen ? 1f : 0f);
+    }
 
     @Override
     public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
@@ -147,8 +187,86 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
     @Override
     public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
-      if (upstream instanceof MiniAudioEffectNode upstreamNode) {
-        node.attachToThisNode(upstreamNode.node(), bus);
+      MANode up = nodeOf(upstream);
+      if (up != null) {
+        node.attachToThisNode(up, bus);
+      }
+    }
+
+    @Override
+    public void detach(int bus) {
+      node.detach(bus);
+    }
+
+    @Override
+    public void dispose() {
+      node.dispose();
+    }
+  }
+
+  /** Echo / delay effect node backed by {@link MADelayNode}. */
+  private static final class MiniAudioEchoNode implements FlixelSoundBackend.EchoNode {
+
+    private final MADelayNode node;
+
+    private MiniAudioEchoNode(MADelayNode node) {
+      this.node = node;
+    }
+
+    @Override
+    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
+      if (upstream instanceof FlixelMiniAudioSound mas) {
+        node.attachToThisNode(mas.getMASound(), bus);
+      }
+    }
+
+    @Override
+    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
+      MANode up = nodeOf(upstream);
+      if (up != null) {
+        node.attachToThisNode(up, bus);
+      }
+    }
+
+    @Override
+    public void detach(int bus) {
+      node.detach(bus);
+    }
+
+    @Override
+    public void dispose() {
+      node.dispose();
+    }
+  }
+
+  /** Low-pass filter effect node backed by {@link MALowPassFilter}. */
+  private static final class MiniAudioLowPassNode implements FlixelSoundBackend.LowPassNode {
+
+    private final MALowPassFilter node;
+    private final int order;
+
+    private MiniAudioLowPassNode(MALowPassFilter node, int order) {
+      this.node = node;
+      this.order = order;
+    }
+
+    @Override
+    public void setCutoff(double hz) {
+      node.reinit(hz);
+    }
+
+    @Override
+    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
+      if (upstream instanceof FlixelMiniAudioSound mas) {
+        node.attachToThisNode(mas.getMASound(), bus);
+      }
+    }
+
+    @Override
+    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
+      MANode up = nodeOf(upstream);
+      if (up != null) {
+        node.attachToThisNode(up, bus);
       }
     }
 
