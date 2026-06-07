@@ -93,17 +93,17 @@ final class FlixelMiniAudioSound implements FlixelSoundBackend {
 
   @Override
   public void setVolume(float volume) {
-    sound.setVolume(volume);
+    sound.setVolume(Math.min(Math.max(volume, 0f), 1f));
   }
 
   @Override
   public void setPitch(float pitch) {
-    sound.setPitch(pitch);
+    sound.setPitch(Math.max(0.001f, pitch));
   }
 
   @Override
   public void setPan(float pan) {
-    sound.setPan(pan);
+    sound.setPan(Math.min(Math.max(pan, -1f), 1f));
   }
 
   @Override
