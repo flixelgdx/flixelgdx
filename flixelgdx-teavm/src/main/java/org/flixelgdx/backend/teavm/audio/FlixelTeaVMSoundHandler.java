@@ -56,6 +56,13 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * <p>Groups are no-ops beyond triggering context-level suspend/resume: the Web Audio API does
  * not expose per-group routing without a dedicated graph, and the engine's SFX and music groups
  * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager}.
+ *
+ * <p>Audio-graph effects ({@link org.flixelgdx.audio.FlixelSoundBackend.ReverbNode},
+ * {@link org.flixelgdx.audio.FlixelSoundBackend.EchoNode},
+ * {@link org.flixelgdx.audio.FlixelSoundBackend.LowPassNode}) are fully supported on web
+ * using native Web Audio API nodes. Reverb uses a {@code ConvolverNode} driven by a
+ * procedurally generated impulse response; echo uses a {@code DelayNode} with a feedback
+ * {@code GainNode}; low-pass uses a {@code BiquadFilterNode}.
  */
 public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
@@ -185,31 +192,45 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void attachToEngineOutput(FlixelSoundBackend sound, int outputBusIndex) {
-    // No-op on web.
+    if (masterGainNode == null || !(sound instanceof TeaVMAudioNode n)) {
+      return;
+    }
+    jsDisconnect(n.getOutputNode());
+    jsConnect(n.getOutputNode(), masterGainNode);
   }
 
   @Override
   public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
-    // No-op on web.
+    if (masterGainNode == null || !(node instanceof TeaVMAudioNode n)) {
+      return;
+    }
+    jsDisconnect(n.getOutputNode());
+    jsConnect(n.getOutputNode(), masterGainNode);
   }
 
   @Override
   public FlixelSoundBackend.ReverbNode createReverbNode(float wet) {
-    return NoOpEffectNode.INSTANCE;
+    ensureContext();
+    return new FlixelTeaVMReverbNode(context, wet);
   }
 
   @Override
   public FlixelSoundBackend.EchoNode createDelayNode(float delaySeconds, float decay) {
-    return NoOpEffectNode.INSTANCE;
+    ensureContext();
+    return new FlixelTeaVMEchoNode(context, delaySeconds, decay);
   }
 
   @Override
   public FlixelSoundBackend.LowPassNode createLowPassFilter(double cutoffHz, int order) {
-    return NoOpEffectNode.INSTANCE;
+    ensureContext();
+    return new FlixelTeaVMLowPassNode(context, cutoffHz);
   }
 
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native JSObject jsCreateContext();
+
+  @JSBody(params = {"node"}, script = "try { node.disconnect(); } catch(e) {}")
+  private static native void jsDisconnect(JSObject node);
 
   @JSBody(params = { "ctx" }, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
@@ -239,52 +260,6 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   @JSBody(params = { "buf" }, script = "return buf.duration;")
   private static native double jsGetBufferDuration(JSObject buf);
-
-  /**
-   * Singleton no-op effect node returned by all effect factories until Web Audio API
-   * effect support is implemented. Implements all typed effect interfaces so the same
-   * stub can be returned from every factory method without casting.
-   */
-  private static final class NoOpEffectNode
-      implements FlixelSoundBackend.ReverbNode,
-                 FlixelSoundBackend.EchoNode,
-                 FlixelSoundBackend.LowPassNode {
-
-    static final NoOpEffectNode INSTANCE = new NoOpEffectNode();
-
-    @Override
-    public void attachToUpstream(FlixelSoundBackend upstream, int bus) {}
-
-    @Override
-    public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {}
-
-    @Override
-    public void detach(int bus) {}
-
-    @Override
-    public void dispose() {}
-
-    @Override
-    public void setWet(float wet) {}
-
-    @Override
-    public void setDry(float dry) {}
-
-    @Override
-    public void setRoomSize(float size) {}
-
-    @Override
-    public void setDamping(float damping) {}
-
-    @Override
-    public void setWidth(float width) {}
-
-    @Override
-    public void setFrozen(boolean frozen) {}
-
-    @Override
-    public void setCutoff(double hz) {}
-  }
 
   /** JS-callable success callback used by {@link #prewarmSound}. */
   @JSFunctor

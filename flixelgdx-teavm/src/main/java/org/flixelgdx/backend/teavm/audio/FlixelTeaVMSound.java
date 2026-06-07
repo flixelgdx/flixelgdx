@@ -53,7 +53,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * Flixel.sound.play("music/song.mp3");
  * }</pre>
  */
-final class FlixelTeaVMSound implements FlixelSoundBackend {
+final class FlixelTeaVMSound implements FlixelSoundBackend, TeaVMAudioNode {
 
   private double startContextTime;
   private double pauseOffset;
@@ -290,6 +290,18 @@ final class FlixelTeaVMSound implements FlixelSoundBackend {
   @Override
   public void setPosition(float x, float y, float z) {
     // No-op.
+  }
+
+  /**
+   * Returns the stereo panner node, which is the final output stage of this sound.
+   * Effect routing connects this to an effect's input (or reconnects it to the master gain
+   * when the effect chain is cleared).
+   *
+   * @return The {@code StereoPannerNode} output node.
+   */
+  @Override
+  public JSObject getOutputNode() {
+    return pannerNode;
   }
 
   @Override
