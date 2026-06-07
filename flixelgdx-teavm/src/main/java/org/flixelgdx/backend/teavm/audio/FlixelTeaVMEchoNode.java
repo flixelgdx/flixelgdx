@@ -105,21 +105,21 @@ final class FlixelTeaVMEchoNode implements FlixelSoundBackend.EchoNode, TeaVMAud
     jsDisconnect(inputNode);
   }
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createGain();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
 
-  @JSBody(params = {"ctx", "maxDelay"}, script = "return ctx.createDelay(maxDelay);")
+  @JSBody(params = { "ctx", "maxDelay" }, script = "return ctx.createDelay(maxDelay);")
   private static native JSObject jsCreateDelay(JSObject ctx, float maxDelay);
 
-  @JSBody(params = {"a", "b"}, script = "a.connect(b);")
+  @JSBody(params = { "a", "b" }, script = "a.connect(b);")
   private static native void jsConnect(JSObject a, JSObject b);
 
-  @JSBody(params = {"node"}, script = "try { node.disconnect(); } catch(e) {}")
+  @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
   private static native void jsDisconnect(JSObject node);
 
-  @JSBody(params = {"node", "v"}, script = "node.gain.value = v;")
+  @JSBody(params = { "node", "v" }, script = "node.gain.value = v;")
   private static native void jsSetGain(JSObject node, float v);
 
-  @JSBody(params = {"delayNode", "seconds"}, script = "delayNode.delayTime.value = seconds;")
+  @JSBody(params = { "delayNode", "seconds" }, script = "delayNode.delayTime.value = seconds;")
   private static native void jsSetDelayTime(JSObject delayNode, float seconds);
 }

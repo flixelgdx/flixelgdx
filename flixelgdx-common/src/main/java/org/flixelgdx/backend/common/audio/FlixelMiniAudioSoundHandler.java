@@ -50,11 +50,6 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
     engine = new MiniAudio();
   }
 
-  /** Returns the underlying MiniAudio engine for advanced or asset-loader use. */
-  public MiniAudio getEngine() {
-    return engine;
-  }
-
   @Override
   public FlixelSoundBackend createSound(String path, short flags, Object group, boolean external) {
     MAGroup maGroup = (group instanceof MAGroup g) ? g : null;
@@ -157,21 +152,23 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
     return new MiniAudioLowPassNode(new MALowPassFilter(engine, cutoffHz, order), order);
   }
 
+  /** Returns the underlying MiniAudio engine for advanced or asset-loader use. */
+  public MiniAudio getEngine() {
+    return engine;
+  }
+
   private static MANode nodeOf(FlixelSoundBackend.EffectNode n) {
-    if (n instanceof MiniAudioReverbNode r) return r.node;
-    if (n instanceof MiniAudioEchoNode e) return e.node;
-    if (n instanceof MiniAudioLowPassNode lp) return lp.node;
+    if (n instanceof MiniAudioReverbNode r)
+      return r.node;
+    if (n instanceof MiniAudioEchoNode e)
+      return e.node;
+    if (n instanceof MiniAudioLowPassNode lp)
+      return lp.node;
     return null;
   }
 
   /** Reverb effect node backed by {@link MAReverbNode}. */
-  private static final class MiniAudioReverbNode implements FlixelSoundBackend.ReverbNode {
-
-    private final MAReverbNode node;
-
-    private MiniAudioReverbNode(MAReverbNode node) {
-      this.node = node;
-    }
+  private record MiniAudioReverbNode(MAReverbNode node) implements FlixelSoundBackend.ReverbNode {
 
     @Override
     public void setWet(float wet) {
@@ -230,13 +227,7 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   /** Echo / delay effect node backed by {@link MADelayNode}. */
-  private static final class MiniAudioEchoNode implements FlixelSoundBackend.EchoNode {
-
-    private final MADelayNode node;
-
-    private MiniAudioEchoNode(MADelayNode node) {
-      this.node = node;
-    }
+  private record MiniAudioEchoNode(MADelayNode node) implements FlixelSoundBackend.EchoNode {
 
     @Override
     public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
@@ -265,15 +256,7 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   /** Low-pass filter effect node backed by {@link MALowPassFilter}. */
-  private static final class MiniAudioLowPassNode implements FlixelSoundBackend.LowPassNode {
-
-    private final MALowPassFilter node;
-    private final int order;
-
-    private MiniAudioLowPassNode(MALowPassFilter node, int order) {
-      this.node = node;
-      this.order = order;
-    }
+  private record MiniAudioLowPassNode(MALowPassFilter node, int order) implements FlixelSoundBackend.LowPassNode {
 
     @Override
     public void setCutoff(double hz) {

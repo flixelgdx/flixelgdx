@@ -229,7 +229,7 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native JSObject jsCreateContext();
 
-  @JSBody(params = {"node"}, script = "try { node.disconnect(); } catch(e) {}")
+  @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
   private static native void jsDisconnect(JSObject node);
 
   @JSBody(params = { "ctx" }, script = "return ctx.createGain();")

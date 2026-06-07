@@ -160,22 +160,22 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
     jsDisconnect(inputNode);
   }
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createGain();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createGain();")
   private static native JSObject jsCreateGain(JSObject ctx);
 
-  @JSBody(params = {"ctx"}, script = "return ctx.createConvolver();")
+  @JSBody(params = { "ctx" }, script = "return ctx.createConvolver();")
   private static native JSObject jsCreateConvolver(JSObject ctx);
 
-  @JSBody(params = {"a", "b"}, script = "a.connect(b);")
+  @JSBody(params = { "a", "b" }, script = "a.connect(b);")
   private static native void jsConnect(JSObject a, JSObject b);
 
-  @JSBody(params = {"node"}, script = "try { node.disconnect(); } catch(e) {}")
+  @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
   private static native void jsDisconnect(JSObject node);
 
-  @JSBody(params = {"node", "v"}, script = "node.gain.value = v;")
+  @JSBody(params = { "node", "v" }, script = "node.gain.value = v;")
   private static native void jsSetGain(JSObject node, float v);
 
-  @JSBody(params = {"conv", "buf"}, script = "conv.buffer = buf;")
+  @JSBody(params = { "conv", "buf" }, script = "conv.buffer = buf;")
   private static native void jsSetConvolverBuffer(JSObject conv, JSObject buf);
 
   /**
@@ -186,9 +186,8 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
    * parameter blends from mono (0) to fully independent stereo channels (1).
    */
   @JSBody(
-      params = {"ctx", "roomSize", "damping", "width"},
-      script =
-          "var sampleRate = ctx.sampleRate;"
+      params = { "ctx", "roomSize", "damping", "width" },
+      script = "var sampleRate = ctx.sampleRate;"
           + "var duration = 0.2 + roomSize * 3.8;"
           + "var length = Math.ceil(sampleRate * duration);"
           + "var ir = ctx.createBuffer(2, length, sampleRate);"

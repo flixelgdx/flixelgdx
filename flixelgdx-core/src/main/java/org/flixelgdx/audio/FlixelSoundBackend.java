@@ -345,14 +345,23 @@ public interface FlixelSoundBackend {
     /** No-op sentinel returned when no sound factory is available. */
     ReverbNode NOOP = new ReverbNode() {
       public void attachToUpstream(FlixelSoundBackend u, int b) {}
+
       public void attachToUpstreamNode(EffectNode u, int b) {}
+
       public void detach(int b) {}
+
       public void dispose() {}
+
       public void setWet(float v) {}
+
       public void setDry(float v) {}
+
       public void setRoomSize(float v) {}
+
       public void setDamping(float v) {}
+
       public void setWidth(float v) {}
+
       public void setFrozen(boolean v) {}
     };
 
@@ -413,8 +422,11 @@ public interface FlixelSoundBackend {
     /** No-op sentinel returned when no sound factory is available. */
     EchoNode NOOP = new EchoNode() {
       public void attachToUpstream(FlixelSoundBackend u, int b) {}
+
       public void attachToUpstreamNode(EffectNode u, int b) {}
+
       public void detach(int b) {}
+
       public void dispose() {}
     };
   }
@@ -435,9 +447,13 @@ public interface FlixelSoundBackend {
     /** No-op sentinel returned when no sound factory is available. */
     LowPassNode NOOP = new LowPassNode() {
       public void attachToUpstream(FlixelSoundBackend u, int b) {}
+
       public void attachToUpstreamNode(EffectNode u, int b) {}
+
       public void detach(int b) {}
+
       public void dispose() {}
+
       public void setCutoff(double v) {}
     };
 

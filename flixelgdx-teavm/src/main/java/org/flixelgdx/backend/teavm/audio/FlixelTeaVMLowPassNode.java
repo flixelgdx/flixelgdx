@@ -85,16 +85,16 @@ final class FlixelTeaVMLowPassNode implements FlixelSoundBackend.LowPassNode, Te
   }
 
   @JSBody(
-      params = {"ctx"},
+      params = { "ctx" },
       script = "var f = ctx.createBiquadFilter(); f.type = 'lowpass'; return f;")
   private static native JSObject jsCreateLowPassFilter(JSObject ctx);
 
-  @JSBody(params = {"a", "b"}, script = "a.connect(b);")
+  @JSBody(params = { "a", "b" }, script = "a.connect(b);")
   private static native void jsConnect(JSObject a, JSObject b);
 
-  @JSBody(params = {"node"}, script = "try { node.disconnect(); } catch(e) {}")
+  @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
   private static native void jsDisconnect(JSObject node);
 
-  @JSBody(params = {"filter", "hz"}, script = "filter.frequency.value = hz;")
+  @JSBody(params = { "filter", "hz" }, script = "filter.frequency.value = hz;")
   private static native void jsSetCutoff(JSObject filter, double hz);
 }
