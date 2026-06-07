@@ -192,7 +192,7 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void attachToEngineOutput(FlixelSoundBackend sound, int outputBusIndex) {
-    if (masterGainNode == null || !(sound instanceof TeaVMAudioNode n)) {
+    if (masterGainNode == null || !(sound instanceof FlixelTeaVMAudioNode n)) {
       return;
     }
     jsDisconnect(n.getOutputNode());
@@ -201,7 +201,7 @@ public class FlixelTeaVMSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
-    if (masterGainNode == null || !(node instanceof TeaVMAudioNode n)) {
+    if (masterGainNode == null || !(node instanceof FlixelTeaVMAudioNode n)) {
       return;
     }
     jsDisconnect(n.getOutputNode());

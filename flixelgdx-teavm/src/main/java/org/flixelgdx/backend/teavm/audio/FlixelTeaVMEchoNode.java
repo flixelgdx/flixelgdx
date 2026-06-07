@@ -36,16 +36,16 @@ import org.teavm.jso.JSObject;
  *
  * <p>Audio graph layout:
  * <pre>
- *   inputNode -+--&gt; delayNode --+--&gt; outputNode --&gt; downstream
- *              |                |
- *              |    feedbackGain &lt;--+
+ *   inputNode -+--> delayNode ------+----> outputNode --> downstream
+ *              |                    |
+ *              |    feedbackGain <--+
  *              |         |
- *              |         +--&gt; delayNode (feedback loop)
+ *              |         +--> delayNode (feedback loop)
  *              |
- *              +--&gt; outputNode (dry path)
+ *              +--> outputNode (dry path)
  * </pre>
  */
-final class FlixelTeaVMEchoNode implements FlixelSoundBackend.EchoNode, TeaVMAudioNode {
+final class FlixelTeaVMEchoNode implements FlixelSoundBackend.EchoNode, FlixelTeaVMAudioNode {
 
   private final JSObject inputNode;
   private final JSObject delayNode;
@@ -78,7 +78,7 @@ final class FlixelTeaVMEchoNode implements FlixelSoundBackend.EchoNode, TeaVMAud
 
   @Override
   public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-    if (upstream instanceof TeaVMAudioNode n) {
+    if (upstream instanceof FlixelTeaVMAudioNode n) {
       jsDisconnect(n.getOutputNode());
       jsConnect(n.getOutputNode(), inputNode);
     }
@@ -86,7 +86,7 @@ final class FlixelTeaVMEchoNode implements FlixelSoundBackend.EchoNode, TeaVMAud
 
   @Override
   public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
-    if (upstream instanceof TeaVMAudioNode n) {
+    if (upstream instanceof FlixelTeaVMAudioNode n) {
       jsDisconnect(n.getOutputNode());
       jsConnect(n.getOutputNode(), inputNode);
     }

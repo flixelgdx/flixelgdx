@@ -39,11 +39,13 @@ import org.teavm.jso.JSObject;
  *   upstream --&gt; filterNode --&gt; downstream
  * </pre>
  */
-final class FlixelTeaVMLowPassNode implements FlixelSoundBackend.LowPassNode, TeaVMAudioNode {
+final class FlixelTeaVMLowPassNode implements FlixelSoundBackend.LowPassNode, FlixelTeaVMAudioNode {
 
+  private double cutoffHz;
   private final JSObject filterNode;
 
   FlixelTeaVMLowPassNode(JSObject context, double cutoffHz) {
+    this.cutoffHz = cutoffHz;
     filterNode = jsCreateLowPassFilter(context);
     jsSetCutoff(filterNode, cutoffHz);
   }
@@ -54,13 +56,19 @@ final class FlixelTeaVMLowPassNode implements FlixelSoundBackend.LowPassNode, Te
   }
 
   @Override
+  public double getCutoff() {
+    return cutoffHz;
+  }
+
+  @Override
   public void setCutoff(double hz) {
+    cutoffHz = hz;
     jsSetCutoff(filterNode, hz);
   }
 
   @Override
   public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-    if (upstream instanceof TeaVMAudioNode n) {
+    if (upstream instanceof FlixelTeaVMAudioNode n) {
       jsDisconnect(n.getOutputNode());
       jsConnect(n.getOutputNode(), filterNode);
     }
@@ -68,7 +76,7 @@ final class FlixelTeaVMLowPassNode implements FlixelSoundBackend.LowPassNode, Te
 
   @Override
   public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
-    if (upstream instanceof TeaVMAudioNode n) {
+    if (upstream instanceof FlixelTeaVMAudioNode n) {
       jsDisconnect(n.getOutputNode());
       jsConnect(n.getOutputNode(), filterNode);
     }

@@ -139,7 +139,7 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
     float w = Math.max(0f, Math.min(1f, wet));
     rev.setWet(w);
     rev.setDry(1f - w);
-    return new MiniAudioReverbNode(rev);
+    return new MiniAudioReverbNode(rev, w, 1f - w);
   }
 
   @Override
@@ -149,7 +149,7 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public FlixelSoundBackend.LowPassNode createLowPassFilter(double cutoffHz, int order) {
-    return new MiniAudioLowPassNode(new MALowPassFilter(engine, cutoffHz, order), order);
+    return new MiniAudioLowPassNode(new MALowPassFilter(engine, cutoffHz, order), order, cutoffHz);
   }
 
   /** Returns the underlying MiniAudio engine for advanced or asset-loader use. */
@@ -168,35 +168,85 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   /** Reverb effect node backed by {@link MAReverbNode}. */
-  private record MiniAudioReverbNode(MAReverbNode node) implements FlixelSoundBackend.ReverbNode {
+  private static final class MiniAudioReverbNode implements FlixelSoundBackend.ReverbNode {
+
+    private final MAReverbNode node;
+    private float wet;
+    private float dry;
+    private float roomSize = 0.7f;
+    private float damping = 0.5f;
+    private float width = 1.0f;
+    private boolean frozen;
+
+    MiniAudioReverbNode(MAReverbNode node, float wet, float dry) {
+      this.node = node;
+      this.wet = wet;
+      this.dry = dry;
+    }
+
+    @Override
+    public float getWet() {
+      return wet;
+    }
+
+    @Override
+    public float getDry() {
+      return dry;
+    }
+
+    @Override
+    public float getRoomSize() {
+      return roomSize;
+    }
+
+    @Override
+    public float getDamping() {
+      return damping;
+    }
+
+    @Override
+    public float getWidth() {
+      return width;
+    }
+
+    @Override
+    public boolean isFrozen() {
+      return frozen;
+    }
 
     @Override
     public void setWet(float wet) {
-      node.setWet(Math.max(0f, Math.min(1f, wet)));
+      this.wet = Math.max(0f, Math.min(1f, wet));
+      node.setWet(this.wet);
     }
 
     @Override
     public void setDry(float dry) {
-      node.setDry(Math.max(0f, Math.min(1f, dry)));
+      this.dry = Math.max(0f, Math.min(1f, dry));
+      node.setDry(this.dry);
     }
 
     @Override
     public void setRoomSize(float size) {
-      node.setRoomSize(Math.max(0f, Math.min(1f, size)));
+      roomSize = Math.max(0f, Math.min(1f, size));
+      node.setRoomSize(roomSize);
     }
 
     @Override
     public void setDamping(float damping) {
-      node.setDumping(Math.max(0f, Math.min(1f, damping)));
+      this.damping = Math.max(0f, Math.min(1f, damping));
+      node.setDumping(this.damping);
     }
 
     @Override
     public void setWidth(float width) {
-      node.setWidth(Math.max(0f, Math.min(1f, width)));
+      this.width = Math.max(0f, Math.min(1f, width));
+      node.setWidth(this.width);
     }
 
     @Override
     public void setFrozen(boolean frozen) {
+      this.frozen = frozen;
       node.setMode(frozen ? 1f : 0f);
     }
 
@@ -256,10 +306,26 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   }
 
   /** Low-pass filter effect node backed by {@link MALowPassFilter}. */
-  private record MiniAudioLowPassNode(MALowPassFilter node, int order) implements FlixelSoundBackend.LowPassNode {
+  private static final class MiniAudioLowPassNode implements FlixelSoundBackend.LowPassNode {
+
+    private double cutoffHz;
+    private final MALowPassFilter node;
+    private final int order;
+
+    MiniAudioLowPassNode(MALowPassFilter node, int order, double cutoffHz) {
+      this.node = node;
+      this.order = order;
+      this.cutoffHz = cutoffHz;
+    }
+
+    @Override
+    public double getCutoff() {
+      return cutoffHz;
+    }
 
     @Override
     public void setCutoff(double hz) {
+      cutoffHz = hz;
       node.reinit(hz);
     }
 

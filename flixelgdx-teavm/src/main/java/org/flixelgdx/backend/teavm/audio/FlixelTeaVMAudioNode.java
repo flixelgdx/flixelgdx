@@ -33,7 +33,7 @@ import org.teavm.jso.JSObject;
  * ({@link FlixelTeaVMReverbNode}, {@link FlixelTeaVMEchoNode},
  * {@link FlixelTeaVMLowPassNode}).
  */
-interface TeaVMAudioNode {
+interface FlixelTeaVMAudioNode {
 
   /**
    * Returns the Web Audio API node whose output carries this node's final audio signal.

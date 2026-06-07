@@ -45,12 +45,12 @@ import org.teavm.jso.JSObject;
  *
  * <p>Audio graph layout:
  * <pre>
- *   inputNode -+--&gt; convolverNode --&gt; wetGain --+--&gt; outputNode --&gt; downstream
- *              |                                |
- *              +--&gt; dryGain -------------------+
+ *   inputNode -+--> convolverNode ----> wetGain ----+---> outputNode --> downstream
+ *              |                                    |
+ *              +--> dryGain ------------------------+
  * </pre>
  */
-final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaVMAudioNode {
+final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, FlixelTeaVMAudioNode {
 
   private final JSObject context;
   private final JSObject inputNode;
@@ -59,6 +59,8 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
   private final JSObject dryGain;
   private final JSObject outputNode;
 
+  private float wet;
+  private float dry;
   private float roomSize = 0.7f;
   private float damping = 0.5f;
   private float width = 1.0f;
@@ -78,9 +80,10 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
     jsConnect(wetGain, outputNode);
     jsConnect(dryGain, outputNode);
 
-    float w = Math.max(0f, Math.min(1f, wet));
-    jsSetGain(wetGain, w);
-    jsSetGain(dryGain, 1f - w);
+    this.wet = Math.max(0f, Math.min(1f, wet));
+    this.dry = 1f - this.wet;
+    jsSetGain(wetGain, this.wet);
+    jsSetGain(dryGain, this.dry);
 
     jsSetConvolverBuffer(convolverNode, jsGenerateIR(context, roomSize, damping, width));
   }
@@ -91,13 +94,45 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
   }
 
   @Override
+  public float getWet() {
+    return wet;
+  }
+
+  @Override
+  public float getDry() {
+    return dry;
+  }
+
+  @Override
+  public float getRoomSize() {
+    return roomSize;
+  }
+
+  @Override
+  public float getDamping() {
+    return damping;
+  }
+
+  @Override
+  public float getWidth() {
+    return width;
+  }
+
+  @Override
+  public boolean isFrozen() {
+    return frozen;
+  }
+
+  @Override
   public void setWet(float wet) {
-    jsSetGain(wetGain, Math.max(0f, Math.min(1f, wet)));
+    this.wet = Math.max(0f, Math.min(1f, wet));
+    jsSetGain(wetGain, this.wet);
   }
 
   @Override
   public void setDry(float dry) {
-    jsSetGain(dryGain, Math.max(0f, Math.min(1f, dry)));
+    this.dry = Math.max(0f, Math.min(1f, dry));
+    jsSetGain(dryGain, this.dry);
   }
 
   @Override
@@ -132,7 +167,7 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
 
   @Override
   public void attachToUpstream(FlixelSoundBackend upstream, int bus) {
-    if (upstream instanceof TeaVMAudioNode n) {
+    if (upstream instanceof FlixelTeaVMAudioNode n) {
       jsDisconnect(n.getOutputNode());
       jsConnect(n.getOutputNode(), inputNode);
     }
@@ -140,7 +175,7 @@ final class FlixelTeaVMReverbNode implements FlixelSoundBackend.ReverbNode, TeaV
 
   @Override
   public void attachToUpstreamNode(FlixelSoundBackend.EffectNode upstream, int bus) {
-    if (upstream instanceof TeaVMAudioNode n) {
+    if (upstream instanceof FlixelTeaVMAudioNode n) {
       jsDisconnect(n.getOutputNode());
       jsConnect(n.getOutputNode(), inputNode);
     }

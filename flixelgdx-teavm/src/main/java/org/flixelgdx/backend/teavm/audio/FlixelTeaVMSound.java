@@ -53,7 +53,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * Flixel.sound.play("music/song.mp3");
  * }</pre>
  */
-final class FlixelTeaVMSound implements FlixelSoundBackend, TeaVMAudioNode {
+final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode {
 
   private double startContextTime;
   private double pauseOffset;
