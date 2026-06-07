@@ -64,7 +64,7 @@ final class FlixelTeaVMEchoNode implements FlixelSoundBackend.EchoNode, FlixelTe
 
     // Dry signal passes straight through.
     jsConnect(inputNode, outputNode);
-    // Wet: delay → output and delay → feedback → delay (loop).
+    // Wet: delay -> output and delay -> feedback -> delay (loop).
     jsConnect(inputNode, delayNode);
     jsConnect(delayNode, outputNode);
     jsConnect(delayNode, feedbackGain);

@@ -36,7 +36,7 @@ import org.teavm.jso.JSObject;
  *
  * <p>Audio graph layout:
  * <pre>
- *   upstream --&gt; filterNode --&gt; downstream
+ *   upstream --> filterNode --> downstream
  * </pre>
  */
 final class FlixelTeaVMLowPassNode implements FlixelSoundBackend.LowPassNode, FlixelTeaVMAudioNode {
