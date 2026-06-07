@@ -24,7 +24,9 @@
 package org.flixelgdx.backend.common.audio;
 
 import org.flixelgdx.audio.FlixelSoundBackend;
+import org.jetbrains.annotations.Nullable;
 
+import games.rednblack.miniaudio.MAGroup;
 import games.rednblack.miniaudio.MASound;
 
 /**
@@ -34,13 +36,29 @@ final class FlixelMiniAudioSound implements FlixelSoundBackend {
 
   private final MASound sound;
 
-  FlixelMiniAudioSound(MASound sound) {
+  @Nullable
+  private final MAGroup group;
+
+  FlixelMiniAudioSound(MASound sound, @Nullable MAGroup group) {
     this.sound = sound;
+    this.group = group;
   }
 
   /** Returns the underlying {@link MASound} for advanced engine operations. */
   MASound getMASound() {
     return sound;
+  }
+
+  /**
+   * Returns the group this sound was created in, or {@code null} if it has no group.
+   * Used by the factory to route effect chains through the group so that group-level
+   * pause and resume still apply even when effects are active.
+   *
+   * @return The group, or {@code null}.
+   */
+  @Nullable
+  MAGroup getGroup() {
+    return group;
   }
 
   @Override

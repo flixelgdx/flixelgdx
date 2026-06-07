@@ -59,7 +59,7 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   public FlixelSoundBackend createSound(String path, short flags, Object group, boolean external) {
     MAGroup maGroup = (group instanceof MAGroup g) ? g : null;
     MASound ma = engine.createSound(path, flags, maGroup, external);
-    return new FlixelMiniAudioSound(ma);
+    return new FlixelMiniAudioSound(ma, maGroup);
   }
 
   @Override
@@ -100,7 +100,15 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
 
   @Override
   public void attachToEngineOutput(FlixelSoundBackend sound, int outputBusIndex) {
-    if (sound instanceof FlixelMiniAudioSound mas) {
+    if (!(sound instanceof FlixelMiniAudioSound mas)) {
+      return;
+    }
+    MAGroup group = mas.getGroup();
+    if (group != null) {
+      // Reconnect the sound directly to its group, restoring the routing that existed
+      // before any effect chain was added. Group-level pause then controls this sound again.
+      group.attachToThisNode(mas.getMASound(), outputBusIndex);
+    } else {
       engine.attachToEngineOutput(mas.getMASound(), outputBusIndex);
     }
   }
@@ -109,6 +117,23 @@ public class FlixelMiniAudioSoundHandler implements FlixelSoundBackend.Factory {
   public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex) {
     MANode n = nodeOf(node);
     if (n != null) {
+      engine.attachToEngineOutput(n, outputBusIndex);
+    }
+  }
+
+  @Override
+  public void attachEffectToEngineOutput(FlixelSoundBackend.EffectNode node, int outputBusIndex,
+      FlixelSoundBackend sound) {
+    MANode n = nodeOf(node);
+    if (n == null) {
+      return;
+    }
+    MAGroup group = (sound instanceof FlixelMiniAudioSound mas) ? mas.getGroup() : null;
+    if (group != null) {
+      // Route the tail of the effect chain through the group so that groupPause() and
+      // groupPlay() still gate audio even while effects are active.
+      group.attachToThisNode(n, outputBusIndex);
+    } else {
       engine.attachToEngineOutput(n, outputBusIndex);
     }
   }

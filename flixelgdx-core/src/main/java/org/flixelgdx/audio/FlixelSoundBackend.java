@@ -246,6 +246,23 @@ public interface FlixelSoundBackend {
     void attachEffectToEngineOutput(EffectNode node, int outputBusIndex);
 
     /**
+     * Sound-aware overload of {@link #attachEffectToEngineOutput(EffectNode, int)}.
+     *
+     * <p>Backends that route through sound groups (e.g. MiniAudio) should override this to
+     * connect the tail node through the sound's group rather than directly to the engine
+     * endpoint, preserving group-level pause and resume behavior. The default implementation
+     * delegates to the two-argument form and ignores the sound.
+     *
+     * @param node The tail effect node whose output to route.
+     * @param outputBusIndex Output bus index (typically 0).
+     * @param sound The sound whose effect chain is being finalized.
+     */
+    default void attachEffectToEngineOutput(EffectNode node, int outputBusIndex,
+        FlixelSoundBackend sound) {
+      attachEffectToEngineOutput(node, outputBusIndex);
+    }
+
+    /**
      * Creates a reverb effect node.
      *
      * @param wet Wet amount in [0, 1].

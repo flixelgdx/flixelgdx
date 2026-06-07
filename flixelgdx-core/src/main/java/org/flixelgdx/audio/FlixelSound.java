@@ -732,7 +732,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     }
     audioEffectNodes.add(node);
     if (factory != null) {
-      factory.attachEffectToEngineOutput(node, 0);
+      factory.attachEffectToEngineOutput(node, 0, sound);
     }
   }
 
