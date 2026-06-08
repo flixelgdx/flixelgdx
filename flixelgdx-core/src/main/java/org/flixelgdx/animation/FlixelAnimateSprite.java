@@ -398,7 +398,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     // World position with scroll factor (matches FlixelSprite.draw() / FlixelObject.getDrawX()).
-    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 

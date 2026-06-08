@@ -196,7 +196,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
   @Nullable
   private static FlixelCamera safeGetDefaultCamera() {
     try {
-      return Flixel.getCamera();
+      return Flixel.cameras.first();
     } catch (Exception e) {
       return null;
     }

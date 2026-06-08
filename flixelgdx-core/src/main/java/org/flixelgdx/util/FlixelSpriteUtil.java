@@ -349,7 +349,7 @@ public final class FlixelSpriteUtil {
       boolean top,
       boolean bottom) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    FlixelCamera cam = camera != null ? camera : Flixel.getCamera();
+    FlixelCamera cam = camera != null ? camera : Flixel.cameras.first();
     float minX = cam.getViewLeft();
     float minY = cam.getViewTop();
     float maxX = cam.getViewRight();
@@ -390,7 +390,7 @@ public final class FlixelSpriteUtil {
       boolean top,
       boolean bottom) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    FlixelCamera cam = camera != null ? camera : Flixel.getCamera();
+    FlixelCamera cam = camera != null ? camera : Flixel.cameras.first();
     float minX = cam.getViewLeft();
     float minY = cam.getViewTop();
     float maxX = cam.getViewRight();

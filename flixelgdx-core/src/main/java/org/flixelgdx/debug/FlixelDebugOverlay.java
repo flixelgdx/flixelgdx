@@ -245,7 +245,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /** Returns the camera currently selected by Alt+arrow cycling, clamped to a valid index. */
   public final int getInspectCameraIndex() {
-    Array<FlixelCamera> cams = Flixel.getCameras();
+    Array<FlixelCamera> cams = Flixel.cameras;
     int n = (cams != null) ? cams.size : 0;
     if (n == 0) {
       return -1;
@@ -509,7 +509,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (Flixel.mouse == null) {
       return;
     }
-    Array<FlixelCamera> cams = Flixel.getCameras();
+    Array<FlixelCamera> cams = Flixel.cameras;
     if (cams == null || cams.size == 0) {
       return;
     }
@@ -584,7 +584,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
 
-    Array<FlixelCamera> cams = Flixel.getCameras();
+    Array<FlixelCamera> cams = Flixel.cameras;
     if (cams == null || cams.size == 0) {
       return;
     }

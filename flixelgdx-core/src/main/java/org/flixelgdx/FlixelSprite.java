@@ -424,7 +424,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     if (!isOnDrawCamera()) {
       return;
     }
-    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
