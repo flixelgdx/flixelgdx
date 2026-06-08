@@ -23,13 +23,13 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 >
 > 3. If your code is broken or rejected, ***it is not the AI's fault, it is yours***. AI is useful, but it can't do the thinking for you.
 
-## Java runtime (JDK 17, OpenJ9)
+## Java runtime (JDK 17, Eclipse Temurin)
 
-FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use a JDK that ships **Eclipse OpenJ9** as the VM — specifically **[IBM Semeru Runtime](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/)** (Java 17, OpenJ9 edition). OpenJ9 typically uses **much less heap and RSS** than HotSpot-class JVMs (Oracle JDK, Eclipse Temurin, Amazon Corretto, Azul Zulu HotSpot, and most default `openjdk-17` packages from Linux distros). That matters for games and iterative runs.
+FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)** (the Adoptium distribution of OpenJDK). Temurin is a well-tested, freely available HotSpot build with strong community support and broad platform coverage.
 
-**Do not** use Oracle’s JDK or other **HotSpot** builds as your default for this project unless you have no alternative. If `java -version` output mentions **OpenJ9**, you are on the right VM; if it mentions **HotSpot** (or only “OpenJDK” without OpenJ9), switch to Semeru.
+**Do not** use Oracle’s proprietary JDK. If `java -version` output mentions **Temurin** or **OpenJDK**, you are on a compatible build.
 
-CI uses **IBM Semeru (OpenJ9)** via GitHub Actions so builds match that recommendation.
+CI uses **Eclipse Temurin 17** via GitHub Actions so builds match that recommendation.
 
 Full installation steps for Windows, macOS, and Linux are in [COMPILING.md](COMPILING.md) (Java section).
 
@@ -83,7 +83,7 @@ Once EditorConfig is enabled, new and edited files will respect the project’s 
 - **Whitespace**: Trim trailing whitespace from every line. End each file with a single newline. Use a single blank line between methods and between logical sections; do not add multiple blank lines in a row unless the style already exists in that file.
 - **Imports**: Use single-class imports (no `import foo.bar.*`). Order imports as the rest of the project does (typically: Java, then third-party, then project packages, with blank lines between groups).
 
-Match the existing style in the file you are editing. When in doubt, run `./gradlew classes` and rely on the build; we expect code to look like it was written by a single person.
+Match the existing style in the file you are editing. When in doubt, run `./gradlew spotlessApply` and rely on the build; we expect code to look like it was written by a single person.
 
 ### Naming and Style
 
@@ -104,7 +104,7 @@ When replicating HaxeFlixel or Flixel APIs, follow the existing naming in this p
 
 **Inline comments:**
 
-- **Complex logic**: Use short comments to explain *why* something is done when the reason is not obvious from the code (e.g. a workaround, a non-obvious invariant, or a performance-sensitive choice). Prefer clear naming and small methods so that most code does not need comments.
+- **Complex logic**: Use short comments to explain *why* something is done when the reason is not obvious from the code (e.g. a workaround, a non-obvious invariant, or a performance-sensitive choice). Prefer clear naming and small methods so simple to semi-complex code does not need comments.
 - **Avoid noise**: Do not comment the obvious (e.g. "increment i" next to `i++`). Do not leave commented-out code in the final patch; remove it or explain in the PR why it must stay.
 - **TODOs**: Use `// TODO: description` for temporary workarounds or follow-ups. Prefer opening an issue and referencing it in the TODO if the follow-up is non-trivial.
 
