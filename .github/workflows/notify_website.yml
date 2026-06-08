@@ -9,7 +9,7 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger flixelgdx-website rebuild
+      - name: Trigger Website API rebuild
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
