@@ -70,8 +70,6 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
   @NotNull
   private FlixelMouseIconManager iconManager = FlixelNoopMouseIconManager.INSTANCE;
 
-  public boolean enabled = true;
-
   private int screenX;
   private int screenY;
 
@@ -138,6 +136,9 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
       return false;
     }
   };
+
+  /** When {@code false}, all queries return inactive state. */
+  public boolean enabled = true;
 
   public FlixelMouseManager() {}
 

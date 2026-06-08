@@ -90,12 +90,6 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @Nullable
   private Float endTimeMs;
 
-  /** When true, {@link #destroy()} is called when the sound finishes (non-looping). */
-  private boolean autoDestroy;
-
-  /** When true, this sound is not automatically destroyed on state switch. */
-  private boolean persist;
-
   /** Current fade tween, so it can be cancelled when starting a new fade. */
   @Nullable
   private FlixelTween fadeTween;
@@ -106,6 +100,12 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   /** Signal dispatched when the sound reaches its end (non-looping). */
   @NotNull
   public final FlixelSignal<Void> onComplete = new FlixelSignal<>();
+
+  /** When true, {@link #destroy()} is called when the sound finishes (non-looping). */
+  private boolean autoDestroy;
+
+  /** When true, this sound is not automatically destroyed on state switch. */
+  private boolean persist;
 
   /**
    * Creates a new Flixel sound wrapping the given file path.

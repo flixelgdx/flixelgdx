@@ -98,6 +98,8 @@ import java.util.function.Supplier;
  */
 public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
+  private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
+
   /** The title displayed on the game's window. */
   protected String title;
 
@@ -117,6 +119,54 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** The framerate of how fast the game should update and render. */
   private int framerate;
+
+  /** The main batch used for rendering all sprites on screen. */
+  protected FlixelBatch batch;
+
+  /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
+  protected Color bgColor = new Color(Color.BLACK);
+
+  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelSpriteBatch#setColor(Color)}. */
+  protected Texture bgTexture;
+
+  /** Where all the global cameras are stored. */
+  protected Array<FlixelCamera> cameras;
+
+  /**
+   * Total render calls issued by the framework {@link FlixelBatch} during the most recently
+   * completed draw pass, summed across all camera loops. Derived from the delta of
+   * {@link FlixelBatch#getTotalRenderCalls()} so multiple begin/end cycles within a single frame
+   * do not erase earlier cameras' counts.
+   */
+  private int frameRenderCalls;
+
+  /** 2D array of saved camera scroll values when the game is paused for debugging. */
+  @Nullable
+  private float[][] debugPauseCameraScroll;
+
+  /** Array of saved camera zoom values when the game is paused for debugging. */
+  @Nullable
+  private float[] debugPauseCameraZoom;
+
+  /** Reusable signal data for preUpdate dispatch (avoids per-frame allocation). */
+  private final UpdateSignalData preUpdateData = new UpdateSignalData();
+
+  /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
+  private final UpdateSignalData postUpdateData = new UpdateSignalData();
+
+  /**
+   * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
+   * this session. Cleared when transparency is turned off.
+   */
+  private final float[] desktopTransparencyRestoreGameRgba = new float[4];
+
+  /**
+   * Packed per-camera backdrop data: {@code r, g, b, a, useBgAlphaBlending ? 1f : 0f} for each camera index.
+   * Reused across toggles to avoid allocations.
+   */
+  private float[] desktopTransparencyRestoreCamerasPacked = new float[20];
+
+  private int desktopTransparencyRestoreCameraCount;
 
   /** Should the game use VSync to limit the framerate to the monitor's refresh rate? */
   private boolean vsync;
@@ -145,26 +195,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Is the game's window currently minimized? */
   private boolean isMinimized = false;
 
-  /** The main batch used for rendering all sprites on screen. */
-  protected FlixelBatch batch;
-
-  /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
-  protected Color bgColor = new Color(Color.BLACK);
-
-  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelSpriteBatch#setColor(Color)}. */
-  protected Texture bgTexture;
-
-  /** Where all the global cameras are stored. */
-  protected Array<FlixelCamera> cameras;
-
-  /**
-   * Total render calls issued by the framework {@link FlixelBatch} during the most recently
-   * completed draw pass, summed across all camera loops. Derived from the delta of
-   * {@link FlixelBatch#getTotalRenderCalls()} so multiple begin/end cycles within a single frame
-   * do not erase earlier cameras' counts.
-   */
-  private int frameRenderCalls;
-
   /** Is the game currently closing? */
   private boolean isClosing = false;
 
@@ -180,20 +210,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Prevents re-entrant fullscreen transitions from resize callbacks on desktop backends. */
   private boolean fullscreenChangeInProgress = false;
 
-  /** 2D array of saved camera scroll values when the game is paused for debugging. */
-  @Nullable
-  private float[][] debugPauseCameraScroll;
-
-  /** Array of saved camera zoom values when the game is paused for debugging. */
-  @Nullable
-  private float[] debugPauseCameraZoom;
-
-  /** Reusable signal data for preUpdate dispatch (avoids per-frame allocation). */
-  private final UpdateSignalData preUpdateData = new UpdateSignalData();
-
-  /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
-  private final UpdateSignalData postUpdateData = new UpdateSignalData();
-
   /**
    * When {@code true}, {@link Flixel#getState()} was sent {@link FlixelState#pause()} for a paired app or window pause
    * and {@link FlixelState#resume()} has not yet been dispatched. Used so duplicate callbacks (such as minimize plus
@@ -207,23 +223,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   private boolean desktopTransparencyActive;
 
-  /**
-   * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
-   * this session. Cleared when transparency is turned off.
-   */
-  private final float[] desktopTransparencyRestoreGameRgba = new float[4];
-
-  /**
-   * Packed per-camera backdrop data: {@code r, g, b, a, useBgAlphaBlending ? 1f : 0f} for each camera index.
-   * Reused across toggles to avoid allocations.
-   */
-  private float[] desktopTransparencyRestoreCamerasPacked = new float[20];
-
-  private int desktopTransparencyRestoreCameraCount;
-
   private boolean desktopTransparencyRestoreSnapshotValid;
-
-  private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
 
   /**
    * Creates a new game instance with the details specified.

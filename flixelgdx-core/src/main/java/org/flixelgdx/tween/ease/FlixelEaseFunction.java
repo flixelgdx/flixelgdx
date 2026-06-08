@@ -21,30 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.tween;
+package org.flixelgdx.tween.ease;
 
-import org.flixelgdx.tween.ease.FlixelEase;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class FlixelEaseTest {
-
-  @Test
-  void linearEndpoints() {
-    assertEquals(0f, FlixelEase.linear(0f), 1e-6f);
-    assertEquals(1f, FlixelEase.linear(1f), 1e-6f);
-  }
-
-  @Test
-  void quadInIncreasesOnZeroToOne() {
-    assertTrue(FlixelEase.quadIn(0.25f) < FlixelEase.quadIn(0.75f));
-  }
-
-  @Test
-  void quadInEndpoints() {
-    assertEquals(0f, FlixelEase.quadIn(0f), 1e-6f);
-    assertEquals(1f, FlixelEase.quadIn(1f), 1e-6f);
-  }
+@FunctionalInterface
+public interface FlixelEaseFunction {
+  float compute(float t);
 }

@@ -46,11 +46,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, Pool.Poolable {
 
-  /** Whether the timer is currently active. */
-  public boolean active;
-
-  /** Whether the timer has finished. */
-  public boolean finished;
+  /** Global timer manager, updated from {@link org.flixelgdx.FlixelGame#update(float)}. */
+  @NotNull
+  private static final FlixelTimerManager GLOBAL_MANAGER = new FlixelTimerManager();
 
   /** The time to complete the timer. */
   public float time;
@@ -68,16 +66,18 @@ public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, Pool.Poo
   @Nullable
   public FlixelTimerListener onComplete;
 
-  /** Global timer manager, updated from {@link org.flixelgdx.FlixelGame#update(float)}. */
-  @NotNull
-  private static final FlixelTimerManager GLOBAL_MANAGER = new FlixelTimerManager();
-
   /** The parent manager of the timer. */
   @NotNull
   protected FlixelTimerManager manager;
 
   /** The time remaining for the timer. */
   private float timeLeft;
+
+  /** Whether the timer is currently active. */
+  public boolean active;
+
+  /** Whether the timer has finished. */
+  public boolean finished;
 
   /** Whether to fire the next update. */
   private boolean fireNextUpdate;

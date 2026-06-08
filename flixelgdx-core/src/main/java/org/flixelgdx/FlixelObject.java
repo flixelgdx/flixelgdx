@@ -53,22 +53,22 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   public static final float SEPARATE_BIAS = 4f;
 
   /** X position of the upper left corner of this object in world space. */
-  private float x = 0f;
+  private float x;
 
   /** Y position of the upper left corner of this object in world space. */
-  private float y = 0f;
+  private float y;
 
   /** The width of this object's hitbox. */
-  private float width = 0f;
+  private float width;
 
   /** The height of this object's hitbox. */
-  private float height = 0f;
+  private float height;
 
   /** X position at the start of the current frame, before motion. */
-  protected float lastX = 0f;
+  protected float lastX;
 
   /** Y position at the start of the current frame, before motion. */
-  protected float lastY = 0f;
+  protected float lastY;
 
   /** The angle (in degrees) of this object. Does not affect collision. */
   private float angle = 0f;
@@ -109,9 +109,6 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   /** Maximum angular velocity in degrees per second. */
   protected float maxAngularVelocity = 10000f;
 
-  /** When {@code true}, {@link #updateMotion(float)} runs each frame. */
-  protected boolean moves = true;
-
   /**
    * Bit field of direction flags indicating which sides allow collision.
    * Use {@link FlixelDirectionFlags#ANY} (default) for full collision,
@@ -133,12 +130,6 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
    * the moment an object lands ({@link #justTouched}).
    */
   protected int wasTouching = FlixelDirectionFlags.NONE;
-
-  /**
-   * When {@code true}, this object will not be moved by collision resolution.
-   * Other objects will still be pushed away from it.
-   */
-  protected boolean immovable = false;
 
   /**
    * Bounciness factor used during collision resolution. {@code 0} means no
@@ -180,6 +171,15 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
    * of collision state.
    */
   protected float[] debugColorOverride = null;
+
+  /** When {@code true}, {@link #updateMotion(float)} runs each frame. */
+  protected boolean moves = true;
+
+  /**
+   * When {@code true}, this object will not be moved by collision resolution.
+   * Other objects will still be pushed away from it.
+   */
+  protected boolean immovable = false;
 
   /**
    * Creates a new {@link FlixelObject} with the default position (0, 0) and size (0, 0).

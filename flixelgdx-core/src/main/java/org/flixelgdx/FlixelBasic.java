@@ -86,6 +86,10 @@ public abstract class FlixelBasic implements IFlixelBasic {
   /** A unique ID starting from 0 and increasing by 1 for each subsequent {@code FlixelBasic} created. */
   public final int ID;
 
+  /** Cameras this object may render on. {@code null} or an empty array means every camera. */
+  @Nullable
+  public FlixelCamera[] cameras;
+
   /** Controls whether {@link #update(float)} is automatically called. */
   public boolean active = true;
 
@@ -106,10 +110,6 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * @see #isVisible()
    */
   public boolean visible = true;
-
-  /** Cameras this object may render on. {@code null} or an empty array means every camera. */
-  @Nullable
-  public FlixelCamera[] cameras;
 
   public FlixelBasic() {
     this.ID = idEnumerator++;

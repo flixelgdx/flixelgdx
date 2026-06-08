@@ -31,6 +31,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
+import com.badlogic.gdx.utils.ObjectSet;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundSource;
@@ -44,10 +45,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -98,17 +97,17 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
 
-  /** Default {@link FlixelTypedAsset#isPersist()} for handles created after construction; see {@link #getGlobalPersist()}. */
-  private boolean globalPersist = false;
-
   /**
    * Asset keys for which the next created handle for that key should use {@code persist == true} after
    * a matching {@link #load(String, boolean)} (or other {@code load(..., true)}) call.
    */
-  private final Set<String> pendingPersistKeys = new HashSet<>();
+  private final ObjectSet<String> pendingPersistKeys = new ObjectSet<>();
 
   /** FlixelString object to prevent allocation every time {@link #getDiagnostics()} is called. */
   private final FlixelString diagnosticsString = new FlixelString();
+
+  /** Default {@link FlixelTypedAsset#isPersist()} for handles created after construction; see {@link #getGlobalPersist()}. */
+  private boolean globalPersist = false;
 
   /** Constructs a new asset manager with the default loaders for strings and sound sources. */
   public FlixelDefaultAssetManager() {
@@ -389,7 +388,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     // Output loaded assets in the libGDX AssetManager.
     diagnosticsString.concat("------------------------- LOADED ASSETS -------------------------\n");
     Array<String> assetNames = manager.getAssetNames();
-    Set<String> managerKeys = new HashSet<>(Math.max(16, assetNames.size * 2));
+    ObjectSet<String> managerKeys = new ObjectSet<>(Math.max(16, assetNames.size * 2));
     synchronized (manager) {
       for (int i = 0; i < assetNames.size; i++) {
         String fileName = assetNames.get(i);

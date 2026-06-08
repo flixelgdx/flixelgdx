@@ -36,6 +36,7 @@ import java.util.List;
  * <p>Example usage:
  * <pre>{@code
  * public class EnemyCountEntry extends FlixelDebugConsoleEntry {
+ *
  *   private final EnemyManager manager;
  *
  *   public EnemyCountEntry(EnemyManager manager) {

@@ -55,9 +55,6 @@ import org.flixelgdx.input.FlixelInputProcessorManager;
  */
 public class FlixelKeyInputManager implements FlixelInputProcessorManager {
 
-  /** Whether keyboard input is currently enabled. When false, all key checks return false. */
-  public boolean enabled = true;
-
   /** Keys currently pressed (updated only by {@code this} manager's {@link InputProcessor}). */
   private final IntSet currentPressedKeys = new IntSet();
 
@@ -125,6 +122,9 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
   };
+
+  /** Whether keyboard input is currently enabled. When false, all key checks return false. */
+  public boolean enabled = true;
 
   public FlixelKeyInputManager() {}
 

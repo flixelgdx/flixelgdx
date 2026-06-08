@@ -44,7 +44,7 @@ public class FlixelNumTween extends FlixelTween {
   protected float range;
 
   /** Callback function for updating the value when the tween updates. */
-  protected FlixelNumTweenUpdateCallback updateCallback;
+  protected UpdateCallback updateCallback;
 
   /**
    * Constructs a new numerical tween, which will tween a simple starting number to an ending value.
@@ -55,7 +55,7 @@ public class FlixelNumTween extends FlixelTween {
    * @param updateCallback Callback function for updating any variable that needs the current value when the tween updates.
    */
   public FlixelNumTween(float start, float end, FlixelTweenSettings settings,
-      FlixelNumTweenUpdateCallback updateCallback) {
+      UpdateCallback updateCallback) {
     super(settings);
     this.start = start;
     this.end = end;
@@ -72,7 +72,7 @@ public class FlixelNumTween extends FlixelTween {
    * @param updateCallback Callback for each updated value.
    * @return this, for chaining.
    */
-  public FlixelNumTween setTarget(float from, float to, FlixelNumTweenUpdateCallback updateCallback) {
+  public FlixelNumTween setTarget(float from, float to, UpdateCallback updateCallback) {
     this.start = from;
     this.end = to;
     this.value = from;
@@ -102,7 +102,7 @@ public class FlixelNumTween extends FlixelTween {
    * variable that needs the current value of the tween.
    */
   @FunctionalInterface
-  public interface FlixelNumTweenUpdateCallback {
+  public interface UpdateCallback {
 
     /**
      * A callback method that is called when the tween updates its value during its tweening (or animating) process.

@@ -86,20 +86,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
   @NotNull
   private String currentAnim = "";
 
-  /** Whether the animation should loop. */
-  private boolean looping = true;
-
-  /** Whether the animation is paused. */
-  private boolean paused;
-
   /** +1 forward, -1 reverse (affects how {@link #stateTime} advances). */
   private int playDirection = 1;
 
   /** The last dispatched frame index. */
   private int lastDispatchedFrameIndex = -1;
-
-  /** Whether the last animation was finished. */
-  private boolean lastFinished = true;
 
   /** Dispatched when the visible keyframe index changes. */
   @NotNull
@@ -112,6 +103,15 @@ public class FlixelAnimationController implements FlixelUpdatable {
   /** The current frame signal data to prevent allocation of a new object every time. */
   private final FlixelAnimationFrameSignalData currentFrameSignalData =
       new FlixelAnimationFrameSignalData("", -1, null);
+
+  /** Whether the animation should loop. */
+  private boolean looping = true;
+
+  /** Whether the animation is paused. */
+  private boolean paused;
+
+  /** Whether the last animation was finished. */
+  private boolean lastFinished = true;
 
   /**
    * Creates a new animation controller for the given sprite.

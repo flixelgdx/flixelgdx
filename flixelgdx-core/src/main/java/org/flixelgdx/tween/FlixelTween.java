@@ -90,8 +90,8 @@ import java.util.function.Supplier;
  * <p>
  * Subclasses of {@code FlixelTween} implement specialized behavior:
  * <ul>
- *   <li>{@link FlixelGoalTween}: interpolates properties of objects using lambda getters and setters.</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value via a callback.</li>
+ *   <li>{@link FlixelGoalTween}: interpolates properties of objects using lambda getters and setters</li>
+ *   <li>{@link org.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value via a callback</li>
  *   <li>{@link org.flixelgdx.tween.type.FlixelColorTween}: tweens between colors</li>
  *   <li>{@link org.flixelgdx.tween.type.FlixelAngleTween}: smoothly rotates a value</li>
  *   <li>{@link org.flixelgdx.tween.type.motion.FlixelLinearMotion} and others: for advanced motion paths</li>
@@ -222,7 +222,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween num(float from, float to, FlixelTweenSettings tweenSettings,
-      FlixelNumTween.FlixelNumTweenUpdateCallback updateCallback) {
+      FlixelNumTween.UpdateCallback updateCallback) {
     FlixelNumTween tween = globalManager.obtainTween(FlixelNumTween.class,
         () -> new FlixelNumTween(from, to, tweenSettings, updateCallback));
     tween.setTweenSettings(tweenSettings);

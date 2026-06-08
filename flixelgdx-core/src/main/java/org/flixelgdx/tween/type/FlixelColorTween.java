@@ -46,11 +46,11 @@ public class FlixelColorTween extends FlixelTween {
   protected FlixelColor fromFlixel;
   @Nullable
   protected FlixelColor toFlixel;
-  protected boolean useRawColor;
   @Nullable
   protected FlixelColorable colorTarget;
   @Nullable
   protected Runnable onColor;
+  protected boolean useRawColor;
 
   public FlixelColorTween(@Nullable FlixelTweenSettings settings) {
     super(settings);

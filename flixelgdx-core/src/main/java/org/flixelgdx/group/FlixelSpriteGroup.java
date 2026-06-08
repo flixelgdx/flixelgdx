@@ -73,6 +73,8 @@ import java.util.function.Predicate;
  */
 public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupable<FlixelSprite> {
 
+  private static final Random RANDOM = new Random();
+
   /** The members belonging to this group. */
   protected final SnapshotArray<FlixelSprite> members;
 
@@ -82,14 +84,12 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   /** Distance of each sprite from the center when using {@link RotationMode#WHEEL}. */
   private float rotationRadius;
 
-  private static final Random RANDOM = new Random();
-
   /** Reusable rectangle for internal calculations that would otherwise allocate. */
   private final Rectangle tmpBoundsRect = new Rectangle();
 
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
-  private boolean antialiasing = false;
   private int facing = FlixelDirectionFlags.RIGHT;
+  private boolean antialiasing = false;
 
   /** Creates a sprite group with no member limit and default wheel radius {@code 100}. */
   public FlixelSpriteGroup() {
