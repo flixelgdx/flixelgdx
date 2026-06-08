@@ -1,6 +1,6 @@
 # Compiling & Testing
 
-FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. To test your changes, you use the framework as a local dependency (or composite build) in a separate test project. This guide walks you through every step from a clean machine to running and testing the framework—including prerequisites, IDE setup on all major platforms, and how to avoid common mistakes.
+FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. To test your changes, you use the framework as a local dependency (or composite build) in a separate test project. This guide walks you through every step from a clean machine to running and testing the framework, including prerequisites, IDE setup on all major platforms, and how to avoid common mistakes.
 
 ---
 
@@ -110,7 +110,7 @@ sudo pacman -S jdk17-openjdk
    git clone https://github.com/flixelgdx/flixelgdx.git
    cd flixelgdx
   ```
-2. **If you are contributing**: Fork the repo on GitHub, then clone your fork and add the upstream remote:
+2. **If you are contributing**: Fork the repo on GitHub, then clone your fork, and add the upstream remote:
   ```bash
    git remote add upstream https://github.com/flixelgdx/flixelgdx.git
    git fetch upstream
@@ -192,7 +192,7 @@ So the dependency is: `org.flixelgdx:flixelgdx-core:<version>`.
 
 ## Testing with a test project
 
-You need a separate libGDX application that depends on FlixelGDX. Two ways to do that:
+You need a separate test project that depends on FlixelGDX. Two ways to do that:
 
 - **Method 1**: Create a project with the **FlixelGDX project generator** and depend on the published artifact from `mavenLocal()`.
 - **Method 2**: Use **Gradle composite build** so your test project uses the FlixelGDX source directly (no need to run `publishToMavenLocal` after every change).
@@ -260,24 +260,18 @@ If you launch the desktop module with your own LWJGL3 configuration instance, de
 
 Composite build lets the test project use your local FlixelGDX source so changes are picked up without republishing.
 
-1. **Open your test project** (the libGDX app) in your IDE.
-2. **Add the composite in the test project’s `settings.gradle`** (at the top level, same file that has `rootProject.name`):
+1. **Open your test project** in your IDE.
+2. **Add the composite to the test project’s `settings.gradle`**, below the existing `rootProject.name` line:
   ```gradle
-   rootProject.name = 'my-test-game'
-
-   includeBuild('/path/to/flixelgdx') {
-     dependencySubstitution {
-       substitute module('org.flixelgdx:flixelgdx-core') using project(':flixelgdx-core')
-     }
-   }
+   includeBuild ‘/path/to/flixelgdx’
   ```
-   Replace `/path/to/flixelgdx` with the **absolute path** to your FlixelGDX clone.  
-  - **Windows**: use forward slashes or escaped backslashes, e.g. `C:/Users/You/flixelgdx` or `C:\\Users\\You\\flixelgdx`.  
+   Replace `/path/to/flixelgdx` with the path to your FlixelGDX clone.
+  - **Windows**: use forward slashes, e.g. `C:/Users/You/flixelgdx`.
   - **macOS/Linux**: e.g. `/home/you/projects/flixelgdx`.
-3. **Declare the dependency in the test project’s core `build.gradle`** (no version needed; the composite supplies the project):
+3. **Your existing dependency declaration stays as-is**; the composite build substitutes it automatically:
   ```gradle
    dependencies {
-     implementation 'org.flixelgdx:flixelgdx-core'
+     implementation ‘org.flixelgdx:flixelgdx-core:<version>’
      // ... other dependencies
    }
   ```
@@ -292,19 +286,17 @@ Composite build lets the test project use your local FlixelGDX source so changes
    From the FlixelGDX repo root:
 
    ```bash
-   ./gradlew test
+   ./gradlew :flixelgdx-test:test
    ```
 
    Fix any failing tests before submitting changes.
+
 2. **Use a real test game**
-  - In your test project (generator or composite), verify there is a minimal `FlixelGame` and at least one `FlixelState`.
+  - In your test project (maven local or composite), verify there is a minimal `FlixelGame` and at least one `FlixelState`.
   - Switch states, create sprites, use `FlixelTween` / `FlixelTweenSettings`, and hit the code paths you changed.
   - Run the **desktop** launcher first; then Android or other platforms if your change affects them.
 3. **Verify no regressions**
   After modifying FlixelGDX, run `./gradlew test` again and run your test game (state switches, tweens, sprites, etc.) to ensure nothing else breaks.
-4. **Example verification**
-  In the test project, a minimal check that the framework is wired correctly:
-   If this compiles and runs (e.g. shows your state), the dependency and setup are correct. Then add more states and use the APIs you’re changing to test the framework properly.
 
 ---
 
@@ -649,7 +641,7 @@ Contributing to the **flixelgdx-ios** module or testing FlixelGDX on iOS require
   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
   ```
 3. **MobiVM**  
-   FlixelGDX uses **MobiVM** for iOS (the maintained [RoboVM fork](https://github.com/MobiVM/robovm)). When you create a test project with gdx-liftoff and add the iOS platform, select **MobiVM** (or the RoboVM option that uses MobiVM) as the backend. The generated project will pull the MobiVM/RoboVM Gradle plugin and dependencies; no separate installer is usually needed. Ensure your test project uses the MobiVM backend.
+   FlixelGDX uses **MobiVM** for iOS (the maintained [RoboVM fork](https://github.com/MobiVM/robovm)). Since the FlixelGDX project generator does not yet support iOS, use **gdx-liftoff** to create your iOS test project and select MobiVM as the backend. The generated project will pull the MobiVM/RoboVM Gradle plugin and dependencies; no separate installer is usually needed.
 
 ### Development process for iOS
 
@@ -670,11 +662,6 @@ Contributing to the **flixelgdx-ios** module or testing FlixelGDX on iOS require
 | **Mac, no paid Apple Developer account** | You cannot install or run on a **physical device** or distribute via the App Store. | Use the **simulator only** (free). Create and run an iPhone/iPad simulator from Xcode → **Window → Devices and Simulators**. The simulator is enough for many contributions and bug reproductions. |
 | **Mac, with paid account** | None for basic testing. | Use simulator for quick iteration; use a device when you need to test device-only behavior (performance, sensors, etc.). |
 | **MobiVM / RoboVM version** | MobiVM is actively maintained; libGDX and gdx-liftoff pin specific versions. | Follow [MobiVM releases](https://github.com/MobiVM/robovm/releases) and gdx-liftoff release notes. Use the Java and dependency versions recommended by the FlixelGDX and liftoff docs. |
-
-**Summary**  
-
-- **Android**: Install the Android SDK (Android Studio or command-line), set `ANDROID_HOME` and `local.properties`, accept licenses. You can build the Android module on any OS; running the app requires an emulator (with acceleration where possible) or a physical device. On Windows/Linux you cannot do iOS; on Mac prefer ARM64 emulator images on Apple Silicon.
-- **iOS**: You must have a Mac and Xcode. Use MobiVM for the iOS backend. Build and run via Gradle and the simulator; use a paid Apple Developer account for device testing. Without a Mac, you can still contribute to flixelgdx-ios code and rely on CI or a Mac-in-the-cloud for running and testing.
 
 ---
 
