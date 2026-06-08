@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.tween;
+package org.flixelgdx.tween.ease;
 
 /** Class where all easer functions are stored, mostly used for tweening. */
 public final class FlixelEase {
@@ -216,25 +216,5 @@ public final class FlixelEase {
         * Math.sin((t - (ELASTIC_PERIOD / 4)) * (2 * Math.PI) / ELASTIC_PERIOD)
         * 0.5
         + 1);
-  }
-
-  @FunctionalInterface
-  public interface FunkinEaseFunction {
-    float compute(float t);
-  }
-
-  @FunctionalInterface
-  public interface FunkinEaseStartCallback {
-    void run(FlixelTween tween);
-  }
-
-  @FunctionalInterface
-  public interface FunkinEaseUpdateCallback {
-    void run(FlixelTween tween);
-  }
-
-  @FunctionalInterface
-  public interface FunkinEaseCompleteCallback {
-    void run(FlixelTween tween);
   }
 }

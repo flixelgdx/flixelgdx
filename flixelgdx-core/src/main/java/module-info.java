@@ -28,6 +28,7 @@ module org.flixelgdx.core {
   exports org.flixelgdx.util.save;
   exports org.flixelgdx.util.signal;
   exports org.flixelgdx.util.timer;
+  exports org.flixelgdx.tween.ease;
 
   // Automatic module names (from JAR filenames when on the module path).
   requires transitive gdx;

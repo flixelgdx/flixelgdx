@@ -52,9 +52,9 @@ public class FlixelShakeTween extends FlixelTween {
   protected FlixelAxes axes = FlixelAxes.XY;
   protected FlixelShakeUnit shakeUnit = FlixelShakeUnit.FRACTION;
   protected float intensity = 0.05f;
-  protected boolean fadeOut = false;
   protected float savedX;
   protected float savedY;
+  protected boolean fadeOut = false;
 
   public FlixelShakeTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
@@ -203,5 +203,4 @@ public class FlixelShakeTween extends FlixelTween {
     }
     return Objects.equals(object, target) && "shake".equals(field);
   }
-
 }

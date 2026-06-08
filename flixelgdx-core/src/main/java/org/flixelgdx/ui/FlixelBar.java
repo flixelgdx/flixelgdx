@@ -102,8 +102,6 @@ public class FlixelBar extends FlixelSprite {
 
   private BarFillDirection fillDirection = BarFillDirection.LEFT_TO_RIGHT;
 
-  private boolean screenSpace = false;
-
   // Value smoothing: 1 = snap, lower = smoother.
   private float lerp = 1f;
   private float lastElapsed = 1f / 60f;
@@ -137,10 +135,8 @@ public class FlixelBar extends FlixelSprite {
   private float borderThickness = 0f;
 
   // Threshold coloring: libGDX Array for indexed hot-path iteration (no per-frame Iterator).
-  private boolean thresholdEnabled = false;
   private final Array<ThresholdStop> thresholdStops = new Array<>(true, 8);
   private float thresholdColorLerp = 1f;
-  private boolean thresholdSmoothOnDecreaseOnly = true;
   private float lastPercentForThreshold = 1f;
   private final Color thresholdCurrentColor = new Color(Color.WHITE);
   private final Color thresholdDesiredColor = new Color(Color.WHITE);
@@ -165,6 +161,10 @@ public class FlixelBar extends FlixelSprite {
   // Per-instance 1x1 texture for rectangle drawing.
   @Nullable
   private Texture whitePixel;
+
+  private boolean screenSpace = false;
+  private boolean thresholdEnabled = false;
+  private boolean thresholdSmoothOnDecreaseOnly = true;
 
   /**
    * Creates a bar at the given world position with the given hitbox size. No texture is loaded on the

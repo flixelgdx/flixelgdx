@@ -55,6 +55,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> implements Screen {
 
+  /** The currently active substate opened on top of {@code this} state. */
+  private FlixelSubState subState;
+
   /** Should {@code this} state update its logic even when a substate is currently opened? */
   public boolean persistentUpdate = false;
 
@@ -66,9 +69,6 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
    * reduce state creation time, at the cost of greater memory usage.
    */
   public boolean destroySubStates = true;
-
-  /** The currently active substate opened on top of {@code this} state. */
-  private FlixelSubState subState;
 
   /** Creates a new state with no limit on member count. */
   protected FlixelState() {

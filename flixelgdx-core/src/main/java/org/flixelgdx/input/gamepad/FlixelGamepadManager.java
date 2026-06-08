@@ -52,42 +52,6 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
   private static final int MAX_BUTTONS = 256;
   private static final int MAX_AXES = 64;
 
-  /** Mutable payload reused for {@link #deviceConnected}; do not retain past the callback. */
-  public static final class GamepadConnectedEvent {
-    private int gamepadId;
-    private FlixelGamepadModel model;
-
-    public int gamepadId() {
-      return gamepadId;
-    }
-
-    @NotNull
-    public FlixelGamepadModel model() {
-      return model;
-    }
-
-    void set(int gamepadId, @NotNull FlixelGamepadModel model) {
-      this.gamepadId = gamepadId;
-      this.model = model;
-    }
-  }
-
-  /** Mutable payload reused for {@link #deviceDisconnected}; do not retain past the callback. */
-  public static final class GamepadDisconnectedEvent {
-    private int gamepadId;
-
-    public int gamepadId() {
-      return gamepadId;
-    }
-
-    void set(int gamepadId) {
-      this.gamepadId = gamepadId;
-    }
-  }
-
-  /** When {@code false}, all queries return inactive state. */
-  public boolean enabled = true;
-
   /** Number of controllers mapped to IDs {@code 0 .. numActiveGamepads-1} this frame. */
   public int numActiveGamepads;
 
@@ -117,6 +81,9 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   @Nullable
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
+
+  /** When {@code false}, all queries return inactive state. */
+  public boolean enabled = true;
 
   private boolean listenerAttached;
 
@@ -578,7 +545,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
   }
 
   private boolean isAxisActive(int slot, int nativeAxis, float dz) {
-    if (nativeAxis == ControllerMapping.UNDEFINED || nativeAxis < 0 || nativeAxis >= MAX_AXES) {
+    if (nativeAxis <= ControllerMapping.UNDEFINED || nativeAxis >= MAX_AXES) {
       return false;
     }
     return Math.abs(axisValues[slot][nativeAxis]) > dz;
@@ -605,5 +572,38 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return 0f;
     }
     return axisValues[gamepadId][nat];
+  }
+
+  /** Mutable payload reused for {@link #deviceConnected}; do not retain past the callback. */
+  public static final class GamepadConnectedEvent {
+    private int gamepadId;
+    private FlixelGamepadModel model;
+
+    public int gamepadId() {
+      return gamepadId;
+    }
+
+    @NotNull
+    public FlixelGamepadModel model() {
+      return model;
+    }
+
+    void set(int gamepadId, @NotNull FlixelGamepadModel model) {
+      this.gamepadId = gamepadId;
+      this.model = model;
+    }
+  }
+
+  /** Mutable payload reused for {@link #deviceDisconnected}; do not retain past the callback. */
+  public static final class GamepadDisconnectedEvent {
+    private int gamepadId;
+
+    public int gamepadId() {
+      return gamepadId;
+    }
+
+    void set(int gamepadId) {
+      this.gamepadId = gamepadId;
+    }
   }
 }

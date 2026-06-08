@@ -570,8 +570,6 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     }
   }
 
-  // ---
-
   /** Flashes white for 1 second. */
   public void flash() {
     flash(Color.WHITE, 1f, null, false);

@@ -90,8 +90,6 @@ public class FlixelSave implements FlixelDestroyable {
   @Nullable
   private String boundSlot;
 
-  private boolean bound;
-
   @NotNull
   private FlixelSaveStatus status = FlixelSaveStatus.EMPTY;
 
@@ -104,6 +102,8 @@ public class FlixelSave implements FlixelDestroyable {
    */
   @NotNull
   public final ObjectMap<String, Object> data = new ObjectMap<>();
+
+  private boolean bound;
 
   /**
    * Binds to local preferences. {@code slot} selects a separate file name suffix for multiple slots.

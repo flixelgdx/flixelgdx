@@ -47,8 +47,8 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
   @NotNull
   private final FlixelAssetManager assetManager;
 
-  private boolean persist;
   private int refCount;
+  private boolean persist;
 
   /**
    * Same-package and subclass access for {@link FlixelDefaultAssetManager} and typed wrappers such as

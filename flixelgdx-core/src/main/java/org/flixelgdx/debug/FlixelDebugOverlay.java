@@ -118,14 +118,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   private final ShapeRenderer shapeRenderer;
 
-  /** Visibility flag for the renderer. Hitbox drawing is gated by {@link #drawDebug} instead. */
-  private boolean visible = false;
-
-  private boolean drawDebug = false;
-
-  /** Prevents double-dispose if {@link #dispose()} and {@link #destroy()} are both used. */
-  private boolean destroyed = false;
-
   protected float statsTimer = 0f;
   protected int cachedFps;
   protected float cachedHeapMegabytes;
@@ -203,6 +195,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** World-space offset between cursor and dragged sprite's origin so it does not snap on grab. */
   private float dragOffsetX;
   private float dragOffsetY;
+
+  /** Visibility flag for the renderer. Hitbox drawing is gated by {@link #drawDebug} instead. */
+  private boolean visible = false;
+
+  private boolean drawDebug = false;
+
+  /** Prevents double-dispose if {@link #dispose()} and {@link #destroy()} are both used. */
+  private boolean destroyed = false;
 
   /** Constructs the shared debug overlay state. Subclasses should call this before wiring platform UI. */
   protected FlixelDebugOverlay() {

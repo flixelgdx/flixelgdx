@@ -26,8 +26,12 @@ package org.flixelgdx.tween.settings;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.functional.supplier.FloatSupplier;
-import org.flixelgdx.tween.FlixelEase;
 import org.flixelgdx.tween.FlixelTween;
+import org.flixelgdx.tween.ease.FlixelEase;
+import org.flixelgdx.tween.ease.FlixelEaseCompleteCallback;
+import org.flixelgdx.tween.ease.FlixelEaseFunction;
+import org.flixelgdx.tween.ease.FlixelEaseStartCallback;
+import org.flixelgdx.tween.ease.FlixelEaseUpdateCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,10 +45,10 @@ public class FlixelTweenSettings {
   private float loopDelay;
   private float framerate;
   private FlixelTweenType type;
-  private FlixelEase.FunkinEaseFunction ease;
-  private FlixelEase.FunkinEaseStartCallback onStart;
-  private FlixelEase.FunkinEaseUpdateCallback onUpdate;
-  private FlixelEase.FunkinEaseCompleteCallback onComplete;
+  private FlixelEaseFunction ease;
+  private FlixelEaseStartCallback onStart;
+  private FlixelEaseUpdateCallback onUpdate;
+  private FlixelEaseCompleteCallback onComplete;
   private final Array<FlixelTweenGoal> goals;
 
   public FlixelTweenSettings() {
@@ -64,7 +68,7 @@ public class FlixelTweenSettings {
    */
   public FlixelTweenSettings(
       @NotNull FlixelTweenType type,
-      @Nullable FlixelEase.FunkinEaseFunction ease) {
+      @Nullable FlixelEaseFunction ease) {
     this.duration = 1.0f;
     this.startDelay = 0.0f;
     this.loopDelay = 0.0f;
@@ -89,9 +93,10 @@ public class FlixelTweenSettings {
    * @param setter Consumes the interpolated value on every tween update.
    * @return {@code this} tween settings object for chaining.
    */
-  public FlixelTweenSettings addGoal(@NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalGetter getter,
+  public FlixelTweenSettings addGoal(
+      @NotNull FlixelTweenGoal.FlixelTweenGoalGetter getter,
       float toValue,
-      @NotNull FlixelTweenSettings.FlixelTweenGoal.FlixelTweenGoalSetter setter) {
+      @NotNull FlixelTweenGoal.FlixelTweenGoalSetter setter) {
     goals.add(new FlixelTweenGoal(getter, toValue, setter));
     return this;
   }
@@ -115,19 +120,19 @@ public class FlixelTweenSettings {
     return type;
   }
 
-  public FlixelEase.FunkinEaseFunction getEase() {
+  public FlixelEaseFunction getEase() {
     return ease;
   }
 
-  public FlixelEase.FunkinEaseStartCallback getOnStart() {
+  public FlixelEaseStartCallback getOnStart() {
     return onStart;
   }
 
-  public FlixelEase.FunkinEaseUpdateCallback getOnUpdate() {
+  public FlixelEaseUpdateCallback getOnUpdate() {
     return onUpdate;
   }
 
-  public FlixelEase.FunkinEaseCompleteCallback getOnComplete() {
+  public FlixelEaseCompleteCallback getOnComplete() {
     return onComplete;
   }
 
@@ -147,7 +152,7 @@ public class FlixelTweenSettings {
     return framerate;
   }
 
-  public FlixelTweenSettings setEase(FlixelEase.FunkinEaseFunction ease) {
+  public FlixelTweenSettings setEase(FlixelEaseFunction ease) {
     this.ease = ease;
     return this;
   }
@@ -176,17 +181,17 @@ public class FlixelTweenSettings {
     return this;
   }
 
-  public FlixelTweenSettings setOnStart(FlixelEase.FunkinEaseStartCallback onStart) {
+  public FlixelTweenSettings setOnStart(FlixelEaseStartCallback onStart) {
     this.onStart = onStart;
     return this;
   }
 
-  public FlixelTweenSettings setOnUpdate(FlixelEase.FunkinEaseUpdateCallback onUpdate) {
+  public FlixelTweenSettings setOnUpdate(FlixelEaseUpdateCallback onUpdate) {
     this.onUpdate = onUpdate;
     return this;
   }
 
-  public FlixelTweenSettings setOnComplete(FlixelEase.FunkinEaseCompleteCallback onComplete) {
+  public FlixelTweenSettings setOnComplete(FlixelEaseCompleteCallback onComplete) {
     this.onComplete = onComplete;
     return this;
   }

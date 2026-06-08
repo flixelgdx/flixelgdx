@@ -104,20 +104,20 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
   /** The offset from the sprite's position to its graphic. */
   protected float offsetY = 0f;
 
-  /** Whether this sprite is smoothed when scaled. */
-  protected boolean antialiasing = false;
-
   /** The color tint applied when drawing this sprite. */
   protected final Color color = new Color(Color.WHITE);
+
+  /** The direction this sprite is facing. Useful for automatic flipping. */
+  protected int facing = FlixelDirectionFlags.RIGHT;
+
+  /** Whether this sprite is smoothed when scaled. */
+  protected boolean antialiasing = false;
 
   /** Whether this sprite is flipped horizontally. */
   protected boolean flipX = false;
 
   /** Whether this sprite is flipped vertically. */
   protected boolean flipY = false;
-
-  /** The direction this sprite is facing. Useful for automatic flipping. */
-  protected int facing = FlixelDirectionFlags.RIGHT;
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {

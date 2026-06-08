@@ -54,14 +54,6 @@ public class FlixelLogger implements ApplicationLogger {
    */
   public static final int MAX_LOG_ENTRIES = 200;
 
-  /**
-   * Whether to write logs to a file when {@link #startFileLogging()} is called.
-   *
-   * <p>Once {@link #startFileLogging()} is called, setting this will have no effect.
-   * You must call {@link #stopFileLogging()} before changing this again.
-   */
-  private boolean canStoreLogs = true;
-
   /** Maximum number of log files to keep when file logging is enabled. */
   private int maxLogFiles = 10;
 
@@ -88,6 +80,14 @@ public class FlixelLogger implements ApplicationLogger {
 
   /** Reused for plain file lines. */
   private final FlixelString fileLine = new FlixelString(512);
+
+  /**
+   * Whether to write logs to a file when {@link #startFileLogging()} is called.
+   *
+   * <p>Once {@link #startFileLogging()} is called, setting this will have no effect.
+   * You must call {@link #stopFileLogging()} before changing this again.
+   */
+  private boolean canStoreLogs = true;
 
   /**
    * Creates a logger that outputs to the console and optionally to a file

@@ -84,29 +84,11 @@ public class FlixelText extends FlixelSprite {
   /** Horizontal alignment within the field. */
   private Alignment alignment = Alignment.LEFT;
 
-  /** Whether text wraps at {@link #fieldWidth}. Defaults to {@code true}. */
-  private boolean wordWrap = true;
-
-  /**
-   * Whether the field dimensions are determined automatically from the text
-   * content. Requires {@link #wordWrap} to be {@code false} to take full effect.
-   */
-  private boolean autoSize = true;
-
   /** The width of the text field. {@code 0} means auto-width. */
   private float fieldWidth;
 
   /** The height of the text field. {@code 0} means auto-height. */
   private float fieldHeight;
-
-  /** Whether to render bold text. Only effective with FreeType fonts. */
-  private boolean bold = false;
-
-  /** Whether to render italic text. Only effective with FreeType fonts. */
-  private boolean italic = false;
-
-  /** Whether the text is underlined. Stored for API compatibility. */
-  private boolean underline = false;
 
   /** Extra horizontal spacing between characters, in pixels. */
   private float letterSpacing = 0;
@@ -128,13 +110,6 @@ public class FlixelText extends FlixelSprite {
 
   /** The font used for text rendering. */
   private BitmapFont bitmapFont;
-
-  /**
-   * {@code true} if {@link #bitmapFont} was produced by FreeType for a direct
-   * {@link #fontFile} (not registry-cached); such fonts are disposed when replaced or on
-   * {@link #destroy()}.
-   */
-  private boolean privateBitmapFontOwned;
 
   /** Reused when generating FreeType fonts from a private {@link #fontFile}. */
   private final FreeTypeFontParameter freeTypeParams = new FreeTypeFontParameter();
@@ -160,6 +135,37 @@ public class FlixelText extends FlixelSprite {
   /** The path used to create a privately-owned {@link #generator}, for change detection. */
   private String currentGeneratorPath;
 
+  /** Reusable matrix to save the batch's transform before applying text transforms. */
+  private final Matrix4 savedTransform = new Matrix4();
+
+  /** Reusable matrix for applying rotation/scale transforms during drawing. */
+  private final Matrix4 textTransform = new Matrix4();
+
+  /** Whether text wraps at {@link #fieldWidth}. Defaults to {@code true}. */
+  private boolean wordWrap = true;
+
+  /**
+   * Whether the field dimensions are determined automatically from the text
+   * content. Requires {@link #wordWrap} to be {@code false} to take full effect.
+   */
+  private boolean autoSize = true;
+
+  /** Whether to render bold text. Only effective with FreeType fonts. */
+  private boolean bold = false;
+
+  /** Whether to render italic text. Only effective with FreeType fonts. */
+  private boolean italic = false;
+
+  /** Whether the text is underlined. Stored for API compatibility. */
+  private boolean underline = false;
+
+  /**
+   * {@code true} if {@link #bitmapFont} was produced by FreeType for a direct
+   * {@link #fontFile} (not registry-cached); such fonts are disposed when replaced or on
+   * {@link #destroy()}.
+   */
+  private boolean privateBitmapFontOwned;
+
   /** Whether this instance created (and therefore owns) the current {@link #generator}. */
   private boolean ownsGenerator;
 
@@ -168,12 +174,6 @@ public class FlixelText extends FlixelSprite {
 
   /** Whether the text layout needs to be recalculated. */
   private boolean layoutDirty = true;
-
-  /** Reusable matrix to save the batch's transform before applying text transforms. */
-  private final Matrix4 savedTransform = new Matrix4();
-
-  /** Reusable matrix for applying rotation/scale transforms during drawing. */
-  private final Matrix4 textTransform = new Matrix4();
 
   /** Creates a new text object at (0, 0) with default settings. */
   public FlixelText() {
@@ -438,7 +438,7 @@ public class FlixelText extends FlixelSprite {
 
   /**
    * Sets whether to underline the text. This property is stored for API
-   * compatibility but visual rendering of underlines is limited.
+   * compatibility, but visual rendering of underlines is limited.
    *
    * @param underline Whether to underline.
    * @return This instance for chaining.
@@ -492,10 +492,10 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
-   * Sets the font by its {@link FlixelFontRegistry} identifier. The font must
-   * have been previously registered via
-   * {@link FlixelFontRegistry#register(String, FileHandle)}. Pass {@code null}
-   * to clear the registry reference and fall back to the default resolution order
+   * Sets the font by its {@link FlixelFontRegistry} identifier.
+   *
+   * <p>The font must have been previously registered via {@link FlixelFontRegistry#register(String, FileHandle)}.
+   * Pass {@code null} to clear the registry reference and fall back to the default resolution order
    * (direct file -> registry default -> built-in font).
    *
    * @param id The registered font ID, or {@code null} to clear.
@@ -583,7 +583,7 @@ public class FlixelText extends FlixelSprite {
    * @param color The border color in RGBA. Pass {@code null} for transparent.
    * @param size The border size in pixels.
    * @param quality Rendering quality. {@code 0}: single iteration, {@code 1}: one
-   * iteration per pixel in {@code size}.
+   *   iteration per pixel in {@code size}.
    * @return This instance for chaining.
    */
   public FlixelText setBorderStyle(BorderStyle style, Color color, float size, float quality) {

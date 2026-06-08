@@ -39,8 +39,8 @@ public class FlixelFlickerTween extends FlixelTween {
   protected @Nullable FlixelVisible flickerTarget;
   protected float period = 0.08f;
   protected float ratio = 0.5f;
-  protected boolean endVisibility = true;
   protected @Nullable Predicate<FlixelFlickerTween> tweenFunction;
+  protected boolean endVisibility = true;
 
   public FlixelFlickerTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
