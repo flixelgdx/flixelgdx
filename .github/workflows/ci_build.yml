@@ -35,10 +35,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (OpenJ9)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 17
           cache: 'gradle'
 
@@ -56,10 +56,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (OpenJ9)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 17
           cache: 'gradle'
 
@@ -93,10 +93,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (OpenJ9)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 17
           cache: 'gradle'
 
