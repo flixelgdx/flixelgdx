@@ -925,7 +925,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       text(COLOR_OK, "RUNNING");
     }
 
-    Array<FlixelCamera> cams = Flixel.getCameras();
+    Array<FlixelCamera> cams = Flixel.cameras;
     int camCount = cams != null ? cams.size : 0;
     int inspect = getInspectCameraIndex();
     text(COLOR_KEY, "Cameras");
@@ -1071,7 +1071,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     ImGui.separator();
     if (ImGui.button("Reset zoom on inspected camera")) {
-      Array<FlixelCamera> cams = Flixel.getCameras();
+      Array<FlixelCamera> cams = Flixel.cameras;
       if (cams != null && cams.size > 0) {
         FlixelCamera cam = cams.get(getInspectCameraIndex());
         cam.setZoom(1f);

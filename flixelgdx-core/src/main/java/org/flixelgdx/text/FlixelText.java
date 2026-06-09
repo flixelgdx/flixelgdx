@@ -864,7 +864,7 @@ public class FlixelText extends FlixelSprite {
       return;
     }
 
-    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
     float wx = cam.worldToViewX(getX(), getScrollX());
     float wy = cam.worldToViewY(getY(), getScrollY());
 

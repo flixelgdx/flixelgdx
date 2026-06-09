@@ -129,8 +129,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelSpriteBatch#setColor(Color)}. */
   protected Texture bgTexture;
 
-  /** Where all the global cameras are stored. */
-  protected Array<FlixelCamera> cameras;
+  /** Convenience reference to the global {@link Flixel#cameras} list (the single source of truth). */
+  protected final Array<FlixelCamera> cameras = Flixel.cameras;
 
   /**
    * Total render calls issued by the framework {@link FlixelBatch} during the most recently
@@ -333,7 +333,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     stateLifecyclePauseDispatched = false;
 
     batch = new FlixelSpriteBatch();
-    cameras = new Array<>(FlixelCamera[]::new);
+    cameras.clear();
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
 
     Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -609,7 +609,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   private void snapshotCamerasForDebugPause() {
-    if (cameras == null || cameras.size == 0) {
+    if (cameras.size == 0) {
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
@@ -626,7 +626,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   private void restoreCamerasAfterDebugPause() {
-    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null || cameras == null) {
+    if (debugPauseCameraScroll == null || debugPauseCameraZoom == null) {
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
@@ -836,7 +836,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     for (FlixelCamera camera : cameras) {
       camera.destroy();
     }
-    cameras = null;
+    cameras.clear();
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
     gamePaused = false;
@@ -880,16 +880,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Gets the first camera that is part of the list. If the list is {@code null} or empty, then a new list (with a
-   * default camera accordingly) is created.
+   * Gets the first camera in {@link Flixel#cameras}. If the list is empty, a default camera is created and added
+   * first so this never returns {@code null}.
    *
    * @return The first camera in the list.
    */
   public FlixelCamera getCamera() {
     Vector2 windowSize = viewSize;
-    if (cameras == null) {
-      cameras = new Array<>(FlixelCamera[]::new);
-    }
     if (cameras.isEmpty()) {
       cameras.add(new FlixelCamera((int) windowSize.x, (int) windowSize.y));
       cameras.first().apply();
@@ -903,7 +900,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void resetCameras() {
     FlixelCamera camera = new FlixelCamera((int) viewSize.x, (int) viewSize.y);
     camera.update((int) windowSize.x, (int) windowSize.y, camera.centerCameraOnResize);
-    cameras = new Array<>(FlixelCamera[]::new);
+    cameras.clear();
     cameras.add(camera);
     if (desktopTransparencyActive) {
       applyDesktopTransparencyBackdropOnly();
@@ -1022,9 +1019,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   private void applyDesktopTransparencyBackdropOnly() {
     bgColor.a = 0f;
-    if (cameras == null) {
-      return;
-    }
     FlixelCamera[] camItems = cameras.items;
     for (int i = 0, n = cameras.size; i < n; i++) {
       FlixelCamera cam = camItems[i];
@@ -1045,7 +1039,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     g[1] = bgColor.g;
     g[2] = bgColor.b;
     g[3] = bgColor.a;
-    int n = cameras == null ? 0 : cameras.size;
+    int n = cameras.size;
     ensureDesktopTransparencyCameraSnapshotCapacity(n);
     FlixelCamera[] camItems = n == 0 ? null : cameras.items;
     float[] p = desktopTransparencyRestoreCamerasPacked;
@@ -1088,9 +1082,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       bgColor.a = g[3];
     } else {
       bgColor.set(Color.BLACK);
-    }
-    if (cameras == null) {
-      return;
     }
     FlixelCamera[] camItems = cameras.items;
     int n = cameras.size;

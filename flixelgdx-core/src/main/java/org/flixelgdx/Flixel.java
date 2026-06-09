@@ -217,21 +217,43 @@ public final class Flixel {
    * controls such as fullscreen toggling and framerate caps.
    *
    * <p>Most game code never needs to touch {@code Flixel.game} directly. Prefer the specialized
-   * fields ({@link #sound}, {@link #assets}, {@link #keys}, etc.) for day-to-day work. Reach for
-   * this field only when the high-level APIs do not cover what you need, such as setting a custom
-   * background color or querying the raw camera array.
+   * fields ({@link #sound}, {@link #assets}, {@link #keys}, {@link #cameras}, etc.) for day-to-day
+   * work. Reach for this field only when the high-level APIs do not cover what you need, such as
+   * setting a custom background color or toggling fullscreen.
    *
    * <p>Example:
    * <pre>{@code
    * // Change the game's background color.
    * Flixel.game.bgColor.set(Color.CORNFLOWER_BLUE);
-   *
-   * // Query the active camera list.
-   * Array<FlixelCamera> cameras = Flixel.game.getCameras();
    * }</pre>
    */
   @NotNull
   public static FlixelGame game;
+
+  /**
+   * The global list of active {@link FlixelCamera cameras}, ordered back-to-front.
+   *
+   * <p>The first entry, {@code Flixel.cameras.first()}, is the main camera that the framework follows
+   * and renders to by default. Add more cameras for split-screen, picture-in-picture, or separate UI
+   * layers.
+   *
+   * <p>This reference is {@code final} and never {@code null}: the framework creates a default camera
+   * at startup and refreshes the list (in place) on a state switch, so it is safe to read from your
+   * state's {@code create()} onward. Mutate it through the list's own methods (for example
+   * {@link Array#add}); the array itself is never replaced.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * // The main camera.
+   * FlixelCamera main = Flixel.cameras.first();
+   * main.follow(player);
+   *
+   * // A second camera for a UI overlay.
+   * Flixel.cameras.add(new FlixelCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+   * }</pre>
+   */
+  @NotNull
+  public static final Array<FlixelCamera> cameras = new Array<>(FlixelCamera[]::new);
 
   /**
    * The platform-specific alert dialog provider.
@@ -1131,18 +1153,6 @@ public final class Flixel {
 
   public static FlixelState getState() {
     return state;
-  }
-
-  /** @see FlixelGame#getCamera() */
-  public static FlixelCamera getCamera() {
-    Objects.requireNonNull(game, "Cannot get the camera when the game object is not initialized!");
-    return game.getCamera();
-  }
-
-  /** @see FlixelGame#getCameras() */
-  public static Array<FlixelCamera> getCameras() {
-    Objects.requireNonNull(game, "Cannot get the cameras when the game object is not initialized!");
-    return game.getCameras();
   }
 
   public static int getViewWidth() {

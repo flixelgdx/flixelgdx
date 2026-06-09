@@ -661,7 +661,7 @@ public class FlixelBar extends FlixelSprite {
     }
     ensureWhitePixel();
 
-    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.getCamera();
+    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
     float px = getX();
     float py = getY();
     if (screenSpace) {
