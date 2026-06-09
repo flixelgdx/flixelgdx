@@ -746,7 +746,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     float logSlotTop = oy + statsH + gap + perfH + gap;
     float logSlotBottom = oy + availH;
-    float logSlotH = Math.max(0f, logSlotBottom - logSlotTop + 50);
+    float logSlotH = Math.max(0f, logSlotBottom - logSlotTop);
     float logH = Math.min(logHBase * 1.35f, logSlotH);
 
     // Right stack: Watch, Controls, then the Tracker / Texture Inspector slot flush under Controls
@@ -815,12 +815,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     layoutTextureW = textureW;
     layoutTextureH = textureH;
 
-    // Tracker shares the under-Controls slot with the Texture Inspector (which is hidden by default
-    // and snaps over it when opened), so by default the Tracker fills the bottom of the right column.
     layoutTrackerX = ox + workW - controlsW;
     layoutTrackerY = textureTop;
     layoutTrackerW = controlsW;
-    layoutTrackerH = textureH;
+    layoutTrackerH = Math.max(72f, textureHBase);
 
     layoutCommandX = ox;
     layoutCommandY = yCmd;
@@ -1202,7 +1200,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Renders the Tracker panel: one collapsible header per registered {@link FlixelDebugTrackerEntry},
+   * Renders the Tracker panel, a collapsible header per registered {@link org.flixelgdx.debug.FlixelDebugTrackerEntry},
    * each containing a {@code name -> value} table (just like the Watch panel). Shown by default; when no
    * trackers are registered it stays visible with a hint, mirroring the Watch panel's empty state.
    */

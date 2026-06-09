@@ -44,6 +44,7 @@ import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
@@ -63,7 +64,7 @@ import java.util.function.Consumer;
  * watch values, log entries, and custom tracker blocks.
  *
  * <p>The class deliberately does <strong>not</strong> render any UI on its own. Doing so in the
- * core module would either pull a heavy GUI dependency into every platform (web/iOS/Android).
+ * core module would pull a heavy GUI dependency into every platform (web/iOS/Android).
  * Instead, backends extend this abstract class and implement {@link #drawUI()} to render the
  * panels with whatever toolkit suits the platform.
  *
@@ -529,6 +530,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (alt && Flixel.keys.rawJustPressed(cycleRight) && !shouldSuppressDebugRawKeybind(cycleRight)) {
       debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.size;
     }
+
     FlixelCamera cam = cams.get(debugInspectCameraIndex);
     boolean uiCapturedMouse = isMouseCapturedByUI();
     float scrollDelta = Flixel.mouse.getScrollDeltaY();
@@ -543,6 +545,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       cam.setZoom(newZoom);
     }
     cam.applyLibCameraTransform();
+
     if (!uiCapturedMouse && Flixel.mouse.rawPressed(Flixel.getDebugCameraPanButton())) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
@@ -598,13 +601,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // but calling it here too is cheap and guarantees correctness if the call order ever shifts.
     cam.applyLibCameraTransform();
 
-    // The viewport's unproject returns coordinates in *view* space (the same space the batch
+    // The viewport's unproject returns coordinates in VIEW space (the same space the batch
     // draws into). Sprite hitboxes live in world space (their x and y fields), so we need to
     // add the camera's scroll back in plus the view margin (the offset induced by zoom that
     // FlixelCamera.worldToViewX() subtracts during draw). Without this conversion the picker would
     // feel off when the camera is scrolled or zoomed: clicks would land on the wrong sprite or miss entirely.
     pickUnproject.set(Flixel.mouse.getScreenX(), Flixel.mouse.getScreenY());
     cam.getViewport().unproject(pickUnproject);
+
     // View-space coordinates match FlixelSprite.draw() (worldToViewX / worldToViewY). Hit-testing
     // in view space fixes mis-picks when members use scroll factors (common in layered stages
     // and sprite groups where siblings overlap in world AABB but render at different parallax).
@@ -613,12 +617,12 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     float worldX = viewPickX + cam.scrollX + cam.getViewMarginX();
     float worldY = viewPickY + cam.scrollY + cam.getViewMarginY();
 
-    // Use the raw* helpers so the picker keeps reading the actual mouse state (Flixel.mouse.pressed
+    // Use the raw* helpers so the picker keeps reading the actual mouse state (Flixel.mouse.pressed(...)
     // is suppressed when the cursor is over an imgui window, and we still want the uncovered
     // viewport area to drive picking). The early-exit gate above already guards the imgui case.
-    boolean justPressed = Flixel.mouse.rawJustPressed(Input.Buttons.LEFT);
-    boolean pressed = Flixel.mouse.rawPressed(Input.Buttons.LEFT);
-    boolean justReleased = Flixel.mouse.rawJustReleased(Input.Buttons.LEFT);
+    boolean justPressed = Flixel.mouse.rawJustPressed(FlixelMouseButton.LEFT);
+    boolean pressed = Flixel.mouse.rawPressed(FlixelMouseButton.LEFT);
+    boolean justReleased = Flixel.mouse.rawJustReleased(FlixelMouseButton.LEFT);
 
     FlixelObject dragged = Flixel.debug.getDraggedSprite();
 
