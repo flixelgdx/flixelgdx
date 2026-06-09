@@ -52,8 +52,11 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixe
   p.mavenPublishing {
     publishToMavenCentral(centralPortal)
 
+    // signing.keyId: local keyring-file signing (dev machine).
+    // signingInMemoryKeyId: in-memory ASCII-armored key signing (CI / GitHub Actions).
     def hasSigning = p.findProperty('flixel.signing.enabled')?.toString() == 'true'
                   || p.findProperty('signing.keyId') != null
+                  || p.findProperty('signingInMemoryKeyId') != null
     if (hasSigning) {
       signAllPublications()
     }
