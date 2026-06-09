@@ -1,0 +1,74 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2026 stringdotjar
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package org.flixelgdx.backend.ios.alert;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
+
+import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.robovm.apple.dispatch.DispatchQueue;
+import org.robovm.apple.uikit.UIAlertAction;
+import org.robovm.apple.uikit.UIAlertActionStyle;
+import org.robovm.apple.uikit.UIAlertController;
+import org.robovm.apple.uikit.UIAlertControllerStyle;
+import org.robovm.apple.uikit.UIViewController;
+
+/**
+ * iOS implementation of {@link FlixelAlerter} using {@link UIAlertController}.
+ */
+public class FlixelIOSAlerter implements FlixelAlerter {
+
+  @Override
+  public void showInfoAlert(String title, String message) {
+    showAlert(title, message);
+  }
+
+  @Override
+  public void showWarningAlert(String title, String message) {
+    showAlert(title, message);
+  }
+
+  @Override
+  public void showErrorAlert(String title, String message) {
+    showAlert(title, message);
+  }
+
+  private void showAlert(final String title, final String message) {
+    DispatchQueue.getMainQueue().async(() -> {
+      if (!(Gdx.app instanceof IOSApplication)) {
+        return;
+      }
+      UIViewController root = ((IOSApplication) Gdx.app).getUIViewController();
+      if (root == null) {
+        return;
+      }
+      UIAlertController alert = new UIAlertController(
+          title,
+          message != null ? message : "",
+          UIAlertControllerStyle.Alert);
+      alert.addAction(new UIAlertAction("OK", UIAlertActionStyle.Default, null));
+      root.presentViewController(alert, true, null);
+    });
+  }
+}

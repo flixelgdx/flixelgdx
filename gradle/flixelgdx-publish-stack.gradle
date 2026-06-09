@@ -1,6 +1,28 @@
 /**
- * Attaches {@code sourcesJar} / {@code javadocJar} and Javadoc settings for published libraries.
+ * Publishing pipeline for all FlixelGDX modules.
+ *
+ * <p>Publishes to Maven Central via the Sonatype Central Portal using the
+ * com.vanniktech.maven.publish plugin.
+ *
+ * <p>To publish, add the following to ~/.gradle/gradle.properties (never commit these):
+ * <pre>
+ *   # User token from portal.central.sonatype.com -> Account -> User Token
+ *   mavenCentralUsername=&lt;token username&gt;
+ *   mavenCentralPassword=&lt;token password&gt;
+ *
+ *   # GPG signing key
+ *   signing.keyId=&lt;last 8 chars of your key fingerprint&gt;
+ *   signing.password=&lt;key passphrase&gt;
+ *   signing.secretKeyRingFile=&lt;absolute path to your .gpg secret key file&gt;
+ * </pre>
+ *
+ * <p>Then run: ./gradlew publishAllPublicationsToMavenCentralRepository
+ *
+ * <p>The upload lands in a staging deployment on the Central Portal. Log in to
+ * portal.central.sonatype.com and manually release it to make it publicly available.
  */
+
+// Attach sources/javadoc jars and Javadoc settings for every java-library subproject.
 subprojects { Project p ->
   p.pluginManager.withPlugin('java-library') {
     p.apply from: rootProject.file('gradle/flixelgdx-library-publish.gradle')
@@ -17,57 +39,55 @@ subprojects {
   }
 }
 
-configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-teavm-plugin'
-  && it.name != 'flixelgdx-logging-plugin' }) {
-  apply plugin: 'maven-publish'
-  afterEvaluate {
-    publishing {
-      publications {
-        if (project.plugins.hasPlugin('java-library') || project.plugins.hasPlugin('java')) {
-          maven(MavenPublication) {
-            from components.java
-            groupId = project.group
-            artifactId = project.name
-            version = project.version
-            rootProject.configureFlixelMavenPom(delegate)
-          }
+configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-android' }) { Project p ->
+  p.apply plugin: 'com.vanniktech.maven.publish'
+
+  // SonatypeHost cannot be imported at compile time in apply-from scripts because Gradle
+  // does not expose the buildscript classpath to the script compiler. Load the enum from
+  // the same classloader as the mavenPublishing extension so the types are compatible.
+  def centralPortal = p.extensions.getByName('mavenPublishing').class.classLoader
+    .loadClass('com.vanniktech.maven.publish.SonatypeHost')
+    .getField('CENTRAL_PORTAL').get(null)
+
+  p.mavenPublishing {
+    publishToMavenCentral(centralPortal)
+
+    // signing.keyId: local keyring-file signing (dev machine).
+    // signingInMemoryKeyId: in-memory ASCII-armored key signing (CI / GitHub Actions).
+    def hasSigning = p.findProperty('flixel.signing.enabled')?.toString() == 'true'
+                  || p.findProperty('signing.keyId') != null
+                  || p.findProperty('signingInMemoryKeyId') != null
+    if (hasSigning) {
+      signAllPublications()
+    }
+
+    coordinates(p.group as String, p.name, p.version as String)
+
+    pom {
+      name = rootProject.findProperty('pomName') ?: 'FlixelGDX'
+      description = rootProject.findProperty('pomDescription')
+        ?: 'High-level and powerful game development framework that brings the Flixel philosophy to Java and libGDX.'
+      url = rootProject.findProperty('pomUrl') ?: 'https://flixelgdx.org'
+      licenses {
+        license {
+          name = rootProject.findProperty('pomLicenseName') ?: 'MIT License'
+          url = rootProject.findProperty('pomLicenseUrl') ?: 'https://opensource.org/licenses/MIT'
+          distribution = 'repo'
         }
       }
-    }
-  }
-}
-
-/**
- * Gradle plugin modules use {@code java-gradle-plugin}, which creates {@code pluginMaven}. Avoid duplicating the {@code maven} publication.
- */
-configure(subprojects.findAll { it.name == 'flixelgdx-teavm-plugin' || it.name == 'flixelgdx-logging-plugin' }) {
-  apply plugin: 'maven-publish'
-  afterEvaluate {
-    publishing {
-      publications.withType(MavenPublication).configureEach {
-        rootProject.configureFlixelMavenPom(delegate)
+      developers {
+        developer {
+          id = rootProject.findProperty('pomDeveloperId') ?: 'stringdotjar'
+          name = rootProject.findProperty('pomDeveloperName') ?: 'String'
+        }
       }
-    }
-  }
-}
-
-subprojects {
-  afterEvaluate { Project p ->
-    if (!p.plugins.hasPlugin('maven-publish')) {
-      return
-    }
-    def pubs = p.publishing.publications.withType(MavenPublication)
-    if (pubs.isEmpty()) {
-      return
-    }
-    def signingExplicit = p.findProperty('flixel.signing.enabled')?.toString() == 'true'
-    def signingKeys = p.findProperty('signing.keyId') != null && p.findProperty('signing.secretKeyRingFile') != null
-    if (!signingExplicit && !signingKeys) {
-      return
-    }
-    p.apply plugin: 'signing'
-    pubs.configureEach { pub ->
-      p.signing.sign(pub)
+      scm {
+        connection = rootProject.findProperty('pomScmConnection')
+          ?: 'scm:git:git://github.com/flixelgdx/flixelgdx.git'
+        developerConnection = rootProject.findProperty('pomScmDeveloperConnection')
+          ?: 'scm:git:ssh://git@github.com/flixelgdx/flixelgdx.git'
+        url = rootProject.findProperty('pomScmUrl') ?: 'https://github.com/flixelgdx/flixelgdx'
+      }
     }
   }
 }

@@ -19,13 +19,15 @@ When writing code, you're required to do the following:
   Use records, lambdas, modern switch statements, etc. where necessary.
 - When you are done with a provided task, you must explain in simple detail what you changed, your reasoning behind it,
   and how it incorporates with the system.
-- When referencing classes, import EVERYTHING that you will use. Do not use package references directly when using a class, method, etc.,
-  import it and then use it in code.
-- Never use star imports (`*`). It's necessary and can be hard to tell what specific classes/methods/enums/etc. are
+- When referencing classes, import EVERYTHING that you will use. Do not use package references directly when using a class, method, etc.
+  Import it and then use it in code.
+- Never use star imports (`*`). It's not necessary and can be hard to tell what specific classes/methods/enums/etc. are
   being used in the said source code file.
 - As shown in the `.editorconfig` file, put all empty and void-returning methods with their braces on the same line.
 - Keep your field and method names short. They shouldn't be multiple characters long. If a method name gets too long,
   rename it to be shorter, and add a Javadoc to describe what it is instead.
+- When you're done with a task, run all unit tests and Javadoc linting to ensure that your code and documentation
+  are in a good state; if any of these tests fail, fix them.
 
 # Examples of Good and Bad Code
 

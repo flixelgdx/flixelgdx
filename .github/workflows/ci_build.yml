@@ -7,6 +7,27 @@ on:
     branches: [master, develop]
 
 jobs:
+  format:
+    name: Formatting check (Spotless)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Check formatting
+        run: ./gradlew spotlessCheck --no-daemon --warning-mode all
+        shell: bash
+
   test:
     name: Unit tests (JVM)
     runs-on: ubuntu-latest
@@ -14,10 +35,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (OpenJ9)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 17
           cache: 'gradle'
 
@@ -35,10 +56,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (OpenJ9)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 17
           cache: 'gradle'
 
@@ -72,10 +93,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17 (OpenJ9)
+      - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 17
           cache: 'gradle'
 

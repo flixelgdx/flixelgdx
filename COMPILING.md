@@ -1,6 +1,6 @@
 # Compiling & Testing
 
-FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. To test your changes, you use the framework as a local dependency (or composite build) in a separate test project. This guide walks you through every step from a clean machine to running and testing the framework—including prerequisites, IDE setup on all major platforms, and how to avoid common mistakes.
+FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. To test your changes, you use the framework as a local dependency (or composite build) in a separate test project. This guide walks you through every step from a clean machine to running and testing the framework, including prerequisites, IDE setup on all major platforms, and how to avoid common mistakes.
 
 ---
 
@@ -37,51 +37,68 @@ FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. 
 
 Verify: open a new terminal and run `git --version`.
 
-### 2. Java (JDK 17 with OpenJ9)
+### 2. Java (JDK 17 with Eclipse Temurin)
 
 FlixelGDX requires **Java 17** (LTS). The build uses the Gradle wrapper (Gradle 9.x), which runs on JDK 17+. Your IDE and command line must both use JDK 17.
 
-**Use the OpenJ9 VM:** install **[IBM Semeru Runtime](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/)** — **17 (LTS), OpenJ9** — not Oracle JDK, not Eclipse Temurin, and not the default `openjdk-17` packages on most Linux distros (those are almost always **HotSpot** and use a lot more RAM). For games, OpenJ9 is the recommended default.
+**Use Eclipse Temurin:** install **[Eclipse Temurin 17 (Adoptium)](https://adoptium.net/temurin/releases/?package=jdk&version=17)** - the battle-tested, open-source HotSpot JDK used across the Java game development ecosystem. It gets timely security updates through Adoptium and integrates seamlessly with Gradle toolchains.
 
-After install, `java -version` should mention **Eclipse OpenJ9** (or **OpenJ9**). If you see **OpenJDK HotSpot** or **Temurin** with no OpenJ9, install Semeru instead.
+After install, `java -version` should show **17** and mention `OpenJDK`.
 
 #### Windows
 
-- Download the **Windows x64** JDK 17 **with OpenJ9** from the [IBM Semeru Runtimes downloads](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/) page (MSI or ZIP).  
-- Run the installer. Enable “Set JAVA_HOME” / “Add to PATH” if offered.  
-- **Set JAVA_HOME (if not set by installer)**  
-  - **Settings → System → About → Advanced system settings → Environment Variables**.  
-  - **System variables → New**: `JAVA_HOME` = Semeru install folder (e.g. `C:\Program Files\Semeru\jdk-17.x.x`).  
-  - **Path** → **New** → `%JAVA_HOME%\bin`.  
+- Download the **Windows x64** JDK 17 MSI from the [Adoptium Temurin downloads](https://adoptium.net/temurin/releases/?package=jdk&version=17) page.
+- Run the installer. Enable “Set JAVA_HOME” / “Add to PATH” if offered.
+- **Set JAVA_HOME (if not set by installer)**
+  - **Settings -> System -> About -> Advanced system settings -> Environment Variables**.
+  - **System variables -> New**: `JAVA_HOME` = Temurin install folder (e.g. `C:\Program Files\Eclipse Adoptium\jdk-17.x.x`).
+  - **Path** -> **New** -> `%JAVA_HOME%\bin`.
   - Restart the terminal.
-- **Verify**  
-  - `java -version` — should show **17** and **OpenJ9**.  
-  - `javac -version` — **17**.
+- **Verify**
+  - `java -version` - should show **17**.
+  - `javac -version` - **17**.
 
 #### macOS
 
-- **Option A (installer)**  
-  - Download **macOS** JDK 17 **OpenJ9** from [IBM Semeru Runtimes downloads](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/) and install the `.pkg`.
-- **Option B (Homebrew)**  
-  - `brew install --cask semeru-jdk-open@17` — see [semeru-jdk-open@17](https://formulae.brew.sh/cask/semeru-jdk-open@17).  
-  - Point `JAVA_HOME` at the Semeru install (e.g. under `/Library/Java/JavaVirtualMachines/`).
-- **Verify**  
-  - `java -version` and `javac -version` show 17 with **OpenJ9**.
+- **Option A (Homebrew)**
+  - `brew install --cask temurin@17`
+  - Point `JAVA_HOME` at the Temurin install (e.g. under `/Library/Java/JavaVirtualMachines/`).
+- **Option B (installer)**
+  - Download **macOS** JDK 17 from [Adoptium Temurin downloads](https://adoptium.net/temurin/releases/?package=jdk&version=17) and install the `.pkg`.
+- **Verify**
+  - `java -version` and `javac -version` show 17.
 
 #### Linux
 
-Prefer a **Semeru 17 OpenJ9** build from [IBM Semeru Runtimes downloads](https://developer.ibm.com/languages/java/semeru-runtimes/downloads/) (`.tar.gz`), unpack to e.g. `/opt/semeru-java17`, then:
+Adoptium maintains official package repositories for major distributions.
+
+**Ubuntu / Debian:**
 
 ```bash
-export JAVA_HOME=/opt/semeru-java17
-export PATH="$JAVA_HOME/bin:$PATH"
+wget -qO- https://packages.adoptium.net/artifactory/api/gpg/key/public \
+  | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
+echo “deb [signed-by=/usr/share/keyrings/adoptium.gpg] \
+  https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main” \
+  | sudo tee /etc/apt/sources.list.d/adoptium.list
+sudo apt update && sudo apt install -y temurin-17-jdk
 ```
 
-Add those lines to `~/.bashrc` or `~/.profile` (or `~/.zshrc` on Zsh).
+**Fedora / RHEL:**
 
-Some distributions package OpenJ9 under other names; if in doubt, use the official Semeru tarball so the VM is **OpenJ9**, not the distro’s HotSpot `openjdk-17-jdk`.
+```bash
+sudo dnf install https://packages.adoptium.net/artifactory/rpm/fedora/$(rpm -E %fedora)/adoptium.repo
+sudo dnf install -y temurin-17-jdk
+```
 
-- **Verify**  
+**Arch:**
+
+```bash
+sudo pacman -S jdk17-openjdk
+```
+
+(Arch ships HotSpot OpenJDK, which is binary-compatible with Temurin.)
+
+- **Verify**
   - `java -version`, `javac -version`, and `echo $JAVA_HOME`.
 
 ---
@@ -90,12 +107,12 @@ Some distributions package OpenJ9 under other names; if in doubt, use the offici
 
 1. **Clone the repository** (replace with the actual repo URL if you use a fork):
   ```bash
-   git clone https://github.com/stringdotjar/flixelgdx.git
+   git clone https://github.com/flixelgdx/flixelgdx.git
    cd flixelgdx
   ```
-2. **If you are contributing**: Fork the repo on GitHub, then clone your fork and add the upstream remote:
+2. **If you are contributing**: Fork the repo on GitHub, then clone your fork, and add the upstream remote:
   ```bash
-   git remote add upstream https://github.com/stringdotjar/flixelgdx.git
+   git remote add upstream https://github.com/flixelgdx/flixelgdx.git
    git fetch upstream
    git checkout develop
   ```
@@ -118,8 +135,8 @@ Configure your editor so it uses JDK 17 and the project’s Gradle build. Enabli
   - **File → Open** → select the **flixelgdx** root folder (the one that contains `build.gradle` and `settings.gradle`).  
   - Choose **Open as Project**.  
   - When asked “Load Gradle project?”, choose **Load Gradle Project** and use the **Gradle wrapper** (default). Wait for indexing and dependency resolution to finish.
-- **Set project JDK to 17 (OpenJ9)**  
-  - **File → Project Structure → Project**: set **Project SDK** to **17**. Prefer **IBM Semeru** (OpenJ9) — add it via **Add SDK → Download JDK** and pick a **Semeru 17** build, or **Add SDK → JDK** and point to your Semeru install folder.  
+- **Set project JDK to 17 (Eclipse Temurin)**
+  - **File -> Project Structure -> Project**: set **Project SDK** to **17**. Prefer **Eclipse Temurin** (Adoptium) - add it via **Add SDK -> Download JDK** and pick a **Temurin 17** build, or **Add SDK -> JDK** and point to your Temurin install folder.
   - Set **Project language level** to **17**.
 - **EditorConfig**  
   - **Settings → Editor → Code Style** → enable **“Enable EditorConfig support”**.  
@@ -165,226 +182,96 @@ The first run may take longer while Gradle downloads the wrapper and dependencie
 
 **Published coordinates:**
 
-- **Group**: `me.stringdotjar.flixelgdx`
+- **Group**: `org.flixelgdx`
 - **Artifact**: `flixelgdx-core` (the library your game’s `core` module depends on)
 - **Version**: from this repo’s `gradle.properties` (e.g. `projectVersion=1.0.0`)
 
-So the dependency is: `me.stringdotjar.flixelgdx:flixelgdx-core:<version>`.
+So the dependency is: `org.flixelgdx:flixelgdx-core:<version>`.
 
 ---
 
 ## Testing with a test project
 
-You need a separate libGDX application that depends on FlixelGDX. Two ways to do that:
+You need a separate test project that depends on FlixelGDX. Two ways to do that:
 
-- **Method 1**: Create a project with **gdx-liftoff** and depend on the published artifact from `mavenLocal()`.
+- **Method 1**: Create a project with the **FlixelGDX project generator** and depend on the published artifact from `mavenLocal()`.
 - **Method 2**: Use **Gradle composite build** so your test project uses the FlixelGDX source directly (no need to run `publishToMavenLocal` after every change).
 
-### Method 1: Using gdx-liftoff
+### Method 1: Using the FlixelGDX project generator
 
-[gdx-liftoff](https://github.com/libgdx/gdx-liftoff) is the recommended way to create new libGDX projects. It is a desktop app that generates a Gradle-based project with the platforms and options you choose. The steps below describe how to create a **minimal** project (desktop-only, no extensions), then how to integrate FlixelGDX and what to select if you want to test on Android, iOS, or web as well.
+The **FlixelGDX project generator** on the framework website is the recommended way to create a new test project. It generates a fully wired, ready-to-run Gradle project with the platforms and options you choose - no manual dependency setup required.
 
-#### Getting and running gdx-liftoff
+#### Generating the project
 
-1. Download the latest **gdx-liftoff-*.jar** from [gdx-liftoff Releases](https://github.com/libgdx/gdx-liftoff/releases) (e.g. `gdx-liftoff-1.14.0.7.jar`). Use the cross-platform JAR if you have a JDK installed.
-2. Run it (Java 17 highly recommended):
-  ```bash
-   java -jar gdx-liftoff-1.14.0.7.jar
-  ```
-   Replace the filename with the JAR you downloaded. A setup window opens.
+1. Open the **Getting Started** page on the [FlixelGDX website](https://flixelgdx.org/getting-started).
+2. Fill in your project details:
+   - **Game name**: e.g. `FlixelTest`.
+   - **Game id**: e.g. `flixel-test`.
+   - **Package name**: e.g. `com.example.flixeltest`.
+   - **Language**: **Java** (or Kotlin).
+   - **JDK vendor**: **Eclipse Temurin** (recommended).
+   - **Platforms**: at minimum **Desktop (LWJGL3)**. Add **Web (TeaVM)** if you want to test the web backend.
+   - **Template**: **Blank play state** for an empty starting point.
+3. Click **Download project** and unzip the result to a folder of your choice.
+4. Open a terminal in the unzipped folder and run:
+   ```bash
+   ./gradlew :lwjgl3:run
+   ```
+   (Use `gradlew.bat :lwjgl3:run` on Windows.)
 
-#### Creating a minimal project (step-by-step)
+Gradle auto-downloads a matching JDK toolchain on the first build via the Foojay Toolchains Resolver. After a brief first-time download you should see the empty game window.
 
-Work through the gdx-liftoff screens in order. For a **minimal** test project used only to run and test FlixelGDX on desktop, use these choices:
+#### What the generator creates
 
-1. **Basic project information (first screen)**
-  - **Project name**: e.g. `FlixelTest` or `MyFlixelGame`.  
-  - **Package**: e.g. `com.example.flixeltest`.  
-  - **Main class**: e.g. `FlixelTestGame` — this will be the class that will later extend `FlixelGame`.  
-  - Click **Next** or **Project Options** to open the Add-Ons / configuration screens.
-2. **Platforms (Add-Ons → Platforms)**
-  - For a **minimal desktop-only** project:  
-    - Check **Core** (required).  
-    - Check **LWJGL3** (desktop).  
-    - Leave **Android**, **iOS**, and **HTML** unchecked.
-  - If you want to test FlixelGDX on other platforms later, you can add them here (or regenerate a new project with them). See [Platform options for testing](#platform-options-for-testing) below.
-3. **Languages**
-  - Leave **Java** selected (FlixelGDX uses Java).
-4. **Extensions**
-  - For a minimal project, leave all extensions **unchecked** (no Ashley, FreeType, etc.).
-5. **Template**
-  - For quick testing, choose **Classic** or **ApplicationAdapter** — this generates a single main class that implements `ApplicationListener`. You will replace its logic with `FlixelGame` and states.  
-  - Alternatively, **Game** gives you a `Game` plus `Screen` structure; you can still make the main class extend `FlixelGame` and use `FlixelState` instead of `Screen`.
-6. **Third-party libraries**
-  - Leave the list empty for a minimal project (you will add FlixelGDX manually).
-7. **Final Settings**
-  - Set **Java version** to **17** (required for FlixelGDX and the generated build).  
-  - Set **Project path** to the folder where the project should be created (e.g. `C:\dev\FlixelTest` or `~/projects/FlixelTest`).  
-  - Click **Generate**. gdx-liftoff will create the project and open the folder when done.
+The generated project is a Gradle multi-module project that already depends on FlixelGDX via Maven Central:
 
-You now have a Gradle project with at least a **core** module and an **lwjgl3** module (and optionally **android**, **ios**, **html**, etc., if you selected them).
+```
+my-game/
+  assets/               -- game assets shared across all platforms
+  core/                 -- your game’s shared logic (depends on flixelgdx-core)
+  lwjgl3/               -- desktop launcher (depends on flixelgdx-lwjgl3)
+  teavm/                -- web launcher, present if you selected Web (optional)
+  build.gradle          -- root build file
+  gradlew / gradlew.bat -- Gradle wrapper script(s)
+  settings.gradle       -- Project settings
+```
+
+The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/src/main/java/...` so you can start adding game logic immediately. Open those files and replace the state’s `create()` method with your test code.
 
 #### Platform options for testing
 
-If you want to run your FlixelGDX test game on more than desktop, select the following in the **Platforms** step **before** generating:
+| Platform | Generator option | Run command |
+|----------|-----------------|-------------|
+| **Desktop (LWJGL3)** | Check **Desktop (LWJGL3)** | `./gradlew :lwjgl3:run` |
+| **Web (TeaVM)** | Check **Web (TeaVM)** | `./gradlew :teavm:run` |
+| **Android** | Coming soon | - |
+| **iOS** | Coming soon | - |
 
-| Platform | What to select in gdx-liftoff | What you get |
-|----------|-------------------------------|--------------|
-| **Desktop (LWJGL3)** | **Core** + **LWJGL3** | `lwjgl3` module; run the `lwjgl3` run configuration or `./gradlew lwjgl3:run`. |
-| **Android** | **Core** + **LWJGL3** + **Android** | `android` module; run the `android` configuration or connect a device/emulator and run the Android app. Requires Android SDK. |
-| **iOS** | **Core** + **LWJGL3** + **iOS** with **MobiVM** | `ios` module; run the iOS launcher from a Mac. You **must** select **MobiVM** (or the RoboVM option that uses the [MobiVM](https://github.com/MobiVM/robovm) fork) as the iOS backend in gdx-liftoff. MobiVM is the maintained fork of RoboVM used by libGDX for iOS. |
-| **Web (TeaVM)** | **Core** + **LWJGL3** + **HTML** with **TeaVM** | In Secondary Platforms, check **HTML(TeaVM)** (not GWT). Generates an `html` module that compiles Java to JavaScript via TeaVM. Run the `html` run configuration or the Gradle task that starts the TeaVM server / builds the web output. |
+#### Testing your local FlixelGDX changes
 
-Many backend modules already depend on `flixelgdx-core`; you typically depend on **`flixelgdx-core`** and **one backend module** plus any extra modules you use directly. For example, you would place the following in your **core** module (where all of your game's main logic goes):
+The project generator targets Maven Central by default, which means it pulls the last stable release of FlixelGDX rather than your local clone. To test your local changes you have two options:
 
-```gradle
-dependencies {
-  implementation 'me.stringdotjar.flixelgdx:flixelgdx-core:1.0.0'
-}
-```
+- **Publish to Maven Local** (fast for one-off tests): run `./gradlew publishToMavenLocal` in the FlixelGDX repo, then add `mavenLocal()` to the `repositories` block in the generated project’s root `build.gradle` (before `mavenCentral()`).
+- **Composite build** (best for active development): see [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) below - it links your test project directly to the FlixelGDX source with no republishing required on each change.
 
-And then you would place the following in your **lwjgl3** (desktop) module:
-
-```gradle
-dependencies {
-  implementation 'me.stringdotjar.flixelgdx:flixelgdx-lwjgl3:1.0.0'
-}
-```
-
-#### Integrating FlixelGDX into the generated project
-
-After the project is generated, add FlixelGDX and wire it in:
-
-1. **Publish FlixelGDX to Maven Local** (if you have not already). From the FlixelGDX repo root:
-  ```bash
-   ./gradlew publishToMavenLocal
-   ```
-
-2. **Add Maven Local to the test project.**  
-   Open the **root** `build.gradle` of the liftoff-generated project (the one that contains `allprojects { ... }`). In the `repositories` block, ensure `mavenLocal()` is present, usually before `mavenCentral()`:
-   ```gradle
-   allprojects {
-     repositories {
-       mavenLocal()
-       mavenCentral()
-       // ... other repositories
-     }
-   }
-   ```
-   If `mavenLocal()` is already there, skip this step.
-
-3. **Add the FlixelGDX dependency to the core module.**  
-   Open the **core** module’s `build.gradle` (e.g. `core/build.gradle`). In the `dependencies { }` block, add:
-   ```gradle
-   dependencies {
-     implementation "me.stringdotjar.flixelgdx:flixelgdx-core:1.0.0"  // Use the version from FlixelGDX’s gradle.properties
-     // ... existing dependencies (e.g. libgdx)
-   }
-   ```
-
-4. **Replace the main class with a FlixelGame.**  
-   Open the main class in `core` (the one you named in gdx-liftoff, e.g. `FlixelTestGame.java`). Change it so that it extends `FlixelGame` instead of `ApplicationAdapter` or `Game`, and start a state in `create()`:
-   ```java
-   package com.example.flixeltest;
-
-   import me.stringdotjar.flixelgdx.Flixel;
-   import me.stringdotjar.flixelgdx.FlixelGame;
-   import me.stringdotjar.flixelgdx.FlixelState;
-
-   public class FlixelTestGame extends FlixelGame {
-     
-     // Make sure to create a constructor so you can use it in a launcher!
-     public FlixelTestGame(String title, int width, int height, FlixelState initialScreen) {
-       super(title, width, height, initialScreen);
-     }
-   }
-   ```
-
-5. **Create a simple state.**  
-   Add a new class (e.g. `MyTestState.java`) in the same package or in a `states` package, extending `FlixelState`, and override what you need (e.g. `create()` to add sprites or text):
-   ```java
-   package com.example.flixeltest;
-
-   import me.stringdotjar.flixelgdx.FlixelState;
-
-   public class MyTestState extends FlixelState {
-
-     @Override
-     public void create() {
-       super.create();
-       // Add your test content (sprites, tweens, etc.)
-     }
-   }
-   ```
-
-6. **Use a dedicated built-in launcher.**  
-   FlixelGDX provides many built-in launchers for each platform. In this example, we'll use the LWJGL3 launcher.
-
-   - **Add the FlixelGDX LWJGL3 dependency** to the **lwjgl3** module’s `build.gradle` (e.g. `lwjgl3/build.gradle`), not the root or core module:
-     ```gradle
-     dependencies {
-       implementation "me.stringdotjar.flixelgdx:flixelgdx-lwjgl3:1.0.0"  // same version as flixelgdx-core
-       // ... existing dependencies (e.g. libGDX lwjgl3 backend, core project)
-     }
-     ```
-     The lwjgl3 module already depends on your `core` project, so it will have access to `FlixelTestGame` and `MyTestState`.
-
-   - **Use (or create) a launcher class** in the lwjgl3 module. Typically, gdx-liftoff will generate a launcher class for you, but you can customize it if you want.
-     ```java
-     package com.example.flixeltest;
-
-     import com.example.flixeltest.MyTestState;
-     import com.example.flixeltest.FlixelTestGame;
-     import me.stringdotjar.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
-
-     /** Launches the desktop (LWJGL3) application. */
-     public class Lwjgl3Launcher {
- 
-       public static void main(String[] args) {
-         if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
- 
-         // Create your game and pass the initial screen.
-         FlixelTestGame game = new FlixelTestGame(
-           "Flixel Test", 
-           800, 
-           600, 
-           new MyTestState()
-         );
- 
-         // Launch the game using the FlixelGDX LWJGL3 launcher.
-         FlixelLwjgl3Launcher.launch(game);
-       }
-     }
-     ```
-
-   If you launch with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
-
-7. **Refresh Gradle** in your IDE (e.g. “Reload All Gradle Projects” or Gradle sync). Resolve any import errors so that `FlixelGame`, `FlixelState`, and `Flixel` are found from `flixelgdx-core`, and `FlixelLwjgl3Launcher` from `flixelgdx-lwjgl3`.
-8. **Run the desktop launcher.**
-  Run the **lwjgl3** run configuration with the main class set to your launcher (e.g. `FlixelTestLauncher`). You should see your state. If you added Android/iOS/HTML, run the corresponding launcher or Gradle task for that platform to test there as well.
+If you launch the desktop module with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
 
 ### Method 2: Composite build (IntelliJ or any Gradle-based IDE)
 
 Composite build lets the test project use your local FlixelGDX source so changes are picked up without republishing.
 
-1. **Open your test project** (the libGDX app) in your IDE.
-2. **Add the composite in the test project’s `settings.gradle`** (at the top level, same file that has `rootProject.name`):
+1. **Open your test project** in your IDE.
+2. **Add the composite to the test project’s `settings.gradle`**, below the existing `rootProject.name` line:
   ```gradle
-   rootProject.name = 'my-test-game'
-
-   includeBuild('/path/to/flixelgdx') {
-     dependencySubstitution {
-       substitute module('me.stringdotjar.flixelgdx:flixelgdx-core') using project(':flixelgdx-core')
-     }
-   }
+   includeBuild ‘/path/to/flixelgdx’
   ```
-   Replace `/path/to/flixelgdx` with the **absolute path** to your FlixelGDX clone.  
-  - **Windows**: use forward slashes or escaped backslashes, e.g. `C:/Users/You/flixelgdx` or `C:\\Users\\You\\flixelgdx`.  
+   Replace `/path/to/flixelgdx` with the path to your FlixelGDX clone.
+  - **Windows**: use forward slashes, e.g. `C:/Users/You/flixelgdx`.
   - **macOS/Linux**: e.g. `/home/you/projects/flixelgdx`.
-3. **Declare the dependency in the test project’s core `build.gradle`** (no version needed; the composite supplies the project):
+3. **Your existing dependency declaration stays as-is**; the composite build substitutes it automatically:
   ```gradle
    dependencies {
-     implementation 'me.stringdotjar.flixelgdx:flixelgdx-core'
+     implementation ‘org.flixelgdx:flixelgdx-core:<version>’
      // ... other dependencies
    }
   ```
@@ -399,19 +286,17 @@ Composite build lets the test project use your local FlixelGDX source so changes
    From the FlixelGDX repo root:
 
    ```bash
-   ./gradlew test
+   ./gradlew :flixelgdx-test:test
    ```
 
    Fix any failing tests before submitting changes.
+
 2. **Use a real test game**
-  - In your test project (liftoff or composite), create a minimal `FlixelGame` and at least one `FlixelState`.
+  - In your test project (maven local or composite), verify there is a minimal `FlixelGame` and at least one `FlixelState`.
   - Switch states, create sprites, use `FlixelTween` / `FlixelTweenSettings`, and hit the code paths you changed.
   - Run the **desktop** launcher first; then Android or other platforms if your change affects them.
 3. **Verify no regressions**
   After modifying FlixelGDX, run `./gradlew test` again and run your test game (state switches, tweens, sprites, etc.) to ensure nothing else breaks.
-4. **Example verification**
-  In the test project, a minimal check that the framework is wired correctly:
-   If this compiles and runs (e.g. shows your state), the dependency and setup are correct. Then add more states and use the APIs you’re changing to test the framework properly.
 
 ---
 
@@ -420,11 +305,13 @@ Composite build lets the test project use your local FlixelGDX source so changes
 FlixelGDX supports web builds through the **TeaVM** backend (`flixelgdx-teavm`). TeaVM transpiles
 Java bytecode into JavaScript so your game can run in a browser.
 
-> [!IMPORTANT]
-> **Do not use the TeaVM module generated by gdx-liftoff.** Liftoff generates a module using the
-> old `backend-teavm` + `TeaVMBuilder.java` approach, which is incompatible with FlixelGDX's
-> `backend-web` + `org.teavm` Gradle plugin approach. Delete `TeaVMBuilder.java` and replace the
-> entire `build.gradle` with the template below.
+> [!NOTE]
+> Projects generated by the **FlixelGDX project generator** already use the correct TeaVM setup
+> described below - no extra steps are needed. If you have an older project originally created
+> with gdx-liftoff, note that Liftoff generates a module using the old `backend-teavm` +
+> `TeaVMBuilder.java` approach, which is incompatible with FlixelGDX's `backend-web` +
+> `org.teavm` Gradle plugin approach. Delete `TeaVMBuilder.java` and replace the entire
+> `build.gradle` with the template below.
 
 ### Recommended: use the FlixelGDX TeaVM Gradle plugin
 
@@ -439,14 +326,14 @@ otherwise require manual setup:
 
 #### 1. Add plugin resolution to `settings.gradle`
 
-The plugin is published to `mavenLocal` (dev) and JitPack (distribution), so add those
-repositories to the `pluginManagement` block at the top of your root `settings.gradle`:
+The plugin is published to Maven Central (stable releases) and JitPack (snapshots / specific commits), so add those repositories to the `pluginManagement` block at the top of your root `settings.gradle`:
 
 ```gradle
 pluginManagement {
   repositories {
     mavenLocal()
-    maven { url 'https://jitpack.io' }
+    mavenCentral()
+    maven { url 'https://jitpack.io' }  // only needed for snapshots or specific commits
     gradlePluginPortal()
   }
 }
@@ -460,7 +347,7 @@ Add a `teavm/` directory (or any name you prefer) to your project. A minimal
 ```gradle
 plugins {
   id 'org.teavm' version '0.13.0'
-  id 'me.stringdotjar.flixelgdx.teavm' version '0.1.0-beta'
+  id 'org.flixelgdx.teavm' version '0.1.0-beta'
 }
 
 teavm {
@@ -474,7 +361,7 @@ teavm {
 }
 
 dependencies {
-  implementation 'me.stringdotjar.flixelgdx:flixelgdx-teavm:0.1.0-beta'
+  implementation 'org.flixelgdx:flixelgdx-teavm:0.1.0-beta'
   implementation project(':core')
 }
 ```
@@ -568,13 +455,20 @@ FlixelTeaVMLauncher.launch(
 );
 ```
 
-### Reflection metadata
+### TeaVM metadata (`teavm.json`)
 
-FlixelGDX's TeaVM build auto-generates a `teavm.json` reflection metadata file during the
-`processResources` phase. This file preserves class/field/method information that TeaVM's
-ahead-of-time compiler would otherwise strip.
+FlixelGDX's TeaVM build auto-generates a `teavm.json` metadata file during the
+`processResources` phase. This file lists classes (and related reflective surface) that TeaVM's
+ahead-of-time compiler should keep when your game or a dependency still uses
+`java.lang.reflect`, serialization, annotation introspection, or other patterns that need
+type information at runtime.
 
-The reflection profile is controlled by `flixelReflectionProfile` in `gradle.properties`:
+The **size** of that list is controlled by a profile in `gradle.properties`. The Gradle keys
+`flixelReflectionProfile` and `flixelReflectionExtraPackages` keep these historical names, but
+they only drive this TeaVM metadata step. They are **not** a FlixelGDX reflection API (the core
+framework does not ship one; see [Optional ReflectAOT for game code](#optional-reflectaot-for-game-code) below).
+
+`flixelReflectionProfile` selects a preset:
 
 | Profile    | What is preserved |
 |------------|-------------------|
@@ -582,12 +476,18 @@ The reflection profile is controlled by `flixelReflectionProfile` in `gradle.pro
 | `STANDARD` | FlixelGDX + libGDX classes (recommended). |
 | `ALL`      | FlixelGDX + libGDX + visible dependencies (anim8, miniaudio). |
 
-To include your own game packages in the metadata, set `flixelReflectionExtraPackages` in
-`gradle.properties`:
+To add your own packages (for example your `core` module's root package), list them in
+`flixelReflectionExtraPackages` (comma-separated):
 
 ```properties
 flixelReflectionExtraPackages=com.mygame,org.example.tools
 ```
+
+### Optional ReflectAOT for game code
+
+In order to keep the core of the framework platform-agnostic, it does not expose a reflection API. If your 
+game still wants a small `Reflect`-style API with Gradle-time validation, use the separate **ReflectAOT** 
+plugin maintained alongside FlixelGDX: [https://github.com/flixelgdx/ReflectAOT](https://github.com/flixelgdx/ReflectAOT).
 
 ### Platform limitations on web
 
@@ -598,8 +498,6 @@ environment:
   a safe no-op. Console output (`System.out.println`) maps to `console.log` in the browser.
 - **Jansi / ANSI colors** are not installed. Terminal color codes are irrelevant in a browser
   console.
-- **`FlixelVarTween`** relies on runtime reflection and may exhibit slower performance on
-  TeaVM. Prefer `FlixelPropertyTween` (getter/setter lambdas) for web-targeted games.
 - **`FlixelGitUtil`** and other `ProcessBuilder`-based utilities are unavailable (no subprocess
   support in browsers).
 - **`FlixelDefaultAssetManager.extractAssetPath()`** uses `java.io.File` for temp file
@@ -611,9 +509,11 @@ environment:
 Before shipping a web build, verify the following:
 
 1. The game boots and the initial state renders in the browser.
-2. No `ClassNotFoundException` or `NoSuchMethodException` in the browser console (indicates
-   missing reflection metadata; widen the profile or add extra packages).
-3. Tweens animate correctly (prefer `FlixelPropertyTween` over `FlixelVarTween`).
+2. No `ClassNotFoundException` or `NoSuchMethodException` in the browser console (often means
+   TeaVM metadata is too narrow; widen `flixelReflectionProfile` or add packages in
+   `flixelReflectionExtraPackages`).
+3. Tweens animate correctly (`FlixelTween.tween(...)` with `FlixelTweenSettings` goals; the
+   default tween implementation is `FlixelGoalTween`).
 4. Audio plays in the browser (uses the Web Audio API via libGDX's backend).
 5. Input (keyboard, mouse/touch) responds as expected.
 
@@ -741,7 +641,7 @@ Contributing to the **flixelgdx-ios** module or testing FlixelGDX on iOS require
   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
   ```
 3. **MobiVM**  
-   FlixelGDX uses **MobiVM** for iOS (the maintained [RoboVM fork](https://github.com/MobiVM/robovm)). When you create a test project with gdx-liftoff and add the iOS platform, select **MobiVM** (or the RoboVM option that uses MobiVM) as the backend. The generated project will pull the MobiVM/RoboVM Gradle plugin and dependencies; no separate installer is usually needed. Ensure your test project uses the MobiVM backend as described in the [platform options table](#platform-options-for-testing) earlier in this document.
+   FlixelGDX uses **MobiVM** for iOS (the maintained [RoboVM fork](https://github.com/MobiVM/robovm)). Since the FlixelGDX project generator does not yet support iOS, use **gdx-liftoff** to create your iOS test project and select MobiVM as the backend. The generated project will pull the MobiVM/RoboVM Gradle plugin and dependencies; no separate installer is usually needed.
 
 ### Development process for iOS
 
@@ -763,11 +663,6 @@ Contributing to the **flixelgdx-ios** module or testing FlixelGDX on iOS require
 | **Mac, with paid account** | None for basic testing. | Use simulator for quick iteration; use a device when you need to test device-only behavior (performance, sensors, etc.). |
 | **MobiVM / RoboVM version** | MobiVM is actively maintained; libGDX and gdx-liftoff pin specific versions. | Follow [MobiVM releases](https://github.com/MobiVM/robovm/releases) and gdx-liftoff release notes. Use the Java and dependency versions recommended by the FlixelGDX and liftoff docs. |
 
-**Summary**  
-
-- **Android**: Install the Android SDK (Android Studio or command-line), set `ANDROID_HOME` and `local.properties`, accept licenses. You can build the Android module on any OS; running the app requires an emulator (with acceleration where possible) or a physical device. On Windows/Linux you cannot do iOS; on Mac prefer ARM64 emulator images on Apple Silicon.
-- **iOS**: You must have a Mac and Xcode. Use MobiVM for the iOS backend. Build and run via Gradle and the simulator; use a paid Apple Developer account for device testing. Without a Mac, you can still contribute to flixelgdx-ios code and rely on CI or a Mac-in-the-cloud for running and testing.
-
 ---
 
 ## Troubleshooting
@@ -775,7 +670,7 @@ Contributing to the **flixelgdx-ios** module or testing FlixelGDX on iOS require
 ### JAVA_HOME not set or wrong
 
 - **Symptom**: Gradle or the IDE reports “JAVA_HOME is not set” or uses the wrong Java version.
-- **Fix**: Set `JAVA_HOME` to the **JDK 17** installation directory (see [Java (JDK 17)](#2-java-jdk-17) for your OS). Use a **new** terminal/IDE restart after changing environment variables.
+- **Fix**: Set `JAVA_HOME` to the **JDK 17** installation directory (see [Java (JDK 17 with Eclipse Temurin)](#2-java-jdk-17-with-eclipse-temurin) for your OS). Use a **new** terminal/IDE restart after changing environment variables.
 
 ### Wrong Java version (8, 11, 21, etc.)
 
@@ -796,7 +691,7 @@ Then run `./gradlew publishToMavenLocal` again.
 - **Symptom**: Gradle or scripts fail when the project path contains spaces (e.g. `C:\Users\My Name\flixelgdx`).
 - **Fix**: Prefer a path without spaces (e.g. `C:\dev\flixelgdx`). If you must use spaces, quote the path in scripts and in composite build: `includeBuild('C:/Users/My Name/flixelgdx') { ... }`.
 
-### Dependency not found: `me.stringdotjar.flixelgdx:flixelgdx-core`
+### Dependency not found: `org.flixelgdx:flixelgdx-core`
 
 - **Symptom**: The test project fails to resolve the FlixelGDX dependency.
 - **Fix**:  
