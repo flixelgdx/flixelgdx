@@ -52,7 +52,8 @@ public final class FlixelLoggerBytecodeWeaver {
    * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Rewriting
    * {@code Flixel} itself would only capture {@code Flixel.java} line numbers, so {@link #weave(ClassNode)} skips that
    * class. Call sites in game bytecode use {@code INVOKESTATIC Flixel...}; those are rewritten to
-   * {@code FlixelLoggingBytecodeHooks} so line metadata comes from the caller class (critical for TeaVM where stack walking is unavailable).
+   * {@code FlixelLoggingBytecodeHooks} so line metadata comes from the caller class (critical for TeaVM
+   * where stack walking is unavailable).
    */
   private static final String FLIXEL_STATIC_FACADE_INTERNAL = "org/flixelgdx/Flixel";
 
