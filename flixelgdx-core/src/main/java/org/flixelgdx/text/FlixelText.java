@@ -108,6 +108,12 @@ public class FlixelText extends FlixelSprite {
    */
   private float borderQuality = 1;
 
+  /**
+   * The screen-to-world pixel ratio at which the current font was last baked.
+   * A value of {@code 0} forces a font rebuild on the next draw or measurement.
+   */
+  private float lastBakeScreenScale = 0f;
+
   /** The font used for text rendering. */
   private BitmapFont bitmapFont;
 
@@ -969,6 +975,7 @@ public class FlixelText extends FlixelSprite {
     borderColor.set(Color.CLEAR);
     borderSize = 1;
     borderQuality = 1;
+    lastBakeScreenScale = 0f;
     fontFile = null;
     fontRegistryId = null;
     privateBitmapFontOwned = false;
@@ -992,6 +999,12 @@ public class FlixelText extends FlixelSprite {
    * Called lazily before drawing or when dimensions are queried.
    */
   private void rebuildIfDirty() {
+    if (!fontDirty && isEmbedded()) {
+      float s = currentScreenScale();
+      if (Math.abs(s - lastBakeScreenScale) > 0.01f) {
+        fontDirty = true;
+      }
+    }
     if (fontDirty) {
       rebuildFont();
       fontDirty = false;
@@ -1007,11 +1020,16 @@ public class FlixelText extends FlixelSprite {
    * Regenerates the {@link BitmapFont} based on current settings. The font source
    * is resolved in this order:
    * <ol>
-   *   <li>{@link #fontRegistryId}: shared generator from {@link FlixelFontRegistry}</li>
+   *   <li>{@link #fontRegistryId}: generator from {@link FlixelFontRegistry}</li>
    *   <li>{@link #fontFile}: privately-owned generator for a direct file</li>
    *   <li>{@link FlixelFontRegistry#getDefault()}: global registry default</li>
-   *   <li>libGDX built-in bitmap font (Arial 15px, scaled)</li>
+   *   <li>libGDX built-in bitmap font (lsans-15, scaled)</li>
    * </ol>
+   *
+   * <p>When a FreeType generator is available the font texture is baked at the current
+   * screen-pixel size (see {@link #currentScreenScale()}) so glyphs are crisp at any
+   * display resolution. The resulting {@link BitmapFont} is always owned by this instance
+   * and is disposed when replaced or when {@link #destroy()} is called.
    */
   private void rebuildFont() {
     BitmapFont oldFont = bitmapFont;
@@ -1019,27 +1037,34 @@ public class FlixelText extends FlixelSprite {
 
     FreeTypeFontGenerator gen = resolveGenerator();
     if (gen != null) {
+      float screenScale = currentScreenScale();
+      lastBakeScreenScale = screenScale;
+      int bakeSize = Math.max(1, Math.round(size * screenScale));
       int space = (int) letterSpacing;
-      if (fontRegistryId != null) {
-        bitmapFont = FlixelFontRegistry.obtainBitmapFontFromFreeType(
-            "reg:" + fontRegistryId, gen, size, space);
-        privateBitmapFontOwned = false;
-      } else if (fontFile != null) {
-        freeTypeParams.size = size;
-        freeTypeParams.spaceX = space;
+
+      freeTypeParams.size = bakeSize;
+      freeTypeParams.spaceX = space;
+      freeTypeParams.mono = !antialiasing;
+      freeTypeParams.hinting = antialiasing ? FreeTypeFontGenerator.Hinting.Full : FreeTypeFontGenerator.Hinting.None;
+      freeTypeParams.minFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+      freeTypeParams.magFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+
+      // Incremental generation (glyphs on demand) only makes sense for a private file handle;
+      // registry generators serve multiple callers and work better with an upfront bake.
+      if (fontFile != null) {
         freeTypeParams.incremental = true;
-        freeTypeParams.mono = !antialiasing;
-        freeTypeParams.hinting = antialiasing ? FreeTypeFontGenerator.Hinting.Full : FreeTypeFontGenerator.Hinting.None;
-        freeTypeParams.minFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
-        freeTypeParams.magFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
-        bitmapFont = gen.generateFont(freeTypeParams);
-        privateBitmapFontOwned = true;
+        freeTypeParams.genMipMaps = false;
       } else {
-        String defId = FlixelFontRegistry.getDefault();
-        bitmapFont = FlixelFontRegistry.obtainBitmapFontFromFreeType(
-            "def:" + defId, gen, size, space);
-        privateBitmapFontOwned = false;
+        freeTypeParams.incremental = false;
+        freeTypeParams.genMipMaps = true;
       }
+
+      bitmapFont = gen.generateFont(freeTypeParams);
+      // Scale glyph metrics down so the layout measures in game pixels, not baked pixels.
+      // The viewport's world-to-screen projection then maps those game pixels to the
+      // correct screen pixels automatically.
+      bitmapFont.getData().setScale(1f / screenScale);
+      privateBitmapFontOwned = true;
     } else {
       bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
       privateBitmapFontOwned = false;
@@ -1056,6 +1081,28 @@ public class FlixelText extends FlixelSprite {
     if (bitmapFont != null) {
       bitmapFont.setUseIntegerPositions(!antialiasing);
     }
+  }
+
+  /**
+   * Returns the ratio of screen pixels to world (game) pixels for the current camera.
+   *
+   * <p>Uses the active draw camera when inside a draw call, otherwise falls back to the
+   * primary camera. Returns {@code 1f} when no camera or game context is available.
+   */
+  private float currentScreenScale() {
+    FlixelCamera cam = Flixel.getDrawCamera();
+    if (cam == null) {
+      if (Flixel.getGame() == null) {
+        return 1f;
+      }
+      cam = Flixel.cameras.first();
+    }
+    float worldH = cam.getViewport().getWorldHeight();
+    float screenH = cam.getViewport().getScreenHeight();
+    if (worldH <= 0f || screenH <= 0f) {
+      return 1f;
+    }
+    return screenH / worldH;
   }
 
   /**
