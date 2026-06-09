@@ -31,6 +31,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.Flixel;
@@ -43,7 +44,6 @@ import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
-import org.flixelgdx.logging.FlixelDebugConsoleEntry;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
@@ -60,7 +60,7 @@ import java.util.function.Consumer;
  * Platform-agnostic <em>controller</em> for the FlixelGDX in-game debugger. This abstract class is the
  * baseline behavior that every FlixelGDX backend can rely on: it owns the visibility flags,
  * keybind handling, hitbox drawing, the pause/camera tools, and the pooled buffers that hold
- * watch values, log entries, and custom console blocks.
+ * watch values, log entries, and custom tracker blocks.
  *
  * <p>The class deliberately does <strong>not</strong> render any UI on its own. Doing so in the
  * core module would either pull a heavy GUI dependency into every platform (web/iOS/Android).
@@ -93,7 +93,7 @@ import java.util.function.Consumer;
  *       any markup string.</li>
  *   <li>Refreshes watch entries at 10Hz into reusable {@link FlixelString} buffers
  *       ({@link FlixelDebugWatchManager#fillWatchEntries(Array, Array)}).</li>
- *   <li>Reuses {@link CachedConsoleBlock} instances across rebuilds.</li>
+ *   <li>Reuses {@link CachedTrackerBlock} instances across rebuilds.</li>
  * </ul>
  */
 public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
@@ -167,10 +167,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Cached watch values refreshed at {@value #WATCH_REFRESH_INTERVAL}s; buffers are reused across refreshes. */
   protected final Array<FlixelString> cachedWatchValues = new Array<>();
 
-  protected final Array<CachedConsoleBlock> cachedConsoleBlocks = new Array<>();
+  protected final Array<CachedTrackerBlock> cachedTrackerBlocks = new Array<>();
 
-  /** Pool of console blocks between rebuilds to avoid reallocating block objects. */
-  private final Array<CachedConsoleBlock> cachedConsoleBlockPool = new Array<>();
+  /** Pool of tracker blocks between rebuilds to avoid reallocating block objects. */
+  private final Array<CachedTrackerBlock> cachedTrackerBlockPool = new Array<>();
 
   /** Latest log lines, oldest first; bounded by {@link FlixelLogger#MAX_LOG_ENTRIES}. */
   protected final Deque<BufferedLogLine> logBuffer = new ArrayDeque<>();
@@ -324,7 +324,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (watchRefreshTimer >= WATCH_REFRESH_INTERVAL) {
       watchRefreshTimer = 0f;
       refreshWatchEntries();
-      rebuildCachedConsoleBlocks();
+      rebuildCachedTrackerBlocks();
     }
 
     onUpdateUI(elapsed);
@@ -451,10 +451,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected void onWatchEntriesRefreshed() {}
 
   /**
-   * Hook fired after {@link #cachedConsoleBlocks} has been rebuilt. Override in renderer subclasses
+   * Hook fired after {@link #cachedTrackerBlocks} has been rebuilt. Override in renderer subclasses
    * that need to keep a parallel cache (for example a {@code String[]} for Dear ImGui).
    */
-  protected void onConsoleBlocksRebuilt() {}
+  protected void onTrackerBlocksRebuilt() {}
 
   /**
    * Hook fired right after a new {@link FlixelLogEntry} has been pushed into {@link #logBuffer}.
@@ -832,50 +832,55 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    */
   public void resize(int width, int height) {}
 
-  private void reclaimConsoleBlocksToPool() {
-    for (int i = 0; i < cachedConsoleBlocks.size; i++) {
-      cachedConsoleBlockPool.add(cachedConsoleBlocks.get(i));
+  private void reclaimTrackerBlocksToPool() {
+    for (int i = 0; i < cachedTrackerBlocks.size; i++) {
+      cachedTrackerBlockPool.add(cachedTrackerBlocks.get(i));
     }
-    cachedConsoleBlocks.clear();
+    cachedTrackerBlocks.clear();
   }
 
-  private CachedConsoleBlock obtainConsoleBlock() {
-    return cachedConsoleBlockPool.size > 0
-        ? cachedConsoleBlockPool.pop()
-        : new CachedConsoleBlock();
+  private CachedTrackerBlock obtainTrackerBlock() {
+    return cachedTrackerBlockPool.size > 0
+        ? cachedTrackerBlockPool.pop()
+        : new CachedTrackerBlock();
   }
 
-  private void rebuildCachedConsoleBlocks() {
-    reclaimConsoleBlocksToPool();
-    FlixelLogger logger = Flixel.log;
-    if (logger == null) {
+  private void rebuildCachedTrackerBlocks() {
+    reclaimTrackerBlocksToPool();
+    if (Flixel.debug == null) {
       return;
     }
-    FlixelDebugConsoleEntry[] entries = logger.getConsoleEntries();
-    if (entries == null || entries.length == 0) {
+    Array<FlixelDebugTrackerEntry> entries = Flixel.debug.getTrackerEntries();
+    if (entries == null || entries.size == 0) {
       return;
     }
-    for (FlixelDebugConsoleEntry entry : entries) {
+    for (int e = 0; e < entries.size; e++) {
+      FlixelDebugTrackerEntry entry = entries.get(e);
       if (entry == null) {
         continue;
       }
-      String[] lines = entry.getConsoleLines();
-      if (lines == null || lines.length == 0) {
+      ObjectMap<String, String> values = entry.getTrackedValues();
+      if (values == null || values.size == 0) {
         continue;
       }
-      CachedConsoleBlock block = obtainConsoleBlock();
+      CachedTrackerBlock block = obtainTrackerBlock();
       block.name.clear();
       block.name.concat(entry.getName());
-      int n = lines.length;
-      block.ensureBodyLineCount(n);
-      for (int i = 0; i < n; i++) {
-        block.bodies[i].clear();
-        block.bodies[i].concat(lines[i]);
+      int n = values.size;
+      block.ensurePairCount(n);
+      // ObjectMap reuses its entries iterator, so this loop stays allocation-free.
+      int i = 0;
+      for (ObjectMap.Entry<String, String> pair : values) {
+        block.keys[i].clear();
+        block.keys[i].concat(pair.key != null ? pair.key : "");
+        block.values[i].clear();
+        block.values[i].concat(pair.value != null ? pair.value : "");
+        i++;
       }
-      block.bodyCount = n;
-      cachedConsoleBlocks.add(block);
+      block.pairCount = i;
+      cachedTrackerBlocks.add(block);
     }
-    onConsoleBlocksRebuilt();
+    onTrackerBlocksRebuilt();
   }
 
   private void onLogEntry(FlixelLogEntry entry) {
@@ -985,21 +990,26 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
   }
 
-  /** Cached block for {@link FlixelDebugConsoleEntry} output (rebuilt every {@value #WATCH_REFRESH_INTERVAL}s). */
-  public static final class CachedConsoleBlock {
+  /** Cached block for a {@link FlixelDebugTrackerEntry} (rebuilt every {@value #WATCH_REFRESH_INTERVAL}s). */
+  public static final class CachedTrackerBlock {
 
     public final FlixelString name = new FlixelString(64);
-    public FlixelString[] bodies = new FlixelString[0];
-    public int bodyCount;
+    public FlixelString[] keys = new FlixelString[0];
+    public FlixelString[] values = new FlixelString[0];
+    public int pairCount;
 
-    void ensureBodyLineCount(int n) {
-      if (bodies.length < n) {
-        FlixelString[] nb = new FlixelString[n];
-        System.arraycopy(bodies, 0, nb, 0, bodies.length);
-        for (int i = bodies.length; i < n; i++) {
-          nb[i] = new FlixelString(96);
+    void ensurePairCount(int n) {
+      if (keys.length < n) {
+        FlixelString[] nk = new FlixelString[n];
+        FlixelString[] nv = new FlixelString[n];
+        System.arraycopy(keys, 0, nk, 0, keys.length);
+        System.arraycopy(values, 0, nv, 0, values.length);
+        for (int i = keys.length; i < n; i++) {
+          nk[i] = new FlixelString(48);
+          nv[i] = new FlixelString(64);
         }
-        bodies = nb;
+        keys = nk;
+        values = nv;
       }
     }
   }

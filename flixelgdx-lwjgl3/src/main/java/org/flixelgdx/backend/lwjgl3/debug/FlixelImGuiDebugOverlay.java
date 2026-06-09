@@ -52,6 +52,7 @@ import imgui.flag.ImGuiDockNodeFlags;
 import imgui.flag.ImGuiInputTextFlags;
 import imgui.flag.ImGuiKey;
 import imgui.flag.ImGuiTableFlags;
+import imgui.flag.ImGuiTreeNodeFlags;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
@@ -106,8 +107,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
 
+  /** Empty-state copy for the Tracker panel (must match {@link #drawTrackerWindow()}). */
+  private static final String TRACKER_EMPTY_HINT =
+      "No trackers registered. Use Flixel.debug.addTrackerEntry(...) to show grouped values here.";
+
   private int watchCount;
-  private int consoleBlockCount;
+  private int trackerBlockCount;
   private int commandHistoryCursor = -1;
   private int commandLineUtf8ScratchLen;
   private int cachedToggleKey = -1;
@@ -125,7 +130,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float layoutWatchX, layoutWatchY, layoutWatchW, layoutWatchH;
   private float layoutControlsX, layoutControlsY, layoutControlsW, layoutControlsH;
   private float layoutTextureX, layoutTextureY, layoutTextureW, layoutTextureH;
-  private float layoutConsoleX, layoutConsoleY, layoutConsoleW, layoutConsoleH;
+  private float layoutTrackerX, layoutTrackerY, layoutTrackerW, layoutTrackerH;
   private float layoutCommandX, layoutCommandY, layoutCommandW, layoutCommandH;
   private float textureViewerZoom = 1f;
 
@@ -150,7 +155,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private final ImBoolean showControlsWindow = new ImBoolean(true);
   private final ImBoolean showWatchWindow = new ImBoolean(true);
   private final ImBoolean showLogWindow = new ImBoolean(true);
-  private final ImBoolean showConsoleWindow = new ImBoolean(true);
+  private final ImBoolean showTrackerWindow = new ImBoolean(true);
   private final ImBoolean showCommandWindow = new ImBoolean(true);
   private final ImBoolean showTextureWindow = new ImBoolean(false);
 
@@ -192,10 +197,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private String[] watchKeyStr = new String[0];
   private String[] watchValueStr = new String[0];
 
-  // Console caches mirroring cachedConsoleBlocks as String arrays.
-  private String[] consoleNameStr = new String[0];
-  private String[][] consoleBodyStrs = new String[0][];
-  private int[] consoleBodyCounts = new int[0];
+  // Tracker caches mirroring cachedTrackerBlocks as String arrays.
+  private String[] trackerNameStr = new String[0];
+  private String[][] trackerKeyStrs = new String[0][];
+  private String[][] trackerValueStrs = new String[0][];
+  private int[] trackerPairCounts = new int[0];
 
   private String keybindToggleLabel;
   private String keybindHitboxLabel;
@@ -386,7 +392,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawWatchWindow();
     drawControlsWindow();
     drawLogWindow();
-    drawConsoleWindow();
+    drawTrackerWindow();
     drawCommandWindow();
     drawTextureWindow();
     onDrawImGui();
@@ -436,31 +442,39 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   @Override
-  protected void onConsoleBlocksRebuilt() {
-    int n = cachedConsoleBlocks.size;
-    if (consoleNameStr.length < n) {
-      String[] nb = new String[Math.max(n, consoleNameStr.length * 2)];
-      String[][] nbb = new String[nb.length][];
+  protected void onTrackerBlocksRebuilt() {
+    int n = cachedTrackerBlocks.size;
+    if (trackerNameStr.length < n) {
+      String[] nb = new String[Math.max(n, trackerNameStr.length * 2)];
+      String[][] nk = new String[nb.length][];
+      String[][] nv = new String[nb.length][];
       int[] nc = new int[nb.length];
-      consoleNameStr = nb;
-      consoleBodyStrs = nbb;
-      consoleBodyCounts = nc;
+      trackerNameStr = nb;
+      trackerKeyStrs = nk;
+      trackerValueStrs = nv;
+      trackerPairCounts = nc;
     }
     for (int i = 0; i < n; i++) {
-      CachedConsoleBlock block = cachedConsoleBlocks.get(i);
-      consoleNameStr[i] = block.name.toString();
-      int bodyN = block.bodyCount;
-      String[] bodies = consoleBodyStrs[i];
-      if (bodies == null || bodies.length < bodyN) {
-        bodies = new String[Math.max(bodyN, 4)];
-        consoleBodyStrs[i] = bodies;
+      CachedTrackerBlock block = cachedTrackerBlocks.get(i);
+      trackerNameStr[i] = block.name.toString();
+      int pairN = block.pairCount;
+      String[] keys = trackerKeyStrs[i];
+      String[] vals = trackerValueStrs[i];
+      if (keys == null || keys.length < pairN) {
+        keys = new String[Math.max(pairN, 4)];
+        trackerKeyStrs[i] = keys;
       }
-      for (int b = 0; b < bodyN; b++) {
-        bodies[b] = block.bodies[b].toString();
+      if (vals == null || vals.length < pairN) {
+        vals = new String[Math.max(pairN, 4)];
+        trackerValueStrs[i] = vals;
       }
-      consoleBodyCounts[i] = bodyN;
+      for (int p = 0; p < pairN; p++) {
+        keys[p] = block.keys[p].toString();
+        vals[p] = block.values[p].toString();
+      }
+      trackerPairCounts[i] = pairN;
     }
-    consoleBlockCount = n;
+    trackerBlockCount = n;
   }
 
   @Override
@@ -684,35 +698,28 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     final float gap = 8f;
     float cmdH = 76f;
-    float consH = 124f;
 
     // Side columns stay within a stable pixel band so ultra-wide monitors do not stretch panels.
     float colW = Math.min(Math.max(workW * 0.175f, 220f), 338f);
-    // Keep both columns plus the middle console strip inside the work area on small windows.
+    // Keep both columns inside the work area on small windows.
     colW = Math.min(colW, Math.max(200f, (workW - 3f * gap) * 0.48f));
 
     float rightX = ox + workW - colW;
     float logW = Math.min(colW * 1.75f, Math.max(colW, rightX - gap - ox));
 
     float yCmd = oy + workH - cmdH;
-    float yCons = yCmd - consH - gap;
-    float availH = yCons - oy - gap;
-    // If the work area is very short (small window or low resolution), shrink the bottom chrome
-    // first so the column stacks still have room without overlapping the console strip.
-    while (availH < 200f && (consH > 64f || cmdH > 52f)) {
-      if (consH > 64f) {
-        consH -= 10f;
-      } else {
-        cmdH -= 6f;
-      }
+    float availH = yCmd - oy - gap;
+    // If the work area is very short (small window or low resolution), shrink the command bar
+    // first so the column stacks still have room.
+    while (availH < 200f && cmdH > 52f) {
+      cmdH -= 6f;
       yCmd = oy + workH - cmdH;
-      yCons = yCmd - consH - gap;
-      availH = yCons - oy - gap;
+      availH = yCmd - oy - gap;
     }
     availH = Math.max(96f, availH);
 
     // Left stack: Stats, Performance, then Log (wider/taller, vertically centered in the band
-    // above the console strip).
+    // above the command bar).
     float statsH = Math.min(172f, Math.max(96f, availH * 0.19f));
     // Taller performance panel so all four plot rows (including Native) fit comfortably.
     float perfH = Math.min(380f, Math.max(148f, availH * 0.43f));
@@ -738,12 +745,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
 
     float logSlotTop = oy + statsH + gap + perfH + gap;
-    float logSlotBottom = yCons - gap;
+    float logSlotBottom = oy + availH;
     float logSlotH = Math.max(0f, logSlotBottom - logSlotTop + 50);
     float logH = Math.min(logHBase * 1.35f, logSlotH);
 
-    // Right stack: Watch, Controls, then Texture Inspector with its top edge flush under Controls
-    // so it never overlaps the controls panel. Heights clamp to the console strip (yCons).
+    // Right stack: Watch, Controls, then the Tracker / Texture Inspector slot flush under Controls
+    // so it never overlaps the controls panel. Heights clamp to the available column height.
     float watchH = Math.min(statsH * 1.25f, availH * 0.28f);
     final float minTextureStripe = 96f;
     final float minControlsH = 400f;
@@ -767,16 +774,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       textureHBase = availH - watchH - controlsH - 2f * gap;
     }
 
-    float midX = ox + colW + gap;
-    float midW = workW - 2f * colW - 2f * gap;
-    midW = Math.max(100f, midW);
-
     float rightColMaxW = workW - logW - gap;
     float watchW = Math.min(colW * 1.4f, rightColMaxW);
     float controlsW = Math.min(Math.max(watchW, colW * 1.25f), rightColMaxW);
 
     float textureTop = oy + watchH + gap + controlsH + gap;
-    float textureBottomLimit = yCons - gap + 120;
+    float textureBottomLimit = oy + availH + 120;
     float maxTextureH = Math.max(72f, textureBottomLimit - textureTop);
     float textureW = Math.min(colW * 1.8f, workW - colW - gap);
     float textureHDesired = Math.min(480f, Math.max(140f, textureHBase * 1.75f));
@@ -812,10 +815,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     layoutTextureW = textureW;
     layoutTextureH = textureH;
 
-    layoutConsoleX = midX;
-    layoutConsoleY = yCons;
-    layoutConsoleW = midW;
-    layoutConsoleH = consH;
+    // Tracker shares the under-Controls slot with the Texture Inspector (which is hidden by default
+    // and snaps over it when opened), so by default the Tracker fills the bottom of the right column.
+    layoutTrackerX = ox + workW - controlsW;
+    layoutTrackerY = textureTop;
+    layoutTrackerW = controlsW;
+    layoutTrackerH = textureH;
 
     layoutCommandX = ox;
     layoutCommandY = yCmd;
@@ -868,9 +873,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       ImGui.menuItem("Stats", null, showStatsWindow);
       ImGui.menuItem("Performance", null, showPerformanceWindow);
       ImGui.menuItem("Controls", null, showControlsWindow);
+      ImGui.menuItem("Tracker", null, showTrackerWindow);
       ImGui.menuItem("Watch", null, showWatchWindow);
       ImGui.menuItem("Log", null, showLogWindow);
-      ImGui.menuItem("Console", null, showConsoleWindow);
       ImGui.menuItem("Command Line", null, showCommandWindow);
       ImGui.menuItem("Texture Inspector", null, showTextureWindow);
       ImGui.separator();
@@ -1196,34 +1201,51 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.end();
   }
 
-  private void drawConsoleWindow() {
-    if (!showConsoleWindow.get()) {
+  /**
+   * Renders the Tracker panel: one collapsible header per registered {@link FlixelDebugTrackerEntry},
+   * each containing a {@code name -> value} table (just like the Watch panel). Shown by default; when no
+   * trackers are registered it stays visible with a hint, mirroring the Watch panel's empty state.
+   */
+  private void drawTrackerWindow() {
+    if (!showTrackerWindow.get()) {
       return;
     }
-    if (consoleBlockCount == 0) {
-      // Hide automatically when there is nothing to show, but keep it discoverable via the menu.
-      return;
-    }
-    applyWindowLayout(layoutConsoleX, layoutConsoleY, layoutConsoleW, layoutConsoleH);
-    if (!ImGui.begin("Console", showConsoleWindow)) {
+    applyWindowLayout(layoutTrackerX, layoutTrackerY, layoutTrackerW, layoutTrackerH);
+    if (!ImGui.begin("Tracker", showTrackerWindow)) {
       ImGui.end();
       return;
     }
-    for (int i = 0; i < consoleBlockCount; i++) {
-      String name = consoleNameStr[i];
+    if (trackerBlockCount == 0) {
+      ImGui.textDisabled(TRACKER_EMPTY_HINT);
+      ImGui.end();
+      return;
+    }
+    int tableFlags = ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.SizingStretchProp;
+    for (int i = 0; i < trackerBlockCount; i++) {
+      String name = trackerNameStr[i];
       if (name == null) {
         continue;
       }
-      if (ImGui.collapsingHeader(name)) {
-        String[] bodies = consoleBodyStrs[i];
-        int n = consoleBodyCounts[i];
-        ImGui.indent();
-        for (int b = 0; b < n; b++) {
-          if (bodies != null && bodies[b] != null) {
-            text(COLOR_VALUE, bodies[b]);
+      if (ImGui.collapsingHeader(name, ImGuiTreeNodeFlags.DefaultOpen)) {
+        String[] keys = trackerKeyStrs[i];
+        String[] vals = trackerValueStrs[i];
+        int n = trackerPairCounts[i];
+        // pushID keeps each block's table id unique without allocating a per-frame string.
+        ImGui.pushID(i);
+        if (ImGui.beginTable("tracker_table", 2, tableFlags)) {
+          ImGui.tableSetupColumn("Name");
+          ImGui.tableSetupColumn("Value");
+          ImGui.tableHeadersRow();
+          for (int p = 0; p < n; p++) {
+            ImGui.tableNextRow();
+            ImGui.tableNextColumn();
+            text(COLOR_KEY, keys != null && keys[p] != null ? keys[p] : "");
+            ImGui.tableNextColumn();
+            text(COLOR_VALUE, vals != null && vals[p] != null ? vals[p] : "");
           }
+          ImGui.endTable();
         }
-        ImGui.unindent();
+        ImGui.popID();
       }
     }
     ImGui.end();
