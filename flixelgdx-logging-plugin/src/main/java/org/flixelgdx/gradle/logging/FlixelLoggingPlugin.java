@@ -25,23 +25,23 @@ package org.flixelgdx.gradle.logging;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.UncheckedIOException;
-import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.api.tasks.compile.AbstractCompile;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 /**
- * Registers a finalize step after each {@link JavaCompile} task that rewrites
- * {@code FlixelLogger} invocations to {@code *WithSite} overloads.
+ * Registers a finalize step after each {@link AbstractCompile} task (covers both
+ * {@code compileJava} and {@code compileKotlin}) that rewrites {@code FlixelLogger}
+ * invocations to {@code *WithSite} overloads so stack traces carry accurate file/line info.
  */
 public class FlixelLoggingPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project project) {
     FlixelLoggingExtension ext = project.getExtensions().create("flixelLogging", FlixelLoggingExtension.class);
-    project.getPlugins().withType(JavaPlugin.class, p -> wire(project, ext));
+    wire(project, ext);
   }
 
   private static void wire(Project project, FlixelLoggingExtension ext) {
@@ -49,7 +49,7 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
       if (!ext.getEnabled().get()) {
         return;
       }
-      pr.getTasks().withType(JavaCompile.class).configureEach(compile -> compile.doLast(task -> {
+      pr.getTasks().withType(AbstractCompile.class).configureEach(compile -> compile.doLast(task -> {
         Path root = compile.getDestinationDirectory().get().getAsFile().toPath();
         try {
           FlixelTransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), task.getLogger());

@@ -49,7 +49,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
 
   private final ArraySupplier<T[]> memberArrayFactory;
 
-  protected int maxSize = 0;
+  protected int maxSize;
 
   /**
    * Creates a new group with the given array factory and unlimited size by default.

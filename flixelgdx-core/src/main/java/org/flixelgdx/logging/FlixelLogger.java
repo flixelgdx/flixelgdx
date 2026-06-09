@@ -72,9 +72,6 @@ public class FlixelLogger implements ApplicationLogger {
   /** Listeners notified whenever a log message is produced (used by the debug overlay). */
   private final Array<Consumer<FlixelLogEntry>> logListeners = new Array<>(Consumer[]::new);
 
-  /** Registered debug console entries that supply custom lines to the overlay console. */
-  private final Array<FlixelDebugConsoleEntry> consoleEntries = new Array<>(FlixelDebugConsoleEntry[]::new);
-
   /** Reused for ANSI console lines (single game thread in practice). */
   private final FlixelString consoleLine = new FlixelString(512);
 
@@ -224,30 +221,6 @@ public class FlixelLogger implements ApplicationLogger {
    */
   public void removeLogListener(Consumer<FlixelLogEntry> listener) {
     logListeners.removeValue(listener, true);
-  }
-
-  /**
-   * Registers a custom console entry whose lines will be shown in the debug overlay console.
-   *
-   * @param entry The entry to register.
-   */
-  public void addConsoleEntry(FlixelDebugConsoleEntry entry) {
-    if (entry != null) {
-      consoleEntries.add(entry);
-    }
-  }
-
-  /**
-   * Removes a previously registered console entry.
-   *
-   * @param entry The entry to remove.
-   */
-  public void removeConsoleEntry(FlixelDebugConsoleEntry entry) {
-    consoleEntries.removeValue(entry, true);
-  }
-
-  public FlixelDebugConsoleEntry[] getConsoleEntries() {
-    return consoleEntries.items;
   }
 
   /**

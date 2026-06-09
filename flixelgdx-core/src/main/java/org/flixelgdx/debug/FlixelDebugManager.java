@@ -102,6 +102,12 @@ public class FlixelDebugManager {
    */
   private final Array<FlixelBatch> trackedBatches = new Array<>(false, 4);
 
+  /**
+   * Custom entries shown in the overlay's Tracker panel, registered via
+   * {@link #addTrackerEntry(FlixelDebugTrackerEntry)}.
+   */
+  private final Array<FlixelDebugTrackerEntry> trackerEntries = new Array<>(FlixelDebugTrackerEntry[]::new);
+
   /** The sprite currently selected by the LMB picker, or {@code null}. */
   @Nullable
   private FlixelObject inspectedSprite;
@@ -256,6 +262,40 @@ public class FlixelDebugManager {
   /** Returns the live array of user-registered batches. Package-private; consumed by the debug overlay. */
   Array<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
+  }
+
+  /**
+   * Registers a {@link FlixelDebugTrackerEntry} whose {@code label -> value} pairs are shown as a named,
+   * collapsible group in the overlay's Tracker panel. Registering the same entry twice is a no-op.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.debug.addTrackerEntry(new EnemyTrackerEntry(enemyManager));
+   * }</pre>
+   *
+   * @param entry The entry to register. Must not be {@code null}.
+   */
+  public void addTrackerEntry(@NotNull FlixelDebugTrackerEntry entry) {
+    if (entry == null || trackerEntries.contains(entry, true)) {
+      return;
+    }
+    trackerEntries.add(entry);
+  }
+
+  /**
+   * Removes a previously registered tracker entry. Passing an entry that was never registered is a no-op.
+   *
+   * @param entry The entry to stop tracking.
+   */
+  public void removeTrackerEntry(@NotNull FlixelDebugTrackerEntry entry) {
+    if (entry != null) {
+      trackerEntries.removeValue(entry, true);
+    }
+  }
+
+  /** Returns the live array of registered tracker entries. Package-private; consumed by the debug overlay. */
+  Array<FlixelDebugTrackerEntry> getTrackerEntries() {
+    return trackerEntries;
   }
 
   /**

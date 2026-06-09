@@ -47,7 +47,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.RandomAccess;
-import java.util.function.Consumer;
 
 /**
  * A UI bar for progress, health, stamina, experience, cooldowns, loading, or any value mapped to a
@@ -74,8 +73,8 @@ import java.util.function.Consumer;
  *
  * <p><b>Appearance</b>: Solid colors, custom empty and filled regions, optional two-color gradients,
  * optional border, and threshold-based fill colors with optional color smoothing when the fill percent
- * drops. Optional overlay text uses {@link #setText(java.util.function.Consumer)} with a
- * {@link FlixelString} scratch buffer (see that method for why).
+ * drops. Optional overlay text is set with {@link #setText(CharSequence)}; pass a reused
+ * {@link FlixelString} for allocation-free live labels (see that method for why).
  *
  * <p><b>Screen space</b>: With {@link #setScreenSpace(boolean)} {@code true}, the bar is offset by the
  * current draw camera scroll so it stays fixed on screen while the world moves.
@@ -142,12 +141,12 @@ public class FlixelBar extends FlixelSprite {
   private final Color thresholdDesiredColor = new Color(Color.WHITE);
   private final Color thresholdScratch = new Color(Color.WHITE);
 
+  /** Current overlay label source, or {@code null} for none. May be a live {@link FlixelString} you mutate. */
   @Nullable
-  private Consumer<FlixelString> textFormatter;
-  private final FlixelString overlayTextScratch = new FlixelString(48);
+  private CharSequence overlayText;
   /**
-   * Snapshot of the last label passed to {@link FlixelText#setText}; never the same instance as
-   * {@link #overlayTextScratch}.
+   * Snapshot of the last label pushed to {@link FlixelText#setText}; used to skip redundant updates when the
+   * overlay text has not changed. Never the same instance as {@link #overlayText}.
    */
   private final FlixelString overlayTextLast = new FlixelString(48);
 
@@ -568,29 +567,23 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Sets an optional label rendered on top of the bar. Each {@link #update(float)}, the given callback
-   * receives a cleared {@link FlixelString}; use {@link FlixelString#concat} and {@link FlixelString#set}
-   * overloads to build the visible text without allocating a
-   * {@link String} each frame. Text is centered on the bar by default; use {@link #setTextOffset(float, float)}
-   * to nudge it. Pass {@code null} to remove overlay text.
+   * Sets an optional label rendered on top of the bar. Text is centered on the bar by default; use
+   * {@link #setTextOffset(float, float)} to nudge it. Pass {@code null} to remove overlay text.
    *
-   * <p><b>Why a {@code Consumer<FlixelString>} and not {@code Supplier<String>}?</b> A supplier that returns
-   * a new {@link String} every frame (common with {@link String#format} or {@code +}) allocates on the heap
-   * every frame per bar, which adds up quickly on typical JVMs and on TeaVM. This API reuses one
-   * {@link FlixelString} per bar, compares the new characters to the last label without building a
-   * {@link String} when nothing changed, and only then calls {@link FlixelText#setText(CharSequence)}.
+   * <p>The bar keeps the {@link CharSequence} you pass and re-reads it each {@link #update(float)}, so for
+   * <b>live</b> text (a score, a percentage) hand it a {@link FlixelString} that you mutate in place: the bar
+   * picks up the new characters without you allocating a fresh {@link String} every frame, compares them to the
+   * last label, and only calls {@link FlixelText#setText(CharSequence)} when they actually change. For
+   * <b>static</b> text, a plain {@link String} works just as well.
    *
-   * @param formatter {@code null} for no overlay; otherwise invoked each update with the shared scratch buffer.
+   * @param label {@code null} for no overlay; otherwise the label source (often a reused {@link FlixelString}).
    * @return {@code this} for chaining.
    */
-  public FlixelBar setText(@Nullable Consumer<FlixelString> formatter) {
-    if (this.textFormatter != formatter) {
-      overlayTextLast.clear();
-    }
-    this.textFormatter = formatter;
-    if (formatter == null) {
+  public FlixelBar setText(@Nullable CharSequence label) {
+    this.overlayText = label;
+    overlayTextLast.clear();
+    if (label == null) {
       text = null;
-      overlayTextLast.clear();
       return this;
     }
     if (text == null) {
@@ -601,7 +594,7 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Pixel offset added to the centered text position after {@link #setText(java.util.function.Consumer)}.
+   * Pixel offset added to the centered text position after {@link #setText(CharSequence)}.
    *
    * @param dx Horizontal offset in pixels (positive moves right).
    * @param dy Vertical offset in pixels (positive moves down in Flixel coordinates).
@@ -615,7 +608,7 @@ public class FlixelBar extends FlixelSprite {
 
   /**
    * Updates sprite animation state, then applies max supplier, value tracking, value smoothing, and refreshes
-   * overlay text from the {@link #setText(java.util.function.Consumer)} formatter when set.
+   * overlay text from the {@link #setText(CharSequence)} source when set.
    *
    * @param elapsed Seconds since last frame; passed to {@link FlixelSprite#update(float)} and smoothing.
    */
@@ -644,12 +637,10 @@ public class FlixelBar extends FlixelSprite {
       displayedValue = MathUtils.lerp(displayedValue, value, lerpFactor);
     }
 
-    if (text != null && textFormatter != null) {
-      overlayTextScratch.clear();
-      textFormatter.accept(overlayTextScratch);
-      if (!FlixelStringUtil.contentEquals(overlayTextScratch, overlayTextLast)) {
-        text.setText(overlayTextScratch);
-        overlayTextLast.set(overlayTextScratch);
+    if (text != null && overlayText != null) {
+      if (!FlixelStringUtil.contentEquals(overlayText, overlayTextLast)) {
+        text.setText(overlayText);
+        overlayTextLast.set(overlayText);
       }
     }
   }
@@ -714,7 +705,7 @@ public class FlixelBar extends FlixelSprite {
     }
     whitePixel = null;
     text = null;
-    textFormatter = null;
+    overlayText = null;
   }
 
   private void ensureWhitePixel() {
