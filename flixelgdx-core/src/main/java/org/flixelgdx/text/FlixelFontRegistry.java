@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.text;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
@@ -342,7 +343,7 @@ public final class FlixelFontRegistry {
     FreeTypeFontParameter param = new FreeTypeFontParameter();
     param.size = size;
     param.spaceX = letterSpacing;
-    param.genMipMaps = true;
+    param.genMipMaps = Gdx.app.getType() != Application.ApplicationType.WebGL;
     param.minFilter = Texture.TextureFilter.Linear;
     param.magFilter = Texture.TextureFilter.Linear;
     BitmapFont font = generator.generateFont(param);

@@ -1075,6 +1075,9 @@ public class FlixelText extends FlixelSprite {
     } catch (Throwable ignored) {
       // Font file is unavailable on this platform (e.g., not preloaded on TeaVM). Leave gen
       // null so the fallback path below loads the packaged bitmap font instead.
+      // Update lastBakeScreenScale so the scale check does not fire every frame, which
+      // would otherwise cause a continuous per-frame rebuild attempt.
+      lastBakeScreenScale = currentScreenScale();
     }
 
     if (gen != null) {
