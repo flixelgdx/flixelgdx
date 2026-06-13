@@ -350,7 +350,9 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
-   * Sets the width of the text field. Enables auto-sizing if {@code <= 0}.
+   * Sets the width of the text field. A positive value disables auto-sizing so
+   * the hitbox and layout use this fixed width; a value {@code <= 0} re-enables
+   * auto-sizing so dimensions are derived from the text content.
    *
    * @param fieldWidth The field width in pixels.
    * @return This instance for chaining.
@@ -359,9 +361,7 @@ public class FlixelText extends FlixelSprite {
     float newWidth = Math.max(0, fieldWidth);
     if (this.fieldWidth != newWidth) {
       this.fieldWidth = newWidth;
-      if (newWidth <= 0) {
-        autoSize = true;
-      }
+      autoSize = newWidth <= 0;
       layoutDirty = true;
     }
     return this;
