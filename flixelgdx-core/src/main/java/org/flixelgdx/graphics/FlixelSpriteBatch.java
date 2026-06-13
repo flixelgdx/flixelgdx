@@ -80,7 +80,7 @@ public class FlixelSpriteBatch implements FlixelBatch {
   private static final int VERTICES_PER_QUAD = 4;
   private static final int INDICES_PER_QUAD = 6;
   private static final int DEFAULT_MAX_QUADS = 1000;
-  private static final int MAX_SLOTS_DESKTOP = 16;
+  private static final int MAX_SLOTS_DESKTOP = 32;
 
   private final int maxTextureSlots;
   private int renderCalls;
