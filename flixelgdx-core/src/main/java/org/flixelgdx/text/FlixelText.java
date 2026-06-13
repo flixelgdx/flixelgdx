@@ -350,7 +350,9 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
-   * Sets the width of the text field. Enables auto-sizing if {@code <= 0}.
+   * Sets the width of the text field. A positive value disables auto-sizing so
+   * the hitbox and layout use this fixed width; a value {@code <= 0} re-enables
+   * auto-sizing so dimensions are derived from the text content.
    *
    * @param fieldWidth The field width in pixels.
    * @return This instance for chaining.
@@ -359,9 +361,7 @@ public class FlixelText extends FlixelSprite {
     float newWidth = Math.max(0, fieldWidth);
     if (this.fieldWidth != newWidth) {
       this.fieldWidth = newWidth;
-      if (newWidth <= 0) {
-        autoSize = true;
-      }
+      autoSize = newWidth <= 0;
       layoutDirty = true;
     }
     return this;
@@ -829,6 +829,38 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
+   * Returns the hitbox width, triggering a layout rebuild first if any text
+   * attributes have changed since the last rebuild.
+   *
+   * <p>This ensures that callers such as {@link #screenCenter()} always operate
+   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   *
+   * <p>If no font is available yet (for example, before a GL context exists),
+   * the returned value is {@code 0} until the first successful rebuild.
+   */
+  @Override
+  public float getWidth() {
+    rebuildIfDirty();
+    return super.getWidth();
+  }
+
+  /**
+   * Returns the hitbox height, triggering a layout rebuild first if any text
+   * attributes have changed since the last rebuild.
+   *
+   * <p>This ensures that callers such as {@link #screenCenter()} always operate
+   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   *
+   * <p>If no font is available yet (for example, before a GL context exists),
+   * the returned value is {@code 0} until the first successful rebuild.
+   */
+  @Override
+  public float getHeight() {
+    rebuildIfDirty();
+    return super.getHeight();
+  }
+
+  /**
    * Returns the actual rendered width of the text content (which may differ from
    * {@link #getFieldWidth()} when a fixed field width is set). Triggers a layout
    * rebuild if necessary.
@@ -1011,8 +1043,8 @@ public class FlixelText extends FlixelSprite {
       layoutDirty = true;
     }
     if (layoutDirty) {
-      rebuildLayout();
       layoutDirty = false;
+      rebuildLayout();
     }
   }
 
