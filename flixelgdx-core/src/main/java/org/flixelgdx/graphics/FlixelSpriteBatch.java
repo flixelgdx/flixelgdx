@@ -684,21 +684,14 @@ public class FlixelSpriteBatch implements FlixelBatch {
         + "    gl_Position = u_projTrans * " + ShaderProgram.POSITION_ATTRIBUTE + ";\n"
         + "}\n";
 
-    StringBuilder frag = new StringBuilder(256 + slots * 80);
+    StringBuilder frag = new StringBuilder(256 + slots * 120);
     frag.append("#ifdef GL_ES\nprecision mediump float;\n#endif\n");
     frag.append("varying vec4 v_color;\nvarying vec2 v_texCoord;\nvarying float v_texIndex;\n");
     for (int i = 0; i < slots; i++) {
       frag.append("uniform sampler2D u_texture").append(i).append(";\n");
     }
     frag.append("void main() {\n    vec4 tex;\n");
-    for (int i = 0; i < slots; i++) {
-      frag.append(i == 0 ? "    if" : "    else if");
-      frag.append(" (v_texIndex < ")
-          .append(i)
-          .append(".5) tex = texture2D(u_texture")
-          .append(i)
-          .append(", v_texCoord);\n");
-    }
+    appendBinarySearch(frag, 0, slots - 1, "    ");
     frag.append("    gl_FragColor = v_color * tex;\n}\n");
 
     ShaderProgram shader = new ShaderProgram(vert, frag.toString());
@@ -706,5 +699,18 @@ public class FlixelSpriteBatch implements FlixelBatch {
       throw new IllegalStateException("FlixelSpriteBatch shader compilation failed:\n" + shader.getLog());
     }
     return shader;
+  }
+
+  private static void appendBinarySearch(StringBuilder frag, int lo, int hi, String indent) {
+    if (lo == hi) {
+      frag.append(indent).append("tex = texture2D(u_texture").append(lo).append(", v_texCoord);\n");
+      return;
+    }
+    int mid = (lo + hi) / 2;
+    frag.append(indent).append("if (v_texIndex < ").append(mid + 1).append(".0) {\n");
+    appendBinarySearch(frag, lo, mid, indent + "    ");
+    frag.append(indent).append("} else {\n");
+    appendBinarySearch(frag, mid + 1, hi, indent + "    ");
+    frag.append(indent).append("}\n");
   }
 }
