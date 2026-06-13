@@ -28,7 +28,7 @@ import org.flixelgdx.FlixelObject;
 
 /**
  * Interface for objects that can draw a debug bounding box in the
- * {@link org.flixelgdx.debug.FlixelDebugOverlay}. Any class that
+ * {@link org.flixelgdx.debug.FlixelDebugOverlay FlixelDebugOverlay}. Any class that
  * implements this will automatically appear when visual debug drawing is enabled,
  * without being hard-coded into the overlay.
  *

@@ -47,7 +47,7 @@ import java.util.function.Predicate;
  * made up of several member sprites. It implements {@link FlixelBasicGroupable}
  * for managing members while inheriting all sprite properties from {@link FlixelSprite}.
  * <p>
- * Because FlixelSpriteGroup extends {@link org.flixelgdx.FlixelSprite}, groups can be nested
+ * Because FlixelSpriteGroup extends {@link org.flixelgdx.FlixelSprite FlixelSprite}, groups can be nested
  * inside other groups, enabling complex hierarchical sprite compositions. Any property
  * change on the group (position, alpha, color, scale, rotation, flip) automatically
  * propagates to all members.
@@ -67,7 +67,7 @@ import java.util.function.Predicate;
  * </ul>
  *
  * <p>{@link #remove} and {@link #detach} restore local coordinates and unlink the sprite; they do not call
- * {@link FlixelSprite#destroy()}. Use {@link org.flixelgdx.FlixelBasic#kill()} / {@link org.flixelgdx.FlixelBasic#revive()} or
+ * {@link FlixelSprite#destroy()}. Use {@link org.flixelgdx.FlixelBasic#kill() FlixelBasic.kill()} / {@link org.flixelgdx.FlixelBasic#revive() FlixelBasic.revive()} or
  * {@link #recycle()} for reuse. {@link #clear()} unlinks all members without destroying them.
  * {@link #destroy()} on this group destroys every member (releases graphics) and resets group state.
  */

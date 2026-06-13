@@ -27,7 +27,7 @@ package org.flixelgdx.debug;
  * Debug overlay with no extra UI: the full {@link FlixelDebugOverlay} controller (stats, watch,
  * log buffers, pause/camera tools, sprite picking) runs, but {@link #drawUI()} is a no-op.
  *
- * <p>Use this as the default {@link org.flixelgdx.Flixel#setDebugOverlay(java.util.function.Supplier)}
+ * <p>Use this as the default {@link org.flixelgdx.Flixel#setDebugOverlay(java.util.function.Supplier) Flixel.setDebugOverlay(Supplier)}
  * when a platform does not ship a richer debugger yet (for example headless tests or backends
  * without Dear ImGui). Desktop launchers typically replace it with a platform-specific subclass.
  */

@@ -40,8 +40,8 @@ import java.util.function.Consumer;
  * tree (counting active members, iterating {@link FlixelDebugDrawable} instances for bounding-box drawing, etc.).
  *
  * <p>Recursion descends into any member that implements {@link FlixelGroupable}, which
- * covers {@link org.flixelgdx.group.FlixelBasicGroup}, {@link org.flixelgdx.group.FlixelSpriteGroup},
- * and nested {@link org.flixelgdx.group.FlixelGroup} instances whose elements are {@link IFlixelBasic}.
+ * covers {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}, {@link org.flixelgdx.group.FlixelSpriteGroup FlixelSpriteGroup},
+ * and nested {@link org.flixelgdx.group.FlixelGroup FlixelGroup} instances whose elements are {@link IFlixelBasic}.
  */
 public final class FlixelDebugUtil {
 

@@ -30,7 +30,7 @@ import org.flixelgdx.functional.FlixelShakeable;
 /**
  * Desktop window controls that stay safe on every platform.
  *
- * <p>Use {@link org.flixelgdx.Flixel#window} after {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame)}.
+ * <p>Use {@link org.flixelgdx.Flixel#window Flixel.window} after {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
  * The implementation only adjusts backdrop drawing and, on desktop with a transparent-capable framebuffer, an end-of-frame
  * alpha fix so normal gameplay is not composited through the desktop unless this mode is on.
  *
@@ -45,8 +45,8 @@ import org.flixelgdx.functional.FlixelShakeable;
  * Flixel.window.setDesktopTransparencyActive(false); // Normal opaque letterboxing again.
  * }</pre>
  *
- * <p>This interface extends {@link org.flixelgdx.functional.FlixelShakeable} so you can pass {@code Flixel.window} to
- * {@link org.flixelgdx.tween.FlixelTween#shake} when you want the OS window itself to jitter.
+ * <p>This interface extends {@link org.flixelgdx.functional.FlixelShakeable FlixelShakeable} so you can pass {@code Flixel.window} to
+ * {@link org.flixelgdx.tween.FlixelTween#shake FlixelTween.shake} when you want the OS window itself to jitter.
  *
  * @see org.flixelgdx.Flixel#window
  */

@@ -73,7 +73,7 @@ import java.util.function.Consumer;
  *   <li>{@link Flixel#setDebugMode(boolean)} flips debug mode on in your launcher.</li>
  *   <li>The launcher (or your code) calls {@link Flixel#setDebugOverlay(java.util.function.Supplier)}
  *       with the backend-specific factory.</li>
- *   <li>{@link org.flixelgdx.FlixelGame} constructs the overlay during {@code create}
+ *   <li>{@link org.flixelgdx.FlixelGame FlixelGame} constructs the overlay during {@code create}
  *       and registers it with the logger.</li>
  * </ol>
  *
@@ -424,7 +424,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Backends that render a command-line {@code InputText} can override this to skip debug hotkeys for keys that would
    * normally type into that field (letters, punctuation, arrows, Enter, and so on). Return {@code false} by default so
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)} shortcuts keep working.
+   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)} shortcuts keep working.
    *
    * @param keycode FlixelGDX {@link FlixelKey} or libGDX {@link Input.Keys} key code being handled by a debug binding.
    * @return {@code true} to skip handling this key for debug shortcuts this frame.
@@ -470,14 +470,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer (typically the imgui
    * debug overlay) is currently capturing the mouse. When this returns {@code true},
-   * {@link org.flixelgdx.input.mouse.FlixelMouseManager#pressed(int)} and
+   * {@link org.flixelgdx.input.mouse.FlixelMouseManager#pressed(int) FlixelMouseManager.pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, and the debug camera tools / sprite picker also skip
    * their work, so clicking inside (for example) a Dear ImGui window does not bleed through
    * into the game logic. Defaults to {@code false}.
    *
    * <p>The debug overlay's own mouse-driven tools (sprite picker, camera pan) read
-   * {@link org.flixelgdx.input.mouse.FlixelMouseManager#rawPressed(int)} so they
+   * {@link org.flixelgdx.input.mouse.FlixelMouseManager#rawPressed(int) FlixelMouseManager.rawPressed(int)} so they
    * can opt in to "ignore the suppression" while still respecting this hook for the early-exit
    * gate.
    *
@@ -490,14 +490,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer is currently consuming
    * keyboard input. When this returns {@code true},
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#pressed(int)} and
+   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#pressed(int) FlixelKeyInputManager.pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, so typing in (for example) a Dear ImGui text field
    * cannot also capture game input and activate game-level actions like {@code ui_accept}.
    * Defaults to {@code false}.
    *
    * <p>The debug overlay's own toggle keys (debug overlay toggle, hitbox toggle, pause) read
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)}
+   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)}
    * so they keep working even when this returns {@code true}.
    *
    * @return {@code true} if a foreground UI element is consuming keyboard input this frame.
@@ -714,7 +714,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   /**
-   * View-space hit test aligned with {@link org.flixelgdx.FlixelSprite#draw(Batch)}: uses world position
+   * View-space hit test aligned with {@link org.flixelgdx.FlixelSprite#draw(Batch) FlixelSprite.draw(Batch)}: uses world position
    * plus each object's scroll factors so parallax sprites and grouped layers match what the player sees.
    */
   private static boolean overlapsObjectInView(@NotNull FlixelCamera cam, @NotNull FlixelObject obj,
@@ -790,7 +790,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * intentionally avoids depending on a heavy GUI toolkit (Dear ImGui, scene2d.ui, etc.). Backends
    * override this to render the panels with whatever toolkit suits the platform.
    *
-   * <p>Called from {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch)}
+   * <p>Called from {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch) FlixelGame.draw(Batch)}
    * after the game stage and bounding boxes have been drawn.
    */
   public void draw() {

@@ -38,7 +38,7 @@ import java.util.Arrays;
 
 /**
  * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
- * keyboard and mouse frame contract from {@link org.flixelgdx.FlixelGame}.
+ * keyboard and mouse frame contract from {@link org.flixelgdx.FlixelGame FlixelGame}.
  *
  * <p>Use logical button and axis constants from {@link FlixelGamepadInput} (for example {@link FlixelGamepadInput#A})
  * with {@link #pressed(int, int)}; each {@link Controller#getMapping()} supplies native indices.

@@ -27,12 +27,12 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.Pool;
 
 /**
- * Full {@link org.flixelgdx.FlixelBasic}-style contract: per-frame update and draw hooks,
+ * Full {@link org.flixelgdx.FlixelBasic FlixelBasic}-style contract: per-frame update and draw hooks,
  * existence and active flags, visibility, kill and revive, teardown, and libGDX {@link Disposable} /
- * {@link Pool.Poolable} hooks. Extend {@link org.flixelgdx.FlixelBasic} when you want the
+ * {@link Pool.Poolable} hooks. Extend {@link org.flixelgdx.FlixelBasic FlixelBasic} when you want the
  * default field-based implementation, or implement this interface on your own type when you need a
- * custom base class but still want to add instances to a {@link org.flixelgdx.FlixelState}
- * or {@link org.flixelgdx.group.FlixelBasicGroup}.
+ * custom base class but still want to add instances to a {@link org.flixelgdx.FlixelState FlixelState}
+ * or {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}.
  *
  * @see org.flixelgdx.FlixelBasic
  * @see org.flixelgdx.group.FlixelBasicGroup

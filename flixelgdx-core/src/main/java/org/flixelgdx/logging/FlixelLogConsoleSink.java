@@ -28,8 +28,8 @@ package org.flixelgdx.logging;
  * {@code System.out} is not appropriate or where ANSI colors from the default path do not render
  * (for example, browser devtools with styled {@code console.log}).
  *
- * <p>Register with {@link org.flixelgdx.Flixel#setLogConsoleSink(FlixelLogConsoleSink)} before
- * {@link org.flixelgdx.Flixel#initialize} from the platform launcher. When set, the logger calls
+ * <p>Register with {@link org.flixelgdx.Flixel#setLogConsoleSink(FlixelLogConsoleSink) Flixel.setLogConsoleSink(FlixelLogConsoleSink)} before
+ * {@link org.flixelgdx.Flixel#initialize Flixel.initialize} from the platform launcher. When set, the logger calls
  * this instead of writing ANSI text to standard output; file logging and in-game log listeners are unchanged.
  */
 @FunctionalInterface

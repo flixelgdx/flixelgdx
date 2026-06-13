@@ -58,7 +58,7 @@ import org.jetbrains.annotations.NotNull;
  * not a whole number when the window is larger than the camera's internal size (e.g. fullscreen).
  * libGDX {@link BitmapFont} defaults to integer-snapped glyph quads, which looks blocky under
  * that scaling. Set {@link BitmapFont#setUseIntegerPositions(boolean)} to {@code false} on fonts
- * you draw through this pipeline (FlixelGDX does this for {@link org.flixelgdx.text.FlixelText}
+ * you draw through this pipeline (FlixelGDX does this for {@link org.flixelgdx.text.FlixelText FlixelText}
  * and registry fonts automatically).
  */
 public class FlixelCamera extends FlixelBasic implements FlixelColorable {

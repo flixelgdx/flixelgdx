@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * Central manager for all audio. {@link FlixelSound} instances, master volume,
  * sound groups (SFX and music), and focus-based pause/resume.
  *
- * <p>Access via {@link org.flixelgdx.Flixel#sound}. Supports
+ * <p>Access via {@link org.flixelgdx.Flixel#sound Flixel.sound}. Supports
  * separate groups for sound effects and music, global master volume, and
  * automatic pause when the game loses focus (and resume when it regains focus).
  *
@@ -103,9 +103,9 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    * Destroys all non-persistent {@link FlixelSound} instances tracked by this manager, including
    * the current music track if it is not persistent.
    *
-   * <p>Called automatically by {@link org.flixelgdx.Flixel#switchState} on every state switch
-   * when the asset mode is {@link org.flixelgdx.asset.FlixelAssetMode#STANDARD} or
-   * {@link org.flixelgdx.asset.FlixelAssetMode#AGGRESSIVE}. Sounds whose {@link FlixelSound#isPersist()}
+   * <p>Called automatically by {@link org.flixelgdx.Flixel#switchState Flixel.switchState} on every state switch
+   * when the asset mode is {@link org.flixelgdx.asset.FlixelAssetMode#STANDARD FlixelAssetMode.STANDARD} or
+   * {@link org.flixelgdx.asset.FlixelAssetMode#AGGRESSIVE FlixelAssetMode.AGGRESSIVE}. Sounds whose {@link FlixelSound#isPersist()}
    * flag is set survive the switch unchanged.
    *
    * <p>Sounds that were already destroyed (for example, via {@link FlixelSound#setAutoDestroy}) are

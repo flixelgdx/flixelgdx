@@ -24,9 +24,11 @@
 package org.flixelgdx.functional;
 
 /**
- * Flixel-style kill and revive: a killed object should not run normal updates or draws, but can be
- * revived later without reallocating. See {@link org.flixelgdx.FlixelBasic#kill()} and
- * {@link org.flixelgdx.FlixelBasic#revive()}.
+ * Flixel-style kill and revive.
+ *
+ * <p>A killed object should not run normal updates or draws, but can be
+ * revived later without reallocating. See {@link org.flixelgdx.FlixelBasic#kill() FlixelBasic.kill()} and
+ * {@link org.flixelgdx.FlixelBasic#revive() FlixelBasic.revive()}.
  */
 public interface FlixelKillable {
 

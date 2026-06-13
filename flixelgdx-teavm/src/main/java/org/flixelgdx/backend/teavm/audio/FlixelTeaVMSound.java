@@ -47,7 +47,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * <p>Position is tracked by recording {@code AudioContext.currentTime} at start and
  * computing the elapsed offset each frame, so no polling timer is needed.
  *
- * <p>Example usage (indirect, via {@link org.flixelgdx.audio.FlixelAudioManager}):
+ * <p>Example usage (indirect, via {@link org.flixelgdx.audio.FlixelAudioManager FlixelAudioManager}):
  *
  * <pre>{@code
  * Flixel.sound.play("music/song.mp3");
@@ -117,7 +117,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
    *
    * <p>Because the buffer is already decoded, this constructor never blocks and the
    * sound is ready to play immediately. Use {@link FlixelTeaVMSoundHandler#prewarmSound}
-   * (via {@link org.flixelgdx.audio.FlixelAudioManager#prewarmSound}) to populate the
+   * (via {@link org.flixelgdx.audio.FlixelAudioManager#prewarmSound FlixelAudioManager.prewarmSound}) to populate the
    * cache before calling play.
    *
    * @param path The asset path, used only for error messages.

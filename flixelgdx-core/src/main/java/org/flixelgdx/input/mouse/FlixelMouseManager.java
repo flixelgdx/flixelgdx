@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Mouse and pointer polling with screen/world coordinates. Access via {@code Flixel.mouse} after
- * {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame)}.
+ * {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
  *
  * <h2>Scroll wheel deltas</h2>
  * <p>
@@ -202,7 +202,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
     }
   }
 
-  /** Sets the camera for world coordinates; {@code null} uses {@link Flixel#getCamera()}. */
+  /** Sets the camera for world coordinates; {@code null} uses {@link Flixel#cameras}. */
   public void setWorldCamera(@Nullable FlixelCamera worldCamera) {
     this.worldCamera = worldCamera;
   }
@@ -214,7 +214,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
 
   /**
    * Call at end of frame after game logic (with
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#endFrame()}). Resets
+   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#endFrame() FlixelKeyInputManager.endFrame()}). Resets
    * {@link #getScrollDeltaX()} and {@link #getScrollDeltaY()} to zero for the next frame.
    */
   public void endFrame() {

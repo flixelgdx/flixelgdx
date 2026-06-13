@@ -30,16 +30,16 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Immutable description of one source for a {@link FlixelActionDigital}. Factory methods are allocation-free after the
- * binding is stored; do not create new bindings inside {@link org.flixelgdx.FlixelState#update(float)}.
+ * binding is stored; do not create new bindings inside {@link org.flixelgdx.FlixelState#update(float) FlixelState.update(float)}.
  *
  * <h2>Kinds</h2>
  *
  * <ul>
- *   <li>{@link FlixelInputBindingKind#KEY} via {@link #key(int)} uses {@link org.flixelgdx.Flixel#keys}.</li>
+ *   <li>{@link FlixelInputBindingKind#KEY} via {@link #key(int)} uses {@link org.flixelgdx.Flixel#keys Flixel.keys}.</li>
  *   <li>{@link FlixelInputBindingKind#GAMEPAD_BUTTON} via {@link #gamepadButton(int, int)} uses logical codes from
- *       {@link org.flixelgdx.input.gamepad.FlixelGamepadInput}; slot {@link #GAMEPAD_SLOT_ANY} maps to
+ *       {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}; slot {@link #GAMEPAD_SLOT_ANY} maps to
  *       {@code anyPressed}.</li>
- *   <li>{@link FlixelInputBindingKind#POINTER_BUTTON} via {@link #pointerButton(int, int)} uses {@link org.flixelgdx.Flixel#mouse}
+ *   <li>{@link FlixelInputBindingKind#POINTER_BUTTON} via {@link #pointerButton(int, int)} uses {@link org.flixelgdx.Flixel#mouse Flixel.mouse}
  *       for {@link #POINTER_MOUSE}, else {@link com.badlogic.gdx.Gdx#input} multitouch.</li>
  *   <li>{@link FlixelInputBindingKind#TOUCH_REGION} via {@link #touchRegion(float, float, float, float)} polls normalized
  *       screen rects each frame (mobile-style zones).</li>

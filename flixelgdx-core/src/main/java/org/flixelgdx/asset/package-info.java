@@ -10,19 +10,19 @@
  * <p>Prefer {@link FlixelAssetManager#load(FlixelSource)} for explicit asset types. {@link FlixelAssetManager#load(String)}
  * resolves the path by file extension using a per-manager registry ({@link FlixelAssetManager#registerExtension}).
  *
- * <p>Game code typically uses {@link org.flixelgdx.Flixel#assets} rather than constructing
+ * <p>Game code typically uses {@link org.flixelgdx.Flixel#assets Flixel.assets} rather than constructing
  * a manager directly, but the manager is instantiable and extendable for advanced use cases.
  *
  * <p><b>{@link FlixelAsset}</b>: Public contract for typed handles (refcount, {@code persist}, load/require).
  * Pooled handles come from {@link FlixelAssetManager#obtainTypedAsset(String, Class)} as {@link FlixelTypedAsset}
- * (implementation detail). {@link org.flixelgdx.graphics.FlixelGraphic} and
- * {@link org.flixelgdx.audio.FlixelSound} also implement {@code FlixelAsset} where applicable.
+ * (implementation detail). {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} and
+ * {@link org.flixelgdx.audio.FlixelSound FlixelSound} also implement {@code FlixelAsset} where applicable.
  *
  * <p><b>{@link FlixelSource}</b>: Small interface that lets built in and user defined source objects
  * expose a consistent {@code (assetKey, type)} contract for loading and requiring through the manager.
  *
  * <p><b>{@link FlixelWrapperSource}</b>: Extends {@link FlixelSource} with a pooled wrapper type
- * (e.g. {@link org.flixelgdx.graphics.FlixelGraphic}) resolved via
+ * (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}) resolved via
  * {@link FlixelAssetManager#obtainWrapper(String, Class)}. Registering <em>new</em> wrapper types uses
  * {@link FlixelAssetManager#registerWrapperFactory(FlixelWrapperFactory)}; caller-owned wrappers use
  * {@link FlixelAssetManager#allocateSyntheticWrapperKey()} and {@link FlixelAssetManager#registerWrapper(FlixelPooledWrapper)}.
@@ -43,8 +43,8 @@
  *     <td>No, as it's a typed handle, not the pooled wrapper system.</td>
  *   </tr>
  *   <tr>
- *     <td>A second pooled object around the asset (policy, sharing), e.g. {@link org.flixelgdx.graphics.FlixelGraphic}</td>
- *     <td>{@link FlixelAssetManager#obtainWrapper}; built-in {@link org.flixelgdx.graphics.FlixelGraphicWrapperFactory};
+ *     <td>A second pooled object around the asset (policy, sharing), e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}</td>
+ *     <td>{@link FlixelAssetManager#obtainWrapper}; built-in {@link org.flixelgdx.graphics.FlixelGraphicWrapperFactory FlixelGraphicWrapperFactory};
  *         {@link FlixelAssetManager#registerWrapperFactory} only for new wrapper <em>classes</em>.</td>
  *     <td>Only if you introduce a new wrapper type beyond framework defaults.</td>
  *   </tr>

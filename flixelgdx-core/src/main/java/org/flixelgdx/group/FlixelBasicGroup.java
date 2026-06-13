@@ -33,14 +33,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link org.flixelgdx.FlixelBasic} that owns a {@link FlixelGroup} of {@link IFlixelBasic} members, with batch
+ * A {@link org.flixelgdx.FlixelBasic FlixelBasic} that owns a {@link FlixelGroup} of {@link IFlixelBasic} members, with batch
  * {@link #update(float)} / {@link #draw(Batch)}, {@link #recycle()}, and {@link #destroy()} that tears down members.
  *
  * <p>Member list operations are delegated to an internal {@link FlixelGroup}; {@link #getMemberList()} exposes it when
  * you need the raw container.
  *
- * <p>{@link #remove} and {@link #detach} only unlink members; they do not call {@link org.flixelgdx.FlixelBasic#destroy()}. Prefer
- * {@link org.flixelgdx.FlixelBasic#kill()} / {@link #recycle()} for reuse. See {@link org.flixelgdx.FlixelBasic} for lifecycle guidance.
+ * <p>{@link #remove} and {@link #detach} only unlink members; they do not call {@link org.flixelgdx.FlixelBasic#destroy() FlixelBasic.destroy()}. Prefer
+ * {@link org.flixelgdx.FlixelBasic#kill() FlixelBasic.kill()} / {@link #recycle()} for reuse. See {@link org.flixelgdx.FlixelBasic FlixelBasic} for lifecycle guidance.
  *
  * @param <T> Member type.
  * @see FlixelGroup
@@ -68,8 +68,8 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
 
   /**
    * Called by {@link #recycle()} when no dead member exists and the group is under {@link #getMaxSize()}. The default
-   * returns {@code null}. {@link org.flixelgdx.FlixelState} overrides this to allocate a
-   * {@link org.flixelgdx.FlixelSprite}.
+   * returns {@code null}. {@link org.flixelgdx.FlixelState FlixelState} overrides this to allocate a
+   * {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    */
   protected @Nullable T createMemberForRecycle() {
     return null;

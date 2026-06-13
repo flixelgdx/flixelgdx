@@ -338,7 +338,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * suppress gameplay input.
    *
    * <p>Note that the debug overlay's own toggle keys (F2 by default, etc.) read raw input from
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int)},
+   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)},
    * so they continue to work while a text field is focused except for keys that are suppressed as
    * typable command-line input (see {@link #shouldSuppressDebugRawKeybind(int)} on this class).
    */
@@ -1200,7 +1200,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Renders the Tracker panel, a collapsible header per registered {@link org.flixelgdx.debug.FlixelDebugTrackerEntry},
+   * Renders the Tracker panel, a collapsible header per registered {@link org.flixelgdx.debug.FlixelDebugTrackerEntry FlixelDebugTrackerEntry},
    * each containing a {@code name -> value} table (just like the Watch panel). Shown by default; when no
    * trackers are registered it stays visible with a hint, mirroring the Watch panel's empty state.
    */

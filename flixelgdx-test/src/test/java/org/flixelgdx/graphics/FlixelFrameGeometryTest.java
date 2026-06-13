@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Verifies the pure Sparrow-frame geometry that {@link org.flixelgdx.FlixelSprite#draw} relies on.
+ * Verifies the pure Sparrow-frame geometry that {@link org.flixelgdx.FlixelSprite#draw FlixelSprite.draw} relies on.
  *
  * <p>These tests use real {@code SubTexture} values taken from Friday Night Funkin' atlases
  * (Boyfriend, Pico, Darnell), the same assets that exposed the original rendering bug. Each row is
