@@ -193,7 +193,7 @@ public class FlixelLogger implements ApplicationLogger {
    * lines and releases its resources.
    *
    * <p>Call this during game shutdown (for example from
-   * {@link org.flixelgdx.FlixelGame#dispose()}) so that logs
+   * {@link org.flixelgdx.FlixelGame#dispose() FlixelGame.dispose()}) so that logs
    * written during disposal are persisted.
    */
   public void stopFileLogging() {

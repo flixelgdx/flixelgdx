@@ -24,7 +24,7 @@
 package org.flixelgdx.functional;
 
 /**
- * Spatial and kinematic surface shared by {@link org.flixelgdx.FlixelObject}: world position, size, scroll
+ * Spatial and kinematic surface shared by {@link org.flixelgdx.FlixelObject FlixelObject}: world position, size, scroll
  * factors, velocity-based motion, and immovable toggling so motion tweens never need to cast to {@code FlixelObject}.
  *
  * @see org.flixelgdx.FlixelObject
@@ -267,15 +267,15 @@ public interface FlixelPositional extends FlixelAngleable {
   void setMaxAngularVelocity(float mav);
 
   /**
-   * When {@code true}, {@link org.flixelgdx.FlixelObject#updateMotion(float)} runs each frame on
-   * {@link org.flixelgdx.FlixelObject}.
+   * When {@code true}, {@link org.flixelgdx.FlixelObject#updateMotion(float) FlixelObject.updateMotion(float)} runs each frame on
+   * {@link org.flixelgdx.FlixelObject FlixelObject}.
    *
    * @return Whether integrated motion is enabled.
    */
   boolean getMoves();
 
   /**
-   * Enables or disables automatic motion integration on {@link org.flixelgdx.FlixelObject}.
+   * Enables or disables automatic motion integration on {@link org.flixelgdx.FlixelObject FlixelObject}.
    *
    * @param moves {@code true} to integrate velocity each frame.
    */

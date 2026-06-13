@@ -44,7 +44,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The core building block of all Flixel games. Extends {@link FlixelObject} with graphical
+ * The core building block of all FlixelGDX games. Extends {@link FlixelObject} with graphical
  * capabilities including texture rendering, scaling, rotation, tinting, and flipping.
  *
  * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
@@ -389,10 +389,10 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
    * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
-   * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load};
+   * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
    * not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets()}{@code .obtainWrapper}(...) (implicit retain).
+   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .obtainWrapper}(...) (implicit retain).
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {

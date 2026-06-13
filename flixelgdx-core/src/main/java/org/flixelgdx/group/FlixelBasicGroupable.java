@@ -31,20 +31,20 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A {@link FlixelGroupable} whose members are {@link IFlixelBasic} instances. Engine code (overlap checks, debug
  * traversal, {@link FlixelBasicGroup}) can depend on this marker and the helpers below without forcing generic
- * {@link FlixelGroup} users to extend {@link org.flixelgdx.FlixelBasic}.
+ * {@link FlixelGroup} users to extend {@link org.flixelgdx.FlixelBasic FlixelBasic}.
  *
- * <p>For lifecycle guidance ({@code kill}/{@code revive}/{@code destroy}), see {@link org.flixelgdx.FlixelBasic}.
+ * <p>For lifecycle guidance ({@code kill}/{@code revive}/{@code destroy}), see {@link org.flixelgdx.FlixelBasic FlixelBasic}.
  *
  * @param <T> Member type.
  */
 public interface FlixelBasicGroupable<T extends IFlixelBasic> extends FlixelGroupable<T> {
 
   /**
-   * Removes the member from the group; if {@code destroy} is {@code true}, also calls {@link org.flixelgdx.functional.FlixelDestroyable#destroy()} on it
+   * Removes the member from the group; if {@code destroy} is {@code true}, also calls {@link org.flixelgdx.functional.FlixelDestroyable#destroy() FlixelDestroyable.destroy()} on it
    * after removal.
    *
    * @param member The member to remove.
-   * @param destroy If {@code true}, call {@link org.flixelgdx.functional.FlixelDestroyable#destroy()} after unlinking.
+   * @param destroy If {@code true}, call {@link org.flixelgdx.functional.FlixelDestroyable#destroy() FlixelDestroyable.destroy()} after unlinking.
    */
   default void removeMember(T member, boolean destroy) {
     if (member == null) {

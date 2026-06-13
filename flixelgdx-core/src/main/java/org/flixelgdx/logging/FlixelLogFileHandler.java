@@ -37,10 +37,10 @@ import org.jetbrains.annotations.Nullable;
  * <p>On platforms where file logging is not feasible (for example, web/TeaVM), no
  * handler needs to be registered and the logger will simply skip file output.
  *
- * <p>Register an implementation before {@link org.flixelgdx.Flixel#initialize}
- * by calling {@link org.flixelgdx.Flixel#setLogFileHandler}. The handler
+ * <p>Register an implementation before {@link org.flixelgdx.Flixel#initialize Flixel.initialize}
+ * by calling {@link org.flixelgdx.Flixel#setLogFileHandler Flixel.setLogFileHandler}. The handler
  * follows the same injection pattern used by
- * {@link org.flixelgdx.backend.alert.FlixelAlerter} and
+ * {@link org.flixelgdx.backend.alert.FlixelAlerter FlixelAlerter} and
  * {@link FlixelStackTraceProvider}.
  *
  * @see FlixelLogger

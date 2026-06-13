@@ -36,8 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * HaxeFlixel plugin-style managers so {@link #active}, {@link #exists}, {@link #kill}, and {@link #destroy} gate
  * {@link #update(float)} the same way as other Flixel objects.
  *
- * <p>Use {@link FlixelTimer#getGlobalManager()} with {@link org.flixelgdx.FlixelGame} (already wired) or
- * construct a dedicated manager for isolated groups (for example add it to a {@link org.flixelgdx.FlixelState}).
+ * <p>Use {@link FlixelTimer#getGlobalManager()} with {@link org.flixelgdx.FlixelGame FlixelGame} (already wired) or
+ * construct a dedicated manager for isolated groups (for example add it to a {@link org.flixelgdx.FlixelState FlixelState}).
  *
  * <p>Timers are backed by a {@link Pool} to avoid per-delay allocations. {@link #start(float, FlixelTimerListener, int)}
  * obtains from the pool; {@link FlixelTimer#cancel()} and completed runs return instances to the pool.

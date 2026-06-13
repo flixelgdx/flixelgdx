@@ -196,7 +196,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * of the public game-code API.
    *
    * <p>The graphic is assumed to have already been retained by the caller (typically via
-   * {@link org.flixelgdx.asset.FlixelAssetManager#obtainWrapper}, which retains
+   * {@link org.flixelgdx.asset.FlixelAssetManager#obtainWrapper FlixelAssetManager.obtainWrapper}, which retains
    * automatically), so this method only stores the reference and does not call
    * {@link FlixelGraphic#retain()} again.
    *
@@ -344,7 +344,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Draws the sprite. With a rig installed, walks the current clip's current keyframe and draws each
-   * part through the shared {@link org.flixelgdx.graphics.FlixelSpriteBatch} with a preallocated
+   * part through the shared {@link org.flixelgdx.graphics.FlixelSpriteBatch FlixelSpriteBatch} with a preallocated
    * {@link Affine2}. Without a rig (or with a non-sprite {@link Batch}), falls back to the inherited
    * {@link FlixelSprite} draw path.
    *

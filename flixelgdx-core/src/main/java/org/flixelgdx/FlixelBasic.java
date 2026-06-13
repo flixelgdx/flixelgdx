@@ -29,10 +29,10 @@ import org.flixelgdx.functional.IFlixelBasic;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This is the most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
+ * The most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
  * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
- * It implements {@link org.flixelgdx.functional.IFlixelBasic}, the full contract
- * used by {@link org.flixelgdx.FlixelState} and {@link org.flixelgdx.group.FlixelBasicGroup}.
+ * It implements {@link org.flixelgdx.functional.IFlixelBasic IFlixelBasic}, the full contract
+ * used by {@link org.flixelgdx.FlixelState FlixelState} and {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
  * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
@@ -52,13 +52,13 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #destroy()} (drops resources you may still want)</td>
  *     </tr>
  *     <tr>
- *       <td>Reuse a "dead" slot in a {@link org.flixelgdx.group.FlixelBasicGroup}</td>
- *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#recycle()} or {@link #revive()} after {@link #kill()}</td>
+ *       <td>Reuse a "dead" slot in a {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}</td>
+ *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
  *       <td>{@link #destroy()} unless you truly discard the instance</td>
  *     </tr>
  *     <tr>
  *       <td>Remove from group only; you still hold the reference</td>
- *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#remove} / {@link org.flixelgdx.group.FlixelGroupable#detach}</td>
+ *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#remove FlixelBasicGroup.remove} / {@link org.flixelgdx.group.FlixelGroupable#detach FlixelGroupable.detach}</td>
  *       <td>Assuming the group calls {@link #destroy()} for you (it does not)</td>
  *     </tr>
  *     <tr>
@@ -67,7 +67,7 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #kill()} alone (resources may leak until something calls {@link #destroy()})</td>
  *     </tr>
  *     <tr>
- *       <td>Container shut down ({@link org.flixelgdx.group.FlixelBasicGroup#destroy()}, {@link FlixelState#destroy()})</td>
+ *       <td>Container shut down ({@link org.flixelgdx.group.FlixelBasicGroup#destroy() FlixelBasicGroup.destroy()}, {@link FlixelState#destroy()})</td>
  *       <td>Let the group/state call {@link #destroy()} on each member</td>
  *       <td>Relying on {@link #kill()} for GPU/native cleanup</td>
  *     </tr>

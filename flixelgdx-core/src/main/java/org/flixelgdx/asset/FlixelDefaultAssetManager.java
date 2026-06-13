@@ -56,15 +56,15 @@ import java.util.function.Function;
  * {@link AssetManager}, plus pooled wrappers (via {@link FlixelWrapperFactory}) and {@link FlixelTypedAsset}
  * that track {@code persist} and reference counts and can be cleared on state switches.
  *
- * <p><b>Recommended usage:</b> Access this via {@link org.flixelgdx.Flixel#assets}.
+ * <p><b>Recommended usage:</b> Access this via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
  * <p><b>Path loading:</b> {@link #load(String)} infers a {@link FlixelSource} from the file extension using
  * {@link #registerExtension(String, Function)}. Prefer {@link #load(FlixelSource)} when the asset type must be explicit.
  *
- * <p><b>Web audio pre-decoding:</b> any {@link #load} call that enqueues a {@link org.flixelgdx.audio.FlixelSoundSource}
+ * <p><b>Web audio pre-decoding:</b> any {@link #load} call that enqueues a {@link org.flixelgdx.audio.FlixelSoundSource FlixelSoundSource}
  * automatically triggers background audio decoding on the web platform ({@link Application.ApplicationType#WebGL}).
  * By the time the loading state finishes and the game state starts, the decoded buffer is cached and
- * {@link org.flixelgdx.audio.FlixelAudioManager#play} returns instantly with no decode lag. On desktop and Android
+ * {@link org.flixelgdx.audio.FlixelAudioManager#play FlixelAudioManager.play} returns instantly with no decode lag. On desktop and Android
  * this is a no-op.
  *
  * <pre>{@code

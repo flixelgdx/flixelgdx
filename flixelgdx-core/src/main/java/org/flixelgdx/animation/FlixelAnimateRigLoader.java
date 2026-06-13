@@ -331,7 +331,7 @@ final class FlixelAnimateRigLoader {
    * when game code switches between atlases.
    *
    * <p>The new spritemap's frames are appended to {@link FlixelAnimateRig#atlas} (which is shared
-   * by reference with the owning sprite, so {@link org.flixelgdx.FlixelSprite#getAtlasRegions()}
+   * by reference with the owning sprite, so {@link org.flixelgdx.FlixelSprite#getAtlasRegions() FlixelSprite.getAtlasRegions()}
    * keeps working) and the new label-layer clips are added to {@link FlixelAnimateRig#clips}. Clip
    * names that collide with existing ones are silently overwritten on both the rig and the controller,
    * matching {@link ObjectMap#put}.

@@ -1,9 +1,9 @@
 /**
- * Sprite animation controllers, state machines, and clip playback helpers used by {@link org.flixelgdx.FlixelSprite}.
+ * Sprite animation controllers, state machines, and clip playback helpers used by {@link org.flixelgdx.FlixelSprite FlixelSprite}.
  *
- * <p>Controllers are optional: {@link org.flixelgdx.FlixelSprite#ensureAnimation()} allocates a
- * {@link org.flixelgdx.animation.FlixelAnimationController} when you need timelines, Sparrow/XML atlases, or named clips.
- * {@link org.flixelgdx.FlixelSprite} doesn't include an animation controller by default because they
+ * <p>Controllers are optional: {@link org.flixelgdx.FlixelSprite#ensureAnimation() FlixelSprite.ensureAnimation()} allocates a
+ * {@link org.flixelgdx.animation.FlixelAnimationController FlixelAnimationController} when you need timelines, Sparrow/XML atlases, or named clips.
+ * {@link org.flixelgdx.FlixelSprite FlixelSprite} doesn't include an animation controller by default because they
  * take up a large chunk of memory, which can add up quickly if you have a lot of sprites.
  *
  * <p>For simple flip-book style frames, prefer loading frame grids or atlases once and driving playback through the controller

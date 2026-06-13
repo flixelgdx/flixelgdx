@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>How values combine</h2>
  *
- * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis; {@link org.flixelgdx.Flixel#gamepads}
+ * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis; {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}
  * axis bindings add smooth stick values. Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added
  * on top. The result is clamped to a maximum length of {@code 1} so diagonals do not exceed unit speed when mixing keys
  * and sticks.

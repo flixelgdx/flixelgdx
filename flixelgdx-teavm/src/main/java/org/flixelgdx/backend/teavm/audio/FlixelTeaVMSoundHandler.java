@@ -55,11 +55,11 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  *
  * <p>Groups are no-ops beyond triggering context-level suspend/resume: the Web Audio API does
  * not expose per-group routing without a dedicated graph, and the engine's SFX and music groups
- * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager}.
+ * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager FlixelAudioManager}.
  *
- * <p>Audio-graph effects ({@link org.flixelgdx.audio.FlixelSoundBackend.ReverbNode},
- * {@link org.flixelgdx.audio.FlixelSoundBackend.EchoNode},
- * {@link org.flixelgdx.audio.FlixelSoundBackend.LowPassNode}) are fully supported on web
+ * <p>Audio-graph effects ({@link org.flixelgdx.audio.FlixelSoundBackend.ReverbNode ReverbNode},
+ * {@link org.flixelgdx.audio.FlixelSoundBackend.EchoNode EchoNode},
+ * {@link org.flixelgdx.audio.FlixelSoundBackend.LowPassNode LowPassNode}) are fully supported on web
  * using native Web Audio API nodes. Reverb uses a {@code ConvolverNode} driven by a
  * procedurally generated impulse response; echo uses a {@code DelayNode} with a feedback
  * {@code GainNode}; low-pass uses a {@code BiquadFilterNode}.

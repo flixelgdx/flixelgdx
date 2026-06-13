@@ -52,7 +52,7 @@ public class FlixelTypedAsset<T> implements FlixelAsset<T> {
 
   /**
    * Same-package and subclass access for {@link FlixelDefaultAssetManager} and typed wrappers such as
-   * {@link org.flixelgdx.graphics.FlixelGraphic}.
+   * {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}.
    */
   protected FlixelTypedAsset(
       @NotNull FlixelAssetManager assetManager,

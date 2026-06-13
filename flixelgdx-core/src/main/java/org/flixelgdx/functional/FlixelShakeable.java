@@ -28,13 +28,13 @@ import com.badlogic.gdx.Gdx;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
 
 /**
- * Something {@link org.flixelgdx.tween.type.FlixelShakeTween} can jitter and restore without caring whether
+ * Something {@link org.flixelgdx.tween.type.FlixelShakeTween FlixelShakeTween} can jitter and restore without caring whether
  * the underlying channel is a sprite graphic offset, a world position, or a desktop window position.
  *
- * <p>Implementations choose what X and Y mean: {@link org.flixelgdx.FlixelSprite} uses graphic
- * {@linkplain org.flixelgdx.FlixelSprite#getOffsetX() offset}; {@link org.flixelgdx.FlixelObject}
+ * <p>Implementations choose what X and Y mean: {@link org.flixelgdx.FlixelSprite FlixelSprite} uses graphic
+ * {@linkplain org.flixelgdx.FlixelSprite#getOffsetX() offset}; {@link org.flixelgdx.FlixelObject FlixelObject}
  * uses world {@linkplain org.flixelgdx.functional.FlixelPositional position};
- * {@link org.flixelgdx.backend.window.FlixelWindow} uses window placement in screen coordinates.
+ * {@link org.flixelgdx.backend.window.FlixelWindow FlixelWindow} uses window placement in screen coordinates.
  *
  * @see org.flixelgdx.tween.type.FlixelShakeTween
  */

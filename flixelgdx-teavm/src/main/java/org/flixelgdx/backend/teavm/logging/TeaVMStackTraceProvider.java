@@ -29,7 +29,7 @@ import org.flixelgdx.logging.FlixelStackTraceProvider;
 /**
  * Implementation of {@link FlixelStackTraceProvider} for TeaVM. Stack walking is not available in the same
  * way as on the JVM, so this implementation returns {@code null} for {@link #getCaller()}. The
- * {@link org.flixelgdx.logging.FlixelLogger} treats a missing caller as an unknown file/line
+ * {@link org.flixelgdx.logging.FlixelLogger FlixelLogger} treats a missing caller as an unknown file/line
  * and still emits logs, file output, and in-game log listeners.
  */
 public class TeaVMStackTraceProvider implements FlixelStackTraceProvider {

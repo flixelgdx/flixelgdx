@@ -32,7 +32,7 @@ public interface FlixelAngleable {
 
   /**
    * The angle in degrees of this object. Does not affect axis-aligned collision on
-   * {@link org.flixelgdx.FlixelObject}.
+   * {@link org.flixelgdx.FlixelObject FlixelObject}.
    *
    * @return The current angle in degrees.
    */

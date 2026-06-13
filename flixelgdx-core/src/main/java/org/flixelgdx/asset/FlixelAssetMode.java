@@ -26,7 +26,7 @@ package org.flixelgdx.asset;
 /**
  * Controls when the asset manager reclaims memory for non-persistent assets.
  *
- * <p>The active mode is read by {@link org.flixelgdx.Flixel#switchState} and by individual asset
+ * <p>The active mode is read by {@link org.flixelgdx.Flixel#switchState Flixel.switchState} and by individual asset
  * handles on every {@link FlixelAsset#release()} call, so changing the mode mid-session takes
  * effect immediately without any extra steps.
  *
@@ -57,7 +57,7 @@ public enum FlixelAssetMode {
 
   /**
    * Non-persistent assets with a zero reference count are unloaded when
-   * {@link org.flixelgdx.Flixel#switchState} runs. This is the default.
+   * {@link org.flixelgdx.Flixel#switchState Flixel.switchState} runs. This is the default.
    *
    * <p>Persistent assets (see {@link FlixelAsset#isPersist()}) and any asset still held by a
    * live object (reference count greater than zero) are kept across the switch.
@@ -88,7 +88,7 @@ public enum FlixelAssetMode {
    *     {@link FlixelAssetManager#load(String)} again and awaiting the async load cycle.</li>
    * </ul>
    *
-   * <p>{@link org.flixelgdx.Flixel#switchState} still calls {@link FlixelAssetManager#clearNonPersist()}
+   * <p>{@link org.flixelgdx.Flixel#switchState Flixel.switchState} still calls {@link FlixelAssetManager#clearNonPersist()}
    * as a safety net for assets that were loaded but never retained.
    */
   AGGRESSIVE

@@ -28,7 +28,7 @@ package org.flixelgdx.input;
  *
  * <p>Call {@link #update()} once near the start of the frame, then {@link #endFrame()} after game
  * logic and rendering so edge-triggered helpers (for example {@code justPressed}) stay valid for
- * the full frame, matching {@link org.flixelgdx.FlixelGame}.
+ * the full frame, matching {@link org.flixelgdx.FlixelGame FlixelGame}.
  */
 public interface FlixelInputManager {
 

@@ -28,7 +28,7 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 /**
  * Web (TeaVM) debug overlay: reuses the shared {@link FlixelDebugOverlay} controller (pause,
  * camera tools, hitboxes, watch/log buffers) without an extra UI toolkit. Replace
- * {@link org.flixelgdx.Flixel#setDebugOverlay(java.util.function.Supplier)} if you add a
+ * {@link org.flixelgdx.Flixel#setDebugOverlay(java.util.function.Supplier) Flixel.setDebugOverlay(Supplier)} if you add a
  * browser-based panel layer later.
  */
 public final class FlixelTeaVMDebugOverlay extends FlixelDebugOverlay {

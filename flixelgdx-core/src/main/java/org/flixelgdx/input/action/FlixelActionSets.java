@@ -28,19 +28,19 @@ import com.badlogic.gdx.utils.Array;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Global registry of {@link FlixelActionSet} instances. {@link org.flixelgdx.FlixelGame} invokes
+ * Global registry of {@link FlixelActionSet} instances. {@link org.flixelgdx.FlixelGame FlixelGame} invokes
  * {@link #updateAll(float)} and {@link #endFrameAll()} so every registered set stays on the same contract as
- * {@link org.flixelgdx.input.FlixelInputManager} (keys, mouse, gamepads).
+ * {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager} (keys, mouse, gamepads).
  *
  * <h2>When {@code updateAll} runs</h2>
  *
- * <p>Order inside {@link org.flixelgdx.FlixelGame#update(float)}: {@code Flixel.keys.update()},
+ * <p>Order inside {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)}: {@code Flixel.keys.update()},
  * {@code Flixel.mouse.update()}, {@code Flixel.gamepads.update()}, then {@link #updateAll(float)}. Gameplay code in
- * {@link org.flixelgdx.FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
+ * {@link org.flixelgdx.FlixelState FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
  *
  * <h2>When {@code endFrameAll} runs</h2>
  *
- * <p>After {@link org.flixelgdx.FlixelGame#draw} and the input managers' {@code endFrame()} calls,
+ * <p>After {@link org.flixelgdx.FlixelGame#draw FlixelGame.draw} and the input managers' {@code endFrame()} calls,
  * {@link #endFrameAll()} copies digital and analog edge state for the next frame.
  *
  * <h2>Registration</h2>
@@ -69,7 +69,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link org.flixelgdx.FlixelGame#update(float)} after gamepad polling.
+   * Invoked from {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)} after gamepad polling.
    *
    * @param elapsed Seconds since last frame (same as game update).
    */
@@ -80,7 +80,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link org.flixelgdx.FlixelGame#render()} after keys, mouse, and gamepads
+   * Invoked from {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} after keys, mouse, and gamepads
    * {@code endFrame()}.
    */
   public static void endFrameAll() {

@@ -41,7 +41,7 @@ import java.util.function.Function;
  *
  * <p>Prefer {@link #load(FlixelSource)} for loading assets so the asset type is explicit. {@link #load(String)}
  * infers a source from the file extension via the per-manager extension registry; it is convenient but
- * ambiguous if extensions collide or custom content is used—register mappings with
+ * ambiguous if extensions collide or custom content is used. Register mappings with
  * {@link #registerExtension(String, Function)} or use {@link #load(FlixelSource)} instead.
  *
  * <p>The default implementation canonicalizes path-shaped keys (see {@link FlixelAssetPaths#normalizeAssetPath(String)})
@@ -56,7 +56,7 @@ import java.util.function.Function;
  *     another layer will {@link FlixelAsset#retain()}, or for inspection).</li>
  *   <li><b>{@code obtain...}</b>: “Give me the handle and count me as a user.” Get or create the asset handle, then
  *     automatically call {@link FlixelAsset#retain()} for {@link FlixelAsset} handles. Call {@link FlixelAsset#release()} when done
- *     (e.g. {@link org.flixelgdx.FlixelSprite#destroy()} for graphics loaded via {@code obtainWrapper}).</li>
+ *     (e.g. {@link org.flixelgdx.FlixelSprite#destroy() FlixelSprite.destroy()} for graphics loaded via {@code obtainWrapper}).</li>
  * </ul>
  */
 public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
@@ -74,7 +74,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   void load(@NotNull String path);
 
   /**
-   * Like {@link #load(String)} but marks the asset key so the first {@link FlixelAsset} or {@link org.flixelgdx.graphics.FlixelGraphic}
+   * Like {@link #load(String)} but marks the asset key so the first {@link FlixelAsset} or {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
    * handle created for that key uses {@code persist == true} (survives {@link #clearNonPersist()} when unreferenced).
    *
    * @param path Same as {@link #load(String)}.
@@ -282,11 +282,11 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * loaded data can remain in memory across state switches until {@link #clear()} or {@link FlixelAsset#setPersist(boolean)}.
    * When {@code false}, new handles may be removed on {@code clearNonPersist()} once unreferenced.
    *
-   * <p>Owned wrappers (see {@link org.flixelgdx.graphics.FlixelGraphic} and {@code isOwned()} on
+   * <p>Owned wrappers (see {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} and {@code isOwned()} on
    * {@link FlixelPooledWrapper}) use {@code persist == false} regardless of this setting so synthetic textures
    * are always eligible for eviction when refcount is zero.
    *
-   * <p><b>Owned versus persist</b> (see also {@link org.flixelgdx.graphics.FlixelGraphic}):
+   * <p><b>Owned versus persist</b> (see also {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}):
    * <ul>
    *   <li><b>Owned</b> - Structural: this handle wraps a dedicated {@link com.badlogic.gdx.graphics.Texture} that
    *     the framework disposes when the wrapper leaves the pool (for example pixmap or caller-supplied textures).
@@ -318,7 +318,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
 
   /**
    * Sets the active asset management mode. The change takes effect immediately on the next
-   * {@link FlixelAsset#release()} call or the next {@link org.flixelgdx.Flixel#switchState} call,
+   * {@link FlixelAsset#release()} call or the next {@link org.flixelgdx.Flixel#switchState Flixel.switchState} call,
    * whichever comes first.
    *
    * @param mode The new mode; must not be {@code null}.
@@ -330,7 +330,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   void clear();
 
   /**
-   * Allocates a unique key for a caller-constructed wrapper (e.g. {@link org.flixelgdx.graphics.FlixelGraphic}
+   * Allocates a unique key for a caller-constructed wrapper (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
    * around an owned texture). Use with {@link #registerWrapper(FlixelPooledWrapper)}.
    */
   @NotNull
@@ -345,7 +345,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
 
   /**
    * Registers a {@link FlixelWrapperFactory} for a wrapper type (e.g. built-in
-   * {@link org.flixelgdx.graphics.FlixelGraphicWrapperFactory} for {@link org.flixelgdx.graphics.FlixelGraphic}).
+   * {@link org.flixelgdx.graphics.FlixelGraphicWrapperFactory FlixelGraphicWrapperFactory} for {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
    * Custom pooled facades use this; loading plain libGDX types uses {@link FlixelSource} + {@link #registerExtension} instead.
    */
   void registerWrapperFactory(@NotNull FlixelWrapperFactory<?> factory);
@@ -359,7 +359,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * <p>Use when you need the canonical instance for inspection or to hand off to another API that
    * will call {@link FlixelAsset#retain()} itself. For normal ownership, prefer {@link #obtainWrapper}.
    *
-   * @param key Cache key (e.g. asset path for a {@link org.flixelgdx.graphics.FlixelGraphic}).
+   * @param key Cache key (e.g. asset path for a {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
    * @param wrapperType Wrapper class registered with {@link #registerWrapperFactory}.
    * @param <W> Wrapper type.
    * @return Pooled wrapper instance.
@@ -374,10 +374,10 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * {@link FlixelAsset#retain()} when executed. Note that you should
    *
    * <p>Equivalent to {@link #ensureWrapper} followed by {@link FlixelAsset#retain()} for {@link FlixelAsset} wrappers.
-   * Call {@link FlixelAsset#release()} when done (e.g. from {@link org.flixelgdx.FlixelSprite#destroy()}).
+   * Call {@link FlixelAsset#release()} when done (e.g. from {@link org.flixelgdx.FlixelSprite#destroy() FlixelSprite.destroy()}).
    *
-   * @param key Cache key (e.g. asset path for a {@link org.flixelgdx.graphics.FlixelGraphic}).
-   * @param wrapperType Wrapper class registered by the implementation (e.g. {@link org.flixelgdx.graphics.FlixelGraphic}.class).
+   * @param key Cache key (e.g. asset path for a {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
+   * @param wrapperType Wrapper class registered by the implementation (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}.class).
    * @param <W> Wrapper type.
    * @return Pooled wrapper instance.
    */
@@ -433,7 +433,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   /**
    * Peeks at a typed asset handle without creating it.
    *
-   * <p><b>Beginner shorthand:</b> “Is there already a typed handle?”—look only; never creates; refcount unchanged.
+   * <p><b>Beginner shorthand:</b> “Is there already a typed handle?”: look-only, never creates, refcount unchanged.
    *
    * @param assetKey Asset key.
    * @param type Asset type.

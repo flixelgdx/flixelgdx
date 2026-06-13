@@ -31,9 +31,9 @@ import java.util.function.Consumer;
 
 /**
  * Group-like containers with a typed member list. This interface is intentionally generic so libGDX projects can use
- * {@link FlixelGroup} with any member type without adopting {@link org.flixelgdx.FlixelBasic}.
+ * {@link FlixelGroup} with any member type without adopting {@link org.flixelgdx.FlixelBasic FlixelBasic}.
  *
- * <p>FlixelGDX gameplay code that uses lifecycle flags and {@link org.flixelgdx.FlixelBasic#destroy()} should
+ * <p>FlixelGDX gameplay code that uses lifecycle flags and {@link org.flixelgdx.FlixelBasic#destroy() FlixelBasic.destroy()} should
  * implement {@link FlixelBasicGroupable} instead (or use {@link FlixelBasicGroup} / {@link FlixelSpriteGroup}).
  *
  * @param <T> Member type.
@@ -45,7 +45,7 @@ public interface FlixelGroupable<T> {
 
   /**
    * Removes the member from this group only. Does not interpret or tear down the member; see {@link FlixelBasicGroupable}
-   * for optional {@code destroy} semantics on {@link org.flixelgdx.FlixelBasic} members.
+   * for optional {@code destroy} semantics on {@link org.flixelgdx.FlixelBasic FlixelBasic} members.
    */
   void remove(T member);
 

@@ -91,10 +91,10 @@ import java.util.function.Supplier;
  * Subclasses of {@code FlixelTween} implement specialized behavior:
  * <ul>
  *   <li>{@link FlixelGoalTween}: interpolates properties of objects using lambda getters and setters</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelNumTween}: tweens a simple numeric value via a callback</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelColorTween}: tweens between colors</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelAngleTween}: smoothly rotates a value</li>
- *   <li>{@link org.flixelgdx.tween.type.motion.FlixelLinearMotion} and others: for advanced motion paths</li>
+ *   <li>{@link org.flixelgdx.tween.type.FlixelNumTween FlixelNumTween}: tweens a simple numeric value via a callback</li>
+ *   <li>{@link org.flixelgdx.tween.type.FlixelColorTween FlixelColorTween}: tweens between colors</li>
+ *   <li>{@link org.flixelgdx.tween.type.FlixelAngleTween FlixelAngleTween}: smoothly rotates a value</li>
+ *   <li>{@link org.flixelgdx.tween.type.motion.FlixelLinearMotion FlixelLinearMotion} and others: for advanced motion paths</li>
  * </ul>
  *
  * <h2>Key Fields</h2>
@@ -267,7 +267,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite}.
+   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -288,7 +288,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite}.
+   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -316,7 +316,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite}.
+   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -338,7 +338,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite}.
+   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -366,7 +366,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite}.
+   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -388,7 +388,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite}.
+   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -1002,7 +1002,7 @@ public abstract class FlixelTween implements Pool.Poolable {
 
   /**
    * Cancels every active tween on the global manager. Does not clear pools; pair with {@link #clearTweenPools()} if you
-   * want a full reset (as {@link org.flixelgdx.Flixel#switchState} does when {@code clearTweens} is true).
+   * want a full reset (as {@link org.flixelgdx.Flixel#switchState Flixel.switchState} does when {@code clearTweens} is true).
    */
   public static void cancelActiveTweens() {
     Array<FlixelTween> list = globalManager.getActiveTweens();

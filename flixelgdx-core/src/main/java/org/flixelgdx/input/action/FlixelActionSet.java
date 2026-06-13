@@ -31,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
- * contract as {@link org.flixelgdx.input.FlixelInputManager}. Actions read {@link org.flixelgdx.Flixel#keys},
- * {@link org.flixelgdx.Flixel#mouse}, {@link org.flixelgdx.Flixel#gamepads}, and {@code Gdx.input}
+ * contract as {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager}. Actions read {@link org.flixelgdx.Flixel#keys Flixel.keys},
+ * {@link org.flixelgdx.Flixel#mouse Flixel.mouse}, {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}, and {@code Gdx.input}
  * during {@link #update(float)}. This class is <strong>not</strong> an {@link com.badlogic.gdx.InputProcessor}: you do not add
  * it to {@link com.badlogic.gdx.InputMultiplexer}. Framework keyboard and mouse processors stay the single libGDX entry
  * points for those devices.
@@ -40,13 +40,13 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Lifecycle (normal games)</h2>
  *
  * <ol>
- *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#initialize}.</li>
+ *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#initialize Flixel.initialize}.</li>
  *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
  *       call {@link #add(FlixelAction)} for each, and configure {@link FlixelInputBinding} / {@link FlixelAnalogAxisBinding}.</li>
- *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame} calls
+ *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame FlixelGame} calls
  *       {@link FlixelActionSets#updateAll(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
  *       after keys, mouse, and gamepads {@code endFrame()} in {@code render()}.</li>
- *   <li>From {@link org.flixelgdx.FlixelState#update(float)} (or similar), read {@code jump.justPressed()},
+ *   <li>From {@link org.flixelgdx.FlixelState#update(float) FlixelState.update(float)} (or similar), read {@code jump.justPressed()},
  *       {@code move.getX()}, etc.</li>
  *   <li>When the screen or mode ends, call {@link #destroy()} so the set unregisters and clears members.</li>
  * </ol>

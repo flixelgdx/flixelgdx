@@ -28,10 +28,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Typed handle for one asset path + class, with optional {@code persist} and refcount.
  *
- * <p>Handles are cached on {@link org.flixelgdx.Flixel#assets}. {@link FlixelAssetManager#obtainTypedAsset(String, Class)}
+ * <p>Handles are cached on {@link org.flixelgdx.Flixel#assets Flixel.assets}. {@link FlixelAssetManager#obtainTypedAsset(String, Class)}
  * and {@link FlixelAssetManager#obtainWrapper(String, Class)} implicitly {@link #retain()}; use {@link FlixelAssetManager#ensureTypedAsset}
- * / {@link FlixelAssetManager#ensureWrapper} when you must not change the refcount. {@link org.flixelgdx.graphics.FlixelGraphic}
- * and {@link org.flixelgdx.audio.FlixelSound} also implement this contract where applicable.
+ * / {@link FlixelAssetManager#ensureWrapper} when you must not change the refcount. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
+ * and {@link org.flixelgdx.audio.FlixelSound FlixelSound} also implement this contract where applicable.
  *
  * <p>Prefer {@link #queueLoad()} in a loading state and {@code Flixel.assets.update()} each frame.
  *

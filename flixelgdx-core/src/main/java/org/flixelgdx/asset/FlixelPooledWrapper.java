@@ -26,8 +26,8 @@ package org.flixelgdx.asset;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Pooled wrapper registered through {@link org.flixelgdx.asset.FlixelAssetManager} ({@code registerWrapper}) for
- * {@link org.flixelgdx.asset.FlixelAssetManager#clearNonPersist()} lifecycle.
+ * Pooled wrapper registered through {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager} ({@code registerWrapper}) for
+ * {@link org.flixelgdx.asset.FlixelAssetManager#clearNonPersist() FlixelAssetManager.clearNonPersist()} lifecycle.
  */
 public interface FlixelPooledWrapper {
 
@@ -41,7 +41,7 @@ public interface FlixelPooledWrapper {
 
   /**
    * @return The wrapper class used to look up a {@link FlixelWrapperFactory} (typically the concrete
-   *   wrapper class, e.g. {@link org.flixelgdx.graphics.FlixelGraphic}.class).
+   *   wrapper class, e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}.class).
    */
   @NotNull
   default Class<?> wrapperRegistrationClass() {
@@ -49,9 +49,9 @@ public interface FlixelPooledWrapper {
   }
 
   /**
-   * Whether this wrapper holds a dedicated resource the pool must dispose (for example {@link org.flixelgdx.graphics.FlixelGraphic}
+   * Whether this wrapper holds a dedicated resource the pool must dispose (for example {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
    * with a pixmap or caller texture). This is structural, not the same as {@link FlixelAsset#isPersist()}; see
-   * {@link org.flixelgdx.graphics.FlixelGraphic} and {@link FlixelAssetManager#getGlobalPersist()}.
+   * {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} and {@link FlixelAssetManager#getGlobalPersist()}.
    *
    * @return {@code true} if the wrapper is owned, {@code false} otherwise.
    */

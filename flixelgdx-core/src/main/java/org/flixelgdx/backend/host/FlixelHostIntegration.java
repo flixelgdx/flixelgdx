@@ -29,8 +29,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Host operating system integration, which allows desktop notifications and taskbar attention.
  *
- * <p>This is separate from {@link org.flixelgdx.backend.alert.FlixelAlerter}, which shows blocking
- * dialog popups. Use {@link org.flixelgdx.Flixel#host} from game code.
+ * <p>This is separate from {@link org.flixelgdx.backend.alert.FlixelAlerter FlixelAlerter}, which shows blocking
+ * dialog popups. Use {@link org.flixelgdx.Flixel#host Flixel.host} from game code.
  *
  * <p>Desktop LWJGL3 ships a full implementation (freedesktop {@code notify-send} on Linux rather than AWT for toasts,
  * GLFW plus AWT {@code java.awt.Taskbar} for attention where available). Mobile and web builds keep the safe no-op implementation.

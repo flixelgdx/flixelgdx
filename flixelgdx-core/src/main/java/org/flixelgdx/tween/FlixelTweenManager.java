@@ -209,7 +209,7 @@ public class FlixelTweenManager {
 
   /**
    * Completes matching tweens in one step (large delta). Non-{@link FlixelTweenType#isLooping() looping} tweens only.
-   * {@link org.flixelgdx.tween.settings.FlixelTweenSettings#getOnComplete()} runs when
+   * {@link org.flixelgdx.tween.settings.FlixelTweenSettings#getOnComplete() FlixelTweenSettings.getOnComplete()} runs when
    * {@link FlixelTween#finish()} is invoked after the tween reports finished.
    *
    * @param object The object to complete tweens of.

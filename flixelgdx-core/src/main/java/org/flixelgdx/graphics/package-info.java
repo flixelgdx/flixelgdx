@@ -6,15 +6,15 @@
  *
  * <p>Key types:
  * <ul>
- *   <li>{@link org.flixelgdx.graphics.FlixelGraphic} - Pooled wrapper around a texture
+ *   <li>{@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} - Pooled wrapper around a texture
  *       asset key with reference counting and persistence policy.</li>
- *   <li>{@link org.flixelgdx.graphics.FlixelFrame} - Frame metadata wrapper around a
+ *   <li>{@link org.flixelgdx.graphics.FlixelFrame FlixelFrame} - Frame metadata wrapper around a
  *       {@code TextureRegion}, used for sprite sheets and atlas like behavior.</li>
- *   <li>{@link org.flixelgdx.graphics.FlixelGraphicSource} - Source object that provides
+ *   <li>{@link org.flixelgdx.graphics.FlixelGraphicSource FlixelGraphicSource} - Source object that provides
  *       consistent loading and wrapper access for one graphic key.</li>
  * </ul>
  *
- * <p>Textures are loaded through {@link org.flixelgdx.Flixel#assets} and should be
+ * <p>Textures are loaded through {@link org.flixelgdx.Flixel#assets Flixel.assets} and should be
  * preloaded in a loading state to avoid blocking the main thread, which is what the game loop runs on.
  */
 package org.flixelgdx.graphics;
