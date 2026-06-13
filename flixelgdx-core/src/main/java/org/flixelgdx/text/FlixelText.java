@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.text;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -1067,7 +1069,14 @@ public class FlixelText extends FlixelSprite {
     BitmapFont oldFont = bitmapFont;
     boolean oldPrivate = privateBitmapFontOwned;
 
-    FreeTypeFontGenerator gen = resolveGenerator();
+    FreeTypeFontGenerator gen = null;
+    try {
+      gen = resolveGenerator();
+    } catch (Throwable ignored) {
+      // Font file is unavailable on this platform (e.g., not preloaded on TeaVM). Leave gen
+      // null so the fallback path below loads the packaged bitmap font instead.
+    }
+
     if (gen != null) {
       float screenScale = currentScreenScale();
       lastBakeScreenScale = screenScale;
@@ -1083,20 +1092,33 @@ public class FlixelText extends FlixelSprite {
 
       // Incremental generation (glyphs on demand) only makes sense for a private file handle;
       // registry generators serve multiple callers and work better with an upfront bake.
+      // Mipmaps are not generated on WebGL because glGenerateMipmap fails for NPOT textures
+      // on WebGL 1.0, which is the only context available in TeaVM-compiled games.
+      boolean webGl = Gdx.app.getType() == Application.ApplicationType.WebGL;
       if (fontFile != null) {
         freeTypeParams.incremental = true;
         freeTypeParams.genMipMaps = false;
       } else {
         freeTypeParams.incremental = false;
-        freeTypeParams.genMipMaps = true;
+        freeTypeParams.genMipMaps = !webGl;
       }
 
-      bitmapFont = gen.generateFont(freeTypeParams);
-      // Scale glyph metrics down so the layout measures in game pixels, not baked pixels.
-      // The viewport's world-to-screen projection then maps those game pixels to the
-      // correct screen pixels automatically.
-      bitmapFont.getData().setScale(1f / screenScale);
-      privateBitmapFontOwned = true;
+      try {
+        bitmapFont = gen.generateFont(freeTypeParams);
+        // Scale glyph metrics down so the layout measures in game pixels, not baked pixels.
+        // The viewport's world-to-screen projection then maps those game pixels to the
+        // correct screen pixels automatically.
+        bitmapFont.getData().setScale(1f / screenScale);
+        privateBitmapFontOwned = true;
+      } catch (Throwable ignored) {
+        // FreeType font generation failed (e.g., freetype.js not yet loaded or unsupported
+        // feature on TeaVM). Fall back to the packaged bitmap font so text still renders.
+        // Update lastBakeScreenScale so the scale check does not fire again until the
+        // screen scale actually changes, preventing a per-frame retry loop.
+        lastBakeScreenScale = screenScale;
+        bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
+        privateBitmapFontOwned = false;
+      }
     } else {
       bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
       privateBitmapFontOwned = false;
