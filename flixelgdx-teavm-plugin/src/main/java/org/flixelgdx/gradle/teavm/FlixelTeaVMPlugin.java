@@ -195,9 +195,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // Copy any user-made web config files into the build output.
     project.getTasks().register("copyWebApp", Copy.class, task -> {
       task.setGroup(TASK_GROUP);
-      task
-          .setDescription(
-              "Copies user-provided web resources (e.g. a custom index.html) into the web output directory.");
+      task.setDescription(
+          "Copies user-provided web resources (e.g. a custom index.html) into the web output directory.");
       task.onlyIf(t -> ext.getWebappDir().get().getAsFile().exists());
       task.from(ext.getWebappDir());
       task.into(teaVmWebRoot);

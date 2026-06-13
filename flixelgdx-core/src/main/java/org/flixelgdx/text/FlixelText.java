@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.text;
 
+import com.badlogic.gdx.Application;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -1067,7 +1069,14 @@ public class FlixelText extends FlixelSprite {
     BitmapFont oldFont = bitmapFont;
     boolean oldPrivate = privateBitmapFontOwned;
 
-    FreeTypeFontGenerator gen = resolveGenerator();
+    FreeTypeFontGenerator gen;
+    try {
+      gen = resolveGenerator();
+    } catch (Exception e) {
+      Gdx.app.log("FlixelText", "Font generator unavailable: " + e.getMessage());
+      gen = null;
+    }
+
     if (gen != null) {
       float screenScale = currentScreenScale();
       lastBakeScreenScale = screenScale;
@@ -1083,21 +1092,48 @@ public class FlixelText extends FlixelSprite {
 
       // Incremental generation (glyphs on demand) only makes sense for a private file handle;
       // registry generators serve multiple callers and work better with an upfront bake.
+      // WebGL 1.0 rejects glGenerateMipmap on non-power-of-two textures, so skip on that backend.
       if (fontFile != null) {
         freeTypeParams.incremental = true;
         freeTypeParams.genMipMaps = false;
       } else {
         freeTypeParams.incremental = false;
-        freeTypeParams.genMipMaps = true;
+        freeTypeParams.genMipMaps = Gdx.app.getType() != Application.ApplicationType.WebGL;
       }
 
-      bitmapFont = gen.generateFont(freeTypeParams);
-      // Scale glyph metrics down so the layout measures in game pixels, not baked pixels.
-      // The viewport's world-to-screen projection then maps those game pixels to the
-      // correct screen pixels automatically.
-      bitmapFont.getData().setScale(1f / screenScale);
-      privateBitmapFontOwned = true;
+      BitmapFont generated = null;
+      try {
+        generated = gen.generateFont(freeTypeParams);
+      } catch (Exception e) {
+        Gdx.app.log("FlixelText", "Font generation failed: " + e.getMessage());
+      }
+
+      if (generated != null) {
+        // Guard against garbage metrics from gdx-freetype-teavm's dataSize=0 bug: FreeType
+        // returns raw EM units (thousands of units) instead of pixel-sized metrics, making
+        // lineHeight vastly larger than the requested bake size. Treat that as a failed bake.
+        boolean metricsPlausible = generated.getData().lineHeight <= bakeSize * 4;
+        if (!metricsPlausible) {
+          generated.dispose();
+          generated = null;
+        }
+      }
+      if (generated != null) {
+        // Scale glyph metrics down so the layout measures in game pixels, not baked pixels.
+        // The viewport's world-to-screen projection then maps those game pixels to the
+        // correct screen pixels automatically.
+        bitmapFont = generated;
+        bitmapFont.getData().setScale(1f / screenScale);
+        privateBitmapFontOwned = true;
+      } else {
+        bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
+        privateBitmapFontOwned = false;
+      }
     } else {
+      // Sync lastBakeScreenScale even when falling back to the default bitmap font. Without
+      // this the per-frame scale check in rebuildIfDirty() sees a stale 0 and marks the font
+      // dirty every frame, creating an infinite rebuild loop for embedded-font text objects.
+      lastBakeScreenScale = currentScreenScale();
       bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
       privateBitmapFontOwned = false;
     }
@@ -1152,7 +1188,7 @@ public class FlixelText extends FlixelSprite {
       String path = fontFile.path();
       if (!ownsGenerator || generator == null || !path.equals(currentGeneratorPath)) {
         disposeOwnedGenerator();
-        generator = new FreeTypeFontGenerator(fontFile);
+        generator = FlixelFontRegistry.createGenerator(fontFile);
         currentGeneratorPath = path;
         ownsGenerator = true;
       }

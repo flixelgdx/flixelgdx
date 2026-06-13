@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.text;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
@@ -37,6 +38,7 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -308,9 +310,12 @@ public final class FlixelFontRegistry {
       FileHandle fnt = useInternal
           ? Gdx.files.internal(DEFAULT_BITMAP_FNT)
           : Gdx.files.classpath(DEFAULT_BITMAP_FNT);
-      if (fnt == null || !fnt.exists()) {
+      if (fnt == null) {
         return null;
       }
+      // Skip the exists() check intentionally: on TeaVM web the in-memory VFS may report a file as
+      // absent even though it was successfully preloaded, depending on how the backend normalizes
+      // paths. Attempting the load and catching any exception is the safest cross-platform approach.
       return new BitmapFont(fnt);
     } catch (Throwable ignored) {
       return null;
@@ -342,7 +347,8 @@ public final class FlixelFontRegistry {
     FreeTypeFontParameter param = new FreeTypeFontParameter();
     param.size = size;
     param.spaceX = letterSpacing;
-    param.genMipMaps = true;
+    // WebGL 1.0 rejects glGenerateMipmap on non-power-of-two textures, so skip on that backend.
+    param.genMipMaps = Gdx.app.getType() != Application.ApplicationType.WebGL;
     param.minFilter = Texture.TextureFilter.Linear;
     param.magFilter = Texture.TextureFilter.Linear;
     BitmapFont font = generator.generateFont(param);
@@ -370,6 +376,28 @@ public final class FlixelFontRegistry {
     }
     entries.clear();
     defaultFontId = null;
+  }
+
+  /**
+   * Creates a {@link FreeTypeFontGenerator} for the given font file, applying a WebGL-safe
+   * workaround on that backend.
+   *
+   * <p>On WebGL, {@code gdx-freetype-teavm} uses {@link com.badlogic.gdx.utils.StreamUtils#copyStream}
+   * to fill the font's {@link java.nio.ByteBuffer}, which advances the buffer's position to its
+   * limit. The subsequent call into the Emscripten FreeType module then receives
+   * {@code dataSize = buffer.remaining() = 0}, causing FreeType to produce garbage glyph metrics
+   * (raw EM units instead of pixel units). Reporting {@code length() = 0} for the file handle
+   * forces the alternate branch in the emulation that uses {@link com.badlogic.gdx.utils.BufferUtils#copy},
+   * which correctly resets the buffer position to zero before the native call.
+   *
+   * @param fontFile The font asset handle. Not modified.
+   * @return A newly created generator.
+   */
+  static FreeTypeFontGenerator createGenerator(FileHandle fontFile) {
+    if (Gdx.app.getType() == Application.ApplicationType.WebGL) {
+      fontFile = new ZeroLengthFileHandle(fontFile);
+    }
+    return new FreeTypeFontGenerator(fontFile);
   }
 
   private static void disposeAllCachedBitmapFonts() {
@@ -418,7 +446,7 @@ public final class FlixelFontRegistry {
 
     FreeTypeFontGenerator getOrCreateGenerator() {
       if (generator == null) {
-        generator = new FreeTypeFontGenerator(fontFile);
+        generator = createGenerator(fontFile);
       }
       return generator;
     }
@@ -429,6 +457,87 @@ public final class FlixelFontRegistry {
         generator.dispose();
         generator = null;
       }
+    }
+  }
+
+  /**
+   * Wraps a {@link FileHandle} and always returns {@code 0} from {@link #length()}.
+   *
+   * <p>This tricks {@code gdx-freetype-teavm}'s {@code FreeType.Library.newFace()} into taking
+   * the {@code fileSize == 0} code path, which copies the font bytes via
+   * {@link com.badlogic.gdx.utils.BufferUtils#copy} (a native call that resets the buffer
+   * position). The alternative path ({@code fileSize != 0}) uses
+   * {@link com.badlogic.gdx.utils.StreamUtils#copyStream}, which fills the buffer and leaves
+   * its position at the end - causing the Emscripten FreeType module to receive
+   * {@code dataSize = 0} and produce unusable glyph metrics.
+   */
+  private static final class ZeroLengthFileHandle extends FileHandle {
+
+    private final FileHandle wrapped;
+
+    ZeroLengthFileHandle(FileHandle wrapped) {
+      this.type = wrapped.type();
+      this.wrapped = wrapped;
+    }
+
+    @Override
+    public String path() {
+      return wrapped.path();
+    }
+
+    @Override
+    public String name() {
+      return wrapped.name();
+    }
+
+    @Override
+    public String extension() {
+      return wrapped.extension();
+    }
+
+    @Override
+    public String nameWithoutExtension() {
+      return wrapped.nameWithoutExtension();
+    }
+
+    @Override
+    public String pathWithoutExtension() {
+      return wrapped.pathWithoutExtension();
+    }
+
+    @Override
+    public long length() {
+      return 0;
+    }
+
+    @Override
+    public boolean exists() {
+      return wrapped.exists();
+    }
+
+    @Override
+    public InputStream read() {
+      return wrapped.read();
+    }
+
+    @Override
+    public byte[] readBytes() {
+      return wrapped.readBytes();
+    }
+
+    @Override
+    public FileHandle parent() {
+      return wrapped.parent();
+    }
+
+    @Override
+    public FileHandle child(String name) {
+      return wrapped.child(name);
+    }
+
+    @Override
+    public FileHandle sibling(String name) {
+      return wrapped.sibling(name);
     }
   }
 }
