@@ -27,9 +27,7 @@
   <canvas id="{{CANVAS_ID}}"></canvas>
 {{NATIVE_SCRIPTS}}  <script src="{{TEAVM_SCRIPT}}"></script>
   <script>
-    main();
-
-    (function () {
+{{TEAVM_INIT}}    (function () {
       var canvas = document.getElementById('{{CANVAS_ID}}');
 
       function scaleCanvas() {

@@ -223,10 +223,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         if (!ext.getGenerateDefaultIndexHtml().get()) {
           return false;
         }
-        // Index generation is JS-specific; wasmGC requires a custom index.html with WASM loading logic.
+        // For wasmGC, only generate when copyRuntime is enabled; the runtime JS provides the entry point.
         TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
         if (teavm != null && teavm.getWasmGC().getAddedToWebApp().getOrElse(false)) {
-          return false;
+          return teavm.getWasmGC().getCopyRuntime().getOrElse(false);
         }
         // Always run when a custom file is explicitly provided.
         if (ext.getCustomIndexHtml().isPresent() && ext.getCustomIndexHtml().getAsFile().get().exists()) {
@@ -291,12 +291,19 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
+          TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+          boolean wasmGCMode = teavm != null && teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
+          String scriptSrc = wasmGCMode
+              ? resolveWasmGCRuntimeScriptSrc(teavm)
+              : resolveTeaVmScriptSrc(project, outputDir);
+          String teaVmInit = wasmGCMode ? "" : "    main();\n\n";
           String html = template
               .replace("{{TITLE}}", ext.getTitle().get())
               .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
               .replace("{{FAVICON}}", faviconLink)
               .replace("{{NATIVE_SCRIPTS}}", nativeScripts.toString())
-              .replace("{{TEAVM_SCRIPT}}", resolveTeaVmScriptSrc(project, outputDir));
+              .replace("{{TEAVM_INIT}}", teaVmInit)
+              .replace("{{TEAVM_SCRIPT}}", scriptSrc);
           Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
@@ -425,11 +432,14 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       });
     });
 
-    // gdx-teavm / JMultiPlatform still expect a script named teavm.js. When targetFileName is custom, copy it.
+    // When the user sets a custom targetFileName, TeaVM still writes (or may leave behind) a teavm.js
+    // from a previous build. Since generateIndexHtml already references the correct filename directly,
+    // teavm.js is a stale artifact that should be cleaned up.
     project.getTasks().register("aliasTeaVmMainScript", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription(
-          "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility).");
+          "Deletes any stale teavm.js from the output directory when a custom targetFileName is set, "
+              + "since index.html already references the correct bundle name directly.");
       task.onlyIf(t -> {
         TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
         return teavm == null || !teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
@@ -439,27 +449,23 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         if (js == null) {
           return;
         }
-        try {
-          String file = unwrap(js.getTargetFileName());
-          if (file == null || file.isEmpty() || "teavm.js".equalsIgnoreCase(file)) {
-            return;
+        String file = unwrap(js.getTargetFileName());
+        if (file == null || file.isEmpty() || "teavm.js".equalsIgnoreCase(file)) {
+          return;
+        }
+        String rel = unwrap(js.getRelativePathInOutputDir());
+        File root = teaVmWebRoot.get().getAsFile();
+        String sub = (rel == null || rel.isEmpty()) ? "" : rel.replace('\\', '/');
+        if (!sub.isEmpty() && !sub.endsWith("/")) {
+          sub = sub + "/";
+        }
+        File stale = new File(root, sub + "teavm.js");
+        if (stale.isFile()) {
+          if (stale.delete()) {
+            project.getLogger().info("[FlixelGDX] Deleted stale teavm.js (active bundle: {}).", file);
+          } else {
+            project.getLogger().warn("[FlixelGDX] Could not delete stale teavm.js at {}.", stale.getAbsolutePath());
           }
-          String rel = unwrap(js.getRelativePathInOutputDir());
-          File root = teaVmWebRoot.get().getAsFile();
-          String sub = (rel == null || rel.isEmpty()) ? "" : rel.replace('\\', '/');
-          if (!sub.isEmpty() && !sub.endsWith("/")) {
-            sub = sub + "/";
-          }
-          File src = new File(root, sub + file);
-          File dst = new File(root, sub + "teavm.js");
-          if (src.isFile() && !src.getCanonicalFile().equals(dst.getCanonicalFile())) {
-            Files.copy(src.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            project
-                .getLogger()
-                .info("[FlixelGDX] Wrote gdx-teavm compatibility copy: " + sub + "teavm.js (from " + file + ").");
-          }
-        } catch (IOException e) {
-          project.getLogger().warn("[FlixelGDX] Could not create teavm.js alias: {}", e.getMessage());
         }
       });
     });
@@ -652,6 +658,12 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         if (runTask != null && buildWasmGC != null) {
           runTask.dependsOn(buildWasmGC);
         }
+        // Generate index.html after the WASM build finishes (copyWasmGCRuntime must run first so
+        // the runtime JS filename can be resolved from the task output).
+        Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
+        if (buildWasmGC != null && generateIndexHtml != null) {
+          buildWasmGC.finalizedBy(generateIndexHtml);
+        }
       } else {
         Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
         Task copyWebApp = p.getTasks().findByName("copyWebApp");
@@ -729,6 +741,26 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   private static TeaVMJSConfiguration findTeaVmJsConfiguration(@NonNull Project project) {
     TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
     return teavm == null ? null : teavm.getJs();
+  }
+
+  /**
+   * Resolves the wasmGC runtime script filename for the generated {@code index.html}.
+   *
+   * <p>{@code copyWasmGCRuntime} places a file named {@code {targetFileName}-runtime.js} alongside
+   * the {@code .wasm} binary. This method constructs that name from the configured
+   * {@link TeaVMWasmGCConfiguration#getTargetFileName() targetFileName}, falling back to
+   * {@code output.wasm-runtime.js} when no name has been set.
+   *
+   * @param teavm The TeaVM extension (must not be {@code null}).
+   * @return The filename of the wasmGC runtime script (for example {@code pong.wasm-runtime.js}).
+   */
+  @NonNull
+  private static String resolveWasmGCRuntimeScriptSrc(@NonNull TeaVMExtension teavm) {
+    String targetFileName = teavm.getWasmGC().getTargetFileName().getOrNull();
+    if (targetFileName == null || targetFileName.isBlank()) {
+      targetFileName = "output.wasm";
+    }
+    return targetFileName + "-runtime.js";
   }
 
   /**
