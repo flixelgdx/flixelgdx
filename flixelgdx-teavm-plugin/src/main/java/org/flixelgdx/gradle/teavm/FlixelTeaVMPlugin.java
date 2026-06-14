@@ -297,8 +297,11 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           String scriptSrc = wasmGCMode
               ? resolveWasmGCRuntimeScriptSrc(teavm)
               : resolveTeaVmScriptSrc(project, outputDir);
+          String wasmSrc = wasmGCMode ? resolveWasmGCSrc(teavm) : null;
           String teaVmInit = wasmGCMode
-              ? "    TeaVM.wasmGC.load(\"" + resolveWasmGCSrc(teavm) + "\");\n\n"
+              ? "    TeaVM.wasmGC.load(\"" + wasmSrc + "\").then(function(teavm) {\n"
+                + "        teavm.exports.main([]);\n"
+                + "    });\n\n"
               : "    main();\n\n";
           String html = template
               .replace("{{TITLE}}", ext.getTitle().get())
