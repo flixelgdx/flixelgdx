@@ -659,8 +659,7 @@ public class FlixelText extends FlixelSprite {
    * @return This instance for chaining.
    */
   public FlixelText setFormat(FileHandle fontFile, int size, Color color,
-      Alignment alignment, BorderStyle borderStyle,
-      Color borderColor) {
+      Alignment alignment, BorderStyle borderStyle, Color borderColor) {
     if (fontFile != null) {
       setFont(fontFile);
     }

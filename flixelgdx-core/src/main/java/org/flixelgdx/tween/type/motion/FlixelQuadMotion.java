@@ -29,7 +29,7 @@ import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
 /** Quadratic Bézier motion (one control point). */
-public final class FlixelQuadMotion extends FlixelMotion {
+public class FlixelQuadMotion extends FlixelMotion {
 
   private float fromX;
   private float fromY;
@@ -101,5 +101,29 @@ public final class FlixelQuadMotion extends FlixelMotion {
     float u = 1f - t;
     motionX = fromX * u * u + cx * 2f * u * t + toX * t * t;
     motionY = fromY * u * u + cy * 2f * u * t + toY * t * t;
+  }
+
+  public float getFromX() {
+    return fromX;
+  }
+
+  public float getFromY() {
+    return fromY;
+  }
+
+  public float getCy() {
+    return cy;
+  }
+
+  public float getCx() {
+    return cx;
+  }
+
+  public float getToX() {
+    return toX;
+  }
+
+  public float getToY() {
+    return toY;
   }
 }
