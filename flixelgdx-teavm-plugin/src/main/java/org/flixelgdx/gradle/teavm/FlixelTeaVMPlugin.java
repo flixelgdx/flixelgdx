@@ -38,7 +38,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.teavm.gradle.api.TeaVMExtension;
 import org.teavm.gradle.api.TeaVMJSConfiguration;
-import org.teavm.gradle.api.TeaVMWasmGCConfiguration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -105,11 +104,8 @@ import java.util.jar.JarFile;
  *       and other tooling that still expect that name.</li>
  * </ul>
  *
- * <p>All helper tasks above are wired as dependencies of the primary TeaVM build task for the
- * active output mode. For {@code js} output that is {@code generateJavaScript} and
- * {@code javaScriptDevServer}; for {@code wasmGC} output that is {@code buildWasmGC}. The active
- * mode is read from {@link FlixelTeaVMExtension#getOutputMode()}, which defaults to
- * {@link FlixelTeaVMOutputMode#JAVASCRIPT}. The {@code run} dev-server task is wired in all modes.
+ * <p>All helper tasks above are wired as dependencies of {@code generateJavaScript} and
+ * {@code javaScriptDevServer}. The {@code run} dev-server task is also wired.
  *
  * <h2>Minimal usage</h2>
  *
@@ -182,9 +178,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
     ext.getCanvasId().convention(FlixelTeaVMExtension.DEFAULT_CANVAS_ID);
     ext.getTitle().convention(FlixelTeaVMExtension.DEFAULT_TITLE);
-    ext.getOutputMode().convention(FlixelTeaVMOutputMode.JAVASCRIPT);
-    // Resolved to the active output mode's directory in afterEvaluate; fallback is used only when
-    // org.teavm is missing entirely.
+    // Resolved to teavm.js.outputDir in afterEvaluate; fallback is used only when org.teavm is missing entirely.
     DirectoryProperty teaVmWebRoot = project.getObjects().directoryProperty();
     teaVmWebRoot.convention(project.getLayout().getBuildDirectory().dir("generated/teavm"));
 
@@ -223,11 +217,6 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.onlyIf(t -> {
         if (!ext.getGenerateDefaultIndexHtml().get()) {
           return false;
-        }
-        // For wasmGC, only generate when copyRuntime is enabled; the runtime JS provides the entry point.
-        if (ext.getOutputMode().get() == FlixelTeaVMOutputMode.WEBASSEMBLY) {
-          TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
-          return teavm != null && teavm.getWasmGC().getCopyRuntime().getOrElse(false);
         }
         // Always run when a custom file is explicitly provided.
         if (ext.getCustomIndexHtml().isPresent() && ext.getCustomIndexHtml().getAsFile().get().exists()) {
@@ -292,17 +281,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             }
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
-          TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
-          boolean wasmGCMode = ext.getOutputMode().get() == FlixelTeaVMOutputMode.WEBASSEMBLY;
-          String scriptSrc = wasmGCMode
-              ? resolveWasmGCRuntimeScriptSrc(teavm)
-              : resolveTeaVmScriptSrc(project, outputDir);
-          String wasmSrc = wasmGCMode ? resolveWasmGCSrc(teavm) : null;
-          String teaVmInit = wasmGCMode
-              ? "    TeaVM.wasmGC.load(\"" + wasmSrc + "\").then(function(teavm) {\n"
-                + "        teavm.exports.main([]);\n"
-                + "    });\n\n"
-              : "    main();\n\n";
+          String scriptSrc = resolveTeaVmScriptSrc(project, outputDir);
+          String teaVmInit = "    main();\n\n";
           String html = template
               .replace("{{TITLE}}", ext.getTitle().get())
               .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
@@ -446,7 +426,6 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.setDescription(
           "Deletes any stale teavm.js from the output directory when a custom targetFileName is set, "
               + "since index.html already references the correct bundle name directly.");
-      task.onlyIf(t -> ext.getOutputMode().get() != FlixelTeaVMOutputMode.WEBASSEMBLY);
       task.doLast(t -> {
         TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
         if (js == null) {
@@ -626,77 +605,53 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       });
     });
 
-    // Wire FlixelGDX helper tasks as dependencies of the primary TeaVM build task, and resolve the
-    // shared web root to the correct output directory for the active output mode (JS or wasmGC).
+    // Wire FlixelGDX helper tasks as dependencies of the primary TeaVM build tasks and resolve the
+    // shared web root to teavm.js.outputDir.
     project.afterEvaluate(p -> {
       TeaVMExtension teavm = p.getExtensions().findByType(TeaVMExtension.class);
       if (teavm == null) {
         p.getLogger().warn(
             "[FlixelGDX] org.teavm extension not found. Helper tasks use build/generated/teavm as the web root. "
-                + "Apply org.teavm before this plugin and set outputDir under teavm.js, teavm.wasmGC, or teavm.all.");
+                + "Apply org.teavm before this plugin and set outputDir under teavm.js or teavm.all.");
         return;
       }
 
-      boolean wasmGCMode = ext.getOutputMode().get() == FlixelTeaVMOutputMode.WEBASSEMBLY;
+      teaVmWebRoot.set(teavm.getJs().getOutputDir());
 
-      // Point the shared web root at the output directory for the active output mode.
-      if (wasmGCMode) {
-        teaVmWebRoot.set(teavm.getWasmGC().getOutputDir());
-      } else {
-        teaVmWebRoot.set(teavm.getJs().getOutputDir());
-      }
-
-      // Wire FlixelGDX helper tasks to the primary TeaVM build task for the active mode.
-      wireTo(p, wasmGCMode ? "buildWasmGC" : "generateJavaScript");
-      if (!wasmGCMode) {
-        wireTo(p, "javaScriptDevServer");
-      }
+      wireTo(p, "generateJavaScript");
+      wireTo(p, "javaScriptDevServer");
       wireTo(p, "run");
 
+      Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
+      Task copyWebApp = p.getTasks().findByName("copyWebApp");
+      Task generateJs = p.getTasks().findByName("generateJavaScript");
+      Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
       Task runTask = p.getTasks().findByName("run");
 
-      if (wasmGCMode) {
-        // The run task must trigger the full wasmGC build (generateWasmGC + copyWasmGCRuntime).
-        Task buildWasmGC = p.getTasks().findByName("buildWasmGC");
-        if (runTask != null && buildWasmGC != null) {
-          runTask.dependsOn(buildWasmGC);
-        }
-        // Generate index.html after the WASM build finishes (copyWasmGCRuntime must run first so
-        // the runtime JS filename can be resolved from the task output).
-        Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
-        if (buildWasmGC != null && generateIndexHtml != null) {
-          buildWasmGC.finalizedBy(generateIndexHtml);
-        }
-      } else {
-        Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
-        Task copyWebApp = p.getTasks().findByName("copyWebApp");
-        // Generate index after TeaVM writes JS (and after teavm.js alias). Otherwise Gradle may run
-        // copyWebApp after generateIndexHtml and overwrite a fresh index.html from src/main/webapp/, or
-        // leave a stale script src.
-        Task generateJs = p.getTasks().findByName("generateJavaScript");
-        Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
-        if (generateJs != null && generateIndexHtml != null) {
-          generateJs.finalizedBy(generateIndexHtml);
-        }
-        if (generateIndexHtml != null && copyWebApp != null) {
-          generateIndexHtml.mustRunAfter(copyWebApp);
-        }
-        if (generateIndexHtml != null && alias != null) {
-          generateIndexHtml.mustRunAfter(alias);
-        }
-        // The run task must also trigger the full TeaVM compilation so the JS bundle exists
-        // before the dev server starts serving files.
-        if (runTask != null && generateJs != null) {
-          runTask.dependsOn(generateJs);
-        }
-        if (alias != null && generateJs != null) {
-          generateJs.finalizedBy(alias);
-          Task devServer = p.getTasks().findByName("javaScriptDevServer");
-          if (devServer != null) {
-            devServer.dependsOn(generateJs);
-            devServer.dependsOn(alias);
-            alias.mustRunAfter(generateJs);
-          }
+      // Generate index after TeaVM writes JS (and after teavm.js alias). Otherwise Gradle may run
+      // copyWebApp after generateIndexHtml and overwrite a fresh index.html from src/main/webapp/, or
+      // leave a stale script src.
+      if (generateJs != null && generateIndexHtml != null) {
+        generateJs.finalizedBy(generateIndexHtml);
+      }
+      if (generateIndexHtml != null && copyWebApp != null) {
+        generateIndexHtml.mustRunAfter(copyWebApp);
+      }
+      if (generateIndexHtml != null && alias != null) {
+        generateIndexHtml.mustRunAfter(alias);
+      }
+      // The run task must trigger the full TeaVM compilation so the JS bundle exists
+      // before the dev server starts serving files.
+      if (runTask != null && generateJs != null) {
+        runTask.dependsOn(generateJs);
+      }
+      if (alias != null && generateJs != null) {
+        generateJs.finalizedBy(alias);
+        Task devServer = p.getTasks().findByName("javaScriptDevServer");
+        if (devServer != null) {
+          devServer.dependsOn(generateJs);
+          devServer.dependsOn(alias);
+          alias.mustRunAfter(generateJs);
         }
       }
     });
@@ -744,73 +699,6 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   private static TeaVMJSConfiguration findTeaVmJsConfiguration(@NonNull Project project) {
     TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
     return teavm == null ? null : teavm.getJs();
-  }
-
-  /**
-   * Resolves the wasmGC WASM binary path for the generated {@code index.html} {@code load()} call.
-   *
-   * <p>Returns a relative URL like {@code wasm-gc/pong.wasm} that the browser passes to
-   * {@code TeaVM.wasmGC.load()}.
-   *
-   * @param teavm The TeaVM extension (must not be {@code null}).
-   * @return The relative URL path of the wasmGC binary from the web root.
-   */
-  @NonNull
-  private static String resolveWasmGCSrc(@NonNull TeaVMExtension teavm) {
-    TeaVMWasmGCConfiguration wasmGC = teavm.getWasmGC();
-    String targetFileName = unwrap(wasmGC.getTargetFileName());
-    if (targetFileName == null || targetFileName.isBlank()) {
-      targetFileName = "output.wasm";
-    }
-    return buildWasmGCRelativePath(wasmGC, targetFileName);
-  }
-
-  /**
-   * Resolves the wasmGC runtime script path for the generated {@code index.html}.
-   *
-   * <p>{@code copyWasmGCRuntime} places a file named {@code {targetFileName}-runtime.js} under
-   * {@code {outputDir}/{relativePathInOutputDir}/} (defaulting to {@code wasm-gc/}). This method
-   * constructs the relative URL path from the output root so the browser can find the file,
-   * returning something like {@code wasm-gc/pong.wasm-runtime.js}.
-   *
-   * @param teavm The TeaVM extension (must not be {@code null}).
-   * @return The relative URL path of the wasmGC runtime script from the web root.
-   */
-  @NonNull
-  private static String resolveWasmGCRuntimeScriptSrc(@NonNull TeaVMExtension teavm) {
-    TeaVMWasmGCConfiguration wasmGC = teavm.getWasmGC();
-    String targetFileName = unwrap(wasmGC.getTargetFileName());
-    if (targetFileName == null || targetFileName.isBlank()) {
-      targetFileName = "output.wasm";
-    }
-    return buildWasmGCRelativePath(wasmGC, targetFileName + "-runtime.js");
-  }
-
-  /**
-   * Prepends {@code relativePathInOutputDir} (e.g. {@code wasm-gc/}) to {@code fileName} when
-   * the path is non-empty, producing a URL relative to the output root.
-   *
-   * @param wasmGC The wasmGC configuration.
-   * @param fileName The filename to prefix.
-   * @return The relative URL path (for example {@code wasm-gc/pong.wasm}).
-   */
-  @NonNull
-  private static String buildWasmGCRelativePath(@NonNull TeaVMWasmGCConfiguration wasmGC, @NonNull String fileName) {
-    String rel = unwrap(wasmGC.getRelativePathInOutputDir());
-    if (rel == null || rel.isBlank()) {
-      return fileName;
-    }
-    String normalized = rel.replace('\\', '/').trim();
-    while (normalized.startsWith("/")) {
-      normalized = normalized.substring(1);
-    }
-    if (normalized.isEmpty()) {
-      return fileName;
-    }
-    if (!normalized.endsWith("/")) {
-      normalized = normalized + "/";
-    }
-    return normalized + fileName;
   }
 
   /**

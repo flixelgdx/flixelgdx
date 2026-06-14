@@ -71,10 +71,6 @@ import org.gradle.api.provider.Property;
  *
  *   // Provide a favicon that is copied to the output and linked in the generated index.html.
  *   customFavicon = file('src/main/webapp/favicon.ico')
- *
- *   // Set the TeaVM output mode. JAVASCRIPT (default) wires to generateJavaScript;
- *   // WEBASSEMBLY wires to buildWasmGC and generates a wasmGC-compatible index.html.
- *   outputMode = FlixelTeaVMOutputMode.WEBASSEMBLY
  * }
  * }</pre>
  */
@@ -202,20 +198,4 @@ public interface FlixelTeaVMExtension {
    */
   RegularFileProperty getCustomFavicon();
 
-  /**
-   * The TeaVM compilation target that the FlixelGDX plugin should wire its helper tasks against.
-   *
-   * <p>Accepted values are {@link FlixelTeaVMOutputMode#JAVASCRIPT} (default) and
-   * {@link FlixelTeaVMOutputMode#WEBASSEMBLY}. The plugin uses this to determine which TeaVM task
-   * to depend on, which output directory to use, and how to generate {@code index.html}.
-   *
-   * <pre>{@code
-   * flixelgdx {
-   *   outputMode = FlixelTeaVMOutputMode.WEBASSEMBLY
-   * }
-   * }</pre>
-   *
-   * @return The output mode property.
-   */
-  Property<FlixelTeaVMOutputMode> getOutputMode();
 }
