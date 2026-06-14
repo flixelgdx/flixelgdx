@@ -54,11 +54,17 @@ public final class FlixelDebugUtil {
    * @return The number of active members, or {@code 0} if no state is loaded.
    */
   public static int countActiveMembers() {
-    FlixelState state = Flixel.getState();
-    if (state == null) {
-      return 0;
+    int count = 0;
+    FlixelState current = Flixel.getState();
+    while (current != null) {
+      FlixelState sub = current.getSubState();
+      boolean hasSubState = (sub != null);
+      if (!hasSubState || current.persistentUpdate) {
+        count += countActiveMembersRecursive(current.getMembers());
+      }
+      current = sub;
     }
-    return countActiveMembersRecursive(state.getMembers());
+    return count;
   }
 
   private static int countActiveMembersRecursive(SnapshotArray<?> members) {
@@ -91,11 +97,15 @@ public final class FlixelDebugUtil {
    * @param callback Invoked once per visible {@link FlixelDebugDrawable}.
    */
   public static void forEachDebugDrawable(Consumer<FlixelDebugDrawable> callback) {
-    FlixelState state = Flixel.getState();
-    if (state == null) {
-      return;
+    FlixelState current = Flixel.getState();
+    while (current != null) {
+      FlixelState sub = current.getSubState();
+      boolean hasSubState = (sub != null);
+      if (!hasSubState || current.persistentDraw) {
+        forEachDebugDrawableRecursive(current.getMembers(), callback);
+      }
+      current = sub;
     }
-    forEachDebugDrawableRecursive(state.getMembers(), callback);
   }
 
   private static void forEachDebugDrawableRecursive(@NotNull SnapshotArray<?> members,
