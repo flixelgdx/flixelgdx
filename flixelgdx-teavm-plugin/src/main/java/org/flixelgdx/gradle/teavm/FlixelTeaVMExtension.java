@@ -197,4 +197,5 @@ public interface FlixelTeaVMExtension {
    * @return The custom favicon file property.
    */
   RegularFileProperty getCustomFavicon();
+
 }

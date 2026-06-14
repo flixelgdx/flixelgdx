@@ -85,7 +85,7 @@ import org.jetbrains.annotations.Nullable;
  *   @Override
  *   public void update(float elapsed) {
  *     if (controls.jump.justPressed()) {
- *       // fire jump once this frame
+ *       // Fire jump once this frame.
  *     }
  *     float mx = controls.move.getX();
  *     float my = controls.move.getY();
