@@ -742,23 +742,40 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
-   * Resolves the wasmGC runtime script filename for the generated {@code index.html}.
+   * Resolves the wasmGC runtime script path for the generated {@code index.html}.
    *
-   * <p>{@code copyWasmGCRuntime} places a file named {@code {targetFileName}-runtime.js} alongside
-   * the {@code .wasm} binary. This method constructs that name from the configured
-   * {@link TeaVMWasmGCConfiguration#getTargetFileName() targetFileName}, falling back to
-   * {@code output.wasm-runtime.js} when no name has been set.
+   * <p>{@code copyWasmGCRuntime} places a file named {@code {targetFileName}-runtime.js} under
+   * {@code {outputDir}/{relativePathInOutputDir}/} (defaulting to {@code wasm-gc/}). This method
+   * constructs the relative URL path from the output root so the browser can find the file,
+   * returning something like {@code wasm-gc/pong.wasm-runtime.js}.
    *
    * @param teavm The TeaVM extension (must not be {@code null}).
-   * @return The filename of the wasmGC runtime script (for example {@code pong.wasm-runtime.js}).
+   * @return The relative URL path of the wasmGC runtime script from the web root.
    */
   @NonNull
   private static String resolveWasmGCRuntimeScriptSrc(@NonNull TeaVMExtension teavm) {
-    String targetFileName = teavm.getWasmGC().getTargetFileName().getOrNull();
+    TeaVMWasmGCConfiguration wasmGC = teavm.getWasmGC();
+    String targetFileName = unwrap(wasmGC.getTargetFileName());
     if (targetFileName == null || targetFileName.isBlank()) {
       targetFileName = "output.wasm";
     }
-    return targetFileName + "-runtime.js";
+    String runtimeFileName = targetFileName + "-runtime.js";
+
+    String rel = unwrap(wasmGC.getRelativePathInOutputDir());
+    if (rel == null || rel.isBlank()) {
+      return runtimeFileName;
+    }
+    String normalized = rel.replace('\\', '/').trim();
+    while (normalized.startsWith("/")) {
+      normalized = normalized.substring(1);
+    }
+    if (normalized.isEmpty()) {
+      return runtimeFileName;
+    }
+    if (!normalized.endsWith("/")) {
+      normalized = normalized + "/";
+    }
+    return normalized + runtimeFileName;
   }
 
   /**
