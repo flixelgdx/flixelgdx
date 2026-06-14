@@ -2,11 +2,6 @@ import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.external.javadoc.JavadocMemberLevel
 import org.gradle.external.javadoc.StandardJavadocDocletOptions
 
-java {
-  withSourcesJar()
-  withJavadocJar()
-}
-
 tasks.withType(Javadoc).configureEach { Javadoc t ->
   t.options.encoding = 'UTF-8'
   t.options.charSet = 'UTF-8'

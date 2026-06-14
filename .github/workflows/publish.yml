@@ -4,8 +4,6 @@ name: Publish to Maven Central
 # The git tag drives the artifact version: v1.2.3 -> publishes as 1.2.3.
 on:
   push:
-    branches:
-      - 'master'
     tags:
       - 'v*'
 
