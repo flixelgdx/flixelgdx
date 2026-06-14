@@ -17,7 +17,7 @@ direction, releases, and all decisions that affect the framework and its communi
 - Full administrative access to the repository and the FlixelGDX Foundation organization
 - Creating and managing releases
 - Appointing and removing Maintainers
-- Resolving any conflict or situation that Maintainers cannot or should not handle on their own
+- Resolving any conflict or situation that Maintainers cannot (or should not) handle on their own
 - Final say on any decision, technical or otherwise
 
 ## Current Project Leaders
@@ -107,7 +107,7 @@ align early than to submit a large pull request that needs to be substantially r
 
 # Versioning
 
-FlixelGDX is still in active development and is currently versioned at `0.x.x`. While we aim to be
+FlixelGDX is still in heavy active development and is currently versioned at `0.x.x`. While we aim to be
 thoughtful about compatibility, **breaking changes can and will happen at any time during this phase**.
 Do not depend on any API being stable until the project reaches `1.0.0`.
 
