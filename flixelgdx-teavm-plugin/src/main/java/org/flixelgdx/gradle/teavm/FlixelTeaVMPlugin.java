@@ -108,8 +108,8 @@ import java.util.jar.JarFile;
  * <p>All helper tasks above are wired as dependencies of the primary TeaVM build task for the
  * active output mode. For {@code js} output that is {@code generateJavaScript} and
  * {@code javaScriptDevServer}; for {@code wasmGC} output that is {@code buildWasmGC}. The active
- * mode is detected from whichever block has {@code addedToWebApp = true} in the {@code teavm}
- * extension, with JS as the default. The {@code run} dev-server task is wired in all modes.
+ * mode is read from {@link FlixelTeaVMExtension#getOutputMode()}, which defaults to
+ * {@link FlixelTeaVMOutputMode#JAVASCRIPT}. The {@code run} dev-server task is wired in all modes.
  *
  * <h2>Minimal usage</h2>
  *
@@ -182,6 +182,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
     ext.getCanvasId().convention(FlixelTeaVMExtension.DEFAULT_CANVAS_ID);
     ext.getTitle().convention(FlixelTeaVMExtension.DEFAULT_TITLE);
+    ext.getOutputMode().convention(FlixelTeaVMOutputMode.JAVASCRIPT);
     // Resolved to the active output mode's directory in afterEvaluate; fallback is used only when
     // org.teavm is missing entirely.
     DirectoryProperty teaVmWebRoot = project.getObjects().directoryProperty();
@@ -224,9 +225,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           return false;
         }
         // For wasmGC, only generate when copyRuntime is enabled; the runtime JS provides the entry point.
-        TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
-        if (teavm != null && teavm.getWasmGC().getAddedToWebApp().getOrElse(false)) {
-          return teavm.getWasmGC().getCopyRuntime().getOrElse(false);
+        if (ext.getOutputMode().get() == FlixelTeaVMOutputMode.WEBASSEMBLY) {
+          TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+          return teavm != null && teavm.getWasmGC().getCopyRuntime().getOrElse(false);
         }
         // Always run when a custom file is explicitly provided.
         if (ext.getCustomIndexHtml().isPresent() && ext.getCustomIndexHtml().getAsFile().get().exists()) {
@@ -292,7 +293,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
             template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
           }
           TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
-          boolean wasmGCMode = teavm != null && teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
+          boolean wasmGCMode = ext.getOutputMode().get() == FlixelTeaVMOutputMode.WEBASSEMBLY;
           String scriptSrc = wasmGCMode
               ? resolveWasmGCRuntimeScriptSrc(teavm)
               : resolveTeaVmScriptSrc(project, outputDir);
@@ -440,10 +441,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.setDescription(
           "Deletes any stale teavm.js from the output directory when a custom targetFileName is set, "
               + "since index.html already references the correct bundle name directly.");
-      task.onlyIf(t -> {
-        TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
-        return teavm == null || !teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
-      });
+      task.onlyIf(t -> ext.getOutputMode().get() != FlixelTeaVMOutputMode.WEBASSEMBLY);
       task.doLast(t -> {
         TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
         if (js == null) {
@@ -634,7 +632,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         return;
       }
 
-      boolean wasmGCMode = teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
+      boolean wasmGCMode = ext.getOutputMode().get() == FlixelTeaVMOutputMode.WEBASSEMBLY;
 
       // Point the shared web root at the output directory for the active output mode.
       if (wasmGCMode) {
