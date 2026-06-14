@@ -5,10 +5,10 @@
 ### Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)
 
 [![CI](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/org.flixelgdx/flixelgdx-core)](https://central.sonatype.com/artifact/org.flixelgdx/flixelgdx-core)
 [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Website](https://img.shields.io/badge/website-flixelgdx.org-blue)](https://flixelgdx.org)
-[![API Docs](https://img.shields.io/badge/api_docs-flixelgdx.org%2Fapi-blue)](https://flixelgdx.org/api)
 [![Stars](https://img.shields.io/github/stars/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/stargazers)
 [![Forks](https://img.shields.io/github/forks/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/forks)
 [![Issues](https://img.shields.io/github/issues/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/issues)
