@@ -290,6 +290,7 @@ public final class Flixel {
    *
    * <p>This field is {@code null} until the first call to {@link #switchState(FlixelState)}.
    */
+  @Nullable
   public static FlixelState state;
 
   /**
@@ -595,7 +596,7 @@ public final class Flixel {
    * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a real implementation before
-   * {@link Flixel#initialize(FlixelGame)} runs. On all other platforms it falls back to
+   * {@link Flixel#initialize(FlixelGame)} runs. On an unknown platform it falls back to
    * {@link FlixelNoopWindow}, which silently ignores every call, so you can always write
    * {@code Flixel.window.setOpacity(0.8f)} without wrapping it in a platform check.
    *
@@ -605,7 +606,7 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
-   * // Make the window semi-transparent (desktop only; no-ops on other platforms).
+   * // Make the window semi-transparent.
    * Flixel.window.setOpacity(0.85f);
    *
    * // Remove the title bar and border.

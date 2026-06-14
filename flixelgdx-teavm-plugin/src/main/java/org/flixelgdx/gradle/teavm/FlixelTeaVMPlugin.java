@@ -279,9 +279,8 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // dependency JARs into teavm.js.outputDir/scripts/ where the runtime expects them.
     project.getTasks().register("extractNativeScripts", task -> {
       task.setGroup(TASK_GROUP);
-      task
-          .setDescription(
-              "Extracts native JavaScript files from gdx-teavm dependency JARs into the scripts directory.");
+      task.setDescription(
+          "Extracts native JavaScript files from gdx-teavm dependency JARs into the scripts directory.");
       task.doLast(t -> {
         File scriptsDir = new File(teaVmWebRoot.get().getAsFile(), "scripts");
         scriptsDir.mkdirs();
