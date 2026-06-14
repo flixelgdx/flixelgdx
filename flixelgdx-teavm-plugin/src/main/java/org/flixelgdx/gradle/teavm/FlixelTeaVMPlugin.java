@@ -297,7 +297,9 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
           String scriptSrc = wasmGCMode
               ? resolveWasmGCRuntimeScriptSrc(teavm)
               : resolveTeaVmScriptSrc(project, outputDir);
-          String teaVmInit = wasmGCMode ? "" : "    main();\n\n";
+          String teaVmInit = wasmGCMode
+              ? "    TeaVM.wasmGC.load(\"" + resolveWasmGCSrc(teavm) + "\");\n\n"
+              : "    main();\n\n";
           String html = template
               .replace("{{TITLE}}", ext.getTitle().get())
               .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
@@ -742,6 +744,25 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
   }
 
   /**
+   * Resolves the wasmGC WASM binary path for the generated {@code index.html} {@code load()} call.
+   *
+   * <p>Returns a relative URL like {@code wasm-gc/pong.wasm} that the browser passes to
+   * {@code TeaVM.wasmGC.load()}.
+   *
+   * @param teavm The TeaVM extension (must not be {@code null}).
+   * @return The relative URL path of the wasmGC binary from the web root.
+   */
+  @NonNull
+  private static String resolveWasmGCSrc(@NonNull TeaVMExtension teavm) {
+    TeaVMWasmGCConfiguration wasmGC = teavm.getWasmGC();
+    String targetFileName = unwrap(wasmGC.getTargetFileName());
+    if (targetFileName == null || targetFileName.isBlank()) {
+      targetFileName = "output.wasm";
+    }
+    return buildWasmGCRelativePath(wasmGC, targetFileName);
+  }
+
+  /**
    * Resolves the wasmGC runtime script path for the generated {@code index.html}.
    *
    * <p>{@code copyWasmGCRuntime} places a file named {@code {targetFileName}-runtime.js} under
@@ -759,23 +780,34 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     if (targetFileName == null || targetFileName.isBlank()) {
       targetFileName = "output.wasm";
     }
-    String runtimeFileName = targetFileName + "-runtime.js";
+    return buildWasmGCRelativePath(wasmGC, targetFileName + "-runtime.js");
+  }
 
+  /**
+   * Prepends {@code relativePathInOutputDir} (e.g. {@code wasm-gc/}) to {@code fileName} when
+   * the path is non-empty, producing a URL relative to the output root.
+   *
+   * @param wasmGC The wasmGC configuration.
+   * @param fileName The filename to prefix.
+   * @return The relative URL path (for example {@code wasm-gc/pong.wasm}).
+   */
+  @NonNull
+  private static String buildWasmGCRelativePath(@NonNull TeaVMWasmGCConfiguration wasmGC, @NonNull String fileName) {
     String rel = unwrap(wasmGC.getRelativePathInOutputDir());
     if (rel == null || rel.isBlank()) {
-      return runtimeFileName;
+      return fileName;
     }
     String normalized = rel.replace('\\', '/').trim();
     while (normalized.startsWith("/")) {
       normalized = normalized.substring(1);
     }
     if (normalized.isEmpty()) {
-      return runtimeFileName;
+      return fileName;
     }
     if (!normalized.endsWith("/")) {
       normalized = normalized + "/";
     }
-    return normalized + runtimeFileName;
+    return normalized + fileName;
   }
 
   /**
