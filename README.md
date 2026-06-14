@@ -13,9 +13,9 @@
 [![Forks](https://img.shields.io/github/forks/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/forks)
 [![Issues](https://img.shields.io/github/issues/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/commits)
+[![Last Commit](https://img.shields.io/github/last-commit/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/commits/develop)
 [![Contributors](https://img.shields.io/github/contributors/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/graphs/contributors)
-[![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/)
+[![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
 [![libGDX 1.14.0](https://img.shields.io/badge/libGDX-1.14.0-red)](https://libgdx.com/)
 [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
 
@@ -287,4 +287,5 @@ For full wiring (launchers, composite builds, TeaVM setup), see **[COMPILING.md]
 - **[Contributing Guide](CONTRIBUTING.md)**: Coding standards, PR requirements, and how to contribute.
 - **[Project Structure](PROJECT.md)**: The multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
-- **API docs (Javadoc)**: Run `./gradlew javadocAll` locally to generate HTML under each module's `build/docs/javadoc`.
+- **[Code of Conduct](CODE_OF_CONDUCT.md)**: Rules set in place for a stable open source community.
+- **[Project Roles](GOVERNANCE.md)**: How each role for the project operates, including project leaders and maintainers.
