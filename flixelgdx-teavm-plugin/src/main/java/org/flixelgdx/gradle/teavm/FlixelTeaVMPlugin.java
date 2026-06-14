@@ -78,25 +78,25 @@ import java.util.jar.JarFile;
  *
  * <ul>
  *   <li>{@code copyAssets} - copies the game's asset directory into
-   *       {@code <teavm.js.outputDir>/assets/}.</li>
-   *   <li>{@code copyWebApp} - copies everything in {@code src/main/webapp/} into
-   *       {@code <teavm.js.outputDir>/} (skipped if the directory does not exist), except
-   *       {@code startup-logo.png}, which is placed under {@code assets/} by {@code copyDefaultStartupLogo}.</li>
-   *   <li>{@code generateIndexHtml} - writes a default {@code index.html} into
-   *       {@code <teavm.js.outputDir>/} when no {@code index.html} is present in the webapp directory.
-   *       It runs <strong>after</strong> TeaVM emits JavaScript (and after {@code aliasTeaVmMainScript} and
-   *       {@code extractNativeScripts}) so the page always references the current bundle path and includes
-   *       a {@code <script>} tag for every file found in {@code scripts/}.</li>
-   *   <li>{@code extractNativeScripts} - extracts native JavaScript files (e.g. {@code gdx.wasm.js},
-   *       {@code howler.js}, {@code freetype.js}) from gdx-teavm dependency JARs into
-   *       {@code <teavm.js.outputDir>/scripts/}. These are required at runtime by the gdx-teavm backend.</li>
+ *       {@code <teavm.js.outputDir>/assets/}.</li>
+ *   <li>{@code copyWebApp} - copies everything in {@code src/main/webapp/} into
+ *       {@code <teavm.js.outputDir>/} (skipped if the directory does not exist), except
+ *       {@code startup-logo.png}, which is placed under {@code assets/} by {@code copyDefaultStartupLogo}.</li>
+ *   <li>{@code generateIndexHtml} - writes a default {@code index.html} into
+ *       {@code <teavm.js.outputDir>/} when no {@code index.html} is present in the webapp directory.
+ *       It runs <strong>after</strong> TeaVM emits JavaScript (and after {@code aliasTeaVmMainScript} and
+ *       {@code extractNativeScripts}) so the page always references the current bundle path and includes
+ *       a {@code <script>} tag for every file found in {@code scripts/}.</li>
+ *   <li>{@code extractNativeScripts} - extracts native JavaScript files (e.g. {@code gdx.wasm.js},
+ *       {@code howler.js}, {@code freetype.js}) from gdx-teavm dependency JARs into
+ *       {@code <teavm.js.outputDir>/scripts/}. These are required at runtime by the gdx-teavm backend.</li>
  *   <li>{@code generatePreloadFile} - scans the assets directory and writes a {@code preload.txt}
-   *       manifest into {@code <teavm.js.outputDir>/assets/}. This file is required by gdx-teavm's asset
+ *       manifest into {@code <teavm.js.outputDir>/assets/}. This file is required by gdx-teavm's asset
  *       preloader to discover and download game assets at startup.</li>
-   *   <li>{@code copyDefaultStartupLogo} - writes {@code startup-logo.png} into
-   *       {@code <teavm.js.outputDir>/assets/} for gdx-teavm's preload screen.</li>
-   *   <li>{@code copyFlixelGdxDefaultBitmapFont} - copies {@code lsans-15.fnt} and {@code lsans-15.png} into
-   *       {@code <teavm.js.outputDir>/assets/org/flixelgdx/bitmap/} so the web preloader and
+ *   <li>{@code copyDefaultStartupLogo} - writes {@code startup-logo.png} into
+ *       {@code <teavm.js.outputDir>/assets/} for gdx-teavm's preload screen.</li>
+ *   <li>{@code copyFlixelGdxDefaultBitmapFont} - copies {@code lsans-15.fnt} and {@code lsans-15.png} into
+ *       {@code <teavm.js.outputDir>/assets/org/flixelgdx/bitmap/} so the web preloader and
  *       {@code Gdx.files.internal} can find the default bitmap font (for example
  *       {@code FlixelDebugOverlay}).</li>
  *   <li>{@code aliasTeaVmMainScript} - when {@code teavm.js} {@code targetFileName} is not
@@ -150,16 +150,16 @@ import java.util.jar.JarFile;
  *
  * <pre>{@code
  * flixelgdx {
- *   title = 'My Game Title'                                        // default: My FlixelGDX Game
- *   canvasId = 'my-canvas'                                         // default: 'flixelgdx-canvas'
- *   devServerPort = 1234                                           // default: 8080
- *   assetsDir = file('../assets')                                  // default: rootProject/assets/
- *   webappDir = file('src/main/webapp')                            // default: same value
- *   generateDefaultIndexHtml = true                                // default: true
- *   generateDefaultStartupLogo = true                              // default: true
- *   customIndexHtml = file('src/main/webapp/index.html')           // default: flixelgdx's resource index.html
- *   customStartupLogo = file('src/main/webapp/startup-logo.png')   // default: flixelgdx's resource startup-logo.png
- *   customFavicon = file('src/main/webapp/favicon.ico')            // default: none
+ *   title = 'My Game Title'                                      // default: My FlixelGDX Game
+ *   canvasId = 'my-canvas'                                       // default: 'flixelgdx-canvas'
+ *   devServerPort = 1234                                         // default: 8080
+ *   assetsDir = file('../assets')                                // default: rootProject/assets/
+ *   webappDir = file('src/main/webapp')                          // default: same value
+ *   generateDefaultIndexHtml = true                              // default: true
+ *   generateDefaultStartupLogo = true                            // default: true
+ *   customIndexHtml = file('src/main/webapp/index.html')         // default: flixelgdx's resource index.html
+ *   customStartupLogo = file('src/main/webapp/startup-logo.png') // default: flixelgdx's resource startup-logo.png
+ *   customFavicon = file('src/main/webapp/favicon.ico')          // default: none
  * }
  * }</pre>
  *

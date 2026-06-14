@@ -657,10 +657,19 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * was hit. Topmost is defined as "rendered last": the recursive walk mirrors the draw order,
    * so the first matching member encountered from back to front wins.
    *
+   * <p>The search covers the active state and all of its open substates. Substates are
+   * searched first because they render on top of their parent. A parent state's members are
+   * included only when the parent has no substate, or when {@link FlixelState#persistentDraw}
+   * is {@code true}, mirroring the actual draw chain.
+   *
+   * <p>Only objects assigned to {@code cam} are eligible. An object with a {@code null} or
+   * empty camera list is treated as assigned to all cameras (the libGDX default).
+   *
    * <p>Hidden ({@code visible == false}) and dead ({@code exists == false}) members are skipped so
    * the picker never grabs invisible UI elements or pooled corpses.
    *
-   * @param cam Camera used to convert each candidate's world box into view space.
+   * @param cam Camera used to convert each candidate's world box into view space, and to filter
+   *     objects that are not assigned to it.
    * @param viewX View-space X from {@code viewport.unproject} (before adding scroll / margin).
    * @param viewY View-space Y from {@code viewport.unproject}.
    * @return The topmost hit, or {@code null}.
@@ -671,7 +680,28 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (state == null) {
       return null;
     }
-    return pickRecursive(state.getMembers(), cam, viewX, viewY);
+    return pickFromStateChain(state, cam, viewX, viewY);
+  }
+
+  /**
+   * Walks the state chain starting at {@code state}, searching substates first (deepest renders on
+   * top) and falling back to the parent only when it has no substate or when
+   * {@link FlixelState#persistentDraw} is {@code true}.
+   */
+  @Nullable
+  private FlixelObject pickFromStateChain(@NotNull FlixelState state, @NotNull FlixelCamera cam,
+      float viewX, float viewY) {
+    FlixelState sub = state.getSubState();
+    if (sub != null) {
+      FlixelObject hit = pickFromStateChain(sub, cam, viewX, viewY);
+      if (hit != null) {
+        return hit;
+      }
+    }
+    if (sub == null || state.persistentDraw) {
+      return pickRecursive(state.getMembers(), cam, viewX, viewY);
+    }
+    return null;
   }
 
   @Nullable
@@ -702,7 +732,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
           }
           continue;
         }
-        if (basic instanceof FlixelObject obj && overlapsObjectInView(cam, obj, viewX, viewY)) {
+        if (basic instanceof FlixelObject obj && isAssignedToCamera(basic, cam)
+            && overlapsObjectInView(cam, obj, viewX, viewY)) {
           hit = obj;
           break;
         }
@@ -711,6 +742,23 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       members.end();
     }
     return hit;
+  }
+
+  /**
+   * Returns {@code true} if {@code basic} should be rendered by {@code cam}. An object with a
+   * {@code null} or empty camera list renders to all cameras (the libGDX default).
+   */
+  private static boolean isAssignedToCamera(@NotNull FlixelBasic basic, @NotNull FlixelCamera cam) {
+    FlixelCamera[] list = basic.cameras;
+    if (list == null || list.length == 0) {
+      return true;
+    }
+    for (FlixelCamera c : list) {
+      if (c == cam) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
