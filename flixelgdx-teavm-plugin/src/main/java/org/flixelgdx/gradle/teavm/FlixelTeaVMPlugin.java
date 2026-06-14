@@ -38,6 +38,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.teavm.gradle.api.TeaVMExtension;
 import org.teavm.gradle.api.TeaVMJSConfiguration;
+import org.teavm.gradle.api.TeaVMWasmGCConfiguration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -104,8 +105,11 @@ import java.util.jar.JarFile;
  *       and other tooling that still expect that name.</li>
  * </ul>
  *
- * <p>All six helper tasks above are added as dependencies of {@code generateJavaScript},
- * {@code javaScriptDevServer}, and {@code run} (when those tasks exist on the project).
+ * <p>All helper tasks above are wired as dependencies of the primary TeaVM build task for the
+ * active output mode. For {@code js} output that is {@code generateJavaScript} and
+ * {@code javaScriptDevServer}; for {@code wasmGC} output that is {@code buildWasmGC}. The active
+ * mode is detected from whichever block has {@code addedToWebApp = true} in the {@code teavm}
+ * extension, with JS as the default. The {@code run} dev-server task is wired in all modes.
  *
  * <h2>Minimal usage</h2>
  *
@@ -178,7 +182,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
 
     ext.getCanvasId().convention(FlixelTeaVMExtension.DEFAULT_CANVAS_ID);
     ext.getTitle().convention(FlixelTeaVMExtension.DEFAULT_TITLE);
-    DirectoryProperty teaVmWebRoot = teaVmJsOutputRoot(project);
+    // Resolved to the active output mode's directory in afterEvaluate; fallback is used only when
+    // org.teavm is missing entirely.
+    DirectoryProperty teaVmWebRoot = project.getObjects().directoryProperty();
+    teaVmWebRoot.convention(project.getLayout().getBuildDirectory().dir("generated/teavm"));
 
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
@@ -214,6 +221,11 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.mustRunAfter(project.getTasks().named("extractNativeScripts"));
       task.onlyIf(t -> {
         if (!ext.getGenerateDefaultIndexHtml().get()) {
+          return false;
+        }
+        // Index generation is JS-specific; wasmGC requires a custom index.html with WASM loading logic.
+        TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+        if (teavm != null && teavm.getWasmGC().getAddedToWebApp().getOrElse(false)) {
           return false;
         }
         // Always run when a custom file is explicitly provided.
@@ -418,6 +430,10 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       task.setGroup(TASK_GROUP);
       task.setDescription(
           "If teavm.js is not the bundle name, copies the generated JS to teavm.js in the same folder (gdx-teavm compatibility).");
+      task.onlyIf(t -> {
+        TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
+        return teavm == null || !teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
+      });
       task.doLast(t -> {
         TeaVMJSConfiguration js = findTeaVmJsConfiguration(project);
         if (js == null) {
@@ -601,43 +617,71 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
       });
     });
 
-    // Connect the new tasks to automatically run when either the Java bytecode is being converted
-    // to JavaScript or when a local developer server is created to test the game using the plugin.
+    // Wire FlixelGDX helper tasks as dependencies of the primary TeaVM build task, and resolve the
+    // shared web root to the correct output directory for the active output mode (JS or wasmGC).
     project.afterEvaluate(p -> {
-      wireTo(p, "generateJavaScript");
-      wireTo(p, "javaScriptDevServer");
+      TeaVMExtension teavm = p.getExtensions().findByType(TeaVMExtension.class);
+      if (teavm == null) {
+        p.getLogger().warn(
+            "[FlixelGDX] org.teavm extension not found. Helper tasks use build/generated/teavm as the web root. "
+                + "Apply org.teavm before this plugin and set outputDir under teavm.js, teavm.wasmGC, or teavm.all.");
+        return;
+      }
+
+      boolean wasmGCMode = teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
+
+      // Point the shared web root at the output directory for the active output mode.
+      if (wasmGCMode) {
+        teaVmWebRoot.set(teavm.getWasmGC().getOutputDir());
+      } else {
+        teaVmWebRoot.set(teavm.getJs().getOutputDir());
+      }
+
+      // Wire FlixelGDX helper tasks to the primary TeaVM build task for the active mode.
+      wireTo(p, wasmGCMode ? "buildWasmGC" : "generateJavaScript");
+      if (!wasmGCMode) {
+        wireTo(p, "javaScriptDevServer");
+      }
       wireTo(p, "run");
 
-      Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
-      Task copyWebApp = p.getTasks().findByName("copyWebApp");
-      // Generate index after TeaVM writes JS (and after teavm.js alias). Otherwise Gradle may run
-      // copyWebApp after generateIndexHtml and overwrite a fresh index.html from src/main/webapp/, or
-      // leave a stale script src.
-      Task generateJs = p.getTasks().findByName("generateJavaScript");
-      Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
-      if (generateJs != null && generateIndexHtml != null) {
-        generateJs.finalizedBy(generateIndexHtml);
-      }
-      if (generateIndexHtml != null && copyWebApp != null) {
-        generateIndexHtml.mustRunAfter(copyWebApp);
-      }
-      if (generateIndexHtml != null && alias != null) {
-        generateIndexHtml.mustRunAfter(alias);
-      }
-
-      // The run task must also trigger the full TeaVM compilation so the JS bundle from teavm.js exists
-      // before the dev server starts serving files.
       Task runTask = p.getTasks().findByName("run");
-      if (runTask != null && generateJs != null) {
-        runTask.dependsOn(generateJs);
-      }
-      if (alias != null && generateJs != null) {
-        generateJs.finalizedBy(alias);
-        Task devServer = p.getTasks().findByName("javaScriptDevServer");
-        if (devServer != null) {
-          devServer.dependsOn(generateJs);
-          devServer.dependsOn(alias);
-          alias.mustRunAfter(generateJs);
+
+      if (wasmGCMode) {
+        // The run task must trigger the full wasmGC build (generateWasmGC + copyWasmGCRuntime).
+        Task buildWasmGC = p.getTasks().findByName("buildWasmGC");
+        if (runTask != null && buildWasmGC != null) {
+          runTask.dependsOn(buildWasmGC);
+        }
+      } else {
+        Task generateIndexHtml = p.getTasks().findByName("generateIndexHtml");
+        Task copyWebApp = p.getTasks().findByName("copyWebApp");
+        // Generate index after TeaVM writes JS (and after teavm.js alias). Otherwise Gradle may run
+        // copyWebApp after generateIndexHtml and overwrite a fresh index.html from src/main/webapp/, or
+        // leave a stale script src.
+        Task generateJs = p.getTasks().findByName("generateJavaScript");
+        Task alias = p.getTasks().findByName("aliasTeaVmMainScript");
+        if (generateJs != null && generateIndexHtml != null) {
+          generateJs.finalizedBy(generateIndexHtml);
+        }
+        if (generateIndexHtml != null && copyWebApp != null) {
+          generateIndexHtml.mustRunAfter(copyWebApp);
+        }
+        if (generateIndexHtml != null && alias != null) {
+          generateIndexHtml.mustRunAfter(alias);
+        }
+        // The run task must also trigger the full TeaVM compilation so the JS bundle exists
+        // before the dev server starts serving files.
+        if (runTask != null && generateJs != null) {
+          runTask.dependsOn(generateJs);
+        }
+        if (alias != null && generateJs != null) {
+          generateJs.finalizedBy(alias);
+          Task devServer = p.getTasks().findByName("javaScriptDevServer");
+          if (devServer != null) {
+            devServer.dependsOn(generateJs);
+            devServer.dependsOn(alias);
+            alias.mustRunAfter(generateJs);
+          }
         }
       }
     });
@@ -822,28 +866,4 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     return chosen == null ? null : root.relativize(chosen).toString().replace('\\', '/');
   }
 
-  /**
-   * Base directory shared by TeaVM JS compilation and FlixelGDX helper tasks: {@code teavm.js.outputDir}
-   * when the TeaVM plugin is applied (inherits from {@code teavm.all.outputDir} when only the {@code all}
-   * block sets {@code outputDir}). If TeaVM is not applied, helper tasks fall back to
-   * {@code build/generated/teavm} and a warning is logged.
-   *
-   * @param project The Gradle project.
-   * @return The web root directory property FlixelGDX tasks should use.
-   */
-  @NonNull
-  private static DirectoryProperty teaVmJsOutputRoot(@NonNull Project project) {
-    TeaVMExtension teavm = project.getExtensions().findByType(TeaVMExtension.class);
-    if (teavm != null && teavm.getJs() != null) {
-      return teavm.getJs().getOutputDir();
-    }
-    project
-        .getLogger()
-        .warn(
-            "[FlixelGDX] org.teavm extension not found. Helper tasks use build/generated/teavm as the web root. "
-                + "Apply org.teavm before this plugin and set outputDir under teavm.js or teavm.all.");
-    DirectoryProperty fallback = project.getObjects().directoryProperty();
-    fallback.convention(project.getLayout().getBuildDirectory().dir("generated/teavm"));
-    return fallback;
-  }
 }
