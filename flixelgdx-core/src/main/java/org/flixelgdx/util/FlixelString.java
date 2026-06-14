@@ -65,7 +65,7 @@ import java.util.function.Supplier;
  * <h2>Passing to libGDX drawing APIs</h2>
  *
  * <p>This class implements {@link CharSequence}, so instances can be passed directly to APIs such
- * as {@link com.badlogic.gdx.graphics.g2d.BitmapFont#draw} without building a temporary
+ * as {@link com.badlogic.gdx.graphics.g2d.BitmapFont#draw BitmapFont.draw()} without building a temporary
  * {@link String}. Avoid calling {@link #toString()} or using string concatenation on this type in
  * per-frame code: both allocate. Pass {@code this} as a {@link CharSequence} instead.
  *
@@ -99,9 +99,8 @@ import java.util.function.Supplier;
  *   // Below would be the same equivalent of doing ft.setText("Score: " + 100),
  *   // except it doesn't allocate new strings every frame and keeps your
  *   // framerate silky smooth!
- *   fs.clear();
- *   fs.append("Score: ");
- *   fs.append(100);
+ *   fs.set("Score: ");
+ *   fs.concat(100);
  *   ft.setText(fs);
  * }
  * }</pre>
