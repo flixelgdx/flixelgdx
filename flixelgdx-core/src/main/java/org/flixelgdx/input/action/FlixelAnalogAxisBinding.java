@@ -31,8 +31,8 @@ import org.jetbrains.annotations.NotNull;
  * {@link Kind#KEY_NEG_X}, {@link Kind#KEY_POS_X}, and stick channels {@link Kind#GAMEPAD_AXIS_X} /
  * {@link Kind#GAMEPAD_AXIS_Y} for the same physical stick on a slot.
  *
- * <p>Create bindings only during setup. Gamepad axes use {@link org.flixelgdx.input.gamepad.FlixelGamepadInput}
- * logical constants; {@link org.flixelgdx.Flixel#gamepads} applies the same dead zone as the rest of a game.
+ * <p>Create bindings only during setup. Gamepad axes use {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}
+ * logical constants; {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads} applies the same dead zone as the rest of a game.
  */
 public final class FlixelAnalogAxisBinding {
 

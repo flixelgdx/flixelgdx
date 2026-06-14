@@ -27,13 +27,13 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * An asset {@link FlixelSource} that also has a pooled Flixel wrapper type {@code W} (e.g.
- * {@link org.flixelgdx.graphics.FlixelGraphic} for textures).
+ * {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} for textures).
  *
  * <p>Use {@link #obtainWrapper(FlixelAssetManager)} for the canonical wrapper without refcount changes
  * ({@link FlixelAssetManager#ensureWrapper}); use {@link FlixelAssetManager#obtainWrapper(String, Class)} when you need an implicit {@link FlixelAsset#retain()}.
  *
  * @param <T> Runtime type loaded from the asset manager (e.g. {@link com.badlogic.gdx.graphics.Texture}).
- * @param <W> Pooled wrapper type (e.g. {@link org.flixelgdx.graphics.FlixelGraphic}).
+ * @param <W> Pooled wrapper type (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
  */
 public interface FlixelWrapperSource<T, W> extends FlixelSource<T> {
 

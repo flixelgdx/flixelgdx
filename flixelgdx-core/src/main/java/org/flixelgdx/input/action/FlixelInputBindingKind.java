@@ -30,11 +30,11 @@ package org.flixelgdx.input.action;
  */
 public enum FlixelInputBindingKind {
 
-  /** {@link org.flixelgdx.input.keyboard.FlixelKey} / {@link com.badlogic.gdx.Input.Keys} keycode. */
+  /** {@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey} / {@link com.badlogic.gdx.Input.Keys} keycode. */
   KEY,
 
   /**
-   * Logical gamepad button from {@link org.flixelgdx.input.gamepad.FlixelGamepadInput}
+   * Logical gamepad button from {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}
    * plus a slot index, or {@code -1} for any connected slot (uses {@code Flixel.gamepads.anyPressed} style queries).
    */
   GAMEPAD_BUTTON,

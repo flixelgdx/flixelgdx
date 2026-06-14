@@ -12,14 +12,14 @@
  * <h2>Where things live</h2>
  *
  * <ul>
- *   <li><b>Keyboard:</b> {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager} on {@link org.flixelgdx.Flixel#keys}.</li>
- *   <li><b>Mouse / pointers:</b> {@link org.flixelgdx.input.mouse.FlixelMouseManager} on {@link org.flixelgdx.Flixel#mouse}.</li>
- *   <li><b>Gamepads:</b> {@link org.flixelgdx.input.gamepad.FlixelGamepadManager} on {@link org.flixelgdx.Flixel#gamepads}.</li>
- *   <li><b>Logical actions (rebindable layers):</b> {@link org.flixelgdx.input.action} ({@link org.flixelgdx.input.action.FlixelActionSet}, {@link org.flixelgdx.input.action.FlixelActionDigital}, {@link org.flixelgdx.input.action.FlixelActionAnalog}).</li>
+ *   <li><b>Keyboard:</b> {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager FlixelKeyInputManager} on {@link org.flixelgdx.Flixel#keys Flixel.keys}.</li>
+ *   <li><b>Mouse / pointers:</b> {@link org.flixelgdx.input.mouse.FlixelMouseManager FlixelMouseManager} on {@link org.flixelgdx.Flixel#mouse Flixel.mouse}.</li>
+ *   <li><b>Gamepads:</b> {@link org.flixelgdx.input.gamepad.FlixelGamepadManager FlixelGamepadManager} on {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}.</li>
+ *   <li><b>Logical actions (rebindable layers):</b> {@link org.flixelgdx.input.action action} ({@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet}, {@link org.flixelgdx.input.action.FlixelActionDigital FlixelActionDigital}, {@link org.flixelgdx.input.action.FlixelActionAnalog FlixelActionAnalog}).</li>
  * </ul>
  *
  * <p>
  * Action sets do <strong>not</strong> implement {@link com.badlogic.gdx.InputProcessor}; they poll the managers above each frame.
- * See {@link org.flixelgdx.input.action.FlixelActionSet} for lifecycle and examples.
+ * See {@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet} for lifecycle and examples.
  */
 package org.flixelgdx.input;

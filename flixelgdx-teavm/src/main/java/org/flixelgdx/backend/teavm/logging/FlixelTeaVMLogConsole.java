@@ -27,7 +27,7 @@ import org.flixelgdx.logging.FlixelLogLevel;
 import org.teavm.jso.JSBody;
 
 /**
- * Routes {@link org.flixelgdx.logging.FlixelLogConsoleSink} output to the browser
+ * Routes {@link org.flixelgdx.logging.FlixelLogConsoleSink FlixelLogConsoleSink} output to the browser
  * {@code console} with {@code %c} styling so log levels and locations read clearly in devtools
  * (ANSI escapes from {@code System.out} are not used on web).
  *

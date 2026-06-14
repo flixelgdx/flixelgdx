@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Helper class related to {@link org.flixelgdx.FlixelSprite}.
+ * Helper class related to {@link org.flixelgdx.FlixelSprite FlixelSprite}.
  *
  * <p>These utilities are designed to work with FlixelGDX's normal Batch-based draw flow.
  * Avoid using ShapeRenderer in core game rendering unless you control the render pipeline.
@@ -53,7 +53,7 @@ import java.util.Objects;
  * sprite instance in hot paths. That allocates new {@link Pixmap} and {@link Texture} objects and
  * will spike heap usage on most JVMs. Prefer {@link #obtainWhitePixelTexture(FlixelAssetManager)},
  * which registers a single persistent texture with the asset manager (see
- * {@link org.flixelgdx.asset.FlixelDefaultAssetManager}) and reuses it for the lifetime of the game.
+ * {@link org.flixelgdx.asset.FlixelDefaultAssetManager FlixelDefaultAssetManager}) and reuses it for the lifetime of the game.
  *
  * <p>{@link #fill} writes solid pixels into the active frame when possible, and {@link #setBrightness} adjusts tint
  * like Animate brightness.
@@ -78,7 +78,7 @@ public final class FlixelSpriteUtil {
    * {@code true}, and registers it with {@link FlixelAssetManager#registerWrapper}.
    * Callers must not {@link Texture#dispose()} this texture; lifecycle follows the asset manager.
    *
-   * @param assets Non-null manager from {@link org.flixelgdx.Flixel#ensureAssets()}.
+   * @param assets Non-null manager from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}.
    */
   @NotNull
   public static Texture obtainWhitePixelTexture(@NotNull FlixelAssetManager assets) {

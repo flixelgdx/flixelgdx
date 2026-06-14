@@ -6,14 +6,14 @@
  *
  * <p>Key types:
  * <ul>
- *   <li>{@link org.flixelgdx.Flixel#sound} - Central audio manager used by game code.</li>
- *   <li>{@link org.flixelgdx.audio.FlixelSound} - A playback object with volume, pan,
+ *   <li>{@link org.flixelgdx.Flixel#sound Flixel.sound} - Central audio manager used by game code.</li>
+ *   <li>{@link org.flixelgdx.audio.FlixelSound FlixelSound} - A playback object with volume, pan,
  *       pitch, fades, and completion signals.</li>
- *   <li>{@link org.flixelgdx.audio.FlixelSoundSource} - A cached sound asset that can
- *       spawn fresh {@link org.flixelgdx.audio.FlixelSound} instances.</li>
+ *   <li>{@link org.flixelgdx.audio.FlixelSoundSource FlixelSoundSource} - A cached sound asset that can
+ *       spawn fresh {@link org.flixelgdx.audio.FlixelSound FlixelSound} instances.</li>
  * </ul>
  *
- * <p>For loading, prefer {@link org.flixelgdx.Flixel#assets} and the asset types in
- * {@link org.flixelgdx.asset}.
+ * <p>For loading, prefer {@link org.flixelgdx.Flixel#assets Flixel.assets} and the asset types in
+ * {@link org.flixelgdx.asset asset}.
  */
 package org.flixelgdx.audio;

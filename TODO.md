@@ -11,13 +11,15 @@
 - [ ] Add support for Android and iOS
   - [ ] Find someone to help me test iOS ***or*** get a Macbook with Xcode and test it on there
 - [ ] Create a Discord server for people to find help and for collaborators/contributors to easily contact me
-- [ ] Develop comprehensive and modernized website (EJ will help with this)
-  - [ ] Create homepage
-  - [ ] Create "Getting Started" page to allow users to automatically generate a FlixelGDX project with pre-written  Gradle configs and their specified settings
-  - [ ] Create beginner-friendly and easy-to-navigate API documentation pages (use Docusaurus and maybe Dokka?)
+- [x] Develop comprehensive and modernized website
+  - [x] Create homepage
+  - [x] Create "Getting Started" page to allow users to automatically generate a FlixelGDX project with pre-written  Gradle configs and their specified settings
+  - [x] Create beginner-friendly and easy-to-navigate API documentation pages (use Docusaurus and DocletMD, our own custom plugin)
   - [ ] Use the created demos, compile them to web, and create a page for those demos (with GitHub links to the source code)
-  - [ ] Create a "Your First Game" tutorial page for complete beginners wanting to code a game with FlixelGDX
+  - [x] Create multiple documentation pages teaching core concepts, using the debugger, etc.
+  - [x] Create a "Your First Game" tutorial page for complete beginners wanting to code a game with FlixelGDX
 - [x] Develop an ahead-of-time compiling plugin using Kotlin to solve the reflection problem for Java by compiling
       reflection at build time and catching errors before a game (or program) starts, with a `Reflect` class modeled after [Haxe's `Reflect` class](https://api.haxe.org/Reflect.html)
   - [x] Remove the current reflection system (which would break for mobile) from the core framework (use [ReflectAOT](https://github.com/flixelgdx/ReflectAOT) in game projects instead).
-- [ ] Switch out `flixelgdx-teavm` back from JavaScript to WebAssembly by default(?)
+- [ ] Buy Twitter verification and post about the framework to gain traction
+- [ ] Post on Hacker News(...?)

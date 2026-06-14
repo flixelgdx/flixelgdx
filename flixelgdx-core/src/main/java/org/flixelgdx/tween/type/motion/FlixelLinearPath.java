@@ -32,7 +32,7 @@ import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
 /** Piecewise-linear path through a polyline. */
-public final class FlixelLinearPath extends FlixelMotion {
+public class FlixelLinearPath extends FlixelMotion {
 
   private final Array<Vector2> points = new Array<>();
   private float[] cumulativeT = new float[8];

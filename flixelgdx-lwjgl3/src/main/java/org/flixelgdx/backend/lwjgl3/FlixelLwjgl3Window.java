@@ -34,7 +34,7 @@ import org.lwjgl.glfw.GLFW;
 /**
  * GLFW-backed {@link FlixelWindow} for the LWJGL3 backend.
  *
- * <p>Desktop see-through uses {@link org.flixelgdx.FlixelGame#applyBackdropForDesktopTransparency(boolean)} from the
+ * <p>Desktop see-through uses {@link org.flixelgdx.FlixelGame#applyBackdropForDesktopTransparency(boolean) FlixelGame.applyBackdropForDesktopTransparency(boolean)} from the
  * default {@link FlixelWindow#setTransparencyActive(boolean)} implementation. Do not call
  * {@code glfwSetWindowAttrib(GLFW_TRANSPARENT_FRAMEBUFFER, ...)}: GLFW reports {@code GLFW_INVALID_ENUM} and it is not a supported
  * dynamic attribute on common platforms.

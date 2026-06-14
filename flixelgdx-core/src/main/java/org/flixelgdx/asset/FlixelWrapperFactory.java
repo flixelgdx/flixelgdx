@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  * <p>Implementations for their object map should make its key type as {@link String}, and its
  * value type as the wrapper object {@link W}.
  *
- * @param <W> Concrete wrapper type (e.g. {@link org.flixelgdx.graphics.FlixelGraphic}).
+ * @param <W> Concrete wrapper type (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
  */
 public interface FlixelWrapperFactory<W> {
 

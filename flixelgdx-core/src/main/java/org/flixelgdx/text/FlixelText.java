@@ -162,9 +162,6 @@ public class FlixelText extends FlixelSprite {
   /** Whether to render italic text. Only effective with FreeType fonts. */
   private boolean italic = false;
 
-  /** Whether the text is underlined. Stored for API compatibility. */
-  private boolean underline = false;
-
   /**
    * {@code true} if {@link #bitmapFont} was produced by FreeType for a direct
    * {@link #fontFile} (not registry-cached); such fonts are disposed when replaced or on
@@ -243,22 +240,40 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
+   * Gets the string version of the text being displayed for {@code this} text object.
+   *
+   * <p>Note that you should <strong>not</strong> call this every frame. If you must get
+   * the texting being displayed of your text object, use {@link #getTextBuffer()} instead,
+   * paired with {@link FlixelStringUtil#contentEquals(CharSequence, CharSequence)} for
+   * comparisons.
+   *
+   * @return The string version of the text being displayed on {@code this} text object.
+   */
+  public String getText() {
+    return textBuffer.toString();
+  }
+
+  /**
    * Sets the text to display.
    *
    * @param text The new text string.
-   * @return This instance for chaining.
    */
-  public FlixelText setText(String text) {
-    return setText((CharSequence) text);
+  public void setText(String text) {
+    setText((CharSequence) text);
   }
 
-  public FlixelText setText(CharSequence text) {
+  /**
+   * Sets the display text of {@code this} text object using a native Java {@link CharSequence}.
+   *
+   * @param text The {@link CharSequence} to apply to {@code this} text object. For most FlixelGDX
+   *     games this is typically a {@link FlixelString}.
+   */
+  public void setText(CharSequence text) {
     if (FlixelStringUtil.contentEquals(text == null ? "null" : text, textBuffer)) {
-      return this;
+      return;
     }
     textBuffer.set(text);
     layoutDirty = true;
-    return this;
   }
 
   /** Returns the font size in pixels. */
@@ -271,16 +286,14 @@ public class FlixelText extends FlixelSprite {
    * regeneration. When using the default font, the built-in bitmap font is scaled.
    *
    * @param size The new font size (minimum 1).
-   * @return This instance for chaining.
    */
-  public FlixelText setTextSize(int size) {
+  public void setTextSize(int size) {
     int newSize = Math.max(1, size);
     if (this.size != newSize) {
       this.size = newSize;
       fontDirty = true;
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns the current text alignment. */
@@ -293,14 +306,12 @@ public class FlixelText extends FlixelSprite {
    * effect when {@link #isAutoSize()} is {@code false} (i.e. the field has a fixed width).
    *
    * @param alignment The alignment to use.
-   * @return This instance for chaining.
    */
-  public FlixelText setAlignment(@NotNull Alignment alignment) {
+  public void setAlignment(@NotNull Alignment alignment) {
     if (this.alignment != alignment) {
       this.alignment = alignment;
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns whether word wrapping is enabled. */
@@ -312,14 +323,12 @@ public class FlixelText extends FlixelSprite {
    * Enables or disables word wrapping. Defaults to {@code true}.
    *
    * @param wordWrap Whether to wrap text at the field width.
-   * @return This instance for chaining.
    */
-  public FlixelText setWordWrap(boolean wordWrap) {
+  public void setWordWrap(boolean wordWrap) {
     if (this.wordWrap != wordWrap) {
       this.wordWrap = wordWrap;
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns whether the text field auto-sizes to fit its content. */
@@ -334,14 +343,12 @@ public class FlixelText extends FlixelSprite {
    * take full effect.
    *
    * @param autoSize Whether to auto-size.
-   * @return This instance for chaining.
    */
-  public FlixelText setAutoSize(boolean autoSize) {
+  public void setAutoSize(boolean autoSize) {
     if (this.autoSize != autoSize) {
       this.autoSize = autoSize;
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns the width of the text field, or {@code 0} if auto-sizing. */
@@ -350,21 +357,19 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
-   * Sets the width of the text field. Enables auto-sizing if {@code <= 0}.
+   * Sets the width of the text field. A positive value disables auto-sizing so
+   * the hitbox and layout use this fixed width; a value {@code <= 0} re-enables
+   * auto-sizing so dimensions are derived from the text content.
    *
    * @param fieldWidth The field width in pixels.
-   * @return This instance for chaining.
    */
-  public FlixelText setFieldWidth(float fieldWidth) {
+  public void setFieldWidth(float fieldWidth) {
     float newWidth = Math.max(0, fieldWidth);
     if (this.fieldWidth != newWidth) {
       this.fieldWidth = newWidth;
-      if (newWidth <= 0) {
-        autoSize = true;
-      }
+      autoSize = newWidth <= 0;
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns the height of the text field, or {@code 0} if auto-height. */
@@ -378,15 +383,13 @@ public class FlixelText extends FlixelSprite {
    * is {@code true}.
    *
    * @param fieldHeight The field height in pixels.
-   * @return This instance for chaining.
    */
-  public FlixelText setFieldHeight(float fieldHeight) {
+  public void setFieldHeight(float fieldHeight) {
     float newHeight = Math.max(0, fieldHeight);
     if (this.fieldHeight != newHeight) {
       this.fieldHeight = newHeight;
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns whether bold text is enabled. */
@@ -400,9 +403,8 @@ public class FlixelText extends FlixelSprite {
    * font does not support runtime weight changes.
    *
    * @param bold Whether to use bold.
-   * @return This instance for chaining.
    */
-  public FlixelText setBold(boolean bold) {
+  public void setBold(boolean bold) {
     if (this.bold != bold) {
       this.bold = bold;
       if (fontFile != null || fontRegistryId != null) {
@@ -410,7 +412,6 @@ public class FlixelText extends FlixelSprite {
       }
       layoutDirty = true;
     }
-    return this;
   }
 
   /** Returns whether italic text is enabled. */
@@ -424,9 +425,8 @@ public class FlixelText extends FlixelSprite {
    * font does not support runtime style changes.
    *
    * @param italic Whether to use italic.
-   * @return This instance for chaining.
    */
-  public FlixelText setItalic(boolean italic) {
+  public void setItalic(boolean italic) {
     if (this.italic != italic) {
       this.italic = italic;
       if (fontFile != null || fontRegistryId != null) {
@@ -434,24 +434,6 @@ public class FlixelText extends FlixelSprite {
       }
       layoutDirty = true;
     }
-    return this;
-  }
-
-  /** Returns whether underline is enabled. */
-  public boolean isUnderline() {
-    return underline;
-  }
-
-  /**
-   * Sets whether to underline the text. This property is stored for API
-   * compatibility, but visual rendering of underlines is limited.
-   *
-   * @param underline Whether to underline.
-   * @return This instance for chaining.
-   */
-  public FlixelText setUnderline(boolean underline) {
-    this.underline = underline;
-    return this;
   }
 
   /** Returns the letter spacing in pixels. */
@@ -465,9 +447,8 @@ public class FlixelText extends FlixelSprite {
    * as FreeType uses this value during glyph generation.
    *
    * @param letterSpacing The spacing in pixels.
-   * @return This instance for chaining.
    */
-  public FlixelText setLetterSpacing(float letterSpacing) {
+  public void setLetterSpacing(float letterSpacing) {
     if (this.letterSpacing != letterSpacing) {
       this.letterSpacing = letterSpacing;
       if (fontFile != null || fontRegistryId != null) {
@@ -475,7 +456,6 @@ public class FlixelText extends FlixelSprite {
       }
       layoutDirty = true;
     }
-    return this;
   }
 
   /**
@@ -493,7 +473,7 @@ public class FlixelText extends FlixelSprite {
    * Returns the {@link FlixelFontRegistry} ID currently set on this text, or
    * {@code null} if a direct {@link FileHandle} or the default font is used.
    */
-  public String getFontRegistryId() {
+  public String getFont() {
     return fontRegistryId;
   }
 
@@ -505,10 +485,9 @@ public class FlixelText extends FlixelSprite {
    * (direct file -> registry default -> built-in font).
    *
    * @param id The registered font ID, or {@code null} to clear.
-   * @return This instance for chaining.
    * @throws IllegalArgumentException if {@code id} is non-null but not registered.
    */
-  public FlixelText setFont(String id) {
+  public void setFont(String id) {
     if (id != null && !FlixelFontRegistry.has(id)) {
       throw new IllegalArgumentException("No font registered with id \"" + id + "\".");
     }
@@ -517,7 +496,6 @@ public class FlixelText extends FlixelSprite {
     this.fontFile = null;
     fontDirty = true;
     layoutDirty = true;
-    return this;
   }
 
   /**
@@ -526,15 +504,13 @@ public class FlixelText extends FlixelSprite {
    * font. This clears any previously set {@linkplain #setFont(String) registry ID}.
    *
    * @param fontFile The {@code .ttf} or {@code .otf} file handle, or {@code null}.
-   * @return This instance for chaining.
    */
-  public FlixelText setFont(FileHandle fontFile) {
+  public void setFont(FileHandle fontFile) {
     disposeOwnedGenerator();
     this.fontFile = fontFile;
     this.fontRegistryId = null;
     fontDirty = true;
     layoutDirty = true;
-    return this;
   }
 
   /**
@@ -544,10 +520,9 @@ public class FlixelText extends FlixelSprite {
    * Clears any previously set font file or registry ID.
    *
    * @param font The bitmap font to use. Must not be {@code null}.
-   * @return This instance for chaining.
    * @throws IllegalArgumentException if {@code font} is {@code null}.
    */
-  public FlixelText setBitmapFont(BitmapFont font) {
+  public void setBitmapFont(BitmapFont font) {
     if (font == null) {
       throw new IllegalArgumentException("BitmapFont cannot be null.");
     }
@@ -559,7 +534,6 @@ public class FlixelText extends FlixelSprite {
     fontDirty = false;
     layoutDirty = true;
     font.setUseIntegerPositions(!antialiasing);
-    return this;
   }
 
   /** Returns the current border style. */
@@ -590,14 +564,12 @@ public class FlixelText extends FlixelSprite {
    * @param size The border size in pixels.
    * @param quality Rendering quality. {@code 0}: single iteration, {@code 1}: one
    *   iteration per pixel in {@code size}.
-   * @return This instance for chaining.
    */
-  public FlixelText setBorderStyle(BorderStyle style, Color color, float size, float quality) {
+  public void setBorderStyle(BorderStyle style, Color color, float size, float quality) {
     this.borderStyle = (style != null) ? style : BorderStyle.NONE;
     this.borderColor.set((color != null) ? color : Color.CLEAR);
     this.borderSize = Math.max(0, size);
     this.borderQuality = Math.max(0, quality);
-    return this;
   }
 
   /**
@@ -605,10 +577,9 @@ public class FlixelText extends FlixelSprite {
    *
    * @param style The border style.
    * @param color The border color.
-   * @return This instance for chaining.
    */
-  public FlixelText setBorderStyle(BorderStyle style, Color color) {
-    return setBorderStyle(style, color, 1, 1);
+  public void setBorderStyle(BorderStyle style, Color color) {
+    setBorderStyle(style, color, 1, 1);
   }
 
   /**
@@ -616,10 +587,9 @@ public class FlixelText extends FlixelSprite {
    *
    * @param style The border style.
    * @param color The border color.
-   * @return This instance for chaining.
    */
-  public FlixelText setBorderStyle(BorderStyle style, @NotNull FlixelColor color) {
-    return setBorderStyle(style, color.getGdxColor(), 1, 1);
+  public void setBorderStyle(BorderStyle style, @NotNull FlixelColor color) {
+    setBorderStyle(style, color.getGdxColor(), 1, 1);
   }
 
   /**
@@ -630,20 +600,18 @@ public class FlixelText extends FlixelSprite {
    * @param size The border size in pixels.
    * @param quality Rendering quality. {@code 0}: single iteration, {@code 1}: one
    * iteration per pixel in {@code size}.
-   * @return This instance for chaining.
    */
-  public FlixelText setBorderStyle(BorderStyle style, @NotNull FlixelColor color, float size, float quality) {
-    return setBorderStyle(style, color.getGdxColor(), size, quality);
+  public void setBorderStyle(BorderStyle style, @NotNull FlixelColor color, float size, float quality) {
+    setBorderStyle(style, color.getGdxColor(), size, quality);
   }
 
   /**
    * Sets the border style with a default black color, size of 1, and quality of 1.
    *
    * @param style The border style.
-   * @return This instance for chaining.
    */
-  public FlixelText setBorderStyle(BorderStyle style) {
-    return setBorderStyle(style, Color.BLACK, 1, 1);
+  public void setBorderStyle(BorderStyle style) {
+    setBorderStyle(style, Color.BLACK, 1, 1);
   }
 
   /**
@@ -656,11 +624,9 @@ public class FlixelText extends FlixelSprite {
    * @param alignment The text alignment, or {@code null} to keep current.
    * @param borderStyle The border style, or {@code null} to keep current.
    * @param borderColor The border color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(FileHandle fontFile, int size, Color color,
-      Alignment alignment, BorderStyle borderStyle,
-      Color borderColor) {
+  public void setFormat(FileHandle fontFile, int size, Color color,
+      Alignment alignment, BorderStyle borderStyle, Color borderColor) {
     if (fontFile != null) {
       setFont(fontFile);
     }
@@ -678,7 +644,6 @@ public class FlixelText extends FlixelSprite {
     } else if (borderColor != null) {
       this.borderColor.set(borderColor);
     }
-    return this;
   }
 
   /**
@@ -687,10 +652,9 @@ public class FlixelText extends FlixelSprite {
    * @param fontFile The font file, or {@code null} to keep current.
    * @param size The font size, or {@code 0} to keep current.
    * @param color The text color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(FileHandle fontFile, int size, Color color) {
-    return setFormat(fontFile, size, color, null, null, null);
+  public void setFormat(FileHandle fontFile, int size, Color color) {
+    setFormat(fontFile, size, color, null, null, null);
   }
 
   /**
@@ -703,12 +667,11 @@ public class FlixelText extends FlixelSprite {
    * @param alignment The text alignment, or {@code null} to keep current.
    * @param borderStyle The border style, or {@code null} to keep current.
    * @param borderColor The border color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(FileHandle fontFile, int size, FlixelColor color,
+  public void setFormat(FileHandle fontFile, int size, FlixelColor color,
       Alignment alignment, BorderStyle borderStyle,
       FlixelColor borderColor) {
-    return setFormat(fontFile, size,
+    setFormat(fontFile, size,
         color != null ? color.getGdxColor() : null,
         alignment, borderStyle,
         borderColor != null ? borderColor.getGdxColor() : null);
@@ -720,10 +683,9 @@ public class FlixelText extends FlixelSprite {
    * @param fontFile The font file, or {@code null} to keep current.
    * @param size The font size, or {@code 0} to keep current.
    * @param color The text color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(FileHandle fontFile, int size, @NotNull FlixelColor color) {
-    return setFormat(fontFile, size, color.getGdxColor(), null, null, null);
+  public void setFormat(FileHandle fontFile, int size, @NotNull FlixelColor color) {
+    setFormat(fontFile, size, color.getGdxColor(), null, null, null);
   }
 
   /**
@@ -736,9 +698,8 @@ public class FlixelText extends FlixelSprite {
    * @param alignment The text alignment, or {@code null} to keep current.
    * @param borderStyle The border style, or {@code null} to keep current.
    * @param borderColor The border color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(String fontId, int size, Color color,
+  public void setFormat(String fontId, int size, Color color,
       Alignment alignment, BorderStyle borderStyle,
       Color borderColor) {
     if (fontId != null) {
@@ -758,7 +719,6 @@ public class FlixelText extends FlixelSprite {
     } else if (borderColor != null) {
       this.borderColor.set(borderColor);
     }
-    return this;
   }
 
   /**
@@ -767,10 +727,9 @@ public class FlixelText extends FlixelSprite {
    * @param fontId The registered font ID, or {@code null} to keep current.
    * @param size The font size, or {@code 0} to keep current.
    * @param color The text color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(String fontId, int size, Color color) {
-    return setFormat(fontId, size, color, null, null, null);
+  public void setFormat(String fontId, int size, Color color) {
+    setFormat(fontId, size, color, null, null, null);
   }
 
   /**
@@ -783,12 +742,11 @@ public class FlixelText extends FlixelSprite {
    * @param alignment The text alignment, or {@code null} to keep current.
    * @param borderStyle The border style, or {@code null} to keep current.
    * @param borderColor The border color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(String fontId, int size, FlixelColor color,
+  public void setFormat(String fontId, int size, FlixelColor color,
       Alignment alignment, BorderStyle borderStyle,
       FlixelColor borderColor) {
-    return setFormat(fontId, size,
+    setFormat(fontId, size,
         color != null ? color.getGdxColor() : null,
         alignment, borderStyle,
         borderColor != null ? borderColor.getGdxColor() : null);
@@ -800,10 +758,9 @@ public class FlixelText extends FlixelSprite {
    * @param fontId The registered font ID, or {@code null} to keep current.
    * @param size The font size, or {@code 0} to keep current.
    * @param color The text color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(String fontId, int size, @NotNull FlixelColor color) {
-    return setFormat(fontId, size, color.getGdxColor(), null, null, null);
+  public void setFormat(String fontId, int size, @NotNull FlixelColor color) {
+    setFormat(fontId, size, color.getGdxColor(), null, null, null);
   }
 
   /**
@@ -811,10 +768,9 @@ public class FlixelText extends FlixelSprite {
    *
    * @param size The font size, or {@code 0} to keep current.
    * @param color The text color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(int size, Color color) {
-    return setFormat((FileHandle) null, size, color, null, null, null);
+  public void setFormat(int size, Color color) {
+    setFormat((FileHandle) null, size, color, null, null, null);
   }
 
   /**
@@ -822,10 +778,41 @@ public class FlixelText extends FlixelSprite {
    *
    * @param size The font size, or {@code 0} to keep current.
    * @param color The text color, or {@code null} to keep current.
-   * @return This instance for chaining.
    */
-  public FlixelText setFormat(int size, @NotNull FlixelColor color) {
-    return setFormat((FileHandle) null, size, color.getGdxColor(), null, null, null);
+  public void setFormat(int size, @NotNull FlixelColor color) {
+    setFormat((FileHandle) null, size, color.getGdxColor(), null, null, null);
+  }
+
+  /**
+   * Returns the hitbox width, triggering a layout rebuild first if any text
+   * attributes have changed since the last rebuild.
+   *
+   * <p>This ensures that callers such as {@link #screenCenter()} always operate
+   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   *
+   * <p>If no font is available yet (for example, before a GL context exists),
+   * the returned value is {@code 0} until the first successful rebuild.
+   */
+  @Override
+  public float getWidth() {
+    rebuildIfDirty();
+    return super.getWidth();
+  }
+
+  /**
+   * Returns the hitbox height, triggering a layout rebuild first if any text
+   * attributes have changed since the last rebuild.
+   *
+   * <p>This ensures that callers such as {@link #screenCenter()} always operate
+   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   *
+   * <p>If no font is available yet (for example, before a GL context exists),
+   * the returned value is {@code 0} until the first successful rebuild.
+   */
+  @Override
+  public float getHeight() {
+    rebuildIfDirty();
+    return super.getHeight();
   }
 
   /**
@@ -969,7 +956,6 @@ public class FlixelText extends FlixelSprite {
     fieldHeight = 0;
     bold = false;
     italic = false;
-    underline = false;
     letterSpacing = 0;
     borderStyle = BorderStyle.NONE;
     borderColor.set(Color.CLEAR);
@@ -1011,8 +997,8 @@ public class FlixelText extends FlixelSprite {
       layoutDirty = true;
     }
     if (layoutDirty) {
-      rebuildLayout();
       layoutDirty = false;
+      rebuildLayout();
     }
   }
 

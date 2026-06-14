@@ -6,7 +6,7 @@
  * that integrates with that platform's UI or runtime capabilities.
  *
  * <p>Games configure the active implementation during startup using
- * {@link org.flixelgdx.Flixel#setAlerter(org.flixelgdx.backend.alert.FlixelAlerter)}
- * before calling {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame)}.
+ * {@link org.flixelgdx.Flixel#setAlerter(org.flixelgdx.backend.alert.FlixelAlerter) Flixel.setAlerter(FlixelAlerter)}
+ * before calling {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
  */
 package org.flixelgdx.backend.alert;

@@ -137,7 +137,7 @@ public interface FlixelSoundBackend {
   /**
    * Platform-specific factory for creating sounds, groups, and effect nodes.
    *
-   * <p>One instance is injected into {@link org.flixelgdx.Flixel} at startup
+   * <p>One instance is injected into {@link org.flixelgdx.Flixel Flixel} at startup
    * via {@code Flixel.setSoundBackendFactory(...)}, and is shared by
    * {@link FlixelAudioManager} and {@link FlixelSound}.
    */
@@ -200,8 +200,8 @@ public interface FlixelSoundBackend {
      * decode lag.
      *
      * <p>This is an internal hook called automatically by
-     * {@link org.flixelgdx.asset.FlixelDefaultAssetManager} whenever a
-     * {@link org.flixelgdx.audio.FlixelSoundSource} is enqueued on the web platform.
+     * {@link org.flixelgdx.asset.FlixelDefaultAssetManager FlixelDefaultAssetManager} whenever a
+     * {@link org.flixelgdx.audio.FlixelSoundSource FlixelSoundSource} is enqueued on the web platform.
      * Do not call it directly; load audio through {@code Flixel.assets.load(path)} instead.
      *
      * <p>On platforms where decoding is synchronous (desktop, Android) this is a no-op.
@@ -214,7 +214,7 @@ public interface FlixelSoundBackend {
      * Returns {@code true} while at least one {@link #prewarmSound} decode is still in progress.
      *
      * <p>On platforms where decoding is synchronous (desktop, Android) this always returns
-     * {@code false}. On the web platform, {@link org.flixelgdx.asset.FlixelAssetManager#update()}
+     * {@code false}. On the web platform, {@link org.flixelgdx.asset.FlixelAssetManager#update() FlixelAssetManager.update()}
      * consults this method and continues returning {@code false} until all pending decodes
      * resolve, keeping the loading-state loop alive until audio is truly ready to play.
      *

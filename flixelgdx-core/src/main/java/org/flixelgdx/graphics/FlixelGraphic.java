@@ -36,11 +36,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Graphic container and wrapper around a libGDX {@link Texture}, implementing {@link org.flixelgdx.asset.FlixelAsset}{@code <Texture>}
- * via {@link org.flixelgdx.asset.FlixelTypedAsset}.
+ * Graphic container and wrapper around a libGDX {@link Texture}, implementing {@link org.flixelgdx.asset.FlixelAsset FlixelAsset}{@code <Texture>}
+ * via {@link org.flixelgdx.asset.FlixelTypedAsset FlixelTypedAsset}.
  *
  * <p>Graphics are identified by an {@code assetKey} (usually an internal asset path).
- * Wrapper instances are pooled in {@link org.flixelgdx.asset.FlixelAssetManager} so
+ * Wrapper instances are pooled in {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager} so
  * multiple sprites can share policy state.
  *
  * <p><b>Owned versus persist</b>:
@@ -49,18 +49,18 @@ import java.util.Objects;
  *     {@code makeGraphic} or {@code loadGraphic(Texture, ...)}). The framework disposes that texture when the wrapper
  *     is evicted from the pool. {@code isOwned()} is true. Not a user toggle.</li>
  *   <li><b>Persist</b> - Policy. For path-keyed pooled graphics, whether an unreferenced wrapper survives
- *     {@link org.flixelgdx.asset.FlixelAssetManager#clearNonPersist()}. New non-owned graphics use
- *     {@link org.flixelgdx.asset.FlixelAssetManager#getGlobalPersist()} by default. Owned graphics always
+ *     {@link org.flixelgdx.asset.FlixelAssetManager#clearNonPersist() FlixelAssetManager.clearNonPersist()}. New non-owned graphics use
+ *     {@link org.flixelgdx.asset.FlixelAssetManager#getGlobalPersist() FlixelAssetManager.getGlobalPersist()} by default. Owned graphics always
  *     use {@code persist == false} and are always removed on {@code clearNonPersist()} when refcount is zero, so
  *     {@code persist} does not block eviction of synthetic textures.</li>
  * </ul>
  *
  * <p>Lifecycle ({@code persist}, refcount) is tracked here. Keyed texture loading is implemented in
- * {@link org.flixelgdx.asset.FlixelAssetManager} ({@link org.flixelgdx.Flixel#assets}).
+ * {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager} ({@link org.flixelgdx.Flixel#assets Flixel.assets}).
  *
- * <p>Enqueue loads with {@link #queueLoad()} (or {@link org.flixelgdx.asset.FlixelAssetManager#load(FlixelSource)} /
- * {@link org.flixelgdx.asset.FlixelAssetManager#load(String)} on {@code Flixel.assets}); prefer
- * {@link org.flixelgdx.asset.FlixelAssetManager#load(FlixelSource)} over {@code load(String)} when the type must be explicit.
+ * <p>Enqueue loads with {@link #queueLoad()} (or {@link org.flixelgdx.asset.FlixelAssetManager#load(FlixelSource) FlixelAssetManager.load(FlixelSource)} /
+ * {@link org.flixelgdx.asset.FlixelAssetManager#load(String) FlixelAssetManager.load(String)} on {@code Flixel.assets}); prefer
+ * {@link org.flixelgdx.asset.FlixelAssetManager#load(FlixelSource) FlixelAssetManager.load(FlixelSource)} over {@code load(String)} when the type must be explicit.
  *
  * @see org.flixelgdx.asset.FlixelAssetManager
  */

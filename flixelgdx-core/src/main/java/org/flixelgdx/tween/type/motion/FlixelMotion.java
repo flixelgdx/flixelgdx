@@ -45,6 +45,7 @@ public abstract class FlixelMotion extends FlixelTween {
   public float motionY;
 
   protected @Nullable FlixelPositional motionTarget;
+
   private boolean priorImmovable;
   private boolean immovableCaptured;
 
@@ -119,5 +120,13 @@ public abstract class FlixelMotion extends FlixelTween {
       return Objects.equals(object, motionTarget);
     }
     return Objects.equals(object, motionTarget) && ("x".equals(field) || "y".equals(field));
+  }
+
+  public boolean isPriorImmovable() {
+    return priorImmovable;
+  }
+
+  public boolean isImmovableCaptured() {
+    return immovableCaptured;
   }
 }

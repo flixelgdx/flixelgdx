@@ -290,6 +290,7 @@ public final class Flixel {
    *
    * <p>This field is {@code null} until the first call to {@link #switchState(FlixelState)}.
    */
+  @Nullable
   public static FlixelState state;
 
   /**
@@ -313,7 +314,7 @@ public final class Flixel {
    * between keys that are held down, freshly pressed on the current frame, and freshly released
    * on the current frame, so your game logic can respond precisely to each event type.
    *
-   * <p>Key constants are defined in {@link org.flixelgdx.input.keyboard.FlixelKey}. Pass any of
+   * <p>Key constants are defined in {@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey}. Pass any of
    * those constants to the methods below:
    * <ul>
    *   <li>{@link FlixelKeyInputManager#pressed(int)} - {@code true} while the key is held down.</li>
@@ -348,7 +349,7 @@ public final class Flixel {
    *
    * <p>The audio backend is platform-specific and is injected by the launcher before
    * {@link #initialize(FlixelGame)}. On all platforms, it's typically powered by miniaudio,
-   * although for web it may be a Web Audio backend dependent on the circumstances.
+   * and for web (TeaVM) it utilizes the Web Audio API.
    *
    * <p>Example:
    * <pre>{@code
@@ -497,7 +498,7 @@ public final class Flixel {
    * <p>Poll button states and screen-space coordinates every frame. Like {@link #keys}, this
    * manager distinguishes between buttons that are currently held, just pressed this frame, and
    * just released this frame, so your code can react precisely to each event. Button constants are
-   * defined in {@link org.flixelgdx.input.mouse.FlixelMouseButton}.
+   * defined in {@link org.flixelgdx.input.mouse.FlixelMouseButton FlixelMouseButton}.
    *
    * <p>Coordinates are returned in screen pixels with the origin in the top-left corner, matching
    * libGDX conventions. Use the active camera's screen-to-world helper to convert these
@@ -526,7 +527,7 @@ public final class Flixel {
    *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
-   * defined in {@link org.flixelgdx.input.gamepad.FlixelGamepadInput}, so the same game code works
+   * defined in {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}, so the same game code works
    * across different controller layouts without any platform-specific branching.
    *
    * <p>Each connected controller is identified by a zero-based index. Player 1's controller is
@@ -595,7 +596,7 @@ public final class Flixel {
    * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a real implementation before
-   * {@link Flixel#initialize(FlixelGame)} runs. On all other platforms it falls back to
+   * {@link Flixel#initialize(FlixelGame)} runs. On an unknown platform it falls back to
    * {@link FlixelNoopWindow}, which silently ignores every call, so you can always write
    * {@code Flixel.window.setOpacity(0.8f)} without wrapping it in a platform check.
    *
@@ -605,7 +606,7 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
-   * // Make the window semi-transparent (desktop only; no-ops on other platforms).
+   * // Make the window semi-transparent.
    * Flixel.window.setOpacity(0.85f);
    *
    * // Remove the title bar and border.
@@ -641,7 +642,7 @@ public final class Flixel {
   public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
 
   /**
-   * Global timescale for frame-based timers ({@link org.flixelgdx.util.timer.FlixelTimer}).
+   * Global timescale for frame-based timers ({@link org.flixelgdx.util.timer.FlixelTimer FlixelTimer}).
    *
    * <p>{@code 1f} is normal speed; lower slows timers, higher speeds them up. Does not change {@link #elapsed} itself.
    */
@@ -1324,7 +1325,7 @@ public final class Flixel {
 
   /**
    * Clears the active debug overlay reference after it has been disposed.
-   * {@link FlixelGame#dispose()} calls {@link org.flixelgdx.debug.FlixelDebugOverlay#destroy()}
+   * {@link FlixelGame#dispose()} calls {@link org.flixelgdx.debug.FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
    * first; this method only nulls the static handle to avoid double-dispose.
    */
   static void clearDebugOverlay() {
@@ -1448,7 +1449,7 @@ public final class Flixel {
   }
 
   /**
-   * The camera currently being drawn in {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch)},
+   * The camera currently being drawn in {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch) FlixelGame.draw(Batch)},
    * or {@code null} if not in a camera pass.
    */
   @Nullable
