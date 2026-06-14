@@ -29,7 +29,7 @@ import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
 /** Cubic Bézier motion (two control points). */
-public final class FlixelCubicMotion extends FlixelMotion {
+public class FlixelCubicMotion extends FlixelMotion {
 
   private float p0x;
   private float p0y;
@@ -109,5 +109,37 @@ public final class FlixelCubicMotion extends FlixelMotion {
     float ttt = tt * t;
     motionX = uuu * p0x + 3f * uu * t * p1x + 3f * u * tt * p2x + ttt * p3x;
     motionY = uuu * p0y + 3f * uu * t * p1y + 3f * u * tt * p2y + ttt * p3y;
+  }
+
+  public float getP0x() {
+    return p0x;
+  }
+
+  public float getP0y() {
+    return p0y;
+  }
+
+  public float getP1x() {
+    return p1x;
+  }
+
+  public float getP1y() {
+    return p1y;
+  }
+
+  public float getP2x() {
+    return p2x;
+  }
+
+  public float getP2y() {
+    return p2y;
+  }
+
+  public float getP3x() {
+    return p3x;
+  }
+
+  public float getP3y() {
+    return p3y;
   }
 }

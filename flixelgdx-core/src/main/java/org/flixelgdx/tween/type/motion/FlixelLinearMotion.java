@@ -29,7 +29,7 @@ import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
 /** Straight-line motion from ({@code fromX}, {@code fromY}) to ({@code toX}, {@code toY}). */
-public final class FlixelLinearMotion extends FlixelMotion {
+public class FlixelLinearMotion extends FlixelMotion {
 
   private float fromX;
   private float fromY;
@@ -75,5 +75,21 @@ public final class FlixelLinearMotion extends FlixelMotion {
   protected void computeMotion() {
     motionX = fromX + moveX * scale;
     motionY = fromY + moveY * scale;
+  }
+
+  public float getFromX() {
+    return fromX;
+  }
+
+  public float getFromY() {
+    return fromY;
+  }
+
+  public float getMoveX() {
+    return moveX;
+  }
+
+  public float getMoveY() {
+    return moveY;
   }
 }

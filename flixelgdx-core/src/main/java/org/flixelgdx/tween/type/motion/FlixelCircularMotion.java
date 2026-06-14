@@ -29,7 +29,7 @@ import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
 /** Motion along a circular arc (angles in degrees for the API, radians internally). */
-public final class FlixelCircularMotion extends FlixelMotion {
+public class FlixelCircularMotion extends FlixelMotion {
 
   private float centerX;
   private float centerY;
@@ -86,5 +86,25 @@ public final class FlixelCircularMotion extends FlixelMotion {
     float a = angleStartRad + angleSweepRad * scale;
     motionX = centerX + MathUtils.cos(a) * radius;
     motionY = centerY + MathUtils.sin(a) * radius;
+  }
+
+  public float getCenterX() {
+    return centerX;
+  }
+
+  public float getCenterY() {
+    return centerY;
+  }
+
+  public float getRadius() {
+    return radius;
+  }
+
+  public float getAngleStartRad() {
+    return angleStartRad;
+  }
+
+  public float getAngleSweepRad() {
+    return angleSweepRad;
   }
 }

@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * Chain of quadratic Bézier segments: control points are {@code start, control, end, control, end, ...}
  * (odd total count, at least three points).
  */
-public final class FlixelQuadPath extends FlixelMotion {
+public class FlixelQuadPath extends FlixelMotion {
 
   private final Array<Vector2> points = new Array<>();
   private float[] cumulativeT = new float[8];
@@ -142,5 +142,25 @@ public final class FlixelQuadPath extends FlixelMotion {
     float r = 1f - s;
     motionX = a.x * r * r + b.x * 2f * r * s + c.x * s * s;
     motionY = a.y * r * r + b.y * 2f * r * s + c.y * s * s;
+  }
+
+  public Array<Vector2> getPoints() {
+    return points;
+  }
+
+  public float[] getCumulativeT() {
+    return cumulativeT;
+  }
+
+  public float[] getSegmentLen() {
+    return segmentLen;
+  }
+
+  public int getNumSegs() {
+    return numSegs;
+  }
+
+  public float getTotalDistance() {
+    return totalDistance;
   }
 }
