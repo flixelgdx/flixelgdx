@@ -13,7 +13,7 @@
 [![Forks](https://img.shields.io/github/forks/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/forks)
 [![Issues](https://img.shields.io/github/issues/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/commits/develop)
+[![Last Commit](https://img.shields.io/github/last-commit/flixelgdx/flixelgdx/develop)](https://github.com/flixelgdx/flixelgdx/commits/develop)
 [![Contributors](https://img.shields.io/github/contributors/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/graphs/contributors)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
 [![libGDX 1.14.0](https://img.shields.io/badge/libGDX-1.14.0-red)](https://libgdx.com/)
