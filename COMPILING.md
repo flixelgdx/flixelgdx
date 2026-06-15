@@ -11,7 +11,7 @@ FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. 
 3. [IDE setup](#ide-setup)
 4. [Compiling FlixelGDX](#compiling-flixelgdx)
 5. [Testing with a test project](#testing-with-a-test-project)
-6. [How to test the framework properly](#how-to-test-the-framework-properly)
+6. [How to run unit tests](#how-to-run-unit-tests)
 7. [Web (TeaVM) setup and configuration](#web-teavm-setup-and-configuration)
 8. [Setting up the Android SDK (for contributing to the Android platform)](#setting-up-the-android-sdk-for-contributing-to-the-android-platform)
 9. [Setting up an iOS development environment (for contributing to the iOS platform)](#setting-up-an-ios-development-environment-for-contributing-to-the-ios-platform)
@@ -192,38 +192,14 @@ So the dependency is: `org.flixelgdx:flixelgdx-core:<version>`.
 
 ## Testing with a test project
 
-You need a separate test project that depends on FlixelGDX. Two ways to do that:
+You need a separate test project that depends on FlixelGDX. There are two ways to wire it up:
 
-- **Method 1**: Create a project with the **FlixelGDX project generator** and depend on the published artifact from `mavenLocal()`.
-- **Method 2**: Use **Gradle composite build** so your test project uses the FlixelGDX source directly (no need to run `publishToMavenLocal` after every change).
+- **Method 1**: Publish the framework to your local Maven repository and pull it in via `mavenLocal()`.
+- **Method 2**: Use a **Gradle composite build** so your test project compiles directly against the FlixelGDX source - no republishing needed after every change.
 
-### Method 1: Using the FlixelGDX project generator
+### Generating the project
 
-The **FlixelGDX project generator** on the framework website is the recommended way to create a new test project. It generates a fully wired, ready-to-run Gradle project with the platforms and options you choose - no manual dependency setup required.
-
-#### Generating the project
-
-1. Open the **Getting Started** page on the [FlixelGDX website](https://flixelgdx.org/getting-started).
-2. Fill in your project details:
-   - **Game name**: e.g. `FlixelTest`.
-   - **Game id**: e.g. `flixel-test`.
-   - **Package name**: e.g. `com.example.flixeltest`.
-   - **Language**: **Java** (or Kotlin).
-   - **JDK vendor**: **Eclipse Temurin** (recommended).
-   - **Platforms**: at minimum **Desktop (LWJGL3)**. Add **Web (TeaVM)** if you want to test the web backend.
-   - **Template**: **Blank play state** for an empty starting point.
-3. Click **Download project** and unzip the result to a folder of your choice.
-4. Open a terminal in the unzipped folder and run:
-   ```bash
-   ./gradlew :lwjgl3:run
-   ```
-   (Use `gradlew.bat :lwjgl3:run` on Windows.)
-
-Gradle auto-downloads a matching JDK toolchain on the first build via the Foojay Toolchains Resolver. After a brief first-time download you should see the empty game window.
-
-#### What the generator creates
-
-The generated project is a Gradle multi-module project that already depends on FlixelGDX via Maven Central:
+Use the **Getting Started** page on the [FlixelGDX website](https://flixelgdx.org/getting-started) to generate a test project. It creates a fully wired, ready-to-run Gradle multi-module project:
 
 ```
 my-game/
@@ -236,9 +212,29 @@ my-game/
   settings.gradle       -- Project settings
 ```
 
+1. Fill in your project details:
+    - **Game name**: e.g. `FlixelTest`.
+    - **Game id**: e.g. `flixel-test`.
+    - **Package name**: e.g. `com.example.flixeltest`.
+    - **Language**: **Java** (or Kotlin).
+    - **JDK vendor**: **Eclipse Temurin** (recommended).
+    - **Platforms**: at minimum **Desktop (LWJGL3)**. Add **Web (TeaVM)** if you want to test the web backend.
+    - **Template**: **Blank play state** for an empty starting point.
+2. Click **Download project** and unzip the result to a folder of your choice.
+3. Open a terminal in the unzipped folder and verify the project boots:
+   ```bash
+   ./gradlew :lwjgl3:run
+   ```
+   (Use `gradlew.bat :lwjgl3:run` on Windows.)
+
+Gradle auto-downloads a matching JDK toolchain on the first build. After a brief first-time download you should see the empty game window.
+
+> [!TIP]
+> If you toggle on Expert mode, some new options will be available to you, including JitPack setup and an option to provide a composite build path.
+
 The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/src/main/java/...` so you can start adding game logic immediately. Open those files and replace the state’s `create()` method with your test code.
 
-#### Platform options for testing
+**Platform run commands:**
 
 | Platform | Generator option | Run command |
 |----------|-----------------|-------------|
@@ -247,12 +243,18 @@ The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/sr
 | **Android** | Coming soon | - |
 | **iOS** | Coming soon | - |
 
-#### Testing your local FlixelGDX changes
+### Method 1: Using `mavenLocal()`
 
-The project generator targets Maven Central by default, which means it pulls the last stable release of FlixelGDX rather than your local clone. To test your local changes you have two options:
+The generated project targets Maven Central by default, pulling the last stable release of FlixelGDX rather than your local clone. To test your local changes:
 
-- **Publish to Maven Local** (fast for one-off tests): run `./gradlew publishToMavenLocal` in the FlixelGDX repo, then add `mavenLocal()` to the `repositories` block in the generated project’s root `build.gradle` (before `mavenCentral()`).
-- **Composite build** (best for active development): see [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) below - it links your test project directly to the FlixelGDX source with no republishing required on each change.
+1. In the FlixelGDX repo, publish to your local Maven repository:
+   ```bash
+   ./gradlew publishToMavenLocal
+   ```
+2. In the test project’s root `build.gradle`, add `mavenLocal()` to the `repositories` block before `mavenCentral()`.
+
+> [!NOTE]
+> You must re-run `publishToMavenLocal` each time you change the framework and want the test project to pick up those changes. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid this.
 
 If you launch the desktop module with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
 
@@ -279,24 +281,13 @@ Composite build lets the test project use your local FlixelGDX source so changes
 
 ---
 
-## How to test the framework properly
+## How to run unit tests
 
-1. **Run the project’s unit tests**
+All unit tests live in a separate Gradle module, inside of `flixelgdx-test`. You can run the framework's unit tests with the following command:
 
-   From the FlixelGDX repo root:
-
-   ```bash
-   ./gradlew :flixelgdx-test:test
-   ```
-
-   Fix any failing tests before submitting changes.
-
-2. **Use a real test game**
-  - In your test project (maven local or composite), verify there is a minimal `FlixelGame` and at least one `FlixelState`.
-  - Switch states, create sprites, use `FlixelTween` / `FlixelTweenSettings`, and hit the code paths you changed.
-  - Run the **desktop** launcher first; then Android or other platforms if your change affects them.
-3. **Verify no regressions**
-  After modifying FlixelGDX, run `./gradlew test` again and run your test game (state switches, tweens, sprites, etc.) to ensure nothing else breaks.
+```bash
+./gradlew :flixelgdx-test:test
+```
 
 ---
 
