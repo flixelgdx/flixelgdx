@@ -50,9 +50,9 @@ import java.util.Objects;
  * <ul>
  *   <li>An integer index into {@link #atlas} selecting which bitmap slice to draw.</li>
  *   <li>A fully baked {@link Affine2} that already contains (a) the Flash {@code MX} or {@code M3D}
- *   matrix chain from the root symbol or stage down to the leaf bitmap, (b) a Y-axis flip that converts Adobe Animate's Y-down
- *   bitmap space into libGDX's Y-up texture-region space, and (c) an anchor translation that shifts the
- *   whole rig so the anchor-clip bounding box starts at {@code (0, 0)}.</li>
+ *   matrix chain from the root symbol or stage down to the leaf bitmap, (b) a Y-axis flip that converts
+ *   Adobe Animate's Y-down bitmap space into libGDX's Y-up texture-region space, and (c) an anchor translation
+ *   that shifts the whole rig so the anchor-clip bounding box starts at {@code (0, 0)}.</li>
  * </ul>
  *
  * <p>Because every matrix is baked at load time, the per-frame draw path is reduced to one translate, one

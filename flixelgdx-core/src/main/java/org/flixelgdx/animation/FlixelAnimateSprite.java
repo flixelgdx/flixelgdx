@@ -23,9 +23,12 @@
  */
 package org.flixelgdx.animation;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
@@ -38,6 +41,8 @@ import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * A {@link FlixelSprite} that renders Adobe Animate texture-atlas rigs. The three input files
@@ -52,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelAnimationController#getCurrentKeyframeIndex()}, and walks the keyframe's pre-baked
  * parts back-to-front. Every part carries a fully composed {@link Affine2}, so the inner loop is a
  * single {@link Affine2#setToProduct} plus one
- * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} per
+ * {@link Batch#draw(TextureRegion, float, float, Affine2)} per
  * visible bitmap.
  *
  * <p>Position, scale, rotation, color tint, flip, origin, offset, antialiasing, scroll factor, and
@@ -74,6 +79,15 @@ import org.jetbrains.annotations.Nullable;
  * fas.screenCenter();
  * fas.animation.playAnimation("Animation Name");
  * add(fas);
+ *
+ * // If you group all of your atlas files in individual folders, you can
+ * // also just provide a path to a folder and the paths will be automatically
+ * // loaded for you!
+ * FlixelAnimateSprite.defaultSpritemapName = "customSpritemapName";
+ * FlixelAnimateSprite.defaultSpritemapName = "customAnimationName";
+ *
+ * FlixelAnimateSprite fas = new FlixelAnimateSprite();
+ * fas.addSpritemapAndAnimation("path/to/atlas/folder");
  * }
  * </pre>
  *
@@ -82,8 +96,29 @@ import org.jetbrains.annotations.Nullable;
  * shared atlas, bake clips into the existing anchor space (the body stays pinned when you switch atlases),
  * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
  * override earlier registrations on collisions.
+ *
+ * @see #addSpritemapAndAnimation(String)
+ * @see #addSpritemapAndAnimation(String, String, String)
+ * @see #defaultSpritemapName
+ * @see #defaultAnimationName
  */
 public class FlixelAnimateSprite extends FlixelSprite {
+
+  /**
+   * The default file name for every spritemap {@code .png} / {@code .json}
+   * loaded with {@link #addSpritemapAndAnimation(String)}. Note that you shouldn't
+   * include an extension, as it's already handled for you. Default value is {@code "spritemap1"}.
+   */
+  @NotNull
+  public static String defaultSpritemapName = "spritemap1";
+
+  /**
+   * The default file name for every animation {@code .json} data
+   * loaded with {@link #addSpritemapAndAnimation(String)}. When using this, you don't need to
+   * include {@code .json} at the end, as the loader does it for you. Default value is {@code "Animation"}.
+   */
+  @NotNull
+  public static String defaultAnimationName = "Animation";
 
   /**
    * The rig that drives this sprite's rendering. {@code null} until
@@ -98,12 +133,14 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * sprite's world transform; each part's baked affine is then post-multiplied into {@link #drawAffine}
    * for the {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call.
    */
+  @NotNull
   private final Affine2 baseAffine = new Affine2();
 
   /**
    * Scratch affine used to hold the per-part composed matrix passed to
    * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)}.
    */
+  @NotNull
   private final Affine2 drawAffine = new Affine2();
 
   /**
@@ -133,6 +170,52 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
+   * Adds an Adobe Animate texture atlas from a single provided path.
+   *
+   * <p>This method is very useful if you have an exact location where all three core parts of
+   * an atlas are stored, and you just want to provide the path to it. Note that you can set the
+   * default file names of the default spritemap and animation data if you know what it's going
+   * to be every time!
+   *
+   * @param path The directory where all three core files are stored. Must be a directory.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If the provided path isn't a real directory.
+   * @throws NullPointerException If either {@link #defaultSpritemapName} or {@link #defaultAnimationName}
+   *     are {@code null}.
+   * @see #defaultSpritemapName
+   * @see #defaultAnimationName
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(String path) {
+    Objects.requireNonNull(defaultSpritemapName, "defaultSpritemapName cannot be null.");
+    Objects.requireNonNull(defaultAnimationName, "defaultAnimationName cannot be null.");
+    if (!Gdx.files.internal(path).isDirectory()) {
+      throw new IllegalArgumentException("The provided path is either not a real folder.");
+    }
+    return addSpritemapAndAnimation(path + "/" + defaultSpritemapName + ".png",
+        path + "/" + defaultSpritemapName + ".json", path + "/" + defaultAnimationName + ".json");
+  }
+
+  /**
+   * Adds an Adobe Animate texture atlas from a single provided directory handle.
+   *
+   * <p>Equivalent to {@link #addSpritemapAndAnimation(String)}, but accepts a libGDX {@link FileHandle}
+   * for callers that already resolved the directory through a file resolver instead of holding a raw path.
+   *
+   * @param path The directory handle where all three core files are stored. Must be a directory.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If the provided path isn't a real directory.
+   * @throws NullPointerException If either {@link #defaultSpritemapName} or {@link #defaultAnimationName}
+   *     are {@code null}.
+   * @see #defaultSpritemapName
+   * @see #defaultAnimationName
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(@NotNull FileHandle path) {
+    return addSpritemapAndAnimation(pathOf(path, "path"));
+  }
+
+  /**
    * Adds an Adobe Animate texture atlas ({@code PNG} plus spritemap JSON and {@code Animation.json}). If
    * this sprite has no rig yet, {@link FlixelAnimateRigLoader#load} builds one and starts the anchor
    * clip. If a rig is already installed, the same triple is merged with {@link FlixelAnimateRigLoader#append}.
@@ -150,6 +233,138 @@ public class FlixelAnimateSprite extends FlixelSprite {
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath) {
     return addSpritemapAndAnimation(textureKey, spritemapJsonPath, animationJsonPath, null);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code textureKey}
+   * as a {@link FileHandle} instead of a path string.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    return addSpritemapAndAnimation(pathOf(textureKey, "textureKey"), spritemapJsonPath, animationJsonPath);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code spritemapJsonPath}
+   * as a {@link FileHandle} instead of a path string.
+   *
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    return addSpritemapAndAnimation(textureKey, pathOf(spritemapJsonPath, "spritemapJsonPath"), animationJsonPath);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code animationJsonPath}
+   * as a {@link FileHandle} instead of a path string.
+   *
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath) {
+    return addSpritemapAndAnimation(textureKey, spritemapJsonPath, pathOf(animationJsonPath, "animationJsonPath"));
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code textureKey}
+   * and {@code spritemapJsonPath} as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull String animationJsonPath) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"), pathOf(spritemapJsonPath, "spritemapJsonPath"), animationJsonPath);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code textureKey}
+   * and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"), spritemapJsonPath, pathOf(animationJsonPath, "animationJsonPath"));
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code spritemapJsonPath}
+   * and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath) {
+    return addSpritemapAndAnimation(
+        textureKey, pathOf(spritemapJsonPath, "spritemapJsonPath"), pathOf(animationJsonPath, "animationJsonPath"));
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts all three core
+   * parameters as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"),
+        pathOf(spritemapJsonPath, "spritemapJsonPath"),
+        pathOf(animationJsonPath, "animationJsonPath"));
   }
 
   /**
@@ -181,6 +396,181 @@ public class FlixelAnimateSprite extends FlixelSprite {
       FlixelAnimateRigLoader.append(this, controller, textureKey, spritemapJsonPath, animationJsonPath);
     }
     return this;
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
+   * {@code textureKey} as a {@link FileHandle} instead of a path string.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull String animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"), spritemapJsonPath, animationJsonPath, anchorClipName);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
+   * {@code spritemapJsonPath} as a {@link FileHandle} instead of a path string.
+   *
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull String animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        textureKey, pathOf(spritemapJsonPath, "spritemapJsonPath"), animationJsonPath, anchorClipName);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
+   * {@code animationJsonPath} as a {@link FileHandle} instead of a path string.
+   *
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        textureKey, spritemapJsonPath, pathOf(animationJsonPath, "animationJsonPath"), anchorClipName);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
+   * {@code textureKey} and {@code spritemapJsonPath} as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull String animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"),
+        pathOf(spritemapJsonPath, "spritemapJsonPath"),
+        animationJsonPath,
+        anchorClipName);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
+   * {@code textureKey} and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull String spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"),
+        spritemapJsonPath,
+        pathOf(animationJsonPath, "animationJsonPath"),
+        anchorClipName);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
+   * {@code spritemapJsonPath} and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull String textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        textureKey,
+        pathOf(spritemapJsonPath, "spritemapJsonPath"),
+        pathOf(animationJsonPath, "animationJsonPath"),
+        anchorClipName);
+  }
+
+  /**
+   * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts all
+   * three core parameters as {@link FileHandle}s instead of path strings.
+   *
+   * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
+   * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
+   * @param animationJsonPath The path to the animation JSON, as a file handle. Must not be {@code null}.
+   * @param anchorClipName Anchor clip name for the initial load only; ignored when appending. May be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If any file is missing, malformed, or not a recognized Adobe Animate export.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSpritemapAndAnimation(
+      @NotNull FileHandle textureKey,
+      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FileHandle animationJsonPath,
+      @Nullable String anchorClipName) {
+    return addSpritemapAndAnimation(
+        pathOf(textureKey, "textureKey"),
+        pathOf(spritemapJsonPath, "spritemapJsonPath"),
+        pathOf(animationJsonPath, "animationJsonPath"),
+        anchorClipName);
+  }
+
+  /**
+   * Resolves a {@link FileHandle} into the path string the rest of {@code addSpritemapAndAnimation}
+   * overloads operate on. Asset-manager lookups (the spritemap PNG) and direct JSON reads both resolve
+   * a plain path through {@code Gdx.files}, so converting up front lets every {@link FileHandle} overload
+   * delegate straight into the existing {@code String} pipeline without duplicating loading logic.
+   *
+   * @param handle The file handle to resolve. Must not be {@code null}.
+   * @param paramName The parameter name to report if {@code handle} is {@code null}.
+   * @return The handle's path, as returned by {@link FileHandle#path()}.
+   */
+  @NotNull
+  private static String pathOf(@NotNull FileHandle handle, @NotNull String paramName) {
+    Objects.requireNonNull(handle, paramName + " cannot be null.");
+    return handle.path();
   }
 
   @Nullable
