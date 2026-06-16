@@ -28,6 +28,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.SnapshotArray;
 
+import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.jetbrains.annotations.NotNull;
@@ -276,16 +277,13 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   }
 
   /**
-   * Adds a new object to {@code this} state.
+   * Adds a new member to {@code this} state.
    *
-   * @param basic The object to add to the state.
+   * @param basic The new member to add to the state.
    */
   @Override
   public void add(@NotNull IFlixelBasic basic) {
     super.add(basic);
-    if (basic instanceof FlixelSprite sprite) {
-      sprite.setAntialiasing(Flixel.isAntialiasing());
-    }
   }
 
   @Nullable

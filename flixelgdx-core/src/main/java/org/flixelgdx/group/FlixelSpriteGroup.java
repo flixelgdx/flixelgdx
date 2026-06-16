@@ -219,7 +219,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   /** Sets a color tint on the group and propagates it to all current members. */
   @Override
-  public void setColor(Color tint) {
+  public void setColor(@NotNull Color tint) {
     super.setColor(tint);
     FlixelSprite[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {

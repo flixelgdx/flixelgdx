@@ -969,8 +969,6 @@ public class FlixelText extends FlixelSprite {
     ownsGenerator = false;
     fontDirty = true;
     layoutDirty = true;
-    setPosition(0, 0);
-    setColor(Color.WHITE);
   }
 
   @Override
