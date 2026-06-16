@@ -326,6 +326,55 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return animationOffsets.containsKey(name);
   }
 
+  /** Equivalent to {@link #centerOffsets(boolean)} with {@code adjustPosition} set to {@code false}. */
+  public void centerOffsets() {
+    centerOffsets(false);
+  }
+
+  /**
+   * Centers the owning sprite's hitbox within its current frame's untrimmed source box.
+   *
+   * <p>This is useful when a trimmed Sparrow frame draws smaller than the hitbox set by
+   * {@link FlixelSprite#updateHitbox(float, float)} (or vice versa), since the art would otherwise sit
+   * off-center inside the box.
+   *
+   * <p>This is a one-shot computation from the currently displayed {@link FlixelFrame}, independent
+   * of the per-animation {@link #addOffset(String, float, float) registry}; it does not read or write
+   * {@link #animationOffsets}. Calling it after a clip with a registered offset will overwrite that
+   * offset until the next {@link #playAnimation} call reapplies it.
+   *
+   * @param adjustPosition Whether to also shift the sprite's position so its origin stays anchored
+   *     to the frame's center, matching HaxeFlixel's optional position correction.
+   */
+  public void centerOffsets(boolean adjustPosition) {
+    FlixelFrame frame = owner.getCurrentFrame();
+    if (frame == null) {
+      return;
+    }
+    owner.setOffset(
+        centeredOffset(frame.originalWidth, owner.getWidth()),
+        centeredOffset(frame.originalHeight, owner.getHeight()));
+    if (adjustPosition) {
+      owner.setPosition(
+          owner.getX() + owner.getOriginX() - frame.originalWidth * 0.5f,
+          owner.getY() + owner.getOriginY() - frame.originalHeight * 0.5f);
+    }
+  }
+
+  /**
+   * Pure offset math for {@link #centerOffsets(boolean)}, split out so it can be unit tested without
+   * a GPU-backed {@link FlixelFrame}.
+   *
+   * @param sourceSize The frame's untrimmed source size on this axis ({@code originalWidth} or
+   *     {@code originalHeight}).
+   * @param hitboxSize The sprite's hitbox size on this axis ({@link FlixelSprite#getWidth()} or
+   *     {@link FlixelSprite#getHeight()}).
+   * @return The offset that centers {@code hitboxSize} within {@code sourceSize}.
+   */
+  static float centeredOffset(float sourceSize, float hitboxSize) {
+    return (sourceSize - hitboxSize) * 0.5f;
+  }
+
   public void pause() {
     paused = true;
   }

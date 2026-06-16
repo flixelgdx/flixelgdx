@@ -46,6 +46,20 @@ public class FlixelFlickerTween extends FlixelTween {
     super(settings);
   }
 
+  /**
+   * Registers the visibility target and the flicker's per-cycle timing.
+   *
+   * @param flickerTarget The object to toggle visibility on.
+   * @param period Length of one full on/off cycle, in seconds.
+   * @param ratio Fraction of each period spent invisible, clamped to {@code [0, 1]}. A ratio of
+   *     {@code 0.5} reproduces HaxeFlixel's {@code FlxFlicker.flicker} even toggle, where
+   *     HaxeFlixel's {@code Interval} parameter is half of this {@code period}. Other ratios bias
+   *     the cycle toward mostly visible or mostly invisible, which HaxeFlixel's toggle-only flicker
+   *     cannot do.
+   * @param endVisibility Visibility to restore once a non-looping flicker finishes.
+   * @param tweenFunction Custom visibility function, or {@code null} to use {@link #defaultTweenFunction}.
+   * @return {@code this} tween for chaining.
+   */
   public FlixelFlickerTween setFlicker(
       @Nullable FlixelVisible flickerTarget,
       float period,

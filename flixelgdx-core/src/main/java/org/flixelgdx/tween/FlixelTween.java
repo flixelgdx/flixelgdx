@@ -463,8 +463,12 @@ public abstract class FlixelTween implements Pool.Poolable {
    * Creates a new flicker tween with the provided settings and adds it to the global tween manager.
    *
    * @param visible The visibility target to flicker.
-   * @param period The period of the flicker.
-   * @param ratio The ratio of the flicker.
+   * @param period Length of one full on/off cycle, in seconds.
+   * @param ratio Fraction of each period spent invisible, clamped to {@code [0, 1]}. A ratio of
+   *     {@code 0.5} reproduces HaxeFlixel's {@code FlxFlicker.flicker} even toggle, where
+   *     HaxeFlixel's {@code Interval} parameter is half of this {@code period}. Other ratios bias
+   *     the cycle toward mostly visible or mostly invisible, which HaxeFlixel's toggle-only flicker
+   *     cannot do.
    * @param endVisibility The visibility of the flicker at the end.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
    * @param tweenFunction The function to use for the flicker.

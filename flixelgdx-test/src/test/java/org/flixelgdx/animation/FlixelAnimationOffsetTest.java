@@ -80,4 +80,25 @@ class FlixelAnimationOffsetTest {
     assertEquals(3f, sprite.getOffsetX(), 0f);
     assertEquals(5f, sprite.getOffsetY(), 0f);
   }
+
+  @Test
+  void centerOffsetsDoesNothingWithoutAFrame() {
+    // centerOffsets() reads the sprite's current frame, which a sprite with no graphic never has.
+    FlixelSprite sprite = new FlixelSprite();
+    sprite.setOffset(3f, 5f);
+
+    sprite.ensureAnimation().centerOffsets();
+
+    assertEquals(3f, sprite.getOffsetX(), 0f);
+    assertEquals(5f, sprite.getOffsetY(), 0f);
+  }
+
+  @Test
+  void centeredOffsetMath() {
+    // A source box bigger than the hitbox should push the offset positive (matching
+    // FlixelSprite.setOffset(...)'s "positive moves the graphic left/up" convention).
+    assertEquals(5f, FlixelAnimationController.centeredOffset(20f, 10f), 0f);
+    assertEquals(0f, FlixelAnimationController.centeredOffset(10f, 10f), 0f);
+    assertEquals(-5f, FlixelAnimationController.centeredOffset(10f, 20f), 0f);
+  }
 }
