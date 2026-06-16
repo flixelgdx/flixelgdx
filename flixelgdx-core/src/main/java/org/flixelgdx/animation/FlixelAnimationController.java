@@ -148,6 +148,37 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
+   * Loads a Sparrow atlas from a single base path, inferring the conventional {@code .png} and
+   * {@code .xml} file names shared by a Sparrow export. For example, passing
+   * {@code "shared/images/foo"} loads the texture from
+   * {@code "shared/images/foo.png"} and the atlas data from
+   * {@code "shared/images/foo.xml"}.
+   *
+   * <pre>{@code
+   * sprite.ensureAnimation().loadSparrowFrames("shared/images/foo");
+   * }</pre>
+   *
+   * @param path The base path, without a file extension, shared by the PNG and XML pair.
+   * @return The owning sprite for chaining.
+   */
+  @NotNull
+  public FlixelSprite loadSparrowFrames(@NotNull String path) {
+    return loadSparrowFrames(path + ".png", path + ".xml");
+  }
+
+  /**
+   * Overload of {@link #loadSparrowFrames(String)} that accepts the base path as a {@link FileHandle}
+   * instead of a path string.
+   *
+   * @param path The base path handle, without a file extension, shared by the PNG and XML pair.
+   * @return The owning sprite for chaining.
+   */
+  @NotNull
+  public FlixelSprite loadSparrowFrames(@NotNull FileHandle path) {
+    return loadSparrowFrames(path.path());
+  }
+
+  /**
    * Loads Sparrow XML from a path string (UTF-8). Tries {@code Gdx.files.internal} then {@code classpath}.
    *
    * @param textureKey Asset key of the {@link FlixelGraphic}.
