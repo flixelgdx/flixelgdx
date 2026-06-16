@@ -43,6 +43,7 @@ import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
+import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -208,6 +209,13 @@ public final class Flixel {
    * to at most this value so a long hitch does not move physics too far in one step.
    */
   public static final float MAX_ELAPSED = 0.1f;
+
+  /**
+   * Automatically applies antialiasing for any member added to the current {@link FlixelState}.
+   * Note that when this value is set to {@code true}, any {@link FlixelSprite}'s / {@link FlixelAntialiasable}'s
+   * antialiasing property will be ignored.
+   */
+  public static boolean applyAntialiasingOnStateAdd = false;
 
   /**
    * The active {@link FlixelGame} instance driving the game lifecycle.
