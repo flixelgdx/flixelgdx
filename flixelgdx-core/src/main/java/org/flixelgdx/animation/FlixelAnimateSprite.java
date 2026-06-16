@@ -193,7 +193,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
       throw new IllegalArgumentException("The provided path is either not a real folder.");
     }
     return addSpritemapAndAnimation(path + "/" + defaultSpritemapName + ".png",
-      path + "/" + defaultSpritemapName + ".json", path + "/" + defaultAnimationName + ".json");
+        path + "/" + defaultSpritemapName + ".json", path + "/" + defaultAnimationName + ".json");
   }
 
   /**
