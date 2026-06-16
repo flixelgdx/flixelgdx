@@ -122,6 +122,15 @@ public class FlixelColor {
   }
 
   /**
+   * Creates a new color from the given {@code FlixelColor} value.
+   *
+   * @param source The {@code FlixelColor} value to copy.
+   */
+  public FlixelColor(@NotNull FlixelColor source) {
+    this.color = new Color(source.color);
+  }
+
+  /**
    * @return Packed RGBA8888, same as libGDX {@link Color#rgba8888(Color)} on the backing color.
    */
   public int getColor() {
