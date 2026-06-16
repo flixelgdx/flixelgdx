@@ -284,6 +284,9 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   @Override
   public void add(@NotNull IFlixelBasic basic) {
     super.add(basic);
+    if (basic instanceof FlixelAntialiasable b && Flixel.applyAntialiasingOnStateAdd) {
+      b.setAntialiasing(Flixel.isAntialiasing());
+    }
   }
 
   @Nullable
