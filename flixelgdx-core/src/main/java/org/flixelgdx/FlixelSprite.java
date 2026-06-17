@@ -34,6 +34,7 @@ import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -55,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
  */
-public class FlixelSprite extends FlixelObject implements FlixelColorable {
+public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable {
 
   /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
   @Nullable
@@ -124,13 +125,25 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     this(0, 0);
   }
 
+  /**
+   * Constructs a new sprite at the given position.
+   *
+   * @param x The X coordinate to place the new sprite at.
+   * @param y The X coordinate to place the new sprite at.
+   */
   public FlixelSprite(float x, float y) {
     this(x, y, null);
   }
 
+  /**
+   * Constructs a new sprite at the given position with a loaded graphic.
+   *
+   * @param x The X coordinate to place the new sprite at.
+   * @param y The X coordinate to place the new sprite at.
+   */
   public FlixelSprite(float x, float y, String graphicAssetKey) {
     super(x, y);
-    if (graphicAssetKey != null && graphicAssetKey.isEmpty()) {
+    if (graphicAssetKey != null && !graphicAssetKey.isEmpty()) {
       loadGraphic(graphicAssetKey);
     }
   }
@@ -736,10 +749,12 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     this.offsetY = y;
   }
 
+  @Override
   public boolean isAntialiasing() {
     return antialiasing;
   }
 
+  @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
     Texture texture = currentRegion != null ? currentRegion.getTexture() : null;
@@ -748,6 +763,11 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
           antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
           antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
+  }
+
+  @Override
+  public void toggleAntialiasing() {
+    setAntialiasing(!isAntialiasing());
   }
 
   public float getAlpha() {
@@ -810,18 +830,6 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     offsetY = y;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public float getShakeWidth() {
-    return getWidth();
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public float getShakeHeight() {
-    return getHeight();
-  }
-
   public void setAlpha(float a) {
     color.a = a;
   }
@@ -859,7 +867,7 @@ public class FlixelSprite extends FlixelObject implements FlixelColorable {
     return atlasFrames;
   }
 
-  public FlixelFrame getCurrentFrame() {
+  public @Nullable FlixelFrame getCurrentFrame() {
     return currentFrame;
   }
 

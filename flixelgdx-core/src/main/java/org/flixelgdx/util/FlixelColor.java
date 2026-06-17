@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.MathUtils;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Mutable color wrapper that owns a single {@link Color} instance for stable tinting
@@ -63,6 +64,8 @@ public class FlixelColor {
 
   @NotNull
   private final Color color;
+  @Nullable
+  private float[] hsv;
 
   /**
    * Creates a new color with the default white color.
@@ -72,18 +75,19 @@ public class FlixelColor {
   }
 
   /**
-   * Creates a new color with the given RGBA values. Values must be in the range 0-255.
+   * Creates a new color with the given RGBA values. Values must be in the range 0-255 (with alpha
+   * being {@code [0, 1]}).
    *
    * @param r The red component.
    * @param g The green component.
    * @param b The blue component.
-   * @param a The alpha component.
+   * @param a The alpha component (ranged from {@code [0, 1]}).
    */
-  public FlixelColor(int r, int g, int b, int a) {
+  public FlixelColor(int r, int g, int b, float a) {
     float nr = MathUtils.clamp(r, 0, 255) / 255f;
     float ng = MathUtils.clamp(g, 0, 255) / 255f;
     float nb = MathUtils.clamp(b, 0, 255) / 255f;
-    float na = MathUtils.clamp(a, 0, 255) / 255f;
+    float na = MathUtils.clamp(a, 0, 1);
     this.color = new Color(nr, ng, nb, na);
   }
 
@@ -118,6 +122,15 @@ public class FlixelColor {
   }
 
   /**
+   * Creates a new color from the given {@code FlixelColor} value.
+   *
+   * @param source The {@code FlixelColor} value to copy.
+   */
+  public FlixelColor(@NotNull FlixelColor source) {
+    this.color = new Color(source.color);
+  }
+
+  /**
    * @return Packed RGBA8888, same as libGDX {@link Color#rgba8888(Color)} on the backing color.
    */
   public int getColor() {
@@ -143,10 +156,84 @@ public class FlixelColor {
   }
 
   /**
+   * Sets this color from a hex string, same format accepted by libGDX {@link Color#valueOf(String)}
+   * (for example {@code "ff0000"} or {@code "ff0000ff"}).
+   *
+   * @param hexFormat The hex string to parse. Must not be {@code null}.
+   */
+  public void setColor(@NotNull String hexFormat) {
+    color.set(Color.valueOf(hexFormat));
+  }
+
+  /**
+   * @return The hue component of this color, in degrees {@code [0, 360)}.
+   */
+  public float getHue() {
+    return hsv()[0];
+  }
+
+  /**
+   * @return The saturation component of this color, in the range {@code [0, 1]}.
+   */
+  public float getSaturation() {
+    return hsv()[1];
+  }
+
+  /**
+   * @return The value (brightness) component of this color, in the range {@code [0, 1]}.
+   */
+  public float getValue() {
+    return hsv()[2];
+  }
+
+  /**
+   * Sets the hue component of this color, leaving saturation, value, and alpha unchanged.
+   *
+   * @param hue The new hue, in degrees {@code [0, 360)}.
+   */
+  public void setHue(float hue) {
+    float[] v = hsv();
+    color.fromHsv(hue, v[1], v[2]);
+  }
+
+  /**
+   * Sets the saturation component of this color, leaving hue, value, and alpha unchanged.
+   *
+   * @param saturation The new saturation, in the range {@code [0, 1]}.
+   */
+  public void setSaturation(float saturation) {
+    float[] v = hsv();
+    color.fromHsv(v[0], saturation, v[2]);
+  }
+
+  /**
+   * Sets the value (brightness) component of this color, leaving hue, saturation, and alpha unchanged.
+   *
+   * @param value The new value, in the range {@code [0, 1]}.
+   */
+  public void setValue(float value) {
+    float[] v = hsv();
+    color.fromHsv(v[0], v[1], value);
+  }
+
+  /**
    * @return The backing libGDX color (mutable). Must not be {@code null}.
    */
   @NotNull
   public Color getGdxColor() {
     return color;
+  }
+
+  /**
+   * Lazily allocates the backing HSV scratch array, then refreshes it from the current color.
+   *
+   * @return The reused HSV scratch array, refreshed to match {@link #color}.
+   */
+  @NotNull
+  private float[] hsv() {
+    if (hsv == null) {
+      hsv = new float[3];
+    }
+    return color.toHsv(hsv);
   }
 }

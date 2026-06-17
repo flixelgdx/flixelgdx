@@ -371,7 +371,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * Returns or creates a pooled wrapper and increments its reference count when it implements {@link FlixelAsset}.
    *
    * <p><b>Beginner shorthand:</b> “Give me the shared handle and count me as a user.” This method automatically calls
-   * {@link FlixelAsset#retain()} when executed. Note that you should
+   * {@link FlixelAsset#retain()} when executed.
    *
    * <p>Equivalent to {@link #ensureWrapper} followed by {@link FlixelAsset#retain()} for {@link FlixelAsset} wrappers.
    * Call {@link FlixelAsset#release()} when done (e.g. from {@link org.flixelgdx.FlixelSprite#destroy() FlixelSprite.destroy()}).
