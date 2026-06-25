@@ -32,6 +32,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.XmlReader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -42,6 +43,7 @@ import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.StringReader;
 import java.util.Objects;
 
 /**
@@ -97,8 +99,14 @@ import java.util.Objects;
  * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
  * override earlier registrations on collisions.
  *
+ * <h2>Mixing in a Sparrow atlas</h2>
+ * A character can also carry Sparrow XML clips on the same body via {@link #addSparrowAtlas(String)}.
+ * Rig clips keep rendering from the baked rig; clips registered against the merged Sparrow frames
+ * render through the standard frame path, and the sprite picks the right one per clip automatically.
+ *
  * @see #addSpritemapAndAnimation(String)
  * @see #addSpritemapAndAnimation(String, String, String)
+ * @see #addSparrowAtlas(String)
  * @see #defaultSpritemapName
  * @see #defaultAnimationName
  */
@@ -558,6 +566,91 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
+   * Merges a Sparrow XML atlas onto this sprite, alongside any Adobe Animate rig already installed.
+   *
+   * <p>Adobe Animate atlases ({@link #addSpritemapAndAnimation}) and Sparrow atlases normally live on
+   * different sprites, because the plain Sparrow loader ({@code animation.loadSparrowFrames}) replaces the
+   * sprite's atlas and clears its clips. This method instead <em>appends</em> the Sparrow sheet's
+   * frames to the sprite's existing atlas, so one character can mix both formats: rig clips keep
+   * rendering through the baked rig, while Sparrow clips render through the standard frame path. After
+   * calling this, register the Sparrow clips the usual way, for example
+   * {@code sprite.amimation.addAnimationByPrefix("singLEFT-censor", "pico swear left", 24, false)}.
+   *
+   * <p>A clip counts as rig-backed only when its name matches a baked rig clip; every other clip
+   * (including the Sparrow clips registered after this call) renders from {@link FlixelSprite#currentRegion},
+   * so the two coexist on the same body without extra bookkeeping in game code.
+   *
+   * <pre>{@code
+   * FlixelAnimateSprite pico = new FlixelAnimateSprite();
+   * pico.addSpritemapAndAnimation("characters/pico/basic-animations"); // Animate rig (idle, sing)
+   * pico.addSparrowAtlas("characters/Pico_Censored");                  // Sparrow sheet (censor poses)
+   * pico.animation.addAnimationByPrefix("singLEFT-censor", "pico swear left", 24, false);
+   * pico.animation.playAnimation("Idle");           // rig clip
+   * pico.animation.playAnimation("singLEFT-censor"); // Sparrow clip
+   * }</pre>
+   *
+   * @param path The base path shared by the PNG and XML pair, without a file extension.
+   * @return {@code this} sprite, for chaining.
+   * @see #addSparrowAtlas(String, String)
+   */
+  @NotNull
+  public FlixelAnimateSprite addSparrowAtlas(@NotNull String path) {
+    return addSparrowAtlas(path + ".png", path + ".xml");
+  }
+
+  /**
+   * Overload of {@link #addSparrowAtlas(String)} that accepts the base path as a {@link FileHandle}.
+   *
+   * @param path The base path handle shared by the PNG and XML pair, without a file extension.
+   * @return {@code this} sprite, for chaining.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSparrowAtlas(@NotNull FileHandle path) {
+    return addSparrowAtlas(pathOf(path, "path"));
+  }
+
+  /**
+   * Merges a Sparrow XML atlas from an explicit texture key and XML path. See {@link #addSparrowAtlas(String)}
+   * for the typical base-path form and the rendering contract.
+   *
+   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
+   * @param xmlPath The path to the Sparrow XML. Must not be {@code null}.
+   * @return {@code this} sprite, for chaining.
+   * @throws IllegalArgumentException If either file is missing or malformed.
+   */
+  @NotNull
+  public FlixelAnimateSprite addSparrowAtlas(@NotNull String textureKey, @NotNull String xmlPath) {
+    ensureAnimation();
+
+    FileHandle xmlHandle = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
+    String xmlText = FlixelSpritemapJsonLoader.readUtf8Text(xmlHandle);
+    XmlReader.Element xmlRoot = new XmlReader().parse(new StringReader(xmlText));
+
+    FlixelGraphic graphic = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
+    Texture texture;
+    try {
+      texture = graphic.requireTexture();
+    } catch (IllegalStateException notLoaded) {
+      texture = graphic.loadNow();
+    }
+
+    Array<FlixelFrame> parsed = FlixelAnimationController.parseSparrowFrames(texture, xmlRoot);
+
+    // Append onto whatever atlas the sprite already has. When a rig is installed its atlas array is
+    // shared by reference with the sprite, so appending here also feeds the rig's antialiasing pass
+    // and keeps getAtlasRegions()-driven clip lookups (addAnimationByPrefix) working across formats.
+    Array<FlixelFrame> existing = getAtlasRegions();
+    if (existing == null) {
+      atlasFrames = parsed;
+    } else {
+      existing.addAll(parsed);
+    }
+
+    retainSecondaryGraphic(graphic);
+    return this;
+  }
+
+  /**
    * Resolves a {@link FileHandle} into the path string the rest of {@code addSpritemapAndAnimation}
    * overloads operate on. Asset-manager lookups (the spritemap PNG) and direct JSON reads both resolve
    * a plain path through {@code Gdx.files}, so converting up front lets every {@link FileHandle} overload
@@ -612,20 +705,54 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * When a rig is installed we render directly from its pre-baked parts and never touch
-   * {@link FlixelSprite#currentRegion}, so we swallow the animation controller's per-frame "current
-   * keyframe" callback. Without a rig, behavior falls through to the normal
-   * {@link FlixelSprite#setCurrentFrameForAnimation} path so the sprite still works for simple atlases.
+   * Routes the controller's per-frame "current keyframe" callback to the right renderer.
    *
-   * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored when a rig
-   *   is installed.
+   * <p>When the clip that is playing is rig-backed we render directly from its pre-baked parts and
+   * never touch {@link FlixelSprite#currentRegion}, so we swallow the callback (and clear any leftover
+   * Sparrow frame so switching from a Sparrow clip to a rig clip does not flash stale art). For a
+   * Sparrow or simple-atlas clip the callback falls through to the normal
+   * {@link FlixelSprite#setCurrentFrameForAnimation} path, which is what lets a Sparrow sheet merged
+   * with {@link #addSparrowAtlas(String)} share the same sprite as the rig.
+   *
+   * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored while a
+   *   rig clip is playing.
    */
   @Override
   public void setCurrentFrameForAnimation(@Nullable FlixelFrame frame) {
-    if (rig != null) {
+    if (isCurrentClipRig()) {
+      currentFrame = null;
       return;
     }
     super.setCurrentFrameForAnimation(frame);
+  }
+
+  /**
+   * Whether the clip the controller is currently playing is backed by the installed rig.
+   *
+   * <p>A clip is rig-backed only when a rig is installed and the clip name matches one of the rig's
+   * baked clips. Clips registered against merged Sparrow frames (or any non-rig atlas) are not
+   * rig-backed and therefore render through {@link FlixelSprite#currentRegion}.
+   *
+   * @return {@code true} if the current clip should be drawn from the rig.
+   */
+  private boolean isCurrentClipRig() {
+    FlixelAnimationController controller = animation;
+    String name = (controller != null) ? controller.getCurrentAnim() : "";
+    boolean rigHasClip = rig != null && !name.isEmpty() && rig.getClip(name) != null;
+    return useRigClip(rig != null, rigHasClip);
+  }
+
+  /**
+   * Pure decision for whether the rig draw path should be used, split out so it can be unit tested
+   * without a GPU-backed rig. The rig path is used only when a rig is installed and it actually holds
+   * the clip being played.
+   *
+   * @param hasRig Whether a rig is installed.
+   * @param rigHasClip Whether the rig holds the clip currently playing.
+   * @return {@code true} if the rig draw path should be used.
+   */
+  static boolean useRigClip(boolean hasRig, boolean rigHasClip) {
+    return hasRig && rigHasClip;
   }
 
   /**
@@ -645,11 +772,14 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @Override
   public @NotNull FlixelSprite updateHitbox() {
-    if (rig == null) {
+    // A Sparrow clip merged onto this sprite sizes its hitbox from the frame, like a normal sprite;
+    // only a rig clip uses the rig's anchor bounding box.
+    if (!isCurrentClipRig()) {
       return super.updateHitbox();
     }
-    float effW = Math.abs(getScaleX()) * rig.anchorWidth;
-    float effH = Math.abs(getScaleY()) * rig.anchorHeight;
+    FlixelAnimateRig activeRig = rig;
+    float effW = Math.abs(getScaleX()) * activeRig.anchorWidth;
+    float effH = Math.abs(getScaleY()) * activeRig.anchorHeight;
     return updateHitbox(effW, effH);
   }
 
@@ -773,6 +903,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
     FlixelAnimateRig.Clip clip = activeRig.getClip(clipName);
     if (clip == null) {
+      // Not a rig clip: a Sparrow clip merged via addSparrowAtlas() (or any non-rig atlas clip)
+      // renders through the standard frame path off currentFrame / currentRegion.
+      super.draw(batch);
       return;
     }
 

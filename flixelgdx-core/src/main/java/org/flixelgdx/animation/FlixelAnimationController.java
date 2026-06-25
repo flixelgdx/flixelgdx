@@ -220,6 +220,28 @@ public class FlixelAnimationController implements FlixelUpdatable {
       texture = g.loadNow();
     }
 
+    Array<FlixelFrame> atlasFrames = parseSparrowFrames(texture, xmlRoot);
+    owner.applySparrowAtlas(g, atlasFrames);
+    return owner;
+  }
+
+  /**
+   * Parses Sparrow {@code SubTexture} entries into a fresh frame list without installing them on any
+   * sprite.
+   *
+   * <p>This is the shared parsing core behind {@link #loadSparrowFrames(String, XmlReader.Element)}.
+   * Keeping it separate lets callers that need to <em>merge</em> a Sparrow sheet into an existing
+   * atlas (for example {@link FlixelAnimateSprite#addSparrowAtlas(String)}) reuse the exact same
+   * region math without going through {@link FlixelSprite#applySparrowAtlas}, which replaces the
+   * sprite's atlas and clears its clips.
+   *
+   * @param texture The backing texture the regions are cut from.
+   * @param xmlRoot The root {@code TextureAtlas} element of a Sparrow XML.
+   * @return A newly allocated list of frames, one per valid {@code SubTexture}.
+   */
+  @NotNull
+  public static Array<FlixelFrame> parseSparrowFrames(
+      @NotNull Texture texture, @NotNull XmlReader.Element xmlRoot) {
     int texW = texture.getWidth();
     int texH = texture.getHeight();
     Array<FlixelFrame> atlasFrames = new Array<>(FlixelFrame[]::new);
@@ -277,8 +299,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
       atlasFrames.add(frame);
     }
 
-    owner.applySparrowAtlas(g, atlasFrames);
-    return owner;
+    return atlasFrames;
   }
 
   /** Clears all clips, per-animation offsets, and resets playback state. */
