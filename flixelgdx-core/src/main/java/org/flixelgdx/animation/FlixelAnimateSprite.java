@@ -37,7 +37,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -97,8 +96,15 @@ import java.util.Objects;
  * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
  * override earlier registrations on collisions.
  *
+ * <h2>Mixing in a Sparrow atlas</h2>
+ * A character can also carry Sparrow XML clips on the same body via
+ * {@link FlixelAnimationController#addSparrowAtlas(String)}. Rig clips keep rendering from the baked
+ * rig; clips registered against the merged Sparrow frames render through the standard frame path, and
+ * the sprite picks the right one per clip automatically.
+ *
  * @see #addSpritemapAndAnimation(String)
  * @see #addSpritemapAndAnimation(String, String, String)
+ * @see FlixelAnimationController#addSparrowAtlas(String)
  * @see #defaultSpritemapName
  * @see #defaultAnimationName
  */
@@ -142,16 +148,6 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   private final Affine2 drawAffine = new Affine2();
-
-  /**
-   * Extra {@link FlixelGraphic} handles retained when additional spritesheets are merged so those atlases' textures stay
-   * loaded for the lifetime of this sprite. The first (primary) graphic is
-   * still tracked by {@link FlixelSprite}'s own {@code graphic} field; this list only holds graphics
-   * appended <em>after</em> the initial load. Lazily allocated to avoid the per-instance footprint
-   * for sprites that only ever load a single atlas.
-   */
-  @Nullable
-  private Array<FlixelGraphic> secondaryGraphics;
 
   /** Creates an empty sprite at {@code (0, 0)}. Call {@link #addSpritemapAndAnimation} before using BTA rigs. */
   public FlixelAnimateSprite() {
@@ -579,53 +575,54 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Retains an additional {@link FlixelGraphic} so its texture stays loaded until this sprite is
-   * destroyed, and propagates the sprite's current antialiasing setting onto the new graphic's
-   * texture so an appended atlas matches the visual filter of the original. Called by
-   * {@link FlixelAnimateRigLoader#append} for every secondary atlas merged into the rig; not part
-   * of the public game-code API.
+   * Routes the controller's per-frame "current keyframe" callback to the right renderer.
    *
-   * <p>The graphic is assumed to have already been retained by the caller (typically via
-   * {@link org.flixelgdx.asset.FlixelAssetManager#obtainWrapper FlixelAssetManager.obtainWrapper}, which retains
-   * automatically), so this method only stores the reference and does not call
-   * {@link FlixelGraphic#retain()} again.
+   * <p>When the clip that is playing is rig-backed we render directly from its pre-baked parts and
+   * never touch {@link FlixelSprite#currentRegion}, so we swallow the callback (and clear any leftover
+   * Sparrow frame so switching from a Sparrow clip to a rig clip does not flash stale art). For a
+   * Sparrow or simple-atlas clip the callback falls through to the normal
+   * {@link FlixelSprite#setCurrentFrameForAnimation} path, which is what lets a Sparrow sheet merged
+   * with {@link FlixelAnimationController#addSparrowAtlas(String)} share the same sprite as the rig.
    *
-   * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.
-   */
-  void retainSecondaryGraphic(@NotNull FlixelGraphic graphic) {
-    if (secondaryGraphics == null) {
-      secondaryGraphics = new Array<>(2);
-    }
-    secondaryGraphics.add(graphic);
-
-    if (antialiasing) {
-      Texture texture;
-      try {
-        texture = graphic.requireTexture();
-      } catch (IllegalStateException notLoaded) {
-        texture = null;
-      }
-      if (texture != null) {
-        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-      }
-    }
-  }
-
-  /**
-   * When a rig is installed we render directly from its pre-baked parts and never touch
-   * {@link FlixelSprite#currentRegion}, so we swallow the animation controller's per-frame "current
-   * keyframe" callback. Without a rig, behavior falls through to the normal
-   * {@link FlixelSprite#setCurrentFrameForAnimation} path so the sprite still works for simple atlases.
-   *
-   * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored when a rig
-   *   is installed.
+   * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored while a
+   *   rig clip is playing.
    */
   @Override
   public void setCurrentFrameForAnimation(@Nullable FlixelFrame frame) {
-    if (rig != null) {
+    if (isCurrentClipRig()) {
+      currentFrame = null;
       return;
     }
     super.setCurrentFrameForAnimation(frame);
+  }
+
+  /**
+   * Whether the clip the controller is currently playing is backed by the installed rig.
+   *
+   * <p>A clip is rig-backed only when a rig is installed and the clip name matches one of the rig's
+   * baked clips. Clips registered against merged Sparrow frames (or any non-rig atlas) are not
+   * rig-backed and therefore render through {@link FlixelSprite#currentRegion}.
+   *
+   * @return {@code true} if the current clip should be drawn from the rig.
+   */
+  private boolean isCurrentClipRig() {
+    FlixelAnimationController controller = animation;
+    String name = (controller != null) ? controller.getCurrentAnim() : "";
+    boolean rigHasClip = rig != null && !name.isEmpty() && rig.getClip(name) != null;
+    return useRigClip(rig != null, rigHasClip);
+  }
+
+  /**
+   * Pure decision for whether the rig draw path should be used, split out so it can be unit tested
+   * without a GPU-backed rig. The rig path is used only when a rig is installed and it actually holds
+   * the clip being played.
+   *
+   * @param hasRig Whether a rig is installed.
+   * @param rigHasClip Whether the rig holds the clip currently playing.
+   * @return {@code true} if the rig draw path should be used.
+   */
+  static boolean useRigClip(boolean hasRig, boolean rigHasClip) {
+    return hasRig && rigHasClip;
   }
 
   /**
@@ -645,11 +642,14 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @Override
   public @NotNull FlixelSprite updateHitbox() {
-    if (rig == null) {
+    // A Sparrow clip merged onto this sprite sizes its hitbox from the frame, like a normal sprite;
+    // only a rig clip uses the rig's anchor bounding box.
+    if (!isCurrentClipRig()) {
       return super.updateHitbox();
     }
-    float effW = Math.abs(getScaleX()) * rig.anchorWidth;
-    float effH = Math.abs(getScaleY()) * rig.anchorHeight;
+    FlixelAnimateRig activeRig = rig;
+    float effW = Math.abs(getScaleX()) * activeRig.anchorWidth;
+    float effH = Math.abs(getScaleY()) * activeRig.anchorHeight;
     return updateHitbox(effW, effH);
   }
 
@@ -773,6 +773,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
     FlixelAnimateRig.Clip clip = activeRig.getClip(clipName);
     if (clip == null) {
+      // Not a rig clip: a Sparrow clip merged via addSparrowAtlas() (or any non-rig atlas clip)
+      // renders through the standard frame path off currentFrame / currentRegion.
+      super.draw(batch);
       return;
     }
 
@@ -906,18 +909,6 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @Override
   public void destroy() {
     rig = null;
-    if (secondaryGraphics != null) {
-      // Balance every retain from merged sheets (obtainWrapper()). The primary
-      // graphic is still released by FlixelSprite.destroy() through its own field.
-      for (int i = 0; i < secondaryGraphics.size; i++) {
-        FlixelGraphic g = secondaryGraphics.get(i);
-        if (g != null) {
-          g.release();
-        }
-      }
-      secondaryGraphics.clear();
-      secondaryGraphics = null;
-    }
     super.destroy();
   }
 }

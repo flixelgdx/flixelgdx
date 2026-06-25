@@ -67,6 +67,16 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   protected Array<FlixelFrame> atlasFrames;
 
   /**
+   * Extra {@link FlixelGraphic} handles retained when additional spritesheets are merged onto this
+   * sprite, so those atlases' textures stay loaded for the sprite's lifetime. The primary graphic is
+   * still tracked by the {@link #graphic} field; this list only holds graphics appended <em>after</em>
+   * the initial load, for example through {@link #mergeSparrowAtlas} or an appended Animate rig atlas.
+   * Lazily allocated to avoid the per-instance footprint for sprites that only ever load one atlas.
+   */
+  @Nullable
+  protected Array<FlixelGraphic> secondaryGraphics;
+
+  /**
    * Heavy controller object for handling animations. {@code null} until {@link #ensureAnimation()} or assigned directly.
    */
   @Nullable
@@ -429,6 +439,64 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
   }
 
+  /**
+   * Merges parsed Sparrow atlas frames onto this sprite's existing atlas instead of replacing it.
+   *
+   * <p>Where {@link #applySparrowAtlas} swaps in a fresh atlas and clears the sprite's clips, this
+   * <em>appends</em> {@code parsedFrames} to whatever atlas the sprite already has (creating one when
+   * it had none) and retains {@code newGraphic} as a {@link #retainSecondaryGraphic secondary graphic}
+   * so its texture stays loaded. That lets a single sprite carry frames from more than one sheet,
+   * which is what {@link FlixelAnimationController#addSparrowAtlas(String)} builds on. The currently
+   * displayed frame and the registered clips are left untouched, so a sprite already showing a rig
+   * clip or another atlas keeps rendering exactly as before; play one of the newly registered clips to
+   * show the merged art.
+   *
+   * @param newGraphic The graphic backing {@code parsedFrames}, already retained by its loader.
+   * @param parsedFrames The frames to append, which may be empty.
+   */
+  public void mergeSparrowAtlas(
+      @NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
+    retainSecondaryGraphic(newGraphic);
+    if (atlasFrames == null) {
+      atlasFrames = parsedFrames;
+    } else {
+      atlasFrames.addAll(parsedFrames);
+    }
+  }
+
+  /**
+   * Retains an additional {@link FlixelGraphic} so its texture stays loaded until this sprite is
+   * destroyed, and propagates the sprite's current antialiasing setting onto the new graphic's
+   * texture so an appended atlas matches the visual filter of the original.
+   *
+   * <p>The graphic is assumed to have already been retained by the caller (typically via
+   * {@link org.flixelgdx.asset.FlixelAssetManager#obtainWrapper FlixelAssetManager.obtainWrapper},
+   * which retains automatically), so this method only stores the reference and does not call
+   * {@link FlixelGraphic#retain()} again. This is an advanced hook used by atlas-merging code such as
+   * {@link FlixelAnimationController#addSparrowAtlas(String)} and the Animate rig loader; most game
+   * code never calls it directly.
+   *
+   * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.
+   */
+  public void retainSecondaryGraphic(@NotNull FlixelGraphic graphic) {
+    if (secondaryGraphics == null) {
+      secondaryGraphics = new Array<>(2);
+    }
+    secondaryGraphics.add(graphic);
+
+    if (antialiasing) {
+      Texture texture;
+      try {
+        texture = graphic.requireTexture();
+      } catch (IllegalStateException notLoaded) {
+        texture = null;
+      }
+      if (texture != null) {
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+      }
+    }
+  }
+
   @Override
   public void draw(Batch batch) {
     if (!visible) {
@@ -663,6 +731,18 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       atlasFrames = null;
     }
     frames = null;
+    if (secondaryGraphics != null) {
+      // Balance every retain from merged sheets (obtainWrapper()); the primary graphic below is
+      // released separately through its own field.
+      for (int i = 0; i < secondaryGraphics.size; i++) {
+        FlixelGraphic g = secondaryGraphics.get(i);
+        if (g != null) {
+          g.release();
+        }
+      }
+      secondaryGraphics.clear();
+      secondaryGraphics = null;
+    }
     if (graphic != null) {
       graphic.release();
       graphic = null;
