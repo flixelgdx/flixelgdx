@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
  * <strong>not</strong> allocated by default (saves memory for large sprite counts on the order of thousands of
  * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or assign a controller directly
- * when you need clips, then use {@code sprite.ensureAnimation().playAnimation(...)}, {@code loadSparrowFrames(...)}, etc.
+ * when you need clips, then use {@code sprite.ensureAnimation().addSparrowAtlas(...)}, {@code .playAnimation(...)}, etc.
  *
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
@@ -411,7 +411,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link FlixelAnimationController#addSparrowAtlas(String, com.badlogic.gdx.utils.XmlReader.Element)} and
    * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
    * not a general API for game code.
    *
@@ -509,8 +509,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    float drawLeft = wx - offsetX;
-    float drawBottom = wy - offsetY;
+    float drawLeft = wx + offsetX;
+    float drawBottom = wy + offsetY;
     // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
     // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
     float cullW = currentFrame != null
@@ -550,8 +550,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
       int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
 
-      float drawX = wx - offsetX + insetX;
-      float drawY = wy - offsetY + insetY;
+      float drawX = wx + offsetX + insetX;
+      float drawY = wy + offsetY + insetY;
 
       // Rotate/scale around the source box's center, expressed relative to the region's bottom-left
       // corner (the origin that the batch.draw overload below measures from).
@@ -589,8 +589,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       batch.setColor(color);
       batch.draw(
           currentRegion.getRegion(),
-          wx - offsetX,
-          wy - offsetY,
+          wx + offsetX,
+          wy + offsetY,
           originX,
           originY,
           getWidth(),

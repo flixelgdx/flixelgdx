@@ -921,7 +921,7 @@ public class FlixelText extends FlixelSprite {
   /** @throws UnsupportedOperationException always; text objects cannot use Sparrow atlases. */
   @Override
   public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
-    throw new UnsupportedOperationException("FlixelText does not support loadSparrowFrames().");
+    throw new UnsupportedOperationException("FlixelText does not support addSparrowAtlas().");
   }
 
   /** @return {@code null} always; text has no atlas regions. */
