@@ -226,14 +226,80 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
+   * Merges a Sparrow XML atlas onto the owning sprite from a single base path, inferring the
+   * conventional {@code .png} and {@code .xml} file names shared by a Sparrow export.
+   *
+   * <p>Unlike {@link #loadSparrowFrames(String)}, which replaces the sprite's atlas and clears its
+   * clips, this <em>appends</em> the sheet's frames to whatever atlas the sprite already has, so one
+   * sprite can carry frames from several sheets. It works on any {@link FlixelSprite}, not just an
+   * Adobe Animate rig sprite: a plain sprite can mix two Sparrow sheets, and a
+   * {@link FlixelAnimateSprite} can carry Sparrow clips alongside its baked rig. Register the merged
+   * clips the usual way after this call, then play one to show the merged art.
+   *
+   * <pre>{@code
+   * FlixelSprite sprite = new FlixelSprite();
+   * sprite.ensureAnimation().addSparrowAtlas("shared/images/characters/Pico_Censored");
+   * sprite.animation.addAnimationByPrefix("swearLeft", "pico swear left", 24, false);
+   * sprite.animation.playAnimation("swearLeft");
+   * }</pre>
+   *
+   * @param path The base path, without a file extension, shared by the PNG and XML pair.
+   * @return The owning sprite for chaining.
+   * @see #addSparrowAtlas(String, String)
+   */
+  @NotNull
+  public FlixelSprite addSparrowAtlas(@NotNull String path) {
+    return addSparrowAtlas(path + ".png", path + ".xml");
+  }
+
+  /**
+   * Overload of {@link #addSparrowAtlas(String)} that accepts the base path as a {@link FileHandle}.
+   *
+   * @param path The base path handle, without a file extension, shared by the PNG and XML pair.
+   * @return The owning sprite for chaining.
+   */
+  @NotNull
+  public FlixelSprite addSparrowAtlas(@NotNull FileHandle path) {
+    return addSparrowAtlas(path.path());
+  }
+
+  /**
+   * Merges a Sparrow XML atlas onto the owning sprite from an explicit texture key and XML path. See
+   * {@link #addSparrowAtlas(String)} for the typical base-path form and the merge contract.
+   *
+   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
+   * @param xmlPath The path to the Sparrow XML. Must not be {@code null}.
+   * @return The owning sprite for chaining.
+   * @throws IllegalArgumentException If either file is missing or malformed.
+   */
+  @NotNull
+  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull String xmlPath) {
+    FileHandle xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
+    String text = FlixelSpritemapJsonLoader.readUtf8Text(xml);
+    XmlReader.Element xmlRoot = new XmlReader().parse(new StringReader(text));
+
+    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
+    Texture texture;
+    try {
+      texture = g.requireTexture();
+    } catch (IllegalStateException notLoaded) {
+      texture = g.loadNow();
+    }
+
+    Array<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);
+    owner.mergeSparrowAtlas(g, parsed);
+    return owner;
+  }
+
+  /**
    * Parses Sparrow {@code SubTexture} entries into a fresh frame list without installing them on any
    * sprite.
    *
    * <p>This is the shared parsing core behind {@link #loadSparrowFrames(String, XmlReader.Element)}.
    * Keeping it separate lets callers that need to <em>merge</em> a Sparrow sheet into an existing
-   * atlas (for example {@link FlixelAnimateSprite#addSparrowAtlas(String)}) reuse the exact same
-   * region math without going through {@link FlixelSprite#applySparrowAtlas}, which replaces the
-   * sprite's atlas and clears its clips.
+   * atlas (for example {@link #addSparrowAtlas(String)}) reuse the exact same region math without
+   * going through {@link FlixelSprite#applySparrowAtlas}, which replaces the sprite's atlas and
+   * clears its clips.
    *
    * @param texture The backing texture the regions are cut from.
    * @param xmlRoot The root {@code TextureAtlas} element of a Sparrow XML.
