@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.asset;
 
+import com.badlogic.gdx.assets.AssetManager;
+import org.flixelgdx.audio.FlixelSoundSource;
+import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,15 +33,15 @@ import java.util.Objects;
 
 /**
  * Generic {@link FlixelAsset} handle for types whose libGDX raw type is the same as the content
- * type (e.g. {@link String} for text files, {@link org.flixelgdx.audio.FlixelSoundSource FlixelSoundSource} for audio).
+ * type (e.g. {@link String} for text files, {@link FlixelSoundSource FlixelSoundSource} for audio).
  *
  * <p>Content is resolved lazily: the first {@link #get()} call either fetches the value from the
- * libGDX {@link com.badlogic.gdx.assets.AssetManager} once loading completes, or triggers a
- * synchronous load if the asset was not queued first. Prefer
- * {@link FlixelAssetManager#load(String)} in a loading state to avoid mid-frame stalls.
+ * libGDX {@link AssetManager} once loading completes, or triggers a synchronous load if the asset
+ * was not queued first. Prefer {@link FlixelAssetManager#load(String)} in a loading state to avoid
+ * mid-frame stalls.
  *
- * <p>For image assets, use {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}, which
- * implements {@link FlixelAsset}{@code <FlixelGraphic>} directly.
+ * <p>For image assets, use {@link FlixelGraphic FlixelGraphic}, which implements
+ * {@link FlixelAsset}{@code <FlixelGraphic>} directly.
  *
  * @param <T> The content type; must match what the registered libGDX loader produces.
  */
@@ -65,8 +68,7 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
    *
    * @param assets The owning asset manager.
    * @param path Normalized asset path.
-   * @param rawType The libGDX raw type registered with the underlying
-   *   {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@code String.class}).
+   * @param rawType The libGDX raw type registered with the underlying {@link AssetManager} (e.g. {@code String.class}).
    */
   public FlixelDefaultAsset(
       @NotNull FlixelAssetManager assets,

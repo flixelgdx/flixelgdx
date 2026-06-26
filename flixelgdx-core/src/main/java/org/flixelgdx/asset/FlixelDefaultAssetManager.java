@@ -103,8 +103,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         FlixelSoundSource.class,
         new FlixelSoundSourceLoader(manager.getFileHandleResolver()));
 
-    FlixelAssetLoader<FlixelGraphic> graphicLoader =
-        (assets, path) -> new FlixelGraphic(assets, path);
+    FlixelAssetLoader<FlixelGraphic> graphicLoader = FlixelGraphic::new;
     registerLoader(".png", Texture.class, graphicLoader);
     registerLoader(".jpg", Texture.class, graphicLoader);
     registerLoader(".jpeg", Texture.class, graphicLoader);

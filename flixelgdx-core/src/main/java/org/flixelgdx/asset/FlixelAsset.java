@@ -40,15 +40,15 @@ import org.jetbrains.annotations.NotNull;
  * <p>Typical usage in a sprite class:
  *
  * <pre>{@code
- * // In a loading state
+ * // In a loading state.
  * Flixel.assets.load("player.png");
  *
- * // In a game state
+ * // In a game state.
  * FlixelAsset<FlixelGraphic> asset = Flixel.assets.get("player.png");
  * asset.retain();
  * FlixelGraphic graphic = asset.get();
  *
- * // In destroy()
+ * // In destroy().
  * asset.release();
  * }</pre>
  *
