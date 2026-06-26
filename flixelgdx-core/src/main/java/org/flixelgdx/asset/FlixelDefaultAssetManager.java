@@ -160,10 +160,10 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       return (FlixelAsset<T>) cached;
     }
     LoaderEntry<?> entry = requireEntry(path);
-    FlixelAsset<?> handle = ((LoaderEntry<T>) entry).loader.create(this, path);
+    FlixelAsset<T> handle = ((LoaderEntry<T>) entry).loader.create(this, path);
     applyPendingPersist(path, handle);
     cache.put(path, handle);
-    return (FlixelAsset<T>) handle;
+    return handle;
   }
 
   @Nullable
@@ -210,12 +210,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public boolean update() {
-    return manager.update() && !Flixel.getSoundFactory().isPrewarmPending();
+    boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
+    return manager.update() && !prewarmPending;
   }
 
   @Override
   public boolean update(int millis) {
-    return manager.update(millis) && !Flixel.getSoundFactory().isPrewarmPending();
+    boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
+    return manager.update(millis) && prewarmPending;
   }
 
   @Override
@@ -494,7 +496,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
       return;
     }
-    Flixel.getSoundFactory().prewarmSound(resolveAudioPath(path));
+    if (Flixel.getSoundFactory() != null) {
+      Flixel.getSoundFactory().prewarmSound(resolveAudioPath(path));
+    }
   }
 
   /** Pairs a libGDX raw type with its {@link FlixelAssetLoader}. */

@@ -70,7 +70,7 @@ public class FlixelLogger implements ApplicationLogger {
   private String customLogsFolderPath = null;
 
   /** Listeners notified whenever a log message is produced (used by the debug overlay). */
-  private final Array<Consumer<FlixelLogEntry>> logListeners = new Array<>(Consumer[]::new);
+  private final Array<Consumer<FlixelLogEntry>> logListeners = new Array<Consumer<FlixelLogEntry>>(Consumer[]::new);
 
   /** Reused for ANSI console lines (single game thread in practice). */
   private final FlixelString consoleLine = new FlixelString(512);
