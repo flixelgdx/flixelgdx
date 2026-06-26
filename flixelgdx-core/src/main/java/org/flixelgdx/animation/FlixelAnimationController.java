@@ -228,13 +228,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    */
   @NotNull
   public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
-    Texture texture;
-    try {
-      texture = g.requireTexture();
-    } catch (IllegalStateException notLoaded) {
-      texture = g.loadNow();
-    }
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    Texture texture = g.getTexture();
 
     Array<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);
     Array<FlixelFrame> existing = owner.getAtlasRegions();

@@ -10,8 +10,8 @@
  *       asset key with reference counting and persistence policy.</li>
  *   <li>{@link org.flixelgdx.graphics.FlixelFrame FlixelFrame} - Frame metadata wrapper around a
  *       {@code TextureRegion}, used for sprite sheets and atlas like behavior.</li>
- *   <li>{@link org.flixelgdx.graphics.FlixelGraphicSource FlixelGraphicSource} - Source object that provides
- *       consistent loading and wrapper access for one graphic key.</li>
+ *   <li>{@link org.flixelgdx.asset.FlixelAssetLoader FlixelAssetLoader} - Functional interface for
+ *       registering custom asset loaders per file extension.</li>
  * </ul>
  *
  * <p>Textures are loaded through {@link org.flixelgdx.Flixel#assets Flixel.assets} and should be

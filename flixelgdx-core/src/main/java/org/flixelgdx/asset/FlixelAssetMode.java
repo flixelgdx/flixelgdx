@@ -70,8 +70,8 @@ public enum FlixelAssetMode {
    *
    * <p>This uses O(1) work per {@link FlixelAsset#release()} call - there is no periodic scan.
    * The asset handle that just dropped to zero triggers the unload inline, then the handle is
-   * evicted from the manager cache so subsequent {@code ensureTypedAsset} or {@code ensureWrapper}
-   * calls start fresh.
+   * evicted from the manager cache so subsequent {@link FlixelAssetManager#get(String)} calls
+   * create a fresh handle.
    *
    * <p><b>Important caveats:</b>
    * <ul>

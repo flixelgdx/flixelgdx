@@ -61,7 +61,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   private static final float MS_TO_SEC = 1f / SEC_TO_MS;
 
   @NotNull
-  private final String assetKey;
+  private final String path;
 
   @NotNull
   private final FlixelSoundBackend sound;
@@ -124,7 +124,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   public FlixelSound(@NotNull FlixelSoundBackend sound) {
     super();
     this.sound = sound;
-    this.assetKey = "__flixel_sound__/" + ID;
+    this.path = "__flixel_sound__/" + ID;
     retain();
   }
 
@@ -178,14 +178,19 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   @NotNull
   @Override
-  public String getAssetKey() {
-    return assetKey;
+  public String getPath() {
+    return path;
   }
 
   @NotNull
   @Override
-  public Class<FlixelSoundBackend> getType() {
-    return FlixelSoundBackend.class;
+  public FlixelSoundBackend get() {
+    return sound;
+  }
+
+  @Override
+  public boolean isLoaded() {
+    return true;
   }
 
   @Override
@@ -209,23 +214,6 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     }
     refCount--;
     return this;
-  }
-
-  @Override
-  public void queueLoad() {
-    // Sound is created eagerly in constructors, nothing to queue.
-  }
-
-  @NotNull
-  @Override
-  public FlixelSoundBackend require() {
-    return sound;
-  }
-
-  @NotNull
-  @Override
-  public FlixelSoundBackend loadNow() {
-    return sound;
   }
 
   /**

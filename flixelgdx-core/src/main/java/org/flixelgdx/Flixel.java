@@ -211,8 +211,10 @@ public final class Flixel {
   public static final float MAX_ELAPSED = 0.1f;
 
   /**
-   * Automatically applies antialiasing for any member added to the current {@link FlixelState}.
-   * Note that when this value is set to {@code true}, any {@link FlixelSprite}'s / {@link FlixelAntialiasable}'s
+   * Automatically applies the globally set {@link #setAntialiasing(boolean) antialiasing} value for any
+   * member added to the current {@link FlixelState}.
+   *
+   * <p>Note that when this value is set to {@code true}, any {@link FlixelSprite}'s / {@link FlixelAntialiasable}'s
    * antialiasing property will be ignored.
    */
   public static boolean applyAntialiasingOnStateAdd = false;

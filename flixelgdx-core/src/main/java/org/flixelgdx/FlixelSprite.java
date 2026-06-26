@@ -249,9 +249,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       graphic.release();
     }
     FlixelAssetManager assets = Flixel.ensureAssets();
-    String key = assets.allocateSyntheticWrapperKey();
+    String key = assets.allocateSyntheticKey();
     FlixelGraphic g = new FlixelGraphic(assets, key, texture);
-    assets.registerWrapper(g);
+    assets.register(g);
     graphic = g.retain();
 
     TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
@@ -262,44 +262,35 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@code Flixel.assets.update()} in a loading state.
-   *
-   * <p>This method falls back to a synchronous load if the texture is not loaded yet.
-   * Preloading is still strongly recommended to avoid mid-frame stalls.
+   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
+   * a loading state to avoid synchronous stalls on the first frame.
    *
    * @param assetKey The key of the graphic to load.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
-    Texture t = requireOrLoad(g);
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    Texture t = g.getTexture();
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
 
   /**
-   * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@code Flixel.assets.update()} in a loading state.
-   *
-   * <p>This method falls back to a synchronous load if the texture
-   * is not loaded yet. Preloading is still strongly recommended to avoid mid-frame stalls.
+   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
+   * a loading state to avoid synchronous stalls on the first frame.
    *
    * @param assetKey The key of the graphic to load.
    * @param frameWidth The width of the graphic.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
-    Texture t = requireOrLoad(g);
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    Texture t = g.getTexture();
     return loadGraphic(g, frameWidth, t.getHeight());
   }
 
   /**
-   * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@link FlixelAssetManager#update()} in a loading state.
-   *
-   * <p>This method falls back to a synchronous load if the texture is not loaded yet.
-   * Preloading is still strongly recommended to avoid mid-frame stalls.
+   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
+   * a loading state to avoid synchronous stalls on the first frame.
    *
    * @param assetKey The key of the graphic to load.
    * @param frameWidth The width of the graphic.
@@ -307,7 +298,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
     return loadGraphic(g, frameWidth, frameHeight);
   }
 
@@ -318,7 +309,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FlixelGraphic g) {
-    return loadGraphic(g, g.requireTexture().getWidth(), g.requireTexture().getHeight());
+    return loadGraphic(g, g.getTexture().getWidth(), g.getTexture().getHeight());
   }
 
   /**
@@ -329,7 +320,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FlixelGraphic g, int frameWidth) {
-    return loadGraphic(g, frameWidth, g.requireTexture().getHeight());
+    return loadGraphic(g, frameWidth, g.getTexture().getHeight());
   }
 
   /**
@@ -345,7 +336,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       graphic.release();
     }
     graphic = g;
-    Texture texture = requireOrLoad(g);
+    Texture texture = g.getTexture();
     TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
     frames = wrapFrames(regions);
     currentRegion = frames[0][0];
@@ -356,15 +347,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     updateHitbox(frameWidth, frameHeight);
     return this;
-  }
-
-  @NotNull
-  private static Texture requireOrLoad(@NotNull FlixelGraphic g) {
-    try {
-      return g.requireTexture();
-    } catch (IllegalStateException e) {
-      return g.loadNow();
-    }
   }
 
   private static FlixelFrame[][] wrapFrames(TextureRegion[][] regions) {
@@ -415,7 +397,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
    * not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .obtainWrapper}(...) (implicit retain).
+   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
@@ -470,11 +452,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * texture so an appended atlas matches the visual filter of the original.
    *
    * <p>The graphic is assumed to have already been retained by the caller (typically via
-   * {@link org.flixelgdx.asset.FlixelAssetManager#obtainWrapper FlixelAssetManager.obtainWrapper},
-   * which retains automatically), so this method only stores the reference and does not call
-   * {@link FlixelGraphic#retain()} again. This is an advanced hook used by atlas-merging code such as
-   * {@link FlixelAnimationController#addSparrowAtlas(String)} and the Animate rig loader; most game
-   * code never calls it directly.
+   * {@link org.flixelgdx.asset.FlixelAssetManager#get(String) FlixelAssetManager.get(...)} followed
+   * by {@link org.flixelgdx.asset.FlixelAsset#retain() retain()}), so this method only stores the
+   * reference and does not call {@link FlixelGraphic#retain()} again. This is an advanced hook used
+   * by atlas-merging code such as {@link FlixelAnimationController#addSparrowAtlas(String)} and
+   * the Animate rig loader; most game code never calls it directly.
    *
    * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.
    */
@@ -484,16 +466,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     secondaryGraphics.add(graphic);
 
-    if (antialiasing) {
-      Texture texture;
-      try {
-        texture = graphic.requireTexture();
-      } catch (IllegalStateException notLoaded) {
-        texture = null;
-      }
-      if (texture != null) {
-        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-      }
+    if (antialiasing && graphic.isLoaded()) {
+      graphic.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
   }
 
@@ -732,7 +706,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     frames = null;
     if (secondaryGraphics != null) {
-      // Balance every retain from merged sheets (obtainWrapper()); the primary graphic below is
+      // Balance every retain from merged sheets (get() + retain()); the primary graphic below is
       // released separately through its own field.
       for (int i = 0; i < secondaryGraphics.size; i++) {
         FlixelGraphic g = secondaryGraphics.get(i);

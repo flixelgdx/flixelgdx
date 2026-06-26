@@ -35,6 +35,7 @@ import com.badlogic.gdx.math.Vector2;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -75,7 +76,7 @@ public final class FlixelSpriteUtil {
   /**
    * Returns the shared 1x1 white {@link Texture} registered with {@code assets}. The first call
    * creates the texture, wraps it in a {@link FlixelGraphic} with {@link FlixelGraphic#setPersist(boolean)}
-   * {@code true}, and registers it with {@link FlixelAssetManager#registerWrapper}.
+   * {@code true}, and registers it with {@link FlixelAssetManager#register(org.flixelgdx.asset.FlixelAsset)}.
    * Callers must not {@link Texture#dispose()} this texture; lifecycle follows the asset manager.
    *
    * @param assets Non-null manager from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}.
@@ -83,15 +84,15 @@ public final class FlixelSpriteUtil {
   @NotNull
   public static Texture obtainWhitePixelTexture(@NotNull FlixelAssetManager assets) {
     synchronized (WHITE_PIXEL_LOCK) {
-      FlixelGraphic existing = assets.peekWrapper(WHITE_PIXEL_TEXTURE_KEY, FlixelGraphic.class);
+      FlixelAsset<?> existing = assets.peek(WHITE_PIXEL_TEXTURE_KEY);
       if (existing != null) {
-        return existing.require();
+        return ((FlixelGraphic) existing).getTexture();
       }
       Texture t = createWhitePixelTexture();
       FlixelGraphic g = new FlixelGraphic(assets, WHITE_PIXEL_TEXTURE_KEY, t);
       g.setPersist(true);
-      assets.registerWrapper(g);
-      return g.require();
+      assets.register(g);
+      return g.getTexture();
     }
   }
 
