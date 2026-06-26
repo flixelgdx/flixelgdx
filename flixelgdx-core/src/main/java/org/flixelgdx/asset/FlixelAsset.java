@@ -26,93 +26,105 @@ package org.flixelgdx.asset;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Typed handle for one asset path + class, with optional {@code persist} and refcount.
+ * Unified handle for one asset, with reference counting and lifecycle policy.
  *
- * <p>Handles are cached on {@link org.flixelgdx.Flixel#assets Flixel.assets}. {@link FlixelAssetManager#obtainTypedAsset(String, Class)}
- * and {@link FlixelAssetManager#obtainWrapper(String, Class)} implicitly {@link #retain()}; use {@link FlixelAssetManager#ensureTypedAsset}
- * / {@link FlixelAssetManager#ensureWrapper} when you must not change the refcount. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
- * and {@link org.flixelgdx.audio.FlixelSound FlixelSound} also implement this contract where applicable.
+ * <p>All assets retrieved from {@link FlixelAssetManager} implement this interface.
+ * {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} implements
+ * {@code FlixelAsset<FlixelGraphic>} directly so the graphic object is the handle.
+ * Other asset types use {@link FlixelDefaultAsset}.
  *
- * <p>Prefer {@link #queueLoad()} in a loading state and {@code Flixel.assets.update()} each frame.
+ * <p>Call {@link #retain()} when you take ownership of an asset handle and {@link #release()}
+ * when you are done. The asset manager uses the reference count to decide when it is safe to
+ * unload the underlying data during state switches.
  *
- * @param <T> LibGDX-loaded asset type (e.g. {@link com.badlogic.gdx.graphics.Texture}).
+ * <p>Typical usage in a sprite class:
+ *
+ * <pre>{@code
+ * // In a loading state
+ * Flixel.assets.load("player.png");
+ *
+ * // In a game state
+ * FlixelAsset<FlixelGraphic> asset = Flixel.assets.get("player.png");
+ * asset.retain();
+ * FlixelGraphic graphic = asset.get();
+ *
+ * // In destroy()
+ * asset.release();
+ * }</pre>
+ *
+ * @param <T> The wrapper type that game code interacts with (e.g.
+ *   {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
  */
 public interface FlixelAsset<T> {
 
   /**
-   * Gets and returns the asset key associated with this asset.
+   * Returns the normalized asset path this handle was created for.
    *
-   * @return The asset key.
+   * @return The asset path; never {@code null}.
    */
   @NotNull
-  String getAssetKey();
+  String getPath();
 
   /**
-   * Gets and returns the type of the asset.
+   * Returns the content for this asset, loading it synchronously if it is not ready yet.
    *
-   * @return The asset type.
+   * <p>Prefer loading assets ahead of time in a loading state via
+   * {@link FlixelAssetManager#load(String)} and {@link FlixelAssetManager#update()} to avoid
+   * mid-frame stalls caused by a synchronous load.
+   *
+   * @return The asset content; never {@code null}.
    */
   @NotNull
-  Class<T> getType();
+  T get();
 
   /**
-   * Checks if {@code this} asset will be kept in memory after the game state is switched.
+   * Returns {@code true} if the content for this asset is already available without
+   * triggering a synchronous load.
    *
-   * @return {@code true} if the asset will be kept in memory after the game state is switched, {@code false} otherwise.
+   * @return {@code true} if {@link #get()} can return immediately without blocking.
+   */
+  boolean isLoaded();
+
+  /**
+   * Returns whether this asset survives {@link FlixelAssetManager#clearNonPersist()} when its
+   * reference count is zero.
+   *
+   * @return {@code true} if persistent.
    */
   boolean isPersist();
 
   /**
-   * Sets whether {@code this} asset will be kept in memory after the game state is switched.
+   * Sets the persist flag for this asset. When {@code true}, the asset is kept in the manager
+   * cache across state switches even when its reference count is zero.
    *
-   * @param persist {@code true} if the asset will be kept in memory after the game state is switched, {@code false} otherwise.
-   * @return {@code this} asset for chaining.
+   * @param persist {@code true} to keep this asset across state switches when unreferenced.
+   * @return {@code this} for chaining.
    */
   @NotNull
   FlixelAsset<T> setPersist(boolean persist);
 
   /**
-   * Gets and returns the reference count of {@code this} asset.
+   * Returns the current reference count. Zero means no owner holds this asset.
    *
    * @return The reference count.
    */
   int getRefCount();
 
   /**
-   * Increments the reference count of {@code this} asset.
+   * Increments the reference count. Call this when you take ownership of the asset.
    *
-   * @return {@code this} asset for chaining.
+   * @return {@code this} for chaining.
    */
   @NotNull
   FlixelAsset<T> retain();
 
   /**
-   * Decrements the reference count of {@code this} asset.
+   * Decrements the reference count. Call this when you are done with the asset. When the count
+   * reaches zero, {@link FlixelAssetManager#onAssetReleased(FlixelAsset)} is called so the
+   * manager can apply the active {@link FlixelAssetMode}.
    *
-   * @return {@code this} asset for chaining.
+   * @return {@code this} for chaining.
    */
   @NotNull
   FlixelAsset<T> release();
-
-  /**
-   * Enqueues this asset into the active {@link FlixelAssetManager}. Safe to call multiple times.
-   *
-   * <p>Use this method to preload assets in your game's loading state.
-   */
-  void queueLoad();
-
-  /**
-   * Requires the asset to already be loaded.
-   *
-   * @return The loaded asset.
-   * @throws IllegalStateException if the asset is not loaded.
-   */
-  @NotNull
-  T require();
-
-  /**
-   * Explicit synchronous load for one-off cases. Avoid using implicitly during gameplay.
-   */
-  @NotNull
-  T loadNow();
 }

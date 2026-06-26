@@ -1,56 +1,45 @@
 /**
  * Asset loading and lifecycle for FlixelGDX.
  *
- * <p><b>{@link FlixelAssetManager}</b>: Centralized asset system used by FlixelGDX.
- * It wraps a libGDX {@link com.badlogic.gdx.assets.AssetManager} and provides consistent helpers
- * for loading ({@link FlixelAssetManager#load(FlixelSource)}, {@link FlixelAssetManager#load(String)},
- * {@code update}), strict access ({@code require}), and lifecycle policy
- * (wrapper pools, reference counts, and clearing non persistent assets on state switches).
+ * <p><b>{@link FlixelAssetManager}</b>: Centralized asset system. It wraps a libGDX
+ * {@link com.badlogic.gdx.assets.AssetManager} as a loading engine and maintains a single
+ * {@code ObjectMap<String, FlixelAsset<?>>} cache as the source of truth at runtime.
+ * Game code accesses it via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
- * <p>Prefer {@link FlixelAssetManager#load(FlixelSource)} for explicit asset types. {@link FlixelAssetManager#load(String)}
- * resolves the path by file extension using a per-manager registry ({@link FlixelAssetManager#registerExtension}).
+ * <p><b>{@link FlixelAsset}</b>: Unified handle for any asset with reference counting and
+ * lifecycle policy. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} implements
+ * {@code FlixelAsset<FlixelGraphic>} directly; other types (text, audio sources) use the
+ * generic {@link FlixelDefaultAsset}.
  *
- * <p>Game code typically uses {@link org.flixelgdx.Flixel#assets Flixel.assets} rather than constructing
- * a manager directly, but the manager is instantiable and extendable for advanced use cases.
+ * <p><b>{@link FlixelAssetLoader}</b>: Functional interface for registering custom asset types.
+ * One loader per file extension; register with
+ * {@link FlixelAssetManager#registerLoader(String, Class, FlixelAssetLoader)}.
  *
- * <p><b>{@link FlixelAsset}</b>: Public contract for typed handles (refcount, {@code persist}, load/require).
- * Pooled handles come from {@link FlixelAssetManager#obtainTypedAsset(String, Class)} as {@link FlixelTypedAsset}
- * (implementation detail). {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} and
- * {@link org.flixelgdx.audio.FlixelSound FlixelSound} also implement {@code FlixelAsset} where applicable.
+ * <p><b>Basic workflow:</b>
  *
- * <p><b>{@link FlixelSource}</b>: Small interface that lets built in and user defined source objects
- * expose a consistent {@code (assetKey, type)} contract for loading and requiring through the manager.
+ * <pre>{@code
+ * // Loading state
+ * Flixel.assets.load("images/player.png");
+ * while (!Flixel.assets.update()) { ... }
  *
- * <p><b>{@link FlixelWrapperSource}</b>: Extends {@link FlixelSource} with a pooled wrapper type
- * (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}) resolved via
- * {@link FlixelAssetManager#obtainWrapper(String, Class)}. Registering <em>new</em> wrapper types uses
- * {@link FlixelAssetManager#registerWrapperFactory(FlixelWrapperFactory)}; caller-owned wrappers use
- * {@link FlixelAssetManager#allocateSyntheticWrapperKey()} and {@link FlixelAssetManager#registerWrapper(FlixelPooledWrapper)}.
+ * // Game state
+ * FlixelAsset<FlixelGraphic> asset = Flixel.assets.get("images/player.png");
+ * asset.retain();
+ * sprite.loadGraphic(asset.get());
  *
- * <p><b>When to use sources vs wrappers</b>
+ * // destroy()
+ * asset.release();
+ * }</pre>
  *
- * <table border="1">
- *   <caption>Choosing between extension loading and the wrapper pool</caption>
- *   <tr><th>Need</th><th>Use</th><th>Wrapper factory?</th></tr>
- *   <tr>
- *     <td>Load a file as a libGDX type (texture, sound data, etc.)</td>
- *     <td>{@link FlixelAssetManager#registerExtension} + {@link FlixelSource} + {@code load} / {@code get} / {@code source.require(assets)}</td>
- *     <td>No, as it's not a pooled facade.</td>
- *   </tr>
- *   <tr>
- *     <td>Refcount / persist / clear policy on a {@code (key, Class)} handle</td>
- *     <td>{@link FlixelAssetManager#obtainTypedAsset} -> {@link FlixelAsset}</td>
- *     <td>No, as it's a typed handle, not the pooled wrapper system.</td>
- *   </tr>
- *   <tr>
- *     <td>A second pooled object around the asset (policy, sharing), e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}</td>
- *     <td>{@link FlixelAssetManager#obtainWrapper}; built-in {@link org.flixelgdx.graphics.FlixelGraphicWrapperFactory FlixelGraphicWrapperFactory};
- *         {@link FlixelAssetManager#registerWrapperFactory} only for new wrapper <em>classes</em>.</td>
- *     <td>Only if you introduce a new wrapper type beyond framework defaults.</td>
- *   </tr>
- * </table>
+ * <p><b>Custom asset types:</b>
  *
- * <p><b>Experts:</b> Use {@link FlixelAssetManager#getManager()} only when you need raw libGDX behavior.
+ * <pre>{@code
+ * Flixel.assets.registerLoader(".cfg", String.class,
+ *     (assets, path) -> new FlixelDefaultAsset<>(assets, path, String.class));
+ * }</pre>
+ *
+ * <p><b>Experts:</b> Use {@link FlixelAssetManager#getManager()} only when you need raw
+ * libGDX behavior (custom loaders, {@link com.badlogic.gdx.assets.AssetDescriptor}s, etc.).
  *
  * @see org.flixelgdx.asset.FlixelAssetManager
  * @see org.flixelgdx.asset.FlixelDefaultAssetManager
