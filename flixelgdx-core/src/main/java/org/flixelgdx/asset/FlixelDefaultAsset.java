@@ -24,6 +24,7 @@
 package org.flixelgdx.asset;
 
 import com.badlogic.gdx.assets.AssetManager;
+
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;

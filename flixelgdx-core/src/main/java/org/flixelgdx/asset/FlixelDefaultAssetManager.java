@@ -68,12 +68,12 @@ import java.util.Objects;
  * On desktop and Android this is a no-op.
  *
  * <pre>{@code
- * // Loading state
+ * // Inside of a loading state.
  * Flixel.assets.load("music/inst.mp3");
  * Flixel.assets.load("music/voices.mp3");
  * Flixel.assets.finishLoading();
  *
- * // Game state - buffers already decoded
+ * // Game state, with buffers already decoded.
  * Flixel.sound.play("music/inst.mp3");
  * Flixel.sound.play("music/voices.mp3");
  * }</pre>
@@ -398,7 +398,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         return file.getAbsolutePath();
       }
     } catch (Exception ignored) {
-      // Packaged JAR - no real filesystem path.
+      // The asset is inside a packaged JAR, meaning there's no real file system path to be resolved.
     }
     String ext = path.contains(".") ? path.substring(path.lastIndexOf('.')) : ".tmp";
     try {
@@ -410,8 +410,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       throw new RuntimeException("Failed to extract asset from JAR: " + path, e);
     }
   }
-
-  // --- Internal helpers ---
 
   private void evict(@NotNull String path, @NotNull FlixelAsset<?> asset) {
     if (asset instanceof FlixelGraphic g) {
