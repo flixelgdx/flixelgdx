@@ -739,7 +739,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * {@link FlixelSprite} draw path.
    *
    * <p>The rig draw composes the sprite's world transform once per frame as
-   * {@code T(wx-offsetX, wy-offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX/|sx|, -originY/|sy|)}.
+   * {@code T(wx+offsetX, wy+offsetY) * T(originX, originY) * R(angle) * S(sx, sy) * T(-originX/|sx|, -originY/|sy|)}.
    * The asymmetric origin (scaled-world units before the scale, anchor-local units after the scale) is
    * what makes the rig's visible bounding box exactly coincide with the hitbox after
    * {@link #updateHitbox()} for any non-unit scale, while still pivoting rotations around the visual
@@ -799,8 +799,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     // but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
     float rigCullW = getWidth() * Math.abs(scaleX);
     float rigCullH = getHeight() * Math.abs(scaleY);
-    float rigLeft = wx - getOffsetX();
-    float rigBottom = wy - getOffsetY();
+    float rigLeft = wx + getOffsetX();
+    float rigBottom = wy + getOffsetY();
     float rigAngle = getAngle();
     if (rigAngle != 0f) {
       float cos = Math.abs(MathUtils.cosDeg(rigAngle));
@@ -848,7 +848,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     // +origin_world, then translates to the world position. Identity branches are skipped so the
     // no-rotation/no-scale fast path stays cheap.
     baseAffine.idt();
-    baseAffine.translate(wx - getOffsetX(), wy - getOffsetY());
+    baseAffine.translate(wx + getOffsetX(), wy + getOffsetY());
     if (hasOrigin) {
       baseAffine.translate(ox, oy);
     }

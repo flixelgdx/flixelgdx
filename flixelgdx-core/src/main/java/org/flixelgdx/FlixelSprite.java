@@ -550,8 +550,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
       int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
 
-      float drawX = wx + offsetX + insetX;
-      float drawY = wy + offsetY + insetY;
+      // When scale != 1 the source box grows proportionally from its center, so the region's draw
+      // position must shift by half the extra width/height so the source box's left/bottom edge
+      // stays anchored at (wx + offsetX, wy + offsetY) rather than drifting with the scale pivot.
+      float drawX = wx + offsetX + insetX + srcW * (Math.abs(scaleX) - 1) * 0.5f;
+      float drawY = wy + offsetY + insetY + srcH * (Math.abs(scaleY) - 1) * 0.5f;
 
       // Rotate/scale around the source box's center, expressed relative to the region's bottom-left
       // corner (the origin that the batch.draw overload below measures from).
