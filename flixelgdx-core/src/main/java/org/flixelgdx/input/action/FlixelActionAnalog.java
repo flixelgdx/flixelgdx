@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Use {@link #getX()} and {@link #getY()} after {@code super.update(elapsed)} in your state. {@link #getPrevX()} / {@link #getPrevY()}
  * mirror the previous frame after {@link FlixelActionSet#endFrame()}. {@link #moved()} is a small helper for non-zero length.
  *
- * <h2>Flick detection</h2>
+ * <h2>Flick detection and hold-repeat</h2>
  *
  * <p>{@link #flicked()} returns {@code true} for exactly one frame when the stick first crosses {@link #flickThreshold}.
  * It resets to {@code false} as long as the stick stays past the threshold, and fires again only after the stick
@@ -65,16 +65,21 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()} and is useful for menu navigation
  * where each stick deflection should trigger exactly one action.
  *
+ * <p>{@link #flickedRepeating()} extends that with hold-repeat: it fires on the initial flick,
+ * then fires again after {@link FlixelAction#holdDelay} seconds if the stick is still past the
+ * threshold, and continues every {@link FlixelAction#holdInterval} seconds after that. Use this
+ * for menus that should keep scrolling when the stick is held.
+ *
  * <pre>{@code
- * // Navigate a menu with a single stick deflection.
- * if (navigate.flicked()) {
- *   if (navigate.getY() < 0) selectNextItem();
- *   else if (navigate.getY() > 0) selectPreviousItem();
+ * // Navigate a menu; hold the stick to keep scrolling.
+ * if (navigate.flickedRepeating()) {
+ *   if (navigate.getY() > 0) selectPreviousItem();
+ *   else if (navigate.getY() < 0) selectNextItem();
  * }
  * }</pre>
  *
  * <p>Key bindings contribute {@code +-1.0} per axis, so pressing any bound key immediately exceeds the default threshold
- * and fires {@link #flicked()} on that frame. Adjust {@link #flickThreshold} before the game loop if your game needs
+ * and fires both methods on that frame. Adjust {@link #flickThreshold} before the game loop if your game needs
  * a different sensitivity.
  */
 public final class FlixelActionAnalog extends FlixelAction {
@@ -84,6 +89,12 @@ public final class FlixelActionAnalog extends FlixelAction {
    * made against the normalized vector length after all bindings are accumulated, so a value of
    * {@code 0.3} means roughly 30% deflection. Defaults to {@code 0.3f}; adjust before the game
    * loop if your game needs a different sensitivity.
+   */
+  /**
+   * Minimum stick magnitude (0 to 1) required for {@link #flicked()} and {@link #flickedRepeating()}
+   * to fire. The comparison is made against the normalized vector length after all bindings are
+   * accumulated, so a value of {@code 0.3} means roughly 30% deflection. Defaults to {@code 0.3f};
+   * adjust before the game loop if your game needs a different sensitivity.
    */
   public float flickThreshold = 0.3f;
 
@@ -95,7 +106,10 @@ public final class FlixelActionAnalog extends FlixelAction {
   private float y;
   private float prevX;
   private float prevY;
+  private float flickHoldAccum;
 
+  private boolean flickHoldRepeating;
+  private boolean flickRepeated;
   private boolean flickState;
   private boolean prevFlickState;
 
@@ -113,6 +127,9 @@ public final class FlixelActionAnalog extends FlixelAction {
       x = 0f;
       y = 0f;
       flickState = false;
+      flickHoldAccum = 0f;
+      flickHoldRepeating = false;
+      flickRepeated = false;
       return;
     }
     scratch.set(0f, 0f);
@@ -135,6 +152,30 @@ public final class FlixelActionAnalog extends FlixelAction {
     y = sy;
     float ft = flickThreshold;
     flickState = (x * x + y * y) >= ft * ft;
+    if (flickState) {
+      if (!prevFlickState) {
+        flickHoldAccum = 0f;
+        flickHoldRepeating = false;
+        flickRepeated = true;
+      } else {
+        flickHoldAccum += elapsed;
+        flickRepeated = false;
+        if (!flickHoldRepeating) {
+          if (flickHoldAccum >= holdDelay) {
+            flickHoldAccum -= holdDelay;
+            flickHoldRepeating = true;
+            flickRepeated = true;
+          }
+        } else if (flickHoldAccum >= holdInterval) {
+          flickHoldAccum -= holdInterval;
+          flickRepeated = true;
+        }
+      }
+    } else {
+      flickHoldAccum = 0f;
+      flickHoldRepeating = false;
+      flickRepeated = false;
+    }
   }
 
   private static void accumulate(@NotNull FlixelAnalogAxisBinding b, @NotNull Vector2 out) {
@@ -164,19 +205,15 @@ public final class FlixelActionAnalog extends FlixelAction {
           out.x += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
         }
       }
+      // Negate raw Y to convert from screen-space (up = negative) to math-space (up = positive).
       case GAMEPAD_AXIS_Y -> {
         if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.y += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
-        }
-      }
-      case NEG_GAMEPAD_AXIS_X -> {
-        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.x -= Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
-        }
-      }
-      case NEG_GAMEPAD_AXIS_Y -> {
-        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
           out.y -= Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+        }
+      }
+      case RAW_GAMEPAD_AXIS_Y -> {
+        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
+          out.y += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
         }
       }
       default -> {
@@ -197,6 +234,9 @@ public final class FlixelActionAnalog extends FlixelAction {
     y = 0f;
     prevX = 0f;
     prevY = 0f;
+    flickHoldAccum = 0f;
+    flickHoldRepeating = false;
+    flickRepeated = false;
     flickState = false;
     prevFlickState = false;
   }
@@ -239,5 +279,29 @@ public final class FlixelActionAnalog extends FlixelAction {
    */
   public boolean flicked() {
     return active && flickState && !prevFlickState;
+  }
+
+  /**
+   * Returns {@code true} on the initial flick and again on each hold-repeat tick.
+   *
+   * <p>Fires on the same frame as {@link #flicked()} when the stick first crosses
+   * {@link #flickThreshold}, then fires again after {@link FlixelAction#holdDelay} seconds if the
+   * stick is still past the threshold, and continues every {@link FlixelAction#holdInterval}
+   * seconds after that. Returning the stick below the threshold resets the timer.
+   *
+   * <p>Use this instead of {@link #flicked()} when a held stick deflection should keep triggering,
+   * such as scrolling through a long menu list:
+   *
+   * <pre>{@code
+   * if (navigate.flickedRepeating()) {
+   *   if (navigate.getY() > 0) selectPreviousItem();
+   *   else if (navigate.getY() < 0) selectNextItem();
+   * }
+   * }</pre>
+   *
+   * @return {@code true} on the initial flick frame and on each repeat tick while held past the threshold.
+   */
+  public boolean flickedRepeating() {
+    return active && flickRepeated;
   }
 }

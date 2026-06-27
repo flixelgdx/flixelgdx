@@ -26,6 +26,7 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.Input;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.input.action.FlixelAnalogAxisBinding;
 import org.flixelgdx.GdxHeadlessExtension;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.junit.jupiter.api.AfterEach;
@@ -172,29 +173,90 @@ class FlixelActionSystemTest {
   }
 
   @Test
-  void negGamepadAxisYInvertsRelativeToGamepadAxisY() {
-    // Simulate a gamepad axis returning a positive raw Y value (screen-space "down").
-    // negGamepadAxisY should subtract that value, yielding negative Y (math-space "down"),
-    // while plain gamepadAxisY would yield positive Y - the classic inversion bug.
+  void gamepadAxisYDefaultIsYCorrected() {
+    // GAMEPAD_AXIS_Y should now subtract the raw value so that up = positive Y, matching keys.
+    // Use posYKey and negYKey as a reference: posYKey(UP) gives +Y, negYKey(DOWN) gives -Y.
+    // gamepadAxisY (corrected) should behave like posYKey for an upward stick deflection, which
+    // in screen-space is a negative raw value that gets negated to produce positive Y.
+    // We verify the Kind assignment directly since we can't inject a fake controller here.
+    FlixelAnalogAxisBinding corrected = FlixelAnalogAxisBinding.gamepadAxisY(0, 0);
+    FlixelAnalogAxisBinding raw = FlixelAnalogAxisBinding.gamepadAxisY(0, 0, true);
+    assertEquals(FlixelAnalogAxisBinding.Kind.GAMEPAD_AXIS_Y, corrected.kind);
+    assertEquals(FlixelAnalogAxisBinding.Kind.RAW_GAMEPAD_AXIS_Y, raw.kind);
+  }
+
+  @Test
+  void digitalRepeatedFiresOnPressAndAfterHoldDelay() {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
-    FlixelActionAnalog stickNeg = new FlixelActionAnalog("stickNeg");
-    FlixelActionAnalog stickPlain = new FlixelActionAnalog("stickPlain");
+    FlixelActionDigital scroll = new FlixelActionDigital("scroll");
+    scroll.addBinding(FlixelInputBinding.key(Input.Keys.DOWN));
+    scroll.holdDelay = 0.5f;
+    scroll.holdInterval = 0.1f;
+    set.add(scroll);
 
-    // Only add key bindings so we can drive Y without a real controller.
-    // negYKey contributes -1 to Y, mirroring what negGamepadAxisY does for a positive raw axis.
-    stickNeg.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.S));
-    stickPlain.addAxisBinding(FlixelAnalogAxisBinding.posYKey(Input.Keys.S));
-    set.add(stickNeg);
-    set.add(stickPlain);
-
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.S);
+    // Initial press: repeated() fires immediately.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
     set.update(0f);
+    assertTrue(scroll.repeated());
 
-    // negYKey drives Y negative - same sign that negGamepadAxisY produces for a positive raw axis.
-    assertTrue(stickNeg.getY() < 0f);
-    // posYKey drives Y positive - same sign that plain gamepadAxisY produces (the inverted case).
-    assertTrue(stickPlain.getY() > 0f);
+    // Still held but before holdDelay: repeated() does not fire again.
+    set.endFrame();
+    set.update(0.3f);
+    assertFalse(scroll.repeated());
+
+    // Still held, holdDelay elapsed: first hold-repeat fires.
+    set.endFrame();
+    set.update(0.25f);
+    assertTrue(scroll.repeated());
+
+    // Still held, holdInterval not yet elapsed: no repeat.
+    set.endFrame();
+    set.update(0.04f);
+    assertFalse(scroll.repeated());
+
+    // holdInterval elapsed: repeat fires again.
+    set.endFrame();
+    set.update(0.06f);
+    assertTrue(scroll.repeated());
+
+    // Released: no repeat.
+    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertFalse(scroll.repeated());
+  }
+
+  @Test
+  void analogFlickedRepeatingFiresOnFlickAndAfterHoldDelay() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
+    navigate.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.DOWN));
+    navigate.holdDelay = 0.5f;
+    navigate.holdInterval = 0.1f;
+    set.add(navigate);
+
+    // Initial flick: flickedRepeating() fires on the first frame.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    set.update(0f);
+    assertTrue(navigate.flickedRepeating());
+
+    // Held but before holdDelay: no repeat.
+    set.endFrame();
+    set.update(0.3f);
+    assertFalse(navigate.flickedRepeating());
+
+    // holdDelay elapsed: first hold-repeat fires.
+    set.endFrame();
+    set.update(0.25f);
+    assertTrue(navigate.flickedRepeating());
+
+    // Released (magnitude drops below threshold): no repeat.
+    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertFalse(navigate.flickedRepeating());
   }
 
   @Test

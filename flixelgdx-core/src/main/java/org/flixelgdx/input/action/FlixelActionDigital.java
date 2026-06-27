@@ -45,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #pressed()} while a key is held (sustains, movement gates).</li>
  *   <li>{@link #justPressed()} or {@link #check()} for a single-frame edge (tap notes, menu confirm).</li>
  *   <li>{@link #justReleased()} when the player releases after a hold.</li>
+ *   <li>{@link #repeated()} for hold-repeating navigation: fires on the initial press, then fires
+ *       again after {@link FlixelAction#holdDelay} seconds, then every {@link FlixelAction#holdInterval}
+ *       seconds while held. Replaces a manual {@code justPressed()} check when autorepeat is needed.</li>
  * </ul>
  *
  * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via {@link FlixelActionSets#updateAll(float)}).
@@ -62,6 +65,10 @@ public final class FlixelActionDigital extends FlixelAction {
 
   private final Array<FlixelInputBinding> bindings = new Array<>(8);
 
+  private float holdAccum;
+
+  private boolean holdRepeating;
+  private boolean repeated;
   private boolean pressed;
   private boolean previous;
 
@@ -82,6 +89,9 @@ public final class FlixelActionDigital extends FlixelAction {
   void updateAction(float elapsed) {
     if (!active) {
       pressed = false;
+      repeated = false;
+      holdAccum = 0f;
+      holdRepeating = false;
       return;
     }
     boolean v = false;
@@ -98,6 +108,30 @@ public final class FlixelActionDigital extends FlixelAction {
       cb.run();
     }
     pressed = v;
+    if (v) {
+      if (!previous) {
+        holdAccum = 0f;
+        holdRepeating = false;
+        repeated = true;
+      } else {
+        holdAccum += elapsed;
+        repeated = false;
+        if (!holdRepeating) {
+          if (holdAccum >= holdDelay) {
+            holdAccum -= holdDelay;
+            holdRepeating = true;
+            repeated = true;
+          }
+        } else if (holdAccum >= holdInterval) {
+          holdAccum -= holdInterval;
+          repeated = true;
+        }
+      }
+    } else {
+      holdAccum = 0f;
+      holdRepeating = false;
+      repeated = false;
+    }
   }
 
   @Override
@@ -109,6 +143,9 @@ public final class FlixelActionDigital extends FlixelAction {
   void resetAction() {
     pressed = false;
     previous = false;
+    holdAccum = 0f;
+    holdRepeating = false;
+    repeated = false;
   }
 
   /**
@@ -130,6 +167,27 @@ public final class FlixelActionDigital extends FlixelAction {
 
   public boolean justReleased() {
     return active && !pressed && previous;
+  }
+
+  /**
+   * Returns {@code true} on the initial press and again on each hold-repeat tick.
+   *
+   * <p>Fires immediately on the frame the button is first pressed (same as {@link #justPressed()}),
+   * then fires again after {@link FlixelAction#holdDelay} seconds if the button is still held, and
+   * continues firing every {@link FlixelAction#holdInterval} seconds after that. Releasing the button
+   * resets the timer so the next press starts fresh.
+   *
+   * <p>Use this instead of {@link #justPressed()} anywhere a held button should keep triggering,
+   * such as menu scrolling, cursor movement, or incrementing a value:
+   *
+   * <pre>{@code
+   * if (controls.uiDown.repeated()) scrollMenu(1);
+   * }</pre>
+   *
+   * @return {@code true} on the initial press frame and on each repeat tick.
+   */
+  public boolean repeated() {
+    return active && repeated;
   }
 
   private boolean evalBinding(@NotNull FlixelInputBinding b) {
