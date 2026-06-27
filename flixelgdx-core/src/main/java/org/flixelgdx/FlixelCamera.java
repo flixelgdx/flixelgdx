@@ -42,6 +42,7 @@ import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 
 /**

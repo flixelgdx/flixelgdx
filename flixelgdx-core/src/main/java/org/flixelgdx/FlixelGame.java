@@ -53,6 +53,7 @@ import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelRuntimeUtil;
+import org.flixelgdx.util.FlixelShader;
 import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.util.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
@@ -550,6 +551,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         if (cameraShader != null) {
           camera.getFbo().end();
           camera.getViewport().apply();
+          // FlixelSpriteBatch.flush() leaves the active GL texture unit at the last
+          // slot it bound (e.g. unit 2 after drawing 3 atlases). SpriteBatch.flush()
+          // calls Texture.bind() with no unit argument, so it binds the FBO texture
+          // to whatever unit is still active - not unit 0. The composite shader reads
+          // u_texture which defaults to 0, so it would sample a game atlas instead of
+          // the FBO. Resetting to unit 0 here ensures the FBO texture lands on unit 0.
+          Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
           if (compositeBatch == null) {
             compositeBatch = new SpriteBatch();
           }

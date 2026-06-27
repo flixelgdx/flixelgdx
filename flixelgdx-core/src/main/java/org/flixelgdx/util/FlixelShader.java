@@ -21,9 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx;
+package org.flixelgdx.util;
 
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.FlixelCamera;
 
 /**
  * A compiled GLSL shader program with a FlixelGDX lifecycle.
