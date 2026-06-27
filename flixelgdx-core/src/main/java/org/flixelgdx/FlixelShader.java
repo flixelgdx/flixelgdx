@@ -38,14 +38,19 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
  * automatically render its scene into a framebuffer, then composite the result to screen using
  * this shader each frame.
  *
- * <p>FlixelShader targets OpenGL ES 2.0 GLSL. The single-argument constructor uses a built-in
- * pass-through vertex shader that matches the attribute contract of libGDX's standard
- * {@link com.badlogic.gdx.graphics.g2d.SpriteBatch SpriteBatch}
- * ({@code a_position}, {@code a_color}, {@code a_texCoord0}, {@code u_projTrans}). Custom
- * fragment shaders receive the camera output as {@code uniform sampler2D u_texture} and can
- * sample it via the {@code v_texCoords} varying.
+ * <p>Two modes are available:
+ * <ul>
+ *   <li><b>libGDX mode</b> (constructors): write raw GLSL ES 2.0 targeting the standard
+ *     libGDX {@link com.badlogic.gdx.graphics.g2d.SpriteBatch SpriteBatch} attribute contract.
+ *     Fragment shaders receive the camera output as {@code uniform sampler2D u_texture} via
+ *     the {@code v_texCoords} varying.</li>
+ *   <li><b>HaxeFlixel mode} ({@link #fromHaxeFlixel(String)})</b>: write or copy a filter
+ *     shader from HaxeFlixel using {@code #pragma header}, {@code #pragma body},
+ *     {@code bitmap}, {@code openfl_TextureCoordv}, and {@code flixel_texture2D(...)}. The
+ *     preprocessor rewrites those to libGDX-compatible names before compilation.</li>
+ * </ul>
  *
- * <p>Example - a grayscale filter applied to the default camera:
+ * <p>Raw libGDX mode example - a grayscale filter applied to the default camera:
  *
  * <pre>{@code
  * FlixelShader gray = new FlixelShader(
@@ -57,7 +62,15 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
  *     "  gl_FragColor = vec4(g, g, g, c.a);\n" +
  *     "}"
  * );
- * Flixel.camera.setShader(gray);
+ * Flixel.cameras.first().setShader(gray);
+ * }</pre>
+ *
+ * <p>HaxeFlixel mode example using a {@code .frag} file from disk:
+ *
+ * <pre>{@code
+ * String src = Gdx.files.internal("shaders/bloom.frag").readString();
+ * FlixelShader bloom = FlixelShader.fromHaxeFlixel(src);
+ * Flixel.cameras.first().setShader(bloom);
  * }</pre>
  *
  * <p>Override {@link #update(float)} to drive time-based uniforms, for example:
@@ -102,6 +115,41 @@ public class FlixelShader extends FlixelBasic {
           + "  gl_Position = u_projTrans * a_position;\n"
           + "}\n";
 
+  /**
+   * GLSL {@code #define} macros prepended to every HaxeFlixel fragment shader.
+   *
+   * <p>These alias HaxeFlixel / OpenFL variable and function names to their libGDX equivalents
+   * so the shader source compiles without modification:
+   * <ul>
+   *   <li>{@code bitmap} - the main texture sampler (maps to {@code u_texture})</li>
+   *   <li>{@code openfl_TextureCoordv} - the UV coordinate varying (maps to {@code v_texCoords})</li>
+   *   <li>{@code openfl_Alpha} - global alpha value (constant {@code 1.0})</li>
+   *   <li>{@code openfl_TextureSize} - texture dimensions uniform (maps to {@code u_textureSize})</li>
+   *   <li>{@code openfl_HasColorTransform} - color transform flag (constant {@code false})</li>
+   *   <li>{@code flixel_texture2D(t, c)} - texture sampling helper (maps to {@code texture2D(t, c)})</li>
+   * </ul>
+   */
+  private static final String HAXEFLIXEL_DEFINES =
+      "#define bitmap u_texture\n"
+          + "#define openfl_TextureCoordv v_texCoords\n"
+          + "#define openfl_Alpha 1.0\n"
+          + "#define openfl_TextureSize u_textureSize\n"
+          + "#define openfl_HasColorTransform false\n"
+          + "#define flixel_texture2D(t, c) texture2D(t, c)\n";
+
+  /**
+   * The GLSL source block that replaces {@code #pragma header} in HaxeFlixel shaders.
+   *
+   * <p>Declares the uniform sampler, UV coordinate varying, and color varying that the
+   * compositing pipeline feeds into the fragment shader each frame. Using the libGDX-native
+   * names here means the {@link #HAXEFLIXEL_DEFINES} aliases resolve correctly.
+   */
+  private static final String HAXEFLIXEL_HEADER_EXPANSION =
+      "uniform sampler2D u_texture;\n"
+          + "uniform vec2 u_textureSize;\n"
+          + "varying vec4 v_color;\n"
+          + "varying vec2 v_texCoords;\n";
+
   private ShaderProgram program;
 
   /**
@@ -132,6 +180,36 @@ public class FlixelShader extends FlixelBasic {
     if (!this.program.isCompiled()) {
       Flixel.error("FlixelShader", "Shader compilation failed:\n" + this.program.getLog());
     }
+  }
+
+  /**
+   * Creates a {@code FlixelShader} from a HaxeFlixel-style fragment shader source string.
+   *
+   * <p>The preprocessor performs three transformations before compilation:
+   * <ol>
+   *   <li>Prepends {@link #HAXEFLIXEL_DEFINES} so HaxeFlixel names alias to libGDX names.</li>
+   *   <li>Replaces {@code #pragma header} with {@link #HAXEFLIXEL_HEADER_EXPANSION},
+   *       which declares the texture sampler, size uniform, and UV varyings.</li>
+   *   <li>Removes any {@code #pragma body} lines, which have no meaning outside
+   *       HaxeFlixel's own template system.</li>
+   * </ol>
+   *
+   * <p>The built-in pass-through vertex shader is used, so no custom vertex source is needed.
+   * Compilation errors are logged via {@link Flixel#error(String, Object)}.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * String src = Gdx.files.internal("shaders/crt.frag").readString();
+   * FlixelShader crt = FlixelShader.fromHaxeFlixel(src);
+   * Flixel.cameras.first().setShader(crt);
+   * }</pre>
+   *
+   * @param fragSrc HaxeFlixel fragment shader source, typically read from a {@code .frag} file.
+   * @return A compiled {@code FlixelShader} ready to assign to a {@link FlixelCamera}.
+   */
+  public static FlixelShader fromHaxeFlixel(String fragSrc) {
+    return new FlixelShader(DEFAULT_VERT, preprocessHaxeFlixel(fragSrc));
   }
 
   /**
@@ -178,5 +256,17 @@ public class FlixelShader extends FlixelBasic {
    */
   public String getLog() {
     return program != null ? program.getLog() : "";
+  }
+
+  /**
+   * Runs the HaxeFlixel-to-libGDX preprocessing pipeline on a raw fragment shader string.
+   *
+   * @param src Raw HaxeFlixel fragment shader source.
+   * @return Preprocessed GLSL ES 2.0 fragment source ready for libGDX compilation.
+   */
+  private static String preprocessHaxeFlixel(String src) {
+    src = src.replace("#pragma header", HAXEFLIXEL_HEADER_EXPANSION);
+    src = src.replace("#pragma body", "");
+    return HAXEFLIXEL_DEFINES + src;
   }
 }
