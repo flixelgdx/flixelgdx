@@ -38,11 +38,14 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
+import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelSpriteBatch;
+import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.input.FlixelInputProcessorManager;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -132,6 +135,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Convenience reference to the global {@link Flixel#cameras} list (the single source of truth). */
   protected final Array<FlixelCamera> cameras = Flixel.cameras;
 
+  /** The camera used to render the global overlay. Not registered in {@link Flixel#cameras}. */
+  @Nullable
+  private FlixelCamera overlayCamera;
+
+  /** The member group for the global overlay. Updated and drawn when the overlay is enabled. */
+  @Nullable
+  private FlixelBasicGroup<IFlixelBasic> overlayGroup;
+
   /**
    * Total render calls issued by the framework {@link FlixelBatch} during the most recently
    * completed draw pass, summed across all camera loops. Derived from the delta of
@@ -203,6 +214,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** When true, skips gameplay/state/camera follow updates (debug pause). */
   private boolean gamePaused = false;
+
+  /** When true, the global overlay group is updated and drawn on top of all game cameras each frame. */
+  private boolean overlayEnabled;
 
   /** When true, calls {@link #destroy()} and {@link #create()}, which resets the game. */
   protected volatile boolean resetRequested = false;
@@ -335,6 +349,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     batch = new FlixelSpriteBatch();
     cameras.clear();
     cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
+    overlayCamera = new FlixelCamera((int) viewSize.x, (int) viewSize.y);
+    overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
+    };
 
     Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
     pixmap.setColor(Color.WHITE);
@@ -384,6 +401,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     for (FlixelCamera camera : cameras) {
       camera.update(width, height, camera.centerCameraOnResize);
+    }
+    if (overlayCamera != null && overlayEnabled) {
+      overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
@@ -441,6 +461,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       for (FlixelCamera camera : cameras) {
         camera.update(elapsed);
       }
+
+      if (overlayGroup != null && overlayEnabled) {
+        overlayGroup.update(elapsed);
+        if (overlayCamera != null) {
+          overlayCamera.update(elapsed);
+        }
+      }
     }
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
@@ -497,6 +524,22 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
         camera.drawFX(batch, bgTexture);
 
+        batch.end();
+      } finally {
+        Flixel.setDrawCamera(null);
+      }
+    }
+
+    if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
+      Flixel.setDrawCamera(overlayCamera);
+      try {
+        if (gamePaused) {
+          overlayCamera.applyLibCameraTransform();
+        }
+        overlayCamera.getViewport().apply();
+        batch.setProjectionMatrix(overlayCamera.getCamera().combined);
+        batch.begin();
+        overlayGroup.draw(batch);
         batch.end();
       } finally {
         Flixel.setDrawCamera(null);
@@ -837,6 +880,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       camera.destroy();
     }
     cameras.clear();
+    if (overlayGroup != null) {
+      overlayGroup.destroy();
+      overlayGroup = null;
+    }
+    if (overlayCamera != null) {
+      overlayCamera.destroy();
+      overlayCamera = null;
+    }
+    overlayEnabled = false;
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
     gamePaused = false;
@@ -905,6 +957,62 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (desktopTransparencyActive) {
       applyDesktopTransparencyBackdropOnly();
     }
+  }
+
+  /**
+   * Adds a member to the global overlay group so it is updated and drawn on top of all game cameras while the overlay
+   * is enabled.
+   *
+   * <p>The overlay must be enabled via {@link #enableGlobalOverlay(boolean)} or {@link #toggleGlobalOverlay()} for
+   * added members to actually appear. This is safe to call even when the overlay is disabled.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * fpsCounter = new FlixelText();
+   * add(fpsCounter);
+   * enableGlobalOverlay(true);
+   * }</pre>
+   *
+   * @param basic The object to add to the overlay group.
+   */
+  public void add(@NotNull IFlixelBasic basic) {
+    if (overlayGroup != null) {
+      overlayGroup.add(basic);
+      if (basic instanceof FlixelAntialiasable b && Flixel.applyAntialiasingOnStateAdd) {
+        b.setAntialiasing(Flixel.isAntialiasing());
+      }
+    }
+  }
+
+  /**
+   * Removes a member from the global overlay group.
+   *
+   * @param basic The object to remove from the overlay group.
+   */
+  public void remove(@NotNull IFlixelBasic basic) {
+    if (overlayGroup != null) {
+      overlayGroup.remove(basic);
+    }
+  }
+
+  /**
+   * Enables or disables the global overlay. When disabled, the overlay group is neither updated nor drawn, making it
+   * zero-cost on the frame budget.
+   *
+   * @param enabled Whether the overlay should be active.
+   */
+  public void enableGlobalOverlay(boolean enabled) {
+    overlayEnabled = enabled;
+  }
+
+  /**
+   * Toggles the global overlay on if it is currently off, and off if it is currently on.
+   *
+   * @return The new enabled state after toggling.
+   */
+  public boolean toggleGlobalOverlay() {
+    overlayEnabled = !overlayEnabled;
+    return overlayEnabled;
   }
 
   public String getTitle() {
@@ -1154,5 +1262,34 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void setWindowSize(Vector2 newSize) {
     viewSize = newSize;
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
+  }
+
+  public boolean isGlobalOverlayEnabled() {
+    return overlayEnabled;
+  }
+
+  /**
+   * Returns the private {@link FlixelCamera} used to render the global overlay.
+   *
+   * <p>This camera is never registered in {@link Flixel#cameras}, so it is not affected by state
+   * code or camera resets. Its scroll is always zero, which means overlay members placed at
+   * position {@code (x, y)} always appear at those same design-resolution coordinates regardless
+   * of what the active game camera is doing.
+   *
+   * @return The overlay camera, or {@code null} if {@link #create()} has not yet run.
+   */
+  @Nullable
+  public FlixelCamera getOverlayCamera() {
+    return overlayCamera;
+  }
+
+  /**
+   * Returns the {@link FlixelBasicGroup} that holds all members added via {@link #add(IFlixelBasic)}.
+   *
+   * @return The overlay group, or {@code null} if {@link #create()} has not yet run.
+   */
+  @Nullable
+  public FlixelBasicGroup<IFlixelBasic> getOverlayGroup() {
+    return overlayGroup;
   }
 }
