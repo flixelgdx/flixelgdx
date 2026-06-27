@@ -201,7 +201,7 @@ public class PerformanceObject {
 
 Summarize edits in plain language: what changed, why, and how it fits the system.
 
-Before considering a coding task finished, **run unit tests** and **Javadoc lint**; fix failures. **All** unit tests live
+Before considering a coding task finished, **run unit tests**, **spotless apply (for formatting)**. and **Javadoc lint**; fix failures. **All** unit tests live
 in the `flixelgdx-test` module, not scattered around multiple modules.
 
 ---

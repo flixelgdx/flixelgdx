@@ -47,8 +47,8 @@ import org.jetbrains.annotations.Nullable;
 public interface FlixelHostIntegration {
 
   /**
-   * Shows a non-blocking desktop notification using the platform provider (Action Center on Windows, Notification Center on macOS,
-   * D-Bus, or libnotify on Linux).
+   * Shows a non-blocking desktop notification using the platform provider (Action Center on Windows,
+   * Notification Center on macOS, D-Bus or libnotify on Linux).
    *
    * @param title Short title, or {@code null} to use a blank title when the OS allows it.
    * @param message Body text; must not be {@code null}.
@@ -61,7 +61,8 @@ public interface FlixelHostIntegration {
   void requestAttention();
 
   /**
-   * @return {@code true} if {@link #sendNotification(String, String)} is expected to do useful work on this platform session.
+   * @return {@code true} if {@link #sendNotification(String, String)} is expected to do useful
+   * work on this platform session.
    */
   boolean supportsDesktopNotification();
 }

@@ -26,7 +26,6 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.Input;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.input.action.FlixelAnalogAxisBinding;
 import org.flixelgdx.GdxHeadlessExtension;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.junit.jupiter.api.AfterEach;

@@ -181,7 +181,7 @@ public final class FlixelActionDigital extends FlixelAction {
    * such as menu scrolling, cursor movement, or incrementing a value:
    *
    * <pre>{@code
-   * if (controls.uiDown.repeated()) scrollMenu(1);
+   * if (controls.uiDown.repeated()) scrollMenu();
    * }</pre>
    *
    * @return {@code true} on the initial press frame and on each repeat tick.
@@ -204,7 +204,6 @@ public final class FlixelActionDigital extends FlixelAction {
       }
       case POINTER_BUTTON -> evalPointer(b.a, b.b);
       case TOUCH_REGION -> evalTouchRegion(b.normX, b.normY, b.normW, b.normH);
-      default -> false;
     };
   }
 
