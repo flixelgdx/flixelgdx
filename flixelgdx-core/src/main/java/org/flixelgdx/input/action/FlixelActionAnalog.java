@@ -56,8 +56,36 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Use {@link #getX()} and {@link #getY()} after {@code super.update(elapsed)} in your state. {@link #getPrevX()} / {@link #getPrevY()}
  * mirror the previous frame after {@link FlixelActionSet#endFrame()}. {@link #moved()} is a small helper for non-zero length.
+ *
+ * <h2>Flick detection</h2>
+ *
+ * <p>{@link #flicked()} returns {@code true} for exactly one frame when the stick first crosses {@link #flickThreshold}.
+ * It resets to {@code false} as long as the stick stays past the threshold, and fires again only after the stick
+ * returns below the threshold and crosses it again. This mirrors the single-frame contract of
+ * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()} and is useful for menu navigation
+ * where each stick deflection should trigger exactly one action.
+ *
+ * <pre>{@code
+ * // Navigate a menu with a single stick deflection.
+ * if (navigate.flicked()) {
+ *   if (navigate.getY() < 0) selectNextItem();
+ *   else if (navigate.getY() > 0) selectPreviousItem();
+ * }
+ * }</pre>
+ *
+ * <p>Key bindings contribute {@code +-1.0} per axis, so pressing any bound key immediately exceeds the default threshold
+ * and fires {@link #flicked()} on that frame. Adjust {@link #flickThreshold} before the game loop if your game needs
+ * a different sensitivity.
  */
 public final class FlixelActionAnalog extends FlixelAction {
+
+  /**
+   * Minimum stick magnitude (0 to 1) required for {@link #flicked()} to fire. The comparison is
+   * made against the normalized vector length after all bindings are accumulated, so a value of
+   * {@code 0.3} means roughly 30% deflection. Defaults to {@code 0.3f}; adjust before the game
+   * loop if your game needs a different sensitivity.
+   */
+  public float flickThreshold = 0.3f;
 
   private final Array<FlixelAnalogAxisBinding> bindings = new Array<>(12);
 
@@ -67,6 +95,9 @@ public final class FlixelActionAnalog extends FlixelAction {
   private float y;
   private float prevX;
   private float prevY;
+
+  private boolean flickState;
+  private boolean prevFlickState;
 
   public FlixelActionAnalog(@Nullable String name) {
     super(name);
@@ -81,6 +112,7 @@ public final class FlixelActionAnalog extends FlixelAction {
     if (!active) {
       x = 0f;
       y = 0f;
+      flickState = false;
       return;
     }
     scratch.set(0f, 0f);
@@ -101,6 +133,8 @@ public final class FlixelActionAnalog extends FlixelAction {
     }
     x = sx;
     y = sy;
+    float ft = flickThreshold;
+    flickState = (x * x + y * y) >= ft * ft;
   }
 
   private static void accumulate(@NotNull FlixelAnalogAxisBinding b, @NotNull Vector2 out) {
@@ -144,6 +178,7 @@ public final class FlixelActionAnalog extends FlixelAction {
   void endFrameAction() {
     prevX = x;
     prevY = y;
+    prevFlickState = flickState;
   }
 
   @Override
@@ -152,6 +187,8 @@ public final class FlixelActionAnalog extends FlixelAction {
     y = 0f;
     prevX = 0f;
     prevY = 0f;
+    flickState = false;
+    prevFlickState = false;
   }
 
   public float getX() {
@@ -175,5 +212,22 @@ public final class FlixelActionAnalog extends FlixelAction {
       return false;
     }
     return Math.abs(x) > 1e-4f || Math.abs(y) > 1e-4f;
+  }
+
+  /**
+   * Returns {@code true} for the single frame when the stick first crosses {@link #flickThreshold}.
+   *
+   * <p>Stays {@code false} while the stick remains past the threshold, and fires again only after
+   * the stick drops below it and crosses it once more. This mirrors the single-frame contract of
+   * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()}, making it safe
+   * to use for menu navigation where one deflection should trigger exactly one action.
+   *
+   * <p>Key and button bindings contribute {@code +-1.0} per axis, so any bound key press that
+   * brings the magnitude past {@link #flickThreshold} fires {@code flicked()} on that frame.
+   *
+   * @return {@code true} for one frame when the stick crosses the threshold from below.
+   */
+  public boolean flicked() {
+    return active && flickState && !prevFlickState;
   }
 }

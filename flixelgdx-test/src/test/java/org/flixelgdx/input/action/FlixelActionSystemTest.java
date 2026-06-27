@@ -140,6 +140,38 @@ class FlixelActionSystemTest {
   }
 
   @Test
+  void analogFlickedFiresOncePerDeflection() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
+    navigate.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.DOWN));
+    navigate.addAxisBinding(FlixelAnalogAxisBinding.posYKey(Input.Keys.UP));
+    set.add(navigate);
+
+    // First press: flicked() fires on the first frame.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    set.update(0f);
+    assertTrue(navigate.flicked());
+
+    // Held: flicked() must not fire again while the stick stays past the threshold.
+    set.endFrame();
+    set.update(0f);
+    assertFalse(navigate.flicked());
+
+    // Released: magnitude drops below threshold, flicked() stays false.
+    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertFalse(navigate.flicked());
+
+    // Second press in the opposite direction: flicked() fires again.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.UP);
+    set.endFrame();
+    set.update(0f);
+    assertTrue(navigate.flicked());
+  }
+
+  @Test
   void steamReaderMergesDigital() {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
