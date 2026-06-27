@@ -917,7 +917,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Toggles auto-pause on or off.
    *
-   * @return The new value of autoPause after toggling.
+   * @return The new value of auto-pause after toggling.
    */
   public boolean toggleAutoPause() {
     autoPause = !autoPause;
