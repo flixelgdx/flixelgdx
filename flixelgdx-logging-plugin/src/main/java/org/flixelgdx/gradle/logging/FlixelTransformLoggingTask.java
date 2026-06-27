@@ -71,7 +71,8 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
     }
     Files.walkFileTree(root, new SimpleFileVisitor<>() {
       @Override
-      public @NonNull FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs) throws IOException {
+      public @NonNull FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs)
+          throws IOException {
         if (!file.toString().endsWith(".class") || file.getFileName().toString().equals("module-info.class")) {
           return FileVisitResult.CONTINUE;
         }
