@@ -522,20 +522,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       return;
     }
 
-    // Switch the batch shader if this sprite uses one. batch.setShader() flushes pending geometry
-    // internally before switching, so no explicit flush is needed here. Sprites that share the same
-    // shader instance and are drawn consecutively will batch together - only transitions cost a
-    // flush. If this sprite has no shader and the batch still has one active (left over from a
-    // previous shaded sprite), we restore the default so this sprite renders correctly.
-    if (spriteShader != null) {
-      ShaderProgram prog = spriteShader.getProgram();
-      if (prog != null && batch.getShader() != prog) {
-        batch.setShader(prog);
-        spriteShader.applyUniforms();
-      }
-    } else if (batch.getShader() != null) {
-      batch.setShader(null);
-    }
+    applyShaderToBatch(batch);
 
     if (currentFrame != null) {
       FlixelFrame f = currentFrame;
@@ -750,6 +737,30 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (graphic != null) {
       graphic.release();
       graphic = null;
+    }
+  }
+
+  /**
+   * Switches the batch to this sprite's shader if one is assigned, or restores the default if not.
+   *
+   * <p>Called at the start of every draw path (including subclass overrides such as
+   * {@link org.flixelgdx.animation.FlixelAnimateSprite FlixelAnimateSprite}) to ensure the correct
+   * shader is active before any geometry is submitted. {@link Batch#setShader(ShaderProgram)}
+   * flushes pending geometry internally before switching, so no explicit flush is needed here.
+   * Consecutive sprites sharing the same {@link FlixelShader} instance skip the swap entirely and
+   * batch together for free.
+   *
+   * @param batch The active batch to apply the shader switch on.
+   */
+  protected void applyShaderToBatch(Batch batch) {
+    if (spriteShader != null) {
+      ShaderProgram prog = spriteShader.getProgram();
+      if (prog != null && batch.getShader() != prog) {
+        batch.setShader(prog);
+        spriteShader.applyUniforms();
+      }
+    } else if (batch.getShader() != null) {
+      batch.setShader(null);
     }
   }
 

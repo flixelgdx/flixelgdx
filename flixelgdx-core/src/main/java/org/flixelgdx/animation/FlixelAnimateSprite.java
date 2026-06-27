@@ -821,6 +821,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
       return;
     }
 
+    applyShaderToBatch(batch);
+
     // Match FlixelSprite's flip-into-scale convention: a negative scale on either axis mirrors the
     // sprite around its origin, and the facing flag piles on top of the user-set flipX.
     boolean isFlippedX = flipX || (facing == FlixelDirectionFlags.LEFT);
