@@ -40,10 +40,12 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A powerful camera class that controls world-to-screen projection, parallax scrolling, zoom,
@@ -65,7 +67,7 @@ import org.jetbrains.annotations.NotNull;
  * you draw through this pipeline (FlixelGDX does this for {@link org.flixelgdx.text.FlixelText FlixelText}
  * and registry fonts automatically).
  */
-public class FlixelCamera extends FlixelBasic implements FlixelColorable {
+public class FlixelCamera extends FlixelBasic implements FlixelColorable, FlixelShaderable {
 
   /**
    * Any {@code FlixelCamera} with a zoom of {@code <= 0} (the default constructor value) will
@@ -1420,6 +1422,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
    *
    * @return The active {@link FlixelShader}, or {@code null}.
    */
+  @Nullable
   public FlixelShader getShader() {
     return shader;
   }

@@ -601,6 +601,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
         batch.end();
 
+        // If a sprite swapped the batch to a custom shader during the draw pass, reset it now.
+        // batch.setShader(null) while not drawing is a cheap reference write with no GPU cost.
+        if (batch.getShader() != null) {
+          batch.setShader(null);
+        }
+
         if (cameraShader != null) {
           camera.getFbo().end();
           if (useGlobalFbo) {
