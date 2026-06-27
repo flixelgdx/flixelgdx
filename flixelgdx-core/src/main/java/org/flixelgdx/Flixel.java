@@ -535,6 +535,13 @@ public final class Flixel {
   /**
    * The gamepad and controller input manager.
    *
+   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadManager#enabled} to
+   * {@code true} before the game loop starts if your game needs controller support:
+   *
+   * <pre>{@code
+   * Flixel.gamepads.enabled = true;
+   * }</pre>
+   *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
    * defined in {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}, so the same game code works
@@ -548,6 +555,9 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
+   * // Opt in to controller support before the game loop starts.
+   * Flixel.gamepads.enabled = true;
+   *
    * // Check if player 1 pressed the A button this frame.
    * if (Flixel.gamepads.justPressed(0, FlixelGamepadInput.A)) {
    *   player.jump();
@@ -784,7 +794,6 @@ public final class Flixel {
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
     gamepads = new FlixelGamepadManager();
-    gamepads.attach();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
