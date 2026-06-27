@@ -149,7 +149,7 @@ public final class FlixelLoggerBytecodeWeaver {
       return false;
     }
     boolean changed = false;
-    String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile.java";
+    String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile";
     String classNameDots = classNode.name.replace('/', '.');
     for (MethodNode method : classNode.methods) {
       if (method.instructions == null || method.instructions.size() == 0) {
