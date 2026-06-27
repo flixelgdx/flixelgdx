@@ -45,17 +45,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelAnalogAxisBinding {
 
-  public enum Kind {
-    KEY_NEG_X,
-    KEY_POS_X,
-    KEY_NEG_Y,
-    KEY_POS_Y,
-    GAMEPAD_AXIS_X,
-    GAMEPAD_AXIS_Y,
-    NEG_GAMEPAD_AXIS_X,
-    NEG_GAMEPAD_AXIS_Y
-  }
-
   public final Kind kind;
 
   /** Keycode for key kinds, or {@link FlixelGamepadInput} logical axis for gamepad kinds. */
@@ -134,5 +123,19 @@ public final class FlixelAnalogAxisBinding {
   @NotNull
   public static FlixelAnalogAxisBinding negGamepadAxisY(int gamepadSlot, int logicalAxis) {
     return new FlixelAnalogAxisBinding(Kind.NEG_GAMEPAD_AXIS_Y, logicalAxis, gamepadSlot);
+  }
+
+  /**
+   * Simple enum for handling different input types and their directions.
+   */
+  public enum Kind {
+    KEY_NEG_X,
+    KEY_POS_X,
+    KEY_NEG_Y,
+    KEY_POS_Y,
+    GAMEPAD_AXIS_X,
+    GAMEPAD_AXIS_Y,
+    NEG_GAMEPAD_AXIS_X,
+    NEG_GAMEPAD_AXIS_Y
   }
 }
