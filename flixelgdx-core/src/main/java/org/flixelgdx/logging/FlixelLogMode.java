@@ -37,7 +37,8 @@ public enum FlixelLogMode {
 
   /**
    * Provides a more detailed log output that includes the time of the log call, class, line number, and
-   * method of the call. Great for debugging purposes and people who like a more professional feel for their game!
+   * method of the call. Great for advanced debugging purposes and people who like a more
+   * professional feel for their game!
    */
   DETAILED
 }
