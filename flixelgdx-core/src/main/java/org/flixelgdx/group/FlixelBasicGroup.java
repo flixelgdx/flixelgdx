@@ -23,18 +23,18 @@
  */
 package org.flixelgdx.group;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.ArraySupplier;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.functional.IFlixelBasic;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link org.flixelgdx.FlixelBasic FlixelBasic} that owns a {@link FlixelGroup} of {@link IFlixelBasic} members, with batch
- * {@link #update(float)} / {@link #draw(Batch)}, {@link #recycle()}, and {@link #destroy()} that tears down members.
+ * {@link #update(float)} / {@link org.flixelgdx.functional.FlixelDrawable#draw(FlixelBatch)}, {@link #recycle()}, and {@link #destroy()} that tears down members.
  *
  * <p>Member list operations are delegated to an internal {@link FlixelGroup}; {@link #getMemberList()} exposes it when
  * you need the raw container.
@@ -118,7 +118,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
   }
 
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     SnapshotArray<T> members = memberList.getMembers();
     if (members == null) {
       return;

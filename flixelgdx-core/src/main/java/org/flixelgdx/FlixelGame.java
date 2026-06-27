@@ -32,7 +32,6 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
@@ -545,13 +544,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param batch The batch to use for drawing the game.
    */
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     Flixel.Signals.preDraw.dispatch();
 
-    ScreenUtils.clear(bgColor); // Clear the screen to refresh the screen.
+    ScreenUtils.clear(bgColor); // Clear the screen to refresh it.
     FlixelState state = Flixel.getState();
 
-    int totalRenderCallsBefore = this.batch != null ? this.batch.getTotalRenderCalls() : 0;
+    int totalRenderCallsBefore = batch.getTotalRenderCalls();
 
     boolean useGlobalFbo = !globalShaders.isEmpty() && sceneFboA != null;
     if (useGlobalFbo) {
@@ -665,7 +664,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    frameRenderCalls = this.batch != null ? this.batch.getTotalRenderCalls() - totalRenderCallsBefore : 0;
+    frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
     FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
     if (debugOverlay != null) {
@@ -705,7 +704,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Updates the game's global and internal {@link #update(float)} and {@link #draw(Batch)} methods, with elapsed time clamped
+   * Updates the game's global and internal {@link #update(float)} and {@link FlixelDrawable#draw(FlixelBatch)} methods, with elapsed time clamped
    * to the min and max values to prevent major lag spikes.
    *
    * <p>This method is called automatically by libGDX's {@link ApplicationListener#render()} method when the game is
@@ -713,10 +712,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * perform custom updating/rendering before the game is updated/rendered.
    *
    * <p>You should not (and cannot) override this method. You are encouraged to override either {@link #update(float)}
-   * or {@link #draw(Batch)} instead, as they separate logic and rendering correctly.
+   * or {@link FlixelDrawable#draw(FlixelBatch)} instead, as they separate logic and rendering correctly.
    *
    * @see #update(float)
-   * @see #draw(Batch)
+   * @see FlixelDrawable#draw(FlixelBatch)
    * @see ApplicationListener#render()
    */
   @Override
@@ -1198,21 +1197,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Gets the first camera in {@link Flixel#cameras}. If the list is empty, a default camera is created and added
-   * first so this never returns {@code null}.
-   *
-   * @return The first camera in the list.
-   */
-  public FlixelCamera getCamera() {
-    Vector2 windowSize = viewSize;
-    if (cameras.isEmpty()) {
-      cameras.add(new FlixelCamera((int) windowSize.x, (int) windowSize.y));
-      cameras.first().apply();
-    }
-    return cameras.first();
-  }
-
-  /**
    * Resets the camera list to contain a single default camera with the current window size as its viewport.
    */
   public void resetCameras() {
@@ -1317,8 +1301,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return cameras;
   }
 
+  @NotNull
   public FlixelBatch getBatch() {
     return batch;
+  }
+
+  @Nullable
+  public SpriteBatch getCompositeBatch() {
+    return compositeBatch;
   }
 
   /**
@@ -1369,7 +1359,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Updates global and per-camera backdrop drawing for desktop compositing. Called from
    * {@link org.flixelgdx.backend.window.FlixelWindow FlixelWindow}. When desktop see-through is off but the GLFW window
-   * was created with a transparent-capable framebuffer, {@link #draw} also forces framebuffer alpha to {@code 1} after
+   * was created with a transparent-capable framebuffer, {@link FlixelDrawable#draw} also forces framebuffer alpha to {@code 1} after
    * rendering so tinted sprites do not composite through the real desktop.
    *
    * @param active {@code true} for transparent clears and camera fills; {@code false} restores colors

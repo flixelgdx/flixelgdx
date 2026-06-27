@@ -26,7 +26,6 @@ package org.flixelgdx.debug;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
@@ -40,6 +39,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
@@ -762,7 +762,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   /**
-   * View-space hit test aligned with {@link org.flixelgdx.FlixelSprite#draw(Batch) FlixelSprite.draw(Batch)}: uses world position
+   * View-space hit test aligned with {@link FlixelDrawable#draw(FlixelBatch) FlixelSprite.draw(Batch)}: uses world position
    * plus each object's scroll factors so parallax sprites and grouped layers match what the player sees.
    */
   private static boolean overlapsObjectInView(@NotNull FlixelCamera cam, @NotNull FlixelObject obj,
@@ -838,7 +838,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * intentionally avoids depending on a heavy GUI toolkit (Dear ImGui, scene2d.ui, etc.). Backends
    * override this to render the panels with whatever toolkit suits the platform.
    *
-   * <p>Called from {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch) FlixelGame.draw(Batch)}
+   * <p>Called from {@link FlixelDrawable#draw(FlixelBatch) FlixelGame.draw(Batch)}
    * after the game stage and bounding boxes have been drawn.
    */
   public void draw() {

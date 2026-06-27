@@ -25,11 +25,11 @@ package org.flixelgdx;
 
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.IFlixelBasic;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -131,7 +131,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
    * @param batch The batch that's used to draw {@code this} state's members.
    */
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     super.draw(batch);
   }
 

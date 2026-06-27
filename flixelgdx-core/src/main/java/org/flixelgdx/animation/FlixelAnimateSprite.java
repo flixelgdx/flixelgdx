@@ -36,6 +36,7 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
@@ -755,7 +756,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @param batch The active batch.
    */
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     if (!visible || !isOnDrawCamera()) {
       return;
     }
