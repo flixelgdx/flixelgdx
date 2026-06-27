@@ -185,11 +185,16 @@ public class FlixelAnimateSprite extends FlixelSprite {
   public FlixelAnimateSprite addSpritemapAndAnimation(String path) {
     Objects.requireNonNull(defaultSpritemapName, "defaultSpritemapName cannot be null.");
     Objects.requireNonNull(defaultAnimationName, "defaultAnimationName cannot be null.");
-    if (!Gdx.files.internal(path).isDirectory()) {
-      throw new IllegalArgumentException("The provided path is either not a real folder, or doesn't exist.");
+    String pngPath = path + "/" + defaultSpritemapName + ".png";
+    String spritemapJsonPath = path + "/" + defaultSpritemapName + ".json";
+    String animationJsonPath = path + "/" + defaultAnimationName + ".json";
+    if (!Gdx.files.internal(pngPath).exists()
+        || !Gdx.files.internal(spritemapJsonPath).exists()
+        || !Gdx.files.internal(animationJsonPath).exists()) {
+      throw new IllegalArgumentException(
+          "The provided path is either not a real folder, one of the required files is missing, or doesn't exist.");
     }
-    return addSpritemapAndAnimation(path + "/" + defaultSpritemapName + ".png",
-        path + "/" + defaultSpritemapName + ".json", path + "/" + defaultAnimationName + ".json");
+    return addSpritemapAndAnimation(pngPath, spritemapJsonPath, animationJsonPath);
   }
 
   /**
