@@ -36,8 +36,10 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.util.FlixelDirectionFlags;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -754,7 +756,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @param batch The active batch.
    */
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     if (!visible || !isOnDrawCamera()) {
       return;
     }
@@ -819,6 +821,14 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
     if (!cam.isInView(rigLeft, rigBottom, rigCullW, rigCullH)) {
       return;
+    }
+
+    FlixelShader activeShader = getShader();
+    if (activeShader != null
+        && activeShader.getProgram() != null
+        && batch.getShader() != activeShader.getProgram()) {
+      batch.setShader(activeShader.getProgram());
+      activeShader.applyUniforms();
     }
 
     // Match FlixelSprite's flip-into-scale convention: a negative scale on either axis mirrors the
@@ -887,6 +897,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     batch.setColor(Color.WHITE);
+
+    if (activeShader != null) {
+      batch.setShader(null);
+    }
   }
 
   /**

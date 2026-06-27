@@ -23,7 +23,8 @@
  */
 package org.flixelgdx.functional;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
+import org.flixelgdx.graphics.FlixelBatch;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for Flixel-based visible objects that can be drawn.
@@ -37,5 +38,5 @@ public interface FlixelDrawable {
    *
    * @param batch The batch used for rendering.
    */
-  void draw(Batch batch);
+  void draw(@NotNull FlixelBatch batch);
 }

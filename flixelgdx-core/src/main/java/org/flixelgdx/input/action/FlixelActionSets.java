@@ -25,6 +25,7 @@ package org.flixelgdx.input.action;
 
 import com.badlogic.gdx.utils.Array;
 
+import org.flixelgdx.functional.FlixelDrawable;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <h2>When {@code endFrameAll} runs</h2>
  *
- * <p>After {@link org.flixelgdx.FlixelGame#draw FlixelGame.draw} and the input managers' {@code endFrame()} calls,
+ * <p>After {@link FlixelDrawable#draw FlixelGame.draw} and the input managers' {@code endFrame()} calls,
  * {@link #endFrameAll()} copies digital and analog edge state for the next frame.
  *
  * <h2>Registration</h2>
