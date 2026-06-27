@@ -33,6 +33,8 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -139,6 +141,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Nullable
   private FlixelCamera overlayCamera;
 
+  /**
+   * A standard single-texture batch used only for the post-processing composite pass when a
+   * {@link FlixelCamera} has a {@link FlixelShader} assigned. Created lazily on first use and
+   * disposed in {@link #destroy()}.
+   */
+  @Nullable
+  private SpriteBatch compositeBatch;
+
   /** The member group for the global overlay. Updated and drawn when the overlay is enabled. */
   @Nullable
   private FlixelBasicGroup<IFlixelBasic> overlayGroup;
@@ -164,6 +174,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
+
+  /** Orthographic projection matrix reused each frame for the FBO composite pass. */
+  private final Matrix4 fboOrtho = new Matrix4();
 
   /**
    * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
@@ -503,6 +516,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
           camera.applyLibCameraTransform();
         }
         camera.getViewport().apply();
+
+        FlixelShader cameraShader = camera.getShader();
+        if (cameraShader != null) {
+          camera.getFbo().begin();
+          Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+          Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        }
+
         batch.setProjectionMatrix(camera.getCamera().combined);
         batch.begin();
 
@@ -525,6 +546,20 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         camera.drawFX(batch, bgTexture);
 
         batch.end();
+
+        if (cameraShader != null) {
+          camera.getFbo().end();
+          camera.getViewport().apply();
+          if (compositeBatch == null) {
+            compositeBatch = new SpriteBatch();
+          }
+          fboOrtho.setToOrtho2D(0, 0, camera.width, camera.height);
+          compositeBatch.setProjectionMatrix(fboOrtho);
+          compositeBatch.setShader(cameraShader.getProgram());
+          compositeBatch.begin();
+          compositeBatch.draw(camera.getFboRegion(), 0, 0, camera.width, camera.height);
+          compositeBatch.end();
+        }
       } finally {
         Flixel.setDrawCamera(null);
       }
@@ -858,6 +893,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (batch != null) {
       batch.dispose();
       batch = null;
+    }
+    if (compositeBatch != null) {
+      compositeBatch.dispose();
+      compositeBatch = null;
     }
     if (bgTexture != null) {
       bgTexture.dispose();

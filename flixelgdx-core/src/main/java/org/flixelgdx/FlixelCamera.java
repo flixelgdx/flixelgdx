@@ -27,9 +27,12 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -232,6 +235,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   private Runnable flashOnComplete;
   private Runnable shakeOnComplete;
   private FlixelAxes shakeAxes = FlixelAxes.XY;
+  private FlixelShader shader;
+  private FrameBuffer fbo;
+  private TextureRegion fboRegion;
 
   private RegionMode regionMode = RegionMode.PIXEL_TOP_LEFT;
 
@@ -404,6 +410,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   public void update(float elapsed) {
     if (!active || !exists) {
       return;
+    }
+
+    if (shader != null) {
+      shader.update(elapsed);
     }
 
     updateFollow(elapsed);
@@ -1048,11 +1058,28 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   public void destroy() {
     super.destroy();
     stopFX();
+    disposeFbo();
     target = null;
     deadzone = null;
+    shader = null;
     flashOnComplete = null;
     fadeOnComplete = null;
     shakeOnComplete = null;
+  }
+
+  private void initFbo() {
+    disposeFbo();
+    fbo = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
+    fboRegion = new TextureRegion(fbo.getColorBufferTexture());
+    fboRegion.flip(false, true);
+  }
+
+  private void disposeFbo() {
+    if (fbo != null) {
+      fbo.dispose();
+      fbo = null;
+      fboRegion = null;
+    }
   }
 
   private void updateFlash(float elapsed) {
@@ -1362,6 +1389,61 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
     out.set(topLeftX, topLeftY, resolvedRegionWidth, resolvedRegionHeight);
   }
 
+  /**
+   * Assigns a post-processing shader to this camera. When set, the camera renders its scene into
+   * an internal {@link FrameBuffer} each frame and then composites the result to screen using
+   * the given shader.
+   *
+   * <p>The shader is NOT owned by the camera. Call {@link FlixelShader#destroy()} yourself
+   * when you are done with it. To remove the shader and return to direct rendering, pass
+   * {@code null}.
+   *
+   * <p>Changing the shader recreates the internal framebuffer. Passing the same shader object
+   * that is already set is safe but still recreates the framebuffer, so avoid calling this
+   * every frame.
+   *
+   * @param shader The shader to apply as a camera post-processing effect, or {@code null} to
+   *   disable post-processing.
+   */
+  public void setShader(FlixelShader shader) {
+    this.shader = shader;
+    if (shader != null) {
+      initFbo();
+    } else {
+      disposeFbo();
+    }
+  }
+
+  /**
+   * Returns the shader currently assigned to this camera, or {@code null} if none is set.
+   *
+   * @return The active {@link FlixelShader}, or {@code null}.
+   */
+  public FlixelShader getShader() {
+    return shader;
+  }
+
+  /**
+   * Returns the internal {@link FrameBuffer} used for post-processing, or {@code null} if no
+   * shader has been assigned via {@link #setShader(FlixelShader)}.
+   *
+   * @return The camera's framebuffer, or {@code null}.
+   */
+  public FrameBuffer getFbo() {
+    return fbo;
+  }
+
+  /**
+   * Returns a Y-flipped {@link TextureRegion} wrapping the internal framebuffer's color texture.
+   * Used by {@link FlixelGame} to draw the captured scene through the camera's shader.
+   * Returns {@code null} if no shader has been assigned.
+   *
+   * @return The framebuffer region, or {@code null}.
+   */
+  public TextureRegion getFboRegion() {
+    return fboRegion;
+  }
+
   /** Returns the underlying libGDX {@link Camera} used for projection. */
   public Camera getCamera() {
     return camera;
@@ -1551,6 +1633,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable {
   public void setSize(int width, int height) {
     this.width = width;
     this.height = height;
+    if (shader != null) {
+      initFbo();
+    }
   }
 
   /**
