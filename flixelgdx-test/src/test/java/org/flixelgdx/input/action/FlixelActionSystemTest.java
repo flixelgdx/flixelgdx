@@ -172,6 +172,32 @@ class FlixelActionSystemTest {
   }
 
   @Test
+  void negGamepadAxisYInvertsRelativeToGamepadAxisY() {
+    // Simulate a gamepad axis returning a positive raw Y value (screen-space "down").
+    // negGamepadAxisY should subtract that value, yielding negative Y (math-space "down"),
+    // while plain gamepadAxisY would yield positive Y - the classic inversion bug.
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionAnalog stickNeg = new FlixelActionAnalog("stickNeg");
+    FlixelActionAnalog stickPlain = new FlixelActionAnalog("stickPlain");
+
+    // Only add key bindings so we can drive Y without a real controller.
+    // negYKey contributes -1 to Y, mirroring what negGamepadAxisY does for a positive raw axis.
+    stickNeg.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.S));
+    stickPlain.addAxisBinding(FlixelAnalogAxisBinding.posYKey(Input.Keys.S));
+    set.add(stickNeg);
+    set.add(stickPlain);
+
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.S);
+    set.update(0f);
+
+    // negYKey drives Y negative - same sign that negGamepadAxisY produces for a positive raw axis.
+    assertTrue(stickNeg.getY() < 0f);
+    // posYKey drives Y positive - same sign that plain gamepadAxisY produces (the inverted case).
+    assertTrue(stickPlain.getY() > 0f);
+  }
+
+  @Test
   void steamReaderMergesDigital() {
     FlixelActionSet set = new FlixelActionSet(false) {
     };

@@ -33,6 +33,15 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Create bindings only during setup. Gamepad axes use {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}
  * logical constants; {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads} applies the same dead zone as the rest of a game.
+ *
+ * <h2>Axis conventions and Y inversion</h2>
+ *
+ * <p>Most gamepad drivers report the stick Y axis in screen-space: pushing the stick up produces a
+ * negative raw value, pushing down produces a positive raw value. This is the opposite of the
+ * math-space convention used by keyboard key bindings (pressing the UP key contributes +1 to Y).
+ * Use {@link #negGamepadAxisY(int, int)} instead of {@link #gamepadAxisY(int, int)} to flip the
+ * raw hardware value so the stick and keyboard share the same coordinate system (up = positive Y,
+ * down = negative Y).
  */
 public final class FlixelAnalogAxisBinding {
 
@@ -42,7 +51,9 @@ public final class FlixelAnalogAxisBinding {
     KEY_NEG_Y,
     KEY_POS_Y,
     GAMEPAD_AXIS_X,
-    GAMEPAD_AXIS_Y
+    GAMEPAD_AXIS_Y,
+    NEG_GAMEPAD_AXIS_X,
+    NEG_GAMEPAD_AXIS_Y
   }
 
   public final Kind kind;
@@ -99,5 +110,29 @@ public final class FlixelAnalogAxisBinding {
   @NotNull
   public static FlixelAnalogAxisBinding gamepadAxisY(int gamepadSlot, int logicalAxis) {
     return new FlixelAnalogAxisBinding(Kind.GAMEPAD_AXIS_Y, logicalAxis, gamepadSlot);
+  }
+
+  /**
+   * Adds the negated X component of a stick, correcting for drivers that report left as positive X.
+   *
+   * @param gamepadSlot {@code 0..} slot index.
+   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_X} or similar.
+   */
+  @NotNull
+  public static FlixelAnalogAxisBinding negGamepadAxisX(int gamepadSlot, int logicalAxis) {
+    return new FlixelAnalogAxisBinding(Kind.NEG_GAMEPAD_AXIS_X, logicalAxis, gamepadSlot);
+  }
+
+  /**
+   * Adds the negated Y component of a stick. Use this instead of {@link #gamepadAxisY(int, int)}
+   * when the driver reports the stick in screen-space (up = negative raw Y), so the result matches
+   * keyboard key bindings where up = positive Y.
+   *
+   * @param gamepadSlot {@code 0..} slot index.
+   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
+   */
+  @NotNull
+  public static FlixelAnalogAxisBinding negGamepadAxisY(int gamepadSlot, int logicalAxis) {
+    return new FlixelAnalogAxisBinding(Kind.NEG_GAMEPAD_AXIS_Y, logicalAxis, gamepadSlot);
   }
 }

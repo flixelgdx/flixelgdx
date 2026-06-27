@@ -169,6 +169,16 @@ public final class FlixelActionAnalog extends FlixelAction {
           out.y += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
         }
       }
+      case NEG_GAMEPAD_AXIS_X -> {
+        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
+          out.x -= Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+        }
+      }
+      case NEG_GAMEPAD_AXIS_Y -> {
+        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
+          out.y -= Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
+        }
+      }
       default -> {
       }
     }
