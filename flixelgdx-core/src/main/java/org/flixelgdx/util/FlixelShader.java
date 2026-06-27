@@ -115,7 +115,9 @@ public class FlixelShader extends FlixelBasic {
    * the same vertex source without duplicating it.
    */
   public static final String DEFAULT_VERT =
-      "precision mediump float;\n"
+      "#ifdef GL_ES\n"
+          + "precision mediump float;\n"
+          + "#endif\n"
           + "attribute vec4 a_position;\n"
           + "attribute vec4 a_color;\n"
           + "attribute vec2 a_texCoord0;\n"
@@ -159,7 +161,9 @@ public class FlixelShader extends FlixelBasic {
    * names here means the {@link #HAXEFLIXEL_DEFINES} aliases resolve correctly.
    */
   private static final String HAXEFLIXEL_HEADER_EXPANSION =
-      "precision mediump float;\n"
+      "#ifdef GL_ES\n"
+          + "precision mediump float;\n"
+          + "#endif\n"
           + "uniform sampler2D u_texture;\n"
           + "uniform vec2 u_textureSize;\n"
           + "varying vec4 v_color;\n"
