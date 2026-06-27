@@ -34,6 +34,8 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
@@ -186,6 +188,38 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private int fboOrthoW = -1;
 
   private int fboOrthoH = -1;
+
+  /**
+   * Ordered list of shaders applied to all game cameras as a group before the global overlay is
+   * drawn. Shaders are run in insertion order; two or more shaders chain via ping-pong FBOs so
+   * each pass feeds the next without re-rendering the scene.
+   *
+   * <p>Managed via {@link #addGlobalShader(FlixelShader)} and
+   * {@link #removeGlobalShader(FlixelShader)}.
+   */
+  private final Array<FlixelShader> globalShaders = new Array<>();
+
+  /**
+   * Primary scene framebuffer for the global shader pass.
+   * Created on the first {@link #addGlobalShader} call and recreated on window resize.
+   * Null when {@link #globalShaders} is empty.
+   */
+  @Nullable
+  private FrameBuffer sceneFboA;
+
+  /**
+   * Secondary scene framebuffer used only when two or more global shaders are active.
+   * Acts as the ping-pong target so each shader reads from one FBO and writes to the other.
+   * Null when fewer than two shaders are present.
+   */
+  @Nullable
+  private FrameBuffer sceneFboB;
+
+  @Nullable
+  private TextureRegion sceneFboRegionA;
+
+  @Nullable
+  private TextureRegion sceneFboRegionB;
 
   /**
    * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
@@ -437,6 +471,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (state != null) {
       state.resize(width, height);
     }
+
+    if (!globalShaders.isEmpty()) {
+      initSceneFbos(globalShaders.size > 1);
+    }
   }
 
   /**
@@ -515,6 +553,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     int totalRenderCallsBefore = this.batch != null ? this.batch.getTotalRenderCalls() : 0;
 
+    boolean useGlobalFbo = !globalShaders.isEmpty() && sceneFboA != null;
+    if (useGlobalFbo) {
+      sceneFboA.begin();
+      Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+      Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    }
+
     // Loop through all cameras and draw the state/substate chain onto each camera.
     FlixelCamera[] cameraItems = cameras.items;
     for (int ci = 0, cn = cameras.size; ci < cn; ci++) {
@@ -558,6 +603,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
         if (cameraShader != null) {
           camera.getFbo().end();
+          if (useGlobalFbo) {
+            // camera.getFbo().end() restores GL framebuffer to 0 (the screen). When the global
+            // FBO is active we need to be back inside it so the per-camera composite draws into
+            // the scene texture rather than directly to the screen.
+            Gdx.gl20.glBindFramebuffer(GL20.GL_FRAMEBUFFER, sceneFboA.getFramebufferHandle());
+          }
           camera.getViewport().apply();
           // FlixelSpriteBatch.flush() leaves the active GL texture unit at the last
           // slot it bound (e.g. unit 2 after drawing 3 atlases). SpriteBatch.flush()
@@ -586,6 +637,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       } finally {
         Flixel.setDrawCamera(null);
       }
+    }
+
+    if (useGlobalFbo) {
+      sceneFboA.end();
+      applyGlobalShaderChain();
     }
 
     if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
@@ -871,6 +927,144 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
+   * Adds a shader to the global post-processing chain applied to all game cameras together.
+   *
+   * <p>Unlike per-camera shaders (see {@link FlixelCamera#setShader(FlixelShader)}), a global
+   * shader captures the combined output of every game camera into a single full-screen
+   * framebuffer and applies the effect in one pass. This means barrel distortion, scanlines,
+   * and similar effects align correctly across camera boundaries. The global overlay (debug
+   * FPS display, etc.) is drawn after the global composite and is always excluded.
+   *
+   * <p>Shaders added with this method run in insertion order. When more than one shader is
+   * present they chain via ping-pong framebuffers so each pass feeds the next without
+   * re-rendering the scene.
+   *
+   * <p><b>Performance note:</b> Every global shader adds a full-screen framebuffer pass per
+   * frame. On weaker or integrated-graphics hardware this can have a meaningful impact on
+   * frame budget. It is strongly recommended to expose a graphics settings option in your
+   * game so players can disable shader effects. A common pattern is to call
+   * {@link #removeGlobalShader(FlixelShader)} and {@link FlixelCamera#setShader(FlixelShader)
+   * camera.setShader(null)} when the player turns shaders off, and re-add them when turned
+   * back on.
+   *
+   * <p>Adding the same shader instance more than once is a no-op.
+   *
+   * @param shader The shader to append to the global chain.
+   */
+  public void addGlobalShader(FlixelShader shader) {
+    if (globalShaders.contains(shader, true)) {
+      return;
+    }
+    boolean needsPingPong = !globalShaders.isEmpty();
+    globalShaders.add(shader);
+    initSceneFbos(needsPingPong || globalShaders.size > 1);
+  }
+
+  /**
+   * Removes a shader from the global post-processing chain.
+   *
+   * <p>If the chain becomes empty as a result, the scene framebuffers are released immediately.
+   * Removing a shader that was never added is a no-op.
+   *
+   * @param shader The shader to remove.
+   * @return {@code true} if the shader was found and removed, {@code false} otherwise.
+   */
+  public boolean removeGlobalShader(FlixelShader shader) {
+    boolean removed = globalShaders.removeValue(shader, true);
+    if (removed) {
+      if (globalShaders.isEmpty()) {
+        disposeSceneFbos();
+      } else {
+        initSceneFbos(globalShaders.size > 1);
+      }
+    }
+    return removed;
+  }
+
+  /** Creates (or recreates) the scene framebuffers used by the global shader chain. */
+  private void initSceneFbos(boolean needPingPong) {
+    disposeSceneFbos();
+    int w = Gdx.graphics.getBackBufferWidth();
+    int h = Gdx.graphics.getBackBufferHeight();
+    sceneFboA = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
+    sceneFboRegionA = new TextureRegion(sceneFboA.getColorBufferTexture());
+    sceneFboRegionA.flip(false, true);
+    if (needPingPong) {
+      sceneFboB = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
+      sceneFboRegionB = new TextureRegion(sceneFboB.getColorBufferTexture());
+      sceneFboRegionB.flip(false, true);
+    }
+  }
+
+  /** Releases the scene framebuffers and clears the region references. */
+  private void disposeSceneFbos() {
+    if (sceneFboA != null) {
+      sceneFboA.dispose();
+      sceneFboA = null;
+      sceneFboRegionA = null;
+    }
+    if (sceneFboB != null) {
+      sceneFboB.dispose();
+      sceneFboB = null;
+      sceneFboRegionB = null;
+    }
+  }
+
+  /**
+   * Composites the scene framebuffer to the screen by running it through the global shader chain.
+   * When more than one shader is present the passes ping-pong between {@link #sceneFboA} and
+   * {@link #sceneFboB} so each shader reads from one texture and writes to the other.
+   */
+  private void applyGlobalShaderChain() {
+    if (compositeBatch == null) {
+      compositeBatch = new SpriteBatch();
+    }
+    int w = Gdx.graphics.getBackBufferWidth();
+    int h = Gdx.graphics.getBackBufferHeight();
+    boolean usingA = true;
+    TextureRegion src = sceneFboRegionA;
+    int n = globalShaders.size;
+
+    for (int i = 0; i < n; i++) {
+      FlixelShader gs = globalShaders.get(i);
+      boolean isLast = (i == n - 1);
+
+      Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
+
+      if (w != fboOrthoW || h != fboOrthoH) {
+        fboOrthoW = w;
+        fboOrthoH = h;
+        fboOrtho.setToOrtho2D(0, 0, w, h);
+        compositeBatch.setProjectionMatrix(fboOrtho);
+      }
+      if (compositeBatch.getShader() != gs.getProgram()) {
+        compositeBatch.setShader(gs.getProgram());
+      }
+
+      if (!isLast) {
+        FrameBuffer dst = usingA ? sceneFboB : sceneFboA;
+        TextureRegion dstRegion = usingA ? sceneFboRegionB : sceneFboRegionA;
+        dst.begin();
+        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        compositeBatch.begin();
+        gs.applyUniforms();
+        compositeBatch.draw(src, 0, 0, w, h);
+        compositeBatch.end();
+        dst.end();
+        Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
+        src = dstRegion;
+        usingA = !usingA;
+      } else {
+        compositeBatch.begin();
+        gs.applyUniforms();
+        compositeBatch.draw(src, 0, 0, w, h);
+        compositeBatch.end();
+      }
+    }
+  }
+
+  /**
    * Destroys the game and all of its resources.
    *
    * <p>Note that this doesn't close the game entirely; it just disposes
@@ -917,6 +1111,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       batch.dispose();
       batch = null;
     }
+    disposeSceneFbos();
+    globalShaders.clear();
+
     if (compositeBatch != null) {
       compositeBatch.dispose();
       compositeBatch = null;
