@@ -579,6 +579,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
             compositeBatch.setShader(cameraShader.getProgram());
           }
           compositeBatch.begin();
+          cameraShader.applyUniforms();
           compositeBatch.draw(camera.getFboRegion(), 0, 0, camera.width, camera.height);
           compositeBatch.end();
         }

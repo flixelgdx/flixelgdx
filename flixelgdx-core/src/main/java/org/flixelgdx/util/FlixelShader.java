@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.util;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 
 import org.flixelgdx.Flixel;
@@ -77,21 +78,25 @@ import org.flixelgdx.FlixelCamera;
  * Flixel.cameras.first().setShader(bloom);
  * }</pre>
  *
- * <p>Override {@link #update(float)} to drive time-based uniforms, for example:
+ * <p>Shaders that declare {@code uniform float u_time} receive the total elapsed time in seconds
+ * automatically - no extra code is required. For other custom uniforms, override
+ * {@link #applyUniforms()} and call the super method first:
  *
  * <pre>{@code
- * public class WaveShader extends FlixelShader {
- *   private float time;
+ * public class TintShader extends FlixelShader {
+ *   private float intensity;
+ *   private int intensityLoc;
  *
- *   public WaveShader() {
- *     super(WAVE_FRAG_SRC);
+ *   public TintShader() {
+ *     super(FRAG_SRC);
+ *     intensityLoc = getProgram().fetchUniformLocation("u_intensity", false);
  *   }
  *
- *   public void update(float elapsed) {
- *     super.update(elapsed);
- *     time += elapsed;
- *     getProgram().bind();
- *     getProgram().setUniformf("u_time", time);
+ *   public void applyUniforms() {
+ *     super.applyUniforms();
+ *     if (intensityLoc >= 0) {
+ *       Gdx.gl20.glUniform1f(intensityLoc, intensity);
+ *     }
  *   }
  * }
  * }</pre>
@@ -154,6 +159,16 @@ public class FlixelShader extends FlixelBasic {
           + "varying vec4 v_color;\n"
           + "varying vec2 v_texCoords;\n";
 
+  /**
+   * Cached uniform location of {@code u_time}, or {@code -1} if the shader does not declare it.
+   * Looked up once at compile time so {@link #applyUniforms()} never calls into the driver
+   * for a string search.
+   */
+  private int timeUniformLoc = -1;
+
+  /** Total elapsed seconds accumulated by {@link #update(float)}, fed to {@code u_time}. */
+  private float time;
+
   private ShaderProgram program;
 
   /**
@@ -183,6 +198,8 @@ public class FlixelShader extends FlixelBasic {
     this.program = new ShaderProgram(vertSrc, fragSrc);
     if (!this.program.isCompiled()) {
       Flixel.error("FlixelShader", "Shader compilation failed:\n" + this.program.getLog());
+    } else {
+      this.timeUniformLoc = this.program.fetchUniformLocation("u_time", false);
     }
   }
 
@@ -230,6 +247,39 @@ public class FlixelShader extends FlixelBasic {
     if (program != null) {
       program.dispose();
       program = null;
+    }
+    timeUniformLoc = -1;
+  }
+
+  /**
+   * Increments the internal elapsed-time counter used to feed {@code u_time}.
+   *
+   * <p>This is called automatically by the owning {@link FlixelCamera} each frame. Subclasses
+   * that need to update state every frame should override this and call {@code super.update(elapsed)}.
+   *
+   * @param elapsed Seconds since the previous frame.
+   */
+  @Override
+  public void update(float elapsed) {
+    super.update(elapsed);
+    time += elapsed;
+  }
+
+  /**
+   * Uploads per-frame uniforms to the shader while it is bound for rendering.
+   *
+   * <p>Called automatically by the framework immediately after the composite
+   * {@link com.badlogic.gdx.graphics.g2d.SpriteBatch SpriteBatch} begins the post-processing
+   * draw pass, at which point the shader is already the active GL program. Do <b>not</b> call
+   * this yourself unless you have bound the program first - writing uniforms to an unbound
+   * program has no effect.
+   *
+   * <p>The base implementation uploads {@code u_time} if the shader declared it. Subclasses
+   * that need additional uniforms should override this and call {@code super.applyUniforms()} first.
+   */
+  public void applyUniforms() {
+    if (timeUniformLoc >= 0) {
+      Gdx.gl20.glUniform1f(timeUniformLoc, time);
     }
   }
 
