@@ -149,7 +149,7 @@ public final class FlixelLoggerBytecodeWeaver {
       return false;
     }
     boolean changed = false;
-    String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile.java";
+    String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile";
     String classNameDots = classNode.name.replace('/', '.');
     for (MethodNode method : classNode.methods) {
       if (method.instructions == null || method.instructions.size() == 0) {
@@ -165,7 +165,7 @@ public final class FlixelLoggerBytecodeWeaver {
           continue;
         }
         int op = min.getOpcode();
-        int line = currentLine >= 0 ? currentLine : 0;
+        int line = Math.max(currentLine, 0);
 
         if (op == Opcodes.INVOKESTATIC && FLIXEL_STATIC_FACADE_INTERNAL.equals(min.owner)) {
           Replacement facadeReplacement = FLIXEL_STATIC_REPLACEMENTS.get(min.name + min.desc);

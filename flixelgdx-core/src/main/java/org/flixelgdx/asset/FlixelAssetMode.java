@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.asset;
 
+import org.flixelgdx.Flixel;
+
 /**
  * Controls when the asset manager reclaims memory for non-persistent assets.
  *
@@ -70,17 +72,17 @@ public enum FlixelAssetMode {
    *
    * <p>This uses O(1) work per {@link FlixelAsset#release()} call - there is no periodic scan.
    * The asset handle that just dropped to zero triggers the unload inline, then the handle is
-   * evicted from the manager cache so subsequent {@code ensureTypedAsset} or {@code ensureWrapper}
-   * calls start fresh.
+   * evicted from the manager cache so subsequent {@link FlixelAssetManager#get(String)} calls
+   * create a fresh handle.
    *
    * <p><b>Important caveats:</b>
    * <ul>
    *   <li>{@link FlixelAsset#release()} must be called on the GL/render thread. Calling it from
    *     a background thread while libGDX may be uploading or disposing GPU resources is not safe
-   *     in AGGRESSIVE mode (it is fine in LAZY and STANDARD since those only unload at state
-   *     switch boundaries, which is always on the GL thread).</li>
+   *     in AGGRESSIVE mode. It is fine in LAZY and STANDARD since those only unload at state
+   *     switch boundaries, which is always on the GL thread.</li>
    *   <li>After an aggressive eviction, the underlying libGDX asset is disposed. Any code that
-   *     still holds a raw reference to the same {@link com.badlogic.gdx.graphics.Texture} (or
+   *     still holds a raw reference to the same {@link com.badlogic.gdx.graphics.Texture Texture} (or
    *     other resource) object will encounter a disposed object. The automated sprite pipeline
    *     ({@code loadGraphic} and {@code destroy}) handles this correctly; direct raw-asset usage
    *     outside that pipeline must ensure no other references remain before releasing.</li>
@@ -88,7 +90,7 @@ public enum FlixelAssetMode {
    *     {@link FlixelAssetManager#load(String)} again and awaiting the async load cycle.</li>
    * </ul>
    *
-   * <p>{@link org.flixelgdx.Flixel#switchState Flixel.switchState} still calls {@link FlixelAssetManager#clearNonPersist()}
+   * <p>{@link Flixel#switchState Flixel.switchState} still calls {@link FlixelAssetManager#clearNonPersist()}
    * as a safety net for assets that were loaded but never retained.
    */
   AGGRESSIVE

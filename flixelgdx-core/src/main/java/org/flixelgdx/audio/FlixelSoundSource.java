@@ -27,7 +27,6 @@ import com.badlogic.gdx.files.FileHandle;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAssetPaths;
-import org.flixelgdx.asset.FlixelSource;
 import org.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * object has mutable state (volume/pan/time/playing) and cannot be safely
  * shared across callers or overlapping plays.
  */
-public final class FlixelSoundSource implements FlixelSource<FlixelSoundSource> {
+public final class FlixelSoundSource {
 
   @NotNull
   private final String assetKey;
@@ -69,14 +68,14 @@ public final class FlixelSoundSource implements FlixelSource<FlixelSoundSource> 
     this.external = external;
   }
 
-  @Override
+  /**
+   * Returns the asset key (path) for this sound source.
+   *
+   * @return The asset key; never {@code null}.
+   */
+  @NotNull
   public String getAssetKey() {
     return assetKey;
-  }
-
-  @Override
-  public Class<FlixelSoundSource> getType() {
-    return FlixelSoundSource.class;
   }
 
   /**

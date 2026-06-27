@@ -27,7 +27,6 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
@@ -36,11 +35,14 @@ import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
+import org.flixelgdx.functional.FlixelShaderable;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,12 +53,12 @@ import org.jetbrains.annotations.Nullable;
  * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
  * <strong>not</strong> allocated by default (saves memory for large sprite counts on the order of thousands of
  * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or assign a controller directly
- * when you need clips, then use {@code sprite.ensureAnimation().playAnimation(...)}, {@code loadSparrowFrames(...)}, etc.
+ * when you need clips, then use {@code sprite.ensureAnimation().addSparrowAtlas(...)}, {@code .playAnimation(...)}, etc.
  *
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
  */
-public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable {
+public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable, FlixelShaderable {
 
   /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
   @Nullable
@@ -65,6 +67,16 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /** The atlas frames used in this sprite (used for animations). */
   @Nullable
   protected Array<FlixelFrame> atlasFrames;
+
+  /**
+   * Extra {@link FlixelGraphic} handles retained when additional spritesheets are merged onto this
+   * sprite, so those atlases' textures stay loaded for the sprite's lifetime. The primary graphic is
+   * still tracked by the {@link #graphic} field; this list only holds graphics appended <em>after</em>
+   * the initial load, for example through {@link #mergeSparrowAtlas} or an appended Animate rig atlas.
+   * Lazily allocated to avoid the per-instance footprint for sprites that only ever load one atlas.
+   */
+  @Nullable
+  protected Array<FlixelGraphic> secondaryGraphics;
 
   /**
    * Heavy controller object for handling animations. {@code null} until {@link #ensureAnimation()} or assigned directly.
@@ -110,6 +122,17 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
+
+  /**
+   * The shader applied to this sprite individually, or {@code null} for no per-sprite effect.
+   *
+   * <p>Set via {@link #setShader(FlixelShader)}. Prefer keeping this {@code null} unless you
+   * specifically need a per-sprite effect; each unique shader in draw order costs a GPU batch
+   * flush. See {@link org.flixelgdx.functional.FlixelShaderable FlixelShaderable} for the
+   * full performance breakdown.
+   */
+  @Nullable
+  private FlixelShader spriteShader;
 
   /** Whether this sprite is smoothed when scaled. */
   protected boolean antialiasing = false;
@@ -239,9 +262,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       graphic.release();
     }
     FlixelAssetManager assets = Flixel.ensureAssets();
-    String key = assets.allocateSyntheticWrapperKey();
+    String key = assets.allocateSyntheticKey();
     FlixelGraphic g = new FlixelGraphic(assets, key, texture);
-    assets.registerWrapper(g);
+    assets.register(g);
     graphic = g.retain();
 
     TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
@@ -252,44 +275,35 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@code Flixel.assets.update()} in a loading state.
-   *
-   * <p>This method falls back to a synchronous load if the texture is not loaded yet.
-   * Preloading is still strongly recommended to avoid mid-frame stalls.
+   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
+   * a loading state to avoid synchronous stalls on the first frame.
    *
    * @param assetKey The key of the graphic to load.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
-    Texture t = requireOrLoad(g);
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    Texture t = g.getTexture();
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
 
   /**
-   * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@code Flixel.assets.update()} in a loading state.
-   *
-   * <p>This method falls back to a synchronous load if the texture
-   * is not loaded yet. Preloading is still strongly recommended to avoid mid-frame stalls.
+   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
+   * a loading state to avoid synchronous stalls on the first frame.
    *
    * @param assetKey The key of the graphic to load.
    * @param frameWidth The width of the graphic.
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
-    Texture t = requireOrLoad(g);
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    Texture t = g.getTexture();
     return loadGraphic(g, frameWidth, t.getHeight());
   }
 
   /**
-   * Loads a cached graphic by key. The texture can be preloaded via {@link FlixelGraphic#queueLoad()}
-   * and {@link FlixelAssetManager#update()} in a loading state.
-   *
-   * <p>This method falls back to a synchronous load if the texture is not loaded yet.
-   * Preloading is still strongly recommended to avoid mid-frame stalls.
+   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
+   * a loading state to avoid synchronous stalls on the first frame.
    *
    * @param assetKey The key of the graphic to load.
    * @param frameWidth The width of the graphic.
@@ -297,7 +311,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(assetKey, FlixelGraphic.class);
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
     return loadGraphic(g, frameWidth, frameHeight);
   }
 
@@ -308,7 +322,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FlixelGraphic g) {
-    return loadGraphic(g, g.requireTexture().getWidth(), g.requireTexture().getHeight());
+    return loadGraphic(g, g.getTexture().getWidth(), g.getTexture().getHeight());
   }
 
   /**
@@ -319,7 +333,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(FlixelGraphic g, int frameWidth) {
-    return loadGraphic(g, frameWidth, g.requireTexture().getHeight());
+    return loadGraphic(g, frameWidth, g.getTexture().getHeight());
   }
 
   /**
@@ -335,7 +349,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       graphic.release();
     }
     graphic = g;
-    Texture texture = requireOrLoad(g);
+    Texture texture = g.getTexture();
     TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
     frames = wrapFrames(regions);
     currentRegion = frames[0][0];
@@ -346,15 +360,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     updateHitbox(frameWidth, frameHeight);
     return this;
-  }
-
-  @NotNull
-  private static Texture requireOrLoad(@NotNull FlixelGraphic g) {
-    try {
-      return g.requireTexture();
-    } catch (IllegalStateException e) {
-      return g.loadNow();
-    }
   }
 
   private static FlixelFrame[][] wrapFrames(TextureRegion[][] regions) {
@@ -401,11 +406,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#loadSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link FlixelAnimationController#addSparrowAtlas(String, com.badlogic.gdx.utils.XmlReader.Element)} and
    * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
    * not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .obtainWrapper}(...) (implicit retain).
+   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
@@ -429,8 +434,58 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
   }
 
+  /**
+   * Merges parsed Sparrow atlas frames onto this sprite's existing atlas instead of replacing it.
+   *
+   * <p>Where {@link #applySparrowAtlas} swaps in a fresh atlas and clears the sprite's clips, this
+   * <em>appends</em> {@code parsedFrames} to whatever atlas the sprite already has (creating one when
+   * it had none) and retains {@code newGraphic} as a {@link #retainSecondaryGraphic secondary graphic}
+   * so its texture stays loaded. That lets a single sprite carry frames from more than one sheet,
+   * which is what {@link FlixelAnimationController#addSparrowAtlas(String)} builds on. The currently
+   * displayed frame and the registered clips are left untouched, so a sprite already showing a rig
+   * clip or another atlas keeps rendering exactly as before; play one of the newly registered clips to
+   * show the merged art.
+   *
+   * @param newGraphic The graphic backing {@code parsedFrames}, already retained by its loader.
+   * @param parsedFrames The frames to append, which may be empty.
+   */
+  public void mergeSparrowAtlas(
+      @NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
+    retainSecondaryGraphic(newGraphic);
+    if (atlasFrames == null) {
+      atlasFrames = parsedFrames;
+    } else {
+      atlasFrames.addAll(parsedFrames);
+    }
+  }
+
+  /**
+   * Retains an additional {@link FlixelGraphic} so its texture stays loaded until this sprite is
+   * destroyed, and propagates the sprite's current antialiasing setting onto the new graphic's
+   * texture so an appended atlas matches the visual filter of the original.
+   *
+   * <p>The graphic is assumed to have already been retained by the caller (typically via
+   * {@link org.flixelgdx.asset.FlixelAssetManager#get(String) FlixelAssetManager.get(...)} followed
+   * by {@link org.flixelgdx.asset.FlixelAsset#retain() retain()}), so this method only stores the
+   * reference and does not call {@link FlixelGraphic#retain()} again. This is an advanced hook used
+   * by atlas-merging code such as {@link FlixelAnimationController#addSparrowAtlas(String)} and
+   * the Animate rig loader; most game code never calls it directly.
+   *
+   * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.
+   */
+  public void retainSecondaryGraphic(@NotNull FlixelGraphic graphic) {
+    if (secondaryGraphics == null) {
+      secondaryGraphics = new Array<>(2);
+    }
+    secondaryGraphics.add(graphic);
+
+    if (antialiasing && graphic.isLoaded()) {
+      graphic.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    }
+  }
+
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     if (!visible) {
       return;
     }
@@ -441,8 +496,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    float drawLeft = wx - offsetX;
-    float drawBottom = wy - offsetY;
+    float drawLeft = wx + offsetX;
+    float drawBottom = wy + offsetY;
     // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
     // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
     float cullW = currentFrame != null
@@ -466,6 +521,19 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       return;
     }
 
+    // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
+    // pending geometry internally before switching, so no explicit flush is needed. The shader is
+    // restored to default immediately after drawing so that subsequent non-shaded sprites are
+    // unaffected. Note: batch.getShader() always returns non-null (it returns the built-in default
+    // when no custom shader is active), so the restore must be tied to spriteShader rather than
+    // using batch.getShader() != null as a guard.
+    if (spriteShader != null) {
+      if (spriteShader.getProgram() != null && batch.getShader() != spriteShader.getProgram()) {
+        batch.setShader(spriteShader.getProgram());
+        spriteShader.applyUniforms();
+      }
+    }
+
     if (currentFrame != null) {
       FlixelFrame f = currentFrame;
       int srcW = f.originalWidth;
@@ -482,8 +550,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
       int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
 
-      float drawX = wx - offsetX + insetX;
-      float drawY = wy - offsetY + insetY;
+      float drawX = wx + offsetX + insetX;
+      float drawY = wy + offsetY + insetY;
 
       // Rotate/scale around the source box's center, expressed relative to the region's bottom-left
       // corner (the origin that the batch.draw overload below measures from).
@@ -521,8 +589,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       batch.setColor(color);
       batch.draw(
           currentRegion.getRegion(),
-          wx - offsetX,
-          wy - offsetY,
+          wx + offsetX,
+          wy + offsetY,
           originX,
           originY,
           getWidth(),
@@ -531,6 +599,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           sy,
           getAngle());
       batch.setColor(Color.WHITE);
+    }
+
+    if (spriteShader != null) {
+      batch.setShader(null);
     }
   }
 
@@ -651,6 +723,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     originY = 0f;
     offsetX = 0f;
     offsetY = 0f;
+    spriteShader = null;
     antialiasing = false;
     color.set(Color.WHITE);
     flipX = false;
@@ -663,10 +736,57 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       atlasFrames = null;
     }
     frames = null;
+    if (secondaryGraphics != null) {
+      // Balance every retain from merged sheets (get() + retain()); the primary graphic below is
+      // released separately through its own field.
+      for (int i = 0; i < secondaryGraphics.size; i++) {
+        FlixelGraphic g = secondaryGraphics.get(i);
+        if (g != null) {
+          g.release();
+        }
+      }
+      secondaryGraphics.clear();
+      secondaryGraphics = null;
+    }
     if (graphic != null) {
       graphic.release();
       graphic = null;
     }
+  }
+
+  /**
+   * Assigns a shader that is applied to this sprite individually when it is drawn.
+   *
+   * <p>Each unique shader transition in draw order flushes the GPU vertex buffer before the new
+   * shader takes over. Consecutive sprites that share the same {@link FlixelShader} instance batch
+   * together for free. If you mix many different shaders across sprites in a single camera,
+   * performance may drop noticeably on weak devices. Giving players the option to disable sprite
+   * shaders is strongly recommended.
+   *
+   * <p>The shader is NOT owned by this sprite. Call {@link FlixelShader#destroy()} yourself when
+   * the shader is no longer needed. Pass {@code null} to remove the current shader.
+   *
+   * <p>If you need a full-scene effect (post-processing applied to everything a camera sees),
+   * prefer {@link org.flixelgdx.FlixelCamera#setShader(FlixelShader) FlixelCamera.setShader()}
+   * instead - it captures the entire scene into a single FBO and applies the shader once, with
+   * no per-sprite flush cost.
+   *
+   * @param shader The shader to apply when drawing this sprite, or {@code null} to remove it.
+   */
+  @Override
+  public void setShader(@Nullable FlixelShader shader) {
+    this.spriteShader = shader;
+  }
+
+  /**
+   * Returns the shader currently assigned to this sprite, or {@code null} if none is set.
+   *
+   * @return The active per-sprite {@link FlixelShader}, or {@code null}.
+   */
+  @Nullable
+  @Override
+  public FlixelShader getShader() {
+    return spriteShader;
   }
 
   /**

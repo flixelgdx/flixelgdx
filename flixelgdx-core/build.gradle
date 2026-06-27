@@ -68,10 +68,6 @@ dependencies {
   api "com.github.tommyettinger:libgdx-utils:$utilsVersion"
 
   implementation "org.jetbrains:annotations:26.1.0"
-
-  if (enableGraalNative == 'true') {
-    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
-  }
 }
 
 // Javadoc runs in classpath mode: module-info is for compilation only; mixing JPMS + automatic

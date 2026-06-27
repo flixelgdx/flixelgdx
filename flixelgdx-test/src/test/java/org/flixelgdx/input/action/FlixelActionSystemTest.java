@@ -140,6 +140,125 @@ class FlixelActionSystemTest {
   }
 
   @Test
+  void analogFlickedFiresOncePerDeflection() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
+    navigate.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.DOWN));
+    navigate.addAxisBinding(FlixelAnalogAxisBinding.posYKey(Input.Keys.UP));
+    set.add(navigate);
+
+    // First press: flicked() fires on the first frame.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    set.update(0f);
+    assertTrue(navigate.flicked());
+
+    // Held: flicked() must not fire again while the stick stays past the threshold.
+    set.endFrame();
+    set.update(0f);
+    assertFalse(navigate.flicked());
+
+    // Released: magnitude drops below threshold, flicked() stays false.
+    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertFalse(navigate.flicked());
+
+    // Second press in the opposite direction: flicked() fires again.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.UP);
+    set.endFrame();
+    set.update(0f);
+    assertTrue(navigate.flicked());
+  }
+
+  @Test
+  void gamepadAxisYDefaultIsYCorrected() {
+    // GAMEPAD_AXIS_Y should now subtract the raw value so that up = positive Y, matching keys.
+    // Use posYKey and negYKey as a reference: posYKey(UP) gives +Y, negYKey(DOWN) gives -Y.
+    // gamepadAxisY (corrected) should behave like posYKey for an upward stick deflection, which
+    // in screen-space is a negative raw value that gets negated to produce positive Y.
+    // We verify the Kind assignment directly since we can't inject a fake controller here.
+    FlixelAnalogAxisBinding corrected = FlixelAnalogAxisBinding.gamepadAxisY(0, 0);
+    FlixelAnalogAxisBinding raw = FlixelAnalogAxisBinding.gamepadAxisY(0, 0, true);
+    assertEquals(FlixelAnalogAxisBinding.Kind.GAMEPAD_AXIS_Y, corrected.kind);
+    assertEquals(FlixelAnalogAxisBinding.Kind.RAW_GAMEPAD_AXIS_Y, raw.kind);
+  }
+
+  @Test
+  void digitalRepeatedFiresOnPressAndAfterHoldDelay() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionDigital scroll = new FlixelActionDigital("scroll");
+    scroll.addBinding(FlixelInputBinding.key(Input.Keys.DOWN));
+    scroll.setHoldDelay(0.5f);
+    scroll.setHoldInterval(0.1f);
+    set.add(scroll);
+
+    // Initial press: repeated() fires immediately.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    set.update(0f);
+    assertTrue(scroll.repeated());
+
+    // Still held but before holdDelay: repeated() does not fire again.
+    set.endFrame();
+    set.update(0.3f);
+    assertFalse(scroll.repeated());
+
+    // Still held, holdDelay elapsed: first hold-repeat fires.
+    set.endFrame();
+    set.update(0.25f);
+    assertTrue(scroll.repeated());
+
+    // Still held, holdInterval not yet elapsed: no repeat.
+    set.endFrame();
+    set.update(0.04f);
+    assertFalse(scroll.repeated());
+
+    // holdInterval elapsed: repeat fires again.
+    set.endFrame();
+    set.update(0.06f);
+    assertTrue(scroll.repeated());
+
+    // Released: no repeat.
+    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertFalse(scroll.repeated());
+  }
+
+  @Test
+  void analogFlickedRepeatingFiresOnFlickAndAfterHoldDelay() {
+    FlixelActionSet set = new FlixelActionSet(false) {
+    };
+    FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
+    navigate.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.DOWN));
+    navigate.setHoldDelay(0.5f);
+    navigate.setHoldInterval(0.1f);
+    set.add(navigate);
+
+    // Initial flick: flickedRepeating() fires on the first frame.
+    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    set.update(0f);
+    assertTrue(navigate.flickedRepeating());
+
+    // Held but before holdDelay: no repeat.
+    set.endFrame();
+    set.update(0.3f);
+    assertFalse(navigate.flickedRepeating());
+
+    // holdDelay elapsed: first hold-repeat fires.
+    set.endFrame();
+    set.update(0.25f);
+    assertTrue(navigate.flickedRepeating());
+
+    // Released (magnitude drops below threshold): no repeat.
+    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    set.endFrame();
+    set.update(0f);
+    assertFalse(navigate.flickedRepeating());
+  }
+
+  @Test
   void steamReaderMergesDigital() {
     FlixelActionSet set = new FlixelActionSet(false) {
     };

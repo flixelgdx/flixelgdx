@@ -34,6 +34,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.functional.supplier.FloatSupplier;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.text.FlixelText;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelSpriteUtil;
@@ -646,7 +647,7 @@ public class FlixelBar extends FlixelSprite {
   }
 
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     if (!isOnDrawCamera()) {
       return;
     }

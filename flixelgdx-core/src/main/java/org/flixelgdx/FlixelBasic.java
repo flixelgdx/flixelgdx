@@ -23,9 +23,9 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
-
 import org.flixelgdx.functional.IFlixelBasic;
+import org.flixelgdx.graphics.FlixelBatch;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -101,7 +101,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
    */
   public boolean alive = true;
 
-  /** Controls whether {@link #update(float)} and {@link #draw(Batch)} are automatically called. */
+  /** Controls whether {@link #update(float)} and {@link org.flixelgdx.functional.FlixelDrawable#draw(FlixelBatch)} are automatically called. */
   public boolean exists = true;
 
   /**
@@ -134,7 +134,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * @param batch The batch used for rendering.
    */
   @Override
-  public void draw(Batch batch) {}
+  public void draw(@NotNull FlixelBatch batch) {}
 
   /**
    * Whether this object should render in the current {@link FlixelGame} camera pass.

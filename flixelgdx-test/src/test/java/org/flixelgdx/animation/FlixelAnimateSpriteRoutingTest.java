@@ -21,35 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.asset;
+package org.flixelgdx.animation;
 
-import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Source for plain text assets loaded via the libGDX {@link String} asset loader.
- *
- * <p>Used by extension-based {@link FlixelAssetManager#load(String)} for paths like {@code .txt},
- * {@code .xml}, {@code .json} when registered on the manager.
+ * Covers the pure decision that routes a clip to the rig draw path versus the standard Sparrow /
+ * atlas frame path on a {@link FlixelAnimateSprite}. The full render path needs a GPU texture, so
+ * this focuses on the texture-free rule: the rig is used only when one is installed and it actually
+ * holds the clip being played.
  */
-public final class FlixelStringAssetSource implements FlixelSource<String> {
+class FlixelAnimateSpriteRoutingTest {
 
-  @NotNull
-  private final String assetKey;
-
-  public FlixelStringAssetSource(@NotNull String assetKey) {
-    if (assetKey == null || assetKey.isEmpty()) {
-      throw new IllegalArgumentException("assetKey cannot be null/empty.");
-    }
-    this.assetKey = FlixelAssetPaths.normalizeAssetPath(assetKey);
-  }
-
-  @Override
-  public String getAssetKey() {
-    return assetKey;
-  }
-
-  @Override
-  public Class<String> getType() {
-    return String.class;
+  @Test
+  void rigPathRequiresBothARigAndAMatchingClip() {
+    assertTrue(FlixelAnimateSprite.useRigClip(true, true), "Rig installed and owns the clip.");
+    assertFalse(
+        FlixelAnimateSprite.useRigClip(true, false),
+        "A merged Sparrow clip is not in the rig, so it must use the frame path.");
+    assertFalse(
+        FlixelAnimateSprite.useRigClip(false, false), "No rig means the standard frame path.");
+    assertFalse(
+        FlixelAnimateSprite.useRigClip(false, true),
+        "Without a rig there is nothing to draw the clip from, regardless of the clip flag.");
   }
 }

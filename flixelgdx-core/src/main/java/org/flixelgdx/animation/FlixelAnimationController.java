@@ -46,12 +46,17 @@ import java.util.Comparator;
 
 /**
  * Playback state and clip registration for {@link FlixelSprite} animations. Obtain a controller with
- * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().loadSparrowFrames(...)},
+ * {@link FlixelSprite#ensureAnimation()} (or assign one directly), then call {@code sprite.ensureAnimation().addSparrowAtlas(...)},
  * {@code .playAnimation(...)}, etc. Decouples animation timing from rendering and physics.
  *
  * <p>Optionally link a {@link FlixelAnimationStateMachine} via {@link #setStateMachine} so the
  * machine is ticked automatically inside {@link #update(float)} - no separate machine update call
- * needed in your game loop.
+ * would be needed in your game loop.
+ *
+ * <h2>Mixing in a Sparrow atlas</h2>
+ * A character can also carry Sparrow XML clips on the same body via
+ * {@link FlixelAnimationController#addSparrowAtlas(String)}, allowing a single sprite to contain
+ * multiple Sparrow sheets with unique animations.
  */
 public class FlixelAnimationController implements FlixelUpdatable {
 
@@ -148,78 +153,109 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * Loads a Sparrow atlas from a single base path, inferring the conventional {@code .png} and
-   * {@code .xml} file names shared by a Sparrow export. For example, passing
-   * {@code "shared/images/foo"} loads the texture from
-   * {@code "shared/images/foo.png"} and the atlas data from
-   * {@code "shared/images/foo.xml"}.
+   * Loads or merges a Sparrow atlas onto the owning sprite from a single base path, inferring the
+   * conventional {@code .png} and {@code .xml} file names shared by a Sparrow export. For example,
+   * passing {@code "shared/images/foo"} loads the texture from {@code "shared/images/foo.png"} and
+   * the atlas data from {@code "shared/images/foo.xml"}.
+   *
+   * <p>When the sprite has no atlas yet, this installs the sheet as the primary atlas, sizes the
+   * sprite to the first frame, and clears any previously registered clips. When the sprite already
+   * has an atlas (either from a prior call or from an Adobe Animate rig), this appends the new
+   * sheet's frames without disturbing the existing ones, so a single sprite can carry clips from
+   * multiple sheets.
    *
    * <pre>{@code
-   * sprite.ensureAnimation().loadSparrowFrames("shared/images/foo");
+   * sprite.ensureAnimation().addSparrowAtlas("shared/images/foo");
+   * sprite.animation.addAnimationByPrefix("idle", "idle", 24, true);
+   * sprite.animation.playAnimation("idle");
    * }</pre>
    *
    * @param path The base path, without a file extension, shared by the PNG and XML pair.
    * @return The owning sprite for chaining.
+   * @see #addSparrowAtlas(String, String)
    */
   @NotNull
-  public FlixelSprite loadSparrowFrames(@NotNull String path) {
-    return loadSparrowFrames(path + ".png", path + ".xml");
+  public FlixelSprite addSparrowAtlas(@NotNull String path) {
+    return addSparrowAtlas(path + ".png", path + ".xml");
   }
 
   /**
-   * Overload of {@link #loadSparrowFrames(String)} that accepts the base path as a {@link FileHandle}
-   * instead of a path string.
+   * Overload of {@link #addSparrowAtlas(String)} that accepts the base path as a {@link FileHandle}.
    *
    * @param path The base path handle, without a file extension, shared by the PNG and XML pair.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite loadSparrowFrames(@NotNull FileHandle path) {
-    return loadSparrowFrames(path.path());
+  public FlixelSprite addSparrowAtlas(@NotNull FileHandle path) {
+    return addSparrowAtlas(path.path());
   }
 
   /**
-   * Loads Sparrow XML from a path string (UTF-8). Tries {@code Gdx.files.internal} then {@code classpath}.
+   * Loads or merges a Sparrow atlas onto the owning sprite from an explicit texture key and XML path.
+   * See {@link #addSparrowAtlas(String)} for the full load/merge contract.
    *
-   * @param textureKey Asset key of the {@link FlixelGraphic}.
-   * @param xmlPath Path to Sparrow XML (e.g. {@code "data/hero.xml"}).
+   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
+   * @param xmlPath The path to the Sparrow XML. Must not be {@code null}.
    * @return The owning sprite for chaining.
+   * @throws IllegalArgumentException If either file is missing or malformed.
    */
   @NotNull
-  public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull String xmlPath) {
+  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull String xmlPath) {
     FileHandle xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
     String text = FlixelSpritemapJsonLoader.readUtf8Text(xml);
-    return loadSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
+    return addSparrowAtlas(textureKey, new XmlReader().parse(new StringReader(text)));
   }
 
   /**
-   * @param textureKey Asset key of the {@link FlixelGraphic}.
-   * @param xmlFile Sparrow XML file, read as UTF-8 (optional BOM stripped)
-   * @return The owning sprite for chaining.
-   */
-  @NotNull
-  public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
-    String text = FlixelSpritemapJsonLoader.readUtf8Text(xmlFile);
-    return loadSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
-  }
-
-  /**
-   * Parses Sparrow {@code SubTexture} entries and installs the result on the owner.
+   * Overload of {@link #addSparrowAtlas(String, String)} that accepts the XML as a {@link FileHandle}.
    *
-   * @param textureKey Asset key of the {@link FlixelGraphic}.
-   * @param xmlRoot Root XML element (e.g. from {@link XmlReader#parse(FileHandle)}).
+   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
+   * @param xmlFile The Sparrow XML file, read as UTF-8. Must not be {@code null}.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite loadSparrowFrames(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
-    Texture texture;
-    try {
-      texture = g.requireTexture();
-    } catch (IllegalStateException e) {
-      texture = g.loadNow();
-    }
+  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
+    String text = FlixelSpritemapJsonLoader.readUtf8Text(xmlFile);
+    return addSparrowAtlas(textureKey, new XmlReader().parse(new StringReader(text)));
+  }
 
+  /**
+   * Overload of {@link #addSparrowAtlas(String, String)} that accepts a pre-parsed XML root.
+   *
+   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
+   * @param xmlRoot The root {@code TextureAtlas} element of a Sparrow XML. Must not be {@code null}.
+   * @return The owning sprite for chaining.
+   */
+  @NotNull
+  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    Texture texture = g.getTexture();
+
+    Array<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);
+    Array<FlixelFrame> existing = owner.getAtlasRegions();
+    if (existing == null || existing.isEmpty()) {
+      owner.applySparrowAtlas(g, parsed);
+    } else {
+      owner.mergeSparrowAtlas(g, parsed);
+    }
+    return owner;
+  }
+
+  /**
+   * Parses Sparrow {@code SubTexture} entries into a fresh frame list without installing them on any
+   * sprite.
+   *
+   * <p>This is the shared parsing core used by {@link #addSparrowAtlas(String, XmlReader.Element)}.
+   * Keeping it separate lets callers inspect or transform the frame list before passing it to
+   * {@link FlixelSprite#applySparrowAtlas} or {@link FlixelSprite#mergeSparrowAtlas}.
+   *
+   * @param texture The backing texture the regions are cut from.
+   * @param xmlRoot The root {@code TextureAtlas} element of a Sparrow XML.
+   * @return A newly allocated list of frames, one per valid {@code SubTexture}.
+   */
+  @NotNull
+  public static Array<FlixelFrame> parseSparrowFrames(
+      @NotNull Texture texture, @NotNull XmlReader.Element xmlRoot) {
     int texW = texture.getWidth();
     int texH = texture.getHeight();
     Array<FlixelFrame> atlasFrames = new Array<>(FlixelFrame[]::new);
@@ -277,8 +313,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
       atlasFrames.add(frame);
     }
 
-    owner.applySparrowAtlas(g, atlasFrames);
-    return owner;
+    return atlasFrames;
   }
 
   /** Clears all clips, per-animation offsets, and resets playback state. */
@@ -301,8 +336,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * <p>A Sparrow atlas keeps each frame planted within its own untrimmed source box, but different
    * clips are usually authored on differently sized canvases, so their anchors do not line up when
    * you switch between them. Nudge each clip by a hand-tuned amount so they all share a common ground
-   * line. The offset is <em>subtracted</em> from the draw position, so positive {@code x} moves the
-   * graphic left and positive {@code y} moves it up (matching {@link FlixelSprite#setOffset}).
+   * line. The offset is <em>added</em> to the draw position, so positive {@code x} moves the
+   * graphic right and positive {@code y} moves it up (matching {@link FlixelSprite#setOffset}).
    *
    * <p>The feature is opt-in. Until the first {@code addOffset} call the controller never touches the
    * sprite's offset; afterwards it owns it, and playing a clip with no registered offset resets the
@@ -313,12 +348,12 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * anim.addAnimationByPrefix("idle", "BF idle dance", 24, true);
    * anim.addAnimationByPrefix("singLEFT", "BF NOTE LEFT", 24, false);
    * anim.addOffset("idle", 0, 0);
-   * anim.addOffset("singLEFT", 12, -6);
+   * anim.addOffset("singLEFT", -12, 6);
    * anim.playAnimation("idle"); // offset snaps to (0, 0)
    * }</pre>
    *
    * @param name The animation name, as registered with one of the {@code addAnimation*} methods.
-   * @param x Horizontal offset in pixels (positive moves the graphic left).
+   * @param x Horizontal offset in pixels (positive moves the graphic right).
    * @param y Vertical offset in pixels (positive moves the graphic up).
    */
   public void addOffset(@NotNull String name, float x, float y) {

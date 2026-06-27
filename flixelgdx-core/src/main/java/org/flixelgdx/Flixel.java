@@ -44,6 +44,7 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
+import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -211,8 +212,10 @@ public final class Flixel {
   public static final float MAX_ELAPSED = 0.1f;
 
   /**
-   * Automatically applies antialiasing for any member added to the current {@link FlixelState}.
-   * Note that when this value is set to {@code true}, any {@link FlixelSprite}'s / {@link FlixelAntialiasable}'s
+   * Automatically applies the globally set {@link #setAntialiasing(boolean) antialiasing} value for any
+   * member added to the current {@link FlixelState}.
+   *
+   * <p>Note that when this value is set to {@code true}, any {@link FlixelSprite}'s / {@link FlixelAntialiasable}'s
    * antialiasing property will be ignored.
    */
   public static boolean applyAntialiasingOnStateAdd = false;
@@ -533,6 +536,13 @@ public final class Flixel {
   /**
    * The gamepad and controller input manager.
    *
+   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadManager#enabled} to
+   * {@code true} before the game loop starts if your game needs controller support:
+   *
+   * <pre>{@code
+   * Flixel.gamepads.enabled = true;
+   * }</pre>
+   *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
    * defined in {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}, so the same game code works
@@ -546,6 +556,9 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
+   * // Opt in to controller support before the game loop starts.
+   * Flixel.gamepads.enabled = true;
+   *
    * // Check if player 1 pressed the A button this frame.
    * if (Flixel.gamepads.justPressed(0, FlixelGamepadInput.A)) {
    *   player.jump();
@@ -668,7 +681,7 @@ public final class Flixel {
    */
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
-  /** The camera currently being drawn in {@link FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch)}. */
+  /** The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch)}. */
   @Nullable
   private static FlixelCamera drawCamera;
 
@@ -782,7 +795,6 @@ public final class Flixel {
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
     gamepads = new FlixelGamepadManager();
-    gamepads.attach();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
@@ -1457,7 +1469,7 @@ public final class Flixel {
   }
 
   /**
-   * The camera currently being drawn in {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch) FlixelGame.draw(Batch)},
+   * The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch) FlixelGame.draw(Batch)},
    * or {@code null} if not in a camera pass.
    */
   @Nullable

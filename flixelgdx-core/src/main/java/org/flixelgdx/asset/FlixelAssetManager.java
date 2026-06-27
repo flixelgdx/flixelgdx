@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.asset;
 
-import com.badlogic.gdx.assets.AssetDescriptor;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.utils.Disposable;
 
@@ -31,114 +30,152 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Function;
-
 /**
  * Asset manager interface for FlixelGDX.
  *
- * <p>This is the public seam used by sprites and other runtime systems. The default implementation is
- * {@link FlixelDefaultAssetManager}.
+ * <p>This is the public seam used by sprites and other runtime systems. The default
+ * implementation is {@link FlixelDefaultAssetManager}. Access via
+ * {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
- * <p>Prefer {@link #load(FlixelSource)} for loading assets so the asset type is explicit. {@link #load(String)}
- * infers a source from the file extension via the per-manager extension registry; it is convenient but
- * ambiguous if extensions collide or custom content is used. Register mappings with
- * {@link #registerExtension(String, Function)} or use {@link #load(FlixelSource)} instead.
+ * <p><b>Basic workflow:</b>
  *
- * <p>The default implementation canonicalizes path-shaped keys (see {@link FlixelAssetPaths#normalizeAssetPath(String)})
- * so duplicate slashes or mixed separators do not break lookups on backends that compare paths literally (such as web manifests).
+ * <pre>{@code
+ * // Loading state: queue assets
+ * Flixel.assets.load("player.png");
+ * Flixel.assets.load("music/bg.mp3");
  *
- * <p><b>If you ever forget which method to use when it comes to handles, here's a quick reminder:</b>
- * <ul>
- *   <li><b>{@code peek...}</b>: “Is there already a handle for this key?” This should be read only; it may return {@code null}.
- *     It does not create a handle nor does it change the reference count.</li>
- *   <li><b>{@code ensure...}</b>: “Make sure the handle exists.” Get or create the canonical instance and automatically
- *     create a handle if it doesn't exist. The reference count for that said asset handle is unchanged (use when
- *     another layer will {@link FlixelAsset#retain()}, or for inspection).</li>
- *   <li><b>{@code obtain...}</b>: “Give me the handle and count me as a user.” Get or create the asset handle, then
- *     automatically call {@link FlixelAsset#retain()} for {@link FlixelAsset} handles. Call {@link FlixelAsset#release()} when done
- *     (e.g. {@link org.flixelgdx.FlixelSprite#destroy() FlixelSprite.destroy()} for graphics loaded via {@code obtainWrapper}).</li>
- * </ul>
+ * // Each frame until done
+ * Flixel.assets.update();
+ *
+ * // Game state: get and retain a handle
+ * FlixelAsset<FlixelGraphic> graphic = Flixel.assets.get("player.png");
+ * graphic.retain();
+ *
+ * // Use the content
+ * sprite.loadGraphic(graphic.get());
+ *
+ * // Release when done (e.g. in destroy())
+ * graphic.release();
+ * }</pre>
+ *
+ * <p>{@link #load(String)} infers the asset type from the file extension using the
+ * per-manager loader registry ({@link #registerLoader}). Prefer it over explicit type
+ * parameters for common asset types. Use {@link #registerLoader} to add custom extensions.
+ *
+ * <p>Path keys are normalized (collapsed slashes, unified separators) via
+ * {@link FlixelAssetPaths#normalizeAssetPath(String)} so duplicate slashes or backslashes
+ * do not cause mismatches on web builds or other backends where paths are compared literally.
+ *
+ * <p><b>For advanced libGDX interop</b> (custom loaders, asset descriptors, raw API access),
+ * use {@link #getManager()} to reach the underlying {@link AssetManager} directly.
  */
 public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
 
   /**
-   * Loads an asset using a path and the file extension to choose a {@link FlixelSource} factory from the
-   * registry on this manager.
+   * Queues an asset for loading using the file extension to select a loader from the registry.
    *
-   * <p>This is the simplest call for beginners, but it is not always the safest: extension alone may not
-   * match how you intend to load the file. For deterministic behavior, prefer {@link #load(FlixelSource)}.
+   * <p>Call {@link #update()} each frame (or {@link #finishLoading()} to block) until loading
+   * completes, then retrieve the handle with {@link #get(String)}.
    *
-   * @param path Asset path (e.g. internal path like {@code "images/fungus.png"}).
-   * @throws IllegalArgumentException if the path has no extension, or no factory is registered for it.
+   * @param path Asset path (e.g. {@code "images/player.png"}).
+   * @throws IllegalArgumentException if the path has no extension or no loader is registered.
    */
   void load(@NotNull String path);
 
   /**
-   * Like {@link #load(String)} but marks the asset key so the first {@link FlixelAsset} or {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
-   * handle created for that key uses {@code persist == true} (survives {@link #clearNonPersist()} when unreferenced).
+   * Like {@link #load(String)}, but marks the first handle created for this key as persistent.
+   * Persistent handles survive {@link #clearNonPersist()} when their reference count is zero.
    *
-   * @param path Same as {@link #load(String)}.
-   * @param persist When {@code true}, the next handle for this key is persistent.
+   * @param path Asset path.
+   * @param persist When {@code true}, the first handle created for this path is persistent.
    */
   void load(@NotNull String path, boolean persist);
 
   /**
-   * Registers or replaces the factory used for a file extension (e.g. {@code ".png"} or {@code png}).
-   * The factory receives the full path string and returns a {@link FlixelSource} whose runtime type is
-   * what libGDX {@link AssetManager} should load (e.g. {@link com.badlogic.gdx.graphics.Texture}).
+   * Returns the {@link FlixelAsset} handle for {@code path}, creating it if it does not exist.
    *
-   * @param extension File extension, with or without a leading dot; normalized case-insensitively.
-   * @param factory Produces a source for the given path; must not return {@code null}.
+   * <p>The handle's content is resolved lazily: {@link FlixelAsset#get()} fetches the data
+   * once loading completes or triggers a synchronous load if needed. Call {@link #load(String)}
+   * in a loading state first to avoid mid-frame stalls.
+   *
+   * <p>Multiple calls with the same path return the same cached handle. Call
+   * {@link FlixelAsset#retain()} when you take ownership and {@link FlixelAsset#release()} when
+   * done so the manager can track which assets are still in use.
+   *
+   * <p>The return type is inferred from the loader registered for the path's extension. The
+   * cast is unchecked internally; passing the wrong type variable at the call site will produce
+   * a {@link ClassCastException} at runtime if the inferred type does not match.
+   *
+   * @param path Asset path.
+   * @param <T> Expected wrapper type (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
+   * @return The cached or newly created handle; never {@code null}.
+   * @throws IllegalArgumentException if no loader is registered for the path's extension.
    */
-  void registerExtension(@NotNull String extension, @NotNull Function<String, FlixelSource<?>> factory);
+  @NotNull
+  <T> FlixelAsset<T> get(@NotNull String path);
 
   /**
-   * Removes a previously registered extension mapping from this manager instance.
+   * Returns the cached {@link FlixelAsset} handle for {@code path} without creating one.
    *
-   * @param extension Same form as {@link #registerExtension(String, Function)}.
+   * <p>Use this for read-only checks, for example to see if a shared resource is already
+   * registered before creating it. Does not change the reference count.
+   *
+   * @param path Asset path.
+   * @return The cached handle, or {@code null} if none exists.
    */
-  void unregisterExtension(@NotNull String extension);
+  @Nullable
+  FlixelAsset<?> peek(@NotNull String path);
 
   /**
-   * Loads by explicit file name and runtime asset type. Prefer {@link #load(FlixelSource)}
-   * or {@link #load(String)} unless you need direct control over the libGDX type.
+   * Registers a loader for a file extension. The {@code rawType} is what libGDX's
+   * {@link AssetManager} will load under the hood (e.g. {@link com.badlogic.gdx.graphics.Texture}
+   * for image files). The {@code loader} wraps the path into a {@link FlixelAsset} handle.
    *
-   * @param fileName Asset key/path passed to libGDX.
-   * @param type Concrete type registered with {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@link com.badlogic.gdx.graphics.Texture}.class).
+   * <p>Example: adding a custom config extension that loads text:
+   *
+   * <pre>{@code
+   * Flixel.assets.registerLoader(".cfg", String.class,
+   *     (assets, path) -> new FlixelDefaultAsset<>(assets, path, String.class));
+   * }</pre>
+   *
+   * @param extension File extension with or without a leading dot (e.g. {@code ".png"} or {@code "png"}).
+   * @param rawType The libGDX raw type to load.
+   * @param loader Creates handles for paths with this extension.
+   * @param <T> The wrapper type the loader produces.
    */
-  <T> void load(@NotNull String fileName, @NotNull Class<T> type);
+  <T> void registerLoader(
+      @NotNull String extension,
+      @NotNull Class<?> rawType,
+      @NotNull FlixelAssetLoader<T> loader);
 
   /**
-   * Like {@link #load(String, Class)} with a pending persist flag for the first handle (see {@link #load(String, boolean)}).
+   * Removes a previously registered loader for the given extension.
    *
-   * @param fileName The asset key/path passed to libGDX.
-   * @param type The concrete type registered with {@link com.badlogic.gdx.assets.AssetManager} (e.g. {@link com.badlogic.gdx.graphics.Texture}.class).
-   * @param persist The pending persist flag for the first handle.
-   * @param <T> The asset type.
+   * @param extension Same form as {@link #registerLoader}.
    */
-  <T> void load(@NotNull String fileName, @NotNull Class<T> type, boolean persist);
+  void unregisterLoader(@NotNull String extension);
 
   /**
-   * Enqueues loading for the given source’s key and runtime type.
+   * Registers a caller-constructed asset handle directly with the manager cache. Use this for
+   * assets created outside the normal loading pipeline (e.g. a texture built from a
+   * {@link com.badlogic.gdx.graphics.Pixmap}).
    *
-   * @param source Non-null source describing what to load.
+   * <p>The handle is keyed by {@link FlixelAsset#getPath()}. If a handle is already registered
+   * under that key, it is replaced.
+   *
+   * @param asset The handle to register. Use {@link #allocateSyntheticKey()} when no natural
+   *   path exists.
    */
-  void load(@NotNull FlixelSource<?> source);
+  void register(@NotNull FlixelAsset<?> asset);
 
   /**
-   * Like {@link #load(FlixelSource)} with a pending persist flag (see {@link #load(String, boolean)}).
+   * Allocates a unique synthetic key for caller-created assets that have no natural path.
+   * Use with {@link #register(FlixelAsset)}.
    *
-   * @param source The source to load.
-   * @param persist The pending persist flag for the first handle.
+   * @return A unique key string; never {@code null}.
    */
-  void load(@NotNull FlixelSource<?> source, boolean persist);
-
-  /**
-   * Enqueues loading using a libGDX asset descriptor.
-   *
-   * @param assetDescriptor Descriptor for the asset to load.
-   */
-  void load(@NotNull AssetDescriptor<?> assetDescriptor);
+  @NotNull
+  String allocateSyntheticKey();
 
   /**
    * Processes one loading task on the underlying {@link AssetManager}.
@@ -148,7 +185,7 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   boolean update();
 
   /**
-   * Processes loading for up to {@code millis} milliseconds (may yield between steps).
+   * Processes loading for up to {@code millis} milliseconds.
    *
    * @param millis Maximum time to spend updating.
    * @return {@code true} when all queued loading is finished.
@@ -156,322 +193,143 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   boolean update(int millis);
 
   /**
-   * @return Overall loading progress in {@code [0, 1]} from the underlying {@link AssetManager}.
+   * Returns overall loading progress in {@code [0, 1]}.
+   *
+   * @return Progress fraction.
    */
   float getProgress();
 
   /**
-   * Returns the number of assets currently loaded in the underlying {@link AssetManager}. Reads a
-   * single integer field and does not allocate.
+   * Returns the number of assets currently tracked in the manager cache.
    *
-   * <p>Useful for tracking memory leaks: a steadily climbing count across state switches often
-   * means assets are being loaded without a matching unload or {@link #clearNonPersist()} call.
+   * <p>A steadily climbing count across state switches often means assets are being loaded
+   * without a matching {@link FlixelAsset#release()} or {@link #clearNonPersist()} call.
    *
-   * @return Number of loaded assets, or {@code 0} if not available.
+   * @return Number of cached handles.
    */
   default int getLoadedAssetCount() {
     return 0;
   }
 
   /**
-   * @param fileName Asset file name/key.
-   * @return Whether any type of asset with that name is loaded (libGDX {@link AssetManager#isLoaded(String)}).
-   */
-  boolean isLoaded(@NotNull String fileName);
-
-  /**
-   * @param fileName Asset file name/key.
-   * @param type Runtime asset type.
-   * @return Whether that asset is loaded for the given type.
-   */
-  boolean isLoaded(@NotNull String fileName, @NotNull Class<?> type);
-
-  /**
-   * @param source Source whose key and type are checked.
-   * @return Whether the asset described by {@code source} is loaded.
-   */
-  boolean isLoaded(@NotNull FlixelSource<?> source);
-
-  /**
-   * Returns a loaded asset of the given type, or throws if missing.
+   * Returns whether the asset at {@code path} is ready (content available without blocking).
    *
-   * @param fileName Asset key.
-   * @param type Runtime type.
-   * @param <T> Asset type.
-   * @return The loaded instance.
+   * @param path Asset path.
+   * @return {@code true} if the asset is loaded and available.
    */
-  @NotNull
-  <T> T get(@NotNull String fileName, @NotNull Class<T> type);
+  boolean isLoaded(@NotNull String path);
 
   /**
-   * Returns a loaded asset using the source’s key and type.
-   *
-   * @param source Non-null source.
-   * @param <T> Asset type.
-   * @return The loaded instance.
-   */
-  @NotNull
-  <T> T get(@NotNull FlixelSource<T> source);
-
-  /**
-   * Requires the source to already be loaded, then returns it (delegates to {@link FlixelSource#require}).
-   *
-   * @param source Non-null source.
-   * @param <T> Asset type.
-   * @return The loaded instance.
-   */
-  @NotNull
-  <T> T require(@NotNull FlixelSource<T> source);
-
-  /**
-   * Resolves an internal audio path to an absolute filesystem path suitable for native backends (cached).
-   *
-   * @param path Internal asset path.
-   * @return Resolved absolute path string.
-   */
-  @NotNull
-  String resolveAudioPath(@NotNull String path);
-
-  /**
-   * Converts an internal path to an absolute filesystem path, extracting to a temp file when needed (e.g. JAR).
-   *
-   * @param path Internal asset path.
-   * @return Absolute path string.
-   */
-  @NotNull
-  String extractAssetPath(@NotNull String path);
-
-  /**
-   * Unloads an asset by file name (libGDX {@link AssetManager#unload(String)}) and
-   * removes the asset from the GPU VRAM.
-   *
-   * @param fileName Asset key to unload.
-   */
-  void unload(@NotNull String fileName);
-
-  /**
-   * Blocks until all queued assets are loaded.
+   * Blocks until all queued assets finish loading.
    */
   void finishLoading();
 
   /**
-   * Blocks until the asset at {@code fileName} is loaded.
+   * Blocks until the specific asset at {@code path} finishes loading.
    *
-   * @param fileName Asset key.
+   * @param path Asset path.
    */
-  void finishLoadingAsset(@NotNull String fileName);
+  void finishLoadingAsset(@NotNull String path);
 
   /**
-   * @return Multi-line diagnostics: every asset loaded in the underlying {@link AssetManager} with libGDX
-   *   reference counts (load/unload/dependency bookkeeping), plus Flixel {@code retain}/{@code release}
-   *   counts where {@link #peekTypedAsset} or texture {@link #peekWrapper} handles exist, then optional
-   *   sections for wrapper-only keys (e.g. synthetic owned textures) and typed handles not currently loaded.
+   * Unloads the asset at {@code path} from the underlying libGDX {@link AssetManager}.
+   *
+   * @param path Asset key to unload.
+   */
+  void unload(@NotNull String path);
+
+  /**
+   * Returns multi-line diagnostics: every cached handle with its path, type, reference count,
+   * persist flag, and whether the underlying libGDX asset is loaded.
+   *
+   * @return Diagnostic string; never {@code null}.
    */
   @NotNull
   String getDiagnostics();
 
   /**
-   * Clears non-persistent pooled wrappers and {@link FlixelAsset} handles with zero reference counts.
+   * Unloads non-persistent asset handles whose reference count is zero. Called automatically
+   * by {@link org.flixelgdx.Flixel#switchState Flixel.switchState} in
+   * {@link FlixelAssetMode#STANDARD} and {@link FlixelAssetMode#AGGRESSIVE} modes.
    */
   void clearNonPersist();
 
   /**
-   * Returns the default {@link FlixelAsset#isPersist()} value assigned to newly created pooled handles
-   * ({@link FlixelTypedAsset} and subclasses created through this manager). When {@code true}, new handles
-   * stay in the manager cache when their reference count is zero and {@link #clearNonPersist()} runs, so
-   * loaded data can remain in memory across state switches until {@link #clear()} or {@link FlixelAsset#setPersist(boolean)}.
-   * When {@code false}, new handles may be removed on {@code clearNonPersist()} once unreferenced.
+   * Unloads and removes all cached asset handles, regardless of persist or reference count.
+   */
+  void clear();
+
+  /**
+   * Returns the default {@link FlixelAsset#isPersist()} value assigned to newly created handles.
    *
-   * <p>Owned wrappers (see {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} and {@code isOwned()} on
-   * {@link FlixelPooledWrapper}) use {@code persist == false} regardless of this setting so synthetic textures
-   * are always eligible for eviction when refcount is zero.
+   * <p>When {@code true}, new handles survive {@link #clearNonPersist()} when unreferenced.
+   * Owned assets (e.g. textures created from a {@link com.badlogic.gdx.graphics.Pixmap}) always
+   * use {@code persist = false} regardless of this setting.
    *
-   * <p><b>Owned versus persist</b> (see also {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}):
-   * <ul>
-   *   <li><b>Owned</b> - Structural: this handle wraps a dedicated {@link com.badlogic.gdx.graphics.Texture} that
-   *     the framework disposes when the wrapper leaves the pool (for example pixmap or caller-supplied textures).
-   *     Not a user toggle; determined by how the graphic was created.</li>
-   *   <li><b>Persist</b> - Policy: whether an unreferenced pooled handle is kept in the cache when
-   *     {@code clearNonPersist()} runs. Applies to normal path-keyed graphics; owned graphics ignore persist for
-   *     that eviction pass so they are always removed at refcount zero.</li>
-   * </ul>
-   *
-   * @return Default persist flag for new typed and path-pooled handles.
+   * @return The global persist default.
    */
   boolean getGlobalPersist();
 
   /**
-   * Sets {@link #getGlobalPersist()}. Does not change {@code persist} on handles already in the cache.
+   * Sets the global persist default. Does not affect handles already in the cache.
    *
-   * @param globalPersist default for future {@link FlixelTypedAsset} and similar creations
+   * @param globalPersist New default value.
    */
   void setGlobalPersist(boolean globalPersist);
 
   /**
-   * Returns the active asset management mode, which controls when non-persistent assets are reclaimed.
+   * Returns the active {@link FlixelAssetMode} controlling when non-persistent assets are reclaimed.
    *
-   * @return The current {@link FlixelAssetMode}; never {@code null}.
-   * @see FlixelAssetMode
+   * @return The current mode; never {@code null}.
    */
   @NotNull
   FlixelAssetMode getAssetMode();
 
   /**
-   * Sets the active asset management mode. The change takes effect immediately on the next
-   * {@link FlixelAsset#release()} call or the next {@link org.flixelgdx.Flixel#switchState Flixel.switchState} call,
-   * whichever comes first.
+   * Sets the active asset management mode. Takes effect on the next
+   * {@link FlixelAsset#release()} call or the next
+   * {@link org.flixelgdx.Flixel#switchState Flixel.switchState}, whichever comes first.
    *
    * @param mode The new mode; must not be {@code null}.
-   * @see FlixelAssetMode
    */
   void setAssetMode(@NotNull FlixelAssetMode mode);
 
-  /** Clears all cached assets, regardless if {@link FlixelAsset#isPersist()} is true or not. */
-  void clear();
-
   /**
-   * Allocates a unique key for a caller-constructed wrapper (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}
-   * around an owned texture). Use with {@link #registerWrapper(FlixelPooledWrapper)}.
+   * Resolves an internal audio path to an absolute filesystem path suitable for native backends.
+   * Results are cached after the first call.
+   *
+   * @param path Internal asset path.
+   * @return Resolved absolute path; never {@code null}.
    */
   @NotNull
-  String allocateSyntheticWrapperKey();
+  String resolveAudioPath(@NotNull String path);
 
   /**
-   * Registers a caller-built wrapper with the pool for {@link #clearNonPersist()} and keyed lookup.
-   * The wrapper’s {@link FlixelPooledWrapper#wrapperRegistrationClass()} must match a factory registered via
-   * {@link #registerWrapperFactory(FlixelWrapperFactory)}.
-   */
-  void registerWrapper(@NotNull FlixelPooledWrapper wrapper);
-
-  /**
-   * Registers a {@link FlixelWrapperFactory} for a wrapper type (e.g. built-in
-   * {@link org.flixelgdx.graphics.FlixelGraphicWrapperFactory FlixelGraphicWrapperFactory} for {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
-   * Custom pooled facades use this; loading plain libGDX types uses {@link FlixelSource} + {@link #registerExtension} instead.
-   */
-  void registerWrapperFactory(@NotNull FlixelWrapperFactory<?> factory);
-
-  /**
-   * Returns or creates a pooled wrapper for {@code key} without changing its reference count.
+   * Converts an internal path to an absolute filesystem path, extracting to a temp file when the
+   * asset lives inside a JAR.
    *
-   * <p><b>Beginner shorthand:</b> “Make sure the label exists”. Note this does not claim usage, but the
-   * wrapper will be created if it doesn't exist.
-   *
-   * <p>Use when you need the canonical instance for inspection or to hand off to another API that
-   * will call {@link FlixelAsset#retain()} itself. For normal ownership, prefer {@link #obtainWrapper}.
-   *
-   * @param key Cache key (e.g. asset path for a {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
-   * @param wrapperType Wrapper class registered with {@link #registerWrapperFactory}.
-   * @param <W> Wrapper type.
-   * @return Pooled wrapper instance.
+   * @param path Internal asset path.
+   * @return Absolute path; never {@code null}.
    */
   @NotNull
-  <W> W ensureWrapper(@NotNull String key, @NotNull Class<W> wrapperType);
+  String extractAssetPath(@NotNull String path);
 
   /**
-   * Returns or creates a pooled wrapper and increments its reference count when it implements {@link FlixelAsset}.
+   * Called by {@link FlixelAsset#release()} when a handle's reference count reaches zero.
    *
-   * <p><b>Beginner shorthand:</b> “Give me the shared handle and count me as a user.” This method automatically calls
-   * {@link FlixelAsset#retain()} when executed.
+   * <p>In {@link FlixelAssetMode#AGGRESSIVE} mode the default implementation triggers an
+   * immediate eviction. In other modes this is a no-op; cleanup happens at state-switch time
+   * via {@link #clearNonPersist()}.
    *
-   * <p>Equivalent to {@link #ensureWrapper} followed by {@link FlixelAsset#retain()} for {@link FlixelAsset} wrappers.
-   * Call {@link FlixelAsset#release()} when done (e.g. from {@link org.flixelgdx.FlixelSprite#destroy() FlixelSprite.destroy()}).
-   *
-   * @param key Cache key (e.g. asset path for a {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
-   * @param wrapperType Wrapper class registered by the implementation (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}.class).
-   * @param <W> Wrapper type.
-   * @return Pooled wrapper instance.
-   */
-  @NotNull
-  <W> W obtainWrapper(@NotNull String key, @NotNull Class<W> wrapperType);
-
-  /**
-   * Returns a pooled wrapper if present, or {@code null}.
-   *
-   * <p><b>Beginner shorthand:</b> “Is there already a handle?”. This is read only; if the
-   * cached wrapper doesn't exist, then it returns {@code null}.
-   *
-   * @param key Cache key.
-   * @param wrapperType Wrapper class.
-   * @param <W> Wrapper type.
-   * @return Cached wrapper or {@code null}.
-   */
-  @Nullable
-  <W> W peekWrapper(@NotNull String key, @NotNull Class<W> wrapperType);
-
-  /**
-   * Returns or creates a typed {@link FlixelAsset} handle without changing its reference count.
-   *
-   * <p><b>Beginner shorthand:</b> “Make sure the typed handle exists”. Note that this does not automatically call
-   * {@link FlixelAsset#retain()}, you still have to manually execute it yourself.
-   *
-   * <p>For ownership, prefer {@link #obtainTypedAsset} which automatically calls {@link FlixelAsset#retain()}.
-   *
-   * @param assetKey Asset key.
-   * @param type libGDX-loaded asset type.
-   * @param <T> Asset type.
-   * @return Cached or new handle.
-   */
-  @NotNull
-  <T> FlixelAsset<T> ensureTypedAsset(@NotNull String assetKey, @NotNull Class<T> type);
-
-  /**
-   * Returns or creates a typed handle and increments its reference count.
-   *
-   * <p><b>Beginner shorthand:</b> “Give me the typed handle and count me as a user.” This method automatically calls
-   * {@link FlixelAsset#retain()} when executed.
-   *
-   * <p>Call {@link FlixelAsset#release()} when the owner is done, or use {@link #ensureTypedAsset} for zero-ref access.
-   *
-   * @param assetKey Asset key.
-   * @param type libGDX-loaded asset type.
-   * @param <T> Asset type.
-   * @return Cached or new handle.
-   */
-  @NotNull
-  <T> FlixelAsset<T> obtainTypedAsset(@NotNull String assetKey, @NotNull Class<T> type);
-
-  /**
-   * Peeks at a typed asset handle without creating it.
-   *
-   * <p><b>Beginner shorthand:</b> “Is there already a typed handle?”: look-only, never creates, refcount unchanged.
-   *
-   * @param assetKey Asset key.
-   * @param type Asset type.
-   * @return Handle or {@code null}.
-   */
-  @Nullable
-  FlixelAsset<?> peekTypedAsset(@NotNull String assetKey, @NotNull Class<?> type);
-
-  /**
-   * Unloads and removes non-persistent typed asset handles with zero reference counts.
-   *
-   * @param respectPersist If {@link FlixelAsset#isPersist()} should be taken into consideration or should be ignored.
-   */
-  void clearWrapperAssets(boolean respectPersist);
-
-  /**
-   * Unloads and removes non-persistent typed asset handles with zero reference counts.
-   *
-   * @param respectPersist If {@link FlixelAsset#isPersist()} should be taken into consideration or should be ignored.
-   */
-  void clearTypedAssets(boolean respectPersist);
-
-  /**
-   * Called by {@link FlixelAsset#release()} on the exact transition from reference count 1 to 0.
-   *
-   * <p>In {@link FlixelAssetMode#AGGRESSIVE} mode the default implementation triggers an immediate
-   * eviction - unloading the asset from libGDX and removing the handle from the manager cache. In
-   * all other modes this is a no-op; cleanup happens at state-switch time via {@link #clearNonPersist()}.
-   *
-   * <p>Custom {@link FlixelAssetManager} implementations that do not extend {@link FlixelDefaultAssetManager}
-   * may override this to hook into the release lifecycle.
-   *
-   * @param handle The asset handle whose reference count just reached zero.
+   * @param handle The handle whose reference count just reached zero.
    */
   default void onAssetReleased(@NotNull FlixelAsset<?> handle) {}
 
   /**
-   * @return The underlying libGDX {@link AssetManager} for advanced use (loaders, descriptors, raw APIs).
+   * Returns the underlying libGDX {@link AssetManager} for advanced use such as custom loaders,
+   * asset descriptors, or raw API access not covered by this interface.
+   *
+   * @return The underlying manager; never {@code null}.
    */
   @NotNull
   AssetManager getManager();

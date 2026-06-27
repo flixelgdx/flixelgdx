@@ -260,13 +260,8 @@ final class FlixelAnimateRigLoader {
     JsonValue animationRoot = new JsonReader().parse(animationText);
 
     // Obtain the backing texture. If the asset has not been preloaded, fall back to a synchronous load.
-    FlixelGraphic graphic = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
-    Texture texture;
-    try {
-      texture = graphic.requireTexture();
-    } catch (IllegalStateException notLoaded) {
-      texture = graphic.loadNow();
-    }
+    FlixelGraphic graphic = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    Texture texture = graphic.getTexture();
 
     // Build the atlas region list and the "ATLAS name -> region index" lookup shared by every ASI reference.
     ObjectMap<String, Integer> nameToIndex = new ObjectMap<>();
@@ -358,13 +353,8 @@ final class FlixelAnimateRigLoader {
     JsonValue spritemapRoot = new JsonReader().parse(spritemapText);
     JsonValue animationRoot = new JsonReader().parse(animationText);
 
-    FlixelGraphic graphic = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
-    Texture texture;
-    try {
-      texture = graphic.requireTexture();
-    } catch (IllegalStateException notLoaded) {
-      texture = graphic.loadNow();
-    }
+    FlixelGraphic graphic = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    Texture texture = graphic.getTexture();
 
     // Parse the new atlas with a fresh local lookup, then offset every entry so the indices point
     // into the merged atlas (existing rig frames first, appended frames after). This lets the bake

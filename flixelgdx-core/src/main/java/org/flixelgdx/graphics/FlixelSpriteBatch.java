@@ -393,14 +393,12 @@ public class FlixelSpriteBatch implements FlixelBatch {
     if (clockwise) {
       u = region.getU2();
       u2 = region.getU();
-      v = region.getV2();
-      v2 = region.getV();
     } else {
       u = region.getU();
       u2 = region.getU2();
-      v = region.getV2();
-      v2 = region.getV();
     }
+    v = region.getV2();
+    v2 = region.getV();
 
     writeRotatedQuad(x, y, originX, originY, w, h, scaleX, scaleY, rotation, tidx, u, v, u2, v2);
   }

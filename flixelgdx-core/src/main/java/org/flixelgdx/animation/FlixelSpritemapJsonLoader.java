@@ -197,13 +197,8 @@ public final class FlixelSpritemapJsonLoader {
     String smText = readUtf8Text(resolveAssetPath(spritemapJsonPath));
     JsonValue spritemapRoot = new JsonReader().parse(smText);
 
-    FlixelGraphic g = Flixel.ensureAssets().obtainWrapper(textureKey, FlixelGraphic.class);
-    Texture texture;
-    try {
-      texture = g.requireTexture();
-    } catch (IllegalStateException notLoaded) {
-      texture = g.loadNow();
-    }
+    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    Texture texture = g.getTexture();
 
     Array<FlixelFrame> frames = buildSimpleFrames(spritemapRoot, texture);
     controller.getOwner().applySparrowAtlas(g, frames);

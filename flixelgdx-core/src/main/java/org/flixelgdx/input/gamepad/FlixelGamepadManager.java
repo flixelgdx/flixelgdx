@@ -40,6 +40,13 @@ import java.util.Arrays;
  * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
  * keyboard and mouse frame contract from {@link org.flixelgdx.FlixelGame FlixelGame}.
  *
+ * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link #enabled} to {@code true} before the game
+ * loop starts to opt in:
+ *
+ * <pre>{@code
+ * Flixel.gamepads.enabled = true;
+ * }</pre>
+ *
  * <p>Use logical button and axis constants from {@link FlixelGamepadInput} (for example {@link FlixelGamepadInput#A})
  * with {@link #pressed(int, int)}; each {@link Controller#getMapping()} supplies native indices.
  * {@link FlixelGamepadDevice} is optional; call {@link #ensureDevice(int)} once per slot you want a facade for.
@@ -82,8 +89,11 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
   @Nullable
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
 
-  /** When {@code false}, all queries return inactive state. */
-  public boolean enabled = true;
+  /**
+   * Whether the gamepad system is active. When {@code false}, all queries return inactive state and no hardware is
+   * polled. Defaults to {@code false}; set to {@code true} to opt in before the game loop starts.
+   */
+  public boolean enabled = false;
 
   private boolean listenerAttached;
 
