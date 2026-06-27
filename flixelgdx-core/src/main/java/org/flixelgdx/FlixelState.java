@@ -304,7 +304,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
     if (game == null) {
       return Color.BLACK;
     }
-    return game.getCamera().bgColor;
+    return Flixel.cameras.first().bgColor;
   }
 
   /**

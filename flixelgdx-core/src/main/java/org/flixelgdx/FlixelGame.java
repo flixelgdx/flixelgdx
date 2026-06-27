@@ -1187,16 +1187,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Sets a custom folder for log files. Call before {@link #create()} so that file logging uses
-   * this folder instead of the default (project root in IDE, directory containing the JAR when run from a JAR).
-   *
-   * @param absolutePathToLogsFolder Absolute path to the logs folder, or {@code null} to use the default.
-   */
-  public void setLogsFolder(String absolutePathToLogsFolder) {
-    Flixel.log.setLogsFolder(absolutePathToLogsFolder);
-  }
-
-  /**
    * Resets the camera list to contain a single default camera with the current window size as its viewport.
    */
   public void resetCameras() {
