@@ -23,11 +23,11 @@
  */
 package org.flixelgdx.util.timer;
 
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
 
 import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -103,7 +103,7 @@ public class FlixelTimerManager extends FlixelBasic {
   }
 
   @Override
-  public final void draw(Batch batch) {}
+  public final void draw(@NotNull FlixelBatch batch) {}
 
   @Override
   public void destroy() {

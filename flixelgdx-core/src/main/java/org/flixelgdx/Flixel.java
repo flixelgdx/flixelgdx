@@ -44,6 +44,7 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
+import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -680,7 +681,7 @@ public final class Flixel {
    */
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
-  /** The camera currently being drawn in {@link FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch)}. */
+  /** The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch)}. */
   @Nullable
   private static FlixelCamera drawCamera;
 
@@ -1468,7 +1469,7 @@ public final class Flixel {
   }
 
   /**
-   * The camera currently being drawn in {@link org.flixelgdx.FlixelGame#draw(com.badlogic.gdx.graphics.g2d.Batch) FlixelGame.draw(Batch)},
+   * The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch) FlixelGame.draw(Batch)},
    * or {@code null} if not in a camera pass.
    */
   @Nullable

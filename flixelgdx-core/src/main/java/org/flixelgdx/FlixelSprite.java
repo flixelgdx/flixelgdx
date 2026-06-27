@@ -27,7 +27,6 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
@@ -36,11 +35,14 @@ import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
+import org.flixelgdx.functional.FlixelShaderable;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +58,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
  */
-public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable {
+public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable, FlixelShaderable {
 
   /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
   @Nullable
@@ -120,6 +122,17 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
+
+  /**
+   * The shader applied to this sprite individually, or {@code null} for no per-sprite effect.
+   *
+   * <p>Set via {@link #setShader(FlixelShader)}. Prefer keeping this {@code null} unless you
+   * specifically need a per-sprite effect; each unique shader in draw order costs a GPU batch
+   * flush. See {@link org.flixelgdx.functional.FlixelShaderable FlixelShaderable} for the
+   * full performance breakdown.
+   */
+  @Nullable
+  private FlixelShader spriteShader;
 
   /** Whether this sprite is smoothed when scaled. */
   protected boolean antialiasing = false;
@@ -472,7 +485,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   @Override
-  public void draw(Batch batch) {
+  public void draw(@NotNull FlixelBatch batch) {
     if (!visible) {
       return;
     }
@@ -506,6 +519,19 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     if (!cam.isInView(drawLeft, drawBottom, cullW, cullH)) {
       return;
+    }
+
+    // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
+    // pending geometry internally before switching, so no explicit flush is needed. The shader is
+    // restored to default immediately after drawing so that subsequent non-shaded sprites are
+    // unaffected. Note: batch.getShader() always returns non-null (it returns the built-in default
+    // when no custom shader is active), so the restore must be tied to spriteShader rather than
+    // using batch.getShader() != null as a guard.
+    if (spriteShader != null) {
+      if (spriteShader.getProgram() != null && batch.getShader() != spriteShader.getProgram()) {
+        batch.setShader(spriteShader.getProgram());
+        spriteShader.applyUniforms();
+      }
     }
 
     if (currentFrame != null) {
@@ -573,6 +599,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           sy,
           getAngle());
       batch.setColor(Color.WHITE);
+    }
+
+    if (spriteShader != null) {
+      batch.setShader(null);
     }
   }
 
@@ -693,6 +723,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     originY = 0f;
     offsetX = 0f;
     offsetY = 0f;
+    spriteShader = null;
     antialiasing = false;
     color.set(Color.WHITE);
     flipX = false;
@@ -721,6 +752,41 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       graphic.release();
       graphic = null;
     }
+  }
+
+  /**
+   * Assigns a shader that is applied to this sprite individually when it is drawn.
+   *
+   * <p>Each unique shader transition in draw order flushes the GPU vertex buffer before the new
+   * shader takes over. Consecutive sprites that share the same {@link FlixelShader} instance batch
+   * together for free. If you mix many different shaders across sprites in a single camera,
+   * performance may drop noticeably on weak devices. Giving players the option to disable sprite
+   * shaders is strongly recommended.
+   *
+   * <p>The shader is NOT owned by this sprite. Call {@link FlixelShader#destroy()} yourself when
+   * the shader is no longer needed. Pass {@code null} to remove the current shader.
+   *
+   * <p>If you need a full-scene effect (post-processing applied to everything a camera sees),
+   * prefer {@link org.flixelgdx.FlixelCamera#setShader(FlixelShader) FlixelCamera.setShader()}
+   * instead - it captures the entire scene into a single FBO and applies the shader once, with
+   * no per-sprite flush cost.
+   *
+   * @param shader The shader to apply when drawing this sprite, or {@code null} to remove it.
+   */
+  @Override
+  public void setShader(@Nullable FlixelShader shader) {
+    this.spriteShader = shader;
+  }
+
+  /**
+   * Returns the shader currently assigned to this sprite, or {@code null} if none is set.
+   *
+   * @return The active per-sprite {@link FlixelShader}, or {@code null}.
+   */
+  @Nullable
+  @Override
+  public FlixelShader getShader() {
+    return spriteShader;
   }
 
   /**
