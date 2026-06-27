@@ -180,6 +180,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private final Matrix4 fboOrtho = new Matrix4();
 
   /**
+   * Camera dimensions the current {@link #fboOrtho} matrix was last built for.
+   * -1 means uninitialized; any change triggers a rebuild and a re-upload to the composite batch.
+   */
+  private int fboOrthoW = -1;
+
+  private int fboOrthoH = -1;
+
+  /**
    * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
    * this session. Cleared when transparency is turned off.
    */
@@ -561,9 +569,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
           if (compositeBatch == null) {
             compositeBatch = new SpriteBatch();
           }
-          fboOrtho.setToOrtho2D(0, 0, camera.width, camera.height);
-          compositeBatch.setProjectionMatrix(fboOrtho);
-          compositeBatch.setShader(cameraShader.getProgram());
+          if (camera.width != fboOrthoW || camera.height != fboOrthoH) {
+            fboOrthoW = camera.width;
+            fboOrthoH = camera.height;
+            fboOrtho.setToOrtho2D(0, 0, fboOrthoW, fboOrthoH);
+            compositeBatch.setProjectionMatrix(fboOrtho);
+          }
+          if (compositeBatch.getShader() != cameraShader.getProgram()) {
+            compositeBatch.setShader(cameraShader.getProgram());
+          }
           compositeBatch.begin();
           compositeBatch.draw(camera.getFboRegion(), 0, 0, camera.width, camera.height);
           compositeBatch.end();
@@ -905,6 +919,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (compositeBatch != null) {
       compositeBatch.dispose();
       compositeBatch = null;
+      fboOrthoW = -1;
+      fboOrthoH = -1;
     }
     if (bgTexture != null) {
       bgTexture.dispose();
