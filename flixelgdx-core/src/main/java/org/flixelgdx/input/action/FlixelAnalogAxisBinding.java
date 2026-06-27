@@ -34,14 +34,14 @@ import org.jetbrains.annotations.NotNull;
  * <p>Create bindings only during setup. Gamepad axes use {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}
  * logical constants; {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads} applies the same dead zone as the rest of a game.
  *
- * <h2>Axis conventions and Y inversion</h2>
+ * <h2>Axis conventions and Y correction</h2>
  *
  * <p>Most gamepad drivers report the stick Y axis in screen-space: pushing the stick up produces a
  * negative raw value, pushing down produces a positive raw value. This is the opposite of the
  * math-space convention used by keyboard key bindings (pressing the UP key contributes +1 to Y).
- * Use {@link #negGamepadAxisY(int, int)} instead of {@link #gamepadAxisY(int, int)} to flip the
- * raw hardware value so the stick and keyboard share the same coordinate system (up = positive Y,
- * down = negative Y).
+ * {@link #gamepadAxisY(int, int)} corrects this by default so the stick and keyboard share the same
+ * coordinate system (up = positive Y, down = negative Y). Pass {@code raw = true} to the overload
+ * {@link #gamepadAxisY(int, int, boolean)} when you specifically need the uncorrected hardware value.
  */
 public final class FlixelAnalogAxisBinding {
 
@@ -80,7 +80,8 @@ public final class FlixelAnalogAxisBinding {
   }
 
   /**
-   * Adds the X component of a stick (or single axis read as X only).
+   * Adds the X component of a stick. Most drivers report X in math-space already (left = negative,
+   * right = positive), so no correction is applied.
    *
    * @param gamepadSlot {@code 0..} slot index.
    * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_X} or similar.
@@ -91,51 +92,40 @@ public final class FlixelAnalogAxisBinding {
   }
 
   /**
-   * Adds the Y component of a stick.
+   * Adds the Y component of a stick with the screen-space inversion corrected so that up = positive Y,
+   * matching the keyboard key convention. This is the correct choice for almost every game.
    *
    * @param gamepadSlot {@code 0..} slot index.
    * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
    */
   @NotNull
   public static FlixelAnalogAxisBinding gamepadAxisY(int gamepadSlot, int logicalAxis) {
-    return new FlixelAnalogAxisBinding(Kind.GAMEPAD_AXIS_Y, logicalAxis, gamepadSlot);
+    return gamepadAxisY(gamepadSlot, logicalAxis, false);
   }
 
   /**
-   * Adds the negated X component of a stick, correcting for drivers that report left as positive X.
-   *
-   * @param gamepadSlot {@code 0..} slot index.
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_X} or similar.
-   */
-  @NotNull
-  public static FlixelAnalogAxisBinding negGamepadAxisX(int gamepadSlot, int logicalAxis) {
-    return new FlixelAnalogAxisBinding(Kind.NEG_GAMEPAD_AXIS_X, logicalAxis, gamepadSlot);
-  }
-
-  /**
-   * Adds the negated Y component of a stick. Use this instead of {@link #gamepadAxisY(int, int)}
-   * when the driver reports the stick in screen-space (up = negative raw Y), so the result matches
-   * keyboard key bindings where up = positive Y.
+   * Adds the Y component of a stick.
    *
    * @param gamepadSlot {@code 0..} slot index.
    * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
+   * @param raw When {@code false} (the default), the raw hardware Y is negated so that up = positive Y,
+   *   matching keyboard key bindings. Pass {@code true} to use the raw screen-space value unchanged.
    */
   @NotNull
-  public static FlixelAnalogAxisBinding negGamepadAxisY(int gamepadSlot, int logicalAxis) {
-    return new FlixelAnalogAxisBinding(Kind.NEG_GAMEPAD_AXIS_Y, logicalAxis, gamepadSlot);
+  public static FlixelAnalogAxisBinding gamepadAxisY(int gamepadSlot, int logicalAxis, boolean raw) {
+    return new FlixelAnalogAxisBinding(raw ? Kind.RAW_GAMEPAD_AXIS_Y : Kind.GAMEPAD_AXIS_Y, logicalAxis, gamepadSlot);
   }
 
-  /**
-   * Simple enum for handling different input types and their directions.
-   */
+  /** Binding kinds used by {@link FlixelActionAnalog} to accumulate the vector each frame. */
   public enum Kind {
     KEY_NEG_X,
     KEY_POS_X,
     KEY_NEG_Y,
     KEY_POS_Y,
     GAMEPAD_AXIS_X,
+    /** Y axis with screen-space inversion corrected (up = positive Y). Default from {@link #gamepadAxisY(int, int)}. */
     GAMEPAD_AXIS_Y,
-    NEG_GAMEPAD_AXIS_X,
-    NEG_GAMEPAD_AXIS_Y
+    /** Raw hardware Y axis without any correction. */
+    RAW_GAMEPAD_AXIS_Y
   }
 }
