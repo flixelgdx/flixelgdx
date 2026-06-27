@@ -35,18 +35,43 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>The {@link #getName()} string is used for Steam Input alignment and logging; keep names stable if players rebind or
  * use cloud profiles.
+ *
+ * <h2>Hold-repeat</h2>
+ *
+ * <p>{@link #getHoldDelay() holdDelay} and {@link #getHoldInterval() holdInterval} control autorepeat timing used by
+ * {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
+ * Set them before the game loop starts if the defaults do not suit your game:
+ *
+ * <pre>{@code
+ * navigate.setHoldDelay(0.4f);     // Wait 400 ms before the first repeat...
+ * navigate.setHoldInterval(0.08f); // ...then fire every 80 ms while held.
+ * }</pre>
  */
 public abstract class FlixelAction {
 
-  @NotNull
-  private final String name;
+  /**
+   * Seconds to wait after the initial press or flick before the first hold-repeat fires.
+   * Used by {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
+   * Defaults to {@code 0.5f}.
+   */
+  private float holdDelay = 0.5f;
 
-  @Nullable
-  FlixelActionSet owner;
+  /**
+   * Seconds between each subsequent hold-repeat after the initial delay has elapsed.
+   * Used by {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
+   * Defaults to {@code 0.1f}.
+   */
+  private float holdInterval = 0.1f;
 
   /** Optional edge callback; assign once to avoid per-frame allocations. */
   @Nullable
   public Runnable callback;
+
+  @Nullable
+  FlixelActionSet owner;
+
+  @NotNull
+  private final String name;
 
   /** When {@code false}, this action stays inactive and reads false or zero. */
   public boolean active = true;
@@ -72,6 +97,22 @@ public abstract class FlixelAction {
 
   void setOwner(@Nullable FlixelActionSet set) {
     this.owner = set;
+  }
+
+  public float getHoldDelay() {
+    return holdDelay;
+  }
+
+  public void setHoldDelay(float holdDelay) {
+    this.holdDelay = Math.max(0f, holdDelay);
+  }
+
+  public float getHoldInterval() {
+    return holdInterval;
+  }
+
+  public void setHoldInterval(float holdInterval) {
+    this.holdInterval = Math.max(0f, holdInterval);
   }
 
   abstract void updateAction(float elapsed);

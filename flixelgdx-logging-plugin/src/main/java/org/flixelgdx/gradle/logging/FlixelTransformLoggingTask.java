@@ -32,6 +32,7 @@ import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.jspecify.annotations.NonNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -68,9 +69,10 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
     if (!Files.isDirectory(root)) {
       return;
     }
-    Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+    Files.walkFileTree(root, new SimpleFileVisitor<>() {
       @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+      public @NonNull FileVisitResult visitFile(@NonNull Path file, @NonNull BasicFileAttributes attrs)
+          throws IOException {
         if (!file.toString().endsWith(".class") || file.getFileName().toString().equals("module-info.class")) {
           return FileVisitResult.CONTINUE;
         }

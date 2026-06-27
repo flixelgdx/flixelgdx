@@ -41,10 +41,7 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
   @Override
   public void apply(Project project) {
     FlixelLoggingExtension ext = project.getExtensions().create("flixelLogging", FlixelLoggingExtension.class);
-    wire(project, ext);
-  }
 
-  private static void wire(Project project, FlixelLoggingExtension ext) {
     project.afterEvaluate(pr -> {
       if (!ext.getEnabled().get()) {
         return;
