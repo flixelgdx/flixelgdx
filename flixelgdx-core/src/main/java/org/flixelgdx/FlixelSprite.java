@@ -29,7 +29,6 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
@@ -522,7 +521,18 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       return;
     }
 
-    applyShaderToBatch(batch);
+    // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
+    // pending geometry internally before switching, so no explicit flush is needed. The shader is
+    // restored to default immediately after drawing so that subsequent non-shaded sprites are
+    // unaffected. Note: batch.getShader() always returns non-null (it returns the built-in default
+    // when no custom shader is active), so the restore must be tied to spriteShader rather than
+    // using batch.getShader() != null as a guard.
+    if (spriteShader != null) {
+      if (spriteShader.getProgram() != null && batch.getShader() != spriteShader.getProgram()) {
+        batch.setShader(spriteShader.getProgram());
+        spriteShader.applyUniforms();
+      }
+    }
 
     if (currentFrame != null) {
       FlixelFrame f = currentFrame;
@@ -589,6 +599,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           sy,
           getAngle());
       batch.setColor(Color.WHITE);
+    }
+
+    if (spriteShader != null) {
+      batch.setShader(null);
     }
   }
 
@@ -737,30 +751,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (graphic != null) {
       graphic.release();
       graphic = null;
-    }
-  }
-
-  /**
-   * Switches the batch to this sprite's shader if one is assigned, or restores the default if not.
-   *
-   * <p>Called at the start of every draw path (including subclass overrides such as
-   * {@link org.flixelgdx.animation.FlixelAnimateSprite FlixelAnimateSprite}) to ensure the correct
-   * shader is active before any geometry is submitted. {@link Batch#setShader(ShaderProgram)}
-   * flushes pending geometry internally before switching, so no explicit flush is needed here.
-   * Consecutive sprites sharing the same {@link FlixelShader} instance skip the swap entirely and
-   * batch together for free.
-   *
-   * @param batch The active batch to apply the shader switch on.
-   */
-  protected void applyShaderToBatch(Batch batch) {
-    if (spriteShader != null) {
-      ShaderProgram prog = spriteShader.getProgram();
-      if (prog != null && batch.getShader() != prog) {
-        batch.setShader(prog);
-        spriteShader.applyUniforms();
-      }
-    } else if (batch.getShader() != null) {
-      batch.setShader(null);
     }
   }
 

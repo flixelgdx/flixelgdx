@@ -38,6 +38,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.util.FlixelDirectionFlags;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -821,7 +822,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
       return;
     }
 
-    applyShaderToBatch(batch);
+    FlixelShader activeShader = getShader();
+    if (activeShader != null
+        && activeShader.getProgram() != null
+        && batch.getShader() != activeShader.getProgram()) {
+      batch.setShader(activeShader.getProgram());
+      activeShader.applyUniforms();
+    }
 
     // Match FlixelSprite's flip-into-scale convention: a negative scale on either axis mirrors the
     // sprite around its origin, and the facing flag piles on top of the user-set flipX.
@@ -889,6 +896,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     batch.setColor(Color.WHITE);
+
+    if (activeShader != null) {
+      batch.setShader(null);
+    }
   }
 
   /**

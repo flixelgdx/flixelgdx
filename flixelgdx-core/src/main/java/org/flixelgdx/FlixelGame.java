@@ -601,11 +601,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
         batch.end();
 
-        // If a sprite swapped the batch to a custom shader during the draw pass, reset it now.
-        // batch.setShader(null) while not drawing is a cheap reference write with no GPU cost.
-        if (batch.getShader() != null) {
-          batch.setShader(null);
-        }
+        // Safety reset: per-sprite shader draws restore themselves inline, but reset here as a
+        // backstop so the next camera pass always starts with the default batch shader.
+        // Not drawing at this point, so this is a cheap reference write with no GPU cost.
+        batch.setShader(null);
 
         if (cameraShader != null) {
           camera.getFbo().end();
