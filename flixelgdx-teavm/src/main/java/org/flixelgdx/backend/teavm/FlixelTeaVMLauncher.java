@@ -36,6 +36,7 @@ import org.flixelgdx.backend.teavm.logging.FlixelTeaVMLogConsole;
 import org.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.Nullable;
+import org.teavm.jso.JSBody;
 
 import java.util.function.Consumer;
 
@@ -80,6 +81,11 @@ import java.util.function.Consumer;
  * The {@link org.flixelgdx.logging.FlixelLogFileHandler FlixelLogFileHandler} is not registered, so {@link FlixelLogger#startFileLogging()} is a safe no-op.
  * Console output uses {@link Flixel#setLogConsoleSink} with a styled {@code console} writer so log lines appear with readable colors
  * in the browser; ANSI {@code System.out} is not used on web.
+ *
+ * <p>When {@code Gdx.app.exit()} is called, the launcher overrides {@code exit()} to invoke the browser's
+ * {@code window.close()}. Browsers only close the tab when it was opened programmatically via {@code window.open()};
+ * for tabs the user opened directly, the browser silently ignores the request. This is a browser security
+ * restriction and cannot be bypassed from JavaScript.
  *
  * @see FlixelGame
  * @see WebApplicationConfiguration
@@ -205,8 +211,25 @@ public class FlixelTeaVMLauncher {
         super.init();
         Flixel.mouse.setMouseIconManager(new FlixelTeaVMMouseIconManager(configuration.canvasID));
       }
+
+      @Override
+      public void exit() {
+        super.exit();
+        closeWindow();
+      }
     };
   }
+
+  /**
+   * Calls the browser's {@code window.close()} to close the current tab.
+   *
+   * <p>Browsers only honor this call when the tab was opened programmatically via
+   * {@code window.open()}. For tabs the user opened directly, the browser silently
+   * ignores the request; this is an intentional browser security restriction and
+   * cannot be bypassed.
+   */
+  @JSBody(script = "window.close();")
+  private static native void closeWindow();
 
   /**
    * Default TeaVM entry point. Games should use their own launcher class
