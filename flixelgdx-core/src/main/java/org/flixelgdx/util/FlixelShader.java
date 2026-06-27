@@ -144,8 +144,11 @@ public class FlixelShader extends FlixelBasic {
    *   <li>{@code openfl_HasColorTransform} - color transform flag (constant {@code false})</li>
    *   <li>{@code flixel_texture2D(t, c)} - texture sampling helper (maps to {@code texture2D(t, c)})</li>
    * </ul>
+   *
+   * <p>Exposed as {@code protected} so subclasses can compose their own extended preprocessing
+   * pipelines that build on top of the standard HaxeFlixel environment.
    */
-  static final String HAXEFLIXEL_DEFINES =
+  protected static final String HAXEFLIXEL_DEFINES =
       "#define bitmap u_texture\n"
           + "#define openfl_TextureCoordv v_texCoords\n"
           + "#define openfl_Alpha 1.0\n"
@@ -159,8 +162,11 @@ public class FlixelShader extends FlixelBasic {
    * <p>Declares the uniform sampler, UV coordinate varying, and color varying that the
    * compositing pipeline feeds into the fragment shader each frame. Using the libGDX-native
    * names here means the {@link #HAXEFLIXEL_DEFINES} aliases resolve correctly.
+   *
+   * <p>Exposed as {@code protected} so subclasses can compose their own extended preprocessing
+   * pipelines that build on top of the standard HaxeFlixel environment.
    */
-  static final String HAXEFLIXEL_HEADER_EXPANSION =
+  protected static final String HAXEFLIXEL_HEADER_EXPANSION =
       "#ifdef GL_ES\n"
           + "precision mediump float;\n"
           + "#endif\n"
