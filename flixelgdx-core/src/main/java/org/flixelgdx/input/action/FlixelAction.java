@@ -38,13 +38,13 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Hold-repeat</h2>
  *
- * <p>{@link #holdDelay} and {@link #holdInterval} control autorepeat timing used by
+ * <p>{@link #getHoldDelay() holdDelay} and {@link #getHoldInterval() holdInterval} control autorepeat timing used by
  * {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
  * Set them before the game loop starts if the defaults do not suit your game:
  *
  * <pre>{@code
- * navigate.holdDelay    = 0.4f; // wait 400 ms before the first repeat
- * navigate.holdInterval = 0.08f; // then fire every 80 ms while held
+ * navigate.setHoldDelay(0.4f);     // Wait 400 ms before the first repeat...
+ * navigate.setHoldInterval(0.08f); // ...then fire every 80 ms while held.
  * }</pre>
  */
 public abstract class FlixelAction {
@@ -54,14 +54,14 @@ public abstract class FlixelAction {
    * Used by {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
    * Defaults to {@code 0.5f}.
    */
-  public float holdDelay = 0.5f;
+  private float holdDelay = 0.5f;
 
   /**
    * Seconds between each subsequent hold-repeat after the initial delay has elapsed.
    * Used by {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
    * Defaults to {@code 0.1f}.
    */
-  public float holdInterval = 0.1f;
+  private float holdInterval = 0.1f;
 
   /** Optional edge callback; assign once to avoid per-frame allocations. */
   @Nullable
@@ -97,6 +97,22 @@ public abstract class FlixelAction {
 
   void setOwner(@Nullable FlixelActionSet set) {
     this.owner = set;
+  }
+
+  public float getHoldDelay() {
+    return holdDelay;
+  }
+
+  public void setHoldDelay(float holdDelay) {
+    this.holdDelay = Math.max(0f, holdDelay);
+  }
+
+  public float getHoldInterval() {
+    return holdInterval;
+  }
+
+  public void setHoldInterval(float holdInterval) {
+    this.holdInterval = Math.max(0f, holdInterval);
   }
 
   abstract void updateAction(float elapsed);

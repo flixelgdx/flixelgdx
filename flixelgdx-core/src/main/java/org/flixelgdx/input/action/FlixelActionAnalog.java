@@ -66,9 +66,9 @@ import org.jetbrains.annotations.Nullable;
  * where each stick deflection should trigger exactly one action.
  *
  * <p>{@link #flickedRepeating()} extends that with hold-repeat: it fires on the initial flick,
- * then fires again after {@link FlixelAction#holdDelay} seconds if the stick is still past the
- * threshold, and continues every {@link FlixelAction#holdInterval} seconds after that. Use this
- * for menus that should keep scrolling when the stick is held.
+ * then fires again after {@link FlixelAction#getHoldDelay() FlixelAction.holdDelay} seconds
+ * if the stick is still past the threshold, and continues every {@link FlixelAction#getHoldInterval() FlixelAction.holdInterval}
+ * seconds after that. Use this for menus that should keep scrolling when the stick is held.
  *
  * <pre>{@code
  * // Navigate a menu; hold the stick to keep scrolling.
@@ -85,18 +85,12 @@ import org.jetbrains.annotations.Nullable;
 public final class FlixelActionAnalog extends FlixelAction {
 
   /**
-   * Minimum stick magnitude (0 to 1) required for {@link #flicked()} to fire. The comparison is
-   * made against the normalized vector length after all bindings are accumulated, so a value of
-   * {@code 0.3} means roughly 30% deflection. Defaults to {@code 0.3f}; adjust before the game
-   * loop if your game needs a different sensitivity.
-   */
-  /**
    * Minimum stick magnitude (0 to 1) required for {@link #flicked()} and {@link #flickedRepeating()}
    * to fire. The comparison is made against the normalized vector length after all bindings are
    * accumulated, so a value of {@code 0.3} means roughly 30% deflection. Defaults to {@code 0.3f};
    * adjust before the game loop if your game needs a different sensitivity.
    */
-  public float flickThreshold = 0.3f;
+  private float flickThreshold = 0.3f;
 
   private final Array<FlixelAnalogAxisBinding> bindings = new Array<>(12);
 
@@ -161,13 +155,13 @@ public final class FlixelActionAnalog extends FlixelAction {
         flickHoldAccum += elapsed;
         flickRepeated = false;
         if (!flickHoldRepeating) {
-          if (flickHoldAccum >= holdDelay) {
-            flickHoldAccum -= holdDelay;
+          if (flickHoldAccum >= getHoldDelay()) {
+            flickHoldAccum -= getHoldDelay();
             flickHoldRepeating = true;
             flickRepeated = true;
           }
-        } else if (flickHoldAccum >= holdInterval) {
-          flickHoldAccum -= holdInterval;
+        } else if (flickHoldAccum >= getHoldInterval()) {
+          flickHoldAccum -= getHoldInterval();
           flickRepeated = true;
         }
       }
@@ -257,6 +251,14 @@ public final class FlixelActionAnalog extends FlixelAction {
     return active ? prevY : 0f;
   }
 
+  public float getFlickThreshold() {
+    return flickThreshold;
+  }
+
+  public void setFlickThreshold(float flickThreshold) {
+    this.flickThreshold = Math.max(0f, Math.min(1f, flickThreshold));
+  }
+
   public boolean moved() {
     if (!active) {
       return false;
@@ -285,12 +287,13 @@ public final class FlixelActionAnalog extends FlixelAction {
    * Returns {@code true} on the initial flick and again on each hold-repeat tick.
    *
    * <p>Fires on the same frame as {@link #flicked()} when the stick first crosses
-   * {@link #flickThreshold}, then fires again after {@link FlixelAction#holdDelay} seconds if the
-   * stick is still past the threshold, and continues every {@link FlixelAction#holdInterval}
-   * seconds after that. Returning the stick below the threshold resets the timer.
+   * {@link #flickThreshold}, then fires again after {@link FlixelAction#getHoldDelay() FlixelAction.holdDelay}
+   * seconds if the stick is still past the threshold, and continues every
+   * {@link FlixelAction#getHoldInterval() FlixelAction.holdInterval} seconds after that.
+   * Returning the stick below the threshold resets the timer.
    *
    * <p>Use this instead of {@link #flicked()} when a held stick deflection should keep triggering,
-   * such as scrolling through a long menu list:
+   * such as scrolling through a long menu list.
    *
    * <pre>{@code
    * if (navigate.flickedRepeating()) {

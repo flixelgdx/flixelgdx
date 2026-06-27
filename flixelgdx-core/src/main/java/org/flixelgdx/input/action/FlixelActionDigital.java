@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #justPressed()} or {@link #check()} for a single-frame edge (tap notes, menu confirm).</li>
  *   <li>{@link #justReleased()} when the player releases after a hold.</li>
  *   <li>{@link #repeated()} for hold-repeating navigation: fires on the initial press, then fires
- *       again after {@link FlixelAction#holdDelay} seconds, then every {@link FlixelAction#holdInterval}
+ *       again after {@link FlixelAction#getHoldDelay()} seconds, then every {@link FlixelAction#getHoldInterval()}
  *       seconds while held. Replaces a manual {@code justPressed()} check when autorepeat is needed.</li>
  * </ul>
  *
@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Optional callback</h2>
  *
- * <p>{@link #callback} runs on the press edge when assigned; prefer a single static {@link Runnable} to avoid allocating
+ * <p>{@link #getHoldDelay()()} runs on the press edge when assigned; prefer a single static {@link Runnable} to avoid allocating
  * lambdas in hot paths.
  */
 public final class FlixelActionDigital extends FlixelAction {
@@ -117,13 +117,13 @@ public final class FlixelActionDigital extends FlixelAction {
         holdAccum += elapsed;
         repeated = false;
         if (!holdRepeating) {
-          if (holdAccum >= holdDelay) {
-            holdAccum -= holdDelay;
+          if (holdAccum >= getHoldDelay()) {
+            holdAccum -= getHoldDelay();
             holdRepeating = true;
             repeated = true;
           }
-        } else if (holdAccum >= holdInterval) {
-          holdAccum -= holdInterval;
+        } else if (holdAccum >= getHoldInterval()) {
+          holdAccum -= getHoldInterval();
           repeated = true;
         }
       }
@@ -173,8 +173,8 @@ public final class FlixelActionDigital extends FlixelAction {
    * Returns {@code true} on the initial press and again on each hold-repeat tick.
    *
    * <p>Fires immediately on the frame the button is first pressed (same as {@link #justPressed()}),
-   * then fires again after {@link FlixelAction#holdDelay} seconds if the button is still held, and
-   * continues firing every {@link FlixelAction#holdInterval} seconds after that. Releasing the button
+   * then fires again after {@link FlixelAction#getHoldDelay()} seconds if the button is still held, and
+   * continues firing every {@link FlixelAction#getHoldInterval()} seconds after that. Releasing the button
    * resets the timer so the next press starts fresh.
    *
    * <p>Use this instead of {@link #justPressed()} anywhere a held button should keep triggering,

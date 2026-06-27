@@ -190,8 +190,8 @@ class FlixelActionSystemTest {
     };
     FlixelActionDigital scroll = new FlixelActionDigital("scroll");
     scroll.addBinding(FlixelInputBinding.key(Input.Keys.DOWN));
-    scroll.holdDelay = 0.5f;
-    scroll.holdInterval = 0.1f;
+    scroll.setHoldDelay(0.5f);
+    scroll.setHoldInterval(0.1f);
     set.add(scroll);
 
     // Initial press: repeated() fires immediately.
@@ -232,8 +232,8 @@ class FlixelActionSystemTest {
     };
     FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
     navigate.addAxisBinding(FlixelAnalogAxisBinding.negYKey(Input.Keys.DOWN));
-    navigate.holdDelay = 0.5f;
-    navigate.holdInterval = 0.1f;
+    navigate.setHoldDelay(0.5f);
+    navigate.setHoldInterval(0.1f);
     set.add(navigate);
 
     // Initial flick: flickedRepeating() fires on the first frame.
