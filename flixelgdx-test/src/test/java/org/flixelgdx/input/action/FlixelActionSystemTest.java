@@ -197,33 +197,33 @@ class FlixelActionSystemTest {
     // Initial press: repeated() fires immediately.
     Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
     set.update(0f);
-    assertTrue(scroll.repeated());
+    assertTrue(scroll.held());
 
     // Still held but before holdDelay: repeated() does not fire again.
     set.endFrame();
     set.update(0.3f);
-    assertFalse(scroll.repeated());
+    assertFalse(scroll.held());
 
     // Still held, holdDelay elapsed: first hold-repeat fires.
     set.endFrame();
     set.update(0.25f);
-    assertTrue(scroll.repeated());
+    assertTrue(scroll.held());
 
     // Still held, holdInterval not yet elapsed: no repeat.
     set.endFrame();
     set.update(0.04f);
-    assertFalse(scroll.repeated());
+    assertFalse(scroll.held());
 
     // holdInterval elapsed: repeat fires again.
     set.endFrame();
     set.update(0.06f);
-    assertTrue(scroll.repeated());
+    assertTrue(scroll.held());
 
     // Released: no repeat.
     Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
     set.endFrame();
     set.update(0f);
-    assertFalse(scroll.repeated());
+    assertFalse(scroll.held());
   }
 
   @Test

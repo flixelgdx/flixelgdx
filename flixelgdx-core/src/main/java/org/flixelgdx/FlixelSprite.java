@@ -406,7 +406,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#addSparrowAtlas(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link FlixelAnimationController#addSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
    * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
    * not a general API for game code.
    *
@@ -441,7 +441,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * <em>appends</em> {@code parsedFrames} to whatever atlas the sprite already has (creating one when
    * it had none) and retains {@code newGraphic} as a {@link #retainSecondaryGraphic secondary graphic}
    * so its texture stays loaded. That lets a single sprite carry frames from more than one sheet,
-   * which is what {@link FlixelAnimationController#addSparrowAtlas(String)} builds on. The currently
+   * which is what {@link FlixelAnimationController#addSparrowFrames(String)} builds on. The currently
    * displayed frame and the registered clips are left untouched, so a sprite already showing a rig
    * clip or another atlas keeps rendering exactly as before; play one of the newly registered clips to
    * show the merged art.
@@ -468,7 +468,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * {@link org.flixelgdx.asset.FlixelAssetManager#get(String) FlixelAssetManager.get(...)} followed
    * by {@link org.flixelgdx.asset.FlixelAsset#retain() retain()}), so this method only stores the
    * reference and does not call {@link FlixelGraphic#retain()} again. This is an advanced hook used
-   * by atlas-merging code such as {@link FlixelAnimationController#addSparrowAtlas(String)} and
+   * by atlas-merging code such as {@link FlixelAnimationController#addSparrowFrames(String)} and
    * the Animate rig loader; most game code never calls it directly.
    *
    * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.

@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Hold-repeat</h2>
  *
  * <p>{@link #getHoldDelay() holdDelay} and {@link #getHoldInterval() holdInterval} control autorepeat timing used by
- * {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
+ * {@link FlixelActionDigital#held()} and {@link FlixelActionAnalog#flickedRepeating()}.
  * Set them before the game loop starts if the defaults do not suit your game:
  *
  * <pre>{@code
@@ -51,14 +51,14 @@ public abstract class FlixelAction {
 
   /**
    * Seconds to wait after the initial press or flick before the first hold-repeat fires.
-   * Used by {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
+   * Used by {@link FlixelActionDigital#held()} and {@link FlixelActionAnalog#flickedRepeating()}.
    * Defaults to {@code 0.5f}.
    */
   private float holdDelay = 0.5f;
 
   /**
    * Seconds between each subsequent hold-repeat after the initial delay has elapsed.
-   * Used by {@link FlixelActionDigital#repeated()} and {@link FlixelActionAnalog#flickedRepeating()}.
+   * Used by {@link FlixelActionDigital#held()} and {@link FlixelActionAnalog#flickedRepeating()}.
    * Defaults to {@code 0.1f}.
    */
   private float holdInterval = 0.1f;

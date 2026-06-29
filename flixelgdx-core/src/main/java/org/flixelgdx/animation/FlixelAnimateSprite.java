@@ -100,13 +100,13 @@ import java.util.Objects;
  *
  * <h2>Mixing in a Sparrow atlas</h2>
  * A character can also carry Sparrow XML clips on the same body via
- * {@link FlixelAnimationController#addSparrowAtlas(String)}. Rig clips keep rendering from the baked
+ * {@link FlixelAnimationController#addSparrowFrames(String)}. Rig clips keep rendering from the baked
  * rig; clips registered against the merged Sparrow frames render through the standard frame path, and
  * the sprite picks the right one per clip automatically.
  *
  * @see #addSpritemapAndAnimation(String)
  * @see #addSpritemapAndAnimation(String, String, String)
- * @see FlixelAnimationController#addSparrowAtlas(String)
+ * @see FlixelAnimationController#addSparrowFrames(String)
  * @see #defaultSpritemapFileName
  * @see #defaultAnimationFileName
  */
@@ -136,7 +136,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   private FlixelAnimateRig rig;
 
   /**
-   * Preallocated affine reused by {@link #draw(Batch)} so we never allocate on the hot path. At the
+   * Preallocated affine reused by {@link #draw(FlixelBatch)} so we never allocate on the hot path. At the
    * start of each draw call it is set to a translate, rotate, scale, and origin pivot composing the
    * sprite's world transform; each part's baked affine is then post-multiplied into {@link #drawAffine}
    * for the {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call.
@@ -589,7 +589,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * Sparrow frame so switching from a Sparrow clip to a rig clip does not flash stale art). For a
    * Sparrow or simple-atlas clip the callback falls through to the normal
    * {@link FlixelSprite#setCurrentFrameForAnimation} path, which is what lets a Sparrow sheet merged
-   * with {@link FlixelAnimationController#addSparrowAtlas(String)} share the same sprite as the rig.
+   * with {@link FlixelAnimationController#addSparrowFrames(String)} share the same sprite as the rig.
    *
    * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored while a
    *   rig clip is playing.
@@ -640,8 +640,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
    *
    * <p>Unlike {@link FlixelSprite#updateHitbox}, this method does <strong>not</strong> reset
    * {@link #setScale(float)} back to {@code 1}. The rig's part affines are baked at anchor-local size,
-   * so the absolute scale must remain on the sprite for the {@link #draw(Batch)} matrix chain to
-   * size the visible rig correctly. The {@link #draw(Batch)} method is fully aware of this and uses
+   * so the absolute scale must remain on the sprite for the {@link #draw(FlixelBatch)} matrix chain to
+   * size the visible rig correctly. The {@link #draw(FlixelBatch)} method is fully aware of this and uses
    * {@link #getOriginX()} / {@link #getOriginY()} together with {@code |scaleX|} / {@code |scaleY|}
    * so the visible rig still coincides with the hitbox.
    *
