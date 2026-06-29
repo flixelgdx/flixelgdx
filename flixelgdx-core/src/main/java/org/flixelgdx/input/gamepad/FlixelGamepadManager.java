@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
@@ -88,6 +89,9 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   @Nullable
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
+
+  @NotNull
+  private FlixelHapticsProvider hapticsProvider = new FlixelDefaultHapticsProvider(this);
 
   /**
    * Whether the gamepad system is active. When {@code false}, all queries return inactive state and no hardware is
@@ -435,8 +439,108 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return m != null ? m : FlixelGamepadModel.UNKNOWN;
   }
 
+  /**
+   * Replaces the haptics backend used by all vibration calls on this manager.
+   *
+   * <p>The default is {@link FlixelDefaultHapticsProvider}, which delegates to gdx-controllers
+   * and works on desktop and web out of the box. Swap this to unlock platform-specific features
+   * such as independent dual-motor channels, haptic patterns, or DualSense adaptive triggers.
+   *
+   * @param provider Non-null replacement provider.
+   * @throws NullPointerException If {@code provider} is {@code null}.
+   */
+  public void setHapticsProvider(@NotNull FlixelHapticsProvider provider) {
+    hapticsProvider = Objects.requireNonNull(provider, "provider cannot be null.");
+  }
+
+  /**
+   * Returns whether the controller in the given slot reports vibration support.
+   *
+   * @param slot Slot index.
+   * @return {@code true} when the system is enabled, the slot is in range, and the hardware
+   *     reports haptics capability.
+   */
+  public boolean canVibrate(int slot) {
+    if (!enabled || slot < 0 || slot >= numActiveGamepads) {
+      return false;
+    }
+    return hapticsProvider.canVibrate(slot);
+  }
+
+  /**
+   * Vibrates the controller in the given slot at full intensity on both motors for the given
+   * duration.
+   *
+   * <pre>{@code
+   * // Short full-strength rumble on the first controller.
+   * Flixel.gamepads.vibrate(0, 0.3f);
+   * }</pre>
+   *
+   * @param slot Slot index.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(int slot, float durationSecs) {
+    vibrate(slot, 1f, 1f, durationSecs);
+  }
+
+  /**
+   * Vibrates the controller in the given slot at the given intensity on both motors.
+   *
+   * @param slot Slot index.
+   * @param intensity Motor strength in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(int slot, float intensity, float durationSecs) {
+    vibrate(slot, intensity, intensity, durationSecs);
+  }
+
+  /**
+   * Vibrates the controller in the given slot with independent left and right motor intensities.
+   *
+   * <p>On backends that expose only a single motor channel (desktop and web via the default
+   * {@link FlixelDefaultHapticsProvider}), the stronger of the two values drives both motors.
+   * Installing a custom {@link FlixelHapticsProvider} via {@link #setHapticsProvider} can honor
+   * both values independently on hardware that supports it.
+   *
+   * <pre>{@code
+   * // Rumble only the left (low-frequency) motor at half strength for half a second.
+   * Flixel.gamepads.vibrate(0, 0.5f, 0f, 0.5f);
+   * }</pre>
+   *
+   * @param slot Slot index.
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(int slot, float leftIntensity, float rightIntensity, float durationSecs) {
+    if (!enabled || slot < 0 || slot >= numActiveGamepads) {
+      return;
+    }
+    hapticsProvider.vibrate(slot, leftIntensity, rightIntensity, durationSecs);
+  }
+
+  /**
+   * Stops any active vibration on the controller in the given slot immediately.
+   *
+   * @param slot Slot index.
+   */
+  public void stopVibration(int slot) {
+    if (!enabled || slot < 0 || slot >= numActiveGamepads) {
+      return;
+    }
+    hapticsProvider.stopVibration(slot);
+  }
+
   boolean isSlotConnected(int id) {
     return id >= 0 && id < numActiveGamepads && slotController[id] != null;
+  }
+
+  @Nullable
+  Controller controllerAt(int slot) {
+    if (slot < 0 || slot >= MAX_GAMEPADS) {
+      return null;
+    }
+    return slotController[slot];
   }
 
   @Override

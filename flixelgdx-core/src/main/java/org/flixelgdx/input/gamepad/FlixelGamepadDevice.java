@@ -81,6 +81,52 @@ public final class FlixelGamepadDevice {
     return manager.justReleased(id, logicalButton);
   }
 
+  /**
+   * Returns whether this controller reports vibration support.
+   *
+   * @return {@code true} when connected and the hardware supports vibration.
+   */
+  public boolean canVibrate() {
+    return manager.canVibrate(id);
+  }
+
+  /**
+   * Vibrates this controller at full intensity on both motors for the given duration.
+   *
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float durationSecs) {
+    manager.vibrate(id, durationSecs);
+  }
+
+  /**
+   * Vibrates this controller at the given intensity on both motors.
+   *
+   * @param intensity Motor strength in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float intensity, float durationSecs) {
+    manager.vibrate(id, intensity, durationSecs);
+  }
+
+  /**
+   * Vibrates this controller with independent left and right motor intensities.
+   *
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float leftIntensity, float rightIntensity, float durationSecs) {
+    manager.vibrate(id, leftIntensity, rightIntensity, durationSecs);
+  }
+
+  /**
+   * Stops any active vibration on this controller immediately.
+   */
+  public void stopVibration() {
+    manager.stopVibration(id);
+  }
+
   public float getAxis(int logicalAxis) {
     return manager.getAxis(id, logicalAxis);
   }
