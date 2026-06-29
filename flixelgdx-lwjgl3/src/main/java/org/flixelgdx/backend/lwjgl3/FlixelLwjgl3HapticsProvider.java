@@ -103,7 +103,7 @@ final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
       return null;
     }
     Controller c = Flixel.gamepads.controllerAt(slot);
-    if (!(c instanceof JamepadController)) {
+    if (c != null && !(c instanceof JamepadController)) {
       return null;
     }
     try {

@@ -33,7 +33,7 @@ import org.teavm.jso.JSBody;
  * {@link JSBody} inline JavaScript, bypassing the xpenatan gdx-teavm controller layer entirely.
  *
  * <p>This provider is installed automatically by {@link FlixelTeaVMLauncher} and replaces the
- * default {@link org.flixelgdx.input.gamepad.FlixelDefaultHapticsProvider}. You do not need to
+ * default {@code org.flixelgdx.input.gamepad.FlixelDefaultHapticsProvider}. You do not need to
  * install it manually.
  *
  * <h2>Motor mapping</h2>
