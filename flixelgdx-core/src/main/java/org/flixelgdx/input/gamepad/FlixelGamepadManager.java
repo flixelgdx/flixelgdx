@@ -514,9 +514,11 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
   /**
    * Replaces the haptics backend used by all vibration calls on this manager.
    *
-   * <p>The default is {@link FlixelDefaultHapticsProvider}, which delegates to gdx-controllers
-   * and works on desktop and web out of the box. Swap this to unlock platform-specific features
-   * such as independent dual-motor channels, haptic patterns, or DualSense adaptive triggers.
+   * <p>Each platform launcher installs a provider automatically: {@code FlixelLwjgl3Launcher}
+   * installs {@code FlixelLwjgl3HapticsProvider} (Jamepad/SDL, true dual-motor), and
+   * {@code FlixelTeaVMLauncher} installs {@code FlixelTeaVMHapticsProvider} (W3C Gamepad Haptics
+   * API, true dual-motor). Only override this when you need platform-specific features that the
+   * built-in providers do not cover, such as DualSense adaptive triggers or haptic patterns.
    *
    * @param provider Non-null replacement provider.
    * @throws NullPointerException If {@code provider} is {@code null}.
@@ -568,11 +570,6 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   /**
    * Vibrates the controller in the given slot with independent left and right motor intensities.
-   *
-   * <p>On backends that expose only a single motor channel (desktop and web via the default
-   * {@link FlixelDefaultHapticsProvider}), the stronger of the two values drives both motors.
-   * Installing a custom {@link FlixelHapticsProvider} via {@link #setHapticsProvider} can honor
-   * both values independently on hardware that supports it.
    *
    * <pre>{@code
    * // Rumble only the left (low-frequency) motor at half strength for half a second.

@@ -50,8 +50,9 @@ public interface FlixelHapticsProvider {
   /**
    * Vibrates the controller in the given slot.
    *
-   * <p>On hardware with a single motor channel, or on backends that expose only a single strength
-   * value, both intensities may be collapsed to a single value - typically the larger of the two.
+   * <p>The built-in providers for desktop and web honor both motor channels independently.
+   * Implementations targeting single-motor hardware may collapse the two intensities to a single
+   * value, typically the larger of the two.
    *
    * @param slot Slot index between {@code 0} and {@link FlixelGamepadManager#MAX_GAMEPADS} exclusive.
    * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.

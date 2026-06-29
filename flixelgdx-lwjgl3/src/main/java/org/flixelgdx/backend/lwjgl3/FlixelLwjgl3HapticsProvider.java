@@ -40,7 +40,7 @@ import java.lang.reflect.Field;
  * high-frequency (right) motor channels.
  *
  * <p>This provider is installed automatically by {@link FlixelLwjgl3Launcher} and replaces the
- * default {@link org.flixelgdx.input.gamepad.FlixelDefaultHapticsProvider}. You do not need to
+ * default {@code org.flixelgdx.input.gamepad.FlixelDefaultHapticsProvider}. You do not need to
  * install it manually.
  *
  * <h2>Fallback behavior</h2>
