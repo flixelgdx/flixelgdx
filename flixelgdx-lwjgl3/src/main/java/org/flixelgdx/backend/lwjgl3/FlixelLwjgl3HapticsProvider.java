@@ -24,7 +24,6 @@
 package org.flixelgdx.backend.lwjgl3;
 
 import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.controllers.desktop.support.JamepadController;
 import com.studiohartman.jamepad.ControllerIndex;
 import com.studiohartman.jamepad.ControllerUnpluggedException;
