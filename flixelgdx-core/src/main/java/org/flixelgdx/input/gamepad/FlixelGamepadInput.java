@@ -140,9 +140,6 @@ public final class FlixelGamepadInput {
     if (logicalButton == DPAD_RIGHT) {
       return m.buttonDpadRight;
     }
-    if (logicalButton == C || logicalButton == Z || logicalButton == CIRCLE || logicalButton == MODE) {
-      return ControllerMapping.UNDEFINED;
-    }
     return ControllerMapping.UNDEFINED;
   }
 

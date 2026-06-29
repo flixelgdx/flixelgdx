@@ -84,8 +84,8 @@ import java.util.Objects;
  * // If you group all of your atlas files in individual folders, you can
  * // also just provide a path to a folder and the paths will be automatically
  * // loaded for you!
- * FlixelAnimateSprite.defaultSpritemapName = "customSpritemapName";
- * FlixelAnimateSprite.defaultSpritemapName = "customAnimationName";
+ * FlixelAnimateSprite.defaultSpritemapFileName = "customSpritemapName";
+ * FlixelAnimateSprite.defaultAnimationFileName = "customAnimationName";
  *
  * FlixelAnimateSprite fas = new FlixelAnimateSprite();
  * fas.addSpritemapAndAnimation("path/to/atlas/folder");
@@ -100,15 +100,15 @@ import java.util.Objects;
  *
  * <h2>Mixing in a Sparrow atlas</h2>
  * A character can also carry Sparrow XML clips on the same body via
- * {@link FlixelAnimationController#addSparrowAtlas(String)}. Rig clips keep rendering from the baked
+ * {@link FlixelAnimationController#addSparrowFrames(String)}. Rig clips keep rendering from the baked
  * rig; clips registered against the merged Sparrow frames render through the standard frame path, and
  * the sprite picks the right one per clip automatically.
  *
  * @see #addSpritemapAndAnimation(String)
  * @see #addSpritemapAndAnimation(String, String, String)
- * @see FlixelAnimationController#addSparrowAtlas(String)
- * @see #defaultSpritemapName
- * @see #defaultAnimationName
+ * @see FlixelAnimationController#addSparrowFrames(String)
+ * @see #defaultSpritemapFileName
+ * @see #defaultAnimationFileName
  */
 public class FlixelAnimateSprite extends FlixelSprite {
 
@@ -118,7 +118,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * include an extension, as it's already handled for you. Default value is {@code "spritemap1"}.
    */
   @NotNull
-  public static String defaultSpritemapName = "spritemap1";
+  public static String defaultSpritemapFileName = "spritemap1";
 
   /**
    * The default file name for every animation {@code .json} data
@@ -126,7 +126,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * include {@code .json} at the end, as the loader does it for you. Default value is {@code "Animation"}.
    */
   @NotNull
-  public static String defaultAnimationName = "Animation";
+  public static String defaultAnimationFileName = "Animation";
 
   /**
    * The rig that drives this sprite's rendering. {@code null} until
@@ -136,7 +136,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   private FlixelAnimateRig rig;
 
   /**
-   * Preallocated affine reused by {@link #draw(Batch)} so we never allocate on the hot path. At the
+   * Preallocated affine reused by {@link #draw(FlixelBatch)} so we never allocate on the hot path. At the
    * start of each draw call it is set to a translate, rotate, scale, and origin pivot composing the
    * sprite's world transform; each part's baked affine is then post-multiplied into {@link #drawAffine}
    * for the {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call.
@@ -178,18 +178,18 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @param path The directory where all three core files are stored. Must be a directory.
    * @return {@code this} sprite, for chaining.
    * @throws IllegalArgumentException If the provided path isn't a real directory.
-   * @throws NullPointerException If either {@link #defaultSpritemapName} or {@link #defaultAnimationName}
+   * @throws NullPointerException If either {@link #defaultSpritemapFileName} or {@link #defaultAnimationFileName}
    *     are {@code null}.
-   * @see #defaultSpritemapName
-   * @see #defaultAnimationName
+   * @see #defaultSpritemapFileName
+   * @see #defaultAnimationFileName
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(String path) {
-    Objects.requireNonNull(defaultSpritemapName, "defaultSpritemapName cannot be null.");
-    Objects.requireNonNull(defaultAnimationName, "defaultAnimationName cannot be null.");
-    String pngPath = path + "/" + defaultSpritemapName + ".png";
-    String spritemapJsonPath = path + "/" + defaultSpritemapName + ".json";
-    String animationJsonPath = path + "/" + defaultAnimationName + ".json";
+    Objects.requireNonNull(defaultSpritemapFileName, "defaultSpritemapName cannot be null.");
+    Objects.requireNonNull(defaultAnimationFileName, "defaultAnimationName cannot be null.");
+    String pngPath = path + "/" + defaultSpritemapFileName + ".png";
+    String spritemapJsonPath = path + "/" + defaultSpritemapFileName + ".json";
+    String animationJsonPath = path + "/" + defaultAnimationFileName + ".json";
     if (!Gdx.files.internal(pngPath).exists()
         || !Gdx.files.internal(spritemapJsonPath).exists()
         || !Gdx.files.internal(animationJsonPath).exists()) {
@@ -208,10 +208,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @param path The directory handle where all three core files are stored. Must be a directory.
    * @return {@code this} sprite, for chaining.
    * @throws IllegalArgumentException If the provided path isn't a real directory.
-   * @throws NullPointerException If either {@link #defaultSpritemapName} or {@link #defaultAnimationName}
+   * @throws NullPointerException If either {@link #defaultSpritemapFileName} or {@link #defaultAnimationFileName}
    *     are {@code null}.
-   * @see #defaultSpritemapName
-   * @see #defaultAnimationName
+   * @see #defaultSpritemapFileName
+   * @see #defaultAnimationFileName
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(@NotNull FileHandle path) {
@@ -589,7 +589,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * Sparrow frame so switching from a Sparrow clip to a rig clip does not flash stale art). For a
    * Sparrow or simple-atlas clip the callback falls through to the normal
    * {@link FlixelSprite#setCurrentFrameForAnimation} path, which is what lets a Sparrow sheet merged
-   * with {@link FlixelAnimationController#addSparrowAtlas(String)} share the same sprite as the rig.
+   * with {@link FlixelAnimationController#addSparrowFrames(String)} share the same sprite as the rig.
    *
    * @param frame The frame being advanced to by {@link FlixelAnimationController}; ignored while a
    *   rig clip is playing.
@@ -640,8 +640,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
    *
    * <p>Unlike {@link FlixelSprite#updateHitbox}, this method does <strong>not</strong> reset
    * {@link #setScale(float)} back to {@code 1}. The rig's part affines are baked at anchor-local size,
-   * so the absolute scale must remain on the sprite for the {@link #draw(Batch)} matrix chain to
-   * size the visible rig correctly. The {@link #draw(Batch)} method is fully aware of this and uses
+   * so the absolute scale must remain on the sprite for the {@link #draw(FlixelBatch)} matrix chain to
+   * size the visible rig correctly. The {@link #draw(FlixelBatch)} method is fully aware of this and uses
    * {@link #getOriginX()} / {@link #getOriginY()} together with {@code |scaleX|} / {@code |scaleY|}
    * so the visible rig still coincides with the hitbox.
    *

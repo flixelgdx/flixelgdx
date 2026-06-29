@@ -176,6 +176,7 @@ public class FlixelLwjgl3Launcher {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
+    Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
     new Lwjgl3Application(game, configuration);

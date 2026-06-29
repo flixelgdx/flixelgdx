@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
@@ -88,6 +89,9 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   @Nullable
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
+
+  @NotNull
+  private FlixelHapticsProvider hapticsProvider = new FlixelDefaultHapticsProvider(this);
 
   /**
    * Whether the gamepad system is active. When {@code false}, all queries return inactive state and no hardware is
@@ -261,6 +265,13 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return w;
   }
 
+  /**
+   * Returns {@code true} when any active gamepad currently holds the given button.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}, such as
+   *     {@link FlixelGamepadInput#A}.
+   * @return {@code true} when at least one gamepad is pressing the button this frame.
+   */
   public boolean anyPressed(int logicalButton) {
     if (!enabled) {
       return false;
@@ -273,6 +284,12 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
+  /**
+   * Returns {@code true} when any active gamepad first pressed the given button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} when at least one gamepad transitioned to pressed this frame.
+   */
   public boolean anyJustPressed(int logicalButton) {
     if (!enabled) {
       return false;
@@ -285,6 +302,12 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
+  /**
+   * Returns {@code true} when any active gamepad released the given button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} when at least one gamepad transitioned to released this frame.
+   */
   public boolean anyJustReleased(int logicalButton) {
     if (!enabled) {
       return false;
@@ -297,6 +320,12 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
+  /**
+   * Returns {@code true} when any active gamepad has a button pressed or an analog input beyond the
+   * dead zone this frame.
+   *
+   * @return {@code true} when at least one gamepad is producing input.
+   */
   public boolean anyInput() {
     if (!enabled) {
       return false;
@@ -309,6 +338,12 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
+  /**
+   * Returns {@code true} when any active gamepad is moving a left or right stick horizontally beyond
+   * the dead zone this frame.
+   *
+   * @return {@code true} when at least one gamepad has horizontal stick movement.
+   */
   public boolean anyMovedXAxis() {
     if (!enabled) {
       return false;
@@ -325,6 +360,12 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
+  /**
+   * Returns {@code true} when any active gamepad is moving a left or right stick vertically beyond
+   * the dead zone this frame.
+   *
+   * @return {@code true} when at least one gamepad has vertical stick movement.
+   */
   public boolean anyMovedYAxis() {
     if (!enabled) {
       return false;
@@ -341,6 +382,16 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return false;
   }
 
+  /**
+   * Returns {@code true} when the given slot is currently pressing the given button.
+   *
+   * <p>Pass {@link FlixelGamepadInput#ANY} as the button to check whether the slot has any
+   * button pressed or meaningful analog movement this frame.
+   *
+   * @param gamepadId Slot index.
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} when that button is pressed on the given slot this frame.
+   */
   public boolean pressed(int gamepadId, int logicalButton) {
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return false;
@@ -361,6 +412,14 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return currentButtons[gamepadId][nativeCode];
   }
 
+  /**
+   * Returns {@code true} when the given slot first pressed the button this frame (was not pressed
+   * last frame).
+   *
+   * @param gamepadId Slot index.
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} on the first frame the button is pressed.
+   */
   public boolean justPressed(int gamepadId, int logicalButton) {
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return false;
@@ -389,6 +448,14 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return currentButtons[gamepadId][nativeCode] && !previousButtons[gamepadId][nativeCode];
   }
 
+  /**
+   * Returns {@code true} when the given slot released the button this frame (was pressed last
+   * frame, not pressed now).
+   *
+   * @param gamepadId Slot index.
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} on the first frame the button is no longer pressed.
+   */
   public boolean justReleased(int gamepadId, int logicalButton) {
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return false;
@@ -417,6 +484,15 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return !currentButtons[gamepadId][nativeCode] && previousButtons[gamepadId][nativeCode];
   }
 
+  /**
+   * Returns the current value of a logical axis on the given slot, after applying the global dead
+   * zone. Returns {@code 0f} when the value is within the dead zone or the slot is out of range.
+   *
+   * @param gamepadId Slot index.
+   * @param logicalAxis A logical axis constant from {@link FlixelGamepadInput}, such as
+   *     {@link FlixelGamepadInput#AXIS_LEFT_X}.
+   * @return Axis value in the range {@code [-1, 1]}, or {@code 0f} when inactive.
+   */
   public float getAxis(int gamepadId, int logicalAxis) {
     float v = getAxisRaw(gamepadId, logicalAxis);
     float dz = deadZoneValue();
@@ -435,8 +511,112 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return m != null ? m : FlixelGamepadModel.UNKNOWN;
   }
 
+  /**
+   * Replaces the haptics backend used by all vibration calls on this manager.
+   *
+   * <p>Each platform launcher installs a provider automatically: {@code FlixelLwjgl3Launcher}
+   * installs {@code FlixelLwjgl3HapticsProvider} (Jamepad/SDL, true dual-motor), and
+   * {@code FlixelTeaVMLauncher} installs {@code FlixelTeaVMHapticsProvider} (W3C Gamepad Haptics
+   * API, true dual-motor). Only override this when you need platform-specific features that the
+   * built-in providers do not cover, such as DualSense adaptive triggers or haptic patterns.
+   *
+   * @param provider Non-null replacement provider.
+   * @throws NullPointerException If {@code provider} is {@code null}.
+   */
+  public void setHapticsProvider(@NotNull FlixelHapticsProvider provider) {
+    hapticsProvider = Objects.requireNonNull(provider, "provider cannot be null.");
+  }
+
+  /**
+   * Returns whether the controller in the given slot reports vibration support.
+   *
+   * @param slot Slot index.
+   * @return {@code true} when the system is enabled, the slot is in range, and the hardware
+   *     reports haptics capability.
+   */
+  public boolean canVibrate(int slot) {
+    if (!enabled || slot < 0 || slot >= numActiveGamepads) {
+      return false;
+    }
+    return hapticsProvider.canVibrate(slot);
+  }
+
+  /**
+   * Vibrates the controller in the given slot at full intensity on both motors for the given
+   * duration.
+   *
+   * <pre>{@code
+   * // Short full-strength rumble on the first controller.
+   * Flixel.gamepads.vibrate(0, 0.3f);
+   * }</pre>
+   *
+   * @param slot Slot index.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(int slot, float durationSecs) {
+    vibrate(slot, 1f, 1f, durationSecs);
+  }
+
+  /**
+   * Vibrates the controller in the given slot at the given intensity on both motors.
+   *
+   * @param slot Slot index.
+   * @param intensity Motor strength in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(int slot, float intensity, float durationSecs) {
+    vibrate(slot, intensity, intensity, durationSecs);
+  }
+
+  /**
+   * Vibrates the controller in the given slot with independent left and right motor intensities.
+   *
+   * <pre>{@code
+   * // Rumble only the left (low-frequency) motor at half strength for half a second.
+   * Flixel.gamepads.vibrate(0, 0.5f, 0f, 0.5f);
+   * }</pre>
+   *
+   * @param slot Slot index.
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(int slot, float leftIntensity, float rightIntensity, float durationSecs) {
+    if (!enabled || slot < 0 || slot >= numActiveGamepads) {
+      return;
+    }
+    hapticsProvider.vibrate(slot, leftIntensity, rightIntensity, durationSecs);
+  }
+
+  /**
+   * Stops any active vibration on the controller in the given slot immediately.
+   *
+   * @param slot Slot index.
+   */
+  public void stopVibration(int slot) {
+    if (!enabled || slot < 0 || slot >= numActiveGamepads) {
+      return;
+    }
+    hapticsProvider.stopVibration(slot);
+  }
+
   boolean isSlotConnected(int id) {
     return id >= 0 && id < numActiveGamepads && slotController[id] != null;
+  }
+
+  /**
+   * Returns the raw, underlying gdx-controllers {@link Controller} object at the given index.
+   *
+   * @param slot Slot index.
+   * @return The gdx-controllers {@link Controller} object from the provided index, or {@code null}
+   *     if it could not be found.
+   */
+  @Nullable
+  public Controller controllerAt(int slot) {
+    if (slot < 0 || slot >= MAX_GAMEPADS) {
+      return null;
+    }
+    return slotController[slot];
   }
 
   @Override
@@ -578,7 +758,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return 0f;
     }
     int nat = FlixelGamepadInput.logicalAxisToNative(c, logicalAxis);
-    if (nat == ControllerMapping.UNDEFINED || nat < 0 || nat >= MAX_AXES) {
+    if (nat < 0 || nat >= MAX_AXES) {
       return 0f;
     }
     return axisValues[gamepadId][nat];

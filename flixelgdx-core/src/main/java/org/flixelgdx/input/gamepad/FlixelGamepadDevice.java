@@ -69,26 +69,107 @@ public final class FlixelGamepadDevice {
     return manager.getDetectedModel(id);
   }
 
+  /**
+   * Returns {@code true} when this controller is currently pressing the given button.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} when the button is held this frame.
+   */
   public boolean pressed(int logicalButton) {
     return manager.pressed(id, logicalButton);
   }
 
+  /**
+   * Returns {@code true} when this controller first pressed the button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} on the first frame the button is pressed.
+   */
   public boolean justPressed(int logicalButton) {
     return manager.justPressed(id, logicalButton);
   }
 
+  /**
+   * Returns {@code true} when this controller released the button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} on the first frame the button is no longer pressed.
+   */
   public boolean justReleased(int logicalButton) {
     return manager.justReleased(id, logicalButton);
   }
 
+  /**
+   * Returns whether this controller reports vibration support.
+   *
+   * @return {@code true} when connected and the hardware supports vibration.
+   */
+  public boolean canVibrate() {
+    return manager.canVibrate(id);
+  }
+
+  /**
+   * Vibrates this controller at full intensity on both motors for the given duration.
+   *
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float durationSecs) {
+    manager.vibrate(id, durationSecs);
+  }
+
+  /**
+   * Vibrates this controller at the given intensity on both motors.
+   *
+   * @param intensity Motor strength in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float intensity, float durationSecs) {
+    manager.vibrate(id, intensity, durationSecs);
+  }
+
+  /**
+   * Vibrates this controller with independent left and right motor intensities.
+   *
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float leftIntensity, float rightIntensity, float durationSecs) {
+    manager.vibrate(id, leftIntensity, rightIntensity, durationSecs);
+  }
+
+  /**
+   * Stops any active vibration on this controller immediately.
+   */
+  public void stopVibration() {
+    manager.stopVibration(id);
+  }
+
+  /**
+   * Returns the current value of a logical axis on this controller, after dead-zone processing.
+   *
+   * @param logicalAxis A logical axis constant from {@link FlixelGamepadInput}.
+   * @return Axis value in the range {@code [-1, 1]}, or {@code 0f} when inactive or within the
+   *     dead zone.
+   */
   public float getAxis(int logicalAxis) {
     return manager.getAxis(id, logicalAxis);
   }
 
+  /**
+   * Shorthand for the left stick horizontal axis ({@link FlixelGamepadInput#AXIS_LEFT_X}).
+   *
+   * @return Horizontal axis value in the range {@code [-1, 1]}.
+   */
   public float getXAxis() {
     return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_X);
   }
 
+  /**
+   * Shorthand for the left stick vertical axis ({@link FlixelGamepadInput#AXIS_LEFT_Y}).
+   *
+   * @return Vertical axis value in the range {@code [-1, 1]}.
+   */
   public float getYAxis() {
     return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_Y);
   }

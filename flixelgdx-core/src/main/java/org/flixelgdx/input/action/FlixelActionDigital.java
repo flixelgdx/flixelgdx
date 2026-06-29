@@ -43,9 +43,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <ul>
  *   <li>{@link #pressed()} while a key is held (sustains, movement gates).</li>
- *   <li>{@link #justPressed()} or {@link #check()} for a single-frame edge (tap notes, menu confirm).</li>
+ *   <li>{@link #justPressed()} for a single-frame edge (tap notes, menu confirm).</li>
  *   <li>{@link #justReleased()} when the player releases after a hold.</li>
- *   <li>{@link #repeated()} for hold-repeating navigation: fires on the initial press, then fires
+ *   <li>{@link #held()} for hold-repeating navigation: fires on the initial press, then fires
  *       again after {@link FlixelAction#getHoldDelay()} seconds, then every {@link FlixelAction#getHoldInterval()}
  *       seconds while held. Replaces a manual {@code justPressed()} check when autorepeat is needed.</li>
  * </ul>
@@ -68,7 +68,7 @@ public final class FlixelActionDigital extends FlixelAction {
   private float holdAccum;
 
   private boolean holdRepeating;
-  private boolean repeated;
+  private boolean held;
   private boolean pressed;
   private boolean previous;
 
@@ -89,7 +89,7 @@ public final class FlixelActionDigital extends FlixelAction {
   void updateAction(float elapsed) {
     if (!active) {
       pressed = false;
-      repeated = false;
+      held = false;
       holdAccum = 0f;
       holdRepeating = false;
       return;
@@ -112,25 +112,25 @@ public final class FlixelActionDigital extends FlixelAction {
       if (!previous) {
         holdAccum = 0f;
         holdRepeating = false;
-        repeated = true;
+        held = true;
       } else {
         holdAccum += elapsed;
-        repeated = false;
+        held = false;
         if (!holdRepeating) {
           if (holdAccum >= getHoldDelay()) {
             holdAccum -= getHoldDelay();
             holdRepeating = true;
-            repeated = true;
+            held = true;
           }
         } else if (holdAccum >= getHoldInterval()) {
           holdAccum -= getHoldInterval();
-          repeated = true;
+          held = true;
         }
       }
     } else {
       holdAccum = 0f;
       holdRepeating = false;
-      repeated = false;
+      held = false;
     }
   }
 
@@ -145,16 +145,7 @@ public final class FlixelActionDigital extends FlixelAction {
     previous = false;
     holdAccum = 0f;
     holdRepeating = false;
-    repeated = false;
-  }
-
-  /**
-   * Same as {@link #justPressed()}: true for the single frame the action became active.
-   *
-   * @return Whether the action triggered this frame.
-   */
-  public boolean check() {
-    return justPressed();
+    held = false;
   }
 
   public boolean pressed() {
@@ -181,13 +172,13 @@ public final class FlixelActionDigital extends FlixelAction {
    * such as menu scrolling, cursor movement, or incrementing a value:
    *
    * <pre>{@code
-   * if (controls.uiDown.repeated()) scrollMenu();
+   * if (controls.uiDown.held()) scrollMenu();
    * }</pre>
    *
    * @return {@code true} on the initial press frame and on each repeat tick.
    */
-  public boolean repeated() {
-    return active && repeated;
+  public boolean held() {
+    return active && held;
   }
 
   private boolean evalBinding(@NotNull FlixelInputBinding b) {
