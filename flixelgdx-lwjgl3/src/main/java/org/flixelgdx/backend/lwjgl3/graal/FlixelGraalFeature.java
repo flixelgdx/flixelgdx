@@ -23,8 +23,11 @@
  */
 package org.flixelgdx.backend.lwjgl3.graal;
 
+import com.badlogic.gdx.controllers.desktop.support.JamepadController;
+
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.lwjgl.system.CallbackI;
 
 import games.rednblack.miniaudio.MiniAudio;
@@ -71,6 +74,7 @@ public class FlixelGraalFeature implements Feature {
     try {
       registerImGui();
       registerMiniAudio();
+      registerJamepad();
     } catch (NoSuchFieldException | NoSuchMethodException e) {
       // A missing entry means a library version change introduced or removed a field/method.
       // The build will not fail here, but the resulting binary may crash at the call site.
@@ -132,6 +136,18 @@ public class FlixelGraalFeature implements Feature {
         .register(ImPlatformFuncViewportSuppImVec2.class.getDeclaredMethod("get", ImGuiViewport.class, ImVec2.class));
     RuntimeJNIAccess.register(ImStrConsumer.class.getDeclaredMethod("accept", String.class));
     RuntimeJNIAccess.register(ImStrSupplier.class.getDeclaredMethod("get"));
+  }
+
+  /**
+   * Registers Jamepad reflection entries needed by {@link org.flixelgdx.backend.lwjgl3.FlixelLwjgl3HapticsProvider}.
+   *
+   * <p>{@code FlixelLwjgl3HapticsProvider} reads the private {@code controllerIndex} field from
+   * {@link JamepadController} to call {@code ControllerIndex.doVibration} directly for true
+   * independent dual-motor vibration. Without this registration, GraalVM native image discards
+   * the field and the reflective read fails at runtime.
+   */
+  private void registerJamepad() throws NoSuchFieldException {
+    RuntimeReflection.register(JamepadController.class.getDeclaredField("controllerIndex"));
   }
 
   /**
