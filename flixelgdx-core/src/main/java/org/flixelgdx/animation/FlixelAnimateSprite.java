@@ -84,8 +84,8 @@ import java.util.Objects;
  * // If you group all of your atlas files in individual folders, you can
  * // also just provide a path to a folder and the paths will be automatically
  * // loaded for you!
- * FlixelAnimateSprite.defaultSpritemapName = "customSpritemapName";
- * FlixelAnimateSprite.defaultSpritemapName = "customAnimationName";
+ * FlixelAnimateSprite.defaultSpritemapFileName = "customSpritemapName";
+ * FlixelAnimateSprite.defaultAnimationFileName = "customAnimationName";
  *
  * FlixelAnimateSprite fas = new FlixelAnimateSprite();
  * fas.addSpritemapAndAnimation("path/to/atlas/folder");
@@ -107,8 +107,8 @@ import java.util.Objects;
  * @see #addSpritemapAndAnimation(String)
  * @see #addSpritemapAndAnimation(String, String, String)
  * @see FlixelAnimationController#addSparrowAtlas(String)
- * @see #defaultSpritemapName
- * @see #defaultAnimationName
+ * @see #defaultSpritemapFileName
+ * @see #defaultAnimationFileName
  */
 public class FlixelAnimateSprite extends FlixelSprite {
 
@@ -118,7 +118,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * include an extension, as it's already handled for you. Default value is {@code "spritemap1"}.
    */
   @NotNull
-  public static String defaultSpritemapName = "spritemap1";
+  public static String defaultSpritemapFileName = "spritemap1";
 
   /**
    * The default file name for every animation {@code .json} data
@@ -126,7 +126,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * include {@code .json} at the end, as the loader does it for you. Default value is {@code "Animation"}.
    */
   @NotNull
-  public static String defaultAnimationName = "Animation";
+  public static String defaultAnimationFileName = "Animation";
 
   /**
    * The rig that drives this sprite's rendering. {@code null} until
@@ -178,18 +178,18 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @param path The directory where all three core files are stored. Must be a directory.
    * @return {@code this} sprite, for chaining.
    * @throws IllegalArgumentException If the provided path isn't a real directory.
-   * @throws NullPointerException If either {@link #defaultSpritemapName} or {@link #defaultAnimationName}
+   * @throws NullPointerException If either {@link #defaultSpritemapFileName} or {@link #defaultAnimationFileName}
    *     are {@code null}.
-   * @see #defaultSpritemapName
-   * @see #defaultAnimationName
+   * @see #defaultSpritemapFileName
+   * @see #defaultAnimationFileName
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(String path) {
-    Objects.requireNonNull(defaultSpritemapName, "defaultSpritemapName cannot be null.");
-    Objects.requireNonNull(defaultAnimationName, "defaultAnimationName cannot be null.");
-    String pngPath = path + "/" + defaultSpritemapName + ".png";
-    String spritemapJsonPath = path + "/" + defaultSpritemapName + ".json";
-    String animationJsonPath = path + "/" + defaultAnimationName + ".json";
+    Objects.requireNonNull(defaultSpritemapFileName, "defaultSpritemapName cannot be null.");
+    Objects.requireNonNull(defaultAnimationFileName, "defaultAnimationName cannot be null.");
+    String pngPath = path + "/" + defaultSpritemapFileName + ".png";
+    String spritemapJsonPath = path + "/" + defaultSpritemapFileName + ".json";
+    String animationJsonPath = path + "/" + defaultAnimationFileName + ".json";
     if (!Gdx.files.internal(pngPath).exists()
         || !Gdx.files.internal(spritemapJsonPath).exists()
         || !Gdx.files.internal(animationJsonPath).exists()) {
@@ -208,10 +208,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @param path The directory handle where all three core files are stored. Must be a directory.
    * @return {@code this} sprite, for chaining.
    * @throws IllegalArgumentException If the provided path isn't a real directory.
-   * @throws NullPointerException If either {@link #defaultSpritemapName} or {@link #defaultAnimationName}
+   * @throws NullPointerException If either {@link #defaultSpritemapFileName} or {@link #defaultAnimationFileName}
    *     are {@code null}.
-   * @see #defaultSpritemapName
-   * @see #defaultAnimationName
+   * @see #defaultSpritemapFileName
+   * @see #defaultAnimationFileName
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(@NotNull FileHandle path) {
