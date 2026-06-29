@@ -604,8 +604,15 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return id >= 0 && id < numActiveGamepads && slotController[id] != null;
   }
 
+  /**
+   * Returns the raw, underlying gdx-controllers {@link Controller} object at the given index.
+   *
+   * @param slot Slot index.
+   * @return The gdx-controllers {@link Controller} object from the provided index, or {@code null}
+   *     if it could not be found.
+   */
   @Nullable
-  Controller controllerAt(int slot) {
+  public Controller controllerAt(int slot) {
     if (slot < 0 || slot >= MAX_GAMEPADS) {
       return null;
     }
@@ -751,7 +758,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return 0f;
     }
     int nat = FlixelGamepadInput.logicalAxisToNative(c, logicalAxis);
-    if (nat == ControllerMapping.UNDEFINED || nat < 0 || nat >= MAX_AXES) {
+    if (nat < 0 || nat >= MAX_AXES) {
       return 0f;
     }
     return axisValues[gamepadId][nat];

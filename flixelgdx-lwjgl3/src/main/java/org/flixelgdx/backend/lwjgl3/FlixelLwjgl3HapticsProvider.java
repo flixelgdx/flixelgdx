@@ -29,6 +29,7 @@ import com.badlogic.gdx.controllers.desktop.support.JamepadController;
 import com.studiohartman.jamepad.ControllerIndex;
 import com.studiohartman.jamepad.ControllerUnpluggedException;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
 
 import java.lang.reflect.Field;
@@ -76,7 +77,7 @@ final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
       }
       return;
     }
-    Controller c = controllerAt(slot);
+    Controller c = Flixel.gamepads.controllerAt(slot);
     if (c != null && c.canVibrate()) {
       float peak = Math.max(0f, Math.min(1f, Math.max(leftIntensity, rightIntensity)));
       c.startVibration((int) (durationSecs * 1000f), peak);
@@ -85,7 +86,7 @@ final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
 
   @Override
   public void stopVibration(int slot) {
-    Controller c = controllerAt(slot);
+    Controller c = Flixel.gamepads.controllerAt(slot);
     if (c != null) {
       c.cancelVibration();
     }
@@ -93,22 +94,15 @@ final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
 
   @Override
   public boolean canVibrate(int slot) {
-    Controller c = controllerAt(slot);
+    Controller c = Flixel.gamepads.controllerAt(slot);
     return c != null && c.canVibrate();
-  }
-
-  private static Controller controllerAt(int slot) {
-    if (slot < 0 || slot >= Controllers.getControllers().size) {
-      return null;
-    }
-    return Controllers.getControllers().get(slot);
   }
 
   private static ControllerIndex indexAt(int slot) {
     if (CONTROLLER_INDEX_FIELD == null) {
       return null;
     }
-    Controller c = controllerAt(slot);
+    Controller c = Flixel.gamepads.controllerAt(slot);
     if (!(c instanceof JamepadController)) {
       return null;
     }
