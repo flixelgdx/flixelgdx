@@ -191,6 +191,7 @@ public class FlixelTeaVMLauncher {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
+    Flixel.gamepads.setHapticsProvider(new FlixelTeaVMHapticsProvider());
 
     Flixel.log.setCanStoreLogs(false);
 

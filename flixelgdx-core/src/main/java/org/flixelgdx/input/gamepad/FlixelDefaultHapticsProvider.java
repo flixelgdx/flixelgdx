@@ -26,18 +26,19 @@ package org.flixelgdx.input.gamepad;
 import com.badlogic.gdx.controllers.Controller;
 
 /**
- * Default {@link FlixelHapticsProvider} backed by gdx-controllers'
+ * Fallback {@link FlixelHapticsProvider} backed by gdx-controllers'
  * {@link Controller#startVibration}.
  *
- * <p>Works on desktop (SDL via {@code gdx-controllers-desktop}) and web (W3C Gamepad API via
- * {@code gdx-controllers-teavm}) without any extra setup. Both platforms expose vibration through
- * the same {@link Controller} interface, so no backend-specific code is needed here.
+ * <p>This implementation is installed automatically at startup, but each backend launcher
+ * immediately replaces it with a platform-specific provider that supports true dual-motor
+ * vibration. On desktop, {@code FlixelLwjgl3HapticsProvider} uses Jamepad's SDL rumble API
+ * directly; on web, {@code FlixelTeaVMHapticsProvider} calls the W3C Gamepad Haptics API.
+ * This class is only used if the game bypasses the standard launchers.
  *
- * <p>Because the underlying API accepts a single unified strength rather than separate motor
- * channels, {@code leftIntensity} and {@code rightIntensity} are collapsed to
- * {@code Math.max(leftIntensity, rightIntensity)} before the call. Both values are clamped to
- * {@code [0, 1]} first. For true independent dual-motor control, supply a custom
- * {@link FlixelHapticsProvider} via {@link FlixelGamepadManager#setHapticsProvider}.
+ * <p>Because {@link Controller#startVibration} accepts a single unified strength rather than
+ * separate motor channels, {@code leftIntensity} and {@code rightIntensity} are collapsed to
+ * {@code Math.max(leftIntensity, rightIntensity)}. Both values are clamped to {@code [0, 1]}
+ * first.
  */
 final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
 

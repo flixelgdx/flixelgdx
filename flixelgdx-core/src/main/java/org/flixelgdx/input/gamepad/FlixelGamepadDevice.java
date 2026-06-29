@@ -69,14 +69,32 @@ public final class FlixelGamepadDevice {
     return manager.getDetectedModel(id);
   }
 
+  /**
+   * Returns {@code true} when this controller is currently pressing the given button.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} when the button is held this frame.
+   */
   public boolean pressed(int logicalButton) {
     return manager.pressed(id, logicalButton);
   }
 
+  /**
+   * Returns {@code true} when this controller first pressed the button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} on the first frame the button is pressed.
+   */
   public boolean justPressed(int logicalButton) {
     return manager.justPressed(id, logicalButton);
   }
 
+  /**
+   * Returns {@code true} when this controller released the button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
+   * @return {@code true} on the first frame the button is no longer pressed.
+   */
   public boolean justReleased(int logicalButton) {
     return manager.justReleased(id, logicalButton);
   }
@@ -127,14 +145,31 @@ public final class FlixelGamepadDevice {
     manager.stopVibration(id);
   }
 
+  /**
+   * Returns the current value of a logical axis on this controller, after dead-zone processing.
+   *
+   * @param logicalAxis A logical axis constant from {@link FlixelGamepadInput}.
+   * @return Axis value in the range {@code [-1, 1]}, or {@code 0f} when inactive or within the
+   *     dead zone.
+   */
   public float getAxis(int logicalAxis) {
     return manager.getAxis(id, logicalAxis);
   }
 
+  /**
+   * Shorthand for the left stick horizontal axis ({@link FlixelGamepadInput#AXIS_LEFT_X}).
+   *
+   * @return Horizontal axis value in the range {@code [-1, 1]}.
+   */
   public float getXAxis() {
     return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_X);
   }
 
+  /**
+   * Shorthand for the left stick vertical axis ({@link FlixelGamepadInput#AXIS_LEFT_Y}).
+   *
+   * @return Vertical axis value in the range {@code [-1, 1]}.
+   */
   public float getYAxis() {
     return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_Y);
   }
