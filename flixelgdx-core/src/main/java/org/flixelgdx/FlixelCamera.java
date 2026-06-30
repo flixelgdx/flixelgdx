@@ -23,6 +23,7 @@
  */
 package org.flixelgdx;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
@@ -36,6 +37,7 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import org.flixelgdx.functional.FlixelColorable;
@@ -341,8 +343,13 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Full constructor allowing fully custom libGDX {@link Camera} and {@link Viewport} types.
    *
    * <p>If {@code viewport} is provided, its camera is used (the {@code camera} parameter is ignored).
-   * If only {@code camera} is provided, it is wrapped in a new {@link FitViewport}.
-   * If neither is provided, an {@link OrthographicCamera} and {@link FitViewport} are created.
+   * If only {@code camera} is provided, it is wrapped in a default viewport.
+   * If neither is provided, an {@link OrthographicCamera} and a default viewport are created.
+   *
+   * <p>The default viewport type is chosen automatically by platform. On desktop and web a
+   * {@link FitViewport} letterboxes the game world to the window. On Android a
+   * {@link ScreenViewport} fills the screen without black bars, adapting the visible area to
+   * the device's native resolution.
    *
    * @param x X location of the camera's display in native screen pixels.
    * @param y Y location of the camera's display in native screen pixels.
@@ -350,7 +357,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param height The height of the camera display in game pixels. {@code 0} = window height.
    * @param zoom The initial zoom level. {@code 0} = {@link #defaultZoom}. {@code 2} = 2x magnification.
    * @param camera Custom libGDX Camera, or {@code null} for a default {@link OrthographicCamera}.
-   * @param viewport Custom libGDX Viewport, or {@code null} for a default {@link FitViewport}.
+   * @param viewport Custom libGDX Viewport, or {@code null} for a platform-appropriate default.
    */
   public FlixelCamera(float x, float y, int width, int height, float zoom, Camera camera, Viewport viewport) {
     super();
@@ -364,10 +371,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       this.camera = viewport.getCamera();
     } else if (camera != null) {
       this.camera = camera;
-      this.viewport = new FitViewport(this.width, this.height, this.camera);
+      this.viewport = buildDefaultViewport(this.width, this.height, this.camera);
     } else {
       this.camera = new OrthographicCamera(this.width, this.height);
-      this.viewport = new FitViewport(this.width, this.height, this.camera);
+      this.viewport = buildDefaultViewport(this.width, this.height, this.camera);
     }
 
     this.zoom = (zoom == 0f) ? defaultZoom : zoom;
@@ -1270,6 +1277,13 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Window width for defaults: {@link Flixel#getViewWidth()} when a game exists, otherwise
    * {@link com.badlogic.gdx.Graphics#getWidth()}.
    */
+  private static Viewport buildDefaultViewport(int width, int height, Camera camera) {
+    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Android) {
+      return new ScreenViewport(camera);
+    }
+    return new FitViewport(width, height, camera);
+  }
+
   private static int resolveWindowWidth() {
     if (Flixel.getGame() != null) {
       return Flixel.getViewWidth();
