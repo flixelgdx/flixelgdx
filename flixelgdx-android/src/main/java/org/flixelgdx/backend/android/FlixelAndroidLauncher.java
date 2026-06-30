@@ -99,9 +99,7 @@ public class FlixelAndroidLauncher {
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
-    // ExtendViewport fills the screen without black bars by extending the visible world area
-    // to match the device's native resolution, rather than letterboxing.
-    FlixelCamera.viewportFactory = (w, h, cam) -> new ExtendViewport(w, h, cam);
+    FlixelCamera.viewportFactory = ExtendViewport::new;
     Flixel.setAlerter(new FlixelAndroidAlerter(activity));
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());

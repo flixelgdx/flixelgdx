@@ -890,9 +890,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       if (ImGui.menuItem("Show Hitboxes", null, drawDebug)) {
         toggleDrawDebug();
       }
-      boolean paused = Flixel.isPaused();
+      boolean paused = Flixel.game.isGamePaused();
       if (ImGui.menuItem("Pause Game", null, paused)) {
-        Flixel.setPaused(!paused);
+        Flixel.game.setGamePaused(!paused);
       }
       if (ImGui.menuItem("Reset State")) {
         Flixel.resetState();
@@ -919,7 +919,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawStatRow("Render calls", cachedRenderCalls);
 
     ImGui.separator();
-    boolean paused = Flixel.isPaused();
+    boolean paused = Flixel.game.isGamePaused();
     text(COLOR_KEY, "Update");
     ImGui.sameLine();
     if (paused) {
@@ -1054,9 +1054,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (ImGui.checkbox("Show hitboxes", drawDebug)) {
       toggleDrawDebug();
     }
-    boolean paused = Flixel.isPaused();
+    boolean paused = Flixel.game.isGamePaused();
     if (ImGui.checkbox("Pause game loop", paused)) {
-      Flixel.setPaused(!paused);
+      Flixel.game.setGamePaused(!paused);
     }
 
     ImGui.separator();

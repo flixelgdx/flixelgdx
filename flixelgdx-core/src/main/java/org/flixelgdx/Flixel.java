@@ -1181,9 +1181,9 @@ public final class Flixel {
    *
    * <p>When cameras are active, this equals the first camera's viewport world width, which
    * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
-   * the launcher installs an {@link com.badlogic.gdx.utils.viewport.ExtendViewport}, the value
-   * is the full screen-filling width rather than the fixed design width. Before any camera is
-   * created, the design width from the {@link FlixelGame} constructor is returned instead.
+   * the launcher installs a libGDX {@link com.badlogic.gdx.utils.viewport.ExtendViewport ExtendViewport},
+   * the value is the full screen-filling width rather than the fixed design width. Before any camera is
+   * created, the initial width from the {@link FlixelGame} constructor is returned instead.
    */
   public static int getWidth() {
     return cameras.isEmpty() ? (int) game.viewSize.x : (int) cameras.first().getWorldWidth();
@@ -1192,39 +1192,25 @@ public final class Flixel {
   /**
    * Returns the visible height of the game world in game pixels.
    *
-   * <p>When cameras are active, this equals the first camera's viewport world height. Before
-   * any camera is created, the design height from the {@link FlixelGame} constructor is returned.
-   *
-   * @see #getWidth()
+   * <p>When cameras are active, this equals the first camera's viewport world height, which
+   * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
+   * the launcher installs a libGDX {@link com.badlogic.gdx.utils.viewport.ExtendViewport ExtendViewport},
+   * the value is the full screen-filling height rather than the fixed design height. Before any camera is
+   * created, the initial height from the {@link FlixelGame} constructor is returned instead.
    */
   public static int getHeight() {
     return cameras.isEmpty() ? (int) game.viewSize.y : (int) cameras.first().getWorldHeight();
   }
 
   /**
-   * Returns the game's design size in game pixels, as set in the {@link FlixelGame} constructor.
+   * Returns the game's initial size in game pixels, as set in the {@link FlixelGame} constructor.
    *
    * <p>Unlike {@link #getWidth()} and {@link #getHeight()}, this always reflects the fixed design
-   * dimensions and is not affected by the active viewport type. The returned {@link Vector2} is
-   * the live internal vector. Do not modify it.
+   * dimensions that were set upon the game's initialization and is not affected by the active viewport
+   * type. The returned {@link Vector2} is the live internal vector. Do not modify it.
    */
   public static Vector2 getSize() {
     return game.viewSize;
-  }
-
-  /**
-   * Whether the game update loop is frozen (debug pause).
-   *
-   * @see FlixelGame#setGamePaused(boolean)
-   */
-  public static boolean isPaused() {
-    return game != null && game.isGamePaused();
-  }
-
-  public static void setPaused(boolean paused) {
-    if (game != null) {
-      game.setGamePaused(paused);
-    }
   }
 
   /**
