@@ -393,6 +393,13 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
       return path;
     }
+    // On Android, MiniAudio reads assets through AAssetManager_open() after setupAndroid()
+    // is called. That API takes a path relative to the assets root, so we return the path
+    // as-is. Extracting to a temp file produces an absolute filesystem path that
+    // AAssetManager cannot find, causing error code -7 (MA_DOES_NOT_EXIST).
+    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Android) {
+      return path;
+    }
     FileHandle handle = Gdx.files.internal(path);
     try {
       File file = handle.file();
