@@ -1176,40 +1176,40 @@ public final class Flixel {
     return state;
   }
 
-  /** Returns the game's design width in game pixels, as set in the {@link FlixelGame} constructor. */
+  /**
+   * Returns the visible width of the game world in game pixels.
+   *
+   * <p>When cameras are active, this equals the first camera's viewport world width, which
+   * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
+   * the launcher installs an {@link com.badlogic.gdx.utils.viewport.ExtendViewport}, the value
+   * is the full screen-filling width rather than the fixed design width. Before any camera is
+   * created, the design width from the {@link FlixelGame} constructor is returned instead.
+   */
   public static int getWidth() {
-    return (int) game.viewSize.x;
+    return cameras.isEmpty() ? (int) game.viewSize.x : (int) cameras.first().getWorldWidth();
   }
 
-  /** Returns the game's design height in game pixels, as set in the {@link FlixelGame} constructor. */
+  /**
+   * Returns the visible height of the game world in game pixels.
+   *
+   * <p>When cameras are active, this equals the first camera's viewport world height. Before
+   * any camera is created, the design height from the {@link FlixelGame} constructor is returned.
+   *
+   * @see #getWidth()
+   */
   public static int getHeight() {
-    return (int) game.viewSize.y;
+    return cameras.isEmpty() ? (int) game.viewSize.y : (int) cameras.first().getWorldHeight();
   }
 
   /**
    * Returns the game's design size in game pixels, as set in the {@link FlixelGame} constructor.
    *
-   * <p>The returned {@link Vector2} is the live internal vector. Do not modify it.
+   * <p>Unlike {@link #getWidth()} and {@link #getHeight()}, this always reflects the fixed design
+   * dimensions and is not affected by the active viewport type. The returned {@link Vector2} is
+   * the live internal vector. Do not modify it.
    */
   public static Vector2 getSize() {
     return game.viewSize;
-  }
-
-  /**
-   * Returns the actual visible width of the primary camera in world units, accounting for zoom
-   * and the viewport type. On Android with the default {@link com.badlogic.gdx.utils.viewport.ExtendViewport},
-   * this is wider than {@link #getWidth()} when the screen ratio exceeds the design ratio.
-   */
-  public static float getVisibleWidth() {
-    return cameras.isEmpty() ? getWidth() : cameras.first().getVisibleWidth();
-  }
-
-  /**
-   * Returns the actual visible height of the primary camera in world units, accounting for zoom
-   * and the viewport type.
-   */
-  public static float getVisibleHeight() {
-    return cameras.isEmpty() ? getHeight() : cameras.first().getVisibleHeight();
   }
 
   /**

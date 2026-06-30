@@ -25,8 +25,10 @@ package org.flixelgdx.backend.android;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
@@ -97,6 +99,9 @@ public class FlixelAndroidLauncher {
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
+    // ExtendViewport fills the screen without black bars by extending the visible world area
+    // to match the device's native resolution, rather than letterboxing.
+    FlixelCamera.viewportFactory = (w, h, cam) -> new ExtendViewport(w, h, cam);
     Flixel.setAlerter(new FlixelAndroidAlerter(activity));
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
