@@ -700,8 +700,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   public FlixelSprite screenCenter(FlixelAxes axes) {
     float halfWidth = getWidth() / 2f;
     float halfHeight = getHeight() / 2f;
-    float halfViewWidth = Flixel.getViewWidth() / 2f;
-    float halfViewHeight = Flixel.getViewHeight() / 2f;
+    float halfViewWidth = Flixel.getWidth() / 2f;
+    float halfViewHeight = Flixel.getHeight() / 2f;
     switch (axes) {
       case X -> setPosition(halfViewWidth - halfWidth, getY());
       case Y -> setPosition(getX(), halfViewHeight - halfHeight);

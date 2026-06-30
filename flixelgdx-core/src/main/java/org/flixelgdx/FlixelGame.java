@@ -1275,15 +1275,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return title;
   }
 
-  public Vector2 getViewSize() {
+  public Vector2 getSize() {
     return viewSize;
   }
 
-  public int getViewWidth() {
+  public int getWidth() {
     return (int) viewSize.x;
   }
 
-  public int getViewHeight() {
+  public int getHeight() {
     return (int) viewSize.y;
   }
 

@@ -446,7 +446,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * The orthographic camera looks at the center of that space ({@code viewW/2, viewH/2}).
    */
   public void applyLibCameraTransform() {
-    // TODO: Find a way to avoid having to do explicit casting.
+    // TODO: Find a way to avoid explicit casting.
     if (camera instanceof OrthographicCamera ortho) {
       ortho.up.set(0, 1, 0);
       ortho.direction.set(0, 0, -1);
@@ -856,7 +856,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float a = fillColor.a * fxAlpha;
     // Use the viewport's actual world dimensions rather than the design dimensions so that
     // viewports like ExtendViewport which extend the visible area beyond the design size
-    // are fully covered. camera.position is in view space (getViewWidth/2 + shake offset),
+    // are fully covered. camera.position is in view space (getVisibleWidth/2 + shake offset),
     // so the fill rect is derived from it to stay correctly anchored.
     float fw = viewport.getWorldWidth() / zoom;
     float fh = viewport.getWorldHeight() / zoom;
@@ -1289,7 +1289,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Window width for defaults: {@link Flixel#getViewWidth()} when a game exists, otherwise
+   * Window width for defaults: {@link Flixel#getWidth()} when a game exists, otherwise
    * {@link com.badlogic.gdx.Graphics#getWidth()}.
    */
   private static Viewport buildDefaultViewport(int width, int height, Camera camera) {
@@ -1304,7 +1304,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   private static int resolveWindowWidth() {
     if (Flixel.getGame() != null) {
-      return Flixel.getViewWidth();
+      return Flixel.getWidth();
     }
     if (Gdx.graphics != null) {
       return Math.max(1, Gdx.graphics.getWidth());
@@ -1313,12 +1313,12 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Window height for defaults: {@link Flixel#getViewHeight()} when a game exists, otherwise
+   * Window height for defaults: {@link Flixel#getHeight()} when a game exists, otherwise
    * {@link com.badlogic.gdx.Graphics#getHeight()}.
    */
   private static int resolveWindowHeight() {
     if (Flixel.getGame() != null) {
-      return Flixel.getViewHeight();
+      return Flixel.getHeight();
     }
     if (Gdx.graphics != null) {
       return Math.max(1, Gdx.graphics.getHeight());
@@ -1509,6 +1509,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the visible width of the camera's view in world units, accounting for the current
    * zoom level ({@code width / zoom}).
+   *
+   * <p>This is based on the camera's design width. For the actual screen-filling visible area
+   * when using a viewport that extends beyond the design dimensions (such as
+   * {@link com.badlogic.gdx.utils.viewport.ExtendViewport}), use {@link #getVisibleWidth()}.
    */
   public float getViewWidth() {
     return width / zoom;
@@ -1517,9 +1521,37 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the visible height of the camera's view in world units, accounting for the current
    * zoom level ({@code height / zoom}).
+   *
+   * <p>This is based on the camera's design height. For the actual screen-filling visible area
+   * when using a viewport that extends beyond the design dimensions (such as
+   * {@link com.badlogic.gdx.utils.viewport.ExtendViewport}), use {@link #getVisibleHeight()}.
    */
   public float getViewHeight() {
     return height / zoom;
+  }
+
+  /**
+   * Returns the actual visible width of this camera in world units, accounting for both the
+   * current zoom level and any extension applied by the active viewport.
+   *
+   * <p>For {@link com.badlogic.gdx.utils.viewport.FitViewport} this equals {@link #getViewWidth()}.
+   * For {@link com.badlogic.gdx.utils.viewport.ExtendViewport} on a wider screen (such as Android),
+   * this returns the full extended width so that content can be correctly positioned at screen edges.
+   */
+  public float getVisibleWidth() {
+    return viewport.getWorldWidth() / zoom;
+  }
+
+  /**
+   * Returns the actual visible height of this camera in world units, accounting for both the
+   * current zoom level and any extension applied by the active viewport.
+   *
+   * <p>For {@link com.badlogic.gdx.utils.viewport.FitViewport} this equals {@link #getViewHeight()}.
+   * For {@link com.badlogic.gdx.utils.viewport.ExtendViewport} on a taller screen, this returns
+   * the full extended height.
+   */
+  public float getVisibleHeight() {
+    return viewport.getWorldHeight() / zoom;
   }
 
   /**

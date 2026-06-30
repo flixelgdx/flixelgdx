@@ -1176,16 +1176,40 @@ public final class Flixel {
     return state;
   }
 
-  public static int getViewWidth() {
+  /** Returns the game's design width in game pixels, as set in the {@link FlixelGame} constructor. */
+  public static int getWidth() {
     return (int) game.viewSize.x;
   }
 
-  public static int getViewHeight() {
+  /** Returns the game's design height in game pixels, as set in the {@link FlixelGame} constructor. */
+  public static int getHeight() {
     return (int) game.viewSize.y;
   }
 
-  public static Vector2 getViewSize() {
+  /**
+   * Returns the game's design size in game pixels, as set in the {@link FlixelGame} constructor.
+   *
+   * <p>The returned {@link Vector2} is the live internal vector. Do not modify it.
+   */
+  public static Vector2 getSize() {
     return game.viewSize;
+  }
+
+  /**
+   * Returns the actual visible width of the primary camera in world units, accounting for zoom
+   * and the viewport type. On Android with the default {@link com.badlogic.gdx.utils.viewport.ExtendViewport},
+   * this is wider than {@link #getWidth()} when the screen ratio exceeds the design ratio.
+   */
+  public static float getVisibleWidth() {
+    return cameras.isEmpty() ? getWidth() : cameras.first().getVisibleWidth();
+  }
+
+  /**
+   * Returns the actual visible height of the primary camera in world units, accounting for zoom
+   * and the viewport type.
+   */
+  public static float getVisibleHeight() {
+    return cameras.isEmpty() ? getHeight() : cameras.first().getVisibleHeight();
   }
 
   /**
