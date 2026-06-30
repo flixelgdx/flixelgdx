@@ -854,17 +854,25 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float g = fillColor.g;
     float b = fillColor.b;
     float a = fillColor.a * fxAlpha;
+    // Use the viewport's actual world dimensions rather than the design dimensions so that
+    // viewports like ExtendViewport which extend the visible area beyond the design size
+    // are fully covered. camera.position is in view space (getViewWidth/2 + shake offset),
+    // so the fill rect is derived from it to stay correctly anchored.
+    float fw = viewport.getWorldWidth() / zoom;
+    float fh = viewport.getWorldHeight() / zoom;
+    float fx = camera.position.x - fw / 2f;
+    float fy = camera.position.y - fh / 2f;
     if (blendAlpha) {
       if (a <= 0f) {
         return;
       }
       batch.setColor(r, g, b, a);
-      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, fx, fy, fw, fh);
     } else {
       boolean wasBlending = batch.isBlendingEnabled();
       batch.disableBlending();
       batch.setColor(r, g, b, a);
-      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, fx, fy, fw, fh);
       if (wasBlending) {
         batch.enableBlending();
       }
@@ -880,13 +888,20 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param whitePixel A 1x1 white {@link Texture} used for color drawing.
    */
   public void drawFX(Batch batch, Texture whitePixel) {
+    if ((!flashActive || flashAlpha <= 0f) && !fadeActive && fadeAlpha <= 0f) {
+      return;
+    }
+    float fw = viewport.getWorldWidth() / zoom;
+    float fh = viewport.getWorldHeight() / zoom;
+    float fx = camera.position.x - fw / 2f;
+    float fy = camera.position.y - fh / 2f;
     if (flashActive && flashAlpha > 0f) {
       batch.setColor(flashColor.r, flashColor.g, flashColor.b, flashAlpha * alpha);
-      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, fx, fy, fw, fh);
     }
     if (fadeActive || fadeAlpha > 0f) {
       batch.setColor(fadeColor.r, fadeColor.g, fadeColor.b, fadeAlpha * alpha);
-      batch.draw(whitePixel, 0f, 0f, getViewWidth(), getViewHeight());
+      batch.draw(whitePixel, fx, fy, fw, fh);
     }
     batch.setColor(Color.WHITE);
   }
