@@ -806,11 +806,27 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Override
   public void pause() {
     dispatchStateLifecyclePause();
+    // On Android there are no window-focus events, so pause() is the only signal
+    // that the app has gone to the background. Pause audio here so it does not
+    // keep playing on a locked screen when autoPause is enabled.
+    if (Gdx.app != null
+        && Gdx.app.getType() == Application.ApplicationType.Android
+        && autoPause) {
+      Flixel.sound.pause();
+    }
   }
 
   @Override
   public void resume() {
     dispatchStateLifecycleResume();
+    // Mirror of the pause() Android path: resume audio when the app returns to
+    // the foreground, unless a debug pause is holding it.
+    if (Gdx.app != null
+        && Gdx.app.getType() == Application.ApplicationType.Android
+        && autoPause
+        && !gamePaused) {
+      Flixel.sound.resume();
+    }
   }
 
   /**
