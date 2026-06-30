@@ -26,11 +26,10 @@ package org.flixelgdx.backend.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Runs Flixel window lifecycle hooks, then forwards to an optional user {@link Lwjgl3WindowListener}.
+ * Forwards window lifecycle events to an optional user {@link Lwjgl3WindowListener}.
  */
 final class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
@@ -50,7 +49,6 @@ final class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
   @Override
   public void iconified(boolean isIconified) {
-    Flixel.getGame().onWindowMinimized(isIconified);
     if (next != null) {
       next.iconified(isIconified);
     }
@@ -65,17 +63,13 @@ final class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
   @Override
   public void focusLost() {
-    if (!Flixel.getGame().isMinimized()) {
-      Flixel.getGame().onWindowUnfocused();
-      if (next != null) {
-        next.focusLost();
-      }
+    if (next != null) {
+      next.focusLost();
     }
   }
 
   @Override
   public void focusGained() {
-    Flixel.getGame().onWindowFocused();
     if (next != null) {
       next.focusGained();
     }

@@ -252,14 +252,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   protected boolean transparentFramebufferRequested = false;
 
-  /** Should the game pause update calls and audio when the window loses focus or is minimized? */
+  /** Should the game pause audio when the application goes to the background? */
   public boolean autoPause = true;
-
-  /** Is the game's window currently focused? */
-  private boolean isFocused = true;
-
-  /** Is the game's window currently minimized? */
-  private boolean isMinimized = false;
 
   /** Is the game currently closing? */
   private boolean isClosing = false;
@@ -728,9 +722,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     windowSize.y = Gdx.graphics.getHeight();
     fullscreen = Gdx.graphics.isFullscreen();
 
-    if (!autoPause || isFocused) {
-      update(elapsed);
-    }
+    update(elapsed);
     draw(batch);
 
     // Finalize input frame AFTER user update hooks run, so justPressed()/justReleased() checks
@@ -762,9 +754,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       Flixel.sound.pause();
     } else {
       restoreCamerasAfterDebugPause();
-      if (!autoPause || (isFocused && !isMinimized)) {
-        Flixel.sound.resume();
-      }
+      Flixel.sound.resume();
     }
     this.gamePaused = gamePaused;
   }
@@ -806,12 +796,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Override
   public void pause() {
     dispatchStateLifecyclePause();
-    // On Android there are no window-focus events, so pause() is the only signal
-    // that the app has gone to the background. Pause audio here so it does not
-    // keep playing on a locked screen when autoPause is enabled.
-    if (Gdx.app != null
-        && Gdx.app.getType() == Application.ApplicationType.Android
-        && autoPause) {
+    if (autoPause) {
       Flixel.sound.pause();
     }
   }
@@ -819,12 +804,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Override
   public void resume() {
     dispatchStateLifecycleResume();
-    // Mirror of the pause() Android path: resume audio when the app returns to
-    // the foreground, unless a debug pause is holding it.
-    if (Gdx.app != null
-        && Gdx.app.getType() == Application.ApplicationType.Android
-        && autoPause
-        && !gamePaused) {
+    if (autoPause && !gamePaused) {
       Flixel.sound.resume();
     }
   }
@@ -855,50 +835,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (state != null) {
       state.resume();
     }
-  }
-
-  /** Called when the user regains focus on the game's window. */
-  public void onWindowFocused() {
-    isFocused = true;
-    dispatchStateLifecycleResume();
-    if (autoPause && !isMinimized && !gamePaused) {
-      Flixel.sound.resume();
-      Gdx.graphics.setContinuousRendering(true);
-      Gdx.graphics.requestRendering();
-    }
-    Flixel.Signals.windowFocused.dispatch();
-  }
-
-  /** Called when the user loses focus on the game's window, while also not being minimized. */
-  public void onWindowUnfocused() {
-    isFocused = false;
-    dispatchStateLifecyclePause();
-    if (autoPause) {
-      Flixel.sound.pause();
-      Gdx.graphics.setContinuousRendering(false);
-    }
-    Flixel.Signals.windowUnfocused.dispatch();
-  }
-
-  /**
-   * Called when the user minimizes the game's window.
-   *
-   * @param iconified Whether the window is iconified (minimized) or not. This parameter is provided
-   *   for compatibility with the window listener in the LWJGL3 (desktop) launcher.
-   */
-  public void onWindowMinimized(boolean iconified) {
-    isMinimized = iconified;
-    if (iconified) {
-      isFocused = false;
-      dispatchStateLifecyclePause();
-      if (autoPause) {
-        Flixel.sound.pause();
-        Gdx.graphics.setContinuousRendering(false);
-      }
-    } else {
-      dispatchStateLifecycleResume();
-    }
-    Flixel.Signals.windowMinimized.dispatch();
   }
 
   /**
@@ -1299,10 +1235,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return (int) windowSize.y;
   }
 
-  public boolean isFocused() {
-    return isFocused;
-  }
-
   public Array<FlixelCamera> getCameras() {
     return cameras;
   }
@@ -1485,10 +1417,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   public boolean isGamePaused() {
     return gamePaused;
-  }
-
-  public boolean isMinimized() {
-    return isMinimized;
   }
 
   public boolean isClosing() {
