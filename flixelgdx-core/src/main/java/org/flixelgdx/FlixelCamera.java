@@ -36,8 +36,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import org.flixelgdx.functional.FlixelColorable;
@@ -347,9 +347,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * If neither is provided, an {@link OrthographicCamera} and a default viewport are created.
    *
    * <p>The default viewport type is chosen automatically by platform. On desktop and web a
-   * {@link FitViewport} letterboxes the game world to the window. On Android a
-   * {@link ScreenViewport} fills the screen without black bars, adapting the visible area to
-   * the device's native resolution.
+   * {@link FitViewport} letterboxes the game world to the window. On Android an
+   * {@link ExtendViewport} fills the screen without black bars or distortion by extending the
+   * visible world area to cover the device's native resolution.
    *
    * @param x X location of the camera's display in native screen pixels.
    * @param y Y location of the camera's display in native screen pixels.
@@ -1279,7 +1279,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    */
   private static Viewport buildDefaultViewport(int width, int height, Camera camera) {
     if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Android) {
-      return new ScreenViewport(camera);
+      // ExtendViewport scales the game up to fill the device screen without distortion
+      // or cropping. When the screen ratio differs from the game's design ratio, it
+      // extends the visible world area rather than adding black bars or clipping content.
+      return new ExtendViewport(width, height, camera);
     }
     return new FitViewport(width, height, camera);
   }
