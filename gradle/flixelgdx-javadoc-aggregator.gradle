@@ -9,6 +9,7 @@ tasks.register('javadocAll') {
     ':flixelgdx-ios:javadoc',
     ':flixelgdx-teavm:javadoc',
     ':flixelgdx-teavm-plugin:javadoc',
-    ':flixelgdx-logging-plugin:javadoc'
+    ':flixelgdx-logging-plugin:javadoc',
+    ':flixelgdx-basisu-plugin:javadoc'
   )
 }

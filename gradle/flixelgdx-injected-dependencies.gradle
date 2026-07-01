@@ -7,7 +7,7 @@
 
 configure(subprojects.findAll { p ->
   p.name != 'flixelgdx-core' && p.name != 'flixelgdx-test' && p.name != 'flixelgdx-teavm-plugin'
-    && p.name != 'flixelgdx-logging-plugin'
+    && p.name != 'flixelgdx-logging-plugin' && p.name != 'flixelgdx-basisu-plugin'
 }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
@@ -29,7 +29,7 @@ configure(subprojects.findAll { p ->
     && p.name != 'flixelgdx-teavm'
     && p.name != 'flixelgdx-test'
     && p.name != 'flixelgdx-teavm-plugin'
-    && p.name != 'flixelgdx-logging-plugin'
+    && p.name != 'flixelgdx-logging-plugin' && p.name != 'flixelgdx-basisu-plugin'
 }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
