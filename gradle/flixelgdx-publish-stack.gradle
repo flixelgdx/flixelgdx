@@ -39,7 +39,7 @@ subprojects {
   }
 }
 
-configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-android' }) { Project p ->
+configure(subprojects.findAll { it.name != 'flixelgdx-test' }) { Project p ->
   p.apply plugin: 'com.vanniktech.maven.publish'
 
   // SonatypeHost cannot be imported at compile time in apply-from scripts because Gradle
