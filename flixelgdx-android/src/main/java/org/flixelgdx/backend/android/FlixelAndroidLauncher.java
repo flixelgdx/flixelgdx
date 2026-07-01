@@ -25,8 +25,10 @@ package org.flixelgdx.backend.android;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
@@ -97,10 +99,16 @@ public class FlixelAndroidLauncher {
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
+    FlixelCamera.viewportFactory = ExtendViewport::new;
     Flixel.setAlerter(new FlixelAndroidAlerter(activity));
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
-    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
+    FlixelMiniAudioSoundHandler soundHandler = new FlixelMiniAudioSoundHandler();
+    // MiniAudio on Android requires the native AAssetManager to open files from
+    // the assets/ folder. setupAndroid() must receive the AssetManager (not the
+    // Activity) so the JNI side can read AssetManager.mObject for the native pointer.
+    soundHandler.getEngine().setupAndroid(activity.getAssets());
+    Flixel.setSoundBackendFactory(soundHandler);
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (onBeforeInitialize != null) {

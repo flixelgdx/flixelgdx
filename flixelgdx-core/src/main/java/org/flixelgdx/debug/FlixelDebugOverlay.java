@@ -282,9 +282,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       // unless a backend suppresses typable keys while a command field is active (see LWJGL ImGui overlay).
       int pauseKey = Flixel.getDebugPauseKey();
       if (Flixel.keys.rawJustPressed(pauseKey) && !shouldSuppressDebugRawKeybind(pauseKey)) {
-        Flixel.setPaused(!Flixel.isPaused());
+        Flixel.game.setGamePaused(!Flixel.game.isGamePaused());
       }
-      if (Flixel.isPaused()) {
+      if (Flixel.game.isGamePaused()) {
         handleInspectCameraTools();
         handleSpritePicker();
       } else {
