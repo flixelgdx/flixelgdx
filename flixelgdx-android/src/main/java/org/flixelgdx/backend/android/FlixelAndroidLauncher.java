@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.android;
 
+import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -119,6 +120,55 @@ public class FlixelAndroidLauncher {
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;
 
-    activity.initialize(game, configuration);
+    activity.initialize(new CompressedTextureListener(game), configuration);
+  }
+
+  /**
+   * Wraps the game's {@link ApplicationListener} so compressed texture support is enabled once
+   * the GL context is ready, but before {@link FlixelGame#create()} loads any graphics.
+   *
+   * <p>{@link org.flixelgdx.asset.FlixelAssetManager#enableCompressedTextures()} calls
+   * {@code Gdx.gl}, which is not available yet when {@link #launch} runs on the Android UI
+   * thread. {@link ApplicationListener#create()} is the first point guaranteed to run on the GL
+   * thread with a live context, so the call is deferred here instead.
+   */
+  private static final class CompressedTextureListener implements ApplicationListener {
+
+    private final ApplicationListener delegate;
+
+    private CompressedTextureListener(ApplicationListener delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void create() {
+      Flixel.assets.enableCompressedTextures();
+      delegate.create();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+      delegate.resize(width, height);
+    }
+
+    @Override
+    public void render() {
+      delegate.render();
+    }
+
+    @Override
+    public void pause() {
+      delegate.pause();
+    }
+
+    @Override
+    public void resume() {
+      delegate.resume();
+    }
+
+    @Override
+    public void dispose() {
+      delegate.dispose();
+    }
   }
 }

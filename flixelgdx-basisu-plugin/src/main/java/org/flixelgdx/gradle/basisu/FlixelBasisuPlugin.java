@@ -60,7 +60,11 @@ import java.util.Map;
  * install and run the {@code basisu} command line tool by hand: it fetches a verified {@code
  * basisu} binary for the host platform, caches it in the Gradle user home directory, and wires a
  * {@code compressBasisuTextures} task into the Android build so every {@code .png} under the
- * configured assets directory is compressed automatically.
+ * configured assets directory is compressed automatically. The Android launcher enables the
+ * matching runtime loader automatically, so game code keeps requesting {@code .png} paths and
+ * transparently gets the compressed texture back; see
+ * {@code FlixelAssetManager.enableCompressedTextures()} in {@code flixelgdx-core} for the loading
+ * side of this feature.
  *
  * <p>Compression stays off unless a developer opts in, since it changes build output and needs
  * network access on first use to fetch the encoder. See {@link FlixelBasisuExtension} for the
@@ -164,24 +168,29 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
       });
     });
 
-    project.getPlugins().withId("com.android.application", p -> wireAndroid(project, ext, sourceImages, compressTask));
-    project.getPlugins().withId("com.android.library", p -> wireAndroid(project, ext, sourceImages, compressTask));
+    project.getPlugins().withId("com.android.application", p -> wireAndroid(project, ext, compressTask));
+    project.getPlugins().withId("com.android.library", p -> wireAndroid(project, ext, compressTask));
   }
 
   /**
    * Wires compressed output into an Android module's assets source set once the project is fully
-   * configured, so the compressed {@code .ktx2} files ship instead of the source PNGs they were
+   * configured, so the compressed {@code .ktx2} files ship alongside the source PNGs they were
    * built from.
+   *
+   * <p>AGP's asset-merge tasks (for example {@code mergeDebugAssets}) do not honor
+   * {@link com.android.build.gradle.api.AndroidSourceDirectorySet#exclude} for asset packaging:
+   * every source directory is copied into the merge output as-is, regardless of any exclude
+   * patterns configured on the source set. Excluding the plain PNGs there is a no-op, so instead
+   * each merge task gets a {@code doLast} action that deletes the plain PNG once the merge
+   * completes, wherever a compressed {@code .ktx2} sibling exists in the merged output.
    *
    * @param project The Gradle project the plugin was applied to.
    * @param ext The resolved {@link FlixelBasisuExtension} for this project.
-   * @param sourceImages The lazily-evaluated set of PNG files eligible for compression.
    * @param compressTask The registered {@code compressBasisuTextures} task.
    */
   private void wireAndroid(
       @NonNull Project project,
       @NonNull FlixelBasisuExtension ext,
-      @NonNull ConfigurableFileTree sourceImages,
       @NonNull TaskProvider<Task> compressTask) {
     project.afterEvaluate(p -> {
       if (!ext.getEnabled().get()) {
@@ -191,13 +200,44 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
       BaseExtension android = p.getExtensions().getByType(BaseExtension.class);
       var assets = android.getSourceSets().getByName("main").getAssets();
       assets.srcDir(ext.getOutputDir());
-      for (File source : sourceImages) {
-        File assetsRoot = ext.getAssetsDir().get().getAsFile();
-        assets.exclude(assetsRoot.toPath().relativize(source.toPath()).toString().replace('\\', '/'));
-      }
 
-      p.getTasks().matching(t -> t.getName().matches("merge.*Assets")).configureEach(t -> t.dependsOn(compressTask));
+      p.getTasks().matching(t -> t.getName().matches("merge.*Assets")).configureEach(t -> {
+        t.dependsOn(compressTask);
+        t.doLast(unused -> {
+          for (File outputDir : t.getOutputs().getFiles()) {
+            deleteUncompressedSiblings(outputDir);
+          }
+        });
+      });
     });
+  }
+
+  /**
+   * Recursively deletes plain PNGs under {@code dir} that have a compressed {@code .ktx2}
+   * sibling in the same directory, so a merged Android assets folder does not ship both formats
+   * for the same image.
+   *
+   * @param dir Directory to scan; ignored if it does not exist or is not a directory.
+   */
+  private void deleteUncompressedSiblings(@NonNull File dir) {
+    File[] children = dir.listFiles();
+    if (children == null) {
+      return;
+    }
+    for (File child : children) {
+      if (child.isDirectory()) {
+        deleteUncompressedSiblings(child);
+        continue;
+      }
+      if (!child.getName().endsWith(".ktx2")) {
+        continue;
+      }
+      String pngName = child.getName().substring(0, child.getName().length() - ".ktx2".length()) + ".png";
+      File pngSibling = new File(child.getParentFile(), pngName);
+      if (pngSibling.isFile()) {
+        pngSibling.delete();
+      }
+    }
   }
 
   /**

@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.graphics;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.asset.FlixelAsset;
@@ -30,6 +31,7 @@ import org.flixelgdx.asset.FlixelAssetManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -66,6 +68,9 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   @NotNull
   private final String path;
+
+  @NotNull
+  private final String resolvedPath;
 
   @Nullable
   private final Texture ownedTexture;
@@ -104,6 +109,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     this.path = Objects.requireNonNull(path, "path cannot be null.");
     this.ownedTexture = ownedTexture;
     this.owned = (ownedTexture != null);
+    this.resolvedPath = owned ? this.path : resolveCompressedPath(assets, this.path);
     this.persist = owned ? false : assets.getGlobalPersist();
   }
 
@@ -122,7 +128,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   @Override
   public boolean isLoaded() {
-    return owned || assets.getManager().isLoaded(path, Texture.class);
+    return owned || assets.getManager().isLoaded(resolvedPath, Texture.class);
   }
 
   @Override
@@ -176,11 +182,25 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     if (owned) {
       return Objects.requireNonNull(ownedTexture, "Owned texture is null.");
     }
-    if (!assets.getManager().isLoaded(path, Texture.class)) {
-      assets.getManager().load(path, Texture.class);
-      assets.getManager().finishLoadingAsset(path);
+    if (!assets.getManager().isLoaded(resolvedPath, Texture.class)) {
+      assets.getManager().load(resolvedPath, Texture.class);
+      assets.getManager().finishLoadingAsset(resolvedPath);
     }
-    return assets.getManager().get(path, Texture.class);
+    return assets.getManager().get(resolvedPath, Texture.class);
+  }
+
+  /**
+   * Returns the path actually used to load the underlying texture from the libGDX
+   * {@code AssetManager}.
+   *
+   * <p>Equal to {@link #getPath()} unless compressed textures are enabled and a {@code .ktx2}
+   * sibling was found for this graphic, in which case that sibling's path is returned instead.
+   *
+   * @return The resolved texture path.
+   */
+  @NotNull
+  public String getResolvedPath() {
+    return resolvedPath;
   }
 
   /**
@@ -202,5 +222,23 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
    */
   public boolean isOwned() {
     return owned;
+  }
+
+  /**
+   * Returns {@code path}, or a {@code .ktx2} sibling of it when compressed textures are enabled
+   * on {@code assets} and that sibling exists, so the underlying libGDX {@code AssetManager} is
+   * asked to load the compressed variant instead of the plain PNG.
+   *
+   * @param assets The owning asset manager.
+   * @param path Normalized asset path.
+   * @return The path to load the texture from.
+   */
+  @NotNull
+  private static String resolveCompressedPath(@NotNull FlixelAssetManager assets, @NotNull String path) {
+    if (!assets.isCompressedTexturesEnabled() || !path.toLowerCase(Locale.ROOT).endsWith(".png")) {
+      return path;
+    }
+    String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
+    return Gdx.files.internal(ktxPath).exists() ? ktxPath : path;
   }
 }

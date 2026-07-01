@@ -2,7 +2,7 @@ eclipse.project.name = appName + '-android'
 
 apply plugin: 'com.android.library'
 
-def reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD").toString().trim().toUpperCase(java.util.Locale.ROOT)
+def reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD").toString().trim().toUpperCase(Locale.ROOT)
 def reflectionProfile = ["SIMPLE", "STANDARD", "ALL"].contains(reflectionProfileRaw) ? reflectionProfileRaw : "STANDARD"
 def reflectionExtraPackages = (findProperty("flixelReflectionExtraPackages") ?: "")
   .toString()
@@ -60,7 +60,11 @@ def androidNativeCoordinates = [
   "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a",
   "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a",
   "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86",
-  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-arm64-v8a",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-armeabi-v7a",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-x86",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-x86_64"
 ]
 
 def nativesOutputDir = layout.buildDirectory.dir("jniLibs")

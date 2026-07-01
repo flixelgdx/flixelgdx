@@ -64,6 +64,7 @@ dependencies {
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
+  api "com.crashinvaders.basisu:basisu-gdx:$basisuGdxVersion"
   api "com.github.tommyettinger:anim8-gdx:$anim8Version"
   api "com.github.tommyettinger:libgdx-utils:$utilsVersion"
 

@@ -333,4 +333,27 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    */
   @NotNull
   AssetManager getManager();
+
+  /**
+   * Registers a KTX2/Basis Universal texture loader so {@code .png} requests transparently use a
+   * compressed {@code .ktx2} sibling when one exists next to the requested path.
+   *
+   * <p>Call this once during platform-specific startup, before loading any graphics, on backends
+   * that ship the Basis Universal transcoder natives (the Android backend calls this
+   * automatically during launch). Calling it on a backend without those natives available is
+   * harmless but pointless, since {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} only
+   * looks for a {@code .ktx2} sibling after this has been called, and no {@code .ktx2} files exist
+   * unless the {@code org.flixelgdx.basisu} Gradle plugin compressed them into the build.
+   * Idempotent: calling it more than once has no additional effect.
+   *
+   * @see #isCompressedTexturesEnabled()
+   */
+  void enableCompressedTextures();
+
+  /**
+   * Returns whether {@link #enableCompressedTextures()} has been called on this manager.
+   *
+   * @return {@code true} if compressed {@code .ktx2} textures are recognized by this manager.
+   */
+  boolean isCompressedTexturesEnabled();
 }

@@ -34,6 +34,7 @@ module org.flixelgdx.core {
   requires transitive gdx;
   requires transitive gdx.controllers.core;
   requires transitive gdx.freetype;
+  requires transitive basisu.gdx;
   requires transitive anim8.gdx;
   requires transitive libgdx.utils;
   requires org.jetbrains.annotations;

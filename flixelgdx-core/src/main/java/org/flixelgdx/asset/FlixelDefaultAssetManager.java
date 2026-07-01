@@ -31,6 +31,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
+import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundSource;
@@ -57,6 +58,11 @@ import java.util.Objects;
  * ({@code .png}, {@code .jpg}, {@code .jpeg}, {@code .webp}), audio ({@code .mp3}, {@code .ogg},
  * {@code .wav}, {@code .flac}), and text ({@code .txt}, {@code .xml}, {@code .json}). Add custom
  * extensions via {@link #registerLoader(String, Class, FlixelAssetLoader)}.
+ *
+ * <p><b>Compressed textures:</b> call {@link #enableCompressedTextures()} on backends that ship
+ * the Basis Universal transcoder natives to make {@code .png} requests transparently prefer a
+ * {@code .ktx2} sibling when one exists. The Android backend does this automatically during
+ * launch.
  *
  * <p><b>Recommended usage:</b> Access via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
@@ -94,6 +100,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   private int syntheticKeyId;
 
   private boolean globalPersist = false;
+  private boolean compressedTexturesEnabled;
 
   /** Constructs a new manager with default loaders for images, audio, and text. */
   public FlixelDefaultAssetManager() {
@@ -206,6 +213,20 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public AssetManager getManager() {
     return manager;
+  }
+
+  @Override
+  public void enableCompressedTextures() {
+    if (compressedTexturesEnabled) {
+      return;
+    }
+    manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver()));
+    compressedTexturesEnabled = true;
+  }
+
+  @Override
+  public boolean isCompressedTexturesEnabled() {
+    return compressedTexturesEnabled;
   }
 
   @Override
@@ -423,8 +444,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         if (t != null) {
           t.dispose();
         }
-      } else if (manager != null && manager.isLoaded(path, Texture.class)) {
-        manager.unload(path);
+      } else if (manager != null && manager.isLoaded(g.getResolvedPath(), Texture.class)) {
+        manager.unload(g.getResolvedPath());
       }
     } else if (asset instanceof FlixelDefaultAsset<?> da) {
       if (manager != null && manager.isLoaded(path, da.getRawType())) {
