@@ -390,7 +390,10 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public String extractAssetPath(@NotNull String path) {
     path = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(path, "path cannot be null."));
-    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
+    // On platforms other than desktop, there's typically no real file system we can
+    // extract an asset to, so we simply return the original path that was provided.
+    var hasRealFileSystem = Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Desktop;
+    if (!hasRealFileSystem) {
       return path;
     }
     FileHandle handle = Gdx.files.internal(path);

@@ -448,9 +448,9 @@ public class FlixelDebugManager {
     });
 
     registerCommand("pause", args -> {
-      boolean target = args.getBoolean(0, !Flixel.isPaused());
-      Flixel.setPaused(target);
-      Flixel.info("FlixelDebug", "Pause state: " + Flixel.isPaused());
+      boolean target = args.getBoolean(0, !Flixel.game.isGamePaused());
+      Flixel.game.setGamePaused(target);
+      Flixel.info("FlixelDebug", "Pause state: " + Flixel.game.isGamePaused());
     });
 
     registerCommand("hitboxes", args -> {
