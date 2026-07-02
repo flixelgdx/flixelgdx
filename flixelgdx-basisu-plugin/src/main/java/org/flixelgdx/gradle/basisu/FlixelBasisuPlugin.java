@@ -199,7 +199,12 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
       BaseExtension android = p.getExtensions().getByType(BaseExtension.class);
       var assets = android.getSourceSets().getByName("main").getAssets();
-      assets.srcDir(ext.getOutputDir());
+      // Resolve to a plain File rather than passing the live Provider: ext.getOutputDir() is
+      // also registered as compressBasisuTextures' declared output (see task.getOutputs().dir
+      // above), and Android Studio's sync model builder refuses to resolve providers carrying
+      // task-producer metadata, since sync must never trigger task execution. A plain File has
+      // no such metadata; the explicit dependsOn below still guarantees build-time ordering.
+      assets.srcDir(ext.getOutputDir().get().getAsFile());
 
       p.getTasks().matching(t -> t.getName().matches("merge.*Assets")).configureEach(t -> {
         t.dependsOn(compressTask);

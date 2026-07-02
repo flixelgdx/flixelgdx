@@ -31,6 +31,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
@@ -127,18 +128,12 @@ public class FlixelAndroidLauncher {
    * Wraps the game's {@link ApplicationListener} so compressed texture support is enabled once
    * the GL context is ready, but before {@link FlixelGame#create()} loads any graphics.
    *
-   * <p>{@link org.flixelgdx.asset.FlixelAssetManager#enableCompressedTextures()} calls
-   * {@code Gdx.gl}, which is not available yet when {@link #launch} runs on the Android UI
-   * thread. {@link ApplicationListener#create()} is the first point guaranteed to run on the GL
-   * thread with a live context, so the call is deferred here instead.
+   * <p>{@link FlixelAssetManager#enableCompressedTextures()} calls {@code Gdx.gl}, which is not
+   * available yet when {@link #launch} runs on the Android UI thread. {@link
+   * ApplicationListener#create()} is the first point guaranteed to run on the GL thread with a
+   * live context, so the call is deferred here instead.
    */
-  private static final class CompressedTextureListener implements ApplicationListener {
-
-    private final ApplicationListener delegate;
-
-    private CompressedTextureListener(ApplicationListener delegate) {
-      this.delegate = delegate;
-    }
+  private record CompressedTextureListener(ApplicationListener delegate) implements ApplicationListener {
 
     @Override
     public void create() {
