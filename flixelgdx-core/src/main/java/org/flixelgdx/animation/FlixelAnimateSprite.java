@@ -36,6 +36,7 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.util.FlixelDirectionFlags;
@@ -190,7 +191,12 @@ public class FlixelAnimateSprite extends FlixelSprite {
     String pngPath = path + "/" + defaultSpritemapFileName + ".png";
     String spritemapJsonPath = path + "/" + defaultSpritemapFileName + ".json";
     String animationJsonPath = path + "/" + defaultAnimationFileName + ".json";
-    if (!Gdx.files.internal(pngPath).exists()
+    // Resolve a .ktx2 sibling before checking existence, since compressed builds delete the
+    // plain PNG once its .ktx2 replacement exists (see FlixelAssetPaths.resolveCompressedTexturePath).
+    String resolvedPngPath = Flixel.ensureAssets().isCompressedTexturesEnabled()
+        ? FlixelAssetPaths.resolveCompressedTexturePath(pngPath)
+        : pngPath;
+    if (!Gdx.files.internal(resolvedPngPath).exists()
         || !Gdx.files.internal(spritemapJsonPath).exists()
         || !Gdx.files.internal(animationJsonPath).exists()) {
       throw new IllegalArgumentException(
@@ -881,8 +887,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
     Array<FlixelFrame> atlas = activeRig.atlas;
     FlixelAnimateRig.Part[] parts = keyframe.parts;
-    for (int i = 0; i < parts.length; i++) {
-      FlixelAnimateRig.Part part = parts[i];
+    for (FlixelAnimateRig.Part part : parts) {
       if (part.atlasIndex < 0 || part.atlasIndex >= atlas.size) {
         continue;
       }
