@@ -14,6 +14,7 @@ dependencies {
   api "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-desktop"
   api "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+  api "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-desktop"
   api "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
   api "io.github.spair:imgui-java-binding:$imguiJavaVersion"
