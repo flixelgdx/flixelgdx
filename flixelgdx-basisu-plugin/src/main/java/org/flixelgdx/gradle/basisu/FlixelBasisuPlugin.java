@@ -139,6 +139,12 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
           "Compresses PNG assets into KTX2/Basis Universal supercompressed textures for reduced GPU memory usage.");
       task.onlyIf(t -> ext.getEnabled().get());
       task.getInputs().files(sourceImages).skipWhenEmpty();
+      // Encoder flags below are read inside doLast, not just used to configure the task, so
+      // Gradle has no way to know they affect the outputs unless declared explicitly. Without
+      // this, flipping useUastc or generateMipmaps in build.gradle without touching any PNGs
+      // leaves the task UP-TO-DATE and silently keeps the stale, previously encoded output.
+      task.getInputs().property("useUastc", ext.getUseUastc());
+      task.getInputs().property("generateMipmaps", ext.getGenerateMipmaps());
       task.getOutputs().dir(ext.getOutputDir());
 
       task.doLast(t -> {
