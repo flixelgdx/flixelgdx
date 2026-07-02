@@ -94,6 +94,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   private final ObjectMap<String, FlixelAsset<?>> cache = new ObjectMap<>();
   private final ObjectMap<String, LoaderEntry<?>> loaderRegistry = new ObjectMap<>();
   private final ObjectMap<String, String> audioPathCache = new ObjectMap<>();
+  private final ObjectMap<String, String> texturePathCache = new ObjectMap<>();
   private final ObjectSet<String> pendingPersistKeys = new ObjectSet<>();
   private final FlixelString diagnosticsString = new FlixelString();
   private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
@@ -134,7 +135,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public void load(@NotNull String path) {
     path = requireNormalized(path);
     LoaderEntry<?> entry = requireEntry(path);
-    manager.load(path, entry.rawType);
+    manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
       maybePrewarmAudio(path);
     }
@@ -147,7 +148,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       pendingPersistKeys.add(path);
     }
     LoaderEntry<?> entry = requireEntry(path);
-    manager.load(path, entry.rawType);
+    manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
       maybePrewarmAudio(path);
     }
@@ -263,7 +264,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (entry == null) {
       return false;
     }
-    return manager.isLoaded(path, entry.rawType);
+    return manager.isLoaded(resolveTexturePath(path), entry.rawType);
   }
 
   @Override
@@ -274,15 +275,17 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public void finishLoadingAsset(@NotNull String path) {
     manager.finishLoadingAsset(
-        FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(path, "path cannot be null.")));
+        resolveTexturePath(
+            FlixelAssetPaths.normalizeAssetPath(
+                Objects.requireNonNull(path, "path cannot be null."))));
   }
 
   @Override
   public void unload(@NotNull String path) {
     manager.unload(
-        FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(path, "path cannot be null.")));
+        resolveTexturePath(
+            FlixelAssetPaths.normalizeAssetPath(
+                Objects.requireNonNull(path, "path cannot be null."))));
   }
 
   @NotNull
@@ -384,6 +387,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     cache.clear();
     loaderRegistry.clear();
     audioPathCache.clear();
+    texturePathCache.clear();
     pendingPersistKeys.clear();
     syntheticKeyId = 0;
     assetMode = FlixelAssetMode.STANDARD;
@@ -523,6 +527,30 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (Flixel.getSoundFactory() != null) {
       Flixel.getSoundFactory().prewarmSound(resolveAudioPath(path));
     }
+  }
+
+  /**
+   * Returns {@code path}, or its {@code .ktx2} sibling when compressed textures are enabled and
+   * one exists, so every place this manager touches the underlying libGDX {@link AssetManager}
+   * for a texture path (load, unload, isLoaded, finishLoadingAsset) uses the same key that
+   * {@link FlixelGraphic} independently resolves to. Results are cached since the underlying
+   * {@code .ktx2} presence never changes at runtime.
+   *
+   * @param path Normalized asset path.
+   * @return The path to use with the underlying {@link AssetManager}.
+   */
+  @NotNull
+  private String resolveTexturePath(@NotNull String path) {
+    if (!compressedTexturesEnabled) {
+      return path;
+    }
+    String cached = texturePathCache.get(path);
+    if (cached != null) {
+      return cached;
+    }
+    String resolved = FlixelAssetPaths.resolveCompressedTexturePath(path);
+    texturePathCache.put(path, resolved);
+    return resolved;
   }
 
   /** Pairs a libGDX raw type with its {@link FlixelAssetLoader}. */

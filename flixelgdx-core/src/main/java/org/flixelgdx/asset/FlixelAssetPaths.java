@@ -23,8 +23,11 @@
  */
 package org.flixelgdx.asset;
 
+import com.badlogic.gdx.Gdx;
+
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -79,6 +82,30 @@ public final class FlixelAssetPaths {
       sb.append(c);
     }
     return sb.toString();
+  }
+
+  /**
+   * Returns {@code path}, or its {@code .ktx2} sibling when one exists on disk, so a compressed
+   * texture load uses the smaller supercompressed asset instead of the plain PNG it was built
+   * from.
+   *
+   * <p>Only {@code .png} paths are considered, since the {@code org.flixelgdx.basisu} Gradle
+   * plugin only compresses PNG source images; every other extension is returned unchanged.
+   * Callers are expected to only invoke this when
+   * {@link FlixelAssetManager#isCompressedTexturesEnabled()} is {@code true}, since the
+   * existence check touches the file system.
+   *
+   * @param path Internal asset path. Must not be {@code null}.
+   * @return {@code path}, or its {@code .ktx2} sibling if one is present.
+   */
+  @NotNull
+  public static String resolveCompressedTexturePath(@NotNull String path) {
+    Objects.requireNonNull(path, "path cannot be null.");
+    if (!path.toLowerCase(Locale.ROOT).endsWith(".png")) {
+      return path;
+    }
+    String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
+    return Gdx.files.internal(ktxPath).exists() ? ktxPath : path;
   }
 
   private static boolean needsNormalization(@NotNull String path) {

@@ -23,15 +23,14 @@
  */
 package org.flixelgdx.graphics;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.asset.FlixelAssetPaths;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -110,7 +109,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     this.ownedTexture = ownedTexture;
     this.owned = (ownedTexture != null);
     this.resolvedPath = owned ? this.path : resolveCompressedPath(assets, this.path);
-    this.persist = owned ? false : assets.getGlobalPersist();
+    this.persist = !owned && assets.getGlobalPersist();
   }
 
   @NotNull
@@ -235,10 +234,6 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
    */
   @NotNull
   private static String resolveCompressedPath(@NotNull FlixelAssetManager assets, @NotNull String path) {
-    if (!assets.isCompressedTexturesEnabled() || !path.toLowerCase(Locale.ROOT).endsWith(".png")) {
-      return path;
-    }
-    String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
-    return Gdx.files.internal(ktxPath).exists() ? ktxPath : path;
+    return assets.isCompressedTexturesEnabled() ? FlixelAssetPaths.resolveCompressedTexturePath(path) : path;
   }
 }
