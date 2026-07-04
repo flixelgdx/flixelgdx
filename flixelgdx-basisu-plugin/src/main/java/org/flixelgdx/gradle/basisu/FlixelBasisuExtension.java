@@ -64,7 +64,7 @@ import org.gradle.api.provider.Property;
  *   // Ant-style glob patterns, relative to assetsDir, to skip. A plain path excludes just that
  *   // one file; a path ending in /** excludes an entire folder (e.g. bitmap fonts).
  *   excludes = [
- *     'characters/bf/icon.png',
+ *     'foo/bar/icon.png',
  *     'fonts/**'
  *   ]
  * }
