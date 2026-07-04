@@ -75,7 +75,7 @@ import org.gradle.api.provider.Property;
 public interface FlixelBasisuExtension {
 
   /** Gradle extension name used to register this extension under. */
-  String NAME = "flixelBasisu";
+  String NAME = "flixelgdxBasisu";
 
   /**
    * Whether texture compression runs at all.

@@ -86,7 +86,7 @@ import java.util.Set;
  * }</pre>
  *
  * <p>On the desktop backend, compression only affects the packaged {@code jar} task (and anything
- * that depends on it, such as {@code dist} or {@code construo}). Running via {@code ./gradlew run}
+ * that depends on it, such as {@code dist} or {@code construo}). Running via {@code ./gradlew :lwjgl3:run}
  * still loads plain PNGs directly from the source assets directory, since compressing on every
  * run would slow the development loop.
  *
@@ -245,23 +245,11 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
       BaseExtension android = p.getExtensions().getByType(BaseExtension.class);
       var assets = android.getSourceSets().getByName("main").getAssets();
-      // Resolve to a plain File rather than passing the live Provider: ext.getOutputDir() is
-      // also registered as compressBasisuTextures' declared output (see task.getOutputs().dir
-      // above), and Android Studio's sync model builder refuses to resolve providers carrying
-      // task-producer metadata, since sync must never trigger task execution. A plain File has
-      // no such metadata; the explicit dependsOn below still guarantees build-time ordering.
+      // Resolve to a plain File rather than passing the live Provider.
       assets.srcDir(ext.getOutputDir().get().getAsFile());
 
       p.getTasks().matching(t -> t.getName().matches("merge.*Assets")).configureEach(t -> {
         t.dependsOn(compressTask);
-        // AGP resolves the android sourceSet's asset directories into this task's own input
-        // snapshot before assets.srcDir(...) above ever runs (its plugin applies, and therefore
-        // registers its own afterEvaluate wiring, ahead of ours). That stale snapshot means a
-        // re-encoded .ktx2 with new byte content but the same file name and directory listing
-        // does not register as a changed input, so the merge task reports UP-TO-DATE and ships
-        // whatever was merged the last time this task actually ran. Declaring the output
-        // directory again here, directly against this task's own inputs, forces Gradle to hash
-        // its contents itself instead of trusting AGP's snapshot.
         t.getInputs().files(ext.getOutputDir()).withPropertyName("flixelBasisuCompressedOutput");
         t.doLast(unused -> {
           for (File outputDir : t.getOutputs().getFiles()) {
@@ -415,10 +403,10 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
   /**
    * Returns {@code true} if {@code details} is a plain PNG with a compressed {@code .ktx2}
    * sibling in the compression task's output directory, so {@link #wireJvmJar} can exclude it
-   * from the packaged jar in favor of the compressed variant.
+   * from the packaged JAR in favor of the compressed variant.
    *
    * @param ext The resolved {@link FlixelBasisuExtension} for this project.
-   * @param details The file being considered for inclusion in the jar.
+   * @param details The file being considered for inclusion in the JAR.
    * @return {@code true} if the plain PNG should be excluded.
    */
   private boolean hasCompressedSibling(@NonNull FlixelBasisuExtension ext, @NonNull FileTreeElement details) {
@@ -567,7 +555,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
   /**
    * Attempts to call {@link File#mkdirs()} on the provided {@link File}. If {@link File#mkdirs()}
-   * returns false, or if path, a {@link RuntimeException} will be thrown.
+   * returns false, or if the path doesn't exist, a {@link RuntimeException} will be thrown.
    *
    * @param path The path to be created.
    * @throws RuntimeException If the directories failed to be created.
