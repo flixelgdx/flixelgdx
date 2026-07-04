@@ -808,7 +808,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    // Conservative culling using the anchor-clip hitbox. Multi-part rigs may extend beyond this box
+    // Conservative culling using the anchor-clip hitbox. Multipart rigs may extend beyond this box,
     // but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
     float rigCullW = getWidth() * Math.abs(scaleX);
     float rigCullH = getHeight() * Math.abs(scaleY);
