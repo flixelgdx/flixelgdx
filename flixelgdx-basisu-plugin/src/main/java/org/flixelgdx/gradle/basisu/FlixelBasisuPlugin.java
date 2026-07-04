@@ -128,6 +128,8 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
     ext.getOutputDir().convention(project.getLayout().getBuildDirectory().dir("generated/basisuAssets"));
     ext.getGenerateMipmaps().convention(true);
     ext.getUseUastc().convention(false);
+    ext.getEtc1sQuality().convention(128);
+    ext.getUastcLevel().convention(2);
     ext.getExcludes().convention(List.of());
 
     ConfigurableFileTree sourceImages = project.fileTree(ext.getAssetsDir(), tree -> tree.include("**/*.png"));
@@ -145,12 +147,14 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
       // leaves the task UP-TO-DATE and silently keeps the stale, previously encoded output.
       task.getInputs().property("useUastc", ext.getUseUastc());
       task.getInputs().property("generateMipmaps", ext.getGenerateMipmaps());
+      task.getInputs().property("etc1sQuality", ext.getEtc1sQuality());
+      task.getInputs().property("uastcLevel", ext.getUastcLevel());
       task.getOutputs().dir(ext.getOutputDir());
 
       task.doLast(t -> {
         File assetsRoot = ext.getAssetsDir().get().getAsFile();
         File outputRoot = ext.getOutputDir().get().getAsFile();
-        outputRoot.mkdirs();
+        tryMakeDir(outputRoot);
 
         File encoder = resolveEncoderBinary(project);
 
@@ -160,7 +164,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
           File dest = new File(outputRoot, relativeOut);
           File destDir = dest.getParentFile();
           if (destDir != null) {
-            destDir.mkdirs();
+            tryMakeDir(destDir);
           }
 
           List<String> command = new ArrayList<>();
@@ -172,6 +176,11 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
           }
           if (ext.getUseUastc().get()) {
             command.add("-uastc");
+            command.add("-uastc_level");
+            command.add(String.valueOf(ext.getUastcLevel().get()));
+          } else {
+            command.add("-q");
+            command.add(String.valueOf(ext.getEtc1sQuality().get()));
           }
           command.add("-output_file");
           command.add(dest.getAbsolutePath());
@@ -333,7 +342,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
     }
 
     project.getLogger().lifecycle("[FlixelGDX] Fetching basisu encoder for {}...", platformKey);
-    cacheDir.mkdirs();
+    tryMakeDir(cacheDir);
     downloadTo(BASISU_RAW_BASE + binary.repoPath(), binaryFile);
 
     if (!sha256Matches(binaryFile, binary.sha256())) {
@@ -439,6 +448,20 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new GradleException("FlixelGDX: basisu encoder was interrupted.", e);
+    }
+  }
+
+  /**
+   * Attempts to call {@link File#mkdirs()} on the provided {@link File}. If {@link File#mkdirs()}
+   * returns false, or if path, a {@link RuntimeException} will be thrown.
+   *
+   * @param path The path to be created.
+   * @throws RuntimeException If the directories failed to be created.
+   */
+  private void tryMakeDir(File path) {
+    boolean wasMade = path.mkdirs();
+    if (!(path.exists() || wasMade)) {
+      throw new RuntimeException("The provided path '" + path.getAbsolutePath() + "' was failed to be created.");
     }
   }
 

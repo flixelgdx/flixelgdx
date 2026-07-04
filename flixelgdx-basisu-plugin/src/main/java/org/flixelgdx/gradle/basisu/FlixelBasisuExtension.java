@@ -53,8 +53,20 @@ import org.gradle.api.provider.Property;
  *   // Use higher-quality UASTC instead of the smaller default ETC1S mode (default: false).
  *   useUastc = false
  *
- *   // Ant-style glob patterns, relative to assetsDir, to skip (e.g. bitmap fonts).
- *   excludes = ['**&#47;fonts/**']
+ *   // ETC1S quality level, 1 (smallest, worst) to 255 (largest, best). Ignored when useUastc is
+ *   // true. Default: 128.
+ *   etc1sQuality = 128
+ *
+ *   // UASTC encoding level, 0 (fastest, worst) to 4 (slowest, best). Ignored when useUastc is
+ *   // false. Default: 2.
+ *   uastcLevel = 2
+ *
+ *   // Ant-style glob patterns, relative to assetsDir, to skip. A plain path excludes just that
+ *   // one file; a path ending in /** excludes an entire folder (e.g. bitmap fonts).
+ *   excludes = [
+ *     'characters/bf/icon.png',
+ *     'fonts/**'
+ *   ]
  * }
  * }</pre>
  *
@@ -116,11 +128,35 @@ public interface FlixelBasisuExtension {
   Property<Boolean> getUseUastc();
 
   /**
+   * ETC1S quality level, from {@code 1} (smallest file, worst quality) to {@code 255} (largest
+   * file, best quality).
+   *
+   * <p>Only honored when {@link #getUseUastc()} is {@code false}; ignored in UASTC mode. Defaults
+   * to {@code 128}, matching the {@code basisu} encoder's own default.
+   *
+   * @return The {@code -q} property.
+   */
+  Property<Integer> getEtc1sQuality();
+
+  /**
+   * UASTC encoding level, from {@code 0} (fastest, lowest quality) to {@code 4} (slowest, highest
+   * quality).
+   *
+   * <p>Only honored when {@link #getUseUastc()} is {@code true}; ignored in ETC1S mode. Defaults
+   * to {@code 2}, matching the {@code basisu} encoder's own default.
+   *
+   * @return The {@code -uastc_level} property.
+   */
+  Property<Integer> getUastcLevel();
+
+  /**
    * Ant-style glob patterns, relative to {@link #getAssetsDir()}, for {@code .png} files that
    * should stay as plain PNGs instead of being compressed.
    *
-   * <p>Defaults to an empty list. Useful for assets where exact pixel data matters, such as
-   * bitmap font pages.
+   * <p>A plain path (for example, {@code "characters/bf/icon.png"}) excludes just that one file.
+   * A path ending in {@code /**} (for example, {@code "fonts/**"}) excludes an entire folder and
+   * everything under it. Defaults to an empty list. Useful for assets where exact pixel data
+   * matters, such as bitmap font pages.
    *
    * @return The excludes property.
    */
