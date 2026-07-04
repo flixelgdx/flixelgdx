@@ -34,6 +34,7 @@ import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -100,6 +101,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
   private static final String TASK_GROUP = "flixelgdx";
   private static final String ENABLE_PROPERTY = "enableBasisuCompression";
   private static final String COMPRESS_TASK_NAME = "compressBasisuTextures";
+  private static final String SETTINGS_MARKER_FILE = ".basisu-settings";
 
   // Pinned to a specific commit (rather than a branch) so a compromised or changed upstream file
   // cannot silently start executing different code during a developer's build. Update this
@@ -160,12 +162,26 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
         File encoder = resolveEncoderBinary(project);
 
+        // The whole task reruns whenever any declared input changes, including the excludes
+        // list (which changes the sourceImages file collection). Without a per-file check here,
+        // that means excluding or re-including a single asset re-invokes basisu for every other
+        // untouched PNG too. Comparing each destination's timestamp against its source lets
+        // unaffected files skip re-encoding; only a genuine encoder setting change forces a full
+        // re-encode, since that affects every output regardless of which sources changed.
+        String settingsSignature = currentSettingsSignature(ext);
+        boolean settingsChanged = !settingsSignature.equals(readSettingsMarker(outputRoot));
+
         Set<String> expectedOutputs = new HashSet<>();
         for (File source : sourceImages) {
           String relativePath = assetsRoot.toPath().relativize(source.toPath()).toString();
           String relativeOut = relativePath.substring(0, relativePath.length() - ".png".length()) + ".ktx2";
           expectedOutputs.add(relativeOut);
           File dest = new File(outputRoot, relativeOut);
+
+          if (!settingsChanged && dest.isFile() && dest.lastModified() >= source.lastModified()) {
+            continue;
+          }
+
           File destDir = dest.getParentFile();
           if (destDir != null) {
             tryMakeDir(destDir);
@@ -193,6 +209,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
         }
 
         pruneStaleOutputs(outputRoot, outputRoot, expectedOutputs);
+        writeSettingsMarker(outputRoot, settingsSignature);
       });
     });
 
@@ -286,6 +303,54 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
       if (!expectedRelativePaths.contains(relativePath)) {
         child.delete();
       }
+    }
+  }
+
+  /**
+   * Builds a short signature string from every encoder setting that affects the bytes of a
+   * compressed output, so a change to any of them can be detected without comparing each
+   * setting individually.
+   *
+   * @param ext The resolved {@link FlixelBasisuExtension} for this project.
+   * @return A signature that changes if and only if an encoder setting has changed.
+   */
+  @NonNull
+  private String currentSettingsSignature(@NonNull FlixelBasisuExtension ext) {
+    return ext.getUseUastc().get() + ":" + ext.getGenerateMipmaps().get() + ":"
+        + ext.getEtc1sQuality().get() + ":" + ext.getUastcLevel().get();
+  }
+
+  /**
+   * Reads the encoder settings signature recorded by the previous run of the compression task.
+   *
+   * @param outputRoot The compression task's output directory.
+   * @return The previously recorded signature, or {@code null} if none is recorded yet.
+   */
+  @Nullable
+  private String readSettingsMarker(@NonNull File outputRoot) {
+    File marker = new File(outputRoot, SETTINGS_MARKER_FILE);
+    if (!marker.isFile()) {
+      return null;
+    }
+    try {
+      return Files.readString(marker.toPath()).trim();
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
+  /**
+   * Records {@code signature} as the encoder settings used by the current run, so the next run
+   * can detect whether a setting has changed since.
+   *
+   * @param outputRoot The compression task's output directory.
+   * @param signature The signature to record, from {@link #currentSettingsSignature}.
+   */
+  private void writeSettingsMarker(@NonNull File outputRoot, @NonNull String signature) {
+    try {
+      Files.writeString(new File(outputRoot, SETTINGS_MARKER_FILE).toPath(), signature);
+    } catch (IOException e) {
+      throw new GradleException("FlixelGDX: failed to write basisu settings marker.", e);
     }
   }
 
