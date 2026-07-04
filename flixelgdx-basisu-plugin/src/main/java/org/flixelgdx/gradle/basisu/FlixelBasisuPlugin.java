@@ -231,6 +231,15 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
       p.getTasks().matching(t -> t.getName().matches("merge.*Assets")).configureEach(t -> {
         t.dependsOn(compressTask);
+        // AGP resolves the android sourceSet's asset directories into this task's own input
+        // snapshot before assets.srcDir(...) above ever runs (its plugin applies, and therefore
+        // registers its own afterEvaluate wiring, ahead of ours). That stale snapshot means a
+        // re-encoded .ktx2 with new byte content but the same file name and directory listing
+        // does not register as a changed input, so the merge task reports UP-TO-DATE and ships
+        // whatever was merged the last time this task actually ran. Declaring the output
+        // directory again here, directly against this task's own inputs, forces Gradle to hash
+        // its contents itself instead of trusting AGP's snapshot.
+        t.getInputs().files(ext.getOutputDir()).withPropertyName("flixelBasisuCompressedOutput");
         t.doLast(unused -> {
           for (File outputDir : t.getOutputs().getFiles()) {
             deleteUncompressedSiblings(outputDir);
