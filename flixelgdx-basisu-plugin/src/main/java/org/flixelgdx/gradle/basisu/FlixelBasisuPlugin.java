@@ -47,9 +47,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Gradle plugin that adds opt-in KTX2/Basis Universal texture compression to a FlixelGDX Android
@@ -158,9 +160,11 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
         File encoder = resolveEncoderBinary(project);
 
+        Set<String> expectedOutputs = new HashSet<>();
         for (File source : sourceImages) {
           String relativePath = assetsRoot.toPath().relativize(source.toPath()).toString();
           String relativeOut = relativePath.substring(0, relativePath.length() - ".png".length()) + ".ktx2";
+          expectedOutputs.add(relativeOut);
           File dest = new File(outputRoot, relativeOut);
           File destDir = dest.getParentFile();
           if (destDir != null) {
@@ -187,6 +191,8 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
           runEncoder(project, command);
         }
+
+        pruneStaleOutputs(outputRoot, outputRoot, expectedOutputs);
       });
     });
 
@@ -247,6 +253,40 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
         });
       });
     });
+  }
+
+  /**
+   * Recursively deletes {@code .ktx2} files under {@code dir} that no longer correspond to a
+   * currently compressed source PNG, so a source file freshly added to {@code excludes} (or
+   * deleted from {@link FlixelBasisuExtension#getAssetsDir()}) does not leave behind a stale
+   * compressed texture that a subsequent Android asset merge would mistake for the current
+   * output and ship instead of the plain PNG.
+   *
+   * @param root The output directory this task writes into; used to compute each file's
+   *     path relative to it.
+   * @param dir Directory to scan; ignored if it does not exist or is not a directory.
+   * @param expectedRelativePaths Relative paths (from {@code root}) of every {@code .ktx2} file
+   *     this run's source PNGs are expected to produce.
+   */
+  private void pruneStaleOutputs(
+      @NonNull File root, @NonNull File dir, @NonNull Set<String> expectedRelativePaths) {
+    File[] children = dir.listFiles();
+    if (children == null) {
+      return;
+    }
+    for (File child : children) {
+      if (child.isDirectory()) {
+        pruneStaleOutputs(root, child, expectedRelativePaths);
+        continue;
+      }
+      if (!child.getName().endsWith(".ktx2")) {
+        continue;
+      }
+      String relativePath = root.toPath().relativize(child.toPath()).toString();
+      if (!expectedRelativePaths.contains(relativePath)) {
+        child.delete();
+      }
+    }
   }
 
   /**
