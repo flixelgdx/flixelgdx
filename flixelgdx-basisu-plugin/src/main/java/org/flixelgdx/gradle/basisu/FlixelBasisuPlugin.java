@@ -55,8 +55,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Gradle plugin that adds opt-in KTX2/Basis Universal texture compression to a FlixelGDX Android
- * module.
+ * Gradle plugin that adds opt-in KTX2/Basis Universal texture compression.
  *
  * <p>libGDX decodes every PNG into an uncompressed {@code RGBA8888} texture on the GPU, so a few
  * megabytes of source art can balloon into hundreds of megabytes of video memory. Basis Universal
@@ -65,11 +64,10 @@ import java.util.Set;
  * install and run the {@code basisu} command line tool by hand: it fetches a verified {@code
  * basisu} binary for the host platform, caches it in the Gradle user home directory, and wires a
  * {@code compressBasisuTextures} task into the Android build so every {@code .png} under the
- * configured assets directory is compressed automatically. The Android launcher enables the
+ * configured assets directory is compressed automatically. Supporting launchers enable the
  * matching runtime loader automatically, so game code keeps requesting {@code .png} paths and
- * transparently gets the compressed texture back; see
- * {@code FlixelAssetManager.enableCompressedTextures()} in {@code flixelgdx-core} for the loading
- * side of this feature.
+ * transparently gets the compressed texture back; see {@code FlixelAssetManager.enableCompressedTextures()}
+ * in {@code flixelgdx-core} for the loading side of this feature.
  *
  * <p>Compression stays off unless a developer opts in, since it changes build output and needs
  * network access on first use to fetch the encoder. See {@link FlixelBasisuExtension} for the
@@ -86,7 +84,7 @@ import java.util.Set;
  * }</pre>
  *
  * <p>On the desktop backend, compression only affects the packaged {@code jar} task (and anything
- * that depends on it, such as {@code dist} or {@code construo}). Running via {@code ./gradlew :lwjgl3:run}
+ * that depends on it, such as Construo). Running via {@code ./gradlew :lwjgl3:run}
  * still loads plain PNGs directly from the source assets directory, since compressing on every
  * run would slow the development loop.
  *
@@ -103,9 +101,8 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
   private static final String COMPRESS_TASK_NAME = "compressBasisuTextures";
   private static final String SETTINGS_MARKER_FILE = ".basisu-settings";
 
-  // Pinned to a specific commit (rather than a branch) so a compromised or changed upstream file
-  // cannot silently start executing different code during a developer's build. Update this
-  // alongside the checksums below when bumping to a newer basisu build.
+  // Pinned to a specific commit because the repository we rely on doesn't receive updates
+  // anymore, nor does it have any releases we can pull from.
   private static final String BASISU_COMMIT = "168ecd13d2884aacc674f30a5eddc389e4f07fb0";
   private static final String BASISU_RAW_BASE =
       "https://raw.githubusercontent.com/HacksawStudios/basisu/" + BASISU_COMMIT + "/";

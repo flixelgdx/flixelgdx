@@ -28,8 +28,5 @@ repositories {
 }
 
 dependencies {
-  // AndroidSourceSet/BaseExtension types for wiring compressed output into the assets source
-  // set. The user's build supplies the real AGP instance at apply time; only needed here to
-  // compile against, not to bundle or execute.
   compileOnly "com.android.tools.build:gradle:8.7.3"
 }

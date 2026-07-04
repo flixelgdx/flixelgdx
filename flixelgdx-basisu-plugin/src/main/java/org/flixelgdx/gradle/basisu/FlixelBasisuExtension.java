@@ -153,7 +153,7 @@ public interface FlixelBasisuExtension {
    * Ant-style glob patterns, relative to {@link #getAssetsDir()}, for {@code .png} files that
    * should stay as plain PNGs instead of being compressed.
    *
-   * <p>A plain path (for example, {@code "characters/bf/icon.png"}) excludes just that one file.
+   * <p>A plain path (for example, {@code "foo/bar/icon.png"}) excludes just that one file.
    * A path ending in {@code /**} (for example, {@code "fonts/**"}) excludes an entire folder and
    * everything under it. Defaults to an empty list. Useful for assets where exact pixel data
    * matters, such as bitmap font pages.
