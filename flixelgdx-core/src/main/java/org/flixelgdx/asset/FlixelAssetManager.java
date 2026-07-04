@@ -356,4 +356,21 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * @return {@code true} if compressed {@code .ktx2} textures are recognized by this manager.
    */
   boolean isCompressedTexturesEnabled();
+
+  /**
+   * Resolves {@code path} to the key that should be used with the underlying libGDX
+   * {@link AssetManager} for a texture load, returning a {@code .ktx2} sibling instead of
+   * {@code path} when {@link #enableCompressedTextures()} has been called and that sibling
+   * exists. Every part of the framework that needs to know whether a texture path has a
+   * compressed variant (loading, unloading, checking load state) should go through this method
+   * rather than re-implementing the check, so the compressed/plain decision is made in exactly
+   * one place. Results are cached, since a path's compressed-sibling status never changes at
+   * runtime.
+   *
+   * @param path Normalized asset path.
+   * @return The path to use with the underlying {@link AssetManager}.
+   * @see #enableCompressedTextures()
+   */
+  @NotNull
+  String resolveTexturePath(@NotNull String path);
 }

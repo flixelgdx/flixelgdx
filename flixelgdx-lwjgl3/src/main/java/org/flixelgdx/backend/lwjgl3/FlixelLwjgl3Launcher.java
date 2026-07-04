@@ -23,13 +23,11 @@
  */
 package org.flixelgdx.backend.lwjgl3;
 
-import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
@@ -181,7 +179,8 @@ public class FlixelLwjgl3Launcher {
     Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
-    new Lwjgl3Application(new CompressedTextureListener(game), configuration);
+    game.setCompressedTexturesRequested(true);
+    new Lwjgl3Application(game, configuration);
 
     if (AnsiConsole.isInstalled()) {
       AnsiConsole.systemUninstall();
@@ -250,47 +249,4 @@ public class FlixelLwjgl3Launcher {
     }
   }
 
-  /**
-   * Wraps the game's {@link ApplicationListener} so compressed texture support is enabled once
-   * the GL context is ready, but before {@link FlixelGame#create()} loads any graphics.
-   *
-   * <p>{@link FlixelAssetManager#enableCompressedTextures()} calls {@code Gdx.gl}, which is not
-   * set until deep inside {@link Lwjgl3Application}'s blocking render loop, well after its
-   * constructor is called in {@link #launch}. {@link ApplicationListener#create()} is the first
-   * point guaranteed to run on the GL thread with a live context, so the call is deferred here
-   * instead.
-   */
-  private record CompressedTextureListener(ApplicationListener delegate) implements ApplicationListener {
-
-    @Override
-    public void create() {
-      Flixel.assets.enableCompressedTextures();
-      delegate.create();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-      delegate.resize(width, height);
-    }
-
-    @Override
-    public void render() {
-      delegate.render();
-    }
-
-    @Override
-    public void pause() {
-      delegate.pause();
-    }
-
-    @Override
-    public void resume() {
-      delegate.resume();
-    }
-
-    @Override
-    public void dispose() {
-      delegate.dispose();
-    }
-  }
 }

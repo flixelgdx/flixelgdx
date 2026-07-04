@@ -441,6 +441,21 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
   }
 
+  @NotNull
+  @Override
+  public String resolveTexturePath(@NotNull String path) {
+    if (!compressedTexturesEnabled) {
+      return path;
+    }
+    String cached = texturePathCache.get(path);
+    if (cached != null) {
+      return cached;
+    }
+    String resolved = FlixelAssetPaths.resolveCompressedTexturePath(path);
+    texturePathCache.put(path, resolved);
+    return resolved;
+  }
+
   private void evict(@NotNull String path, @NotNull FlixelAsset<?> asset) {
     if (asset instanceof FlixelGraphic g) {
       if (g.isOwned()) {
@@ -527,30 +542,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (Flixel.getSoundFactory() != null) {
       Flixel.getSoundFactory().prewarmSound(resolveAudioPath(path));
     }
-  }
-
-  /**
-   * Returns {@code path}, or its {@code .ktx2} sibling when compressed textures are enabled and
-   * one exists, so every place this manager touches the underlying libGDX {@link AssetManager}
-   * for a texture path (load, unload, isLoaded, finishLoadingAsset) uses the same key that
-   * {@link FlixelGraphic} independently resolves to. Results are cached since the underlying
-   * {@code .ktx2} presence never changes at runtime.
-   *
-   * @param path Normalized asset path.
-   * @return The path to use with the underlying {@link AssetManager}.
-   */
-  @NotNull
-  private String resolveTexturePath(@NotNull String path) {
-    if (!compressedTexturesEnabled) {
-      return path;
-    }
-    String cached = texturePathCache.get(path);
-    if (cached != null) {
-      return cached;
-    }
-    String resolved = FlixelAssetPaths.resolveCompressedTexturePath(path);
-    texturePathCache.put(path, resolved);
-    return resolved;
   }
 
   /** Pairs a libGDX raw type with its {@link FlixelAssetLoader}. */

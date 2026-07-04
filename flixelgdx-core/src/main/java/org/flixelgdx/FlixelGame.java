@@ -40,6 +40,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDestroyable;
@@ -252,6 +253,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   protected boolean transparentFramebufferRequested = false;
 
+  /**
+   * When {@code true}, {@link #create()} calls {@link FlixelAssetManager#enableCompressedTextures()}
+   * so {@code .png} requests transparently prefer a {@code .ktx2} sibling when one exists. Set by
+   * platform launchers that ship the Basis Universal transcoder natives (desktop, Android); leave
+   * {@code false} on backends that do not (see {@link FlixelAssetManager#enableCompressedTextures()}).
+   */
+  protected boolean compressedTexturesRequested = false;
+
   /** Should the game pause audio when the application goes to the background? */
   public boolean autoPause = true;
 
@@ -390,6 +399,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Override
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
+
+    if (compressedTexturesRequested) {
+      Flixel.assets.enableCompressedTextures();
+    }
 
     isClosed = false;
     isClosing = false;
@@ -1285,6 +1298,21 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   public void setTransparentFramebufferRequested(boolean transparentFramebufferRequested) {
     this.transparentFramebufferRequested = transparentFramebufferRequested;
+  }
+
+  public boolean isCompressedTexturesRequested() {
+    return compressedTexturesRequested;
+  }
+
+  /**
+   * Requests that {@link #create()} enable KTX2/Basis Universal compressed texture loading.
+   * Platform launchers that support it set this before the underlying application object is
+   * constructed, so it takes effect before {@link #create()} runs.
+   *
+   * @param compressedTexturesRequested {@code true} to enable compressed textures on {@link #create()}.
+   */
+  public void setCompressedTexturesRequested(boolean compressedTexturesRequested) {
+    this.compressedTexturesRequested = compressedTexturesRequested;
   }
 
   /**

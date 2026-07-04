@@ -27,7 +27,6 @@ import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
-import org.flixelgdx.asset.FlixelAssetPaths;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -108,7 +107,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     this.path = Objects.requireNonNull(path, "path cannot be null.");
     this.ownedTexture = ownedTexture;
     this.owned = (ownedTexture != null);
-    this.resolvedPath = owned ? this.path : resolveCompressedPath(assets, this.path);
+    this.resolvedPath = owned ? this.path : assets.resolveTexturePath(this.path);
     this.persist = !owned && assets.getGlobalPersist();
   }
 
@@ -221,19 +220,5 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
    */
   public boolean isOwned() {
     return owned;
-  }
-
-  /**
-   * Returns {@code path}, or a {@code .ktx2} sibling of it when compressed textures are enabled
-   * on {@code assets} and that sibling exists, so the underlying libGDX {@code AssetManager} is
-   * asked to load the compressed variant instead of the plain PNG.
-   *
-   * @param assets The owning asset manager.
-   * @param path Normalized asset path.
-   * @return The path to load the texture from.
-   */
-  @NotNull
-  private static String resolveCompressedPath(@NotNull FlixelAssetManager assets, @NotNull String path) {
-    return assets.isCompressedTexturesEnabled() ? FlixelAssetPaths.resolveCompressedTexturePath(path) : path;
   }
 }

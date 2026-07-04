@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.backend.android;
 
-import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -31,7 +30,6 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
@@ -121,49 +119,7 @@ public class FlixelAndroidLauncher {
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;
 
-    activity.initialize(new CompressedTextureListener(game), configuration);
-  }
-
-  /**
-   * Wraps the game's {@link ApplicationListener} so compressed texture support is enabled once
-   * the GL context is ready, but before {@link FlixelGame#create()} loads any graphics.
-   *
-   * <p>{@link FlixelAssetManager#enableCompressedTextures()} calls {@code Gdx.gl}, which is not
-   * available yet when {@link #launch} runs on the Android UI thread. {@link
-   * ApplicationListener#create()} is the first point guaranteed to run on the GL thread with a
-   * live context, so the call is deferred here instead.
-   */
-  private record CompressedTextureListener(ApplicationListener delegate) implements ApplicationListener {
-
-    @Override
-    public void create() {
-      Flixel.assets.enableCompressedTextures();
-      delegate.create();
-    }
-
-    @Override
-    public void resize(int width, int height) {
-      delegate.resize(width, height);
-    }
-
-    @Override
-    public void render() {
-      delegate.render();
-    }
-
-    @Override
-    public void pause() {
-      delegate.pause();
-    }
-
-    @Override
-    public void resume() {
-      delegate.resume();
-    }
-
-    @Override
-    public void dispose() {
-      delegate.dispose();
-    }
+    game.setCompressedTexturesRequested(true);
+    activity.initialize(game, configuration);
   }
 }

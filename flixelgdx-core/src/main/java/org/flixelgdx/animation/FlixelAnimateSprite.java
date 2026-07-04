@@ -36,7 +36,6 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
-import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.util.FlixelDirectionFlags;
@@ -192,10 +191,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     String spritemapJsonPath = path + "/" + defaultSpritemapFileName + ".json";
     String animationJsonPath = path + "/" + defaultAnimationFileName + ".json";
     // Resolve a .ktx2 sibling before checking existence, since compressed builds delete the
-    // plain PNG once its .ktx2 replacement exists (see FlixelAssetPaths.resolveCompressedTexturePath).
-    String resolvedPngPath = Flixel.ensureAssets().isCompressedTexturesEnabled()
-        ? FlixelAssetPaths.resolveCompressedTexturePath(pngPath)
-        : pngPath;
+    // plain PNG once its .ktx2 replacement exists.
+    String resolvedPngPath = Flixel.ensureAssets().resolveTexturePath(pngPath);
     if (!Gdx.files.internal(resolvedPngPath).exists()
         || !Gdx.files.internal(spritemapJsonPath).exists()
         || !Gdx.files.internal(animationJsonPath).exists()) {
