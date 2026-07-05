@@ -67,9 +67,6 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   @NotNull
   private final String path;
 
-  @NotNull
-  private final String resolvedPath;
-
   @Nullable
   private final Texture ownedTexture;
 
@@ -107,7 +104,6 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     this.path = Objects.requireNonNull(path, "path cannot be null.");
     this.ownedTexture = ownedTexture;
     this.owned = (ownedTexture != null);
-    this.resolvedPath = owned ? this.path : assets.resolveTexturePath(this.path);
     this.persist = !owned && assets.getGlobalPersist();
   }
 
@@ -126,7 +122,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   @Override
   public boolean isLoaded() {
-    return owned || assets.getManager().isLoaded(resolvedPath, Texture.class);
+    return owned || assets.getManager().isLoaded(getResolvedPath(), Texture.class);
   }
 
   @Override
@@ -180,25 +176,26 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     if (owned) {
       return Objects.requireNonNull(ownedTexture, "Owned texture is null.");
     }
+    String resolvedPath = getResolvedPath();
     if (!assets.getManager().isLoaded(resolvedPath, Texture.class)) {
       assets.getManager().load(resolvedPath, Texture.class);
-      assets.getManager().finishLoadingAsset(resolvedPath);
+      assets.finishLoadingAsset(resolvedPath);
     }
     return assets.getManager().get(resolvedPath, Texture.class);
   }
 
   /**
    * Returns the path actually used to load the underlying texture from the libGDX
-   * {@code AssetManager}.
+   * {@code AssetManager}, resolved on demand through {@link FlixelAssetManager#resolveTexturePath}.
    *
-   * <p>Equal to {@link #getPath()} unless compressed textures are enabled and a {@code .ktx2}
-   * sibling was found for this graphic, in which case that sibling's path is returned instead.
+   * <p>Equal to {@link #getPath()} unless a {@code .ktx2} sibling was found for this graphic, in
+   * which case that sibling's path is returned instead.
    *
    * @return The resolved texture path.
    */
   @NotNull
   public String getResolvedPath() {
-    return resolvedPath;
+    return owned ? path : assets.resolveTexturePath(path);
   }
 
   /**
