@@ -338,9 +338,10 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    * Registers a KTX2/Basis Universal texture loader so {@code .png} requests transparently use a
    * compressed {@code .ktx2} sibling when one exists next to the requested path.
    *
-   * <p>Call this once during platform-specific startup, before loading any graphics, on backends
-   * that ship the Basis Universal transcoder natives (the Android backend calls this
-   * automatically during launch). Calling it on a backend without those natives available is
+   * <p>{@link org.flixelgdx.FlixelGame#create() FlixelGame.create()} calls this automatically on
+   * every backend, after the platform application object has created a GL context (this method
+   * queries {@code Gdx.gl} for supported compressed texture formats, so it cannot run any
+   * earlier). Calling it on a backend without the Basis Universal transcoder natives available is
    * harmless but pointless, since {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} only
    * looks for a {@code .ktx2} sibling after this has been called, and no {@code .ktx2} files exist
    * unless the {@code org.flixelgdx.basisu} Gradle plugin compressed them into the build.

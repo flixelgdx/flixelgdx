@@ -179,7 +179,6 @@ public class FlixelLwjgl3Launcher {
     Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
-    game.setCompressedTexturesRequested(true);
     new Lwjgl3Application(game, configuration);
 
     if (AnsiConsole.isInstalled()) {

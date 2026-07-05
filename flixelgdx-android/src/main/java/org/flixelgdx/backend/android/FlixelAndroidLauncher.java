@@ -119,7 +119,6 @@ public class FlixelAndroidLauncher {
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;
 
-    game.setCompressedTexturesRequested(true);
     activity.initialize(game, configuration);
   }
 }

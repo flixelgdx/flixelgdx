@@ -59,10 +59,9 @@ import java.util.Objects;
  * {@code .wav}, {@code .flac}), and text ({@code .txt}, {@code .xml}, {@code .json}). Add custom
  * extensions via {@link #registerLoader(String, Class, FlixelAssetLoader)}.
  *
- * <p><b>Compressed textures:</b> call {@link #enableCompressedTextures()} on backends that ship
- * the Basis Universal transcoder natives to make {@code .png} requests transparently prefer a
- * {@code .ktx2} sibling when one exists. The Android backend does this automatically during
- * launch.
+ * <p><b>Compressed textures:</b> {@link org.flixelgdx.FlixelGame#create() FlixelGame.create()}
+ * calls {@link #enableCompressedTextures()} automatically on every backend so {@code .png}
+ * requests transparently prefer a {@code .ktx2} sibling when one exists.
  *
  * <p><b>Recommended usage:</b> Access via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
@@ -137,7 +136,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     LoaderEntry<?> entry = requireEntry(path);
     manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
-      maybePrewarmAudio(path);
+      prewarmAudio(path);
     }
   }
 
@@ -150,7 +149,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     LoaderEntry<?> entry = requireEntry(path);
     manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
-      maybePrewarmAudio(path);
+      prewarmAudio(path);
     }
   }
 
@@ -535,7 +534,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     return ext;
   }
 
-  private void maybePrewarmAudio(@NotNull String path) {
+  private void prewarmAudio(@NotNull String path) {
     if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
       return;
     }

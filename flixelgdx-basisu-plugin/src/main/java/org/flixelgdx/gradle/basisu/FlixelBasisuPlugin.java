@@ -64,10 +64,11 @@ import java.util.Set;
  * install and run the {@code basisu} command line tool by hand: it fetches a verified {@code
  * basisu} binary for the host platform, caches it in the Gradle user home directory, and wires a
  * {@code compressBasisuTextures} task into the Android build so every {@code .png} under the
- * configured assets directory is compressed automatically. Supporting launchers enable the
- * matching runtime loader automatically, so game code keeps requesting {@code .png} paths and
- * transparently gets the compressed texture back; see {@code FlixelAssetManager.enableCompressedTextures()}
- * in {@code flixelgdx-core} for the loading side of this feature.
+ * configured assets directory is compressed automatically. {@code FlixelGame.create()} enables
+ * the matching runtime loader automatically on every backend, so game code keeps requesting
+ * {@code .png} paths and transparently gets the compressed texture back; see
+ * {@code FlixelAssetManager.enableCompressedTextures()} in {@code flixelgdx-core} for the loading
+ * side of this feature.
  *
  * <p>Compression stays off unless a developer opts in, since it changes build output and needs
  * network access on first use to fetch the encoder. See {@link FlixelBasisuExtension} for the
