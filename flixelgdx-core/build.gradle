@@ -2,7 +2,9 @@ import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.external.javadoc.CoreJavadocOptions
 import org.gradle.plugins.ide.eclipse.model.Library
 
-apply plugin: "java-library"
+plugins {
+  id 'java-library'
+}
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'

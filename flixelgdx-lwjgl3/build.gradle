@@ -1,4 +1,6 @@
-apply plugin: "java-library"
+plugins {
+  id 'java-library'
+}
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-lwjgl3'
