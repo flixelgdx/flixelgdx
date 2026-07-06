@@ -16,6 +16,10 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-teavm-plugin`**: Plugin that automates the workflow for web games. This includes copying assets, creating the HTML index file, extracting native scripts, and more.
 - **`flixelgdx-logging-plugin`**: Plugin that runs after `compileJava` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on TeaVM and helpful on the JVM).
 - **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for TeaVM or other non-JVM targets (stack traces, optional log files, etc.). It depends on **`flixelgdx-common`** for shared native-friendly pieces such as MiniAudio.
+- **`flixelgdx-video/`**: Optional video playback extension (for cutscenes, animated backgrounds, and so on), split into per-platform modules so games only ship the decoder they need:
+  - **`flixelgdx-video-core`**: The platform-agnostic API (`FlixelVideo`, `FlixelVideos`, `FlixelBaseVideo`, `FlixelVideoBackend`). TeaVM-safe; depends only on `flixelgdx-core`.
+  - **`flixelgdx-video-lwjgl3`**: Desktop backend that decodes through [libvlc](https://www.videolan.org/vlc/libvlc.html) in-memory callbacks and streams frames to the GPU with double-buffered PBOs. Bundles the VLC natives for Windows/macOS/Linux into the jar by default (build with `-PskipVlcNatives=true` for a slim jar) and falls back to a game-shipped `vlc/` folder or a system VLC install. If no working VLC is found, videos degrade to a never-ready state with a logged error instead of crashing the game.
+  - **`flixelgdx-video-teavm`**: Web backend built on a hidden HTML video element; the browser decodes and each frame is transferred GPU-to-GPU with `texImage2D`.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
 ## Build System
