@@ -30,6 +30,9 @@ configure(subprojects.findAll { p ->
     && p.name != 'flixelgdx-test'
     && p.name != 'flixelgdx-teavm-plugin'
     && p.name != 'flixelgdx-logging-plugin'
+    // Video core and web modules must stay TeaVM-safe, so they never pull the JVM-only helpers.
+    && p.name != 'flixelgdx-video-core'
+    && p.name != 'flixelgdx-video-teavm'
 }) {
   afterEvaluate {
     if (it.plugins.hasPlugin('java-library') || it.plugins.hasPlugin('com.android.library')) {
