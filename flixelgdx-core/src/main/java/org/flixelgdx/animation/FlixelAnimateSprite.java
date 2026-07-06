@@ -190,7 +190,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
     String pngPath = path + "/" + defaultSpritemapFileName + ".png";
     String spritemapJsonPath = path + "/" + defaultSpritemapFileName + ".json";
     String animationJsonPath = path + "/" + defaultAnimationFileName + ".json";
-    if (!Gdx.files.internal(pngPath).exists()
+    // Resolve a .ktx2 sibling before checking existence, since compressed builds delete the
+    // plain PNG once its .ktx2 replacement exists.
+    String resolvedPngPath = Flixel.ensureAssets().resolveTexturePath(pngPath);
+    if (!Gdx.files.internal(resolvedPngPath).exists()
         || !Gdx.files.internal(spritemapJsonPath).exists()
         || !Gdx.files.internal(animationJsonPath).exists()) {
       throw new IllegalArgumentException(
@@ -802,7 +805,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float wx = cam.worldToViewX(getX(), scrollX);
     float wy = cam.worldToViewY(getY(), scrollY);
 
-    // Conservative culling using the anchor-clip hitbox. Multi-part rigs may extend beyond this box
+    // Conservative culling using the anchor-clip hitbox. Multipart rigs may extend beyond this box,
     // but it avoids drawing entirely off-screen rigs. Per-part culling is not done here.
     float rigCullW = getWidth() * Math.abs(scaleX);
     float rigCullH = getHeight() * Math.abs(scaleY);
@@ -881,8 +884,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
     Array<FlixelFrame> atlas = activeRig.atlas;
     FlixelAnimateRig.Part[] parts = keyframe.parts;
-    for (int i = 0; i < parts.length; i++) {
-      FlixelAnimateRig.Part part = parts[i];
+    for (FlixelAnimateRig.Part part : parts) {
       if (part.atlasIndex < 0 || part.atlasIndex >= atlas.size) {
         continue;
       }

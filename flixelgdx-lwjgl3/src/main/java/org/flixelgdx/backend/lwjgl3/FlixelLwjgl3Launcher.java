@@ -247,4 +247,5 @@ public class FlixelLwjgl3Launcher {
       System.setProperty("jdk.gtk.version", "3");
     }
   }
+
 }

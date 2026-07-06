@@ -391,6 +391,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
 
+    // Deferred to here (rather than the asset manager's constructor) since the KTX2 loader
+    // queries Gdx.gl for supported texture formats, and no GL context exists until create() runs.
+    Flixel.assets.enableCompressedTextures();
+
     isClosed = false;
     isClosing = false;
     stateLifecyclePauseDispatched = false;

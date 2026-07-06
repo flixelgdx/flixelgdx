@@ -2,7 +2,7 @@ eclipse.project.name = appName + '-android'
 
 apply plugin: 'com.android.library'
 
-def reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD").toString().trim().toUpperCase(java.util.Locale.ROOT)
+def reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD").toString().trim().toUpperCase(Locale.ROOT)
 def reflectionProfile = ["SIMPLE", "STANDARD", "ALL"].contains(reflectionProfileRaw) ? reflectionProfileRaw : "STANDARD"
 def reflectionExtraPackages = (findProperty("flixelReflectionExtraPackages") ?: "")
   .toString()
@@ -60,7 +60,11 @@ def androidNativeCoordinates = [
   "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a",
   "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a",
   "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86",
-  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-arm64-v8a",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-armeabi-v7a",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-x86",
+  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-x86_64"
 ]
 
 def nativesOutputDir = layout.buildDirectory.dir("jniLibs")
@@ -68,13 +72,6 @@ def nativesOutputDir = layout.buildDirectory.dir("jniLibs")
 android {
   namespace "org.flixelgdx"
   compileSdk 36
-
-  publishing {
-    singleVariant("release") {
-      withSourcesJar()
-      withJavadocJar()
-    }
-  }
 
   defaultConfig {
     multiDexEnabled = true
@@ -112,6 +109,7 @@ dependencies {
   coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
   api project(':flixelgdx-core')
+  api project(':flixelgdx-jvm')
   api "androidx.multidex:multidex:2.0.1"
   androidNativeCoordinates.each { coordinates ->
     add("api", coordinates)
@@ -157,45 +155,5 @@ afterEvaluate {
       mergeJniTask.dependsOn(copyAndroidNatives)
     }
     variant.assembleProvider.get().dependsOn(copyAndroidNatives)
-  }
-}
-
-apply plugin: 'maven-publish'
-afterEvaluate {
-  publishing {
-    publications {
-      release(MavenPublication) {
-        from components.release
-        groupId = project.group
-        artifactId = project.name
-        version = project.version
-        pom {
-          name = rootProject.findProperty('pomName') ?: 'FlixelGDX'
-          description = rootProject.findProperty('pomDescription')
-            ?: 'High-level and powerful game development framework that brings the Flixel philosophy to Java and libGDX.'
-          url = rootProject.findProperty('pomUrl') ?: 'https://flixelgdx.org'
-          licenses {
-            license {
-              name = rootProject.findProperty('pomLicenseName') ?: 'MIT License'
-              url = rootProject.findProperty('pomLicenseUrl') ?: 'https://opensource.org/licenses/MIT'
-              distribution = 'repo'
-            }
-          }
-          developers {
-            developer {
-              id = rootProject.findProperty('pomDeveloperId') ?: 'stringdotjar'
-              name = rootProject.findProperty('pomDeveloperName') ?: 'String'
-            }
-          }
-          scm {
-            connection = rootProject.findProperty('pomScmConnection')
-              ?: 'scm:git:git://github.com/flixelgdx/flixelgdx.git'
-            developerConnection = rootProject.findProperty('pomScmDeveloperConnection')
-              ?: 'scm:git:ssh://git@github.com/flixelgdx/flixelgdx.git'
-            url = rootProject.findProperty('pomScmUrl') ?: 'https://github.com/flixelgdx/flixelgdx'
-          }
-        }
-      }
-    }
   }
 }

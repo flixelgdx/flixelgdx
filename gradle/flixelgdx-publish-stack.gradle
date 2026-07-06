@@ -3,23 +3,6 @@
  *
  * <p>Publishes to Maven Central via the Sonatype Central Portal using the
  * com.vanniktech.maven.publish plugin.
- *
- * <p>To publish, add the following to ~/.gradle/gradle.properties (never commit these):
- * <pre>
- *   # User token from portal.central.sonatype.com -> Account -> User Token
- *   mavenCentralUsername=&lt;token username&gt;
- *   mavenCentralPassword=&lt;token password&gt;
- *
- *   # GPG signing key
- *   signing.keyId=&lt;last 8 chars of your key fingerprint&gt;
- *   signing.password=&lt;key passphrase&gt;
- *   signing.secretKeyRingFile=&lt;absolute path to your .gpg secret key file&gt;
- * </pre>
- *
- * <p>Then run: ./gradlew publishAllPublicationsToMavenCentralRepository
- *
- * <p>The upload lands in a staging deployment on the Central Portal. Log in to
- * portal.central.sonatype.com and manually release it to make it publicly available.
  */
 
 // Attach sources/javadoc jars and Javadoc settings for every java-library subproject.
@@ -39,7 +22,7 @@ subprojects {
   }
 }
 
-configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixelgdx-android' }) { Project p ->
+configure(subprojects.findAll { it.name != 'flixelgdx-test' }) { Project p ->
   p.apply plugin: 'com.vanniktech.maven.publish'
 
   // SonatypeHost cannot be imported at compile time in apply-from scripts because Gradle
@@ -64,29 +47,26 @@ configure(subprojects.findAll { it.name != 'flixelgdx-test' && it.name != 'flixe
     coordinates(p.group as String, p.name, p.version as String)
 
     pom {
-      name = rootProject.findProperty('pomName') ?: 'FlixelGDX'
-      description = rootProject.findProperty('pomDescription')
-        ?: 'High-level and powerful game development framework that brings the Flixel philosophy to Java and libGDX.'
-      url = rootProject.findProperty('pomUrl') ?: 'https://flixelgdx.org'
+      name = rootProject.property('pomName')
+      description = rootProject.property('pomDescription')
+      url = rootProject.property('pomUrl')
       licenses {
         license {
-          name = rootProject.findProperty('pomLicenseName') ?: 'MIT License'
-          url = rootProject.findProperty('pomLicenseUrl') ?: 'https://opensource.org/licenses/MIT'
+          name = rootProject.property('pomLicenseName')
+          url = rootProject.property('pomLicenseUrl')
           distribution = 'repo'
         }
       }
       developers {
         developer {
-          id = rootProject.findProperty('pomDeveloperId') ?: 'stringdotjar'
-          name = rootProject.findProperty('pomDeveloperName') ?: 'String'
+          id = rootProject.property('pomDeveloperId')
+          name = rootProject.property('pomDeveloperName')
         }
       }
       scm {
-        connection = rootProject.findProperty('pomScmConnection')
-          ?: 'scm:git:git://github.com/flixelgdx/flixelgdx.git'
-        developerConnection = rootProject.findProperty('pomScmDeveloperConnection')
-          ?: 'scm:git:ssh://git@github.com/flixelgdx/flixelgdx.git'
-        url = rootProject.findProperty('pomScmUrl') ?: 'https://github.com/flixelgdx/flixelgdx'
+        connection = rootProject.property('pomScmConnection')
+        developerConnection = rootProject.property('pomScmDeveloperConnection')
+        url = rootProject.property('pomScmUrl')
       }
     }
   }

@@ -2,8 +2,6 @@
  * Repository list and Java toolchains for all subprojects.
  */
 subprojects {
-  group = "$groupId"
-  version = "$projectVersion"
   ext.appName = 'flixelgdx'
 
   repositories {

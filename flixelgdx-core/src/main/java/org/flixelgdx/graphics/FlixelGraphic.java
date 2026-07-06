@@ -104,7 +104,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     this.path = Objects.requireNonNull(path, "path cannot be null.");
     this.ownedTexture = ownedTexture;
     this.owned = (ownedTexture != null);
-    this.persist = owned ? false : assets.getGlobalPersist();
+    this.persist = !owned && assets.getGlobalPersist();
   }
 
   @NotNull
@@ -122,7 +122,7 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   @Override
   public boolean isLoaded() {
-    return owned || assets.getManager().isLoaded(path, Texture.class);
+    return owned || assets.getManager().isLoaded(getResolvedPath(), Texture.class);
   }
 
   @Override
@@ -176,11 +176,26 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     if (owned) {
       return Objects.requireNonNull(ownedTexture, "Owned texture is null.");
     }
-    if (!assets.getManager().isLoaded(path, Texture.class)) {
-      assets.getManager().load(path, Texture.class);
-      assets.getManager().finishLoadingAsset(path);
+    String resolvedPath = getResolvedPath();
+    if (!assets.getManager().isLoaded(resolvedPath, Texture.class)) {
+      assets.getManager().load(resolvedPath, Texture.class);
+      assets.finishLoadingAsset(resolvedPath);
     }
-    return assets.getManager().get(path, Texture.class);
+    return assets.getManager().get(resolvedPath, Texture.class);
+  }
+
+  /**
+   * Returns the path actually used to load the underlying texture from the libGDX
+   * {@code AssetManager}, resolved on demand through {@link FlixelAssetManager#resolveTexturePath}.
+   *
+   * <p>Equal to {@link #getPath()} unless a {@code .ktx2} sibling was found for this graphic, in
+   * which case that sibling's path is returned instead.
+   *
+   * @return The resolved texture path.
+   */
+  @NotNull
+  public String getResolvedPath() {
+    return owned ? path : assets.resolveTexturePath(path);
   }
 
   /**

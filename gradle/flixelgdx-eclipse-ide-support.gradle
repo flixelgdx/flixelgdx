@@ -4,6 +4,9 @@
  *
  * {@code flixelgdx-core} configures Eclipse in its own {@code build.gradle}; skip here to avoid duplicate hooks.
  */
+
+import org.gradle.plugins.ide.eclipse.model.Library
+
 subprojects { Project p ->
   p.plugins.withId('java-library') {
     if (p.name == 'flixelgdx-core') {
@@ -11,7 +14,7 @@ subprojects { Project p ->
     }
     p.eclipse.classpath.file {
       whenMerged {
-        entries.findAll { it instanceof org.gradle.plugins.ide.eclipse.model.Library }.each {
+        entries.findAll { it instanceof Library }.each {
           it.entryAttributes['module'] = 'true'
         }
       }

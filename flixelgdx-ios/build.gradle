@@ -1,4 +1,6 @@
-apply plugin: "java-library"
+plugins {
+  id 'java-library'
+}
 
 eclipse.project.name = appName + '-ios'
 
@@ -15,6 +17,7 @@ ext {
 
 dependencies {
   api project(':flixelgdx-core')
+  api project(':flixelgdx-jvm')
   api "com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
   api "com.mobidevelop.robovm:robovm-rt:$roboVMVersion"

@@ -31,6 +31,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
+import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundSource;
@@ -57,6 +58,10 @@ import java.util.Objects;
  * ({@code .png}, {@code .jpg}, {@code .jpeg}, {@code .webp}), audio ({@code .mp3}, {@code .ogg},
  * {@code .wav}, {@code .flac}), and text ({@code .txt}, {@code .xml}, {@code .json}). Add custom
  * extensions via {@link #registerLoader(String, Class, FlixelAssetLoader)}.
+ *
+ * <p><b>Compressed textures:</b> {@link org.flixelgdx.FlixelGame#create() FlixelGame.create()}
+ * calls {@link #enableCompressedTextures()} automatically on every backend so {@code .png}
+ * requests transparently prefer a {@code .ktx2} sibling when one exists.
  *
  * <p><b>Recommended usage:</b> Access via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
@@ -88,12 +93,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   private final ObjectMap<String, FlixelAsset<?>> cache = new ObjectMap<>();
   private final ObjectMap<String, LoaderEntry<?>> loaderRegistry = new ObjectMap<>();
   private final ObjectMap<String, String> audioPathCache = new ObjectMap<>();
+  private final ObjectMap<String, String> texturePathCache = new ObjectMap<>();
   private final ObjectSet<String> pendingPersistKeys = new ObjectSet<>();
   private final FlixelString diagnosticsString = new FlixelString();
   private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
   private int syntheticKeyId;
 
   private boolean globalPersist = false;
+  private boolean compressedTexturesEnabled;
 
   /** Constructs a new manager with default loaders for images, audio, and text. */
   public FlixelDefaultAssetManager() {
@@ -127,9 +134,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public void load(@NotNull String path) {
     path = requireNormalized(path);
     LoaderEntry<?> entry = requireEntry(path);
-    manager.load(path, entry.rawType);
+    manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
-      maybePrewarmAudio(path);
+      prewarmAudio(path);
     }
   }
 
@@ -140,9 +147,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       pendingPersistKeys.add(path);
     }
     LoaderEntry<?> entry = requireEntry(path);
-    manager.load(path, entry.rawType);
+    manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
-      maybePrewarmAudio(path);
+      prewarmAudio(path);
     }
   }
 
@@ -209,6 +216,20 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   @Override
+  public void enableCompressedTextures() {
+    if (compressedTexturesEnabled) {
+      return;
+    }
+    manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver()));
+    compressedTexturesEnabled = true;
+  }
+
+  @Override
+  public boolean isCompressedTexturesEnabled() {
+    return compressedTexturesEnabled;
+  }
+
+  @Override
   public boolean update() {
     boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
     return manager.update() && !prewarmPending;
@@ -242,7 +263,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (entry == null) {
       return false;
     }
-    return manager.isLoaded(path, entry.rawType);
+    return manager.isLoaded(resolveTexturePath(path), entry.rawType);
   }
 
   @Override
@@ -253,15 +274,17 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public void finishLoadingAsset(@NotNull String path) {
     manager.finishLoadingAsset(
-        FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(path, "path cannot be null.")));
+        resolveTexturePath(
+            FlixelAssetPaths.normalizeAssetPath(
+                Objects.requireNonNull(path, "path cannot be null."))));
   }
 
   @Override
   public void unload(@NotNull String path) {
     manager.unload(
-        FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(path, "path cannot be null.")));
+        resolveTexturePath(
+            FlixelAssetPaths.normalizeAssetPath(
+                Objects.requireNonNull(path, "path cannot be null."))));
   }
 
   @NotNull
@@ -363,6 +386,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     cache.clear();
     loaderRegistry.clear();
     audioPathCache.clear();
+    texturePathCache.clear();
     pendingPersistKeys.clear();
     syntheticKeyId = 0;
     assetMode = FlixelAssetMode.STANDARD;
@@ -416,6 +440,21 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
   }
 
+  @NotNull
+  @Override
+  public String resolveTexturePath(@NotNull String path) {
+    if (!compressedTexturesEnabled) {
+      return path;
+    }
+    String cached = texturePathCache.get(path);
+    if (cached != null) {
+      return cached;
+    }
+    String resolved = FlixelAssetPaths.resolveCompressedTexturePath(path);
+    texturePathCache.put(path, resolved);
+    return resolved;
+  }
+
   private void evict(@NotNull String path, @NotNull FlixelAsset<?> asset) {
     if (asset instanceof FlixelGraphic g) {
       if (g.isOwned()) {
@@ -423,8 +462,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         if (t != null) {
           t.dispose();
         }
-      } else if (manager != null && manager.isLoaded(path, Texture.class)) {
-        manager.unload(path);
+      } else if (manager != null && manager.isLoaded(g.getResolvedPath(), Texture.class)) {
+        manager.unload(g.getResolvedPath());
       }
     } else if (asset instanceof FlixelDefaultAsset<?> da) {
       if (manager != null && manager.isLoaded(path, da.getRawType())) {
@@ -495,7 +534,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     return ext;
   }
 
-  private void maybePrewarmAudio(@NotNull String path) {
+  private void prewarmAudio(@NotNull String path) {
     if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
       return;
     }
