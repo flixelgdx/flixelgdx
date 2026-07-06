@@ -10,26 +10,13 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-common`**: Shared code that multiple JVM-family backends can use without pulling in LWJGL3 or TeaVM. This includes the MiniAudio-based sound handler used by desktop, Android, and iOS launchers.
 - **`flixelgdx-lwjgl3`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**. When you create a desktop launcher with FlixelGDX, this is the module that provides the actual `Lwjgl3Application`.
 - **`flixelgdx-android`**: The backend for Android devices. This integrates FlixelGDX with libGDX's Android launcher and lifecycle.
-- **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM).
-- **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript.
-- **`flixelgdx-teavm-plugin`**: A custom plugin to automate the workflow for web games.
-- **`flixelgdx-logging-plugin`**: Optional Gradle plugin that runs after `compileJava` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on TeaVM and helpful on the JVM).
+- **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM). Not supported yet.
+- **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript, allowing games to run seamlessly in a browser.
+- **`flixelgdx-basisu-plugin`**: Compression plugin that automatically downloads a Basis Universal binary for the current OS and applies `.ktx2` compression for every `.png` asset.
+- **`flixelgdx-teavm-plugin`**: Plugin that automates the workflow for web games. This includes copying assets, creating the HTML index file, extracting native scripts, and more.
+- **`flixelgdx-logging-plugin`**: Plugin that runs after `compileJava` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on TeaVM and helpful on the JVM).
 - **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for TeaVM or other non-JVM targets (stack traces, optional log files, etc.). It depends on **`flixelgdx-common`** for shared native-friendly pieces such as MiniAudio.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
-
-### Which module should my game depend on?
-
-When you use FlixelGDX **as a library inside another libGDX project**, you almost always:
-
-- add a dependency on **`org.flixelgdx:flixelgdx-core`** to your own `core` module, and
-- keep using your existing platform launchers (desktop, Android, etc.).
-
-When you are building a project that is structured like FlixelGDX itself (multi-module with shared `core` and distinct backends), you can:
-
-- depend on `flixelgdx-core` from your game logic,
-- depend on the appropriate backend modules (`flixelgdx-lwjgl3`, `flixelgdx-android`, `flixelgdx-ios`, `flixelgdx-teavm`) in your platform-specific launchers.
-
-For more info on how to wire FlixelGDX into a new libGDX project, see the [COMPILING.md](COMPILING.md) document.
 
 ## Build System
 
@@ -47,11 +34,11 @@ Dependencies are managed in the `build.gradle` file of each module. We use `api`
 
 For example, the `flixelgdx-core` module uses `api` for libGDX, which means any project using FlixelGDX will also have access to the underlying libGDX classes.
 
-When you publish FlixelGDX to your local Maven repository (see `TESTING.md`), other projects can simply add:
+When you publish FlixelGDX to your local Maven repository (see [`COMPILING.md`](./COMPILING.md)), other projects can simply add:
 
 ```gradle
 dependencies {
-    implementation "org.flixelgdx:core:<version>"
+  implementation "org.flixelgdx:core:<version>"
 }
 ```
 
