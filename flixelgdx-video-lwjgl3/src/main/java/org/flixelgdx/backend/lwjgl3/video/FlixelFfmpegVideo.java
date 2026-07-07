@@ -50,7 +50,6 @@ import org.lwjgl.opengl.GL21C;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static org.bytedeco.ffmpeg.global.avcodec.av_packet_alloc;
 import static org.bytedeco.ffmpeg.global.avcodec.av_packet_free;
@@ -98,23 +97,22 @@ import static org.bytedeco.ffmpeg.global.swscale.sws_scale;
  * Desktop video backend that decodes through JavaCPP-bundled FFmpeg.
  *
  * <p>All demuxing and decoding happens on a dedicated background thread. Decoded
- * video frames are converted to RGBA and placed into a small queue of pre-allocated
- * {@link BytePointer}s backed by JavaCPP's native allocator. The render thread borrows
- * a buffer from a pool, uploads it through a ping-ponged pair of pixel buffer objects
- * for asynchronous GPU DMA, then returns the buffer to the pool. Audio is decoded to
- * interleaved stereo 16-bit PCM and streamed to an OpenAL source via a small buffer
- * ring. Neither video frames nor audio chunks touch the Java heap or the JVM direct
- * buffer budget ({@code MaxDirectMemorySize}) at steady state.
+ * video frames are converted to RGBA, queued, and consumed by the render thread
+ * which uploads each frame through a ping-ponged pair of pixel buffer objects so
+ * the GPU DMA and the CPU pixel copy never stall each other. Audio is decoded to
+ * interleaved stereo 16-bit PCM and streamed to an OpenAL source via a small
+ * buffer ring; volume is re-applied every frame so it always reflects the most
+ * recent {@link #setMediaVolume(float)} call.
  *
- * <p>The FFmpeg native libraries are bundled inside the framework's dependency JARs
- * and extracted automatically by JavaCPP on first use; no system VLC or other video
- * library is required.
+ * <p>The FFmpeg native libraries are bundled inside the framework's dependency
+ * JARs and extracted automatically by JavaCPP on first use; no system VLC or
+ * other video library is required.
  *
  * <p>Threading contract: all template methods ({@link #playMedia()},
  * {@link #updateMedia(float)}, {@link #disposeMedia()}, and the other
- * {@code protected} methods) must be called on the render thread. The decode thread
- * only touches the shared fields that are explicitly {@code volatile}, and the two
- * blocking queues which are thread-safe by construction.
+ * {@code protected} methods) must be called on the render thread. The decode
+ * thread only touches the shared fields that are explicitly {@code volatile}, and
+ * the two blocking queues which are thread-safe by construction.
  */
 final class FlixelFfmpegVideo extends FlixelBaseVideo {
 
@@ -136,6 +134,10 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
    */
   private static final AVRational US_RATIONAL = new AVRational().num(1).den(1_000_000);
 
+  // -------------------------------------------------------------------------
+  // Fields (alignment order: long/double, then int/float/ref, then boolean/byte)
+  // -------------------------------------------------------------------------
+
   /** Current playback position in microseconds; render thread only. */
   private long playbackUs;
 
@@ -147,6 +149,8 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
    * thread, read and cleared by the decode thread.
    */
   private volatile long seekTargetUs = -1;
+
+  // -- int / float / ref --
 
   private AVFormatContext formatCtx;
   private AVCodecContext videoCtx;
@@ -160,21 +164,10 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
   private final BlockingQueue<VideoFrame> frameQueue = new ArrayBlockingQueue<>(VIDEO_QUEUE_DEPTH);
 
   /**
-   * Audio PCM queue: decode thread produces interleaved stereo 16-bit
-   * JavaCPP-allocated {@link BytePointer}s, render thread streams them to OpenAL.
+   * Audio PCM queue: decode thread produces interleaved stereo 16-bit chunks,
+   * render thread streams them to OpenAL.
    */
-  private final BlockingQueue<BytePointer> audioQueue = new ArrayBlockingQueue<>(64);
-
-  /**
-   * Pool of {@link BytePointer}s reused between frames. Memory is allocated through
-   * JavaCPP's native allocator, which does not count against the JVM direct buffer
-   * budget ({@code MaxDirectMemorySize}). The decode thread borrows one buffer, fills
-   * it, and puts it in {@link #frameQueue}. The render thread returns each buffer
-   * here after uploading it to the GPU. Pool size is {@code VIDEO_QUEUE_DEPTH + 1}:
-   * the queue can hold {@code VIDEO_QUEUE_DEPTH} filled buffers while the decode
-   * thread pre-fills one more.
-   */
-  private final BlockingQueue<BytePointer> freeFramePool = new ArrayBlockingQueue<>(VIDEO_QUEUE_DEPTH + 1);
+  private final BlockingQueue<byte[]> audioQueue = new ArrayBlockingQueue<>(64);
 
   private Texture texture;
 
@@ -205,6 +198,8 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
   private volatile float desiredVolume = 1f;
   private volatile float desiredRate = 1f;
 
+  // -- boolean / byte --
+
   private volatile boolean playing;
   private volatile boolean paused;
   private volatile boolean looping;
@@ -222,6 +217,8 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
   private volatile boolean disposed;
   private boolean ready;
 
+  // -------------------------------------------------------------------------
+
   FlixelFfmpegVideo(@NotNull String path) {
     super();
     av_log_set_level(AV_LOG_QUIET);
@@ -230,6 +227,10 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     decodeThread.setDaemon(true);
     decodeThread.start();
   }
+
+  // -------------------------------------------------------------------------
+  // Template methods
+  // -------------------------------------------------------------------------
 
   @Override
   protected void playMedia() {
@@ -241,7 +242,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     playbackUs = 0;
     playing = true;
     paused = false;
-    clearFrameQueue();
+    frameQueue.clear();
     audioQueue.clear();
   }
 
@@ -268,7 +269,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     ended = false;
     seekTargetUs = 0;
     playbackUs = 0;
-    clearFrameQueue();
+    frameQueue.clear();
     audioQueue.clear();
     if (audioInitialized) {
       AL10.alSourceStop(alSource);
@@ -303,7 +304,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     long targetUs = (long) (Math.max(0f, timeMs) * 1000L);
     playbackUs = targetUs;
     seekTargetUs = targetUs;
-    clearFrameQueue();
+    frameQueue.clear();
     audioQueue.clear();
     ended = false;
   }
@@ -352,7 +353,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
   protected void applyMediaQuality(@NotNull FlixelVideoQuality quality) {
     mediaQuality = quality;
     // Decode thread rebuilds SwsContext on the next frame when it sees the new quality.
-    clearFrameQueue();
+    frameQueue.clear();
   }
 
   @Override
@@ -382,14 +383,10 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
       playbackUs += (long) (cappedElapsed * desiredRate * 1_000_000L);
     }
 
-    // Consume the latest video frame whose PTS has passed. Drop older frames
-    // back into the pool so the decode thread can reuse their buffers.
+    // Consume the latest video frame whose PTS has passed.
     VideoFrame display = null;
     VideoFrame candidate;
     while ((candidate = frameQueue.peek()) != null && candidate.ptsUs() <= playbackUs) {
-      if (display != null) {
-        freeFramePool.offer(display.pixels());
-      }
       display = frameQueue.poll();
     }
     if (display != null) {
@@ -445,11 +442,14 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
       pbos[1] = 0;
     }
 
-    clearFrameQueue();
+    frameQueue.clear();
     audioQueue.clear();
-    freeFramePool.clear();
     ready = false;
   }
+
+  // -------------------------------------------------------------------------
+  // FFmpeg setup (render thread)
+  // -------------------------------------------------------------------------
 
   private void openMedia(String path) {
     formatCtx = new AVFormatContext(null);
@@ -523,6 +523,10 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Decode loop (background thread)
+  // -------------------------------------------------------------------------
+
   private void runDecodeLoop() {
     AVPacket pkt = av_packet_alloc();
     AVFrame srcFrame = av_frame_alloc();
@@ -549,7 +553,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
           if (audioCtx != null) {
             avcodec_flush_buffers(audioCtx);
           }
-          clearFrameQueue();
+          frameQueue.clear();
           audioQueue.clear();
           continue;
         }
@@ -563,7 +567,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
             if (audioCtx != null) {
               avcodec_flush_buffers(audioCtx);
             }
-            clearFrameQueue();
+            frameQueue.clear();
             audioQueue.clear();
           } else {
             ended = true;
@@ -574,6 +578,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
 
         int idx = pkt.stream_index();
         if (idx == videoStreamIdx) {
+          // Rebuild SwsContext when quality or source dimensions change.
           FlixelVideoQuality q = mediaQuality;
           int tw = scaledDimension(videoCtx.width(), q);
           int th = scaledDimension(videoCtx.height(), q);
@@ -595,16 +600,6 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
             decodeH = th;
             frameW = tw;
             frameH = th;
-
-            // Repopulate the frame pool with correctly-sized JavaCPP-allocated
-            // buffers. Any old buffers still in the pool are dropped here; JavaCPP
-            // frees their native memory when they are GC'd. new BytePointer(n)
-            // uses JavaCPP's own allocator and does not count against MaxDirectMemorySize.
-            freeFramePool.clear();
-            int frameBytes = tw * th * 4;
-            for (int i = 0; i < VIDEO_QUEUE_DEPTH + 1; i++) {
-              freeFramePool.offer(new BytePointer(frameBytes));
-            }
           }
 
           avcodec_send_packet(videoCtx, pkt);
@@ -621,28 +616,17 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
             long ptsUs = av_rescale_q(pts,
                 formatCtx.streams(videoStreamIdx).time_base(), US_RATIONAL);
 
-            // Borrow a JavaCPP-allocated buffer from the pool. The render thread
-            // returns it after uploading, so the pool stays bounded and neither
-            // heap nor MaxDirectMemorySize budget is touched per frame.
-            BytePointer pixelBuf = freeFramePool.poll(200L, TimeUnit.MILLISECONDS);
-            if (pixelBuf == null || disposed) {
-              continue;
-            }
-
-            // Strip row padding: copy each row from native RGBA data into the
-            // tight pool buffer via ByteBuffer views of both native regions.
+            // Strip row padding: copy each row individually into a tight RGBA buffer.
             int stride = rgbaFrame.linesize(0);
             int rowBytes = tw * 4;
-            BytePointer nativeData = rgbaFrame.data(0);
-            nativeData.capacity((long) stride * th);
-            ByteBuffer srcBuf = nativeData.asByteBuffer();
-            ByteBuffer destBuf = pixelBuf.asByteBuffer();
+            byte[] pixels = new byte[tw * th * 4];
+            BytePointer data = rgbaFrame.data(0);
             for (int row = 0; row < th; row++) {
-              srcBuf.limit(row * stride + rowBytes).position(row * stride);
-              destBuf.put(srcBuf);
+              data.position((long) row * stride).get(pixels, row * rowBytes, rowBytes);
             }
+            data.position(0);
 
-            frameQueue.put(new VideoFrame(pixelBuf, tw, th, ptsUs));
+            frameQueue.put(new VideoFrame(ByteBuffer.wrap(pixels), tw, th, ptsUs));
           }
         } else if (idx == audioStreamIdx && audioCtx != null) {
           decodeAudioPacket(pkt, srcFrame, audioOutFrame);
@@ -695,10 +679,8 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
 
       if (swr_convert_frame(swrCtx, outFrame, inFrame) == 0 && outFrame.nb_samples() > 0) {
         int bytes = outFrame.nb_samples() * 4; // stereo * 2 bytes per sample
-        BytePointer audioData = outFrame.data(0);
-        audioData.capacity(bytes);
-        BytePointer pcm = new BytePointer(bytes);
-        pcm.asByteBuffer().put(audioData.asByteBuffer());
+        byte[] pcm = new byte[bytes];
+        outFrame.data(0).get(pcm, 0, bytes);
         audioQueue.put(pcm);
       }
     }
@@ -719,6 +701,10 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     }
     return swr;
   }
+
+  // -------------------------------------------------------------------------
+  // Render-thread GPU and audio helpers
+  // -------------------------------------------------------------------------
 
   private void ensureGpuObjects(int w, int h) {
     if (texture != null && w == textureW && h == textureH) {
@@ -749,8 +735,7 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     pboIndex ^= 1;
     GL15C.glBindBuffer(GL21C.GL_PIXEL_UNPACK_BUFFER, pbo);
     GL15C.glBufferData(GL21C.GL_PIXEL_UNPACK_BUFFER, bytes, GL15C.GL_STREAM_DRAW);
-    BytePointer pixels = frame.pixels();
-    GL15C.glBufferSubData(GL21C.GL_PIXEL_UNPACK_BUFFER, 0, pixels.asByteBuffer());
+    GL15C.glBufferSubData(GL21C.GL_PIXEL_UNPACK_BUFFER, 0, frame.pixels());
 
     // Upload from the PBO (GPU DMA, no CPU stall).
     texture.bind();
@@ -758,9 +743,6 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
         GL11C.GL_RGBA, GL11C.GL_UNSIGNED_BYTE, 0L);
 
     GL15C.glBindBuffer(GL21C.GL_PIXEL_UNPACK_BUFFER, 0);
-
-    // Return the buffer to the pool so the decode thread can reuse it.
-    freeFramePool.offer(pixels);
     ready = true;
   }
 
@@ -773,11 +755,11 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
       AL10.alSourcef(alSource, AL10.AL_PITCH, 1f);
 
       for (int buf : alBuffers) {
-        BytePointer pcm = audioQueue.poll();
+        byte[] pcm = audioQueue.poll();
         if (pcm == null) {
           break;
         }
-        AL10.alBufferData(buf, alFormat, pcm.asByteBuffer(), alSampleRate);
+        AL10.alBufferData(buf, alFormat, ByteBuffer.wrap(pcm), alSampleRate);
         AL10.alSourceQueueBuffers(alSource, buf);
       }
 
@@ -794,9 +776,9 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     int processed = AL10.alGetSourcei(alSource, AL10.AL_BUFFERS_PROCESSED);
     while (processed-- > 0) {
       int buf = AL10.alSourceUnqueueBuffers(alSource);
-      BytePointer pcm = audioQueue.poll();
+      byte[] pcm = audioQueue.poll();
       if (pcm != null) {
-        AL10.alBufferData(buf, alFormat, pcm.asByteBuffer(), alSampleRate);
+        AL10.alBufferData(buf, alFormat, ByteBuffer.wrap(pcm), alSampleRate);
         AL10.alSourceQueueBuffers(alSource, buf);
       }
     }
@@ -806,18 +788,6 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
       if (state != AL10.AL_PLAYING) {
         AL10.alSourcePlay(alSource);
       }
-    }
-  }
-
-  /**
-   * Drains the frame queue and returns each frame's buffer to the free pool.
-   * Must be called instead of {@code frameQueue.clear()} to avoid leaking pool
-   * buffers that would then be unreachable to the decode thread.
-   */
-  private void clearFrameQueue() {
-    VideoFrame f;
-    while ((f = frameQueue.poll()) != null) {
-      freeFramePool.offer(f.pixels());
     }
   }
 
@@ -831,6 +801,6 @@ final class FlixelFfmpegVideo extends FlixelBaseVideo {
     return Math.max(2, Math.round(sourceSize * quality.getScale()) & ~1);
   }
 
-  private record VideoFrame(BytePointer pixels, int width, int height, long ptsUs) {
+  private record VideoFrame(ByteBuffer pixels, int width, int height, long ptsUs) {
   }
 }
