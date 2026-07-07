@@ -31,7 +31,7 @@ import com.badlogic.gdx.graphics.TextureData;
 import com.github.xpenatan.gdx.teavm.backends.web.WebGL20;
 import com.github.xpenatan.gdx.teavm.backends.web.gl.WebGLRenderingContextExt;
 
-import org.flixelgdx.video.FlixelVideoBackend;
+import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelVideoQuality;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +40,7 @@ import org.teavm.jso.JSObject;
 import org.teavm.jso.dom.html.HTMLVideoElement;
 
 /**
- * Web {@link FlixelVideoBackend} built on a hidden HTML video element.
+ * Web video backend built on a hidden HTML video element.
  *
  * <p>The video element is used strictly as a decoding source and is never attached to
  * the DOM, so it cannot float above or below the game canvas; every frame is pulled
@@ -52,11 +52,11 @@ import org.teavm.jso.dom.html.HTMLVideoElement;
  * whenever the decoder runs on the GPU. Lower presets route through an offscreen
  * canvas ({@code drawImage} downscale, then {@code texImage2D(..., canvas)}).
  *
- * <p>Autoplay policies may block {@link #play()} with sound before the first user
+ * <p>Autoplay policies may block {@link #playMedia()} with sound before the first user
  * gesture; in that case playback resumes automatically on the next pointer or key
  * event (the rejection handler in {@link #jsPlay} registers one-shot listeners).
  */
-final class FlixelTeaVMVideo implements FlixelVideoBackend {
+final class FlixelTeaVMVideo extends FlixelBaseVideo {
 
   /** The hidden video element doing the decoding. */
   private final JSObject element;
@@ -69,7 +69,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   private Texture texture;
 
   @NotNull
-  private FlixelVideoQuality quality = FlixelVideoQuality.FULL;
+  private FlixelVideoQuality mediaQuality = FlixelVideoQuality.FULL;
 
   /** Texture dimensions currently allocated on the GPU. */
   private int textureWidth;
@@ -94,11 +94,12 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
    * @param url The video URL, typically an internal asset path relative to the page.
    */
   FlixelTeaVMVideo(@NotNull String url) {
+    super();
     element = jsCreateVideo(url);
   }
 
   @Override
-  public void play() {
+  protected void playMedia() {
     if (disposed) {
       return;
     }
@@ -106,7 +107,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void pause() {
+  protected void pauseMedia() {
     if (disposed) {
       return;
     }
@@ -114,12 +115,12 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void resume() {
-    play();
+  protected void resumeMedia() {
+    playMedia();
   }
 
   @Override
-  public void stop() {
+  protected void stopMedia() {
     if (disposed) {
       return;
     }
@@ -129,22 +130,22 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isPlaying() {
+  protected boolean isMediaPlaying() {
     return !disposed && jsIsPlaying(element);
   }
 
   @Override
-  public boolean isEnd() {
+  protected boolean isMediaEnded() {
     return !disposed && jsIsEnded(element);
   }
 
   @Override
-  public boolean isReady() {
+  protected boolean isMediaReady() {
     return ready;
   }
 
   @Override
-  public float getTime() {
+  protected float getMediaTime() {
     if (disposed) {
       return 0f;
     }
@@ -155,7 +156,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void setTime(float timeMs) {
+  protected void setMediaTime(float timeMs) {
     if (disposed) {
       return;
     }
@@ -170,7 +171,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public float getLength() {
+  protected float getMediaLength() {
     if (disposed) {
       return 0f;
     }
@@ -182,12 +183,12 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public float getRate() {
+  protected float getMediaRate() {
     return rate;
   }
 
   @Override
-  public void setRate(float rate) {
+  protected void setMediaRate(float rate) {
     if (disposed || rate <= 0f) {
       return;
     }
@@ -196,25 +197,25 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isLooping() {
+  protected boolean isMediaLooped() {
     return looping;
   }
 
   @Override
-  public void setLooping(boolean looping) {
-    this.looping = looping;
+  protected void setMediaLooped(boolean looped) {
+    this.looping = looped;
     if (!disposed) {
-      jsSetLoop(element, looping);
+      jsSetLoop(element, looped);
     }
   }
 
   @Override
-  public float getVolume() {
+  protected float getMediaVolume() {
     return volume;
   }
 
   @Override
-  public void setVolume(float volume) {
+  protected void setMediaVolume(float volume) {
     this.volume = Math.max(0f, Math.min(1f, volume));
     if (!disposed) {
       jsSetVolume(element, this.volume);
@@ -222,11 +223,11 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void setQuality(@NotNull FlixelVideoQuality quality) {
-    if (this.quality == quality) {
+  protected void applyMediaQuality(@NotNull FlixelVideoQuality quality) {
+    if (this.mediaQuality == quality) {
       return;
     }
-    this.quality = quality;
+    this.mediaQuality = quality;
     // Force the texture to be recreated at the new decode size on the next frame.
     lastUploadedTime = -1.0;
     if (texture != null) {
@@ -237,7 +238,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public int getVideoWidth() {
+  protected int getMediaVideoWidth() {
     if (disposed) {
       return 0;
     }
@@ -245,7 +246,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public int getVideoHeight() {
+  protected int getMediaVideoHeight() {
     if (disposed) {
       return 0;
     }
@@ -253,7 +254,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void update() {
+  protected void updateMedia(float elapsed) {
     if (disposed) {
       return;
     }
@@ -273,8 +274,8 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
     if (jsGetReadyState(element) < 2) {
       return;
     }
-    int width = getVideoWidth();
-    int height = getVideoHeight();
+    int width = getMediaVideoWidth();
+    int height = getMediaVideoHeight();
     if (width <= 0 || height <= 0) {
       return;
     }
@@ -295,12 +296,12 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
 
   @Override
   @Nullable
-  public Texture getTexture() {
+  protected Texture getMediaTexture() {
     return ready ? texture : null;
   }
 
   @Override
-  public void dispose() {
+  protected void disposeMedia() {
     if (disposed) {
       return;
     }
@@ -334,7 +335,7 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
       return;
     }
     Gdx.gl.glBindTexture(GL20.GL_TEXTURE_2D, target.getTextureObjectHandle());
-    if (quality == FlixelVideoQuality.FULL) {
+    if (mediaQuality == FlixelVideoQuality.FULL) {
       HTMLVideoElement video = element.cast();
       context().texImage2D(GL20.GL_TEXTURE_2D, 0, GL20.GL_RGBA, GL20.GL_RGBA,
           GL20.GL_UNSIGNED_BYTE, video);
@@ -351,10 +352,10 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
     if (sourceSize <= 0) {
       return 0;
     }
-    if (quality == FlixelVideoQuality.FULL) {
+    if (mediaQuality == FlixelVideoQuality.FULL) {
       return sourceSize;
     }
-    return Math.max(2, Math.round(sourceSize * quality.getScale()));
+    return Math.max(2, Math.round(sourceSize * mediaQuality.getScale()));
   }
 
   @NotNull
@@ -374,11 +375,6 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
       + "v.playsInline = true;"
       + "v.flixelVolume = 1;"
       + "v.flixelLoop = false;"
-      // Each element carries its own audio, so per-video volume is independent by
-      // construction. The catch is that some browsers reset media element properties
-      // when new metadata arrives, which drops a volume or loop value set before the
-      // stream loaded. Reapplying the requested values here keeps each video pinned to
-      // its own settings instead of snapping back to the element defaults.
       + "v.addEventListener('loadedmetadata', function() {"
       + "  v.volume = v.flixelVolume;"
       + "  v.loop = v.flixelLoop;"
@@ -466,12 +462,12 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   private static native void jsTexImage2DCanvas(JSObject ctx, JSObject canvas);
 
   /**
-     * Custom texture data that allocates GPU storage for the video frames.
-     *
-     * <p>The actual pixels are re-specified every frame by {@code texImage2D} with a
-     * video or canvas source, so this only performs the initial allocation that gives
-     * the libGDX {@link Texture} wrapper its correct dimensions for UV math.
-     */
+   * Custom texture data that allocates GPU storage for the video frames.
+   *
+   * <p>The actual pixels are re-specified every frame by {@code texImage2D} with a
+   * video or canvas source, so this only performs the initial allocation that gives
+   * the libGDX {@link Texture} wrapper its correct dimensions for UV math.
+   */
   private record WebVideoTextureData(int width, int height) implements TextureData {
 
     @Override

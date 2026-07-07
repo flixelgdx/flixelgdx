@@ -8,7 +8,7 @@ eclipse.project.name = appName + '-video-android'
 apply plugin: 'com.android.library'
 
 android {
-  namespace "org.flixelgdx.video.android"
+  namespace "org.flixelgdx.backend.android.video"
   compileSdk 36
 
   defaultConfig {
@@ -23,7 +23,6 @@ android {
 }
 
 repositories {
-  // Needed for AAPT2 and the Android Gradle plugin's own artifacts.
   google()
 }
 
@@ -33,15 +32,7 @@ configurations {
 
 dependencies {
   coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
-
-  // The platform-agnostic video API this backend implements. It transitively brings in
-  // flixelgdx-core and libGDX, so no separate core dependency is needed here.
   api project(':flixelgdx-video-core')
-
-  // Supplies the Android libGDX types (Gdx, Texture, FrameBuffer, ShaderProgram, Mesh)
-  // this backend uses to upload and draw decoded frames.
   api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
-
-  // Nullability annotations, compile-time only (no runtime dependency shipped in the AAR).
   compileOnly 'org.jetbrains:annotations:26.1.0'
 }

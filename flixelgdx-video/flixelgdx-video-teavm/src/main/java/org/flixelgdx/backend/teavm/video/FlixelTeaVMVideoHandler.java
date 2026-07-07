@@ -23,7 +23,8 @@
  */
 package org.flixelgdx.backend.teavm.video;
 
-import org.flixelgdx.video.FlixelVideoBackend;
+import org.flixelgdx.video.FlixelBaseVideo;
+import org.flixelgdx.video.FlixelVideoFactory;
 import org.flixelgdx.video.FlixelVideos;
 
 /**
@@ -38,7 +39,7 @@ import org.flixelgdx.video.FlixelVideos;
  * }
  * }</pre>
  */
-public final class FlixelTeaVMVideoHandler implements FlixelVideoBackend.Factory {
+public final class FlixelTeaVMVideoHandler implements FlixelVideoFactory {
 
   /**
    * Registers this handler as the video backend factory for {@link FlixelVideos}.
@@ -49,7 +50,7 @@ public final class FlixelTeaVMVideoHandler implements FlixelVideoBackend.Factory
   }
 
   @Override
-  public FlixelVideoBackend createVideo(String path, boolean external) {
+  public FlixelBaseVideo createVideo(String path, boolean external) {
     return new FlixelTeaVMVideo(resolveUrl(path, external));
   }
 

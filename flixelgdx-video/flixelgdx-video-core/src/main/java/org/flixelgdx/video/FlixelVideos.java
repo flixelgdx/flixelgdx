@@ -53,12 +53,12 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  *
  * @see FlixelVideo
- * @see FlixelVideoBackend.Factory
+ * @see FlixelVideoFactory
  */
 public final class FlixelVideos {
 
   @Nullable
-  private static FlixelVideoBackend.Factory backendFactory;
+  private static FlixelVideoFactory backendFactory;
 
   private FlixelVideos() {}
 
@@ -71,7 +71,7 @@ public final class FlixelVideos {
    */
   @NotNull
   public static FlixelVideo create(@NotNull String path) {
-    return new FlixelBaseVideo(createBackend(path, false));
+    return createBackend(path, false);
   }
 
   /**
@@ -91,7 +91,7 @@ public final class FlixelVideos {
     if (internal) {
       return create(file.path());
     }
-    return new FlixelBaseVideo(createBackend(file.file().getAbsolutePath(), true));
+    return createBackend(file.file().getAbsolutePath(), true);
   }
 
   /**
@@ -104,7 +104,7 @@ public final class FlixelVideos {
    * @param factory The backend factory to use (must not be {@code null}).
    * @throws IllegalArgumentException If {@code factory} is {@code null}.
    */
-  public static void setBackendFactory(@NotNull FlixelVideoBackend.Factory factory) {
+  public static void setBackendFactory(@NotNull FlixelVideoFactory factory) {
     if (factory == null) {
       throw new IllegalArgumentException("Video backend factory cannot be null.");
     }
@@ -117,13 +117,13 @@ public final class FlixelVideos {
    * @return The factory, or {@code null} if no platform installer has run yet.
    */
   @Nullable
-  public static FlixelVideoBackend.Factory getBackendFactory() {
+  public static FlixelVideoFactory getBackendFactory() {
     return backendFactory;
   }
 
   @NotNull
-  private static FlixelVideoBackend createBackend(@NotNull String path, boolean external) {
-    FlixelVideoBackend.Factory factory = backendFactory;
+  private static FlixelVideo createBackend(@NotNull String path, boolean external) {
+    FlixelVideoFactory factory = backendFactory;
     if (factory == null) {
       throw new IllegalStateException(
           "No video backend factory registered. Call the platform installer first, e.g. "

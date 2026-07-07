@@ -56,7 +56,6 @@ import org.jetbrains.annotations.Nullable;
  * releases the decoder and the frame texture.
  *
  * @see FlixelVideos
- * @see FlixelVideoBackend
  */
 public interface FlixelVideo extends IFlixelBasic {
 

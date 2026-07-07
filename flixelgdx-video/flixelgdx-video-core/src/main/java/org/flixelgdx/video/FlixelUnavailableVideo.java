@@ -29,108 +29,106 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A do-nothing {@link FlixelVideoBackend} used when video playback is unavailable.
+ * A do-nothing {@link FlixelBaseVideo} used when video playback is unavailable.
  *
  * <p>Platform factories return this backend when their native decoder cannot be set
- * up (for example, no working VLC installation on desktop). The game keeps running,
+ * up (for example, no working VLC installation on desktop). The game keeps running;
  * the video simply never becomes ready and never provides a texture, and every
  * control call is a safe no-op. Games that must react to a missing decoder can check
  * {@link FlixelVideo#isReady()} staying {@code false}.
  */
-public final class FlixelUnavailableVideo implements FlixelVideoBackend {
+public final class FlixelUnavailableVideo extends FlixelBaseVideo {
 
-  /** The shared instance; the backend is stateless, so one is enough for all videos. */
-  @NotNull
-  public static final FlixelUnavailableVideo INSTANCE = new FlixelUnavailableVideo();
-
-  private FlixelUnavailableVideo() {}
+  public FlixelUnavailableVideo() {
+    super();
+  }
 
   @Override
-  public void play() {}
+  protected void playMedia() {}
 
   @Override
-  public void pause() {}
+  protected void pauseMedia() {}
 
   @Override
-  public void resume() {}
+  protected void resumeMedia() {}
 
   @Override
-  public void stop() {}
+  protected void stopMedia() {}
 
   @Override
-  public boolean isPlaying() {
+  protected boolean isMediaPlaying() {
     return false;
   }
 
   @Override
-  public boolean isEnd() {
+  protected boolean isMediaReady() {
     return false;
   }
 
   @Override
-  public boolean isReady() {
+  protected boolean isMediaEnded() {
     return false;
   }
 
   @Override
-  public float getTime() {
+  protected float getMediaTime() {
     return 0f;
   }
 
   @Override
-  public void setTime(float timeMs) {}
+  protected void setMediaTime(float timeMs) {}
 
   @Override
-  public float getLength() {
+  protected float getMediaLength() {
     return 0f;
   }
 
   @Override
-  public float getRate() {
+  protected float getMediaRate() {
     return 1f;
   }
 
   @Override
-  public void setRate(float rate) {}
+  protected void setMediaRate(float rate) {}
 
   @Override
-  public boolean isLooping() {
+  protected boolean isMediaLooped() {
     return false;
   }
 
   @Override
-  public void setLooping(boolean looping) {}
+  protected void setMediaLooped(boolean looped) {}
 
   @Override
-  public float getVolume() {
+  protected float getMediaVolume() {
     return 1f;
   }
 
   @Override
-  public void setVolume(float volume) {}
+  protected void setMediaVolume(float volume) {}
 
   @Override
-  public void setQuality(@NotNull FlixelVideoQuality quality) {}
+  protected void applyMediaQuality(@NotNull FlixelVideoQuality quality) {}
 
   @Override
-  public int getVideoWidth() {
+  protected int getMediaVideoWidth() {
     return 0;
   }
 
   @Override
-  public int getVideoHeight() {
+  protected int getMediaVideoHeight() {
     return 0;
   }
 
-  @Override
-  public void update() {}
-
-  @Override
   @Nullable
-  public Texture getTexture() {
+  @Override
+  protected Texture getMediaTexture() {
     return null;
   }
 
   @Override
-  public void dispose() {}
+  protected void updateMedia(float elapsed) {}
+
+  @Override
+  protected void disposeMedia() {}
 }

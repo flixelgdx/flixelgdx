@@ -37,7 +37,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 
-import org.flixelgdx.video.FlixelVideoBackend;
+import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelVideoQuality;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,8 +49,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
- * Android {@link FlixelVideoBackend} that decodes through the platform
- * {@link MediaPlayer} into a {@link SurfaceTexture}.
+ * Android video backend that decodes through the platform {@link MediaPlayer} into a
+ * {@link SurfaceTexture}.
  *
  * <p>The MediaPlayer renders each frame into a {@code GL_TEXTURE_EXTERNAL_OES} texture
  * fed by a SurfaceTexture, which keeps decoding (and its audio) entirely on the
@@ -63,12 +63,12 @@ import java.io.OutputStream;
  * <p>Using MediaPlayer gives audio, per-video volume, looping, seeking, and playback
  * rate from the platform, so each video keeps its own audio level with no cross-talk.
  *
- * <p>Threading contract: {@link #update()} and {@link #dispose()} must run on the render
- * thread (they touch GL objects and the SurfaceTexture). MediaPlayer fires its prepared,
- * completion, error, and size callbacks on its own threads, so those only set volatile
- * flags that the render thread reads.
+ * <p>Threading contract: {@link #updateMedia(float)} and {@link #disposeMedia()} must
+ * run on the render thread (they touch GL objects and the SurfaceTexture). MediaPlayer
+ * fires its prepared, completion, error, and size callbacks on its own threads, so
+ * those only set volatile flags that the render thread reads.
  */
-final class FlixelAndroidVideo implements FlixelVideoBackend {
+final class FlixelAndroidVideo extends FlixelBaseVideo {
 
   /** Serializes MediaPlayer state changes against its callback threads and disposal. */
   private final Object playerLock = new Object();
@@ -90,7 +90,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   private AssetFileDescriptor assetDescriptor;
 
   @NotNull
-  private volatile FlixelVideoQuality quality = FlixelVideoQuality.FULL;
+  private volatile FlixelVideoQuality mediaQuality = FlixelVideoQuality.FULL;
 
   private int oesTextureId;
 
@@ -123,12 +123,13 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   /**
    * Creates the decoder and wires it to a fresh OES texture.
    *
-   * @param path Asset-relative path for internal assets, or an absolute path/URL for
+   * @param path Asset-relative path for internal assets, or an absolute path for
    *     external sources.
    * @param external {@code true} when {@code path} points outside the game's assets.
    * @throws IllegalStateException If the media cannot be opened or the GL objects fail.
    */
   FlixelAndroidVideo(@NotNull String path, boolean external) {
+    super();
     try {
       player = new MediaPlayer();
       setDataSource(player, path, external);
@@ -157,13 +158,13 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
       });
       player.prepareAsync();
     } catch (Exception error) {
-      dispose();
+      disposeMedia();
       throw new IllegalStateException("Could not open video: " + path, error);
     }
   }
 
   @Override
-  public void play() {
+  protected void playMedia() {
     if (disposed || errored) {
       return;
     }
@@ -176,7 +177,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void pause() {
+  protected void pauseMedia() {
     synchronized (playerLock) {
       if (prepared && !disposed && player != null && player.isPlaying()) {
         player.pause();
@@ -185,7 +186,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void resume() {
+  protected void resumeMedia() {
     if (disposed || errored) {
       return;
     }
@@ -197,7 +198,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void stop() {
+  protected void stopMedia() {
     ended = false;
     pendingSeekMs = -1f;
     synchronized (playerLock) {
@@ -209,24 +210,24 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isPlaying() {
+  protected boolean isMediaPlaying() {
     synchronized (playerLock) {
       return prepared && !disposed && player != null && player.isPlaying();
     }
   }
 
   @Override
-  public boolean isEnd() {
+  protected boolean isMediaEnded() {
     return ended;
   }
 
   @Override
-  public boolean isReady() {
+  protected boolean isMediaReady() {
     return ready;
   }
 
   @Override
-  public float getTime() {
+  protected float getMediaTime() {
     synchronized (playerLock) {
       if (!prepared || disposed || player == null) {
         return Math.max(pendingSeekMs, 0f);
@@ -236,7 +237,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void setTime(float timeMs) {
+  protected void setMediaTime(float timeMs) {
     float target = Math.max(0f, timeMs);
     ended = false;
     synchronized (playerLock) {
@@ -250,7 +251,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public float getLength() {
+  protected float getMediaLength() {
     synchronized (playerLock) {
       if (!prepared || disposed || player == null) {
         return 0f;
@@ -261,12 +262,12 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public float getRate() {
+  protected float getMediaRate() {
     return desiredRate;
   }
 
   @Override
-  public void setRate(float rate) {
+  protected void setMediaRate(float rate) {
     if (rate <= 0f) {
       return;
     }
@@ -279,27 +280,27 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isLooping() {
+  protected boolean isMediaLooped() {
     return looping;
   }
 
   @Override
-  public void setLooping(boolean looping) {
-    this.looping = looping;
+  protected void setMediaLooped(boolean looped) {
+    this.looping = looped;
     synchronized (playerLock) {
       if (prepared && !disposed && player != null) {
-        player.setLooping(looping);
+        player.setLooping(looped);
       }
     }
   }
 
   @Override
-  public float getVolume() {
+  protected float getMediaVolume() {
     return volume;
   }
 
   @Override
-  public void setVolume(float volume) {
+  protected void setMediaVolume(float volume) {
     this.volume = Math.max(0f, Math.min(1f, volume));
     synchronized (playerLock) {
       if (prepared && !disposed && player != null) {
@@ -309,25 +310,25 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void setQuality(@NotNull FlixelVideoQuality quality) {
+  protected void applyMediaQuality(@NotNull FlixelVideoQuality quality) {
     // MediaPlayer always decodes at the source resolution, so the preset scales the
     // framebuffer the frame is copied into instead: a lower preset stores a smaller,
     // softer texture and uploads less. The change lands the next time a frame is blitted.
-    this.quality = quality;
+    this.mediaQuality = quality;
   }
 
   @Override
-  public int getVideoWidth() {
+  protected int getMediaVideoWidth() {
     return scaledDimension(sourceWidth);
   }
 
   @Override
-  public int getVideoHeight() {
+  protected int getMediaVideoHeight() {
     return scaledDimension(sourceHeight);
   }
 
   @Override
-  public void update() {
+  protected void updateMedia(float elapsed) {
     if (disposed || errored) {
       return;
     }
@@ -345,8 +346,8 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
       frameAvailable = false;
       surfaceTexture.updateTexImage();
       surfaceTexture.getTransformMatrix(stMatrix);
-      int width = getVideoWidth();
-      int height = getVideoHeight();
+      int width = getMediaVideoWidth();
+      int height = getMediaVideoHeight();
       if (width > 0 && height > 0) {
         ensureFbo(width, height);
         blitter.blit(oesTextureId, stMatrix, fbo);
@@ -357,12 +358,12 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
 
   @Override
   @Nullable
-  public Texture getTexture() {
+  protected Texture getMediaTexture() {
     return ready && fbo != null ? fbo.getColorBufferTexture() : null;
   }
 
   @Override
-  public void dispose() {
+  protected void disposeMedia() {
     synchronized (playerLock) {
       if (disposed) {
         return;
@@ -491,11 +492,11 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
     if (sourceSize <= 0) {
       return 0;
     }
-    if (quality == FlixelVideoQuality.FULL) {
+    if (mediaQuality == FlixelVideoQuality.FULL) {
       return sourceSize;
     }
     // Keep the size even so the downscale stays friendly to chroma-subsampled sources.
-    return Math.max(2, Math.round(sourceSize * quality.getScale()) & ~1);
+    return Math.max(2, Math.round(sourceSize * mediaQuality.getScale()) & ~1);
   }
 
   /** Creates and configures an external OES texture for the SurfaceTexture to fill. */

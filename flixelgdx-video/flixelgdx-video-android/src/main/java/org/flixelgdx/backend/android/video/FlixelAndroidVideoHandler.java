@@ -25,8 +25,9 @@ package org.flixelgdx.backend.android.video;
 
 import com.badlogic.gdx.Gdx;
 
+import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelUnavailableVideo;
-import org.flixelgdx.video.FlixelVideoBackend;
+import org.flixelgdx.video.FlixelVideoFactory;
 import org.flixelgdx.video.FlixelVideos;
 
 /**
@@ -49,7 +50,7 @@ import org.flixelgdx.video.FlixelVideos;
  * backend that is never ready (see {@link FlixelUnavailableVideo}) and the reason is
  * logged, so a bad file or codec never crashes the game.
  */
-public final class FlixelAndroidVideoHandler implements FlixelVideoBackend.Factory {
+public final class FlixelAndroidVideoHandler implements FlixelVideoFactory {
 
   /**
    * Registers this handler as the video backend factory for {@link FlixelVideos}.
@@ -60,12 +61,12 @@ public final class FlixelAndroidVideoHandler implements FlixelVideoBackend.Facto
   }
 
   @Override
-  public FlixelVideoBackend createVideo(String path, boolean external) {
+  public FlixelBaseVideo createVideo(String path, boolean external) {
     try {
       return new FlixelAndroidVideo(path, external);
     } catch (RuntimeException error) {
       Gdx.app.error("FlixelVideo", "Video is unavailable: " + error.getMessage());
-      return FlixelUnavailableVideo.INSTANCE;
+      return new FlixelUnavailableVideo();
     }
   }
 }

@@ -32,7 +32,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 
-import org.flixelgdx.video.FlixelVideoBackend;
+import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelVideoQuality;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,26 +43,25 @@ import org.lwjgl.opengl.GL21C;
 import java.nio.ByteBuffer;
 
 /**
- * Desktop {@link FlixelVideoBackend} that decodes through libvlc's in-memory video
- * callbacks.
+ * Desktop video backend that decodes through libvlc's in-memory video callbacks.
  *
  * <p>libvlc never owns a window here. The format callback negotiates an RGBA buffer
  * (optionally downscaled for {@link FlixelVideoQuality}), the lock callback hands
  * libvlc one of two pre-allocated native pixel buffers to decode into, and the display
  * callback flips a dirty flag. Audio decoding and output stay entirely inside libvlc.
  *
- * <p>On the render thread, {@link #update()} streams the latest completed frame into a
- * reusable {@link Texture} through two ping-ponged pixel buffer objects: each frame the
- * pixels are written into one PBO (orphaned first so the driver never blocks on the
- * previous transfer) while the texture upload reads from it via DMA, and the next frame
- * uses the other PBO. All buffers, textures, and PBOs are allocated once per format and
- * reused; the per-frame path allocates nothing.
+ * <p>On the render thread, {@link #updateMedia(float)} streams the latest completed
+ * frame into a reusable {@link Texture} through two ping-ponged pixel buffer objects:
+ * each frame the pixels are written into one PBO (orphaned first so the driver never
+ * blocks on the previous transfer) while the texture upload reads from it via DMA, and
+ * the next frame uses the other PBO. All buffers, textures, and PBOs are allocated once
+ * per format and reused; the per-frame path allocates nothing.
  *
  * <p>Threading contract: every public method must be called on the render thread. The
  * inner callbacks run on libvlc decoder threads and only touch the shared frame buffers
  * under {@code bufferLock} plus a handful of volatile flags.
  */
-final class FlixelVlcVideo implements FlixelVideoBackend {
+final class FlixelVlcVideo extends FlixelBaseVideo {
 
   /** Protects the frame buffer swap between the libvlc thread and the render thread. */
   private final Object bufferLock = new Object();
@@ -87,7 +86,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   private Texture texture;
 
   @NotNull
-  private volatile FlixelVideoQuality quality = FlixelVideoQuality.FULL;
+  private volatile FlixelVideoQuality mediaQuality = FlixelVideoQuality.FULL;
 
   // Strong references keep the JNA callback trampolines alive while libvlc holds them.
   private final LibVlc.LockCallback lockCallback;
@@ -151,7 +150,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   /** Set by the error event. */
   private volatile boolean playbackError;
 
-  /** Sticky end state reported by {@link #isEnd()} for non-looping playback. */
+  /** Sticky end state reported by {@link #isMediaEnded()} for non-looping playback. */
   private boolean ended;
 
   private boolean looping;
@@ -171,6 +170,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
    * @throws IllegalStateException If libvlc cannot open the media.
    */
   FlixelVlcVideo(@NotNull Pointer instance, @NotNull String path) {
+    super();
     Pointer media = LibVlc.libvlc_media_new_path(instance, path);
     if (media == null) {
       throw new IllegalStateException("libvlc could not open media: " + path);
@@ -199,7 +199,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void play() {
+  protected void playMedia() {
     if (disposed) {
       return;
     }
@@ -214,7 +214,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void pause() {
+  protected void pauseMedia() {
     if (disposed) {
       return;
     }
@@ -222,7 +222,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void resume() {
+  protected void resumeMedia() {
     if (disposed) {
       return;
     }
@@ -230,7 +230,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void stop() {
+  protected void stopMedia() {
     if (disposed) {
       return;
     }
@@ -241,12 +241,12 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isPlaying() {
+  protected boolean isMediaPlaying() {
     return !disposed && LibVlc.libvlc_media_player_get_state(mediaPlayer) == LibVlc.STATE_PLAYING;
   }
 
   @Override
-  public boolean isEnd() {
+  protected boolean isMediaEnded() {
     if (disposed) {
       return false;
     }
@@ -254,12 +254,12 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isReady() {
+  protected boolean isMediaReady() {
     return ready;
   }
 
   @Override
-  public float getTime() {
+  protected float getMediaTime() {
     if (disposed) {
       return 0f;
     }
@@ -271,7 +271,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void setTime(float timeMs) {
+  protected void setMediaTime(float timeMs) {
     if (disposed) {
       return;
     }
@@ -289,7 +289,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public float getLength() {
+  protected float getMediaLength() {
     if (disposed) {
       return 0f;
     }
@@ -298,12 +298,12 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public float getRate() {
+  protected float getMediaRate() {
     return desiredRate;
   }
 
   @Override
-  public void setRate(float rate) {
+  protected void setMediaRate(float rate) {
     if (disposed || rate <= 0f) {
       return;
     }
@@ -312,22 +312,22 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public boolean isLooping() {
+  protected boolean isMediaLooped() {
     return looping;
   }
 
   @Override
-  public void setLooping(boolean looping) {
-    this.looping = looping;
+  protected void setMediaLooped(boolean looped) {
+    this.looping = looped;
   }
 
   @Override
-  public float getVolume() {
+  protected float getMediaVolume() {
     return desiredVolume;
   }
 
   @Override
-  public void setVolume(float volume) {
+  protected void setMediaVolume(float volume) {
     desiredVolume = Math.max(0f, Math.min(1f, volume));
     if (!disposed) {
       LibVlc.libvlc_audio_set_volume(mediaPlayer, (int) (desiredVolume * 100f));
@@ -335,19 +335,19 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public void setQuality(@NotNull FlixelVideoQuality quality) {
-    if (disposed || this.quality == quality) {
+  protected void applyMediaQuality(@NotNull FlixelVideoQuality quality) {
+    if (disposed || this.mediaQuality == quality) {
       return;
     }
-    this.quality = quality;
+    this.mediaQuality = quality;
     int state = LibVlc.libvlc_media_player_get_state(mediaPlayer);
     if (state == LibVlc.STATE_PLAYING || state == LibVlc.STATE_PAUSED) {
       // The vmem format is negotiated at playback start, so rebuild the pipeline in
       // place: remember where we were, restart, and seek back.
-      float resumeAt = getTime();
+      float resumeAt = getMediaTime();
       boolean wasPaused = state == LibVlc.STATE_PAUSED;
       LibVlc.libvlc_media_player_stop(mediaPlayer);
-      play();
+      playMedia();
       pendingSeekMs = resumeAt;
       if (wasPaused) {
         // Let the pipeline restart and produce the frame, then re-pause on the next pump.
@@ -357,17 +357,17 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
   }
 
   @Override
-  public int getVideoWidth() {
+  protected int getMediaVideoWidth() {
     return visibleWidth > 0 ? visibleWidth : frameWidth;
   }
 
   @Override
-  public int getVideoHeight() {
+  protected int getMediaVideoHeight() {
     return visibleHeight > 0 ? visibleHeight : frameHeight;
   }
 
   @Override
-  public void update() {
+  protected void updateMedia(float elapsed) {
     if (disposed) {
       return;
     }
@@ -383,7 +383,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
         // libvlc 3 parks the player in the Ended state; restart from the render thread
         // (never from the event thread, which libvlc forbids re-entering).
         LibVlc.libvlc_media_player_stop(mediaPlayer);
-        play();
+        playMedia();
       } else {
         ended = true;
       }
@@ -419,12 +419,12 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
 
   @Override
   @Nullable
-  public Texture getTexture() {
+  protected Texture getMediaTexture() {
     return ready ? texture : null;
   }
 
   @Override
-  public void dispose() {
+  protected void disposeMedia() {
     if (disposed) {
       return;
     }
@@ -558,7 +558,7 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
     int sourceHeight = height.getValue();
     setupSourceWidth = sourceWidth;
     setupSourceHeight = sourceHeight;
-    float scale = quality.getScale();
+    float scale = mediaQuality.getScale();
     // Even dimensions keep chroma subsampled sources (which is nearly all of them) happy.
     int decodeWidth = Math.max(2, ((int) (sourceWidth * scale)) & ~1);
     int decodeHeight = Math.max(2, ((int) (sourceHeight * scale)) & ~1);

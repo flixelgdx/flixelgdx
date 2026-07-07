@@ -27,8 +27,9 @@ import com.badlogic.gdx.Gdx;
 import com.sun.jna.Pointer;
 import com.sun.jna.StringArray;
 
+import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelUnavailableVideo;
-import org.flixelgdx.video.FlixelVideoBackend;
+import org.flixelgdx.video.FlixelVideoFactory;
 import org.flixelgdx.video.FlixelVideos;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,7 +56,7 @@ import org.jetbrains.annotations.NotNull;
  * {@link org.flixelgdx.video.FlixelUnavailableVideo FlixelUnavailableVideo}) and the
  * reason is logged, so a missing decoder degrades the game instead of crashing it.
  */
-public final class FlixelVlcVideoHandler implements FlixelVideoBackend.Factory {
+public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
 
   private static Pointer instance;
 
@@ -104,12 +105,12 @@ public final class FlixelVlcVideoHandler implements FlixelVideoBackend.Factory {
   }
 
   @Override
-  public FlixelVideoBackend createVideo(String path, boolean external) {
+  public FlixelBaseVideo createVideo(String path, boolean external) {
     // A broken or missing VLC installation must not crash the game: the video
     // degrades to a backend that is never ready, and the reason is logged loudly so
     // the problem is diagnosable.
     if (unavailable) {
-      return FlixelUnavailableVideo.INSTANCE;
+      return new FlixelUnavailableVideo();
     }
     try {
       ensureInstance();
@@ -117,13 +118,13 @@ public final class FlixelVlcVideoHandler implements FlixelVideoBackend.Factory {
       unavailable = true;
       Gdx.app.error("FlixelVideo",
           "Video playback is disabled for this session: " + error.getMessage());
-      return FlixelUnavailableVideo.INSTANCE;
+      return new FlixelUnavailableVideo();
     }
     try {
       return new FlixelVlcVideo(instance, path);
     } catch (IllegalStateException error) {
       Gdx.app.error("FlixelVideo", error.getMessage());
-      return FlixelUnavailableVideo.INSTANCE;
+      return new FlixelUnavailableVideo();
     }
   }
 }
