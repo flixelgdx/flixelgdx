@@ -56,8 +56,21 @@ public final class FlixelFfmpegVideoHandler implements FlixelVideoFactory {
   /**
    * Registers this handler as the video backend factory for {@link FlixelVideos}.
    * Safe to call multiple times.
+   *
+   * <p>JavaCPP's {@code Pointer} class enforces a physical-memory guard that defaults
+   * to four times the JVM heap ({@code -Xmx}). FFmpeg's native codec libraries can
+   * exceed that limit on their own before any video is even opened, causing a spurious
+   * {@link OutOfMemoryError}. This method raises the cap to the machine's total physical
+   * RAM so the guard only fires on genuine runaway growth, not on a normal codec load.
    */
   public static void install() {
+    // JavaCPP's Pointer reads this property in its static initializer to cap
+    // physical-memory usage. The default is 4x the JVM heap (-Xmx), so with a
+    // small heap FFmpeg's codec libraries trigger the guard just by loading. Set
+    // it to Long.MAX_VALUE to remove the cap; the system itself limits how much
+    // RAM the process can actually consume, so the guard adds nothing here.
+    System.setProperty("org.bytedeco.javacpp.maxPhysicalBytes",
+        Long.toString(Long.MAX_VALUE));
     FlixelVideos.setBackendFactory(new FlixelFfmpegVideoHandler());
   }
 
