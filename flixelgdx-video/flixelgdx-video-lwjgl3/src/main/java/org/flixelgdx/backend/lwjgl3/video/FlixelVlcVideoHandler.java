@@ -97,6 +97,10 @@ public final class FlixelVlcVideoHandler implements FlixelVideoBackend.Factory {
           "libvlc_new failed. The located VLC installation may be incomplete (missing plugins).");
     }
     instance = created;
+    // A one-time confirmation of which libvlc actually satisfied the game, so a
+    // "plugins cannot be found" report can be traced to the exact install that loaded.
+    Gdx.app.log("FlixelVideo", "libvlc " + LibVlc.libvlc_get_version()
+        + " initialized from " + FlixelVlcDiscovery.getLoadedFrom() + ".");
   }
 
   @Override

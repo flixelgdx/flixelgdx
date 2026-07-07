@@ -298,6 +298,37 @@ tasks.register('downloadVlcNatives') {
   }
 }
 
+// Name of the natives folder for the machine currently running the build.
+def hostVlcPlatform = {
+  def os = System.getProperty('os.name', '').toLowerCase(java.util.Locale.ROOT)
+  if (os.contains('win')) {
+    return 'windows-amd64'
+  }
+  if (os.contains('mac')) {
+    return 'macos-universal'
+  }
+  return 'linux-amd64'
+}()
+
+// Reports whether one platform's natives are complete enough to actually play video:
+// the libvlc library plus a non-empty plugins directory. The three platforms use
+// slightly different layouts (macOS keeps libraries under lib/, Linux keeps plugins
+// under vlc/plugins), so all of them are accepted here.
+def vlcNativesComplete = { File platformDir ->
+  if (!platformDir.isDirectory()) {
+    return false
+  }
+  def hasLibIn = { File dir ->
+    dir.isDirectory() && (dir.listFiles()?.any { it.name.startsWith('libvlc') } ?: false)
+  }
+  def hasLib = hasLibIn(platformDir) || hasLibIn(new File(platformDir, 'lib'))
+  def pluginsDir = new File(platformDir, 'plugins').isDirectory()
+    ? new File(platformDir, 'plugins')
+    : new File(platformDir, 'vlc/plugins')
+  def hasPlugins = pluginsDir.isDirectory() && (pluginsDir.listFiles()?.length ?: 0) > 0
+  return hasLib && hasPlugins
+}
+
 // The libvlc libraries are included in this module's jar automatically, so desktop
 // games work out of the box; FlixelVlcDiscovery extracts them to a per-user cache at
 // runtime. Pass -PskipVlcNatives=true for a slim jar that relies on a system VLC
@@ -305,6 +336,19 @@ tasks.register('downloadVlcNatives') {
 if ((findProperty('skipVlcNatives') ?: 'false') != 'true') {
   processResources {
     dependsOn 'downloadVlcNatives'
+    // Fail loudly if the host platform's natives did not make it into natives/. Without
+    // this the jar is packaged silently and the missing libraries only surface at runtime
+    // as an unavailable video, which is exactly the failure this module tries to prevent.
+    doFirst {
+      def hostDir = new File(vlcNativesDir.asFile, hostVlcPlatform)
+      if (!vlcNativesComplete(hostDir)) {
+        throw new GradleException(
+          "flixelgdx-video-lwjgl3: libvlc natives for this platform (${hostVlcPlatform}) are "
+            + "missing or incomplete under ${hostDir}. Run './gradlew "
+            + ":flixelgdx-video-lwjgl3:downloadVlcNatives' (needs network access), or pass "
+            + "-PskipVlcNatives=true to build a slim jar that relies on a system VLC install.")
+      }
+    }
     from(vlcNativesDir) {
       into 'org/flixelgdx/video/natives'
       exclude '**/sdk/**'

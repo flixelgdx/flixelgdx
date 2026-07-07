@@ -81,7 +81,26 @@ final class FlixelVlcDiscovery {
 
   private static final String RESOURCE_ROOT = "org/flixelgdx/video/natives/";
 
+  /** Where the last successful {@link #load()} found libvlc, kept for diagnostics. */
+  @Nullable
+  private static volatile String loadedFrom;
+
   private FlixelVlcDiscovery() {}
+
+  /**
+   * Returns a human-readable description of where the loaded libvlc came from.
+   *
+   * <p>Useful for logging which of the search candidates (bundled natives, a shipped
+   * {@code vlc/} folder, or a system install) actually satisfied the game, which is the
+   * first thing to check when playback is unexpectedly unavailable.
+   *
+   * @return The path or description of the accepted libvlc, or {@code null} if
+   *     {@link #load()} has not succeeded yet.
+   */
+  @Nullable
+  static String getLoadedFrom() {
+    return loadedFrom;
+  }
 
   /**
    * Finds a working libvlc, sets {@code VLC_PLUGIN_PATH} when needed, and loads it.
@@ -188,6 +207,7 @@ final class FlixelVlcDiscovery {
             + "are missing or from a different distribution)");
         return null;
       }
+      loadedFrom = lib.getAbsolutePath();
       return loaded;
     } catch (UnsatisfiedLinkError error) {
       attempts.add(lib.getAbsolutePath() + " (failed to load: " + error.getMessage() + ")");
@@ -248,6 +268,7 @@ final class FlixelVlcDiscovery {
       setPluginPathEnv(null);
       NativeLibrary loaded = NativeLibrary.getInstance("vlc");
       if (probe("vlc")) {
+        loadedFrom = "system libvlc (linker path)";
         return loaded;
       }
       attempts.add("system libvlc (loaded, but libvlc_new failed; install vlc-plugin-base)");
