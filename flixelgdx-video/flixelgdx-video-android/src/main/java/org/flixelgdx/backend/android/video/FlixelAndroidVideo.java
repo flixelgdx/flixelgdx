@@ -229,7 +229,7 @@ final class FlixelAndroidVideo implements FlixelVideoBackend {
   public float getTime() {
     synchronized (playerLock) {
       if (!prepared || disposed || player == null) {
-        return pendingSeekMs >= 0f ? pendingSeekMs : 0f;
+        return Math.max(pendingSeekMs, 0f);
       }
       return Math.max(0, player.getCurrentPosition());
     }
