@@ -31,7 +31,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
-import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundSource;
@@ -101,6 +100,10 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   private boolean globalPersist = false;
   private boolean compressedTexturesEnabled;
+
+  /** Platform-provided installer for the KTX2 texture loader; {@code null} where unsupported. */
+  @Nullable
+  private static FlixelKtx2LoaderInstaller ktx2LoaderInstaller;
 
   /** Constructs a new manager with default loaders for images, audio, and text. */
   public FlixelDefaultAssetManager() {
@@ -220,21 +223,20 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (compressedTexturesEnabled) {
       return;
     }
-    // Basis Universal has no decoder on the web: its transcoder ships only as desktop
-    // and Android natives, so a .ktx2 load on TeaVM reaches the unemulated
-    // BufferUtils.isUnsafeByteBuffer(...) and crashes the asset thread. Leaving the
-    // loader unregistered keeps compressedTexturesEnabled false, so resolveTexturePath
-    // returns the plain .png and no .ktx2 is ever requested on web.
-    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
+    if (ktx2LoaderInstaller == null) {
       return;
     }
-    manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver()));
-    compressedTexturesEnabled = true;
+    ktx2LoaderInstaller.install(manager);
   }
 
   @Override
   public boolean isCompressedTexturesEnabled() {
     return compressedTexturesEnabled;
+  }
+
+  @Override
+  public void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer) {
+    ktx2LoaderInstaller = installer;
   }
 
   @Override
