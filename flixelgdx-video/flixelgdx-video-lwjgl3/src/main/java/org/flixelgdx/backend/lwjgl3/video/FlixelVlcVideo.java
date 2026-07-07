@@ -395,15 +395,15 @@ final class FlixelVlcVideo implements FlixelVideoBackend {
         LibVlc.libvlc_media_player_set_time(mediaPlayer, (long) pendingSeekMs);
         pendingSeekMs = -1f;
       }
-      // The volume is reconciled every frame instead of being pushed once per start.
-      // Audio outputs can silently override a player's volume after the stream is
-      // created; PulseAudio in particular restores the volume of the application's
-      // most recent stream, so a looping video that restarts right after another
-      // video ends would otherwise inherit that other video's volume.
-      int wantVolume = (int) (desiredVolume * 100f);
-      if (LibVlc.libvlc_audio_get_volume(mediaPlayer) != wantVolume) {
-        LibVlc.libvlc_audio_set_volume(mediaPlayer, wantVolume);
-      }
+      // Each player re-asserts its own volume every frame while it is live. Guarding
+      // this with libvlc_audio_get_volume(...) is not enough: that call returns the
+      // value libvlc last stored, not the real output gain, so when an audio server
+      // restores a different stream's volume onto this one (PulseAudio restores the
+      // application's most recent stream) the guard sees no change and never corrects
+      // it, and two videos end up sharing a volume. Pushing the value unconditionally
+      // is a cheap idempotent native call that keeps every player pinned to its own
+      // volume, which is what stops simultaneous videos from mixing their levels up.
+      LibVlc.libvlc_audio_set_volume(mediaPlayer, (int) (desiredVolume * 100f));
       if (!settingsApplied) {
         settingsApplied = true;
         if (desiredRate != 1f) {
