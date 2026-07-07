@@ -372,6 +372,17 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
       + "v.crossOrigin = 'anonymous';"
       + "v.preload = 'auto';"
       + "v.playsInline = true;"
+      + "v.flixelVolume = 1;"
+      + "v.flixelLoop = false;"
+      // Each element carries its own audio, so per-video volume is independent by
+      // construction. The catch is that some browsers reset media element properties
+      // when new metadata arrives, which drops a volume or loop value set before the
+      // stream loaded. Reapplying the requested values here keeps each video pinned to
+      // its own settings instead of snapping back to the element defaults.
+      + "v.addEventListener('loadedmetadata', function() {"
+      + "  v.volume = v.flixelVolume;"
+      + "  v.loop = v.flixelLoop;"
+      + "});"
       + "v.load();"
       + "return v;")
   private static native JSObject jsCreateVideo(String url);
@@ -418,10 +429,10 @@ final class FlixelTeaVMVideo implements FlixelVideoBackend {
   @JSBody(params = { "v", "rate" }, script = "v.playbackRate = rate;")
   private static native void jsSetRate(JSObject v, float rate);
 
-  @JSBody(params = { "v", "loop" }, script = "v.loop = loop;")
+  @JSBody(params = { "v", "loop" }, script = "v.flixelLoop = loop; v.loop = loop;")
   private static native void jsSetLoop(JSObject v, boolean loop);
 
-  @JSBody(params = { "v", "volume" }, script = "v.volume = volume;")
+  @JSBody(params = { "v", "volume" }, script = "v.flixelVolume = volume; v.volume = volume;")
   private static native void jsSetVolume(JSObject v, float volume);
 
   @JSBody(params = { "v" }, script = "return Math.fround(v.volume);")
