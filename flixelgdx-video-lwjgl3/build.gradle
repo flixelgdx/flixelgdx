@@ -1,3 +1,11 @@
+import org.apache.commons.compress.archivers.ar.ArArchiveInputStream
+import org.apache.commons.compress.archivers.sevenz.SevenZFile
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.tukaani.xz.XZInputStream
+
+import java.security.MessageDigest
+import java.util.zip.GZIPInputStream
+
 // Desktop backend for the FlixelGDX video extension. Bridges libvlc into the
 // framework through JNA-registered JNI bindings and packages (optionally) the
 // libvlc native libraries that downloadVlcNatives fetches from upstream.
@@ -101,7 +109,7 @@ def vlcDownloadDir = layout.buildDirectory.dir('vlc-downloads')
 def vlcNativesDir = layout.projectDirectory.dir('natives')
 
 def sha256Of = { File f ->
-  def digest = java.security.MessageDigest.getInstance('SHA-256')
+  def digest = MessageDigest.getInstance('SHA-256')
   f.withInputStream { is ->
     byte[] buf = new byte[65536]
     int n
@@ -133,16 +141,16 @@ def fetchVlcArtifact = { Map spec, File dir ->
 // Extracts a Debian package's data.tar.* into destDir using commons-compress only.
 def extractDeb = { File deb, File destDir ->
   deb.withInputStream { fis ->
-    def ar = new org.apache.commons.compress.archivers.ar.ArArchiveInputStream(fis)
+    def ar = new ArArchiveInputStream(fis)
     def entry
     while ((entry = ar.nextEntry) != null) {
       if (!entry.name.startsWith('data.tar')) {
         continue
       }
       def dataStream = entry.name.endsWith('.xz')
-        ? new org.tukaani.xz.XZInputStream(ar)
-        : (entry.name.endsWith('.gz') ? new java.util.zip.GZIPInputStream(ar) : ar)
-      def tar = new org.apache.commons.compress.archivers.tar.TarArchiveInputStream(dataStream)
+        ? new XZInputStream(ar)
+        : (entry.name.endsWith('.gz') ? new GZIPInputStream(ar) : ar)
+      def tar = new TarArchiveInputStream(dataStream)
       def tarEntry
       while ((tarEntry = tar.nextEntry) != null) {
         if (!tarEntry.file) {
@@ -159,7 +167,7 @@ def extractDeb = { File deb, File destDir ->
 def extractLibsFrom7z = { File sevenZip, String pathPrefix, File destDir ->
   // Constructor form on purpose: Gradle's own (older) commons-compress wins on the
   // buildscript classpath and does not have the newer builder() API.
-  def sz = new org.apache.commons.compress.archivers.sevenz.SevenZFile(sevenZip)
+  def sz = new SevenZFile(sevenZip)
   try {
     def entry
     while ((entry = sz.nextEntry) != null) {
