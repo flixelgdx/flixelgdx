@@ -220,6 +220,14 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (compressedTexturesEnabled) {
       return;
     }
+    // Basis Universal has no decoder on the web: its transcoder ships only as desktop
+    // and Android natives, so a .ktx2 load on TeaVM reaches the unemulated
+    // BufferUtils.isUnsafeByteBuffer(...) and crashes the asset thread. Leaving the
+    // loader unregistered keeps compressedTexturesEnabled false, so resolveTexturePath
+    // returns the plain .png and no .ktx2 is ever requested on web.
+    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
+      return;
+    }
     manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver()));
     compressedTexturesEnabled = true;
   }
