@@ -38,6 +38,7 @@ java {
 dependencies {
   api project(':flixelgdx-video-core')
   api "net.java.dev.jna:jna:$jnaVersion"
+  implementation project(':flixelgdx-lwjgl3')
   implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
   implementation 'org.jetbrains:annotations:26.1.0'
 

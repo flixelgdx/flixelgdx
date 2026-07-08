@@ -24,9 +24,13 @@
 package org.flixelgdx.backend.lwjgl3.video;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.utils.Array;
 import com.sun.jna.Pointer;
 import com.sun.jna.StringArray;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3WindowListener;
 import org.flixelgdx.video.FlixelUnavailableVideo;
 import org.flixelgdx.video.FlixelVideo;
 import org.flixelgdx.video.FlixelVideoFactory;
@@ -58,17 +62,28 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
 
+  private static final Array<FlixelVlcVideo> activeVideos = new Array<>(8);
+
   private static Pointer instance;
 
   /** Set after discovery fails once, so every later video degrades without re-probing. */
   private static boolean unavailable;
 
+  /** Guards focus hook registration so repeated {@link #install()} calls do not stack duplicates. */
+  private static boolean installed;
+
   /**
-   * Registers this handler as the video backend factory for {@link FlixelVideos}.
-   * Safe to call multiple times.
+   * Registers this handler as the video backend factory for {@link FlixelVideos} and wires
+   * up desktop focus hooks for automatic video pause/resume. Safe to call multiple times.
    */
   public static void install() {
     FlixelVideos.setBackendFactory(new FlixelVlcVideoHandler());
+    if (!installed) {
+      installed = true;
+      FlixelLwjgl3WindowListener.addFocusHooks(
+          FlixelVlcVideoHandler::onFocusGained,
+          FlixelVlcVideoHandler::onFocusLost);
+    }
   }
 
   /**
@@ -82,26 +97,6 @@ public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
   public static String getLibVlcVersion() {
     ensureInstance();
     return LibVlc.libvlc_get_version();
-  }
-
-  private static synchronized void ensureInstance() {
-    if (instance != null) {
-      return;
-    }
-    LibVlc.register(FlixelVlcDiscovery.load());
-    // Headless flags: no interface, no X11 requirement, no console spam. Video output
-    // is negotiated per player through the vmem callbacks, so libvlc never opens a window.
-    String[] args = { "--intf=dummy", "--quiet", "--no-xlib" };
-    Pointer created = LibVlc.libvlc_new(args.length, new StringArray(args));
-    if (created == null) {
-      throw new IllegalStateException(
-          "libvlc_new failed. The located VLC installation may be incomplete (missing plugins).");
-    }
-    instance = created;
-    // A one-time confirmation of which libvlc actually satisfied the game, so a
-    // "plugins cannot be found" report can be traced to the exact install that loaded.
-    Gdx.app.log("FlixelVideo", "libvlc " + LibVlc.libvlc_get_version()
-        + " initialized from " + FlixelVlcDiscovery.getLoadedFrom() + ".");
   }
 
   @Override
@@ -125,6 +120,49 @@ public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
     } catch (IllegalStateException error) {
       Gdx.app.error("FlixelVideo", error.getMessage());
       return new FlixelUnavailableVideo();
+    }
+  }
+
+  static void track(FlixelVlcVideo video) {
+    activeVideos.add(video);
+  }
+
+  static void untrack(FlixelVlcVideo video) {
+    activeVideos.removeValue(video, true);
+  }
+
+  private static synchronized void ensureInstance() {
+    if (instance != null) {
+      return;
+    }
+    LibVlc.register(FlixelVlcDiscovery.load());
+    // HVideo output is negotiated per player through the vmem callbacks, so libvlc never opens a window.
+    String[] args = { "--intf=dummy", "--quiet", "--no-xlib" };
+    Pointer created = LibVlc.libvlc_new(args.length, new StringArray(args));
+    if (created == null) {
+      throw new IllegalStateException(
+          "libvlc_new failed. The located VLC installation may be incomplete (missing plugins).");
+    }
+    instance = created;
+    // A one-time confirmation of which libvlc actually satisfied the game, so a
+    // "plugins cannot be found" report can be traced to the exact install that loaded.
+    Gdx.app.log("FlixelVideo", "libvlc " + LibVlc.libvlc_get_version()
+        + " initialized from " + FlixelVlcDiscovery.getLoadedFrom() + ".");
+  }
+
+  private static void onFocusLost() {
+    FlixelGame game = Flixel.getGame();
+    if (game == null || !game.autoPause) {
+      return;
+    }
+    for (int i = 0, n = activeVideos.size; i < n; i++) {
+      activeVideos.get(i).autoPause();
+    }
+  }
+
+  private static void onFocusGained() {
+    for (int i = 0, n = activeVideos.size; i < n; i++) {
+      activeVideos.get(i).autoResume();
     }
   }
 }

@@ -25,9 +25,11 @@ package org.flixelgdx.backend.lwjgl3.window;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
+import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,6 +47,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
 
+  private static final Array<Runnable> focusLostHooks = new Array<>(4);
+  private static final Array<Runnable> focusGainedHooks = new Array<>(4);
+
   @Nullable
   private final Lwjgl3WindowListener next;
 
@@ -52,6 +57,22 @@ public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
 
   public FlixelLwjgl3WindowListener(@Nullable Lwjgl3WindowListener next) {
     this.next = next;
+  }
+
+  /**
+   * Registers a pair of callbacks that fire on every focus-gained and focus-lost event,
+   * after the built-in Flixel lifecycle hooks run.
+   *
+   * <p>Intended for backend modules (such as the LWJGL3/VLC video module) that need reliable
+   * focus notifications without relying on {@link Flixel.Signals}, which
+   * can be cleared by developer code.
+   *
+   * @param onFocusGained Called when the window regains focus.
+   * @param onFocusLost Called when the window loses focus.
+   */
+  public static void addFocusHooks(@NotNull Runnable onFocusGained, @NotNull Runnable onFocusLost) {
+    focusGainedHooks.add(onFocusGained);
+    focusLostHooks.add(onFocusLost);
   }
 
   void setAbsorbCloseRequests(boolean absorb) {
@@ -95,6 +116,9 @@ public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
     if (game != null) {
       game.onFocusLost();
     }
+    for (int i = 0, n = focusLostHooks.size; i < n; i++) {
+      focusLostHooks.get(i).run();
+    }
     if (next != null) {
       next.focusLost();
     }
@@ -105,6 +129,9 @@ public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
     FlixelGame game = Flixel.game;
     if (game != null) {
       game.onFocusGained();
+    }
+    for (int i = 0, n = focusGainedHooks.size; i < n; i++) {
+      focusGainedHooks.get(i).run();
     }
     if (next != null) {
       next.focusGained();

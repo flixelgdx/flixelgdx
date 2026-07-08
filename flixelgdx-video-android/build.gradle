@@ -33,6 +33,6 @@ configurations {
 dependencies {
   coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
   api project(':flixelgdx-video-core')
-  api "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+  api project(':flixelgdx-android')
   compileOnly 'org.jetbrains:annotations:26.1.0'
 }

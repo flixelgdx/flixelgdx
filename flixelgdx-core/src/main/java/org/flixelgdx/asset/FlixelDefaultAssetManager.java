@@ -33,6 +33,7 @@ import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.audio.FlixelSoundSourceLoader;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -68,7 +69,7 @@ import java.util.Objects;
  * triggers background audio decoding on the web platform
  * ({@link Application.ApplicationType#WebGL}). By the time the loading state finishes the
  * decoded buffer is cached and
- * {@link org.flixelgdx.audio.FlixelAudioManager#play FlixelAudioManager.play} returns instantly.
+ * {@link FlixelSoundManager#play FlixelSoundManager.play} returns instantly.
  * On desktop and Android this is a no-op.
  *
  * <pre>{@code

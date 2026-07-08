@@ -14,6 +14,6 @@ java {
 // decoder drives a hidden HTML video element and WebGL uploads the frames.
 dependencies {
   api project(':flixelgdx-video-core')
-  api "com.github.xpenatan.gdx-teavm:backend-web:$gdxTeaVMVersion"
+  api project(':flixelgdx-teavm')
   implementation 'org.jetbrains:annotations:15.0'
 }

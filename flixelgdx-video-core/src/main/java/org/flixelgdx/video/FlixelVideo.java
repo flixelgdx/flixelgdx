@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.video;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.LifecycleListener;
 import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.Flixel;
@@ -72,36 +70,21 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class FlixelVideo extends FlixelBasic {
 
-  /** Signal dispatched once when a non-looping video reaches its end. */
+  /** Signal dispatched when this video starts playing. **/
+  @NotNull
+  public final FlixelSignal<Void> onPlay = new FlixelSignal<>();
+
+  /** Signal dispatched when this video is paused. **/
+  @NotNull
+  public final FlixelSignal<Void> onPause = new FlixelSignal<>();
+
+  /** Signal dispatched when this video resumes playing. **/
+  @NotNull
+  public final FlixelSignal<Void> onResume = new FlixelSignal<>();
+
+  /** Signal dispatched once when this non-looping video reaches its end. */
   @NotNull
   public final FlixelSignal<Void> onComplete = new FlixelSignal<>();
-
-  private final LifecycleListener lifecycleListener = new LifecycleListener() {
-    @Override
-    public void resume() {
-      if (Flixel.game == null || !Flixel.game.autoPause || Flixel.game.isGamePaused()) {
-        return;
-      }
-      if (wasPlayingBeforePause) {
-        wasPlayingBeforePause = false;
-        resumeMedia();
-      }
-    }
-
-    @Override
-    public void pause() {
-      if (Flixel.game == null || !Flixel.game.autoPause) {
-        return;
-      }
-      wasPlayingBeforePause = isMediaPlaying();
-      if (wasPlayingBeforePause) {
-        pauseMedia();
-      }
-    }
-
-    @Override
-    public void dispose() {}
-  };
 
   @NotNull
   private FlixelVideoQuality quality = FlixelVideoQuality.FULL;
@@ -129,9 +112,6 @@ public abstract class FlixelVideo extends FlixelBasic {
 
   /** Guards {@link #onComplete} so the end of a video is only announced once. */
   private boolean completed;
-
-  /** Whether the video was playing when the OS suspended the application. */
-  private boolean wasPlayingBeforePause;
 
   /** Starts the underlying media player. */
   protected abstract void playMedia();
@@ -273,7 +253,6 @@ public abstract class FlixelVideo extends FlixelBasic {
 
   protected FlixelVideo() {
     super();
-    Gdx.app.addLifecycleListener(lifecycleListener);
   }
 
   /**
@@ -311,6 +290,7 @@ public abstract class FlixelVideo extends FlixelBasic {
     if (forceRestart) {
       setMediaTime(startTimeMs);
     }
+    onPlay.dispatch();
     return this;
   }
 
@@ -322,6 +302,7 @@ public abstract class FlixelVideo extends FlixelBasic {
   @NotNull
   public final FlixelVideo pause() {
     pauseMedia();
+    onPause.dispatch();
     return this;
   }
 
@@ -333,6 +314,7 @@ public abstract class FlixelVideo extends FlixelBasic {
   @NotNull
   public final FlixelVideo resume() {
     resumeMedia();
+    onResume.dispatch();
     return this;
   }
 
@@ -421,9 +403,10 @@ public abstract class FlixelVideo extends FlixelBasic {
 
   @Override
   public void destroy() {
-    Gdx.app.removeLifecycleListener(lifecycleListener);
-    wasPlayingBeforePause = false;
     super.destroy();
+    onPlay.clear();
+    onPause.clear();
+    onResume.clear();
     onComplete.clear();
     disposeMedia();
     quality = FlixelVideoQuality.FULL;
@@ -449,16 +432,6 @@ public abstract class FlixelVideo extends FlixelBasic {
   @Nullable
   public final Texture getTexture() {
     return getMediaTexture();
-  }
-
-  /**
-   * Returns the signal dispatched once when a non-looping video reaches its end.
-   *
-   * @return The completion signal.
-   */
-  @NotNull
-  public final FlixelSignal<Void> getOnComplete() {
-    return onComplete;
   }
 
   /**

@@ -67,7 +67,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   private final FlixelSoundBackend sound;
 
   @Nullable
-  private FlixelAudioManager manager;
+  private FlixelSoundManager manager;
 
   @Nullable
   private FlixelAsset<FlixelSoundSource> sourceAsset;
@@ -145,7 +145,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * @return The manager, or {@code null} if not assigned to one.
    */
   @Nullable
-  public FlixelAudioManager getManager() {
+  public FlixelSoundManager getManager() {
     return manager;
   }
 
@@ -156,14 +156,14 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelSound setManager(@Nullable FlixelAudioManager manager) {
+  public FlixelSound setManager(@Nullable FlixelSoundManager manager) {
     this.manager = manager;
     return this;
   }
 
   /**
    * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
-   * retained when this sound was created through {@link FlixelAudioManager}. The handle is
+   * retained when this sound was created through {@link FlixelSoundManager}. The handle is
    * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
    * active {@link org.flixelgdx.asset.FlixelAssetMode FlixelAssetMode}.
    *

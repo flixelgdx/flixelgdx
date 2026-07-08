@@ -162,6 +162,9 @@ final class FlixelVlcVideo extends FlixelVideo {
 
   private boolean disposed;
 
+  /** Set when this video was auto-paused on focus loss, so it can be resumed when focus returns. */
+  private boolean autoPaused;
+
   /**
    * Creates a media player for the given file and wires all libvlc callbacks.
    *
@@ -196,6 +199,7 @@ final class FlixelVlcVideo extends FlixelVideo {
     eventManager = LibVlc.libvlc_media_player_event_manager(mediaPlayer);
     LibVlc.libvlc_event_attach(eventManager, LibVlc.EVENT_END_REACHED, eventCallback, null);
     LibVlc.libvlc_event_attach(eventManager, LibVlc.EVENT_ENCOUNTERED_ERROR, eventCallback, null);
+    FlixelVlcVideoHandler.track(this);
   }
 
   @Override
@@ -429,6 +433,8 @@ final class FlixelVlcVideo extends FlixelVideo {
       return;
     }
     disposed = true;
+    autoPaused = false;
+    FlixelVlcVideoHandler.untrack(this);
     LibVlc.libvlc_event_detach(eventManager, LibVlc.EVENT_END_REACHED, eventCallback, null);
     LibVlc.libvlc_event_detach(eventManager, LibVlc.EVENT_ENCOUNTERED_ERROR, eventCallback, null);
     LibVlc.libvlc_media_player_stop(mediaPlayer);
@@ -452,6 +458,20 @@ final class FlixelVlcVideo extends FlixelVideo {
       readyIndex = -1;
     }
     ready = false;
+  }
+
+  void autoPause() {
+    if (isMediaPlaying()) {
+      pauseMedia();
+      autoPaused = true;
+    }
+  }
+
+  void autoResume() {
+    if (autoPaused) {
+      autoPaused = false;
+      resumeMedia();
+    }
   }
 
   /**
