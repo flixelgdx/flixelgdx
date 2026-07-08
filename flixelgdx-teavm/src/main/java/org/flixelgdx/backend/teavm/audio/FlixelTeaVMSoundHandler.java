@@ -28,6 +28,7 @@ import com.badlogic.gdx.utils.ObjectMap;
 import com.github.xpenatan.gdx.teavm.backends.web.dom.typedarray.TypedArrays;
 
 import org.flixelgdx.audio.FlixelSoundBackend;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -55,7 +56,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  *
  * <p>Groups are no-ops beyond triggering context-level suspend/resume: the Web Audio API does
  * not expose per-group routing without a dedicated graph, and the engine's SFX and music groups
- * are always paused and resumed together by {@link org.flixelgdx.audio.FlixelAudioManager FlixelAudioManager}.
+ * are always paused and resumed together by {@link FlixelSoundManager FlixelSoundManager}.
  *
  * <p>Audio-graph effects ({@link org.flixelgdx.audio.FlixelSoundBackend.ReverbNode ReverbNode},
  * {@link org.flixelgdx.audio.FlixelSoundBackend.EchoNode EchoNode},

@@ -31,9 +31,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
-import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.audio.FlixelSoundSourceLoader;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -69,7 +69,7 @@ import java.util.Objects;
  * triggers background audio decoding on the web platform
  * ({@link Application.ApplicationType#WebGL}). By the time the loading state finishes the
  * decoded buffer is cached and
- * {@link org.flixelgdx.audio.FlixelAudioManager#play FlixelAudioManager.play} returns instantly.
+ * {@link FlixelSoundManager#play FlixelSoundManager.play} returns instantly.
  * On desktop and Android this is a no-op.
  *
  * <pre>{@code
@@ -101,6 +101,10 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   private boolean globalPersist = false;
   private boolean compressedTexturesEnabled;
+
+  /** Platform-provided installer for the KTX2 texture loader; {@code null} where unsupported. */
+  @Nullable
+  private static FlixelKtx2LoaderInstaller ktx2LoaderInstaller;
 
   /** Constructs a new manager with default loaders for images, audio, and text. */
   public FlixelDefaultAssetManager() {
@@ -220,13 +224,20 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (compressedTexturesEnabled) {
       return;
     }
-    manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver()));
-    compressedTexturesEnabled = true;
+    if (ktx2LoaderInstaller == null) {
+      return;
+    }
+    ktx2LoaderInstaller.install(manager);
   }
 
   @Override
   public boolean isCompressedTexturesEnabled() {
     return compressedTexturesEnabled;
+  }
+
+  @Override
+  public void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer) {
+    ktx2LoaderInstaller = installer;
   }
 
   @Override

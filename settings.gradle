@@ -10,7 +10,7 @@ def includeAndroidFromLocal = false
 def localPropsFile = new File(settingsDir, 'local.properties')
 if (localPropsFile.exists()) {
   localPropsFile.withInputStream { stream ->
-    def props = new java.util.Properties()
+    def props = new Properties()
     props.load(stream)
     includeAndroidFromLocal = props.getProperty('includeAndroid', 'false') == 'true'
   }
@@ -27,9 +27,12 @@ def modules = [
   'flixelgdx-teavm-plugin',
   'flixelgdx-logging-plugin',
   'flixelgdx-basisu-plugin',
+  'flixelgdx-video-core',
+  'flixelgdx-video-lwjgl3',
+  'flixelgdx-video-teavm',
   'flixelgdx-test'
 ]
 if (gradle.ext.includeAndroid) {
-  modules += 'flixelgdx-android'
+  modules += ['flixelgdx-android', 'flixelgdx-video-android']
 }
 include modules

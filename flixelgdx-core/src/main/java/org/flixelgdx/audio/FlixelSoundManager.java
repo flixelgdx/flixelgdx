@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * otherwise enqueue and block-load that source before creating a {@link FlixelSound}.
  * External paths still bypass the asset manager and hit the backend directly.
  */
-public class FlixelAudioManager implements FlixelDestroyable, Disposable {
+public class FlixelSoundManager implements FlixelDestroyable, Disposable {
 
   private final FlixelSoundBackend.Factory factory;
   private final Array<FlixelSound> activeSounds = new Array<>(false, 8);
@@ -63,7 +63,7 @@ public class FlixelAudioManager implements FlixelDestroyable, Disposable {
    *
    * @param factory The platform-specific sound backend factory.
    */
-  public FlixelAudioManager(@NotNull FlixelSoundBackend.Factory factory) {
+  public FlixelSoundManager(@NotNull FlixelSoundBackend.Factory factory) {
     this.factory = factory;
     sfxGroup = factory.createGroup();
     musicGroup = factory.createGroup();

@@ -25,7 +25,9 @@ package org.flixelgdx.backend.android;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -115,6 +117,8 @@ public class FlixelAndroidLauncher {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
+    Flixel.assets.setKtx2LoaderInstaller(manager ->
+      manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
 
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;

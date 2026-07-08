@@ -25,6 +25,8 @@ package org.flixelgdx.backend.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.graphics.Texture;
+import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
@@ -34,7 +36,9 @@ import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
 import org.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
 import org.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
+import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3HapticsProvider;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
 import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
@@ -155,7 +159,6 @@ public class FlixelLwjgl3Launcher {
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
     }
-    attachFlixelWindowListener(configuration);
     FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe());
     if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
@@ -176,6 +179,8 @@ public class FlixelLwjgl3Launcher {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
+    Flixel.assets.setKtx2LoaderInstaller(
+        manager -> manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
     Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
@@ -221,17 +226,8 @@ public class FlixelLwjgl3Launcher {
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
     }
-    attachFlixelWindowListener(configuration);
+    configuration.attachFlixelWindowListener();
     return configuration;
-  }
-
-  /**
-   * Ensures Flixel window notifications, optional user {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener},
-   * and close-absorption wrapping are installed. Only {@link FlixelLwjgl3ApplicationConfiguration} is supported so the
-   * user listener can be captured without reflection, which allows AOT compilers like GraalVM to not scream at you.
-   */
-  public static void attachFlixelWindowListener(FlixelLwjgl3ApplicationConfiguration configuration) {
-    configuration.attachFlixelWindowListenerChain();
   }
 
   /**
@@ -247,5 +243,4 @@ public class FlixelLwjgl3Launcher {
       System.setProperty("jdk.gtk.version", "3");
     }
   }
-
 }

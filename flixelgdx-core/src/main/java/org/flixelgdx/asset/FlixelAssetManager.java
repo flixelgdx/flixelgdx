@@ -359,6 +359,22 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
   boolean isCompressedTexturesEnabled();
 
   /**
+   * Registers the platform installer that adds the KTX2 (Basis Universal) texture loader.
+   *
+   * <p>Called once by a platform launcher that bundles the basisu natives (the desktop and
+   * Android launchers do this). The core module must never reference the loader directly:
+   * Basis Universal disposes native byte buffers through
+   * {@code BufferUtils.isUnsafeByteBuffer(...)}, a method TeaVM cannot compile, so a direct
+   * reference would fail the entire web build during reachability analysis. Routing the
+   * registration through this installer keeps the compressed-texture code out of the shared
+   * module, so platforms without it (such as web) simply leave the feature unsupported.
+   *
+   * @param installer The installer to run when compressed textures are enabled, or
+   *     {@code null} to leave them unsupported.
+   */
+  void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer);
+
+  /**
    * Resolves {@code path} to the key that should be used with the underlying libGDX
    * {@link AssetManager} for a texture load, returning a {@code .ktx2} sibling instead of
    * {@code path} when {@link #enableCompressedTextures()} has been called and that sibling

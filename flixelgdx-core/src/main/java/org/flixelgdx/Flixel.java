@@ -31,8 +31,8 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.asset.FlixelDefaultAssetManager;
-import org.flixelgdx.audio.FlixelAudioManager;
 import org.flixelgdx.audio.FlixelSoundBackend;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.alert.FlixelAlerter;
 import org.flixelgdx.backend.host.FlixelHostIntegration;
 import org.flixelgdx.backend.host.FlixelNoopHostIntegration;
@@ -375,7 +375,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static FlixelAudioManager sound;
+  public static FlixelSoundManager sound;
 
   /**
    * The central asset manager for the game.
@@ -786,7 +786,7 @@ public final class Flixel {
     // Initialize the core systems.
     keys = new FlixelKeyInputManager();
     if (sound == null) {
-      sound = new FlixelAudioManager(soundFactory);
+      sound = new FlixelSoundManager(soundFactory);
     } else {
       sound.resetSession();
     }
@@ -1730,6 +1730,9 @@ public final class Flixel {
     public static final FlixelSignal<StateSwitchSignalData> postStateSwitch = new FlixelSignal<>();
     public static final FlixelSignal<Void> preGameClose = new FlixelSignal<>();
     public static final FlixelSignal<Void> postGameClose = new FlixelSignal<>();
+    public static final FlixelSignal<Void> windowFocused = new FlixelSignal<>();
+    public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
+    public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
 
     private Signals() {}
   }

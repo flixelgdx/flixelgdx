@@ -60,9 +60,7 @@ public class FlixelLwjgl3Alerter implements FlixelAlerter {
       JOptionPane.showMessageDialog(null, msg, title, type);
     } else {
       try {
-        EventQueue.invokeAndWait(() -> {
-          JOptionPane.showMessageDialog(null, msg, title, type);
-        });
+        EventQueue.invokeAndWait(() -> JOptionPane.showMessageDialog(null, msg, title, type));
       } catch (InterruptedException | InvocationTargetException e) {
         // Ignore.
       }

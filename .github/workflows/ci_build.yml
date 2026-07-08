@@ -34,7 +34,7 @@ jobs:
         shell: bash
 
   test:
-    name: Unit tests (JVM)
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -242,8 +242,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * When {@code true}, the LWJGL3 launcher requests an alpha-capable framebuffer so
-   * {@link org.flixelgdx.backend.window.FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)} can composite
-   * with the desktop.
+   * {@link org.flixelgdx.backend.window.FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)}
+   * can composite with the desktop.
    *
    * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
    *
@@ -464,7 +464,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       debugOverlay.resize(width, height);
     }
 
-    FlixelState state = Flixel.getState();
+    FlixelState state = Flixel.state;
     if (state != null) {
       state.resize(width, height);
     }
@@ -600,24 +600,19 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
         // Safety reset: per-sprite shader draws restore themselves inline, but reset here as a
         // backstop so the next camera pass always starts with the default batch shader.
-        // Not drawing at this point, so this is a cheap reference write with no GPU cost.
         batch.setShader(null);
 
         if (cameraShader != null) {
           camera.getFbo().end();
           if (useGlobalFbo) {
-            // camera.getFbo().end() restores GL framebuffer to 0 (the screen). When the global
-            // FBO is active we need to be back inside it so the per-camera composite draws into
-            // the scene texture rather than directly to the screen.
+            // camera.getFbo().end() restores GL framebuffer to 0 (the screen).
             Gdx.gl20.glBindFramebuffer(GL20.GL_FRAMEBUFFER, sceneFboA.getFramebufferHandle());
           }
           camera.getViewport().apply();
           // FlixelSpriteBatch.flush() leaves the active GL texture unit at the last
           // slot it bound (e.g. unit 2 after drawing 3 atlases). SpriteBatch.flush()
           // calls Texture.bind() with no unit argument, so it binds the FBO texture
-          // to whatever unit is still active - not unit 0. The composite shader reads
-          // u_texture which defaults to 0, so it would sample a game atlas instead of
-          // the FBO. Resetting to unit 0 here ensures the FBO texture lands on unit 0.
+          // to whatever unit is still active, not unit 0.
           Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
           if (compositeBatch == null) {
             compositeBatch = new SpriteBatch();
@@ -797,48 +792,104 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     debugPauseCameraZoom = null;
   }
 
+  /**
+   * Do not override this method. Override {@link #onFocusLost()} instead.
+   */
   @Override
-  public void pause() {
-    dispatchStateLifecyclePause();
-    if (autoPause) {
-      Flixel.sound.pause();
-    }
-  }
-
-  @Override
-  public void resume() {
-    dispatchStateLifecycleResume();
-    if (autoPause && !gamePaused) {
-      Flixel.sound.resume();
-    }
+  public final void pause() {
+    onFocusLost();
   }
 
   /**
-   * Notifies the current {@link FlixelState} chain once per pause cycle (see {@link #stateLifecyclePauseDispatched}).
+   * Do not override this method. Override {@link #onFocusGained()} instead.
    */
-  private void dispatchStateLifecyclePause() {
+  @Override
+  public final void resume() {
+    onFocusGained();
+  }
+
+  /**
+   * Called when the game window loses focus or the application goes to the background.
+   *
+   * <p>On mobile and web this fires when the OS sends the application to the background.
+   * On desktop it fires when the game window loses focus or is minimized (focus loss always
+   * arrives before minimize, so this is called once for both events).
+   *
+   * <p>The default implementation pauses audio and stops continuous rendering when
+   * {@link #autoPause} is {@code true}, then notifies the active state. Duplicate calls
+   * without an intervening {@link #onFocusGained()} are silently ignored.
+   *
+   * @see #onFocusGained()
+   * @see #onMinimized()
+   * @see Flixel.Signals#windowUnfocused
+   */
+  public void onFocusLost() {
     if (stateLifecyclePauseDispatched) {
       return;
     }
     stateLifecyclePauseDispatched = true;
-    FlixelState state = Flixel.getState();
+    FlixelState state = Flixel.state;
     if (state != null) {
-      state.pause();
+      state.onFocusLost();
     }
+    if (autoPause) {
+      Flixel.sound.pause();
+      Gdx.graphics.setContinuousRendering(false);
+    }
+    Flixel.Signals.windowUnfocused.dispatch();
   }
 
   /**
-   * Clears the pause latch and notifies the current {@link FlixelState} chain, if a matching pause was dispatched.
+   * Called when the game window regains focus or the application returns to the foreground.
+   *
+   * <p>On mobile and web this fires when the OS brings the application back to the foreground.
+   * On desktop it fires when the game window gains focus, including when the window is
+   * restored from being minimized.
+   *
+   * <p>The default implementation resumes audio and re-enables continuous rendering when
+   * {@link #autoPause} is {@code true}, then notifies the active state. Calls that arrive
+   * without a prior {@link #onFocusLost()} are silently ignored.
+   *
+   * @see #onFocusLost()
+   * @see Flixel.Signals#windowFocused
    */
-  private void dispatchStateLifecycleResume() {
+  public void onFocusGained() {
     if (!stateLifecyclePauseDispatched) {
       return;
     }
     stateLifecyclePauseDispatched = false;
-    FlixelState state = Flixel.getState();
+    FlixelState state = Flixel.state;
     if (state != null) {
-      state.resume();
+      state.onFocusGained();
     }
+    if (autoPause && !gamePaused) {
+      Flixel.sound.resume();
+      Gdx.graphics.setContinuousRendering(true);
+      Gdx.graphics.requestRendering();
+    }
+    Flixel.Signals.windowFocused.dispatch();
+  }
+
+  /**
+   * Called when the desktop window is minimized (iconified).
+   *
+   * <p>This is a desktop-only event and is never called on mobile or web platforms.
+   * On most operating systems, focus loss fires first so {@link #onFocusLost()} already
+   * handles audio and rendering pausing before this is called.
+   *
+   * <p>The default implementation notifies the active state and dispatches
+   * {@link Flixel.Signals#windowMinimized}.
+   *
+   * @see #onFocusLost()
+   * @see #onFocusGained()
+   * @see Flixel.Signals#windowMinimized
+   */
+  public void onMinimized() {
+    FlixelState state = Flixel.state;
+    if (state != null) {
+      state.onMinimized();
+    }
+    Flixel.Signals.windowMinimized.dispatch();
   }
 
   /**
@@ -1093,7 +1144,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       if (Flixel.initialized) {
         Flixel.sound.destroy();
       } else {
-        Flixel.sound.resetSession(); // Game will crash if Flixel.resetGame() used destroy() instead!
+        Flixel.sound.resetSession();
       }
     }
 

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.lwjgl3;
+package org.flixelgdx.backend.lwjgl3.window;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
@@ -46,7 +46,7 @@ import org.lwjgl.glfw.GLFW;
 public final class FlixelLwjgl3Window implements FlixelWindow {
 
   @Nullable
-  private static volatile FlixelLwjgl3ChainingWindowListener closeHook;
+  private static volatile FlixelLwjgl3WindowListener closeHook;
 
   private int logicalX, logicalY;
 
@@ -58,7 +58,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
    */
   private boolean positionFlushPosted;
 
-  static void configureCloseHandlingHook(@Nullable FlixelLwjgl3ChainingWindowListener hook) {
+  public static void configureCloseHandlingHook(@Nullable FlixelLwjgl3WindowListener hook) {
     closeHook = hook;
   }
 
@@ -253,7 +253,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
 
   @Override
   public void setAbsorbCloseRequests(boolean absorb) {
-    FlixelLwjgl3ChainingWindowListener hook = closeHook;
+    FlixelLwjgl3WindowListener hook = closeHook;
     if (hook != null) {
       hook.setAbsorbCloseRequests(absorb);
     }
@@ -266,7 +266,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
 
   @Override
   public boolean isAbsorbCloseRequests() {
-    FlixelLwjgl3ChainingWindowListener hook = closeHook;
+    FlixelLwjgl3WindowListener hook = closeHook;
     return hook != null && hook.isAbsorbCloseRequests();
   }
 
