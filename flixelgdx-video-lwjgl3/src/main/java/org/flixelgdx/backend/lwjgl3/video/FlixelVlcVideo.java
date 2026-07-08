@@ -32,7 +32,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 
-import org.flixelgdx.video.FlixelBaseVideo;
+import org.flixelgdx.video.FlixelVideo;
 import org.flixelgdx.video.FlixelVideoQuality;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +61,7 @@ import java.nio.ByteBuffer;
  * inner callbacks run on libvlc decoder threads and only touch the shared frame buffers
  * under {@code bufferLock} plus a handful of volatile flags.
  */
-final class FlixelVlcVideo extends FlixelBaseVideo {
+final class FlixelVlcVideo extends FlixelVideo {
 
   /** Protects the frame buffer swap between the libvlc thread and the render thread. */
   private final Object bufferLock = new Object();

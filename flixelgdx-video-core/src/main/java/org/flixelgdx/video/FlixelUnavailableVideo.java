@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A do-nothing {@link FlixelBaseVideo} used when video playback is unavailable.
+ * A do-nothing {@link FlixelVideo} used when video playback is unavailable.
  *
  * <p>Platform factories return this backend when their native decoder cannot be set
  * up (for example, no working VLC installation on desktop). The game keeps running;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * control call is a safe no-op. Games that must react to a missing decoder can check
  * {@link FlixelVideo#isReady()} staying {@code false}.
  */
-public final class FlixelUnavailableVideo extends FlixelBaseVideo {
+public final class FlixelUnavailableVideo extends FlixelVideo {
 
   public FlixelUnavailableVideo() {
     super();

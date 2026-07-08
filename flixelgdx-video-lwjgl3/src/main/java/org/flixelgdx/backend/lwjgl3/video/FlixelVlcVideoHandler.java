@@ -27,8 +27,8 @@ import com.badlogic.gdx.Gdx;
 import com.sun.jna.Pointer;
 import com.sun.jna.StringArray;
 
-import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelUnavailableVideo;
+import org.flixelgdx.video.FlixelVideo;
 import org.flixelgdx.video.FlixelVideoFactory;
 import org.flixelgdx.video.FlixelVideos;
 import org.jetbrains.annotations.NotNull;
@@ -105,7 +105,7 @@ public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
   }
 
   @Override
-  public FlixelBaseVideo createVideo(String path, boolean external) {
+  public FlixelVideo createVideo(String path, boolean external) {
     // A broken or missing VLC installation must not crash the game: the video
     // degrades to a backend that is never ready, and the reason is logged loudly so
     // the problem is diagnosable.

@@ -37,7 +37,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 
-import org.flixelgdx.video.FlixelBaseVideo;
+import org.flixelgdx.video.FlixelVideo;
 import org.flixelgdx.video.FlixelVideoQuality;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -68,7 +68,7 @@ import java.io.OutputStream;
  * fires its prepared, completion, error, and size callbacks on its own threads, so
  * those only set volatile flags that the render thread reads.
  */
-final class FlixelAndroidVideo extends FlixelBaseVideo {
+final class FlixelAndroidVideo extends FlixelVideo {
 
   /** Serializes MediaPlayer state changes against its callback threads and disposal. */
   private final Object playerLock = new Object();
@@ -342,6 +342,16 @@ final class FlixelAndroidVideo extends FlixelBaseVideo {
       pendingSeekMs = -1f;
     }
 
+    // Re-assert the desired volume every frame, mirroring the desktop VLC approach.
+    // The Android audio system can duck or restore player gain on audio focus changes
+    // without notifying the application; pushing the value here keeps each video
+    // pinned to its own level regardless of what the system does between frames.
+    synchronized (playerLock) {
+      if (prepared && !disposed && player != null) {
+        player.setVolume(volume, volume);
+      }
+    }
+
     if (frameAvailable && surfaceTexture != null) {
       frameAvailable = false;
       surfaceTexture.updateTexImage();
@@ -451,6 +461,10 @@ final class FlixelAndroidVideo extends FlixelBaseVideo {
           ended = false;
         }
         player.start();
+        // Re-assert volume after start: some Android versions recreate the audio
+        // track on start() and silently reset the gain to 1.0, discarding whatever
+        // setVolume() applied during onPrepared.
+        player.setVolume(volume, volume);
         if (desiredRate != 1f) {
           applyRate();
         }

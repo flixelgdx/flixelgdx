@@ -21,80 +21,76 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.lwjgl3;
+package org.flixelgdx.backend.lwjgl3.window;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Outermost GLFW listener that can veto close requests when absorption is enabled.
+ * Forwards window lifecycle events to an optional user {@link Lwjgl3WindowListener}.
  */
-public final class FlixelLwjgl3ChainingWindowListener implements Lwjgl3WindowListener {
+public class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
-  @NotNull
-  private final Lwjgl3WindowListener delegate;
+  @Nullable
+  private final Lwjgl3WindowListener next;
 
-  private volatile boolean absorbCloseRequests;
-
-  public FlixelLwjgl3ChainingWindowListener(@NotNull Lwjgl3WindowListener delegate) {
-    this.delegate = delegate;
-  }
-
-  void setAbsorbCloseRequests(boolean absorbCloseRequests) {
-    this.absorbCloseRequests = absorbCloseRequests;
-  }
-
-  boolean isAbsorbCloseRequests() {
-    return absorbCloseRequests;
-  }
-
-  @NotNull
-  public Lwjgl3WindowListener getDelegate() {
-    return delegate;
+  public FlixelLwjgl3NotifyWindowListener(@Nullable Lwjgl3WindowListener next) {
+    this.next = next;
   }
 
   @Override
   public void created(Lwjgl3Window window) {
-    delegate.created(window);
+    if (next != null) {
+      next.created(window);
+    }
   }
 
   @Override
   public void iconified(boolean isIconified) {
-    delegate.iconified(isIconified);
+    if (next != null) {
+      next.iconified(isIconified);
+    }
   }
 
   @Override
   public void maximized(boolean isMaximized) {
-    delegate.maximized(isMaximized);
+    if (next != null) {
+      next.maximized(isMaximized);
+    }
   }
 
   @Override
   public void focusLost() {
-    delegate.focusLost();
+    if (next != null) {
+      next.focusLost();
+    }
   }
 
   @Override
   public void focusGained() {
-    delegate.focusGained();
+    if (next != null) {
+      next.focusGained();
+    }
   }
 
   @Override
   public boolean closeRequested() {
-    if (absorbCloseRequests) {
-      return false;
-    }
-    return delegate.closeRequested();
+    return next == null || next.closeRequested();
   }
 
   @Override
   public void filesDropped(String[] files) {
-    delegate.filesDropped(files);
+    if (next != null) {
+      next.filesDropped(files);
+    }
   }
 
   @Override
   public void refreshRequested() {
-    delegate.refreshRequested();
+    if (next != null) {
+      next.refreshRequested();
+    }
   }
 }

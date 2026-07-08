@@ -49,7 +49,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
  * decoder's padding and maps the picture into the framebuffer. The vertical flip below
  * lines the result up with the top-left texture orientation the framework draws with:
  * the bottom row of the framebuffer receives the top row of the video, so
- * {@code FlixelBaseVideo} shows the frame upright without a per-platform flip.
+ * {@code FlixelVideo} shows the frame upright without a per-platform flip.
  */
 final class FlixelOesBlitter {
 

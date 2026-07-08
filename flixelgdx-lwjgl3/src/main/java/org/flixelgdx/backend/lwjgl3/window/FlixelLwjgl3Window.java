@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.lwjgl3;
+package org.flixelgdx.backend.lwjgl3.window;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
@@ -58,7 +58,7 @@ public final class FlixelLwjgl3Window implements FlixelWindow {
    */
   private boolean positionFlushPosted;
 
-  static void configureCloseHandlingHook(@Nullable FlixelLwjgl3ChainingWindowListener hook) {
+  public static void configureCloseHandlingHook(@Nullable FlixelLwjgl3ChainingWindowListener hook) {
     closeHook = hook;
   }
 

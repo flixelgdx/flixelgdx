@@ -25,8 +25,8 @@ package org.flixelgdx.backend.android.video;
 
 import com.badlogic.gdx.Gdx;
 
-import org.flixelgdx.video.FlixelBaseVideo;
 import org.flixelgdx.video.FlixelUnavailableVideo;
+import org.flixelgdx.video.FlixelVideo;
 import org.flixelgdx.video.FlixelVideoFactory;
 import org.flixelgdx.video.FlixelVideos;
 
@@ -61,7 +61,7 @@ public final class FlixelAndroidVideoHandler implements FlixelVideoFactory {
   }
 
   @Override
-  public FlixelBaseVideo createVideo(String path, boolean external) {
+  public FlixelVideo createVideo(String path, boolean external) {
     try {
       return new FlixelAndroidVideo(path, external);
     } catch (RuntimeException error) {

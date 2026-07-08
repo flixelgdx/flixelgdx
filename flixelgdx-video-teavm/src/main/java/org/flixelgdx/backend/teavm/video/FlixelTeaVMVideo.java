@@ -31,7 +31,7 @@ import com.badlogic.gdx.graphics.TextureData;
 import com.github.xpenatan.gdx.teavm.backends.web.WebGL20;
 import com.github.xpenatan.gdx.teavm.backends.web.gl.WebGLRenderingContextExt;
 
-import org.flixelgdx.video.FlixelBaseVideo;
+import org.flixelgdx.video.FlixelVideo;
 import org.flixelgdx.video.FlixelVideoQuality;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,7 +56,7 @@ import org.teavm.jso.dom.html.HTMLVideoElement;
  * gesture; in that case playback resumes automatically on the next pointer or key
  * event (the rejection handler in {@link #jsPlay} registers one-shot listeners).
  */
-final class FlixelTeaVMVideo extends FlixelBaseVideo {
+public final class FlixelTeaVMVideo extends FlixelVideo {
 
   /** The hidden video element doing the decoding. */
   private final JSObject element;
@@ -93,7 +93,7 @@ final class FlixelTeaVMVideo extends FlixelBaseVideo {
    *
    * @param url The video URL, typically an internal asset path relative to the page.
    */
-  FlixelTeaVMVideo(@NotNull String url) {
+  public FlixelTeaVMVideo(@NotNull String url) {
     super();
     element = jsCreateVideo(url);
   }
@@ -264,11 +264,9 @@ final class FlixelTeaVMVideo extends FlixelBaseVideo {
       pendingSeekMs = -1f;
     }
 
-    // Defensive volume reconciliation: if anything reset the element's volume (a
-    // browser policy, an extension, or a source reload), the desired value wins.
-    if (jsGetVolume(element) != volume) {
-      jsSetVolume(element, volume);
-    }
+    // Re-assert volume every frame; some browsers reset v.volume on autoplay
+    // initialization or when the audio context unlocks after a user gesture.
+    jsSetVolume(element, volume);
 
     // HAVE_CURRENT_DATA (2) means a decoded frame is available for the current time.
     if (jsGetReadyState(element) < 2) {
@@ -387,7 +385,8 @@ final class FlixelTeaVMVideo extends FlixelBaseVideo {
    * Starts playback. If the browser's autoplay policy rejects the call (no user
    * gesture yet), one-shot listeners retry on the next pointer or key event.
    */
-  @JSBody(params = { "v" }, script = "var p = v.play();"
+  @JSBody(params = { "v" }, script = "v.volume = v.flixelVolume;"
+      + "var p = v.play();"
       + "if (p && p.catch) {"
       + "  p.catch(function() {"
       + "    if (v.flixelResumeArmed) return;"
@@ -396,6 +395,7 @@ final class FlixelTeaVMVideo extends FlixelBaseVideo {
       + "      v.flixelResumeArmed = false;"
       + "      document.removeEventListener('pointerdown', resume);"
       + "      document.removeEventListener('keydown', resume);"
+      + "      v.volume = v.flixelVolume;"
       + "      v.play();"
       + "    };"
       + "    document.addEventListener('pointerdown', resume);"
@@ -430,9 +430,6 @@ final class FlixelTeaVMVideo extends FlixelBaseVideo {
 
   @JSBody(params = { "v", "volume" }, script = "v.flixelVolume = volume; v.volume = volume;")
   private static native void jsSetVolume(JSObject v, float volume);
-
-  @JSBody(params = { "v" }, script = "return Math.fround(v.volume);")
-  private static native float jsGetVolume(JSObject v);
 
   @JSBody(params = { "v" }, script = "return v.readyState;")
   private static native int jsGetReadyState(JSObject v);

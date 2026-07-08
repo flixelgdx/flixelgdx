@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.lwjgl3;
+package org.flixelgdx.backend.lwjgl3.input;
 
 import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.desktop.support.JamepadController;
@@ -29,6 +29,7 @@ import com.studiohartman.jamepad.ControllerIndex;
 import com.studiohartman.jamepad.ControllerUnpluggedException;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
 import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
 
 import java.lang.reflect.Field;
@@ -50,7 +51,7 @@ import java.lang.reflect.Field;
  * hardening), the provider falls back to {@link Controller#startVibration} with the stronger of
  * the two intensities driving both motors, matching the behavior of the default provider.
  */
-final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
+public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
 
   private static final Field CONTROLLER_INDEX_FIELD;
 
