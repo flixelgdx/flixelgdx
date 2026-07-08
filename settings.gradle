@@ -36,3 +36,15 @@ if (gradle.ext.includeAndroid) {
   modules += ['flixelgdx-android', 'flixelgdx-video-android']
 }
 include modules
+
+// Video extension: modules live nested under flixelgdx-video/ but keep flat Gradle
+// names so published coordinates stay org.flixelgdx:flixelgdx-video-<module>.
+def videoModules = [
+  'flixelgdx-video-core',
+  'flixelgdx-video-lwjgl3',
+  'flixelgdx-video-teavm'
+]
+include videoModules
+videoModules.each { name ->
+  project(":${name}").projectDir = new File(settingsDir, "flixelgdx-video/${name}")
+}
