@@ -61,10 +61,6 @@ import java.util.Objects;
  */
 public final class FlixelSpriteUtil {
 
-  private FlixelSpriteUtil() {}
-
-  private static final Vector2 TMP_V2 = new Vector2();
-
   /**
    * Fixed asset key for the framework-owned 1x1 white {@link Texture} registered via
    * {@link #obtainWhitePixelTexture(FlixelAssetManager)}.
@@ -585,12 +581,13 @@ public final class FlixelSpriteUtil {
    * @return The midpoint of the sprite.
    */
   @NotNull
-  public static Vector2 getMidpoint(@NotNull FlixelSprite sprite, @Nullable Vector2 out) {
+  public static Vector2 getMidpoint(@NotNull FlixelSprite sprite, @NotNull Vector2 out) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    Vector2 v = out != null ? out : TMP_V2;
     float w = sprite.getWidth() * Math.abs(sprite.getScaleX());
     float h = sprite.getHeight() * Math.abs(sprite.getScaleY());
-    v.set(sprite.getX() + w * 0.5f, sprite.getY() + h * 0.5f);
-    return v;
+    out.set(sprite.getX() + w * 0.5f, sprite.getY() + h * 0.5f);
+    return out;
   }
+
+  private FlixelSpriteUtil() {}
 }

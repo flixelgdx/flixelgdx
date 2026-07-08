@@ -105,7 +105,9 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   }
 
   @Override
-  public void render(float delta) {}
+  public void render(float delta) {
+    update(delta);
+  }
 
   /**
    * Called when the state is first created. This is where you want to assign your
@@ -145,14 +147,14 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
     if (toOpen == null) {
       return;
     }
-    if (this.subState == toOpen) {
+    if (subState == toOpen) {
       return;
     }
-    if (this.subState != null) {
+    if (subState != null) {
       closeSubState();
     }
 
-    this.subState = toOpen;
+    subState = toOpen;
     toOpen.parentState = this;
     toOpen.create();
     toOpen.syncBackgroundToCameras();
@@ -210,59 +212,66 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   public void resize(int width, int height) {}
 
   /**
-   * Called by the framework when the application is paused by the OS (for example Android backgrounding) or when the
-   * desktop window loses focus or is minimized. Do not override this method. Override {@link #onFocusLost()} instead.
-   *
-   * <p>The call walks from {@code this} state down through {@link #getSubState()} so every state in the chain is
-   * notified, parent before child.
-   *
-   * @see FlixelGame#pause()
-   * @see FlixelGame#onWindowUnfocused()
-   * @see Screen#pause()
+   * Do not override this method. Override {@link #onFocusLost()} instead.
    */
   @Override
   public final void pause() {
     onFocusLost();
-    FlixelSubState sub = getSubState();
-    if (sub != null) {
-      sub.pause();
-    }
   }
 
   /**
-   * Called by the framework when the application resumes or when the desktop window regains focus or is restored from
-   * minimized. Do not override this method. Override {@link #onFocus()} instead.
-   *
-   * <p>The call walks {@link #getSubState()} first so the deepest substate runs {@link #onFocus()} before its parents.
-   *
-   * @see FlixelGame#resume()
-   * @see FlixelGame#onWindowFocused()
-   * @see Screen#resume()
+   * Do not override this method. Override {@link #onFocusGained()} instead.
    */
   @Override
   public final void resume() {
-    FlixelSubState sub = getSubState();
-    if (sub != null) {
-      sub.resume();
-    }
-    onFocus();
+    onFocusGained();
   }
 
   /**
-   * Hook for when {@code this} state should treat the game as inactive: window unfocused, minimized, OS-level pause,
-   * or other cases where {@link FlixelGame} dispatches {@link #pause()} to the current state chain.
+   * Called when the game window loses focus or the application goes to the background.
    *
-   * <p>Parent states run this hook before substates during {@link #pause()}.
+   * <p>Override this to react to focus loss in your state. The default implementation
+   * walks down to the active {@link FlixelSubState} so it is also notified.
+   *
+   * @see FlixelGame#onFocusLost()
    */
-  protected void onFocusLost() {}
+  public void onFocusLost() {
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.onFocusLost();
+    }
+  }
 
   /**
-   * Hook for when {@code this} state should treat the game as active again after {@link #onFocusLost()}: window
-   * focused again, restored from minimized, OS-level resume, or matching {@link #resume()} from {@link FlixelGame}.
+   * Called when the game window regains focus or the application returns to the foreground.
    *
-   * <p>Substates run this hook before their parent states during {@link #resume()}.
+   * <p>Override this to react to focus gain in your state. The default implementation
+   * walks down to the active {@link FlixelSubState} so it is also notified.
+   *
+   * @see FlixelGame#onFocusGained()
    */
-  protected void onFocus() {}
+  public void onFocusGained() {
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.onFocusGained();
+    }
+  }
+
+  /**
+   * Called when the desktop window is minimized.
+   *
+   * <p>This is a desktop-only event; it is never called on mobile or web platforms.
+   * The default implementation walks down to the active {@link FlixelSubState} so it is
+   * also notified.
+   *
+   * @see FlixelGame#onMinimized()
+   */
+  public void onMinimized() {
+    FlixelSubState sub = getSubState();
+    if (sub != null) {
+      sub.onMinimized();
+    }
+  }
 
   @Override
   public void hide() {}

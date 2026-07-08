@@ -1730,6 +1730,9 @@ public final class Flixel {
     public static final FlixelSignal<StateSwitchSignalData> postStateSwitch = new FlixelSignal<>();
     public static final FlixelSignal<Void> preGameClose = new FlixelSignal<>();
     public static final FlixelSignal<Void> postGameClose = new FlixelSignal<>();
+    public static final FlixelSignal<Void> windowFocused = new FlixelSignal<>();
+    public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
+    public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
 
     private Signals() {}
   }

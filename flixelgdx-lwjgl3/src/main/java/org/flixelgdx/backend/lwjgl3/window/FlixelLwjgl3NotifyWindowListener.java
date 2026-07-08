@@ -26,6 +26,8 @@ package org.flixelgdx.backend.lwjgl3.window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,6 +51,12 @@ public class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
   @Override
   public void iconified(boolean isIconified) {
+    if (isIconified) {
+      FlixelGame game = Flixel.getGame();
+      if (game != null) {
+        game.onMinimized();
+      }
+    }
     if (next != null) {
       next.iconified(isIconified);
     }
@@ -63,6 +71,10 @@ public class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
   @Override
   public void focusLost() {
+    FlixelGame game = Flixel.getGame();
+    if (game != null) {
+      game.onFocusLost();
+    }
     if (next != null) {
       next.focusLost();
     }
@@ -70,6 +82,10 @@ public class FlixelLwjgl3NotifyWindowListener implements Lwjgl3WindowListener {
 
   @Override
   public void focusGained() {
+    FlixelGame game = Flixel.getGame();
+    if (game != null) {
+      game.onFocusGained();
+    }
     if (next != null) {
       next.focusGained();
     }

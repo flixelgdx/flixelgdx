@@ -25,17 +25,9 @@ package org.flixelgdx.util;
 
 import com.badlogic.gdx.utils.CharArray;
 
-import org.flixelgdx.functional.supplier.ByteSupplier;
-import org.flixelgdx.functional.supplier.CharSupplier;
-import org.flixelgdx.functional.supplier.FloatSupplier;
-import org.flixelgdx.functional.supplier.ShortSupplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -96,11 +88,11 @@ import java.util.function.Supplier;
  * // In your update loop...
  * @Override
  * public void update(float elapsed) {
- *   // Below would be the same equivalent of doing ft.setText("Score: " + 100),
+ *   // Below would be the same equivalent of doing ft.setText("Score: " + score),
  *   // except it doesn't allocate new strings every frame and keeps your
  *   // framerate silky smooth!
  *   fs.set("Score: ");
- *   fs.concat(100);
+ *   fs.concat(score);
  *   ft.setText(fs);
  * }
  * }</pre>
@@ -228,7 +220,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(byte value) {
     buffer.clear();
-    buffer.append((int) value);
+    buffer.append(value);
     return this;
   }
 
@@ -236,7 +228,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(short value) {
     buffer.clear();
-    buffer.append((int) value);
+    buffer.append(value);
     return this;
   }
 
@@ -269,70 +261,6 @@ public class FlixelString implements CharSequence {
   public FlixelString set(double value) {
     buffer.clear();
     buffer.append(value);
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code boolean}. */
-  @NotNull
-  public FlixelString set(@NotNull BooleanSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsBoolean());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code char}. */
-  @NotNull
-  public FlixelString set(@NotNull CharSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsChar());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code byte}. */
-  @NotNull
-  public FlixelString set(@NotNull ByteSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsByte());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code short}. */
-  @NotNull
-  public FlixelString set(@NotNull ShortSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsShort());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code int}. */
-  @NotNull
-  public FlixelString set(@NotNull IntSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsInt());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code long}. */
-  @NotNull
-  public FlixelString set(@NotNull LongSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsLong());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code float}. */
-  @NotNull
-  public FlixelString set(@NotNull FloatSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsFloat());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code double}. */
-  @NotNull
-  public FlixelString set(@NotNull DoubleSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsDouble());
     return this;
   }
 
@@ -407,7 +335,7 @@ public class FlixelString implements CharSequence {
    */
   @NotNull
   public FlixelString concat(short value) {
-    buffer.append((int) value);
+    buffer.append(value);
     return this;
   }
 
@@ -456,102 +384,6 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString concat(double value) {
     buffer.append(value);
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link BooleanSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull BooleanSupplier supplier) {
-    buffer.append(supplier.getAsBoolean());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link CharSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull CharSupplier supplier) {
-    buffer.append(supplier.getAsChar());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link ByteSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull ByteSupplier supplier) {
-    buffer.append((int) supplier.getAsByte());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link ShortSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull ShortSupplier supplier) {
-    buffer.append((int) supplier.getAsShort());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link IntSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull IntSupplier supplier) {
-    buffer.append(supplier.getAsInt());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link LongSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull LongSupplier supplier) {
-    buffer.append(supplier.getAsLong());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link FloatSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull FloatSupplier supplier) {
-    buffer.append(supplier.getAsFloat());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link DoubleSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull DoubleSupplier supplier) {
-    buffer.append(supplier.getAsDouble());
     return this;
   }
 

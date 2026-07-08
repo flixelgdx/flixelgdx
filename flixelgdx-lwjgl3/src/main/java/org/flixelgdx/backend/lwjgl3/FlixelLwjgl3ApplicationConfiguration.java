@@ -26,6 +26,11 @@ package org.flixelgdx.backend.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3ChainingWindowListener;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3NotifyWindowListener;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
+import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -33,9 +38,9 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelLwjgl3Launcher} can wrap it for Flixel window hooks and optional close absorption without reflection.
  *
  * <p>Use this type whenever you pass a custom configuration into {@link FlixelLwjgl3Launcher#launch(
- * org.flixelgdx.FlixelGame, org.flixelgdx.backend.runtime.FlixelRuntimeMode,
- * FlixelLwjgl3ApplicationConfiguration)} and you call {@link #setWindowListener(Lwjgl3WindowListener)} yourself.
- * The convenience overloads that build a configuration for you already create an instance of this class.
+ * FlixelGame, FlixelRuntimeMode, FlixelLwjgl3ApplicationConfiguration)} and you call
+ * {@link #setWindowListener(Lwjgl3WindowListener)} yourself. The convenience overloads that build a configuration
+ * for you already create an instance of this class.
  *
  * <p>Example:
  *
