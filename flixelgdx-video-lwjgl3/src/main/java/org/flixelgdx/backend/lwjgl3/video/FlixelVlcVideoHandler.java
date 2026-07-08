@@ -111,8 +111,7 @@ public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
       ensureInstance();
     } catch (IllegalStateException | LinkageError error) {
       unavailable = true;
-      Gdx.app.error("FlixelVideo",
-          "Video playback is disabled for this session: " + error.getMessage());
+      Gdx.app.error("FlixelVideo", "Video playback is disabled for this session: " + error.getMessage());
       return new FlixelUnavailableVideo();
     }
     try {

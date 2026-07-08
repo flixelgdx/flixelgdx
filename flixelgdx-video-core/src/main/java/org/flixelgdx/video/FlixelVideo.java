@@ -23,11 +23,14 @@
  */
 package org.flixelgdx.video;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.LifecycleListener;
 import com.badlogic.gdx.graphics.Texture;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
@@ -106,6 +109,41 @@ public abstract class FlixelVideo extends FlixelBasic {
 
   /** Vertical parallax factor, same contract as sprites ({@code 1} = follows the camera). */
   public float scrollY = 1f;
+
+  /**
+   * Registered with {@link Gdx#app} so the video pauses and resumes on mobile and web when the
+   * application moves to and from the background. Stored so it can be removed in
+   * {@link #destroy()}.
+   */
+  private final LifecycleListener lifecycleListener = new LifecycleListener() {
+    @Override
+    public void pause() {
+      FlixelGame game = Flixel.getGame();
+      if (game == null || !game.autoPause || autoPaused || !isMediaPlaying()) {
+        return;
+      }
+      pauseMedia();
+      autoPaused = true;
+    }
+
+    @Override
+    public void resume() {
+      if (!autoPaused) {
+        return;
+      }
+      autoPaused = false;
+      resumeMedia();
+    }
+
+    @Override
+    public void dispose() {}
+  };
+
+  /**
+   * Set when this video was paused automatically (by the lifecycle listener or a platform-specific
+   * focus hook) so it can be correctly resumed when the application returns to the foreground.
+   */
+  protected boolean autoPaused;
 
   /** When {@code true}, {@link #destroy()} is called automatically when playback completes. */
   private boolean autoDestroy;
@@ -253,6 +291,7 @@ public abstract class FlixelVideo extends FlixelBasic {
 
   protected FlixelVideo() {
     super();
+    Gdx.app.addLifecycleListener(lifecycleListener);
   }
 
   /**
@@ -404,6 +443,7 @@ public abstract class FlixelVideo extends FlixelBasic {
   @Override
   public void destroy() {
     super.destroy();
+    Gdx.app.removeLifecycleListener(lifecycleListener);
     onPlay.clear();
     onPause.clear();
     onResume.clear();
@@ -416,6 +456,7 @@ public abstract class FlixelVideo extends FlixelBasic {
     height = 0f;
     scrollX = 1f;
     scrollY = 1f;
+    autoPaused = false;
     autoDestroy = false;
     completed = false;
   }

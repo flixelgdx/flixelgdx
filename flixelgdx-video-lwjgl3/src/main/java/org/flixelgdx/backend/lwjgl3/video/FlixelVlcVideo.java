@@ -162,9 +162,6 @@ final class FlixelVlcVideo extends FlixelVideo {
 
   private boolean disposed;
 
-  /** Set when this video was auto-paused on focus loss, so it can be resumed when focus returns. */
-  private boolean autoPaused;
-
   /**
    * Creates a media player for the given file and wires all libvlc callbacks.
    *
