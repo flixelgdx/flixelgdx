@@ -30,6 +30,7 @@ import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
+import org.flixelgdx.asset.FlixelDefaultAssetManager;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.audio.FlixelSoundBackend;
 import org.flixelgdx.backend.alert.FlixelAlerter;
