@@ -226,7 +226,7 @@ public class FlixelLwjgl3Launcher {
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
     }
-    configuration.attachFlixelWindowListenerChain();
+    configuration.attachFlixelWindowListener();
     return configuration;
   }
 

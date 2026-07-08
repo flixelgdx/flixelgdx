@@ -819,16 +819,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * {@link #autoPause} is {@code true}, then notifies the active state. Duplicate calls
    * without an intervening {@link #onFocusGained()} are silently ignored.
    *
-   * <p>Override this to add custom behavior when focus is lost:
-   *
-   * <pre>{@code
-   * @Override
-   * protected void onFocusLost() {
-   *   super.onFocusLost();
-   *   myVideo.pause();
-   * }
-   * }</pre>
-   *
    * @see #onFocusGained()
    * @see #onMinimized()
    * @see Flixel.Signals#windowUnfocused
@@ -860,16 +850,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * {@link #autoPause} is {@code true}, then notifies the active state. Calls that arrive
    * without a prior {@link #onFocusLost()} are silently ignored.
    *
-   * <p>Override this to add custom behavior when focus returns:
-   *
-   * <pre>{@code
-   * @Override
-   * protected void onFocusGained() {
-   *   super.onFocusGained();
-   *   myVideo.resume();
-   * }
-   * }</pre>
-   *
    * @see #onFocusLost()
    * @see Flixel.Signals#windowFocused
    */
@@ -898,15 +878,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * handles audio and rendering pausing before this is called.
    *
    * <p>The default implementation notifies the active state and dispatches
-   * {@link Flixel.Signals#windowMinimized}. Override to add custom behavior:
-   *
-   * <pre>{@code
-   * @Override
-   * protected void onMinimized() {
-   *   super.onMinimized();
-   *   saveQuickAutoSave();
-   * }
-   * }</pre>
+   * {@link Flixel.Signals#windowMinimized}.
    *
    * @see #onFocusLost()
    * @see #onFocusGained()

@@ -26,58 +26,89 @@ package org.flixelgdx.backend.lwjgl3.window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
-import org.jetbrains.annotations.NotNull;
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Outermost GLFW listener that can veto close requests when absorption is enabled.
+ * GLFW window listener that drives Flixel window lifecycle hooks and optionally forwards
+ * events to a user-supplied {@link Lwjgl3WindowListener}.
+ *
+ * <p>This listener handles three responsibilities in one place:
+ * <ul>
+ *   <li>Routing GLFW focus and minimize events to {@link FlixelGame#onFocusLost()},
+ *       {@link FlixelGame#onFocusGained()}, and {@link FlixelGame#onMinimized()}.</li>
+ *   <li>Vetoing GLFW close requests when {@link #setAbsorbCloseRequests(boolean)} is
+ *       {@code true}.</li>
+ *   <li>Forwarding all events to the optional user listener passed at construction.</li>
+ * </ul>
  */
-public class FlixelLwjgl3ChainingWindowListener implements Lwjgl3WindowListener {
+public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
 
-  @NotNull
-  private final Lwjgl3WindowListener delegate;
+  @Nullable
+  private final Lwjgl3WindowListener next;
 
   private volatile boolean absorbCloseRequests;
 
-  public FlixelLwjgl3ChainingWindowListener(@NotNull Lwjgl3WindowListener delegate) {
-    this.delegate = delegate;
+  public FlixelLwjgl3WindowListener(@Nullable Lwjgl3WindowListener next) {
+    this.next = next;
   }
 
-  void setAbsorbCloseRequests(boolean absorbCloseRequests) {
-    this.absorbCloseRequests = absorbCloseRequests;
+  void setAbsorbCloseRequests(boolean absorb) {
+    this.absorbCloseRequests = absorb;
   }
 
   boolean isAbsorbCloseRequests() {
     return absorbCloseRequests;
   }
 
-  @NotNull
-  public Lwjgl3WindowListener getDelegate() {
-    return delegate;
-  }
-
   @Override
   public void created(Lwjgl3Window window) {
-    delegate.created(window);
+    if (next != null) {
+      next.created(window);
+    }
   }
 
   @Override
   public void iconified(boolean isIconified) {
-    delegate.iconified(isIconified);
+    if (isIconified) {
+      FlixelGame game = Flixel.getGame();
+      if (game != null) {
+        game.onMinimized();
+      }
+    }
+    if (next != null) {
+      next.iconified(isIconified);
+    }
   }
 
   @Override
   public void maximized(boolean isMaximized) {
-    delegate.maximized(isMaximized);
+    if (next != null) {
+      next.maximized(isMaximized);
+    }
   }
 
   @Override
   public void focusLost() {
-    delegate.focusLost();
+    FlixelGame game = Flixel.game;
+    if (game != null) {
+      game.onFocusLost();
+    }
+    if (next != null) {
+      next.focusLost();
+    }
   }
 
   @Override
   public void focusGained() {
-    delegate.focusGained();
+    FlixelGame game = Flixel.game;
+    if (game != null) {
+      game.onFocusGained();
+    }
+    if (next != null) {
+      next.focusGained();
+    }
   }
 
   @Override
@@ -85,16 +116,20 @@ public class FlixelLwjgl3ChainingWindowListener implements Lwjgl3WindowListener 
     if (absorbCloseRequests) {
       return false;
     }
-    return delegate.closeRequested();
+    return next == null || next.closeRequested();
   }
 
   @Override
   public void filesDropped(String[] files) {
-    delegate.filesDropped(files);
+    if (next != null) {
+      next.filesDropped(files);
+    }
   }
 
   @Override
   public void refreshRequested() {
-    delegate.refreshRequested();
+    if (next != null) {
+      next.refreshRequested();
+    }
   }
 }

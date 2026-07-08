@@ -27,9 +27,8 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3ChainingWindowListener;
-import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3NotifyWindowListener;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3WindowListener;
 import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,20 +56,20 @@ public class FlixelLwjgl3ApplicationConfiguration extends Lwjgl3ApplicationConfi
   private Lwjgl3WindowListener userWindowListener;
 
   @Nullable
-  private FlixelLwjgl3ChainingWindowListener installedFlixelChain;
+  private FlixelLwjgl3WindowListener installedFlixelListener;
 
   @Override
   public void setWindowListener(@Nullable Lwjgl3WindowListener listener) {
-    if (!(listener instanceof FlixelLwjgl3ChainingWindowListener)) {
+    if (!(listener instanceof FlixelLwjgl3WindowListener)) {
       userWindowListener = listener;
     }
     super.setWindowListener(listener);
   }
 
   /**
-   * @return The last listener you assigned with {@link #setWindowListener(Lwjgl3WindowListener)} before the Flixel chain
-   * was installed, or {@code null} if none. This excludes {@link FlixelLwjgl3ChainingWindowListener}; that wrapper is
-   * managed by {@link FlixelLwjgl3Launcher}.
+   * @return The last listener you assigned with {@link #setWindowListener(Lwjgl3WindowListener)} before the Flixel
+   * listener was installed, or {@code null} if none. {@link FlixelLwjgl3WindowListener} itself is excluded; that
+   * wrapper is managed by {@link FlixelLwjgl3Launcher}.
    */
   @Nullable
   public Lwjgl3WindowListener getUserWindowListener() {
@@ -78,18 +77,18 @@ public class FlixelLwjgl3ApplicationConfiguration extends Lwjgl3ApplicationConfi
   }
 
   /**
-   * Wraps {@link #getUserWindowListener()} inside Flixel GLFW hooks and installs the chaining listener used for close
-   * absorption support. Safe to call more than once; repeated calls refresh the absorption hook reference.
+   * Installs the {@link FlixelLwjgl3WindowListener} that drives Flixel window lifecycle hooks and close absorption
+   * support, wrapping any user-supplied listener. Safe to call more than once; repeated calls refresh the hook
+   * reference without creating a new listener.
    */
-  public void attachFlixelWindowListenerChain() {
-    if (installedFlixelChain != null) {
-      FlixelLwjgl3Window.configureCloseHandlingHook(installedFlixelChain);
+  public void attachFlixelWindowListener() {
+    if (installedFlixelListener != null) {
+      FlixelLwjgl3Window.configureCloseHandlingHook(installedFlixelListener);
       return;
     }
-    FlixelLwjgl3NotifyWindowListener notify = new FlixelLwjgl3NotifyWindowListener(userWindowListener);
-    FlixelLwjgl3ChainingWindowListener chain = new FlixelLwjgl3ChainingWindowListener(notify);
-    super.setWindowListener(chain);
-    installedFlixelChain = chain;
-    FlixelLwjgl3Window.configureCloseHandlingHook(chain);
+    FlixelLwjgl3WindowListener listener = new FlixelLwjgl3WindowListener(userWindowListener);
+    super.setWindowListener(listener);
+    installedFlixelListener = listener;
+    FlixelLwjgl3Window.configureCloseHandlingHook(listener);
   }
 }
