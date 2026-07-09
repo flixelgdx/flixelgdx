@@ -50,14 +50,12 @@ import org.jetbrains.annotations.NotNull;
  * }</pre>
  *
  * <p>Installation is cheap: no native library is touched until the first
- * {@link org.flixelgdx.video.FlixelVideo FlixelVideo} is created, at which point
- * {@link FlixelVlcDiscovery} locates libvlc (bundled natives, a game-shipped
- * {@code vlc/} folder, or a system installation) and a single shared libvlc instance
- * is created for the whole game.
+ * {@link FlixelVideo} is created, at which point {@link FlixelVlcDiscovery} locates
+ * libvlc (bundled natives, a game-shipped {@code vlc/} folder, or a system installation)
+ * and a single shared libvlc instance is created for the whole game.
  *
  * <p>When no working VLC can be found at all, videos are still created; they just
- * stay in a never-ready state (see
- * {@link org.flixelgdx.video.FlixelUnavailableVideo FlixelUnavailableVideo}) and the
+ * stay in a never-ready state (see {@link FlixelUnavailableVideo}) and the
  * reason is logged, so a missing decoder degrades the game instead of crashing it.
  */
 public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
