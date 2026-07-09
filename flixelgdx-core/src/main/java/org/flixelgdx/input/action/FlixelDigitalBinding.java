@@ -27,6 +27,7 @@ import com.badlogic.gdx.Gdx;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
+import org.flixelgdx.input.touch.FlixelTouch;
 
 /**
  * Boolean input contributor for a {@link FlixelActionDigital}.
@@ -36,12 +37,13 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
  * returns {@code true}.
  *
  * <p>Create bindings only during setup, not each frame. The static factory methods cover the
- * common cases (keyboard, mouse, gamepad, touch region). For anything else, pass a plain lambda:
+ * common cases (keyboard, mouse, gamepad, touch). For anything else, pass a plain lambda:
  *
  * <pre>{@code
  * jump.addBinding(FlixelDigitalBinding.key(FlixelKey.SPACE));
  * jump.addBinding(FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
- * jump.addBinding(() -> myCustomSensor.isActive()); // Custom source.
+ * jump.addBinding(FlixelDigitalBinding.touch(0));          // first finger
+ * jump.addBinding(() -> myCustomSensor.isActive());        // custom source
  * }</pre>
  *
  * @see FlixelActionDigital
@@ -100,9 +102,24 @@ public interface FlixelDigitalBinding {
   }
 
   /**
+   * Touch pointer binding using {@link org.flixelgdx.Flixel#touches Flixel.touches}.
+   *
+   * <pre>{@code
+   * // Fire while the first finger is down.
+   * shoot.addBinding(FlixelDigitalBinding.touch(0));
+   * }</pre>
+   *
+   * @param pointer Zero-based pointer index (0 = first finger).
+   * @return Binding that fires while the given pointer is in contact with the screen.
+   */
+  static FlixelDigitalBinding touch(int pointer) {
+    return () -> Flixel.touches != null && Flixel.touches.enabled && Flixel.touches.pressed(pointer);
+  }
+
+  /**
    * Normalized screen region binding. Fires when any active touch pointer falls inside the
    * rectangle. Coordinates are fractions of the back buffer dimensions, with the origin at the
-   * top-left corner (matching libGDX screen-space Y).
+   * top-left corner (matching libGDX screen-space Y, where Y increases downward).
    *
    * <pre>{@code
    * // Bottom-left quarter of the screen as a virtual jump button.
@@ -117,6 +134,9 @@ public interface FlixelDigitalBinding {
    */
   static FlixelDigitalBinding touchRegion(float normX, float normY, float normW, float normH) {
     return () -> {
+      if (Flixel.touches == null || !Flixel.touches.enabled) {
+        return false;
+      }
       int bw = Gdx.graphics.getBackBufferWidth();
       int bh = Gdx.graphics.getBackBufferHeight();
       if (bw <= 0 || bh <= 0) {
@@ -124,13 +144,54 @@ public interface FlixelDigitalBinding {
       }
       float fx = 1f / bw;
       float fy = 1f / bh;
-      for (int p = 0; p <= 20; p++) {
-        if (!Gdx.input.isTouched(p)) {
+      int max = Flixel.touches.getMaxPointers();
+      for (int p = 0; p < max; p++) {
+        FlixelTouch t = Flixel.touches.list[p];
+        if (!t.isPressed()) {
           continue;
         }
-        float px = Gdx.input.getX(p) * fx;
-        float py = Gdx.input.getY(p) * fy;
+        float px = t.screenX * fx;
+        float py = t.screenY * fy;
         if (px >= normX && px <= normX + normW && py >= normY && py <= normY + normH) {
+          return true;
+        }
+      }
+      return false;
+    };
+  }
+
+  /**
+   * World-space region binding. Fires when any active touch pointer's unprojected world position
+   * falls inside the rectangle. Coordinates use the bottom-left origin (Y increases upward),
+   * matching the standard game-world convention used by cameras and game objects.
+   *
+   * <p>World coordinates are taken from {@link FlixelTouch#worldX} and {@link FlixelTouch#worldY},
+   * which are unprojected each frame via the touch manager's active camera (configurable with
+   * {@link org.flixelgdx.input.touch.FlixelTouchManager#setWorldCamera FlixelTouchManager.setWorldCamera(...)}).
+   *
+   * <pre>{@code
+   * // Virtual jump button occupying the left half of a 480x270 world.
+   * jump.addBinding(FlixelDigitalBinding.touchRegionWorld(0f, 0f, 240f, 270f));
+   * }</pre>
+   *
+   * @param x Left edge in world units.
+   * @param y Bottom edge in world units.
+   * @param w Width in world units.
+   * @param h Height in world units.
+   * @return Binding that fires while any touch pointer's world position is inside the region.
+   */
+  static FlixelDigitalBinding touchRegionWorld(float x, float y, float w, float h) {
+    return () -> {
+      if (Flixel.touches == null || !Flixel.touches.enabled) {
+        return false;
+      }
+      int max = Flixel.touches.getMaxPointers();
+      for (int p = 0; p < max; p++) {
+        FlixelTouch t = Flixel.touches.list[p];
+        if (!t.isPressed()) {
+          continue;
+        }
+        if (t.worldX >= x && t.worldX <= x + w && t.worldY >= y && t.worldY <= y + h) {
           return true;
         }
       }

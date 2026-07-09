@@ -49,6 +49,7 @@ import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
+import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
 import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
@@ -534,6 +535,32 @@ public final class Flixel {
   public static FlixelMouseManager mouse;
 
   /**
+   * The multitouch input manager for the game.
+   *
+   * <p>Tracks up to {@link org.flixelgdx.input.touch.FlixelTouchManager#DEFAULT_MAX_POINTERS
+   * DEFAULT_MAX_POINTERS} simultaneous fingers. Access per-pointer state through the pre-allocated
+   * {@link org.flixelgdx.input.touch.FlixelTouchManager#list list} array, or use the convenience
+   * methods for quick checks:
+   *
+   * <pre>{@code
+   * // React on first contact.
+   * if (Flixel.touches.list[0].isJustPressed()) {
+   *   spawnEffect(Flixel.touches.list[0].worldX, Flixel.touches.list[0].worldY);
+   * }
+   *
+   * // Check how many fingers are down.
+   * if (Flixel.touches.count() >= 2) {
+   *   beginPinchZoom();
+   * }
+   * }</pre>
+   *
+   * @see org.flixelgdx.input.touch.FlixelTouchManager
+   * @see org.flixelgdx.input.touch.FlixelTouch
+   */
+  @NotNull
+  public static FlixelTouchManager touches;
+
+  /**
    * The gamepad and controller input manager.
    *
    * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadManager#enabled} to
@@ -794,6 +821,7 @@ public final class Flixel {
     debug = new FlixelDebugManager();
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
+    touches = new FlixelTouchManager();
     gamepads = new FlixelGamepadManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
