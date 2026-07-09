@@ -37,7 +37,7 @@ import org.flixelgdx.input.touch.FlixelTouch;
  * returns {@code true}.
  *
  * <p>Create bindings only during setup, not each frame. The static factory methods cover the
- * common cases (keyboard, mouse, gamepad, touch). For anything else, pass a plain lambda:
+ * common cases (keyboard, mouse, gamepad, touch region). For anything else, pass a plain lambda:
  *
  * <pre>{@code
  * jump.addBinding(FlixelDigitalBinding.key(FlixelKey.SPACE));
