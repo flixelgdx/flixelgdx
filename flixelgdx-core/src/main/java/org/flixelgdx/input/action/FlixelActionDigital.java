@@ -23,21 +23,20 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.utils.Array;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Boolean action: any {@link FlixelInputBinding} that evaluates true, OR optional Steam digital for the same
- * {@link #getName()}, makes {@link #pressed()} true for this frame.
+ * Boolean action: any {@link FlixelDigitalBinding} that evaluates true, OR optional Steam digital
+ * for the same {@link #getName()}, makes {@link #pressed()} true for this frame.
  *
  * <h2>Setup</h2>
  *
- * <p>Call {@link #addBinding(FlixelInputBinding)} only during construction or loading (not each frame). Multiple
- * bindings are OR'd: {@code jump} might accept Space, gamepad A, and a touch region.
+ * <p>Call {@link #addBinding(FlixelDigitalBinding)} only during construction or loading (not each
+ * frame). Multiple bindings are OR'd: a {@code jump} action might accept Space, gamepad A, and a
+ * touch region.
  *
  * <h2>Reading in gameplay</h2>
  *
@@ -46,24 +45,25 @@ import org.jetbrains.annotations.Nullable;
  *   <li>{@link #justPressed()} for a single-frame edge (tap notes, menu confirm).</li>
  *   <li>{@link #justReleased()} when the player releases after a hold.</li>
  *   <li>{@link #held()} for hold-repeating navigation: fires on the initial press, then fires
- *       again after {@link FlixelAction#getHoldDelay()} seconds, then every {@link FlixelAction#getHoldInterval()}
- *       seconds while held. Replaces a manual {@code justPressed()} check when autorepeat is needed.</li>
+ *       again after {@link FlixelAction#getHoldDelay()} seconds, then every
+ *       {@link FlixelAction#getHoldInterval()} seconds while held. Replaces a manual
+ *       {@code justPressed()} check when autorepeat is needed.</li>
  * </ul>
  *
- * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via {@link FlixelActionSets#updateAll(float)}).
- * {@link FlixelActionSet#endFrame()} (via {@link FlixelActionSets#endFrameAll()}) runs after
- * {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} finalizes keys and mouse, matching their {@code justPressed} timing.
+ * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via
+ * {@link FlixelActionSets#updateAll(float)}). {@link FlixelActionSet#endFrame()} (via
+ * {@link FlixelActionSets#endFrameAll()}) runs after
+ * {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} finalizes keys and mouse, matching
+ * their {@code justPressed} timing.
  *
  * <h2>Optional callback</h2>
  *
- * <p>{@link #getHoldDelay()()} runs on the press edge when assigned; prefer a single static {@link Runnable} to avoid allocating
- * lambdas in hot paths.
+ * <p>{@link FlixelAction#callback} runs on the press edge when assigned; prefer a single static
+ * {@link Runnable} to avoid allocating lambdas in hot paths.
  */
 public final class FlixelActionDigital extends FlixelAction {
 
-  private static final int MAX_TOUCH_POINTER = 20;
-
-  private final Array<FlixelInputBinding> bindings = new Array<>(8);
+  private final Array<FlixelDigitalBinding> bindings = new Array<>(8);
 
   private float holdAccum;
 
@@ -81,7 +81,7 @@ public final class FlixelActionDigital extends FlixelAction {
    *
    * @param binding Non-null binding.
    */
-  public void addBinding(@NotNull FlixelInputBinding binding) {
+  public void addBinding(@NotNull FlixelDigitalBinding binding) {
     bindings.add(binding);
   }
 
@@ -100,7 +100,7 @@ public final class FlixelActionDigital extends FlixelAction {
       v = true;
     }
     for (int i = 0, n = bindings.size; i < n; i++) {
-      v |= evalBinding(bindings.get(i));
+      v |= bindings.get(i).evaluate();
     }
     boolean edge = v && !previous;
     Runnable cb = callback;
@@ -164,9 +164,9 @@ public final class FlixelActionDigital extends FlixelAction {
    * Returns {@code true} on the initial press and again on each hold-repeat tick.
    *
    * <p>Fires immediately on the frame the button is first pressed (same as {@link #justPressed()}),
-   * then fires again after {@link FlixelAction#getHoldDelay()} seconds if the button is still held, and
-   * continues firing every {@link FlixelAction#getHoldInterval()} seconds after that. Releasing the button
-   * resets the timer so the next press starts fresh.
+   * then fires again after {@link FlixelAction#getHoldDelay()} seconds if the button is still held,
+   * and continues firing every {@link FlixelAction#getHoldInterval()} seconds after that. Releasing
+   * the button resets the timer so the next press starts fresh.
    *
    * <p>Use this instead of {@link #justPressed()} anywhere a held button should keep triggering,
    * such as menu scrolling, cursor movement, or incrementing a value:
@@ -179,53 +179,5 @@ public final class FlixelActionDigital extends FlixelAction {
    */
   public boolean held() {
     return active && held;
-  }
-
-  private boolean evalBinding(@NotNull FlixelInputBinding b) {
-    return switch (b.kind) {
-      case KEY -> Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.a);
-      case GAMEPAD_BUTTON -> {
-        if (Flixel.gamepads == null || !Flixel.gamepads.enabled) {
-          yield false;
-        }
-        if (b.b == FlixelInputBinding.GAMEPAD_SLOT_ANY) {
-          yield Flixel.gamepads.anyPressed(b.a);
-        }
-        yield Flixel.gamepads.pressed(b.b, b.a);
-      }
-      case POINTER_BUTTON -> evalPointer(b.a, b.b);
-      case TOUCH_REGION -> evalTouchRegion(b.normX, b.normY, b.normW, b.normH);
-    };
-  }
-
-  private static boolean evalPointer(int pointer, int button) {
-    if (pointer == FlixelInputBinding.POINTER_MOUSE) {
-      return Flixel.mouse != null && Flixel.mouse.enabled && Flixel.mouse.pressed(button);
-    }
-    if (!Gdx.input.isTouched(pointer)) {
-      return false;
-    }
-    return button < 0 || Gdx.input.isButtonPressed(button);
-  }
-
-  private static boolean evalTouchRegion(float nx, float ny, float nw, float nh) {
-    int bw = Gdx.graphics.getBackBufferWidth();
-    int bh = Gdx.graphics.getBackBufferHeight();
-    if (bw <= 0 || bh <= 0) {
-      return false;
-    }
-    float fx = 1f / bw;
-    float fy = 1f / bh;
-    for (int p = 0; p <= MAX_TOUCH_POINTER; p++) {
-      if (!Gdx.input.isTouched(p)) {
-        continue;
-      }
-      float px = Gdx.input.getX(p) * fx;
-      float py = Gdx.input.getY(p) * fy;
-      if (px >= nx && px <= nx + nw && py >= ny && py <= ny + nh) {
-        return true;
-      }
-    }
-    return false;
   }
 }

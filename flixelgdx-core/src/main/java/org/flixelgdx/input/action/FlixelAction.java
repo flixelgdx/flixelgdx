@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Base type for a named logical control inside a {@link FlixelActionSet}.
  *
- * <p>Concrete types are {@link FlixelActionDigital} (boolean, many {@link FlixelInputBinding}s OR'd together) and
+ * <p>Concrete types are {@link FlixelActionDigital} (boolean, many {@link FlixelDigitalBinding}s OR'd together) and
  * {@link FlixelActionAnalog} (2D vector from keys and gamepad axes, optional Steam vector merge). Subclasses are updated
  * by the owning set's {@link FlixelActionSet#update(float)} and finalized by {@link FlixelActionSet#endFrame()}.
  *
