@@ -26,6 +26,7 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.Gdx;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 
 /**
  * Boolean input contributor for a {@link FlixelActionDigital}.
@@ -40,7 +41,7 @@ import org.flixelgdx.Flixel;
  * <pre>{@code
  * jump.addBinding(FlixelDigitalBinding.key(FlixelKey.SPACE));
  * jump.addBinding(FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
- * jump.addBinding(() -> myCustomSensor.isActive()); // custom source
+ * jump.addBinding(() -> myCustomSensor.isActive()); // Custom source.
  * }</pre>
  *
  * @see FlixelActionDigital
@@ -71,7 +72,7 @@ public interface FlixelDigitalBinding {
   /**
    * Mouse button binding using {@link org.flixelgdx.Flixel#mouse Flixel.mouse}.
    *
-   * @param button libGDX button index (for example {@link com.badlogic.gdx.Input.Buttons#LEFT}).
+   * @param button Mouse button index (for example {@link FlixelMouseButton#LEFT}).
    * @return Binding that fires while the button is held.
    */
   static FlixelDigitalBinding mouseButton(int button) {
