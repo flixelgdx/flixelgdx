@@ -1,8 +1,8 @@
 /**
  * Logical input actions: named {@link org.flixelgdx.input.action.FlixelAction FlixelAction} instances grouped in a
- * {@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet}, with tagged {@link org.flixelgdx.input.action.FlixelInputBinding FlixelInputBinding}
- * and {@link org.flixelgdx.input.action.FlixelAnalogAxisBinding FlixelAnalogAxisBinding} so keyboard, gamepad, pointer, and touch regions
- * never share one ambiguous integer bucket.
+ * {@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet}, wired up with
+ * {@link org.flixelgdx.input.action.FlixelDigitalBinding FlixelDigitalBinding} and
+ * {@link org.flixelgdx.input.action.FlixelAnalogBinding FlixelAnalogBinding} contributors.
  *
  * <h2>Why use this package</h2>
  *

@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  * <ol>
  *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#initialize Flixel.initialize}.</li>
  *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
- *       call {@link #add(FlixelAction)} for each, and configure {@link FlixelInputBinding} / {@link FlixelAnalogAxisBinding}.</li>
+ *       call {@link #add(FlixelAction)} for each, and add {@link FlixelDigitalBinding} / {@link FlixelAnalogBinding} instances.</li>
  *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame FlixelGame} calls
  *       {@link FlixelActionSets#updateAll(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
  *       after keys, mouse, and gamepads {@code endFrame()} in {@code render()}.</li>
@@ -61,15 +61,15 @@ import org.jetbrains.annotations.Nullable;
  *
  *   public PlayerControls() {
  *     jump = new FlixelActionDigital("jump");
- *     jump.addBinding(FlixelInputBinding.key(FlixelKey.SPACE));
- *     jump.addBinding(FlixelInputBinding.gamepadButton(0, FlixelGamepadInput.A));
+ *     jump.addBinding(FlixelDigitalBinding.key(FlixelKey.SPACE));
+ *     jump.addBinding(FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
  *     add(jump);
  *
  *     move = new FlixelActionAnalog("move");
- *     move.addAxisBinding(FlixelAnalogAxisBinding.negXKey(FlixelKey.A));
- *     move.addAxisBinding(FlixelAnalogAxisBinding.posXKey(FlixelKey.D));
- *     move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- *     move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ *     move.addBinding(FlixelAnalogBinding.negXKey(FlixelKey.A));
+ *     move.addBinding(FlixelAnalogBinding.posXKey(FlixelKey.D));
+ *     move.addBinding(FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+ *     move.addBinding(FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
  *     add(move);
  *   }
  * }
