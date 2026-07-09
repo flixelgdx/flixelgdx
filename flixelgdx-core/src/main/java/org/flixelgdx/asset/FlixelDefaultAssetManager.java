@@ -228,6 +228,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       return;
     }
     ktx2LoaderInstaller.install(manager);
+    compressedTexturesEnabled = true;
   }
 
   @Override

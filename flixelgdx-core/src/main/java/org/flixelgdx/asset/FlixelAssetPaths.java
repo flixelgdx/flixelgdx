@@ -85,27 +85,41 @@ public final class FlixelAssetPaths {
   }
 
   /**
-   * Returns {@code path}, or its {@code .ktx2} sibling when one exists on disk, so a compressed
-   * texture load uses the smaller supercompressed asset instead of the plain PNG it was built
-   * from.
+   * Returns the best available path for loading a texture when compressed textures are enabled.
    *
-   * <p>Only {@code .png} paths are considered, since the {@code org.flixelgdx.basisu} Gradle
-   * plugin only compresses PNG source images; every other extension is returned unchanged.
-   * Callers are expected to only invoke this when
+   * <p>For {@code .png} paths the method checks whether a {@code .ktx2} sibling exists and
+   * prefers it; if not, the original PNG path is returned as-is so the caller can fall back to
+   * the uncompressed version. For {@code .ktx2} paths the file is verified to exist and, if it
+   * does not, the method tries the matching {@code .png} sibling instead. Every other extension
+   * is returned unchanged.
+   *
+   * <p>Callers are expected to only invoke this when
    * {@link FlixelAssetManager#isCompressedTexturesEnabled()} is {@code true}, since the
-   * existence check touches the file system.
+   * existence check touches the file system. Returns {@code path} unchanged when libGDX is
+   * not yet initialized.
    *
    * @param path Internal asset path. Must not be {@code null}.
-   * @return {@code path}, or its {@code .ktx2} sibling if one is present.
+   * @return The best available path for this texture, never {@code null}.
    */
   @NotNull
   public static String resolveCompressedTexturePath(@NotNull String path) {
     Objects.requireNonNull(path, "path cannot be null.");
-    if (!path.toLowerCase(Locale.ROOT).endsWith(".png")) {
+    if (Gdx.files == null) {
       return path;
     }
-    String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
-    return Gdx.files.internal(ktxPath).exists() ? ktxPath : path;
+    String lc = path.toLowerCase(Locale.ROOT);
+    if (lc.endsWith(".png")) {
+      String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
+      return Gdx.files.internal(ktxPath).exists() ? ktxPath : path;
+    }
+    if (lc.endsWith(".ktx2")) {
+      if (Gdx.files.internal(path).exists()) {
+        return path;
+      }
+      String pngPath = path.substring(0, path.length() - ".ktx2".length()) + ".png";
+      return Gdx.files.internal(pngPath).exists() ? pngPath : path;
+    }
+    return path;
   }
 
   private static boolean needsNormalization(@NotNull String path) {
