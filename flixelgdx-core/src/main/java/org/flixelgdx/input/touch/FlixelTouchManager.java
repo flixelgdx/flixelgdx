@@ -174,8 +174,13 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
 
   private int maxPointers;
 
-  /** When {@code false}, all queries return inactive state. */
-  public boolean enabled = true;
+  /**
+   * When {@code false}, all queries return inactive state.
+   *
+   * <p>Note that this is typically {@code false} by default, although mobile backends will
+   * automatically enable the touch manager when a game is compiled for mobile platforms.
+   */
+  public boolean enabled = false;
 
   public FlixelTouchManager() {
     this(DEFAULT_MAX_POINTERS);

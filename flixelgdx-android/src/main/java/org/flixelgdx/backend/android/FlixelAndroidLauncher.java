@@ -119,6 +119,9 @@ public class FlixelAndroidLauncher {
     Flixel.initialize(game);
     Flixel.assets.setKtx2LoaderInstaller(manager ->
       manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
+    Flixel.keys.enabled = false;
+    Flixel.mouse.enabled = false;
+    Flixel.touches.enabled = true;
 
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;
