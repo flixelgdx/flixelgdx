@@ -117,7 +117,7 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionDigital custom = new FlixelActionDigital("custom");
-    boolean[] active = {true};
+    boolean[] active = { true };
     custom.addBinding(() -> active[0]);
     set.add(custom);
 
