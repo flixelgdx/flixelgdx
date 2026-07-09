@@ -52,6 +52,18 @@ import org.jetbrains.annotations.Nullable;
  * if (Flixel.touches.anyTouched()) {
  *   player.move(Flixel.touches.list[0].worldX, Flixel.touches.list[0].worldY);
  * }
+ *
+ * // Detect a tap on a sprite using world coordinates.
+ * if (Flixel.touches.justTouchedWorld(
+ *         mySprite.getX(), mySprite.getY(),
+ *         mySprite.getWidth(), mySprite.getHeight())) {
+ *   onButtonTapped();
+ * }
+ *
+ * // Track whether a finger is currently held inside a screen region.
+ * if (Flixel.touches.touchingScreen(0, 0, halfWidth, screenHeight)) {
+ *   moveLeft();
+ * }
  * }</pre>
  *
  * <h2>Coordinate systems</h2>
@@ -84,7 +96,7 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
    * Per-pointer state array. Read {@link FlixelTouch} instances directly for zero-overhead access.
    * Do not reassign this field from outside the manager; use {@link #setMaxPointers(int)} instead.
    *
-   * <p>Every slot is always a non-null {@link FlixelTouch}. Check {@link FlixelTouch#isPressed()}
+   * <p>Every slot is always a non-null {@link FlixelTouch}. Check {@link FlixelTouch#pressed()}
    * to determine whether a slot represents an active finger.
    */
   public FlixelTouch[] list;
@@ -268,8 +280,8 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
   }
 
   /**
-   * Clears per-frame edge flags ({@link FlixelTouch#isJustPressed()},
-   * {@link FlixelTouch#isJustReleased()}, {@link FlixelTouch#isJustCancelled()}) for all pointers.
+   * Clears per-frame edge flags ({@link FlixelTouch#justPressed()},
+   * {@link FlixelTouch#justReleased()}, {@link FlixelTouch#justCancelled()}) for all pointers.
    * Called once per frame by {@code FlixelGame.render()} after game logic and drawing finish.
    */
   @Override
@@ -378,6 +390,146 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
       }
     }
     return c;
+  }
+
+  /**
+   * Returns {@code true} while any active pointer is inside the given world-space rectangle.
+   *
+   * <p>Coordinates use the bottom-left origin (Y increases upward), matching the game world.
+   * Use this to track a finger held inside an area. For detecting the moment a finger lands,
+   * use {@link #justTouchedWorld(float, float, float, float)} instead.
+   *
+   * <pre>{@code
+   * if (Flixel.touches.touchingWorld(button.getX(), button.getY(),
+   *         button.getWidth(), button.getHeight())) {
+   *   button.setHighlighted(true);
+   * }
+   * }</pre>
+   *
+   * @param x Left edge of the rectangle in world units.
+   * @param y Bottom edge of the rectangle in world units.
+   * @param width Width of the rectangle in world units.
+   * @param height Height of the rectangle in world units.
+   * @return {@code true} if at least one pressed pointer is inside the rectangle.
+   */
+  public boolean touchingWorld(float x, float y, float width, float height) {
+    if (!enabled) {
+      return false;
+    }
+    for (int p = 0; p < maxPointers; p++) {
+      FlixelTouch t = list[p];
+      if (t.pressed
+          && t.worldX >= x && t.worldX <= x + width
+          && t.worldY >= y && t.worldY <= y + height) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} while any active pointer is inside the given screen-space rectangle.
+   *
+   * <p>Coordinates use the top-left origin (Y increases downward), matching libGDX screen space.
+   * Use this to track a finger held inside an area. For detecting the moment a finger lands,
+   * use {@link #justTouchedScreen(float, float, float, float)} instead.
+   *
+   * <pre>{@code
+   * float half = Gdx.graphics.getWidth() / 2f;
+   * if (Flixel.touches.touchingScreen(half, 0, half, Gdx.graphics.getHeight())) {
+   *   moveRight();
+   * }
+   * }</pre>
+   *
+   * @param x Left edge of the rectangle in screen pixels.
+   * @param y Top edge of the rectangle in screen pixels.
+   * @param width Width of the rectangle in screen pixels.
+   * @param height Height of the rectangle in screen pixels.
+   * @return {@code true} if at least one pressed pointer is inside the rectangle.
+   */
+  public boolean touchingScreen(float x, float y, float width, float height) {
+    if (!enabled) {
+      return false;
+    }
+    for (int p = 0; p < maxPointers; p++) {
+      FlixelTouch t = list[p];
+      if (t.pressed
+          && t.screenX >= x && t.screenX <= x + width
+          && t.screenY >= y && t.screenY <= y + height) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} on the single frame any pointer first touches the given world-space rectangle.
+   *
+   * <p>Coordinates use the bottom-left origin (Y increases upward), matching the game world.
+   * Clears to {@code false} after the frame ends, matching the timing of
+   * {@link FlixelTouch#isJustPressed()}.
+   *
+   * <pre>{@code
+   * if (Flixel.touches.justTouchedWorld(button.getX(), button.getY(),
+   *         button.getWidth(), button.getHeight())) {
+   *   onButtonTapped();
+   * }
+   * }</pre>
+   *
+   * @param x Left edge of the rectangle in world units.
+   * @param y Bottom edge of the rectangle in world units.
+   * @param width Width of the rectangle in world units.
+   * @param height Height of the rectangle in world units.
+   * @return {@code true} if any pointer was just pressed inside the rectangle this frame.
+   */
+  public boolean justTouchedWorld(float x, float y, float width, float height) {
+    if (!enabled) {
+      return false;
+    }
+    for (int p = 0; p < maxPointers; p++) {
+      FlixelTouch t = list[p];
+      if (t.justPressed
+          && t.worldX >= x && t.worldX <= x + width
+          && t.worldY >= y && t.worldY <= y + height) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} on the single frame any pointer first touches the given screen-space rectangle.
+   *
+   * <p>Coordinates use the top-left origin (Y increases downward), matching libGDX screen space.
+   * Clears to {@code false} after the frame ends, matching the timing of
+   * {@link FlixelTouch#isJustPressed()}.
+   *
+   * <pre>{@code
+   * if (Flixel.touches.justTouchedScreen(0, 0, Gdx.graphics.getWidth() / 2f,
+   *         Gdx.graphics.getHeight())) {
+   *   onLeftSideTapped();
+   * }
+   * }</pre>
+   *
+   * @param x Left edge of the rectangle in screen pixels.
+   * @param y Top edge of the rectangle in screen pixels.
+   * @param width Width of the rectangle in screen pixels.
+   * @param height Height of the rectangle in screen pixels.
+   * @return {@code true} if any pointer was just pressed inside the rectangle this frame.
+   */
+  public boolean justTouchedScreen(float x, float y, float width, float height) {
+    if (!enabled) {
+      return false;
+    }
+    for (int p = 0; p < maxPointers; p++) {
+      FlixelTouch t = list[p];
+      if (t.justPressed
+          && t.screenX >= x && t.screenX <= x + width
+          && t.screenY >= y && t.screenY <= y + height) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Nullable

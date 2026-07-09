@@ -49,9 +49,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>{@code
  * FlixelVideo cutscene = FlixelVideos.create("videos/intro.mp4");
- * cutscene.setSize(Flixel.getGame().getViewWidth(), Flixel.getGame().getViewHeight());
+ * cutscene.setSize(Flixel.game.getWidth(), Flixel.game.getHeight());
  * cutscene.setLooped(false);
- * cutscene.onComplete.add(v -> Flixel.switchState(new MenuState()));
+ * cutscene.onComplete.add(() -> Flixel.switchState(new MenuState()));
  * add(cutscene);
  * cutscene.play();
  * }</pre>
@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
  * video leaves the game for good to release the decoder and the frame texture.
  *
  * <p>The video pauses automatically when the OS suspends the application (the same
- * condition that pauses sounds) if {@link org.flixelgdx.FlixelGame#autoPause} is
+ * condition that pauses sounds) if {@link FlixelGame#autoPause} is
  * {@code true}, and resumes when the application comes back to the foreground.
  *
  * <p>Subclassing this type is only needed for a custom media pipeline. Platform backends
@@ -92,7 +92,7 @@ public abstract class FlixelVideo extends FlixelBasic {
   @NotNull
   private FlixelVideoQuality quality = FlixelVideoQuality.FULL;
 
-  /** World X position of the top-left corner in view coordinates. */
+  /** World X position of the bottom-left corner in view coordinates. */
   public float x;
 
   /** World Y position of the video in view coordinates. */

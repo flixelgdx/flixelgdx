@@ -147,7 +147,7 @@ public interface FlixelDigitalBinding {
       int max = Flixel.touches.getMaxPointers();
       for (int p = 0; p < max; p++) {
         FlixelTouch t = Flixel.touches.list[p];
-        if (!t.isPressed()) {
+        if (!t.pressed()) {
           continue;
         }
         float px = t.screenX * fx;
@@ -188,7 +188,7 @@ public interface FlixelDigitalBinding {
       int max = Flixel.touches.getMaxPointers();
       for (int p = 0; p < max; p++) {
         FlixelTouch t = Flixel.touches.list[p];
-        if (!t.isPressed()) {
+        if (!t.pressed()) {
           continue;
         }
         if (t.worldX >= x && t.worldX <= x + w && t.worldY >= y && t.worldY <= y + h) {

@@ -72,7 +72,7 @@ public final class FlixelTouch {
   FlixelTouch() {}
 
   /** Returns {@code true} while this pointer is currently in contact with the screen. */
-  public boolean isPressed() {
+  public boolean pressed() {
     return pressed;
   }
 
@@ -80,7 +80,7 @@ public final class FlixelTouch {
    * Returns {@code true} on the single frame this pointer first touched the screen. Clears to
    * {@code false} after {@link FlixelTouchManager#endFrame()} is called.
    */
-  public boolean isJustPressed() {
+  public boolean justPressed() {
     return justPressed;
   }
 
@@ -88,7 +88,7 @@ public final class FlixelTouch {
    * Returns {@code true} on the single frame this pointer lifted off the screen. Clears to
    * {@code false} after {@link FlixelTouchManager#endFrame()} is called.
    */
-  public boolean isJustReleased() {
+  public boolean justReleased() {
     return justReleased;
   }
 
@@ -96,7 +96,7 @@ public final class FlixelTouch {
    * Returns {@code true} once this pointer has moved after being pressed, and stays {@code true}
    * until the pointer is released. Use this to distinguish a tap from a drag gesture.
    */
-  public boolean isDragging() {
+  public boolean dragging() {
     return dragging;
   }
 
@@ -105,7 +105,7 @@ public final class FlixelTouch {
    * example, an incoming phone call interrupting the touch session). Clears to {@code false} after
    * {@link FlixelTouchManager#endFrame()} is called.
    */
-  public boolean isJustCancelled() {
+  public boolean justCancelled() {
     return justCancelled;
   }
 }
