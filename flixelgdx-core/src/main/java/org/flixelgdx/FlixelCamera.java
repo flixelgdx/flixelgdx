@@ -1309,7 +1309,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   private static int resolveWindowWidth() {
-    if (Flixel.getGame() != null) {
+    if (Flixel.game != null) {
       return Flixel.getWidth();
     }
     if (Gdx.graphics != null) {
@@ -1323,7 +1323,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * {@link com.badlogic.gdx.Graphics#getHeight()}.
    */
   private static int resolveWindowHeight() {
-    if (Flixel.getGame() != null) {
+    if (Flixel.game != null) {
       return Flixel.getHeight();
     }
     if (Gdx.graphics != null) {
@@ -1363,7 +1363,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     if (useSubScreenViewport || hasCustomPixelRegion || regionMode != RegionMode.PIXEL_TOP_LEFT) {
       return true;
     }
-    FlixelGame game = Flixel.getGame();
+    FlixelGame game = Flixel.game;
     if (game == null || game.getCameras() == null || game.getCameras().size <= 1) {
       return false;
     }

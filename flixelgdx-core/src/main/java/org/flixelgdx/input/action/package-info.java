@@ -13,7 +13,7 @@
  * <h2>Frame order (important)</h2>
  *
  * <p>{@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)} runs {@code Flixel.keys.update()}, {@code Flixel.mouse.update()},
- * {@code Flixel.gamepads.update()}, then {@link org.flixelgdx.input.action.FlixelActionSets#updateAll(float) FlixelActionSets.updateAll(float)}.
+ * {@code Flixel.gamepads.update()}, then {@link org.flixelgdx.input.action.FlixelActionSets#update(float) FlixelActionSets.updateAll(float)}.
  * Your {@link org.flixelgdx.FlixelState#update(float) FlixelState.update(float)} runs after that, so action queries see the current frame's
  * hardware snapshot. {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} ends with {@code endFrame()} on keys, mouse, gamepads,
  * then {@link org.flixelgdx.input.action.FlixelActionSets#endFrameAll() FlixelActionSets.endFrameAll()} so {@code justPressed()} / {@code justReleased()}

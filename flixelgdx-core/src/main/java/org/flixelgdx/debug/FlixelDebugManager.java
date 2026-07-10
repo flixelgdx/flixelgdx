@@ -48,6 +48,11 @@ import java.util.regex.Pattern;
  * Flixel.debug.setDrawDebug(true);
  * Flixel.debug.registerCommand("hello", args -> Flixel.info("Hi!"));
  * Flixel.debug.executeCommand("hello");
+ *
+ * // Customize keybinds via the overlay field (null-safe: only set after debug mode starts).
+ * if (Flixel.debug.overlay != null) {
+ *   Flixel.debug.overlay.toggleKey = FlixelKey.F1;
+ * }
  * }</pre>
  *
  * <p>The manager is intentionally lightweight: it forwards visibility/hitbox toggles to the active
@@ -69,18 +74,6 @@ import java.util.regex.Pattern;
  * registered commands map outside the main thread is unsupported.
  */
 public class FlixelDebugManager {
-
-  /**
-   * Internal handler form used after registration has wrapped the raw consumer. Kept
-   * package-private because external code never has a reason to construct one directly.
-   */
-  @FunctionalInterface
-  interface CommandHandler {
-    void invoke(@NotNull FlixelDebugCommandArgs args);
-  }
-
-  record RegisteredCommand(String name, CommandHandler handler) {
-  }
 
   /**
    * Regex enforced by {@link #registerCommand(String, Consumer)}. A valid command name must
@@ -108,6 +101,19 @@ public class FlixelDebugManager {
    */
   private final Array<FlixelDebugTrackerEntry> trackerEntries = new Array<>(FlixelDebugTrackerEntry[]::new);
 
+  /**
+   * The active debug overlay. Defaults to {@link FlixelNoopDebugOverlay#INSTANCE} so this field
+   * is never {@code null}, meaning callers do not need a null check. When debug mode starts,
+   * {@link org.flixelgdx.Flixel Flixel} replaces this with a real overlay instance.
+   *
+   * <p>Access keybinds and visibility via this field:
+   * <pre>{@code
+   * Flixel.debug.overlay.toggleKey = FlixelKey.F1;
+   * Flixel.debug.overlay.setVisible(true);
+   * }</pre>
+   */
+  public FlixelDebugOverlay overlay = FlixelNoopDebugOverlay.INSTANCE;
+
   /** The sprite currently selected by the LMB picker, or {@code null}. */
   @Nullable
   private FlixelObject inspectedSprite;
@@ -121,21 +127,9 @@ public class FlixelDebugManager {
     registerBuiltinCommands();
   }
 
-  /**
-   * Returns the currently active {@link FlixelDebugOverlay}, or {@code null} if the game is not
-   * running in debug mode (or the overlay has not been created yet).
-   *
-   * @return The active overlay, or {@code null}.
-   */
-  @Nullable
-  public FlixelDebugOverlay getOverlay() {
-    return Flixel.getDebugOverlay();
-  }
-
   /** Returns {@code true} when the overlay is on screen. */
   public boolean isVisible() {
-    FlixelDebugOverlay overlay = getOverlay();
-    return overlay != null && overlay.isVisible();
+    return overlay.isVisible();
   }
 
   /**
@@ -144,24 +138,17 @@ public class FlixelDebugManager {
    * @param visible {@code true} to show, {@code false} to hide.
    */
   public void setVisible(boolean visible) {
-    FlixelDebugOverlay overlay = getOverlay();
-    if (overlay != null) {
-      overlay.setVisible(visible);
-    }
+    overlay.setVisible(visible);
   }
 
   /** Toggles the overlay visibility. */
   public void toggleVisible() {
-    FlixelDebugOverlay overlay = getOverlay();
-    if (overlay != null) {
-      overlay.toggleVisible();
-    }
+    overlay.toggleVisible();
   }
 
   /** Returns {@code true} when bounding-box drawing (hitboxes) is on. */
   public boolean isDrawDebug() {
-    FlixelDebugOverlay overlay = getOverlay();
-    return overlay != null && overlay.isDrawDebug();
+    return overlay.isDrawDebug();
   }
 
   /**
@@ -170,18 +157,12 @@ public class FlixelDebugManager {
    * @param drawDebug {@code true} to draw, {@code false} to hide.
    */
   public void setDrawDebug(boolean drawDebug) {
-    FlixelDebugOverlay overlay = getOverlay();
-    if (overlay != null) {
-      overlay.setDrawDebug(drawDebug);
-    }
+    overlay.setDrawDebug(drawDebug);
   }
 
   /** Toggles bounding-box drawing. */
   public void toggleDrawDebug() {
-    FlixelDebugOverlay overlay = getOverlay();
-    if (overlay != null) {
-      overlay.toggleDrawDebug();
-    }
+    overlay.toggleDrawDebug();
   }
 
   /**
@@ -259,8 +240,7 @@ public class FlixelDebugManager {
     }
   }
 
-  /** Returns the live array of user-registered batches. Package-private; consumed by the debug overlay. */
-  Array<FlixelBatch> getTrackedBatches() {
+  public Array<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
   }
 
@@ -478,5 +458,17 @@ public class FlixelDebugManager {
         Flixel.watch.addMouse();
       }
     });
+  }
+
+  /**
+   * Internal handler form used after registration has wrapped the raw consumer. Kept
+   * package-private because external code never has a reason to construct one directly.
+   */
+  @FunctionalInterface
+  interface CommandHandler {
+    void invoke(@NotNull FlixelDebugCommandArgs args);
+  }
+
+  record RegisteredCommand(String name, CommandHandler handler) {
   }
 }

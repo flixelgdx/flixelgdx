@@ -789,7 +789,7 @@ public class FlixelText extends FlixelSprite {
    * attributes have changed since the last rebuild.
    *
    * <p>This ensures that callers such as {@link #screenCenter()} always operate
-   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   * on up-to-date dimensions, even before the first {@link #draw(FlixelBatch)} call.
    *
    * <p>If no font is available yet (for example, before a GL context exists),
    * the returned value is {@code 0} until the first successful rebuild.
@@ -805,7 +805,7 @@ public class FlixelText extends FlixelSprite {
    * attributes have changed since the last rebuild.
    *
    * <p>This ensures that callers such as {@link #screenCenter()} always operate
-   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   * on up-to-date dimensions, even before the first {@link #draw(FlixelBatch)} call.
    *
    * <p>If no font is available yet (for example, before a GL context exists),
    * the returned value is {@code 0} until the first successful rebuild.
@@ -1077,7 +1077,7 @@ public class FlixelText extends FlixelSprite {
   private float currentScreenScale() {
     FlixelCamera cam = Flixel.getDrawCamera();
     if (cam == null) {
-      if (Flixel.getGame() == null) {
+      if (Flixel.game == null) {
         return 1f;
       }
       cam = Flixel.cameras.first();

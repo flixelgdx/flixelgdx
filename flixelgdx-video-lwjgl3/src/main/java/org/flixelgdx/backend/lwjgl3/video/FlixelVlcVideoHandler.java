@@ -148,7 +148,7 @@ public final class FlixelVlcVideoHandler implements FlixelVideoFactory {
   }
 
   private static void onFocusLost() {
-    FlixelGame game = Flixel.getGame();
+    FlixelGame game = Flixel.game;
     if (game == null || !game.autoPause) {
       return;
     }

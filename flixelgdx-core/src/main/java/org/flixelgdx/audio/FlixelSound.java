@@ -614,7 +614,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * Called from {@link #destroy()}.
    */
   public void clearAudioEffectChain() {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     for (int i = audioEffectNodes.size - 1; i >= 0; i--) {
       FlixelSoundBackend.EffectNode n = audioEffectNodes.get(i);
       n.detach(0);
@@ -645,7 +645,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   @NotNull
   public FlixelSoundBackend.ReverbNode addReverb(float wetAmount) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (factory == null)
       return FlixelSoundBackend.ReverbNode.NOOP;
     FlixelSoundBackend.ReverbNode node = factory.createReverbNode(wetAmount);
@@ -665,7 +665,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   @NotNull
   public FlixelSoundBackend.EchoNode addEcho(float delaySeconds, float decay) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (factory == null)
       return FlixelSoundBackend.EchoNode.NOOP;
     FlixelSoundBackend.EchoNode node = factory.createDelayNode(delaySeconds, decay);
@@ -689,7 +689,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   @NotNull
   public FlixelSoundBackend.LowPassNode addLowPassMuffle(double cutoffHz) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (factory == null)
       return FlixelSoundBackend.LowPassNode.NOOP;
     FlixelSoundBackend.LowPassNode node = factory.createLowPassFilter(cutoffHz, 2);
@@ -712,7 +712,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   }
 
   private void attachEffectNode(@NotNull FlixelSoundBackend.EffectNode node) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (audioEffectNodes.size == 0) {
       node.attachToUpstream(sound, 0);
     } else {
@@ -750,7 +750,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   private static FlixelSoundBackend createSoundForHandle(@NotNull FileHandle path) {
     String resolvedPath = FlixelPathsUtil.resolveAudioPath(path.path());
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     Object sfxGroup = Flixel.sound != null ? Flixel.sound.getSfxGroup() : null;
     return factory.createSound(resolvedPath, (short) 0, sfxGroup, false);
   }

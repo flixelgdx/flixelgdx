@@ -24,7 +24,6 @@
 package org.flixelgdx;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
@@ -45,12 +44,12 @@ import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
+import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
-import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
@@ -288,10 +287,10 @@ public final class Flixel {
    * <p>Example:
    * <pre>{@code
    * // Show a blocking error dialog (execution pauses until dismissed).
-   * Flixel.showErrorAlert("Save Failed", "Could not write to disk. Check your permissions.");
+   * Flixel.alert.showErrorAlert("Save Failed", "Could not write to disk. Check your permissions.");
    *
    * // Access the alerter directly for platform-specific behavior.
-   * Flixel.alerter.showInfoAlert("Hello", "Welcome to the game!");
+   * Flixel.alert.showInfoAlert("Hello", "Welcome to the game!");
    * }</pre>
    */
   @NotNull
@@ -777,27 +776,6 @@ public final class Flixel {
    */
   private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelHeadlessDebugOverlay::new;
 
-  /** The active debug overlay instance, created by {@link FlixelGame} during startup. */
-  private static FlixelDebugOverlay debugOverlay;
-
-  /** Current key used to toggle the debug overlay. */
-  private static int debugToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_TOGGLE_KEY;
-
-  /** Current key used to toggle visual debug (bounding boxes). */
-  private static int debugDrawToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_DRAW_DEBUG_KEY;
-
-  /** Current key used to pause the game update loop (debug mode only). */
-  private static int debugPauseKey = FlixelDebugOverlay.Keybinds.DEFAULT_PAUSE_KEY;
-
-  /** Current button used to pan the debug camera. */
-  private static int debugCameraPanButton = FlixelMouseButton.RIGHT;
-
-  /** Current key used to cycle the debug camera to the left while paused (with Alt). */
-  private static int debugCameraCycleLeftKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
-
-  /** Current key used to cycle the debug camera to the right while paused (with Alt). */
-  private static int debugCameraCycleRightKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
-
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
 
@@ -1040,14 +1018,6 @@ public final class Flixel {
     return assets;
   }
 
-  public static FlixelGame getGame() {
-    return game;
-  }
-
-  public static FlixelState getState() {
-    return state;
-  }
-
   /**
    * Returns the visible width of the game world in game pixels.
    *
@@ -1083,42 +1053,6 @@ public final class Flixel {
    */
   public static Vector2 getSize() {
     return game.viewSize;
-  }
-
-  /**
-   * Returns the key used to toggle the debug overlay visibility.
-   *
-   * @see org.flixelgdx.input.keyboard.FlixelKey
-   */
-  public static int getDebugToggleKey() {
-    return debugToggleKey;
-  }
-
-  /**
-   * Returns the key used to toggle visual debug (bounding box drawing) on/off.
-   *
-   * @see org.flixelgdx.input.keyboard.FlixelKey
-   */
-  public static int getDebugDrawToggleKey() {
-    return debugDrawToggleKey;
-  }
-
-  /** Key used to pause the game update loop (debug mode only). */
-  public static int getDebugPauseKey() {
-    return debugPauseKey;
-  }
-
-  /** Mouse button (e.g. {@link Input.Buttons#RIGHT}) for debug camera pan while paused. */
-  public static int getDebugCameraPanButton() {
-    return debugCameraPanButton;
-  }
-
-  public static int getDebugCameraCycleLeftKey() {
-    return debugCameraCycleLeftKey;
-  }
-
-  public static int getDebugCameraCycleRightKey() {
-    return debugCameraCycleRightKey;
   }
 
   /**
@@ -1209,29 +1143,23 @@ public final class Flixel {
   }
 
   /**
-   * Returns the active debug overlay instance, or {@code null} when debug mode is off
-   * or the overlay has not been created yet.
-   */
-  public static FlixelDebugOverlay getDebugOverlay() {
-    return debugOverlay;
-  }
-
-  /**
    * Creates the debug overlay using the registered factory. Called internally by
    * {@link FlixelGame} during startup when debug mode is enabled.
    */
   static FlixelDebugOverlay createDebugOverlay() {
-    debugOverlay = debugOverlayFactory.get();
-    return debugOverlay;
+    debug.overlay = debugOverlayFactory.get();
+    return debug.overlay;
   }
 
   /**
-   * Clears the active debug overlay reference after it has been disposed.
+   * Resets the debug overlay back to the inert noop after it has been disposed.
    * {@link FlixelGame#dispose()} calls {@link org.flixelgdx.debug.FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
-   * first; this method only nulls the static handle to avoid double-dispose.
+   * first; this method only resets the handle to avoid double-dispose.
    */
   static void clearDebugOverlay() {
-    debugOverlay = null;
+    if (debug != null) {
+      debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
+    }
   }
 
   /**
@@ -1245,48 +1173,12 @@ public final class Flixel {
   }
 
   /**
-   * Returns the Java heap memory currently in use, in megabytes.
-   *
-   * @return The Java heap memory currently in use, in megabytes.
-   */
-  public static float getJavaHeapUsedMegabytes() {
-    return getJavaHeapUsedBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the Java heap memory currently in use, in gigabytes.
-   *
-   * @return The Java heap memory currently in use, in gigabytes.
-   */
-  public static float getJavaHeapUsedGigabytes() {
-    return getJavaHeapUsedBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
    * Returns the total Java heap memory allocated by the JVM, in bytes.
    *
    * @return The total Java heap memory allocated by the JVM, in bytes.
    */
   public static long getJavaHeapTotalBytes() {
     return Runtime.getRuntime().totalMemory();
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in megabytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in megabytes.
-   */
-  public static float getJavaHeapTotalMegabytes() {
-    return getJavaHeapTotalBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in gigabytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in gigabytes.
-   */
-  public static float getJavaHeapTotalGigabytes() {
-    return getJavaHeapTotalBytes() / (1024f * 1024f * 1024f);
   }
 
   /**
@@ -1299,24 +1191,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns the maximum Java heap memory available to the JVM, in megabytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in megabytes.
-   */
-  public static float getJavaHeapMaxMegabytes() {
-    return getJavaHeapMaxBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in gigabytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in gigabytes.
-   */
-  public static float getJavaHeapMaxGigabytes() {
-    return getJavaHeapMaxBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
    * Returns an estimate of the native heap usage in bytes as reported by libGDX.
    *
    * <p>This is not available on all platforms and may return the same number as the
@@ -1324,30 +1198,6 @@ public final class Flixel {
    */
   public static long getNativeHeapUsedBytes() {
     return Gdx.app != null ? Gdx.app.getNativeHeap() : 0L;
-  }
-
-  /**
-   * Returns the native heap usage in megabytes.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   *
-   * @return The native heap usage in megabytes.
-   */
-  public static float getNativeHeapUsedMegabytes() {
-    return getNativeHeapUsedBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the native heap usage in gigabytes.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   *
-   * @return The native heap usage in gigabytes.
-   */
-  public static float getNativeHeapUsedGigabytes() {
-    return getNativeHeapUsedBytes() / (1024f * 1024f * 1024f);
   }
 
   /**

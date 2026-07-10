@@ -21,38 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.input.mouse;
-
-import org.jetbrains.annotations.NotNull;
+package org.flixelgdx.debug;
 
 /**
- * {@link FlixelMouseIconManager} implementation used on backends without native cursor control.
+ * A fully inert debug overlay used as the default value of
+ * {@link org.flixelgdx.debug.FlixelDebugManager#overlay FlixelDebugManager.overlay} so callers
+ * never need to null-check the field.
+ *
+ * <p>All lifecycle methods ({@link #update(float)}, {@link #resize(int, int)}, {@link #drawUI()})
+ * are no-ops. The singleton is safe to share across the application's lifetime.
  */
-public enum FlixelNoopMouseIconManager implements FlixelMouseIconManager {
+public final class FlixelNoopDebugOverlay extends FlixelDebugOverlay {
 
-  /** Shared instance. */
-  INSTANCE;
+  /** Shared singleton instance used as the default overlay before debug mode starts. */
+  public static final FlixelNoopDebugOverlay INSTANCE = new FlixelNoopDebugOverlay();
 
-  private FlixelMouseCursor current = FlixelMouseCursor.ARROW;
-
-  @Override
-  public void setCursor(@NotNull FlixelMouseCursor cursor) {
-    current = cursor;
-  }
+  private FlixelNoopDebugOverlay() {}
 
   @Override
-  public void resetCursor() {
-    current = FlixelMouseCursor.ARROW;
-  }
+  public void update(float elapsed) {}
 
   @Override
-  @NotNull
-  public FlixelMouseCursor getCursor() {
-    return current;
-  }
+  public void resize(int width, int height) {}
 
   @Override
-  public boolean supportsCursors() {
-    return false;
-  }
+  protected void drawUI() {}
+
+  @Override
+  public void destroy() {}
 }

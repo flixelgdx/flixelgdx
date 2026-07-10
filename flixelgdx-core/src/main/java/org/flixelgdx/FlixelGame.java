@@ -464,9 +464,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
-    if (debugOverlay != null) {
-      debugOverlay.resize(width, height);
+    if (Flixel.debug != null) {
+      Flixel.debug.overlay.resize(width, height);
     }
 
     FlixelState state = Flixel.state;
@@ -502,7 +501,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.gamepads != null) {
       Flixel.gamepads.update();
     }
-    FlixelActionSets.updateAll(elapsed);
+    FlixelActionSets.update(elapsed);
 
     if (!gamePaused) {
       FlixelTween.updateTweens(elapsed);
@@ -510,7 +509,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.
-      FlixelState current = Flixel.getState();
+      FlixelState current = Flixel.state;
       while (current != null) {
         FlixelState sub = current.getSubState();
         boolean hasSubState = (sub != null);
@@ -535,9 +534,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
-    if (debugOverlay != null && Flixel.isDebugMode()) {
-      debugOverlay.update(elapsed);
+    if (Flixel.debug != null && Flixel.isDebugMode()) {
+      Flixel.debug.overlay.update(elapsed);
     }
 
     postUpdateData.set(elapsed);
@@ -554,7 +552,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.Signals.preDraw.dispatch();
 
     ScreenUtils.clear(bgColor); // Clear the screen to refresh it.
-    FlixelState state = Flixel.getState();
+    FlixelState state = Flixel.state;
 
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
 
@@ -667,10 +665,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
-    if (debugOverlay != null) {
-      debugOverlay.drawBoundingBoxes(cameras.items);
-      debugOverlay.draw();
+    if (Flixel.debug != null) {
+      Flixel.debug.overlay.drawBoundingBoxes(cameras.items);
+      Flixel.debug.overlay.draw();
     }
 
     squashFramebufferAlpha();
@@ -1103,12 +1100,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     Flixel.Signals.preGameClose.dispatch();
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
-    if (debugOverlay != null) {
+    if (Flixel.debug != null) {
       if (Flixel.log != null) {
-        Flixel.log.removeLogListener(debugOverlay.getLogListener());
+        Flixel.log.removeLogListener(Flixel.debug.overlay.getLogListener());
       }
-      debugOverlay.destroy();
+      Flixel.debug.overlay.destroy();
       Flixel.clearDebugOverlay();
     }
 
@@ -1126,8 +1122,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     FlixelTween.resetRegistry();
     FlixelTimer.cancelAll();
 
-    if (Flixel.getState() != null) {
-      Flixel.getState().destroy();
+    if (Flixel.state != null) {
+      Flixel.state.destroy();
     }
     if (batch != null) {
       batch.dispose();
@@ -1195,7 +1191,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       String logs = FlixelRuntimeUtil.getFullExceptionMessage(throwable);
       String msg = "There was an uncaught exception on thread \"" + thread.getName() + "\"!\n" + logs;
       Flixel.error(msg);
-      Flixel.showErrorAlert("Uncaught Exception", msg);
+      Flixel.alert.showErrorAlert("Uncaught Exception", msg);
       destroy();
       // Only use Gdx.app.exit() on non-iOS platforms to avoid App Store guideline violations!
       if (Gdx.app.getType() != Application.ApplicationType.iOS) {

@@ -13,9 +13,9 @@
  * {@link org.flixelgdx.input.mouse.FlixelNoopMouseIconManager FlixelNoopMouseIconManager} is used
  * until a backend installs its own.
  *
- * <p>{@link org.flixelgdx.input.mouse.FlixelNativeMouseCursor FlixelNativeMouseCursor} enumerates
+ * <p>{@link org.flixelgdx.input.mouse.FlixelMouseCursor FlixelMouseCursor} enumerates
  * the system cursor shapes (arrow, hand, crosshair, resize handles, and so on) that
- * {@link org.flixelgdx.input.mouse.FlixelMouseIconManager#setSystemCursor
- * FlixelMouseIconManager.setSystemCursor} accepts.
+ * {@link org.flixelgdx.input.mouse.FlixelMouseIconManager#setCursor(org.flixelgdx.input.mouse.FlixelMouseCursor)
+ * FlixelMouseCursor} accepts.
  */
 package org.flixelgdx.input.mouse;

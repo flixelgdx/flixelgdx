@@ -94,7 +94,7 @@ public class FlixelLogger implements ApplicationLogger {
    */
   public FlixelLogger(FlixelLogMode logMode) {
     this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
-    this.stackTraceProvider = Flixel.getStackTraceProvider();
+    this.stackTraceProvider = Flixel.stackTraceProvider;
   }
 
   /**
@@ -179,7 +179,7 @@ public class FlixelLogger implements ApplicationLogger {
    * timestamped log file, and (on JVM) starts a background writer thread.
    */
   public void startFileLogging() {
-    FlixelLogFileHandler handler = Flixel.getLogFileHandler();
+    FlixelLogFileHandler handler = Flixel.logFileHandler;
     if (handler == null || !canStoreLogs) {
       return;
     }
@@ -196,7 +196,7 @@ public class FlixelLogger implements ApplicationLogger {
    * written during disposal are persisted.
    */
   public void stopFileLogging() {
-    FlixelLogFileHandler handler = Flixel.getLogFileHandler();
+    FlixelLogFileHandler handler = Flixel.logFileHandler;
     if (handler != null) {
       handler.stop();
     }
@@ -612,7 +612,7 @@ public class FlixelLogger implements ApplicationLogger {
 
     String ts = LocalDateTime.now().format(LOG_TIMESTAMP);
 
-    FlixelLogConsoleSink consoleSink = Flixel.getLogConsoleSink();
+    FlixelLogConsoleSink consoleSink = Flixel.logConsoleSink;
     if (consoleSink != null) {
       String safeTag = tag != null ? tag : "";
       consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts,
@@ -648,7 +648,7 @@ public class FlixelLogger implements ApplicationLogger {
     }
 
     // File: always detailed (plain, no ANSI).
-    FlixelLogFileHandler fileHandler = Flixel.getLogFileHandler();
+    FlixelLogFileHandler fileHandler = Flixel.logFileHandler;
     if (fileHandler != null && fileHandler.isActive()) {
       String levelTag = "[" + level + "]";
       String tagPart = "[" + tag + "]";

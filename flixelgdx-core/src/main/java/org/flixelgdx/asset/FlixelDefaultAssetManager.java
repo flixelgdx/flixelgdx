@@ -243,13 +243,13 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public boolean update() {
-    boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
+    boolean prewarmPending = Flixel.soundFactory != null && !Flixel.soundFactory.isPrewarmPending();
     return manager.update() && !prewarmPending;
   }
 
   @Override
   public boolean update(int millis) {
-    boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
+    boolean prewarmPending = Flixel.soundFactory != null && !Flixel.soundFactory.isPrewarmPending();
     return manager.update(millis) && prewarmPending;
   }
 
@@ -550,8 +550,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
       return;
     }
-    if (Flixel.getSoundFactory() != null) {
-      Flixel.getSoundFactory().prewarmSound(resolveAudioPath(path));
+    if (Flixel.soundFactory != null) {
+      Flixel.soundFactory.prewarmSound(resolveAudioPath(path));
     }
   }
 

@@ -111,7 +111,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
 
   /**
    * Called when the state is first created. This is where you want to assign your
-   * sprites and set up everything your state uses!
+   * sprites and set up everything your state uses.
    *
    * <p>Make sure to override this, NOT the constructor!
    */
@@ -309,8 +309,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
    * @return The background color of the first camera.
    */
   public Color getBgColor() {
-    FlixelGame game = Flixel.getGame();
-    if (game == null) {
+    if (Flixel.game == null) {
       return Color.BLACK;
     }
     return Flixel.cameras.first().bgColor;
@@ -325,11 +324,10 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
     if (value == null) {
       return;
     }
-    FlixelGame game = Flixel.getGame();
-    if (game == null) {
+    if (Flixel.game == null) {
       return;
     }
-    for (FlixelCamera cam : game.getCameras()) {
+    for (FlixelCamera cam : Flixel.game.getCameras()) {
       cam.bgColor.set(value);
     }
   }
