@@ -1,0 +1,76 @@
+[versions]
+anim8 = "0.5.3"
+agp = "8.7.3"
+asm = "9.7.1"
+basisuGdx = "1.1.0"
+commonsCompress = "1.27.1"
+desugarJdkLibs = "2.1.5"
+foojay = "0.9.0"
+gdx = "1.14.0"
+gdxControllers = "2.2.4"
+gdxTeavm = "1.5.2"
+graalvm = "24.2.0"
+imgui = "1.90.0"
+jansi = "2.4.2"
+jetbrainsAnnotations = "26.1.0"
+jna = "5.17.0"
+junit = "5.10.0"
+miniaudio = "0.7"
+multidex = "2.0.1"
+robovm = "2.3.22"
+spotless = "8.6.0"
+teavm = "0.13.0"
+utils = "0.13.7"
+vanniktech = "0.33.0"
+vlc = "3.0.23"
+xz = "1.10"
+
+[libraries]
+anim8 = { module = "com.github.tommyettinger:anim8-gdx", version.ref = "anim8" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
+basisu-gdx = { module = "com.crashinvaders.basisu:basisu-gdx", version.ref = "basisuGdx" }
+basisu-wrapper = { module = "com.crashinvaders.basisu:basisu-wrapper", version.ref = "basisuGdx" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
+gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
+gdx-backend-headless = { module = "com.badlogicgames.gdx:gdx-backend-headless", version.ref = "gdx" }
+gdx-backend-lwjgl3 = { module = "com.badlogicgames.gdx:gdx-backend-lwjgl3", version.ref = "gdx" }
+gdx-backend-robovm = { module = "com.badlogicgames.gdx:gdx-backend-robovm", version.ref = "gdx" }
+gdx-freetype = { module = "com.badlogicgames.gdx:gdx-freetype", version.ref = "gdx" }
+gdx-controllers-android = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-android", version.ref = "gdxControllers" }
+gdx-controllers-core = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-core", version.ref = "gdxControllers" }
+gdx-controllers-desktop = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-desktop", version.ref = "gdxControllers" }
+gdx-controllers-ios = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-ios", version.ref = "gdxControllers" }
+gdx-teavm-backend = { module = "com.github.xpenatan.gdx-teavm:backend-web", version.ref = "gdxTeavm" }
+gdx-teavm-controllers = { module = "com.github.xpenatan.gdx-teavm:gdx-controllers-teavm", version.ref = "gdxTeavm" }
+gdx-teavm-freetype = { module = "com.github.xpenatan.gdx-teavm:gdx-freetype-teavm", version.ref = "gdxTeavm" }
+graalvm-nativeimage = { module = "org.graalvm.sdk:nativeimage", version.ref = "graalvm" }
+imgui-binding = { module = "io.github.spair:imgui-java-binding", version.ref = "imgui" }
+imgui-lwjgl3 = { module = "io.github.spair:imgui-java-lwjgl3", version.ref = "imgui" }
+imgui-natives-linux = { module = "io.github.spair:imgui-java-natives-linux", version.ref = "imgui" }
+imgui-natives-macos = { module = "io.github.spair:imgui-java-natives-macos", version.ref = "imgui" }
+imgui-natives-windows = { module = "io.github.spair:imgui-java-natives-windows", version.ref = "imgui" }
+jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+miniaudio = { module = "games.rednblack.miniaudio:miniaudio", version.ref = "miniaudio" }
+miniaudio-platform = { module = "games.rednblack.miniaudio:gdx-miniaudio-platform", version.ref = "miniaudio" }
+multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
+robovm-cocoatouch = { module = "com.mobidevelop.robovm:robovm-cocoatouch", version.ref = "robovm" }
+robovm-rt = { module = "com.mobidevelop.robovm:robovm-rt", version.ref = "robovm" }
+teavm-gradle-plugin = { module = "org.teavm:teavm-gradle-plugin", version.ref = "teavm" }
+utils = { module = "com.github.tommyettinger:libgdx-utils", version.ref = "utils" }
+xz = { module = "org.tukaani:xz", version.ref = "xz" }
+
+[plugins]
+android-library = { id = "com.android.library", version.ref = "agp" }
+foojay = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojay" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+teavm = { id = "org.teavm", version.ref = "teavm" }
+vanniktech = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }

@@ -29,8 +29,8 @@ import com.badlogic.gdx.backends.iosrobovm.IOSApplicationConfiguration;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.ios.alert.FlixelIOSAlerter;
+import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 

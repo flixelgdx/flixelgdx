@@ -31,7 +31,7 @@ import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
+import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;

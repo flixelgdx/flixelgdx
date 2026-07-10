@@ -1,6 +1,6 @@
 # FlixelGDX
 
-<img src="docs/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
+<img src="markdown-assets/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
 
 ### Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)
 

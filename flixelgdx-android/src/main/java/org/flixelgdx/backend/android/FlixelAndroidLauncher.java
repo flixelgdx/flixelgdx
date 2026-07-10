@@ -34,7 +34,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import org.flixelgdx.backend.android.haptics.FlixelAndroidHaptics;
-import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
+import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.FlixelRuntimeMode;
