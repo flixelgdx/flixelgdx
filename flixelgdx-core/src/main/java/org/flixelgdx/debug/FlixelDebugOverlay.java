@@ -135,7 +135,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Mouse button used to pan the debug camera while paused. Set to a negative value to disable. */
   public int cameraPanButton = FlixelMouseButton.RIGHT;
 
-  private final ShapeRenderer shapeRenderer;
+  @Nullable
+  private ShapeRenderer shapeRenderer;
 
   protected float statsTimer = 0f;
   protected int cachedFps;
@@ -224,9 +225,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private boolean destroyed = false;
 
   /** Constructs the shared debug overlay state. Subclasses should call this before wiring platform UI. */
-  protected FlixelDebugOverlay() {
-    shapeRenderer = new ShapeRenderer();
-  }
+  protected FlixelDebugOverlay() {}
 
   public final Consumer<FlixelLogEntry> getLogListener() {
     return logListener;
@@ -801,6 +800,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
 
+    if (shapeRenderer == null) {
+      shapeRenderer = new ShapeRenderer();
+    }
+
     Gdx.gl.glEnable(GL20.GL_BLEND);
     Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 
@@ -995,7 +998,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     destroyed = true;
-    shapeRenderer.dispose();
+    if (shapeRenderer != null) {
+      shapeRenderer.dispose();
+    }
   }
 
   @Override
