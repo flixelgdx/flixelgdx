@@ -14,7 +14,7 @@ plugins {
   // root project itself; subprojects apply them via the flixelgdx.* convention plugins.
   alias(libs.plugins.spotless) apply false
   alias(libs.plugins.vanniktech) apply false
-  id("com.android.library") version "8.7.3" apply false
+  alias(libs.plugins.android.library) apply false
 }
 
 val groupId: String by project
