@@ -112,7 +112,7 @@ public class FlixelIOSLauncher {
    */
   public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
-    Flixel.alerter = new FlixelIOSAlerter();
+    Flixel.alert = new FlixelIOSAlerter();
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = new FlixelMiniAudioSoundHandler();

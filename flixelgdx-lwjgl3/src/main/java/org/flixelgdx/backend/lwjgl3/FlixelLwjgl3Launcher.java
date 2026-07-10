@@ -164,7 +164,7 @@ public class FlixelLwjgl3Launcher {
       AnsiConsole.systemInstall();
     }
 
-    Flixel.alerter = new FlixelLwjgl3Alerter();
+    Flixel.alert = new FlixelLwjgl3Alerter();
     Flixel.window = new FlixelLwjgl3Window();
     Flixel.host = new FlixelLwjgl3HostIntegration();
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();

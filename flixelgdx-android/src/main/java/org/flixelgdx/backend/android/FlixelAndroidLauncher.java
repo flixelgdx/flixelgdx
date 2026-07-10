@@ -103,7 +103,7 @@ public class FlixelAndroidLauncher {
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
     FlixelCamera.viewportFactory = ExtendViewport::new;
-    Flixel.alerter = new FlixelAndroidAlerter(activity);
+    Flixel.alert = new FlixelAndroidAlerter(activity);
     Flixel.haptics = new FlixelAndroidHaptics(activity);
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();

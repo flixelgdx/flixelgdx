@@ -178,7 +178,7 @@ public class FlixelTeaVMLauncher {
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
       @Nullable Consumer<WebApplicationConfiguration> configCustomizer,
       @Nullable Runnable onBeforeInitialize) {
-    Flixel.alerter = new FlixelTeaVMAlerter();
+    Flixel.alert = new FlixelTeaVMAlerter();
     Flixel.stackTraceProvider = new TeaVMStackTraceProvider();
     Flixel.logConsoleSink = FlixelTeaVMLogConsole::emit;
     Flixel.soundFactory = new FlixelTeaVMSoundHandler();

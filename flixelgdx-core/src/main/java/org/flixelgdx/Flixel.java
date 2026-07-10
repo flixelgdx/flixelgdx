@@ -50,6 +50,7 @@ import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
@@ -75,6 +76,7 @@ import org.flixelgdx.util.signal.FlixelSignal;
 import org.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.util.timer.FlixelTimer;
+import org.flixelgdx.util.timer.FlixelTimerListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -113,7 +115,8 @@ import java.util.function.Supplier;
  *   </li>
  *   <li>
  *     <b>Host integration:</b>
- *     Desktop notifications and task attention via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
+ *     Desktop notifications and task attention via {@link #host}. Separate from blocking
+ *     {@link FlixelAlerter#showInfoAlert(String, String)} dialogs.
  *   </li>
  *   <li>
  *     <b>Window control:</b>
@@ -134,8 +137,8 @@ import java.util.function.Supplier;
  *   <li>
  *     <b>Frame timers:</b>
  *     {@link FlixelTimer#getGlobalManager()} is stepped from {@link FlixelGame}.
- *     Use {@link org.flixelgdx.util.timer.FlixelTimer#wait(float, org.flixelgdx.util.timer.FlixelTimerListener)}
- *     or {@code start(...)} on the manager. {@link #timeScale} scales timer elapsed only (not the whole game loop).
+ *     Use {@link FlixelTimer#wait(float, FlixelTimerListener)} or {@code start(...)} on the manager.
+ *     {@link #timeScale} scales timer elapsed only (not the whole game loop).
  *   </li>
  * </ul>
  *
@@ -238,7 +241,7 @@ public final class Flixel {
    * <p>Example:
    * <pre>{@code
    * // Change the game's background color.
-   * Flixel.game.bgColor.set(Color.CORNFLOWER_BLUE);
+   * Flixel.game.bgColor.set(Color.BLUE);
    * }</pre>
    */
   @NotNull
@@ -274,8 +277,8 @@ public final class Flixel {
    *
    * <p>Launchers assign this field before calling
    * {@link #initialize(FlixelGame)}. Once the game is running, prefer the convenience wrappers
-   * {@link #showInfoAlert(String, String)}, {@link #showWarningAlert(String, String)}, and
-   * {@link #showErrorAlert(String, String)} rather than calling this field directly.
+   * {@link FlixelAlerter#showInfoAlert(String, String)}, {@link FlixelAlerter#showWarningAlert(String, String)},
+   * and {@link FlixelAlerter#showErrorAlert(String, String)} rather than calling this field directly.
    *
    * <p>Alert dialogs are blocking modal windows that pause execution until the user dismisses them.
    * Reserve them for critical events (unrecoverable errors, required permission prompts) rather
@@ -292,7 +295,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static FlixelAlerter alerter;
+  public static FlixelAlerter alert;
 
   /**
    * The currently active state.
@@ -674,8 +677,8 @@ public final class Flixel {
    * {@link FlixelNoopHostIntegration}, so calls are always safe to make regardless of platform.
    *
    * <p>This is distinct from the blocking alert dialogs exposed by
-   * {@link #showInfoAlert(String, String)}: host notifications appear as non-intrusive OS toasts
-   * (system tray popups, notification center entries) and do not interrupt gameplay. Taskbar
+   * {@link FlixelAlerter#showInfoAlert(String, String)}: host notifications appear as non-intrusive
+   * OS toasts (system tray popups, notification center entries) and do not interrupt gameplay. Taskbar
    * attention requests flash the game's taskbar button to draw the user's eye after the window
    * has been minimized or sent to the background.
    *
@@ -787,7 +790,7 @@ public final class Flixel {
   private static int debugPauseKey = FlixelDebugOverlay.Keybinds.DEFAULT_PAUSE_KEY;
 
   /** Current button used to pan the debug camera. */
-  private static int debugCameraPanButton = Input.Buttons.RIGHT;
+  private static int debugCameraPanButton = FlixelMouseButton.RIGHT;
 
   /** Current key used to cycle the debug camera to the left while paused (with Alt). */
   private static int debugCameraCycleLeftKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
@@ -824,7 +827,7 @@ public final class Flixel {
 
     // Set the game and backend systems.
     game = gameInstance;
-    if (alerter == null) {
+    if (alert == null) {
       throw new IllegalStateException(
           "Flixel alerter not set. Assign Flixel.alerter before calling Flixel.initialize(...).");
     }
@@ -949,36 +952,6 @@ public final class Flixel {
   }
 
   /**
-   * Shows an info alert notification to the user.
-   *
-   * @param title The title of the alert.
-   * @param message The message of the alert.
-   */
-  public static void showInfoAlert(String title, String message) {
-    alerter.showInfoAlert(title, message);
-  }
-
-  /**
-   * Shows a warning alert notification to the user.
-   *
-   * @param title The title of the alert.
-   * @param message The message of the alert.
-   */
-  public static void showWarningAlert(String title, String message) {
-    alerter.showWarningAlert(title, message);
-  }
-
-  /**
-   * Shows an error alert notification to the user.
-   *
-   * @param title The title of the alert.
-   * @param message The message of the alert.
-   */
-  public static void showErrorAlert(String title, String message) {
-    alerter.showErrorAlert(title, message);
-  }
-
-  /**
    * Logs a generic informational message. This is likely the method you'll use the most,
    * as it's for general messages that don't fit into the other log methods.
    *
@@ -1051,42 +1024,6 @@ public final class Flixel {
    */
   public static void error(String tag, Object message, Throwable throwable) {
     log.error(tag, message, throwable);
-  }
-
-  /**
-   * Returns the platform-specific log file handler, or {@code null} if none has
-   * been registered (for example, on web/TeaVM).
-   *
-   * @return The current log file handler, or {@code null}.
-   */
-  @Nullable
-  public static FlixelLogFileHandler getLogFileHandler() {
-    return logFileHandler;
-  }
-
-  /**
-   * Returns the registered log console sink, or {@code null} if the default {@code System.out} path is used.
-   *
-   * @return The sink, or {@code null}.
-   */
-  @Nullable
-  public static FlixelLogConsoleSink getLogConsoleSink() {
-    return logConsoleSink;
-  }
-
-  /**
-   * Returns the platform-specific sound backend factory, or {@code null} if
-   * none has been registered yet.
-   *
-   * @return The current sound backend factory, or {@code null}.
-   */
-  @Nullable
-  public static FlixelSoundBackend.Factory getSoundFactory() {
-    return soundFactory;
-  }
-
-  public static FlixelStackTraceProvider getStackTraceProvider() {
-    return stackTraceProvider;
   }
 
   /**
@@ -1241,7 +1178,7 @@ public final class Flixel {
    * <p>This is the equivalent of calling {@code Flixel.switchState(new CurrentState())}.
    */
   public static void resetState() {
-    Objects.requireNonNull(game, "Game is not initialized. Call initialize() first.");
+    Objects.requireNonNull(game, "Game is not initialized. Call initialize(...) first.");
     FlixelState next = currentStateFactory != null ? currentStateFactory.get() : null;
     if (next != null) {
       switchState(next);
@@ -1467,7 +1404,6 @@ public final class Flixel {
       return;
     }
 
-    // Apply antialiasing to all sprites in the current state.
     var members = state.getMembers();
     if (members == null) {
       return;
@@ -1478,7 +1414,7 @@ public final class Flixel {
       if (member == null) {
         continue;
       }
-      if (member instanceof FlixelSprite sprite) {
+      if (member instanceof FlixelAntialiasable sprite) {
         sprite.setAntialiasing(enabled);
       }
     }
