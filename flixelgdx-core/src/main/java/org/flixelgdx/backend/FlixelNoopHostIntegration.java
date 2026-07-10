@@ -23,18 +23,38 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
- * Default {@link FlixelHostIntegration} used on platforms without desktop shell integration.
+ * Default {@link FlixelHostIntegration} used on platforms without host shell integration.
+ *
+ * <p>All operations are no-ops. Capability checks return {@code false}. Signals are live instances
+ * that never dispatch on their own, but callers may still add handlers to them safely.
  */
 public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
 
   /** Shared no-op instance. */
   INSTANCE;
+
+  private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
+  private final FlixelSignal<FlixelGraphic> onImagePasted = new FlixelSignal<>();
+
+  @Override
+  public void requestNotificationPermission() {}
+
+  @Override
+  public void requestAttention() {}
+
+  @Override
+  public void keepScreenAwake(boolean awake) {}
+
+  @Override
+  public void setExitConfirmation(@Nullable String message) {}
 
   @Override
   public void sendNotification(@Nullable String title, @NotNull String message) {
@@ -42,10 +62,50 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   }
 
   @Override
-  public void requestAttention() {}
+  public void copyToClipboard(@NotNull String text) {
+    Objects.requireNonNull(text, "text");
+  }
+
+  @Override
+  public void copyImageToClipboard(@NotNull FlixelGraphic graphic) {
+    Objects.requireNonNull(graphic, "graphic");
+  }
+
+  @Override
+  public void pasteFromClipboard() {}
+
+  @Override
+  public void pasteImageFromClipboard() {}
 
   @Override
   public boolean supportsDesktopNotification() {
     return false;
+  }
+
+  @Override
+  public boolean supportsWakeLock() {
+    return false;
+  }
+
+  @Override
+  public boolean supportsClipboard() {
+    return false;
+  }
+
+  @Override
+  public boolean supportsImageClipboard() {
+    return false;
+  }
+
+  @Override
+  @NotNull
+  public FlixelSignal<String> onTextPasted() {
+    return onTextPasted;
+  }
+
+  @Override
+  @NotNull
+  public FlixelSignal<FlixelGraphic> onImagePasted() {
+    return onImagePasted;
   }
 }

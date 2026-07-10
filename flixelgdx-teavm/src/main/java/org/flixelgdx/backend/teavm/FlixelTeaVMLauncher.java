@@ -179,6 +179,7 @@ public class FlixelTeaVMLauncher {
       @Nullable Consumer<WebApplicationConfiguration> configCustomizer,
       @Nullable Runnable onBeforeInitialize) {
     Flixel.alert = new FlixelTeaVMAlerter();
+    Flixel.host = new FlixelTeaVMHostIntegration();
     Flixel.stackTraceProvider = new TeaVMStackTraceProvider();
     Flixel.logConsoleSink = FlixelTeaVMLogConsole::emit;
     Flixel.soundFactory = new FlixelTeaVMSoundHandler();
