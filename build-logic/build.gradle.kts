@@ -22,4 +22,7 @@ dependencies {
   implementation("com.diffplug.spotless:spotless-plugin-gradle:8.6.0")
   implementation("com.vanniktech:gradle-maven-publish-plugin:0.33.0")
   implementation("com.android.tools.build:gradle:8.7.3")
+  // Needed by DownloadVlcNativesTask to extract .deb, .7z, and tar archives in-process.
+  implementation("org.apache.commons:commons-compress:1.27.1")
+  implementation("org.tukaani:xz:1.10")
 }

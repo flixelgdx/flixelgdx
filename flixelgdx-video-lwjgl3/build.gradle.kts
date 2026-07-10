@@ -1,24 +1,8 @@
-import org.apache.commons.compress.archivers.ar.ArArchiveInputStream
-import org.apache.commons.compress.archivers.sevenz.SevenZFile
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.tukaani.xz.XZInputStream
-import java.net.URI
-import java.security.MessageDigest
-import java.util.*
-import java.util.zip.GZIPInputStream
+// Desktop backend for the FlixelGDX video extension. Bridges libvlc into the framework through
+// JNA-registered JNI bindings and packages (optionally) the libvlc native libraries that
+// downloadVlcNatives fetches from upstream.
 
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-  dependencies {
-    // Pure-JVM extraction of the upstream archives: 7z (Windows SDK .lib files)
-    // and Debian .deb (ar + tar.xz) so the natives task needs no external tools
-    // for Windows and Linux. Only the macOS .dmg needs 7z or hdiutil on PATH.
-    classpath("org.apache.commons:commons-compress:${libs.versions.commonsCompress.get()}")
-    classpath("org.tukaani:xz:${libs.versions.xz.get()}")
-  }
-}
+import java.util.Locale
 
 plugins {
   id("flixelgdx.java-library")
@@ -74,214 +58,14 @@ val vlcPluginBlocklist = listOf(
 val vlcDownloadDir = layout.buildDirectory.dir("vlc-downloads")
 val vlcNativesDir = layout.projectDirectory.dir("natives")
 
-fun sha256Of(f: File): String {
-  val digest = MessageDigest.getInstance("SHA-256")
-  f.inputStream().use { stream ->
-    val buf = ByteArray(65536)
-    var n: Int
-    while (stream.read(buf).also { n = it } > 0) {
-      digest.update(buf, 0, n)
-    }
-  }
-  return digest.digest().joinToString("") { "%02x".format(it) }
-}
-
-fun fetchVlcArtifact(spec: Map<String, String>, dir: File): File {
-  val target = File(dir, spec["name"]!!)
-  if (target.exists() && sha256Of(target) == spec["sha256"]) {
-    return target
-  }
-  dir.mkdirs()
-  logger.lifecycle("Downloading ${spec["url"]}")
-  URI(spec["url"]!!).toURL().openStream().use { input ->
-    target.outputStream().use { output -> input.copyTo(output) }
-  }
-  val actual = sha256Of(target)
-  if (actual != spec["sha256"]) {
-    target.delete()
-    throw GradleException("Checksum mismatch for ${spec["name"]}: expected ${spec["sha256"]}, got $actual")
-  }
-  return target
-}
-
-// Extracts a Debian package's data.tar.* into destDir using commons-compress only.
-fun extractDeb(deb: File, destDir: File) {
-  deb.inputStream().use { fis ->
-    val ar = ArArchiveInputStream(fis)
-    var entry = ar.nextEntry
-    while (entry != null) {
-      if (entry.name.startsWith("data.tar")) {
-        val dataStream = when {
-          entry.name.endsWith(".xz") -> XZInputStream(ar)
-          entry.name.endsWith(".gz") -> GZIPInputStream(ar)
-          else -> ar
-        }
-        val tar = TarArchiveInputStream(dataStream)
-        var tarEntry = tar.nextEntry
-        while (tarEntry != null) {
-          if (tarEntry.isFile) {
-            val out = File(destDir, tarEntry.name)
-            out.parentFile.mkdirs()
-            out.outputStream().use { tar.copyTo(it) }
-          }
-          tarEntry = tar.nextEntry
-        }
-      }
-      entry = ar.nextEntry
-    }
-  }
-}
-
-@Suppress("DEPRECATION")
-fun extractLibsFrom7z(sevenZip: File, pathPrefix: String, destDir: File) {
-  // Deprecated single-File constructor used intentionally: Gradle's own (older) commons-compress
-  // wins on the buildscript classpath and may not have the newer Builder API.
-  val sz = SevenZFile(sevenZip)
-  sz.use { sz ->
-    var entry = sz.nextEntry
-    while (entry != null) {
-      val normalizedName = entry.name.replace('\\', '/')
-      if (!entry.isDirectory && normalizedName.startsWith(pathPrefix)) {
-        val out = File(destDir, normalizedName.substring(pathPrefix.length))
-        out.parentFile.mkdirs()
-        val content = ByteArray(entry.size.toInt())
-        var off = 0
-        while (off < content.size) {
-          off += sz.read(content, off, content.size - off)
-        }
-        out.writeBytes(content)
-      }
-      entry = sz.nextEntry
-    }
-  }
-}
-
-tasks.register("downloadVlcNatives") {
+val downloadVlcNatives = tasks.register<DownloadVlcNativesTask>("downloadVlcNatives") {
   group = "flixelgdx"
   description = "Downloads libvlc $vlcVersion natives (Windows, macOS, Linux) into natives/."
-  outputs.dir(vlcNativesDir)
-
-  doLast {
-    val dlDir = vlcDownloadDir.get().asFile
-    val outRoot = vlcNativesDir.asFile
-    val files = vlcDownloads.associate { spec ->
-      @Suppress("UNCHECKED_CAST")
-      val typedSpec = spec as Map<String, String>
-      typedSpec["name"]!! to fetchVlcArtifact(typedSpec, dlDir)
-    }
-
-    // Windows x64: runtime DLLs and plugins from the zip, SDK import libraries from the 7z.
-    val winDir = File(outRoot, "windows-amd64")
-    if (!File(winDir, "libvlc.dll").exists()) {
-      logger.lifecycle("Extracting Windows natives...")
-      val zipRoot = "vlc-$vlcVersion/"
-      copy {
-        from(zipTree(files["vlc-$vlcVersion-win64.zip"]!!)) {
-          include("${zipRoot}libvlc.dll", "${zipRoot}libvlccore.dll", "${zipRoot}plugins/**")
-          vlcPluginBlocklist.forEach { exclude("${zipRoot}plugins/$it/**") }
-          eachFile { path = path.substring(zipRoot.length) }
-          includeEmptyDirs = false
-        }
-        into(winDir)
-      }
-    }
-    if (!File(winDir, "sdk/libvlc.lib").exists()) {
-      logger.lifecycle("Extracting Windows SDK import libraries...")
-      extractLibsFrom7z(files["vlc-$vlcVersion-win64.7z"]!!, "vlc-$vlcVersion/sdk/lib/", File(winDir, "sdk"))
-    }
-
-    // Linux x64: Debian builds of the same upstream release.
-    val linuxDir = File(outRoot, "linux-amd64")
-    if (!File(linuxDir, "libvlc.so.5").exists()) {
-      logger.lifecycle("Extracting Linux natives...")
-      val debStage = File(dlDir, "deb-stage")
-      delete(debStage)
-      vlcDownloads.filter { it["name"]!!.endsWith(".deb") }.forEach { spec ->
-        @Suppress("UNCHECKED_CAST")
-        extractDeb(files[spec["name"]]!!, debStage)
-      }
-      val usrLib = File(debStage, "usr/lib/x86_64-linux-gnu")
-      copy {
-        from(usrLib) {
-          include("libvlc.so*", "libvlccore.so*", "vlc/plugins/**", "vlc/libvlc_*.so")
-          vlcPluginBlocklist.forEach { exclude("vlc/plugins/$it/**") }
-          includeEmptyDirs = false
-        }
-        into(linuxDir)
-      }
-      // The .deb data tar carries libvlc.so.5 as a symlink; materialize real files for jar packaging.
-      mapOf("libvlc.so.5" to "libvlc.so.5.6.1", "libvlccore.so.9" to "libvlccore.so.9.0.1").forEach { (link, real) ->
-        val linkFile = File(linuxDir, link)
-        val realFile = File(linuxDir, real)
-        if (realFile.exists() && (!linkFile.exists() || linkFile.length() == 0L)) {
-          linkFile.delete()
-          linkFile.writeBytes(realFile.readBytes())
-        }
-      }
-    }
-
-    // macOS universal: needs a dmg-capable extractor (7z on any OS, hdiutil on macOS).
-    val macDir = File(outRoot, "macos-universal")
-    if (!File(macDir, "lib/libvlc.dylib").exists()) {
-      val dmg = files["vlc-$vlcVersion-universal.dmg"]!!
-      val sevenZip = listOf("7z", "7za").firstOrNull { tool ->
-        try {
-          ProcessBuilder(tool).start().waitFor()
-          true
-        } catch (e: Exception) {
-          false
-        }
-      }
-      if (sevenZip != null) {
-        logger.lifecycle("Extracting macOS natives with 7z...")
-        val dmgStage = File(dlDir, "dmg-stage")
-        delete(dmgStage)
-        dmgStage.mkdirs()
-        val appPath = "VLC media player/VLC.app/Contents/MacOS"
-        val proc = ProcessBuilder(
-          sevenZip, "x", "-y", "-o${dmgStage.absolutePath}", dmg.absolutePath,
-          "$appPath/lib/*", "$appPath/plugins/*"
-        ).start()
-        proc.inputStream.use { }
-        proc.errorStream.use { }
-        proc.waitFor()
-        val macSrc = File(dmgStage, appPath)
-        if (File(macSrc, "lib").exists()) {
-          copy {
-            from(macSrc) { include("lib/**", "plugins/**") }
-            into(macDir)
-          }
-        } else {
-          logger.warn("7z could not read the dmg layout; macOS natives were skipped.")
-        }
-      } else if (System.getProperty("os.name", "").lowercase(Locale.ROOT).contains("mac")) {
-        logger.lifecycle("Extracting macOS natives with hdiutil...")
-        val mountPoint = File(dlDir, "dmg-mount")
-        mountPoint.mkdirs()
-        ProcessBuilder(
-          "hdiutil",
-          "attach",
-          dmg.absolutePath,
-          "-nobrowse",
-          "-readonly",
-          "-mountpoint",
-          mountPoint.absolutePath
-        ).start().waitFor()
-        try {
-          copy {
-            from(File(mountPoint, "VLC.app/Contents/MacOS")) { include("lib/**", "plugins/**") }
-            into(macDir)
-          }
-        } finally {
-          ProcessBuilder("hdiutil", "detach", mountPoint.absolutePath).start().waitFor()
-        }
-      } else {
-        logger.warn("No 7z/hdiutil found; macOS natives were skipped. Install p7zip to extract the dmg.")
-      }
-    }
-
-    logger.lifecycle("libvlc $vlcVersion natives ready under $outRoot")
-  }
+  this.vlcVersion.set(vlcVersion)
+  downloadSpecs.set(vlcDownloads)
+  pluginBlocklist.set(vlcPluginBlocklist)
+  downloadCacheDir.set(vlcDownloadDir)
+  nativesDir.set(vlcNativesDir)
 }
 
 val hostVlcPlatform = run {
@@ -305,7 +89,7 @@ fun vlcNativesComplete(platformDir: File): Boolean {
 
 if ((findProperty("skipVlcNatives") ?: "false") != "true") {
   tasks.processResources {
-    dependsOn("downloadVlcNatives")
+    dependsOn(downloadVlcNatives)
     // Fail loudly if the host platform's natives did not make it into natives/. Without this
     // the jar is packaged silently and the missing libraries only surface at runtime as an
     // unavailable video, which is exactly the failure this module tries to prevent.
