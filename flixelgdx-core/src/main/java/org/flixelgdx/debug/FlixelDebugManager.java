@@ -103,7 +103,7 @@ public class FlixelDebugManager {
 
   /**
    * The active debug overlay. Defaults to {@link FlixelNoopDebugOverlay#INSTANCE} so this field
-   * is never {@code null} -- callers do not need a null check. When debug mode starts,
+   * is never {@code null}, meaning callers do not need a null check. When debug mode starts,
    * {@link org.flixelgdx.Flixel Flixel} replaces this with a real overlay instance.
    *
    * <p>Access keybinds and visibility via this field:
