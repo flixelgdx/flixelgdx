@@ -6,8 +6,6 @@
  * pipeline targeting Sonatype Central Portal.
  */
 
-import com.vanniktech.maven.publish.SonatypeHost
-
 plugins {
   id("flixelgdx.java-base")
   `java-gradle-plugin`
@@ -27,7 +25,7 @@ tasks.matching { it.name.startsWith("generateMetadataFileFor") }.configureEach {
 }
 
 mavenPublishing {
-  publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+  publishToMavenCentral()
 
   val hasSigning = findProperty("flixel.signing.enabled")?.toString() == "true"
     || findProperty("signing.keyId") != null

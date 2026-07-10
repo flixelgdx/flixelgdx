@@ -24,11 +24,11 @@ import javax.inject.Inject
  * Downloads and extracts libvlc native libraries for Windows, Linux, and macOS into a project
  * directory so they can be packaged into the flixelgdx-video-lwjgl3 JAR.
  *
- * <p>All archive extraction (zip, 7z, deb) is done in-process using commons-compress and xz-java,
+ * All archive extraction (zip, 7z, deb) is done in-process using commons-compress and xz-java,
  * so no external tools are required on Windows or Linux. macOS extraction falls back to the
  * system 7z or hdiutil when available.
  *
- * <p>The task is incremental: if {@link #nativesDir} already contains the expected library files
+ * The task is incremental: if [nativesDir] already contains the expected library files
  * for a given platform, that platform's extraction is skipped.
  */
 abstract class DownloadVlcNativesTask @Inject constructor(
@@ -72,8 +72,8 @@ abstract class DownloadVlcNativesTask @Inject constructor(
       spec["name"]!! to fetchArtifact(spec, dlDir)
     }
 
-    extractWindows(version, files, outRoot, dlDir)
-    extractLinux(version, files, outRoot, dlDir)
+    extractWindows(version, files, outRoot)
+    extractLinux(files, outRoot, dlDir)
     extractMacOS(version, files, outRoot, dlDir)
 
     logger.lifecycle("libvlc $version natives ready under $outRoot")
@@ -152,7 +152,7 @@ abstract class DownloadVlcNativesTask @Inject constructor(
     }
   }
 
-  private fun extractWindows(version: String, files: Map<String, File>, outRoot: File, dlDir: File) {
+  private fun extractWindows(version: String, files: Map<String, File>, outRoot: File) {
     val blocklist = pluginBlocklist.get()
     val winDir = File(outRoot, "windows-amd64")
     val zipRoot = "vlc-$version/"
@@ -174,7 +174,7 @@ abstract class DownloadVlcNativesTask @Inject constructor(
     }
   }
 
-  private fun extractLinux(version: String, files: Map<String, File>, outRoot: File, dlDir: File) {
+  private fun extractLinux(files: Map<String, File>, outRoot: File, dlDir: File) {
     val blocklist = pluginBlocklist.get()
     val linuxDir = File(outRoot, "linux-amd64")
     if (!File(linuxDir, "libvlc.so.5").exists()) {
