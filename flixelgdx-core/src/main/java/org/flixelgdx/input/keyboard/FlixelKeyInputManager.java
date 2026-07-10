@@ -656,7 +656,13 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     pressedOrder.clear();
   }
 
-  private static boolean isValidKeycode(int key) {
+  /**
+   * Verifies if the provided {@link FlixelKey} code is valid.
+   *
+   * @param key {@link FlixelKey} to check.
+   * @return If the keycode is valid.
+   */
+  public boolean isValidKeycode(int key) {
     return key >= 0 && key <= FlixelKey.MAX_KEYCODE;
   }
 }

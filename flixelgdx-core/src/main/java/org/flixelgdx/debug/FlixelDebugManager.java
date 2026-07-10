@@ -76,18 +76,6 @@ import java.util.regex.Pattern;
 public class FlixelDebugManager {
 
   /**
-   * Internal handler form used after registration has wrapped the raw consumer. Kept
-   * package-private because external code never has a reason to construct one directly.
-   */
-  @FunctionalInterface
-  interface CommandHandler {
-    void invoke(@NotNull FlixelDebugCommandArgs args);
-  }
-
-  record RegisteredCommand(String name, CommandHandler handler) {
-  }
-
-  /**
    * Regex enforced by {@link #registerCommand(String, Consumer)}. A valid command name must
    * consist of one or more letters and / or periods only; everything else (numbers, hyphens, underscores,
    * whitespace, symbols, etc.) triggers an {@link IllegalArgumentException} from {@link #validateCommandName(String)}.
@@ -252,8 +240,7 @@ public class FlixelDebugManager {
     }
   }
 
-  /** Returns the live array of user-registered batches. Package-private; consumed by the debug overlay. */
-  Array<FlixelBatch> getTrackedBatches() {
+  public Array<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
   }
 
@@ -471,5 +458,17 @@ public class FlixelDebugManager {
         Flixel.watch.addMouse();
       }
     });
+  }
+
+  /**
+   * Internal handler form used after registration has wrapped the raw consumer. Kept
+   * package-private because external code never has a reason to construct one directly.
+   */
+  @FunctionalInterface
+  interface CommandHandler {
+    void invoke(@NotNull FlixelDebugCommandArgs args);
+  }
+
+  record RegisteredCommand(String name, CommandHandler handler) {
   }
 }
