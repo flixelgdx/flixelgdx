@@ -270,8 +270,8 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
       if (cam != null) {
         tmpUnproject.set(t.screenX, t.screenY);
         cam.getViewport().unproject(tmpUnproject);
-        t.worldX = tmpUnproject.x;
-        t.worldY = tmpUnproject.y;
+        t.worldX = tmpUnproject.x + cam.getViewX();
+        t.worldY = tmpUnproject.y + cam.getViewY();
       } else {
         t.worldX = t.screenX;
         t.worldY = t.screenY;
@@ -467,7 +467,7 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
    *
    * <p>Coordinates use the bottom-left origin (Y increases upward), matching the game world.
    * Clears to {@code false} after the frame ends, matching the timing of
-   * {@link FlixelTouch#isJustPressed()}.
+   * {@link FlixelTouch#justPressed()}.
    *
    * <pre>{@code
    * if (Flixel.touches.justTouchedWorld(button.getX(), button.getY(),
@@ -502,7 +502,7 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
    *
    * <p>Coordinates use the top-left origin (Y increases downward), matching libGDX screen space.
    * Clears to {@code false} after the frame ends, matching the timing of
-   * {@link FlixelTouch#isJustPressed()}.
+   * {@link FlixelTouch#justPressed()}.
    *
    * <pre>{@code
    * if (Flixel.touches.justTouchedScreen(0, 0, Gdx.graphics.getWidth() / 2f,
