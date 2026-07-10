@@ -37,7 +37,6 @@ tasks.register("javadocAll") {
   description = "Runs Javadoc (with doclint) on all published Java library modules."
   dependsOn(
     ":flixelgdx-core:javadoc",
-    ":flixelgdx-common:javadoc",
     ":flixelgdx-jvm:javadoc",
     ":flixelgdx-lwjgl3:javadoc",
     ":flixelgdx-ios:javadoc",

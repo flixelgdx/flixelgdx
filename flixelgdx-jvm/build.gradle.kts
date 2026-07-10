@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-  api(project(":flixelgdx-common"))
+  api(project(":flixelgdx-core"))
+  api(libs.miniaudio)
   implementation(libs.jetbrains.annotations)
 }

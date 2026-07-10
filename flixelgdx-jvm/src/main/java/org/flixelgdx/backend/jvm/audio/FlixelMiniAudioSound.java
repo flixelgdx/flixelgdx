@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.common.audio;
+package org.flixelgdx.backend.jvm.audio;
 
 import org.flixelgdx.audio.FlixelSoundBackend;
 import org.jetbrains.annotations.Nullable;

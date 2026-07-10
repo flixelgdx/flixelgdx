@@ -3,7 +3,6 @@ plugins {
 }
 
 dependencies {
-  api(project(":flixelgdx-common"))
   api(project(":flixelgdx-core"))
   api(project(":flixelgdx-jvm"))
   api("games.rednblack.miniaudio:gdx-miniaudio-platform:${libs.versions.miniaudio.get()}:natives-desktop")

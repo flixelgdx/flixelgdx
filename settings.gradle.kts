@@ -58,7 +58,6 @@ rootProject.name = "flixelgdx"
 
 include(
   "flixelgdx-core",
-  "flixelgdx-common",
   "flixelgdx-jvm",
   "flixelgdx-lwjgl3",
   "flixelgdx-ios",
