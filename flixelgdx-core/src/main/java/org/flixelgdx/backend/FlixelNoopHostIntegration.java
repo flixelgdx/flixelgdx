@@ -21,36 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.teavm.alert;
+package org.flixelgdx.backend;
 
-import org.flixelgdx.backend.FlixelAlerter;
-import org.teavm.jso.JSBody;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
- * Web (TeaVM) implementation of {@link FlixelAlerter} using JavaScript's {@code alert()} function.
+ * Default {@link FlixelHostIntegration} used on platforms without desktop shell integration.
  */
-public class FlixelTeaVMAlerter implements FlixelAlerter {
+public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
+
+  /** Shared no-op instance. */
+  INSTANCE;
 
   @Override
-  public void showInfoAlert(String title, String message) {
-    showAlert(title, message);
-  }
-
-  @Override
-  public void showWarningAlert(String title, String message) {
-    showAlert(title, message);
+  public void sendNotification(@Nullable String title, @NotNull String message) {
+    Objects.requireNonNull(message, "message");
   }
 
   @Override
-  public void showErrorAlert(String title, String message) {
-    showAlert(title, message);
-  }
+  public void requestAttention() {}
 
-  private void showAlert(String title, String message) {
-    String text = (title != null ? title : "") + (message != null ? "\n" + message : "");
-    alert(text);
+  @Override
+  public boolean supportsDesktopNotification() {
+    return false;
   }
-
-  @JSBody(params = "text", script = "alert(text);")
-  private static native void alert(String text);
 }

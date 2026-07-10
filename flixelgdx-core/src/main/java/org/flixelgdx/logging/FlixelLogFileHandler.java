@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.logging;
 
+import org.flixelgdx.backend.FlixelAlerter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Register an implementation before {@link org.flixelgdx.Flixel#initialize Flixel.initialize}
  * by calling {@link org.flixelgdx.Flixel#setLogFileHandler Flixel.setLogFileHandler}. The handler
  * follows the same injection pattern used by
- * {@link org.flixelgdx.backend.alert.FlixelAlerter FlixelAlerter} and
+ * {@link FlixelAlerter FlixelAlerter} and
  * {@link FlixelStackTraceProvider}.
  *
  * @see FlixelLogger

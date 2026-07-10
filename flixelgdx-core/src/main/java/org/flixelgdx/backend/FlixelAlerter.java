@@ -21,21 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.window;
+package org.flixelgdx.backend;
 
 /**
- * Safe default {@link FlixelWindow} for mobile, web, and headless targets.
+ * Interface for displaying alert notifications to the user.
  */
-public enum FlixelNoopWindow implements FlixelWindow {
+public interface FlixelAlerter {
+  void showInfoAlert(String title, String message);
 
-  /** Shared no-op instance. */
-  INSTANCE;
+  void showWarningAlert(String title, String message);
 
-  @Override
-  public void setOpacity(float opacity) {}
-
-  @Override
-  public boolean supportsWindowOpacity() {
-    return false;
-  }
+  void showErrorAlert(String title, String message);
 }

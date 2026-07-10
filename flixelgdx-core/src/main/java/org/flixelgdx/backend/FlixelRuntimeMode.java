@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.runtime;
+package org.flixelgdx.backend;
 
 /**
  * Describes the build/runtime mode the game is running in. Set once by the launcher before

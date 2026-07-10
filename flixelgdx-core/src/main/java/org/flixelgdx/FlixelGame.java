@@ -40,6 +40,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDestroyable;
@@ -242,7 +243,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * When {@code true}, the LWJGL3 launcher requests an alpha-capable framebuffer so
-   * {@link org.flixelgdx.backend.window.FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)}
+   * {@link FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)}
    * can composite with the desktop.
    *
    * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
@@ -282,7 +283,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
-   * {@link org.flixelgdx.backend.window.FlixelWindow#isTransparencyActive() FlixelWindow.isTransparencyActive()}.
+   * {@link FlixelWindow#isTransparencyActive() FlixelWindow.isTransparencyActive()}.
    */
   private boolean desktopTransparencyActive;
 
@@ -1344,7 +1345,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Requests an alpha-capable GLFW framebuffer on LWJGL3 before the desktop launcher runs. Default {@code true}. Set {@code false}
    * if you must avoid framebuffer alpha (some drivers) or never want desktop compositing. When {@code false}, toggling
-   * {@link org.flixelgdx.backend.window.FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
+   * {@link FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
    *
    * @param transparentFramebufferRequested {@code false} to force an opaque default framebuffer at launch.
    */
@@ -1361,7 +1362,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * Updates global and per-camera backdrop drawing for desktop compositing. Called from
-   * {@link org.flixelgdx.backend.window.FlixelWindow FlixelWindow}. When desktop see-through is off but the GLFW window
+   * {@link FlixelWindow FlixelWindow}. When desktop see-through is off but the GLFW window
    * was created with a transparent-capable framebuffer, {@link FlixelDrawable#draw} also forces framebuffer alpha to {@code 1} after
    * rendering so tinted sprites do not composite through the real desktop.
    *

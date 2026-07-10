@@ -21,31 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.host;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
+package org.flixelgdx.backend;
 
 /**
- * Default {@link FlixelHostIntegration} used on platforms without desktop shell integration.
+ * Safe default {@link FlixelWindow} for mobile, web, and headless targets.
  */
-public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
+public enum FlixelNoopWindow implements FlixelWindow {
 
   /** Shared no-op instance. */
   INSTANCE;
 
   @Override
-  public void sendNotification(@Nullable String title, @NotNull String message) {
-    Objects.requireNonNull(message, "message");
-  }
+  public void setOpacity(float opacity) {}
 
   @Override
-  public void requestAttention() {}
-
-  @Override
-  public boolean supportsDesktopNotification() {
+  public boolean supportsWindowOpacity() {
     return false;
   }
 }

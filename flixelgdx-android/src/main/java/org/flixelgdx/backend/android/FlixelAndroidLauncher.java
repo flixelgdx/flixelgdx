@@ -33,10 +33,11 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
+import org.flixelgdx.backend.android.haptics.FlixelAndroidHaptics;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 
 /**
  * Launches the Android version of the FlixelGDX game.
@@ -103,6 +104,7 @@ public class FlixelAndroidLauncher {
       Runnable onBeforeInitialize) {
     FlixelCamera.viewportFactory = ExtendViewport::new;
     Flixel.setAlerter(new FlixelAndroidAlerter(activity));
+    Flixel.setHaptics(new FlixelAndroidHaptics(activity));
     Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
     Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
     FlixelMiniAudioSoundHandler soundHandler = new FlixelMiniAudioSoundHandler();
@@ -118,7 +120,7 @@ public class FlixelAndroidLauncher {
     }
     Flixel.initialize(game);
     Flixel.assets.setKtx2LoaderInstaller(manager ->
-      manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
+        manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
     Flixel.keys.enabled = false;
     Flixel.mouse.enabled = false;
     Flixel.touches.enabled = true;

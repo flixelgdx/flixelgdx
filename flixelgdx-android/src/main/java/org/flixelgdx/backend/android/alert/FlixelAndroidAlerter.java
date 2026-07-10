@@ -25,7 +25,7 @@ package org.flixelgdx.backend.android.alert;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.flixelgdx.backend.FlixelAlerter;
 
 public class FlixelAndroidAlerter implements FlixelAlerter {
 

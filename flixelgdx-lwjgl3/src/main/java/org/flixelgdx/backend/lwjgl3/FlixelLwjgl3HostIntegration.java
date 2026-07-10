@@ -26,7 +26,7 @@ package org.flixelgdx.backend.lwjgl3;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 
-import org.flixelgdx.backend.host.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelHostIntegration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;

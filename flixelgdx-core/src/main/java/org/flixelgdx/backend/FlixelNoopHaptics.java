@@ -21,15 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.alert;
+package org.flixelgdx.backend;
 
 /**
- * Interface for displaying alert notifications to the user.
+ * Default {@link FlixelHaptics} used on platforms without a vibration motor (desktop, web).
+ *
+ * <p>All methods are safe no-ops. {@link #isSupported()} always returns {@code false}.
  */
-public interface FlixelAlerter {
-  void showInfoAlert(String title, String message);
+public enum FlixelNoopHaptics implements FlixelHaptics {
 
-  void showWarningAlert(String title, String message);
+  /** Shared no-op instance. */
+  INSTANCE;
 
-  void showErrorAlert(String title, String message);
+  @Override
+  public void vibrate(int ms) {}
+
+  @Override
+  public void vibrate(long[] pattern, int repeat) {}
+
+  @Override
+  public void cancel() {}
+
+  @Override
+  public boolean isSupported() {
+    return false;
+  }
 }

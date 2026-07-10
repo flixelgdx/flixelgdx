@@ -39,7 +39,7 @@ import org.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3HapticsProvider;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.Nullable;

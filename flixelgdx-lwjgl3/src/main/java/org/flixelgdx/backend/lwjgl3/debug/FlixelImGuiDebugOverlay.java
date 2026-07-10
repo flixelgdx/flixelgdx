@@ -33,6 +33,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.glfw.GLFW;
@@ -65,7 +66,7 @@ import imgui.type.ImString;
  * <h2>Wiring</h2>
  *
  * <p>{@code FlixelLwjgl3Launcher} registers this class as the default debug overlay
- * factory when launching in {@link org.flixelgdx.backend.runtime.FlixelRuntimeMode#DEBUG DEBUG}
+ * factory when launching in {@link FlixelRuntimeMode#DEBUG DEBUG}
  * mode. You can also register it manually with {@link Flixel#setDebugOverlay(java.util.function.Supplier)}
  * before {@link Flixel#initialize}.
  *

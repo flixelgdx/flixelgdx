@@ -27,7 +27,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.math.MathUtils;
 
-import org.flixelgdx.backend.window.FlixelWindow;
+import org.flixelgdx.backend.FlixelWindow;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.host;
+package org.flixelgdx.backend;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Host operating system integration, which allows desktop notifications and taskbar attention.
  *
- * <p>This is separate from {@link org.flixelgdx.backend.alert.FlixelAlerter FlixelAlerter}, which shows blocking
+ * <p>This is separate from {@link FlixelAlerter FlixelAlerter}, which shows blocking
  * dialog popups. Use {@link org.flixelgdx.Flixel#host Flixel.host} from game code.
  *
  * <p>Desktop LWJGL3 ships a full implementation (freedesktop {@code notify-send} on Linux rather than AWT for toasts,

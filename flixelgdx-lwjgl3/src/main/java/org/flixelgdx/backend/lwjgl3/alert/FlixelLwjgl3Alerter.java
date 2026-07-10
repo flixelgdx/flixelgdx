@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.backend.lwjgl3.alert;
 
-import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.flixelgdx.backend.FlixelAlerter;
 
 import java.awt.EventQueue;
 import java.lang.reflect.InvocationTargetException;

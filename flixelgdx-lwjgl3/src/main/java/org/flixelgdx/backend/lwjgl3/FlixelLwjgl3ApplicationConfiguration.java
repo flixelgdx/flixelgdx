@@ -29,7 +29,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3WindowListener;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.jetbrains.annotations.Nullable;
 
 /**

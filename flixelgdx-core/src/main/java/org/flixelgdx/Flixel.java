@@ -33,12 +33,14 @@ import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.asset.FlixelDefaultAssetManager;
 import org.flixelgdx.audio.FlixelSoundBackend;
 import org.flixelgdx.audio.FlixelSoundManager;
-import org.flixelgdx.backend.alert.FlixelAlerter;
-import org.flixelgdx.backend.host.FlixelHostIntegration;
-import org.flixelgdx.backend.host.FlixelNoopHostIntegration;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
-import org.flixelgdx.backend.window.FlixelNoopWindow;
-import org.flixelgdx.backend.window.FlixelWindow;
+import org.flixelgdx.backend.FlixelAlerter;
+import org.flixelgdx.backend.FlixelHaptics;
+import org.flixelgdx.backend.FlixelNoopHaptics;
+import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelNoopHostIntegration;
+import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.flixelgdx.backend.FlixelNoopWindow;
+import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
@@ -690,6 +692,31 @@ public final class Flixel {
   public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
 
   /**
+   * Haptic (vibration) feedback for mobile devices.
+   *
+   * <p>On platforms without a vibration motor (desktop, web) this defaults to a silent no-op, so
+   * all calls are always safe to make. Check {@link FlixelHaptics#isSupported()} first if your
+   * game logic needs to know whether feedback will actually fire.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * // Short pulse when the player takes damage.
+   * Flixel.haptics.vibrate(60);
+   *
+   * // Repeating heartbeat pattern (restarts from index 0) while a timer is critical.
+   * Flixel.haptics.vibrate(new long[] { 0, 80, 120, 80, 600 }, 0);
+   *
+   * // Cancel when the timer ends.
+   * Flixel.haptics.cancel();
+   * }</pre>
+   *
+   * @see FlixelHaptics
+   */
+  @NotNull
+  public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
+
+  /**
    * Global timescale for frame-based timers ({@link org.flixelgdx.util.timer.FlixelTimer FlixelTimer}).
    *
    * <p>{@code 1f} is normal speed; lower slows timers, higher speeds them up. Does not change {@link #elapsed} itself.
@@ -885,6 +912,22 @@ public final class Flixel {
       throw new IllegalStateException("Cannot change host integration after Flixel has been initialized.");
     }
     host = Objects.requireNonNull(hostIntegration, "host cannot be null.");
+  }
+
+  /**
+   * Sets the haptic feedback implementation before {@link #initialize(FlixelGame)}.
+   *
+   * <p>Mobile launchers call this automatically. Only override it if you are providing a
+   * custom haptics backend.
+   *
+   * @param hapticsImpl Non-null haptics implementation to use.
+   * @throws IllegalStateException If Flixel has already been initialized.
+   */
+  public static void setHaptics(@NotNull FlixelHaptics hapticsImpl) {
+    if (initialized) {
+      throw new IllegalStateException("Cannot change haptics after Flixel has been initialized.");
+    }
+    haptics = Objects.requireNonNull(hapticsImpl, "haptics cannot be null.");
   }
 
   /**
