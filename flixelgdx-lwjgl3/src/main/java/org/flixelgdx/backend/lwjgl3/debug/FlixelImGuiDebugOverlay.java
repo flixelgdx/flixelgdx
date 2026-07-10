@@ -82,8 +82,8 @@ import imgui.type.ImString;
  *
  * <p>The imgui-java GLFW backend installs callbacks that <em>chain</em> with the existing
  * libGDX callbacks (using {@code installCallbacks=true}). Both libGDX and imgui see every
- * key, mouse, and scroll event, so {@link Flixel#getDebugToggleKey() F2}, {@link Flixel#getDebugDrawToggleKey() F3},
- * and {@link Flixel#getDebugPauseKey() F4} keep working even when an imgui window has focus. Keys that normally
+ * key, mouse, and scroll event, so {@link #toggleKey F2}, {@link #drawDebugKey F3},
+ * and {@link #pauseKey F4} keep working even when an imgui window has focus. Keys that normally
  * <em>type into</em> the command {@code InputText} (letters, punctuation such as backslash, arrows, Enter, Tab,
  * Backspace, and so on) do not trigger debug bindings while that field is focused, so they do not fight the text box.
  * Function keys, Escape, modifiers, and similar non-text keys still toggle the overlay and other debug actions.
@@ -1100,11 +1100,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * step keeps the controls panel allocation-free on the steady-state path.
    */
   private void refreshKeybindLabelsIfNeeded() {
-    int t = Flixel.getDebugToggleKey();
-    int h = Flixel.getDebugDrawToggleKey();
-    int p = Flixel.getDebugPauseKey();
-    int cl = Flixel.getDebugCameraCycleLeftKey();
-    int cr = Flixel.getDebugCameraCycleRightKey();
+    int t = this.toggleKey;
+    int h = this.drawDebugKey;
+    int p = this.pauseKey;
+    int cl = this.cameraCycleLeftKey;
+    int cr = this.cameraCycleRightKey;
     if (t != cachedToggleKey || keybindToggleLabel == null) {
       keybindToggleLabel = Input.Keys.toString(t);
       cachedToggleKey = t;

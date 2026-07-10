@@ -464,7 +464,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    FlixelDebugOverlay debugOverlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
     if (debugOverlay != null) {
       debugOverlay.resize(width, height);
     }
@@ -535,7 +535,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    FlixelDebugOverlay debugOverlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
     if (debugOverlay != null && Flixel.isDebugMode()) {
       debugOverlay.update(elapsed);
     }
@@ -667,7 +667,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    FlixelDebugOverlay debugOverlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
     if (debugOverlay != null) {
       debugOverlay.drawBoundingBoxes(cameras.items);
       debugOverlay.draw();
@@ -1103,7 +1103,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     Flixel.Signals.preGameClose.dispatch();
 
-    FlixelDebugOverlay debugOverlay = Flixel.getDebugOverlay();
+    FlixelDebugOverlay debugOverlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
     if (debugOverlay != null) {
       if (Flixel.log != null) {
         Flixel.log.removeLogListener(debugOverlay.getLogListener());
@@ -1126,8 +1126,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     FlixelTween.resetRegistry();
     FlixelTimer.cancelAll();
 
-    if (Flixel.getState() != null) {
-      Flixel.getState().destroy();
+    if (Flixel.state != null) {
+      Flixel.state.destroy();
     }
     if (batch != null) {
       batch.dispose();

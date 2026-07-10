@@ -296,7 +296,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * while debug UI text fields are focused.
    */
   private static boolean isCapturedByDebugUI() {
-    FlixelDebugOverlay overlay = Flixel.getDebugOverlay();
+    FlixelDebugOverlay overlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
     return overlay != null && overlay.isKeyboardCapturedByUI();
   }
 

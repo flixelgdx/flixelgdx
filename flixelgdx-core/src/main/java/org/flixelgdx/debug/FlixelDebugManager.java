@@ -48,6 +48,11 @@ import java.util.regex.Pattern;
  * Flixel.debug.setDrawDebug(true);
  * Flixel.debug.registerCommand("hello", args -> Flixel.info("Hi!"));
  * Flixel.debug.executeCommand("hello");
+ *
+ * // Customize keybinds via the overlay field (null-safe: only set after debug mode starts).
+ * if (Flixel.debug.overlay != null) {
+ *   Flixel.debug.overlay.toggleKey = FlixelKey.F1;
+ * }
  * }</pre>
  *
  * <p>The manager is intentionally lightweight: it forwards visibility/hitbox toggles to the active
@@ -108,6 +113,19 @@ public class FlixelDebugManager {
    */
   private final Array<FlixelDebugTrackerEntry> trackerEntries = new Array<>(FlixelDebugTrackerEntry[]::new);
 
+  /**
+   * The active debug overlay instance, or {@code null} when debug mode is off or the overlay
+   * has not been created yet. Assigned by {@link org.flixelgdx.Flixel Flixel} during startup.
+   *
+   * <p>Access keybinds and visibility via this field:
+   * <pre>{@code
+   * Flixel.debug.overlay.toggleKey = FlixelKey.F1;
+   * Flixel.debug.overlay.setVisible(true);
+   * }</pre>
+   */
+  @Nullable
+  public FlixelDebugOverlay overlay;
+
   /** The sprite currently selected by the LMB picker, or {@code null}. */
   @Nullable
   private FlixelObject inspectedSprite;
@@ -121,20 +139,8 @@ public class FlixelDebugManager {
     registerBuiltinCommands();
   }
 
-  /**
-   * Returns the currently active {@link FlixelDebugOverlay}, or {@code null} if the game is not
-   * running in debug mode (or the overlay has not been created yet).
-   *
-   * @return The active overlay, or {@code null}.
-   */
-  @Nullable
-  public FlixelDebugOverlay getOverlay() {
-    return Flixel.getDebugOverlay();
-  }
-
   /** Returns {@code true} when the overlay is on screen. */
   public boolean isVisible() {
-    FlixelDebugOverlay overlay = getOverlay();
     return overlay != null && overlay.isVisible();
   }
 
@@ -144,7 +150,6 @@ public class FlixelDebugManager {
    * @param visible {@code true} to show, {@code false} to hide.
    */
   public void setVisible(boolean visible) {
-    FlixelDebugOverlay overlay = getOverlay();
     if (overlay != null) {
       overlay.setVisible(visible);
     }
@@ -152,7 +157,6 @@ public class FlixelDebugManager {
 
   /** Toggles the overlay visibility. */
   public void toggleVisible() {
-    FlixelDebugOverlay overlay = getOverlay();
     if (overlay != null) {
       overlay.toggleVisible();
     }
@@ -160,7 +164,6 @@ public class FlixelDebugManager {
 
   /** Returns {@code true} when bounding-box drawing (hitboxes) is on. */
   public boolean isDrawDebug() {
-    FlixelDebugOverlay overlay = getOverlay();
     return overlay != null && overlay.isDrawDebug();
   }
 
@@ -170,7 +173,6 @@ public class FlixelDebugManager {
    * @param drawDebug {@code true} to draw, {@code false} to hide.
    */
   public void setDrawDebug(boolean drawDebug) {
-    FlixelDebugOverlay overlay = getOverlay();
     if (overlay != null) {
       overlay.setDrawDebug(drawDebug);
     }
@@ -178,7 +180,6 @@ public class FlixelDebugManager {
 
   /** Toggles bounding-box drawing. */
   public void toggleDrawDebug() {
-    FlixelDebugOverlay overlay = getOverlay();
     if (overlay != null) {
       overlay.toggleDrawDebug();
     }

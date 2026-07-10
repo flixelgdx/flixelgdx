@@ -24,7 +24,6 @@
 package org.flixelgdx;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
@@ -50,7 +49,6 @@ import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
-import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
@@ -777,27 +775,6 @@ public final class Flixel {
    */
   private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelHeadlessDebugOverlay::new;
 
-  /** The active debug overlay instance, created by {@link FlixelGame} during startup. */
-  private static FlixelDebugOverlay debugOverlay;
-
-  /** Current key used to toggle the debug overlay. */
-  private static int debugToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_TOGGLE_KEY;
-
-  /** Current key used to toggle visual debug (bounding boxes). */
-  private static int debugDrawToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_DRAW_DEBUG_KEY;
-
-  /** Current key used to pause the game update loop (debug mode only). */
-  private static int debugPauseKey = FlixelDebugOverlay.Keybinds.DEFAULT_PAUSE_KEY;
-
-  /** Current button used to pan the debug camera. */
-  private static int debugCameraPanButton = FlixelMouseButton.RIGHT;
-
-  /** Current key used to cycle the debug camera to the left while paused (with Alt). */
-  private static int debugCameraCycleLeftKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
-
-  /** Current key used to cycle the debug camera to the right while paused (with Alt). */
-  private static int debugCameraCycleRightKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
-
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
 
@@ -1086,42 +1063,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns the key used to toggle the debug overlay visibility.
-   *
-   * @see org.flixelgdx.input.keyboard.FlixelKey
-   */
-  public static int getDebugToggleKey() {
-    return debugToggleKey;
-  }
-
-  /**
-   * Returns the key used to toggle visual debug (bounding box drawing) on/off.
-   *
-   * @see org.flixelgdx.input.keyboard.FlixelKey
-   */
-  public static int getDebugDrawToggleKey() {
-    return debugDrawToggleKey;
-  }
-
-  /** Key used to pause the game update loop (debug mode only). */
-  public static int getDebugPauseKey() {
-    return debugPauseKey;
-  }
-
-  /** Mouse button (e.g. {@link Input.Buttons#RIGHT}) for debug camera pan while paused. */
-  public static int getDebugCameraPanButton() {
-    return debugCameraPanButton;
-  }
-
-  public static int getDebugCameraCycleLeftKey() {
-    return debugCameraCycleLeftKey;
-  }
-
-  public static int getDebugCameraCycleRightKey() {
-    return debugCameraCycleRightKey;
-  }
-
-  /**
    * Returns the capped elapsed time (in seconds) for the current frame. This value is clamped
    * between {@link #MIN_ELAPSED} and {@link #MAX_ELAPSED} by
    * {@link FlixelGame} each frame.
@@ -1209,20 +1150,12 @@ public final class Flixel {
   }
 
   /**
-   * Returns the active debug overlay instance, or {@code null} when debug mode is off
-   * or the overlay has not been created yet.
-   */
-  public static FlixelDebugOverlay getDebugOverlay() {
-    return debugOverlay;
-  }
-
-  /**
    * Creates the debug overlay using the registered factory. Called internally by
    * {@link FlixelGame} during startup when debug mode is enabled.
    */
   static FlixelDebugOverlay createDebugOverlay() {
-    debugOverlay = debugOverlayFactory.get();
-    return debugOverlay;
+    debug.overlay = debugOverlayFactory.get();
+    return debug.overlay;
   }
 
   /**
@@ -1231,7 +1164,9 @@ public final class Flixel {
    * first; this method only nulls the static handle to avoid double-dispose.
    */
   static void clearDebugOverlay() {
-    debugOverlay = null;
+    if (debug != null) {
+      debug.overlay = null;
+    }
   }
 
   /**
