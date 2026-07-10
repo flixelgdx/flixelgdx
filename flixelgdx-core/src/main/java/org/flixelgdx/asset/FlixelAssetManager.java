@@ -333,4 +333,61 @@ public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
    */
   @NotNull
   AssetManager getManager();
+
+  /**
+   * Registers a KTX2/Basis Universal texture loader so {@code .png} requests transparently use a
+   * compressed {@code .ktx2} sibling when one exists next to the requested path.
+   *
+   * <p>{@link org.flixelgdx.FlixelGame#create() FlixelGame.create()} calls this automatically on
+   * every backend, after the platform application object has created a GL context (this method
+   * queries {@code Gdx.gl} for supported compressed texture formats, so it cannot run any
+   * earlier). Calling it on a backend without the Basis Universal transcoder natives available is
+   * harmless but pointless, since {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} only
+   * looks for a {@code .ktx2} sibling after this has been called, and no {@code .ktx2} files exist
+   * unless the {@code org.flixelgdx.basisu} Gradle plugin compressed them into the build.
+   * Idempotent: calling it more than once has no additional effect.
+   *
+   * @see #isCompressedTexturesEnabled()
+   */
+  void enableCompressedTextures();
+
+  /**
+   * Returns whether {@link #enableCompressedTextures()} has been called on this manager.
+   *
+   * @return {@code true} if compressed {@code .ktx2} textures are recognized by this manager.
+   */
+  boolean isCompressedTexturesEnabled();
+
+  /**
+   * Registers the platform installer that adds the KTX2 (Basis Universal) texture loader.
+   *
+   * <p>Called once by a platform launcher that bundles the basisu natives (the desktop and
+   * Android launchers do this). The core module must never reference the loader directly:
+   * Basis Universal disposes native byte buffers through
+   * {@code BufferUtils.isUnsafeByteBuffer(...)}, a method TeaVM cannot compile, so a direct
+   * reference would fail the entire web build during reachability analysis. Routing the
+   * registration through this installer keeps the compressed-texture code out of the shared
+   * module, so platforms without it (such as web) simply leave the feature unsupported.
+   *
+   * @param installer The installer to run when compressed textures are enabled, or
+   *     {@code null} to leave them unsupported.
+   */
+  void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer);
+
+  /**
+   * Resolves {@code path} to the key that should be used with the underlying libGDX
+   * {@link AssetManager} for a texture load, returning a {@code .ktx2} sibling instead of
+   * {@code path} when {@link #enableCompressedTextures()} has been called and that sibling
+   * exists. Every part of the framework that needs to know whether a texture path has a
+   * compressed variant (loading, unloading, checking load state) should go through this method
+   * rather than re-implementing the check, so the compressed/plain decision is made in exactly
+   * one place. Results are cached, since a path's compressed-sibling status never changes at
+   * runtime.
+   *
+   * @param path Normalized asset path.
+   * @return The path to use with the underlying {@link AssetManager}.
+   * @see #enableCompressedTextures()
+   */
+  @NotNull
+  String resolveTexturePath(@NotNull String path);
 }

@@ -25,14 +25,19 @@ package org.flixelgdx.backend.android;
 
 import com.badlogic.gdx.backends.android.AndroidApplication;
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
+import org.flixelgdx.backend.android.haptics.FlixelAndroidHaptics;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 
 /**
  * Launches the Android version of the FlixelGDX game.
@@ -83,7 +88,7 @@ public class FlixelAndroidLauncher {
    *         new MyGame("My Game", 800, 600, new InitialState()),
    *         this,
    *         FlixelRuntimeMode.RELEASE,
-   *         () -> Flixel.setAlerter(myCustomAlerter)
+   *         () -> Flixel.alerter = myCustomAlerter
    *     );
    *   }
    * }
@@ -97,16 +102,28 @@ public class FlixelAndroidLauncher {
    */
   public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
-    Flixel.setAlerter(new FlixelAndroidAlerter(activity));
-    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
-    Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
-    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
+    FlixelCamera.viewportFactory = ExtendViewport::new;
+    Flixel.alerter = new FlixelAndroidAlerter(activity);
+    Flixel.haptics = new FlixelAndroidHaptics(activity);
+    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.logFileHandler = new FlixelJvmLogFileHandler();
+    FlixelMiniAudioSoundHandler soundHandler = new FlixelMiniAudioSoundHandler();
+    // MiniAudio on Android requires the native AAssetManager to open files from
+    // the assets/ folder. setupAndroid() must receive the AssetManager (not the
+    // Activity) so the JNI side can read AssetManager.mObject for the native pointer.
+    soundHandler.getEngine().setupAndroid(activity.getAssets());
+    Flixel.soundFactory = soundHandler;
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (onBeforeInitialize != null) {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
+    Flixel.assets.setKtx2LoaderInstaller(manager ->
+        manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
+    Flixel.keys.enabled = false;
+    Flixel.mouse.enabled = false;
+    Flixel.touches.enabled = true;
 
     AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
     configuration.useImmersiveMode = true;

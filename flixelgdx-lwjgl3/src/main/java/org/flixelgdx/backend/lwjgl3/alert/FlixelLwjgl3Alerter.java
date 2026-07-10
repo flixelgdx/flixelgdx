@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.backend.lwjgl3.alert;
 
-import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.flixelgdx.backend.FlixelAlerter;
 
 import java.awt.EventQueue;
 import java.lang.reflect.InvocationTargetException;
@@ -60,9 +60,7 @@ public class FlixelLwjgl3Alerter implements FlixelAlerter {
       JOptionPane.showMessageDialog(null, msg, title, type);
     } else {
       try {
-        EventQueue.invokeAndWait(() -> {
-          JOptionPane.showMessageDialog(null, msg, title, type);
-        });
+        EventQueue.invokeAndWait(() -> JOptionPane.showMessageDialog(null, msg, title, type));
       } catch (InterruptedException | InvocationTargetException e) {
         // Ignore.
       }

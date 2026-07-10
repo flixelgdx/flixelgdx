@@ -88,8 +88,7 @@ public class FlixelLogger implements ApplicationLogger {
 
   /**
    * Creates a logger that outputs to the console and optionally to a file
-   * (when a {@link FlixelLogFileHandler} is registered on
-   * {@link Flixel#setLogFileHandler}).
+   * (when {@link Flixel#logFileHandler} is assigned).
    *
    * @param logMode The mode used for console output formatting.
    */

@@ -23,12 +23,14 @@
  */
 package org.flixelgdx.input;
 
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.controllers.ControllerListener;
 
 /**
- * Input manager that participates in libGDX {@link com.badlogic.gdx.InputMultiplexer} wiring.
+ * Input manager that participates in libGDX {@link InputMultiplexer} wiring.
  *
- * <p>Gamepads use {@link com.badlogic.gdx.controllers.ControllerListener} instead and therefore
+ * <p>Gamepads use {@link ControllerListener} instead and therefore
  * implement only {@link FlixelInputManager}.
  */
 public interface FlixelInputProcessorManager extends FlixelInputManager {

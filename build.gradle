@@ -35,8 +35,6 @@ java {
 // Put in a script instead, as it keeps it more organized.
 
 apply from: 'gradle/flixelgdx-allprojects.gradle'
-apply from: 'gradle/flixelgdx-java-language-version.gradle'
-apply from: 'gradle/flixelgdx-injected-dependencies.gradle'
 apply from: 'gradle/flixelgdx-subprojects-repositories.gradle'
 apply from: 'gradle/flixelgdx-publish-stack.gradle'
 apply from: 'gradle/flixelgdx-eclipse-ide-support.gradle'

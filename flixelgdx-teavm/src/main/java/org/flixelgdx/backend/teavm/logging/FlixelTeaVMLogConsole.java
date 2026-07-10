@@ -42,7 +42,7 @@ public final class FlixelTeaVMLogConsole {
 
   /**
    * Forwards one structured log to JavaScript. Matches {@code FlixelLogConsoleSink#emit} for use
-   * with {@code Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit)}.
+   * with {@code Flixel.logConsoleSink = FlixelTeaVMLogConsole::emit}.
    *
    * @param level The log level to color and route on.
    * @param tag The associated tag, may be empty.

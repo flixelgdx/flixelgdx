@@ -25,17 +25,21 @@ package org.flixelgdx.backend.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.graphics.Texture;
+import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
 import org.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
 import org.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
+import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3HapticsProvider;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
+import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.Nullable;
@@ -155,18 +159,17 @@ public class FlixelLwjgl3Launcher {
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
     }
-    attachFlixelWindowListener(configuration);
     FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe());
     if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
     }
 
-    Flixel.setAlerter(new FlixelLwjgl3Alerter());
-    Flixel.setWindow(new FlixelLwjgl3Window());
-    Flixel.setHost(new FlixelLwjgl3HostIntegration());
-    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
-    Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
-    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
+    Flixel.alerter = new FlixelLwjgl3Alerter();
+    Flixel.window = new FlixelLwjgl3Window();
+    Flixel.host = new FlixelLwjgl3HostIntegration();
+    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.logFileHandler = new FlixelJvmLogFileHandler();
+    Flixel.soundFactory = new FlixelMiniAudioSoundHandler();
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {
@@ -176,6 +179,8 @@ public class FlixelLwjgl3Launcher {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
+    Flixel.assets.setKtx2LoaderInstaller(
+        manager -> manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
     Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
@@ -211,7 +216,7 @@ public class FlixelLwjgl3Launcher {
     if (game.isFullscreen()) {
       configuration.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
     } else {
-      configuration.setWindowedMode(game.getViewWidth(), game.getViewHeight());
+      configuration.setWindowedMode(game.getWidth(), game.getHeight());
     }
     configuration.setWindowIcon(Arrays.stream(icons)
         .filter(Objects::nonNull)
@@ -221,17 +226,8 @@ public class FlixelLwjgl3Launcher {
     if (game.isTransparentFramebufferRequested()) {
       configuration.setTransparentFramebuffer(true);
     }
-    attachFlixelWindowListener(configuration);
+    configuration.attachFlixelWindowListener();
     return configuration;
-  }
-
-  /**
-   * Ensures Flixel window notifications, optional user {@link com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowListener},
-   * and close-absorption wrapping are installed. Only {@link FlixelLwjgl3ApplicationConfiguration} is supported so the
-   * user listener can be captured without reflection, which allows AOT compilers like GraalVM to not scream at you.
-   */
-  public static void attachFlixelWindowListener(FlixelLwjgl3ApplicationConfiguration configuration) {
-    configuration.attachFlixelWindowListenerChain();
   }
 
   /**

@@ -1,10 +1,13 @@
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.external.javadoc.CoreJavadocOptions
+import org.gradle.plugins.ide.eclipse.model.Library
+
+plugins {
+  id 'java-library'
+}
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 eclipse.project.name = appName + '-core'
-
-apply plugin: "java-library"
 
 // Embed version from build so Flixel.getVersion() can read it at runtime (Gradle does not set JAR manifest like Maven).
 def generateFlixelVersion = tasks.register('generateFlixelVersion', WriteProperties) {
@@ -54,7 +57,7 @@ tasks.named('compileJava') {
 // making "requires gdx" etc. resolve. Without this, only Gradle's compileJava sees them as modules.
 eclipse.classpath.file {
   whenMerged {
-    entries.findAll { it instanceof org.gradle.plugins.ide.eclipse.model.Library }.each {
+    entries.findAll { it instanceof Library }.each {
       it.entryAttributes['module'] = 'true'
     }
   }
@@ -64,6 +67,7 @@ dependencies {
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
   api "com.badlogicgames.gdx-controllers:gdx-controllers-core:$gdxControllersVersion"
+  api "com.crashinvaders.basisu:basisu-gdx:$basisuGdxVersion"
   api "com.github.tommyettinger:anim8-gdx:$anim8Version"
   api "com.github.tommyettinger:libgdx-utils:$utilsVersion"
 

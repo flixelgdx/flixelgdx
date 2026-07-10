@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.backend.teavm.alert;
 
-import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.flixelgdx.backend.FlixelAlerter;
 import org.teavm.jso.JSBody;
 
 /**

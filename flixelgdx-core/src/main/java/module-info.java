@@ -3,10 +3,7 @@ module org.flixelgdx.core {
   exports org.flixelgdx.animation;
   exports org.flixelgdx.asset;
   exports org.flixelgdx.audio;
-  exports org.flixelgdx.backend.alert;
-  exports org.flixelgdx.backend.host;
-  exports org.flixelgdx.backend.window;
-  exports org.flixelgdx.backend.runtime;
+  exports org.flixelgdx.backend;
   exports org.flixelgdx.debug;
   exports org.flixelgdx.functional;
   exports org.flixelgdx.functional.supplier;
@@ -34,6 +31,7 @@ module org.flixelgdx.core {
   requires transitive gdx;
   requires transitive gdx.controllers.core;
   requires transitive gdx.freetype;
+  requires transitive basisu.gdx;
   requires transitive anim8.gdx;
   requires transitive libgdx.utils;
   requires org.jetbrains.annotations;

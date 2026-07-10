@@ -28,11 +28,11 @@ import com.badlogic.gdx.backends.iosrobovm.IOSApplicationConfiguration;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.common.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.ios.alert.FlixelIOSAlerter;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
 
 /**
  * Launches the iOS (RoboVM) version of the FlixelGDX game.
@@ -98,7 +98,7 @@ public class FlixelIOSLauncher {
    *     return FlixelIOSLauncher.launch(
    *         new MyGame("My Game", 800, 600, new InitialState()),
    *         FlixelRuntimeMode.DEBUG,
-   *         () -> Flixel.setAlerter(myCustomAlerter)
+   *         () -> Flixel.alerter = myCustomAlerter
    *     );
    *   }
    * }
@@ -112,10 +112,10 @@ public class FlixelIOSLauncher {
    */
   public static IOSApplication launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
       Runnable onBeforeInitialize) {
-    Flixel.setAlerter(new FlixelIOSAlerter());
-    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
-    Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
-    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
+    Flixel.alerter = new FlixelIOSAlerter();
+    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.logFileHandler = new FlixelJvmLogFileHandler();
+    Flixel.soundFactory = new FlixelMiniAudioSoundHandler();
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (onBeforeInitialize != null) {

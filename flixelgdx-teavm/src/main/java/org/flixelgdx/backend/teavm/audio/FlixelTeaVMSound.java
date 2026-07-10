@@ -26,6 +26,7 @@ package org.flixelgdx.backend.teavm.audio;
 import com.github.xpenatan.gdx.teavm.backends.web.dom.typedarray.TypedArrays;
 
 import org.flixelgdx.audio.FlixelSoundBackend;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -47,7 +48,7 @@ import org.teavm.jso.typedarrays.ArrayBuffer;
  * <p>Position is tracked by recording {@code AudioContext.currentTime} at start and
  * computing the elapsed offset each frame, so no polling timer is needed.
  *
- * <p>Example usage (indirect, via {@link org.flixelgdx.audio.FlixelAudioManager FlixelAudioManager}):
+ * <p>Example usage (indirect, via {@link FlixelSoundManager FlixelSoundManager}):
  *
  * <pre>{@code
  * Flixel.sound.play("music/song.mp3");
@@ -117,7 +118,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
    *
    * <p>Because the buffer is already decoded, this constructor never blocks and the
    * sound is ready to play immediately. Use {@link FlixelTeaVMSoundHandler#prewarmSound}
-   * (via {@link org.flixelgdx.audio.FlixelAudioManager#prewarmSound FlixelAudioManager.prewarmSound}) to populate the
+   * (via {@link FlixelSoundManager#prewarmSound FlixelSoundManager.prewarmSound}) to populate the
    * cache before calling play.
    *
    * @param path The asset path, used only for error messages.

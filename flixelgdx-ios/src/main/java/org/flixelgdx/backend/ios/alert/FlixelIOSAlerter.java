@@ -26,7 +26,7 @@ package org.flixelgdx.backend.ios.alert;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
 
-import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.flixelgdx.backend.FlixelAlerter;
 import org.robovm.apple.dispatch.DispatchQueue;
 import org.robovm.apple.uikit.UIAlertAction;
 import org.robovm.apple.uikit.UIAlertActionStyle;

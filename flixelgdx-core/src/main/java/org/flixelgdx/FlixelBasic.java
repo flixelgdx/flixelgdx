@@ -72,7 +72,7 @@ import org.jetbrains.annotations.Nullable;
  *       <td>Relying on {@link #kill()} for GPU/native cleanup</td>
  *     </tr>
  *     <tr>
- *       <td>Returning instance to a {@link com.badlogic.gdx.utils.Pool}</td>
+ *       <td>Returning instance to a libGDX {@link com.badlogic.gdx.utils.Pool Pool}</td>
  *       <td>{@code pool.free(object)} (invokes {@link #reset()} -> {@link #destroy()})</td>
  *       <td>Expecting {@link #kill()} to run pool reset logic</td>
  *     </tr>
