@@ -45,6 +45,17 @@ import org.jetbrains.annotations.NotNull;
 public interface FlixelMouseIconManager {
 
   /**
+   * Returns the cursor that was last set via {@link #setCursor(FlixelMouseCursor)}, or
+   * {@link FlixelMouseCursor#ARROW} after construction or {@link #resetCursor()}.
+   *
+   * @return The active cursor, never {@code null}.
+   */
+  @NotNull
+  default FlixelMouseCursor getCursor() {
+    return FlixelMouseCursor.ARROW;
+  }
+
+  /**
    * Applies a preset native cursor for this session.
    *
    * @param cursor Non-null cursor kind; ignored on noop backends.
@@ -55,17 +66,6 @@ public interface FlixelMouseIconManager {
    * Restores the default cursor for this session.
    */
   void resetCursor();
-
-  /**
-   * Returns the cursor that was last set via {@link #setCursor(FlixelMouseCursor)}, or
-   * {@link FlixelMouseCursor#ARROW} after construction or {@link #resetCursor()}.
-   *
-   * @return The active cursor, never {@code null}.
-   */
-  @NotNull
-  default FlixelMouseCursor getCursor() {
-    return FlixelMouseCursor.ARROW;
-  }
 
   /**
    * @return {@code true} when {@link #setCursor(FlixelMouseCursor)} may change what

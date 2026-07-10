@@ -111,7 +111,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
 
   /**
    * Called when the state is first created. This is where you want to assign your
-   * sprites and set up everything your state uses!
+   * sprites and set up everything your state uses.
    *
    * <p>Make sure to override this, NOT the constructor!
    */
