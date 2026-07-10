@@ -118,8 +118,7 @@ public abstract class FlixelVideo extends FlixelBasic {
   private final LifecycleListener lifecycleListener = new LifecycleListener() {
     @Override
     public void pause() {
-      FlixelGame game = Flixel.getGame();
-      if (game == null || !game.autoPause || autoPaused || !isMediaPlaying()) {
+      if (Flixel.game == null || !Flixel.game.autoPause || autoPaused || !isMediaPlaying()) {
         return;
       }
       pauseMedia();

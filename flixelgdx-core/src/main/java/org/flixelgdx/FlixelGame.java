@@ -510,7 +510,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.
-      FlixelState current = Flixel.getState();
+      FlixelState current = Flixel.state;
       while (current != null) {
         FlixelState sub = current.getSubState();
         boolean hasSubState = (sub != null);
@@ -554,7 +554,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.Signals.preDraw.dispatch();
 
     ScreenUtils.clear(bgColor); // Clear the screen to refresh it.
-    FlixelState state = Flixel.getState();
+    FlixelState state = Flixel.state;
 
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
 

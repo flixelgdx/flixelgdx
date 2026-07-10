@@ -56,7 +56,7 @@ public final class FlixelDebugUtil {
    */
   public static int countActiveMembers() {
     int count = 0;
-    FlixelState current = Flixel.getState();
+    FlixelState current = Flixel.state;
     while (current != null) {
       FlixelState sub = current.getSubState();
       boolean hasSubState = (sub != null);
@@ -98,7 +98,7 @@ public final class FlixelDebugUtil {
    * @param callback Invoked once per visible {@link FlixelDebugDrawable}.
    */
   public static void forEachDebugDrawable(Consumer<FlixelDebugDrawable> callback) {
-    FlixelState current = Flixel.getState();
+    FlixelState current = Flixel.state;
     while (current != null) {
       FlixelState sub = current.getSubState();
       boolean hasSubState = (sub != null);

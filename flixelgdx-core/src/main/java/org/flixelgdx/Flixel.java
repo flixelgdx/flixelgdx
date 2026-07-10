@@ -1017,14 +1017,6 @@ public final class Flixel {
     return assets;
   }
 
-  public static FlixelGame getGame() {
-    return game;
-  }
-
-  public static FlixelState getState() {
-    return state;
-  }
-
   /**
    * Returns the visible width of the game world in game pixels.
    *
@@ -1180,48 +1172,12 @@ public final class Flixel {
   }
 
   /**
-   * Returns the Java heap memory currently in use, in megabytes.
-   *
-   * @return The Java heap memory currently in use, in megabytes.
-   */
-  public static float getJavaHeapUsedMegabytes() {
-    return getJavaHeapUsedBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the Java heap memory currently in use, in gigabytes.
-   *
-   * @return The Java heap memory currently in use, in gigabytes.
-   */
-  public static float getJavaHeapUsedGigabytes() {
-    return getJavaHeapUsedBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
    * Returns the total Java heap memory allocated by the JVM, in bytes.
    *
    * @return The total Java heap memory allocated by the JVM, in bytes.
    */
   public static long getJavaHeapTotalBytes() {
     return Runtime.getRuntime().totalMemory();
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in megabytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in megabytes.
-   */
-  public static float getJavaHeapTotalMegabytes() {
-    return getJavaHeapTotalBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in gigabytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in gigabytes.
-   */
-  public static float getJavaHeapTotalGigabytes() {
-    return getJavaHeapTotalBytes() / (1024f * 1024f * 1024f);
   }
 
   /**
@@ -1234,24 +1190,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns the maximum Java heap memory available to the JVM, in megabytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in megabytes.
-   */
-  public static float getJavaHeapMaxMegabytes() {
-    return getJavaHeapMaxBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in gigabytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in gigabytes.
-   */
-  public static float getJavaHeapMaxGigabytes() {
-    return getJavaHeapMaxBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
    * Returns an estimate of the native heap usage in bytes as reported by libGDX.
    *
    * <p>This is not available on all platforms and may return the same number as the
@@ -1259,30 +1197,6 @@ public final class Flixel {
    */
   public static long getNativeHeapUsedBytes() {
     return Gdx.app != null ? Gdx.app.getNativeHeap() : 0L;
-  }
-
-  /**
-   * Returns the native heap usage in megabytes.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   *
-   * @return The native heap usage in megabytes.
-   */
-  public static float getNativeHeapUsedMegabytes() {
-    return getNativeHeapUsedBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the native heap usage in gigabytes.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   *
-   * @return The native heap usage in gigabytes.
-   */
-  public static float getNativeHeapUsedGigabytes() {
-    return getNativeHeapUsedBytes() / (1024f * 1024f * 1024f);
   }
 
   /**

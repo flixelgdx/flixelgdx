@@ -93,9 +93,8 @@ public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
   @Override
   public void iconified(boolean isIconified) {
     if (isIconified) {
-      FlixelGame game = Flixel.getGame();
-      if (game != null) {
-        game.onMinimized();
+      if (Flixel.game != null) {
+        Flixel.game.onMinimized();
       }
     }
     if (next != null) {

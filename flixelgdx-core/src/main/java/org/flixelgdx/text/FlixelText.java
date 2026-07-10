@@ -1077,7 +1077,7 @@ public class FlixelText extends FlixelSprite {
   private float currentScreenScale() {
     FlixelCamera cam = Flixel.getDrawCamera();
     if (cam == null) {
-      if (Flixel.getGame() == null) {
+      if (Flixel.game == null) {
         return 1f;
       }
       cam = Flixel.cameras.first();

@@ -90,8 +90,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return current launch-time request for an alpha-capable default framebuffer.
    */
   default boolean isTransparentFramebufferRequested() {
-    FlixelGame g = Flixel.getGame();
-    return g != null && g.isTransparentFramebufferRequested();
+    return Flixel.game != null && Flixel.game.isTransparentFramebufferRequested();
   }
 
   /**
@@ -105,9 +104,8 @@ public interface FlixelWindow extends FlixelShakeable {
    * @param active {@code true} to composite with the desktop through alpha; {@code false} for a normal opaque window interior.
    */
   default void setTransparencyActive(boolean active) {
-    FlixelGame g = Flixel.getGame();
-    if (g != null) {
-      g.applyBackdropForDesktopTransparency(active);
+    if (Flixel.game != null) {
+      Flixel.game.applyBackdropForDesktopTransparency(active);
     }
   }
 
@@ -115,8 +113,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return last value applied by {@link #setTransparencyActive(boolean)} for this game session.
    */
   default boolean isTransparencyActive() {
-    FlixelGame g = Flixel.getGame();
-    return g != null && g.isTransparencyActive();
+    return Flixel.game != null && Flixel.game.isTransparencyActive();
   }
 
   /**
