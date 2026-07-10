@@ -33,6 +33,7 @@ import org.teavm.jso.JSBody;
  */
 public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager {
 
+  private FlixelMouseCursor current = FlixelMouseCursor.ARROW;
   private final @NotNull String canvasElementId;
 
   public FlixelTeaVMMouseIconManager(@NotNull String canvasElementId) {
@@ -41,12 +42,20 @@ public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager
 
   @Override
   public void setCursor(@NotNull FlixelMouseCursor cursor) {
+    current = cursor;
     setCanvasCursorCss(canvasElementId, cssFor(cursor));
   }
 
   @Override
   public void resetCursor() {
+    current = FlixelMouseCursor.ARROW;
     setCanvasCursorCss(canvasElementId, "default");
+  }
+
+  @Override
+  @NotNull
+  public FlixelMouseCursor getCursor() {
+    return current;
   }
 
   @Override
@@ -73,9 +82,11 @@ public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager
     };
   }
 
-  @JSBody(params = { "canvasId", "css" }, script = "var e=document.getElementById(canvasId);\n"
-      + "if (e !== null) {\n"
-      + "  e.style.cursor = css;\n"
-      + "}\n")
+  @JSBody(params = { "canvasId", "css" }, script = """
+      var e=document.getElementById(canvasId);
+      if (e !== null) {
+        e.style.cursor = css;
+      }
+      """)
   private static native void setCanvasCursorCss(String canvasId, String css);
 }

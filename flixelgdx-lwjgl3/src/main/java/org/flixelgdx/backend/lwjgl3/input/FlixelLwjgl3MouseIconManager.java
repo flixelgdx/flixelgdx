@@ -48,9 +48,12 @@ import java.util.Objects;
  */
 public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManager {
 
+  private FlixelMouseCursor current = FlixelMouseCursor.ARROW;
+
   @Override
   public void setCursor(@NotNull FlixelMouseCursor cursor) {
     Objects.requireNonNull(cursor, "cursor");
+    current = cursor;
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
       return;
     }
@@ -59,10 +62,17 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
 
   @Override
   public void resetCursor() {
+    current = FlixelMouseCursor.ARROW;
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
       return;
     }
     graphics.getWindow().postRunnable(() -> setSystemCursorSwallowCursorUnavailable(Cursor.SystemCursor.Arrow));
+  }
+
+  @Override
+  @NotNull
+  public FlixelMouseCursor getCursor() {
+    return current;
   }
 
   @Override

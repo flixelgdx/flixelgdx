@@ -57,6 +57,17 @@ public interface FlixelMouseIconManager {
   void resetCursor();
 
   /**
+   * Returns the cursor that was last set via {@link #setCursor(FlixelMouseCursor)}, or
+   * {@link FlixelMouseCursor#ARROW} after construction or {@link #resetCursor()}.
+   *
+   * @return The active cursor, never {@code null}.
+   */
+  @NotNull
+  default FlixelMouseCursor getCursor() {
+    return FlixelMouseCursor.ARROW;
+  }
+
+  /**
    * @return {@code true} when {@link #setCursor(FlixelMouseCursor)} may change what
    *     the user sees for this target.
    */
