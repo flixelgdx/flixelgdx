@@ -501,7 +501,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.gamepads != null) {
       Flixel.gamepads.update();
     }
-    FlixelActionSets.updateAll(elapsed);
+    FlixelActionSets.update(elapsed);
 
     if (!gamePaused) {
       FlixelTween.updateTweens(elapsed);

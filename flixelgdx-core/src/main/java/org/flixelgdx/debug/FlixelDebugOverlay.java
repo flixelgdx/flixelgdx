@@ -312,8 +312,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
 
     // Performance ring buffers are sampled whenever the game runs in debug mode, not only while
-    // the overlay is visible, so opening the Performance window mid-session still shows a useful
-    // history instead of an empty graph for the first several seconds.
+    // the overlay is visible, so opening a panel mid-session still shows a useful history instead
+    // of an empty graph for the first several seconds.
     if (Flixel.isDebugMode()) {
       perfSampleTimer += elapsed;
       if (perfSampleTimer >= PERF_SAMPLE_INTERVAL) {

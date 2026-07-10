@@ -27,8 +27,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.graphics.Cursor;
 
+import org.flixelgdx.input.mouse.FlixelMouseCursor;
 import org.flixelgdx.input.mouse.FlixelMouseIconManager;
-import org.flixelgdx.input.mouse.FlixelNativeMouseCursor;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -49,7 +49,7 @@ import java.util.Objects;
 public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManager {
 
   @Override
-  public void setNativeCursor(@NotNull FlixelNativeMouseCursor cursor) {
+  public void setCursor(@NotNull FlixelMouseCursor cursor) {
     Objects.requireNonNull(cursor, "cursor");
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
       return;
@@ -58,7 +58,7 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
   }
 
   @Override
-  public void clearNativeCursor() {
+  public void resetCursor() {
     if (!(Gdx.graphics instanceof Lwjgl3Graphics graphics)) {
       return;
     }
@@ -66,7 +66,7 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
   }
 
   @Override
-  public boolean supportsNativeCursor() {
+  public boolean supportsCursors() {
     return Gdx.graphics instanceof Lwjgl3Graphics;
   }
 
@@ -100,16 +100,16 @@ public final class FlixelLwjgl3MouseIconManager implements FlixelMouseIconManage
     return os.contains("linux");
   }
 
-  private static Cursor.SystemCursor mapToBestSystemCursor(FlixelNativeMouseCursor cursor) {
-    if (cursor == FlixelNativeMouseCursor.WAIT
-        || cursor == FlixelNativeMouseCursor.GRAB
-        || cursor == FlixelNativeMouseCursor.GRABBING) {
+  private static Cursor.SystemCursor mapToBestSystemCursor(FlixelMouseCursor cursor) {
+    if (cursor == FlixelMouseCursor.WAIT
+        || cursor == FlixelMouseCursor.GRAB
+        || cursor == FlixelMouseCursor.GRABBING) {
       return Cursor.SystemCursor.Arrow;
     }
     if (likelyLinuxOs()) {
-      if (cursor == FlixelNativeMouseCursor.NORTH_WEST_SOUTH_EAST_RESIZE
-          || cursor == FlixelNativeMouseCursor.NORTH_EAST_SOUTH_WEST_RESIZE
-          || cursor == FlixelNativeMouseCursor.NOT_ALLOWED) {
+      if (cursor == FlixelMouseCursor.NORTH_WEST_SOUTH_EAST_RESIZE
+          || cursor == FlixelMouseCursor.NORTH_EAST_SOUTH_WEST_RESIZE
+          || cursor == FlixelMouseCursor.NOT_ALLOWED) {
         return Cursor.SystemCursor.Arrow;
       }
     }

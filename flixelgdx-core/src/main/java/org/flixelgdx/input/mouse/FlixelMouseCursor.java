@@ -26,12 +26,15 @@ package org.flixelgdx.input.mouse;
 /**
  * Portable native cursor presets for {@link FlixelMouseIconManager}.
  *
- * <p>Backends map these to OS or browser cursors where available. When a preset has no exact match, each backend chooses the closest
- * alternative and documents limits in its own Javadoc. Plain HTML/CSS builds can expose richer cursor sets through standard CSS keywords,
- * while GLFW on some Linux desktops may fall back to the arrow for waits, grabs, diagonal resizes, or blocked icons when the host
- * cursor theme omits matching glyphs.
+ * <p>Backends map these to OS or browser cursors where available. When a preset has no
+ * exact match, each backend chooses the closest alternative and documents limits in its own
+ * Javadoc.
+ *
+ * <p>Plain HTML/CSS builds can expose richer cursor sets through standard CSS keywords,
+ * while GLFW on some Linux desktops may fall back to the arrow for waits, grabs, diagonal
+ * resizes, or blocked icons when the host cursor theme omits matching glyphs.
  */
-public enum FlixelNativeMouseCursor {
+public enum FlixelMouseCursor {
 
   /** Default arrow pointer. */
   ARROW,
@@ -48,14 +51,11 @@ public enum FlixelNativeMouseCursor {
   /** Hand, often used for links or buttons. */
   HAND,
 
-  /**
-   * Open hand suggesting draggable content ({@code grab} in CSS backends). GLFW does not expose a universal grab shape here, so LWJGL3
-   * maps this to {@link #ARROW}.
-   */
+  /** Open hand suggesting draggable content. */
   GRAB,
 
   /**
-   * Closed hand while dragging ({@code grabbing}). LWJGL3 maps this to {@link #ARROW}.
+   * Closed hand while dragging ({@code grabbing}).
    *
    * @see #GRAB
    */
@@ -80,7 +80,7 @@ public enum FlixelNativeMouseCursor {
   NOT_ALLOWED,
 
   /**
-   * Invisible cursor. Use {@link FlixelMouseIconManager#clearNativeCursor()} to restore the
+   * Invisible cursor. Use {@link FlixelMouseIconManager#resetCursor()} to restore the
    * default instead of selecting this when possible.
    */
   NONE

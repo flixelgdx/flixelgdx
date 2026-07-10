@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  *
  * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via
- * {@link FlixelActionSets#updateAll(float)}). {@link FlixelActionSet#endFrame()} (via
+ * {@link FlixelActionSets#update(float)}). {@link FlixelActionSet#endFrame()} (via
  * {@link FlixelActionSets#endFrameAll()}) runs after
  * {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} finalizes keys and mouse, matching
  * their {@code justPressed} timing.
