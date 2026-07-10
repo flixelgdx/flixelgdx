@@ -79,7 +79,7 @@ import java.util.function.Consumer;
  *
  * <p>File logging is intentionally disabled on the web backend because browsers do not expose a host filesystem.
  * The {@link org.flixelgdx.logging.FlixelLogFileHandler FlixelLogFileHandler} is not registered, so {@link FlixelLogger#startFileLogging()} is a safe no-op.
- * Console output uses {@link Flixel#setLogConsoleSink} with a styled {@code console} writer so log lines appear with readable colors
+ * Console output uses {@link Flixel#logConsoleSink} with a styled {@code console} writer so log lines appear with readable colors
  * in the browser; ANSI {@code System.out} is not used on web.
  *
  * <p>When {@code Gdx.app.exit()} is called, the launcher overrides {@code exit()} to invoke the browser's
@@ -178,10 +178,10 @@ public class FlixelTeaVMLauncher {
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode,
       @Nullable Consumer<WebApplicationConfiguration> configCustomizer,
       @Nullable Runnable onBeforeInitialize) {
-    Flixel.setAlerter(new FlixelTeaVMAlerter());
-    Flixel.setStackTraceProvider(new TeaVMStackTraceProvider());
-    Flixel.setLogConsoleSink(FlixelTeaVMLogConsole::emit);
-    Flixel.setSoundBackendFactory(new FlixelTeaVMSoundHandler());
+    Flixel.alerter = new FlixelTeaVMAlerter();
+    Flixel.stackTraceProvider = new TeaVMStackTraceProvider();
+    Flixel.logConsoleSink = FlixelTeaVMLogConsole::emit;
+    Flixel.soundFactory = new FlixelTeaVMSoundHandler();
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {

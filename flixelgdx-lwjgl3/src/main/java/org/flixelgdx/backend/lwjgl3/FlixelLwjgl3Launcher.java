@@ -164,12 +164,12 @@ public class FlixelLwjgl3Launcher {
       AnsiConsole.systemInstall();
     }
 
-    Flixel.setAlerter(new FlixelLwjgl3Alerter());
-    Flixel.setWindow(new FlixelLwjgl3Window());
-    Flixel.setHost(new FlixelLwjgl3HostIntegration());
-    Flixel.setStackTraceProvider(new FlixelDefaultStackTraceProvider());
-    Flixel.setLogFileHandler(new FlixelJvmLogFileHandler());
-    Flixel.setSoundBackendFactory(new FlixelMiniAudioSoundHandler());
+    Flixel.alerter = new FlixelLwjgl3Alerter();
+    Flixel.window = new FlixelLwjgl3Window();
+    Flixel.host = new FlixelLwjgl3HostIntegration();
+    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.logFileHandler = new FlixelJvmLogFileHandler();
+    Flixel.soundFactory = new FlixelMiniAudioSoundHandler();
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
     if (runtimeMode == FlixelRuntimeMode.DEBUG) {

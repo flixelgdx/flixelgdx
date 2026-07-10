@@ -272,7 +272,7 @@ public final class Flixel {
   /**
    * The platform-specific alert dialog provider.
    *
-   * <p>Launchers set this field (via {@link #setAlerter(FlixelAlerter)}) before calling
+   * <p>Launchers assign this field before calling
    * {@link #initialize(FlixelGame)}. Once the game is running, prefer the convenience wrappers
    * {@link #showInfoAlert(String, String)}, {@link #showWarningAlert(String, String)}, and
    * {@link #showErrorAlert(String, String)} rather than calling this field directly.
@@ -741,28 +741,28 @@ public final class Flixel {
 
   /** System used to detect where a log comes from when a log is created. **/
   @NotNull
-  private static FlixelStackTraceProvider stackTraceProvider;
+  public static FlixelStackTraceProvider stackTraceProvider;
 
   /**
    * Platform-specific handler for writing log output to a file. May be
    * {@code null} on platforms that do not support file logging (e.g., web/TeaVM).
    */
   @Nullable
-  private static FlixelLogFileHandler logFileHandler;
+  public static FlixelLogFileHandler logFileHandler;
 
   /**
    * When non-null, {@link FlixelLogger} sends each console line here instead of {@code System.out} (for example, styled
    * output in the browser). Set before {@link #initialize(FlixelGame)}.
    */
   @Nullable
-  private static FlixelLogConsoleSink logConsoleSink;
+  public static FlixelLogConsoleSink logConsoleSink;
 
   /**
    * Platform-specific factory for creating sounds, groups, and effect nodes.
    * Set by the launcher before {@link #initialize(FlixelGame)}.
    */
   @Nullable
-  private static FlixelSoundBackend.Factory soundFactory;
+  public static FlixelSoundBackend.Factory soundFactory;
 
   /** The runtime mode (TEST, DEBUG, RELEASE) set by the launcher. */
   private static FlixelRuntimeMode runtimeMode = FlixelRuntimeMode.RELEASE;
@@ -826,15 +826,15 @@ public final class Flixel {
     game = gameInstance;
     if (alerter == null) {
       throw new IllegalStateException(
-          "Flixel alerter not set. Call Flixel.setAlerter(...) before Flixel.initialize(...).");
+          "Flixel alerter not set. Assign Flixel.alerter before calling Flixel.initialize(...).");
     }
     if (stackTraceProvider == null) {
       throw new IllegalStateException(
-          "Flixel stack trace provider not set. Call Flixel.setStackTraceProvider(...) before Flixel.initialize(...).");
+          "Flixel stack trace provider not set. Assign Flixel.stackTraceProvider before calling Flixel.initialize(...).");
     }
     if (soundFactory == null) {
       throw new IllegalStateException(
-          "Flixel sound backend factory not set. Call Flixel.setSoundBackendFactory(...) before Flixel.initialize(...).");
+          "Flixel sound backend factory not set. Assign Flixel.soundFactory before calling Flixel.initialize(...).");
     }
 
     // Initialize the core systems.
@@ -870,142 +870,6 @@ public final class Flixel {
         .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
 
     initialized = true;
-  }
-
-  /**
-   * Sets the system used for displaying alert notifications to the user.
-   *
-   * <p>This must be set before {@link #initialize(FlixelGame)}. Calling it after initialization
-   * throws an exception.
-   */
-  public static void setAlerter(@NotNull FlixelAlerter alertSystem) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change alerter after Flixel has been initialized.");
-    }
-    if (alertSystem == null) {
-      throw new IllegalArgumentException("Alert system cannot be null.");
-    }
-    alerter = alertSystem;
-  }
-
-  /**
-   * Sets the desktop window integration implementation before {@link #initialize(FlixelGame)}.
-   *
-   * @param windowAccess Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setWindow(@NotNull FlixelWindow windowAccess) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change window integration after Flixel has been initialized.");
-    }
-    window = Objects.requireNonNull(windowAccess, "window cannot be null.");
-  }
-
-  /**
-   * Sets the host OS integration implementation before {@link #initialize(FlixelGame)}.
-   *
-   * @param hostIntegration Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setHost(@NotNull FlixelHostIntegration hostIntegration) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change host integration after Flixel has been initialized.");
-    }
-    host = Objects.requireNonNull(hostIntegration, "host cannot be null.");
-  }
-
-  /**
-   * Sets the haptic feedback implementation before {@link #initialize(FlixelGame)}.
-   *
-   * <p>Mobile launchers call this automatically. Only override it if you are providing a
-   * custom haptics backend.
-   *
-   * @param hapticsImpl Non-null haptics implementation to use.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setHaptics(@NotNull FlixelHaptics hapticsImpl) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change haptics after Flixel has been initialized.");
-    }
-    haptics = Objects.requireNonNull(hapticsImpl, "haptics cannot be null.");
-  }
-
-  /**
-   * Sets the system used for providing stack traces on logs.
-   *
-   * <p>This must be set before {@link #initialize(FlixelGame)}. Calling it after initialization
-   * throws an exception.
-   */
-  public static void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change stack trace provider after Flixel has been initialized.");
-    }
-    if (provider == null) {
-      throw new IllegalArgumentException("Stack trace provider cannot be null.");
-    }
-    stackTraceProvider = provider;
-  }
-
-  /**
-   * Sets the platform-specific handler responsible for writing log output to a
-   * persistent file.
-   *
-   * <p>This must be called before {@link #initialize(FlixelGame)}. Calling it after
-   * initialization throws an exception. On platforms that do not support file
-   * logging (for example, web/TeaVM), this method may be skipped entirely and
-   * file logging will be silently disabled.
-   *
-   * @param handler The log file handler to use, must not be {@code null}.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   * @throws IllegalArgumentException If {@code handler} is {@code null}.
-   */
-  public static void setLogFileHandler(@NotNull FlixelLogFileHandler handler) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change the log file handler after Flixel has been initialized.");
-    }
-    if (handler == null) {
-      throw new IllegalArgumentException("Log file handler cannot be null.");
-    }
-    logFileHandler = handler;
-  }
-
-  /**
-   * Sets a handler that receives every console log as structured data instead of the default
-   * ANSI stream on {@code System.out}. Intended for the web backend (for example, styled
-   * {@code console.log} in the browser).
-   *
-   * <p>Must be called before {@link #initialize(FlixelGame)}. Pass {@code null} to use the default
-   * terminal output.
-   *
-   * @param sink The sink, or {@code null} to clear.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setLogConsoleSink(@Nullable FlixelLogConsoleSink sink) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change the log console sink after Flixel has been initialized.");
-    }
-    logConsoleSink = sink;
-  }
-
-  /**
-   * Sets the platform-specific sound backend factory used to create sounds,
-   * groups, and effect nodes.
-   *
-   * <p>This must be called before {@link #initialize(FlixelGame)}. Calling it
-   * after initialization throws an exception.
-   *
-   * @param factory The sound backend factory to use (must not be {@code null}).
-   * @throws IllegalStateException If FlixelGDX has already been initialized.
-   * @throws IllegalArgumentException If {@code factory} is {@code null}.
-   */
-  public static void setSoundBackendFactory(@NotNull FlixelSoundBackend.Factory factory) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change sound backend factory after Flixel has been initialized.");
-    }
-    if (factory == null) {
-      throw new IllegalArgumentException("Sound backend factory cannot be null.");
-    }
-    soundFactory = factory;
   }
 
   /**

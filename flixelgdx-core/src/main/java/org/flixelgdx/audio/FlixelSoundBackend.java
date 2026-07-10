@@ -138,7 +138,7 @@ public interface FlixelSoundBackend {
    * Platform-specific factory for creating sounds, groups, and effect nodes.
    *
    * <p>One instance is injected into {@link org.flixelgdx.Flixel Flixel} at startup
-   * via {@code Flixel.setSoundBackendFactory(...)}, and is shared by
+   * via {@link org.flixelgdx.Flixel#soundFactory Flixel.soundFactory}, and is shared by
    * {@link FlixelSoundManager} and {@link FlixelSound}.
    */
   interface Factory {

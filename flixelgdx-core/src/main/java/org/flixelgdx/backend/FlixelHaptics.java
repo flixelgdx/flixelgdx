@@ -33,7 +33,7 @@ package org.flixelgdx.backend;
  *
  * <p>Launchers on supported platforms (for example, Android) install a real implementation before
  * {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(...)} runs.
- * You should not need to call {@link org.flixelgdx.Flixel#setHaptics(FlixelHaptics) Flixel.setHaptics(...)}
+ * You should not need to assign {@link org.flixelgdx.Flixel#haptics Flixel.haptics}
  * from game code unless you are providing a custom backend.
  *
  * <p>Example:

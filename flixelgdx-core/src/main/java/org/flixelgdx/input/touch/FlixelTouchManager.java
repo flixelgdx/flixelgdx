@@ -362,12 +362,64 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
    *
    * @return {@code true} if at least one pointer is pressed and input is enabled.
    */
-  public boolean anyTouched() {
+  public boolean anyPressed() {
     if (!enabled) {
       return false;
     }
     for (int p = 0; p < maxPointers; p++) {
       if (list[p].pressed) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} on the single frame any pointer first touched the screen.
+   *
+   * <p>Equivalent to checking {@link FlixelTouch#justPressed()} across every slot. Useful when you
+   * do not need to know which finger triggered the press.
+   *
+   * <pre>{@code
+   * if (Flixel.touches.anyJustPressed()) {
+   *   Flixel.haptics.vibrate(30);
+   * }
+   * }</pre>
+   *
+   * @return {@code true} if at least one pointer was just pressed this frame and input is enabled.
+   */
+  public boolean anyJustPressed() {
+    if (!enabled) {
+      return false;
+    }
+    for (int p = 0; p < maxPointers; p++) {
+      if (list[p].justPressed) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns {@code true} on the single frame any pointer lifted off the screen.
+   *
+   * <p>Equivalent to checking {@link FlixelTouch#justReleased()} across every slot. Useful when
+   * you only care that some finger was released, not which one.
+   *
+   * <pre>{@code
+   * if (Flixel.touches.anyJustReleased()) {
+   *   releaseButtonHighlight();
+   * }
+   * }</pre>
+   *
+   * @return {@code true} if at least one pointer was just released this frame and input is enabled.
+   */
+  public boolean anyJustReleased() {
+    if (!enabled) {
+      return false;
+    }
+    for (int p = 0; p < maxPointers; p++) {
+      if (list[p].justReleased) {
         return true;
       }
     }
