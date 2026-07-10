@@ -355,8 +355,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
    * debug UI panel.
    */
   private static boolean isCapturedByDebugUI() {
-    FlixelDebugOverlay overlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
-    return overlay != null && overlay.isMouseCapturedByUI();
+    return Flixel.debug != null && Flixel.debug.overlay.isMouseCapturedByUI();
   }
 
   public boolean overlap(@NotNull FlixelObject obj) {

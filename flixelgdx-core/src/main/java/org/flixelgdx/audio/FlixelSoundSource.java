@@ -98,7 +98,7 @@ public final class FlixelSoundSource {
   public FlixelSound create(@Nullable Object group) {
     String resolvedPath = external ? assetKey : FlixelPathsUtil.resolveAudioPath(assetKey);
     Object targetGroup = (group != null) ? group : Flixel.sound.getSfxGroup();
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     FlixelSoundBackend backend = factory.createSound(resolvedPath, (short) 0, targetGroup, external);
     return new FlixelSound(backend);
   }

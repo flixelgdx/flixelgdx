@@ -150,6 +150,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * <p>Call {@link #endFrame()} at the end of the frame so "just pressed/released" detection works
    * next frame.
    */
+  @Override
   public void update() {
     // Intentionally empty: state is maintained by the InputProcessor.
   }
@@ -296,8 +297,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * while debug UI text fields are focused.
    */
   private static boolean isCapturedByDebugUI() {
-    FlixelDebugOverlay overlay = (Flixel.debug != null ? Flixel.debug.overlay : null);
-    return overlay != null && overlay.isKeyboardCapturedByUI();
+    return Flixel.debug != null && Flixel.debug.overlay.isKeyboardCapturedByUI();
   }
 
   /**

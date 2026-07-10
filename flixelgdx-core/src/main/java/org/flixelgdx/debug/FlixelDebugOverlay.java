@@ -298,8 +298,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (Flixel.isDebugMode()) {
       // Raw* so the game loop pause toggle keeps working even while an imgui text field is focused,
       // unless a backend suppresses typable keys while a command field is active (see LWJGL ImGui overlay).
-      if (pauseKey != FlixelKey.NONE && Flixel.keys.rawJustPressed(pauseKey)
-          && !shouldSuppressDebugRawKeybind(pauseKey)) {
+      if (Flixel.keys.rawJustPressed(pauseKey) && !shouldSuppressDebugRawKeybind(pauseKey)) {
         Flixel.game.setGamePaused(!Flixel.game.isGamePaused());
       }
       if (Flixel.game.isGamePaused()) {
@@ -429,12 +428,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // Use the raw* variants so the toggle keys still work even while a Dear ImGui text field
     // (for example, the debug command line) has keyboard focus and the regular justPressed
     // helpers are intentionally suppressed.
-    if (toggleKey != FlixelKey.NONE && Flixel.keys.rawJustPressed(toggleKey)
-        && !shouldSuppressDebugRawKeybind(toggleKey)) {
+    if (Flixel.keys.rawJustPressed(toggleKey) && !shouldSuppressDebugRawKeybind(toggleKey)) {
       toggleVisible();
     }
-    if (drawDebugKey != FlixelKey.NONE && Flixel.keys.rawJustPressed(drawDebugKey)
-        && !shouldSuppressDebugRawKeybind(drawDebugKey)) {
+    if (Flixel.keys.rawJustPressed(drawDebugKey) && !shouldSuppressDebugRawKeybind(drawDebugKey)) {
       toggleDrawDebug();
     }
   }
@@ -540,11 +537,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // input suppression we set up to protect the game's regular input).
     boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
         || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
-    if (alt && cameraCycleLeftKey != FlixelKey.NONE && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
+    if (alt && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
         && !shouldSuppressDebugRawKeybind(cameraCycleLeftKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.size) % cams.size;
     }
-    if (alt && cameraCycleRightKey != FlixelKey.NONE && Flixel.keys.rawJustPressed(cameraCycleRightKey)
+    if (alt && Flixel.keys.rawJustPressed(cameraCycleRightKey)
         && !shouldSuppressDebugRawKeybind(cameraCycleRightKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.size;
     }
@@ -564,7 +561,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     cam.applyLibCameraTransform();
 
-    if (!uiCapturedMouse && cameraPanButton >= 0 && Flixel.mouse.rawPressed(cameraPanButton)) {
+    if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
       if (Flixel.mouse.rawJustPressed(cameraPanButton)) {

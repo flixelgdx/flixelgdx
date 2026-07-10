@@ -44,6 +44,7 @@ import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
+import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.group.FlixelGroupable;
@@ -286,10 +287,10 @@ public final class Flixel {
    * <p>Example:
    * <pre>{@code
    * // Show a blocking error dialog (execution pauses until dismissed).
-   * Flixel.showErrorAlert("Save Failed", "Could not write to disk. Check your permissions.");
+   * Flixel.alert.showErrorAlert("Save Failed", "Could not write to disk. Check your permissions.");
    *
    * // Access the alerter directly for platform-specific behavior.
-   * Flixel.alerter.showInfoAlert("Hello", "Welcome to the game!");
+   * Flixel.alert.showInfoAlert("Hello", "Welcome to the game!");
    * }</pre>
    */
   @NotNull
@@ -1151,13 +1152,13 @@ public final class Flixel {
   }
 
   /**
-   * Clears the active debug overlay reference after it has been disposed.
+   * Resets the debug overlay back to the inert noop after it has been disposed.
    * {@link FlixelGame#dispose()} calls {@link org.flixelgdx.debug.FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
-   * first; this method only nulls the static handle to avoid double-dispose.
+   * first; this method only resets the handle to avoid double-dispose.
    */
   static void clearDebugOverlay() {
     if (debug != null) {
-      debug.overlay = null;
+      debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
     }
   }
 

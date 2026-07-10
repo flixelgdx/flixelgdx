@@ -114,8 +114,9 @@ public class FlixelDebugManager {
   private final Array<FlixelDebugTrackerEntry> trackerEntries = new Array<>(FlixelDebugTrackerEntry[]::new);
 
   /**
-   * The active debug overlay instance, or {@code null} when debug mode is off or the overlay
-   * has not been created yet. Assigned by {@link org.flixelgdx.Flixel Flixel} during startup.
+   * The active debug overlay. Defaults to {@link FlixelNoopDebugOverlay#INSTANCE} so this field
+   * is never {@code null} -- callers do not need a null check. When debug mode starts,
+   * {@link org.flixelgdx.Flixel Flixel} replaces this with a real overlay instance.
    *
    * <p>Access keybinds and visibility via this field:
    * <pre>{@code
@@ -123,8 +124,7 @@ public class FlixelDebugManager {
    * Flixel.debug.overlay.setVisible(true);
    * }</pre>
    */
-  @Nullable
-  public FlixelDebugOverlay overlay;
+  public FlixelDebugOverlay overlay = FlixelNoopDebugOverlay.INSTANCE;
 
   /** The sprite currently selected by the LMB picker, or {@code null}. */
   @Nullable
@@ -141,7 +141,7 @@ public class FlixelDebugManager {
 
   /** Returns {@code true} when the overlay is on screen. */
   public boolean isVisible() {
-    return overlay != null && overlay.isVisible();
+    return overlay.isVisible();
   }
 
   /**
@@ -150,21 +150,17 @@ public class FlixelDebugManager {
    * @param visible {@code true} to show, {@code false} to hide.
    */
   public void setVisible(boolean visible) {
-    if (overlay != null) {
-      overlay.setVisible(visible);
-    }
+    overlay.setVisible(visible);
   }
 
   /** Toggles the overlay visibility. */
   public void toggleVisible() {
-    if (overlay != null) {
-      overlay.toggleVisible();
-    }
+    overlay.toggleVisible();
   }
 
   /** Returns {@code true} when bounding-box drawing (hitboxes) is on. */
   public boolean isDrawDebug() {
-    return overlay != null && overlay.isDrawDebug();
+    return overlay.isDrawDebug();
   }
 
   /**
@@ -173,16 +169,12 @@ public class FlixelDebugManager {
    * @param drawDebug {@code true} to draw, {@code false} to hide.
    */
   public void setDrawDebug(boolean drawDebug) {
-    if (overlay != null) {
-      overlay.setDrawDebug(drawDebug);
-    }
+    overlay.setDrawDebug(drawDebug);
   }
 
   /** Toggles bounding-box drawing. */
   public void toggleDrawDebug() {
-    if (overlay != null) {
-      overlay.toggleDrawDebug();
-    }
+    overlay.toggleDrawDebug();
   }
 
   /**
