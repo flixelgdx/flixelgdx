@@ -41,20 +41,20 @@ import org.jetbrains.annotations.Nullable;
  * Notification API, tab-title attention, the Screen Wake Lock API, the {@code beforeunload}
  * exit guard, and the Clipboard API. Mobile builds use the safe no-op implementation.
  *
- * <p><b>Web notification permission</b>
+ * <h2>Web notification permission</h2>
  *
  * <p>Browsers require explicit user permission before showing notifications. On the web backend,
  * {@link #supportsDesktopNotification()} returns {@code false} until permission has been granted.
- * Call {@link #requestNotificationPermission()} early - ideally during a loading screen or in
- * response to a user gesture - before sending any notifications. On desktop, permission is implicit
+ * Call {@link #requestNotificationPermission()} early, ideally during a loading screen or in
+ * response to a user gesture before sending any notifications. On desktop, permission is implicit
  * and {@link #requestNotificationPermission()} is a no-op.
  *
- * <p><b>Clipboard paste callbacks</b>
+ * <h2>Clipboard paste callbacks</h2>
  *
  * <p>Paste operations are asynchronous. Register handlers on {@link #onTextPasted()} or
  * {@link #onImagePasted()} before calling {@link #pasteFromClipboard()} or
  * {@link #pasteImageFromClipboard()}. The signal fires once the platform has retrieved the data.
- * Handlers may not be called on the GL thread - wrap any libGDX calls with
+ * Handlers may not be called on the GL thread; because of this, wrap any libGDX calls with
  * {@code Gdx.app.postRunnable(...)}.
  *
  * <p>Example:
@@ -64,12 +64,14 @@ import org.jetbrains.annotations.Nullable;
  * Flixel.host.sendNotification("Ready", "Your level finished loading.");
  * Flixel.host.requestAttention();
  *
- * // Clipboard - copy
+ * // Clipboard (copy).
  * Flixel.host.copyToClipboard(saveCode);
  *
- * // Clipboard - paste
+ * // Clipboard (paste).
  * Flixel.host.onTextPasted().add(text -> {
- *     if (text != null) Gdx.app.postRunnable(() -> saveCodeField.setText(text));
+ *   if (text != null) {
+ *     Gdx.app.postRunnable(() -> saveCodeField.setText(text));
+ *   }
  * });
  * Flixel.host.pasteFromClipboard();
  * }</pre>
@@ -114,8 +116,7 @@ public interface FlixelHostIntegration {
    * Sets a message shown to the user when they attempt to close or navigate away from the game.
    *
    * <p>On the web backend this hooks {@code window.beforeunload}. Pass {@code null} to remove the
-   * guard. On desktop this is a no-op since the OS already handles window-close confirmation at the
-   * application level.
+   * guard. On desktop this is a no-op.
    *
    * @param message The warning message, or {@code null} to clear the exit guard.
    */
@@ -203,8 +204,8 @@ public interface FlixelHostIntegration {
   /**
    * Signal dispatched when {@link #pasteFromClipboard()} resolves with text content.
    *
-   * <p>The dispatched value is the pasted text. Handlers may be called off the GL thread -
-   * wrap any libGDX calls with {@code Gdx.app.postRunnable(...)}.
+   * <p>The dispatched value is the pasted text. Handlers may be called off the GL thread.
+   * Wrap any libGDX calls with {@code Gdx.app.postRunnable(...)}.
    *
    * @return The signal; never {@code null}.
    */
@@ -216,7 +217,7 @@ public interface FlixelHostIntegration {
    *
    * <p>The dispatched {@link FlixelGraphic} is an owned graphic at reference count zero. Call
    * {@link FlixelGraphic#retain()} to keep it alive past the handler. Handlers may be called
-   * off the GL thread - wrap any libGDX calls with {@code Gdx.app.postRunnable(...)}.
+   * off the GL thread. Wrap any libGDX calls with {@code Gdx.app.postRunnable(...)}.
    *
    * @return The signal; never {@code null}.
    */
