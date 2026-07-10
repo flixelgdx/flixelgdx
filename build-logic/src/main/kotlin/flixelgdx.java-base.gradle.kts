@@ -8,9 +8,9 @@
  */
 
 plugins {
-    eclipse
-    idea
-    id("com.diffplug.spotless")
+  eclipse
+  idea
+  id("com.diffplug.spotless")
 }
 
 val groupId: String by project
@@ -22,22 +22,22 @@ version = projectVersion
 eclipse.project.name = project.name
 
 idea {
-    module {
-        outputDir = file("build/classes/java/main")
-        testOutputDir = file("build/classes/java/test")
-    }
+  module {
+    outputDir = file("build/classes/java/main")
+    testOutputDir = file("build/classes/java/test")
+  }
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
+  options.encoding = "UTF-8"
 }
 
 spotless {
-    java {
-        eclipse("4.33").configFile("${rootDir}/gradle/spotless/eclipse-formatter.xml")
-        importOrder("com", "org", "io", "java", "javax", "jdk", "", "\\#")
-        removeUnusedImports()
-        endWithNewline()
-        trimTrailingWhitespace()
-    }
+  java {
+    eclipse("4.33").configFile("${rootDir}/gradle/spotless/eclipse-formatter.xml")
+    importOrder("com", "org", "io", "java", "javax", "jdk", "", "\\#")
+    removeUnusedImports()
+    endWithNewline()
+    trimTrailingWhitespace()
+  }
 }

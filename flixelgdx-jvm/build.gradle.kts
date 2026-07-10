@@ -1,8 +1,8 @@
 plugins {
-    id("flixelgdx.java-library")
+  id("flixelgdx.java-library")
 }
 
 dependencies {
-    api(project(":flixelgdx-common"))
-    implementation(libs.jetbrains.annotations)
+  api(project(":flixelgdx-common"))
+  implementation(libs.jetbrains.annotations)
 }
