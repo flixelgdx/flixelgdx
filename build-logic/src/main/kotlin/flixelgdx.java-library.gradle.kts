@@ -2,11 +2,9 @@
  * Convention for FlixelGDX Java library modules.
  *
  * <p>Applies {@code flixelgdx.java-base} for shared setup, then layers on:
- * Java 17 toolchain, JPMS module attributes for Eclipse, Javadoc settings with doclint,
- * and the Vanniktech Maven publish pipeline targeting Sonatype Central Portal.
+ * Java 17 toolchain, Javadoc settings with doclint, and the Vanniktech Maven publish
+ * pipeline targeting Sonatype Central Portal.
  */
-
-import org.gradle.plugins.ide.eclipse.model.Library
 
 plugins {
   id("flixelgdx.java-base")
@@ -17,16 +15,6 @@ plugins {
 java {
   toolchain {
     languageVersion = JavaLanguageVersion.of(17)
-  }
-}
-
-// Mark all library JARs as JPMS modules in Eclipse so automatic modules from libGDX resolve
-// consistently with flixelgdx-core's module-path compile setup.
-eclipse.classpath.file {
-  whenMerged { classpath: org.gradle.plugins.ide.eclipse.model.Classpath ->
-    classpath.entries.filterIsInstance<Library>().forEach {
-      it.entryAttributes["module"] = "true"
-    }
   }
 }
 
@@ -42,7 +30,6 @@ tasks.withType<Javadoc>().configureEach {
     }
   }
   setFailOnError(true)
-  modularity.inferModulePath = false
 }
 
 // JitPack rewrites Gradle module metadata and drops classifier compatibility data, causing
