@@ -37,6 +37,7 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -1605,16 +1606,15 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Returns {@code true} if an axis-aligned rectangle in view space overlaps this camera's visible
    * region.
    *
-   * <p>The coordinates must already be in view space - that is, converted by
+   * <p>The coordinates must already be in view space; that is, converted by
    * {@link #worldToViewX(float, float)} and {@link #worldToViewY(float, float)} before being
    * passed here. The check is a simple AABB overlap against the full visible range
    * {@code [0, viewportWidth/zoom] x [0, viewportHeight/zoom]} and does not account for sprite
    * rotation, making it a conservative test that errs on the side of drawing.
    *
-   * <p>For viewports that extend the world beyond the design dimensions (e.g.
-   * {@link com.badlogic.gdx.utils.viewport.ExtendViewport}), the visible range will be larger
-   * than the camera's design width and height, so objects placed in that extended area are not
-   * incorrectly culled.
+   * <p>For viewports that extend the world beyond the design dimensions (e.g. {@link ExtendViewport}),
+   * the visible range will be larger than the camera's design width and height, so objects placed in that
+   * extended area are not incorrectly culled.
    *
    * @param viewX Left edge of the rectangle in view space.
    * @param viewY Bottom edge of the rectangle in view space.
