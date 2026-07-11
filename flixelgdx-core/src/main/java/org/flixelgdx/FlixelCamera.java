@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>In a full FlixelGDX game, cameras are usually managed by {@link FlixelGame}.
  * You can also use {@code FlixelCamera} in a plain libGDX {@code ApplicationListener}. When
- * {@link Flixel#getGame()} is {@code null}, window size and follow frame rate fall back to
+ * {@link Flixel#game} is {@code null}, window size and follow frame rate fall back to
  * {@link Gdx#graphics} (call {@link #update(int, int, boolean)} from {@code resize} as usual).
  *
  * <p>Every camera wraps a libGDX {@link Camera} and {@link Viewport} internally. By default, an
@@ -289,7 +289,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * When {@code true}, {@link #update(int, int, boolean)} fits this camera into the screen
    * rectangle {@code (x, y, width, height)} instead of the full window. When {@code false},
-   * placement is inferred when {@link Flixel#getGame()} has multiple cameras
+   * placement is inferred when {@link Flixel#game} has multiple cameras
    * (horizontal/vertical strips, picture-in-picture, etc.).
    */
   public boolean useSubScreenViewport = false;
@@ -463,7 +463,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * <p>Drawables use view (batch) coordinates from {@link #worldToViewX(float, float)} and
    * {@link #worldToViewY(float, float)} (see {@link FlixelSprite#draw}).
-   * The orthographic camera looks at the center of that space ({@code viewW/2, viewH/2}).
+   * The camera is positioned at the center of the full visible world so that view-space (0, 0)
+   * lands at the screen's top-left corner. For viewports that extend the world beyond the design
+   * dimensions (e.g. {@link com.badlogic.gdx.utils.viewport.ExtendViewport} on Android),
+   * the camera accounts for the extended area so world (0, 0) still maps to the screen edge
+   * and {@link Flixel#getWidth()} correctly reflects the full visible width.
    */
   public void applyLibCameraTransform() {
     // TODO: Find a way to avoid explicit casting.
@@ -475,8 +479,12 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       }
     }
 
-    float camX = getViewWidth() / 2f + shakeOffsetX;
-    float camY = getViewHeight() / 2f + shakeOffsetY;
+    // Use the viewport's actual world dimensions (camera.viewportWidth/Height) rather than the
+    // design dimensions (width/height) so that viewports that extend beyond the design size
+    // (e.g. ExtendViewport on Android) correctly left-align world (0, 0) with the screen edge.
+    // Dividing by zoom mirrors the ortho.zoom = 1/zoom applied in applyZoom().
+    float camX = camera.viewportWidth / (2f * zoom) + shakeOffsetX;
+    float camY = camera.viewportHeight / (2f * zoom) + shakeOffsetY;
     camera.position.set(camX, camY, 0);
     camera.update();
   }
@@ -1570,9 +1578,14 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * <p>The coordinates must already be in view space - that is, converted by
    * {@link #worldToViewX(float, float)} and {@link #worldToViewY(float, float)} before being
-   * passed here. The check is a simple AABB overlap against {@code [0, viewWidth] x [0, viewHeight]}
-   * and does not account for sprite rotation, making it a conservative test that errs on the side
-   * of drawing.
+   * passed here. The check is a simple AABB overlap against the full visible range
+   * {@code [0, viewportWidth/zoom] x [0, viewportHeight/zoom]} and does not account for sprite
+   * rotation, making it a conservative test that errs on the side of drawing.
+   *
+   * <p>For viewports that extend the world beyond the design dimensions (e.g.
+   * {@link com.badlogic.gdx.utils.viewport.ExtendViewport}), the visible range will be larger
+   * than the camera's design width and height, so objects placed in that extended area are not
+   * incorrectly culled.
    *
    * @param viewX Left edge of the rectangle in view space.
    * @param viewY Bottom edge of the rectangle in view space.
@@ -1581,8 +1594,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @return {@code true} if the rectangle is at least partially visible.
    */
   public boolean isInView(float viewX, float viewY, float width, float height) {
-    return viewX + width > 0f && viewX < getViewWidth()
-        && viewY + height > 0f && viewY < getViewHeight();
+    // Use the viewport's actual visible world size rather than the design size so that viewports
+    // wider than the design (e.g. ExtendViewport) do not incorrectly cull objects in the
+    // extended region. camera.viewportWidth / zoom matches the world range the camera covers.
+    return viewX + width > 0f && viewX < camera.viewportWidth / zoom
+        && viewY + height > 0f && viewY < camera.viewportHeight / zoom;
   }
 
   /**
