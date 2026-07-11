@@ -275,7 +275,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private boolean fullscreenChangeInProgress = false;
 
   /**
-   * When {@code true}, {@link Flixel#getState()} was sent {@link FlixelState#pause()} for a paired app or window pause
+   * When {@code true}, {@link Flixel#state} was sent {@link FlixelState#pause()} for a paired app or window pause
    * and {@link FlixelState#resume()} has not yet been dispatched. Used so duplicate callbacks (such as minimize plus
    * focus lost) only run state hooks once.
    */
@@ -503,34 +503,32 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     FlixelActionSets.update(elapsed);
 
-    if (!gamePaused) {
-      FlixelTween.updateTweens(elapsed);
-      FlixelTimer.getGlobalManager().update(elapsed * Flixel.timeScale);
+    FlixelTween.updateTweens(elapsed);
+    FlixelTimer.getGlobalManager().update(elapsed * Flixel.timeScale);
 
-      // Walk the state/substate chain. Each state in the chain is updated only
-      // if it is the active (innermost) state or if its persistentUpdate flag is true.
-      FlixelState current = Flixel.state;
-      while (current != null) {
-        FlixelState sub = current.getSubState();
-        boolean hasSubState = (sub != null);
+    // Walk the state/substate chain. Each state in the chain is updated only
+    // if it is the active (innermost) state or if its persistentUpdate flag is true.
+    FlixelState current = Flixel.state;
+    while (current != null) {
+      FlixelState sub = current.getSubState();
+      boolean hasSubState = (sub != null);
 
-        if (!hasSubState || current.persistentUpdate) {
-          current.update(elapsed);
-        }
-
-        current = sub;
+      if (!hasSubState || current.persistentUpdate) {
+        current.update(elapsed);
       }
 
-      // Update all cameras.
-      for (FlixelCamera camera : cameras) {
-        camera.update(elapsed);
-      }
+      current = sub;
+    }
 
-      if (overlayGroup != null && overlayEnabled) {
-        overlayGroup.update(elapsed);
-        if (overlayCamera != null) {
-          overlayCamera.update(elapsed);
-        }
+    // Update all cameras.
+    for (FlixelCamera camera : cameras) {
+      camera.update(elapsed);
+    }
+
+    if (overlayGroup != null && overlayEnabled) {
+      overlayGroup.update(elapsed);
+      if (overlayCamera != null) {
+        overlayCamera.update(elapsed);
       }
     }
 
@@ -726,7 +724,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     windowSize.y = Gdx.graphics.getHeight();
     fullscreen = Gdx.graphics.isFullscreen();
 
-    update(elapsed);
+    if (!gamePaused && !stateLifecyclePauseDispatched) {
+      update(elapsed);
+    }
     draw(batch);
 
     // Finalize input frame AFTER user update hooks run, so justPressed()/justReleased() checks
