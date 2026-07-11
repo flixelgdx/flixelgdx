@@ -46,6 +46,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Desktop {@link FlixelHostIntegration}: freedesktop or Zenity notifications on Linux,
@@ -61,6 +64,8 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
 
   @Nullable
   private Process wakeLockProcess;
+  @Nullable
+  private ScheduledExecutorService screensaverResetScheduler;
 
   @Override
   public void requestNotificationPermission() {}
@@ -95,7 +100,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
       return;
     }
     if (awake) {
-      if (wakeLockProcess != null) {
+      if (wakeLockProcess != null || screensaverResetScheduler != null) {
         return;
       }
       if (isMac()) {
@@ -105,8 +110,23 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
             "systemd-inhibit", "--what=idle:sleep",
             "--who=FlixelGDX", "--why=Game",
             "--mode=block", "sleep", "infinity"));
+        // systemd-inhibit prevents system sleep but does not reset the screensaver's own idle
+        // timer (e.g. cinnamon-screensaver runs independently). Poke xdg-screensaver reset
+        // periodically so the screensaver never reaches its activation threshold.
+        screensaverResetScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+          Thread t = new Thread(r, "flixelwakelock");
+          t.setDaemon(true);
+          return t;
+        });
+        screensaverResetScheduler.scheduleAtFixedRate(
+            () -> tryStartProcess(new ProcessBuilder("xdg-screensaver", "reset")),
+            0, 50, TimeUnit.SECONDS);
       }
     } else {
+      if (screensaverResetScheduler != null) {
+        screensaverResetScheduler.shutdownNow();
+        screensaverResetScheduler = null;
+      }
       if (wakeLockProcess != null) {
         wakeLockProcess.destroyForcibly();
         wakeLockProcess = null;
