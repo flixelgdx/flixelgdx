@@ -87,6 +87,11 @@ public final class FlixelSoundSource {
     return external;
   }
 
+  /** Returns whether this source uses an external (absolute) path. */
+  public boolean getExternal() {
+    return external;
+  }
+
   /**
    * Creates a new playable {@link FlixelSound} instance using the provided
    * group (or the default SFX group if {@code null}).

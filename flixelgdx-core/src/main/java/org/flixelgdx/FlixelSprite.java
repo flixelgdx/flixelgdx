@@ -874,6 +874,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return antialiasing;
   }
 
+  /** Returns whether linear texture filtering (antialiasing) is enabled for this sprite. */
+  public boolean getAntialiasing() {
+    return antialiasing;
+  }
+
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
@@ -963,7 +968,17 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return flipX;
   }
 
+  /** Returns whether this sprite is flipped horizontally. */
+  public boolean getFlipX() {
+    return flipX;
+  }
+
   public boolean isFlipY() {
+    return flipY;
+  }
+
+  /** Returns whether this sprite is flipped vertically. */
+  public boolean getFlipY() {
     return flipY;
   }
 

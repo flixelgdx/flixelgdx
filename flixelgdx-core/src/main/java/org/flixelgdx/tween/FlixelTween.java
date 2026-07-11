@@ -1030,7 +1030,17 @@ public abstract class FlixelTween implements Pool.Poolable {
     return finished;
   }
 
+  /** Returns whether this tween has completed all of its iterations. */
+  public boolean getFinished() {
+    return finished;
+  }
+
   public boolean isActive() {
+    return active;
+  }
+
+  /** Returns whether this tween is currently active and updating. */
+  public boolean getActive() {
     return active;
   }
 

@@ -1338,6 +1338,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return transparentFramebufferRequested;
   }
 
+  /** Returns whether an alpha-capable framebuffer was requested at launch. */
+  public boolean getTransparentFramebufferRequested() {
+    return transparentFramebufferRequested;
+  }
+
   /**
    * Requests an alpha-capable GLFW framebuffer on LWJGL3 before the desktop launcher runs. Default {@code true}. Set {@code false}
    * if you must avoid framebuffer alpha (some drivers) or never want desktop compositing. When {@code false}, toggling
@@ -1353,6 +1358,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
    */
   public boolean isTransparencyActive() {
+    return desktopTransparencyActive;
+  }
+
+  /** Returns {@code true} after desktop transparency was applied via {@link #applyBackdropForDesktopTransparency(boolean)}. */
+  public boolean getTransparencyActive() {
     return desktopTransparencyActive;
   }
 
@@ -1481,11 +1491,26 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return gamePaused;
   }
 
+  /** Returns whether the game is currently paused. */
+  public boolean getGamePaused() {
+    return gamePaused;
+  }
+
   public boolean isClosing() {
     return isClosing;
   }
 
+  /** Returns whether the game is in the process of closing. */
+  public boolean getClosing() {
+    return isClosing;
+  }
+
   public boolean isClosed() {
+    return isClosed;
+  }
+
+  /** Returns whether the game window has fully closed. */
+  public boolean getClosed() {
     return isClosed;
   }
 
@@ -1502,6 +1527,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return vsync;
   }
 
+  /** Returns whether vertical sync is enabled. */
+  public boolean getVsync() {
+    return vsync;
+  }
+
   public void setVsync(boolean vsync) {
     this.vsync = vsync;
     Gdx.graphics.setVSync(vsync);
@@ -1511,12 +1541,22 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return fullscreen;
   }
 
+  /** Returns whether the game is currently running in fullscreen mode. */
+  public boolean getFullscreen() {
+    return fullscreen;
+  }
+
   public void setWindowSize(Vector2 newSize) {
     viewSize = newSize;
     Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
   }
 
   public boolean isGlobalOverlayEnabled() {
+    return overlayEnabled;
+  }
+
+  /** Returns whether the global overlay camera is enabled. */
+  public boolean getGlobalOverlayEnabled() {
     return overlayEnabled;
   }
 

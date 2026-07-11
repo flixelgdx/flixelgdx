@@ -148,6 +148,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
     return exists;
   }
 
+  /** Returns whether this object exists in the world. */
+  public boolean getExists() {
+    return exists;
+  }
+
   @Override
   public void setExists(boolean exists) {
     this.exists = exists;
@@ -158,6 +163,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
     return active;
   }
 
+  /** Returns whether this object is active and will be updated each frame. */
+  public boolean getActive() {
+    return active;
+  }
+
   @Override
   public void setActive(boolean active) {
     this.active = active;
@@ -165,6 +175,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
 
   @Override
   public boolean isVisible() {
+    return visible;
+  }
+
+  /** Returns whether this object is visible and will be drawn each frame. */
+  public boolean getVisible() {
     return visible;
   }
 
@@ -180,6 +195,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
 
   @Override
   public boolean isKilled() {
+    return !exists;
+  }
+
+  /** Returns whether this object has been killed (i.e. does not exist). */
+  public boolean getKilled() {
     return !exists;
   }
 

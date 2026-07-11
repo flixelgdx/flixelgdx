@@ -287,6 +287,11 @@ public class FlixelShader extends FlixelBasic {
     return program != null && program.isCompiled();
   }
 
+  /** Returns whether this shader compiled without errors and is ready to use. */
+  public boolean getCompiled() {
+    return program != null && program.isCompiled();
+  }
+
   /**
    * Returns the compilation log from the underlying {@link ShaderProgram}, useful for
    * diagnosing compilation errors. Returns an empty string if the program is {@code null}.

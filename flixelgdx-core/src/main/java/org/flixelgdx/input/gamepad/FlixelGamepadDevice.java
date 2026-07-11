@@ -59,6 +59,11 @@ public final class FlixelGamepadDevice {
     return manager.isSlotConnected(id);
   }
 
+  /** Returns whether this gamepad slot currently maps to a connected controller. */
+  public boolean getConnected() {
+    return manager.isSlotConnected(id);
+  }
+
   /**
    * Model detected for this slot the last time the slot was (re)bound.
    *

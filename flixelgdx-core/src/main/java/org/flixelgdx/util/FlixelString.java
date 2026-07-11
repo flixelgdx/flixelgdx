@@ -167,6 +167,11 @@ public class FlixelString implements CharSequence {
     return buffer.isEmpty();
   }
 
+  /** Returns whether the buffer contains no characters. */
+  public boolean getEmpty() {
+    return buffer.isEmpty();
+  }
+
   /**
    * Replaces the entire buffer with a copy of {@code text}.
    *

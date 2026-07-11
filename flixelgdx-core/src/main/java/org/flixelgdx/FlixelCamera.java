@@ -1748,13 +1748,28 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     return flashActive;
   }
 
+  /** Returns {@code true} if a flash effect is currently active on this camera. */
+  public boolean getFlashActive() {
+    return flashActive;
+  }
+
   /** Returns {@code true} if a fade effect is currently active on this camera. */
   public boolean isFadeActive() {
     return fadeActive;
   }
 
+  /** Returns {@code true} if a fade effect is currently active on this camera. */
+  public boolean getFadeActive() {
+    return fadeActive;
+  }
+
   /** Returns {@code true} if a shake effect is currently active on this camera. */
   public boolean isShakeActive() {
+    return shakeActive;
+  }
+
+  /** Returns {@code true} if a shake effect is currently active on this camera. */
+  public boolean getShakeActive() {
     return shakeActive;
   }
 

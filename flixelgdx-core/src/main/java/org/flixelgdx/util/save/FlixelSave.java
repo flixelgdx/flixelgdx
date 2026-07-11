@@ -132,6 +132,11 @@ public class FlixelSave implements FlixelDestroyable {
     return bound && preferences != null;
   }
 
+  /** Returns whether this save is bound to a named preferences file and ready to use. */
+  public boolean getBound() {
+    return bound && preferences != null;
+  }
+
   @NotNull
   public String getName() {
     return boundName;
@@ -205,6 +210,11 @@ public class FlixelSave implements FlixelDestroyable {
   }
 
   public boolean isEmpty() {
+    return data.size == 0;
+  }
+
+  /** Returns whether this save contains no stored data. */
+  public boolean getEmpty() {
     return data.size == 0;
   }
 

@@ -113,8 +113,18 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
     return content != null || assets.getManager().isLoaded(path, rawType);
   }
 
+  /** Returns whether this asset has been loaded into memory. */
+  public boolean getLoaded() {
+    return isLoaded();
+  }
+
   @Override
   public boolean isPersist() {
+    return persist;
+  }
+
+  /** Returns whether this asset is marked to persist across state transitions. */
+  public boolean getPersist() {
     return persist;
   }
 
