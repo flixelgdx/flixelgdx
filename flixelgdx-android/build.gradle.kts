@@ -112,6 +112,7 @@ dependencies {
   }
   api(libs.gdx.backend.android)
   api(libs.gdx.controllers.android)
+  implementation(libs.jetbrains.annotations)
 }
 
 // Unpacks the .so files bundled at the root of libGDX's native platform jars into this

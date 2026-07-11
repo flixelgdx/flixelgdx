@@ -275,7 +275,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private boolean fullscreenChangeInProgress = false;
 
   /**
-   * When {@code true}, {@link Flixel#getState()} was sent {@link FlixelState#pause()} for a paired app or window pause
+   * When {@code true}, {@link Flixel#state} was sent {@link FlixelState#pause()} for a paired app or window pause
    * and {@link FlixelState#resume()} has not yet been dispatched. Used so duplicate callbacks (such as minimize plus
    * focus lost) only run state hooks once.
    */
@@ -503,7 +503,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     FlixelActionSets.update(elapsed);
 
-    if (!gamePaused) {
+    if (!gamePaused && !stateLifecyclePauseDispatched) {
       FlixelTween.updateTweens(elapsed);
       FlixelTimer.getGlobalManager().update(elapsed * Flixel.timeScale);
 
@@ -702,18 +702,18 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Updates the game's global and internal {@link #update(float)} and {@link FlixelDrawable#draw(FlixelBatch)} methods, with elapsed time clamped
-   * to the min and max values to prevent major lag spikes.
+   * Updates the game's global and internal {@link #update(float)} and {@link #draw(FlixelBatch)} methods, with
+   * elapsed time clamped to the min and max values to prevent major lag spikes.
    *
-   * <p>This method is called automatically by libGDX's {@link ApplicationListener#render()} method when the game is
-   * running, so it is not necessary to override this method in most cases. However, it can be overridden to
-   * perform custom updating/rendering before the game is updated/rendered.
+   * <p>This method is called automatically by libGDX's {@link ApplicationListener#render()} method when
+   * the game is running.
    *
-   * <p>You should not (and cannot) override this method. You are encouraged to override either {@link #update(float)}
-   * or {@link FlixelDrawable#draw(FlixelBatch)} instead, as they separate logic and rendering correctly.
+   * <p>You should not (and cannot) override this method. You are encouraged to override either
+   * {@link #update(float)} or {@link #draw(FlixelBatch)} instead, as they separate logic
+   * and rendering correctly.
    *
    * @see #update(float)
-   * @see FlixelDrawable#draw(FlixelBatch)
+   * @see #draw(FlixelBatch)
    * @see ApplicationListener#render()
    */
   @Override

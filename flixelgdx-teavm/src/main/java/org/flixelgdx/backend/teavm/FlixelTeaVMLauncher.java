@@ -78,14 +78,22 @@ import java.util.function.Consumer;
  * <h2>Platform Notes</h2>
  *
  * <p>File logging is intentionally disabled on the web backend because browsers do not expose a host filesystem.
- * The {@link org.flixelgdx.logging.FlixelLogFileHandler FlixelLogFileHandler} is not registered, so {@link FlixelLogger#startFileLogging()} is a safe no-op.
- * Console output uses {@link Flixel#logConsoleSink} with a styled {@code console} writer so log lines appear with readable colors
- * in the browser; ANSI {@code System.out} is not used on web.
+ * The {@link org.flixelgdx.logging.FlixelLogFileHandler FlixelLogFileHandler} is not registered, so
+ * {@link FlixelLogger#startFileLogging()} is a safe no-op. Console output uses {@link Flixel#logConsoleSink} with
+ * a styled {@code console} writer so log lines appear with readable colors in the browser; ANSI {@code System.out}
+ * is not used on web.
  *
  * <p>When {@code Gdx.app.exit()} is called, the launcher overrides {@code exit()} to invoke the browser's
  * {@code window.close()}. Browsers only close the tab when it was opened programmatically via {@code window.open()};
  * for tabs the user opened directly, the browser silently ignores the request. This is a browser security
  * restriction and cannot be bypassed from JavaScript.
+ *
+ * <p>Web games always pause when their tab is hidden, regardless of the auto-pause setting. The underlying
+ * {@code WebApplication} hooks {@code visibilitychange} unconditionally, and browsers throttle
+ * {@code requestAnimationFrame} heavily in background tabs regardless. This is standard browser behavior
+ * and is not something FlixelGDX can override. If your game needs to account for time spent in the
+ * background (idle progression, session timers, and similar), record a timestamp in
+ * {@link FlixelGame#onFocusLost()} and compute the delta when {@link FlixelGame#onFocusGained()} fires.
  *
  * @see FlixelGame
  * @see WebApplicationConfiguration
@@ -179,6 +187,7 @@ public class FlixelTeaVMLauncher {
       @Nullable Consumer<WebApplicationConfiguration> configCustomizer,
       @Nullable Runnable onBeforeInitialize) {
     Flixel.alert = new FlixelTeaVMAlerter();
+    Flixel.host = new FlixelTeaVMHostIntegration();
     Flixel.stackTraceProvider = new TeaVMStackTraceProvider();
     Flixel.logConsoleSink = FlixelTeaVMLogConsole::emit;
     Flixel.soundFactory = new FlixelTeaVMSoundHandler();
