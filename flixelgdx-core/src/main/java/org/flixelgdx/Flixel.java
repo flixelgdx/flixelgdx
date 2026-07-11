@@ -1234,6 +1234,7 @@ public final class Flixel {
         m.setAntialiasing(enabled);
       }
     }
+    members.end();
   }
 
   /**
