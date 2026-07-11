@@ -23,7 +23,6 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
@@ -47,6 +46,7 @@ import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -1153,7 +1153,7 @@ public final class Flixel {
 
   /**
    * Resets the debug overlay back to the inert noop after it has been disposed.
-   * {@link FlixelGame#dispose()} calls {@link org.flixelgdx.debug.FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
+   * {@link FlixelGame#dispose()} calls {@link FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
    * first; this method only resets the handle to avoid double-dispose.
    */
   static void clearDebugOverlay() {
@@ -1163,45 +1163,7 @@ public final class Flixel {
   }
 
   /**
-   * Returns the Java heap memory currently in use, in bytes.
-   *
-   * @return The Java heap memory currently in use, in bytes.
-   */
-  public static long getJavaHeapUsedBytes() {
-    Runtime rt = Runtime.getRuntime();
-    return rt.totalMemory() - rt.freeMemory();
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in bytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in bytes.
-   */
-  public static long getJavaHeapTotalBytes() {
-    return Runtime.getRuntime().totalMemory();
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in bytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in bytes.
-   */
-  public static long getJavaHeapMaxBytes() {
-    return Runtime.getRuntime().maxMemory();
-  }
-
-  /**
-   * Returns an estimate of the native heap usage in bytes as reported by libGDX.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   */
-  public static long getNativeHeapUsedBytes() {
-    return Gdx.app != null ? Gdx.app.getNativeHeap() : 0L;
-  }
-
-  /**
-   * The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch) FlixelGame.draw(Batch)},
+   * The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)},
    * or {@code null} if not in a camera pass.
    */
   @Nullable
@@ -1239,10 +1201,14 @@ public final class Flixel {
   }
 
   /**
-   * Sets antialiasing to be applied to all {@link FlixelSprite} objects.
-   * Automatically updates the current state.
+   * Sets antialiasing to be applied to all {@link FlixelSprite} / {@link FlixelAntialiasable} objects.
    *
-   * @param enabled If antialiasing should be applied to all current and any future {@link FlixelSprite} objects.
+   * <p>Calling this function automatically updates the current state. Note that if you want this
+   * value to actually apply to any {@link FlixelSprite} / {@link FlixelAntialiasable} object being
+   * added to a {@link FlixelState}, set {@link #applyAntialiasingOnStateAdd} to {@code true}.
+   *
+   * @param enabled If antialiasing should be applied to all current
+   *     {@link FlixelSprite} / {@link FlixelAntialiasable} objects.
    */
   public static void setAntialiasing(boolean enabled) {
     if (enabled == antialiasing) {
@@ -1264,8 +1230,8 @@ public final class Flixel {
       if (member == null) {
         continue;
       }
-      if (member instanceof FlixelAntialiasable sprite) {
-        sprite.setAntialiasing(enabled);
+      if (member instanceof FlixelAntialiasable m) {
+        m.setAntialiasing(enabled);
       }
     }
   }

@@ -223,12 +223,25 @@ public class FlixelTeaVMLauncher {
       }
 
       @Override
+      public long getJavaHeap() {
+        return (long) jsHeapUsedBytes();
+      }
+
+      @Override
       public void exit() {
         super.exit();
         closeWindow();
       }
     };
   }
+
+  /**
+   * Returns the used JavaScript heap size in bytes as reported by {@code performance.memory},
+   * or 0 if the API is not available (non-Chromium browsers).
+   */
+  @JSBody(
+      script = "if (typeof performance !== 'undefined' && performance.memory) { return performance.memory.usedJSHeapSize; } return 0;")
+  private static native double jsHeapUsedBytes();
 
   /**
    * Calls the browser's {@code window.close()} to close the current tab.

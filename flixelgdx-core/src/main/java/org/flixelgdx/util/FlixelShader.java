@@ -48,7 +48,7 @@ import org.flixelgdx.FlixelCamera;
  *     libGDX {@link com.badlogic.gdx.graphics.g2d.SpriteBatch SpriteBatch} attribute contract.
  *     Fragment shaders receive the camera output as {@code uniform sampler2D u_texture} via
  *     the {@code v_texCoords} varying.</li>
- *   <li><b>HaxeFlixel mode} ({@link #fromHaxeFlixel(String)})</b>: write or copy a filter
+ *   <li><b>HaxeFlixel mode ({@link #fromHaxeFlixel(String)})</b>: write or copy a filter
  *     shader from HaxeFlixel using {@code #pragma header}, {@code #pragma body},
  *     {@code bitmap}, {@code openfl_TextureCoordv}, and {@code flixel_texture2D(...)}. The
  *     preprocessor rewrites those to libGDX-compatible names before compilation.</li>
