@@ -68,7 +68,7 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   public void pasteFromClipboard() {}
 
   @Override
-  public boolean supportsDesktopNotification() {
+  public boolean supportsNotifications() {
     return false;
   }
 

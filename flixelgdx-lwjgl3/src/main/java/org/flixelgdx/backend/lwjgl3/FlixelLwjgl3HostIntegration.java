@@ -120,7 +120,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   @Override
   public void sendNotification(@Nullable String title, @NotNull String message) {
     Objects.requireNonNull(message, "message");
-    if (!supportsDesktopNotification()) {
+    if (!supportsNotifications()) {
       return;
     }
     if (isLinux()) {
@@ -161,7 +161,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   }
 
   @Override
-  public boolean supportsDesktopNotification() {
+  public boolean supportsNotifications() {
     return !GraphicsEnvironment.isHeadless();
   }
 

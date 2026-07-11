@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Web notification permission</h2>
  *
  * <p>Browsers require explicit user permission before showing notifications. On the web backend,
- * {@link #supportsDesktopNotification()} returns {@code false} until permission has been granted.
+ * {@link #supportsNotifications()} returns {@code false} until permission has been granted.
  * Call {@link #requestNotificationPermission()} early, ideally during a loading screen or in
  * response to a user gesture before sending any notifications. On desktop, permission is implicit
  * and {@link #requestNotificationPermission()} is a no-op.
@@ -83,7 +83,7 @@ public interface FlixelHostIntegration {
    *
    * <p>On the web backend this triggers the browser permission dialog. It must be called in
    * response to a user gesture (button press, key press, etc.) or the browser will silently
-   * ignore it. Once granted, {@link #supportsDesktopNotification()} returns {@code true} and
+   * ignore it. Once granted, {@link #supportsNotifications()} returns {@code true} and
    * subsequent {@link #sendNotification(String, String)} calls will display toasts.
    *
    * <p>On desktop, permission is implicit and this method does nothing.
@@ -125,7 +125,7 @@ public interface FlixelHostIntegration {
    * Windows, Notification Center on macOS, D-Bus or libnotify on Linux, browser toasts on web).
    *
    * <p>On the web backend, notifications require prior permission. Call
-   * {@link #requestNotificationPermission()} first and confirm {@link #supportsDesktopNotification()}
+   * {@link #requestNotificationPermission()} first and confirm {@link #supportsNotifications()}
    * returns {@code true} before calling this method.
    *
    * @param title Short title, or {@code null} to use a blank title when the OS allows it.
@@ -158,7 +158,7 @@ public interface FlixelHostIntegration {
    *     work on this platform session. On the web backend, returns {@code true} only after
    *     {@link #requestNotificationPermission()} has been granted by the user.
    */
-  boolean supportsDesktopNotification();
+  boolean supportsNotifications();
 
   /**
    * @return {@code true} if {@link #keepScreenAwake(boolean)} is supported on this platform.
@@ -181,5 +181,4 @@ public interface FlixelHostIntegration {
    */
   @NotNull
   FlixelSignal<String> onTextPasted();
-
 }
