@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -35,6 +36,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -401,7 +403,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     this.initialZoom = this.zoom;
     applyZoom();
 
-    update(resolveWindowWidth(), resolveWindowHeight(), centerCameraOnResize);
+    update(resolveActualScreenWidth(), resolveActualScreenHeight(), centerCameraOnResize);
   }
 
   /**
@@ -458,7 +460,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Pushes {@link #scrollX}/{@link #scrollY}, zoom, angle, and shake offsets into the underlying libGDX {@link Camera}.
    *
    * <p>Call this after mutating scroll outside {@link #update(float)} (e.g., during a debug pause pan) and before
-   * {@link Viewport#unproject(com.badlogic.gdx.math.Vector2)} or any rendering.
+   * {@link Viewport#unproject(Vector2)} or any rendering.
    * Safe to call every frame; {@link #update(float)} ends with this automatically.
    *
    * <p>Drawables use view (batch) coordinates from {@link #worldToViewX(float, float)} and
@@ -1101,7 +1103,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Called by the game's front-end on window resize. Repositions and resizes the internal viewport.
    */
   public void onResize() {
-    update(resolveWindowWidth(), resolveWindowHeight(), centerCameraOnResize);
+    update(resolveActualScreenWidth(), resolveActualScreenHeight(), centerCameraOnResize);
   }
 
   /**
@@ -1338,6 +1340,33 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       return Math.max(1, Gdx.graphics.getHeight());
     }
     return 1;
+  }
+
+  /**
+   * Returns the actual screen width in pixels from {@link Graphics}, falling back to
+   * {@link #resolveWindowWidth()} when no GL context exists (e.g. unit tests).
+   *
+   * <p>This differs from {@link #resolveWindowWidth()}, which returns the game's design width.
+   * Use this method wherever a viewport needs the real screen dimensions, not the design resolution.
+   */
+  private static int resolveActualScreenWidth() {
+    if (Gdx.graphics != null) {
+      return Math.max(1, Gdx.graphics.getWidth());
+    }
+    return resolveWindowWidth();
+  }
+
+  /**
+   * Returns the actual screen height in pixels from {@link Graphics}, falling back to
+   * {@link #resolveWindowHeight()} when no GL context exists (e.g. unit tests).
+   *
+   * @see #resolveActualScreenWidth()
+   */
+  private static int resolveActualScreenHeight() {
+    if (Gdx.graphics != null) {
+      return Math.max(1, Gdx.graphics.getHeight());
+    }
+    return resolveWindowHeight();
   }
 
   /**
