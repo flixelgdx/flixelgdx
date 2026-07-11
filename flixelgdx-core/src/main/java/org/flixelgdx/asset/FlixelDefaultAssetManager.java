@@ -236,6 +236,11 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     return compressedTexturesEnabled;
   }
 
+  /** Returns whether KTX2/BasisU compressed texture loading is enabled. */
+  public boolean getCompressedTexturesEnabled() {
+    return compressedTexturesEnabled;
+  }
+
   @Override
   public void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer) {
     ktx2LoaderInstaller = installer;

@@ -362,6 +362,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     return antialiasing;
   }
 
+  /** Returns whether antialiasing is enabled for sprites in this group. */
+  public boolean getAntialiasing() {
+    return antialiasing;
+  }
+
   @Override
   public int getFacing() {
     return facing;
@@ -571,6 +576,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   public boolean isEmpty() {
+    return members.size == 0;
+  }
+
+  /** Returns whether this group contains no members. */
+  public boolean getEmpty() {
     return members.size == 0;
   }
 

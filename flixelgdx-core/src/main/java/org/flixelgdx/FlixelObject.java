@@ -596,6 +596,11 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     return allowCollisions != FlixelDirectionFlags.NONE;
   }
 
+  /** Returns {@code true} when {@code allowCollisions} is not {@link FlixelDirectionFlags#NONE}. */
+  public boolean getSolid() {
+    return allowCollisions != FlixelDirectionFlags.NONE;
+  }
+
   /**
    * Sets {@link #allowCollisions} to {@code ANY} when {@code solid} is true, or {@code NONE} when false.
    *
@@ -616,6 +621,11 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
   /** {@inheritDoc} */
   @Override
   public boolean isImmovable() {
+    return immovable;
+  }
+
+  /** Returns whether this object is immovable during collision resolution. */
+  public boolean getImmovable() {
     return immovable;
   }
 

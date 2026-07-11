@@ -797,8 +797,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return graphic != null && graphic.isOwned();
   }
 
-  public Texture getGraphic() {
-    return getTexture();
+  @Nullable
+  public FlixelGraphic getGraphic() {
+    return graphic;
   }
 
   public Texture getTexture() {
@@ -871,6 +872,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   @Override
   public boolean isAntialiasing() {
+    return antialiasing;
+  }
+
+  /** Returns whether linear texture filtering (antialiasing) is enabled for this sprite. */
+  public boolean getAntialiasing() {
     return antialiasing;
   }
 
@@ -963,8 +969,24 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return flipX;
   }
 
+  public boolean getFlipX() {
+    return flipX;
+  }
+
+  public void setFlipX(boolean flipX) {
+    this.flipX = flipX;
+  }
+
   public boolean isFlipY() {
     return flipY;
+  }
+
+  public boolean getFlipY() {
+    return flipY;
+  }
+
+  public void setFlipY(boolean flipY) {
+    this.flipY = flipY;
   }
 
   public void setRegion(TextureRegion region) {

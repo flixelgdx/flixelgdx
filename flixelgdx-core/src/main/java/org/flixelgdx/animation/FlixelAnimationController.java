@@ -453,6 +453,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return paused;
   }
 
+  /** Returns whether animation playback is currently paused. */
+  public boolean getPaused() {
+    return paused;
+  }
+
   /** Toggles playback direction. Time still advances by {@link #update(float)} while not paused. */
   public void reverse() {
     playDirection = -playDirection;
@@ -664,6 +669,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return !looping && duration > 0f && stateTime >= duration;
   }
 
+  /** Returns whether the current animation has finished playing (only meaningful for non-looping animations). */
+  public boolean getAnimationFinished() {
+    return isAnimationFinished();
+  }
+
   @Override
   public void update(float elapsed) {
     if (animations.size == 0 || paused || currentAnim.isEmpty()) {
@@ -811,6 +821,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   public boolean isLooping() {
+    return looping;
+  }
+
+  /** Returns whether the current animation is set to loop. */
+  public boolean getLooping() {
     return looping;
   }
 

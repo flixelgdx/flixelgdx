@@ -109,6 +109,11 @@ public class FlixelShakeTween extends FlixelTween {
     return fadeOut;
   }
 
+  /** Returns whether this shake tween fades out over time. */
+  public boolean getFadeOut() {
+    return fadeOut;
+  }
+
   @Override
   public FlixelTween start() {
     super.start();

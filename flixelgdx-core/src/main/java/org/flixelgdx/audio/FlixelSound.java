@@ -193,6 +193,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     return true;
   }
 
+  /** Returns whether this sound's audio data has been loaded. */
+  public boolean getLoaded() {
+    return true;
+  }
+
   @Override
   public int getRefCount() {
     return refCount;
@@ -318,6 +323,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     return sound.isLooping();
   }
 
+  /** Returns whether this sound is set to loop. */
+  public boolean getLooped() {
+    return sound.isLooping();
+  }
+
   /**
    * Enables or disables looping.
    *
@@ -335,6 +345,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * @return {@code true} if the sound is actively playing.
    */
   public boolean isPlaying() {
+    return sound.isPlaying();
+  }
+
+  /** Returns whether this sound is currently playing. */
+  public boolean getPlaying() {
     return sound.isPlaying();
   }
 
@@ -548,6 +563,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     return autoDestroy;
   }
 
+  /** Returns whether this sound auto-destroys when playback completes. */
+  public boolean getAutoDestroy() {
+    return autoDestroy;
+  }
+
   /**
    * Sets whether this sound auto-destroys when playback completes.
    *
@@ -561,6 +581,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   @Override
   public boolean isPersist() {
+    return persist;
+  }
+
+  /** Returns whether this sound persists across state transitions. */
+  public boolean getPersist() {
     return persist;
   }
 

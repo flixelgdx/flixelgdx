@@ -125,8 +125,18 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     return owned || assets.getManager().isLoaded(getResolvedPath(), Texture.class);
   }
 
+  /** Returns whether this graphic's texture has been loaded into memory. */
+  public boolean getLoaded() {
+    return isLoaded();
+  }
+
   @Override
   public boolean isPersist() {
+    return persist;
+  }
+
+  /** Returns whether this graphic is marked to persist across state transitions. */
+  public boolean getPersist() {
     return persist;
   }
 
@@ -216,6 +226,11 @@ public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
    * @return {@code true} if owned.
    */
   public boolean isOwned() {
+    return owned;
+  }
+
+  /** Returns whether this graphic owns its texture and disposes it on eviction. */
+  public boolean getOwned() {
     return owned;
   }
 }

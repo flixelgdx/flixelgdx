@@ -27,20 +27,23 @@ import com.badlogic.gdx.utils.ArraySupplier;
 import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.FlixelState;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link org.flixelgdx.FlixelBasic FlixelBasic} that owns a {@link FlixelGroup} of {@link IFlixelBasic} members, with batch
- * {@link #update(float)} / {@link org.flixelgdx.functional.FlixelDrawable#draw(FlixelBatch)}, {@link #recycle()}, and {@link #destroy()} that tears down members.
+ * A {@link FlixelBasic} that owns a {@link FlixelGroup} of {@link IFlixelBasic} members, with batch
+ * {@link #update(float)} / {@link #draw(FlixelBatch)}, {@link #recycle()}, and {@link #destroy()}
+ * that tears down members.
  *
- * <p>Member list operations are delegated to an internal {@link FlixelGroup}; {@link #getMemberList()} exposes it when
- * you need the raw container.
+ * <p>Member list operations are delegated to an internal {@link FlixelGroup}; {@link #getMemberList()}
+ * exposes it when you need the raw container.
  *
- * <p>{@link #remove} and {@link #detach} only unlink members; they do not call {@link org.flixelgdx.FlixelBasic#destroy() FlixelBasic.destroy()}. Prefer
- * {@link org.flixelgdx.FlixelBasic#kill() FlixelBasic.kill()} / {@link #recycle()} for reuse. See {@link org.flixelgdx.FlixelBasic FlixelBasic} for lifecycle guidance.
+ * <p>{@link #remove} and {@link #detach} only unlink members; they do not call {@link FlixelBasic#destroy()}.
+ * Prefer {@link FlixelBasic#kill()} / {@link #recycle()} for reuse. See {@link FlixelBasic} for lifecycle guidance.
  *
  * @param <T> Member type.
  * @see FlixelGroup
@@ -68,8 +71,8 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
 
   /**
    * Called by {@link #recycle()} when no dead member exists and the group is under {@link #getMaxSize()}. The default
-   * returns {@code null}. {@link org.flixelgdx.FlixelState FlixelState} overrides this to allocate a
-   * {@link org.flixelgdx.FlixelSprite FlixelSprite}.
+   * returns {@code null}. {@link FlixelState} overrides this to allocate a
+   * {@link FlixelSprite}.
    */
   protected @Nullable T createMemberForRecycle() {
     return null;
@@ -162,8 +165,8 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
   }
 
   /**
-   * Revives the first {@link #getFirstDead() dead} member, or uses {@link #createMemberForRecycle()}, revives it, adds it
-   * when under max size, and returns it.
+   * Revives the first {@link #getFirstDead() dead} member, or uses {@link #createMemberForRecycle()},
+   * revives it, adds it when under max size, and returns it.
    *
    * @return A member ready to use, or {@code null} if nothing could be recycled or created.
    */
