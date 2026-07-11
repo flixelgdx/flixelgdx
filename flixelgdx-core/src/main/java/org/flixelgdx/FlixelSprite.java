@@ -969,18 +969,24 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return flipX;
   }
 
-  /** Returns whether this sprite is flipped horizontally. */
   public boolean getFlipX() {
     return flipX;
+  }
+
+  public void setFlipX(boolean flipX) {
+    this.flipX = flipX;
   }
 
   public boolean isFlipY() {
     return flipY;
   }
 
-  /** Returns whether this sprite is flipped vertically. */
   public boolean getFlipY() {
     return flipY;
+  }
+
+  public void setFlipY(boolean flipY) {
+    this.flipY = flipY;
   }
 
   public void setRegion(TextureRegion region) {
