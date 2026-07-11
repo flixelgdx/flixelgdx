@@ -797,8 +797,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return graphic != null && graphic.isOwned();
   }
 
-  public Texture getGraphic() {
-    return getTexture();
+  @Nullable
+  public FlixelGraphic getGraphic() {
+    return graphic;
   }
 
   public Texture getTexture() {
