@@ -23,7 +23,6 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
@@ -1163,44 +1162,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns the Java heap memory currently in use, in bytes.
-   *
-   * @return The Java heap memory currently in use, in bytes.
-   */
-  public static long getJavaHeapUsedBytes() {
-    Runtime rt = Runtime.getRuntime();
-    return rt.totalMemory() - rt.freeMemory();
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in bytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in bytes.
-   */
-  public static long getJavaHeapTotalBytes() {
-    return Runtime.getRuntime().totalMemory();
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in bytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in bytes.
-   */
-  public static long getJavaHeapMaxBytes() {
-    return Runtime.getRuntime().maxMemory();
-  }
-
-  /**
-   * Returns an estimate of the native heap usage in bytes as reported by libGDX.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   */
-  public static long getNativeHeapUsedBytes() {
-    return Gdx.app != null ? Gdx.app.getNativeHeap() : 0L;
-  }
-
-  /**
    * The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch) FlixelGame.draw(Batch)},
    * or {@code null} if not in a camera pass.
    */
@@ -1241,6 +1202,8 @@ public final class Flixel {
   /**
    * Sets antialiasing to be applied to all {@link FlixelSprite} objects.
    * Automatically updates the current state.
+   *
+   * <p>Note that if you want this value to take effect
    *
    * @param enabled If antialiasing should be applied to all current and any future {@link FlixelSprite} objects.
    */
