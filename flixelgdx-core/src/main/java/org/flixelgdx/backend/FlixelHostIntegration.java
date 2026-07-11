@@ -24,7 +24,6 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,11 +50,10 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Clipboard paste callbacks</h2>
  *
- * <p>Paste operations are asynchronous. Register handlers on {@link #onTextPasted()} or
- * {@link #onImagePasted()} before calling {@link #pasteFromClipboard()} or
- * {@link #pasteImageFromClipboard()}. The signal fires once the platform has retrieved the data.
- * Handlers may not be called on the GL thread; because of this, wrap any libGDX calls with
- * {@code Gdx.app.postRunnable(...)}.
+ * <p>Paste operations are asynchronous. Register a handler on {@link #onTextPasted()} before
+ * calling {@link #pasteFromClipboard()}. The signal fires once the platform has retrieved the
+ * data. Handlers may not be called on the GL thread; because of this, wrap any libGDX calls
+ * with {@code Gdx.app.postRunnable(...)}.
  *
  * <p>Example:
  *
@@ -145,15 +143,6 @@ public interface FlixelHostIntegration {
   void copyToClipboard(@NotNull String text);
 
   /**
-   * Copies {@code graphic} to the system clipboard as a PNG image.
-   *
-   * <p>Has no effect on platforms where {@link #supportsImageClipboard()} returns {@code false}.
-   *
-   * @param graphic The graphic to copy; must not be {@code null}.
-   */
-  void copyImageToClipboard(@NotNull FlixelGraphic graphic);
-
-  /**
    * Requests a text read from the system clipboard.
    *
    * <p>The result is delivered asynchronously via {@link #onTextPasted()}. Register a handler
@@ -163,19 +152,6 @@ public interface FlixelHostIntegration {
    * <p>Has no effect on platforms where {@link #supportsClipboard()} returns {@code false}.
    */
   void pasteFromClipboard();
-
-  /**
-   * Requests an image read from the system clipboard.
-   *
-   * <p>The result is delivered asynchronously via {@link #onImagePasted()}. Register a handler
-   * on that signal before calling this method. The dispatched {@link FlixelGraphic} is an owned
-   * graphic with a reference count of zero - call {@link FlixelGraphic#retain()} if you intend
-   * to keep it, and {@link FlixelGraphic#release()} when done. If the clipboard does not contain
-   * an image, the signal is not dispatched.
-   *
-   * <p>Has no effect on platforms where {@link #supportsImageClipboard()} returns {@code false}.
-   */
-  void pasteImageFromClipboard();
 
   /**
    * @return {@code true} if {@link #sendNotification(String, String)} is expected to do useful
@@ -196,12 +172,6 @@ public interface FlixelHostIntegration {
   boolean supportsClipboard();
 
   /**
-   * @return {@code true} if image clipboard operations ({@link #copyImageToClipboard(FlixelGraphic)}
-   *     and {@link #pasteImageFromClipboard()}) are supported on this platform.
-   */
-  boolean supportsImageClipboard();
-
-  /**
    * Signal dispatched when {@link #pasteFromClipboard()} resolves with text content.
    *
    * <p>The dispatched value is the pasted text. Handlers may be called off the GL thread.
@@ -212,15 +182,4 @@ public interface FlixelHostIntegration {
   @NotNull
   FlixelSignal<String> onTextPasted();
 
-  /**
-   * Signal dispatched when {@link #pasteImageFromClipboard()} resolves with image content.
-   *
-   * <p>The dispatched {@link FlixelGraphic} is an owned graphic at reference count zero. Call
-   * {@link FlixelGraphic#retain()} to keep it alive past the handler. Handlers may be called
-   * off the GL thread. Wrap any libGDX calls with {@code Gdx.app.postRunnable(...)}.
-   *
-   * @return The signal; never {@code null}.
-   */
-  @NotNull
-  FlixelSignal<FlixelGraphic> onImagePasted();
 }

@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.backend;
 
-import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +41,6 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   INSTANCE;
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
-  private final FlixelSignal<FlixelGraphic> onImagePasted = new FlixelSignal<>();
 
   @Override
   public void requestNotificationPermission() {}
@@ -67,15 +65,7 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   }
 
   @Override
-  public void copyImageToClipboard(@NotNull FlixelGraphic graphic) {
-    Objects.requireNonNull(graphic, "graphic");
-  }
-
-  @Override
   public void pasteFromClipboard() {}
-
-  @Override
-  public void pasteImageFromClipboard() {}
 
   @Override
   public boolean supportsDesktopNotification() {
@@ -93,19 +83,8 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   }
 
   @Override
-  public boolean supportsImageClipboard() {
-    return false;
-  }
-
-  @Override
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return onTextPasted;
-  }
-
-  @Override
-  @NotNull
-  public FlixelSignal<FlixelGraphic> onImagePasted() {
-    return onImagePasted;
   }
 }
