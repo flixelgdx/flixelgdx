@@ -63,10 +63,10 @@ public final class FlixelTeaVMLogConsole {
       String methodLabel,
       String timestamp,
       boolean detailed) {
-    int o = level == FlixelLogLevel.DEBUG ? 3
-        : level == FlixelLogLevel.INFO ? 0
+    int o = level == FlixelLogLevel.INFO ? 0
         : level == FlixelLogLevel.WARN ? 1
-        : 2;
+        : level == FlixelLogLevel.ERROR ? 2
+        : level == FlixelLogLevel.DEBUG ? 3 : 0;
     emit0(
         o,
         nullToE(tag),
