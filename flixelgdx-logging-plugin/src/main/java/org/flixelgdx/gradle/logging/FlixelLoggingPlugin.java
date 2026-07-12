@@ -121,35 +121,36 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
 
       // TeaVM (web) build tasks are not JavaExec, so they need a reflective classpath hook.
       // Detected by class hierarchy, same pattern used for KGP 2.x KotlinCompile.
+      // IMPORTANT: the classpath must be set here during configuration, NOT in doFirst.
+      // TeaVM finalizes its classpath Property before execution begins, so any attempt to
+      // set it inside doFirst throws "value is final and cannot be changed any further."
       pr.getTasks().configureEach(task -> {
         if (task instanceof JavaExec || task instanceof AbstractCompile || !isTeaVMTask(task.getClass())) {
           return;
         }
-        task.doFirst(t -> {
-          FileCollection woven = resolveWovenView(pr);
-          if (woven == null) {
+        FileCollection woven = resolveWovenView(pr);
+        if (woven == null) {
+          return;
+        }
+        try {
+          java.lang.reflect.Method getClasspath = task.getClass().getMethod("getClasspath");
+          Object existing = getClasspath.invoke(task);
+          if (!(existing instanceof FileCollection fc)) {
             return;
           }
+          FileCollection prepended = woven.plus(fc);
           try {
-            java.lang.reflect.Method getClasspath = t.getClass().getMethod("getClasspath");
-            Object existing = getClasspath.invoke(t);
-            if (!(existing instanceof FileCollection fc)) {
-              return;
-            }
-            FileCollection prepended = woven.plus(fc);
-            try {
-              t.getClass().getMethod("setClasspath", FileCollection.class).invoke(t, prepended);
-            } catch (NoSuchMethodException e) {
-              if (existing instanceof ConfigurableFileCollection cfc) {
-                cfc.setFrom(prepended);
-              }
-            }
+            task.getClass().getMethod("setClasspath", FileCollection.class).invoke(task, prepended);
           } catch (NoSuchMethodException e) {
-            // Task has no classpath property; nothing to prepend.
-          } catch (ReflectiveOperationException e) {
-            task.getLogger().warn("Flixel logging: could not prepend woven JARs to '{}' classpath", t.getName(), e);
+            if (existing instanceof ConfigurableFileCollection cfc) {
+              cfc.setFrom(prepended);
+            }
           }
-        });
+        } catch (NoSuchMethodException e) {
+          // Task has no classpath property; nothing to prepend.
+        } catch (ReflectiveOperationException e) {
+          task.getLogger().warn("Flixel logging: could not prepend woven JARs to '{}' classpath", task.getName(), e);
+        }
       });
     });
   }
