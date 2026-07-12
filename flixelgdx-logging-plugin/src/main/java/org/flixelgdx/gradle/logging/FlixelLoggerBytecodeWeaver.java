@@ -351,16 +351,15 @@ public final class FlixelLoggerBytecodeWeaver {
     };
   }
 
+  /**
+   * Creates a {@link ClassWriter} that recomputes only max stack and locals ({@link ClassWriter#COMPUTE_MAXS}),
+   * not full frames. Our transformations only insert {@code LDC}/{@code SIPUSH} sequences before existing
+   * invoke instructions; they do not add branches or jump targets, so compiler-generated frames remain
+   * valid and do not need to be recalculated. Using {@link ClassWriter#COMPUTE_FRAMES} would require
+   * resolving the full class hierarchy via {@link ClassWriter#getCommonSuperClass}, which is unavailable
+   * in isolated environments such as Gradle artifact transforms.
+   */
   public static ClassWriter newClassWriter(ClassReader reader) {
-    return new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES) {
-      @Override
-      protected String getCommonSuperClass(String type1, String type2) {
-        try {
-          return super.getCommonSuperClass(type1, type2);
-        } catch (Exception e) {
-          return "java/lang/Object";
-        }
-      }
-    };
+    return new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
   }
 }

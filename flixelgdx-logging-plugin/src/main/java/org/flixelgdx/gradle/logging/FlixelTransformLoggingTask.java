@@ -82,7 +82,7 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
         byte[] original = Files.readAllBytes(file);
         ClassReader reader = new ClassReader(original);
         ClassNode classNode = new ClassNode();
-        reader.accept(classNode, ClassReader.SKIP_FRAMES);
+        reader.accept(classNode, ClassReader.EXPAND_FRAMES);
         if (!FlixelLoggerBytecodeWeaver.weave(classNode)) {
           return FileVisitResult.CONTINUE;
         }
@@ -128,7 +128,7 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
     try {
       ClassReader reader = new ClassReader(bytes);
       ClassNode classNode = new ClassNode();
-      reader.accept(classNode, ClassReader.SKIP_FRAMES);
+      reader.accept(classNode, ClassReader.EXPAND_FRAMES);
       if (!FlixelLoggerBytecodeWeaver.weave(classNode)) {
         return bytes;
       }
