@@ -1,23 +1,26 @@
-# FlixelGDX
+<div align="center">
+    
+    # FlixelGDX
 
-<img src="markdown-assets/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
-
-### Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)
-
-[![CI](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/org.flixelgdx/flixelgdx-core)](https://central.sonatype.com/artifact/org.flixelgdx/flixelgdx-core)
-[![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Website](https://img.shields.io/badge/website-flixelgdx.org-blue)](https://flixelgdx.org)
-[![Stars](https://img.shields.io/github/stars/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/stargazers)
-[![Forks](https://img.shields.io/github/forks/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/forks)
-[![Issues](https://img.shields.io/github/issues/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/flixelgdx/flixelgdx/develop)](https://github.com/flixelgdx/flixelgdx/commits/develop)
-[![Contributors](https://img.shields.io/github/contributors/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/graphs/contributors)
-[![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
-[![libGDX 1.14.0](https://img.shields.io/badge/libGDX-1.14.0-red)](https://libgdx.com/)
-[![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
+    <img src="markdown-assets/readme/flxgdx.png" width="500" alt="FlixelGDX logo">
+    
+    **Logo Artist: [LeoThM](https://www.instagram.com/leoxthm_/)**
+    
+    [![CI](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml/badge.svg)](https://github.com/flixelgdx/flixelgdx/actions/workflows/ci_build.yml)
+    [![Maven Central](https://img.shields.io/maven-central/v/org.flixelgdx/flixelgdx-core)](https://central.sonatype.com/artifact/org.flixelgdx/flixelgdx-core)
+    [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
+    [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+    [![Website](https://img.shields.io/badge/website-flixelgdx.org-blue)](https://flixelgdx.org)
+    [![Stars](https://img.shields.io/github/stars/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/stargazers)
+    [![Forks](https://img.shields.io/github/forks/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/forks)
+    [![Issues](https://img.shields.io/github/issues/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/issues)
+    [![Pull Requests](https://img.shields.io/github/issues-pr/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/pulls)
+    [![Last Commit](https://img.shields.io/github/last-commit/flixelgdx/flixelgdx/develop)](https://github.com/flixelgdx/flixelgdx/commits/develop)
+    [![Contributors](https://img.shields.io/github/contributors/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/graphs/contributors)
+    [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
+    [![libGDX 1.14.0](https://img.shields.io/badge/libGDX-1.14.0-red)](https://libgdx.com/)
+    [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
+</div>
 
 FlixelGDX is a featherweight powerhouse of a Java game framework built on top of [libGDX](https://libgdx.com/). It brings a clean, state-based game architecture inspired by [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/) into the Java ecosystem, while keeping the full platform reach and rendering power of libGDX underneath.
 
