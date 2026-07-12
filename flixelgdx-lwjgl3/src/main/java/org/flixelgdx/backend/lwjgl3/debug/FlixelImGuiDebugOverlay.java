@@ -35,6 +35,7 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.debug.FlixelDebugTrackerEntry;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.glfw.GLFW;
@@ -106,10 +107,20 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_PAUSED = { 1.00f, 0.70f, 0.20f, 1f };
   private static final float[] COLOR_HINT = { 0.65f, 0.65f, 0.65f, 1f };
 
-  // Panel title-bar color constants (red theme replacing the default ImGui blue).
-  private static final float[] COLOR_TITLE_BG = { 0.30f, 0.04f, 0.04f, 1f };
-  private static final float[] COLOR_TITLE_BG_ACTIVE = { 0.55f, 0.08f, 0.08f, 1f };
-  private static final float[] COLOR_TITLE_BG_COLLAPSED = { 0.20f, 0.04f, 0.04f, 0.75f };
+  // Widget color constants (red theme replacing the default ImGui blue).
+  private static final float[] COLOR_TITLE_BG = { 0.45f, 0.07f, 0.07f, 1f };
+  private static final float[] COLOR_TITLE_BG_ACTIVE = { 0.72f, 0.10f, 0.10f, 1f };
+  private static final float[] COLOR_TITLE_BG_COLLAPSED = { 0.30f, 0.05f, 0.05f, 0.75f };
+  private static final float[] COLOR_FRAME_BG = { 0.28f, 0.05f, 0.05f, 0.54f };
+  private static final float[] COLOR_FRAME_BG_HOVERED = { 0.50f, 0.08f, 0.08f, 0.40f };
+  private static final float[] COLOR_FRAME_BG_ACTIVE = { 0.62f, 0.10f, 0.10f, 0.67f };
+  private static final float[] COLOR_CHECK_MARK = { 1.00f, 0.60f, 0.60f, 1f };
+  private static final float[] COLOR_BUTTON = { 0.65f, 0.10f, 0.10f, 0.60f };
+  private static final float[] COLOR_BUTTON_HOVERED = { 0.80f, 0.15f, 0.15f, 1f };
+  private static final float[] COLOR_BUTTON_ACTIVE = { 0.92f, 0.20f, 0.20f, 1f };
+  private static final float[] COLOR_COLLAPSING_HEADER = { 0.55f, 0.08f, 0.08f, 0.31f };
+  private static final float[] COLOR_COLLAPSING_HEADER_HOVERED = { 0.68f, 0.11f, 0.11f, 0.80f };
+  private static final float[] COLOR_COLLAPSING_HEADER_ACTIVE = { 0.78f, 0.13f, 0.13f, 1f };
 
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
@@ -542,15 +553,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Picks a GLSL version string compatible with the OpenGL context libGDX created. macOS only
-   * exposes core profiles (>= 3.2), so we always feed it {@code "#version 150"}; on Linux/Windows
-   * the same string works against the default libGDX 3.2 context as well.
-   */
-  private static String resolveGlslVersion() {
-    return "#version 150";
-  }
-
-  /**
    * @return {@code true} for keys that should keep working as debug shortcuts while the command field is focused.
    */
   private static boolean isNonTypableSystemDebugKey(int keycode) {
@@ -652,13 +654,31 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         COLOR_TITLE_BG_ACTIVE[3]);
     style.setColor(ImGuiCol.TitleBgCollapsed, COLOR_TITLE_BG_COLLAPSED[0], COLOR_TITLE_BG_COLLAPSED[1],
         COLOR_TITLE_BG_COLLAPSED[2], COLOR_TITLE_BG_COLLAPSED[3]);
+    style.setColor(ImGuiCol.FrameBg, COLOR_FRAME_BG[0], COLOR_FRAME_BG[1], COLOR_FRAME_BG[2], COLOR_FRAME_BG[3]);
+    style.setColor(ImGuiCol.FrameBgHovered, COLOR_FRAME_BG_HOVERED[0], COLOR_FRAME_BG_HOVERED[1],
+        COLOR_FRAME_BG_HOVERED[2], COLOR_FRAME_BG_HOVERED[3]);
+    style.setColor(ImGuiCol.FrameBgActive, COLOR_FRAME_BG_ACTIVE[0], COLOR_FRAME_BG_ACTIVE[1],
+        COLOR_FRAME_BG_ACTIVE[2], COLOR_FRAME_BG_ACTIVE[3]);
+    style.setColor(ImGuiCol.CheckMark, COLOR_CHECK_MARK[0], COLOR_CHECK_MARK[1], COLOR_CHECK_MARK[2],
+        COLOR_CHECK_MARK[3]);
+    style.setColor(ImGuiCol.Button, COLOR_BUTTON[0], COLOR_BUTTON[1], COLOR_BUTTON[2], COLOR_BUTTON[3]);
+    style.setColor(ImGuiCol.ButtonHovered, COLOR_BUTTON_HOVERED[0], COLOR_BUTTON_HOVERED[1], COLOR_BUTTON_HOVERED[2],
+        COLOR_BUTTON_HOVERED[3]);
+    style.setColor(ImGuiCol.ButtonActive, COLOR_BUTTON_ACTIVE[0], COLOR_BUTTON_ACTIVE[1], COLOR_BUTTON_ACTIVE[2],
+        COLOR_BUTTON_ACTIVE[3]);
+    style.setColor(ImGuiCol.Header, COLOR_COLLAPSING_HEADER[0], COLOR_COLLAPSING_HEADER[1], COLOR_COLLAPSING_HEADER[2],
+        COLOR_COLLAPSING_HEADER[3]);
+    style.setColor(ImGuiCol.HeaderHovered, COLOR_COLLAPSING_HEADER_HOVERED[0], COLOR_COLLAPSING_HEADER_HOVERED[1],
+        COLOR_COLLAPSING_HEADER_HOVERED[2], COLOR_COLLAPSING_HEADER_HOVERED[3]);
+    style.setColor(ImGuiCol.HeaderActive, COLOR_COLLAPSING_HEADER_ACTIVE[0], COLOR_COLLAPSING_HEADER_ACTIVE[1],
+        COLOR_COLLAPSING_HEADER_ACTIVE[2], COLOR_COLLAPSING_HEADER_ACTIVE[3]);
 
     ImFontAtlas fonts = io.getFonts();
     fonts.addFontDefault();
     fonts.build();
 
     imGuiGlfw.init(windowHandle, true);
-    imGuiGl3.init(resolveGlslVersion());
+    imGuiGl3.init("#version 150");
 
     imguiInitialized = true;
     forceRefreshOnNextUpdate();
@@ -1214,7 +1234,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Renders the Tracker panel, a collapsible header per registered {@link org.flixelgdx.debug.FlixelDebugTrackerEntry FlixelDebugTrackerEntry},
+   * Renders the Tracker panel, a collapsible header per registered {@link FlixelDebugTrackerEntry},
    * each containing a {@code name -> value} table (just like the Watch panel). Shown by default; when no
    * trackers are registered it stays visible with a hint, mirroring the Watch panel's empty state.
    */
