@@ -31,7 +31,7 @@ import org.gradle.api.provider.Property;
  * <p>Example usage in a game module's {@code build.gradle.kts}:
  *
  * <pre>{@code
- * flixelLogging {
+ * flixelgdxLogging {
  *   enabled = true
  *   verbose = false
  *   weaveDependencies = true
