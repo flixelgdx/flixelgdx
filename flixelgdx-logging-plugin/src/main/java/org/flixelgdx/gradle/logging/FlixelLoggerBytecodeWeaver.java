@@ -48,6 +48,10 @@ public final class FlixelLoggerBytecodeWeaver {
 
   private static final String LOGGER_OWNER = "org/flixelgdx/logging/FlixelLogger";
 
+  private static final String GDX_APPLICATION_OWNER = "com/badlogic/gdx/Application";
+
+  private static final String GDX_APPLICATION_LOGGER_OWNER = "com/badlogic/gdx/ApplicationLogger";
+
   /**
    * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Rewriting
    * {@code Flixel} itself would only capture {@code Flixel.java} line numbers, so {@link #weave(ClassNode)} skips that
@@ -62,6 +66,10 @@ public final class FlixelLoggerBytecodeWeaver {
   private static final Map<String, Replacement> REPLACEMENTS = new HashMap<>();
 
   private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = new HashMap<>();
+
+  private static final Map<String, Replacement> GDX_APP_REPLACEMENTS = new HashMap<>();
+
+  private static final Map<String, Replacement> GDX_APP_LOGGER_REPLACEMENTS = new HashMap<>();
 
   static {
     REPLACEMENTS.put(
@@ -101,6 +109,15 @@ public final class FlixelLoggerBytecodeWeaver {
         new Replacement(
             "errorWithSite",
             "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    REPLACEMENTS.put(
+        "debug(Ljava/lang/Object;)V",
+        new Replacement("debugWithSite",
+            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "debugWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
 
     FLIXEL_STATIC_REPLACEMENTS.put(
         "info(Ljava/lang/Object;)V",
@@ -134,6 +151,70 @@ public final class FlixelLoggerBytecodeWeaver {
         new Replacement(
             "bcErr2",
             "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+
+    // Application receiver stays on the stack and becomes the first parameter of the static hook.
+    GDX_APP_REPLACEMENTS.put(
+        "log(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcGdxLog0",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "log(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcGdxLog1",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcGdxDebug0",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcGdxDebug1",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "error(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcGdxErr0",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "error(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcGdxErr1",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+
+    // ApplicationLogger receiver stays on the stack; same pattern as GDX_APP_REPLACEMENTS above.
+    GDX_APP_LOGGER_REPLACEMENTS.put(
+        "log(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcAppLoggerLog0",
+            "(Lcom/badlogic/gdx/ApplicationLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_LOGGER_REPLACEMENTS.put(
+        "log(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcAppLoggerLog1",
+            "(Lcom/badlogic/gdx/ApplicationLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_LOGGER_REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcAppLoggerDebug0",
+            "(Lcom/badlogic/gdx/ApplicationLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_LOGGER_REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcAppLoggerDebug1",
+            "(Lcom/badlogic/gdx/ApplicationLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_LOGGER_REPLACEMENTS.put(
+        "error(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcAppLoggerErr0",
+            "(Lcom/badlogic/gdx/ApplicationLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_LOGGER_REPLACEMENTS.put(
+        "error(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcAppLoggerErr1",
+            "(Lcom/badlogic/gdx/ApplicationLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
   }
 
   private record Replacement(String newName, String newDescriptor) {
@@ -145,7 +226,9 @@ public final class FlixelLoggerBytecodeWeaver {
    * @return {@code true} if at least one invocation was rewritten.
    */
   public static boolean weave(ClassNode classNode) {
-    if (FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name)) {
+    if (FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name)
+        || HOOKS_OWNER.equals(classNode.name)
+        || LOGGER_OWNER.equals(classNode.name)) {
       return false;
     }
     boolean changed = false;
@@ -175,6 +258,34 @@ public final class FlixelLoggerBytecodeWeaver {
             min.name = facadeReplacement.newName();
             min.desc = facadeReplacement.newDescriptor();
             min.itf = false;
+            changed = true;
+          }
+          continue;
+        }
+
+        if (op == Opcodes.INVOKEINTERFACE && GDX_APPLICATION_LOGGER_OWNER.equals(min.owner)) {
+          Replacement appLoggerReplacement = GDX_APP_LOGGER_REPLACEMENTS.get(min.name + min.desc);
+          if (appLoggerReplacement != null) {
+            insertSiteArguments(method.instructions, min, sourceFile, line, classNameDots, method.name);
+            min.owner = HOOKS_OWNER;
+            min.name = appLoggerReplacement.newName();
+            min.desc = appLoggerReplacement.newDescriptor();
+            min.itf = false;
+            min.setOpcode(Opcodes.INVOKESTATIC);
+            changed = true;
+          }
+          continue;
+        }
+
+        if (op == Opcodes.INVOKEINTERFACE && GDX_APPLICATION_OWNER.equals(min.owner)) {
+          Replacement gdxReplacement = GDX_APP_REPLACEMENTS.get(min.name + min.desc);
+          if (gdxReplacement != null) {
+            insertSiteArguments(method.instructions, min, sourceFile, line, classNameDots, method.name);
+            min.owner = HOOKS_OWNER;
+            min.name = gdxReplacement.newName();
+            min.desc = gdxReplacement.newDescriptor();
+            min.itf = false;
+            min.setOpcode(Opcodes.INVOKESTATIC);
             changed = true;
           }
           continue;
@@ -240,16 +351,15 @@ public final class FlixelLoggerBytecodeWeaver {
     };
   }
 
+  /**
+   * Creates a {@link ClassWriter} that recomputes only max stack and locals ({@link ClassWriter#COMPUTE_MAXS}),
+   * not full frames. Our transformations only insert {@code LDC}/{@code SIPUSH} sequences before existing
+   * invoke instructions; they do not add branches or jump targets, so compiler-generated frames remain
+   * valid and do not need to be recalculated. Using {@link ClassWriter#COMPUTE_FRAMES} would require
+   * resolving the full class hierarchy via {@link ClassWriter#getCommonSuperClass}, which is unavailable
+   * in isolated environments such as Gradle artifact transforms.
+   */
   public static ClassWriter newClassWriter(ClassReader reader) {
-    return new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES) {
-      @Override
-      protected String getCommonSuperClass(String type1, String type2) {
-        try {
-          return super.getCommonSuperClass(type1, type2);
-        } catch (Exception e) {
-          return "java/lang/Object";
-        }
-      }
-    };
+    return new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
   }
 }

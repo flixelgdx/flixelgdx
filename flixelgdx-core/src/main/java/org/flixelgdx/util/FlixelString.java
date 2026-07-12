@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.util;
 
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.utils.CharArray;
 
 import org.jetbrains.annotations.NotNull;
@@ -51,15 +52,15 @@ import java.util.function.Supplier;
  *
  * <p>{@link #setFloatRoundedOneDecimal(float)} and {@link #concatFloatRoundedOneDecimal(float)}
  * delegate to {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}, which
- * formats a float to one decimal place using only integer arithmetic - no {@link String} is
+ * formats a float to one decimal place using only integer arithmetic, meaning no {@link String} is
  * created at any point.
  *
  * <h2>Passing to libGDX drawing APIs</h2>
  *
  * <p>This class implements {@link CharSequence}, so instances can be passed directly to APIs such
- * as {@link com.badlogic.gdx.graphics.g2d.BitmapFont#draw BitmapFont.draw()} without building a temporary
- * {@link String}. Avoid calling {@link #toString()} or using string concatenation on this type in
- * per-frame code: both allocate. Pass {@code this} as a {@link CharSequence} instead.
+ * as {@link BitmapFont#draw} without building a temporary {@link String}. Avoid calling {@link #toString()}
+ * or using string concatenation on this type in per-frame code: both allocate. Pass {@code this} as a
+ * {@link CharSequence} instead.
  *
  * <h2>set() vs concat()</h2>
  *
@@ -68,20 +69,12 @@ import java.util.function.Supplier;
  * clearing, which is useful when building a line from multiple parts. {@link #charBuffer()} exposes
  * the raw {@link CharArray} for advanced interop with libGDX APIs that require it directly.
  *
- * <h2>Supplier overloads</h2>
- *
- * <p>Supplier-based {@link #set} and {@link #concat} overloads (for example
- * {@link #set(java.util.function.IntSupplier)}) avoid boxing when the supplier is stored as a
- * field and reused across frames. If the supplier is created at the call site on every frame (as a
- * lambda literal), the allocation just moves to the supplier itself, so store suppliers as fields
- * to get the full benefit.
- *
  * <h2>Example Usage</h2>
  *
  * <pre>{@code
  * // Create a new FlixelString with a capacity of 32 characters.
  * // Because it implements CharSequence, it can be used as a parameter
- * // for methods that expect a CharSequence, like FlixelText!
+ * // for methods that expect a CharSequence, like FlixelText.
  * FlixelString fs = new FlixelString(32);
  * FlixelText ft = new FlixelText();
  *

@@ -23,30 +23,49 @@
  */
 package org.flixelgdx.gradle.logging;
 
-import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
 
-import javax.inject.Inject;
-
 /**
- * Gradle DSL for {@code flixelLogging} when using {@link FlixelLoggingPlugin}.
+ * Gradle DSL extension for {@code flixelLogging} when using {@link FlixelLoggingPlugin}.
+ *
+ * <p>Example usage in a game module's {@code build.gradle.kts}:
+ *
+ * <pre>{@code
+ * flixelgdxLogging {
+ *   enabled = true
+ *   verbose = false
+ *   weaveDependencies = true
+ * }
+ * }</pre>
  */
-public class FlixelLoggingExtension {
+public interface FlixelLoggingExtension {
 
-  private final Property<Boolean> enabled;
-  private final Property<Boolean> verbose;
+  /**
+   * Whether the bytecode weaver is active. When set to {@code false} the plugin skips all
+   * post-compile transformations and no dependency JAR weaving is registered.
+   *
+   * <p>Defaults to {@code true}.
+   */
+  Property<Boolean> getEnabled();
 
-  @Inject
-  public FlixelLoggingExtension(ObjectFactory objects) {
-    enabled = objects.property(Boolean.class).convention(true);
-    verbose = objects.property(Boolean.class).convention(false);
-  }
+  /**
+   * When {@code true}, each rewritten class path is logged at Gradle lifecycle level so you can
+   * verify the weaver is touching the expected files.
+   *
+   * <p>Defaults to {@code false}.
+   */
+  Property<Boolean> getVerbose();
 
-  public Property<Boolean> getEnabled() {
-    return enabled;
-  }
-
-  public Property<Boolean> getVerbose() {
-    return verbose;
-  }
+  /**
+   * When {@code true}, the plugin registers a Gradle artifact transform that runs the bytecode
+   * weaver over every JAR on {@code runtimeClasspath}. This lets call sites inside third-party
+   * libraries (particularly libGDX backends) carry accurate file and line metadata
+   * when {@code FlixelLogger} is the active application logger.
+   *
+   * <p>Disable this if you have a dependency that is sensitive to bytecode modification, or if
+   * you want to limit weaving strictly to your own compiled sources.
+   *
+   * <p>Defaults to {@code true}.
+   */
+  Property<Boolean> getWeaveDependencies();
 }

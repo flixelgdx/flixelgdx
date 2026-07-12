@@ -25,7 +25,13 @@ package org.flixelgdx.gradle.logging;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
+import org.gradle.api.attributes.Attribute;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.compile.AbstractCompile;
 
 import java.io.IOException;
@@ -39,12 +45,26 @@ import java.nio.file.Path;
  * <p>Both {@link AbstractCompile} tasks (Java) and Kotlin compile tasks are covered. Kotlin
  * compile tasks stopped extending {@link AbstractCompile} in KGP 2.x, so they are detected
  * by walking the class hierarchy and matched by name to avoid a compile-time KGP dependency.
+ *
+ * <p>When {@link FlixelLoggingExtension#getWeaveDependencies()} is {@code true} (the default),
+ * a Gradle artifact transform is also registered so every JAR on {@code runtimeClasspath} is
+ * weaved before {@link JavaExec} tasks run. This gives accurate call site metadata for log calls
+ * originating inside third-party libraries, primarly libGDX backends.
  */
 public class FlixelLoggingPlugin implements Plugin<Project> {
 
+  private static final Attribute<String> ARTIFACT_TYPE =
+      Attribute.of("artifactType", String.class);
+
+  private static final String WOVEN_JAR_TYPE = "flixel-woven-jar";
+
   @Override
   public void apply(Project project) {
-    FlixelLoggingExtension ext = project.getExtensions().create("flixelLogging", FlixelLoggingExtension.class);
+    FlixelLoggingExtension ext =
+        project.getExtensions().create("flixelgdxLogging", FlixelLoggingExtension.class);
+    ext.getEnabled().convention(true);
+    ext.getVerbose().convention(false);
+    ext.getWeaveDependencies().convention(true);
 
     project.afterEvaluate(pr -> {
       if (!ext.getEnabled().get()) {
@@ -80,7 +100,83 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
           }
         });
       });
+
+      if (!ext.getWeaveDependencies().get()) {
+        return;
+      }
+
+      pr.getDependencies().registerTransform(FlixelJarWeaverTransform.class, spec -> {
+        spec.getFrom().attribute(ARTIFACT_TYPE, ArtifactTypeDefinition.JAR_TYPE);
+        spec.getTo().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
+      });
+
+      pr.getTasks().withType(JavaExec.class).configureEach(exec -> exec.doFirst(t -> {
+        FileCollection woven = resolveWovenView(pr);
+        if (woven == null) {
+          return;
+        }
+        JavaExec javaExec = (JavaExec) t;
+        javaExec.setClasspath(woven.plus(javaExec.getClasspath()));
+      }));
+
+      // TeaVM (web) build tasks are not JavaExec, so they need a reflective classpath hook.
+      // Detected by class hierarchy, same pattern used for KGP 2.x KotlinCompile.
+      // IMPORTANT: the classpath must be set here during configuration, NOT in doFirst.
+      // TeaVM finalizes its classpath Property before execution begins, so any attempt to
+      // set it inside doFirst throws "value is final and cannot be changed any further."
+      pr.getTasks().configureEach(task -> {
+        if (task instanceof JavaExec || task instanceof AbstractCompile || !isTeaVMTask(task.getClass())) {
+          return;
+        }
+        FileCollection woven = resolveWovenView(pr);
+        if (woven == null) {
+          return;
+        }
+        try {
+          java.lang.reflect.Method getClasspath = task.getClass().getMethod("getClasspath");
+          Object existing = getClasspath.invoke(task);
+          if (!(existing instanceof FileCollection fc)) {
+            return;
+          }
+          FileCollection prepended = woven.plus(fc);
+          try {
+            task.getClass().getMethod("setClasspath", FileCollection.class).invoke(task, prepended);
+          } catch (NoSuchMethodException e) {
+            if (existing instanceof ConfigurableFileCollection cfc) {
+              cfc.setFrom(prepended);
+            }
+          }
+        } catch (NoSuchMethodException e) {
+          // Task has no classpath property; nothing to prepend.
+        } catch (ReflectiveOperationException e) {
+          task.getLogger().warn("Flixel logging: could not prepend woven JARs to '{}' classpath", task.getName(), e);
+        }
+      });
     });
+  }
+
+  private static FileCollection resolveWovenView(Project project) {
+    Configuration runtimeCp = project.getConfigurations().findByName("runtimeClasspath");
+    if (runtimeCp == null) {
+      return null;
+    }
+    return runtimeCp.getIncoming()
+        .artifactView(view -> {
+          view.getAttributes().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
+          view.setLenient(true);
+        })
+        .getFiles();
+  }
+
+  private static boolean isTeaVMTask(Class<?> cls) {
+    while (cls != null && !Object.class.equals(cls)) {
+      String name = cls.getName();
+      if (name.startsWith("org.teavm") || name.contains("TeaVM") || name.contains("Teavm")) {
+        return true;
+      }
+      cls = cls.getSuperclass();
+    }
+    return false;
   }
 
   private static boolean isKotlinCompileTask(Class<?> cls) {

@@ -223,6 +223,79 @@ public class FlixelLogger implements ApplicationLogger {
   }
 
   /**
+   * Logs a debug message using the default tag.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   */
+  public void debug(Object message) {
+    outputLog(defaultTag, evaluateMessage(message), FlixelLogLevel.DEBUG, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs a debug message under a custom tag.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   */
+  public void debug(String tag, Object message) {
+    outputLog(tag, evaluateMessage(message), FlixelLogLevel.DEBUG, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs a debug message using the default tag with an explicit call site.
+   *
+   * <p>Typically invoked by the {@code flixelgdx-logging-plugin} bytecode weaver so file and line do not rely on
+   * {@link FlixelStackTraceProvider} (for example on TeaVM). You don't need to (nor should you) touch this method;
+   * you should use the other methods, such as {@link #debug(Object)}.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   * @param sourceFileName The JVM source file name at the call site (for example {@code MyState.java}).
+   * @param lineNumber The source line number from debug metadata, or {@code 0} if unknown.
+   * @param declaringClassName The fully qualified name of the class containing the call site.
+   * @param declaringMethodName The simple name of the method containing the call site (no suffix).
+   */
+  public void debugWithSite(
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
+    debugWithSite(defaultTag, message, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
+  }
+
+  /**
+   * Logs a debug message under a custom tag with an explicit call site.
+   *
+   * <p>Typically invoked by the {@code flixelgdx-logging-plugin} bytecode weaver so file and line do not rely on
+   * {@link FlixelStackTraceProvider} (for example on TeaVM). You don't need to (nor should you) touch this method;
+   * you should use the other methods, such as {@link #debug(Object)}.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   * @param sourceFileName The JVM source file name at the call site.
+   * @param lineNumber The source line number from debug metadata, or {@code 0} if unknown.
+   * @param declaringClassName The fully qualified name of the class containing the call site.
+   * @param declaringMethodName The simple name of the method containing the call site.
+   */
+  public void debugWithSite(
+      String tag,
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
+    outputLog(
+        tag,
+        evaluateMessage(message),
+        FlixelLogLevel.DEBUG,
+        true,
+        sourceFileName,
+        lineNumber,
+        declaringClassName,
+        declaringMethodName);
+  }
+
+  /**
    * Logs an informational message using the default tag.
    *
    * @param message The message to log (converted via {@code toString()}).
@@ -604,6 +677,7 @@ public class FlixelLogger implements ApplicationLogger {
 
     // Apply the color and underlining based on the level.
     String color = switch (level) {
+      case DEBUG -> FlixelAsciiCodes.BLUE;
       case INFO -> FlixelAsciiCodes.WHITE;
       case WARN -> FlixelAsciiCodes.YELLOW;
       case ERROR -> FlixelAsciiCodes.RED;
@@ -671,11 +745,9 @@ public class FlixelLogger implements ApplicationLogger {
   }
 
   /**
-   * Gets the location of where the log was called from.
+   * Gets the location of where a log was called from.
    *
-   * <p>This is used to get the file and method name of where the log was called from.
-   *
-   * @return The location of where the log was called from.
+   * @return The location of where a log was called from.
    */
   protected FlixelStackFrame getCaller() {
     return (stackTraceProvider != null) ? stackTraceProvider.getCaller() : null;
@@ -736,16 +808,17 @@ public class FlixelLogger implements ApplicationLogger {
 
   @Override
   public void error(String tag, String message, Throwable exception) {
-    error(tag, message, exception);
+    error(tag, (Object) message, exception);
   }
 
   @Override
   public void debug(String tag, String message) {
-    info(tag, message);
+    debug(tag, (Object) message);
   }
 
   @Override
   public void debug(String tag, String message, Throwable exception) {
-    error(tag, message, exception);
+    String msg = (exception != null) ? (message + " | Exception: " + exception) : message;
+    outputLog(tag, msg, FlixelLogLevel.DEBUG, false, null, 0, null, null);
   }
 }
