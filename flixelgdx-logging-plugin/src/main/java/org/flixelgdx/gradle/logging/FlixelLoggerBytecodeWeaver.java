@@ -48,6 +48,8 @@ public final class FlixelLoggerBytecodeWeaver {
 
   private static final String LOGGER_OWNER = "org/flixelgdx/logging/FlixelLogger";
 
+  private static final String GDX_APPLICATION_OWNER = "com/badlogic/gdx/Application";
+
   /**
    * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Rewriting
    * {@code Flixel} itself would only capture {@code Flixel.java} line numbers, so {@link #weave(ClassNode)} skips that
@@ -62,6 +64,8 @@ public final class FlixelLoggerBytecodeWeaver {
   private static final Map<String, Replacement> REPLACEMENTS = new HashMap<>();
 
   private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = new HashMap<>();
+
+  private static final Map<String, Replacement> GDX_APP_REPLACEMENTS = new HashMap<>();
 
   static {
     REPLACEMENTS.put(
@@ -101,6 +105,15 @@ public final class FlixelLoggerBytecodeWeaver {
         new Replacement(
             "errorWithSite",
             "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    REPLACEMENTS.put(
+        "debug(Ljava/lang/Object;)V",
+        new Replacement("debugWithSite",
+            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "debugWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
 
     FLIXEL_STATIC_REPLACEMENTS.put(
         "info(Ljava/lang/Object;)V",
@@ -134,6 +147,38 @@ public final class FlixelLoggerBytecodeWeaver {
         new Replacement(
             "bcErr2",
             "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+
+    // Application receiver stays on the stack and becomes the first parameter of the static hook.
+    GDX_APP_REPLACEMENTS.put(
+        "log(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcGdxLog0",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "log(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcGdxLog1",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcGdxDebug0",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcGdxDebug1",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "error(Ljava/lang/String;Ljava/lang/String;)V",
+        new Replacement(
+            "bcGdxErr0",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    GDX_APP_REPLACEMENTS.put(
+        "error(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+        new Replacement(
+            "bcGdxErr1",
+            "(Lcom/badlogic/gdx/Application;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
   }
 
   private record Replacement(String newName, String newDescriptor) {
@@ -145,7 +190,7 @@ public final class FlixelLoggerBytecodeWeaver {
    * @return {@code true} if at least one invocation was rewritten.
    */
   public static boolean weave(ClassNode classNode) {
-    if (FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name)) {
+    if (FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name) || HOOKS_OWNER.equals(classNode.name)) {
       return false;
     }
     boolean changed = false;
@@ -175,6 +220,20 @@ public final class FlixelLoggerBytecodeWeaver {
             min.name = facadeReplacement.newName();
             min.desc = facadeReplacement.newDescriptor();
             min.itf = false;
+            changed = true;
+          }
+          continue;
+        }
+
+        if (op == Opcodes.INVOKEINTERFACE && GDX_APPLICATION_OWNER.equals(min.owner)) {
+          Replacement gdxReplacement = GDX_APP_REPLACEMENTS.get(min.name + min.desc);
+          if (gdxReplacement != null) {
+            insertSiteArguments(method.instructions, min, sourceFile, line, classNameDots, method.name);
+            min.owner = HOOKS_OWNER;
+            min.name = gdxReplacement.newName();
+            min.desc = gdxReplacement.newDescriptor();
+            min.itf = false;
+            min.setOpcode(Opcodes.INVOKESTATIC);
             changed = true;
           }
           continue;
