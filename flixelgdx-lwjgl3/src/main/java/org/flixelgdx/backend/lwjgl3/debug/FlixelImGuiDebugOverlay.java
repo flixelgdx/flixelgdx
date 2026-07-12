@@ -100,9 +100,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_INFO = { 0.85f, 0.85f, 0.85f, 1f };
   private static final float[] COLOR_WARN = { 1.00f, 0.80f, 0.20f, 1f };
   private static final float[] COLOR_ERROR = { 1.00f, 0.30f, 0.30f, 1f };
-  private static final float[] COLOR_KEY = { 0.55f, 0.85f, 1.00f, 1f };
+  private static final float[] COLOR_KEY = { 0.9f, 0.2f, 0.2f, 1f };
   private static final float[] COLOR_VALUE = { 0.95f, 0.95f, 0.95f, 1f };
-  private static final float[] COLOR_HEADER = { 0.65f, 0.85f, 1.00f, 1f };
+  private static final float[] COLOR_HEADER = { 0.9f, 0.2f, 0.2f, 1f };
   private static final float[] COLOR_OK = { 0.30f, 0.95f, 0.55f, 1f };
   private static final float[] COLOR_PAUSED = { 1.00f, 0.70f, 0.20f, 1f };
   private static final float[] COLOR_HINT = { 0.65f, 0.65f, 0.65f, 1f };
