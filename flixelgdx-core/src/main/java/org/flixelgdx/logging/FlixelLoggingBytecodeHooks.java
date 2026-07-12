@@ -127,7 +127,8 @@ public final class FlixelLoggingBytecodeHooks {
       String declaringMethod) {
     ApplicationLogger logger = app.getApplicationLogger();
     if (logger instanceof FlixelLogger fl) {
-      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+      String msg = exception != null ? message + " | Exception: " + exception : message;
+      fl.infoWithSite(tag, msg, sourceFile, line, declaringClass, declaringMethod);
     } else {
       app.log(tag, message, exception);
     }
@@ -160,7 +161,8 @@ public final class FlixelLoggingBytecodeHooks {
       String declaringMethod) {
     ApplicationLogger logger = app.getApplicationLogger();
     if (logger instanceof FlixelLogger fl) {
-      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+      String msg = exception != null ? message + " | Exception: " + exception : message;
+      fl.debugWithSite(tag, msg, sourceFile, line, declaringClass, declaringMethod);
     } else {
       app.debug(tag, message, exception);
     }
@@ -224,7 +226,8 @@ public final class FlixelLoggingBytecodeHooks {
       String declaringClass,
       String declaringMethod) {
     if (appLogger instanceof FlixelLogger fl) {
-      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+      String msg = exception != null ? message + " | Exception: " + exception : message;
+      fl.infoWithSite(tag, msg, sourceFile, line, declaringClass, declaringMethod);
     } else {
       appLogger.log(tag, message, exception);
     }
@@ -255,7 +258,8 @@ public final class FlixelLoggingBytecodeHooks {
       String declaringClass,
       String declaringMethod) {
     if (appLogger instanceof FlixelLogger fl) {
-      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+      String msg = exception != null ? message + " | Exception: " + exception : message;
+      fl.debugWithSite(tag, msg, sourceFile, line, declaringClass, declaringMethod);
     } else {
       appLogger.debug(tag, message, exception);
     }

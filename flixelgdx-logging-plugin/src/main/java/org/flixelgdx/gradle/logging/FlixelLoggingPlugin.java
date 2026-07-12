@@ -28,6 +28,7 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.JavaExec;
@@ -110,20 +111,71 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
       });
 
       pr.getTasks().withType(JavaExec.class).configureEach(exec -> exec.doFirst(t -> {
-        Configuration runtimeCp = pr.getConfigurations().findByName("runtimeClasspath");
-        if (runtimeCp == null) {
+        FileCollection woven = resolveWovenView(pr);
+        if (woven == null) {
           return;
         }
-        FileCollection wovenFiles = runtimeCp.getIncoming()
-            .artifactView(view -> {
-              view.getAttributes().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
-              view.setLenient(true);
-            })
-            .getFiles();
         JavaExec javaExec = (JavaExec) t;
-        javaExec.setClasspath(wovenFiles.plus(javaExec.getClasspath()));
+        javaExec.setClasspath(woven.plus(javaExec.getClasspath()));
       }));
+
+      // TeaVM (web) build tasks are not JavaExec, so they need a reflective classpath hook.
+      // Detected by class hierarchy, same pattern used for KGP 2.x KotlinCompile.
+      pr.getTasks().configureEach(task -> {
+        if (task instanceof JavaExec || task instanceof AbstractCompile || !isTeaVMTask(task.getClass())) {
+          return;
+        }
+        task.doFirst(t -> {
+          FileCollection woven = resolveWovenView(pr);
+          if (woven == null) {
+            return;
+          }
+          try {
+            java.lang.reflect.Method getClasspath = t.getClass().getMethod("getClasspath");
+            Object existing = getClasspath.invoke(t);
+            if (!(existing instanceof FileCollection fc)) {
+              return;
+            }
+            FileCollection prepended = woven.plus(fc);
+            try {
+              t.getClass().getMethod("setClasspath", FileCollection.class).invoke(t, prepended);
+            } catch (NoSuchMethodException e) {
+              if (existing instanceof ConfigurableFileCollection cfc) {
+                cfc.setFrom(prepended);
+              }
+            }
+          } catch (NoSuchMethodException e) {
+            // Task has no classpath property; nothing to prepend.
+          } catch (ReflectiveOperationException e) {
+            task.getLogger().warn("Flixel logging: could not prepend woven JARs to '{}' classpath", t.getName(), e);
+          }
+        });
+      });
     });
+  }
+
+  private static FileCollection resolveWovenView(Project project) {
+    Configuration runtimeCp = project.getConfigurations().findByName("runtimeClasspath");
+    if (runtimeCp == null) {
+      return null;
+    }
+    return runtimeCp.getIncoming()
+        .artifactView(view -> {
+          view.getAttributes().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
+          view.setLenient(true);
+        })
+        .getFiles();
+  }
+
+  private static boolean isTeaVMTask(Class<?> cls) {
+    while (cls != null && !Object.class.equals(cls)) {
+      String name = cls.getName();
+      if (name.startsWith("org.teavm") || name.contains("TeaVM") || name.contains("Teavm")) {
+        return true;
+      }
+      cls = cls.getSuperclass();
+    }
+    return false;
   }
 
   private static boolean isKotlinCompileTask(Class<?> cls) {
