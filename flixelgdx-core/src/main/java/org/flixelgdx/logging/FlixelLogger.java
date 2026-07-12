@@ -745,11 +745,9 @@ public class FlixelLogger implements ApplicationLogger {
   }
 
   /**
-   * Gets the location of where the log was called from.
+   * Gets the location of where a log was called from.
    *
-   * <p>This is used to get the file and method name of where the log was called from.
-   *
-   * @return The location of where the log was called from.
+   * @return The location of where a log was called from.
    */
   protected FlixelStackFrame getCaller() {
     return (stackTraceProvider != null) ? stackTraceProvider.getCaller() : null;
@@ -810,7 +808,7 @@ public class FlixelLogger implements ApplicationLogger {
 
   @Override
   public void error(String tag, String message, Throwable exception) {
-    error(tag, message, exception);
+    error(tag, (Object) message, exception);
   }
 
   @Override

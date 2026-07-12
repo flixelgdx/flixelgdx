@@ -30,12 +30,6 @@ package org.flixelgdx.logging;
 public enum FlixelLogLevel {
 
   /**
-   * Highlighted blue in the console and used for verbose, low-priority messages that help during active
-   * development. Matches libGDX's {@code Application.debug(...)} severity level.
-   */
-  DEBUG,
-
-  /**
    * Simple white/gray text and simple informational log level that is used for general information about the game.
    */
   INFO,
@@ -50,5 +44,11 @@ public enum FlixelLogLevel {
    * Highlighted red in the console and indicates an error. Shows something is wrong and
    * should be looked into immediately.
    */
-  ERROR
+  ERROR,
+
+  /**
+   * Highlighted blue in the console and used for verbose, low-priority messages that help during active
+   * development. Matches libGDX's {@code Application.debug(...)} severity level.
+   */
+  DEBUG
 }
