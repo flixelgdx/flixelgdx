@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.lwjgl3.debug;
 
+import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
@@ -37,6 +38,7 @@ import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
 import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.glfw.GLFW;
 
@@ -121,6 +123,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_COLLAPSING_HEADER = { 0.55f, 0.08f, 0.08f, 0.31f };
   private static final float[] COLOR_COLLAPSING_HEADER_HOVERED = { 0.68f, 0.11f, 0.11f, 0.80f };
   private static final float[] COLOR_COLLAPSING_HEADER_ACTIVE = { 0.78f, 0.13f, 0.13f, 1f };
+  private static final float[] COLOR_RESIZE_GRIP = { 0.65f, 0.10f, 0.10f, 0.20f };
+  private static final float[] COLOR_RESIZE_GRIP_HOVERED = { 0.80f, 0.15f, 0.15f, 0.67f };
+  private static final float[] COLOR_RESIZE_GRIP_ACTIVE = { 0.92f, 0.20f, 0.20f, 0.95f };
 
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
@@ -295,7 +300,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * GL state), then the GLFW backend (which removes its callback chain), and finally the imgui
    * context itself. Each call is wrapped in its own try/catch because the LWJGL window is
    * already partway through its own destruction by the time libGDX invokes
-   * {@link com.badlogic.gdx.ApplicationListener#dispose()}, and a stray crash here was triggering
+   * {@link ApplicationListener#dispose()}, and a stray crash here was triggering
    * the framework's uncaught-exception handler with the audio system still alive (the symptom:
    * "OK" closes the alert but music keeps playing).
    */
@@ -356,9 +361,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * suppress gameplay input.
    *
    * <p>Note that the debug overlay's own toggle keys (F2 by default, etc.) read raw input from
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)},
-   * so they continue to work while a text field is focused except for keys that are suppressed as
-   * typable command-line input (see {@link #shouldSuppressDebugRawKeybind(int)} on this class).
+   * {@link FlixelKeyInputManager#rawJustPressed(int)}, so they continue to work while a text field
+   * is focused except for keys that are suppressed as typable command-line input (see
+   * {@link #shouldSuppressDebugRawKeybind(int)} on this class).
    */
   @Override
   public boolean isKeyboardCapturedByUI() {
@@ -388,9 +393,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.newFrame();
 
     // Passthrough dockspace covers the whole viewport with a transparent central node so the
-    // game keeps rendering through the empty space between/around docked windows. Without the
-    // PassthruCentralNode flag the dockspace fills the screen with the imgui background color,
-    // which is the "gray screen" symptom you would otherwise see after toggling the overlay.
+    // game keeps rendering through the empty space between/around docked windows.
     ImGui.dockSpaceOverViewport(0, ImGui.getMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
     drawMainMenuBar();
@@ -672,6 +675,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         COLOR_COLLAPSING_HEADER_HOVERED[2], COLOR_COLLAPSING_HEADER_HOVERED[3]);
     style.setColor(ImGuiCol.HeaderActive, COLOR_COLLAPSING_HEADER_ACTIVE[0], COLOR_COLLAPSING_HEADER_ACTIVE[1],
         COLOR_COLLAPSING_HEADER_ACTIVE[2], COLOR_COLLAPSING_HEADER_ACTIVE[3]);
+    style.setColor(ImGuiCol.ResizeGrip, COLOR_RESIZE_GRIP[0], COLOR_RESIZE_GRIP[1],
+        COLOR_RESIZE_GRIP[2], COLOR_RESIZE_GRIP[3]);
+    style.setColor(ImGuiCol.ResizeGripHovered, COLOR_RESIZE_GRIP_HOVERED[0], COLOR_RESIZE_GRIP_HOVERED[1],
+        COLOR_RESIZE_GRIP_HOVERED[2], COLOR_RESIZE_GRIP_HOVERED[3]);
+    style.setColor(ImGuiCol.ResizeGripActive, COLOR_RESIZE_GRIP_ACTIVE[0], COLOR_RESIZE_GRIP_ACTIVE[1],
+        COLOR_RESIZE_GRIP_ACTIVE[2], COLOR_RESIZE_GRIP_ACTIVE[3]);
 
     ImFontAtlas fonts = io.getFonts();
     fonts.addFontDefault();
