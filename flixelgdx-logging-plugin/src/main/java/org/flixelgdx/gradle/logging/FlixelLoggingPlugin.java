@@ -49,7 +49,7 @@ import java.nio.file.Path;
  * <p>When {@link FlixelLoggingExtension#getWeaveDependencies()} is {@code true} (the default),
  * a Gradle artifact transform is also registered so every JAR on {@code runtimeClasspath} is
  * weaved before {@link JavaExec} tasks run. This gives accurate call site metadata for log calls
- * originating inside third-party libraries such as libGDX backends or controller extensions.
+ * originating inside third-party libraries, primarly libGDX backends.
  */
 public class FlixelLoggingPlugin implements Plugin<Project> {
 

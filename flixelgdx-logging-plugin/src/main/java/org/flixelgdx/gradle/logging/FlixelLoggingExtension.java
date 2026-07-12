@@ -59,7 +59,7 @@ public interface FlixelLoggingExtension {
   /**
    * When {@code true}, the plugin registers a Gradle artifact transform that runs the bytecode
    * weaver over every JAR on {@code runtimeClasspath}. This lets call sites inside third-party
-   * libraries (libGDX backends, controller extensions, etc.) carry accurate file and line metadata
+   * libraries (particularly libGDX backends) carry accurate file and line metadata
    * when {@code FlixelLogger} is the active application logger.
    *
    * <p>Disable this if you have a dependency that is sensitive to bytecode modification, or if
