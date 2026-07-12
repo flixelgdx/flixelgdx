@@ -33,7 +33,8 @@ import org.teavm.jso.JSBody;
  *
  * <p>The native script also picks the right {@code console} method per level (so the browser's
  * own filter pills for warnings and errors work as expected): {@code console.log} for
- * {@link FlixelLogLevel#INFO INFO}, {@code console.warn} for {@link FlixelLogLevel#WARN WARN},
+ * {@link FlixelLogLevel#DEBUG DEBUG} and {@link FlixelLogLevel#INFO INFO},
+ * {@code console.warn} for {@link FlixelLogLevel#WARN WARN},
  * and {@code console.error} for {@link FlixelLogLevel#ERROR ERROR}.
  */
 public final class FlixelTeaVMLogConsole {
@@ -62,7 +63,10 @@ public final class FlixelTeaVMLogConsole {
       String methodLabel,
       String timestamp,
       boolean detailed) {
-    int o = (level == FlixelLogLevel.INFO) ? 0 : (level == FlixelLogLevel.WARN) ? 1 : 2;
+    int o = level == FlixelLogLevel.DEBUG ? 3
+        : level == FlixelLogLevel.INFO ? 0
+        : level == FlixelLogLevel.WARN ? 1
+        : 2;
     emit0(
         o,
         nullToE(tag),
@@ -102,11 +106,14 @@ public final class FlixelTeaVMLogConsole {
       },
       script = ""
           + "var lv = l | 0;"
+          // lv: 0 = INFO, 1 = WARN, 2 = ERROR, 3 = DEBUG
           + "var sink = lv === 1 ? console.warn : (lv === 2 ? console.error : console.log);"
-          + "var locStyle = lv === 0 ? 'color:#5aa0e8;font-weight:600'"
+          + "var locStyle = lv === 3 ? 'color:#5aa0e8;font-weight:600'"
+          + "  : lv === 0 ? 'color:#aaaaaa;font-weight:600'"
           + "  : lv === 1 ? 'color:#c9a020;font-weight:600'"
           + "  : 'color:#e85555;font-weight:600';"
-          + "var msgStyle = lv === 0 ? 'color:#9ec8f5'"
+          + "var msgStyle = lv === 3 ? 'color:#9ec8f5'"
+          + "  : lv === 0 ? 'color:#cccccc'"
           + "  : lv === 1 ? 'color:#e8c860'"
           + "  : 'color:#ff9a9a';"
           + "var metaStyle = 'color:#7a7a7a';"
@@ -114,7 +121,7 @@ public final class FlixelTeaVMLogConsole {
           + "  sink('%c%s %c%s', locStyle, simpleLocation, msgStyle, message);"
           + "  return;"
           + "}"
-          + "var lvStr = lv === 0 ? 'INFO' : lv === 1 ? 'WARN' : 'ERROR';"
+          + "var lvStr = lv === 3 ? 'DEBUG' : lv === 0 ? 'INFO' : lv === 1 ? 'WARN' : 'ERROR';"
           + "var meta = timestamp + ' [' + lvStr + '] [' + tag + '] [' + detailedFile + '] [' + methodLabel + ']';"
           + "sink('%c%s\\n%c%s', metaStyle, meta, msgStyle, message);")
   private static native void emit0(
