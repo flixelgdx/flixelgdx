@@ -233,10 +233,7 @@ public final class FlixelLoggerBytecodeWeaver {
     }
     boolean changed = false;
     String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile";
-    // TeaVM prefixes emulated third-party classes with "emu/" in its internal class pipeline.
-    // Strip that prefix so embedded class names in log output remain readable.
-    String rawName = classNode.name.startsWith("emu/") ? classNode.name.substring(4) : classNode.name;
-    String classNameDots = rawName.replace('/', '.');
+    String classNameDots = classNode.name.replace('/', '.');
     for (MethodNode method : classNode.methods) {
       if (method.instructions == null || method.instructions.size() == 0) {
         continue;
