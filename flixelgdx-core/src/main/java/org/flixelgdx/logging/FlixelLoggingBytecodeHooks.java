@@ -198,4 +198,97 @@ public final class FlixelLoggingBytecodeHooks {
       app.error(tag, message, exception);
     }
   }
+
+  public static void bcAppLoggerLog0(
+      ApplicationLogger appLogger,
+      String tag,
+      String message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    if (appLogger instanceof FlixelLogger fl) {
+      fl.infoWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
+    } else {
+      appLogger.log(tag, message);
+    }
+  }
+
+  public static void bcAppLoggerLog1(
+      ApplicationLogger appLogger,
+      String tag,
+      String message,
+      Throwable exception,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    if (appLogger instanceof FlixelLogger fl) {
+      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+    } else {
+      appLogger.log(tag, message, exception);
+    }
+  }
+
+  public static void bcAppLoggerDebug0(
+      ApplicationLogger appLogger,
+      String tag,
+      String message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    if (appLogger instanceof FlixelLogger fl) {
+      fl.debugWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
+    } else {
+      appLogger.debug(tag, message);
+    }
+  }
+
+  public static void bcAppLoggerDebug1(
+      ApplicationLogger appLogger,
+      String tag,
+      String message,
+      Throwable exception,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    if (appLogger instanceof FlixelLogger fl) {
+      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+    } else {
+      appLogger.debug(tag, message, exception);
+    }
+  }
+
+  public static void bcAppLoggerErr0(
+      ApplicationLogger appLogger,
+      String tag,
+      String message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    if (appLogger instanceof FlixelLogger fl) {
+      fl.errorWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
+    } else {
+      appLogger.error(tag, message);
+    }
+  }
+
+  public static void bcAppLoggerErr1(
+      ApplicationLogger appLogger,
+      String tag,
+      String message,
+      Throwable exception,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    if (appLogger instanceof FlixelLogger fl) {
+      fl.errorWithSite(tag, message, exception, sourceFile, line, declaringClass, declaringMethod);
+    } else {
+      appLogger.error(tag, message, exception);
+    }
+  }
 }

@@ -25,7 +25,12 @@ package org.flixelgdx.gradle.logging;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
+import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.compile.AbstractCompile;
 
 import java.io.IOException;
@@ -39,12 +44,26 @@ import java.nio.file.Path;
  * <p>Both {@link AbstractCompile} tasks (Java) and Kotlin compile tasks are covered. Kotlin
  * compile tasks stopped extending {@link AbstractCompile} in KGP 2.x, so they are detected
  * by walking the class hierarchy and matched by name to avoid a compile-time KGP dependency.
+ *
+ * <p>When {@link FlixelLoggingExtension#getWeaveDependencies()} is {@code true} (the default),
+ * a Gradle artifact transform is also registered so every JAR on {@code runtimeClasspath} is
+ * weaved before {@link JavaExec} tasks run. This gives accurate call site metadata for log calls
+ * originating inside third-party libraries such as libGDX backends or controller extensions.
  */
 public class FlixelLoggingPlugin implements Plugin<Project> {
 
+  private static final Attribute<String> ARTIFACT_TYPE =
+      Attribute.of("artifactType", String.class);
+
+  private static final String WOVEN_JAR_TYPE = "flixel-woven-jar";
+
   @Override
   public void apply(Project project) {
-    FlixelLoggingExtension ext = project.getExtensions().create("flixelLogging", FlixelLoggingExtension.class);
+    FlixelLoggingExtension ext =
+        project.getExtensions().create("flixelLogging", FlixelLoggingExtension.class);
+    ext.getEnabled().convention(true);
+    ext.getVerbose().convention(false);
+    ext.getWeaveDependencies().convention(true);
 
     project.afterEvaluate(pr -> {
       if (!ext.getEnabled().get()) {
@@ -80,6 +99,30 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
           }
         });
       });
+
+      if (!ext.getWeaveDependencies().get()) {
+        return;
+      }
+
+      pr.getDependencies().registerTransform(FlixelJarWeaverTransform.class, spec -> {
+        spec.getFrom().attribute(ARTIFACT_TYPE, ArtifactTypeDefinition.JAR_TYPE);
+        spec.getTo().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
+      });
+
+      pr.getTasks().withType(JavaExec.class).configureEach(exec -> exec.doFirst(t -> {
+        Configuration runtimeCp = pr.getConfigurations().findByName("runtimeClasspath");
+        if (runtimeCp == null) {
+          return;
+        }
+        FileCollection wovenFiles = runtimeCp.getIncoming()
+            .artifactView(view -> {
+              view.getAttributes().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
+              view.setLenient(true);
+            })
+            .getFiles();
+        JavaExec javaExec = (JavaExec) t;
+        javaExec.setClasspath(wovenFiles.plus(javaExec.getClasspath()));
+      }));
     });
   }
 
