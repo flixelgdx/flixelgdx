@@ -106,6 +106,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_PAUSED = { 1.00f, 0.70f, 0.20f, 1f };
   private static final float[] COLOR_HINT = { 0.65f, 0.65f, 0.65f, 1f };
 
+  // Panel title-bar color constants (red theme replacing the default ImGui blue).
+  private static final float[] COLOR_TITLE_BG = { 0.30f, 0.04f, 0.04f, 1f };
+  private static final float[] COLOR_TITLE_BG_ACTIVE = { 0.55f, 0.08f, 0.08f, 1f };
+  private static final float[] COLOR_TITLE_BG_COLLAPSED = { 0.20f, 0.04f, 0.04f, 0.75f };
+
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
 
@@ -640,6 +645,13 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     io.setIniFilename(null);
     io.addConfigFlags(ImGuiConfigFlags.NavEnableKeyboard);
     io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
+
+    var style = ImGui.getStyle();
+    style.setColor(ImGuiCol.TitleBg, COLOR_TITLE_BG[0], COLOR_TITLE_BG[1], COLOR_TITLE_BG[2], COLOR_TITLE_BG[3]);
+    style.setColor(ImGuiCol.TitleBgActive, COLOR_TITLE_BG_ACTIVE[0], COLOR_TITLE_BG_ACTIVE[1], COLOR_TITLE_BG_ACTIVE[2],
+        COLOR_TITLE_BG_ACTIVE[3]);
+    style.setColor(ImGuiCol.TitleBgCollapsed, COLOR_TITLE_BG_COLLAPSED[0], COLOR_TITLE_BG_COLLAPSED[1],
+        COLOR_TITLE_BG_COLLAPSED[2], COLOR_TITLE_BG_COLLAPSED[3]);
 
     ImFontAtlas fonts = io.getFonts();
     fonts.addFontDefault();
