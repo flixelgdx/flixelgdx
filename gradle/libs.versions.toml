@@ -3,9 +3,7 @@ anim8 = "0.5.3"
 agp = "8.7.3"
 asm = "9.7.1"
 basisuGdx = "1.1.0"
-commonsCompress = "1.27.1"
 desugarJdkLibs = "2.1.5"
-foojay = "0.9.0"
 gdx = "1.14.0"
 gdxControllers = "2.2.4"
 gdxTeavm = "1.5.2"
@@ -23,7 +21,6 @@ teavm = "0.13.0"
 utils = "0.13.7"
 vanniktech = "0.33.0"
 vlc = "3.0.23"
-xz = "1.10"
 
 [libraries]
 anim8 = { module = "com.github.tommyettinger:anim8-gdx", version.ref = "anim8" }
@@ -31,8 +28,6 @@ android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 basisu-gdx = { module = "com.crashinvaders.basisu:basisu-gdx", version.ref = "basisuGdx" }
-basisu-wrapper = { module = "com.crashinvaders.basisu:basisu-wrapper", version.ref = "basisuGdx" }
-commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 gdx = { module = "com.badlogicgames.gdx:gdx", version.ref = "gdx" }
 gdx-backend-android = { module = "com.badlogicgames.gdx:gdx-backend-android", version.ref = "gdx" }
@@ -60,17 +55,14 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 miniaudio = { module = "games.rednblack.miniaudio:miniaudio", version.ref = "miniaudio" }
-miniaudio-platform = { module = "games.rednblack.miniaudio:gdx-miniaudio-platform", version.ref = "miniaudio" }
 multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 robovm-cocoatouch = { module = "com.mobidevelop.robovm:robovm-cocoatouch", version.ref = "robovm" }
 robovm-rt = { module = "com.mobidevelop.robovm:robovm-rt", version.ref = "robovm" }
 teavm-gradle-plugin = { module = "org.teavm:teavm-gradle-plugin", version.ref = "teavm" }
 utils = { module = "com.github.tommyettinger:libgdx-utils", version.ref = "utils" }
-xz = { module = "org.tukaani:xz", version.ref = "xz" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
-foojay = { id = "org.gradle.toolchains.foojay-resolver-convention", version.ref = "foojay" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 teavm = { id = "org.teavm", version.ref = "teavm" }
 vanniktech = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }

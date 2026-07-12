@@ -102,6 +102,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_INFO = { 0.85f, 0.85f, 0.85f, 1f };
   private static final float[] COLOR_WARN = { 1.00f, 0.80f, 0.20f, 1f };
   private static final float[] COLOR_ERROR = { 1.00f, 0.30f, 0.30f, 1f };
+  private static final float[] COLOR_DEBUG = { 0.30f, 0.30f, 1.0f, 1f };
   private static final float[] COLOR_KEY = { 0.9f, 0.2f, 0.2f, 1f };
   private static final float[] COLOR_VALUE = { 0.95f, 0.95f, 0.95f, 1f };
   private static final float[] COLOR_HEADER = { 0.9f, 0.2f, 0.2f, 1f };
@@ -186,6 +187,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private final ImBoolean logShowInfo = new ImBoolean(true);
   private final ImBoolean logShowWarn = new ImBoolean(true);
   private final ImBoolean logShowError = new ImBoolean(true);
+  private final ImBoolean logShowDebug = new ImBoolean(true);
   private final ImBoolean logAutoScroll = new ImBoolean(true);
 
   private final ImString commandInputBuffer = new ImString(256);
@@ -592,6 +594,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       case INFO -> COLOR_INFO;
       case WARN -> COLOR_WARN;
       case ERROR -> COLOR_ERROR;
+      case DEBUG -> COLOR_DEBUG;
     };
   }
 
@@ -1215,6 +1218,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       ImGui.menuItem("Info", null, logShowInfo);
       ImGui.menuItem("Warn", null, logShowWarn);
       ImGui.menuItem("Error", null, logShowError);
+      ImGui.menuItem("Debug", null, logShowDebug);
       ImGui.separator();
       ImGui.menuItem("Auto-scroll", null, logAutoScroll);
       ImGui.endMenuBar();
@@ -1477,6 +1481,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       case INFO -> logShowInfo.get();
       case WARN -> logShowWarn.get();
       case ERROR -> logShowError.get();
+      case DEBUG -> logShowDebug.get();
     };
   }
 
