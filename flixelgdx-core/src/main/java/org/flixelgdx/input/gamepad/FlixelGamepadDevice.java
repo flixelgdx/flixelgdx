@@ -71,7 +71,7 @@ public final class FlixelGamepadDevice {
    */
   @NotNull
   public FlixelGamepadModel getModel() {
-    return manager.getDetectedModel(id);
+    return manager.getModel(id);
   }
 
   /**

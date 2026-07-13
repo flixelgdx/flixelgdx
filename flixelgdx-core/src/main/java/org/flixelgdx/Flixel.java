@@ -50,6 +50,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
@@ -514,17 +515,13 @@ public final class Flixel {
    * <p>Poll button states and screen-space coordinates every frame. Like {@link #keys}, this
    * manager distinguishes between buttons that are currently held, just pressed this frame, and
    * just released this frame, so your code can react precisely to each event. Button constants are
-   * defined in {@link org.flixelgdx.input.mouse.FlixelMouseButton FlixelMouseButton}.
-   *
-   * <p>Coordinates are returned in screen pixels with the origin in the top-left corner, matching
-   * libGDX conventions. Use the active camera's screen-to-world helper to convert these
-   * coordinates to world space when needed.
+   * defined in {@link FlixelMouseButton}.
    *
    * <p>Example:
    * <pre>{@code
    * // Fire on the first frame the left button is pressed.
    * if (Flixel.mouse.justPressed(FlixelMouseButton.LEFT)) {
-   *   spawnBullet(Flixel.mouse.getX(), Flixel.mouse.getY());
+   *   spawnBullet(Flixel.mouse.getWorldX(), Flixel.mouse.getWorldY());
    * }
    *
    * // Pan the camera while the right button is held.
@@ -533,7 +530,7 @@ public final class Flixel {
    * }
    * }</pre>
    *
-   * @see org.flixelgdx.input.mouse.FlixelMouseButton
+   * @see FlixelMouseButton
    */
   @NotNull
   public static FlixelMouseManager mouse;
@@ -895,14 +892,12 @@ public final class Flixel {
   public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC,
       Supplier<FlixelState> stateFactory) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
+
     if (!initialized) {
-      throw new IllegalStateException("Flixel has not been initialized yet!");
+      throw new IllegalStateException("Flixel has not been initialized yet.");
     }
     if (newState == null) {
-      throw new IllegalArgumentException("New state cannot be null!");
-    }
-    if (triggerGC) {
-      System.gc();
+      throw new IllegalArgumentException("New state cannot be null.");
     }
     if (state != null) {
       state.destroy();
@@ -926,6 +921,11 @@ public final class Flixel {
     state.ensureMembers();
     state.create();
     currentStateFactory = stateFactory;
+
+    if (triggerGC) {
+      System.gc();
+    }
+
     Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
   }
 

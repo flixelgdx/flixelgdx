@@ -502,8 +502,14 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return v;
   }
 
+  /**
+   * Model detected for the given slot the last time the slot was (re)bound.
+   *
+   * @param gamepadId Slot index.
+   * @return Detected model, or {@link FlixelGamepadModel#UNKNOWN} when out of range or unrecognized.
+   */
   @NotNull
-  public FlixelGamepadModel getDetectedModel(int gamepadId) {
+  public FlixelGamepadModel getModel(int gamepadId) {
     if (gamepadId < 0 || gamepadId >= MAX_GAMEPADS) {
       return FlixelGamepadModel.UNKNOWN;
     }
@@ -667,7 +673,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
         }
         slotController[i] = newC;
         if (newC != null) {
-          FlixelGamepadModel model = FlixelGamepadDetector.detect(newC.getName());
+          FlixelGamepadModel model = FlixelGamepadDetector.detect(newC);
           slotModel[i] = model;
           connectPayload.set(i, model);
           deviceConnected.dispatch(connectPayload);

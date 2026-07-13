@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.input.gamepad;
 
+import com.badlogic.gdx.controllers.Controller;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +44,20 @@ public final class FlixelGamepadDetector {
   private FlixelGamepadDetector() {}
 
   /**
+   * Detects the best {@link FlixelGamepadModel} for the given controller.
+   *
+   * @param controller The controller to detect, or {@code null}.
+   * @return Never {@code null}; {@link FlixelGamepadModel#UNKNOWN} when no rule matches.
+   */
+  @NotNull
+  public static FlixelGamepadModel detect(@Nullable Controller controller) {
+    if (controller == null) {
+      return FlixelGamepadModel.UNKNOWN;
+    }
+    return detect(controller.getName());
+  }
+
+  /**
    * Detects the best {@link FlixelGamepadModel} for the given controller name.
    *
    * @param controllerName Raw name from the backend, or {@code null}.
@@ -58,10 +74,10 @@ public final class FlixelGamepadDetector {
     }
     String n = trimmed.toLowerCase(Locale.ROOT);
 
-    if (n.contains("dualsense")) {
+    if (n.contains("dualsense") || n.contains("ps5")) {
       return FlixelGamepadModel.PS5;
     }
-    if (n.contains("dualshock") || n.contains("ds4")) {
+    if (n.contains("dualshock") || n.contains("ds4") || n.contains("ps4")) {
       return FlixelGamepadModel.PS4;
     }
     if (n.contains("sony")) {
