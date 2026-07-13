@@ -949,17 +949,6 @@ public final class Flixel {
   }
 
   /**
-   * Logs a debug message using the default tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order.
-   *
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
-   */
-  public static void debug(Object message, Object... args) {
-    log.debug(message, args);
-  }
-
-  /**
    * Logs a debug message under a custom tag, replacing each {@code {}} placeholder with
    * the corresponding argument in order.
    *
@@ -990,17 +979,6 @@ public final class Flixel {
    */
   public static void info(String tag, Object message) {
     log.info(tag, message);
-  }
-
-  /**
-   * Logs an informational message using the default tag, replacing each {@code {}} placeholder
-   * with the corresponding argument in order.
-   *
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
-   */
-  public static void info(Object message, Object... args) {
-    log.info(message, args);
   }
 
   /**
@@ -1101,17 +1079,6 @@ public final class Flixel {
    */
   public static void error(String tag, Object message, Throwable throwable) {
     log.error(tag, message, throwable);
-  }
-
-  /**
-   * Logs an error message using the default tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order.
-   *
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
-   */
-  public static void error(Object message, Object... args) {
-    log.error(message, args);
   }
 
   /**
