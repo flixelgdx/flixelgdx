@@ -955,8 +955,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void debug(Object message, Object... args) {
-    log.debug(message, args);
+  public static void debugf(Object message, Object... args) {
+    log.debugf(message, args);
   }
 
   /**
@@ -967,8 +967,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void debug(String tag, Object message, Object... args) {
-    log.debug(tag, message, args);
+  public static void debugf(String tag, Object message, Object... args) {
+    log.debugf(tag, message, args);
   }
 
   /**
@@ -999,8 +999,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void info(Object message, Object... args) {
-    log.info(message, args);
+  public static void infof(Object message, Object... args) {
+    log.infof(message, args);
   }
 
   /**
@@ -1011,8 +1011,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void info(String tag, Object message, Object... args) {
-    log.info(tag, message, args);
+  public static void infof(String tag, Object message, Object... args) {
+    log.infof(tag, message, args);
   }
 
   /**
@@ -1043,8 +1043,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void warn(Object message, Object... args) {
-    log.warn(message, args);
+  public static void warnf(Object message, Object... args) {
+    log.warnf(message, args);
   }
 
   /**
@@ -1055,8 +1055,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void warn(String tag, Object message, Object... args) {
-    log.warn(tag, message, args);
+  public static void warnf(String tag, Object message, Object... args) {
+    log.warnf(tag, message, args);
   }
 
   /**
@@ -1110,8 +1110,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void error(Object message, Object... args) {
-    log.error(message, args);
+  public static void errorf(Object message, Object... args) {
+    log.errorf(message, args);
   }
 
   /**
@@ -1122,8 +1122,8 @@ public final class Flixel {
    * @param throwable The throwable to log.
    * @param args The arguments to substitute into the message.
    */
-  public static void error(Object message, Throwable throwable, Object... args) {
-    log.error(message, throwable, args);
+  public static void errorf(Object message, Throwable throwable, Object... args) {
+    log.errorf(message, throwable, args);
   }
 
   /**
@@ -1134,8 +1134,8 @@ public final class Flixel {
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public static void error(String tag, Object message, Object... args) {
-    log.error(tag, message, args);
+  public static void errorf(String tag, Object message, Object... args) {
+    log.errorf(tag, message, args);
   }
 
   /**
@@ -1147,8 +1147,8 @@ public final class Flixel {
    * @param throwable The throwable to log.
    * @param args The arguments to substitute into the message.
    */
-  public static void error(String tag, Object message, Throwable throwable, Object... args) {
-    log.error(tag, message, throwable, args);
+  public static void errorf(String tag, Object message, Throwable throwable, Object... args) {
+    log.errorf(tag, message, throwable, args);
   }
 
   /**
