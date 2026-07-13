@@ -842,7 +842,7 @@ public class FlixelLogger implements ApplicationLogger {
 
     FlixelLogConsoleSink consoleSink = Flixel.logConsoleSink;
     if (consoleSink != null) {
-      String safeTag = tag != null ? tag : "";
+      String safeTag = tag != null ? tag : defaultTag;
       consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts,
           logMode == FlixelLogMode.DETAILED);
     } else {
