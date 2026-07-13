@@ -248,13 +248,13 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs a debug message using the default tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order.
    *
-   * <p>For example: {@code Flixel.log.debugf("there are {} enemies and {} coins", enemyCount, coinCount)}.
+   * <p>For example: {@code Flixel.log.debug("there are {} enemies and {} coins", enemyCount, coinCount)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void debugf(Object message, Object... args) {
+  public void debug(Object message, Object... args) {
     outputLog(defaultTag, evaluateMessage(message, args), FlixelLogLevel.DEBUG, false, null, 0, null, null);
   }
 
@@ -262,14 +262,14 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs a debug message under a custom tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order.
    *
-   * <p>For example: {@code Flixel.log.debugf("Enemy", "there are {} enemies left", enemyCount)}.
+   * <p>For example: {@code Flixel.log.debug("Enemy", "there are {} enemies left", enemyCount)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param tag The tag to associate with this log entry.
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void debugf(String tag, Object message, Object... args) {
+  public void debug(String tag, Object message, Object... args) {
     outputLog(tag, evaluateMessage(message, args), FlixelLogLevel.DEBUG, false, null, 0, null, null);
   }
 
@@ -350,13 +350,13 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs an informational message using the default tag, replacing each {@code {}} placeholder
    * with the corresponding argument in order.
    *
-   * <p>For example: {@code Flixel.log.infof("loaded {} assets in {}ms", count, elapsed)}.
+   * <p>For example: {@code Flixel.log.info("loaded {} assets in {}ms", count, elapsed)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void infof(Object message, Object... args) {
+  public void info(Object message, Object... args) {
     outputLog(defaultTag, evaluateMessage(message, args), FlixelLogLevel.INFO, false, null, 0, null, null);
   }
 
@@ -364,14 +364,14 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs an informational message under a custom tag, replacing each {@code {}} placeholder with
    * the corresponding argument in order.
    *
-   * <p>For example: {@code Flixel.log.infof("Assets", "loaded {} assets in {}ms", count, elapsed)}.
+   * <p>For example: {@code Flixel.log.info("Assets", "loaded {} assets in {}ms", count, elapsed)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param tag The tag to associate with this log entry.
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void infof(String tag, Object message, Object... args) {
+  public void info(String tag, Object message, Object... args) {
     outputLog(tag, evaluateMessage(message, args), FlixelLogLevel.INFO, false, null, 0, null, null);
   }
 
@@ -452,13 +452,13 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs a warning message using the default tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order.
    *
-   * <p>For example: {@code Flixel.log.warnf("pool exhausted, {} objects dropped", dropped)}.
+   * <p>For example: {@code Flixel.log.warn("pool exhausted, {} objects dropped", dropped)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void warnf(Object message, Object... args) {
+  public void warn(Object message, Object... args) {
     outputLog(defaultTag, evaluateMessage(message, args), FlixelLogLevel.WARN, false, null, 0, null, null);
   }
 
@@ -466,14 +466,14 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs a warning message under a custom tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order.
    *
-   * <p>For example: {@code Flixel.log.warnf("Pool", "pool exhausted, {} objects dropped", dropped)}.
+   * <p>For example: {@code Flixel.log.warn("Pool", "pool exhausted, {} objects dropped", dropped)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param tag The tag to associate with this log entry.
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void warnf(String tag, Object message, Object... args) {
+  public void warn(String tag, Object message, Object... args) {
     outputLog(tag, evaluateMessage(message, args), FlixelLogLevel.WARN, false, null, 0, null, null);
   }
 
@@ -579,51 +579,51 @@ public class FlixelLogger implements ApplicationLogger {
    * Logs an error message using the default tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order, with no throwable.
    *
-   * <p>For example: {@code Flixel.log.errorf("failed to load {} of {} assets", failed, total)}.
+   * <p>For example: {@code Flixel.log.error("failed to load {} of {} assets", failed, total)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void errorf(Object message, Object... args) {
-    errorf(defaultTag, message, (Throwable) null, args);
+  public void error(Object message, Object... args) {
+    error(defaultTag, message, (Throwable) null, args);
   }
 
   /**
    * Logs an error message using the default tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order, including the throwable's string representation.
    *
-   * <p>For example: {@code Flixel.log.errorf("failed to load {} assets", e, count)}.
+   * <p>For example: {@code Flixel.log.error("failed to load {} assets", e, count)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param throwable The exception to append to the log output.
    * @param args The arguments to substitute into the message.
    */
-  public void errorf(Object message, Throwable throwable, Object... args) {
-    errorf(defaultTag, message, throwable, args);
+  public void error(Object message, Throwable throwable, Object... args) {
+    error(defaultTag, message, throwable, args);
   }
 
   /**
    * Logs an error message under a custom tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order, with no throwable.
    *
-   * <p>For example: {@code Flixel.log.errorf("Assets", "failed to load {} of {} assets", failed, total)}.
+   * <p>For example: {@code Flixel.log.error("Assets", "failed to load {} of {} assets", failed, total)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param tag The tag to associate with this log entry.
    * @param message The format string, where each {@code {}} is replaced by the next argument.
    * @param args The arguments to substitute into the message.
    */
-  public void errorf(String tag, Object message, Object... args) {
-    errorf(tag, message, (Throwable) null, args);
+  public void error(String tag, Object message, Object... args) {
+    error(tag, message, (Throwable) null, args);
   }
 
   /**
    * Logs an error message under a custom tag, replacing each {@code {}} placeholder with the
    * corresponding argument in order, including the throwable's string representation.
    *
-   * <p>For example: {@code Flixel.log.errorf("Assets", "failed to load {} assets", e, count)}.
+   * <p>For example: {@code Flixel.log.error("Assets", "failed to load {} assets", e, count)}.
    * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
    *
    * @param tag The tag to associate with this log entry.
@@ -631,7 +631,7 @@ public class FlixelLogger implements ApplicationLogger {
    * @param throwable The exception to append to the log output, or {@code null} if none.
    * @param args The arguments to substitute into the message.
    */
-  public void errorf(String tag, Object message, Throwable throwable, Object... args) {
+  public void error(String tag, Object message, Throwable throwable, Object... args) {
     String msg = evaluateMessage(message, args);
     if (throwable != null) {
       msg = msg + " | Exception: " + throwable;
