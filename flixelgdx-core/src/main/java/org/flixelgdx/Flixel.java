@@ -930,6 +930,37 @@ public final class Flixel {
   }
 
   /**
+   * Logs a debug message using the default tag.
+   *
+   * @param message The message to log.
+   */
+  public static void debug(Object message) {
+    log.debug(message);
+  }
+
+  /**
+   * Logs a debug message under a custom tag.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The message to log.
+   */
+  public static void debug(String tag, Object message) {
+    log.debug(tag, message);
+  }
+
+  /**
+   * Logs a debug message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void debug(String tag, Object message, Object... args) {
+    log.debug(tag, message, args);
+  }
+
+  /**
    * Logs a generic informational message. This is likely the method you'll use the most,
    * as it's for general messages that don't fit into the other log methods.
    *
@@ -951,8 +982,20 @@ public final class Flixel {
   }
 
   /**
+   * Logs an informational message under a custom tag, replacing each {@code {}} placeholder
+   * with the corresponding argument in order.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void info(String tag, Object message, Object... args) {
+    log.info(tag, message, args);
+  }
+
+  /**
    * Logs a generic warning message. This is for messages that are not errors, but are
-   *  still important to note.
+   * still important to note.
    *
    * @param message The message to log.
    */
@@ -961,8 +1004,8 @@ public final class Flixel {
   }
 
   /**
-   * Logs a warning message, with yellow highlighting, with a custom tag. This is for
-   * messages that are not errors but are still important to note.
+   * Logs a warning message with a custom tag. This is for messages that are not errors
+   * but are still important to note.
    *
    * @param tag The tag to log the message under.
    * @param message The message to log.
@@ -972,29 +1015,63 @@ public final class Flixel {
   }
 
   /**
-   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs a warning message using the default tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
+   *
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void warn(Object message, Object... args) {
+    log.warn(message, args);
+  }
+
+  /**
+   * Logs a warning message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void warn(String tag, Object message, Object... args) {
+    log.warn(tag, message, args);
+  }
+
+  /**
+   * Logs an error message with red highlighting (and the file location underlined).
    * This is for events that are typically not recoverable.
    *
    * @param message The message to log.
    */
   public static void error(String message) {
-    error(log.getDefaultTag(), message, null);
+    log.error(message);
   }
 
   /**
-   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
-   * This is for events that are typically not recoverable.
+   * Logs an error message with red highlighting (and the file location underlined), including
+   * the throwable's string representation.
+   *
+   * @param message The message to log.
+   * @param throwable The throwable to log.
+   */
+  public static void error(Object message, Throwable throwable) {
+    log.error(message, throwable);
+  }
+
+  /**
+   * Logs an error message with red highlighting (and the file location underlined) under
+   * a custom tag.
    *
    * @param tag The tag to log the message under.
    * @param message The message to log.
    */
   public static void error(String tag, Object message) {
-    error(tag, message, null);
+    log.error(tag, message);
   }
 
   /**
-   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
-   * This is for events that are typically not recoverable.
+   * Logs an error message with red highlighting (and the file location underlined) under
+   * a custom tag, including the throwable's string representation.
    *
    * @param tag The tag to log the message under.
    * @param message The message to log.
@@ -1002,6 +1079,43 @@ public final class Flixel {
    */
   public static void error(String tag, Object message, Throwable throwable) {
     log.error(tag, message, throwable);
+  }
+
+  /**
+   * Logs an error message using the default tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order, including the throwable's string representation.
+   *
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param throwable The throwable to log.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void error(Object message, Throwable throwable, Object... args) {
+    log.error(message, throwable, args);
+  }
+
+  /**
+   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void error(String tag, Object message, Object... args) {
+    log.error(tag, message, args);
+  }
+
+  /**
+   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order, including the throwable's string representation.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param throwable The throwable to log.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void error(String tag, Object message, Throwable throwable, Object... args) {
+    log.error(tag, message, throwable, args);
   }
 
   /**
