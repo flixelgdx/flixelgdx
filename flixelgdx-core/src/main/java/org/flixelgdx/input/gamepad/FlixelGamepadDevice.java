@@ -184,8 +184,8 @@ public final class FlixelGamepadDevice {
    * processing.
    *
    * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
-   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0}
-   * - use {@link #pressed(int)} with {@link FlixelGamepadInput#L2} there instead.
+   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadInput#L2} there instead.
    *
    * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
    */
@@ -198,8 +198,8 @@ public final class FlixelGamepadDevice {
    * processing.
    *
    * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
-   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0}
-   * - use {@link #pressed(int)} with {@link FlixelGamepadInput#R2} there instead.
+   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadInput#R2} there instead.
    *
    * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
    */

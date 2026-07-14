@@ -417,7 +417,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     }
 
     int nativeCode = resolvedNativeButton(c, logicalButton);
-    if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
+    if (nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
     return currentButtons[gamepadId][nativeCode];
@@ -453,7 +453,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     }
 
     int nativeCode = resolvedNativeButton(c, logicalButton);
-    if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
+    if (nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
     return currentButtons[gamepadId][nativeCode] && !previousButtons[gamepadId][nativeCode];
@@ -489,7 +489,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     }
 
     int nativeCode = resolvedNativeButton(c, logicalButton);
-    if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
+    if (nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
     return !currentButtons[gamepadId][nativeCode] && previousButtons[gamepadId][nativeCode];
