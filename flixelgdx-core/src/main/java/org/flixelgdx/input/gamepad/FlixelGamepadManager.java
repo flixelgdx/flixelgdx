@@ -627,8 +627,8 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
    *
    * <p>On the Jamepad/SDL desktop backend, triggers are reported as axes, so this reads the
    * raw trigger axis directly. On web (TeaVM/W3C Gamepad API), triggers are digital buttons;
-   * this method returns {@code 0} there - use {@link #pressed(int, int)} with
-   * {@link FlixelGamepadInput#L2} on web instead.
+   * this method returns {@code 0} there; for web, use {@link #pressed(int, int)} with
+   * {@link FlixelGamepadInput#L2} instead.
    *
    * <pre>{@code
    * float howHardL2 = Flixel.gamepads.getTriggerL(0);
@@ -647,8 +647,8 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
    *
    * <p>On the Jamepad/SDL desktop backend, triggers are reported as axes, so this reads the
    * raw trigger axis directly. On web (TeaVM/W3C Gamepad API), triggers are digital buttons;
-   * this method returns {@code 0} there - use {@link #pressed(int, int)} with
-   * {@link FlixelGamepadInput#R2} on web instead.
+   * this method returns {@code 0} there; for web, use {@link #pressed(int, int)} with
+   * {@link FlixelGamepadInput#R2} instead.
    *
    * <pre>{@code
    * float howHardR2 = Flixel.gamepads.getTriggerR(0);
