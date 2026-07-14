@@ -21,49 +21,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util;
+package org.flixelgdx.logging;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class FlixelMathUtilTest {
-
-  private static final float DELTA = 1e-5f;
+class FlixelLogEntryTest {
 
   @Test
-  void roundTwoDecimals() {
-    assertEquals(3.15f, FlixelMathUtil.round(3.145f, 2), DELTA);
+  void recordAccessorsReturnConstructorValues() {
+    FlixelLogEntry entry = new FlixelLogEntry(FlixelLogLevel.WARN, "MyTag", "something broke");
+    assertEquals(FlixelLogLevel.WARN, entry.level());
+    assertEquals("MyTag", entry.tag());
+    assertEquals("something broke", entry.message());
   }
 
   @Test
-  void roundZeroPlaces() {
-    assertEquals(4f, FlixelMathUtil.round(3.7f, 0), DELTA);
+  void toStringWithTagIncludesAllParts() {
+    FlixelLogEntry entry = new FlixelLogEntry(FlixelLogLevel.INFO, "Game", "started");
+    assertEquals("[INFO] [Game] started", entry.toString());
   }
 
   @Test
-  void roundZeroValue() {
-    assertEquals(0f, FlixelMathUtil.round(0f, 2), DELTA);
+  void toStringWithEmptyTagOmitsTagBrackets() {
+    FlixelLogEntry entry = new FlixelLogEntry(FlixelLogLevel.DEBUG, "", "debug message");
+    assertEquals("[DEBUG] debug message", entry.toString());
   }
 
   @Test
-  void roundNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0f) = -16, so result is -1.6 exactly.
-    assertEquals(-1.6f, FlixelMathUtil.round(-1.6f, 1), DELTA);
+  void toStringForErrorLevel() {
+    FlixelLogEntry entry = new FlixelLogEntry(FlixelLogLevel.ERROR, "Crash", "null pointer");
+    assertEquals("[ERROR] [Crash] null pointer", entry.toString());
   }
 
   @Test
-  void roundHalfUp() {
-    assertEquals(1f, FlixelMathUtil.round(0.5f, 0), DELTA);
-  }
-
-  @Test
-  void roundLargeWholeNumber() {
-    assertEquals(1000f, FlixelMathUtil.round(999.9f, 0), DELTA);
-  }
-
-  @Test
-  void roundOneDecimalPlace() {
-    assertEquals(1.2f, FlixelMathUtil.round(1.23f, 1), DELTA);
+  void recordEqualityHoldsForIdenticalValues() {
+    FlixelLogEntry a = new FlixelLogEntry(FlixelLogLevel.INFO, "tag", "msg");
+    FlixelLogEntry b = new FlixelLogEntry(FlixelLogLevel.INFO, "tag", "msg");
+    assertEquals(a, b);
   }
 }
