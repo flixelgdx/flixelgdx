@@ -60,6 +60,13 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
   private static final int MAX_BUTTONS = 256;
   private static final int MAX_AXES = 64;
 
+  // Reserved slots in currentButtons/previousButtons for synthesized trigger state. Used on
+  // backends such as Jamepad/SDL where L2 and R2 are reported as analog axes instead of buttons,
+  // leaving ControllerMapping.buttonL2 / buttonR2 as UNDEFINED.
+  private static final int SYNTHETIC_TRIGGER_L = 249;
+  private static final int SYNTHETIC_TRIGGER_R = 250;
+  private static final float TRIGGER_BUTTON_THRESHOLD = 0.5f;
+
   /** Number of controllers mapped to IDs {@code 0 .. numActiveGamepads-1} this frame. */
   public int numActiveGamepads;
 
@@ -92,6 +99,9 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
 
   @NotNull
   private FlixelHapticsProvider hapticsProvider = new FlixelDefaultHapticsProvider(this);
+
+  @Nullable
+  private FlixelAnalogButtonReader analogButtonReader;
 
   /**
    * Whether the gamepad system is active. When {@code false}, all queries return inactive state and no hardware is
@@ -402,10 +412,11 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return false;
     }
     if (logicalButton == FlixelGamepadInput.ANY) {
-      return slotAnyPhysicalButton(gamepadId, c) || slotHasAxisBeyondDeadzone(gamepadId, c);
+      return slotAnyPhysicalButton(gamepadId, c) || slotHasAxisBeyondDeadzone(gamepadId, c)
+          || slotHasTriggerActivity(gamepadId, c);
     }
 
-    int nativeCode = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
+    int nativeCode = resolvedNativeButton(c, logicalButton);
     if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
@@ -441,7 +452,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return false;
     }
 
-    int nativeCode = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
+    int nativeCode = resolvedNativeButton(c, logicalButton);
     if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
@@ -477,7 +488,7 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       return false;
     }
 
-    int nativeCode = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
+    int nativeCode = resolvedNativeButton(c, logicalButton);
     if (nativeCode == ControllerMapping.UNDEFINED || nativeCode < 0 || nativeCode >= MAX_BUTTONS) {
       return false;
     }
@@ -531,6 +542,22 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
    */
   public void setHapticsProvider(@NotNull FlixelHapticsProvider provider) {
     hapticsProvider = Objects.requireNonNull(provider, "provider cannot be null.");
+  }
+
+  /**
+   * Installs a platform-specific reader for analog button values, used to populate
+   * {@link FlixelGamepadInput#AXIS_TRIGGER_L} and {@link FlixelGamepadInput#AXIS_TRIGGER_R} on
+   * backends where triggers are exposed as buttons rather than axes (for example, the web W3C
+   * Gamepad API).
+   *
+   * <p>{@code FlixelTeaVMAnalogButtonReader} (installed automatically by
+   * {@code FlixelTeaVMLauncher}) is the only built-in implementation. Pass {@code null} to disable
+   * analog button reading and fall back to the axis-only trigger behavior.
+   *
+   * @param reader Reader to install, or {@code null} to clear any existing reader.
+   */
+  public void setAnalogButtonReader(@Nullable FlixelAnalogButtonReader reader) {
+    analogButtonReader = reader;
   }
 
   /**
@@ -595,6 +622,46 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
   }
 
   /**
+   * Returns the current analog pressure of the left trigger (L2) on the given slot, in the
+   * range {@code [0, 1]}, after applying the global dead zone.
+   *
+   * <p>On the Jamepad/SDL desktop backend, triggers are reported as axes, so this reads the
+   * raw trigger axis directly. On web (TeaVM/W3C Gamepad API), triggers are digital buttons;
+   * this method returns {@code 0} there - use {@link #pressed(int, int)} with
+   * {@link FlixelGamepadInput#L2} on web instead.
+   *
+   * <pre>{@code
+   * float howHardL2 = Flixel.gamepads.getTriggerL(0);
+   * }</pre>
+   *
+   * @param gamepadId Slot index.
+   * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} when inactive or within the dead zone.
+   */
+  public float getTriggerL(int gamepadId) {
+    return getAxis(gamepadId, FlixelGamepadInput.AXIS_TRIGGER_L);
+  }
+
+  /**
+   * Returns the current analog pressure of the right trigger (R2) on the given slot, in the
+   * range {@code [0, 1]}, after applying the global dead zone.
+   *
+   * <p>On the Jamepad/SDL desktop backend, triggers are reported as axes, so this reads the
+   * raw trigger axis directly. On web (TeaVM/W3C Gamepad API), triggers are digital buttons;
+   * this method returns {@code 0} there - use {@link #pressed(int, int)} with
+   * {@link FlixelGamepadInput#R2} on web instead.
+   *
+   * <pre>{@code
+   * float howHardR2 = Flixel.gamepads.getTriggerR(0);
+   * }</pre>
+   *
+   * @param gamepadId Slot index.
+   * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} when inactive or within the dead zone.
+   */
+  public float getTriggerR(int gamepadId) {
+    return getAxis(gamepadId, FlixelGamepadInput.AXIS_TRIGGER_R);
+  }
+
+  /**
    * Stops any active vibration on the controller in the given slot immediately.
    *
    * @param slot Slot index.
@@ -654,6 +721,33 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     return globalDeadZone != null ? globalDeadZone : 0f;
   }
 
+  /**
+   * Resolves a logical button to its native index, falling back to a synthetic trigger index for
+   * L2 and R2 when the backend leaves their {@link ControllerMapping} entries as
+   * {@link ControllerMapping#UNDEFINED}.
+   */
+  private int resolvedNativeButton(@NotNull Controller c, int logicalButton) {
+    int code = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
+    if (code != ControllerMapping.UNDEFINED) {
+      return code;
+    }
+    if (logicalButton == FlixelGamepadInput.L2) {
+      return SYNTHETIC_TRIGGER_L;
+    }
+    if (logicalButton == FlixelGamepadInput.R2) {
+      return SYNTHETIC_TRIGGER_R;
+    }
+    return ControllerMapping.UNDEFINED;
+  }
+
+  private boolean slotHasTriggerActivity(int slot, @NotNull Controller c) {
+    ControllerMapping m = c.getMapping();
+    if (m.buttonL2 == ControllerMapping.UNDEFINED && currentButtons[slot][SYNTHETIC_TRIGGER_L]) {
+      return true;
+    }
+    return m.buttonR2 == ControllerMapping.UNDEFINED && currentButtons[slot][SYNTHETIC_TRIGGER_R];
+  }
+
   private void syncControllers() {
     Array<Controller> list;
     try {
@@ -708,6 +802,29 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
       for (int a = 0; a < ac; a++) {
         axisValues[s][a] = c.getAxis(a);
       }
+      ControllerMapping m = c.getMapping();
+      // On platforms where triggers are analog buttons (e.g. web W3C Gamepad API), populate the
+      // trigger axis slots from the reader so that getTriggerL/R() returns pressure values.
+      if (analogButtonReader != null) {
+        if (m.buttonL2 != ControllerMapping.UNDEFINED) {
+          axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_L] = analogButtonReader.read(c, m.buttonL2);
+        }
+        if (m.buttonR2 != ControllerMapping.UNDEFINED) {
+          axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_R] = analogButtonReader.read(c, m.buttonR2);
+        }
+      }
+      // On backends such as Jamepad/SDL, triggers are analog axes rather than digital buttons,
+      // so ControllerMapping.buttonL2 and buttonR2 are UNDEFINED. Synthesize a boolean button
+      // state from the trigger axis value so that pressed(), justPressed(), and justReleased()
+      // work correctly on those backends.
+      if (m.buttonL2 == ControllerMapping.UNDEFINED) {
+        float v = FlixelGamepadInput.AXIS_TRIGGER_L < ac ? axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_L] : 0f;
+        currentButtons[s][SYNTHETIC_TRIGGER_L] = v > TRIGGER_BUTTON_THRESHOLD;
+      }
+      if (m.buttonR2 == ControllerMapping.UNDEFINED) {
+        float v = FlixelGamepadInput.AXIS_TRIGGER_R < ac ? axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_R] : 0f;
+        currentButtons[s][SYNTHETIC_TRIGGER_R] = v > TRIGGER_BUTTON_THRESHOLD;
+      }
     }
   }
 
@@ -752,7 +869,8 @@ public final class FlixelGamepadManager implements FlixelInputManager, Controlle
     if (c == null) {
       return false;
     }
-    return slotAnyPhysicalButton(slot, c) || slotHasAxisBeyondDeadzone(slot, c);
+    return slotAnyPhysicalButton(slot, c) || slotHasAxisBeyondDeadzone(slot, c)
+        || slotHasTriggerActivity(slot, c);
   }
 
   private float getAxisRaw(int gamepadId, int logicalAxis) {

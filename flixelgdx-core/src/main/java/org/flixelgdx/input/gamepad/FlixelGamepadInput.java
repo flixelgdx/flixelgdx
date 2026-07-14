@@ -82,6 +82,8 @@ public final class FlixelGamepadInput {
   public static final int AXIS_LEFT_Y = 1;
   public static final int AXIS_RIGHT_X = 2;
   public static final int AXIS_RIGHT_Y = 3;
+  public static final int AXIS_TRIGGER_L = 4;
+  public static final int AXIS_TRIGGER_R = 5;
 
   /**
    * Resolves a logical button code to the native button index for the given controller.
@@ -146,8 +148,14 @@ public final class FlixelGamepadInput {
   /**
    * Resolves a logical axis constant to the native axis index for the given controller.
    *
+   * <p>Stick axes ({@link #AXIS_LEFT_X}, {@link #AXIS_LEFT_Y}, {@link #AXIS_RIGHT_X},
+   * {@link #AXIS_RIGHT_Y}) are resolved through the controller's {@link ControllerMapping}.
+   * Trigger axes ({@link #AXIS_TRIGGER_L}, {@link #AXIS_TRIGGER_R}) return fixed SDL ordinals
+   * (4 and 5) because {@link ControllerMapping} has no axis fields for triggers; this is only
+   * meaningful on the Jamepad/SDL desktop backend.
+   *
    * @param controller Controller whose {@link Controller#getMapping()} is used.
-   * @param logicalAxis One of {@link #AXIS_LEFT_X}, {@link #AXIS_LEFT_Y}, {@link #AXIS_RIGHT_X}, or {@link #AXIS_RIGHT_Y}.
+   * @param logicalAxis One of the {@code AXIS_*} constants in this class.
    * @return Native axis index, or {@link ControllerMapping#UNDEFINED} when unsupported.
    */
   public static int logicalAxisToNative(@NotNull Controller controller, int logicalAxis) {
@@ -163,6 +171,14 @@ public final class FlixelGamepadInput {
     }
     if (logicalAxis == AXIS_RIGHT_Y) {
       return m.axisRightY;
+    }
+    // ControllerMapping has no axisL2/axisR2 fields; these ordinals are defined by SDL and
+    // fixed in Jamepad (ControllerAxis.TRIGGERLEFT = 4, TRIGGERRIGHT = 5).
+    if (logicalAxis == AXIS_TRIGGER_L) {
+      return 4;
+    }
+    if (logicalAxis == AXIS_TRIGGER_R) {
+      return 5;
     }
     return ControllerMapping.UNDEFINED;
   }
