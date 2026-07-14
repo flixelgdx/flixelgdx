@@ -29,9 +29,7 @@ import com.github.xpenatan.gdx.teavm.backends.web.WebApplicationConfiguration;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.backend.teavm.alert.FlixelTeaVMAlerter;
 import org.flixelgdx.backend.teavm.audio.FlixelTeaVMSoundHandler;
-import org.flixelgdx.backend.teavm.debug.FlixelTeaVMDebugOverlay;
 import org.flixelgdx.backend.teavm.logging.FlixelTeaVMLogConsole;
 import org.flixelgdx.backend.teavm.logging.TeaVMStackTraceProvider;
 import org.flixelgdx.logging.FlixelLogger;
@@ -205,6 +203,7 @@ public class FlixelTeaVMLauncher {
     }
     Flixel.initialize(game);
     Flixel.gamepads.setHapticsProvider(new FlixelTeaVMHapticsProvider());
+    Flixel.gamepads.setAnalogButtonReader(new FlixelTeaVMAnalogButtonReader());
 
     Flixel.log.setCanStoreLogs(false);
 

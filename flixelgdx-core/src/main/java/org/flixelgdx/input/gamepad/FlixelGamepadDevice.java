@@ -178,4 +178,32 @@ public final class FlixelGamepadDevice {
   public float getYAxis() {
     return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_Y);
   }
+
+  /**
+   * Analog pressure of the left trigger (L2), in the range {@code [0, 1]}, after dead-zone
+   * processing.
+   *
+   * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
+   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadInput#L2} there instead.
+   *
+   * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
+   */
+  public float getTriggerL() {
+    return manager.getTriggerL(id);
+  }
+
+  /**
+   * Analog pressure of the right trigger (R2), in the range {@code [0, 1]}, after dead-zone
+   * processing.
+   *
+   * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
+   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadInput#R2} there instead.
+   *
+   * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
+   */
+  public float getTriggerR() {
+    return manager.getTriggerR(id);
+  }
 }
