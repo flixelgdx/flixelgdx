@@ -177,7 +177,7 @@ public class FlixelTeaVMLauncher {
    *
    * <pre>{@code
    * FlixelTeaVMLauncher.launch(game, FlixelRuntimeMode.DEBUG, null, () -> {
-   *     Flixel.setDebugOverlay(MyCustomOverlay::new);
+   *   Flixel.setDebugOverlay(MyCustomOverlay::new);
    * });
    * }</pre>
    *
@@ -244,8 +244,11 @@ public class FlixelTeaVMLauncher {
    * Returns the used JavaScript heap size in bytes as reported by {@code performance.memory},
    * or 0 if the API is not available (non-Chromium browsers).
    */
-  @JSBody(
-      script = "if (typeof performance !== 'undefined' && performance.memory) { return performance.memory.usedJSHeapSize; } return 0;")
+  @JSBody(script = """
+    if (typeof performance !== 'undefined' && performance.memory) {
+      return performance.memory.usedJSHeapSize;
+    }
+    return 0;""")
   private static native double jsHeapUsedBytes();
 
   /**
@@ -253,7 +256,7 @@ public class FlixelTeaVMLauncher {
    *
    * <p>Browsers only honor this call when the tab was opened programmatically via
    * {@code window.open()}. For tabs the user opened directly, the browser silently
-   * ignores the request; this is an intentional browser security restriction and
+   * ignores the request. This is an intentional browser security restriction and
    * cannot be bypassed.
    */
   @JSBody(script = "window.close();")
@@ -271,20 +274,4 @@ public class FlixelTeaVMLauncher {
       }
       """)
   private static native void suppressContextMenu(String canvasId);
-
-  /**
-   * Default TeaVM entry point. Games should use their own launcher class
-   * as {@code mainClass} and call {@link #launch(FlixelGame)} with their
-   * game instance.
-   *
-   * @param args ignored.
-   * @throws UnsupportedOperationException always, because this stub should
-   *         never be invoked directly.
-   */
-  public static void main(String[] args) {
-    throw new UnsupportedOperationException(
-        "Configure your game's launcher class as mainClass in the teavm block, "
-            + "e.g. mainClass = \"com.mygame.MyTeaVMLauncher\", and in its main() call "
-            + "FlixelTeaVMLauncher.launch(new YourGame(...));");
-  }
 }
