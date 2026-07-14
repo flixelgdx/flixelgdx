@@ -39,8 +39,6 @@ class FlixelEaseTest {
   private static final float TIGHT = 1e-5f;
   private static final float APPROX = 2e-3f;
 
-  // -- Endpoints: f(0)=0 and f(1)=1 for all polynomial/trig/bounce/back functions --
-
   @ParameterizedTest(name = "{0}: f(0)=0 and f(1)=1")
   @MethodSource("exactEndpointCases")
   void endpointsAreZeroAndOne(String name, float atZero, float atOne) {
@@ -105,8 +103,6 @@ class FlixelEaseTest {
     assertEquals(1f, FlixelEase.elasticInOut(1f), APPROX);
   }
 
-  // -- InOut symmetry: all InOut functions must pass through exactly (0.5, 0.5) --
-
   @ParameterizedTest(name = "{0}(0.5) = 0.5")
   @MethodSource("inOutMidpointCases")
   void inOutPassesThroughHalf(String name, float midValue) {
@@ -126,8 +122,6 @@ class FlixelEaseTest {
         Arguments.of("circInOut", FlixelEase.circInOut(0.5f)));
   }
 
-  // -- Monotonicity: f(0.25) < f(0.75) for all non-oscillating functions --
-
   @ParameterizedTest(name = "{0}: value increases from t=0.25 to t=0.75")
   @MethodSource("monotonicityCases")
   void functionIncreasesFromQuarterToThreeQuarters(String name, float at25, float at75) {
@@ -135,6 +129,7 @@ class FlixelEaseTest {
   }
 
   static Stream<Arguments> monotonicityCases() {
+    // Elastic is excluded, as it oscillates and does not satisfy this property in all sub-ranges.
     return Stream.of(
         Arguments.of("linear", FlixelEase.linear(0.25f), FlixelEase.linear(0.75f)),
         Arguments.of("quadIn", FlixelEase.quadIn(0.25f), FlixelEase.quadIn(0.75f)),
@@ -170,11 +165,8 @@ class FlixelEaseTest {
         Arguments.of("backIn", FlixelEase.backIn(0.25f), FlixelEase.backIn(0.75f)),
         Arguments.of("backOut", FlixelEase.backOut(0.25f), FlixelEase.backOut(0.75f)),
         Arguments.of("backInOut", FlixelEase.backInOut(0.25f), FlixelEase.backInOut(0.75f))
-    // Elastic excluded: it oscillates and does not satisfy this property in all sub-ranges.
     );
   }
-
-  // -- In functions are slower than linear (value < 0.5 at t=0.5) --
 
   @Test
   void inFunctionsAreSlowerThanLinearAtMidpoint() {
@@ -186,8 +178,6 @@ class FlixelEaseTest {
     assertTrue(FlixelEase.expoIn(0.5f) < 0.5f, "expoIn");
     assertTrue(FlixelEase.circIn(0.5f) < 0.5f, "circIn");
   }
-
-  // -- Out functions are faster than linear (value > 0.5 at t=0.5) --
 
   @Test
   void outFunctionsAreFasterThanLinearAtMidpoint() {

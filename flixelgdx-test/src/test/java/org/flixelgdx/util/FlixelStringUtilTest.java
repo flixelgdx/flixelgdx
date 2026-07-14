@@ -36,8 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(GdxHeadlessExtension.class)
 class FlixelStringUtilTest {
 
-  // -- contentEquals --
-
   @Test
   void contentEqualsSameReferenceReturnsTrue() {
     String s = "hello";
@@ -89,8 +87,6 @@ class FlixelStringUtilTest {
   void contentEqualsMixedCharSequenceTypes() {
     assertTrue(FlixelStringUtil.contentEquals("test", new StringBuilder("test")));
   }
-
-  // -- appendFloatRoundedOneDecimal --
 
   @Test
   void appendFloatRoundedOneDecimalPositiveRoundsUp() {

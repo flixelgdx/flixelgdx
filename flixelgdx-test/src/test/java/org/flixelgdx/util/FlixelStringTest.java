@@ -34,8 +34,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(GdxHeadlessExtension.class)
 class FlixelStringTest {
 
-  // -- Construction --
-
   @Test
   void defaultConstructorCreatesEmptyBuffer() {
     FlixelString fs = new FlixelString();
@@ -51,11 +49,9 @@ class FlixelStringTest {
 
   @Test
   void charSequenceConstructorWithNullStoresLiteralNull() {
-    FlixelString fs = new FlixelString((CharSequence) null);
+    FlixelString fs = new FlixelString(null);
     assertEquals("null", fs.toString());
   }
-
-  // -- set(CharSequence) --
 
   @Test
   void setCharSequenceReplacesContent() {
@@ -71,8 +67,6 @@ class FlixelStringTest {
     assertEquals("null", fs.toString());
   }
 
-  // -- set(FlixelString) --
-
   @Test
   void setFlixelStringCopiesOtherBuffer() {
     FlixelString a = new FlixelString("source");
@@ -84,11 +78,9 @@ class FlixelStringTest {
   @Test
   void setNullFlixelStringStoresLiteralNull() {
     FlixelString fs = new FlixelString("x");
-    fs.set((FlixelString) null);
+    fs.set(null);
     assertEquals("null", fs.toString());
   }
-
-  // -- set(primitive) --
 
   @Test
   void setIntWritesDecimalRepresentation() {
@@ -132,8 +124,6 @@ class FlixelStringTest {
     assertEquals("Z", fs.toString());
   }
 
-  // -- clear / isEmpty --
-
   @Test
   void clearResetsLengthToZero() {
     FlixelString fs = new FlixelString("content");
@@ -148,8 +138,6 @@ class FlixelStringTest {
     fs.set("x");
     assertFalse(fs.isEmpty());
   }
-
-  // -- concat --
 
   @Test
   void concatCharSequenceAppendsWithoutClearing() {
@@ -187,8 +175,6 @@ class FlixelStringTest {
     assertEquals("AB", fs.toString());
   }
 
-  // -- chaining --
-
   @Test
   void setAndConcatChainReturnsSameInstance() {
     FlixelString fs = new FlixelString();
@@ -196,8 +182,6 @@ class FlixelStringTest {
     assertEquals(fs, result);
     assertEquals("abc", fs.toString());
   }
-
-  // -- FloatRoundedOneDecimal --
 
   @Test
   void setFloatRoundedOneDecimalFormatsToOnePlaceRoundingUp() {
@@ -228,8 +212,6 @@ class FlixelStringTest {
     assertEquals("-1.6", fs.toString());
   }
 
-  // -- CharSequence contract --
-
   @Test
   void lengthReflectsCurrentContent() {
     FlixelString fs = new FlixelString("abc");
@@ -243,8 +225,6 @@ class FlixelStringTest {
     assertEquals('Y', fs.charAt(1));
     assertEquals('Z', fs.charAt(2));
   }
-
-  // -- copyContentToNewString --
 
   @Test
   void copyContentToNewStringMatchesToString() {

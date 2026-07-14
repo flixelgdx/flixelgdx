@@ -51,8 +51,6 @@ class FlixelLoggerTest {
     logger.addLogListener(captureListener);
   }
 
-  // -- Listener receives correct level and message --
-
   @Test
   void debugCallNotifiesListenerWithDebugLevel() {
     logger.debug("hello");
@@ -81,8 +79,6 @@ class FlixelLoggerTest {
     assertEquals("explosion", captured.get(0).message());
   }
 
-  // -- Tag routing --
-
   @Test
   void taggedDebugSetsTagOnEntry() {
     logger.debug("Physics", "body count: 5");
@@ -102,8 +98,6 @@ class FlixelLoggerTest {
     logger.setDefaultTag(null);
     assertEquals("", logger.getDefaultTag());
   }
-
-  // -- Format string interpolation --
 
   @Test
   void singlePlaceholderIsReplaced() {
@@ -129,8 +123,6 @@ class FlixelLoggerTest {
     assertEquals("null", captured.get(0).message());
   }
 
-  // -- Error with throwable --
-
   @Test
   void errorWithThrowableAppendsMsExceptionSuffix() {
     RuntimeException ex = new RuntimeException("boom");
@@ -138,8 +130,6 @@ class FlixelLoggerTest {
     assertTrue(captured.get(0).message().contains("| Exception:"), "message should include exception suffix");
     assertTrue(captured.get(0).message().startsWith("oops"));
   }
-
-  // -- Listener add / remove --
 
   @Test
   void removeListenerStopsNotifications() {
@@ -153,8 +143,6 @@ class FlixelLoggerTest {
     logger.addLogListener(null);
     logger.debug("ok");
   }
-
-  // -- Log mode getter / setter --
 
   @Test
   void getLogModeReturnsCurrentMode() {
@@ -172,8 +160,6 @@ class FlixelLoggerTest {
     logger.setLogMode(FlixelLogMode.DETAILED);
     assertEquals(FlixelLogMode.DETAILED, logger.getLogMode());
   }
-
-  // -- Logs folder --
 
   @Test
   void setLogsFolderWithNullClearsPath() {

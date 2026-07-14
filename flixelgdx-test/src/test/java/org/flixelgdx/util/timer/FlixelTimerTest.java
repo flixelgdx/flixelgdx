@@ -45,8 +45,6 @@ class FlixelTimerTest {
     manager = new FlixelTimerManager();
   }
 
-  // -- Basic start and callback --
-
   @Test
   void callbackFiresAfterDurationElapses() {
     List<Integer> calls = new ArrayList<>();
@@ -80,8 +78,6 @@ class FlixelTimerTest {
     assertFalse(seen.get(0).active, "timer should be inactive when callback fires");
   }
 
-  // -- Overshoot --
-
   @Test
   void callbackFiresExactlyOnceEvenWhenUpdateOvershootsDuration() {
     List<Integer> calls = new ArrayList<>();
@@ -90,8 +86,6 @@ class FlixelTimerTest {
     manager.update(10f);
     assertEquals(1, calls.size());
   }
-
-  // -- Cancel --
 
   @Test
   void cancelPreventsCallbackFromFiring() {
@@ -113,8 +107,6 @@ class FlixelTimerTest {
     assertTrue(timer.finished);
     assertFalse(timer.active);
   }
-
-  // -- Repeating loops --
 
   @Test
   void repeatingTimerFiresCorrectNumberOfTimes() {
@@ -145,8 +137,6 @@ class FlixelTimerTest {
     assertEquals(1, calls.size());
   }
 
-  // -- Zero-duration --
-
   @Test
   void zeroDurationTimerFiresOnNextUpdate() {
     List<Integer> calls = new ArrayList<>();
@@ -166,8 +156,6 @@ class FlixelTimerTest {
     manager.update(0f);
     assertEquals(1, calls.size());
   }
-
-  // -- Progress and time-left getters --
 
   @Test
   void progressIsZeroBeforeAnyUpdate() {
@@ -200,8 +188,6 @@ class FlixelTimerTest {
     assertEquals(0f, timer.getTimeLeft(), 1e-5f);
   }
 
-  // -- cancelAll --
-
   @Test
   void cancelAllStopsAllTimersWithoutFiringCallbacks() {
     List<Integer> calls = new ArrayList<>();
@@ -214,8 +200,6 @@ class FlixelTimerTest {
     assertTrue(calls.isEmpty());
   }
 
-  // -- Restart --
-
   @Test
   void restartBeforeCompletionResetsCountdown() {
     List<Integer> calls = new ArrayList<>();
@@ -225,7 +209,7 @@ class FlixelTimerTest {
     manager.update(0.5f);
     assertTrue(calls.isEmpty(), "should not fire at halfway point");
 
-    timer.restart(-1f);  // reset to 1s again
+    timer.restart(-1f);  // Reset to 1s again.
 
     manager.update(0.5f);
     assertTrue(calls.isEmpty(), "should not fire halfway through restarted timer");
