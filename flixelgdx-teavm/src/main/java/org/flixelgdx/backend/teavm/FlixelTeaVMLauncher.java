@@ -245,10 +245,10 @@ public class FlixelTeaVMLauncher {
    * or 0 if the API is not available (non-Chromium browsers).
    */
   @JSBody(script = """
-    if (typeof performance !== 'undefined' && performance.memory) {
-      return performance.memory.usedJSHeapSize;
-    }
-    return 0;""")
+      if (typeof performance !== 'undefined' && performance.memory) {
+        return performance.memory.usedJSHeapSize;
+      }
+      return 0;""")
   private static native double jsHeapUsedBytes();
 
   /**
