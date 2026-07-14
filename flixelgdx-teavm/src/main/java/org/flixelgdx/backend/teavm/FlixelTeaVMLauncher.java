@@ -90,7 +90,7 @@ import java.util.function.Consumer;
  *
  * <p>The launcher automatically suppresses the browser's right-click context menu on the game canvas so that
  * right mouse button input reaches the game unobstructed. The suppression is scoped to the canvas element
- * only - right-clicking anywhere else on the page still shows the normal context menu.
+ * only, which means right-clicking anywhere else on the page still shows the normal context menu.
  *
  * <p>Web games always pause when their tab is hidden, regardless of the auto-pause setting. The underlying
  * {@code WebApplication} hooks {@code visibilitychange} unconditionally, and browsers throttle
