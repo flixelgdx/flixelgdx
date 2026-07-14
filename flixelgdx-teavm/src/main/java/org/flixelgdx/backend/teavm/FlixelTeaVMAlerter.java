@@ -21,20 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.teavm.debug;
+package org.flixelgdx.backend.teavm;
 
-import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.backend.FlixelAlerter;
+import org.teavm.jso.JSBody;
 
 /**
- * Web (TeaVM) debug overlay: reuses the shared {@link FlixelDebugOverlay} controller (pause,
- * camera tools, hitboxes, watch/log buffers) without an extra UI toolkit. Replace
- * {@link org.flixelgdx.Flixel#setDebugOverlay(java.util.function.Supplier) Flixel.setDebugOverlay(Supplier)} if you add a
- * browser-based panel layer later.
+ * Web (TeaVM) implementation of {@link FlixelAlerter} using JavaScript's {@code alert()} function.
  */
-public final class FlixelTeaVMDebugOverlay extends FlixelDebugOverlay {
+public class FlixelTeaVMAlerter implements FlixelAlerter {
 
   @Override
-  protected void drawUI() {
-    // No Dear ImGui on web yet; stats and commands remain available through Flixel.log / console.
+  public void showInfoAlert(String title, String message) {
+    showAlert(title, message);
   }
+
+  @Override
+  public void showWarningAlert(String title, String message) {
+    showAlert(title, message);
+  }
+
+  @Override
+  public void showErrorAlert(String title, String message) {
+    showAlert(title, message);
+  }
+
+  private void showAlert(String title, String message) {
+    String text = (title != null ? title : "") + (message != null ? "\n" + message : "");
+    alert(text);
+  }
+
+  @JSBody(params = "text", script = "alert(text);")
+  private static native void alert(String text);
 }
