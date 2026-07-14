@@ -88,6 +88,10 @@ import java.util.function.Consumer;
  * for tabs the user opened directly, the browser silently ignores the request. This is a browser security
  * restriction and cannot be bypassed from JavaScript.
  *
+ * <p>The launcher automatically suppresses the browser's right-click context menu on the game canvas so that
+ * right mouse button input reaches the game unobstructed. The suppression is scoped to the canvas element
+ * only - right-clicking anywhere else on the page still shows the normal context menu.
+ *
  * <p>Web games always pause when their tab is hidden, regardless of the auto-pause setting. The underlying
  * {@code WebApplication} hooks {@code visibilitychange} unconditionally, and browsers throttle
  * {@code requestAnimationFrame} heavily in background tabs regardless. This is standard browser behavior
@@ -220,6 +224,7 @@ public class FlixelTeaVMLauncher {
       protected void init() {
         super.init();
         Flixel.mouse.setMouseIconManager(new FlixelTeaVMMouseIconManager(configuration.canvasID));
+        suppressContextMenu(configuration.canvasID);
       }
 
       @Override
@@ -253,6 +258,19 @@ public class FlixelTeaVMLauncher {
    */
   @JSBody(script = "window.close();")
   private static native void closeWindow();
+
+  /**
+   * Attaches a {@code contextmenu} listener to the canvas that calls
+   * {@code preventDefault()}, stopping the browser right-click menu from
+   * appearing over the game.
+   */
+  @JSBody(params = "canvasId", script = """
+      var e = document.getElementById(canvasId);
+      if (e !== null) {
+        e.addEventListener('contextmenu', function(evt) { evt.preventDefault(); });
+      }
+      """)
+  private static native void suppressContextMenu(String canvasId);
 
   /**
    * Default TeaVM entry point. Games should use their own launcher class
