@@ -164,8 +164,7 @@ class FlixelEaseTest {
         Arguments.of("expoInOut", FlixelEase.expoInOut(0.25f), FlixelEase.expoInOut(0.75f)),
         Arguments.of("backIn", FlixelEase.backIn(0.25f), FlixelEase.backIn(0.75f)),
         Arguments.of("backOut", FlixelEase.backOut(0.25f), FlixelEase.backOut(0.75f)),
-        Arguments.of("backInOut", FlixelEase.backInOut(0.25f), FlixelEase.backInOut(0.75f))
-    );
+        Arguments.of("backInOut", FlixelEase.backInOut(0.25f), FlixelEase.backInOut(0.75f)));
   }
 
   @Test
