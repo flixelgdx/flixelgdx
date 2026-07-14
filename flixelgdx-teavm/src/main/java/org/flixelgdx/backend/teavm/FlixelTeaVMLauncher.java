@@ -88,6 +88,10 @@ import java.util.function.Consumer;
  * for tabs the user opened directly, the browser silently ignores the request. This is a browser security
  * restriction and cannot be bypassed from JavaScript.
  *
+ * <p>The launcher automatically suppresses the browser's right-click context menu on the game canvas so that
+ * right mouse button input reaches the game unobstructed. The suppression is scoped to the canvas element
+ * only, which means right-clicking anywhere else on the page still shows the normal context menu.
+ *
  * <p>Web games always pause when their tab is hidden, regardless of the auto-pause setting. The underlying
  * {@code WebApplication} hooks {@code visibilitychange} unconditionally, and browsers throttle
  * {@code requestAnimationFrame} heavily in background tabs regardless. This is standard browser behavior
@@ -173,7 +177,7 @@ public class FlixelTeaVMLauncher {
    *
    * <pre>{@code
    * FlixelTeaVMLauncher.launch(game, FlixelRuntimeMode.DEBUG, null, () -> {
-   *     Flixel.setDebugOverlay(MyCustomOverlay::new);
+   *   Flixel.setDebugOverlay(MyCustomOverlay::new);
    * });
    * }</pre>
    *
@@ -220,6 +224,7 @@ public class FlixelTeaVMLauncher {
       protected void init() {
         super.init();
         Flixel.mouse.setMouseIconManager(new FlixelTeaVMMouseIconManager(configuration.canvasID));
+        suppressContextMenu(configuration.canvasID);
       }
 
       @Override
@@ -239,8 +244,11 @@ public class FlixelTeaVMLauncher {
    * Returns the used JavaScript heap size in bytes as reported by {@code performance.memory},
    * or 0 if the API is not available (non-Chromium browsers).
    */
-  @JSBody(
-      script = "if (typeof performance !== 'undefined' && performance.memory) { return performance.memory.usedJSHeapSize; } return 0;")
+  @JSBody(script = """
+      if (typeof performance !== 'undefined' && performance.memory) {
+        return performance.memory.usedJSHeapSize;
+      }
+      return 0;""")
   private static native double jsHeapUsedBytes();
 
   /**
@@ -248,25 +256,22 @@ public class FlixelTeaVMLauncher {
    *
    * <p>Browsers only honor this call when the tab was opened programmatically via
    * {@code window.open()}. For tabs the user opened directly, the browser silently
-   * ignores the request; this is an intentional browser security restriction and
+   * ignores the request. This is an intentional browser security restriction and
    * cannot be bypassed.
    */
   @JSBody(script = "window.close();")
   private static native void closeWindow();
 
   /**
-   * Default TeaVM entry point. Games should use their own launcher class
-   * as {@code mainClass} and call {@link #launch(FlixelGame)} with their
-   * game instance.
-   *
-   * @param args ignored.
-   * @throws UnsupportedOperationException always, because this stub should
-   *         never be invoked directly.
+   * Attaches a {@code contextmenu} listener to the canvas that calls
+   * {@code preventDefault()}, stopping the browser right-click menu from
+   * appearing over the game.
    */
-  public static void main(String[] args) {
-    throw new UnsupportedOperationException(
-        "Configure your game's launcher class as mainClass in the teavm block, "
-            + "e.g. mainClass = \"com.mygame.MyTeaVMLauncher\", and in its main() call "
-            + "FlixelTeaVMLauncher.launch(new YourGame(...));");
-  }
+  @JSBody(params = "canvasId", script = """
+      var e = document.getElementById(canvasId);
+      if (e !== null) {
+        e.addEventListener('contextmenu', function(evt) { evt.preventDefault(); });
+      }
+      """)
+  private static native void suppressContextMenu(String canvasId);
 }
