@@ -50,10 +50,10 @@ import java.util.function.Supplier;
  *
  * <h2>Allocation-free float formatting</h2>
  *
- * <p>{@link #setFloatRoundedOneDecimal(float)} and {@link #concatFloatRoundedOneDecimal(float)}
- * delegate to {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}, which
- * formats a float to one decimal place using only integer arithmetic, meaning no {@link String} is
- * created at any point.
+ * <p>{@link #setFloatRounded(float, int)} and {@link #concatFloatRounded(float, int)}
+ * delegate to {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}, which
+ * formats a float to a given number of decimal places using only integer arithmetic, meaning no
+ * {@link String} is created at any point.
  *
  * <h2>Passing to libGDX drawing APIs</h2>
  *
@@ -386,15 +386,20 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (tenths) using the same rules as
-   * {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}. Does not clear the buffer first.
+   * Appends {@code value} rounded to {@code decimalPlaces} decimal places using the same rules as
+   * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}. Does not clear the buffer first.
+   *
+   * <p>Fractional digits are zero-padded on the left when needed, so {@code 3.05f} with
+   * {@code decimalPlaces = 2} produces {@code "3.05"}. If {@code decimalPlaces} is zero or
+   * negative, the value is rounded to a whole number with no decimal point.
    *
    * @param value Value to append (non-finite values use {@link CharArray#append(float)}).
+   * @param decimalPlaces Number of decimal places to format to.
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concatFloatRoundedOneDecimal(float value) {
-    FlixelStringUtil.appendFloatRoundedOneDecimal(buffer, value);
+  public FlixelString concatFloatRounded(float value, int decimalPlaces) {
+    FlixelStringUtil.appendFloatRounded(buffer, value, decimalPlaces);
     return this;
   }
 
@@ -435,18 +440,24 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (tenths), using only {@link CharArray} integer appenders.
-   * This avoids {@link Float#toString(float)} and similar helpers that allocate {@link String} instances.
+   * Replaces the buffer with {@code value} rounded to {@code decimalPlaces} decimal places, using only
+   * {@link CharArray} integer appenders. This avoids {@link Float#toString(float)} and similar helpers
+   * that allocate {@link String} instances.
+   *
+   * <p>Fractional digits are zero-padded on the left when needed, so {@code 3.05f} with
+   * {@code decimalPlaces = 2} produces {@code "3.05"}. If {@code decimalPlaces} is zero or
+   * negative, the value is rounded to a whole number with no decimal point.
    *
    * <p>The buffer is cleared before formatting.
    *
-   * @param value Finite input; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value Value to format; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param decimalPlaces Number of decimal places to format to.
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString setFloatRoundedOneDecimal(float value) {
+  public FlixelString setFloatRounded(float value, int decimalPlaces) {
     buffer.clear();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(buffer, value);
+    FlixelStringUtil.appendFloatRounded(buffer, value, decimalPlaces);
     return this;
   }
 

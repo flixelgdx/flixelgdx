@@ -89,51 +89,87 @@ class FlixelStringUtilTest {
   }
 
   @Test
-  void appendFloatRoundedOneDecimalPositiveRoundsUp() {
+  void appendFloatRoundedPositiveRoundsUp() {
     CharArray out = new CharArray();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(out, 3.45f);
+    FlixelStringUtil.appendFloatRounded(out, 3.45f, 1);
     assertEquals("3.5", new String(out.items, 0, out.size));
   }
 
   @Test
-  void appendFloatRoundedOneDecimalPositiveRoundsDown() {
+  void appendFloatRoundedPositiveRoundsDown() {
     CharArray out = new CharArray();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(out, 3.44f);
+    FlixelStringUtil.appendFloatRounded(out, 3.44f, 1);
     assertEquals("3.4", new String(out.items, 0, out.size));
   }
 
   @Test
-  void appendFloatRoundedOneDecimalZero() {
+  void appendFloatRoundedZero() {
     CharArray out = new CharArray();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(out, 0f);
+    FlixelStringUtil.appendFloatRounded(out, 0f, 1);
     assertEquals("0.0", new String(out.items, 0, out.size));
   }
 
   @Test
-  void appendFloatRoundedOneDecimalNegativeValue() {
-    // -2.6 * 10 = -26.0, Math.round(-26.0f) = -26, so the result is "-2.6".
+  void appendFloatRoundedNegativeValue() {
+    // -2.6 * 10 = -26.0, Math.round(-26.0) = -26, so the result is "-2.6".
     CharArray out = new CharArray();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(out, -2.6f);
+    FlixelStringUtil.appendFloatRounded(out, -2.6f, 1);
     assertEquals("-2.6", new String(out.items, 0, out.size));
   }
 
   @Test
-  void appendFloatRoundedOneDecimalWholeNumber() {
+  void appendFloatRoundedWholeNumber() {
     CharArray out = new CharArray();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(out, 10f);
+    FlixelStringUtil.appendFloatRounded(out, 10f, 1);
     assertEquals("10.0", new String(out.items, 0, out.size));
   }
 
   @Test
-  void appendFloatRoundedOneDecimalNullOutDoesNotThrow() {
-    FlixelStringUtil.appendFloatRoundedOneDecimal(null, 1.0f);
+  void appendFloatRoundedNullOutDoesNotThrow() {
+    FlixelStringUtil.appendFloatRounded(null, 1.0f, 1);
   }
 
   @Test
-  void appendFloatRoundedOneDecimalAppendsToExistingContent() {
+  void appendFloatRoundedAppendsToExistingContent() {
     CharArray out = new CharArray();
     out.append("fps:");
-    FlixelStringUtil.appendFloatRoundedOneDecimal(out, 60.0f);
+    FlixelStringUtil.appendFloatRounded(out, 60.0f, 1);
     assertEquals("fps:60.0", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedTwoDecimalPlaces() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.456f, 2);
+    assertEquals("3.46", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedTwoDecimalPlacesLeadingZero() {
+    // Fractional part is 5 (0.05), which must be padded to "05" not "5".
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.05f, 2);
+    assertEquals("3.05", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedThreeDecimalPlaces() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 1.2345f, 3);
+    assertEquals("1.235", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedZeroDecimalPlaces() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.7f, 0);
+    assertEquals("4", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedNegativeDecimalPlaces() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.7f, -1);
+    assertEquals("4", new String(out.items, 0, out.size));
   }
 }

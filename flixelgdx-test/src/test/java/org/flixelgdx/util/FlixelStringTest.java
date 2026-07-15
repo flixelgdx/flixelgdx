@@ -184,31 +184,46 @@ class FlixelStringTest {
   }
 
   @Test
-  void setFloatRoundedOneDecimalFormatsToOnePlaceRoundingUp() {
+  void setFloatRoundedFormatsToOnePlaceRoundingUp() {
     FlixelString fs = new FlixelString();
-    fs.setFloatRoundedOneDecimal(3.45f);
+    fs.setFloatRounded(3.45f, 1);
     assertEquals("3.5", fs.toString());
   }
 
   @Test
-  void setFloatRoundedOneDecimalFormatsToOnePlaceRoundingDown() {
+  void setFloatRoundedFormatsToOnePlaceRoundingDown() {
     FlixelString fs = new FlixelString();
-    fs.setFloatRoundedOneDecimal(3.44f);
+    fs.setFloatRounded(3.44f, 1);
     assertEquals("3.4", fs.toString());
   }
 
   @Test
-  void concatFloatRoundedOneDecimalAppends() {
+  void setFloatRoundedTwoDecimalPlacesLeadingZero() {
+    // Fractional part is 5 (0.05), which must be padded to "05" not "5".
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(3.05f, 2);
+    assertEquals("3.05", fs.toString());
+  }
+
+  @Test
+  void setFloatRoundedZeroDecimalPlaces() {
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(3.7f, 0);
+    assertEquals("4", fs.toString());
+  }
+
+  @Test
+  void concatFloatRoundedAppends() {
     FlixelString fs = new FlixelString("fps:");
-    fs.concatFloatRoundedOneDecimal(60.0f);
+    fs.concatFloatRounded(60.0f, 1);
     assertEquals("fps:60.0", fs.toString());
   }
 
   @Test
-  void setFloatRoundedOneDecimalNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0f) = -16, result "-1.6".
+  void setFloatRoundedNegativeValue() {
+    // -1.6 * 10 = -16.0, Math.round(-16.0) = -16, result "-1.6".
     FlixelString fs = new FlixelString();
-    fs.setFloatRoundedOneDecimal(-1.6f);
+    fs.setFloatRounded(-1.6f, 1);
     assertEquals("-1.6", fs.toString());
   }
 

@@ -59,16 +59,23 @@ public final class FlixelStringUtil {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (nearest tenth) using only {@link CharArray} primitive
+   * Appends {@code value} rounded to {@code decimalPlaces} decimal places using only {@link CharArray} primitive
    * appenders, avoiding {@link Float#toString(float)} and other helpers that allocate {@link String} objects.
    *
    * <p>Non-finite values are appended via {@link CharArray#append(float)} as a fallback.
    *
-   * @param out Destination buffer; for {@link FlixelString} callers prefer {@link FlixelString#concatFloatRoundedOneDecimal(float)}
-   *   or {@link FlixelString#setFloatRoundedOneDecimal(float)} instead of reaching for a raw {@link CharArray}.
+   * <p>If {@code decimalPlaces} is zero or negative, the value is rounded to the nearest whole number and
+   * appended without a decimal point.
+   *
+   * <p>Fractional digits are zero-padded on the left when needed, so {@code 3.05f} with
+   * {@code decimalPlaces = 2} produces {@code "3.05"}, not {@code "3.5"}.
+   *
+   * @param out Destination buffer; for {@link FlixelString} callers prefer {@link FlixelString#concatFloatRounded(float, int)}
+   *   or {@link FlixelString#setFloatRounded(float, int)} instead of reaching for a raw {@link CharArray}.
    * @param value Value to format.
+   * @param decimalPlaces Number of decimal places to format to. Values of zero or less produce a whole number.
    */
-  public static void appendFloatRoundedOneDecimal(CharArray out, float value) {
+  public static void appendFloatRounded(CharArray out, float value, int decimalPlaces) {
     if (out == null) {
       return;
     }
@@ -76,16 +83,33 @@ public final class FlixelStringUtil {
       out.append(value);
       return;
     }
-    int tenths = Math.round(value * 10f);
-    if (tenths < 0) {
-      out.append('-');
-      tenths = -tenths;
+    if (decimalPlaces <= 0) {
+      out.append(Math.round(value));
+      return;
     }
-    int whole = tenths / 10;
-    int frac = tenths % 10;
+    int scale = 1;
+    for (int i = 0; i < decimalPlaces; i++) {
+      scale *= 10;
+    }
+    long scaled = Math.round((double) value * scale);
+    if (scaled < 0) {
+      out.append('-');
+      scaled = -scaled;
+    }
+    int whole = (int) (scaled / scale);
+    int frac = (int) (scaled % scale);
     out.append(whole);
     out.append('.');
-    out.append((char) ('0' + frac));
+    // Pad the fractional part with leading zeros so it is always decimalPlaces digits wide.
+    // For example, frac=5 with decimalPlaces=2 (scale=100) produces "05", not "5".
+    int pow = scale / 10;
+    while (pow > 1) {
+      if (frac < pow) {
+        out.append('0');
+      }
+      pow /= 10;
+    }
+    out.append(frac);
   }
 
   private FlixelStringUtil() {}
