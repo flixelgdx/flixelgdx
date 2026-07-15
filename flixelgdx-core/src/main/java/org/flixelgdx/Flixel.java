@@ -730,6 +730,9 @@ public final class Flixel {
   /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw libGDX delta. */
   static float elapsed = 0f;
 
+  /** The raw clamped platform delta before {@link #timeScale} is applied. Set by {@link FlixelGame} each frame. */
+  static float rawElapsed = 0f;
+
   /** Has the global manager been initialized yet? */
   static boolean initialized = false;
 
@@ -1181,6 +1184,15 @@ public final class Flixel {
    */
   public static float getElapsed() {
     return elapsed;
+  }
+
+  /**
+   * Returns the raw platform delta (in seconds) for the current frame, clamped to
+   * [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] but not multiplied by {@link #timeScale}.
+   * Use this when you need actual wall-clock frame time regardless of the active time scale.
+   */
+  public static float getRawElapsed() {
+    return rawElapsed;
   }
 
   /**

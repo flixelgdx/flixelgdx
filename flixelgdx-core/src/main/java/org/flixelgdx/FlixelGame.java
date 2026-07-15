@@ -721,6 +721,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     float rawDelta = Gdx.graphics != null ? Gdx.graphics.getDeltaTime() : Flixel.MIN_ELAPSED;
     float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
     float elapsed = rawClamped * Flixel.timeScale;
+    Flixel.rawElapsed = rawClamped;
     Flixel.elapsed = elapsed;
 
     windowSize.x = Gdx.graphics.getWidth();
