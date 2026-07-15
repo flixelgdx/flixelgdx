@@ -127,6 +127,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_RESIZE_GRIP = { 0.65f, 0.10f, 0.10f, 0.20f };
   private static final float[] COLOR_RESIZE_GRIP_HOVERED = { 0.80f, 0.15f, 0.15f, 0.67f };
   private static final float[] COLOR_RESIZE_GRIP_ACTIVE = { 0.92f, 0.20f, 0.20f, 0.95f };
+  private static final float[] COLOR_SLIDER_GRAB = { 0.92f, 0.20f, 0.20f, 0.95f };
+  private static final float[] COLOR_SLIDER_GRAB_ACTIVE = { 0.92f, 0.30f, 0.30f, 0.95f };
 
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
@@ -685,6 +687,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         COLOR_RESIZE_GRIP_HOVERED[2], COLOR_RESIZE_GRIP_HOVERED[3]);
     style.setColor(ImGuiCol.ResizeGripActive, COLOR_RESIZE_GRIP_ACTIVE[0], COLOR_RESIZE_GRIP_ACTIVE[1],
         COLOR_RESIZE_GRIP_ACTIVE[2], COLOR_RESIZE_GRIP_ACTIVE[3]);
+    style.setColor(ImGuiCol.SliderGrab, COLOR_SLIDER_GRAB[0], COLOR_SLIDER_GRAB[1], COLOR_SLIDER_GRAB[2],
+        COLOR_SLIDER_GRAB[3]);
+    style.setColor(ImGuiCol.SliderGrabActive, COLOR_SLIDER_GRAB_ACTIVE[0], COLOR_SLIDER_GRAB_ACTIVE[1],
+        COLOR_SLIDER_GRAB_ACTIVE[2], COLOR_SLIDER_GRAB_ACTIVE[3]);
 
     ImFontAtlas fonts = io.getFonts();
     fonts.addFontDefault();
@@ -1107,12 +1113,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
 
     ImGui.separator();
+    text(COLOR_HEADER, "Time scale");
     timeScaleSliderBuf[0] = Flixel.timeScale;
     ImGui.pushItemWidth(-100f);
-    if (ImGui.sliderFloat("Time scale", timeScaleSliderBuf, 0.1f, 4.0f, "%.2fx")) {
+    if (ImGui.sliderFloat("##timescale", timeScaleSliderBuf, 0.1f, 4.0f, "%.2fx")) {
       Flixel.timeScale = timeScaleSliderBuf[0];
     }
-    ImGui.popItemWidth();
     ImGui.sameLine();
     if (ImGui.button("Reset##timescale")) {
       Flixel.timeScale = 1f;

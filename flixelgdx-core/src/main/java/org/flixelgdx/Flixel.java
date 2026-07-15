@@ -721,7 +721,7 @@ public final class Flixel {
    * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
    * The raw platform delta is clamped to [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] first, then multiplied by
    * this value before being stored in {@link #elapsed} and passed to {@code update()}. All systems that read
-   * {@link #getElapsed()} -- physics, animations, tweens, timers, and camera follow -- are affected uniformly.
+   * {@link #getElapsed()} (such as physics, animations, tweens, timers, and camera follow) are affected uniformly.
    *
    * <p>The debug overlay's Controls panel exposes a slider for this value at runtime (range 0.1x to 4.0x).
    */
