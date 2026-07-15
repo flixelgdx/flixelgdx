@@ -351,11 +351,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * Appends one sample to each performance ring buffer. The buffers are primitive {@code float[]}
    * arrays sized at {@link #PERF_HISTORY_SIZE}, so this method is allocation-free.
    *
-   * @param elapsed Real wall-clock seconds since the last frame (used for the frame-time series).
+   * <p>The frame-time series always reads {@link Flixel#getRawElapsed()} so it reflects actual
+   * wall-clock time regardless of the active {@link Flixel#timeScale}.
+   *
+   * @param elapsed Scaled elapsed time passed by the update loop (kept for subclass compatibility).
    */
   protected void pushPerfSample(float elapsed) {
     int idx = perfHead;
-    perfFrameMs[idx] = elapsed * 1000f;
+    perfFrameMs[idx] = Flixel.getRawElapsed() * 1000f;
     perfHeapMb[idx] = Gdx.app.getJavaHeap() / (1024f * 1024f);
     perfNativeMb[idx] = Gdx.app.getNativeHeap() / (1024f * 1024f);
     perfFps[idx] = Gdx.graphics.getFramesPerSecond();
