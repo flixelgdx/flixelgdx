@@ -215,8 +215,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
   private final byte[] commandLineUtf8Scratch = new byte[512];
 
-  // Reused float buffer fed to ImGui.sliderFloat() so the zoom control stays allocation-free.
+  // Reused float buffers fed to ImGui.sliderFloat() so the controls stay allocation-free.
   private final float[] textureViewerZoomBuf = new float[1];
+  private final float[] timeScaleSliderBuf = new float[1];
 
   // Watch caches mirroring cachedWatchKeys / cachedWatchValues as java String.
   private String[] watchKeyStr = new String[0];
@@ -1103,6 +1104,18 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     boolean paused = Flixel.game.isGamePaused();
     if (ImGui.checkbox("Pause game loop", paused)) {
       Flixel.game.setGamePaused(!paused);
+    }
+
+    ImGui.separator();
+    timeScaleSliderBuf[0] = Flixel.timeScale;
+    ImGui.pushItemWidth(-100f);
+    if (ImGui.sliderFloat("Time scale", timeScaleSliderBuf, 0.1f, 4.0f, "%.2fx")) {
+      Flixel.timeScale = timeScaleSliderBuf[0];
+    }
+    ImGui.popItemWidth();
+    ImGui.sameLine();
+    if (ImGui.button("Reset##timescale")) {
+      Flixel.timeScale = 1f;
     }
 
     ImGui.separator();

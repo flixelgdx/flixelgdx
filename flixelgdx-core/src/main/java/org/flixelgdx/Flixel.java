@@ -716,9 +716,14 @@ public final class Flixel {
   public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
 
   /**
-   * Global timescale for frame-based timers ({@link org.flixelgdx.util.timer.FlixelTimer FlixelTimer}).
+   * Global time scale applied to the game's update loop each frame.
    *
-   * <p>{@code 1f} is normal speed; lower slows timers, higher speeds them up. Does not change {@link #elapsed} itself.
+   * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
+   * The raw platform delta is clamped to [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] first, then multiplied by
+   * this value before being stored in {@link #elapsed} and passed to {@code update()}. All systems that read
+   * {@link #getElapsed()} -- physics, animations, tweens, timers, and camera follow -- are affected uniformly.
+   *
+   * <p>The debug overlay's Controls panel exposes a slider for this value at runtime (range 0.1x to 4.0x).
    */
   public static float timeScale = 1f;
 

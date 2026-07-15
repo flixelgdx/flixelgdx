@@ -505,7 +505,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     if (!gamePaused && !stateLifecyclePauseDispatched) {
       FlixelTween.updateTweens(elapsed);
-      FlixelTimer.getGlobalManager().update(elapsed * Flixel.timeScale);
+      FlixelTimer.getGlobalManager().update(elapsed);
 
       // Walk the state/substate chain. Each state in the chain is updated only
       // if it is the active (innermost) state or if its persistentUpdate flag is true.
@@ -719,7 +719,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Override
   public final void render() {
     float rawDelta = Gdx.graphics != null ? Gdx.graphics.getDeltaTime() : Flixel.MIN_ELAPSED;
-    float elapsed = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+    float elapsed = rawClamped * Flixel.timeScale;
     Flixel.elapsed = elapsed;
 
     windowSize.x = Gdx.graphics.getWidth();
