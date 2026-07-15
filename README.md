@@ -56,6 +56,7 @@ people with a lot of money and an expensive gaming rig.
 - **Text and fonts** - `FlixelText` with `FlixelFontRegistry` for bitmap fonts and runtime font loading.
 - **Camera** - `FlixelCamera` with built-in shake, flash, fade, and follow modes.
 - **Collision** - `Flixel.overlap(a, b)` and `Flixel.collide(a, b)` work on single objects or entire groups, with optional per-pair callbacks.
+- **Tilemaps** - `FlixelTilemap` draws large or infinitely looping maps with a recycled tile grid (ring buffer) instead of one object per tile, so memory stays flat no matter the map size. Supports multiple parallax layers, per-tile solid collision, and custom `FlixelTileBehavior` hooks.
 - **Animation** - Full animation support for Sparrow spritesheets and spritemap atlases via `FlixelAnimateSprite` for Adobe Animate-exported rigs (including out-of-the-box support for the [Better Texture Atlas](https://github.com/Dot-Stuff/BetterTextureAtlas) extension).
 - **Assets** - `FlixelAssetManager` and `FlixelAssetPaths` for path-safe, typed asset loading across all platforms.
 - **Saves** - `FlixelSave` for cross-platform persistent game data.
