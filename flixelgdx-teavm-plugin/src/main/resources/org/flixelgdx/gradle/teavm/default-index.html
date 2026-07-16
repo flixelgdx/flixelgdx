@@ -19,7 +19,6 @@
 
     #{{CANVAS_ID}} {
       display: block;
-      transform-origin: center center;
     }
   </style>
 </head>
@@ -31,14 +30,13 @@
       var canvas = document.getElementById('{{CANVAS_ID}}');
 
       function scaleCanvas() {
-        if (!canvas.width || !canvas.height) return;
-        const scaleX = window.innerWidth / canvas.width;
-        const scaleY = window.innerHeight / canvas.height;
-        canvas.style.transform = 'scale(' + Math.min(scaleX, scaleY) + ')';
+        const scale = Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height);
+        canvas.style.width = (canvas.width * scale) + 'px';
+        canvas.style.height = (canvas.height * scale) + 'px';
       }
 
       // Poll until TeaVM sets the canvas dimensions, then scale and watch for resizes.
-      var poll = setInterval(function () {
+      const poll = setInterval(function () {
         if (canvas.width && canvas.height) {
           clearInterval(poll);
           scaleCanvas();

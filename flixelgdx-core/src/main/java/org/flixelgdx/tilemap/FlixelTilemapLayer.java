@@ -27,6 +27,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import org.flixelgdx.FlixelObject;
+import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -86,7 +87,7 @@ public final class FlixelTilemapLayer {
    * leaves the art untouched. Lower the red, green, and blue channels together to darken the layer
    * (a cheap depth cue for background layers), or lower the alpha to fade the whole layer out.
    */
-  final Color tint = new Color(Color.WHITE);
+  final FlixelColor tint = new FlixelColor(FlixelColor.WHITE);
 
   /** Recycled visible slots, indexed {@code [physicalCol][physicalRow]}. Lazily allocated. */
   @Nullable
@@ -223,7 +224,7 @@ public final class FlixelTilemapLayer {
    * @param brightness The brightness multiplier, typically in the range {@code 0} to {@code 1}.
    */
   public void setBrightness(float brightness) {
-    tint.set(brightness, brightness, brightness, tint.a);
+    tint.set(brightness, brightness, brightness, tint.getAlpha());
   }
 
   /**
@@ -233,7 +234,7 @@ public final class FlixelTilemapLayer {
    * @param color The tint to apply. Must not be {@code null}.
    */
   public void setTint(Color color) {
-    tint.set(color);
+    tint.setColor(color);
   }
 
   /**
@@ -286,10 +287,10 @@ public final class FlixelTilemapLayer {
   }
 
   /**
-   * Returns this layer's live multiply tint. Mutating the returned {@link Color} changes the layer's
+   * Returns this layer's live multiply tint. Mutating the returned {@link FlixelColor} changes the layer's
    * tint directly.
    */
-  public Color getTint() {
+  public FlixelColor getTint() {
     return tint;
   }
 

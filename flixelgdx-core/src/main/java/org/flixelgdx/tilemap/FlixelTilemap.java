@@ -184,7 +184,7 @@ public class FlixelTilemap extends FlixelObject {
       if (grid == null) {
         continue;
       }
-      batch.setColor(layer.tint);
+      batch.setColor(layer.tint.getGdxColor());
       for (int gx = 0; gx < gridCols; gx++) {
         int physicalCol = (layer.ringOriginX + gx) % gridCols;
         float worldX = getX() + (layer.mapOriginCol + gx) * (float) tileWidth;
@@ -355,8 +355,8 @@ public class FlixelTilemap extends FlixelObject {
    * @return {@code true} if a solid tile occupies that position on any layer.
    */
   public boolean isSolidAt(float worldX, float worldY) {
-    int col = (int) Math.floor((worldX - getX()) / tileWidth);
-    int row = (int) Math.floor((worldY - getY()) / tileHeight);
+    int col = normalizeCol((int) Math.floor((worldX - getX()) / tileWidth));
+    int row = normalizeRow((int) Math.floor((worldY - getY()) / tileHeight));
     for (int i = 0; i < layers.size; i++) {
       if (layers.get(i).isSolidAt(col, row, mapWidth, mapHeight)) {
         return true;
@@ -414,12 +414,18 @@ public class FlixelTilemap extends FlixelObject {
         continue;
       }
       for (int row = minRow; row <= maxRow; row++) {
+        int normRow = normalizeRow(row);
         for (int col = minCol; col <= maxCol; col++) {
+          int normCol = normalizeCol(col);
           int id = getTileAtMapPos(col, row, li);
           if (id <= 0) {
             continue;
           }
-          if (hasSolids && layer.isSolidAt(col, row, mapWidth, mapHeight)) {
+          // The solid and behavior lookups use normalized coordinates so that tiles in a looped
+          // chunk beyond the map edge collide just like the original chunk. The collider itself is
+          // still placed at the raw (un-normalized) column and row so it lands exactly where that
+          // looped tile is drawn.
+          if (hasSolids && layer.isSolidAt(normCol, normRow, mapWidth, mapHeight)) {
             placeTileCollider(col, row);
             if (FlixelObject.separate(obj, tileCollider)) {
               separated = true;
@@ -427,7 +433,7 @@ public class FlixelTilemap extends FlixelObject {
           }
           if (trackContacts && hasBehaviors && layer.getBehavior(id) != null
               && objectOverlapsTile(obj, col, row)) {
-            scratchContacts.add(packContact(li, normalizeCol(col), normalizeRow(row)));
+            scratchContacts.add(packContact(li, normCol, normRow));
           }
         }
       }

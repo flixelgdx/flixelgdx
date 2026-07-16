@@ -78,15 +78,15 @@ public class FlixelColor {
    * Creates a new color with the given RGBA values. Values must be in the range 0-255 (with alpha
    * being {@code [0, 1]}).
    *
-   * @param r The red component.
-   * @param g The green component.
-   * @param b The blue component.
-   * @param a The alpha component (ranged from {@code [0, 1]}).
+   * @param r The red channel.
+   * @param g The green channel.
+   * @param b The blue channel.
+   * @param a The alpha channel (ranged from {@code [0, 1]}).
    */
   public FlixelColor(int r, int g, int b, float a) {
-    float nr = MathUtils.clamp(r, 0, 255) / 255f;
-    float ng = MathUtils.clamp(g, 0, 255) / 255f;
-    float nb = MathUtils.clamp(b, 0, 255) / 255f;
+    float nr = clamp(r);
+    float ng = clamp(g);
+    float nb = clamp(b);
     float na = MathUtils.clamp(a, 0, 1);
     color = new Color(nr, ng, nb, na);
   }
@@ -94,10 +94,10 @@ public class FlixelColor {
   /**
    * Creates a new color with the given RGBA values. Values must be in the range 0-1.
    *
-   * @param r The red component.
-   * @param g The green component.
-   * @param b The blue component.
-   * @param a The alpha component.
+   * @param r The red channel.
+   * @param g The green channel.
+   * @param b The blue channel.
+   * @param a The alpha channel.
    */
   public FlixelColor(float r, float g, float b, float a) {
     color = new Color(r, g, b, a);
@@ -128,6 +128,7 @@ public class FlixelColor {
    */
   public FlixelColor(@NotNull FlixelColor source) {
     color = new Color(source.color);
+    hsv = source.hsv;
   }
 
   /**
@@ -217,6 +218,108 @@ public class FlixelColor {
   }
 
   /**
+   * Returns the red channel of this color in the range of {@code 0-255}.
+   *
+   * @return The red channel.
+   */
+  public int getRed() {
+    return (int) (color.r * 255);
+  }
+
+  /**
+   * Returns the green channel of this color in the range of {@code 0-255}.
+   *
+   * @return The green channel.
+   */
+  public int getGreen() {
+    return (int) (color.g * 255);
+  }
+
+  /**
+   * Returns the blue channel of this color in the range of {@code 0-255}.
+   *
+   * @return The blue channel.
+   */
+  public int getBlue() {
+    return (int) (color.b * 255);
+  }
+
+  /**
+   * Returns the alpha channel of this color in the range of {@code 0-1}.
+   *
+   * @return The alpha value.
+   */
+  public float getAlpha() {
+    return color.a;
+  }
+
+  /**
+   * Sets the red channel for this color.
+   *
+   * @param r The new value for this color's red channel. Should be between {@code 0-255}.
+   */
+  public void setRed(int r) {
+    color.r = clamp(r);
+  }
+
+  /**
+   * Sets the green channel for this color.
+   *
+   * @param g The new value for this color's green channel. Should be between {@code 0-255}.
+   */
+  public void setGreen(int g) {
+    color.g = clamp(g);
+  }
+
+  /**
+   * Sets the blue channel of this color.
+   *
+   * @param b The new value for this color's blue channel. Should be between {@code 0-255}.
+   */
+  public void setBlue(int b) {
+    color.b = clamp(b);
+  }
+
+  /**
+   * Sets the alpha channel of this color.
+   *
+   * @param a The new value for this color's alpha channel. Should be between {@code 0-1}.
+   */
+  public void setAlpha(float a) {
+    color.a = MathUtils.clamp(a, 0, 1);
+  }
+
+  /**
+   * Sets this color with the given RGBA values. Values must be in the range 0-255 (with alpha
+   * being {@code [0, 1]}).
+   *
+   * @param r The red channel.
+   * @param g The green channel.
+   * @param b The blue channel.
+   * @param a The alpha channel (ranged from {@code [0, 1]}).
+   */
+  public void set(int r, int g, int b, float a) {
+    color.set(clamp(r), clamp(g), clamp(b), a);
+  }
+
+  /**
+   * Sets this color with the given RGBA values. Values must be in the range 0-1.
+   *
+   * @param r The red channel.
+   * @param g The green channel.
+   * @param b The blue channel.
+   * @param a The alpha channel.
+   */
+  public void set(float r, float g, float b, float a) {
+    color.set(
+      MathUtils.clamp(r, 0, 1),
+      MathUtils.clamp(g, 0, 1),
+      MathUtils.clamp(b, 0, 1),
+      MathUtils.clamp(a, 0, 1)
+    );
+  }
+
+  /**
    * @return The backing libGDX color (mutable).
    */
   @NotNull
@@ -235,5 +338,18 @@ public class FlixelColor {
       hsv = new float[3];
     }
     return color.toHsv(hsv);
+  }
+
+  /**
+   * Clamps the provided integer from range {@code 0-255} to a valid float between {@code 0-1}.
+   *
+   * <p>This is primarily used for converting integer-based RGB values into a valid number
+   * for libGDX {@link Color} to consume.
+   *
+   * @param value The value to clamp.
+   * @return The newly clamped value.
+   */
+  private float clamp(int value) {
+    return MathUtils.clamp(value, 0, 255) / 255f;
   }
 }

@@ -53,7 +53,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void ringBuffer_advancesOriginsWithScroll() {
+  public void ringBufferAdvancesOriginsWithScroll() {
     FlixelTilemap map = new FlixelTilemap(1000, 10, 16, 16);
     FlixelTilemapLayer layer = addFilledLayer(map, 1);
     FlixelCamera cam = new FlixelCamera(48, 48);
@@ -88,7 +88,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void ringBuffer_largeJumpTriggersFullRebuild() {
+  public void ringBufferLargeJumpTriggersFullRebuild() {
     FlixelTilemap map = new FlixelTilemap(2000, 10, 16, 16);
     FlixelTilemapLayer layer = addFilledLayer(map, 1);
     FlixelCamera cam = new FlixelCamera(48, 48);
@@ -104,7 +104,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void grid_growsWhenViewEnlarges() {
+  public void gridGrowsWhenViewEnlarges() {
     FlixelTilemap map = new FlixelTilemap(200, 10, 16, 16);
     FlixelTilemapLayer layer = addFilledLayer(map, 1);
     FlixelCamera cam = new FlixelCamera(48, 48);
@@ -122,7 +122,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void tileLookup_returnsExpectedIds() {
+  public void tileLookupReturnsExpectedIds() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     map.addLayer("ground", tiles, TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
@@ -139,7 +139,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void setTile_updatesDataAndVisibleGrid() {
+  public void setTileUpdatesDataAndVisibleGrid() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
     FlixelTilemapLayer layer =
@@ -163,10 +163,10 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void isSolidAt_respectsSolidFlags() {
+  public void isSolidAtRespectsSolidFlags() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = new int[9];
-    tiles[1 * 3 + 1] = 1; // Solid tile at (1, 1).
+    tiles[3 + 1] = 1; // Solid tile at (1, 1).
     FlixelTilemapLayer layer =
         map.addLayer("ground", tiles, TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
     layer.setSolid(1);
@@ -177,7 +177,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void collide_pushesObjectOutOfSolidTile() {
+  public void collidePushesObjectOutOfSolidTile() {
     FlixelTilemap map = new FlixelTilemap(5, 5, 16, 16);
     int[] tiles = new int[25];
     tiles[2 * 5 + 2] = 1; // Solid tile at (2, 2), world rect 32..48.
@@ -200,27 +200,66 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void layerBrightness_setsTintChannels() {
+  public void isSolidAtRespectsLoopedChunks() {
+    FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
+    int[] tiles = new int[9];
+    tiles[1 * 3 + 1] = 1; // Solid tile at (1, 1), world rect 16..32.
+    FlixelTilemapLayer layer =
+        map.addLayer("ground", tiles, TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
+    layer.setSolid(1);
+    map.loopX = true;
+
+    // The solid tile repeats every mapWidth (3) columns, so its copy in the next chunk covers
+    // world x 64..80 (column 4). Before the loop-aware fix this reported not solid.
+    assertTrue(map.isSolidAt(70f, 20f), "Looped copy of the solid tile is solid too.");
+    assertFalse(map.isSolidAt(52f, 20f), "The looped empty tile (column 3) stays non-solid.");
+  }
+
+  @Test
+  public void collidePushesObjectOutOfLoopedSolidTile() {
+    FlixelTilemap map = new FlixelTilemap(5, 5, 16, 16);
+    int[] tiles = new int[25];
+    tiles[2 * 5 + 2] = 1; // Solid tile at (2, 2).
+    FlixelTilemapLayer layer =
+        map.addLayer("ground", tiles, TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
+    layer.setSolid(1);
+    map.loopX = true;
+
+    // One full map width to the right (5 tiles * 16 px = 80 px) the solid tile repeats at column 7,
+    // world rect 112..128. Drop an object into that looped copy the same way the non-looped test
+    // does, just shifted by one chunk.
+    FlixelObject obj = new FlixelObject(114f, 20f, 8f, 8f);
+    obj.setVelocityY(140f);
+    obj.update(0.1f); // lastY = 20, y moves to ~34, overlapping the looped tile.
+
+    boolean collided = map.collide(obj);
+    assertTrue(collided, "Collision resolves against looped chunks, not just the first one.");
+    assertEquals(24f, obj.getY(), 0.001f, "Object is pushed back out of the looped tile.");
+    assertEquals(0f, obj.getVelocityY(), 0.001f, "Velocity into the looped tile is cancelled.");
+  }
+
+  @Test
+  public void layerBrightnessSetsTintChannels() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     FlixelTilemapLayer layer =
         map.addLayer("bg", new int[9], TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
 
     // Default tint is opaque white (no change to the art).
-    assertEquals(1f, layer.getTint().r, 0.001f);
-    assertEquals(1f, layer.getTint().a, 0.001f);
+    assertEquals(1f, layer.getTint().getRed(), 0.001f);
+    assertEquals(1f, layer.getTint().getAlpha(), 0.001f);
 
     layer.setBrightness(0.6f);
-    assertEquals(0.6f, layer.getTint().r, 0.001f);
-    assertEquals(0.6f, layer.getTint().g, 0.001f);
-    assertEquals(0.6f, layer.getTint().b, 0.001f);
-    assertEquals(1f, layer.getTint().a, 0.001f, "Brightness leaves alpha untouched.");
+    assertEquals(0.6f, layer.getTint().getRed(), 0.001f);
+    assertEquals(0.6f, layer.getTint().getGreen(), 0.001f);
+    assertEquals(0.6f, layer.getTint().getBlue(), 0.001f);
+    assertEquals(1f, layer.getTint().getAlpha(), 0.001f, "Brightness leaves alpha untouched.");
   }
 
   @Test
-  public void interact_firesBehaviorAndBreaksTile() {
+  public void interactFiresBehaviorAndBreaksTile() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = new int[9];
-    tiles[1 * 3 + 1] = 3; // Breakable tile at (1, 1).
+    tiles[3 + 1] = 3; // Breakable tile at (1, 1).
     FlixelTilemapLayer layer =
         map.addLayer("ground", tiles, TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
     layer.setBehavior(3, new BreakableTile());
@@ -233,7 +272,7 @@ public class FlixelTilemapTest {
   }
 
   @Test
-  public void collide_firesEnterTouchAndLeaveCallbacks() {
+  public void collideFiresEnterTouchAndLeaveCallbacks() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = new int[9];
     tiles[1 * 3 + 1] = 2; // Behavior tile at (1, 1).
