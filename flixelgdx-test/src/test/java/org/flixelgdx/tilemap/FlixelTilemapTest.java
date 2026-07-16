@@ -104,6 +104,24 @@ public class FlixelTilemapTest {
   }
 
   @Test
+  public void grid_growsWhenViewEnlarges() {
+    FlixelTilemap map = new FlixelTilemap(200, 10, 16, 16);
+    FlixelTilemapLayer layer = addFilledLayer(map, 1);
+    FlixelCamera cam = new FlixelCamera(48, 48);
+
+    map.prepareLayer(layer, cam);
+    assertEquals(5, map.getGridCols());
+
+    // Zooming out to 0.5 doubles the visible world, so the grid must grow to stay gap-free.
+    cam.setZoom(0.5f);
+    map.prepareLayer(layer, cam);
+    assertEquals(8, map.getGridCols());
+    assertEquals(8, map.getGridRows());
+    assertEquals(8, layer.grid.length, "Layer grid reallocated to the larger size.");
+    assertEquals(8, layer.grid[0].length);
+  }
+
+  @Test
   public void tileLookup_returnsExpectedIds() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };

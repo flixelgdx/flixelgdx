@@ -663,11 +663,19 @@ public class FlixelTilemap extends FlixelObject {
   }
 
   private void ensureGridSizing(FlixelCamera cam) {
-    if (gridCols > 0) {
+    // Size the visible grid to the current view plus a one-tile margin on each edge. The grid only
+    // ever grows, never shrinks, so zooming out (which enlarges the view) reallocates every layer's
+    // grid once to stay gap-free, while zooming back in reuses the larger grid for free.
+    int neededCols = (int) Math.ceil(cam.getViewWidth() / tileWidth) + 2;
+    int neededRows = (int) Math.ceil(cam.getViewHeight() / tileHeight) + 2;
+    if (neededCols <= gridCols && neededRows <= gridRows) {
       return;
     }
-    gridCols = (int) Math.ceil(cam.getViewWidth() / tileWidth) + 2;
-    gridRows = (int) Math.ceil(cam.getViewHeight() / tileHeight) + 2;
+    gridCols = Math.max(gridCols, neededCols);
+    gridRows = Math.max(gridRows, neededRows);
+    for (int i = 0; i < layers.size; i++) {
+      layers.get(i).grid = null;
+    }
   }
 
   private int computeOriginCol(FlixelCamera cam, FlixelTilemapLayer layer) {
