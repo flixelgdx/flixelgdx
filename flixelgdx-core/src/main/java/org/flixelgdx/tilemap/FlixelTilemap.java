@@ -186,9 +186,9 @@ public class FlixelTilemap extends FlixelObject {
       }
       batch.setColor(layer.tint.getGdxColor());
       // Snap the grid's origin to the nearest screen pixel, then advance by exact integer tile
-      // multiples. Without this, each tile computes its view position independently and floating-
-      // point drift between adjacent tiles leaves hairline cracks. The snap unit in view space is
-      // 1/zoom because that many view units equal one screen pixel.
+      // multiples. Without this, each tile computes its view position independently and floating-point
+      // drift between adjacent tiles leaves hairline cracks. The snap unit in view space is 1/zoom
+      // because that many view units equal one screen pixel.
       float zoom = cam.getZoom();
       float baseViewX = Math.round(
           cam.worldToViewX(getX() + layer.mapOriginCol * (float) tileWidth, layer.scrollFactorX) * zoom) / zoom;
