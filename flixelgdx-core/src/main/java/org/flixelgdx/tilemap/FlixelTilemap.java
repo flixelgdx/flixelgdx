@@ -185,19 +185,25 @@ public class FlixelTilemap extends FlixelObject {
         continue;
       }
       batch.setColor(layer.tint.getGdxColor());
+      // Snap the grid's origin to the nearest screen pixel, then advance by exact integer tile
+      // multiples. Without this, each tile computes its view position independently and floating-
+      // point drift between adjacent tiles leaves hairline cracks. The snap unit in view space is
+      // 1/zoom because that many view units equal one screen pixel.
+      float zoom = cam.getZoom();
+      float baseViewX = Math.round(
+          cam.worldToViewX(getX() + layer.mapOriginCol * (float) tileWidth, layer.scrollFactorX) * zoom) / zoom;
+      float baseViewY = Math.round(
+          cam.worldToViewY(getY() + layer.mapOriginRow * (float) tileHeight, layer.scrollFactorY) * zoom) / zoom;
       for (int gx = 0; gx < gridCols; gx++) {
         int physicalCol = (layer.ringOriginX + gx) % gridCols;
-        float worldX = getX() + (layer.mapOriginCol + gx) * (float) tileWidth;
-        float viewX = cam.worldToViewX(worldX, layer.scrollFactorX);
+        float viewX = baseViewX + gx * tileWidth;
         for (int gy = 0; gy < gridRows; gy++) {
           int physicalRow = (layer.ringOriginY + gy) % gridRows;
           TextureRegion region = grid[physicalCol][physicalRow];
           if (region == null) {
             continue;
           }
-          float worldY = getY() + (layer.mapOriginRow + gy) * (float) tileHeight;
-          float viewY = cam.worldToViewY(worldY, layer.scrollFactorY);
-          batch.draw(region, viewX, viewY, tileWidth, tileHeight);
+          batch.draw(region, viewX, baseViewY + gy * tileHeight, tileWidth, tileHeight);
         }
       }
     }

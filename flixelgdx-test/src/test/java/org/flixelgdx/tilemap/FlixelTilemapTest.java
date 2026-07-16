@@ -244,14 +244,15 @@ public class FlixelTilemapTest {
     FlixelTilemapLayer layer =
         map.addLayer("bg", new int[9], TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
 
-    // Default tint is opaque white (no change to the art).
-    assertEquals(1f, layer.getTint().getRed(), 0.001f);
+    // Default tint is opaque white (no change to the art). getRed/Green/Blue return 0-255 ints;
+    // getAlpha returns a 0-1 float.
+    assertEquals(255, layer.getTint().getRed());
     assertEquals(1f, layer.getTint().getAlpha(), 0.001f);
 
     layer.setBrightness(0.6f);
-    assertEquals(0.6f, layer.getTint().getRed(), 0.001f);
-    assertEquals(0.6f, layer.getTint().getGreen(), 0.001f);
-    assertEquals(0.6f, layer.getTint().getBlue(), 0.001f);
+    assertEquals(153, layer.getTint().getRed());
+    assertEquals(153, layer.getTint().getGreen());
+    assertEquals(153, layer.getTint().getBlue());
     assertEquals(1f, layer.getTint().getAlpha(), 0.001f, "Brightness leaves alpha untouched.");
   }
 

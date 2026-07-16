@@ -312,11 +312,10 @@ public class FlixelColor {
    */
   public void set(float r, float g, float b, float a) {
     color.set(
-      MathUtils.clamp(r, 0, 1),
-      MathUtils.clamp(g, 0, 1),
-      MathUtils.clamp(b, 0, 1),
-      MathUtils.clamp(a, 0, 1)
-    );
+        MathUtils.clamp(r, 0, 1),
+        MathUtils.clamp(g, 0, 1),
+        MathUtils.clamp(b, 0, 1),
+        MathUtils.clamp(a, 0, 1));
   }
 
   /**
