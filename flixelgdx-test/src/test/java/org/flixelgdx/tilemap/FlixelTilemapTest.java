@@ -182,6 +182,23 @@ public class FlixelTilemapTest {
   }
 
   @Test
+  public void layerBrightness_setsTintChannels() {
+    FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
+    FlixelTilemapLayer layer =
+        map.addLayer("bg", new int[9], TilemapTestSupport.newTileset(48, 48, 16, 16, 0, 0));
+
+    // Default tint is opaque white (no change to the art).
+    assertEquals(1f, layer.getTint().r, 0.001f);
+    assertEquals(1f, layer.getTint().a, 0.001f);
+
+    layer.setBrightness(0.6f);
+    assertEquals(0.6f, layer.getTint().r, 0.001f);
+    assertEquals(0.6f, layer.getTint().g, 0.001f);
+    assertEquals(0.6f, layer.getTint().b, 0.001f);
+    assertEquals(1f, layer.getTint().a, 0.001f, "Brightness leaves alpha untouched.");
+  }
+
+  @Test
   public void interact_firesBehaviorAndBreaksTile() {
     FlixelTilemap map = new FlixelTilemap(3, 3, 16, 16);
     int[] tiles = new int[9];

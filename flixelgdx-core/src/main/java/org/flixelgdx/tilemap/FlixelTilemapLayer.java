@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.tilemap;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 import org.flixelgdx.FlixelObject;
@@ -79,6 +80,13 @@ public final class FlixelTilemapLayer {
 
   /** The tileset this layer draws its tiles from. */
   FlixelTileset tileset;
+
+  /**
+   * Multiply tint applied to every tile on this layer when drawn. Defaults to opaque white, which
+   * leaves the art untouched. Lower the red, green, and blue channels together to darken the layer
+   * (a cheap depth cue for background layers), or lower the alpha to fade the whole layer out.
+   */
+  final Color tint = new Color(Color.WHITE);
 
   /** Recycled visible slots, indexed {@code [physicalCol][physicalRow]}. Lazily allocated. */
   @Nullable
@@ -207,6 +215,39 @@ public final class FlixelTilemapLayer {
     this.scrollFactorY = scrollFactorY;
   }
 
+  /**
+   * Darkens or brightens this layer uniformly by setting its tint's red, green, and blue channels to
+   * the same value. {@code 1} leaves the art at full brightness, {@code 0.5} makes it half as
+   * bright, and {@code 0} turns it black. The alpha channel is left unchanged.
+   *
+   * @param brightness The brightness multiplier, typically in the range {@code 0} to {@code 1}.
+   */
+  public void setBrightness(float brightness) {
+    tint.set(brightness, brightness, brightness, tint.a);
+  }
+
+  /**
+   * Sets this layer's multiply tint. Copies the given color's channels, so later changes to
+   * {@code color} do not affect the layer.
+   *
+   * @param color The tint to apply. Must not be {@code null}.
+   */
+  public void setTint(Color color) {
+    tint.set(color);
+  }
+
+  /**
+   * Sets this layer's multiply tint from raw channel values in the range {@code 0} to {@code 1}.
+   *
+   * @param r The red channel.
+   * @param g The green channel.
+   * @param b The blue channel.
+   * @param a The alpha channel; lower it to fade the whole layer out.
+   */
+  public void setTint(float r, float g, float b, float a) {
+    tint.set(r, g, b, a);
+  }
+
   private void ensureSolidCapacity(int maxTileId) {
     int needed = maxTileId + 1;
     if (solidTiles == null) {
@@ -242,6 +283,14 @@ public final class FlixelTilemapLayer {
   /** Returns the vertical parallax factor. */
   public float getScrollFactorY() {
     return scrollFactorY;
+  }
+
+  /**
+   * Returns this layer's live multiply tint. Mutating the returned {@link Color} changes the layer's
+   * tint directly.
+   */
+  public Color getTint() {
+    return tint;
   }
 
   /** Returns this layer's name. */

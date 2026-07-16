@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.tilemap;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.IntArray;
@@ -158,7 +159,9 @@ public class FlixelTilemap extends FlixelObject {
   }
 
   /**
-   * Syncs each visible layer's recycled grid to the current camera scroll, then draws it.
+   * Syncs each visible layer's recycled grid to the current camera scroll, then draws it. Each
+   * layer is drawn through its own {@link FlixelTilemapLayer#getTint() tint}, so background layers
+   * can be darkened or faded independently.
    *
    * @param batch The batch to draw into.
    */
@@ -181,6 +184,7 @@ public class FlixelTilemap extends FlixelObject {
       if (grid == null) {
         continue;
       }
+      batch.setColor(layer.tint);
       for (int gx = 0; gx < gridCols; gx++) {
         int physicalCol = (layer.ringOriginX + gx) % gridCols;
         float worldX = getX() + (layer.mapOriginCol + gx) * (float) tileWidth;
@@ -197,6 +201,7 @@ public class FlixelTilemap extends FlixelObject {
         }
       }
     }
+    batch.setColor(Color.WHITE);
   }
 
   /**
