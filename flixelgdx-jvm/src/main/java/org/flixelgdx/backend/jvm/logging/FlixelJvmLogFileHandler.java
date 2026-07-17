@@ -75,10 +75,6 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
     }
 
     String resolvedPath = (logsFolderPath != null) ? logsFolderPath : getDefaultLogsFolderPath();
-    if (resolvedPath == null || Gdx.files == null) {
-      return;
-    }
-
     FileHandle logsFolder = Gdx.files.absolute(resolvedPath);
     logsFolder.mkdirs();
 

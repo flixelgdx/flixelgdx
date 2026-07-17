@@ -104,9 +104,6 @@ public final class FlixelAssetPaths {
   @NotNull
   public static String resolveCompressedTexturePath(@NotNull String path) {
     Objects.requireNonNull(path, "path cannot be null.");
-    if (Gdx.files == null) {
-      return path;
-    }
     String lc = path.toLowerCase(Locale.ROOT);
     if (lc.endsWith(".png")) {
       String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";

@@ -433,7 +433,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     path = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(path, "path cannot be null."));
     // On platforms other than desktop, there's typically no real file system we can
     // extract an asset to, so we simply return the original path that was provided.
-    var hasRealFileSystem = Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Desktop;
+    var hasRealFileSystem = Gdx.app.getType() == Application.ApplicationType.Desktop;
     if (!hasRealFileSystem) {
       return path;
     }
@@ -552,7 +552,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   private void prewarmAudio(@NotNull String path) {
-    if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
+    if (Gdx.app.getType() != Application.ApplicationType.WebGL) {
       return;
     }
     if (Flixel.soundFactory != null) {
