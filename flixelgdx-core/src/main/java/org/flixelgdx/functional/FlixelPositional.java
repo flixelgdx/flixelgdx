@@ -23,9 +23,12 @@
  */
 package org.flixelgdx.functional;
 
+import org.flixelgdx.FlixelObject;
+
 /**
- * Spatial and kinematic surface shared by {@link org.flixelgdx.FlixelObject FlixelObject}: world position, size, scroll
- * factors, velocity-based motion, and immovable toggling so motion tweens never need to cast to {@code FlixelObject}.
+ * Spatial and kinematic surface shared by {@link FlixelObject}. This includes world position, size, scroll
+ * factors, velocity-based motion, and immovable toggling so things like motion tweens never need to
+ * cast to {@code FlixelObject}.
  *
  * @see org.flixelgdx.FlixelObject
  */
@@ -54,7 +57,7 @@ public interface FlixelPositional extends FlixelAngleable {
   void setScrollFactor(float scrollX, float scrollY);
 
   /**
-   * X position of the upper left corner of this object in world space.
+   * X position of the bottom-left corner of this object in world space.
    *
    * @return Current X in world units.
    */
@@ -68,7 +71,7 @@ public interface FlixelPositional extends FlixelAngleable {
   void setX(float x);
 
   /**
-   * Y position of the upper left corner of this object in world space.
+   * Y position of the bottom-left corner of this object in world space.
    *
    * @return Current Y in world units.
    */
