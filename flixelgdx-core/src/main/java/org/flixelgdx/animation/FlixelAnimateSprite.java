@@ -31,6 +31,8 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
@@ -150,6 +152,20 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   private final Affine2 drawAffine = new Affine2();
+
+  /**
+   * Preallocated clip bounds rect reused by {@link #draw(FlixelBatch)} to avoid per-frame
+   * allocation when clipRect is active.
+   */
+  @NotNull
+  private final Rectangle clipBoundsTemp = new Rectangle();
+
+  /**
+   * Preallocated scissor rect reused by {@link #draw(FlixelBatch)} to avoid per-frame
+   * allocation when clipRect is active.
+   */
+  @NotNull
+  private final Rectangle scissorsTemp = new Rectangle();
 
   /** Creates an empty sprite at {@code (0, 0)}. Call {@link #addSpritemapAndAnimation} before using BTA rigs. */
   public FlixelAnimateSprite() {
@@ -588,7 +604,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * Routes the controller's per-frame "current keyframe" callback to the right renderer.
    *
    * <p>When the clip that is playing is rig-backed we render directly from its pre-baked parts and
-   * never touch {@link FlixelSprite#currentRegion}, so we swallow the callback (and clear any leftover
+   * never touch {@link FlixelSprite#currentFrame}, so we swallow the callback (and clear any leftover
    * Sparrow frame so switching from a Sparrow clip to a rig clip does not flash stale art). For a
    * Sparrow or simple-atlas clip the callback falls through to the normal
    * {@link FlixelSprite#setCurrentFrameForAnimation} path, which is what lets a Sparrow sheet merged
@@ -611,7 +627,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    *
    * <p>A clip is rig-backed only when a rig is installed and the clip name matches one of the rig's
    * baked clips. Clips registered against merged Sparrow frames (or any non-rig atlas) are not
-   * rig-backed and therefore render through {@link FlixelSprite#currentRegion}.
+   * rig-backed and therefore render through {@link FlixelSprite#currentFrame}.
    *
    * @return {@code true} if the current clip should be drawn from the rig.
    */
@@ -654,12 +670,11 @@ public class FlixelAnimateSprite extends FlixelSprite {
   public @NotNull FlixelSprite updateHitbox() {
     // A Sparrow clip merged onto this sprite sizes its hitbox from the frame, like a normal sprite;
     // only a rig clip uses the rig's anchor bounding box.
-    if (!isCurrentClipRig()) {
+    if (!isCurrentClipRig() || rig == null) {
       return super.updateHitbox();
     }
-    FlixelAnimateRig activeRig = rig;
-    float effW = Math.abs(getScaleX()) * activeRig.anchorWidth;
-    float effH = Math.abs(getScaleY()) * activeRig.anchorHeight;
+    float effW = Math.abs(getScaleX()) * rig.anchorWidth;
+    float effH = Math.abs(getScaleY()) * rig.anchorHeight;
     return updateHitbox(effW, effH);
   }
 
@@ -698,10 +713,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Toggles texture filtering on the rig's spritemap (or the inherited {@link FlixelSprite#currentRegion}'s
+   * Toggles texture filtering on the rig's spritemap (or the inherited {@link FlixelSprite#currentFrame}'s
    * texture when no rig is installed). Without this override, {@link FlixelSprite#setAntialiasing} would
-   * be a no-op on a rig sprite because we deliberately null out {@link FlixelSprite#currentRegion} once
-   * the rig is in place.
+   * be a no-op on a rig sprite because {@link FlixelSprite#currentFrame} is {@code null} while the rig
+   * is active.
    *
    * @param antialiasing {@code true} to use {@link Texture.TextureFilter#Linear}, {@code false} for
    *   {@link Texture.TextureFilter#Nearest}.
@@ -712,10 +727,10 @@ public class FlixelAnimateSprite extends FlixelSprite {
     Texture.TextureFilter filter =
         antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
 
-    // Without a rig, mirror FlixelSprite.setAntialiasing() exactly: filter only the current region's
+    // Without a rig, mirror FlixelSprite.setAntialiasing() exactly: filter only the current frame's
     // texture so plain atlas usage stays cheap.
     if (rig == null) {
-      Texture texture = (currentRegion != null) ? currentRegion.getTexture() : null;
+      Texture texture = (currentFrame != null) ? currentFrame.getTexture() : null;
       if (texture != null) {
         texture.setFilter(filter, filter);
       }
@@ -723,7 +738,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     // With a rig installed (potentially with multiple merged atlases), every atlas brings its own
-    // backing texture and currentRegion is null. Walk the rig's atlas list and set the filter on
+    // backing texture and currentFrame is null. Walk the rig's atlas list and set the filter on
     // every unique texture. Adjacent frames usually share the same texture, so we dedupe by
     // identity to avoid hammering glTexParameteri on the same texture once per region.
     Texture lastTexture = null;
@@ -784,7 +799,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     FlixelAnimateRig.Clip clip = activeRig.getClip(clipName);
     if (clip == null) {
       // Not a rig clip: a Sparrow clip merged via addSparrowAtlas() (or any non-rig atlas clip)
-      // renders through the standard frame path off currentFrame / currentRegion.
+      // renders through the standard frame path off currentFrame.
       super.draw(batch);
       return;
     }
@@ -880,6 +895,32 @@ public class FlixelAnimateSprite extends FlixelSprite {
       baseAffine.translate(-anchorOriginX, -anchorOriginY);
     }
 
+    int clipW = getClipRectWidth();
+    int clipH = getClipRectHeight();
+    boolean hasClip = clipW > 0 || clipH > 0;
+    boolean clipPushed = false;
+    if (hasClip) {
+      // Flush pending geometry before switching scissor state so non-clipped sprites that were
+      // batched before this draw call are not retroactively clipped.
+      batch.flush();
+      float visW = Math.max(0, (getWidth() - clipW) * Math.abs(sx));
+      float visH = Math.max(0, (getHeight() - clipH) * Math.abs(sy));
+      clipBoundsTemp.set(wx - getOffsetX(), wy - getOffsetY(), visW, visH);
+      ScissorStack.calculateScissors(
+          cam.getCamera(),
+          cam.getViewport().getScreenX(), cam.getViewport().getScreenY(),
+          cam.getViewport().getScreenWidth(), cam.getViewport().getScreenHeight(),
+          batch.getTransformMatrix(), clipBoundsTemp, scissorsTemp);
+      clipPushed = ScissorStack.pushScissors(scissorsTemp);
+      if (!clipPushed) {
+        // Entire rig is scissored out; restore shader and exit without drawing.
+        if (activeShader != null) {
+          batch.setShader(null);
+        }
+        return;
+      }
+    }
+
     batch.setColor(getGdxColor());
 
     Array<FlixelFrame> atlas = activeRig.atlas;
@@ -899,6 +940,11 @@ public class FlixelAnimateSprite extends FlixelSprite {
     }
 
     batch.setColor(Color.WHITE);
+
+    if (hasClip && clipPushed) {
+      batch.flush();
+      ScissorStack.popScissors();
+    }
 
     if (activeShader != null) {
       batch.setShader(null);
