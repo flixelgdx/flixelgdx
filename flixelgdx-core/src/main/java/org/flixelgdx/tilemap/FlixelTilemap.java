@@ -37,6 +37,8 @@ import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * A memory-flat tilemap drawn with a recycled grid of tile slots instead of one object per tile.
  *
@@ -149,8 +151,7 @@ public class FlixelTilemap extends FlixelObject {
       if (behaviors == null) {
         continue;
       }
-      for (int id = 0; id < behaviors.length; id++) {
-        FlixelTileBehavior behavior = behaviors[id];
+      for (FlixelTileBehavior behavior : behaviors) {
         if (behavior != null) {
           behavior.update(elapsed);
         }
@@ -258,7 +259,7 @@ public class FlixelTilemap extends FlixelObject {
   public FlixelTilemapLayer getLayer(String name) {
     for (int i = 0; i < layers.size; i++) {
       FlixelTilemapLayer layer = layers.get(i);
-      if (name == null ? layer.name == null : name.equals(layer.name)) {
+      if (Objects.equals(name, layer.name)) {
         return layer;
       }
     }
@@ -709,6 +710,9 @@ public class FlixelTilemap extends FlixelObject {
   }
 
   private void placeTileCollider(int col, int row) {
+    if (tileCollider == null) {
+      return;
+    }
     float tileX = getX() + col * (float) tileWidth;
     float tileY = getY() + row * (float) tileHeight;
     tileCollider.configure(tileX, tileY, tileWidth, tileHeight);
@@ -731,6 +735,9 @@ public class FlixelTilemap extends FlixelObject {
   }
 
   private void fireBehaviorContacts(FlixelObject obj, @Nullable IntArray previous) {
+    if (scratchContacts == null) {
+      return;
+    }
     for (int i = 0; i < scratchContacts.size; i++) {
       int key = scratchContacts.get(i);
       int li = key >>> CONTACT_LAYER_SHIFT;
