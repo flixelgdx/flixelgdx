@@ -411,8 +411,6 @@ public class FlixelSpriteBatch implements FlixelBatch {
     float m00 = transform.m00, m01 = transform.m01, m02 = transform.m02;
     float m10 = transform.m10, m11 = transform.m11, m12 = transform.m12;
 
-    float x1 = m02;
-    float y1 = m12;
     float x2 = m01 * height + m02;
     float y2 = m11 * height + m12;
     float x3 = m00 * width + m01 * height + m02;
@@ -425,7 +423,7 @@ public class FlixelSpriteBatch implements FlixelBatch {
     float v = region.getV2();
     float v2 = region.getV();
 
-    putVertex(x1, y1, u, v, tidx);
+    putVertex(m02, m12, u, v, tidx);
     putVertex(x2, y2, u, v2, tidx);
     putVertex(x3, y3, u2, v2, tidx);
     putVertex(x4, y4, u2, v, tidx);

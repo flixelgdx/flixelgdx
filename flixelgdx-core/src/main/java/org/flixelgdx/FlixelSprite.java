@@ -29,6 +29,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
@@ -119,6 +120,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /** The color tint applied when drawing this sprite. */
   protected final Color color = new Color(Color.WHITE);
+
+  /** Rectangle that clips the view of the current frame for this sprite. */
+  @NotNull
+  public Rectangle clipRect = new Rectangle();
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -558,6 +563,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       float originXParam = srcW / 2f - insetX;
       float originYParam = srcH / 2f - insetY;
 
+      int clipWidth = clipRect != null ? (int) clipRect.width : 0;
+      int clipHeight = clipRect != null ? (int) clipRect.height : 0;
+
       batch.setColor(color);
       // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
       // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
@@ -567,15 +575,15 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           drawY,
           originXParam,
           originYParam,
-          regW,
-          regH,
+          regW - clipWidth,
+          regH - clipHeight,
           scaleX,
           scaleY,
           getAngle(),
           f.getRegionX(),
           f.getRegionY(),
-          regW,
-          regH,
+          regW - clipWidth,
+          regH - clipHeight,
           isFlippedX,
           isFlippedY);
       batch.setColor(Color.WHITE);
