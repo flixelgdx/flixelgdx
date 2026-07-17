@@ -1992,8 +1992,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
      * origin.
      *
      * <p>The normalized rectangle is converted to pixel top-left coordinates, then converted
-     * again to libGDX bottom-left bounds for
-     * {@link Viewport#setScreenBounds(int, int, int, int)}.
+     * again to libGDX bottom-left bounds for {@link Viewport#setScreenBounds(int, int, int, int)}.
      *
      * <p>Recommended for resolution-independent camera layouts that scale with window size.
      */
