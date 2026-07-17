@@ -35,7 +35,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
 import org.flixelgdx.backend.android.haptics.FlixelAndroidHaptics;
 import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
-import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import org.flixelgdx.backend.jvm.logging.FlixelJvmStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 
@@ -106,7 +106,7 @@ public class FlixelAndroidLauncher {
     Flixel.alert = new FlixelAndroidAlerter(activity);
     Flixel.host = new FlixelAndroidHostIntegration(activity);
     Flixel.haptics = new FlixelAndroidHaptics(activity);
-    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.stackTraceProvider = new FlixelJvmStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     FlixelMiniAudioSoundHandler soundHandler = new FlixelMiniAudioSoundHandler();
     // MiniAudio on Android requires the native AAssetManager to open files from

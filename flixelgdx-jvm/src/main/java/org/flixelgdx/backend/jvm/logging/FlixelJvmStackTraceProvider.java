@@ -30,7 +30,7 @@ import org.flixelgdx.logging.FlixelStackTraceProvider;
  * Implementation of {@link FlixelStackTraceProvider} using Java's {@link StackWalker}.
  * This implementation is used for pretty much every platform excluding TeaVM, which doesn't support it.
  */
-public class FlixelDefaultStackTraceProvider implements FlixelStackTraceProvider {
+public class FlixelJvmStackTraceProvider implements FlixelStackTraceProvider {
 
   /**
    * @return {@code true} if this frame may represent the real logging call site.
@@ -40,7 +40,7 @@ public class FlixelDefaultStackTraceProvider implements FlixelStackTraceProvider
     if ("org.flixelgdx.logging.FlixelLogger".equals(className)) {
       return false;
     }
-    if ("org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider".equals(className)) {
+    if ("org.flixelgdx.backend.jvm.logging.FlixelJvmStackTraceProvider".equals(className)) {
       return false;
     }
     if ("org.flixelgdx.Flixel".equals(className)) {
@@ -67,7 +67,7 @@ public class FlixelDefaultStackTraceProvider implements FlixelStackTraceProvider
   @Override
   public FlixelStackFrame getCaller() {
     return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-        .walk(frames -> frames.filter(FlixelDefaultStackTraceProvider::isUsableCallerFrame).findFirst())
+        .walk(frames -> frames.filter(FlixelJvmStackTraceProvider::isUsableCallerFrame).findFirst())
         .map(StackWalkerFrame::new)
         .orElse(null);
   }

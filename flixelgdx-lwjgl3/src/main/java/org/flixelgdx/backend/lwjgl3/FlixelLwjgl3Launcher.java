@@ -32,7 +32,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
-import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import org.flixelgdx.backend.jvm.logging.FlixelJvmStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
 import org.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
@@ -167,7 +167,7 @@ public class FlixelLwjgl3Launcher {
     Flixel.alert = new FlixelLwjgl3Alerter();
     Flixel.window = new FlixelLwjgl3Window();
     Flixel.host = new FlixelLwjgl3HostIntegration();
-    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.stackTraceProvider = new FlixelJvmStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = new FlixelMiniAudioSoundHandler();
     Flixel.setRuntimeMode(runtimeMode);
