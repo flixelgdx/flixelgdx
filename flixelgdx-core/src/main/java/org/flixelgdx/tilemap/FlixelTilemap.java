@@ -45,7 +45,7 @@ import java.util.Objects;
  * <p>Rather than wrapping libGDX's heavyweight {@code TiledMap}, this class keeps a small pool of
  * visible tile slots sized to the camera view plus a one-tile margin on each edge. That pool is
  * allocated once. As the camera scrolls, only the columns and rows that newly enter the view are
- * refilled, so the tiles that scroll off one edge are recycled and repositioned on the opposite
+ * refilled - the tiles that scroll off one edge are recycled and repositioned on the opposite
  * edge with new data. The result is zero per-frame allocation and constant memory use no matter
  * how large the map is. Think of it like a conveyor belt of tiles: the belt is a fixed length, and
  * as it moves, tiles that fall off the back are placed onto the front with fresh art.
@@ -504,7 +504,6 @@ public class FlixelTilemap extends FlixelObject {
       cam.minScrollY = getY();
       cam.maxScrollY = getY() + mapHeight * (float) tileHeight;
     }
-    Flixel.info("yes");
   }
 
   @Override

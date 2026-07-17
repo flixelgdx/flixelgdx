@@ -607,29 +607,17 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public void updateScroll() {
     float vw = getViewWidth();
     float vh = getViewHeight();
-    // The view's left edge is scrollX + margin, not scrollX itself. The margin is non-zero at
-    // any zoom other than 1, so all comparisons must go through getViewMarginX/Y().
-    float mx = getViewMarginX();
-    float my = getViewMarginY();
-    if (!Float.isNaN(minScrollX) && scrollX + mx < minScrollX) {
-      scrollX = minScrollX - mx;
+    if (!Float.isNaN(minScrollX) && scrollX < minScrollX) {
+      scrollX = minScrollX;
     }
-    if (!Float.isNaN(maxScrollX) && scrollX + mx + vw > maxScrollX) {
-      scrollX = maxScrollX - mx - vw;
+    if (!Float.isNaN(maxScrollX) && scrollX + vw > maxScrollX) {
+      scrollX = maxScrollX - vw;
     }
-    if (!Float.isNaN(minScrollY) && scrollY + my < minScrollY) {
-      scrollY = minScrollY - my;
+    if (!Float.isNaN(minScrollY) && scrollY < minScrollY) {
+      scrollY = minScrollY;
     }
-    if (!Float.isNaN(maxScrollY) && scrollY + my + vh > maxScrollY) {
-      scrollY = maxScrollY - my - vh;
-    }
-    // When the map is narrower or shorter than the view the two bounds conflict. Resolve by
-    // centering the map inside the view on that axis instead of pinning to one edge.
-    if (!Float.isNaN(minScrollX) && !Float.isNaN(maxScrollX) && vw > maxScrollX - minScrollX) {
-      scrollX = minScrollX - mx - (vw - (maxScrollX - minScrollX)) * 0.5f;
-    }
-    if (!Float.isNaN(minScrollY) && !Float.isNaN(maxScrollY) && vh > maxScrollY - minScrollY) {
-      scrollY = minScrollY - my - (vh - (maxScrollY - minScrollY)) * 0.5f;
+    if (!Float.isNaN(maxScrollY) && scrollY + vh > maxScrollY) {
+      scrollY = maxScrollY - vh;
     }
   }
 
@@ -1267,13 +1255,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     }
 
     if (deadzone != null) {
-      // deadzone.x/y are in view space (relative to the view's left/top edge). The view's left
-      // edge is scrollX + margin, so the world-space position of the deadzone must include it.
-      float dmx = getViewMarginX();
-      float dmy = getViewMarginY();
-      float dzLeft = scrollX + dmx + deadzone.x;
+      float dzLeft = scrollX + deadzone.x;
       float dzRight = dzLeft + deadzone.width;
-      float dzTop = scrollY + dmy + deadzone.y;
+      float dzTop = scrollY + deadzone.y;
       float dzBottom = dzTop + deadzone.height;
 
       if (tx < dzLeft) {
