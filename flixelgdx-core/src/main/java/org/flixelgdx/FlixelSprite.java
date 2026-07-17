@@ -121,12 +121,24 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /** The color tint applied when drawing this sprite. */
   protected final Color color = new Color(Color.WHITE);
 
-  /** Rectangle that clips the view of the current frame for this sprite. */
-  @NotNull
-  public Rectangle clipRect = new Rectangle();
-
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
+
+  /**
+   * Visible source width for this sprite.
+   *
+   * <p>The lower this value is, the less visible this sprite will be on
+   * the x-axis from the right side. Good for fade out effects.
+   */
+  private int clipRectWidth;
+
+  /**
+   * Visible source height for this sprite.
+   *
+   * <p>The lower this value is, the less visible this sprite will be on
+   * the y-axis from the bottom. Good for fade out effects.
+   */
+  private int clipRectHeight;
 
   /**
    * The shader applied to this sprite individually, or {@code null} for no per-sprite effect.
@@ -563,9 +575,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       float originXParam = srcW / 2f - insetX;
       float originYParam = srcH / 2f - insetY;
 
-      int clipWidth = clipRect != null ? (int) clipRect.width : 0;
-      int clipHeight = clipRect != null ? (int) clipRect.height : 0;
-
       batch.setColor(color);
       // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
       // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
@@ -575,15 +584,15 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           drawY,
           originXParam,
           originYParam,
-          regW - clipWidth,
-          regH - clipHeight,
+          regW - clipRectWidth,
+          regH - clipRectHeight,
           scaleX,
           scaleY,
           getAngle(),
           f.getRegionX(),
           f.getRegionY(),
-          regW - clipWidth,
-          regH - clipHeight,
+          regW - clipRectWidth,
+          regH - clipRectHeight,
           isFlippedX,
           isFlippedY);
       batch.setColor(Color.WHITE);
@@ -1023,5 +1032,21 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   public FlixelFrame[][] getFrames() {
     return frames;
+  }
+
+  public int getClipRectWidth() {
+    return clipRectWidth;
+  }
+
+  public void setClipRectWidth(int clipRectWidth) {
+    this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, (int) getWidth());
+  }
+
+  public int getClipRectHeight() {
+    return clipRectHeight;
+  }
+
+  public void setClipRectHeight(int clipRectHeight) {
+    this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
   }
 }
