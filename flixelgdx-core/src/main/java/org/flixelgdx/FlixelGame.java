@@ -296,7 +296,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, FlixelState initialState) {
-    this(title, 640, 360, initialState, 60, true, false);
+    this(title, 640, 360, initialState);
   }
 
   /**
@@ -308,7 +308,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState) {
-    this(title, width, height, initialState, 60, true, false);
+    this(title, width, height, initialState, 60);
   }
 
   /**
@@ -321,7 +321,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param framerate The framerate of how fast the game should update and render.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate) {
-    this(title, width, height, initialState, framerate, true, false);
+    this(title, width, height, initialState, framerate, true);
   }
 
   /**
