@@ -50,10 +50,12 @@ import java.util.function.Supplier;
  *
  * <h2>Allocation-free float formatting</h2>
  *
- * <p>{@link #setFloatRoundedOneDecimal(float)} and {@link #concatFloatRoundedOneDecimal(float)}
- * delegate to {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}, which
- * formats a float to one decimal place using only integer arithmetic, meaning no {@link String} is
- * created at any point.
+ * <p>{@link #setFloatRounded(float, int)} and {@link #concatFloatRounded(float, int)} delegate to
+ * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}, which formats a float to any
+ * number of decimal places using only integer arithmetic, meaning no {@link String} is created at
+ * any point. {@link #setFloatRoundedOneDecimal(float)} and
+ * {@link #concatFloatRoundedOneDecimal(float)} are convenience variants for exactly one decimal
+ * place.
  *
  * <h2>Passing to libGDX drawing APIs</h2>
  *
@@ -386,16 +388,35 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (tenths) using the same rules as
-   * {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}. Does not clear the buffer first.
+   * Appends {@code value} rounded to {@code decimals} decimal places using the same rules as
+   * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}. Does not clear the buffer
+   * first.
+   *
+   * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and
+   * no decimal point is written. Fractional digits are zero-padded on the left so the output
+   * always contains exactly {@code decimals} digits after the decimal point.
+   *
+   * @param value    Value to append (non-finite values use {@link CharArray#append(float)}).
+   * @param decimals Number of digits after the decimal point; values of zero or less produce an
+   *                 integer with no decimal point.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelString concatFloatRounded(float value, int decimals) {
+    FlixelStringUtil.appendFloatRounded(buffer, value, decimals);
+    return this;
+  }
+
+  /**
+   * Appends {@code value} rounded to one decimal place (tenths). Convenience wrapper for
+   * {@link #concatFloatRounded(float, int)} with {@code decimals = 1}.
    *
    * @param value Value to append (non-finite values use {@link CharArray#append(float)}).
    * @return {@code this} for chaining.
    */
   @NotNull
   public FlixelString concatFloatRoundedOneDecimal(float value) {
-    FlixelStringUtil.appendFloatRoundedOneDecimal(buffer, value);
-    return this;
+    return concatFloatRounded(value, 1);
   }
 
   /**
@@ -435,19 +456,36 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (tenths), using only {@link CharArray} integer appenders.
-   * This avoids {@link Float#toString(float)} and similar helpers that allocate {@link String} instances.
+   * Clears the buffer and writes {@code value} rounded to {@code decimals} decimal places using
+   * only {@link CharArray} primitive appenders, avoiding {@link Float#toString(float)} and similar
+   * helpers that allocate {@link String} instances.
    *
-   * <p>The buffer is cleared before formatting.
+   * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and
+   * no decimal point is written. Fractional digits are zero-padded on the left so the output
+   * always contains exactly {@code decimals} digits after the decimal point.
    *
-   * @param value Finite input; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value    Value to format; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param decimals Number of digits after the decimal point; values of zero or less produce an
+   *                 integer with no decimal point.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelString setFloatRounded(float value, int decimals) {
+    buffer.clear();
+    FlixelStringUtil.appendFloatRounded(buffer, value, decimals);
+    return this;
+  }
+
+  /**
+   * Clears the buffer and writes {@code value} rounded to one decimal place (tenths). Convenience
+   * wrapper for {@link #setFloatRounded(float, int)} with {@code decimals = 1}.
+   *
+   * @param value Value to format; non-finite values fall back to {@link CharArray#append(float)}.
    * @return {@code this} for chaining.
    */
   @NotNull
   public FlixelString setFloatRoundedOneDecimal(float value) {
-    buffer.clear();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(buffer, value);
-    return this;
+    return setFloatRounded(value, 1);
   }
 
   /**

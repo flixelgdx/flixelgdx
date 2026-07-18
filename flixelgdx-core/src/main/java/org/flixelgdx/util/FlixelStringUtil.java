@@ -59,16 +59,30 @@ public final class FlixelStringUtil {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (nearest tenth) using only {@link CharArray} primitive
+   * Appends {@code value} rounded to {@code decimals} decimal places using only {@link CharArray} primitive
    * appenders, avoiding {@link Float#toString(float)} and other helpers that allocate {@link String} objects.
    *
-   * <p>Non-finite values are appended via {@link CharArray#append(float)} as a fallback.
+   * <p>Non-finite values fall back to {@link CharArray#append(float)}.
    *
-   * @param out Destination buffer; for {@link FlixelString} callers prefer {@link FlixelString#concatFloatRoundedOneDecimal(float)}
-   *   or {@link FlixelString#setFloatRoundedOneDecimal(float)} instead of reaching for a raw {@link CharArray}.
-   * @param value Value to format.
+   * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and no
+   * decimal point is written.
+   *
+   * <p>Fractional digits are zero-padded on the left so the output always has exactly {@code decimals}
+   * digits after the decimal point (for example, {@code 3.05f} with {@code decimals = 2} produces
+   * {@code "3.05"}, not {@code "3.5"}).
+   *
+   * <p>Because this method uses {@code long} arithmetic internally, meaningful precision is still
+   * limited to roughly seven significant digits (the range of a {@code float}).
+   *
+   * @param out      Destination buffer; for {@link FlixelString} callers prefer
+   *                 {@link FlixelString#concatFloatRounded(float, int)} or
+   *                 {@link FlixelString#setFloatRounded(float, int)} instead of reaching for a raw
+   *                 {@link CharArray}.
+   * @param value    Value to format.
+   * @param decimals Number of digits after the decimal point; values of zero or less produce an
+   *                 integer with no decimal point.
    */
-  public static void appendFloatRoundedOneDecimal(CharArray out, float value) {
+  public static void appendFloatRounded(CharArray out, float value, int decimals) {
     if (out == null) {
       return;
     }
@@ -76,16 +90,47 @@ public final class FlixelStringUtil {
       out.append(value);
       return;
     }
-    int tenths = Math.round(value * 10f);
-    if (tenths < 0) {
-      out.append('-');
-      tenths = -tenths;
+    if (decimals <= 0) {
+      out.append(Math.round((double) value));
+      return;
     }
-    int whole = tenths / 10;
-    int frac = tenths % 10;
+    long scale = 1;
+    for (int i = 0; i < decimals; i++) {
+      scale *= 10;
+    }
+    long units = Math.round((double) value * scale);
+    if (units < 0) {
+      out.append('-');
+      units = -units;
+    }
+    long whole = units / scale;
+    long frac = units % scale;
     out.append(whole);
     out.append('.');
-    out.append((char) ('0' + frac));
+    long fracScale = scale / 10;
+    while (fracScale > frac && fracScale >= 1) {
+      out.append('0');
+      fracScale /= 10;
+    }
+    if (frac > 0) {
+      out.append(frac);
+    }
+  }
+
+  /**
+   * Appends {@code value} rounded to one decimal place (nearest tenth). Convenience wrapper for
+   * {@link #appendFloatRounded(CharArray, float, int)} with {@code decimals = 1}.
+   *
+   * <p>Non-finite values fall back to {@link CharArray#append(float)}.
+   *
+   * @param out   Destination buffer; for {@link FlixelString} callers prefer
+   *              {@link FlixelString#concatFloatRoundedOneDecimal(float)} or
+   *              {@link FlixelString#setFloatRoundedOneDecimal(float)} instead of reaching for a raw
+   *              {@link CharArray}.
+   * @param value Value to format.
+   */
+  public static void appendFloatRoundedOneDecimal(CharArray out, float value) {
+    appendFloatRounded(out, value, 1);
   }
 
   private FlixelStringUtil() {}
