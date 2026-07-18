@@ -282,6 +282,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private boolean stateLifecyclePauseDispatched;
 
   /**
+   * When true, the update loop will cycle every frame. This is primarily used by
+   * {@link #onFocusGained()} and {@link #onFocusLost()} for auto-pausing.
+   */
+  private boolean shouldUpdate = true;
+
+  /**
    * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
    * {@link FlixelWindow#isTransparencyActive() FlixelWindow.isTransparencyActive()}.
    */
@@ -296,7 +302,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, FlixelState initialState) {
-    this(title, 640, 360, initialState, 60, true, false);
+    this(title, 640, 360, initialState);
   }
 
   /**
@@ -308,7 +314,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState) {
-    this(title, width, height, initialState, 60, true, false);
+    this(title, width, height, initialState, 60);
   }
 
   /**
@@ -321,7 +327,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param framerate The framerate of how fast the game should update and render.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate) {
-    this(title, width, height, initialState, framerate, true, false);
+    this(title, width, height, initialState, framerate, true);
   }
 
   /**
@@ -503,7 +509,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     FlixelActionSets.update(elapsed);
 
-    if (!gamePaused && !stateLifecyclePauseDispatched) {
+    if (!gamePaused && shouldUpdate) {
       FlixelTween.updateTweens(elapsed);
       FlixelTimer.getGlobalManager().update(elapsed);
 
@@ -845,6 +851,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (autoPause) {
       Flixel.sound.pause();
       Gdx.graphics.setContinuousRendering(false);
+      shouldUpdate = false;
     }
     Flixel.Signals.windowUnfocused.dispatch();
   }
@@ -876,6 +883,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       Flixel.sound.resume();
       Gdx.graphics.setContinuousRendering(true);
       Gdx.graphics.requestRendering();
+      shouldUpdate = true;
     }
     Flixel.Signals.windowFocused.dispatch();
   }

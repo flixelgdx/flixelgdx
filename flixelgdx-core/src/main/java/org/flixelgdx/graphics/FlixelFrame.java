@@ -29,8 +29,10 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
- * HaxeFlixel-like frame wrapper around a libGDX {@link TextureRegion}.
+ * Frame wrapper around a libGDX {@link TextureRegion}.
  *
  * <p>This carries the extra metadata needed for Sparrow/atlas frames (original size and offsets),
  * similar to libGDX's {@code TextureAtlas.AtlasRegion}, but without depending on an atlas type.
@@ -84,12 +86,10 @@ public final class FlixelFrame {
    * Constructs a new FlixelFrame with the given region.
    *
    * @param region The region to wrap.
+   * @throws NullPointerException If the provided region is {@code null}.
    */
   public FlixelFrame(@NotNull TextureRegion region) {
-    if (region == null) {
-      throw new IllegalArgumentException("TextureRegion cannot be null.");
-    }
-    this.region = region;
+    this.region = Objects.requireNonNull(region, "TextureRegion cannot be null.");
     this.name = null;
     this.originalWidth = region.getRegionWidth();
     this.originalHeight = region.getRegionHeight();
