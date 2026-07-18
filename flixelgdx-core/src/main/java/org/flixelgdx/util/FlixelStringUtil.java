@@ -84,6 +84,9 @@ public final class FlixelStringUtil {
    *     integer with no decimal point.
    */
   public static void appendFloatRounded(@NotNull CharArray out, float value, int decimals) {
+    if (out == null) {
+      return;
+    }
     if (Float.isNaN(value) || Float.isInfinite(value)) {
       out.append(value);
       return;
