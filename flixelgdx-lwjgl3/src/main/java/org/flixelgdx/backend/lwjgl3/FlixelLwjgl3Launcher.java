@@ -216,7 +216,7 @@ public class FlixelLwjgl3Launcher {
     if (game.isFullscreen()) {
       configuration.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
     } else {
-      configuration.setWindowedMode(game.getWidth(), game.getHeight());
+      configuration.setWindowedMode(game.getInitialWidth(), game.getInitialHeight());
     }
     configuration.setWindowIcon(Arrays.stream(icons)
         .filter(Objects::nonNull)

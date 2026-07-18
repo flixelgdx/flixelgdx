@@ -28,6 +28,7 @@ import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -50,7 +51,6 @@ import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelSpriteBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
-import org.flixelgdx.input.FlixelInputProcessorManager;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.tween.FlixelTween;
@@ -66,13 +66,12 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * The game object used for containing the main loop and core elements of the Flixel game.
+ * The game object used for containing the main loop and core elements of the game.
  *
  * <p>To actually use this properly, you need to create a subclass of this and override
- * the methods you want to change.
- *
- * <p>It is strongly advised that you do <b>NOT</b> use this class to add the main gameplay logic to your game;
- * your code should go into your {@link FlixelState}s or libGDX {@link com.badlogic.gdx.Screen} implementations instead.
+ * the methods you want to change. It is strongly advised that you do <b>NOT</b> use this class to
+ * add the main gameplay logic to your game. Your code should go into your {@link FlixelState}s or
+ * libGDX {@link Screen} implementations instead.
  *
  * <p>It is recommended for using this in the following way:
  *
@@ -95,7 +94,7 @@ import java.util.function.Supplier;
  * public class Lwjgl3Launcher {
  *
  *   public static void main(String[] args) {
- *     if (StartupHelper.startNewJvmIfRequired()) { // This handles macOS support and helps on Windows.
+ *     if (StartupHelper.startNewJvmIfRequired()) {
  *       return;
  *     }
  *
@@ -108,14 +107,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
 
-  /** The title displayed on the game's window. */
+  /** The initial title displayed on the game's window. Only used at startup time during the game's boot sequence. */
   protected String title;
 
-  /** The size of the game's starting window position and its first camera. */
-  protected Vector2 viewSize;
-
-  /** The current window size stored in a vector object. */
-  protected Vector2 windowSize;
+  /**
+   * The size of the game's starting window position and its first camera. Only used at startup time
+   * during the game's boot sequence.
+   */
+  protected Vector2 initialSize;
 
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs. Use {@code () -> new MyState()} for a fresh
@@ -126,7 +125,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   protected Supplier<FlixelState> initialStateFactory;
 
   /** The framerate of how fast the game should update and render. */
-  private int framerate;
+  private final int framerate;
 
   /** The main batch used for rendering all sprites on screen. */
   protected FlixelBatch batch;
@@ -235,23 +234,23 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   private int desktopTransparencyRestoreCameraCount;
 
-  /** Should the game use VSync to limit the framerate to the monitor's refresh rate? */
-  private boolean vsync;
+  /** Whether the game should use initialize VSync. Only used at startup time during the game's boot sequence. */
+  private final boolean vsync;
 
-  /** Should the game start in fullscreen mode? */
-  protected boolean fullscreen;
+  /** Whether the game should start in fullscreen mode. Only used at startup time during the game's boot sequence. */
+  protected final boolean fullscreen;
 
   /**
-   * When {@code true}, the LWJGL3 launcher requests an alpha-capable framebuffer so
-   * {@link FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)}
-   * can composite with the desktop.
+   * When {@code true}, the launcher requests an alpha-capable framebuffer so
+   * {@link FlixelWindow#setTransparencyActive(boolean)} can composite with the desktop.
    *
-   * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly opaque default framebuffer.
+   * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly
+   * opaque default framebuffer.
    *
-   * <p><b>WARNING</b>: This can cause some minor performance issues on low-end PCs, so only enable this at launch time
-   * if you truly need to!
+   * <p><b>WARNING</b>: This can cause some minor performance issues on low-end devices, so only
+   * enable this at launch time if you truly need to!
    */
-  protected boolean transparentFramebufferRequested = false;
+  public boolean transparentFramebufferRequested = false;
 
   /** Should the game pause audio when the application goes to the background? */
   public boolean autoPause = true;
@@ -374,8 +373,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory,
       int framerate, boolean vsync, boolean fullscreen) {
     this.title = title;
-    this.viewSize = new Vector2(width, height);
-    this.windowSize = new Vector2(width, height);
+    this.initialSize = new Vector2(width, height);
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "The initial state factory cannot be null!");
     this.framerate = framerate;
     this.vsync = vsync;
@@ -408,8 +406,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
     batch = new FlixelSpriteBatch();
     cameras.clear();
-    cameras.add(new FlixelCamera((int) viewSize.x, (int) viewSize.y));
-    overlayCamera = new FlixelCamera((int) viewSize.x, (int) viewSize.y);
+    cameras.add(new FlixelCamera((int) initialSize.x, (int) initialSize.y));
+    overlayCamera = new FlixelCamera((int) initialSize.x, (int) initialSize.y);
     overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
     };
 
@@ -420,9 +418,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     pixmap.dispose();
 
     // Keyboard, mouse, and touch processors on the multiplexer.
-    FlixelInputProcessorManager keysMgr = Flixel.keys;
-    FlixelInputProcessorManager mouseMgr = Flixel.mouse;
-    FlixelInputProcessorManager touchesMgr = Flixel.touches;
+    var keysMgr = Flixel.keys;
+    var mouseMgr = Flixel.mouse;
+    var touchesMgr = Flixel.touches;
     if (keysMgr != null || mouseMgr != null || touchesMgr != null) {
       InputProcessor current = Gdx.input.getInputProcessor();
       InputMultiplexer m;
@@ -460,9 +458,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   @Override
   public void resize(int width, int height) {
-    windowSize.x = width;
-    windowSize.y = height;
-
     for (FlixelCamera camera : cameras) {
       camera.update(width, height, camera.centerCameraOnResize);
     }
@@ -681,11 +676,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.Signals.postDraw.dispatch();
   }
 
-  /**
-   * When the window was created with a transparent-capable framebuffer but desktop see-through is off, the compositor
-   * still blends using framebuffer alpha. Sprite draws that write alpha < 1 would incorrectly show the real desktop.
-   * This clears only the alpha channel to {@code 1} over the full framebuffer after all rendering.
-   */
   private void squashFramebufferAlpha() {
     if (desktopTransparencyActive || !transparentFramebufferRequested) {
       return;
@@ -729,10 +719,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     float elapsed = rawClamped * Flixel.timeScale;
     Flixel.rawElapsed = rawClamped;
     Flixel.elapsed = elapsed;
-
-    windowSize.x = Gdx.graphics.getWidth();
-    windowSize.y = Gdx.graphics.getHeight();
-    fullscreen = Gdx.graphics.isFullscreen();
 
     update(elapsed);
     draw(batch);
@@ -918,7 +904,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void setFullscreen(boolean enabled) {
     boolean currentFullscreen = Gdx.graphics.isFullscreen();
     if (enabled == currentFullscreen || fullscreenChangeInProgress) {
-      fullscreen = currentFullscreen;
       return;
     }
     fullscreenChangeInProgress = true;
@@ -926,11 +911,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       if (enabled) {
         Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
       } else {
-        Gdx.graphics.setWindowedMode((int) viewSize.x, (int) viewSize.y);
+        Gdx.graphics.setWindowedMode((int) initialSize.x, (int) initialSize.y);
       }
     } finally {
       fullscreenChangeInProgress = false;
-      fullscreen = Gdx.graphics.isFullscreen();
     }
   }
 
@@ -1096,7 +1080,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Destroys the game and all of its resources.
    *
-   * <p>Note that this doesn't close the game entirely; it just disposes
+   * <p>Note that this doesn't close the game entirely, it just disposes
    * of the game's resources. If you want to close the entire game, use libGDX's {@link Application#exit()}.
    */
   @Override
@@ -1214,8 +1198,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * Resets the camera list to contain a single default camera with the current window size as its viewport.
    */
   public void resetCameras() {
-    FlixelCamera camera = new FlixelCamera((int) viewSize.x, (int) viewSize.y);
-    camera.update((int) windowSize.x, (int) windowSize.y, camera.centerCameraOnResize);
+    FlixelCamera camera = new FlixelCamera((int) initialSize.x, (int) initialSize.y);
+    camera.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera.centerCameraOnResize);
     cameras.clear();
     cameras.add(camera);
     if (desktopTransparencyActive) {
@@ -1279,34 +1263,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return overlayEnabled;
   }
 
-  public String getTitle() {
-    return title;
-  }
-
-  public Vector2 getSize() {
-    return viewSize;
-  }
-
-  public int getWidth() {
-    return (int) viewSize.x;
-  }
-
-  public int getHeight() {
-    return (int) viewSize.y;
-  }
-
-  public Vector2 getWindowSize() {
-    return windowSize;
-  }
-
-  public int getWindowWidth() {
-    return (int) windowSize.x;
-  }
-
-  public int getWindowHeight() {
-    return (int) windowSize.y;
-  }
-
   public Array<FlixelCamera> getCameras() {
     return cameras;
   }
@@ -1354,17 +1310,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /**
-   * Requests an alpha-capable GLFW framebuffer on LWJGL3 before the desktop launcher runs. Default {@code true}. Set {@code false}
-   * if you must avoid framebuffer alpha (some drivers) or never want desktop compositing. When {@code false}, toggling
-   * {@link FlixelWindow#setTransparencyActive(boolean) FlixelWindow.setTransparencyActive(boolean)} only affects drawing, not true desktop bleed-through.
-   *
-   * @param transparentFramebufferRequested {@code false} to force an opaque default framebuffer at launch.
-   */
-  public void setTransparentFramebufferRequested(boolean transparentFramebufferRequested) {
-    this.transparentFramebufferRequested = transparentFramebufferRequested;
-  }
-
-  /**
    * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
    */
   public boolean isTransparencyActive() {
@@ -1379,12 +1324,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Updates global and per-camera backdrop drawing for desktop compositing. Called from
    * {@link FlixelWindow FlixelWindow}. When desktop see-through is off but the GLFW window
-   * was created with a transparent-capable framebuffer, {@link FlixelDrawable#draw} also forces framebuffer alpha to {@code 1} after
-   * rendering so tinted sprites do not composite through the real desktop.
+   * was created with a transparent-capable framebuffer, {@link FlixelDrawable#draw} also forces
+   * framebuffer alpha to {@code 1} after rendering so tinted sprites do not composite through the real desktop.
    *
-   * @param active {@code true} for transparent clears and camera fills; {@code false} restores colors
-   * captured the first time transparency was enabled this session (then clears that cache), or opaque black
-   * if transparency was never enabled.
+   * @param active {@code true} for transparent clears and camera fills. {@code false} restores colors
+   *     captured the first time transparency was enabled this session (then clears that cache), or opaque black
+   *     if transparency was never enabled.
    */
   public void applyBackdropForDesktopTransparency(boolean active) {
     desktopTransparencyActive = active;
@@ -1497,6 +1442,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Arrays.fill(desktopTransparencyRestoreCamerasPacked, 0f);
   }
 
+  public String getTitle() {
+    return title;
+  }
+
   public boolean isGamePaused() {
     return gamePaused;
   }
@@ -1528,37 +1477,28 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return framerate;
   }
 
-  public void setFramerate(int framerate) {
-    this.framerate = framerate;
-    Gdx.graphics.setForegroundFPS(framerate);
-  }
-
   public boolean isVsync() {
     return vsync;
   }
 
-  /** Returns whether vertical sync is enabled. */
   public boolean getVsync() {
     return vsync;
-  }
-
-  public void setVsync(boolean vsync) {
-    this.vsync = vsync;
-    Gdx.graphics.setVSync(vsync);
   }
 
   public boolean isFullscreen() {
     return fullscreen;
   }
 
-  /** Returns whether the game is currently running in fullscreen mode. */
   public boolean getFullscreen() {
     return fullscreen;
   }
 
-  public void setWindowSize(Vector2 newSize) {
-    viewSize = newSize;
-    Gdx.graphics.setWindowedMode((int) newSize.x, (int) newSize.y);
+  public int getInitialWidth() {
+    return (int) initialSize.x;
+  }
+
+  public int getInitialHeight() {
+    return (int) initialSize.y;
   }
 
   public boolean isGlobalOverlayEnabled() {

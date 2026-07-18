@@ -1150,7 +1150,7 @@ public final class Flixel {
    * created, the initial width from the {@link FlixelGame} constructor is returned instead.
    */
   public static int getWidth() {
-    return cameras.isEmpty() ? (int) game.viewSize.x : (int) cameras.first().getWorldWidth();
+    return cameras.isEmpty() ? (int) game.initialSize.x : (int) cameras.first().getWorldWidth();
   }
 
   /**
@@ -1163,7 +1163,7 @@ public final class Flixel {
    * created, the initial height from the {@link FlixelGame} constructor is returned instead.
    */
   public static int getHeight() {
-    return cameras.isEmpty() ? (int) game.viewSize.y : (int) cameras.first().getWorldHeight();
+    return cameras.isEmpty() ? (int) game.initialSize.y : (int) cameras.first().getWorldHeight();
   }
 
   /**
@@ -1174,7 +1174,7 @@ public final class Flixel {
    * type. The returned {@link Vector2} is the live internal vector. Do not modify it.
    */
   public static Vector2 getSize() {
-    return game.viewSize;
+    return game.initialSize;
   }
 
   /**
