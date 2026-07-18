@@ -83,6 +83,17 @@ public final class FlixelFrame {
   public int offsetY;
 
   /**
+   * Whether this frame was packed into its atlas rotated 90 degrees clockwise.
+   *
+   * <p>When {@code true}, Adobe Animate stores the sprite sideways in the PNG to save space.
+   * The backing {@link TextureRegion} covers the on-disk footprint as-is (width = logical height,
+   * height = logical width), while {@link #originalWidth} and {@link #originalHeight} always hold
+   * the logical (pre-rotation) dimensions. The rig baker applies a rotation-correction matrix so
+   * the part renders upright in rig space regardless of how it was packed.
+   */
+  public boolean rotated;
+
+  /**
    * Constructs a new FlixelFrame with the given region.
    *
    * @param region The region to wrap.
