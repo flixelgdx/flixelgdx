@@ -134,7 +134,6 @@ import java.util.function.Supplier;
  *
  * @author stringdotjar
  */
-
 public abstract class FlixelTween implements Pool.Poolable {
 
   /** The global tween manager for the entire game. */
