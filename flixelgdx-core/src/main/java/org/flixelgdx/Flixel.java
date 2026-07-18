@@ -26,8 +26,8 @@ package org.flixelgdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
-
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.asset.FlixelDefaultAssetManager;
