@@ -624,7 +624,17 @@ final class FlixelAnimateRigLoader {
       Affine2 rootMatrix = new Affine2();
       matrixFromFlashMxOrM3d(rootSi.get("MX"), rootSi.get("M3D"), rootMatrix);
 
-      visitSymbol(parsed.symbolsByName, nameToIndex, rootSnNode.asString(), frameTime, rootMatrix, out, 0);
+      // Apply the root SI's FF (first frame) and LP (loop mode) the same way visitSymbol handles
+      // nested child SIs. Without this, the FF offset on the root symbol instance is ignored and
+      // every clip that references the same symbol with a non-zero FF (such as danceRight when
+      // FF=15) always starts sampling from frame 0 instead of the intended starting frame.
+      String rootSymName = rootSnNode.asString();
+      int rootFirstFrame = readIntOr(rootSi, "FF", 0);
+      String rootLoopMode = readStringOr(rootSi, "LP", "loop");
+      int rootSymDuration = computeSymbolDuration(parsed.symbolsByName, rootSymName);
+      int rootLocalTime = computeChildLocalTime(rootLoopMode, rootFirstFrame, frameTime, rootSymDuration);
+
+      visitSymbol(parsed.symbolsByName, nameToIndex, rootSymName, rootLocalTime, rootMatrix, out, 0);
       return;
     }
 
