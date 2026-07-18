@@ -209,9 +209,9 @@ public class FlixelTeaVMLauncher {
 
     WebApplicationConfiguration configuration = new WebApplicationConfiguration();
     configuration.canvasID = DEFAULT_CANVAS_ID;
-    if (game.getWidth() > 0 && game.getHeight() > 0) {
-      configuration.width = game.getWidth();
-      configuration.height = game.getHeight();
+    if (game.getInitialWidth() > 0 && game.getInitialHeight() > 0) {
+      configuration.width = game.getInitialWidth();
+      configuration.height = game.getInitialHeight();
     }
 
     if (configCustomizer != null) {
