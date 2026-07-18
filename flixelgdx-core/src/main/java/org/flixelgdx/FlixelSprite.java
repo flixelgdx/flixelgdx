@@ -560,6 +560,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float originXParam = srcW / 2f - insetX;
     float originYParam = srcH / 2f - insetY;
 
+    // clipRectWidth/Height are in world units (0..getWidth()/getHeight()), so divide by scale to
+    // get the equivalent texture-pixel reduction. Clamp to [0, regW/regH] so a large clip value
+    // (possible when scale > 1) never produces a negative draw size and causes inversion.
+    int drawW = Math.max(0, regW - (int) (clipRectWidth / Math.abs(scaleX)));
+    int drawH = Math.max(0, regH - (int) (clipRectHeight / Math.abs(scaleY)));
+
     batch.setColor(color);
     // Use positive scale with flipX/flipY only. Negative scale and flip together mirror twice in SpriteBatch, which
     // can disagree across GL backends; UV flip alone matches libGDX behavior for mirroring the texture.
@@ -569,15 +575,15 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         drawY,
         originXParam,
         originYParam,
-        regW - clipRectWidth,
-        regH - clipRectHeight,
+        drawW,
+        drawH,
         scaleX,
         scaleY,
         getAngle(),
         f.getRegionX(),
         f.getRegionY(),
-        regW - clipRectWidth,
-        regH - clipRectHeight,
+        drawW,
+        drawH,
         isFlippedX,
         isFlippedY);
     batch.setColor(Color.WHITE);
