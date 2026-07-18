@@ -1480,6 +1480,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public boolean isVsync() {
     return vsync;
   }
+
   public boolean getVsync() {
     return vsync;
   }
@@ -1487,6 +1488,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public boolean isFullscreen() {
     return fullscreen;
   }
+
   public boolean getFullscreen() {
     return fullscreen;
   }
