@@ -130,7 +130,7 @@ import java.util.function.Supplier;
  * </p>
  *
  * @see FlixelTweenManager
- * @see org.flixelgdx.tween.settings.FlixelTweenSettings
+ * @see FlixelTweenSettings
  *
  * @author stringdotjar
  */
