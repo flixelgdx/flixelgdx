@@ -89,6 +89,76 @@ class FlixelStringUtilTest {
   }
 
   @Test
+  void appendFloatRoundedTwoDecimalsRoundsUp() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.456f, 2);
+    assertEquals("3.46", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedTwoDecimalsRoundsDown() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.454f, 2);
+    assertEquals("3.45", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedTwoDecimalsZero() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 0f, 2);
+    assertEquals("0.00", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedTwoDecimalsNegative() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, -2.6f, 2);
+    assertEquals("-2.60", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedTwoDecimalsLeadingZeroInFraction() {
+    // 3.05 rounded to 2 places must produce "3.05", not "3.5".
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.05f, 2);
+    assertEquals("3.05", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedThreeDecimalsWholeNumber() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 10f, 3);
+    assertEquals("10.000", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedZeroDecimalsProducesInteger() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.6f, 0);
+    assertEquals("4", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedNegativeDecimalsProducesInteger() {
+    CharArray out = new CharArray();
+    FlixelStringUtil.appendFloatRounded(out, 3.6f, -1);
+    assertEquals("4", new String(out.items, 0, out.size));
+  }
+
+  @Test
+  void appendFloatRoundedNullOutDoesNotThrow() {
+    FlixelStringUtil.appendFloatRounded(null, 1.0f, 2);
+  }
+
+  @Test
+  void appendFloatRoundedAppendsToExistingContent() {
+    CharArray out = new CharArray();
+    out.append("v:");
+    FlixelStringUtil.appendFloatRounded(out, 9.5f, 2);
+    assertEquals("v:9.50", new String(out.items, 0, out.size));
+  }
+
+  @Test
   void appendFloatRoundedOneDecimalPositiveRoundsUp() {
     CharArray out = new CharArray();
     FlixelStringUtil.appendFloatRoundedOneDecimal(out, 3.45f);
@@ -111,7 +181,7 @@ class FlixelStringUtilTest {
 
   @Test
   void appendFloatRoundedOneDecimalNegativeValue() {
-    // -2.6 * 10 = -26.0, Math.round(-26.0f) = -26, so the result is "-2.6".
+    // -2.6 * 10 = -26.0, Math.round(-26.0) = -26, so the result is "-2.6".
     CharArray out = new CharArray();
     FlixelStringUtil.appendFloatRoundedOneDecimal(out, -2.6f);
     assertEquals("-2.6", new String(out.items, 0, out.size));

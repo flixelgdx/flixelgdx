@@ -184,6 +184,63 @@ class FlixelStringTest {
   }
 
   @Test
+  void setFloatRoundedTwoDecimalsRoundsUp() {
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(3.456f, 2);
+    assertEquals("3.46", fs.toString());
+  }
+
+  @Test
+  void setFloatRoundedTwoDecimalsRoundsDown() {
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(3.454f, 2);
+    assertEquals("3.45", fs.toString());
+  }
+
+  @Test
+  void setFloatRoundedTwoDecimalsLeadingZeroInFraction() {
+    // 3.05 rounded to 2 places must produce "3.05", not "3.5".
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(3.05f, 2);
+    assertEquals("3.05", fs.toString());
+  }
+
+  @Test
+  void setFloatRoundedThreeDecimalsZeroValue() {
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(0f, 3);
+    assertEquals("0.000", fs.toString());
+  }
+
+  @Test
+  void setFloatRoundedZeroDecimalsProducesInteger() {
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(3.6f, 0);
+    assertEquals("4", fs.toString());
+  }
+
+  @Test
+  void setFloatRoundedNegativeValue() {
+    FlixelString fs = new FlixelString();
+    fs.setFloatRounded(-2.6f, 2);
+    assertEquals("-2.60", fs.toString());
+  }
+
+  @Test
+  void concatFloatRoundedTwoDecimalsAppends() {
+    FlixelString fs = new FlixelString("v:");
+    fs.concatFloatRounded(9.5f, 2);
+    assertEquals("v:9.50", fs.toString());
+  }
+
+  @Test
+  void concatFloatRoundedDoesNotClearBuffer() {
+    FlixelString fs = new FlixelString("hp:");
+    fs.concatFloatRounded(100.0f, 2);
+    assertEquals("hp:100.00", fs.toString());
+  }
+
+  @Test
   void setFloatRoundedOneDecimalFormatsToOnePlaceRoundingUp() {
     FlixelString fs = new FlixelString();
     fs.setFloatRoundedOneDecimal(3.45f);
@@ -206,7 +263,7 @@ class FlixelStringTest {
 
   @Test
   void setFloatRoundedOneDecimalNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0f) = -16, result "-1.6".
+    // -1.6 * 10 = -16.0, Math.round(-16.0) = -16, result "-1.6".
     FlixelString fs = new FlixelString();
     fs.setFloatRoundedOneDecimal(-1.6f);
     assertEquals("-1.6", fs.toString());
