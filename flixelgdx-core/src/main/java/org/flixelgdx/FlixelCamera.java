@@ -607,17 +607,20 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public void updateScroll() {
     float vw = getViewWidth();
     float vh = getViewHeight();
-    if (!Float.isNaN(minScrollX) && scrollX < minScrollX) {
-      scrollX = minScrollX;
-    }
+    // Max is applied before min so that when the level is smaller than the view, the min
+    // (left/top) edge wins and the camera stays pinned to the start of the level instead
+    // of oscillating between minScroll and maxScroll - vw.
     if (!Float.isNaN(maxScrollX) && scrollX + vw > maxScrollX) {
       scrollX = maxScrollX - vw;
     }
-    if (!Float.isNaN(minScrollY) && scrollY < minScrollY) {
-      scrollY = minScrollY;
+    if (!Float.isNaN(minScrollX) && scrollX < minScrollX) {
+      scrollX = minScrollX;
     }
     if (!Float.isNaN(maxScrollY) && scrollY + vh > maxScrollY) {
       scrollY = maxScrollY - vh;
+    }
+    if (!Float.isNaN(minScrollY) && scrollY < minScrollY) {
+      scrollY = minScrollY;
     }
   }
 
@@ -1241,18 +1244,29 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
     float fsx = followScrollFactorX(target);
     float fsy = followScrollFactorY(target);
-
     float tx = target.getX() + target.getWidth() / 2f + targetOffsetX + followLeadX;
     float ty = target.getY() + target.getHeight() / 2f + targetOffsetY + followLeadY;
 
-    float desiredX = scrollXForFollowCenter(tx, fsx);
-    float desiredY = scrollYForFollowCenter(ty, fsy);
-
-    if (followLerp >= 1.0f) {
-      scrollX = desiredX;
-      scrollY = desiredY;
+    if (style == FollowStyle.SCREEN_BY_SCREEN) {
+      float vw = getViewWidth();
+      float vh = getViewHeight();
+      float viewLeft = scrollX + getViewMarginX();
+      float viewTop = scrollY + getViewMarginY();
+      if (tx < viewLeft) {
+        scrollX -= vw;
+      } else if (tx >= viewLeft + vw) {
+        scrollX += vw;
+      }
+      if (ty < viewTop) {
+        scrollY -= vh;
+      } else if (ty >= viewTop + vh) {
+        scrollY += vh;
+      }
       return;
     }
+
+    float desiredX;
+    float desiredY;
 
     if (deadzone != null) {
       float dzLeft = scrollX + deadzone.x;
@@ -1275,11 +1289,19 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       } else {
         desiredY = scrollY;
       }
+    } else {
+      desiredX = scrollXForFollowCenter(tx, fsx);
+      desiredY = scrollYForFollowCenter(ty, fsy);
     }
 
-    float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * 60f);
-    scrollX = MathUtils.lerp(scrollX, desiredX, lerpFactor);
-    scrollY = MathUtils.lerp(scrollY, desiredY, lerpFactor);
+    if (followLerp >= 1.0f) {
+      scrollX = desiredX;
+      scrollY = desiredY;
+    } else {
+      float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * 60f);
+      scrollX = MathUtils.lerp(scrollX, desiredX, lerpFactor);
+      scrollY = MathUtils.lerp(scrollY, desiredY, lerpFactor);
+    }
   }
 
   private void updateDeadzoneForStyle() {
