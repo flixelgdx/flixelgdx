@@ -23,11 +23,15 @@
  */
 package org.flixelgdx;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
@@ -40,6 +44,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelAxes;
+import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
@@ -115,6 +120,13 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /** The color tint applied when drawing this sprite. */
   protected final Color color = new Color(Color.WHITE);
+
+  /**
+   * Blending mode, functions similarly to Photoshop or Gimp, e.g. "multiply", "screen", etc.
+   * Defaults to {@link FlixelBlendMode#NORMAL}, which draws with the usual
+   * SRC_ALPHA / ONE_MINUS_SRC_ALPHA blend function and costs nothing extra.
+   */
+  protected FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -529,6 +541,17 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       return;
     }
 
+    // Non-NORMAL blend modes need this sprite's geometry isolated in its own batch flush, since
+    // the blend function/equation (and, for LIGHTEN/DARKEN, the shader) applies to everything the
+    // GPU draws until it's restored below.
+    boolean blending = blendMode != FlixelBlendMode.NORMAL;
+    ShaderProgram previousShader = null;
+    if (blending) {
+      previousShader = batch.getShader(); // could be non-null if caller set one
+      batch.flush(); // commit anything queued under the old blend state
+      applyBlendMode(batch, blendMode);
+    }
+
     // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
     // pending geometry internally before switching, so no explicit flush is needed.
     if (spriteShader != null) {
@@ -565,26 +588,31 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
     batch.setColor(color);
     batch.draw(
-        f.getTexture(),
-        drawX,
-        drawY,
-        originXParam,
-        originYParam,
-        drawW,
-        drawH,
-        scaleX,
-        scaleY,
-        getAngle(),
-        f.getRegionX(),
-        f.getRegionY(),
-        drawW,
-        drawH,
-        isFlippedX,
-        isFlippedY);
+      f.getTexture(),
+      drawX,
+      drawY,
+      originXParam,
+      originYParam,
+      drawW,
+      drawH,
+      scaleX,
+      scaleY,
+      getAngle(),
+      f.getRegionX(),
+      f.getRegionY(),
+      drawW,
+      drawH,
+      isFlippedX,
+      isFlippedY);
     batch.setColor(Color.WHITE);
 
     if (spriteShader != null) {
       batch.setShader(null);
+    }
+
+    if (blending) {
+      batch.flush(); // commit this sprite under the special blend state
+      resetBlendMode(batch, previousShader);
     }
   }
 
@@ -687,6 +715,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     offsetX = 0f;
     offsetY = 0f;
     spriteShader = null;
+    blendMode = FlixelBlendMode.NORMAL;
     antialiasing = false;
     color.set(Color.WHITE);
     flipX = false;
@@ -848,8 +877,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     Texture texture = currentFrame != null ? currentFrame.getTexture() : null;
     if (texture != null) {
       texture.setFilter(
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 
@@ -868,6 +897,14 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   public void setFacing(int facing) {
     this.facing = facing;
+  }
+
+  public FlixelBlendMode getBlendMode() {
+    return blendMode;
+  }
+
+  public void setBlendMode(FlixelBlendMode blendMode) {
+    this.blendMode = blendMode;
   }
 
   /** {@inheritDoc} */
@@ -997,5 +1034,119 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   public void setClipRectHeight(int clipRectHeight) {
     this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
+  }
+
+  private static final String BLEND_VERTEX_SHADER =
+    "attribute vec4 a_position;\n"
+      + "attribute vec4 a_color;\n"
+      + "attribute vec2 a_texCoord0;\n"
+      + "uniform mat4 u_projTrans;\n"
+      + "varying vec4 v_color;\n"
+      + "varying vec2 v_texCoords;\n"
+      + "void main() {\n"
+      + "    v_color = a_color;\n"
+      + "    v_color.a = v_color.a * (255.0/254.0);\n"
+      + "    v_texCoords = a_texCoord0;\n"
+      + "    gl_Position = u_projTrans * a_position;\n"
+      + "}";
+
+  private static final String PREMULTIPLIED_FRAGMENT_SHADER =
+    "#ifdef GL_ES\n"
+      + "precision mediump float;\n"
+      + "#endif\n"
+      + "varying vec4 v_color;\n"
+      + "varying vec2 v_texCoords;\n"
+      + "uniform sampler2D u_texture;\n"
+      + "void main() {\n"
+      + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
+      + "    gl_FragColor = vec4(c.rgb * c.a, c.a);\n"
+      + "}";
+
+  private static final String WHITE_MIX_FRAGMENT_SHADER =
+    "#ifdef GL_ES\n"
+      + "precision mediump float;\n"
+      + "#endif\n"
+      + "varying vec4 v_color;\n"
+      + "varying vec2 v_texCoords;\n"
+      + "uniform sampler2D u_texture;\n"
+      + "void main() {\n"
+      + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
+      + "    vec3 result = mix(vec3(1.0), c.rgb, c.a);\n"
+      + "    gl_FragColor = vec4(result, c.a);\n"
+      + "}";
+
+  @Nullable private static ShaderProgram premultipliedShader;
+  @Nullable private static ShaderProgram whiteMixShader;
+
+  private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
+    switch (mode) {
+      case ADD:
+        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+        break;
+
+      case MULTIPLY:
+        batch.setBlendFunction(GL20.GL_DST_COLOR, GL20.GL_ZERO);
+        batch.setShader(getWhiteMixShader());
+        break;
+
+      case SCREEN:
+        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_COLOR);
+        batch.setShader(getPremultipliedShader());
+        break;
+
+      case SUBTRACT:
+        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+        batch.setShader(getPremultipliedShader());
+        Gdx.gl.glBlendEquation(GL20.GL_FUNC_REVERSE_SUBTRACT);
+        break;
+
+      case LIGHTEN:
+        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+        batch.setShader(getPremultipliedShader());
+        setBlendEquationMinMax(GL30.GL_MAX);
+        break;
+
+      case DARKEN:
+        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+        batch.setShader(getWhiteMixShader());
+        setBlendEquationMinMax(GL30.GL_MIN);
+        break;
+
+      case NORMAL:
+        break;
+    }
+  }
+
+  private void resetBlendMode(FlixelBatch batch, @Nullable ShaderProgram previousShader) {
+    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+    Gdx.gl.glBlendEquation(GL20.GL_FUNC_ADD);
+    batch.setShader(previousShader);
+  }
+
+  private void setBlendEquationMinMax(int mode) {
+    Gdx.gl.glBlendEquation(mode);
+  }
+
+  private static ShaderProgram getPremultipliedShader() {
+    if (premultipliedShader == null) {
+      premultipliedShader = compileBlendShader(PREMULTIPLIED_FRAGMENT_SHADER, "premultiplied");
+    }
+    return premultipliedShader;
+  }
+
+  private static ShaderProgram getWhiteMixShader() {
+    if (whiteMixShader == null) {
+      whiteMixShader = compileBlendShader(WHITE_MIX_FRAGMENT_SHADER, "white-mix");
+    }
+    return whiteMixShader;
+  }
+
+  private static ShaderProgram compileBlendShader(String fragmentSource, String name) {
+    ShaderProgram.pedantic = false;
+    ShaderProgram shader = new ShaderProgram(BLEND_VERTEX_SHADER, fragmentSource);
+    if (!shader.isCompiled()) {
+      Gdx.app.error("FlixelSprite", "Failed to compile " + name + " blend shader: " + shader.getLog());
+    }
+    return shader;
   }
 }
