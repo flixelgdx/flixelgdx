@@ -1143,10 +1143,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   private static ShaderProgram compileBlendShader(String fragmentSource, String name) {
     ShaderProgram.pedantic = false;
-    ShaderProgram shader = new ShaderProgram(BLEND_VERTEX_SHADER, fragmentSource);
-    if (!shader.isCompiled()) {
-      Gdx.app.error("FlixelSprite", "Failed to compile " + name + " blend shader: " + shader.getLog());
-    }
-    return shader;
+    return new ShaderProgram(BLEND_VERTEX_SHADER, fragmentSource);
   }
 }
