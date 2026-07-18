@@ -720,9 +720,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.rawElapsed = rawClamped;
     Flixel.elapsed = elapsed;
 
-    windowSize.y = Gdx.graphics.getHeight();
-    fullscreen = Gdx.graphics.isFullscreen();
-
     update(elapsed);
     draw(batch);
 
@@ -907,7 +904,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void setFullscreen(boolean enabled) {
     boolean currentFullscreen = Gdx.graphics.isFullscreen();
     if (enabled == currentFullscreen || fullscreenChangeInProgress) {
-      fullscreen = currentFullscreen;
       return;
     }
     fullscreenChangeInProgress = true;
@@ -1267,7 +1263,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return overlayEnabled;
   }
 
-  public int getWindowWidth() {
   public Array<FlixelCamera> getCameras() {
     return cameras;
   }
