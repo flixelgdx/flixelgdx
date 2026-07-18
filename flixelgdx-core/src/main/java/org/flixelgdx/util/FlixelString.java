@@ -274,7 +274,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull CharSequence other) {
+  public FlixelString concat(@Nullable CharSequence other) {
     buffer.append(other != null ? other : "null");
     return this;
   }
@@ -464,7 +464,7 @@ public class FlixelString implements CharSequence {
    * no decimal point is written. Fractional digits are zero-padded on the left so the output
    * always contains exactly {@code decimals} digits after the decimal point.
    *
-   * @param value    Value to format; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value Value to format; non-finite values fall back to {@link CharArray#append(float)}.
    * @param decimals Number of digits after the decimal point; values of zero or less produce an
    *                 integer with no decimal point.
    * @return {@code this} for chaining.
@@ -480,7 +480,7 @@ public class FlixelString implements CharSequence {
    * Clears the buffer and writes {@code value} rounded to one decimal place (tenths). Convenience
    * wrapper for {@link #setFloatRounded(float, int)} with {@code decimals = 1}.
    *
-   * @param value Value to format; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value Value to format. Non-finite values fall back to {@link CharArray#append(float)}.
    * @return {@code this} for chaining.
    */
   @NotNull
@@ -520,7 +520,7 @@ public class FlixelString implements CharSequence {
    * {@inheritDoc}
    *
    * <p><strong>Allocation warning:</strong> Builds a new {@link String}. Do not use on hot paths; pass this
-   * instance as a {@link CharSequence} instead.
+   * instance as a {@link CharSequence} instead where possible.
    */
   @Override
   @NotNull

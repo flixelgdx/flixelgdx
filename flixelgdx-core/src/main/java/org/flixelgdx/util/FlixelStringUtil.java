@@ -24,9 +24,10 @@
 package org.flixelgdx.util;
 
 import com.badlogic.gdx.utils.CharArray;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Handy utility class for handling strings more efficiently.
+ * Handy utility class for manipulating strings more efficiently.
  */
 public final class FlixelStringUtil {
 
@@ -74,18 +75,14 @@ public final class FlixelStringUtil {
    * <p>Because this method uses {@code long} arithmetic internally, meaningful precision is still
    * limited to roughly seven significant digits (the range of a {@code float}).
    *
-   * @param out      Destination buffer; for {@link FlixelString} callers prefer
-   *                 {@link FlixelString#concatFloatRounded(float, int)} or
-   *                 {@link FlixelString#setFloatRounded(float, int)} instead of reaching for a raw
-   *                 {@link CharArray}.
-   * @param value    Value to format.
+   * @param out Destination buffer. For {@link FlixelString} callers, prefer
+   *     {@link FlixelString#concatFloatRounded(float, int)} or {@link FlixelString#setFloatRounded(float, int)}
+   *     instead of reaching for a raw {@link CharArray}.
+   * @param value Value to format.
    * @param decimals Number of digits after the decimal point; values of zero or less produce an
-   *                 integer with no decimal point.
+   *     integer with no decimal point.
    */
-  public static void appendFloatRounded(CharArray out, float value, int decimals) {
-    if (out == null) {
-      return;
-    }
+  public static void appendFloatRounded(@NotNull CharArray out, float value, int decimals) {
     if (Float.isNaN(value) || Float.isInfinite(value)) {
       out.append(value);
       return;
@@ -123,13 +120,12 @@ public final class FlixelStringUtil {
    *
    * <p>Non-finite values fall back to {@link CharArray#append(float)}.
    *
-   * @param out   Destination buffer; for {@link FlixelString} callers prefer
-   *              {@link FlixelString#concatFloatRoundedOneDecimal(float)} or
-   *              {@link FlixelString#setFloatRoundedOneDecimal(float)} instead of reaching for a raw
-   *              {@link CharArray}.
+   * @param out Destination buffer. For {@link FlixelString}, callers prefer
+   *     {@link FlixelString#concatFloatRoundedOneDecimal(float)} or
+   *     {@link FlixelString#setFloatRoundedOneDecimal(float)} instead of reaching for a raw {@link CharArray}.
    * @param value Value to format.
    */
-  public static void appendFloatRoundedOneDecimal(CharArray out, float value) {
+  public static void appendFloatRoundedOneDecimal(@NotNull CharArray out, float value) {
     appendFloatRounded(out, value, 1);
   }
 
