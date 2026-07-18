@@ -453,7 +453,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
     }
 
-    Flixel.switchState(initialStateFactory.get(), true, true, initialStateFactory);
+    Flixel.switchState(initialStateFactory.get(), true, true, true, initialStateFactory);
   }
 
   @Override
@@ -1185,7 +1185,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       String logs = FlixelRuntimeUtil.getFullExceptionMessage(throwable);
       String msg = "There was an uncaught exception on thread \"" + thread.getName() + "\"!\n" + logs;
       Flixel.error(msg);
-      Flixel.alert.showErrorAlert("Uncaught Exception", msg);
+      Flixel.alert.error("Uncaught Exception", msg);
       destroy();
       // Only use Gdx.app.exit() on non-iOS platforms to avoid App Store guideline violations!
       if (Gdx.app.getType() != Application.ApplicationType.iOS) {
