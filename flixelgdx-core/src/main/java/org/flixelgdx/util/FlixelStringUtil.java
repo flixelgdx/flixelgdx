@@ -24,6 +24,7 @@
 package org.flixelgdx.util;
 
 import com.badlogic.gdx.utils.CharArray;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
