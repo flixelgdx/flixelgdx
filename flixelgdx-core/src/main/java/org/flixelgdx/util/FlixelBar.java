@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.ui;
+package org.flixelgdx.util;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -36,10 +36,6 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.text.FlixelText;
-import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelSpriteUtil;
-import org.flixelgdx.util.FlixelString;
-import org.flixelgdx.util.FlixelStringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
