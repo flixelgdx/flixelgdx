@@ -530,11 +530,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
 
     // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
-    // pending geometry internally before switching, so no explicit flush is needed. The shader is
-    // restored to default immediately after drawing so that subsequent non-shaded sprites are
-    // unaffected. Note: batch.getShader() always returns non-null (it returns the built-in default
-    // when no custom shader is active), so the restore must be tied to spriteShader rather than
-    // using batch.getShader() != null as a guard.
+    // pending geometry internally before switching, so no explicit flush is needed.
     if (spriteShader != null) {
       if (spriteShader.getProgram() != null && batch.getShader() != spriteShader.getProgram()) {
         batch.setShader(spriteShader.getProgram());
@@ -552,17 +548,15 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
     // Place the trimmed region inside its untrimmed source box, then anchor that box at the
     // sprite's position. Mirroring is computed around the source box (not the trimmed region) so a
-    // left-facing pose lines up with its right-facing counterpart and feet stay planted.
-    // For plain (non-atlas) frames, offsetX/offsetY are 0 and originalWidth == regionWidth, so
-    // the insets collapse to zero and this path is equivalent to a simple region draw.
+    // left-facing pose lines up with its right-facing counterpart.
     int insetX = FlixelFrame.regionInsetX(srcW, regW, f.offsetX, isFlippedX);
     int insetY = FlixelFrame.regionInsetY(srcH, regH, f.offsetY, isFlippedY);
 
-    float drawX = wx + offsetX + insetX;
-    float drawY = wy + offsetY + insetY;
+    float drawX = wx + offsetX + insetX + srcW * (scaleX - 1) * 0.5f;
+    float drawY = wy + offsetY + insetY + srcH * (scaleY - 1) * 0.5f;
 
     // Rotate/scale around the source box's center, expressed relative to the region's bottom-left
-    // corner (the origin that the batch.draw overload below measures from).
+    // corner (the origin that the batch.draw(...) overload below measures from).
     float originXParam = srcW / 2f - insetX;
     float originYParam = srcH / 2f - insetY;
 
