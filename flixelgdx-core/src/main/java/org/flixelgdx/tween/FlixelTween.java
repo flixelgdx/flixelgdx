@@ -91,10 +91,10 @@ import java.util.function.Supplier;
  * Subclasses of {@code FlixelTween} implement specialized behavior:
  * <ul>
  *   <li>{@link FlixelGoalTween}: interpolates properties of objects using lambda getters and setters</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelNumTween FlixelNumTween}: tweens a simple numeric value via a callback</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelColorTween FlixelColorTween}: tweens between colors</li>
- *   <li>{@link org.flixelgdx.tween.type.FlixelAngleTween FlixelAngleTween}: smoothly rotates a value</li>
- *   <li>{@link org.flixelgdx.tween.type.motion.FlixelLinearMotion FlixelLinearMotion} and others: for advanced motion paths</li>
+ *   <li>{@link FlixelNumTween}: tweens a simple numeric value via a callback</li>
+ *   <li>{@link FlixelColorTween}: tweens between colors</li>
+ *   <li>{@link FlixelAngleTween}: smoothly rotates a value</li>
+ *   <li>{@link FlixelLinearMotion} and others: for advanced motion paths</li>
  * </ul>
  *
  * <h2>Key Fields</h2>
