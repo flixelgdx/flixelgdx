@@ -32,17 +32,17 @@ import org.teavm.jso.JSBody;
 public class FlixelTeaVMAlerter implements FlixelAlerter {
 
   @Override
-  public void showInfoAlert(String title, String message) {
+  public void info(String title, String message) {
     showAlert(title, message);
   }
 
   @Override
-  public void showWarningAlert(String title, String message) {
+  public void warn(String title, String message) {
     showAlert(title, message);
   }
 
   @Override
-  public void showErrorAlert(String title, String message) {
+  public void error(String title, String message) {
     showAlert(title, message);
   }
 

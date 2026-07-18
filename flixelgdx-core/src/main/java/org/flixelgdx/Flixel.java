@@ -23,8 +23,10 @@
  */
 package org.flixelgdx;
 
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
@@ -48,10 +50,12 @@ import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
+import org.flixelgdx.input.gamepad.FlixelGamepadInput;
 import org.flixelgdx.input.gamepad.FlixelGamepadManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
+import org.flixelgdx.input.touch.FlixelTouch;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
 import org.flixelgdx.logging.FlixelLogFileHandler;
@@ -85,6 +89,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -116,7 +121,7 @@ import java.util.function.Supplier;
  *   <li>
  *     <b>Host integration:</b>
  *     Desktop notifications and task attention via {@link #host}. Separate from blocking
- *     {@link FlixelAlerter#showInfoAlert(String, String)} dialogs.
+ *     {@link FlixelAlerter#info(String, String)} dialogs.
  *   </li>
  *   <li>
  *     <b>Window control:</b>
@@ -235,8 +240,7 @@ public final class Flixel {
    *
    * <p>Most game code never needs to touch {@code Flixel.game} directly. Prefer the specialized
    * fields ({@link #sound}, {@link #assets}, {@link #keys}, {@link #cameras}, etc.) for day-to-day
-   * work. Reach for this field only when the high-level APIs do not cover what you need, such as
-   * setting a custom background color or toggling fullscreen.
+   * work. Reach for this field only when the high-level APIs do not cover what you need.
    *
    * <p>Example:
    * <pre>{@code
@@ -275,11 +279,6 @@ public final class Flixel {
   /**
    * The platform-specific alert dialog provider.
    *
-   * <p>Launchers assign this field before calling
-   * {@link #initialize(FlixelGame)}. Once the game is running, prefer the convenience wrappers
-   * {@link FlixelAlerter#showInfoAlert(String, String)}, {@link FlixelAlerter#showWarningAlert(String, String)},
-   * and {@link FlixelAlerter#showErrorAlert(String, String)} rather than calling this field directly.
-   *
    * <p>Alert dialogs are blocking modal windows that pause execution until the user dismisses them.
    * Reserve them for critical events (unrecoverable errors, required permission prompts) rather
    * than routine game feedback. For non-blocking OS notifications that do not interrupt gameplay,
@@ -287,11 +286,9 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
-   * // Show a blocking error dialog (execution pauses until dismissed).
-   * Flixel.alert.showErrorAlert("Save Failed", "Could not write to disk. Check your permissions.");
-   *
-   * // Access the alerter directly for platform-specific behavior.
-   * Flixel.alert.showInfoAlert("Hello", "Welcome to the game!");
+   * Flixel.alert.info("Hello", "Welcome to the game!");
+   * Flixel.alert.warn("Warning", "These permissions are required to continue.");
+   * Flixel.alert.error("Save Failed", "Could not write to disk. Check your permissions.");
    * }</pre>
    */
   @NotNull
@@ -313,7 +310,7 @@ public final class Flixel {
   /**
    * Factory that produces a fresh instance of the current state for {@link #resetState()}.
    *
-   * <p>Updated automatically whenever {@link #switchState(FlixelState, boolean, boolean, Supplier)}
+   * <p>Updated automatically whenever {@link #switchState(FlixelState, boolean, boolean, boolean, Supplier)}
    * is called. The default {@link #switchState(FlixelState)} overload supplies
    * {@code () -> newState} automatically, so this is pre-populated after any normal state switch
    * at no extra cost to the caller.
@@ -399,7 +396,7 @@ public final class Flixel {
    * <pre>{@code
    * // Load a texture and retrieve it.
    * Flixel.assets.load("player.png");
-   * Texture tex = Flixel.assets.get("player.png", Texture.class);
+   * FlixelGraphic tex = Flixel.assets.get<FlixelGraphic>("player.png").get();
    *
    * // Mark an asset persistent so it survives state switches.
    * Flixel.assets.setPersist("shared_ui_atlas.png", true);
@@ -413,8 +410,7 @@ public final class Flixel {
    *
    * <p>A watch is a named, live value that the debug overlay displays while the game runs. Watches
    * are an efficient way to inspect frame-by-frame state (player position, health, physics
-   * variables) without opening a full debugger or scattering temporary log statements throughout
-   * your code.
+   * variables) without scattering temporary log statements throughout your code.
    *
    * <p>Add a watch with a name and a supplier lambda; the overlay calls the supplier every frame
    * to refresh the displayed value. Remove watches you no longer need to keep the overlay clean.
@@ -455,7 +451,7 @@ public final class Flixel {
    *   </li>
    *   <li>
    *     <b>Custom commands:</b> Register interactive console commands with
-   *     {@link FlixelDebugManager#registerCommand(String, java.util.function.Consumer)} to run
+   *     {@link FlixelDebugManager#registerCommand(String, Consumer)} to run
    *     arbitrary game code from the debug overlay's input line.
    *   </li>
    * </ul>
@@ -484,10 +480,9 @@ public final class Flixel {
   /**
    * The preferences-based save data helper for the game.
    *
-   * <p>{@link FlixelSave} wraps libGDX's {@link com.badlogic.gdx.Preferences} system to provide a
-   * simple key-value store that persists between sessions. It is backed by platform-native storage:
-   * a {@code .prefs} file on desktop, browser {@code localStorage} on web, and the equivalent on
-   * mobile.
+   * <p>{@link FlixelSave} wraps libGDX's {@link Preferences} system to provide a simple key-value
+   * store that persists between sessions. It is backed by platform-native storage: a {@code .prefs}
+   * file on desktop, browser {@code localStorage} on web, and the equivalent on mobile.
    *
    * <p>Call {@link FlixelSave#bind(String, String)} once before using any other method to open (or
    * create) the named preferences file. After that, read and write values directly through the
@@ -538,10 +533,9 @@ public final class Flixel {
   /**
    * The multitouch input manager for the game.
    *
-   * <p>Tracks up to {@link org.flixelgdx.input.touch.FlixelTouchManager#DEFAULT_MAX_POINTERS
-   * DEFAULT_MAX_POINTERS} simultaneous fingers. Access per-pointer state through the pre-allocated
-   * {@link org.flixelgdx.input.touch.FlixelTouchManager#list list} array, or use the convenience
-   * methods for quick checks:
+   * <p>Tracks up to {@link FlixelTouchManager#DEFAULT_MAX_POINTERS} simultaneous fingers. Access
+   * per-pointer state through the pre-allocated {@link FlixelTouchManager#list list} array, or use
+   * the convenience methods for quick checks:
    *
    * <pre>{@code
    * // React on first contact.
@@ -555,8 +549,8 @@ public final class Flixel {
    * }
    * }</pre>
    *
-   * @see org.flixelgdx.input.touch.FlixelTouchManager
-   * @see org.flixelgdx.input.touch.FlixelTouch
+   * @see FlixelTouchManager
+   * @see FlixelTouch
    */
   @NotNull
   public static FlixelTouchManager touches;
@@ -573,8 +567,8 @@ public final class Flixel {
    *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
-   * defined in {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}, so the same game code works
-   * across different controller layouts without any platform-specific branching.
+   * defined in {@link FlixelGamepadInput}, so the same game code works across different controller
+   * layouts without any platform-specific branching.
    *
    * <p>Each connected controller is identified by a zero-based index. Player 1's controller is
    * index {@code 0}, player 2's is index {@code 1}, and so on. Query button states with
@@ -597,7 +591,7 @@ public final class Flixel {
    * player.setVelocityX(horizontal * MOVE_SPEED * elapsed);
    * }</pre>
    *
-   * @see org.flixelgdx.input.gamepad.FlixelGamepadInput
+   * @see FlixelGamepadInput
    */
   @NotNull
   public static FlixelGamepadManager gamepads;
@@ -673,7 +667,7 @@ public final class Flixel {
    * {@link FlixelNoopHostIntegration}, so calls are always safe to make regardless of platform.
    *
    * <p>This is distinct from the blocking alert dialogs exposed by
-   * {@link FlixelAlerter#showInfoAlert(String, String)}: host notifications appear as non-intrusive
+   * {@link FlixelAlerter#info(String, String)}: host notifications appear as non-intrusive
    * OS toasts (system tray popups, notification center entries) and do not interrupt gameplay. Taskbar
    * attention requests flash the game's taskbar button to draw the user's eye after the window
    * has been minimized or sent to the background.
@@ -716,7 +710,7 @@ public final class Flixel {
   public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
 
   /**
-   * Global time scale applied to the game's update loop each frame.
+   * Global timescale applied to the game's update loop each frame.
    *
    * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
    * The raw platform delta is clamped to [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] first, then multiplied by
@@ -859,23 +853,22 @@ public final class Flixel {
   }
 
   /**
-   * Sets the current state to the provided state, triggers garbage collection and
-   * clears all active tweens by default.
+   * Sets the current state to the provided state.
    *
    * @param newState The new {@link FlixelState} to set as the current state.
    */
   public static void switchState(FlixelState newState) {
-    switchState(newState, true, true, () -> newState);
+    switchState(newState, true);
   }
 
   /**
-   * Sets the current state to the provided state and triggers Java's garbage collector for memory cleanup.
+   * Sets the current state to the provided state.
    *
    * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    */
   public static void switchState(FlixelState newState, boolean clearTweens) {
-    switchState(newState, clearTweens, true, () -> newState);
+    switchState(newState, clearTweens, true);
   }
 
   /**
@@ -883,10 +876,22 @@ public final class Flixel {
    *
    * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
+   * @param clearTimers Should all active timers be canceled?
+   */
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers) {
+    switchState(newState, clearTweens, clearTimers, true);
+  }
+
+  /**
+   * Sets the current state to the provided state.
+   *
+   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param clearTweens Should all active tweens be canceled and their pools be cleared?
+   * @param clearTimers Should all active timers be canceled?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC) {
-    switchState(newState, clearTweens, triggerGC, () -> newState);
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers, boolean triggerGC) {
+    switchState(newState, clearTweens, clearTimers, triggerGC, () -> newState);
   }
 
   /**
@@ -894,18 +899,16 @@ public final class Flixel {
    *
    * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
+   * @param clearTimers Should all active timers be canceled?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC,
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers, boolean triggerGC,
       Supplier<FlixelState> stateFactory) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
 
     if (!initialized) {
       throw new IllegalStateException("Flixel has not been initialized yet.");
-    }
-    if (newState == null) {
-      throw new IllegalArgumentException("New state cannot be null.");
     }
     if (state != null) {
       state.destroy();
@@ -924,8 +927,11 @@ public final class Flixel {
       FlixelTween.cancelActiveTweens();
       FlixelTween.clearTweenPools();
     }
+    if (clearTimers) {
+      FlixelTimer.cancelAll();
+    }
     game.resetCameras();
-    state = newState;
+    state = Objects.requireNonNull(newState, "New state cannot be null.");
     state.ensureMembers();
     state.create();
     currentStateFactory = stateFactory;
@@ -1020,17 +1026,6 @@ public final class Flixel {
    */
   public static void warn(String tag, Object message) {
     log.warn(tag, message);
-  }
-
-  /**
-   * Logs a warning message using the default tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order.
-   *
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
-   */
-  public static void warn(Object message, Object... args) {
-    log.warn(message, args);
   }
 
   /**
@@ -1145,9 +1140,9 @@ public final class Flixel {
    *
    * <p>When cameras are active, this equals the first camera's viewport world width, which
    * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
-   * the launcher installs a libGDX {@link com.badlogic.gdx.utils.viewport.ExtendViewport ExtendViewport},
-   * the value is the full screen-filling width rather than the fixed design width. Before any camera is
-   * created, the initial width from the {@link FlixelGame} constructor is returned instead.
+   * the launcher installs a libGDX {@link ExtendViewport}, the value is the full screen-filling
+   * width rather than the fixed design width. Before any camera is created, the initial width
+   * from the {@link FlixelGame} constructor is returned instead.
    */
   public static int getWidth() {
     return cameras.isEmpty() ? (int) game.initialSize.x : (int) cameras.first().getWorldWidth();
@@ -1238,7 +1233,8 @@ public final class Flixel {
 
   /**
    * Refreshes the current state by creating a new instance from the factory last set by
-   * {@link #switchState(FlixelState, boolean, boolean, Supplier)}. Does nothing if the factory is {@code null}.
+   * {@link #switchState(FlixelState, boolean, boolean, boolean, Supplier)}. Does nothing if
+   * the factory is {@code null}.
    *
    * <p>This is the equivalent of calling {@code Flixel.switchState(new CurrentState())}.
    */

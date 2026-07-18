@@ -36,17 +36,17 @@ public class FlixelAndroidAlerter implements FlixelAlerter {
   }
 
   @Override
-  public void showInfoAlert(String title, String message) {
+  public void info(String title, String message) {
     showAlert(title, message, android.R.drawable.ic_dialog_info);
   }
 
   @Override
-  public void showWarningAlert(String title, String message) {
+  public void warn(String title, String message) {
     showAlert(title, message, android.R.drawable.ic_dialog_alert);
   }
 
   @Override
-  public void showErrorAlert(String title, String message) {
+  public void error(String title, String message) {
     showAlert(title, message, android.R.drawable.stat_notify_error);
   }
 
