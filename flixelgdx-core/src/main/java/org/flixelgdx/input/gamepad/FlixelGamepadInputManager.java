@@ -869,7 +869,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
    * ({@link #SYNTHETIC_TRIGGER_L} and {@link #SYNTHETIC_TRIGGER_R}), returning {@link FlixelGamepadButton#L2}
    * and {@link FlixelGamepadButton#R2} respectively.
    *
-   * Returns {@link FlixelGamepadButton#NONE} for native indices that do not correspond to any
+   * <p>Returns {@link FlixelGamepadButton#NONE} for native indices that do not correspond to any
    * known logical button on this controller.
    */
   private int nativeButtonToLogical(@NotNull Controller c, int nativeButton) {
