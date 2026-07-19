@@ -151,25 +151,25 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * X offset of the clip rectangle's left edge, in screen pixels from the sprite's drawn left edge.
-   * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(float, float, float, float)}.
    */
   private float clipRectX;
 
   /**
    * Y offset of the clip rectangle's bottom edge, in screen pixels from the sprite's drawn bottom edge.
-   * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(float, float, float, float)}.
    */
   private float clipRectY;
 
   /**
    * Width of the visible clip rectangle, in screen pixels. Active only when
-   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(float, float, float, float)}.
    */
   private float clipRectWidth;
 
   /**
    * Height of the visible clip rectangle, in screen pixels. Active only when
-   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(float, float, float, float)}.
    */
   private float clipRectHeight;
 
@@ -193,7 +193,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /** Whether this sprite is flipped vertically. */
   protected boolean flipY = false;
 
-  /** Whether a clip rectangle is active; set via {@link #setClipRect(int, int, int, int)} and cleared by {@link #clearClipRect()}. */
+  /**
+   * Whether a clip rectangle is active.
+   *
+   * <p>Set from either {@link #setClipRect(float, float, float, float)}, and cleared by
+   * {@link #clearClipRect()}.
+   */
   private boolean clipRectEnabled;
 
   /** Constructs a new FlixelSprite with default values. */
@@ -1099,30 +1104,28 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    *
    * <p>Only the region inside the rectangle is drawn; pixels outside are discarded by the GPU
    * scissor. Coordinates are in the same units as {@link #getWidth()}/{@link #getHeight()} - that
-   * is, they already account for scale - so {@code x=0, y=0} anchors to the drawn bottom-left
-   * corner and {@code width=(int)getWidth()} covers the full drawn width regardless of scale.
+   * is, they already account for scale, so {@code x=0, y=0} anchors to the drawn bottom-left
+   * corner and {@code width=getWidth()} covers the full drawn width regardless of scale.
    *
    * <p>For example, to show only the left half of a sprite regardless of its current scale:
    * <pre>{@code
-   * sprite.setClipRect(0, 0, (int)(sprite.getWidth() * 0.5f), (int)sprite.getHeight());
+   * sprite.setClipRect(0, 0, sprite.getWidth() * 0.5f, sprite.getHeight());
    * // Slide the window right by 10 px later:
-   * sprite.setClipRectX(10);
+   * sprite.changeClipRectX(10);
    * // Remove clipping:
    * sprite.clearClipRect();
    * }</pre>
-   *
-   * <p>Disable clipping with {@link #clearClipRect()}.
    *
    * @param x Left edge of the visible region, in screen pixels from the sprite's drawn left edge.
    * @param y Bottom edge of the visible region, in screen pixels from the sprite's drawn bottom edge.
    * @param width Width of the visible region, in screen pixels.
    * @param height Height of the visible region, in screen pixels.
    */
-  public void setClipRect(int x, int y, int width, int height) {
+  public void setClipRect(float x, float y, float width, float height) {
     clipRectX = x;
     clipRectY = y;
-    clipRectWidth = Math.max(0, width);
-    clipRectHeight = Math.max(0, height);
+    clipRectWidth = MathUtils.clamp(width, 0, getWidth());
+    clipRectHeight = MathUtils.clamp(height, 0, getHeight());
     clipRectEnabled = true;
   }
 
@@ -1164,7 +1167,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectWidth(float clipRectWidth) {
-    this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, (int) getWidth());
+    this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, getWidth());
   }
 
   public void changeClipRectWidth(float clipRectWidth) {
@@ -1176,7 +1179,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectHeight(float clipRectHeight) {
-    this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
+    this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, getHeight());
   }
 
   public void changeClipRectHeight(float clipRectHeight) {
