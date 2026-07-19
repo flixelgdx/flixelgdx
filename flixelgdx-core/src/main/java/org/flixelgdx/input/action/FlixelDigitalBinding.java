@@ -26,6 +26,7 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.Gdx;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.touch.FlixelTouch;
 
@@ -41,7 +42,7 @@ import org.flixelgdx.input.touch.FlixelTouch;
  *
  * <pre>{@code
  * jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
- * jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
+ * jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadButton.A));
  * jump.addBinding("touch",    FlixelDigitalBinding.touch(0));
  * jump.addBinding("sensor",   () -> myCustomSensor.isActive());
  * }</pre>
@@ -86,7 +87,7 @@ public interface FlixelDigitalBinding {
    *
    * @param slot Gamepad slot (0 and up), or {@link #GAMEPAD_SLOT_ANY} to match any connected slot.
    * @param logicalButton Logical button value from
-   *   {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}.
+   *   {@link FlixelGamepadButton FlixelGamepadButton}.
    * @return Binding that fires while the button is held on the given slot.
    */
   static FlixelDigitalBinding gamepadButton(int slot, int logicalButton) {

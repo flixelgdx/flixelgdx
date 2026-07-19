@@ -26,7 +26,7 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.math.Vector2;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.input.gamepad.FlixelGamepadInput;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 
 /**
  * Two-axis input contributor for a {@link FlixelActionAnalog}.
@@ -41,8 +41,8 @@ import org.flixelgdx.input.gamepad.FlixelGamepadInput;
  * <pre>{@code
  * move.addBinding("negX",   FlixelAnalogBinding.negXKey(FlixelKey.A));
  * move.addBinding("posX",   FlixelAnalogBinding.posXKey(FlixelKey.D));
- * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadButton.AXIS_LEFT_Y));
  * move.addBinding("custom", out -> out.x += myJoystick.getX());
  * }</pre>
  *
@@ -127,7 +127,7 @@ public interface FlixelAnalogBinding {
    * negative, right is positive), so no correction is applied.
    *
    * @param slot Gamepad slot (0 and up).
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_X} or similar.
+   * @param logicalAxis {@link FlixelGamepadButton#AXIS_LEFT_X} or similar.
    * @return Binding that contributes the stick X value.
    */
   static FlixelAnalogBinding gamepadAxisX(int slot, int logicalAxis) {
@@ -143,7 +143,7 @@ public interface FlixelAnalogBinding {
    * up = positive Y, matching key bindings. This is the right choice for almost every game.
    *
    * @param slot Gamepad slot (0 and up).
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
+   * @param logicalAxis {@link FlixelGamepadButton#AXIS_LEFT_Y} or similar.
    * @return Binding that contributes the stick Y value (up = positive).
    */
   static FlixelAnalogBinding gamepadAxisY(int slot, int logicalAxis) {
@@ -154,7 +154,7 @@ public interface FlixelAnalogBinding {
    * Adds the Y component of a gamepad stick.
    *
    * @param slot Gamepad slot (0 and up).
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
+   * @param logicalAxis {@link FlixelGamepadButton#AXIS_LEFT_Y} or similar.
    * @param raw When {@code false} (the default), the raw hardware Y is negated so that up = positive
    *   Y, matching key bindings. Pass {@code true} to use the raw screen-space value unchanged.
    * @return Binding that contributes the stick Y value.

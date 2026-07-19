@@ -50,8 +50,7 @@ import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.input.gamepad.FlixelGamepadInput;
-import org.flixelgdx.input.gamepad.FlixelGamepadManager;
+import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
@@ -558,7 +557,7 @@ public final class Flixel {
   /**
    * The gamepad and controller input manager.
    *
-   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadManager#enabled} to
+   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadInputManager#enabled} to
    * {@code true} before the game loop starts if your game needs controller support:
    *
    * <pre>{@code
@@ -567,14 +566,14 @@ public final class Flixel {
    *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
-   * defined in {@link FlixelGamepadInput}, so the same game code works across different controller
+   * defined in {@link FlixelGamepadButton}, so the same game code works across different controller
    * layouts without any platform-specific branching.
    *
    * <p>Each connected controller is identified by a zero-based index. Player 1's controller is
    * index {@code 0}, player 2's is index {@code 1}, and so on. Query button states with
-   * {@link FlixelGamepadManager#pressed(int, int)}, {@link FlixelGamepadManager#justPressed(int, int)},
-   * and {@link FlixelGamepadManager#justReleased(int, int)}, or read analog axes with
-   * {@link FlixelGamepadManager#getAxis(int, int)}.
+   * {@link FlixelGamepadInputManager#pressed(int, int)}, {@link FlixelGamepadInputManager#justPressed(int, int)},
+   * and {@link FlixelGamepadInputManager#justReleased(int, int)}, or read analog axes with
+   * {@link FlixelGamepadInputManager#getAxis(int, int)}.
    *
    * <p>Example:
    * <pre>{@code
@@ -582,19 +581,19 @@ public final class Flixel {
    * Flixel.gamepads.enabled = true;
    *
    * // Check if player 1 pressed the A button this frame.
-   * if (Flixel.gamepads.justPressed(0, FlixelGamepadInput.A)) {
+   * if (Flixel.gamepads.justPressed(0, FlixelGamepadButton.A)) {
    *   player.jump();
    * }
    *
    * // Read the left stick's horizontal axis for movement.
-   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadInput.AXIS_LEFT_X);
+   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadButton.AXIS_LEFT_X);
    * player.setVelocityX(horizontal * MOVE_SPEED * elapsed);
    * }</pre>
    *
-   * @see FlixelGamepadInput
+   * @see FlixelGamepadButton
    */
   @NotNull
-  public static FlixelGamepadManager gamepads;
+  public static FlixelGamepadInputManager gamepads;
 
   /**
    * The default logger used for game diagnostics and debugging output.
@@ -829,7 +828,7 @@ public final class Flixel {
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
     touches = new FlixelTouchManager();
-    gamepads = new FlixelGamepadManager();
+    gamepads = new FlixelGamepadInputManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();

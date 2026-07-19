@@ -29,11 +29,11 @@ import org.junit.jupiter.api.Test;
 
 class FlixelHapticsTest {
 
-  private FlixelGamepadManager manager;
+  private FlixelGamepadInputManager manager;
 
   @BeforeEach
   void setUp() {
-    manager = new FlixelGamepadManager();
+    manager = new FlixelGamepadInputManager();
   }
 
   @Test

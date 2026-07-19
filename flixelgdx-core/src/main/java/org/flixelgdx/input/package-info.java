@@ -14,7 +14,7 @@
  * <ul>
  *   <li><b>Keyboard:</b> {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager FlixelKeyInputManager} on {@link org.flixelgdx.Flixel#keys Flixel.keys}.</li>
  *   <li><b>Mouse / pointers:</b> {@link org.flixelgdx.input.mouse.FlixelMouseManager FlixelMouseManager} on {@link org.flixelgdx.Flixel#mouse Flixel.mouse}.</li>
- *   <li><b>Gamepads:</b> {@link org.flixelgdx.input.gamepad.FlixelGamepadManager FlixelGamepadManager} on {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}.</li>
+ *   <li><b>Gamepads:</b> {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager FlixelGamepadInputManager} on {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}.</li>
  *   <li><b>Logical actions (rebindable layers):</b> {@link org.flixelgdx.input.action action} ({@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet}, {@link org.flixelgdx.input.action.FlixelActionDigital FlixelActionDigital}, {@link org.flixelgdx.input.action.FlixelActionAnalog FlixelActionAnalog}).</li>
  * </ul>
  *

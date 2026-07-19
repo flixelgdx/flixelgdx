@@ -24,14 +24,14 @@
 package org.flixelgdx.input.gamepad;
 
 /**
- * Pluggable vibration backend for {@link FlixelGamepadManager}.
+ * Pluggable vibration backend for {@link FlixelGamepadInputManager}.
  *
  * <p>The built-in implementation, {@link FlixelDefaultHapticsProvider}, delegates to
  * gdx-controllers' {@link com.badlogic.gdx.controllers.Controller#startVibration} and works on
  * desktop (SDL via {@code gdx-controllers-desktop}) and web (W3C Gamepad API via
  * {@code gdx-controllers-teavm}) without any extra setup. For platform-specific features such as
  * dual-motor channels, haptic patterns, or DualSense adaptive triggers, supply a custom
- * implementation via {@link FlixelGamepadManager#setHapticsProvider}.
+ * implementation via {@link FlixelGamepadInputManager#setHapticsProvider}.
  *
  * <h2>Intensity values</h2>
  *
@@ -41,7 +41,7 @@ package org.flixelgdx.input.gamepad;
  *
  * <h2>Slot indices</h2>
  *
- * <p>Each method receives the same slot id used throughout {@link FlixelGamepadManager}. The
+ * <p>Each method receives the same slot id used throughout {@link FlixelGamepadInputManager}. The
  * manager already validates that the slot is in range and that the gamepad system is enabled
  * before calling the provider, so implementations do not need to repeat those checks.
  */
@@ -54,7 +54,7 @@ public interface FlixelHapticsProvider {
    * Implementations targeting single-motor hardware may collapse the two intensities to a single
    * value, typically the larger of the two.
    *
-   * @param slot Slot index between {@code 0} and {@link FlixelGamepadManager#MAX_GAMEPADS} exclusive.
+   * @param slot Slot index between {@code 0} and {@link FlixelGamepadInputManager#MAX_GAMEPADS} exclusive.
    * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
    * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
    * @param durationSecs How long to vibrate, in seconds.
