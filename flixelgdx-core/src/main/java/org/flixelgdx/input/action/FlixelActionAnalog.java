@@ -25,6 +25,7 @@ package org.flixelgdx.input.action;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -98,6 +99,8 @@ public final class FlixelActionAnalog extends FlixelAction {
   private float flickThreshold = 0.3f;
 
   private final Array<FlixelAnalogBinding> bindings = new Array<>(12);
+  @Nullable
+  private ObjectMap<String, FlixelAnalogBinding> namedBindings;
 
   private final Vector2 scratch = new Vector2();
 
@@ -117,12 +120,101 @@ public final class FlixelActionAnalog extends FlixelAction {
   }
 
   /**
-   * Adds a binding evaluated each frame (allocation-free after this call).
+   * Removes all bindings from this action, including any registered under named slots.
+   *
+   * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
+   * sources (it will produce a zero vector until at least one binding is added again).
+   */
+  public void clearBindings() {
+    bindings.clear();
+    if (namedBindings != null) {
+      namedBindings.clear();
+    }
+  }
+
+  /**
+   * Adds an unnamed binding evaluated each frame (allocation-free after this call).
+   *
+   * <p>Each binding contributes to a shared accumulator; the sum is clamped to a maximum length
+   * of {@code 1}. Prefer {@link #addBinding(String, FlixelAnalogBinding)} when you need to replace
+   * or remove this binding later (for example, a rebinding screen).
    *
    * @param binding Non-null binding.
    */
   public void addBinding(@NotNull FlixelAnalogBinding binding) {
     bindings.add(binding);
+  }
+
+  /**
+   * Adds a binding under a named slot (allocation-free after this call).
+   *
+   * <p>If a binding is already registered under {@code slot}, it is removed and replaced. Named
+   * slots are the natural model for a rebinding screen: one slot per axis or device, replaced
+   * in-place when the player picks a new key or stick.
+   *
+   * <pre>{@code
+   * move.addBinding("leftKey",  FlixelAnalogBinding.negXKey(Input.Keys.LEFT));
+   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(Input.Keys.RIGHT));
+   * move.addBinding("stick",    FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+   *
+   * // Player rebinds the left key at runtime.
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(newKey));
+   * }</pre>
+   *
+   * @param slot    Non-null, non-empty identifier for this binding (for example {@code "leftKey"}).
+   * @param binding Non-null binding.
+   */
+  public void addBinding(@NotNull String slot, @NotNull FlixelAnalogBinding binding) {
+    if (namedBindings == null) {
+      namedBindings = new ObjectMap<>(4);
+    }
+    FlixelAnalogBinding old = namedBindings.put(slot, binding);
+    if (old != null) {
+      bindings.removeValue(old, true);
+    }
+    bindings.add(binding);
+  }
+
+  /**
+   * Removes the binding registered under the given slot name.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
+   * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
+   */
+  public boolean removeBinding(@NotNull String slot) {
+    if (namedBindings == null) {
+      return false;
+    }
+    FlixelAnalogBinding old = namedBindings.remove(slot);
+    if (old == null) {
+      return false;
+    }
+    bindings.removeValue(old, true);
+    return true;
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelAnalogBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelAnalogBinding binding) {
+    boolean removed = bindings.removeValue(binding, true);
+    if (removed && namedBindings != null) {
+      ObjectMap.Keys<String> keys = namedBindings.keys();
+      while (keys.hasNext()) {
+        String key = keys.next();
+        if (namedBindings.get(key) == binding) {
+          namedBindings.remove(key);
+          break;
+        }
+      }
+    }
+    return removed;
   }
 
   @Override

@@ -24,6 +24,7 @@
 package org.flixelgdx.input.action;
 
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -64,6 +65,8 @@ import org.jetbrains.annotations.Nullable;
 public final class FlixelActionDigital extends FlixelAction {
 
   private final Array<FlixelDigitalBinding> bindings = new Array<>(8);
+  @Nullable
+  private ObjectMap<String, FlixelDigitalBinding> namedBindings;
 
   private float holdAccum;
 
@@ -77,12 +80,100 @@ public final class FlixelActionDigital extends FlixelAction {
   }
 
   /**
-   * Adds a binding evaluated each frame (allocation-free after this call).
+   * Removes all bindings from this action, including any registered under named slots.
+   *
+   * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
+   * sources (it will never fire until at least one binding is added again).
+   */
+  public void clearBindings() {
+    bindings.clear();
+    if (namedBindings != null) {
+      namedBindings.clear();
+    }
+  }
+
+  /**
+   * Adds an unnamed binding evaluated each frame (allocation-free after this call).
+   *
+   * <p>Multiple bindings are OR'd: the action fires if any one returns {@code true}. Prefer
+   * {@link #addBinding(String, FlixelDigitalBinding)} when you need to replace or remove this
+   * binding later (for example, a rebinding screen).
    *
    * @param binding Non-null binding.
    */
   public void addBinding(@NotNull FlixelDigitalBinding binding) {
     bindings.add(binding);
+  }
+
+  /**
+   * Adds a binding under a named slot (allocation-free after this call).
+   *
+   * <p>If a binding is already registered under {@code slot}, it is removed and replaced. This
+   * makes named slots the natural model for a rebinding screen: one slot per device type, replaced
+   * in-place when the player picks a new key.
+   *
+   * <pre>{@code
+   * jump.addBinding("keyboard", FlixelDigitalBinding.key(Input.Keys.SPACE));
+   * jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
+   *
+   * // Player rebinds the keyboard slot at runtime.
+   * jump.addBinding("keyboard", FlixelDigitalBinding.key(newKey));
+   * }</pre>
+   *
+   * @param slot    Non-null, non-empty identifier for this binding (for example {@code "keyboard"}).
+   * @param binding Non-null binding.
+   */
+  public void addBinding(@NotNull String slot, @NotNull FlixelDigitalBinding binding) {
+    if (namedBindings == null) {
+      namedBindings = new ObjectMap<>(4);
+    }
+    FlixelDigitalBinding old = namedBindings.put(slot, binding);
+    if (old != null) {
+      bindings.removeValue(old, true);
+    }
+    bindings.add(binding);
+  }
+
+  /**
+   * Removes the binding registered under the given slot name.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelDigitalBinding)}.
+   * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
+   */
+  public boolean removeBinding(@NotNull String slot) {
+    if (namedBindings == null) {
+      return false;
+    }
+    FlixelDigitalBinding old = namedBindings.remove(slot);
+    if (old == null) {
+      return false;
+    }
+    bindings.removeValue(old, true);
+    return true;
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelDigitalBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelDigitalBinding binding) {
+    boolean removed = bindings.removeValue(binding, true);
+    if (removed && namedBindings != null) {
+      ObjectMap.Keys<String> keys = namedBindings.keys();
+      while (keys.hasNext()) {
+        String key = keys.next();
+        if (namedBindings.get(key) == binding) {
+          namedBindings.remove(key);
+          break;
+        }
+      }
+    }
+    return removed;
   }
 
   @Override
