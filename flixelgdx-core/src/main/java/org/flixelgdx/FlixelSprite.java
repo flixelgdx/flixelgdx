@@ -588,22 +588,22 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
     batch.setColor(color);
     batch.draw(
-      f.getTexture(),
-      drawX,
-      drawY,
-      originXParam,
-      originYParam,
-      drawW,
-      drawH,
-      scaleX,
-      scaleY,
-      getAngle(),
-      f.getRegionX(),
-      f.getRegionY(),
-      drawW,
-      drawH,
-      isFlippedX,
-      isFlippedY);
+        f.getTexture(),
+        drawX,
+        drawY,
+        originXParam,
+        originYParam,
+        drawW,
+        drawH,
+        scaleX,
+        scaleY,
+        getAngle(),
+        f.getRegionX(),
+        f.getRegionY(),
+        drawW,
+        drawH,
+        isFlippedX,
+        isFlippedY);
     batch.setColor(Color.WHITE);
 
     if (spriteShader != null) {
@@ -877,8 +877,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     Texture texture = currentFrame != null ? currentFrame.getTexture() : null;
     if (texture != null) {
       texture.setFilter(
-        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 
@@ -1038,46 +1038,48 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public static final String BLEND_VERTEX_SHADER =
-    "attribute vec4 a_position;\n"
-      + "attribute vec4 a_color;\n"
-      + "attribute vec2 a_texCoord0;\n"
-      + "uniform mat4 u_projTrans;\n"
-      + "varying vec4 v_color;\n"
-      + "varying vec2 v_texCoords;\n"
-      + "void main() {\n"
-      + "    v_color = a_color;\n"
-      + "    v_color.a = v_color.a * (255.0/254.0);\n"
-      + "    v_texCoords = a_texCoord0;\n"
-      + "    gl_Position = u_projTrans * a_position;\n"
-      + "}";
+      "attribute vec4 a_position;\n"
+          + "attribute vec4 a_color;\n"
+          + "attribute vec2 a_texCoord0;\n"
+          + "uniform mat4 u_projTrans;\n"
+          + "varying vec4 v_color;\n"
+          + "varying vec2 v_texCoords;\n"
+          + "void main() {\n"
+          + "    v_color = a_color;\n"
+          + "    v_color.a = v_color.a * (255.0/254.0);\n"
+          + "    v_texCoords = a_texCoord0;\n"
+          + "    gl_Position = u_projTrans * a_position;\n"
+          + "}";
 
   public static final String PREMULTIPLIED_FRAGMENT_SHADER =
-    "#ifdef GL_ES\n"
-      + "precision mediump float;\n"
-      + "#endif\n"
-      + "varying vec4 v_color;\n"
-      + "varying vec2 v_texCoords;\n"
-      + "uniform sampler2D u_texture;\n"
-      + "void main() {\n"
-      + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
-      + "    gl_FragColor = vec4(c.rgb * c.a, c.a);\n"
-      + "}";
+      "#ifdef GL_ES\n"
+          + "precision mediump float;\n"
+          + "#endif\n"
+          + "varying vec4 v_color;\n"
+          + "varying vec2 v_texCoords;\n"
+          + "uniform sampler2D u_texture;\n"
+          + "void main() {\n"
+          + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
+          + "    gl_FragColor = vec4(c.rgb * c.a, c.a);\n"
+          + "}";
 
   public static final String WHITE_MIX_FRAGMENT_SHADER =
-    "#ifdef GL_ES\n"
-      + "precision mediump float;\n"
-      + "#endif\n"
-      + "varying vec4 v_color;\n"
-      + "varying vec2 v_texCoords;\n"
-      + "uniform sampler2D u_texture;\n"
-      + "void main() {\n"
-      + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
-      + "    vec3 result = mix(vec3(1.0), c.rgb, c.a);\n"
-      + "    gl_FragColor = vec4(result, c.a);\n"
-      + "}";
+      "#ifdef GL_ES\n"
+          + "precision mediump float;\n"
+          + "#endif\n"
+          + "varying vec4 v_color;\n"
+          + "varying vec2 v_texCoords;\n"
+          + "uniform sampler2D u_texture;\n"
+          + "void main() {\n"
+          + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
+          + "    vec3 result = mix(vec3(1.0), c.rgb, c.a);\n"
+          + "    gl_FragColor = vec4(result, c.a);\n"
+          + "}";
 
-  @Nullable private static ShaderProgram premultipliedShader;
-  @Nullable private static ShaderProgram whiteMixShader;
+  @Nullable
+  private static ShaderProgram premultipliedShader;
+  @Nullable
+  private static ShaderProgram whiteMixShader;
 
   private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
 
@@ -1106,7 +1108,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         batch.setShader(getWhiteMixShader());
         setBlendEquationMinMax(GL30.GL_MIN);
       }
-      case NORMAL -> {} // Do Nothing
+      case NORMAL -> {
+      } // Do Nothing
     }
   }
 
