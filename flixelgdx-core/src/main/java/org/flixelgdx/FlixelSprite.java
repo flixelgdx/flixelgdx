@@ -23,15 +23,20 @@
  */
 package org.flixelgdx;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.GL30;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
+import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
@@ -40,6 +45,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelAxes;
+import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
@@ -115,6 +121,21 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /** The color tint applied when drawing this sprite. */
   protected final Color color = new Color(Color.WHITE);
+
+  /**
+   * Blending mode, functions similarly to Photoshop or Gimp, e.g. "multiply", "screen", etc.
+   * Defaults to {@link FlixelBlendMode#NORMAL}, which draws with the usual {@code SRC_ALPHA / ONE_MINUS_SRC_ALPHA}
+   * blend function and costs nothing extra.
+   */
+  @NotNull
+  private FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
+
+  @Nullable
+  private static ShaderProgram premultipliedShader;
+  @Nullable
+  private static ShaderProgram whiteMixShader;
+  private static boolean blendMinMaxChecked;
+  private static boolean blendMinMaxSupported;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -414,10 +435,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
    * {@link FlixelAnimationController#addSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
-   * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
-   * not a general API for game code.
+   * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with {@code retain()} already called.
+   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with
+   *     {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
@@ -529,6 +550,16 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       return;
     }
 
+    // Non-NORMAL blend modes need this sprite's geometry isolated in its own batch flush, since
+    // the blend function/equation (and, for LIGHTEN/DARKEN, the shader) applies to everything the
+    // GPU draws until it's restored below.
+    boolean blending = blendMode != FlixelBlendMode.NORMAL;
+    ShaderProgram previousShader = null;
+    if (blending) {
+      previousShader = batch.getShader();
+      applyBlendMode(batch, blendMode);
+    }
+
     // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
     // pending geometry internally before switching, so no explicit flush is needed.
     if (spriteShader != null) {
@@ -585,6 +616,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
     if (spriteShader != null) {
       batch.setShader(null);
+    }
+
+    if (blending) {
+      batch.flush(); // Commit this sprite under the special blend state.
+      resetBlendMode(batch, previousShader);
     }
   }
 
@@ -687,6 +723,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     offsetX = 0f;
     offsetY = 0f;
     spriteShader = null;
+    blendMode = FlixelBlendMode.NORMAL;
     antialiasing = false;
     color.set(Color.WHITE);
     flipX = false;
@@ -870,6 +907,22 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.facing = facing;
   }
 
+  @NotNull
+  public FlixelBlendMode getBlendMode() {
+    return blendMode;
+  }
+
+  public void setBlendMode(FlixelBlendMode blendMode) {
+    this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
+    if (!isBlendMinMaxSupported()) {
+      if (blendMode == FlixelBlendMode.LIGHTEN || blendMode == FlixelBlendMode.DARKEN) {
+        Flixel.warn("FlixelSprite", blendMode
+            + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
+        this.blendMode = FlixelBlendMode.NORMAL;
+      }
+    }
+  }
+
   /** {@inheritDoc} */
   @Override
   public int getColor() {
@@ -997,5 +1050,83 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   public void setClipRectHeight(int clipRectHeight) {
     this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
+  }
+
+  private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
+    switch (mode) {
+      case ADD -> batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+      case MULTIPLY -> {
+        batch.setBlendFunction(GL20.GL_DST_COLOR, GL20.GL_ZERO);
+        batch.setShader(getWhiteMixShader());
+      }
+      case SCREEN -> {
+        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_COLOR);
+        batch.setShader(getPremultipliedShader());
+      }
+      case SUBTRACT -> {
+        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+        batch.setShader(getPremultipliedShader());
+        Gdx.gl.glBlendEquation(GL20.GL_FUNC_REVERSE_SUBTRACT);
+      }
+      case LIGHTEN -> {
+        if (isBlendMinMaxSupported()) {
+          batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+          batch.setShader(getPremultipliedShader());
+          setBlendEquationMinMax(GL30.GL_MAX);
+        }
+      }
+      case DARKEN -> {
+        if (isBlendMinMaxSupported()) {
+          batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+          batch.setShader(getWhiteMixShader());
+          setBlendEquationMinMax(GL30.GL_MIN);
+        }
+      }
+      case NORMAL -> {
+        // Do nothing.
+      }
+    }
+  }
+
+  private void resetBlendMode(FlixelBatch batch, @Nullable ShaderProgram previousShader) {
+    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+    Gdx.gl.glBlendEquation(GL20.GL_FUNC_ADD);
+    batch.setShader(previousShader);
+  }
+
+  private void setBlendEquationMinMax(int mode) {
+    Gdx.gl.glBlendEquation(mode);
+  }
+
+  private static ShaderProgram getPremultipliedShader() {
+    if (premultipliedShader == null) {
+      premultipliedShader = compileBlendShader(FlixelBlendMode.PREMULTIPLIED_FRAGMENT_SHADER);
+    }
+    return premultipliedShader;
+  }
+
+  private static ShaderProgram getWhiteMixShader() {
+    if (whiteMixShader == null) {
+      whiteMixShader = compileBlendShader(FlixelBlendMode.WHITE_MIX_FRAGMENT_SHADER);
+    }
+    return whiteMixShader;
+  }
+
+  private static ShaderProgram compileBlendShader(String fragmentSource) {
+    ShaderProgram.pedantic = false;
+    return new ShaderProgram(FlixelBlendMode.BLEND_VERTEX_SHADER, fragmentSource);
+  }
+
+  private static boolean isBlendMinMaxSupported() {
+    if (!blendMinMaxChecked) {
+      blendMinMaxChecked = true;
+      if (Gdx.graphics.isGL30Available()) {
+        blendMinMaxSupported = true;
+      } else {
+        String extensions = Gdx.gl.glGetString(GL20.GL_EXTENSIONS);
+        blendMinMaxSupported = extensions != null && extensions.contains("GL_EXT_blend_minmax");
+      }
+    }
+    return blendMinMaxSupported;
   }
 }
