@@ -52,8 +52,6 @@ import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
 /**
  * The core building block of all FlixelGDX games. Extends {@link FlixelObject} with graphical
  * capabilities including texture rendering, scaling, rotation, tinting, and flipping.
@@ -918,8 +916,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
     if (!isBlendMinMaxSupported()) {
       if (blendMode == FlixelBlendMode.LIGHTEN || blendMode == FlixelBlendMode.DARKEN) {
-        Flixel.warn("FlixelSprite",
-            blendMode + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
+        Flixel.warn("FlixelSprite", blendMode
+            + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
         this.blendMode = FlixelBlendMode.NORMAL;
       }
     }
