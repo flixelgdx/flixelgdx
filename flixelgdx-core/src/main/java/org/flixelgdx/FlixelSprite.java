@@ -918,7 +918,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       if (blendMode == FlixelBlendMode.LIGHTEN || blendMode == FlixelBlendMode.DARKEN) {
         Flixel.warn("FlixelSprite",
             blendMode + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
-        blendMode = FlixelBlendMode.NORMAL;
+        this.blendMode = FlixelBlendMode.NORMAL;
       }
     }
   }
