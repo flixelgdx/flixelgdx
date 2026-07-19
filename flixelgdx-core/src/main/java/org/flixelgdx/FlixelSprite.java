@@ -1145,7 +1145,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void changeClipRectX(int clipRectX) {
-    setClipRectX(this.clipRectX + clipRectX);
+    this.clipRectX += clipRectX;
   }
 
   public int getClipRectY() {
@@ -1157,7 +1157,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void changeClipRectY(int clipRectY) {
-    setClipRectY(this.clipRectY + clipRectY);
+    this.clipRectY += clipRectY;
   }
 
   public int getClipRectWidth() {
@@ -1168,12 +1168,20 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectWidth = Math.max(0, clipRectWidth);
   }
 
+  public void changeClipRectWidth(int clipRectWidth) {
+    setClipRectWidth(this.clipRectWidth + clipRectWidth);
+  }
+
   public int getClipRectHeight() {
     return clipRectHeight;
   }
 
   public void setClipRectHeight(int clipRectHeight) {
     this.clipRectHeight = Math.max(0, clipRectHeight);
+  }
+
+  public void changeClipRectHeight(int clipRectHeight) {
+    setClipRectHeight(this.clipRectHeight + clipRectHeight);
   }
 
   private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
