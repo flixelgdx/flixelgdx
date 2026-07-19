@@ -136,8 +136,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   private static ShaderProgram premultipliedShader;
   @Nullable
   private static ShaderProgram whiteMixShader;
-  @Nullable
-  private static Boolean blendMinMaxSupported;
+  private static boolean blendMinMaxChecked;
+  private static boolean blendMinMaxSupported;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -1120,7 +1120,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   private static boolean isBlendMinMaxSupported() {
-    if (blendMinMaxSupported == null) {
+    if (!blendMinMaxChecked) {
+      blendMinMaxChecked = true;
       if (Gdx.graphics.isGL30Available()) {
         blendMinMaxSupported = true;
       } else {
