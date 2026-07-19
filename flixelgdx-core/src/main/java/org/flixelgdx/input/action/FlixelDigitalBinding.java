@@ -40,10 +40,10 @@ import org.flixelgdx.input.touch.FlixelTouch;
  * common cases (keyboard, mouse, gamepad, touch region). For anything else, pass a plain lambda:
  *
  * <pre>{@code
- * jump.addBinding(FlixelDigitalBinding.key(FlixelKey.SPACE));
- * jump.addBinding(FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
- * jump.addBinding(FlixelDigitalBinding.touch(0));          // first finger
- * jump.addBinding(() -> myCustomSensor.isActive());        // custom source
+ * jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
+ * jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
+ * jump.addBinding("touch",    FlixelDigitalBinding.touch(0));
+ * jump.addBinding("sensor",   () -> myCustomSensor.isActive());
  * }</pre>
  *
  * @see FlixelActionDigital
@@ -106,7 +106,7 @@ public interface FlixelDigitalBinding {
    *
    * <pre>{@code
    * // Fire while the first finger is down.
-   * shoot.addBinding(FlixelDigitalBinding.touch(0));
+   * shoot.addBinding("touch", FlixelDigitalBinding.touch(0));
    * }</pre>
    *
    * @param pointer Zero-based pointer index (0 = first finger).
@@ -123,7 +123,7 @@ public interface FlixelDigitalBinding {
    *
    * <pre>{@code
    * // Bottom-left quarter of the screen as a virtual jump button.
-   * jump.addBinding(FlixelDigitalBinding.touchRegion(0f, 0.5f, 0.5f, 0.5f));
+   * jump.addBinding("touch", FlixelDigitalBinding.touchRegion(0f, 0.5f, 0.5f, 0.5f));
    * }</pre>
    *
    * @param normX Left edge as a fraction of the back buffer width (0..1).
@@ -171,7 +171,7 @@ public interface FlixelDigitalBinding {
    *
    * <pre>{@code
    * // Virtual jump button occupying the left half of a 480x270 world.
-   * jump.addBinding(FlixelDigitalBinding.touchRegionWorld(0f, 0f, 240f, 270f));
+   * jump.addBinding("touch", FlixelDigitalBinding.touchRegionWorld(0f, 0f, 240f, 270f));
    * }</pre>
    *
    * @param x Left edge in world units.

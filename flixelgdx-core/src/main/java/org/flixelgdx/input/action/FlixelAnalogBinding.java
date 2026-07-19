@@ -39,11 +39,11 @@ import org.flixelgdx.input.gamepad.FlixelGamepadInput;
  * common cases (keyboard halves, gamepad axes). For anything else, pass a plain lambda:
  *
  * <pre>{@code
- * move.addBinding(FlixelAnalogBinding.negXKey(FlixelKey.A));
- * move.addBinding(FlixelAnalogBinding.posXKey(FlixelKey.D));
- * move.addBinding(FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addBinding(FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
- * move.addBinding(out -> out.x += myJoystick.getX()); // Custom contributor.
+ * move.addBinding("negX",   FlixelAnalogBinding.negXKey(FlixelKey.A));
+ * move.addBinding("posX",   FlixelAnalogBinding.posXKey(FlixelKey.D));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("custom", out -> out.x += myJoystick.getX());
  * }</pre>
  *
  * <h2>Axis conventions</h2>

@@ -23,10 +23,12 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Boolean action: any {@link FlixelDigitalBinding} that evaluates true, OR optional Steam digital
@@ -34,9 +36,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Setup</h2>
  *
- * <p>Call {@link #addBinding(FlixelDigitalBinding)} only during construction or loading (not each
- * frame). Multiple bindings are OR'd: a {@code jump} action might accept Space, gamepad A, and a
- * touch region.
+ * <p>Add bindings via {@link #addBinding(String, FlixelDigitalBinding)} during construction or
+ * loading (not each frame). Multiple bindings are OR'd: a {@code jump} action might accept Space,
+ * gamepad A, and a touch region, each under its own named slot.
  *
  * <h2>Reading in gameplay</h2>
  *
@@ -63,7 +65,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelActionDigital extends FlixelAction {
 
-  private final Array<FlixelDigitalBinding> bindings = new Array<>(8);
+  private final ObjectMap<String, FlixelDigitalBinding> namedBindings = new ObjectMap<>(8);
 
   private float holdAccum;
 
@@ -77,12 +79,80 @@ public final class FlixelActionDigital extends FlixelAction {
   }
 
   /**
-   * Adds a binding evaluated each frame (allocation-free after this call).
+   * Removes all bindings from this action, including any registered under named slots.
    *
+   * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
+   * sources (it will never fire until at least one binding is added again).
+   */
+  public void clearBindings() {
+    namedBindings.clear();
+  }
+
+  /**
+   * Adds a binding under a named slot (allocation-free after this call).
+   *
+   * <p>If a binding is already registered under {@code slot}, it is removed and replaced. This
+   * makes named slots the natural model for a rebinding screen: one slot per device type, replaced
+   * in-place when the player picks a new key.
+   *
+   * <pre>{@code
+   * jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
+   * jump.addBinding("gamepad", FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
+   *
+   * // Player rebinds the keyboard slot at runtime.
+   * jump.addBinding("keyboard", FlixelDigitalBinding.key(newKey));
+   * }</pre>
+   *
+   * @param slot Non-null, non-empty identifier for this binding (for example {@code "keyboard"}).
    * @param binding Non-null binding.
    */
-  public void addBinding(@NotNull FlixelDigitalBinding binding) {
-    bindings.add(binding);
+  public void addBinding(@NotNull String slot, @NotNull FlixelDigitalBinding binding) {
+    namedBindings.put(
+        Objects.requireNonNull(slot, "slot cannot be null."),
+        Objects.requireNonNull(binding, "binding cannot be null."));
+  }
+
+  /**
+   * Removes the binding registered under the given slot name.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelDigitalBinding)}.
+   * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
+   */
+  public boolean removeBinding(@NotNull String slot) {
+    return namedBindings.remove(Objects.requireNonNull(slot, "slot cannot be null.")) != null;
+  }
+
+  /**
+   * Returns the binding registered under the given slot name, or {@code null} if the slot is
+   * unknown.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelDigitalBinding)}.
+   * @return The registered binding, or {@code null} if no binding is registered under that slot.
+   */
+  @Nullable
+  public FlixelDigitalBinding getBinding(@NotNull String slot) {
+    return namedBindings.get(Objects.requireNonNull(slot, "slot cannot be null."));
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelDigitalBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelDigitalBinding binding) {
+    ObjectMap.Keys<String> keys = namedBindings.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (namedBindings.get(key) == binding) {
+        keys.remove();
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -99,8 +169,9 @@ public final class FlixelActionDigital extends FlixelAction {
     if (steam != null && steam.getDigital(getName())) {
       v = true;
     }
-    for (int i = 0, n = bindings.size; i < n; i++) {
-      v |= bindings.get(i).evaluate();
+    ObjectMap.Values<FlixelDigitalBinding> vals = namedBindings.values();
+    while (vals.hasNext()) {
+      v |= vals.next().evaluate();
     }
     boolean edge = v && !previous;
     Runnable cb = callback;

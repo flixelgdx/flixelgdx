@@ -24,10 +24,12 @@
 package org.flixelgdx.input.action;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Two-axis vector built from {@link FlixelAnalogBinding} contributors plus optional Steam analog
@@ -45,12 +47,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>{@code
  * move = new FlixelActionAnalog("move");
- * move.addBinding(FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
- * move.addBinding(FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
- * move.addBinding(FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
- * move.addBinding(FlixelAnalogBinding.posYKey(FlixelKey.UP));
- * move.addBinding(FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addBinding(FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("negX", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+ * move.addBinding("posX", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
+ * move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
+ * move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.UP));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
  * }</pre>
  *
  * <h2>Reading</h2>
@@ -97,7 +99,7 @@ public final class FlixelActionAnalog extends FlixelAction {
    */
   private float flickThreshold = 0.3f;
 
-  private final Array<FlixelAnalogBinding> bindings = new Array<>(12);
+  private final ObjectMap<String, FlixelAnalogBinding> namedBindings = new ObjectMap<>(12);
 
   private final Vector2 scratch = new Vector2();
 
@@ -117,12 +119,82 @@ public final class FlixelActionAnalog extends FlixelAction {
   }
 
   /**
-   * Adds a binding evaluated each frame (allocation-free after this call).
+   * Removes all bindings from this action.
    *
+   * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
+   * sources (it will produce a zero vector until at least one binding is added again).
+   */
+  public void clearBindings() {
+    namedBindings.clear();
+  }
+
+  /**
+   * Adds a binding under a named slot (allocation-free after this call).
+   *
+   * <p>If a binding is already registered under {@code slot}, it is removed and replaced. Named
+   * slots are the natural model for a rebinding screen: one slot per axis or device, replaced
+   * in-place when the player picks a new key or stick.
+   *
+   * <pre>{@code
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
+   * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+   *
+   * // Player rebinds the left key at runtime.
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(newKey));
+   * }</pre>
+   *
+   * @param slot Non-null, non-empty identifier for this binding (for example {@code "leftKey"}).
    * @param binding Non-null binding.
    */
-  public void addBinding(@NotNull FlixelAnalogBinding binding) {
-    bindings.add(binding);
+  public void addBinding(@NotNull String slot, @NotNull FlixelAnalogBinding binding) {
+    var s = Objects.requireNonNull(slot, "slot cannot be null.");
+    var b = Objects.requireNonNull(binding, "binding cannot be null.");
+    namedBindings.put(s, b);
+  }
+
+  /**
+   * Removes the binding registered under the given slot name.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
+   * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
+   */
+  public boolean removeBinding(@NotNull String slot) {
+    FlixelAnalogBinding old = namedBindings.remove(Objects.requireNonNull(slot, "slot cannot be null."));
+    return old != null;
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelAnalogBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelAnalogBinding binding) {
+    ObjectMap.Keys<String> keys = namedBindings.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (namedBindings.get(key) == binding) {
+        keys.remove();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns the binding registered under the given slot name, or {@code null} if the slot is
+   * unknown.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
+   * @return The registered binding, or {@code null} if no binding is registered under that slot.
+   */
+  @Nullable
+  public FlixelAnalogBinding getBinding(@NotNull String slot) {
+    return namedBindings.get(Objects.requireNonNull(slot, "slot cannot be null."));
   }
 
   @Override
@@ -137,8 +209,9 @@ public final class FlixelActionAnalog extends FlixelAction {
       return;
     }
     scratch.set(0f, 0f);
-    for (int i = 0, n = bindings.size; i < n; i++) {
-      bindings.get(i).accumulate(scratch);
+    ObjectMap.Values<FlixelAnalogBinding> vals = namedBindings.values();
+    while (vals.hasNext()) {
+      vals.next().accumulate(scratch);
     }
     FlixelSteamActionReader steam = owner != null ? owner.steamReader : null;
     if (steam != null) {
