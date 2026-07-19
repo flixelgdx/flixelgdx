@@ -33,6 +33,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
@@ -134,6 +136,13 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   private static ShaderProgram premultipliedShader;
   @Nullable
   private static ShaderProgram whiteMixShader;
+
+  /** Shared scratch rectangle for clip rect bounds; reused across all sprite draw calls. */
+  private static final Rectangle tempClipBounds = new Rectangle();
+
+  /** Shared scratch rectangle for scissor pixel coordinates; reused across all sprite draw calls. */
+  private static final Rectangle tempScissors = new Rectangle();
+
   private static boolean blendMinMaxChecked;
   private static boolean blendMinMaxSupported;
 
@@ -141,18 +150,26 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   protected int facing = FlixelDirectionFlags.RIGHT;
 
   /**
-   * Visible source width for this sprite.
-   *
-   * <p>The lower this value is, the less visible this sprite will be on
-   * the x-axis from the right side. Good for fade out effects.
+   * X offset of the clip rectangle's left edge, in unscaled sprite-local pixels. Active only when
+   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   */
+  private int clipRectX;
+
+  /**
+   * Y offset of the clip rectangle's bottom edge, in unscaled sprite-local pixels. Active only when
+   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   */
+  private int clipRectY;
+
+  /**
+   * Width of the visible clip rectangle, in unscaled sprite-local pixels. Active only when
+   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
   private int clipRectWidth;
 
   /**
-   * Visible source height for this sprite.
-   *
-   * <p>The lower this value is, the less visible this sprite will be on
-   * the y-axis from the bottom. Good for fade out effects.
+   * Height of the visible clip rectangle, in unscaled sprite-local pixels. Active only when
+   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
   private int clipRectHeight;
 
@@ -175,6 +192,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /** Whether this sprite is flipped vertically. */
   protected boolean flipY = false;
+
+  /** Whether a clip rectangle is active; set via {@link #setClipRect(int, int, int, int)} and cleared by {@link #clearClipRect()}. */
+  private boolean clipRectEnabled;
 
   /** Constructs a new FlixelSprite with default values. */
   public FlixelSprite() {
@@ -591,8 +611,32 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float originXParam = srcW / 2f - insetX;
     float originYParam = srcH / 2f - insetY;
 
-    int drawW = Math.max(0, regW - (int) (clipRectWidth / Math.abs(scaleX)));
-    int drawH = Math.max(0, regH - (int) (clipRectHeight / Math.abs(scaleY)));
+    boolean clipEnabled = clipRectEnabled;
+    boolean clipPushed = false;
+    if (clipEnabled) {
+      // Flush before changing scissor state so previously batched sprites are not retroactively clipped.
+      batch.flush();
+      float clipScreenX = wx + offsetX + clipRectX * Math.abs(scaleX);
+      float clipScreenY = wy + offsetY + clipRectY * Math.abs(scaleY);
+      float clipScreenW = clipRectWidth * Math.abs(scaleX);
+      float clipScreenH = clipRectHeight * Math.abs(scaleY);
+      tempClipBounds.set(clipScreenX, clipScreenY, clipScreenW, clipScreenH);
+      ScissorStack.calculateScissors(
+          cam.getCamera(),
+          cam.getViewport().getScreenX(), cam.getViewport().getScreenY(),
+          cam.getViewport().getScreenWidth(), cam.getViewport().getScreenHeight(),
+          batch.getTransformMatrix(), tempClipBounds, tempScissors);
+      clipPushed = ScissorStack.pushScissors(tempScissors);
+      if (!clipPushed) {
+        if (spriteShader != null) {
+          batch.setShader(null);
+        }
+        if (blending) {
+          resetBlendMode(batch, previousShader);
+        }
+        return;
+      }
+    }
 
     batch.setColor(color);
     batch.draw(
@@ -601,18 +645,23 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         drawY,
         originXParam,
         originYParam,
-        drawW,
-        drawH,
+        regW,
+        regH,
         scaleX,
         scaleY,
         getAngle(),
         f.getRegionX(),
         f.getRegionY(),
-        drawW,
-        drawH,
+        regW,
+        regH,
         isFlippedX,
         isFlippedY);
     batch.setColor(Color.WHITE);
+
+    if (clipEnabled && clipPushed) {
+      batch.flush();
+      ScissorStack.popScissors();
+    }
 
     if (spriteShader != null) {
       batch.setShader(null);
@@ -730,6 +779,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     flipY = false;
     setAngle(0f);
     currentFrame = null;
+    clipRectX = 0;
+    clipRectY = 0;
+    clipRectWidth = 0;
+    clipRectHeight = 0;
+    clipRectEnabled = false;
     if (atlasFrames != null) {
       atlasFrames.setSize(0);
       atlasFrames = null;
@@ -1036,12 +1090,82 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return frames;
   }
 
+  public boolean isClipRectEnabled() {
+    return clipRectEnabled;
+  }
+
+  /**
+   * Sets the clip rectangle in sprite-local pixel space and enables clipping.
+   *
+   * <p>Only the region inside the rectangle is drawn; pixels outside are discarded by the GPU
+   * scissor. The origin is the sprite's bottom-left corner before scale, so {@code x=0, y=0}
+   * anchors to the bottom-left of the frame. Moving {@code x} or {@code y} slides the visible
+   * window without changing the sprite's world position, which is the key difference from the
+   * old crop-from-edge approach.
+   *
+   * <p>For example, to show only the center quarter of a 100x100 sprite:
+   * <pre>{@code
+   * sprite.setClipRect(25, 25, 50, 50);
+   * // Slide the window right by 10 px later:
+   * sprite.setClipRectX(35);
+   * // Remove clipping:
+   * sprite.clearClipRect();
+   * }</pre>
+   *
+   * <p>Disable clipping with {@link #clearClipRect()}.
+   *
+   * @param x Left edge of the visible region, in unscaled sprite-local pixels.
+   * @param y Bottom edge of the visible region, in unscaled sprite-local pixels.
+   * @param width Width of the visible region, in unscaled sprite-local pixels.
+   * @param height Height of the visible region, in unscaled sprite-local pixels.
+   */
+  public void setClipRect(int x, int y, int width, int height) {
+    clipRectX = x;
+    clipRectY = y;
+    clipRectWidth = Math.max(0, width);
+    clipRectHeight = Math.max(0, height);
+    clipRectEnabled = true;
+  }
+
+  /** Disables the clip rectangle and resets all clip values to zero. */
+  public void clearClipRect() {
+    clipRectX = 0;
+    clipRectY = 0;
+    clipRectWidth = 0;
+    clipRectHeight = 0;
+    clipRectEnabled = false;
+  }
+
+  public int getClipRectX() {
+    return clipRectX;
+  }
+
+  public void setClipRectX(int clipRectX) {
+    this.clipRectX = clipRectX;
+  }
+
+  public void changeClipRectX(int clipRectX) {
+    setClipRectX(this.clipRectX + clipRectX);
+  }
+
+  public int getClipRectY() {
+    return clipRectY;
+  }
+
+  public void setClipRectY(int clipRectY) {
+    this.clipRectY = clipRectY;
+  }
+
+  public void changeClipRectY(int clipRectY) {
+    setClipRectY(this.clipRectY + clipRectY);
+  }
+
   public int getClipRectWidth() {
     return clipRectWidth;
   }
 
   public void setClipRectWidth(int clipRectWidth) {
-    this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, (int) getWidth());
+    this.clipRectWidth = Math.max(0, clipRectWidth);
   }
 
   public int getClipRectHeight() {
@@ -1049,7 +1173,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectHeight(int clipRectHeight) {
-    this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
+    this.clipRectHeight = Math.max(0, clipRectHeight);
   }
 
   private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {

@@ -895,17 +895,17 @@ public class FlixelAnimateSprite extends FlixelSprite {
       baseAffine.translate(-anchorOriginX, -anchorOriginY);
     }
 
-    int clipW = getClipRectWidth();
-    int clipH = getClipRectHeight();
-    boolean hasClip = clipW > 0 || clipH > 0;
+    boolean hasClip = isClipRectEnabled();
     boolean clipPushed = false;
     if (hasClip) {
       // Flush pending geometry before switching scissor state so non-clipped sprites that were
       // batched before this draw call are not retroactively clipped.
       batch.flush();
-      float visW = Math.max(0, (getWidth() - clipW) * Math.abs(sx));
-      float visH = Math.max(0, (getHeight() - clipH) * Math.abs(sy));
-      clipBoundsTemp.set(wx - getOffsetX(), wy - getOffsetY(), visW, visH);
+      float clipScreenX = (wx - getOffsetX()) + getClipRectX() * Math.abs(sx);
+      float clipScreenY = (wy - getOffsetY()) + getClipRectY() * Math.abs(sy);
+      float clipScreenW = getClipRectWidth() * Math.abs(sx);
+      float clipScreenH = getClipRectHeight() * Math.abs(sy);
+      clipBoundsTemp.set(clipScreenX, clipScreenY, clipScreenW, clipScreenH);
       ScissorStack.calculateScissors(
           cam.getCamera(),
           cam.getViewport().getScreenX(), cam.getViewport().getScreenY(),
