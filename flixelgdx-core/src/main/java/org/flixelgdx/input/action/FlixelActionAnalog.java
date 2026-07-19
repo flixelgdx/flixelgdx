@@ -24,11 +24,12 @@
 package org.flixelgdx.input.action;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Two-axis vector built from {@link FlixelAnalogBinding} contributors plus optional Steam analog
@@ -98,9 +99,7 @@ public final class FlixelActionAnalog extends FlixelAction {
    */
   private float flickThreshold = 0.3f;
 
-  private final Array<FlixelAnalogBinding> bindings = new Array<>(12);
-  @Nullable
-  private ObjectMap<String, FlixelAnalogBinding> namedBindings;
+  private final ObjectMap<String, FlixelAnalogBinding> namedBindings = new ObjectMap<>(12);
 
   private final Vector2 scratch = new Vector2();
 
@@ -120,16 +119,13 @@ public final class FlixelActionAnalog extends FlixelAction {
   }
 
   /**
-   * Removes all bindings from this action, including any registered under named slots.
+   * Removes all bindings from this action.
    *
    * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
    * sources (it will produce a zero vector until at least one binding is added again).
    */
   public void clearBindings() {
-    bindings.clear();
-    if (namedBindings != null) {
-      namedBindings.clear();
-    }
+    namedBindings.clear();
   }
 
   /**
@@ -140,8 +136,8 @@ public final class FlixelActionAnalog extends FlixelAction {
    * in-place when the player picks a new key or stick.
    *
    * <pre>{@code
-   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(Input.Keys.LEFT));
-   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(Input.Keys.RIGHT));
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(FlixelKeys.LEFT));
+   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(FlixelKeys.RIGHT));
    * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
    *
    * // Player rebinds the left key at runtime.
@@ -152,14 +148,9 @@ public final class FlixelActionAnalog extends FlixelAction {
    * @param binding Non-null binding.
    */
   public void addBinding(@NotNull String slot, @NotNull FlixelAnalogBinding binding) {
-    if (namedBindings == null) {
-      namedBindings = new ObjectMap<>(4);
-    }
-    FlixelAnalogBinding old = namedBindings.put(slot, binding);
-    if (old != null) {
-      bindings.removeValue(old, true);
-    }
-    bindings.add(binding);
+    var s = Objects.requireNonNull(slot, "slot cannot be null.");
+    var b = Objects.requireNonNull(binding, "binding cannot be null.");
+    namedBindings.put(s, b);
   }
 
   /**
@@ -169,15 +160,29 @@ public final class FlixelActionAnalog extends FlixelAction {
    * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
    */
   public boolean removeBinding(@NotNull String slot) {
-    if (namedBindings == null) {
-      return false;
+    FlixelAnalogBinding old = namedBindings.remove(Objects.requireNonNull(slot, "slot cannot be null."));
+    return old != null;
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelAnalogBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelAnalogBinding binding) {
+    ObjectMap.Keys<String> keys = namedBindings.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (namedBindings.get(key) == binding) {
+        keys.remove();
+        return true;
+      }
     }
-    FlixelAnalogBinding old = namedBindings.remove(slot);
-    if (old == null) {
-      return false;
-    }
-    bindings.removeValue(old, true);
-    return true;
+    return false;
   }
 
   /**
@@ -194,31 +199,7 @@ public final class FlixelActionAnalog extends FlixelAction {
    */
   @Nullable
   public FlixelAnalogBinding getBinding(@NotNull String slot) {
-    return namedBindings != null ? namedBindings.get(slot) : null;
-  }
-
-  /**
-   * Removes a specific binding by reference identity.
-   *
-   * <p>If the binding was added via {@link #addBinding(String, FlixelAnalogBinding)}, its slot
-   * entry is also cleared.
-   *
-   * @param binding The exact binding instance to remove.
-   * @return {@code true} if the binding was found and removed.
-   */
-  public boolean removeBinding(@NotNull FlixelAnalogBinding binding) {
-    boolean removed = bindings.removeValue(binding, true);
-    if (removed && namedBindings != null) {
-      ObjectMap.Keys<String> keys = namedBindings.keys();
-      while (keys.hasNext()) {
-        String key = keys.next();
-        if (namedBindings.get(key) == binding) {
-          namedBindings.remove(key);
-          break;
-        }
-      }
-    }
-    return removed;
+    return namedBindings.get(Objects.requireNonNull(slot, "slot cannot be null."));
   }
 
   @Override
@@ -233,8 +214,9 @@ public final class FlixelActionAnalog extends FlixelAction {
       return;
     }
     scratch.set(0f, 0f);
-    for (int i = 0, n = bindings.size; i < n; i++) {
-      bindings.get(i).accumulate(scratch);
+    ObjectMap.Values<FlixelAnalogBinding> vals = namedBindings.values();
+    while (vals.hasNext()) {
+      vals.next().accumulate(scratch);
     }
     FlixelSteamActionReader steam = owner != null ? owner.steamReader : null;
     if (steam != null) {

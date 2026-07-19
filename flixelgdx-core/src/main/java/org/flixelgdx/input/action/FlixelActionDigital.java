@@ -23,11 +23,12 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Boolean action: any {@link FlixelDigitalBinding} that evaluates true, OR optional Steam digital
@@ -35,9 +36,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Setup</h2>
  *
- * <p>Call {@link #addBinding(FlixelDigitalBinding)} only during construction or loading (not each
- * frame). Multiple bindings are OR'd: a {@code jump} action might accept Space, gamepad A, and a
- * touch region.
+ * <p>Add bindings via {@link #addBinding(String, FlixelDigitalBinding)} during construction or
+ * loading (not each frame). Multiple bindings are OR'd: a {@code jump} action might accept Space,
+ * gamepad A, and a touch region, each under its own named slot.
  *
  * <h2>Reading in gameplay</h2>
  *
@@ -64,9 +65,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelActionDigital extends FlixelAction {
 
-  private final Array<FlixelDigitalBinding> bindings = new Array<>(8);
-  @Nullable
-  private ObjectMap<String, FlixelDigitalBinding> namedBindings;
+  private final ObjectMap<String, FlixelDigitalBinding> namedBindings = new ObjectMap<>(8);
 
   private float holdAccum;
 
@@ -86,10 +85,7 @@ public final class FlixelActionDigital extends FlixelAction {
    * sources (it will never fire until at least one binding is added again).
    */
   public void clearBindings() {
-    bindings.clear();
-    if (namedBindings != null) {
-      namedBindings.clear();
-    }
+    namedBindings.clear();
   }
 
   /**
@@ -111,14 +107,9 @@ public final class FlixelActionDigital extends FlixelAction {
    * @param binding Non-null binding.
    */
   public void addBinding(@NotNull String slot, @NotNull FlixelDigitalBinding binding) {
-    if (namedBindings == null) {
-      namedBindings = new ObjectMap<>(4);
-    }
-    FlixelDigitalBinding old = namedBindings.put(slot, binding);
-    if (old != null) {
-      bindings.removeValue(old, true);
-    }
-    bindings.add(binding);
+    namedBindings.put(
+        Objects.requireNonNull(slot, "slot cannot be null."),
+        Objects.requireNonNull(binding, "binding cannot be null."));
   }
 
   /**
@@ -128,15 +119,7 @@ public final class FlixelActionDigital extends FlixelAction {
    * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
    */
   public boolean removeBinding(@NotNull String slot) {
-    if (namedBindings == null) {
-      return false;
-    }
-    FlixelDigitalBinding old = namedBindings.remove(slot);
-    if (old == null) {
-      return false;
-    }
-    bindings.removeValue(old, true);
-    return true;
+    return namedBindings.remove(Objects.requireNonNull(slot, "slot cannot be null.")) != null;
   }
 
   /**
@@ -153,7 +136,7 @@ public final class FlixelActionDigital extends FlixelAction {
    */
   @Nullable
   public FlixelDigitalBinding getBinding(@NotNull String slot) {
-    return namedBindings != null ? namedBindings.get(slot) : null;
+    return namedBindings.get(Objects.requireNonNull(slot, "slot cannot be null."));
   }
 
   /**
@@ -166,18 +149,15 @@ public final class FlixelActionDigital extends FlixelAction {
    * @return {@code true} if the binding was found and removed.
    */
   public boolean removeBinding(@NotNull FlixelDigitalBinding binding) {
-    boolean removed = bindings.removeValue(binding, true);
-    if (removed && namedBindings != null) {
-      ObjectMap.Keys<String> keys = namedBindings.keys();
-      while (keys.hasNext()) {
-        String key = keys.next();
-        if (namedBindings.get(key) == binding) {
-          namedBindings.remove(key);
-          break;
-        }
+    ObjectMap.Keys<String> keys = namedBindings.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (namedBindings.get(key) == binding) {
+        keys.remove();
+        return true;
       }
     }
-    return removed;
+    return false;
   }
 
   @Override
@@ -194,8 +174,9 @@ public final class FlixelActionDigital extends FlixelAction {
     if (steam != null && steam.getDigital(getName())) {
       v = true;
     }
-    for (int i = 0, n = bindings.size; i < n; i++) {
-      v |= bindings.get(i).evaluate();
+    ObjectMap.Values<FlixelDigitalBinding> vals = namedBindings.values();
+    while (vals.hasNext()) {
+      v |= vals.next().evaluate();
     }
     boolean edge = v && !previous;
     Runnable cb = callback;
