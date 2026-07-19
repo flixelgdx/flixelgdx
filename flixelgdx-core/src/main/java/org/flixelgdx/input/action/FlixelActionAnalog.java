@@ -189,11 +189,6 @@ public final class FlixelActionAnalog extends FlixelAction {
    * Returns the binding registered under the given slot name, or {@code null} if the slot is
    * unknown.
    *
-   * <p>The primary use is a rebinding screen that needs to read the currently active binding in
-   * order to display it. Note that a {@link FlixelAnalogBinding} is a functional interface, so the
-   * returned instance is only meaningful when compared by reference or when your code holds a
-   * separate record of what the binding represents (for example, a keycode stored alongside it).
-   *
    * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
    * @return The registered binding, or {@code null} if no binding is registered under that slot.
    */
