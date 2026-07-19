@@ -136,8 +136,8 @@ public final class FlixelActionAnalog extends FlixelAction {
    * in-place when the player picks a new key or stick.
    *
    * <pre>{@code
-   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(FlixelKeys.LEFT));
-   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(FlixelKeys.RIGHT));
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
    * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
    *
    * // Player rebinds the left key at runtime.
