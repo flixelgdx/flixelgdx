@@ -36,6 +36,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.animation.FlixelAnimationController;
+import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
@@ -123,11 +124,16 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Blending mode, functions similarly to Photoshop or Gimp, e.g. "multiply", "screen", etc.
-   * Defaults to {@link FlixelBlendMode#NORMAL}, which draws with the usual
-   * SRC_ALPHA / ONE_MINUS_SRC_ALPHA blend function and costs nothing extra.
+   * Defaults to {@link FlixelBlendMode#NORMAL}, which draws with the usual {@code SRC_ALPHA / ONE_MINUS_SRC_ALPHA}
+   * blend function and costs nothing extra.
    */
   @NotNull
   private FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
+
+  @Nullable
+  private static ShaderProgram premultipliedShader;
+  @Nullable
+  private static ShaderProgram whiteMixShader;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -427,10 +433,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
    * {@link FlixelAnimationController#addSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
-   * {@link org.flixelgdx.animation.FlixelSpritemapJsonLoader#load FlixelSpritemapJsonLoader.load};
-   * not a general API for game code.
+   * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with {@code retain()} already called.
+   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with
+   *     {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
   public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
@@ -548,7 +554,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     boolean blending = blendMode != FlixelBlendMode.NORMAL;
     ShaderProgram previousShader = null;
     if (blending) {
-      previousShader = batch.getShader(); // could be non-null if caller set one
+      previousShader = batch.getShader();
       applyBlendMode(batch, blendMode);
     }
 
@@ -611,7 +617,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
 
     if (blending) {
-      batch.flush(); // commit this sprite under the special blend state
+      batch.flush(); // Commit this sprite under the special blend state.
       resetBlendMode(batch, previousShader);
     }
   }
@@ -1037,52 +1043,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
   }
 
-  public static final String BLEND_VERTEX_SHADER =
-      "attribute vec4 a_position;\n"
-          + "attribute vec4 a_color;\n"
-          + "attribute vec2 a_texCoord0;\n"
-          + "uniform mat4 u_projTrans;\n"
-          + "varying vec4 v_color;\n"
-          + "varying vec2 v_texCoords;\n"
-          + "void main() {\n"
-          + "    v_color = a_color;\n"
-          + "    v_color.a = v_color.a * (255.0/254.0);\n"
-          + "    v_texCoords = a_texCoord0;\n"
-          + "    gl_Position = u_projTrans * a_position;\n"
-          + "}";
-
-  public static final String PREMULTIPLIED_FRAGMENT_SHADER =
-      "#ifdef GL_ES\n"
-          + "precision mediump float;\n"
-          + "#endif\n"
-          + "varying vec4 v_color;\n"
-          + "varying vec2 v_texCoords;\n"
-          + "uniform sampler2D u_texture;\n"
-          + "void main() {\n"
-          + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
-          + "    gl_FragColor = vec4(c.rgb * c.a, c.a);\n"
-          + "}";
-
-  public static final String WHITE_MIX_FRAGMENT_SHADER =
-      "#ifdef GL_ES\n"
-          + "precision mediump float;\n"
-          + "#endif\n"
-          + "varying vec4 v_color;\n"
-          + "varying vec2 v_texCoords;\n"
-          + "uniform sampler2D u_texture;\n"
-          + "void main() {\n"
-          + "    vec4 c = v_color * texture2D(u_texture, v_texCoords);\n"
-          + "    vec3 result = mix(vec3(1.0), c.rgb, c.a);\n"
-          + "    gl_FragColor = vec4(result, c.a);\n"
-          + "}";
-
-  @Nullable
-  private static ShaderProgram premultipliedShader;
-  @Nullable
-  private static ShaderProgram whiteMixShader;
-
   private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
-
     switch (mode) {
       case ADD -> batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
       case MULTIPLY -> {
@@ -1108,8 +1069,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         batch.setShader(getWhiteMixShader());
         setBlendEquationMinMax(GL30.GL_MIN);
       }
-      case NORMAL -> {
-      } // Do Nothing
+      case NORMAL -> { /* Do nothing. */ }
     }
   }
 
@@ -1125,20 +1085,20 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   private static ShaderProgram getPremultipliedShader() {
     if (premultipliedShader == null) {
-      premultipliedShader = compileBlendShader(PREMULTIPLIED_FRAGMENT_SHADER, "premultiplied");
+      premultipliedShader = compileBlendShader(FlixelBlendMode.PREMULTIPLIED_FRAGMENT_SHADER);
     }
     return premultipliedShader;
   }
 
   private static ShaderProgram getWhiteMixShader() {
     if (whiteMixShader == null) {
-      whiteMixShader = compileBlendShader(WHITE_MIX_FRAGMENT_SHADER, "white-mix");
+      whiteMixShader = compileBlendShader(FlixelBlendMode.WHITE_MIX_FRAGMENT_SHADER);
     }
     return whiteMixShader;
   }
 
-  private static ShaderProgram compileBlendShader(String fragmentSource, String name) {
+  private static ShaderProgram compileBlendShader(String fragmentSource) {
     ShaderProgram.pedantic = false;
-    return new ShaderProgram(BLEND_VERTEX_SHADER, fragmentSource);
+    return new ShaderProgram(FlixelBlendMode.BLEND_VERTEX_SHADER, fragmentSource);
   }
 }
