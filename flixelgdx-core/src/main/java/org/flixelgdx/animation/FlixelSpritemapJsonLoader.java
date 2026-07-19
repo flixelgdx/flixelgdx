@@ -147,8 +147,10 @@ public final class FlixelSpritemapJsonLoader {
       int y = sp.getInt("y");
       int w = sp.getInt("w");
       int h = sp.getInt("h");
+      JsonValue rotatedNode = sp.get("rotated");
+      boolean rotated = rotatedNode != null && rotatedNode.asBoolean();
       int idx = out.size;
-      out.add(buildFrame(texture, x, y, w, h, name));
+      out.add(buildFrame(texture, x, y, w, h, rotated, name));
       if (name != null && !name.isEmpty()) {
         nameToIndexOut.put(name, idx);
       }
@@ -278,7 +280,7 @@ public final class FlixelSpritemapJsonLoader {
         int y = row.get(1).asInt();
         int w = row.get(2).asInt();
         int h = row.get(3).asInt();
-        out.add(buildFrame(texture, x, y, w, h, "frame" + index));
+        out.add(buildFrame(texture, x, y, w, h, false, "frame" + index));
         index++;
       }
       return out;
@@ -297,7 +299,7 @@ public final class FlixelSpritemapJsonLoader {
         int y = getIntField(fr, "y");
         int w = getIntField(fr, "w", "width");
         int h = getIntField(fr, "h", "height");
-        out.add(buildFrame(texture, x, y, w, h, fname));
+        out.add(buildFrame(texture, x, y, w, h, false, fname));
       }
       return out;
     }
@@ -344,14 +346,20 @@ public final class FlixelSpritemapJsonLoader {
 
   @NotNull
   private static FlixelFrame buildFrame(
-      @NotNull Texture texture, int x, int y, int w, int h, @Nullable String name) {
+      @NotNull Texture texture, int x, int y, int w, int h, boolean rotated, @Nullable String name) {
+    // When Adobe Animate packs a sprite 90 degrees CW, the w and h fields in the JSON are the
+    // *atlas-stored* dimensions (w = logical height, h = logical width). The TextureRegion must
+    // cover exactly the atlas footprint (no swap), and originalWidth/Height must be restored to
+    // the logical (pre-rotation) dimensions so the rig baker can place the sprite correctly in
+    // Flash world space.
     TextureRegion region = new TextureRegion(texture, x, y, w, h);
     FlixelFrame f = new FlixelFrame(region);
     f.name = (name != null && !name.isEmpty()) ? name : "frame";
     f.offsetX = 0;
     f.offsetY = 0;
-    f.originalWidth = w;
-    f.originalHeight = h;
+    f.originalWidth = rotated ? h : w;
+    f.originalHeight = rotated ? w : h;
+    f.rotated = rotated;
     return f;
   }
 }

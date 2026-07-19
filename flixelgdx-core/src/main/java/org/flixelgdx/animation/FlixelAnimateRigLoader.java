@@ -87,9 +87,11 @@ import java.util.Objects;
  * loader bakes two Y-flips into every part so the draw path can stay a simple
  * {@code translate * scale * part}:
  * <ol>
- *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, regionHeight]} that turns libGDX's
+ *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, origH]} that turns libGDX's
  *   local-space Y-up rectangle into Adobe's Y-down rectangle, applied on the <em>right</em> so that
- *   the existing {@code MX} chain keeps interpreting its input as Flash-local.</li>
+ *   the existing {@code MX} chain keeps interpreting its input as Flash-local. Parts packed rotated
+ *   90 degrees clockwise use an extended matrix {@code [0, -1, origW; -1, 0, origH]} that
+ *   simultaneously un-rotates and Y-flips.</li>
  *   <li>A <strong>rig-wide flip</strong> {@code [1, 0, -anchorMinX; 0, -1, anchorMinY + anchorHeight]}
  *   that turns Flash-world coordinates back into Y-up world coordinates after all Flash matrices have
  *   been composed, and simultaneously shifts the anchor bounding box so its bottom-left corner sits at
@@ -456,7 +458,10 @@ final class FlixelAnimateRigLoader {
           RawPart raw = scratchRaw.get(p);
           FlixelFrame frame = atlas.get(raw.atlasIndex);
           FlixelAnimateRig.Part part = new FlixelAnimateRig.Part(raw.atlasIndex);
-          bakePartAffine(part.local, raw.flashMatrix, frame.getRegionHeight(), anchorMinX, anchorMinY, anchorHeight);
+          bakePartAffine(
+              part.local, raw.flashMatrix,
+              frame.originalWidth, frame.originalHeight, frame.rotated,
+              anchorMinX, anchorMinY, anchorHeight);
           parts[p] = part;
         }
         kfs[t] = new FlixelAnimateRig.Keyframe(parts);
@@ -523,8 +528,9 @@ final class FlixelAnimateRigLoader {
     for (int i = 0; i < tmp.size; i++) {
       RawPart p = tmp.get(i);
       FlixelFrame frame = atlas.get(p.atlasIndex);
-      float w = frame.getRegionWidth();
-      float h = frame.getRegionHeight();
+      // Use logical (unrotated) dimensions in Flash local space regardless of atlas packing.
+      float w = frame.originalWidth;
+      float h = frame.originalHeight;
       accumulateTransformedCorner(p.flashMatrix, 0f, 0f, out);
       accumulateTransformedCorner(p.flashMatrix, w, 0f, out);
       accumulateTransformedCorner(p.flashMatrix, w, h, out);
@@ -618,7 +624,17 @@ final class FlixelAnimateRigLoader {
       Affine2 rootMatrix = new Affine2();
       matrixFromFlashMxOrM3d(rootSi.get("MX"), rootSi.get("M3D"), rootMatrix);
 
-      visitSymbol(parsed.symbolsByName, nameToIndex, rootSnNode.asString(), frameTime, rootMatrix, out, 0);
+      // Apply the root SI's FF (first frame) and LP (loop mode) the same way visitSymbol handles
+      // nested child SIs. Without this, the FF offset on the root symbol instance is ignored and
+      // every clip that references the same symbol with a non-zero FF (such as danceRight when
+      // FF=15) always starts sampling from frame 0 instead of the intended starting frame.
+      String rootSymName = rootSnNode.asString();
+      int rootFirstFrame = readIntOr(rootSi, "FF", 0);
+      String rootLoopMode = readStringOr(rootSi, "LP", "loop");
+      int rootSymDuration = computeSymbolDuration(parsed.symbolsByName, rootSymName);
+      int rootLocalTime = computeChildLocalTime(rootLoopMode, rootFirstFrame, frameTime, rootSymDuration);
+
+      visitSymbol(parsed.symbolsByName, nameToIndex, rootSymName, rootLocalTime, rootMatrix, out, 0);
       return;
     }
 
@@ -1018,29 +1034,38 @@ final class FlixelAnimateRigLoader {
   /**
    * Bakes the final draw-ready affine for a single part.
    *
-   * <p>The returned matrix equals {@code anchorShift * flipRig * P_flash * flipBitmap}, where
-   * {@code P_flash} is the caller-supplied Flash-world matrix, {@code flipBitmap} converts libGDX
-   * Y-up local bitmap coordinates to Flash Y-down, and {@code anchorShift * flipRig} converts the
-   * resulting Flash-world point back to libGDX Y-up while sliding the anchor bounding box's
-   * bottom-left corner onto the sprite origin.
+   * <p>For a non-rotated part the result equals {@code anchorShift * flipRig * P_flash * flipBitmap},
+   * where {@code flipBitmap = [1, 0, 0; 0, -1, origH]} converts libGDX Y-up local bitmap coordinates
+   * to Flash Y-down, and {@code anchorShift * flipRig} converts the resulting Flash-world point back
+   * to libGDX Y-up while sliding the anchor bounding box's bottom-left corner onto the sprite origin.
+   *
+   * <p>For a part that was packed rotated 90 degrees clockwise in the atlas, Adobe Animate stores
+   * the sprite sideways: the atlas footprint is {@code origH} pixels wide and {@code origW} pixels
+   * tall. The draw call therefore produces a quad in {@code [0, origH] x [0, origW]} local space, so
+   * a different per-bitmap matrix {@code rotFlipBitmap = [0, -1, origW; -1, 0, origH]} is substituted
+   * for {@code flipBitmap}. This matrix un-rotates and Y-flips in one step, mapping each atlas-local
+   * coordinate back to the correct Flash-local position.
+   *
+   * <p>Exposed as package-private so the geometry can be unit-tested without a GPU texture.
    *
    * @param out The destination affine; overwritten.
    * @param flashWorld The accumulated Flash-world matrix for this part.
-   * @param regionHeight The height of the part's texture region in pixels (used by {@code flipBitmap}).
+   * @param origW The logical width of the part in Flash space ({@link FlixelFrame#originalWidth}).
+   * @param origH The logical height of the part in Flash space ({@link FlixelFrame#originalHeight}).
+   * @param rotated Whether this part was packed rotated 90 degrees clockwise in the atlas.
    * @param anchorMinX The minimum X of the anchor bounding box in Flash-world space.
    * @param anchorMinY The minimum Y of the anchor bounding box in Flash-world space.
    * @param anchorHeight The height of the anchor bounding box.
    */
-  private static void bakePartAffine(
+  static void bakePartAffine(
       @NotNull Affine2 out,
       @NotNull Affine2 flashWorld,
-      float regionHeight,
+      float origW,
+      float origH,
+      boolean rotated,
       float anchorMinX,
       float anchorMinY,
       float anchorHeight) {
-    // flipBitmap = [1, 0, 0; 0, -1, regionHeight].
-    // After flashWorld * flipBitmap, the libGDX-local top-left of the region maps to where Flash
-    // expects the bitmap's top-left to sit.
     float p00 = flashWorld.m00;
     float p01 = flashWorld.m01;
     float p02 = flashWorld.m02;
@@ -1048,19 +1073,31 @@ final class FlixelAnimateRigLoader {
     float p11 = flashWorld.m11;
     float p12 = flashWorld.m12;
 
-    float fw01 = -p01;
-    float fw02 = p01 * regionHeight + p02;
-    float fw11 = -p11;
-    float fw12 = p11 * regionHeight + p12;
-
-    // anchorShift * flipRig = [1, 0, -anchorMinX; 0, -1, anchorMinY + anchorHeight] applied on the left.
     float shiftY = anchorMinY + anchorHeight;
-    out.m00 = p00;
-    out.m01 = fw01;
-    out.m02 = fw02 - anchorMinX;
-    out.m10 = -p10;
-    out.m11 = -fw11;
-    out.m12 = shiftY - fw12;
+
+    if (rotated) {
+      // rotFlipBitmap = [0, -1, origW; -1, 0, origH].
+      // P_flash * rotFlipBitmap then anchorShift * flipRig on the left:
+      out.m00 = -p01;
+      out.m01 = -p00;
+      out.m02 = p00 * origW + p01 * origH + p02 - anchorMinX;
+      out.m10 = p11;
+      out.m11 = p10;
+      out.m12 = shiftY - p10 * origW - p11 * origH - p12;
+    } else {
+      // flipBitmap = [1, 0, 0; 0, -1, origH].
+      // P_flash * flipBitmap then anchorShift * flipRig on the left:
+      float fw01 = -p01;
+      float fw02 = p01 * origH + p02;
+      float fw11 = -p11;
+      float fw12 = p11 * origH + p12;
+      out.m00 = p00;
+      out.m01 = fw01;
+      out.m02 = fw02 - anchorMinX;
+      out.m10 = -p10;
+      out.m11 = -fw11;
+      out.m12 = shiftY - fw12;
+    }
   }
 
   /**
