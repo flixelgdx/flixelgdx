@@ -28,6 +28,7 @@ import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.ControllerMapping;
 import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.IntArray;
 
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.input.FlixelInputManager;
@@ -94,6 +95,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   private final boolean[][] previousButtons = new boolean[MAX_GAMEPADS][MAX_BUTTONS];
 
   private final float[][] axisValues = new float[MAX_GAMEPADS][MAX_AXES];
+  private final IntArray[] pressedOrder = new IntArray[MAX_GAMEPADS];
 
   @Nullable
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
@@ -112,7 +114,11 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
 
   private boolean listenerAttached;
 
-  public FlixelGamepadInputManager() {}
+  public FlixelGamepadInputManager() {
+    for (int i = 0; i < MAX_GAMEPADS; i++) {
+      pressedOrder[i] = new IntArray();
+    }
+  }
 
   /**
    * Registers a {@link ControllerListener} with gdx-controllers. Safe to call more than once.
@@ -154,6 +160,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       Arrays.fill(currentButtons[i], false);
       Arrays.fill(previousButtons[i], false);
       Arrays.fill(axisValues[i], 0f);
+      pressedOrder[i].clear();
     }
   }
 
@@ -497,6 +504,140 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   }
 
   /**
+   * Returns the logical button code of the button that has been held the longest on the given slot,
+   * or {@link FlixelGamepadButton#NONE} when no button is currently held.
+   *
+   * <p>Press order is tracked across frames: the first physical button detected as pressed since
+   * the slot was connected (or last cleared) is always returned first, regardless of how many
+   * buttons are held simultaneously.
+   *
+   * <pre>{@code
+   * int btn = Flixel.gamepads.firstPressed(0);
+   * if (btn != FlixelGamepadButton.NONE) {
+   *   System.out.println("Oldest held button: " + FlixelGamepadButton.toString(btn));
+   * }
+   * }</pre>
+   *
+   * @param gamepadId Slot index.
+   * @return Logical button code from {@link FlixelGamepadButton}, or {@link FlixelGamepadButton#NONE}
+   *     when no button is held or the slot is inactive.
+   */
+  public int firstPressed(int gamepadId) {
+    if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
+      return FlixelGamepadButton.NONE;
+    }
+    Controller c = slotController[gamepadId];
+    if (c == null) {
+      return FlixelGamepadButton.NONE;
+    }
+    IntArray order = pressedOrder[gamepadId];
+    if (order.size == 0) {
+      return FlixelGamepadButton.NONE;
+    }
+    return nativeButtonToLogical(c, order.first());
+  }
+
+  /**
+   * Returns the logical button code of the first button that transitioned to pressed this frame on
+   * the given slot, or {@link FlixelGamepadButton#NONE} when no button was just pressed.
+   *
+   * <p>When multiple buttons are pressed in the same frame, the one with the lowest native index
+   * is returned. Unmapped native buttons (those not in {@link FlixelGamepadButton}) are skipped.
+   *
+   * <pre>{@code
+   * int btn = Flixel.gamepads.firstJustPressed(0);
+   * if (btn == FlixelGamepadButton.A) {
+   *   jump();
+   * }
+   * }</pre>
+   *
+   * @param gamepadId Slot index.
+   * @return Logical button code from {@link FlixelGamepadButton}, or {@link FlixelGamepadButton#NONE}
+   *     when no button was just pressed or the slot is inactive.
+   */
+  public int firstJustPressed(int gamepadId) {
+    if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
+      return FlixelGamepadButton.NONE;
+    }
+    Controller c = slotController[gamepadId];
+    if (c == null) {
+      return FlixelGamepadButton.NONE;
+    }
+    int min = c.getMinButtonIndex();
+    int max = c.getMaxButtonIndex();
+    for (int b = min; b <= max; b++) {
+      if (b >= 0 && b < MAX_BUTTONS && currentButtons[gamepadId][b] && !previousButtons[gamepadId][b]) {
+        int logical = nativeButtonToLogical(c, b);
+        if (logical != FlixelGamepadButton.NONE) {
+          return logical;
+        }
+      }
+    }
+    ControllerMapping m = c.getMapping();
+    if (m.buttonL2 == ControllerMapping.UNDEFINED
+        && currentButtons[gamepadId][SYNTHETIC_TRIGGER_L]
+        && !previousButtons[gamepadId][SYNTHETIC_TRIGGER_L]) {
+      return FlixelGamepadButton.L2;
+    }
+    if (m.buttonR2 == ControllerMapping.UNDEFINED
+        && currentButtons[gamepadId][SYNTHETIC_TRIGGER_R]
+        && !previousButtons[gamepadId][SYNTHETIC_TRIGGER_R]) {
+      return FlixelGamepadButton.R2;
+    }
+    return FlixelGamepadButton.NONE;
+  }
+
+  /**
+   * Returns the logical button code of the first button that was released this frame on the given
+   * slot, or {@link FlixelGamepadButton#NONE} when no button was just released.
+   *
+   * <p>When multiple buttons are released in the same frame, the one with the lowest native index
+   * is returned. Unmapped native buttons (those not in {@link FlixelGamepadButton}) are skipped.
+   *
+   * <pre>{@code
+   * int btn = Flixel.gamepads.firstJustReleased(0);
+   * if (btn == FlixelGamepadButton.A) {
+   *   stopCharge();
+   * }
+   * }</pre>
+   *
+   * @param gamepadId Slot index.
+   * @return Logical button code from {@link FlixelGamepadButton}, or {@link FlixelGamepadButton#NONE}
+   *     when no button was just released or the slot is inactive.
+   */
+  public int firstJustReleased(int gamepadId) {
+    if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
+      return FlixelGamepadButton.NONE;
+    }
+    Controller c = slotController[gamepadId];
+    if (c == null) {
+      return FlixelGamepadButton.NONE;
+    }
+    int min = c.getMinButtonIndex();
+    int max = c.getMaxButtonIndex();
+    for (int b = min; b <= max; b++) {
+      if (b >= 0 && b < MAX_BUTTONS && !currentButtons[gamepadId][b] && previousButtons[gamepadId][b]) {
+        int logical = nativeButtonToLogical(c, b);
+        if (logical != FlixelGamepadButton.NONE) {
+          return logical;
+        }
+      }
+    }
+    ControllerMapping m = c.getMapping();
+    if (m.buttonL2 == ControllerMapping.UNDEFINED
+        && !currentButtons[gamepadId][SYNTHETIC_TRIGGER_L]
+        && previousButtons[gamepadId][SYNTHETIC_TRIGGER_L]) {
+      return FlixelGamepadButton.L2;
+    }
+    if (m.buttonR2 == ControllerMapping.UNDEFINED
+        && !currentButtons[gamepadId][SYNTHETIC_TRIGGER_R]
+        && previousButtons[gamepadId][SYNTHETIC_TRIGGER_R]) {
+      return FlixelGamepadButton.R2;
+    }
+    return FlixelGamepadButton.NONE;
+  }
+
+  /**
    * Returns the current value of a logical axis on the given slot, after applying the global dead
    * zone. Returns {@code 0f} when the value is within the dead zone or the slot is out of range.
    *
@@ -723,6 +864,74 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   }
 
   /**
+   * Reverse of {@link FlixelGamepadButton#logicalButtonToNative}: maps a native button index back
+   * to a logical {@link FlixelGamepadButton} constant. Also handles the two synthetic trigger slots
+   * ({@link #SYNTHETIC_TRIGGER_L} and {@link #SYNTHETIC_TRIGGER_R}), returning {@link FlixelGamepadButton#L2}
+   * and {@link FlixelGamepadButton#R2} respectively.
+   *
+   * Returns {@link FlixelGamepadButton#NONE} for native indices that do not correspond to any
+   * known logical button on this controller.
+   */
+  private int nativeButtonToLogical(@NotNull Controller c, int nativeButton) {
+    if (nativeButton == SYNTHETIC_TRIGGER_L) {
+      return FlixelGamepadButton.L2;
+    }
+    if (nativeButton == SYNTHETIC_TRIGGER_R) {
+      return FlixelGamepadButton.R2;
+    }
+    ControllerMapping m = c.getMapping();
+    if (nativeButton == m.buttonA) {
+      return FlixelGamepadButton.A;
+    }
+    if (nativeButton == m.buttonB) {
+      return FlixelGamepadButton.B;
+    }
+    if (nativeButton == m.buttonX) {
+      return FlixelGamepadButton.X;
+    }
+    if (nativeButton == m.buttonY) {
+      return FlixelGamepadButton.Y;
+    }
+    if (nativeButton == m.buttonL1) {
+      return FlixelGamepadButton.L1;
+    }
+    if (nativeButton == m.buttonR1) {
+      return FlixelGamepadButton.R1;
+    }
+    if (nativeButton == m.buttonL2) {
+      return FlixelGamepadButton.L2;
+    }
+    if (nativeButton == m.buttonR2) {
+      return FlixelGamepadButton.R2;
+    }
+    if (nativeButton == m.buttonLeftStick) {
+      return FlixelGamepadButton.THUMBL;
+    }
+    if (nativeButton == m.buttonRightStick) {
+      return FlixelGamepadButton.THUMBR;
+    }
+    if (nativeButton == m.buttonStart) {
+      return FlixelGamepadButton.START;
+    }
+    if (nativeButton == m.buttonBack) {
+      return FlixelGamepadButton.SELECT;
+    }
+    if (nativeButton == m.buttonDpadUp) {
+      return FlixelGamepadButton.DPAD_UP;
+    }
+    if (nativeButton == m.buttonDpadDown) {
+      return FlixelGamepadButton.DPAD_DOWN;
+    }
+    if (nativeButton == m.buttonDpadLeft) {
+      return FlixelGamepadButton.DPAD_LEFT;
+    }
+    if (nativeButton == m.buttonDpadRight) {
+      return FlixelGamepadButton.DPAD_RIGHT;
+    }
+    return FlixelGamepadButton.NONE;
+  }
+
+  /**
    * Resolves a logical button to its native index, falling back to a synthetic trigger index for
    * L2 and R2 when the backend leaves their {@link ControllerMapping} entries as
    * {@link ControllerMapping#UNDEFINED}.
@@ -784,6 +993,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     Arrays.fill(currentButtons[slot], false);
     Arrays.fill(previousButtons[slot], false);
     Arrays.fill(axisValues[slot], 0f);
+    pressedOrder[slot].clear();
   }
 
   private void pollHardware() {
@@ -796,7 +1006,15 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       int maxB = c.getMaxButtonIndex();
       for (int b = minB; b <= maxB; b++) {
         if (b >= 0 && b < MAX_BUTTONS) {
-          currentButtons[s][b] = c.getButton(b);
+          boolean newState = c.getButton(b);
+          if (newState && !previousButtons[s][b]) {
+            if (pressedOrder[s].indexOf(b) < 0) {
+              pressedOrder[s].add(b);
+            }
+          } else if (!newState && previousButtons[s][b]) {
+            pressedOrder[s].removeValue(b);
+          }
+          currentButtons[s][b] = newState;
         }
       }
       int ac = Math.min(c.getAxisCount(), MAX_AXES);
@@ -820,11 +1038,27 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       // work correctly on those backends.
       if (m.buttonL2 == ControllerMapping.UNDEFINED) {
         float v = FlixelGamepadButton.AXIS_TRIGGER_L < ac ? axisValues[s][FlixelGamepadButton.AXIS_TRIGGER_L] : 0f;
-        currentButtons[s][SYNTHETIC_TRIGGER_L] = v > TRIGGER_BUTTON_THRESHOLD;
+        boolean newTriggerL = v > TRIGGER_BUTTON_THRESHOLD;
+        if (newTriggerL && !previousButtons[s][SYNTHETIC_TRIGGER_L]) {
+          if (pressedOrder[s].indexOf(SYNTHETIC_TRIGGER_L) < 0) {
+            pressedOrder[s].add(SYNTHETIC_TRIGGER_L);
+          }
+        } else if (!newTriggerL && previousButtons[s][SYNTHETIC_TRIGGER_L]) {
+          pressedOrder[s].removeValue(SYNTHETIC_TRIGGER_L);
+        }
+        currentButtons[s][SYNTHETIC_TRIGGER_L] = newTriggerL;
       }
       if (m.buttonR2 == ControllerMapping.UNDEFINED) {
         float v = FlixelGamepadButton.AXIS_TRIGGER_R < ac ? axisValues[s][FlixelGamepadButton.AXIS_TRIGGER_R] : 0f;
-        currentButtons[s][SYNTHETIC_TRIGGER_R] = v > TRIGGER_BUTTON_THRESHOLD;
+        boolean newTriggerR = v > TRIGGER_BUTTON_THRESHOLD;
+        if (newTriggerR && !previousButtons[s][SYNTHETIC_TRIGGER_R]) {
+          if (pressedOrder[s].indexOf(SYNTHETIC_TRIGGER_R) < 0) {
+            pressedOrder[s].add(SYNTHETIC_TRIGGER_R);
+          }
+        } else if (!newTriggerR && previousButtons[s][SYNTHETIC_TRIGGER_R]) {
+          pressedOrder[s].removeValue(SYNTHETIC_TRIGGER_R);
+        }
+        currentButtons[s][SYNTHETIC_TRIGGER_R] = newTriggerR;
       }
     }
   }
