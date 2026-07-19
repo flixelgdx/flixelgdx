@@ -525,13 +525,13 @@ public class FlixelSpriteBatch implements FlixelBatch {
 
   @Override
   public void setShader(ShaderProgram shader) {
-    ShaderProgram incoming = shader != null ? shader : builtinShader;
-    if (drawing && activeShader() != incoming) {
+    if (drawing) {
       flush();
     }
     customShader = shader;
     if (drawing) {
-      incoming.bind();
+      ShaderProgram s = activeShader();
+      s.bind();
       setupMatrices();
     }
   }
