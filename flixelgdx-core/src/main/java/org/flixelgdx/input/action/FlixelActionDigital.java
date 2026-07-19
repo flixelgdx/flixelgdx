@@ -93,19 +93,6 @@ public final class FlixelActionDigital extends FlixelAction {
   }
 
   /**
-   * Adds an unnamed binding evaluated each frame (allocation-free after this call).
-   *
-   * <p>Multiple bindings are OR'd: the action fires if any one returns {@code true}. Prefer
-   * {@link #addBinding(String, FlixelDigitalBinding)} when you need to replace or remove this
-   * binding later (for example, a rebinding screen).
-   *
-   * @param binding Non-null binding.
-   */
-  public void addBinding(@NotNull FlixelDigitalBinding binding) {
-    bindings.add(binding);
-  }
-
-  /**
    * Adds a binding under a named slot (allocation-free after this call).
    *
    * <p>If a binding is already registered under {@code slot}, it is removed and replaced. This

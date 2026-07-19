@@ -46,12 +46,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>{@code
  * move = new FlixelActionAnalog("move");
- * move.addBinding(FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
- * move.addBinding(FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
- * move.addBinding(FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
- * move.addBinding(FlixelAnalogBinding.posYKey(FlixelKey.UP));
- * move.addBinding(FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addBinding(FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("negX",  FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+ * move.addBinding("posX",  FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
+ * move.addBinding("negY",  FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
+ * move.addBinding("posY",  FlixelAnalogBinding.posYKey(FlixelKey.UP));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
  * }</pre>
  *
  * <h2>Reading</h2>
@@ -130,19 +130,6 @@ public final class FlixelActionAnalog extends FlixelAction {
     if (namedBindings != null) {
       namedBindings.clear();
     }
-  }
-
-  /**
-   * Adds an unnamed binding evaluated each frame (allocation-free after this call).
-   *
-   * <p>Each binding contributes to a shared accumulator; the sum is clamped to a maximum length
-   * of {@code 1}. Prefer {@link #addBinding(String, FlixelAnalogBinding)} when you need to replace
-   * or remove this binding later (for example, a rebinding screen).
-   *
-   * @param binding Non-null binding.
-   */
-  public void addBinding(@NotNull FlixelAnalogBinding binding) {
-    bindings.add(binding);
   }
 
   /**

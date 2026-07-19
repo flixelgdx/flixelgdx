@@ -60,7 +60,7 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionDigital fire = new FlixelActionDigital("fire");
-    fire.addBinding(FlixelDigitalBinding.key(Input.Keys.F));
+    fire.addBinding("key", FlixelDigitalBinding.key(Input.Keys.F));
     set.add(fire);
 
     Flixel.keys.getInputProcessor().keyDown(Input.Keys.F);
@@ -88,8 +88,8 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionDigital any = new FlixelActionDigital("any");
-    any.addBinding(FlixelDigitalBinding.key(Input.Keys.A));
-    any.addBinding(FlixelDigitalBinding.key(Input.Keys.B));
+    any.addBinding("a", FlixelDigitalBinding.key(Input.Keys.A));
+    any.addBinding("b", FlixelDigitalBinding.key(Input.Keys.B));
     set.add(any);
 
     Flixel.keys.getInputProcessor().keyDown(Input.Keys.B);
@@ -106,7 +106,7 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionDigital zone = new FlixelActionDigital("zone");
-    zone.addBinding(FlixelDigitalBinding.touchRegion(0f, 0f, 0.5f, 0.5f));
+    zone.addBinding("touch", FlixelDigitalBinding.touchRegion(0f, 0f, 0.5f, 0.5f));
     set.add(zone);
     set.update(0f);
     assertFalse(zone.pressed());
@@ -118,7 +118,7 @@ class FlixelActionSystemTest {
     };
     FlixelActionDigital custom = new FlixelActionDigital("custom");
     boolean[] active = { true };
-    custom.addBinding(() -> active[0]);
+    custom.addBinding("lambda", () -> active[0]);
     set.add(custom);
 
     set.update(0f);
@@ -134,10 +134,10 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionAnalog move = new FlixelActionAnalog("move");
-    move.addBinding(FlixelAnalogBinding.negXKey(Input.Keys.LEFT));
-    move.addBinding(FlixelAnalogBinding.posXKey(Input.Keys.RIGHT));
-    move.addBinding(FlixelAnalogBinding.negYKey(Input.Keys.DOWN));
-    move.addBinding(FlixelAnalogBinding.posYKey(Input.Keys.UP));
+    move.addBinding("negX", FlixelAnalogBinding.negXKey(Input.Keys.LEFT));
+    move.addBinding("posX", FlixelAnalogBinding.posXKey(Input.Keys.RIGHT));
+    move.addBinding("negY", FlixelAnalogBinding.negYKey(Input.Keys.DOWN));
+    move.addBinding("posY", FlixelAnalogBinding.posYKey(Input.Keys.UP));
     set.add(move);
 
     Flixel.keys.getInputProcessor().keyDown(Input.Keys.RIGHT);
@@ -161,8 +161,8 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
-    navigate.addBinding(FlixelAnalogBinding.negYKey(Input.Keys.DOWN));
-    navigate.addBinding(FlixelAnalogBinding.posYKey(Input.Keys.UP));
+    navigate.addBinding("down", FlixelAnalogBinding.negYKey(Input.Keys.DOWN));
+    navigate.addBinding("up", FlixelAnalogBinding.posYKey(Input.Keys.UP));
     set.add(navigate);
 
     // First press: flicked() fires on the first frame.
@@ -193,7 +193,7 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionDigital scroll = new FlixelActionDigital("scroll");
-    scroll.addBinding(FlixelDigitalBinding.key(Input.Keys.DOWN));
+    scroll.addBinding("key", FlixelDigitalBinding.key(Input.Keys.DOWN));
     scroll.setHoldDelay(0.5f);
     scroll.setHoldInterval(0.1f);
     set.add(scroll);
@@ -235,7 +235,7 @@ class FlixelActionSystemTest {
     FlixelActionSet set = new FlixelActionSet(false) {
     };
     FlixelActionAnalog navigate = new FlixelActionAnalog("navigate");
-    navigate.addBinding(FlixelAnalogBinding.negYKey(Input.Keys.DOWN));
+    navigate.addBinding("down", FlixelAnalogBinding.negYKey(Input.Keys.DOWN));
     navigate.setHoldDelay(0.5f);
     navigate.setHoldInterval(0.1f);
     set.add(navigate);
@@ -311,7 +311,7 @@ class FlixelActionSystemTest {
     };
     FlixelActionDigital jump = new FlixelActionDigital("jump");
     FlixelDigitalBinding binding = FlixelDigitalBinding.key(Input.Keys.SPACE);
-    jump.addBinding(binding);
+    jump.addBinding("key", binding);
     set.add(jump);
 
     assertTrue(jump.removeBinding(binding));
@@ -326,7 +326,7 @@ class FlixelActionSystemTest {
     };
     FlixelActionDigital jump = new FlixelActionDigital("jump");
     jump.addBinding("keyboard", FlixelDigitalBinding.key(Input.Keys.SPACE));
-    jump.addBinding(FlixelDigitalBinding.key(Input.Keys.ENTER));
+    jump.addBinding("enter", FlixelDigitalBinding.key(Input.Keys.ENTER));
     set.add(jump);
 
     jump.clearBindings();
@@ -376,7 +376,7 @@ class FlixelActionSystemTest {
     };
     FlixelActionAnalog move = new FlixelActionAnalog("move");
     FlixelAnalogBinding binding = FlixelAnalogBinding.posXKey(Input.Keys.RIGHT);
-    move.addBinding(binding);
+    move.addBinding("right", binding);
     set.add(move);
 
     assertTrue(move.removeBinding(binding));
