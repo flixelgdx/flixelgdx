@@ -31,7 +31,7 @@ import org.flixelgdx.FlixelSprite;
  * <p>Using any blend mode other than {@link #NORMAL} will send an extra flush to the GPU, so it's a
  * good idea to be mindful of what sprites to apply blending to.
  *
- * <p>Layering also matters. Most blend types are usually affected when something is above it, so keep
+ * <p>Layering also matters. Some blend types are usually affected when something is above or below it, so keep
  * that in mind when using this.
  *
  * @author nebulastellanova
@@ -42,30 +42,31 @@ public enum FlixelBlendMode {
   NORMAL,
 
   /**
-   * Adds this sprite's color to whatever is already drawn underneath, brightening it.
+   * Adds a sprite's color to whatever is already drawn underneath, brightening it.
    * Good for glows, fire, and light effects.
    */
   ADD,
 
-  /** Multiplies this sprite's color with what's underneath, darkening it. Good for shadows and tinting. */
+  /** Multiplies a sprite's color with what's underneath, darkening it. Good for shadows and tinting. */
   MULTIPLY,
 
   /**
-   * Lightens what's underneath based on this sprite's color, the opposite of {@link #MULTIPLY}. Good for lighting
-   * without fully blowing out to white like {@link #ADD} can. */
+   * Lightens what's underneath based on a sprite's color, the opposite of {@link #MULTIPLY}. Good for lighting
+   * without fully blowing out to white like {@link #ADD} can.
+   */
   SCREEN,
 
-  /** Subtracts this sprite's color from whatever is underneath, darkening it. Good for smoke or ink effects. */
+  /** Subtracts a sprite's color from whatever is underneath, darkening it. Good for smoke or ink effects. */
   SUBTRACT,
 
   /**
-   * Keeps whichever is brighter, this sprite's color or what's underneath, pixel by pixel. Good for particles
-   * and highlights that shouldn't over-brighten on overlap.
+   * Keeps whichever is brighter: a sprite's color or what's underneath, pixel by pixel. Good for particles
+   * and highlights that shouldn't over-brighten upon overlap.
    */
   LIGHTEN,
 
   /**
-   * Keeps whichever is darker, this sprite's color or what's underneath, pixel by pixel. The opposite of LIGHTEN.
+   * Keeps whichever is darker: a sprite's color or what's underneath, pixel by pixel. The opposite of LIGHTEN.
    * Good for shading and vignette-style overlays.
    */
   DARKEN;
