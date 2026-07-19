@@ -182,18 +182,15 @@ class FlixelGamepadInputManagerTest {
   }
 
   private FlixelGamepadInputManager manager;
-  private StubController stub;
 
   @BeforeEach
   void setUp() throws Exception {
     manager = new FlixelGamepadInputManager();
     manager.enabled = true;
     manager.numActiveGamepads = 1;
-    stub = new StubController();
-    injectController(0, stub);
+    StubController stub = new StubController();
+    injectController(stub);
   }
-
-  // --- firstPressed ---
 
   @Test
   void firstPressedReturnsNoneWhenDisabled() {
@@ -219,23 +216,21 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstPressedReturnsChronologicallyFirstButton() throws Exception {
     // B was pressed first, then A.
-    addToPressedOrder(0, TestMapping.NATIVE_B);
-    addToPressedOrder(0, TestMapping.NATIVE_A);
-    setCurrent(0, TestMapping.NATIVE_A, true);
-    setCurrent(0, TestMapping.NATIVE_B, true);
+    addToPressedOrder(TestMapping.NATIVE_B);
+    addToPressedOrder(TestMapping.NATIVE_A);
+    setCurrent(TestMapping.NATIVE_A);
+    setCurrent(TestMapping.NATIVE_B);
 
     assertEquals(FlixelGamepadButton.B, manager.firstPressed(0));
   }
 
   @Test
   void firstPressedReturnsSingleHeldButton() throws Exception {
-    addToPressedOrder(0, TestMapping.NATIVE_Y);
-    setCurrent(0, TestMapping.NATIVE_Y, true);
+    addToPressedOrder(TestMapping.NATIVE_Y);
+    setCurrent(TestMapping.NATIVE_Y);
 
     assertEquals(FlixelGamepadButton.Y, manager.firstPressed(0));
   }
-
-  // --- firstJustPressed ---
 
   @Test
   void firstJustPressedReturnsNoneWhenDisabled() {
@@ -245,16 +240,16 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstJustPressedReturnsNoneWhenNothingChanged() throws Exception {
-    setCurrent(0, TestMapping.NATIVE_A, true);
-    setPrevious(0, TestMapping.NATIVE_A, true);
+    setCurrent(TestMapping.NATIVE_A);
+    setPrevious(TestMapping.NATIVE_A);
 
     assertEquals(FlixelGamepadButton.NONE, manager.firstJustPressed(0));
   }
 
   @Test
   void firstJustPressedReturnsButtonThatTransitionedToPressed() throws Exception {
-    setCurrent(0, TestMapping.NATIVE_A, true);
-    // previous is false by default
+    setCurrent(TestMapping.NATIVE_A);
+    // Previous is false by default.
 
     assertEquals(FlixelGamepadButton.A, manager.firstJustPressed(0));
   }
@@ -262,9 +257,9 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstJustPressedSkipsButtonAlreadyHeldLastFrame() throws Exception {
     // B was held last frame; X is newly pressed.
-    setCurrent(0, TestMapping.NATIVE_B, true);
-    setPrevious(0, TestMapping.NATIVE_B, true);
-    setCurrent(0, TestMapping.NATIVE_X, true);
+    setCurrent(TestMapping.NATIVE_B);
+    setPrevious(TestMapping.NATIVE_B);
+    setCurrent(TestMapping.NATIVE_X);
 
     assertEquals(FlixelGamepadButton.X, manager.firstJustPressed(0));
   }
@@ -273,7 +268,7 @@ class FlixelGamepadInputManagerTest {
   void firstJustPressedReturnsSyntheticL2WhenTriggerCrossesThreshold() throws Exception {
     // L2 mapping is UNDEFINED in TestMapping, so the synthetic trigger slot is used.
     int syntheticL = syntheticTriggerL();
-    setCurrent(0, syntheticL, true);
+    setCurrent(syntheticL);
 
     assertEquals(FlixelGamepadButton.L2, manager.firstJustPressed(0));
   }
@@ -281,12 +276,10 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstJustPressedReturnsSyntheticR2WhenTriggerCrossesThreshold() throws Exception {
     int syntheticR = syntheticTriggerR();
-    setCurrent(0, syntheticR, true);
+    setCurrent(syntheticR);
 
     assertEquals(FlixelGamepadButton.R2, manager.firstJustPressed(0));
   }
-
-  // --- firstJustReleased ---
 
   @Test
   void firstJustReleasedReturnsNoneWhenDisabled() {
@@ -296,16 +289,16 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstJustReleasedReturnsNoneWhenNothingChanged() throws Exception {
-    setCurrent(0, TestMapping.NATIVE_A, true);
-    setPrevious(0, TestMapping.NATIVE_A, true);
+    setCurrent(TestMapping.NATIVE_A);
+    setPrevious(TestMapping.NATIVE_A);
 
     assertEquals(FlixelGamepadButton.NONE, manager.firstJustReleased(0));
   }
 
   @Test
   void firstJustReleasedReturnsButtonThatTransitionedToReleased() throws Exception {
-    // previous = pressed, current = released
-    setPrevious(0, TestMapping.NATIVE_B, true);
+    // previous = pressed, current = released.
+    setPrevious(TestMapping.NATIVE_B);
 
     assertEquals(FlixelGamepadButton.B, manager.firstJustReleased(0));
   }
@@ -313,9 +306,9 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstJustReleasedSkipsButtonStillHeld() throws Exception {
     // A is held both frames; B was released.
-    setCurrent(0, TestMapping.NATIVE_A, true);
-    setPrevious(0, TestMapping.NATIVE_A, true);
-    setPrevious(0, TestMapping.NATIVE_B, true);
+    setCurrent(TestMapping.NATIVE_A);
+    setPrevious(TestMapping.NATIVE_A);
+    setPrevious(TestMapping.NATIVE_B);
 
     assertEquals(FlixelGamepadButton.B, manager.firstJustReleased(0));
   }
@@ -323,7 +316,7 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstJustReleasedReturnsSyntheticL2WhenTriggerDropsBelowThreshold() throws Exception {
     int syntheticL = syntheticTriggerL();
-    setPrevious(0, syntheticL, true);
+    setPrevious(syntheticL);
 
     assertEquals(FlixelGamepadButton.L2, manager.firstJustReleased(0));
   }
@@ -331,35 +324,33 @@ class FlixelGamepadInputManagerTest {
   @Test
   void firstJustReleasedReturnsSyntheticR2WhenTriggerDropsBelowThreshold() throws Exception {
     int syntheticR = syntheticTriggerR();
-    setPrevious(0, syntheticR, true);
+    setPrevious(syntheticR);
 
     assertEquals(FlixelGamepadButton.R2, manager.firstJustReleased(0));
   }
 
-  // --- helpers ---
-
-  private void injectController(int slot, Controller c) throws Exception {
+  private void injectController(Controller c) throws Exception {
     Field f = FlixelGamepadInputManager.class.getDeclaredField("slotController");
     f.setAccessible(true);
-    ((Controller[]) f.get(manager))[slot] = c;
+    ((Controller[]) f.get(manager))[0] = c;
   }
 
-  private void setCurrent(int slot, int button, boolean state) throws Exception {
+  private void setCurrent(int button) throws Exception {
     Field f = FlixelGamepadInputManager.class.getDeclaredField("currentButtons");
     f.setAccessible(true);
-    ((boolean[][]) f.get(manager))[slot][button] = state;
+    ((boolean[][]) f.get(manager))[0][button] = true;
   }
 
-  private void setPrevious(int slot, int button, boolean state) throws Exception {
+  private void setPrevious(int button) throws Exception {
     Field f = FlixelGamepadInputManager.class.getDeclaredField("previousButtons");
     f.setAccessible(true);
-    ((boolean[][]) f.get(manager))[slot][button] = state;
+    ((boolean[][]) f.get(manager))[0][button] = true;
   }
 
-  private void addToPressedOrder(int slot, int nativeButton) throws Exception {
+  private void addToPressedOrder(int nativeButton) throws Exception {
     Field f = FlixelGamepadInputManager.class.getDeclaredField("pressedOrder");
     f.setAccessible(true);
-    ((IntArray[]) f.get(manager))[slot].add(nativeButton);
+    ((IntArray[]) f.get(manager))[0].add(nativeButton);
   }
 
   private static int syntheticTriggerL() throws Exception {
