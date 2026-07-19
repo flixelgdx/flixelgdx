@@ -1060,16 +1060,28 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         Gdx.gl.glBlendEquation(GL20.GL_FUNC_REVERSE_SUBTRACT);
       }
       case LIGHTEN -> {
-        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
-        batch.setShader(getPremultipliedShader());
-        setBlendEquationMinMax(GL30.GL_MAX);
+        if (Gdx.graphics.isGL30Available()) {
+          batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+          batch.setShader(getPremultipliedShader());
+          setBlendEquationMinMax(GL30.GL_MAX);
+        } else {
+          Flixel.warn("FlixelSprite",
+              "LIGHTEN blend mode requires OpenGL ES 3.0, which is not available on this device.");
+        }
       }
       case DARKEN -> {
-        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
-        batch.setShader(getWhiteMixShader());
-        setBlendEquationMinMax(GL30.GL_MIN);
+        if (Gdx.graphics.isGL30Available()) {
+          batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
+          batch.setShader(getWhiteMixShader());
+          setBlendEquationMinMax(GL30.GL_MIN);
+        } else {
+          Flixel.warn("FlixelSprite",
+              "DARKEN blend mode requires OpenGL ES 3.0, which is not available on this device.");
+        }
       }
-      case NORMAL -> { /* Do nothing. */ }
+      case NORMAL -> {
+        // Do nothing.
+      }
     }
   }
 
