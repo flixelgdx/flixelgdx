@@ -150,25 +150,25 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   protected int facing = FlixelDirectionFlags.RIGHT;
 
   /**
-   * X offset of the clip rectangle's left edge, in unscaled sprite-local pixels. Active only when
-   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   * X offset of the clip rectangle's left edge, in screen pixels from the sprite's drawn left edge.
+   * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
   private int clipRectX;
 
   /**
-   * Y offset of the clip rectangle's bottom edge, in unscaled sprite-local pixels. Active only when
-   * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
+   * Y offset of the clip rectangle's bottom edge, in screen pixels from the sprite's drawn bottom edge.
+   * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
   private int clipRectY;
 
   /**
-   * Width of the visible clip rectangle, in unscaled sprite-local pixels. Active only when
+   * Width of the visible clip rectangle, in screen pixels. Active only when
    * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
   private int clipRectWidth;
 
   /**
-   * Height of the visible clip rectangle, in unscaled sprite-local pixels. Active only when
+   * Height of the visible clip rectangle, in screen pixels. Active only when
    * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
   private int clipRectHeight;
@@ -616,10 +616,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (clipEnabled) {
       // Flush before changing scissor state so previously batched sprites are not retroactively clipped.
       batch.flush();
-      float clipScreenX = wx + offsetX + clipRectX * Math.abs(scaleX);
-      float clipScreenY = wy + offsetY + clipRectY * Math.abs(scaleY);
-      float clipScreenW = clipRectWidth * Math.abs(scaleX);
-      float clipScreenH = clipRectHeight * Math.abs(scaleY);
+      float clipScreenX = wx + offsetX + clipRectX;
+      float clipScreenY = wy + offsetY + clipRectY;
+      float clipScreenW = clipRectWidth;
+      float clipScreenH = clipRectHeight;
       tempClipBounds.set(clipScreenX, clipScreenY, clipScreenW, clipScreenH);
       ScissorStack.calculateScissors(
           cam.getCamera(),
@@ -1095,29 +1095,28 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Sets the clip rectangle in sprite-local pixel space and enables clipping.
+   * Sets the clip rectangle in screen-pixel space relative to the sprite's drawn position, and enables clipping.
    *
    * <p>Only the region inside the rectangle is drawn; pixels outside are discarded by the GPU
-   * scissor. The origin is the sprite's bottom-left corner before scale, so {@code x=0, y=0}
-   * anchors to the bottom-left of the frame. Moving {@code x} or {@code y} slides the visible
-   * window without changing the sprite's world position, which is the key difference from the
-   * old crop-from-edge approach.
+   * scissor. Coordinates are in the same units as {@link #getWidth()}/{@link #getHeight()} - that
+   * is, they already account for scale - so {@code x=0, y=0} anchors to the drawn bottom-left
+   * corner and {@code width=(int)getWidth()} covers the full drawn width regardless of scale.
    *
-   * <p>For example, to show only the center quarter of a 100x100 sprite:
+   * <p>For example, to show only the left half of a sprite regardless of its current scale:
    * <pre>{@code
-   * sprite.setClipRect(25, 25, 50, 50);
+   * sprite.setClipRect(0, 0, (int)(sprite.getWidth() * 0.5f), (int)sprite.getHeight());
    * // Slide the window right by 10 px later:
-   * sprite.setClipRectX(35);
+   * sprite.setClipRectX(10);
    * // Remove clipping:
    * sprite.clearClipRect();
    * }</pre>
    *
    * <p>Disable clipping with {@link #clearClipRect()}.
    *
-   * @param x Left edge of the visible region, in unscaled sprite-local pixels.
-   * @param y Bottom edge of the visible region, in unscaled sprite-local pixels.
-   * @param width Width of the visible region, in unscaled sprite-local pixels.
-   * @param height Height of the visible region, in unscaled sprite-local pixels.
+   * @param x Left edge of the visible region, in screen pixels from the sprite's drawn left edge.
+   * @param y Bottom edge of the visible region, in screen pixels from the sprite's drawn bottom edge.
+   * @param width Width of the visible region, in screen pixels.
+   * @param height Height of the visible region, in screen pixels.
    */
   public void setClipRect(int x, int y, int width, int height) {
     clipRectX = x;

@@ -29,6 +29,7 @@ import com.badlogic.gdx.controllers.ControllerMapping;
 import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.utils.Array;
 
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +40,7 @@ import java.util.Objects;
 
 /**
  * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
- * keyboard and mouse frame contract from {@link org.flixelgdx.FlixelGame FlixelGame}.
+ * keyboard and mouse frame contract from {@link FlixelGame}.
  *
  * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link #enabled} to {@code true} before the game
  * loop starts to opt in:
@@ -52,7 +53,7 @@ import java.util.Objects;
  * with {@link #pressed(int, int)}; each {@link Controller#getMapping()} supplies native indices.
  * {@link FlixelGamepadDevice} is optional; call {@link #ensureDevice(int)} once per slot you want a facade for.
  */
-public final class FlixelGamepadManager implements FlixelInputManager, ControllerListener {
+public class FlixelGamepadManager implements FlixelInputManager, ControllerListener {
 
   /** Maximum supported simultaneous controllers. */
   public static final int MAX_GAMEPADS = 8;

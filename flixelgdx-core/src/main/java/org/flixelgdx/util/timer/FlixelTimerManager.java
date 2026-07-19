@@ -97,10 +97,13 @@ public class FlixelTimerManager extends FlixelBasic {
     if (!active || !exists || !alive) {
       return;
     }
-    if (activeTimers.size == 0) {
+    if (activeTimers.size == 0 || activeTimers.isEmpty()) {
       return;
     }
     for (int i = activeTimers.size - 1; i >= 0; i--) {
+      if (i >= activeTimers.size) {
+        continue;
+      }
       activeTimers.get(i).update(elapsed);
     }
   }
