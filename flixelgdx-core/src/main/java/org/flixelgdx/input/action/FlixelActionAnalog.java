@@ -47,10 +47,10 @@ import java.util.Objects;
  *
  * <pre>{@code
  * move = new FlixelActionAnalog("move");
- * move.addBinding("negX",  FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
- * move.addBinding("posX",  FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
- * move.addBinding("negY",  FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
- * move.addBinding("posY",  FlixelAnalogBinding.posYKey(FlixelKey.UP));
+ * move.addBinding("negX", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+ * move.addBinding("posX", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
+ * move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
+ * move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.UP));
  * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
  * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
  * }</pre>
