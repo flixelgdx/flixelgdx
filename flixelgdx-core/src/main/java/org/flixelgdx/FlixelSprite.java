@@ -1164,7 +1164,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectWidth(int clipRectWidth) {
-    this.clipRectWidth = Math.max(0, clipRectWidth);
+    this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, (int) getWidth());
   }
 
   public void changeClipRectWidth(int clipRectWidth) {
@@ -1176,7 +1176,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectHeight(int clipRectHeight) {
-    this.clipRectHeight = Math.max(0, clipRectHeight);
+    this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
   }
 
   public void changeClipRectHeight(int clipRectHeight) {
