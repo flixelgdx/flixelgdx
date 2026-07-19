@@ -140,15 +140,15 @@ public final class FlixelActionAnalog extends FlixelAction {
    * in-place when the player picks a new key or stick.
    *
    * <pre>{@code
-   * move.addBinding("leftKey",  FlixelAnalogBinding.negXKey(Input.Keys.LEFT));
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(Input.Keys.LEFT));
    * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(Input.Keys.RIGHT));
-   * move.addBinding("stick",    FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+   * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
    *
    * // Player rebinds the left key at runtime.
    * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(newKey));
    * }</pre>
    *
-   * @param slot    Non-null, non-empty identifier for this binding (for example {@code "leftKey"}).
+   * @param slot Non-null, non-empty identifier for this binding (for example {@code "leftKey"}).
    * @param binding Non-null binding.
    */
   public void addBinding(@NotNull String slot, @NotNull FlixelAnalogBinding binding) {
@@ -178,6 +178,23 @@ public final class FlixelActionAnalog extends FlixelAction {
     }
     bindings.removeValue(old, true);
     return true;
+  }
+
+  /**
+   * Returns the binding registered under the given slot name, or {@code null} if the slot is
+   * unknown.
+   *
+   * <p>The primary use is a rebinding screen that needs to read the currently active binding in
+   * order to display it. Note that a {@link FlixelAnalogBinding} is a functional interface, so the
+   * returned instance is only meaningful when compared by reference or when your code holds a
+   * separate record of what the binding represents (for example, a keycode stored alongside it).
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
+   * @return The registered binding, or {@code null} if no binding is registered under that slot.
+   */
+  @Nullable
+  public FlixelAnalogBinding getBinding(@NotNull String slot) {
+    return namedBindings != null ? namedBindings.get(slot) : null;
   }
 
   /**
