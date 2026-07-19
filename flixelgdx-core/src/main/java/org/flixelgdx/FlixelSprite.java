@@ -136,6 +136,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   private static ShaderProgram premultipliedShader;
   @Nullable
   private static ShaderProgram whiteMixShader;
+  @Nullable
+  private static Boolean blendMinMaxSupported;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -914,7 +916,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   public void setBlendMode(FlixelBlendMode blendMode) {
     this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
-    if (!Gdx.graphics.isGL30Available()) {
+    if (!isBlendMinMaxSupported()) {
       if (blendMode == FlixelBlendMode.LIGHTEN || blendMode == FlixelBlendMode.DARKEN) {
         Flixel.warn("FlixelSprite",
             blendMode + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
@@ -1069,21 +1071,17 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         Gdx.gl.glBlendEquation(GL20.GL_FUNC_REVERSE_SUBTRACT);
       }
       case LIGHTEN -> {
-        if (Gdx.graphics.isGL30Available()) {
+        if (isBlendMinMaxSupported()) {
           batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
           batch.setShader(getPremultipliedShader());
           setBlendEquationMinMax(GL30.GL_MAX);
-        } else {
-          blendMode = FlixelBlendMode.NORMAL;
         }
       }
       case DARKEN -> {
-        if (Gdx.graphics.isGL30Available()) {
+        if (isBlendMinMaxSupported()) {
           batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
           batch.setShader(getWhiteMixShader());
           setBlendEquationMinMax(GL30.GL_MIN);
-        } else {
-          blendMode = FlixelBlendMode.NORMAL;
         }
       }
       case NORMAL -> {
@@ -1119,5 +1117,17 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   private static ShaderProgram compileBlendShader(String fragmentSource) {
     ShaderProgram.pedantic = false;
     return new ShaderProgram(FlixelBlendMode.BLEND_VERTEX_SHADER, fragmentSource);
+  }
+
+  private static boolean isBlendMinMaxSupported() {
+    if (blendMinMaxSupported == null) {
+      if (Gdx.graphics.isGL30Available()) {
+        blendMinMaxSupported = true;
+      } else {
+        String extensions = Gdx.gl.glGetString(GL20.GL_EXTENSIONS);
+        blendMinMaxSupported = extensions != null && extensions.contains("GL_EXT_blend_minmax");
+      }
+    }
+    return blendMinMaxSupported;
   }
 }

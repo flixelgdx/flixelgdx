@@ -51,7 +51,7 @@ public enum FlixelBlendMode {
   MULTIPLY,
 
   /**
-   * Lightens what's underneath based on this sprite's color, the opposite of MULTIPLY. Good for lighting
+   * Lightens what's underneath based on this sprite's color, the opposite of {@link #MULTIPLY}. Good for lighting
    * without fully blowing out to white like {@link #ADD} can. */
   SCREEN,
 
