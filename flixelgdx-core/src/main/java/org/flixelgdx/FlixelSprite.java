@@ -68,6 +68,20 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable, FlixelShaderable {
 
+  @Nullable
+  private static ShaderProgram premultipliedShader;
+  @Nullable
+  private static ShaderProgram whiteMixShader;
+
+  /** Shared scratch rectangle for clip rect bounds; reused across all sprite draw calls. */
+  private static final Rectangle tempClipBounds = new Rectangle();
+
+  /** Shared scratch rectangle for scissor pixel coordinates; reused across all sprite draw calls. */
+  private static final Rectangle tempScissors = new Rectangle();
+
+  private static boolean blendMinMaxChecked;
+  private static boolean blendMinMaxSupported;
+
   /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
   @Nullable
   protected FlixelGraphic graphic;
@@ -132,20 +146,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   @NotNull
   private FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
 
-  @Nullable
-  private static ShaderProgram premultipliedShader;
-  @Nullable
-  private static ShaderProgram whiteMixShader;
-
-  /** Shared scratch rectangle for clip rect bounds; reused across all sprite draw calls. */
-  private static final Rectangle tempClipBounds = new Rectangle();
-
-  /** Shared scratch rectangle for scissor pixel coordinates; reused across all sprite draw calls. */
-  private static final Rectangle tempScissors = new Rectangle();
-
-  private static boolean blendMinMaxChecked;
-  private static boolean blendMinMaxSupported;
-
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
 
@@ -153,25 +153,25 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * X offset of the clip rectangle's left edge, in screen pixels from the sprite's drawn left edge.
    * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
-  private int clipRectX;
+  private float clipRectX;
 
   /**
    * Y offset of the clip rectangle's bottom edge, in screen pixels from the sprite's drawn bottom edge.
    * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
-  private int clipRectY;
+  private float clipRectY;
 
   /**
    * Width of the visible clip rectangle, in screen pixels. Active only when
    * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
-  private int clipRectWidth;
+  private float clipRectWidth;
 
   /**
    * Height of the visible clip rectangle, in screen pixels. Active only when
    * {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(int, int, int, int)}.
    */
-  private int clipRectHeight;
+  private float clipRectHeight;
 
   /**
    * The shader applied to this sprite individually, or {@code null} for no per-sprite effect.
@@ -1135,51 +1135,51 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     clipRectEnabled = false;
   }
 
-  public int getClipRectX() {
+  public float getClipRectX() {
     return clipRectX;
   }
 
-  public void setClipRectX(int clipRectX) {
+  public void setClipRectX(float clipRectX) {
     this.clipRectX = clipRectX;
   }
 
-  public void changeClipRectX(int clipRectX) {
+  public void changeClipRectX(float clipRectX) {
     this.clipRectX += clipRectX;
   }
 
-  public int getClipRectY() {
+  public float getClipRectY() {
     return clipRectY;
   }
 
-  public void setClipRectY(int clipRectY) {
+  public void setClipRectY(float clipRectY) {
     this.clipRectY = clipRectY;
   }
 
-  public void changeClipRectY(int clipRectY) {
+  public void changeClipRectY(float clipRectY) {
     this.clipRectY += clipRectY;
   }
 
-  public int getClipRectWidth() {
+  public float getClipRectWidth() {
     return clipRectWidth;
   }
 
-  public void setClipRectWidth(int clipRectWidth) {
+  public void setClipRectWidth(float clipRectWidth) {
     this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, (int) getWidth());
   }
 
-  public void changeClipRectWidth(int clipRectWidth) {
+  public void changeClipRectWidth(float clipRectWidth) {
     setClipRectWidth(this.clipRectWidth + clipRectWidth);
   }
 
-  public int getClipRectHeight() {
+  public float getClipRectHeight() {
     return clipRectHeight;
   }
 
-  public void setClipRectHeight(int clipRectHeight) {
+  public void setClipRectHeight(float clipRectHeight) {
     this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
   }
 
-  public void changeClipRectHeight(int clipRectHeight) {
+  public void changeClipRectHeight(float clipRectHeight) {
     setClipRectHeight(this.clipRectHeight + clipRectHeight);
   }
 
