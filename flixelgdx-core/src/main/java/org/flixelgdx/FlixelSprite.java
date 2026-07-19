@@ -913,7 +913,14 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setBlendMode(FlixelBlendMode blendMode) {
-    this.blendMode = Objects.requireNonNull(blendMode, "blendMode cannot be null.");
+    this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
+    if (!Gdx.graphics.isGL30Available()) {
+      if (blendMode == FlixelBlendMode.LIGHTEN || blendMode == FlixelBlendMode.DARKEN) {
+        Flixel.warn("FlixelSprite",
+            blendMode + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
+        blendMode = FlixelBlendMode.NORMAL;
+      }
+    }
   }
 
   /** {@inheritDoc} */
@@ -1067,8 +1074,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           batch.setShader(getPremultipliedShader());
           setBlendEquationMinMax(GL30.GL_MAX);
         } else {
-          Flixel.warn("FlixelSprite",
-              "LIGHTEN blend mode requires OpenGL ES 3.0, which is not available on this device.");
+          blendMode = FlixelBlendMode.NORMAL;
         }
       }
       case DARKEN -> {
@@ -1077,8 +1083,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           batch.setShader(getWhiteMixShader());
           setBlendEquationMinMax(GL30.GL_MIN);
         } else {
-          Flixel.warn("FlixelSprite",
-              "DARKEN blend mode requires OpenGL ES 3.0, which is not available on this device.");
+          blendMode = FlixelBlendMode.NORMAL;
         }
       }
       case NORMAL -> {
