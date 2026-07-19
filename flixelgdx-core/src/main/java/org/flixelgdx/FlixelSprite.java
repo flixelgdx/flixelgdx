@@ -126,7 +126,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Defaults to {@link FlixelBlendMode#NORMAL}, which draws with the usual
    * SRC_ALPHA / ONE_MINUS_SRC_ALPHA blend function and costs nothing extra.
    */
-  protected FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
+  @NotNull
+  private FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
 
   /** The direction this sprite is facing. Useful for automatic flipping. */
   protected int facing = FlixelDirectionFlags.RIGHT;
@@ -548,7 +549,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     ShaderProgram previousShader = null;
     if (blending) {
       previousShader = batch.getShader(); // could be non-null if caller set one
-      batch.flush(); // commit anything queued under the old blend state
       applyBlendMode(batch, blendMode);
     }
 
@@ -899,12 +899,13 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.facing = facing;
   }
 
+  @NotNull
   public FlixelBlendMode getBlendMode() {
     return blendMode;
   }
 
   public void setBlendMode(FlixelBlendMode blendMode) {
-    this.blendMode = blendMode;
+    this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
   }
 
   /** {@inheritDoc} */
@@ -1036,7 +1037,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, (int) getHeight());
   }
 
-  private static final String BLEND_VERTEX_SHADER =
+  public static final String BLEND_VERTEX_SHADER =
     "attribute vec4 a_position;\n"
       + "attribute vec4 a_color;\n"
       + "attribute vec2 a_texCoord0;\n"
@@ -1050,7 +1051,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       + "    gl_Position = u_projTrans * a_position;\n"
       + "}";
 
-  private static final String PREMULTIPLIED_FRAGMENT_SHADER =
+  public static final String PREMULTIPLIED_FRAGMENT_SHADER =
     "#ifdef GL_ES\n"
       + "precision mediump float;\n"
       + "#endif\n"
@@ -1062,7 +1063,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       + "    gl_FragColor = vec4(c.rgb * c.a, c.a);\n"
       + "}";
 
-  private static final String WHITE_MIX_FRAGMENT_SHADER =
+  public static final String WHITE_MIX_FRAGMENT_SHADER =
     "#ifdef GL_ES\n"
       + "precision mediump float;\n"
       + "#endif\n"
@@ -1079,41 +1080,33 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   @Nullable private static ShaderProgram whiteMixShader;
 
   private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
-    switch (mode) {
-      case ADD:
-        batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-        break;
 
-      case MULTIPLY:
+    switch (mode) {
+      case ADD -> batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
+      case MULTIPLY -> {
         batch.setBlendFunction(GL20.GL_DST_COLOR, GL20.GL_ZERO);
         batch.setShader(getWhiteMixShader());
-        break;
-
-      case SCREEN:
+      }
+      case SCREEN -> {
         batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_COLOR);
         batch.setShader(getPremultipliedShader());
-        break;
-
-      case SUBTRACT:
+      }
+      case SUBTRACT -> {
         batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
         batch.setShader(getPremultipliedShader());
         Gdx.gl.glBlendEquation(GL20.GL_FUNC_REVERSE_SUBTRACT);
-        break;
-
-      case LIGHTEN:
+      }
+      case LIGHTEN -> {
         batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
         batch.setShader(getPremultipliedShader());
         setBlendEquationMinMax(GL30.GL_MAX);
-        break;
-
-      case DARKEN:
+      }
+      case DARKEN -> {
         batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
         batch.setShader(getWhiteMixShader());
         setBlendEquationMinMax(GL30.GL_MIN);
-        break;
-
-      case NORMAL:
-        break;
+      }
+      case NORMAL -> {} // Do Nothing
     }
   }
 

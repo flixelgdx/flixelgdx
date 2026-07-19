@@ -24,8 +24,8 @@
 package org.flixelgdx.util;
 
 /**
- * Enum for different FlixelSprite blend modes.
- *
+ * Enum for different FlixelSprite blend modes. <br>
+ * Using any blend mode other than the default will take slightly more effort for the GPU to render.
  * @author nebulastellanova
  */
 public enum FlixelBlendMode {
