@@ -1,7 +1,7 @@
 [versions]
 anim8 = "0.5.3"
 agp = "8.7.3"
-asm = "9.7.1"
+asm = "9.10.1"
 basisuGdx = "1.1.0"
 desugarJdkLibs = "2.1.5"
 gdx = "1.14.0"
