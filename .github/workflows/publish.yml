@@ -64,5 +64,6 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           ./gradlew publishAllPublicationsToMavenCentralRepository \
             -PprojectVersion=$VERSION \
+            -PskipVlcNatives=true \
             --no-daemon \
             --warning-mode all
