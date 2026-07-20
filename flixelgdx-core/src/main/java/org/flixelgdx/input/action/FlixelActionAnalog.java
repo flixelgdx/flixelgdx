@@ -51,8 +51,8 @@ import java.util.Objects;
  * move.addBinding("posX", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
  * move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
  * move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.UP));
- * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadButton.AXIS_LEFT_Y));
  * }</pre>
  *
  * <h2>Reading</h2>
@@ -138,7 +138,7 @@ public final class FlixelActionAnalog extends FlixelAction {
    * <pre>{@code
    * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
    * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
-   * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
+   * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
    *
    * // Player rebinds the left key at runtime.
    * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(newKey));

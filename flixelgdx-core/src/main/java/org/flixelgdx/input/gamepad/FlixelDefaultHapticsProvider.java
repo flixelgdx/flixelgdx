@@ -42,9 +42,9 @@ import com.badlogic.gdx.controllers.Controller;
  */
 final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
 
-  private final FlixelGamepadManager manager;
+  private final FlixelGamepadInputManager manager;
 
-  FlixelDefaultHapticsProvider(FlixelGamepadManager manager) {
+  FlixelDefaultHapticsProvider(FlixelGamepadInputManager manager) {
     this.manager = manager;
   }
 

@@ -40,8 +40,8 @@ import org.teavm.jso.JSBody;
  * {@code navigator.getGamepads()[index].buttons[buttonIndex].value} instead.
  *
  * <p>This reader is installed automatically by {@link FlixelTeaVMLauncher} and covers
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput#AXIS_TRIGGER_L AXIS_TRIGGER_L} and
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput#AXIS_TRIGGER_R AXIS_TRIGGER_R} on web.
+ * {@link FlixelGamepadButton#AXIS_TRIGGER_L AXIS_TRIGGER_L} and
+ * {@link FlixelGamepadButton#AXIS_TRIGGER_R AXIS_TRIGGER_R} on web.
  * You do not need to install it manually.
  */
 final class FlixelTeaVMAnalogButtonReader implements FlixelAnalogButtonReader {

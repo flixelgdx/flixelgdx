@@ -37,17 +37,17 @@ import org.jetbrains.annotations.NotNull;
  * through the standard interface. Implementations of this interface read that value through
  * platform-specific means.
  *
- * <p>The primary use case is populating {@link FlixelGamepadInput#AXIS_TRIGGER_L} and
- * {@link FlixelGamepadInput#AXIS_TRIGGER_R} on backends where L2 and R2 are mapped to button
+ * <p>The primary use case is populating {@link FlixelGamepadButton#AXIS_TRIGGER_L} and
+ * {@link FlixelGamepadButton#AXIS_TRIGGER_R} on backends where L2 and R2 are mapped to button
  * indices (for example {@link ControllerMapping#buttonL2} on web) rather than dedicated axes.
  * Install a platform implementation via
- * {@link FlixelGamepadManager#setAnalogButtonReader(FlixelAnalogButtonReader)}.
+ * {@link FlixelGamepadInputManager#setAnalogButtonReader(FlixelAnalogButtonReader)}.
  *
  * <p>On the Jamepad/SDL desktop backend, triggers are already reported as raw axes and no reader
  * is needed. {@code FlixelTeaVMAnalogButtonReader} (in the {@code flixelgdx-teavm} module) covers
  * the web case and is installed automatically by {@code FlixelTeaVMLauncher}.
  *
- * @see FlixelGamepadManager#setAnalogButtonReader(FlixelAnalogButtonReader)
+ * @see FlixelGamepadInputManager#setAnalogButtonReader(FlixelAnalogButtonReader)
  */
 @FunctionalInterface
 public interface FlixelAnalogButtonReader {

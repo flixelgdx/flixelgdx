@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
 
 /**
- * Logical gamepad button and axis identifiers for {@link FlixelGamepadManager}, resolved to native
+ * Logical gamepad button and axis identifiers for {@link FlixelGamepadInputManager}, resolved to native
  * indices through each {@link Controller#getMapping()} (gdx-controllers SDL-style layout).
  *
  * <h2>Important Note for Desktop (LWJGL3) vs Web (TeaVM)</h2>
@@ -49,9 +49,9 @@ import java.util.Locale;
  * without per-device tables. Games that need perfect parity can offer a remap screen or branch on
  * {@link com.badlogic.gdx.Application#getType()} and {@link Controller#getName()}.
  */
-public final class FlixelGamepadInput {
+public final class FlixelGamepadButton {
 
-  private FlixelGamepadInput() {}
+  private FlixelGamepadButton() {}
 
   public static final int NONE = -2;
   public static final int ANY = -1;

@@ -1,13 +1,13 @@
 /**
  * Gamepad input and haptics support for FlixelGDX.
  *
- * <p>{@link org.flixelgdx.input.gamepad.FlixelGamepadManager FlixelGamepadManager} is the global
+ * <p>{@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager FlixelGamepadInputManager} is the global
  * entry point, accessible via {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}. It polls
  * controllers each frame and exposes familiar pressed/justPressed/justReleased semantics
  * alongside analog axis reads.
  *
  * <p>Logical button and axis constants live on
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput} and are resolved to
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadButton FlixelGamepadButton} and are resolved to
  * native hardware indices through each
  * {@link com.badlogic.gdx.controllers.Controller#getMapping() Controller.getMapping()} at query
  * time. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the
@@ -15,7 +15,7 @@
  *
  * <p>The optional per-slot {@link org.flixelgdx.input.gamepad.FlixelGamepadDevice FlixelGamepadDevice}
  * facade exposes the same queries without passing a slot id on every call. Create one via
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadManager#ensureDevice(int)}.
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager#ensureDevice(int)}.
  *
  * <h2>Haptics and vibration</h2>
  *
@@ -47,6 +47,6 @@
  *
  * <p>For platform-specific haptics (for example DualSense adaptive triggers), supply a custom
  * {@link org.flixelgdx.input.gamepad.FlixelHapticsProvider} via
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadManager#setHapticsProvider}.
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager#setHapticsProvider}.
  */
 package org.flixelgdx.input.gamepad;

@@ -63,14 +63,14 @@ import org.jetbrains.annotations.Nullable;
  *   public PlayerControls() {
  *     jump = new FlixelActionDigital("jump");
  *     jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
- *     jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
+ *     jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadButton.A));
  *     add(jump);
  *
  *     move = new FlixelActionAnalog("move");
  *     move.addBinding("negX",   FlixelAnalogBinding.negXKey(FlixelKey.A));
  *     move.addBinding("posX",   FlixelAnalogBinding.posXKey(FlixelKey.D));
- *     move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- *     move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ *     move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
+ *     move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadButton.AXIS_LEFT_Y));
  *     add(move);
  *   }
  * }
