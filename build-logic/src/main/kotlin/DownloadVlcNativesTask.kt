@@ -152,6 +152,10 @@ abstract class DownloadVlcNativesTask @Inject constructor(
     }
   }
 
+  private fun findFile(files: Map<String, File>, suffix: String): File =
+    files.entries.firstOrNull { (name, _) -> name.endsWith(suffix) }?.value
+      ?: throw GradleException("No download spec found with name suffix '$suffix'")
+
   private fun extractWindows(version: String, files: Map<String, File>, outRoot: File) {
     val blocklist = pluginBlocklist.get()
     val winDir = File(outRoot, "windows-amd64")
@@ -159,7 +163,7 @@ abstract class DownloadVlcNativesTask @Inject constructor(
     if (!File(winDir, "libvlc.dll").exists()) {
       logger.lifecycle("Extracting Windows natives...")
       fs.copy {
-        from(archives.zipTree(files["vlc-$version-win64.zip"]!!)) {
+        from(archives.zipTree(findFile(files, "-win64.zip"))) {
           include("${zipRoot}libvlc.dll", "${zipRoot}libvlccore.dll", "${zipRoot}plugins/**")
           blocklist.forEach { exclude("${zipRoot}plugins/$it/**") }
           eachFile { path = path.substring(zipRoot.length) }
@@ -170,7 +174,7 @@ abstract class DownloadVlcNativesTask @Inject constructor(
     }
     if (!File(winDir, "sdk/libvlc.lib").exists()) {
       logger.lifecycle("Extracting Windows SDK import libraries...")
-      extractLibsFrom7z(files["vlc-$version-win64.7z"]!!, "vlc-$version/sdk/lib/", File(winDir, "sdk"))
+      extractLibsFrom7z(findFile(files, "-win64.7z"), "vlc-$version/sdk/lib/", File(winDir, "sdk"))
     }
   }
 
@@ -209,7 +213,7 @@ abstract class DownloadVlcNativesTask @Inject constructor(
   private fun extractMacOS(version: String, files: Map<String, File>, outRoot: File, dlDir: File) {
     val macDir = File(outRoot, "macos-universal")
     if (File(macDir, "lib/libvlc.dylib").exists()) return
-    val dmg = files["vlc-$version-universal.dmg"]!!
+    val dmg = findFile(files, "-universal.dmg")
     val sevenZip = listOf("7z", "7za").firstOrNull { tool ->
       try { ProcessBuilder(tool).start().waitFor(); true } catch (_: Exception) { false }
     }
