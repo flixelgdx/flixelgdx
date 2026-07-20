@@ -33,6 +33,7 @@ import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -55,12 +56,12 @@ public final class FlixelDebugUtil {
    */
   public static int countActiveMembers() {
     int count = 0;
-    FlixelState current = Flixel.getState();
+    FlixelState current = Flixel.state;
     while (current != null) {
       FlixelState sub = current.getSubState();
       boolean hasSubState = (sub != null);
       if (!hasSubState || current.persistentUpdate) {
-        count += countActiveMembersRecursive(current.getMembers());
+        count += countActiveMembersRecursive(Objects.requireNonNull(current.getMembers()));
       }
       current = sub;
     }
@@ -97,12 +98,12 @@ public final class FlixelDebugUtil {
    * @param callback Invoked once per visible {@link FlixelDebugDrawable}.
    */
   public static void forEachDebugDrawable(Consumer<FlixelDebugDrawable> callback) {
-    FlixelState current = Flixel.getState();
+    FlixelState current = Flixel.state;
     while (current != null) {
       FlixelState sub = current.getSubState();
       boolean hasSubState = (sub != null);
       if (!hasSubState || current.persistentDraw) {
-        forEachDebugDrawableRecursive(current.getMembers(), callback);
+        forEachDebugDrawableRecursive(Objects.requireNonNull(current.getMembers()), callback);
       }
       current = sub;
     }
@@ -128,5 +129,4 @@ public final class FlixelDebugUtil {
     }
     members.end();
   }
-
 }

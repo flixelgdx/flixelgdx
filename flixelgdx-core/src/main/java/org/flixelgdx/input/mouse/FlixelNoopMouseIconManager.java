@@ -33,14 +33,26 @@ public enum FlixelNoopMouseIconManager implements FlixelMouseIconManager {
   /** Shared instance. */
   INSTANCE;
 
-  @Override
-  public void setNativeCursor(@NotNull FlixelNativeMouseCursor cursor) {}
+  private FlixelMouseCursor current = FlixelMouseCursor.ARROW;
 
   @Override
-  public void clearNativeCursor() {}
+  public void setCursor(@NotNull FlixelMouseCursor cursor) {
+    current = cursor;
+  }
 
   @Override
-  public boolean supportsNativeCursor() {
+  public void resetCursor() {
+    current = FlixelMouseCursor.ARROW;
+  }
+
+  @Override
+  @NotNull
+  public FlixelMouseCursor getCursor() {
+    return current;
+  }
+
+  @Override
+  public boolean supportsCursors() {
     return false;
   }
 }

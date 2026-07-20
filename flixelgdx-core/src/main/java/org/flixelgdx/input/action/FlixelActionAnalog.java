@@ -24,51 +24,57 @@
 package org.flixelgdx.input.action;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
- * Two-axis vector built from {@link FlixelAnalogAxisBinding} contributors plus optional Steam analog for {@link #getName()}.
+ * Two-axis vector built from {@link FlixelAnalogBinding} contributors plus optional Steam analog
+ * for {@link #getName()}.
  *
  * <h2>How values combine</h2>
  *
- * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis; {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}
- * axis bindings add smooth stick values. Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added
- * on top. The result is clamped to a maximum length of {@code 1} so diagonals do not exceed unit speed when mixing keys
- * and sticks.
+ * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis;
+ * {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads} axis bindings add smooth stick values.
+ * Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added on top. The
+ * result is clamped to a maximum length of {@code 1} so diagonals do not exceed unit speed when
+ * mixing keys and sticks.
  *
  * <h2>Typical setup</h2>
  *
  * <pre>{@code
  * move = new FlixelActionAnalog("move");
- * move.addAxisBinding(FlixelAnalogAxisBinding.negXKey(FlixelKey.LEFT));
- * move.addAxisBinding(FlixelAnalogAxisBinding.posXKey(FlixelKey.RIGHT));
- * move.addAxisBinding(FlixelAnalogAxisBinding.negYKey(FlixelKey.DOWN));
- * move.addAxisBinding(FlixelAnalogAxisBinding.posYKey(FlixelKey.UP));
- * move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("negX", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+ * move.addBinding("posX", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
+ * move.addBinding("negY", FlixelAnalogBinding.negYKey(FlixelKey.DOWN));
+ * move.addBinding("posY", FlixelAnalogBinding.posYKey(FlixelKey.UP));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadButton.AXIS_LEFT_Y));
  * }</pre>
  *
  * <h2>Reading</h2>
  *
- * <p>Use {@link #getX()} and {@link #getY()} after {@code super.update(elapsed)} in your state. {@link #getPrevX()} / {@link #getPrevY()}
- * mirror the previous frame after {@link FlixelActionSet#endFrame()}. {@link #moved()} is a small helper for non-zero length.
+ * <p>Use {@link #getX()} and {@link #getY()} after {@code super.update(elapsed)} in your state.
+ * {@link #getPrevX()} / {@link #getPrevY()} mirror the previous frame after
+ * {@link FlixelActionSet#endFrame()}. {@link #moved()} is a small helper for non-zero length.
  *
  * <h2>Flick detection and hold-repeat</h2>
  *
- * <p>{@link #flicked()} returns {@code true} for exactly one frame when the stick first crosses {@link #flickThreshold}.
- * It resets to {@code false} as long as the stick stays past the threshold, and fires again only after the stick
- * returns below the threshold and crosses it again. This mirrors the single-frame contract of
- * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()} and is useful for menu navigation
- * where each stick deflection should trigger exactly one action.
+ * <p>{@link #flicked()} returns {@code true} for exactly one frame when the stick first crosses
+ * {@link #flickThreshold}. It resets to {@code false} as long as the stick stays past the
+ * threshold, and fires again only after the stick returns below the threshold and crosses it again.
+ * This mirrors the single-frame contract of
+ * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()} and is useful for
+ * menu navigation where each stick deflection should trigger exactly one action.
  *
  * <p>{@link #flickedRepeating()} extends that with hold-repeat: it fires on the initial flick,
- * then fires again after {@link FlixelAction#getHoldDelay() FlixelAction.holdDelay} seconds
- * if the stick is still past the threshold, and continues every {@link FlixelAction#getHoldInterval() FlixelAction.holdInterval}
- * seconds after that. Use this for menus that should keep scrolling when the stick is held.
+ * then fires again after {@link FlixelAction#getHoldDelay() FlixelAction.holdDelay} seconds if
+ * the stick is still past the threshold, and continues every
+ * {@link FlixelAction#getHoldInterval() FlixelAction.holdInterval} seconds after that. Use this
+ * for menus that should keep scrolling when the stick is held.
  *
  * <pre>{@code
  * // Navigate a menu; hold the stick to keep scrolling.
@@ -78,21 +84,22 @@ import org.jetbrains.annotations.Nullable;
  * }
  * }</pre>
  *
- * <p>Key bindings contribute {@code +-1.0} per axis, so pressing any bound key immediately exceeds the default threshold
- * and fires both methods on that frame. Adjust {@link #flickThreshold} before the game loop if your game needs
- * a different sensitivity.
+ * <p>Key bindings contribute {@code +-1.0} per axis, so pressing any bound key immediately exceeds
+ * the default threshold and fires both methods on that frame. Adjust {@link #flickThreshold} before
+ * the game loop if your game needs a different sensitivity.
  */
 public final class FlixelActionAnalog extends FlixelAction {
 
   /**
-   * Minimum stick magnitude (0 to 1) required for {@link #flicked()} and {@link #flickedRepeating()}
-   * to fire. The comparison is made against the normalized vector length after all bindings are
-   * accumulated, so a value of {@code 0.3} means roughly 30% deflection. Defaults to {@code 0.3f};
-   * adjust before the game loop if your game needs a different sensitivity.
+   * Minimum stick magnitude (0 to 1) required for {@link #flicked()} and
+   * {@link #flickedRepeating()} to fire. The comparison is made against the normalized vector
+   * length after all bindings are accumulated, so a value of {@code 0.3} means roughly 30%
+   * deflection. Defaults to {@code 0.3f}; adjust before the game loop if your game needs a
+   * different sensitivity.
    */
   private float flickThreshold = 0.3f;
 
-  private final Array<FlixelAnalogAxisBinding> bindings = new Array<>(12);
+  private final ObjectMap<String, FlixelAnalogBinding> namedBindings = new ObjectMap<>(12);
 
   private final Vector2 scratch = new Vector2();
 
@@ -111,8 +118,83 @@ public final class FlixelActionAnalog extends FlixelAction {
     super(name);
   }
 
-  public void addAxisBinding(@NotNull FlixelAnalogAxisBinding binding) {
-    bindings.add(binding);
+  /**
+   * Removes all bindings from this action.
+   *
+   * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
+   * sources (it will produce a zero vector until at least one binding is added again).
+   */
+  public void clearBindings() {
+    namedBindings.clear();
+  }
+
+  /**
+   * Adds a binding under a named slot (allocation-free after this call).
+   *
+   * <p>If a binding is already registered under {@code slot}, it is removed and replaced. Named
+   * slots are the natural model for a rebinding screen: one slot per axis or device, replaced
+   * in-place when the player picks a new key or stick.
+   *
+   * <pre>{@code
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(FlixelKey.LEFT));
+   * move.addBinding("rightKey", FlixelAnalogBinding.posXKey(FlixelKey.RIGHT));
+   * move.addBinding("stick", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
+   *
+   * // Player rebinds the left key at runtime.
+   * move.addBinding("leftKey", FlixelAnalogBinding.negXKey(newKey));
+   * }</pre>
+   *
+   * @param slot Non-null, non-empty identifier for this binding (for example {@code "leftKey"}).
+   * @param binding Non-null binding.
+   */
+  public void addBinding(@NotNull String slot, @NotNull FlixelAnalogBinding binding) {
+    var s = Objects.requireNonNull(slot, "slot cannot be null.");
+    var b = Objects.requireNonNull(binding, "binding cannot be null.");
+    namedBindings.put(s, b);
+  }
+
+  /**
+   * Removes the binding registered under the given slot name.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
+   * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
+   */
+  public boolean removeBinding(@NotNull String slot) {
+    FlixelAnalogBinding old = namedBindings.remove(Objects.requireNonNull(slot, "slot cannot be null."));
+    return old != null;
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelAnalogBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelAnalogBinding binding) {
+    ObjectMap.Keys<String> keys = namedBindings.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (namedBindings.get(key) == binding) {
+        keys.remove();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns the binding registered under the given slot name, or {@code null} if the slot is
+   * unknown.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelAnalogBinding)}.
+   * @return The registered binding, or {@code null} if no binding is registered under that slot.
+   */
+  @Nullable
+  public FlixelAnalogBinding getBinding(@NotNull String slot) {
+    return namedBindings.get(Objects.requireNonNull(slot, "slot cannot be null."));
   }
 
   @Override
@@ -127,8 +209,9 @@ public final class FlixelActionAnalog extends FlixelAction {
       return;
     }
     scratch.set(0f, 0f);
-    for (int i = 0, n = bindings.size; i < n; i++) {
-      accumulate(bindings.get(i), scratch);
+    ObjectMap.Values<FlixelAnalogBinding> vals = namedBindings.values();
+    while (vals.hasNext()) {
+      vals.next().accumulate(scratch);
     }
     FlixelSteamActionReader steam = owner != null ? owner.steamReader : null;
     if (steam != null) {
@@ -169,49 +252,6 @@ public final class FlixelActionAnalog extends FlixelAction {
       flickHoldAccum = 0f;
       flickHoldRepeating = false;
       flickRepeated = false;
-    }
-  }
-
-  private static void accumulate(@NotNull FlixelAnalogAxisBinding b, @NotNull Vector2 out) {
-    switch (b.kind) {
-      case KEY_NEG_X -> {
-        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-          out.x -= 1f;
-        }
-      }
-      case KEY_POS_X -> {
-        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-          out.x += 1f;
-        }
-      }
-      case KEY_NEG_Y -> {
-        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-          out.y -= 1f;
-        }
-      }
-      case KEY_POS_Y -> {
-        if (Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.keyOrAxis)) {
-          out.y += 1f;
-        }
-      }
-      case GAMEPAD_AXIS_X -> {
-        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.x += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
-        }
-      }
-      // Negate raw Y to convert from screen-space (up = negative) to math-space (up = positive).
-      case GAMEPAD_AXIS_Y -> {
-        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.y -= Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
-        }
-      }
-      case RAW_GAMEPAD_AXIS_Y -> {
-        if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.y += Flixel.gamepads.getAxis(b.gamepadSlot, b.keyOrAxis);
-        }
-      }
-      default -> {
-      }
     }
   }
 
@@ -271,8 +311,8 @@ public final class FlixelActionAnalog extends FlixelAction {
    *
    * <p>Stays {@code false} while the stick remains past the threshold, and fires again only after
    * the stick drops below it and crosses it once more. This mirrors the single-frame contract of
-   * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()}, making it safe
-   * to use for menu navigation where one deflection should trigger exactly one action.
+   * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()}, making it safe to
+   * use for menu navigation where one deflection should trigger exactly one action.
    *
    * <p>Key and button bindings contribute {@code +-1.0} per axis, so any bound key press that
    * brings the magnitude past {@link #flickThreshold} fires {@code flicked()} on that frame.
@@ -287,10 +327,11 @@ public final class FlixelActionAnalog extends FlixelAction {
    * Returns {@code true} on the initial flick and again on each hold-repeat tick.
    *
    * <p>Fires on the same frame as {@link #flicked()} when the stick first crosses
-   * {@link #flickThreshold}, then fires again after {@link FlixelAction#getHoldDelay() FlixelAction.holdDelay}
-   * seconds if the stick is still past the threshold, and continues every
-   * {@link FlixelAction#getHoldInterval() FlixelAction.holdInterval} seconds after that.
-   * Returning the stick below the threshold resets the timer.
+   * {@link #flickThreshold}, then fires again after
+   * {@link FlixelAction#getHoldDelay() FlixelAction.holdDelay} seconds if the stick is still past
+   * the threshold, and continues every
+   * {@link FlixelAction#getHoldInterval() FlixelAction.holdInterval} seconds after that. Returning
+   * the stick below the threshold resets the timer.
    *
    * <p>Use this instead of {@link #flicked()} when a held stick deflection should keep triggering,
    * such as scrolling through a long menu list.

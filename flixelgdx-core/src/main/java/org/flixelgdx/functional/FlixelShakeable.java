@@ -25,6 +25,7 @@ package org.flixelgdx.functional;
 
 import com.badlogic.gdx.Gdx;
 
+import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
 
 /**
@@ -34,7 +35,7 @@ import org.flixelgdx.tween.settings.FlixelShakeUnit;
  * <p>Implementations choose what X and Y mean: {@link org.flixelgdx.FlixelSprite FlixelSprite} uses graphic
  * {@linkplain org.flixelgdx.FlixelSprite#getOffsetX() offset}; {@link org.flixelgdx.FlixelObject FlixelObject}
  * uses world {@linkplain org.flixelgdx.functional.FlixelPositional position};
- * {@link org.flixelgdx.backend.window.FlixelWindow FlixelWindow} uses window placement in screen coordinates.
+ * {@link FlixelWindow FlixelWindow} uses window placement in screen coordinates.
  *
  * @see org.flixelgdx.tween.type.FlixelShakeTween
  */

@@ -29,8 +29,8 @@ import com.badlogic.gdx.math.Vector2;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.FlixelObject;
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputProcessorManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -68,7 +68,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
   private static final int MAX_BUTTON = 4;
 
   @NotNull
-  private FlixelMouseIconManager iconManager = FlixelNoopMouseIconManager.INSTANCE;
+  public FlixelMouseIconManager icons = FlixelNoopMouseIconManager.INSTANCE;
 
   private int screenX;
   private int screenY;
@@ -149,15 +149,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
    * @param iconManager The {@link FlixelMouseIconManager} to implement.
    */
   public void setMouseIconManager(@Nullable FlixelMouseIconManager iconManager) {
-    this.iconManager = iconManager != null ? iconManager : FlixelNoopMouseIconManager.INSTANCE;
-  }
-
-  /**
-   * @return Native cursor integration for this session (never null).
-   */
-  @NotNull
-  public FlixelMouseIconManager icons() {
-    return iconManager;
+    icons = iconManager != null ? iconManager : FlixelNoopMouseIconManager.INSTANCE;
   }
 
   @NotNull
@@ -355,11 +347,10 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
    * debug UI panel.
    */
   private static boolean isCapturedByDebugUI() {
-    FlixelDebugOverlay overlay = Flixel.getDebugOverlay();
-    return overlay != null && overlay.isMouseCapturedByUI();
+    return Flixel.debug != null && Flixel.debug.overlay.isMouseCapturedByUI();
   }
 
-  public boolean overlap(@NotNull FlixelObject obj) {
+  public boolean overlap(@NotNull FlixelPositional obj) {
     float x = getWorldX();
     float y = getWorldY();
     return x >= obj.getX()

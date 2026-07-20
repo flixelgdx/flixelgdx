@@ -78,6 +78,9 @@ public class FlixelLogger implements ApplicationLogger {
   /** Reused for plain file lines. */
   private final FlixelString fileLine = new FlixelString(512);
 
+  /** Reused for building formatted messages when {@code {}} args are supplied. */
+  private final FlixelString formattedMessage = new FlixelString(512);
+
   /**
    * Whether to write logs to a file when {@link #startFileLogging()} is called.
    *
@@ -88,14 +91,13 @@ public class FlixelLogger implements ApplicationLogger {
 
   /**
    * Creates a logger that outputs to the console and optionally to a file
-   * (when a {@link FlixelLogFileHandler} is registered on
-   * {@link Flixel#setLogFileHandler}).
+   * (when {@link Flixel#logFileHandler} is assigned).
    *
    * @param logMode The mode used for console output formatting.
    */
   public FlixelLogger(FlixelLogMode logMode) {
     this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
-    this.stackTraceProvider = Flixel.getStackTraceProvider();
+    this.stackTraceProvider = Flixel.stackTraceProvider;
   }
 
   /**
@@ -180,7 +182,7 @@ public class FlixelLogger implements ApplicationLogger {
    * timestamped log file, and (on JVM) starts a background writer thread.
    */
   public void startFileLogging() {
-    FlixelLogFileHandler handler = Flixel.getLogFileHandler();
+    FlixelLogFileHandler handler = Flixel.logFileHandler;
     if (handler == null || !canStoreLogs) {
       return;
     }
@@ -197,7 +199,7 @@ public class FlixelLogger implements ApplicationLogger {
    * written during disposal are persisted.
    */
   public void stopFileLogging() {
-    FlixelLogFileHandler handler = Flixel.getLogFileHandler();
+    FlixelLogFileHandler handler = Flixel.logFileHandler;
     if (handler != null) {
       handler.stop();
     }
@@ -224,6 +226,94 @@ public class FlixelLogger implements ApplicationLogger {
   }
 
   /**
+   * Logs a debug message using the default tag.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   */
+  public void debug(Object message) {
+    outputLog(defaultTag, evaluateMessage(message), FlixelLogLevel.DEBUG, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs a debug message under a custom tag.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   */
+  public void debug(String tag, Object message) {
+    outputLog(tag, evaluateMessage(message), FlixelLogLevel.DEBUG, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs a debug message under a custom tag, replacing each {@code {}} placeholder with the
+   * corresponding argument in order.
+   *
+   * <p>For example: {@code Flixel.log.debug("Enemy", "there are {} enemies left", enemyCount)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public void debug(String tag, Object message, Object... args) {
+    outputLog(tag, evaluateMessage(message, args), FlixelLogLevel.DEBUG, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs a debug message using the default tag with an explicit call site.
+   *
+   * <p>Typically invoked by the {@code flixelgdx-logging-plugin} bytecode weaver so file and line do not rely on
+   * {@link FlixelStackTraceProvider} (for example on TeaVM). You don't need to (nor should you) touch this method;
+   * you should use the other methods, such as {@link #debug(Object)}.
+   *
+   * @param message The message to log (converted via {@code toString()}).
+   * @param sourceFileName The JVM source file name at the call site (for example {@code MyState.java}).
+   * @param lineNumber The source line number from debug metadata, or {@code 0} if unknown.
+   * @param declaringClassName The fully qualified name of the class containing the call site.
+   * @param declaringMethodName The simple name of the method containing the call site (no suffix).
+   */
+  public void debugWithSite(
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
+    debugWithSite(defaultTag, message, sourceFileName, lineNumber, declaringClassName, declaringMethodName);
+  }
+
+  /**
+   * Logs a debug message under a custom tag with an explicit call site.
+   *
+   * <p>Typically invoked by the {@code flixelgdx-logging-plugin} bytecode weaver so file and line do not rely on
+   * {@link FlixelStackTraceProvider} (for example on TeaVM). You don't need to (nor should you) touch this method;
+   * you should use the other methods, such as {@link #debug(Object)}.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The message to log (converted via {@code toString()}).
+   * @param sourceFileName The JVM source file name at the call site.
+   * @param lineNumber The source line number from debug metadata, or {@code 0} if unknown.
+   * @param declaringClassName The fully qualified name of the class containing the call site.
+   * @param declaringMethodName The simple name of the method containing the call site.
+   */
+  public void debugWithSite(
+      String tag,
+      Object message,
+      String sourceFileName,
+      int lineNumber,
+      String declaringClassName,
+      String declaringMethodName) {
+    outputLog(
+        tag,
+        evaluateMessage(message),
+        FlixelLogLevel.DEBUG,
+        true,
+        sourceFileName,
+        lineNumber,
+        declaringClassName,
+        declaringMethodName);
+  }
+
+  /**
    * Logs an informational message using the default tag.
    *
    * @param message The message to log (converted via {@code toString()}).
@@ -240,6 +330,21 @@ public class FlixelLogger implements ApplicationLogger {
    */
   public void info(String tag, Object message) {
     outputLog(tag, evaluateMessage(message), FlixelLogLevel.INFO, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs an informational message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
+   *
+   * <p>For example: {@code Flixel.log.info("Assets", "loaded {} assets in {}ms", count, elapsed)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public void info(String tag, Object message, Object... args) {
+    outputLog(tag, evaluateMessage(message, args), FlixelLogLevel.INFO, false, null, 0, null, null);
   }
 
   /**
@@ -316,6 +421,35 @@ public class FlixelLogger implements ApplicationLogger {
   }
 
   /**
+   * Logs a warning message using the default tag, replacing each {@code {}} placeholder with the
+   * corresponding argument in order.
+   *
+   * <p>For example: {@code Flixel.log.warn("pool exhausted, {} objects dropped", dropped)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public void warn(Object message, Object... args) {
+    outputLog(defaultTag, evaluateMessage(message, args), FlixelLogLevel.WARN, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs a warning message under a custom tag, replacing each {@code {}} placeholder with the
+   * corresponding argument in order.
+   *
+   * <p>For example: {@code Flixel.log.warn("Pool", "pool exhausted, {} objects dropped", dropped)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public void warn(String tag, Object message, Object... args) {
+    outputLog(tag, evaluateMessage(message, args), FlixelLogLevel.WARN, false, null, 0, null, null);
+  }
+
+  /**
    * Logs a warning message using the default tag with an explicit call site.
    *
    * <p>Typically invoked by the {@code flixelgdx-logging-plugin} bytecode weaver so file and line do not rely on
@@ -375,7 +509,7 @@ public class FlixelLogger implements ApplicationLogger {
    * @param message The message to log (converted via {@code toString()}).
    */
   public void error(Object message) {
-    error(defaultTag, message, null);
+    error(defaultTag, message, (Throwable) null);
   }
 
   /**
@@ -396,7 +530,7 @@ public class FlixelLogger implements ApplicationLogger {
    * @param message The message to log (converted via {@code toString()}).
    */
   public void error(String tag, Object message) {
-    error(tag, message, null);
+    error(tag, message, (Throwable) null);
   }
 
   /**
@@ -410,6 +544,56 @@ public class FlixelLogger implements ApplicationLogger {
   public void error(String tag, Object message, Throwable throwable) {
     String msg =
         (throwable != null) ? (evaluateMessage(message) + " | Exception: " + throwable) : evaluateMessage(message);
+    outputLog(tag, msg, FlixelLogLevel.ERROR, false, null, 0, null, null);
+  }
+
+  /**
+   * Logs an error message using the default tag, replacing each {@code {}} placeholder with the
+   * corresponding argument in order, including the throwable's string representation.
+   *
+   * <p>For example: {@code Flixel.log.error("failed to load {} assets", e, count)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param throwable The exception to append to the log output.
+   * @param args The arguments to substitute into the message.
+   */
+  public void error(Object message, Throwable throwable, Object... args) {
+    error(defaultTag, message, throwable, args);
+  }
+
+  /**
+   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with the
+   * corresponding argument in order, with no throwable.
+   *
+   * <p>For example: {@code Flixel.log.error("Assets", "failed to load {} of {} assets", failed, total)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public void error(String tag, Object message, Object... args) {
+    error(tag, message, null, args);
+  }
+
+  /**
+   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with the
+   * corresponding argument in order, including the throwable's string representation.
+   *
+   * <p>For example: {@code Flixel.log.error("Assets", "failed to load {} assets", e, count)}.
+   * If there are fewer arguments than placeholders, the remaining {@code {}} tokens are left as-is.
+   *
+   * @param tag The tag to associate with this log entry.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param throwable The exception to append to the log output, or {@code null} if none.
+   * @param args The arguments to substitute into the message.
+   */
+  public void error(String tag, Object message, Throwable throwable, Object... args) {
+    String msg = evaluateMessage(message, args);
+    if (throwable != null) {
+      msg = msg + " | Exception: " + throwable;
+    }
     outputLog(tag, msg, FlixelLogLevel.ERROR, false, null, 0, null, null);
   }
 
@@ -608,14 +792,21 @@ public class FlixelLogger implements ApplicationLogger {
       case INFO -> FlixelAsciiCodes.WHITE;
       case WARN -> FlixelAsciiCodes.YELLOW;
       case ERROR -> FlixelAsciiCodes.RED;
+      case DEBUG -> FlixelAsciiCodes.BLUE;
     };
     boolean underlineFile = (level == FlixelLogLevel.ERROR);
 
     String ts = LocalDateTime.now().format(LOG_TIMESTAMP);
 
-    FlixelLogConsoleSink consoleSink = Flixel.getLogConsoleSink();
+    FlixelLogConsoleSink consoleSink = Flixel.logConsoleSink;
+    String safeTag = tag != null ? tag : defaultTag;
+
+    String levelPart = "[" + level + "]";
+    String tagPart = "[" + safeTag + "]";
+    String filePart = "[" + file + "]";
+    String methodPart = "[" + method + "]";
+
     if (consoleSink != null) {
-      String safeTag = tag != null ? tag : "";
       consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts,
           logMode == FlixelLogMode.DETAILED);
     } else {
@@ -626,12 +817,8 @@ public class FlixelLogger implements ApplicationLogger {
         consoleLine.concat(' ');
         appendColored(consoleLine, rawMessage, color, false, true, false);
       } else {
-        String levelTag = "[" + level + "]";
-        String tagPart = "[" + tag + "]";
-        String filePart = "[" + file + "]";
-        String methodPart = "[" + method + "]";
         appendColored(consoleLine, ts + " ", color, false, false, underlineFile);
-        appendColored(consoleLine, levelTag + " ", color, true, false, underlineFile);
+        appendColored(consoleLine, levelPart + " ", color, true, false, underlineFile);
         appendColored(consoleLine, tagPart + " ", color, true, false, underlineFile);
         appendColored(consoleLine, filePart + " ", color, true, false, underlineFile);
         appendColored(consoleLine, methodPart, color, false, false, underlineFile);
@@ -642,23 +829,19 @@ public class FlixelLogger implements ApplicationLogger {
 
     // Notify in-game log listeners (e.g. the debug overlay console).
     if (!logListeners.isEmpty()) {
-      FlixelLogEntry entry = new FlixelLogEntry(level, tag, rawMessage);
+      FlixelLogEntry entry = new FlixelLogEntry(level, safeTag, rawMessage);
       for (Consumer<FlixelLogEntry> listener : logListeners) {
         listener.accept(entry);
       }
     }
 
     // File: always detailed (plain, no ANSI).
-    FlixelLogFileHandler fileHandler = Flixel.getLogFileHandler();
+    FlixelLogFileHandler fileHandler = Flixel.logFileHandler;
     if (fileHandler != null && fileHandler.isActive()) {
-      String levelTag = "[" + level + "]";
-      String tagPart = "[" + tag + "]";
-      String filePart = "[" + file + "]";
-      String methodPart = "[" + method + "]";
       fileLine.clear();
       fileLine.concat(ts);
       fileLine.concat(' ');
-      fileLine.concat(levelTag);
+      fileLine.concat(levelPart);
       fileLine.concat(' ');
       fileLine.concat(tagPart);
       fileLine.concat(' ');
@@ -672,11 +855,9 @@ public class FlixelLogger implements ApplicationLogger {
   }
 
   /**
-   * Gets the location of where the log was called from.
+   * Gets the location of where a log was called from.
    *
-   * <p>This is used to get the file and method name of where the log was called from.
-   *
-   * @return The location of where the log was called from.
+   * @return The location of where a log was called from.
    */
   protected FlixelStackFrame getCaller() {
     return (stackTraceProvider != null) ? stackTraceProvider.getCaller() : null;
@@ -712,6 +893,35 @@ public class FlixelLogger implements ApplicationLogger {
     return message != null ? message.toString() : "null";
   }
 
+  /**
+   * Evaluates a format message by replacing each {@code {}} placeholder with the next argument.
+   * Placeholders with no corresponding argument are left as {@code {}}.
+   */
+  private String evaluateMessage(Object message, Object... args) {
+    String raw = evaluateMessage(message);
+    if (args == null || args.length == 0) {
+      return raw;
+    }
+    formattedMessage.clear();
+    int argIndex = 0;
+    int len = raw.length();
+    for (int i = 0; i < len; i++) {
+      char c = raw.charAt(i);
+      if (c == '{' && i + 1 < len && raw.charAt(i + 1) == '}') {
+        if (argIndex < args.length) {
+          Object arg = args[argIndex++];
+          formattedMessage.concat(arg != null ? arg.toString() : "null");
+        } else {
+          formattedMessage.concat("{}");
+        }
+        i++;
+      } else {
+        formattedMessage.concat(c);
+      }
+    }
+    return formattedMessage.copyContentToNewString();
+  }
+
   public String getDefaultTag() {
     return defaultTag;
   }
@@ -732,21 +942,22 @@ public class FlixelLogger implements ApplicationLogger {
 
   @Override
   public void error(String tag, String message) {
-    error(tag, message, null);
+    error(tag, message, (Throwable) null);
   }
 
   @Override
   public void error(String tag, String message, Throwable exception) {
-    error(tag, message, exception);
+    error(tag, (Object) message, exception);
   }
 
   @Override
   public void debug(String tag, String message) {
-    info(tag, message);
+    debug(tag, (Object) message);
   }
 
   @Override
   public void debug(String tag, String message, Throwable exception) {
-    error(tag, message, exception);
+    String msg = (exception != null) ? (message + " | Exception: " + exception) : message;
+    outputLog(tag, msg, FlixelLogLevel.DEBUG, false, null, 0, null, null);
   }
 }

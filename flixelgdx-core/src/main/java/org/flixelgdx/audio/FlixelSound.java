@@ -67,7 +67,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   private final FlixelSoundBackend sound;
 
   @Nullable
-  private FlixelAudioManager manager;
+  private FlixelSoundManager manager;
 
   @Nullable
   private FlixelAsset<FlixelSoundSource> sourceAsset;
@@ -145,7 +145,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * @return The manager, or {@code null} if not assigned to one.
    */
   @Nullable
-  public FlixelAudioManager getManager() {
+  public FlixelSoundManager getManager() {
     return manager;
   }
 
@@ -156,14 +156,14 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelSound setManager(@Nullable FlixelAudioManager manager) {
+  public FlixelSound setManager(@Nullable FlixelSoundManager manager) {
     this.manager = manager;
     return this;
   }
 
   /**
    * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
-   * retained when this sound was created through {@link FlixelAudioManager}. The handle is
+   * retained when this sound was created through {@link FlixelSoundManager}. The handle is
    * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
    * active {@link org.flixelgdx.asset.FlixelAssetMode FlixelAssetMode}.
    *
@@ -190,6 +190,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   @Override
   public boolean isLoaded() {
+    return true;
+  }
+
+  /** Returns whether this sound's audio data has been loaded. */
+  public boolean getLoaded() {
     return true;
   }
 
@@ -318,6 +323,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     return sound.isLooping();
   }
 
+  /** Returns whether this sound is set to loop. */
+  public boolean getLooped() {
+    return sound.isLooping();
+  }
+
   /**
    * Enables or disables looping.
    *
@@ -335,6 +345,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * @return {@code true} if the sound is actively playing.
    */
   public boolean isPlaying() {
+    return sound.isPlaying();
+  }
+
+  /** Returns whether this sound is currently playing. */
+  public boolean getPlaying() {
     return sound.isPlaying();
   }
 
@@ -548,6 +563,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     return autoDestroy;
   }
 
+  /** Returns whether this sound auto-destroys when playback completes. */
+  public boolean getAutoDestroy() {
+    return autoDestroy;
+  }
+
   /**
    * Sets whether this sound auto-destroys when playback completes.
    *
@@ -561,6 +581,11 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   @Override
   public boolean isPersist() {
+    return persist;
+  }
+
+  /** Returns whether this sound persists across state transitions. */
+  public boolean getPersist() {
     return persist;
   }
 
@@ -614,7 +639,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    * Called from {@link #destroy()}.
    */
   public void clearAudioEffectChain() {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     for (int i = audioEffectNodes.size - 1; i >= 0; i--) {
       FlixelSoundBackend.EffectNode n = audioEffectNodes.get(i);
       n.detach(0);
@@ -645,7 +670,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   @NotNull
   public FlixelSoundBackend.ReverbNode addReverb(float wetAmount) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (factory == null)
       return FlixelSoundBackend.ReverbNode.NOOP;
     FlixelSoundBackend.ReverbNode node = factory.createReverbNode(wetAmount);
@@ -665,7 +690,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   @NotNull
   public FlixelSoundBackend.EchoNode addEcho(float delaySeconds, float decay) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (factory == null)
       return FlixelSoundBackend.EchoNode.NOOP;
     FlixelSoundBackend.EchoNode node = factory.createDelayNode(delaySeconds, decay);
@@ -689,7 +714,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   @NotNull
   public FlixelSoundBackend.LowPassNode addLowPassMuffle(double cutoffHz) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (factory == null)
       return FlixelSoundBackend.LowPassNode.NOOP;
     FlixelSoundBackend.LowPassNode node = factory.createLowPassFilter(cutoffHz, 2);
@@ -712,7 +737,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   }
 
   private void attachEffectNode(@NotNull FlixelSoundBackend.EffectNode node) {
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     if (audioEffectNodes.size == 0) {
       node.attachToUpstream(sound, 0);
     } else {
@@ -750,7 +775,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   private static FlixelSoundBackend createSoundForHandle(@NotNull FileHandle path) {
     String resolvedPath = FlixelPathsUtil.resolveAudioPath(path.path());
-    FlixelSoundBackend.Factory factory = Flixel.getSoundFactory();
+    FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     Object sfxGroup = Flixel.sound != null ? Flixel.sound.getSfxGroup() : null;
     return factory.createSound(resolvedPath, (short) 0, sfxGroup, false);
   }

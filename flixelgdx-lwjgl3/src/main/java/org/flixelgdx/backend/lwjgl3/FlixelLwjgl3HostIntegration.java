@@ -26,7 +26,8 @@ package org.flixelgdx.backend.lwjgl3;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 
-import org.flixelgdx.backend.host.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -34,35 +35,40 @@ import org.lwjgl.glfw.GLFW;
 import java.awt.EventQueue;
 import java.awt.GraphicsEnvironment;
 import java.awt.Taskbar;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Desktop {@link FlixelHostIntegration}: freedesktop or Zenity notifications on Linux, {@code osascript} on macOS,
- * WinRT toasts via PowerShell on Windows, GLFW window attention, and AWT {@link Taskbar} attention where available.
+ * Desktop {@link FlixelHostIntegration}: freedesktop or Zenity notifications on Linux,
+ * {@code osascript} on macOS, WinRT toasts via PowerShell on Windows, GLFW window attention,
+ * AWT {@link Taskbar} attention, platform screen wake lock, and AWT text clipboard access.
  */
 public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration {
 
   private static final int MAX_NOTIFY_ARG_LEN = 6000;
+  private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+
+  private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
+
+  @Nullable
+  private Process wakeLockProcess;
+  @Nullable
+  private ScheduledExecutorService screensaverResetScheduler;
 
   @Override
-  public void sendNotification(@Nullable String title, @NotNull String message) {
-    Objects.requireNonNull(message, "message");
-    if (!supportsDesktopNotification()) {
-      return;
-    }
-    String os = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-    if (os.contains("linux")) {
-      notifyLinux(title, message);
-    } else if (os.contains("mac")) {
-      notifyMac(title, message);
-    } else if (os.contains("windows")) {
-      notifyWindows(title, message);
-    }
-  }
+  public void requestNotificationPermission() {}
 
   @Override
   public void requestAttention() {
@@ -89,12 +95,114 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   }
 
   @Override
-  public boolean supportsDesktopNotification() {
+  public void keepScreenAwake(boolean awake) {
+    if (!supportsWakeLock()) {
+      return;
+    }
+    if (awake) {
+      if (wakeLockProcess != null || screensaverResetScheduler != null) {
+        return;
+      }
+      if (isMac()) {
+        wakeLockProcess = tryStartWakeLockProcess(new ProcessBuilder("caffeinate", "-d", "-i"));
+      } else if (isLinux()) {
+        wakeLockProcess = tryStartWakeLockProcess(new ProcessBuilder(
+            "systemd-inhibit", "--what=idle:sleep",
+            "--who=FlixelGDX", "--why=Game",
+            "--mode=block", "sleep", "infinity"));
+        // systemd-inhibit prevents system sleep but does not reset the screensaver's own idle
+        // timer (e.g. cinnamon-screensaver runs independently). Poke xdg-screensaver reset
+        // periodically so the screensaver never reaches its activation threshold.
+        screensaverResetScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+          Thread t = new Thread(r, "flixelwakelock");
+          t.setDaemon(true);
+          return t;
+        });
+        screensaverResetScheduler.scheduleAtFixedRate(
+            () -> tryStartProcess(new ProcessBuilder("xdg-screensaver", "reset")),
+            0, 50, TimeUnit.SECONDS);
+      }
+    } else {
+      if (screensaverResetScheduler != null) {
+        screensaverResetScheduler.shutdownNow();
+        screensaverResetScheduler = null;
+      }
+      if (wakeLockProcess != null) {
+        wakeLockProcess.destroyForcibly();
+        wakeLockProcess = null;
+      }
+    }
+  }
+
+  @Override
+  public void setExitConfirmation(@Nullable String message) {}
+
+  @Override
+  public void sendNotification(@Nullable String title, @NotNull String message) {
+    Objects.requireNonNull(message, "message");
+    if (!supportsNotifications()) {
+      return;
+    }
+    if (isLinux()) {
+      notifyLinux(title, message);
+    } else if (isMac()) {
+      notifyMac(title, message);
+    } else if (isWindows()) {
+      notifyWindows(title, message);
+    }
+  }
+
+  @Override
+  public void copyToClipboard(@NotNull String text) {
+    Objects.requireNonNull(text, "text");
+    if (!supportsClipboard()) {
+      return;
+    }
+    EventQueue.invokeLater(() -> Toolkit.getDefaultToolkit().getSystemClipboard()
+        .setContents(new StringSelection(text), null));
+  }
+
+  @Override
+  public void pasteFromClipboard() {
+    if (!supportsClipboard()) {
+      return;
+    }
+    try {
+      Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+      Transferable contents = clipboard.getContents(null);
+      if (contents == null || !contents.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+        return;
+      }
+      String text = (String) contents.getTransferData(DataFlavor.stringFlavor);
+      onTextPasted.dispatch(text);
+    } catch (UnsupportedFlavorException | IOException ignored) {
+      // Ignored.
+    }
+  }
+
+  @Override
+  public boolean supportsNotifications() {
     return !GraphicsEnvironment.isHeadless();
   }
 
+  @Override
+  public boolean supportsWakeLock() {
+    return !GraphicsEnvironment.isHeadless() && (isMac() || isLinux());
+  }
+
+  @Override
+  public boolean supportsClipboard() {
+    return !GraphicsEnvironment.isHeadless();
+  }
+
+  @Override
+  @NotNull
+  public FlixelSignal<String> onTextPasted() {
+    return onTextPasted;
+  }
+
   private static void notifyLinux(@Nullable String title, String message) {
-    String summary = truncateArg(title == null || title.isEmpty() ? "\u00a0" : title, MAX_NOTIFY_ARG_LEN);
+    String summary = truncateArg(title == null || title.isEmpty() ? " " : title, MAX_NOTIFY_ARG_LEN);
     String body = truncateArg(message, MAX_NOTIFY_ARG_LEN);
     if (tryStartProcess(new ProcessBuilder("notify-send", summary, body))) {
       return;
@@ -143,6 +251,17 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
         + "[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('FlixelGDX').Show($n);";
   }
 
+  @Nullable
+  private static Process tryStartWakeLockProcess(ProcessBuilder pb) {
+    try {
+      pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+      pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+      return pb.start();
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
   private static boolean tryStartProcess(ProcessBuilder pb) {
     try {
       pb.redirectError(ProcessBuilder.Redirect.DISCARD);
@@ -163,5 +282,17 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
 
   private static String escapeOsascript(String s) {
     return s.replace("\\", "\\\\").replace("\"", "\\\"");
+  }
+
+  private static boolean isMac() {
+    return OS.contains("mac");
+  }
+
+  private static boolean isLinux() {
+    return OS.contains("linux");
+  }
+
+  private static boolean isWindows() {
+    return OS.contains("windows");
   }
 }

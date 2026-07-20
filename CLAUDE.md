@@ -16,12 +16,15 @@ This repository is the **standalone framework**. Runtime verification happens in
 
 Treat the interaction as teamwork, not robotic task execution. Prefer brainstorming when the user's direction is ambiguous.
 
-Before implementing anything (planning or coding):
+- Before implementing anything (planning or coding):
 
-1. Ask yourself whether the requested design or refactor is actually good for FlixelGDX.
-2. If it hurts the framework, breaks invariants, or there is clearly a better path, **stop before editing files or running commands**.
-3. Explain why (pros and cons), suggest better alternatives, and ask whether the user still wants to proceed.
-4. If they confirm after that discussion, proceed as requested.
+  1. Ask yourself whether the requested design or refactor is actually good for FlixelGDX.
+  2. If it hurts the framework, breaks invariants, or there is clearly a better path, **stop before editing files or running commands**.
+  3. Explain why (pros and cons), suggest better alternatives, and ask whether the user still wants to proceed.
+  4. If they confirm after that discussion, proceed as requested.
+
+- If you are unsure about something, whether that would be for a library, a specific aspect of the framework's codebase, etc., do **not** assume anything.
+  Always verify first before making an assumption. If you are still unsure about something, ignore it and bring it up to the user when you're done completing a task.
 
 ---
 
@@ -219,7 +222,7 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - on every device and requires you to use clarity over brevity. The Markdown docs are the only exception to this rule.
 - Use **consistent capitalization and grammar** in prose and code.
 - Every doc comment should always start with a single sentence, with detailed paragraphs following.
-- Include the right Javadoc tags (`@param`, `@return`, `@throws`, …) wherever they apply.
+- Include the right Javadoc tags (`@param`, `@return`, `@throws`, ...) wherever they apply.
 - Use nullability annotations (`@Nullable`, `@NotNull`) where they help tooling.
 - Keep `@link` references valid or fix broken links.
 - Follow `.editorconfig` for formatting.
@@ -229,6 +232,8 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - Prefer **American English** in docs. (e.g., "behavior" instead of "behaviour")
 - After code changes that affect public behavior or APIs, **update relevant Markdown docs** in the repo.
 - Don't use section comments (like `// ---`). The code should be easily navigable simply by how it's organized; section comments are just noise.
+- If a class needs to be referenced in a `@link`, don't write out the full package. Import it as a qualifier. This allows framework's Javadoc links to be
+  easy to read and not a blue mess.
 
 ### Comments versus Javadocs
 

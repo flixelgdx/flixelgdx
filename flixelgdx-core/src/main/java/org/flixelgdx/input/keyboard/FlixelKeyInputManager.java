@@ -150,6 +150,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * <p>Call {@link #endFrame()} at the end of the frame so "just pressed/released" detection works
    * next frame.
    */
+  @Override
   public void update() {
     // Intentionally empty: state is maintained by the InputProcessor.
   }
@@ -296,8 +297,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * while debug UI text fields are focused.
    */
   private static boolean isCapturedByDebugUI() {
-    FlixelDebugOverlay overlay = Flixel.getDebugOverlay();
-    return overlay != null && overlay.isKeyboardCapturedByUI();
+    return Flixel.debug != null && Flixel.debug.overlay.isKeyboardCapturedByUI();
   }
 
   /**
@@ -656,7 +656,13 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     pressedOrder.clear();
   }
 
-  private static boolean isValidKeycode(int key) {
+  /**
+   * Verifies if the provided {@link FlixelKey} code is valid.
+   *
+   * @param key {@link FlixelKey} to check.
+   * @return If the keycode is valid.
+   */
+  public boolean isValidKeycode(int key) {
     return key >= 0 && key <= FlixelKey.MAX_KEYCODE;
   }
 }

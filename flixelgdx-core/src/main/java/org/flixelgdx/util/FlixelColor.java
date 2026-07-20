@@ -71,7 +71,7 @@ public class FlixelColor {
    * Creates a new color with the default white color.
    */
   public FlixelColor() {
-    this.color = new Color(Color.WHITE);
+    color = new Color(Color.WHITE);
   }
 
   /**
@@ -88,7 +88,7 @@ public class FlixelColor {
     float ng = MathUtils.clamp(g, 0, 255) / 255f;
     float nb = MathUtils.clamp(b, 0, 255) / 255f;
     float na = MathUtils.clamp(a, 0, 1);
-    this.color = new Color(nr, ng, nb, na);
+    color = new Color(nr, ng, nb, na);
   }
 
   /**
@@ -100,7 +100,7 @@ public class FlixelColor {
    * @param a The alpha component.
    */
   public FlixelColor(float r, float g, float b, float a) {
-    this.color = new Color(r, g, b, a);
+    color = new Color(r, g, b, a);
   }
 
   /**
@@ -109,7 +109,7 @@ public class FlixelColor {
    * @param rgba8888 The packed RGBA8888 value.
    */
   public FlixelColor(int rgba8888) {
-    this.color = new Color(rgba8888);
+    color = new Color(rgba8888);
   }
 
   /**
@@ -118,7 +118,7 @@ public class FlixelColor {
    * @param source The {@link Color} value to copy.
    */
   public FlixelColor(@NotNull Color source) {
-    this.color = new Color(source);
+    color = new Color(source);
   }
 
   /**
@@ -127,7 +127,7 @@ public class FlixelColor {
    * @param source The {@code FlixelColor} value to copy.
    */
   public FlixelColor(@NotNull FlixelColor source) {
-    this.color = new Color(source.color);
+    color = new Color(source.color);
   }
 
   /**
@@ -217,7 +217,7 @@ public class FlixelColor {
   }
 
   /**
-   * @return The backing libGDX color (mutable). Must not be {@code null}.
+   * @return The backing libGDX color (mutable).
    */
   @NotNull
   public Color getGdxColor() {

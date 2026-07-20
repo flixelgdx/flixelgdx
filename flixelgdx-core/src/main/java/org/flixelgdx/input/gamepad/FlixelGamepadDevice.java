@@ -27,15 +27,15 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Optional per-slot facade for gamepad queries. Instances are created only when the game calls
- * {@link FlixelGamepadManager#ensureDevice(int)}; {@link FlixelGamepadManager#getById(int)} stays
+ * {@link FlixelGamepadInputManager#ensureDevice(int)}; {@link FlixelGamepadInputManager#getById(int)} stays
  * {@code null} until then.
  */
 public final class FlixelGamepadDevice {
 
-  private final FlixelGamepadManager manager;
+  private final FlixelGamepadInputManager manager;
   private final int id;
 
-  FlixelGamepadDevice(@NotNull FlixelGamepadManager manager, int id) {
+  FlixelGamepadDevice(@NotNull FlixelGamepadInputManager manager, int id) {
     this.manager = manager;
     this.id = id;
   }
@@ -44,7 +44,7 @@ public final class FlixelGamepadDevice {
    * Slot index for this device (stable while the controller stays at the same list index in the
    * backend).
    *
-   * @return Gamepad id between {@code 0} and {@link FlixelGamepadManager#MAX_GAMEPADS} exclusive.
+   * @return Gamepad id between {@code 0} and {@link FlixelGamepadInputManager#MAX_GAMEPADS} exclusive.
    */
   public int getId() {
     return id;
@@ -59,6 +59,11 @@ public final class FlixelGamepadDevice {
     return manager.isSlotConnected(id);
   }
 
+  /** Returns whether this gamepad slot currently maps to a connected controller. */
+  public boolean getConnected() {
+    return manager.isSlotConnected(id);
+  }
+
   /**
    * Model detected for this slot the last time the slot was (re)bound.
    *
@@ -66,30 +71,139 @@ public final class FlixelGamepadDevice {
    */
   @NotNull
   public FlixelGamepadModel getModel() {
-    return manager.getDetectedModel(id);
+    return manager.getModel(id);
   }
 
+  /**
+   * Returns {@code true} when this controller is currently pressing the given button.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadButton}.
+   * @return {@code true} when the button is held this frame.
+   */
   public boolean pressed(int logicalButton) {
     return manager.pressed(id, logicalButton);
   }
 
+  /**
+   * Returns {@code true} when this controller first pressed the button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadButton}.
+   * @return {@code true} on the first frame the button is pressed.
+   */
   public boolean justPressed(int logicalButton) {
     return manager.justPressed(id, logicalButton);
   }
 
+  /**
+   * Returns {@code true} when this controller released the button this frame.
+   *
+   * @param logicalButton A logical button constant from {@link FlixelGamepadButton}.
+   * @return {@code true} on the first frame the button is no longer pressed.
+   */
   public boolean justReleased(int logicalButton) {
     return manager.justReleased(id, logicalButton);
   }
 
+  /**
+   * Returns whether this controller reports vibration support.
+   *
+   * @return {@code true} when connected and the hardware supports vibration.
+   */
+  public boolean canVibrate() {
+    return manager.canVibrate(id);
+  }
+
+  /**
+   * Vibrates this controller at full intensity on both motors for the given duration.
+   *
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float durationSecs) {
+    manager.vibrate(id, durationSecs);
+  }
+
+  /**
+   * Vibrates this controller at the given intensity on both motors.
+   *
+   * @param intensity Motor strength in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float intensity, float durationSecs) {
+    manager.vibrate(id, intensity, durationSecs);
+  }
+
+  /**
+   * Vibrates this controller with independent left and right motor intensities.
+   *
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
+   * @param durationSecs How long to vibrate in seconds.
+   */
+  public void vibrate(float leftIntensity, float rightIntensity, float durationSecs) {
+    manager.vibrate(id, leftIntensity, rightIntensity, durationSecs);
+  }
+
+  /**
+   * Stops any active vibration on this controller immediately.
+   */
+  public void stopVibration() {
+    manager.stopVibration(id);
+  }
+
+  /**
+   * Returns the current value of a logical axis on this controller, after dead-zone processing.
+   *
+   * @param logicalAxis A logical axis constant from {@link FlixelGamepadButton}.
+   * @return Axis value in the range {@code [-1, 1]}, or {@code 0f} when inactive or within the
+   *     dead zone.
+   */
   public float getAxis(int logicalAxis) {
     return manager.getAxis(id, logicalAxis);
   }
 
+  /**
+   * Shorthand for the left stick horizontal axis ({@link FlixelGamepadButton#AXIS_LEFT_X}).
+   *
+   * @return Horizontal axis value in the range {@code [-1, 1]}.
+   */
   public float getXAxis() {
-    return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_X);
+    return manager.getAxis(id, FlixelGamepadButton.AXIS_LEFT_X);
   }
 
+  /**
+   * Shorthand for the left stick vertical axis ({@link FlixelGamepadButton#AXIS_LEFT_Y}).
+   *
+   * @return Vertical axis value in the range {@code [-1, 1]}.
+   */
   public float getYAxis() {
-    return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_Y);
+    return manager.getAxis(id, FlixelGamepadButton.AXIS_LEFT_Y);
+  }
+
+  /**
+   * Analog pressure of the left trigger (L2), in the range {@code [0, 1]}, after dead-zone
+   * processing.
+   *
+   * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
+   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadButton#L2} there instead.
+   *
+   * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
+   */
+  public float getTriggerL() {
+    return manager.getTriggerL(id);
+  }
+
+  /**
+   * Analog pressure of the right trigger (R2), in the range {@code [0, 1]}, after dead-zone
+   * processing.
+   *
+   * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
+   * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadButton#R2} there instead.
+   *
+   * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
+   */
+  public float getTriggerR() {
+    return manager.getTriggerR(id);
   }
 }

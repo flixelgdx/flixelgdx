@@ -55,7 +55,7 @@ import java.util.Comparator;
  *
  * <h2>Mixing in a Sparrow atlas</h2>
  * A character can also carry Sparrow XML clips on the same body via
- * {@link FlixelAnimationController#addSparrowAtlas(String)}, allowing a single sprite to contain
+ * {@link FlixelAnimationController#addSparrowFrames(String)}, allowing a single sprite to contain
  * multiple Sparrow sheets with unique animations.
  */
 public class FlixelAnimationController implements FlixelUpdatable {
@@ -172,27 +172,27 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * @param path The base path, without a file extension, shared by the PNG and XML pair.
    * @return The owning sprite for chaining.
-   * @see #addSparrowAtlas(String, String)
+   * @see #addSparrowFrames(String, String)
    */
   @NotNull
-  public FlixelSprite addSparrowAtlas(@NotNull String path) {
-    return addSparrowAtlas(path + ".png", path + ".xml");
+  public FlixelSprite addSparrowFrames(@NotNull String path) {
+    return addSparrowFrames(path + ".png", path + ".xml");
   }
 
   /**
-   * Overload of {@link #addSparrowAtlas(String)} that accepts the base path as a {@link FileHandle}.
+   * Overload of {@link #addSparrowFrames(String)} that accepts the base path as a {@link FileHandle}.
    *
    * @param path The base path handle, without a file extension, shared by the PNG and XML pair.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowAtlas(@NotNull FileHandle path) {
-    return addSparrowAtlas(path.path());
+  public FlixelSprite addSparrowFrames(@NotNull FileHandle path) {
+    return addSparrowFrames(path.path());
   }
 
   /**
    * Loads or merges a Sparrow atlas onto the owning sprite from an explicit texture key and XML path.
-   * See {@link #addSparrowAtlas(String)} for the full load/merge contract.
+   * See {@link #addSparrowFrames(String)} for the full load/merge contract.
    *
    * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
    * @param xmlPath The path to the Sparrow XML. Must not be {@code null}.
@@ -200,34 +200,34 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @throws IllegalArgumentException If either file is missing or malformed.
    */
   @NotNull
-  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull String xmlPath) {
+  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull String xmlPath) {
     FileHandle xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
     String text = FlixelSpritemapJsonLoader.readUtf8Text(xml);
-    return addSparrowAtlas(textureKey, new XmlReader().parse(new StringReader(text)));
+    return addSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
   }
 
   /**
-   * Overload of {@link #addSparrowAtlas(String, String)} that accepts the XML as a {@link FileHandle}.
+   * Overload of {@link #addSparrowFrames(String, String)} that accepts the XML as a {@link FileHandle}.
    *
    * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
    * @param xmlFile The Sparrow XML file, read as UTF-8. Must not be {@code null}.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
+  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
     String text = FlixelSpritemapJsonLoader.readUtf8Text(xmlFile);
-    return addSparrowAtlas(textureKey, new XmlReader().parse(new StringReader(text)));
+    return addSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
   }
 
   /**
-   * Overload of {@link #addSparrowAtlas(String, String)} that accepts a pre-parsed XML root.
+   * Overload of {@link #addSparrowFrames(String, String)} that accepts a pre-parsed XML root.
    *
    * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
    * @param xmlRoot The root {@code TextureAtlas} element of a Sparrow XML. Must not be {@code null}.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowAtlas(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
+  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
     FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
     Texture texture = g.getTexture();
 
@@ -245,7 +245,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * Parses Sparrow {@code SubTexture} entries into a fresh frame list without installing them on any
    * sprite.
    *
-   * <p>This is the shared parsing core used by {@link #addSparrowAtlas(String, XmlReader.Element)}.
+   * <p>This is the shared parsing core used by {@link #addSparrowFrames(String, XmlReader.Element)}.
    * Keeping it separate lets callers inspect or transform the frame list before passing it to
    * {@link FlixelSprite#applySparrowAtlas} or {@link FlixelSprite#mergeSparrowAtlas}.
    *
@@ -450,6 +450,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   public boolean isPaused() {
+    return paused;
+  }
+
+  /** Returns whether animation playback is currently paused. */
+  public boolean getPaused() {
     return paused;
   }
 
@@ -664,6 +669,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return !looping && duration > 0f && stateTime >= duration;
   }
 
+  /** Returns whether the current animation has finished playing (only meaningful for non-looping animations). */
+  public boolean getAnimationFinished() {
+    return isAnimationFinished();
+  }
+
   @Override
   public void update(float elapsed) {
     if (animations.size == 0 || paused || currentAnim.isEmpty()) {
@@ -811,6 +821,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   public boolean isLooping() {
+    return looping;
+  }
+
+  /** Returns whether the current animation is set to loop. */
+  public boolean getLooping() {
     return looping;
   }
 

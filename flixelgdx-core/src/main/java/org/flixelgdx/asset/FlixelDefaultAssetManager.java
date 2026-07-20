@@ -33,6 +33,7 @@ import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.ObjectSet;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.audio.FlixelSoundSourceLoader;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -58,13 +59,17 @@ import java.util.Objects;
  * {@code .wav}, {@code .flac}), and text ({@code .txt}, {@code .xml}, {@code .json}). Add custom
  * extensions via {@link #registerLoader(String, Class, FlixelAssetLoader)}.
  *
+ * <p><b>Compressed textures:</b> {@link org.flixelgdx.FlixelGame#create() FlixelGame.create()}
+ * calls {@link #enableCompressedTextures()} automatically on every backend so {@code .png}
+ * requests transparently prefer a {@code .ktx2} sibling when one exists.
+ *
  * <p><b>Recommended usage:</b> Access via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
  * <p><b>Web audio pre-decoding:</b> any {@link #load} call for an audio path automatically
  * triggers background audio decoding on the web platform
  * ({@link Application.ApplicationType#WebGL}). By the time the loading state finishes the
  * decoded buffer is cached and
- * {@link org.flixelgdx.audio.FlixelAudioManager#play FlixelAudioManager.play} returns instantly.
+ * {@link FlixelSoundManager#play FlixelSoundManager.play} returns instantly.
  * On desktop and Android this is a no-op.
  *
  * <pre>{@code
@@ -88,12 +93,18 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   private final ObjectMap<String, FlixelAsset<?>> cache = new ObjectMap<>();
   private final ObjectMap<String, LoaderEntry<?>> loaderRegistry = new ObjectMap<>();
   private final ObjectMap<String, String> audioPathCache = new ObjectMap<>();
+  private final ObjectMap<String, String> texturePathCache = new ObjectMap<>();
   private final ObjectSet<String> pendingPersistKeys = new ObjectSet<>();
   private final FlixelString diagnosticsString = new FlixelString();
   private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
   private int syntheticKeyId;
 
   private boolean globalPersist = false;
+  private boolean compressedTexturesEnabled;
+
+  /** Platform-provided installer for the KTX2 texture loader; {@code null} where unsupported. */
+  @Nullable
+  private static FlixelKtx2LoaderInstaller ktx2LoaderInstaller;
 
   /** Constructs a new manager with default loaders for images, audio, and text. */
   public FlixelDefaultAssetManager() {
@@ -127,9 +138,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   public void load(@NotNull String path) {
     path = requireNormalized(path);
     LoaderEntry<?> entry = requireEntry(path);
-    manager.load(path, entry.rawType);
+    manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
-      maybePrewarmAudio(path);
+      prewarmAudio(path);
     }
   }
 
@@ -140,9 +151,9 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       pendingPersistKeys.add(path);
     }
     LoaderEntry<?> entry = requireEntry(path);
-    manager.load(path, entry.rawType);
+    manager.load(resolveTexturePath(path), entry.rawType);
     if (entry.rawType == FlixelSoundSource.class) {
-      maybePrewarmAudio(path);
+      prewarmAudio(path);
     }
   }
 
@@ -209,14 +220,41 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   }
 
   @Override
+  public void enableCompressedTextures() {
+    if (compressedTexturesEnabled) {
+      return;
+    }
+    if (ktx2LoaderInstaller == null) {
+      return;
+    }
+    ktx2LoaderInstaller.install(manager);
+    compressedTexturesEnabled = true;
+  }
+
+  @Override
+  public boolean isCompressedTexturesEnabled() {
+    return compressedTexturesEnabled;
+  }
+
+  /** Returns whether KTX2/BasisU compressed texture loading is enabled. */
+  public boolean getCompressedTexturesEnabled() {
+    return compressedTexturesEnabled;
+  }
+
+  @Override
+  public void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer) {
+    ktx2LoaderInstaller = installer;
+  }
+
+  @Override
   public boolean update() {
-    boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
+    boolean prewarmPending = Flixel.soundFactory != null && !Flixel.soundFactory.isPrewarmPending();
     return manager.update() && !prewarmPending;
   }
 
   @Override
   public boolean update(int millis) {
-    boolean prewarmPending = Flixel.getSoundFactory() != null && !Flixel.getSoundFactory().isPrewarmPending();
+    boolean prewarmPending = Flixel.soundFactory != null && !Flixel.soundFactory.isPrewarmPending();
     return manager.update(millis) && prewarmPending;
   }
 
@@ -242,7 +280,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     if (entry == null) {
       return false;
     }
-    return manager.isLoaded(path, entry.rawType);
+    return manager.isLoaded(resolveTexturePath(path), entry.rawType);
   }
 
   @Override
@@ -253,15 +291,17 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public void finishLoadingAsset(@NotNull String path) {
     manager.finishLoadingAsset(
-        FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(path, "path cannot be null.")));
+        resolveTexturePath(
+            FlixelAssetPaths.normalizeAssetPath(
+                Objects.requireNonNull(path, "path cannot be null."))));
   }
 
   @Override
   public void unload(@NotNull String path) {
     manager.unload(
-        FlixelAssetPaths.normalizeAssetPath(
-            Objects.requireNonNull(path, "path cannot be null.")));
+        resolveTexturePath(
+            FlixelAssetPaths.normalizeAssetPath(
+                Objects.requireNonNull(path, "path cannot be null."))));
   }
 
   @NotNull
@@ -363,6 +403,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     cache.clear();
     loaderRegistry.clear();
     audioPathCache.clear();
+    texturePathCache.clear();
     pendingPersistKeys.clear();
     syntheticKeyId = 0;
     assetMode = FlixelAssetMode.STANDARD;
@@ -390,7 +431,10 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
   @Override
   public String extractAssetPath(@NotNull String path) {
     path = FlixelAssetPaths.normalizeAssetPath(Objects.requireNonNull(path, "path cannot be null."));
-    if (Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.WebGL) {
+    // On platforms other than desktop, there's typically no real file system we can
+    // extract an asset to, so we simply return the original path that was provided.
+    var hasRealFileSystem = Gdx.app != null && Gdx.app.getType() == Application.ApplicationType.Desktop;
+    if (!hasRealFileSystem) {
       return path;
     }
     FileHandle handle = Gdx.files.internal(path);
@@ -413,6 +457,21 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
   }
 
+  @NotNull
+  @Override
+  public String resolveTexturePath(@NotNull String path) {
+    if (!compressedTexturesEnabled) {
+      return path;
+    }
+    String cached = texturePathCache.get(path);
+    if (cached != null) {
+      return cached;
+    }
+    String resolved = FlixelAssetPaths.resolveCompressedTexturePath(path);
+    texturePathCache.put(path, resolved);
+    return resolved;
+  }
+
   private void evict(@NotNull String path, @NotNull FlixelAsset<?> asset) {
     if (asset instanceof FlixelGraphic g) {
       if (g.isOwned()) {
@@ -420,8 +479,8 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
         if (t != null) {
           t.dispose();
         }
-      } else if (manager != null && manager.isLoaded(path, Texture.class)) {
-        manager.unload(path);
+      } else if (manager != null && manager.isLoaded(g.getResolvedPath(), Texture.class)) {
+        manager.unload(g.getResolvedPath());
       }
     } else if (asset instanceof FlixelDefaultAsset<?> da) {
       if (manager != null && manager.isLoaded(path, da.getRawType())) {
@@ -492,12 +551,12 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     return ext;
   }
 
-  private void maybePrewarmAudio(@NotNull String path) {
+  private void prewarmAudio(@NotNull String path) {
     if (Gdx.app == null || Gdx.app.getType() != Application.ApplicationType.WebGL) {
       return;
     }
-    if (Flixel.getSoundFactory() != null) {
-      Flixel.getSoundFactory().prewarmSound(resolveAudioPath(path));
+    if (Flixel.soundFactory != null) {
+      Flixel.soundFactory.prewarmSound(resolveAudioPath(path));
     }
   }
 

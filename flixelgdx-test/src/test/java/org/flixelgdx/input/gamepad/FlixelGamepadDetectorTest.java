@@ -77,6 +77,6 @@ class FlixelGamepadDetectorTest {
 
   @Test
   void detectNull() {
-    Assertions.assertEquals(FlixelGamepadModel.UNKNOWN, FlixelGamepadDetector.detect(null));
+    Assertions.assertEquals(FlixelGamepadModel.UNKNOWN, FlixelGamepadDetector.detect((String) null));
   }
 }

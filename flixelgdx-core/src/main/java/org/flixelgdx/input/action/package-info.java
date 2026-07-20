@@ -1,8 +1,8 @@
 /**
  * Logical input actions: named {@link org.flixelgdx.input.action.FlixelAction FlixelAction} instances grouped in a
- * {@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet}, with tagged {@link org.flixelgdx.input.action.FlixelInputBinding FlixelInputBinding}
- * and {@link org.flixelgdx.input.action.FlixelAnalogAxisBinding FlixelAnalogAxisBinding} so keyboard, gamepad, pointer, and touch regions
- * never share one ambiguous integer bucket.
+ * {@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet}, wired up with
+ * {@link org.flixelgdx.input.action.FlixelDigitalBinding FlixelDigitalBinding} and
+ * {@link org.flixelgdx.input.action.FlixelAnalogBinding FlixelAnalogBinding} contributors.
  *
  * <h2>Why use this package</h2>
  *
@@ -13,7 +13,7 @@
  * <h2>Frame order (important)</h2>
  *
  * <p>{@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)} runs {@code Flixel.keys.update()}, {@code Flixel.mouse.update()},
- * {@code Flixel.gamepads.update()}, then {@link org.flixelgdx.input.action.FlixelActionSets#updateAll(float) FlixelActionSets.updateAll(float)}.
+ * {@code Flixel.gamepads.update()}, then {@link org.flixelgdx.input.action.FlixelActionSets#update(float) FlixelActionSets.updateAll(float)}.
  * Your {@link org.flixelgdx.FlixelState#update(float) FlixelState.update(float)} runs after that, so action queries see the current frame's
  * hardware snapshot. {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} ends with {@code endFrame()} on keys, mouse, gamepads,
  * then {@link org.flixelgdx.input.action.FlixelActionSets#endFrameAll() FlixelActionSets.endFrameAll()} so {@code justPressed()} / {@code justReleased()}

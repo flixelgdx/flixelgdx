@@ -77,11 +77,11 @@ import java.util.function.Consumer;
  *       and registers it with the logger.</li>
  * </ol>
  *
- * <p>Toggle overlay visibility with {@link Flixel#getDebugToggleKey()} (default
- * {@link Keybinds#DEFAULT_TOGGLE_KEY}). Toggle visual debug (hitboxes) with
- * {@link Flixel#getDebugDrawToggleKey()} (default {@link Keybinds#DEFAULT_DRAW_DEBUG_KEY}).
- * In debug mode, {@link Flixel#getDebugPauseKey()} (default F4) pauses the game; while paused you
- * can inspect the camera with Alt+arrows, RMB pan, and the mouse wheel zoom.
+ * <p>Toggle overlay visibility with {@link #toggleKey} (default {@link Keybinds#DEFAULT_TOGGLE_KEY}).
+ * Toggle visual debug (hitboxes) with {@link #drawDebugKey} (default {@link Keybinds#DEFAULT_DRAW_DEBUG_KEY}).
+ * In debug mode, {@link #pauseKey} (default F4) pauses the game; while paused you can inspect the camera
+ * with Alt+arrows ({@link #cameraCycleLeftKey} / {@link #cameraCycleRightKey}), {@link #cameraPanButton} pan,
+ * and the mouse wheel zoom.
  *
  * <h2>Reduced allocation rate</h2>
  *
@@ -117,7 +117,26 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Fallback color used when a {@link FlixelDebugDrawable} returns a {@code null} or undersized array. */
   private static final float[] FALLBACK_BOUNDING_BOX_COLOR = { 1f, 0.2f, 0.2f, 0.6f };
 
-  private final ShapeRenderer shapeRenderer;
+  /** Key that toggles overlay visibility. Set to {@link FlixelKey#NONE} to disable. */
+  public int toggleKey = Keybinds.DEFAULT_TOGGLE_KEY;
+
+  /** Key that toggles bounding-box (hitbox) drawing. Set to {@link FlixelKey#NONE} to disable. */
+  public int drawDebugKey = Keybinds.DEFAULT_DRAW_DEBUG_KEY;
+
+  /** Key that pauses/unpauses the game loop (debug mode only). Set to {@link FlixelKey#NONE} to disable. */
+  public int pauseKey = Keybinds.DEFAULT_PAUSE_KEY;
+
+  /** Key that cycles the debug inspect camera left while paused (with Alt). Set to {@link FlixelKey#NONE} to disable. */
+  public int cameraCycleLeftKey = Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
+
+  /** Key that cycles the debug inspect camera right while paused (with Alt). Set to {@link FlixelKey#NONE} to disable. */
+  public int cameraCycleRightKey = Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
+
+  /** Mouse button used to pan the debug camera while paused. Set to a negative value to disable. */
+  public int cameraPanButton = FlixelMouseButton.RIGHT;
+
+  @Nullable
+  private ShapeRenderer shapeRenderer;
 
   protected float statsTimer = 0f;
   protected int cachedFps;
@@ -206,9 +225,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private boolean destroyed = false;
 
   /** Constructs the shared debug overlay state. Subclasses should call this before wiring platform UI. */
-  protected FlixelDebugOverlay() {
-    shapeRenderer = new ShapeRenderer();
-  }
+  protected FlixelDebugOverlay() {}
 
   public final Consumer<FlixelLogEntry> getLogListener() {
     return logListener;
@@ -280,11 +297,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (Flixel.isDebugMode()) {
       // Raw* so the game loop pause toggle keeps working even while an imgui text field is focused,
       // unless a backend suppresses typable keys while a command field is active (see LWJGL ImGui overlay).
-      int pauseKey = Flixel.getDebugPauseKey();
       if (Flixel.keys.rawJustPressed(pauseKey) && !shouldSuppressDebugRawKeybind(pauseKey)) {
-        Flixel.setPaused(!Flixel.isPaused());
+        Flixel.game.setGamePaused(!Flixel.game.isGamePaused());
       }
-      if (Flixel.isPaused()) {
+      if (Flixel.game.isGamePaused()) {
         handleInspectCameraTools();
         handleSpritePicker();
       } else {
@@ -296,8 +312,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
 
     // Performance ring buffers are sampled whenever the game runs in debug mode, not only while
-    // the overlay is visible, so opening the Performance window mid-session still shows a useful
-    // history instead of an empty graph for the first several seconds.
+    // the overlay is visible, so opening a panel mid-session still shows a useful history instead
+    // of an empty graph for the first several seconds.
     if (Flixel.isDebugMode()) {
       perfSampleTimer += elapsed;
       if (perfSampleTimer >= PERF_SAMPLE_INTERVAL) {
@@ -316,8 +332,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
       cachedFps = Gdx.graphics.getFramesPerSecond();
-      cachedHeapMegabytes = Flixel.getJavaHeapUsedMegabytes();
-      cachedNativeMegabytes = Flixel.getNativeHeapUsedMegabytes();
+      cachedHeapMegabytes = Gdx.app.getJavaHeap() / (1024f * 1024f);
+      cachedNativeMegabytes = Gdx.app.getNativeHeap() / (1024f * 1024f);
       cachedObjectCount = FlixelDebugUtil.countActiveMembers();
       cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
@@ -335,13 +351,16 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * Appends one sample to each performance ring buffer. The buffers are primitive {@code float[]}
    * arrays sized at {@link #PERF_HISTORY_SIZE}, so this method is allocation-free.
    *
-   * @param elapsed Real wall-clock seconds since the last frame (used for the frame-time series).
+   * <p>The frame-time series always reads {@link Flixel#getRawElapsed()} so it reflects actual
+   * wall-clock time regardless of the active {@link Flixel#timeScale}.
+   *
+   * @param elapsed Scaled elapsed time passed by the update loop (kept for subclass compatibility).
    */
   protected void pushPerfSample(float elapsed) {
     int idx = perfHead;
-    perfFrameMs[idx] = elapsed * 1000f;
-    perfHeapMb[idx] = Flixel.getJavaHeapUsedMegabytes();
-    perfNativeMb[idx] = Flixel.getNativeHeapUsedMegabytes();
+    perfFrameMs[idx] = Flixel.getRawElapsed() * 1000f;
+    perfHeapMb[idx] = Gdx.app.getJavaHeap() / (1024f * 1024f);
+    perfNativeMb[idx] = Gdx.app.getNativeHeap() / (1024f * 1024f);
     perfFps[idx] = Gdx.graphics.getFramesPerSecond();
     perfRenderCalls[idx] = sampleRenderCallsNow();
     perfHead = (idx + 1) % PERF_HISTORY_SIZE;
@@ -411,12 +430,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // Use the raw* variants so the toggle keys still work even while a Dear ImGui text field
     // (for example, the debug command line) has keyboard focus and the regular justPressed
     // helpers are intentionally suppressed.
-    int toggleKey = Flixel.getDebugToggleKey();
     if (Flixel.keys.rawJustPressed(toggleKey) && !shouldSuppressDebugRawKeybind(toggleKey)) {
       toggleVisible();
     }
-    int drawKey = Flixel.getDebugDrawToggleKey();
-    if (Flixel.keys.rawJustPressed(drawKey) && !shouldSuppressDebugRawKeybind(drawKey)) {
+    if (Flixel.keys.rawJustPressed(drawDebugKey) && !shouldSuppressDebugRawKeybind(drawDebugKey)) {
       toggleDrawDebug();
     }
   }
@@ -522,12 +539,12 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // input suppression we set up to protect the game's regular input).
     boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
         || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
-    int cycleLeft = Flixel.getDebugCameraCycleLeftKey();
-    int cycleRight = Flixel.getDebugCameraCycleRightKey();
-    if (alt && Flixel.keys.rawJustPressed(cycleLeft) && !shouldSuppressDebugRawKeybind(cycleLeft)) {
+    if (alt && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
+        && !shouldSuppressDebugRawKeybind(cameraCycleLeftKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.size) % cams.size;
     }
-    if (alt && Flixel.keys.rawJustPressed(cycleRight) && !shouldSuppressDebugRawKeybind(cycleRight)) {
+    if (alt && Flixel.keys.rawJustPressed(cameraCycleRightKey)
+        && !shouldSuppressDebugRawKeybind(cameraCycleRightKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.size;
     }
 
@@ -546,10 +563,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     cam.applyLibCameraTransform();
 
-    if (!uiCapturedMouse && Flixel.mouse.rawPressed(Flixel.getDebugCameraPanButton())) {
+    if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
-      if (Flixel.mouse.rawJustPressed(Flixel.getDebugCameraPanButton())) {
+      if (Flixel.mouse.rawJustPressed(cameraPanButton)) {
         lastPanScreenX = sx;
         lastPanScreenY = sy;
       } else {
@@ -568,7 +585,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Handles the LMB picker while the game is paused: clicks select a {@link FlixelObject} for the
    * texture inspector, drags move the selected object around in world space. Camera panning is on
-   * the right mouse button (see {@link Flixel#getDebugCameraPanButton()}) so the two interactions
+   * the right mouse button (see {@link #cameraPanButton}) so the two interactions
    * never fight over the same gesture.
    *
    * <p>Driven from {@link #update(float)} only when the game is paused. Skipped when the cursor is
@@ -676,7 +693,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    */
   @Nullable
   private FlixelObject pickTopMostObject(@NotNull FlixelCamera cam, float viewX, float viewY) {
-    FlixelState state = Flixel.getState();
+    FlixelState state = Flixel.state;
     if (state == null) {
       return null;
     }
@@ -784,6 +801,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   public void drawBoundingBoxes(FlixelCamera[] cameras) {
     if (!drawDebug) {
       return;
+    }
+
+    if (shapeRenderer == null) {
+      shapeRenderer = new ShapeRenderer();
     }
 
     Gdx.gl.glEnable(GL20.GL_BLEND);
@@ -980,7 +1001,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     destroyed = true;
-    shapeRenderer.dispose();
+    if (shapeRenderer != null) {
+      shapeRenderer.dispose();
+    }
   }
 
   @Override

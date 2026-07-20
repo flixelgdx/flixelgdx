@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.backend.teavm;
 
+import org.flixelgdx.input.mouse.FlixelMouseCursor;
 import org.flixelgdx.input.mouse.FlixelMouseIconManager;
-import org.flixelgdx.input.mouse.FlixelNativeMouseCursor;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 
@@ -33,6 +33,7 @@ import org.teavm.jso.JSBody;
  */
 public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager {
 
+  private FlixelMouseCursor current = FlixelMouseCursor.ARROW;
   private final @NotNull String canvasElementId;
 
   public FlixelTeaVMMouseIconManager(@NotNull String canvasElementId) {
@@ -40,21 +41,29 @@ public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager
   }
 
   @Override
-  public void setNativeCursor(@NotNull FlixelNativeMouseCursor cursor) {
+  public void setCursor(@NotNull FlixelMouseCursor cursor) {
+    current = cursor;
     setCanvasCursorCss(canvasElementId, cssFor(cursor));
   }
 
   @Override
-  public void clearNativeCursor() {
+  public void resetCursor() {
+    current = FlixelMouseCursor.ARROW;
     setCanvasCursorCss(canvasElementId, "default");
   }
 
   @Override
-  public boolean supportsNativeCursor() {
+  @NotNull
+  public FlixelMouseCursor getCursor() {
+    return current;
+  }
+
+  @Override
+  public boolean supportsCursors() {
     return !canvasElementId.isEmpty();
   }
 
-  private static String cssFor(FlixelNativeMouseCursor cursor) {
+  private static String cssFor(FlixelMouseCursor cursor) {
     return switch (cursor) {
       case ARROW -> "default";
       case IBEAM -> "text";
@@ -73,9 +82,11 @@ public final class FlixelTeaVMMouseIconManager implements FlixelMouseIconManager
     };
   }
 
-  @JSBody(params = { "canvasId", "css" }, script = "var e=document.getElementById(canvasId);\n"
-      + "if (e !== null) {\n"
-      + "  e.style.cursor = css;\n"
-      + "}\n")
+  @JSBody(params = { "canvasId", "css" }, script = """
+      var e=document.getElementById(canvasId);
+      if (e !== null) {
+        e.style.cursor = css;
+      }
+      """)
   private static native void setCanvasCursorCss(String canvasId, String css);
 }

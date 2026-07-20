@@ -26,6 +26,7 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.functional.FlixelUpdatable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,9 +43,9 @@ import org.jetbrains.annotations.Nullable;
  * <ol>
  *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#initialize Flixel.initialize}.</li>
  *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
- *       call {@link #add(FlixelAction)} for each, and configure {@link FlixelInputBinding} / {@link FlixelAnalogAxisBinding}.</li>
+ *       call {@link #add(FlixelAction)} for each, and add {@link FlixelDigitalBinding} / {@link FlixelAnalogBinding} instances.</li>
  *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame FlixelGame} calls
- *       {@link FlixelActionSets#updateAll(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
+ *       {@link FlixelActionSets#update(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
  *       after keys, mouse, and gamepads {@code endFrame()} in {@code render()}.</li>
  *   <li>From {@link org.flixelgdx.FlixelState#update(float) FlixelState.update(float)} (or similar), read {@code jump.justPressed()},
  *       {@code move.getX()}, etc.</li>
@@ -61,15 +62,15 @@ import org.jetbrains.annotations.Nullable;
  *
  *   public PlayerControls() {
  *     jump = new FlixelActionDigital("jump");
- *     jump.addBinding(FlixelInputBinding.key(FlixelKey.SPACE));
- *     jump.addBinding(FlixelInputBinding.gamepadButton(0, FlixelGamepadInput.A));
+ *     jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
+ *     jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadButton.A));
  *     add(jump);
  *
  *     move = new FlixelActionAnalog("move");
- *     move.addAxisBinding(FlixelAnalogAxisBinding.negXKey(FlixelKey.A));
- *     move.addAxisBinding(FlixelAnalogAxisBinding.posXKey(FlixelKey.D));
- *     move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- *     move.addAxisBinding(FlixelAnalogAxisBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ *     move.addBinding("negX",   FlixelAnalogBinding.negXKey(FlixelKey.A));
+ *     move.addBinding("posX",   FlixelAnalogBinding.posXKey(FlixelKey.D));
+ *     move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadButton.AXIS_LEFT_X));
+ *     move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadButton.AXIS_LEFT_Y));
  *     add(move);
  *   }
  * }
@@ -110,7 +111,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Pass {@code false} to {@link #FlixelActionSet(boolean)} from an anonymous subclass so the set does not register globally,
  * then call {@link #update(float)} and {@link #endFrame()} yourself.
  */
-public class FlixelActionSet implements FlixelDestroyable {
+public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
 
   protected final Array<FlixelAction> members;
 
@@ -153,10 +154,11 @@ public class FlixelActionSet implements FlixelDestroyable {
   }
 
   /**
-   * Steps all member actions. Called from {@link FlixelActionSets#updateAll(float)} after gamepads update.
+   * Steps all member actions. Called from {@link FlixelActionSets#update(float)} after gamepads update.
    *
    * @param elapsed Frame delta in seconds.
    */
+  @Override
   public void update(float elapsed) {
     for (int i = 0, n = members.size; i < n; i++) {
       members.get(i).updateAction(elapsed);

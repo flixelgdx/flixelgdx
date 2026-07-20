@@ -30,13 +30,13 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Global registry of {@link FlixelActionSet} instances. {@link org.flixelgdx.FlixelGame FlixelGame} invokes
- * {@link #updateAll(float)} and {@link #endFrameAll()} so every registered set stays on the same contract as
+ * {@link #update(float)} and {@link #endFrameAll()} so every registered set stays on the same contract as
  * {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager} (keys, mouse, gamepads).
  *
  * <h2>When {@code updateAll} runs</h2>
  *
  * <p>Order inside {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)}: {@code Flixel.keys.update()},
- * {@code Flixel.mouse.update()}, {@code Flixel.gamepads.update()}, then {@link #updateAll(float)}. Gameplay code in
+ * {@code Flixel.mouse.update()}, {@code Flixel.gamepads.update()}, then {@link #update(float)}. Gameplay code in
  * {@link org.flixelgdx.FlixelState FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
  *
  * <h2>When {@code endFrameAll} runs</h2>
@@ -74,7 +74,7 @@ public final class FlixelActionSets {
    *
    * @param elapsed Seconds since last frame (same as game update).
    */
-  public static void updateAll(float elapsed) {
+  public static void update(float elapsed) {
     for (int i = 0, n = registered.size; i < n; i++) {
       registered.get(i).update(elapsed);
     }

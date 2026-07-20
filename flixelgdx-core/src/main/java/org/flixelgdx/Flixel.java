@@ -23,32 +23,39 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.asset.FlixelDefaultAssetManager;
-import org.flixelgdx.audio.FlixelAudioManager;
 import org.flixelgdx.audio.FlixelSoundBackend;
-import org.flixelgdx.backend.alert.FlixelAlerter;
-import org.flixelgdx.backend.host.FlixelHostIntegration;
-import org.flixelgdx.backend.host.FlixelNoopHostIntegration;
-import org.flixelgdx.backend.runtime.FlixelRuntimeMode;
-import org.flixelgdx.backend.window.FlixelNoopWindow;
-import org.flixelgdx.backend.window.FlixelWindow;
+import org.flixelgdx.audio.FlixelSoundManager;
+import org.flixelgdx.backend.FlixelAlerter;
+import org.flixelgdx.backend.FlixelHaptics;
+import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelNoopHaptics;
+import org.flixelgdx.backend.FlixelNoopHostIntegration;
+import org.flixelgdx.backend.FlixelNoopWindow;
+import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
+import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.input.gamepad.FlixelGamepadManager;
+import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseManager;
+import org.flixelgdx.input.touch.FlixelTouch;
+import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
 import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
@@ -72,6 +79,7 @@ import org.flixelgdx.util.signal.FlixelSignal;
 import org.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
 import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.util.timer.FlixelTimer;
+import org.flixelgdx.util.timer.FlixelTimerListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,6 +88,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -110,7 +119,8 @@ import java.util.function.Supplier;
  *   </li>
  *   <li>
  *     <b>Host integration:</b>
- *     Desktop notifications and task attention via {@link #host}. Separate from blocking {@link #showInfoAlert(String, String)} dialogs.
+ *     Desktop notifications and task attention via {@link #host}. Separate from blocking
+ *     {@link FlixelAlerter#info(String, String)} dialogs.
  *   </li>
  *   <li>
  *     <b>Window control:</b>
@@ -131,8 +141,8 @@ import java.util.function.Supplier;
  *   <li>
  *     <b>Frame timers:</b>
  *     {@link FlixelTimer#getGlobalManager()} is stepped from {@link FlixelGame}.
- *     Use {@link org.flixelgdx.util.timer.FlixelTimer#wait(float, org.flixelgdx.util.timer.FlixelTimerListener)}
- *     or {@code start(...)} on the manager. {@link #timeScale} scales timer elapsed only (not the whole game loop).
+ *     Use {@link FlixelTimer#wait(float, FlixelTimerListener)} or {@code start(...)} on the manager.
+ *     {@link #timeScale} scales timer elapsed only (not the whole game loop).
  *   </li>
  * </ul>
  *
@@ -229,13 +239,12 @@ public final class Flixel {
    *
    * <p>Most game code never needs to touch {@code Flixel.game} directly. Prefer the specialized
    * fields ({@link #sound}, {@link #assets}, {@link #keys}, {@link #cameras}, etc.) for day-to-day
-   * work. Reach for this field only when the high-level APIs do not cover what you need, such as
-   * setting a custom background color or toggling fullscreen.
+   * work. Reach for this field only when the high-level APIs do not cover what you need.
    *
    * <p>Example:
    * <pre>{@code
    * // Change the game's background color.
-   * Flixel.game.bgColor.set(Color.CORNFLOWER_BLUE);
+   * Flixel.game.bgColor.set(Color.BLUE);
    * }</pre>
    */
   @NotNull
@@ -269,11 +278,6 @@ public final class Flixel {
   /**
    * The platform-specific alert dialog provider.
    *
-   * <p>Launchers set this field (via {@link #setAlerter(FlixelAlerter)}) before calling
-   * {@link #initialize(FlixelGame)}. Once the game is running, prefer the convenience wrappers
-   * {@link #showInfoAlert(String, String)}, {@link #showWarningAlert(String, String)}, and
-   * {@link #showErrorAlert(String, String)} rather than calling this field directly.
-   *
    * <p>Alert dialogs are blocking modal windows that pause execution until the user dismisses them.
    * Reserve them for critical events (unrecoverable errors, required permission prompts) rather
    * than routine game feedback. For non-blocking OS notifications that do not interrupt gameplay,
@@ -281,15 +285,13 @@ public final class Flixel {
    *
    * <p>Example:
    * <pre>{@code
-   * // Show a blocking error dialog (execution pauses until dismissed).
-   * Flixel.showErrorAlert("Save Failed", "Could not write to disk. Check your permissions.");
-   *
-   * // Access the alerter directly for platform-specific behavior.
-   * Flixel.alerter.showInfoAlert("Hello", "Welcome to the game!");
+   * Flixel.alert.info("Hello", "Welcome to the game!");
+   * Flixel.alert.warn("Warning", "These permissions are required to continue.");
+   * Flixel.alert.error("Save Failed", "Could not write to disk. Check your permissions.");
    * }</pre>
    */
   @NotNull
-  public static FlixelAlerter alerter;
+  public static FlixelAlerter alert;
 
   /**
    * The currently active state.
@@ -307,7 +309,7 @@ public final class Flixel {
   /**
    * Factory that produces a fresh instance of the current state for {@link #resetState()}.
    *
-   * <p>Updated automatically whenever {@link #switchState(FlixelState, boolean, boolean, Supplier)}
+   * <p>Updated automatically whenever {@link #switchState(FlixelState, boolean, boolean, boolean, Supplier)}
    * is called. The default {@link #switchState(FlixelState)} overload supplies
    * {@code () -> newState} automatically, so this is pre-populated after any normal state switch
    * at no extra cost to the caller.
@@ -375,7 +377,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static FlixelAudioManager sound;
+  public static FlixelSoundManager sound;
 
   /**
    * The central asset manager for the game.
@@ -393,7 +395,7 @@ public final class Flixel {
    * <pre>{@code
    * // Load a texture and retrieve it.
    * Flixel.assets.load("player.png");
-   * Texture tex = Flixel.assets.get("player.png", Texture.class);
+   * FlixelGraphic tex = Flixel.assets.get<FlixelGraphic>("player.png").get();
    *
    * // Mark an asset persistent so it survives state switches.
    * Flixel.assets.setPersist("shared_ui_atlas.png", true);
@@ -407,8 +409,7 @@ public final class Flixel {
    *
    * <p>A watch is a named, live value that the debug overlay displays while the game runs. Watches
    * are an efficient way to inspect frame-by-frame state (player position, health, physics
-   * variables) without opening a full debugger or scattering temporary log statements throughout
-   * your code.
+   * variables) without scattering temporary log statements throughout your code.
    *
    * <p>Add a watch with a name and a supplier lambda; the overlay calls the supplier every frame
    * to refresh the displayed value. Remove watches you no longer need to keep the overlay clean.
@@ -449,7 +450,7 @@ public final class Flixel {
    *   </li>
    *   <li>
    *     <b>Custom commands:</b> Register interactive console commands with
-   *     {@link FlixelDebugManager#registerCommand(String, java.util.function.Consumer)} to run
+   *     {@link FlixelDebugManager#registerCommand(String, Consumer)} to run
    *     arbitrary game code from the debug overlay's input line.
    *   </li>
    * </ul>
@@ -478,10 +479,9 @@ public final class Flixel {
   /**
    * The preferences-based save data helper for the game.
    *
-   * <p>{@link FlixelSave} wraps libGDX's {@link com.badlogic.gdx.Preferences} system to provide a
-   * simple key-value store that persists between sessions. It is backed by platform-native storage:
-   * a {@code .prefs} file on desktop, browser {@code localStorage} on web, and the equivalent on
-   * mobile.
+   * <p>{@link FlixelSave} wraps libGDX's {@link Preferences} system to provide a simple key-value
+   * store that persists between sessions. It is backed by platform-native storage: a {@code .prefs}
+   * file on desktop, browser {@code localStorage} on web, and the equivalent on mobile.
    *
    * <p>Call {@link FlixelSave#bind(String, String)} once before using any other method to open (or
    * create) the named preferences file. After that, read and write values directly through the
@@ -509,17 +509,13 @@ public final class Flixel {
    * <p>Poll button states and screen-space coordinates every frame. Like {@link #keys}, this
    * manager distinguishes between buttons that are currently held, just pressed this frame, and
    * just released this frame, so your code can react precisely to each event. Button constants are
-   * defined in {@link org.flixelgdx.input.mouse.FlixelMouseButton FlixelMouseButton}.
-   *
-   * <p>Coordinates are returned in screen pixels with the origin in the top-left corner, matching
-   * libGDX conventions. Use the active camera's screen-to-world helper to convert these
-   * coordinates to world space when needed.
+   * defined in {@link FlixelMouseButton}.
    *
    * <p>Example:
    * <pre>{@code
    * // Fire on the first frame the left button is pressed.
    * if (Flixel.mouse.justPressed(FlixelMouseButton.LEFT)) {
-   *   spawnBullet(Flixel.mouse.getX(), Flixel.mouse.getY());
+   *   spawnBullet(Flixel.mouse.getWorldX(), Flixel.mouse.getWorldY());
    * }
    *
    * // Pan the camera while the right button is held.
@@ -528,15 +524,40 @@ public final class Flixel {
    * }
    * }</pre>
    *
-   * @see org.flixelgdx.input.mouse.FlixelMouseButton
+   * @see FlixelMouseButton
    */
   @NotNull
   public static FlixelMouseManager mouse;
 
   /**
+   * The multitouch input manager for the game.
+   *
+   * <p>Tracks up to {@link FlixelTouchManager#DEFAULT_MAX_POINTERS} simultaneous fingers. Access
+   * per-pointer state through the pre-allocated {@link FlixelTouchManager#list list} array, or use
+   * the convenience methods for quick checks:
+   *
+   * <pre>{@code
+   * // React on first contact.
+   * if (Flixel.touches.list[0].isJustPressed()) {
+   *   spawnEffect(Flixel.touches.list[0].worldX, Flixel.touches.list[0].worldY);
+   * }
+   *
+   * // Check how many fingers are down.
+   * if (Flixel.touches.count() >= 2) {
+   *   beginPinchZoom();
+   * }
+   * }</pre>
+   *
+   * @see FlixelTouchManager
+   * @see FlixelTouch
+   */
+  @NotNull
+  public static FlixelTouchManager touches;
+
+  /**
    * The gamepad and controller input manager.
    *
-   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadManager#enabled} to
+   * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link FlixelGamepadInputManager#enabled} to
    * {@code true} before the game loop starts if your game needs controller support:
    *
    * <pre>{@code
@@ -545,14 +566,14 @@ public final class Flixel {
    *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
-   * defined in {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput}, so the same game code works
-   * across different controller layouts without any platform-specific branching.
+   * defined in {@link FlixelGamepadButton}, so the same game code works across different controller
+   * layouts without any platform-specific branching.
    *
    * <p>Each connected controller is identified by a zero-based index. Player 1's controller is
    * index {@code 0}, player 2's is index {@code 1}, and so on. Query button states with
-   * {@link FlixelGamepadManager#pressed(int, int)}, {@link FlixelGamepadManager#justPressed(int, int)},
-   * and {@link FlixelGamepadManager#justReleased(int, int)}, or read analog axes with
-   * {@link FlixelGamepadManager#getAxis(int, int)}.
+   * {@link FlixelGamepadInputManager#pressed(int, int)}, {@link FlixelGamepadInputManager#justPressed(int, int)},
+   * and {@link FlixelGamepadInputManager#justReleased(int, int)}, or read analog axes with
+   * {@link FlixelGamepadInputManager#getAxis(int, int)}.
    *
    * <p>Example:
    * <pre>{@code
@@ -560,19 +581,19 @@ public final class Flixel {
    * Flixel.gamepads.enabled = true;
    *
    * // Check if player 1 pressed the A button this frame.
-   * if (Flixel.gamepads.justPressed(0, FlixelGamepadInput.A)) {
+   * if (Flixel.gamepads.justPressed(0, FlixelGamepadButton.A)) {
    *   player.jump();
    * }
    *
    * // Read the left stick's horizontal axis for movement.
-   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadInput.AXIS_LEFT_X);
+   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadButton.AXIS_LEFT_X);
    * player.setVelocityX(horizontal * MOVE_SPEED * elapsed);
    * }</pre>
    *
-   * @see org.flixelgdx.input.gamepad.FlixelGamepadInput
+   * @see FlixelGamepadButton
    */
   @NotNull
-  public static FlixelGamepadManager gamepads;
+  public static FlixelGamepadInputManager gamepads;
 
   /**
    * The default logger used for game diagnostics and debugging output.
@@ -645,8 +666,8 @@ public final class Flixel {
    * {@link FlixelNoopHostIntegration}, so calls are always safe to make regardless of platform.
    *
    * <p>This is distinct from the blocking alert dialogs exposed by
-   * {@link #showInfoAlert(String, String)}: host notifications appear as non-intrusive OS toasts
-   * (system tray popups, notification center entries) and do not interrupt gameplay. Taskbar
+   * {@link FlixelAlerter#info(String, String)}: host notifications appear as non-intrusive
+   * OS toasts (system tray popups, notification center entries) and do not interrupt gameplay. Taskbar
    * attention requests flash the game's taskbar button to draw the user's eye after the window
    * has been minimized or sent to the background.
    *
@@ -663,14 +684,47 @@ public final class Flixel {
   public static FlixelHostIntegration host = FlixelNoopHostIntegration.INSTANCE;
 
   /**
-   * Global timescale for frame-based timers ({@link org.flixelgdx.util.timer.FlixelTimer FlixelTimer}).
+   * Haptic (vibration) feedback for mobile devices.
    *
-   * <p>{@code 1f} is normal speed; lower slows timers, higher speeds them up. Does not change {@link #elapsed} itself.
+   * <p>On platforms without a vibration motor (desktop, web) this defaults to a silent no-op, so
+   * all calls are always safe to make. Check {@link FlixelHaptics#isSupported()} first if your
+   * game logic needs to know whether feedback will actually fire.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * // Short pulse when the player takes damage.
+   * Flixel.haptics.vibrate(60);
+   *
+   * // Repeating heartbeat pattern (restarts from index 0) while a timer is critical.
+   * Flixel.haptics.vibrate(new long[] { 0, 80, 120, 80, 600 }, 0);
+   *
+   * // Cancel when the timer ends.
+   * Flixel.haptics.cancel();
+   * }</pre>
+   *
+   * @see FlixelHaptics
+   */
+  @NotNull
+  public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
+
+  /**
+   * Global timescale applied to the game's update loop each frame.
+   *
+   * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
+   * The raw platform delta is clamped to [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] first, then multiplied by
+   * this value before being stored in {@link #elapsed} and passed to {@code update()}. All systems that read
+   * {@link #getElapsed()} (such as physics, animations, tweens, timers, and camera follow) are affected uniformly.
+   *
+   * <p>The debug overlay's Controls panel exposes a slider for this value at runtime (range 0.1x to 4.0x).
    */
   public static float timeScale = 1f;
 
   /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw libGDX delta. */
   static float elapsed = 0f;
+
+  /** The raw clamped platform delta before {@link #timeScale} is applied. Set by {@link FlixelGame} each frame. */
+  static float rawElapsed = 0f;
 
   /** Has the global manager been initialized yet? */
   static boolean initialized = false;
@@ -687,28 +741,28 @@ public final class Flixel {
 
   /** System used to detect where a log comes from when a log is created. **/
   @NotNull
-  private static FlixelStackTraceProvider stackTraceProvider;
+  public static FlixelStackTraceProvider stackTraceProvider;
 
   /**
    * Platform-specific handler for writing log output to a file. May be
    * {@code null} on platforms that do not support file logging (e.g., web/TeaVM).
    */
   @Nullable
-  private static FlixelLogFileHandler logFileHandler;
+  public static FlixelLogFileHandler logFileHandler;
 
   /**
    * When non-null, {@link FlixelLogger} sends each console line here instead of {@code System.out} (for example, styled
    * output in the browser). Set before {@link #initialize(FlixelGame)}.
    */
   @Nullable
-  private static FlixelLogConsoleSink logConsoleSink;
+  public static FlixelLogConsoleSink logConsoleSink;
 
   /**
    * Platform-specific factory for creating sounds, groups, and effect nodes.
    * Set by the launcher before {@link #initialize(FlixelGame)}.
    */
   @Nullable
-  private static FlixelSoundBackend.Factory soundFactory;
+  public static FlixelSoundBackend.Factory soundFactory;
 
   /** The runtime mode (TEST, DEBUG, RELEASE) set by the launcher. */
   private static FlixelRuntimeMode runtimeMode = FlixelRuntimeMode.RELEASE;
@@ -719,27 +773,6 @@ public final class Flixel {
    * starts (i.e. in the launcher, before {@link FlixelGame#create()} runs).
    */
   private static Supplier<FlixelDebugOverlay> debugOverlayFactory = FlixelHeadlessDebugOverlay::new;
-
-  /** The active debug overlay instance, created by {@link FlixelGame} during startup. */
-  private static FlixelDebugOverlay debugOverlay;
-
-  /** Current key used to toggle the debug overlay. */
-  private static int debugToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_TOGGLE_KEY;
-
-  /** Current key used to toggle visual debug (bounding boxes). */
-  private static int debugDrawToggleKey = FlixelDebugOverlay.Keybinds.DEFAULT_DRAW_DEBUG_KEY;
-
-  /** Current key used to pause the game update loop (debug mode only). */
-  private static int debugPauseKey = FlixelDebugOverlay.Keybinds.DEFAULT_PAUSE_KEY;
-
-  /** Current button used to pan the debug camera. */
-  private static int debugCameraPanButton = Input.Buttons.RIGHT;
-
-  /** Current key used to cycle the debug camera to the left while paused (with Alt). */
-  private static int debugCameraCycleLeftKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_LEFT;
-
-  /** Current key used to cycle the debug camera to the right while paused (with Alt). */
-  private static int debugCameraCycleRightKey = FlixelDebugOverlay.Keybinds.DEFAULT_DEBUG_CAMERA_CYCLE_RIGHT;
 
   /** Should the game use antialiasing globally? */
   private static boolean antialiasing = false;
@@ -770,23 +803,23 @@ public final class Flixel {
 
     // Set the game and backend systems.
     game = gameInstance;
-    if (alerter == null) {
+    if (alert == null) {
       throw new IllegalStateException(
-          "Flixel alerter not set. Call Flixel.setAlerter(...) before Flixel.initialize(...).");
+          "Flixel alerter not set. Assign Flixel.alerter before calling Flixel.initialize(...).");
     }
     if (stackTraceProvider == null) {
       throw new IllegalStateException(
-          "Flixel stack trace provider not set. Call Flixel.setStackTraceProvider(...) before Flixel.initialize(...).");
+          "Flixel stack trace provider not set. Assign Flixel.stackTraceProvider before calling Flixel.initialize(...).");
     }
     if (soundFactory == null) {
       throw new IllegalStateException(
-          "Flixel sound backend factory not set. Call Flixel.setSoundBackendFactory(...) before Flixel.initialize(...).");
+          "Flixel sound backend factory not set. Assign Flixel.soundFactory before calling Flixel.initialize(...).");
     }
 
     // Initialize the core systems.
     keys = new FlixelKeyInputManager();
     if (sound == null) {
-      sound = new FlixelAudioManager(soundFactory);
+      sound = new FlixelSoundManager(soundFactory);
     } else {
       sound.resetSession();
     }
@@ -794,7 +827,8 @@ public final class Flixel {
     debug = new FlixelDebugManager();
     save = new FlixelSave();
     mouse = new FlixelMouseManager();
-    gamepads = new FlixelGamepadManager();
+    touches = new FlixelTouchManager();
+    gamepads = new FlixelGamepadInputManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
     if (assets == null) {
       assets = new FlixelDefaultAssetManager();
@@ -818,143 +852,22 @@ public final class Flixel {
   }
 
   /**
-   * Sets the system used for displaying alert notifications to the user.
-   *
-   * <p>This must be set before {@link #initialize(FlixelGame)}. Calling it after initialization
-   * throws an exception.
-   */
-  public static void setAlerter(@NotNull FlixelAlerter alertSystem) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change alerter after Flixel has been initialized.");
-    }
-    if (alertSystem == null) {
-      throw new IllegalArgumentException("Alert system cannot be null.");
-    }
-    alerter = alertSystem;
-  }
-
-  /**
-   * Sets the desktop window integration implementation before {@link #initialize(FlixelGame)}.
-   *
-   * @param windowAccess Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setWindow(@NotNull FlixelWindow windowAccess) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change window integration after Flixel has been initialized.");
-    }
-    window = Objects.requireNonNull(windowAccess, "window cannot be null.");
-  }
-
-  /**
-   * Sets the host OS integration implementation before {@link #initialize(FlixelGame)}.
-   *
-   * @param hostIntegration Non-null backend, typically the LWJGL3 implementation from the {@code flixelgdx-lwjgl3} module.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setHost(@NotNull FlixelHostIntegration hostIntegration) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change host integration after Flixel has been initialized.");
-    }
-    host = Objects.requireNonNull(hostIntegration, "host cannot be null.");
-  }
-
-  /**
-   * Sets the system used for providing stack traces on logs.
-   *
-   * <p>This must be set before {@link #initialize(FlixelGame)}. Calling it after initialization
-   * throws an exception.
-   */
-  public static void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change stack trace provider after Flixel has been initialized.");
-    }
-    if (provider == null) {
-      throw new IllegalArgumentException("Stack trace provider cannot be null.");
-    }
-    stackTraceProvider = provider;
-  }
-
-  /**
-   * Sets the platform-specific handler responsible for writing log output to a
-   * persistent file.
-   *
-   * <p>This must be called before {@link #initialize(FlixelGame)}. Calling it after
-   * initialization throws an exception. On platforms that do not support file
-   * logging (for example, web/TeaVM), this method may be skipped entirely and
-   * file logging will be silently disabled.
-   *
-   * @param handler The log file handler to use, must not be {@code null}.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   * @throws IllegalArgumentException If {@code handler} is {@code null}.
-   */
-  public static void setLogFileHandler(@NotNull FlixelLogFileHandler handler) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change the log file handler after Flixel has been initialized.");
-    }
-    if (handler == null) {
-      throw new IllegalArgumentException("Log file handler cannot be null.");
-    }
-    logFileHandler = handler;
-  }
-
-  /**
-   * Sets a handler that receives every console log as structured data instead of the default
-   * ANSI stream on {@code System.out}. Intended for the web backend (for example, styled
-   * {@code console.log} in the browser).
-   *
-   * <p>Must be called before {@link #initialize(FlixelGame)}. Pass {@code null} to use the default
-   * terminal output.
-   *
-   * @param sink The sink, or {@code null} to clear.
-   * @throws IllegalStateException If Flixel has already been initialized.
-   */
-  public static void setLogConsoleSink(@Nullable FlixelLogConsoleSink sink) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change the log console sink after Flixel has been initialized.");
-    }
-    logConsoleSink = sink;
-  }
-
-  /**
-   * Sets the platform-specific sound backend factory used to create sounds,
-   * groups, and effect nodes.
-   *
-   * <p>This must be called before {@link #initialize(FlixelGame)}. Calling it
-   * after initialization throws an exception.
-   *
-   * @param factory The sound backend factory to use (must not be {@code null}).
-   * @throws IllegalStateException If FlixelGDX has already been initialized.
-   * @throws IllegalArgumentException If {@code factory} is {@code null}.
-   */
-  public static void setSoundBackendFactory(@NotNull FlixelSoundBackend.Factory factory) {
-    if (initialized) {
-      throw new IllegalStateException("Cannot change sound backend factory after Flixel has been initialized.");
-    }
-    if (factory == null) {
-      throw new IllegalArgumentException("Sound backend factory cannot be null.");
-    }
-    soundFactory = factory;
-  }
-
-  /**
-   * Sets the current state to the provided state, triggers garbage collection and
-   * clears all active tweens by default.
+   * Sets the current state to the provided state.
    *
    * @param newState The new {@link FlixelState} to set as the current state.
    */
   public static void switchState(FlixelState newState) {
-    switchState(newState, true, true, () -> newState);
+    switchState(newState, true);
   }
 
   /**
-   * Sets the current state to the provided state and triggers Java's garbage collector for memory cleanup.
+   * Sets the current state to the provided state.
    *
    * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    */
   public static void switchState(FlixelState newState, boolean clearTweens) {
-    switchState(newState, clearTweens, true, () -> newState);
+    switchState(newState, clearTweens, true);
   }
 
   /**
@@ -962,10 +875,22 @@ public final class Flixel {
    *
    * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
+   * @param clearTimers Should all active timers be canceled?
+   */
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers) {
+    switchState(newState, clearTweens, clearTimers, true);
+  }
+
+  /**
+   * Sets the current state to the provided state.
+   *
+   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param clearTweens Should all active tweens be canceled and their pools be cleared?
+   * @param clearTimers Should all active timers be canceled?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC) {
-    switchState(newState, clearTweens, triggerGC, () -> newState);
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers, boolean triggerGC) {
+    switchState(newState, clearTweens, clearTimers, triggerGC, () -> newState);
   }
 
   /**
@@ -973,20 +898,16 @@ public final class Flixel {
    *
    * @param newState The new {@code FlixelState} to set as the current state.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
+   * @param clearTimers Should all active timers be canceled?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean triggerGC,
+  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers, boolean triggerGC,
       Supplier<FlixelState> stateFactory) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
+
     if (!initialized) {
-      throw new IllegalStateException("Flixel has not been initialized yet!");
-    }
-    if (newState == null) {
-      throw new IllegalArgumentException("New state cannot be null!");
-    }
-    if (triggerGC) {
-      System.gc();
+      throw new IllegalStateException("Flixel has not been initialized yet.");
     }
     if (state != null) {
       state.destroy();
@@ -1005,42 +926,51 @@ public final class Flixel {
       FlixelTween.cancelActiveTweens();
       FlixelTween.clearTweenPools();
     }
+    if (clearTimers) {
+      FlixelTimer.cancelAll();
+    }
     game.resetCameras();
-    state = newState;
+    state = Objects.requireNonNull(newState, "New state cannot be null.");
     state.ensureMembers();
     state.create();
     currentStateFactory = stateFactory;
+
+    if (triggerGC) {
+      System.gc();
+    }
+
     Signals.postStateSwitch.dispatch(new StateSwitchSignalData(state));
   }
 
   /**
-   * Shows an info alert notification to the user.
+   * Logs a debug message using the default tag.
    *
-   * @param title The title of the alert.
-   * @param message The message of the alert.
+   * @param message The message to log.
    */
-  public static void showInfoAlert(String title, String message) {
-    alerter.showInfoAlert(title, message);
+  public static void debug(Object message) {
+    log.debug(message);
   }
 
   /**
-   * Shows a warning alert notification to the user.
+   * Logs a debug message under a custom tag.
    *
-   * @param title The title of the alert.
-   * @param message The message of the alert.
+   * @param tag The tag to log the message under.
+   * @param message The message to log.
    */
-  public static void showWarningAlert(String title, String message) {
-    alerter.showWarningAlert(title, message);
+  public static void debug(String tag, Object message) {
+    log.debug(tag, message);
   }
 
   /**
-   * Shows an error alert notification to the user.
+   * Logs a debug message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
    *
-   * @param title The title of the alert.
-   * @param message The message of the alert.
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
    */
-  public static void showErrorAlert(String title, String message) {
-    alerter.showErrorAlert(title, message);
+  public static void debug(String tag, Object message, Object... args) {
+    log.debug(tag, message, args);
   }
 
   /**
@@ -1065,8 +995,20 @@ public final class Flixel {
   }
 
   /**
+   * Logs an informational message under a custom tag, replacing each {@code {}} placeholder
+   * with the corresponding argument in order.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void info(String tag, Object message, Object... args) {
+    log.info(tag, message, args);
+  }
+
+  /**
    * Logs a generic warning message. This is for messages that are not errors, but are
-   *  still important to note.
+   * still important to note.
    *
    * @param message The message to log.
    */
@@ -1075,8 +1017,8 @@ public final class Flixel {
   }
 
   /**
-   * Logs a warning message, with yellow highlighting, with a custom tag. This is for
-   * messages that are not errors but are still important to note.
+   * Logs a warning message with a custom tag. This is for messages that are not errors
+   * but are still important to note.
    *
    * @param tag The tag to log the message under.
    * @param message The message to log.
@@ -1086,29 +1028,52 @@ public final class Flixel {
   }
 
   /**
-   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
+   * Logs a warning message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
+   *
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
+   */
+  public static void warn(String tag, Object message, Object... args) {
+    log.warn(tag, message, args);
+  }
+
+  /**
+   * Logs an error message with red highlighting (and the file location underlined).
    * This is for events that are typically not recoverable.
    *
    * @param message The message to log.
    */
   public static void error(String message) {
-    error(log.getDefaultTag(), message, null);
+    log.error(message);
   }
 
   /**
-   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
-   * This is for events that are typically not recoverable.
+   * Logs an error message with red highlighting (and the file location underlined), including
+   * the throwable's string representation.
+   *
+   * @param message The message to log.
+   * @param throwable The throwable to log.
+   */
+  public static void error(Object message, Throwable throwable) {
+    log.error(message, throwable);
+  }
+
+  /**
+   * Logs an error message with red highlighting (and the file location underlined) under
+   * a custom tag.
    *
    * @param tag The tag to log the message under.
    * @param message The message to log.
    */
   public static void error(String tag, Object message) {
-    error(tag, message, null);
+    log.error(tag, message);
   }
 
   /**
-   * Logs an error message, with red highlighting (and the file location underlined), with a custom tag.
-   * This is for events that are typically not recoverable.
+   * Logs an error message with red highlighting (and the file location underlined) under
+   * a custom tag, including the throwable's string representation.
    *
    * @param tag The tag to log the message under.
    * @param message The message to log.
@@ -1119,39 +1084,40 @@ public final class Flixel {
   }
 
   /**
-   * Returns the platform-specific log file handler, or {@code null} if none has
-   * been registered (for example, on web/TeaVM).
+   * Logs an error message using the default tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order, including the throwable's string representation.
    *
-   * @return The current log file handler, or {@code null}.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param throwable The throwable to log.
+   * @param args The arguments to substitute into the message.
    */
-  @Nullable
-  public static FlixelLogFileHandler getLogFileHandler() {
-    return logFileHandler;
+  public static void error(Object message, Throwable throwable, Object... args) {
+    log.error(message, throwable, args);
   }
 
   /**
-   * Returns the registered log console sink, or {@code null} if the default {@code System.out} path is used.
+   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order.
    *
-   * @return The sink, or {@code null}.
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments to substitute into the message.
    */
-  @Nullable
-  public static FlixelLogConsoleSink getLogConsoleSink() {
-    return logConsoleSink;
+  public static void error(String tag, Object message, Object... args) {
+    log.error(tag, message, args);
   }
 
   /**
-   * Returns the platform-specific sound backend factory, or {@code null} if
-   * none has been registered yet.
+   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with
+   * the corresponding argument in order, including the throwable's string representation.
    *
-   * @return The current sound backend factory, or {@code null}.
+   * @param tag The tag to log the message under.
+   * @param message The format string, where each {@code {}} is replaced by the next argument.
+   * @param throwable The throwable to log.
+   * @param args The arguments to substitute into the message.
    */
-  @Nullable
-  public static FlixelSoundBackend.Factory getSoundFactory() {
-    return soundFactory;
-  }
-
-  public static FlixelStackTraceProvider getStackTraceProvider() {
-    return stackTraceProvider;
+  public static void error(String tag, Object message, Throwable throwable, Object... args) {
+    log.error(tag, message, throwable, args);
   }
 
   /**
@@ -1168,75 +1134,41 @@ public final class Flixel {
     return assets;
   }
 
-  public static FlixelGame getGame() {
-    return game;
-  }
-
-  public static FlixelState getState() {
-    return state;
-  }
-
-  public static int getViewWidth() {
-    return (int) game.viewSize.x;
-  }
-
-  public static int getViewHeight() {
-    return (int) game.viewSize.y;
-  }
-
-  public static Vector2 getViewSize() {
-    return game.viewSize;
+  /**
+   * Returns the visible width of the game world in game pixels.
+   *
+   * <p>When cameras are active, this equals the first camera's viewport world width, which
+   * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
+   * the launcher installs a libGDX {@link ExtendViewport}, the value is the full screen-filling
+   * width rather than the fixed design width. Before any camera is created, the initial width
+   * from the {@link FlixelGame} constructor is returned instead.
+   */
+  public static int getWidth() {
+    return cameras.isEmpty() ? (int) game.initialSize.x : (int) cameras.first().getWorldWidth();
   }
 
   /**
-   * Whether the game update loop is frozen (debug pause).
+   * Returns the visible height of the game world in game pixels.
    *
-   * @see FlixelGame#setGamePaused(boolean)
+   * <p>When cameras are active, this equals the first camera's viewport world height, which
+   * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
+   * the launcher installs a libGDX {@link com.badlogic.gdx.utils.viewport.ExtendViewport ExtendViewport},
+   * the value is the full screen-filling height rather than the fixed design height. Before any camera is
+   * created, the initial height from the {@link FlixelGame} constructor is returned instead.
    */
-  public static boolean isPaused() {
-    return game != null && game.isGamePaused();
-  }
-
-  public static void setPaused(boolean paused) {
-    if (game != null) {
-      game.setGamePaused(paused);
-    }
+  public static int getHeight() {
+    return cameras.isEmpty() ? (int) game.initialSize.y : (int) cameras.first().getWorldHeight();
   }
 
   /**
-   * Returns the key used to toggle the debug overlay visibility.
+   * Returns the game's initial size in game pixels, as set in the {@link FlixelGame} constructor.
    *
-   * @see org.flixelgdx.input.keyboard.FlixelKey
+   * <p>Unlike {@link #getWidth()} and {@link #getHeight()}, this always reflects the fixed design
+   * dimensions that were set upon the game's initialization and is not affected by the active viewport
+   * type. The returned {@link Vector2} is the live internal vector. Do not modify it.
    */
-  public static int getDebugToggleKey() {
-    return debugToggleKey;
-  }
-
-  /**
-   * Returns the key used to toggle visual debug (bounding box drawing) on/off.
-   *
-   * @see org.flixelgdx.input.keyboard.FlixelKey
-   */
-  public static int getDebugDrawToggleKey() {
-    return debugDrawToggleKey;
-  }
-
-  /** Key used to pause the game update loop (debug mode only). */
-  public static int getDebugPauseKey() {
-    return debugPauseKey;
-  }
-
-  /** Mouse button (e.g. {@link Input.Buttons#RIGHT}) for debug camera pan while paused. */
-  public static int getDebugCameraPanButton() {
-    return debugCameraPanButton;
-  }
-
-  public static int getDebugCameraCycleLeftKey() {
-    return debugCameraCycleLeftKey;
-  }
-
-  public static int getDebugCameraCycleRightKey() {
-    return debugCameraCycleRightKey;
+  public static Vector2 getSize() {
+    return game.initialSize;
   }
 
   /**
@@ -1246,6 +1178,15 @@ public final class Flixel {
    */
   public static float getElapsed() {
     return elapsed;
+  }
+
+  /**
+   * Returns the raw platform delta (in seconds) for the current frame, clamped to
+   * [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] but not multiplied by {@link #timeScale}.
+   * Use this when you need actual wall-clock frame time regardless of the active time scale.
+   */
+  public static float getRawElapsed() {
+    return rawElapsed;
   }
 
   /**
@@ -1291,12 +1232,13 @@ public final class Flixel {
 
   /**
    * Refreshes the current state by creating a new instance from the factory last set by
-   * {@link #switchState(FlixelState, boolean, boolean, Supplier)}. Does nothing if the factory is {@code null}.
+   * {@link #switchState(FlixelState, boolean, boolean, boolean, Supplier)}. Does nothing if
+   * the factory is {@code null}.
    *
    * <p>This is the equivalent of calling {@code Flixel.switchState(new CurrentState())}.
    */
   public static void resetState() {
-    Objects.requireNonNull(game, "Game is not initialized. Call initialize() first.");
+    Objects.requireNonNull(game, "Game is not initialized. Call initialize(...) first.");
     FlixelState next = currentStateFactory != null ? currentStateFactory.get() : null;
     if (next != null) {
       switchState(next);
@@ -1327,149 +1269,27 @@ public final class Flixel {
   }
 
   /**
-   * Returns the active debug overlay instance, or {@code null} when debug mode is off
-   * or the overlay has not been created yet.
-   */
-  public static FlixelDebugOverlay getDebugOverlay() {
-    return debugOverlay;
-  }
-
-  /**
    * Creates the debug overlay using the registered factory. Called internally by
    * {@link FlixelGame} during startup when debug mode is enabled.
    */
   static FlixelDebugOverlay createDebugOverlay() {
-    debugOverlay = debugOverlayFactory.get();
-    return debugOverlay;
+    debug.overlay = debugOverlayFactory.get();
+    return debug.overlay;
   }
 
   /**
-   * Clears the active debug overlay reference after it has been disposed.
-   * {@link FlixelGame#dispose()} calls {@link org.flixelgdx.debug.FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
-   * first; this method only nulls the static handle to avoid double-dispose.
+   * Resets the debug overlay back to the inert noop after it has been disposed.
+   * {@link FlixelGame#dispose()} calls {@link FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
+   * first; this method only resets the handle to avoid double-dispose.
    */
   static void clearDebugOverlay() {
-    debugOverlay = null;
+    if (debug != null) {
+      debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
+    }
   }
 
   /**
-   * Returns the Java heap memory currently in use, in bytes.
-   *
-   * @return The Java heap memory currently in use, in bytes.
-   */
-  public static long getJavaHeapUsedBytes() {
-    Runtime rt = Runtime.getRuntime();
-    return rt.totalMemory() - rt.freeMemory();
-  }
-
-  /**
-   * Returns the Java heap memory currently in use, in megabytes.
-   *
-   * @return The Java heap memory currently in use, in megabytes.
-   */
-  public static float getJavaHeapUsedMegabytes() {
-    return getJavaHeapUsedBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the Java heap memory currently in use, in gigabytes.
-   *
-   * @return The Java heap memory currently in use, in gigabytes.
-   */
-  public static float getJavaHeapUsedGigabytes() {
-    return getJavaHeapUsedBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in bytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in bytes.
-   */
-  public static long getJavaHeapTotalBytes() {
-    return Runtime.getRuntime().totalMemory();
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in megabytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in megabytes.
-   */
-  public static float getJavaHeapTotalMegabytes() {
-    return getJavaHeapTotalBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the total Java heap memory allocated by the JVM, in gigabytes.
-   *
-   * @return The total Java heap memory allocated by the JVM, in gigabytes.
-   */
-  public static float getJavaHeapTotalGigabytes() {
-    return getJavaHeapTotalBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in bytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in bytes.
-   */
-  public static long getJavaHeapMaxBytes() {
-    return Runtime.getRuntime().maxMemory();
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in megabytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in megabytes.
-   */
-  public static float getJavaHeapMaxMegabytes() {
-    return getJavaHeapMaxBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the maximum Java heap memory available to the JVM, in gigabytes.
-   *
-   * @return The maximum Java heap memory available to the JVM, in gigabytes.
-   */
-  public static float getJavaHeapMaxGigabytes() {
-    return getJavaHeapMaxBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
-   * Returns an estimate of the native heap usage in bytes as reported by libGDX.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   */
-  public static long getNativeHeapUsedBytes() {
-    return Gdx.app != null ? Gdx.app.getNativeHeap() : 0L;
-  }
-
-  /**
-   * Returns the native heap usage in megabytes.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   *
-   * @return The native heap usage in megabytes.
-   */
-  public static float getNativeHeapUsedMegabytes() {
-    return getNativeHeapUsedBytes() / (1024f * 1024f);
-  }
-
-  /**
-   * Returns the native heap usage in gigabytes.
-   *
-   * <p>This is not available on all platforms and may return the same number as the
-   * Java heap when unsupported.
-   *
-   * @return The native heap usage in gigabytes.
-   */
-  public static float getNativeHeapUsedGigabytes() {
-    return getNativeHeapUsedBytes() / (1024f * 1024f * 1024f);
-  }
-
-  /**
-   * The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch) FlixelGame.draw(Batch)},
+   * The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)},
    * or {@code null} if not in a camera pass.
    */
   @Nullable
@@ -1507,10 +1327,14 @@ public final class Flixel {
   }
 
   /**
-   * Sets antialiasing to be applied to all {@link FlixelSprite} objects.
-   * Automatically updates the current state.
+   * Sets antialiasing to be applied to all {@link FlixelSprite} / {@link FlixelAntialiasable} objects.
    *
-   * @param enabled If antialiasing should be applied to all current and any future {@link FlixelSprite} objects.
+   * <p>Calling this function automatically updates the current state. Note that if you want this
+   * value to actually apply to any {@link FlixelSprite} / {@link FlixelAntialiasable} object being
+   * added to a {@link FlixelState}, set {@link #applyAntialiasingOnStateAdd} to {@code true}.
+   *
+   * @param enabled If antialiasing should be applied to all current
+   *     {@link FlixelSprite} / {@link FlixelAntialiasable} objects.
    */
   public static void setAntialiasing(boolean enabled) {
     if (enabled == antialiasing) {
@@ -1522,7 +1346,6 @@ public final class Flixel {
       return;
     }
 
-    // Apply antialiasing to all sprites in the current state.
     var members = state.getMembers();
     if (members == null) {
       return;
@@ -1533,10 +1356,11 @@ public final class Flixel {
       if (member == null) {
         continue;
       }
-      if (member instanceof FlixelSprite sprite) {
-        sprite.setAntialiasing(enabled);
+      if (member instanceof FlixelAntialiasable m) {
+        m.setAntialiasing(enabled);
       }
     }
+    members.end();
   }
 
   /**

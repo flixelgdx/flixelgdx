@@ -67,4 +67,70 @@ class FlixelSignalTest {
     signal.dispatch();
     assertTrue(runs.isEmpty());
   }
+
+  @Test
+  void clearRemovesAllCallbacks() {
+    List<Integer> runs = new ArrayList<>();
+    FlixelSignal<Void> signal = new FlixelSignal<>();
+    signal.add(data -> runs.add(1));
+    signal.addOnce(data -> runs.add(2));
+    signal.clear();
+    signal.dispatch();
+    assertTrue(runs.isEmpty());
+  }
+
+  @Test
+  void dispatchPassesDataToHandlers() {
+    List<String> received = new ArrayList<>();
+    FlixelSignal<String> signal = new FlixelSignal<>();
+    signal.add(received::add);
+    signal.dispatch("hello");
+    assertEquals(List.of("hello"), received);
+  }
+
+  @Test
+  void permanentHandlersFireBeforeOnceHandlers() {
+    List<Integer> order = new ArrayList<>();
+    FlixelSignal<Void> signal = new FlixelSignal<>();
+    signal.addOnce(data -> order.add(2));
+    signal.add(data -> order.add(1));
+    signal.dispatch();
+    assertEquals(List.of(1, 2), order);
+  }
+
+  @Test
+  void addNullDoesNotThrowAndDoesNotAddCallback() {
+    FlixelSignal<Void> signal = new FlixelSignal<>();
+    signal.add(null);
+    signal.dispatch();
+  }
+
+  @Test
+  void addOnceNullDoesNotThrowAndDoesNotAddCallback() {
+    FlixelSignal<Void> signal = new FlixelSignal<>();
+    signal.addOnce(null);
+    signal.dispatch();
+  }
+
+  @Test
+  void removeFromOnceListWorks() {
+    List<Integer> runs = new ArrayList<>();
+    FlixelSignal<Void> signal = new FlixelSignal<>();
+    FlixelSignal.SignalHandler<Void> h = data -> runs.add(1);
+    signal.addOnce(h);
+    signal.remove(h);
+    signal.dispatch();
+    assertTrue(runs.isEmpty());
+  }
+
+  @Test
+  void multipleDispatchesWithPermanentCallbacks() {
+    List<Integer> runs = new ArrayList<>();
+    FlixelSignal<Void> signal = new FlixelSignal<>();
+    signal.add(data -> runs.add(1));
+    signal.dispatch();
+    signal.dispatch();
+    signal.dispatch();
+    assertEquals(3, runs.size());
+  }
 }

@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.lwjgl3.debug;
 
+import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
@@ -33,7 +34,11 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.debug.FlixelDebugTrackerEntry;
+import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.glfw.GLFW;
 
@@ -65,7 +70,7 @@ import imgui.type.ImString;
  * <h2>Wiring</h2>
  *
  * <p>{@code FlixelLwjgl3Launcher} registers this class as the default debug overlay
- * factory when launching in {@link org.flixelgdx.backend.runtime.FlixelRuntimeMode#DEBUG DEBUG}
+ * factory when launching in {@link FlixelRuntimeMode#DEBUG DEBUG}
  * mode. You can also register it manually with {@link Flixel#setDebugOverlay(java.util.function.Supplier)}
  * before {@link Flixel#initialize}.
  *
@@ -81,8 +86,8 @@ import imgui.type.ImString;
  *
  * <p>The imgui-java GLFW backend installs callbacks that <em>chain</em> with the existing
  * libGDX callbacks (using {@code installCallbacks=true}). Both libGDX and imgui see every
- * key, mouse, and scroll event, so {@link Flixel#getDebugToggleKey() F2}, {@link Flixel#getDebugDrawToggleKey() F3},
- * and {@link Flixel#getDebugPauseKey() F4} keep working even when an imgui window has focus. Keys that normally
+ * key, mouse, and scroll event, so {@link #toggleKey F2}, {@link #drawDebugKey F3},
+ * and {@link #pauseKey F4} keep working even when an imgui window has focus. Keys that normally
  * <em>type into</em> the command {@code InputText} (letters, punctuation such as backslash, arrows, Enter, Tab,
  * Backspace, and so on) do not trigger debug bindings while that field is focused, so they do not fight the text box.
  * Function keys, Escape, modifiers, and similar non-text keys still toggle the overlay and other debug actions.
@@ -97,12 +102,33 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final float[] COLOR_INFO = { 0.85f, 0.85f, 0.85f, 1f };
   private static final float[] COLOR_WARN = { 1.00f, 0.80f, 0.20f, 1f };
   private static final float[] COLOR_ERROR = { 1.00f, 0.30f, 0.30f, 1f };
-  private static final float[] COLOR_KEY = { 0.55f, 0.85f, 1.00f, 1f };
+  private static final float[] COLOR_DEBUG = { 0.30f, 0.30f, 1.0f, 1f };
+  private static final float[] COLOR_KEY = { 0.9f, 0.2f, 0.2f, 1f };
   private static final float[] COLOR_VALUE = { 0.95f, 0.95f, 0.95f, 1f };
-  private static final float[] COLOR_HEADER = { 0.65f, 0.85f, 1.00f, 1f };
+  private static final float[] COLOR_HEADER = { 0.9f, 0.2f, 0.2f, 1f };
   private static final float[] COLOR_OK = { 0.30f, 0.95f, 0.55f, 1f };
   private static final float[] COLOR_PAUSED = { 1.00f, 0.70f, 0.20f, 1f };
   private static final float[] COLOR_HINT = { 0.65f, 0.65f, 0.65f, 1f };
+
+  // Widget color constants (red theme replacing the default ImGui blue).
+  private static final float[] COLOR_TITLE_BG = { 0.45f, 0.07f, 0.07f, 1f };
+  private static final float[] COLOR_TITLE_BG_ACTIVE = { 0.72f, 0.10f, 0.10f, 1f };
+  private static final float[] COLOR_TITLE_BG_COLLAPSED = { 0.30f, 0.05f, 0.05f, 0.75f };
+  private static final float[] COLOR_FRAME_BG = { 0.28f, 0.05f, 0.05f, 0.54f };
+  private static final float[] COLOR_FRAME_BG_HOVERED = { 0.50f, 0.08f, 0.08f, 0.40f };
+  private static final float[] COLOR_FRAME_BG_ACTIVE = { 0.62f, 0.10f, 0.10f, 0.67f };
+  private static final float[] COLOR_CHECK_MARK = { 1.00f, 0.60f, 0.60f, 1f };
+  private static final float[] COLOR_BUTTON = { 0.65f, 0.10f, 0.10f, 0.60f };
+  private static final float[] COLOR_BUTTON_HOVERED = { 0.80f, 0.15f, 0.15f, 1f };
+  private static final float[] COLOR_BUTTON_ACTIVE = { 0.92f, 0.20f, 0.20f, 1f };
+  private static final float[] COLOR_COLLAPSING_HEADER = { 0.55f, 0.08f, 0.08f, 0.31f };
+  private static final float[] COLOR_COLLAPSING_HEADER_HOVERED = { 0.68f, 0.11f, 0.11f, 0.80f };
+  private static final float[] COLOR_COLLAPSING_HEADER_ACTIVE = { 0.78f, 0.13f, 0.13f, 1f };
+  private static final float[] COLOR_RESIZE_GRIP = { 0.65f, 0.10f, 0.10f, 0.20f };
+  private static final float[] COLOR_RESIZE_GRIP_HOVERED = { 0.80f, 0.15f, 0.15f, 0.67f };
+  private static final float[] COLOR_RESIZE_GRIP_ACTIVE = { 0.92f, 0.20f, 0.20f, 0.95f };
+  private static final float[] COLOR_SLIDER_GRAB = { 0.92f, 0.20f, 0.20f, 0.95f };
+  private static final float[] COLOR_SLIDER_GRAB_ACTIVE = { 0.92f, 0.30f, 0.30f, 0.95f };
 
   /** Empty-state copy for the Watch panel (must match {@link #drawWatchWindow()}). */
   private static final String WATCH_EMPTY_HINT = "No watches registered. Use Flixel.watch.add(...) to track values.";
@@ -163,6 +189,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private final ImBoolean logShowInfo = new ImBoolean(true);
   private final ImBoolean logShowWarn = new ImBoolean(true);
   private final ImBoolean logShowError = new ImBoolean(true);
+  private final ImBoolean logShowDebug = new ImBoolean(true);
   private final ImBoolean logAutoScroll = new ImBoolean(true);
 
   private final ImString commandInputBuffer = new ImString(256);
@@ -190,8 +217,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   /** Last non-empty UTF-8 bytes from the command field (ImGui may clear the buffer when Run is pressed). */
   private final byte[] commandLineUtf8Scratch = new byte[512];
 
-  // Reused float buffer fed to ImGui.sliderFloat() so the zoom control stays allocation-free.
+  // Reused float buffers fed to ImGui.sliderFloat() so the controls stay allocation-free.
   private final float[] textureViewerZoomBuf = new float[1];
+  private final float[] timeScaleSliderBuf = new float[1];
 
   // Watch caches mirroring cachedWatchKeys / cachedWatchValues as java String.
   private String[] watchKeyStr = new String[0];
@@ -277,7 +305,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * GL state), then the GLFW backend (which removes its callback chain), and finally the imgui
    * context itself. Each call is wrapped in its own try/catch because the LWJGL window is
    * already partway through its own destruction by the time libGDX invokes
-   * {@link com.badlogic.gdx.ApplicationListener#dispose()}, and a stray crash here was triggering
+   * {@link ApplicationListener#dispose()}, and a stray crash here was triggering
    * the framework's uncaught-exception handler with the audio system still alive (the symptom:
    * "OK" closes the alert but music keeps playing).
    */
@@ -338,9 +366,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * suppress gameplay input.
    *
    * <p>Note that the debug overlay's own toggle keys (F2 by default, etc.) read raw input from
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)},
-   * so they continue to work while a text field is focused except for keys that are suppressed as
-   * typable command-line input (see {@link #shouldSuppressDebugRawKeybind(int)} on this class).
+   * {@link FlixelKeyInputManager#rawJustPressed(int)}, so they continue to work while a text field
+   * is focused except for keys that are suppressed as typable command-line input (see
+   * {@link #shouldSuppressDebugRawKeybind(int)} on this class).
    */
   @Override
   public boolean isKeyboardCapturedByUI() {
@@ -370,9 +398,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.newFrame();
 
     // Passthrough dockspace covers the whole viewport with a transparent central node so the
-    // game keeps rendering through the empty space between/around docked windows. Without the
-    // PassthruCentralNode flag the dockspace fills the screen with the imgui background color,
-    // which is the "gray screen" symptom you would otherwise see after toggling the overlay.
+    // game keeps rendering through the empty space between/around docked windows.
     ImGui.dockSpaceOverViewport(0, ImGui.getMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
 
     drawMainMenuBar();
@@ -535,15 +561,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Picks a GLSL version string compatible with the OpenGL context libGDX created. macOS only
-   * exposes core profiles (>= 3.2), so we always feed it {@code "#version 150"}; on Linux/Windows
-   * the same string works against the default libGDX 3.2 context as well.
-   */
-  private static String resolveGlslVersion() {
-    return "#version 150";
-  }
-
-  /**
    * @return {@code true} for keys that should keep working as debug shortcuts while the command field is focused.
    */
   private static boolean isNonTypableSystemDebugKey(int keycode) {
@@ -580,6 +597,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       case INFO -> COLOR_INFO;
       case WARN -> COLOR_WARN;
       case ERROR -> COLOR_ERROR;
+      case DEBUG -> COLOR_DEBUG;
     };
   }
 
@@ -639,12 +657,47 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     io.addConfigFlags(ImGuiConfigFlags.NavEnableKeyboard);
     io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
 
+    var style = ImGui.getStyle();
+    style.setColor(ImGuiCol.TitleBg, COLOR_TITLE_BG[0], COLOR_TITLE_BG[1], COLOR_TITLE_BG[2], COLOR_TITLE_BG[3]);
+    style.setColor(ImGuiCol.TitleBgActive, COLOR_TITLE_BG_ACTIVE[0], COLOR_TITLE_BG_ACTIVE[1], COLOR_TITLE_BG_ACTIVE[2],
+        COLOR_TITLE_BG_ACTIVE[3]);
+    style.setColor(ImGuiCol.TitleBgCollapsed, COLOR_TITLE_BG_COLLAPSED[0], COLOR_TITLE_BG_COLLAPSED[1],
+        COLOR_TITLE_BG_COLLAPSED[2], COLOR_TITLE_BG_COLLAPSED[3]);
+    style.setColor(ImGuiCol.FrameBg, COLOR_FRAME_BG[0], COLOR_FRAME_BG[1], COLOR_FRAME_BG[2], COLOR_FRAME_BG[3]);
+    style.setColor(ImGuiCol.FrameBgHovered, COLOR_FRAME_BG_HOVERED[0], COLOR_FRAME_BG_HOVERED[1],
+        COLOR_FRAME_BG_HOVERED[2], COLOR_FRAME_BG_HOVERED[3]);
+    style.setColor(ImGuiCol.FrameBgActive, COLOR_FRAME_BG_ACTIVE[0], COLOR_FRAME_BG_ACTIVE[1],
+        COLOR_FRAME_BG_ACTIVE[2], COLOR_FRAME_BG_ACTIVE[3]);
+    style.setColor(ImGuiCol.CheckMark, COLOR_CHECK_MARK[0], COLOR_CHECK_MARK[1], COLOR_CHECK_MARK[2],
+        COLOR_CHECK_MARK[3]);
+    style.setColor(ImGuiCol.Button, COLOR_BUTTON[0], COLOR_BUTTON[1], COLOR_BUTTON[2], COLOR_BUTTON[3]);
+    style.setColor(ImGuiCol.ButtonHovered, COLOR_BUTTON_HOVERED[0], COLOR_BUTTON_HOVERED[1], COLOR_BUTTON_HOVERED[2],
+        COLOR_BUTTON_HOVERED[3]);
+    style.setColor(ImGuiCol.ButtonActive, COLOR_BUTTON_ACTIVE[0], COLOR_BUTTON_ACTIVE[1], COLOR_BUTTON_ACTIVE[2],
+        COLOR_BUTTON_ACTIVE[3]);
+    style.setColor(ImGuiCol.Header, COLOR_COLLAPSING_HEADER[0], COLOR_COLLAPSING_HEADER[1], COLOR_COLLAPSING_HEADER[2],
+        COLOR_COLLAPSING_HEADER[3]);
+    style.setColor(ImGuiCol.HeaderHovered, COLOR_COLLAPSING_HEADER_HOVERED[0], COLOR_COLLAPSING_HEADER_HOVERED[1],
+        COLOR_COLLAPSING_HEADER_HOVERED[2], COLOR_COLLAPSING_HEADER_HOVERED[3]);
+    style.setColor(ImGuiCol.HeaderActive, COLOR_COLLAPSING_HEADER_ACTIVE[0], COLOR_COLLAPSING_HEADER_ACTIVE[1],
+        COLOR_COLLAPSING_HEADER_ACTIVE[2], COLOR_COLLAPSING_HEADER_ACTIVE[3]);
+    style.setColor(ImGuiCol.ResizeGrip, COLOR_RESIZE_GRIP[0], COLOR_RESIZE_GRIP[1],
+        COLOR_RESIZE_GRIP[2], COLOR_RESIZE_GRIP[3]);
+    style.setColor(ImGuiCol.ResizeGripHovered, COLOR_RESIZE_GRIP_HOVERED[0], COLOR_RESIZE_GRIP_HOVERED[1],
+        COLOR_RESIZE_GRIP_HOVERED[2], COLOR_RESIZE_GRIP_HOVERED[3]);
+    style.setColor(ImGuiCol.ResizeGripActive, COLOR_RESIZE_GRIP_ACTIVE[0], COLOR_RESIZE_GRIP_ACTIVE[1],
+        COLOR_RESIZE_GRIP_ACTIVE[2], COLOR_RESIZE_GRIP_ACTIVE[3]);
+    style.setColor(ImGuiCol.SliderGrab, COLOR_SLIDER_GRAB[0], COLOR_SLIDER_GRAB[1], COLOR_SLIDER_GRAB[2],
+        COLOR_SLIDER_GRAB[3]);
+    style.setColor(ImGuiCol.SliderGrabActive, COLOR_SLIDER_GRAB_ACTIVE[0], COLOR_SLIDER_GRAB_ACTIVE[1],
+        COLOR_SLIDER_GRAB_ACTIVE[2], COLOR_SLIDER_GRAB_ACTIVE[3]);
+
     ImFontAtlas fonts = io.getFonts();
     fonts.addFontDefault();
     fonts.build();
 
     imGuiGlfw.init(windowHandle, true);
-    imGuiGl3.init(resolveGlslVersion());
+    imGuiGl3.init("#version 150");
 
     imguiInitialized = true;
     forceRefreshOnNextUpdate();
@@ -890,9 +943,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       if (ImGui.menuItem("Show Hitboxes", null, drawDebug)) {
         toggleDrawDebug();
       }
-      boolean paused = Flixel.isPaused();
+      boolean paused = Flixel.game.isGamePaused();
       if (ImGui.menuItem("Pause Game", null, paused)) {
-        Flixel.setPaused(!paused);
+        Flixel.game.setGamePaused(!paused);
       }
       if (ImGui.menuItem("Reset State")) {
         Flixel.resetState();
@@ -919,7 +972,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     drawStatRow("Render calls", cachedRenderCalls);
 
     ImGui.separator();
-    boolean paused = Flixel.isPaused();
+    boolean paused = Flixel.game.isGamePaused();
     text(COLOR_KEY, "Update");
     ImGui.sameLine();
     if (paused) {
@@ -1054,9 +1107,21 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (ImGui.checkbox("Show hitboxes", drawDebug)) {
       toggleDrawDebug();
     }
-    boolean paused = Flixel.isPaused();
+    boolean paused = Flixel.game.isGamePaused();
     if (ImGui.checkbox("Pause game loop", paused)) {
-      Flixel.setPaused(!paused);
+      Flixel.game.setGamePaused(!paused);
+    }
+
+    ImGui.separator();
+    text(COLOR_HEADER, "Time scale");
+    timeScaleSliderBuf[0] = Flixel.timeScale;
+    ImGui.pushItemWidth(-100f);
+    if (ImGui.sliderFloat("##timescale", timeScaleSliderBuf, 0.1f, 4.0f, "%.2fx")) {
+      Flixel.timeScale = timeScaleSliderBuf[0];
+    }
+    ImGui.sameLine();
+    if (ImGui.button("Reset##timescale")) {
+      Flixel.timeScale = 1f;
     }
 
     ImGui.separator();
@@ -1099,29 +1164,29 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * step keeps the controls panel allocation-free on the steady-state path.
    */
   private void refreshKeybindLabelsIfNeeded() {
-    int t = Flixel.getDebugToggleKey();
-    int h = Flixel.getDebugDrawToggleKey();
-    int p = Flixel.getDebugPauseKey();
-    int cl = Flixel.getDebugCameraCycleLeftKey();
-    int cr = Flixel.getDebugCameraCycleRightKey();
+    int t = this.toggleKey;
+    int h = this.drawDebugKey;
+    int p = this.pauseKey;
+    int cl = this.cameraCycleLeftKey;
+    int cr = this.cameraCycleRightKey;
     if (t != cachedToggleKey || keybindToggleLabel == null) {
-      keybindToggleLabel = Input.Keys.toString(t);
+      keybindToggleLabel = FlixelKey.toString(t);
       cachedToggleKey = t;
     }
     if (h != cachedHitboxKey || keybindHitboxLabel == null) {
-      keybindHitboxLabel = Input.Keys.toString(h);
+      keybindHitboxLabel = FlixelKey.toString(h);
       cachedHitboxKey = h;
     }
     if (p != cachedPauseKey || keybindPauseLabel == null) {
-      keybindPauseLabel = Input.Keys.toString(p);
+      keybindPauseLabel = FlixelKey.toString(p);
       cachedPauseKey = p;
     }
     if (cl != cachedCycleLeftKey || keybindCycleLeftLabel == null) {
-      keybindCycleLeftLabel = "Alt + " + Input.Keys.toString(cl);
+      keybindCycleLeftLabel = "Alt + " + FlixelKey.toString(cl);
       cachedCycleLeftKey = cl;
     }
     if (cr != cachedCycleRightKey || keybindCycleRightLabel == null) {
-      keybindCycleRightLabel = "Alt + " + Input.Keys.toString(cr);
+      keybindCycleRightLabel = "Alt + " + FlixelKey.toString(cr);
       cachedCycleRightKey = cr;
     }
   }
@@ -1172,6 +1237,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       ImGui.menuItem("Info", null, logShowInfo);
       ImGui.menuItem("Warn", null, logShowWarn);
       ImGui.menuItem("Error", null, logShowError);
+      ImGui.menuItem("Debug", null, logShowDebug);
       ImGui.separator();
       ImGui.menuItem("Auto-scroll", null, logAutoScroll);
       ImGui.endMenuBar();
@@ -1200,7 +1266,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Renders the Tracker panel, a collapsible header per registered {@link org.flixelgdx.debug.FlixelDebugTrackerEntry FlixelDebugTrackerEntry},
+   * Renders the Tracker panel, a collapsible header per registered {@link FlixelDebugTrackerEntry},
    * each containing a {@code name -> value} table (just like the Watch panel). Shown by default; when no
    * trackers are registered it stays visible with a hint, mirroring the Watch panel's empty state.
    */
@@ -1434,6 +1500,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       case INFO -> logShowInfo.get();
       case WARN -> logShowWarn.get();
       case ERROR -> logShowError.get();
+      case DEBUG -> logShowDebug.get();
     };
   }
 

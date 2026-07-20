@@ -23,19 +23,12 @@
  */
 package org.flixelgdx.util;
 
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.utils.CharArray;
 
-import org.flixelgdx.functional.supplier.ByteSupplier;
-import org.flixelgdx.functional.supplier.CharSupplier;
-import org.flixelgdx.functional.supplier.FloatSupplier;
-import org.flixelgdx.functional.supplier.ShortSupplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -57,17 +50,19 @@ import java.util.function.Supplier;
  *
  * <h2>Allocation-free float formatting</h2>
  *
- * <p>{@link #setFloatRoundedOneDecimal(float)} and {@link #concatFloatRoundedOneDecimal(float)}
- * delegate to {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}, which
- * formats a float to one decimal place using only integer arithmetic - no {@link String} is
- * created at any point.
+ * <p>{@link #setFloatRounded(float, int)} and {@link #concatFloatRounded(float, int)} delegate to
+ * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}, which formats a float to any
+ * number of decimal places using only integer arithmetic, meaning no {@link String} is created at
+ * any point. {@link #setFloatRoundedOneDecimal(float)} and
+ * {@link #concatFloatRoundedOneDecimal(float)} are convenience variants for exactly one decimal
+ * place.
  *
  * <h2>Passing to libGDX drawing APIs</h2>
  *
  * <p>This class implements {@link CharSequence}, so instances can be passed directly to APIs such
- * as {@link com.badlogic.gdx.graphics.g2d.BitmapFont#draw BitmapFont.draw()} without building a temporary
- * {@link String}. Avoid calling {@link #toString()} or using string concatenation on this type in
- * per-frame code: both allocate. Pass {@code this} as a {@link CharSequence} instead.
+ * as {@link BitmapFont#draw} without building a temporary {@link String}. Avoid calling {@link #toString()}
+ * or using string concatenation on this type in per-frame code: both allocate. Pass {@code this} as a
+ * {@link CharSequence} instead.
  *
  * <h2>set() vs concat()</h2>
  *
@@ -76,31 +71,23 @@ import java.util.function.Supplier;
  * clearing, which is useful when building a line from multiple parts. {@link #charBuffer()} exposes
  * the raw {@link CharArray} for advanced interop with libGDX APIs that require it directly.
  *
- * <h2>Supplier overloads</h2>
- *
- * <p>Supplier-based {@link #set} and {@link #concat} overloads (for example
- * {@link #set(java.util.function.IntSupplier)}) avoid boxing when the supplier is stored as a
- * field and reused across frames. If the supplier is created at the call site on every frame (as a
- * lambda literal), the allocation just moves to the supplier itself, so store suppliers as fields
- * to get the full benefit.
- *
  * <h2>Example Usage</h2>
  *
  * <pre>{@code
  * // Create a new FlixelString with a capacity of 32 characters.
  * // Because it implements CharSequence, it can be used as a parameter
- * // for methods that expect a CharSequence, like FlixelText!
+ * // for methods that expect a CharSequence, like FlixelText.
  * FlixelString fs = new FlixelString(32);
  * FlixelText ft = new FlixelText();
  *
  * // In your update loop...
  * @Override
  * public void update(float elapsed) {
- *   // Below would be the same equivalent of doing ft.setText("Score: " + 100),
+ *   // Below would be the same equivalent of doing ft.setText("Score: " + score),
  *   // except it doesn't allocate new strings every frame and keeps your
  *   // framerate silky smooth!
  *   fs.set("Score: ");
- *   fs.concat(100);
+ *   fs.concat(score);
  *   ft.setText(fs);
  * }
  * }</pre>
@@ -175,6 +162,11 @@ public class FlixelString implements CharSequence {
     return buffer.isEmpty();
   }
 
+  /** Returns whether the buffer contains no characters. */
+  public boolean getEmpty() {
+    return buffer.isEmpty();
+  }
+
   /**
    * Replaces the entire buffer with a copy of {@code text}.
    *
@@ -228,7 +220,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(byte value) {
     buffer.clear();
-    buffer.append((int) value);
+    buffer.append(value);
     return this;
   }
 
@@ -236,7 +228,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(short value) {
     buffer.clear();
-    buffer.append((int) value);
+    buffer.append(value);
     return this;
   }
 
@@ -272,70 +264,6 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the supplied {@code boolean}. */
-  @NotNull
-  public FlixelString set(@NotNull BooleanSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsBoolean());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code char}. */
-  @NotNull
-  public FlixelString set(@NotNull CharSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsChar());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code byte}. */
-  @NotNull
-  public FlixelString set(@NotNull ByteSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsByte());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code short}. */
-  @NotNull
-  public FlixelString set(@NotNull ShortSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsShort());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code int}. */
-  @NotNull
-  public FlixelString set(@NotNull IntSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsInt());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code long}. */
-  @NotNull
-  public FlixelString set(@NotNull LongSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsLong());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code float}. */
-  @NotNull
-  public FlixelString set(@NotNull FloatSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsFloat());
-    return this;
-  }
-
-  /** @return {@code this} after replacing content with the supplied {@code double}. */
-  @NotNull
-  public FlixelString set(@NotNull DoubleSupplier supplier) {
-    buffer.clear();
-    buffer.append(supplier.getAsDouble());
-    return this;
-  }
-
   /**
    * Appends the content of {@code other} to the buffer.
    *
@@ -346,7 +274,7 @@ public class FlixelString implements CharSequence {
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull CharSequence other) {
+  public FlixelString concat(@Nullable CharSequence other) {
     buffer.append(other != null ? other : "null");
     return this;
   }
@@ -407,7 +335,7 @@ public class FlixelString implements CharSequence {
    */
   @NotNull
   public FlixelString concat(short value) {
-    buffer.append((int) value);
+    buffer.append(value);
     return this;
   }
 
@@ -460,112 +388,35 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends the content of {@code supplier} to the buffer.
+   * Appends {@code value} rounded to {@code decimals} decimal places using the same rules as
+   * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}. Does not clear the buffer
+   * first.
    *
-   * @param supplier The {@link BooleanSupplier} to append.
+   * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and
+   * no decimal point is written. Fractional digits are zero-padded on the left so the output
+   * always contains exactly {@code decimals} digits after the decimal point.
+   *
+   * @param value    Value to append (non-finite values use {@link CharArray#append(float)}).
+   * @param decimals Number of digits after the decimal point; values of zero or less produce an
+   *                 integer with no decimal point.
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelString concat(@NotNull BooleanSupplier supplier) {
-    buffer.append(supplier.getAsBoolean());
+  public FlixelString concatFloatRounded(float value, int decimals) {
+    FlixelStringUtil.appendFloatRounded(buffer, value, decimals);
     return this;
   }
 
   /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link CharSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull CharSupplier supplier) {
-    buffer.append(supplier.getAsChar());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link ByteSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull ByteSupplier supplier) {
-    buffer.append((int) supplier.getAsByte());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link ShortSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull ShortSupplier supplier) {
-    buffer.append((int) supplier.getAsShort());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link IntSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull IntSupplier supplier) {
-    buffer.append(supplier.getAsInt());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link LongSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull LongSupplier supplier) {
-    buffer.append(supplier.getAsLong());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link FloatSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull FloatSupplier supplier) {
-    buffer.append(supplier.getAsFloat());
-    return this;
-  }
-
-  /**
-   * Appends the content of {@code supplier} to the buffer.
-   *
-   * @param supplier The {@link DoubleSupplier} to append.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelString concat(@NotNull DoubleSupplier supplier) {
-    buffer.append(supplier.getAsDouble());
-    return this;
-  }
-
-  /**
-   * Appends {@code value} rounded to one decimal place (tenths) using the same rules as
-   * {@link FlixelStringUtil#appendFloatRoundedOneDecimal(CharArray, float)}. Does not clear the buffer first.
+   * Appends {@code value} rounded to one decimal place (tenths). Convenience wrapper for
+   * {@link #concatFloatRounded(float, int)} with {@code decimals = 1}.
    *
    * @param value Value to append (non-finite values use {@link CharArray#append(float)}).
    * @return {@code this} for chaining.
    */
   @NotNull
   public FlixelString concatFloatRoundedOneDecimal(float value) {
-    FlixelStringUtil.appendFloatRoundedOneDecimal(buffer, value);
-    return this;
+    return concatFloatRounded(value, 1);
   }
 
   /**
@@ -605,19 +456,36 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends {@code value} rounded to one decimal place (tenths), using only {@link CharArray} integer appenders.
-   * This avoids {@link Float#toString(float)} and similar helpers that allocate {@link String} instances.
+   * Clears the buffer and writes {@code value} rounded to {@code decimals} decimal places using
+   * only {@link CharArray} primitive appenders, avoiding {@link Float#toString(float)} and similar
+   * helpers that allocate {@link String} instances.
    *
-   * <p>The buffer is cleared before formatting.
+   * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and
+   * no decimal point is written. Fractional digits are zero-padded on the left so the output
+   * always contains exactly {@code decimals} digits after the decimal point.
    *
-   * @param value Finite input; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value Value to format; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param decimals Number of digits after the decimal point; values of zero or less produce an
+   *                 integer with no decimal point.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelString setFloatRounded(float value, int decimals) {
+    buffer.clear();
+    FlixelStringUtil.appendFloatRounded(buffer, value, decimals);
+    return this;
+  }
+
+  /**
+   * Clears the buffer and writes {@code value} rounded to one decimal place (tenths). Convenience
+   * wrapper for {@link #setFloatRounded(float, int)} with {@code decimals = 1}.
+   *
+   * @param value Value to format. Non-finite values fall back to {@link CharArray#append(float)}.
    * @return {@code this} for chaining.
    */
   @NotNull
   public FlixelString setFloatRoundedOneDecimal(float value) {
-    buffer.clear();
-    FlixelStringUtil.appendFloatRoundedOneDecimal(buffer, value);
-    return this;
+    return setFloatRounded(value, 1);
   }
 
   /**
@@ -652,7 +520,7 @@ public class FlixelString implements CharSequence {
    * {@inheritDoc}
    *
    * <p><strong>Allocation warning:</strong> Builds a new {@link String}. Do not use on hot paths; pass this
-   * instance as a {@link CharSequence} instead.
+   * instance as a {@link CharSequence} instead where possible.
    */
   @Override
   @NotNull

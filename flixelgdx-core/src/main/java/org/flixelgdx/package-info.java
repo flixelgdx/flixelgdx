@@ -11,7 +11,7 @@
  *       signals, and access to core managers (input, audio, assets).</li>
  *   <li>{@link org.flixelgdx.FlixelGame FlixelGame} - libGDX application listener that drives the
  *       main update and draw loop.</li>
- *   <li>{@link org.flixelgdx.FlixelState FlixelState} - Screen like container for your game logic.</li>
+ *   <li>{@link org.flixelgdx.FlixelState FlixelState} - Screen-like container for your game logic.</li>
  * </ul>
  *
  * <p>Assets are centralized under {@link org.flixelgdx.Flixel#assets Flixel.assets}. Prefer that API

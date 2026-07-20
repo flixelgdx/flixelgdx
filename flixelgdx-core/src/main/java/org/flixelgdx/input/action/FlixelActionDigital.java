@@ -23,52 +23,54 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
- * Boolean action: any {@link FlixelInputBinding} that evaluates true, OR optional Steam digital for the same
- * {@link #getName()}, makes {@link #pressed()} true for this frame.
+ * Boolean action: any {@link FlixelDigitalBinding} that evaluates true, OR optional Steam digital
+ * for the same {@link #getName()}, makes {@link #pressed()} true for this frame.
  *
  * <h2>Setup</h2>
  *
- * <p>Call {@link #addBinding(FlixelInputBinding)} only during construction or loading (not each frame). Multiple
- * bindings are OR'd: {@code jump} might accept Space, gamepad A, and a touch region.
+ * <p>Add bindings via {@link #addBinding(String, FlixelDigitalBinding)} during construction or
+ * loading (not each frame). Multiple bindings are OR'd: a {@code jump} action might accept Space,
+ * gamepad A, and a touch region, each under its own named slot.
  *
  * <h2>Reading in gameplay</h2>
  *
  * <ul>
  *   <li>{@link #pressed()} while a key is held (sustains, movement gates).</li>
- *   <li>{@link #justPressed()} or {@link #check()} for a single-frame edge (tap notes, menu confirm).</li>
+ *   <li>{@link #justPressed()} for a single-frame edge (tap notes, menu confirm).</li>
  *   <li>{@link #justReleased()} when the player releases after a hold.</li>
- *   <li>{@link #repeated()} for hold-repeating navigation: fires on the initial press, then fires
- *       again after {@link FlixelAction#getHoldDelay()} seconds, then every {@link FlixelAction#getHoldInterval()}
- *       seconds while held. Replaces a manual {@code justPressed()} check when autorepeat is needed.</li>
+ *   <li>{@link #held()} for hold-repeating navigation: fires on the initial press, then fires
+ *       again after {@link FlixelAction#getHoldDelay()} seconds, then every
+ *       {@link FlixelAction#getHoldInterval()} seconds while held. Replaces a manual
+ *       {@code justPressed()} check when autorepeat is needed.</li>
  * </ul>
  *
- * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via {@link FlixelActionSets#updateAll(float)}).
- * {@link FlixelActionSet#endFrame()} (via {@link FlixelActionSets#endFrameAll()}) runs after
- * {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} finalizes keys and mouse, matching their {@code justPressed} timing.
+ * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via
+ * {@link FlixelActionSets#update(float)}). {@link FlixelActionSet#endFrame()} (via
+ * {@link FlixelActionSets#endFrameAll()}) runs after
+ * {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} finalizes keys and mouse, matching
+ * their {@code justPressed} timing.
  *
  * <h2>Optional callback</h2>
  *
- * <p>{@link #getHoldDelay()()} runs on the press edge when assigned; prefer a single static {@link Runnable} to avoid allocating
- * lambdas in hot paths.
+ * <p>{@link FlixelAction#callback} runs on the press edge when assigned; prefer a single static
+ * {@link Runnable} to avoid allocating lambdas in hot paths.
  */
 public final class FlixelActionDigital extends FlixelAction {
 
-  private static final int MAX_TOUCH_POINTER = 20;
-
-  private final Array<FlixelInputBinding> bindings = new Array<>(8);
+  private final ObjectMap<String, FlixelDigitalBinding> namedBindings = new ObjectMap<>(8);
 
   private float holdAccum;
 
   private boolean holdRepeating;
-  private boolean repeated;
+  private boolean held;
   private boolean pressed;
   private boolean previous;
 
@@ -77,19 +79,87 @@ public final class FlixelActionDigital extends FlixelAction {
   }
 
   /**
-   * Adds a binding evaluated each frame (allocation-free after this call).
+   * Removes all bindings from this action, including any registered under named slots.
    *
+   * <p>Use this before re-populating bindings from scratch, or to leave an action with no active
+   * sources (it will never fire until at least one binding is added again).
+   */
+  public void clearBindings() {
+    namedBindings.clear();
+  }
+
+  /**
+   * Adds a binding under a named slot (allocation-free after this call).
+   *
+   * <p>If a binding is already registered under {@code slot}, it is removed and replaced. This
+   * makes named slots the natural model for a rebinding screen: one slot per device type, replaced
+   * in-place when the player picks a new key.
+   *
+   * <pre>{@code
+   * jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
+   * jump.addBinding("gamepad", FlixelDigitalBinding.gamepadButton(0, FlixelGamepadButton.A));
+   *
+   * // Player rebinds the keyboard slot at runtime.
+   * jump.addBinding("keyboard", FlixelDigitalBinding.key(newKey));
+   * }</pre>
+   *
+   * @param slot Non-null, non-empty identifier for this binding (for example {@code "keyboard"}).
    * @param binding Non-null binding.
    */
-  public void addBinding(@NotNull FlixelInputBinding binding) {
-    bindings.add(binding);
+  public void addBinding(@NotNull String slot, @NotNull FlixelDigitalBinding binding) {
+    namedBindings.put(
+        Objects.requireNonNull(slot, "slot cannot be null."),
+        Objects.requireNonNull(binding, "binding cannot be null."));
+  }
+
+  /**
+   * Removes the binding registered under the given slot name.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelDigitalBinding)}.
+   * @return {@code true} if a binding was found and removed, {@code false} if the slot was unknown.
+   */
+  public boolean removeBinding(@NotNull String slot) {
+    return namedBindings.remove(Objects.requireNonNull(slot, "slot cannot be null.")) != null;
+  }
+
+  /**
+   * Returns the binding registered under the given slot name, or {@code null} if the slot is
+   * unknown.
+   *
+   * @param slot Slot name passed to {@link #addBinding(String, FlixelDigitalBinding)}.
+   * @return The registered binding, or {@code null} if no binding is registered under that slot.
+   */
+  @Nullable
+  public FlixelDigitalBinding getBinding(@NotNull String slot) {
+    return namedBindings.get(Objects.requireNonNull(slot, "slot cannot be null."));
+  }
+
+  /**
+   * Removes a specific binding by reference identity.
+   *
+   * <p>If the binding was added via {@link #addBinding(String, FlixelDigitalBinding)}, its slot
+   * entry is also cleared.
+   *
+   * @param binding The exact binding instance to remove.
+   * @return {@code true} if the binding was found and removed.
+   */
+  public boolean removeBinding(@NotNull FlixelDigitalBinding binding) {
+    ObjectMap.Keys<String> keys = namedBindings.keys();
+    while (keys.hasNext()) {
+      String key = keys.next();
+      if (namedBindings.get(key) == binding) {
+        keys.remove();
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
   void updateAction(float elapsed) {
     if (!active) {
       pressed = false;
-      repeated = false;
+      held = false;
       holdAccum = 0f;
       holdRepeating = false;
       return;
@@ -99,8 +169,9 @@ public final class FlixelActionDigital extends FlixelAction {
     if (steam != null && steam.getDigital(getName())) {
       v = true;
     }
-    for (int i = 0, n = bindings.size; i < n; i++) {
-      v |= evalBinding(bindings.get(i));
+    ObjectMap.Values<FlixelDigitalBinding> vals = namedBindings.values();
+    while (vals.hasNext()) {
+      v |= vals.next().evaluate();
     }
     boolean edge = v && !previous;
     Runnable cb = callback;
@@ -112,25 +183,25 @@ public final class FlixelActionDigital extends FlixelAction {
       if (!previous) {
         holdAccum = 0f;
         holdRepeating = false;
-        repeated = true;
+        held = true;
       } else {
         holdAccum += elapsed;
-        repeated = false;
+        held = false;
         if (!holdRepeating) {
           if (holdAccum >= getHoldDelay()) {
             holdAccum -= getHoldDelay();
             holdRepeating = true;
-            repeated = true;
+            held = true;
           }
         } else if (holdAccum >= getHoldInterval()) {
           holdAccum -= getHoldInterval();
-          repeated = true;
+          held = true;
         }
       }
     } else {
       holdAccum = 0f;
       holdRepeating = false;
-      repeated = false;
+      held = false;
     }
   }
 
@@ -145,16 +216,7 @@ public final class FlixelActionDigital extends FlixelAction {
     previous = false;
     holdAccum = 0f;
     holdRepeating = false;
-    repeated = false;
-  }
-
-  /**
-   * Same as {@link #justPressed()}: true for the single frame the action became active.
-   *
-   * @return Whether the action triggered this frame.
-   */
-  public boolean check() {
-    return justPressed();
+    held = false;
   }
 
   public boolean pressed() {
@@ -173,68 +235,20 @@ public final class FlixelActionDigital extends FlixelAction {
    * Returns {@code true} on the initial press and again on each hold-repeat tick.
    *
    * <p>Fires immediately on the frame the button is first pressed (same as {@link #justPressed()}),
-   * then fires again after {@link FlixelAction#getHoldDelay()} seconds if the button is still held, and
-   * continues firing every {@link FlixelAction#getHoldInterval()} seconds after that. Releasing the button
-   * resets the timer so the next press starts fresh.
+   * then fires again after {@link FlixelAction#getHoldDelay()} seconds if the button is still held,
+   * and continues firing every {@link FlixelAction#getHoldInterval()} seconds after that. Releasing
+   * the button resets the timer so the next press starts fresh.
    *
    * <p>Use this instead of {@link #justPressed()} anywhere a held button should keep triggering,
    * such as menu scrolling, cursor movement, or incrementing a value:
    *
    * <pre>{@code
-   * if (controls.uiDown.repeated()) scrollMenu();
+   * if (controls.uiDown.held()) scrollMenu();
    * }</pre>
    *
    * @return {@code true} on the initial press frame and on each repeat tick.
    */
-  public boolean repeated() {
-    return active && repeated;
-  }
-
-  private boolean evalBinding(@NotNull FlixelInputBinding b) {
-    return switch (b.kind) {
-      case KEY -> Flixel.keys != null && Flixel.keys.enabled && Flixel.keys.pressed(b.a);
-      case GAMEPAD_BUTTON -> {
-        if (Flixel.gamepads == null || !Flixel.gamepads.enabled) {
-          yield false;
-        }
-        if (b.b == FlixelInputBinding.GAMEPAD_SLOT_ANY) {
-          yield Flixel.gamepads.anyPressed(b.a);
-        }
-        yield Flixel.gamepads.pressed(b.b, b.a);
-      }
-      case POINTER_BUTTON -> evalPointer(b.a, b.b);
-      case TOUCH_REGION -> evalTouchRegion(b.normX, b.normY, b.normW, b.normH);
-    };
-  }
-
-  private static boolean evalPointer(int pointer, int button) {
-    if (pointer == FlixelInputBinding.POINTER_MOUSE) {
-      return Flixel.mouse != null && Flixel.mouse.enabled && Flixel.mouse.pressed(button);
-    }
-    if (!Gdx.input.isTouched(pointer)) {
-      return false;
-    }
-    return button < 0 || Gdx.input.isButtonPressed(button);
-  }
-
-  private static boolean evalTouchRegion(float nx, float ny, float nw, float nh) {
-    int bw = Gdx.graphics.getBackBufferWidth();
-    int bh = Gdx.graphics.getBackBufferHeight();
-    if (bw <= 0 || bh <= 0) {
-      return false;
-    }
-    float fx = 1f / bw;
-    float fy = 1f / bh;
-    for (int p = 0; p <= MAX_TOUCH_POINTER; p++) {
-      if (!Gdx.input.isTouched(p)) {
-        continue;
-      }
-      float px = Gdx.input.getX(p) * fx;
-      float py = Gdx.input.getY(p) * fy;
-      if (px >= nx && px <= nx + nw && py >= ny && py <= ny + nh) {
-        return true;
-      }
-    }
-    return false;
+  public boolean held() {
+    return active && held;
   }
 }

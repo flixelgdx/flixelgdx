@@ -43,6 +43,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Post-processes compiled classes in a directory, rewriting {@code FlixelLogger} calls.
@@ -79,7 +82,7 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
         byte[] original = Files.readAllBytes(file);
         ClassReader reader = new ClassReader(original);
         ClassNode classNode = new ClassNode();
-        reader.accept(classNode, ClassReader.SKIP_FRAMES);
+        reader.accept(classNode, ClassReader.EXPAND_FRAMES);
         if (!FlixelLoggerBytecodeWeaver.weave(classNode)) {
           return FileVisitResult.CONTINUE;
         }
@@ -92,6 +95,49 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
         return FileVisitResult.CONTINUE;
       }
     });
+  }
+
+  /**
+   * Rewrites {@code FlixelLogger} and {@code Gdx.app} call sites inside a single JAR file,
+   * writing the result to {@code output}. Entries that are not {@code .class} files are copied
+   * verbatim. If the weaver throws for a particular class, the original bytes are kept so the
+   * output JAR is always a valid copy of the input.
+   *
+   * @param input The source JAR to read from.
+   * @param output The destination JAR to write to.
+   * @throws IOException If reading or writing fails at the ZIP level.
+   */
+  public static void weaveJar(Path input, Path output) throws IOException {
+    try (ZipInputStream in = new ZipInputStream(Files.newInputStream(input));
+        ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(output))) {
+      ZipEntry entry;
+      while ((entry = in.getNextEntry()) != null) {
+        String name = entry.getName();
+        out.putNextEntry(new ZipEntry(name));
+        if (name.endsWith(".class") && !name.equals("module-info.class")) {
+          out.write(tryWeaveBytes(in.readAllBytes()));
+        } else {
+          in.transferTo(out);
+        }
+        out.closeEntry();
+      }
+    }
+  }
+
+  static byte[] tryWeaveBytes(byte[] bytes) {
+    try {
+      ClassReader reader = new ClassReader(bytes);
+      ClassNode classNode = new ClassNode();
+      reader.accept(classNode, ClassReader.EXPAND_FRAMES);
+      if (!FlixelLoggerBytecodeWeaver.weave(classNode)) {
+        return bytes;
+      }
+      ClassWriter writer = FlixelLoggerBytecodeWeaver.newClassWriter(reader);
+      classNode.accept(writer);
+      return writer.toByteArray();
+    } catch (Exception e) {
+      return bytes;
+    }
   }
 
   @TaskAction

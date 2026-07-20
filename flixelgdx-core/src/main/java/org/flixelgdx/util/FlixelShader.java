@@ -48,7 +48,7 @@ import org.flixelgdx.FlixelCamera;
  *     libGDX {@link com.badlogic.gdx.graphics.g2d.SpriteBatch SpriteBatch} attribute contract.
  *     Fragment shaders receive the camera output as {@code uniform sampler2D u_texture} via
  *     the {@code v_texCoords} varying.</li>
- *   <li><b>HaxeFlixel mode} ({@link #fromHaxeFlixel(String)})</b>: write or copy a filter
+ *   <li><b>HaxeFlixel mode ({@link #fromHaxeFlixel(String)})</b>: write or copy a filter
  *     shader from HaxeFlixel using {@code #pragma header}, {@code #pragma body},
  *     {@code bitmap}, {@code openfl_TextureCoordv}, and {@code flixel_texture2D(...)}. The
  *     preprocessor rewrites those to libGDX-compatible names before compilation.</li>
@@ -114,22 +114,23 @@ public class FlixelShader extends FlixelBasic {
    * methods (for example a {@code TimedShader.fromHaxeFlixel()} companion) can reuse
    * the same vertex source without duplicating it.
    */
-  public static final String DEFAULT_VERT =
-      "#ifdef GL_ES\n"
-          + "precision mediump float;\n"
-          + "#endif\n"
-          + "attribute vec4 a_position;\n"
-          + "attribute vec4 a_color;\n"
-          + "attribute vec2 a_texCoord0;\n"
-          + "uniform mat4 u_projTrans;\n"
-          + "varying vec4 v_color;\n"
-          + "varying vec2 v_texCoords;\n"
-          + "void main() {\n"
-          + "  v_color = a_color;\n"
-          + "  v_color.a = v_color.a * (255.0 / 254.0);\n"
-          + "  v_texCoords = a_texCoord0;\n"
-          + "  gl_Position = u_projTrans * a_position;\n"
-          + "}\n";
+  public static final String DEFAULT_VERT = """
+      #ifdef GL_ES
+      precision mediump float;
+      #endif
+      attribute vec4 a_position;
+      attribute vec4 a_color;
+      attribute vec2 a_texCoord0;
+      uniform mat4 u_projTrans;
+      varying vec4 v_color;
+      varying vec2 v_texCoords;
+      void main() {
+        v_color = a_color;
+        v_color.a = v_color.a * (255.0 / 254.0);
+        v_texCoords = a_texCoord0;
+        gl_Position = u_projTrans * a_position;
+      }
+      """;
 
   /**
    * GLSL {@code #define} macros prepended to every HaxeFlixel fragment shader.
@@ -284,6 +285,11 @@ public class FlixelShader extends FlixelBasic {
    * @return Whether the underlying {@link ShaderProgram} compiled successfully.
    */
   public boolean isCompiled() {
+    return program != null && program.isCompiled();
+  }
+
+  /** Returns whether this shader compiled without errors and is ready to use. */
+  public boolean getCompiled() {
     return program != null && program.isCompiled();
   }
 

@@ -320,6 +320,11 @@ public class FlixelText extends FlixelSprite {
     return wordWrap;
   }
 
+  /** Returns whether word wrapping is enabled. */
+  public boolean getWordWrap() {
+    return wordWrap;
+  }
+
   /**
    * Enables or disables word wrapping. Defaults to {@code true}.
    *
@@ -334,6 +339,11 @@ public class FlixelText extends FlixelSprite {
 
   /** Returns whether the text field auto-sizes to fit its content. */
   public boolean isAutoSize() {
+    return autoSize;
+  }
+
+  /** Returns whether the text field auto-sizes to fit its content. */
+  public boolean getAutoSize() {
     return autoSize;
   }
 
@@ -398,6 +408,11 @@ public class FlixelText extends FlixelSprite {
     return bold;
   }
 
+  /** Returns whether bold text is enabled. */
+  public boolean getBold() {
+    return bold;
+  }
+
   /**
    * Sets whether to use bold text. Only takes visual effect when a {@code .ttf}
    * font has been set via {@link #setFont(FileHandle)}, since the default bitmap
@@ -417,6 +432,11 @@ public class FlixelText extends FlixelSprite {
 
   /** Returns whether italic text is enabled. */
   public boolean isItalic() {
+    return italic;
+  }
+
+  /** Returns whether italic text is enabled. */
+  public boolean getItalic() {
     return italic;
   }
 
@@ -468,6 +488,16 @@ public class FlixelText extends FlixelSprite {
   public boolean isEmbedded() {
     return fontFile != null || fontRegistryId != null
         || FlixelFontRegistry.getDefault() != null;
+  }
+
+  /**
+   * Returns whether this text uses a custom embedded font ({@code true}) or the
+   * default libGDX bitmap font ({@code false}). A font is considered embedded when
+   * set via {@link #setFont(FileHandle)}, {@link #setFont(String)}, or when a
+   * {@linkplain FlixelFontRegistry#setDefault(String) registry default} is active.
+   */
+  public boolean getEmbedded() {
+    return isEmbedded();
   }
 
   /**
@@ -789,7 +819,7 @@ public class FlixelText extends FlixelSprite {
    * attributes have changed since the last rebuild.
    *
    * <p>This ensures that callers such as {@link #screenCenter()} always operate
-   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   * on up-to-date dimensions, even before the first {@link #draw(FlixelBatch)} call.
    *
    * <p>If no font is available yet (for example, before a GL context exists),
    * the returned value is {@code 0} until the first successful rebuild.
@@ -805,7 +835,7 @@ public class FlixelText extends FlixelSprite {
    * attributes have changed since the last rebuild.
    *
    * <p>This ensures that callers such as {@link #screenCenter()} always operate
-   * on up-to-date dimensions, even before the first {@link #draw(Batch)} call.
+   * on up-to-date dimensions, even before the first {@link #draw(FlixelBatch)} call.
    *
    * <p>If no font is available yet (for example, before a GL context exists),
    * the returned value is {@code 0} until the first successful rebuild.
@@ -1077,7 +1107,7 @@ public class FlixelText extends FlixelSprite {
   private float currentScreenScale() {
     FlixelCamera cam = Flixel.getDrawCamera();
     if (cam == null) {
-      if (Flixel.getGame() == null) {
+      if (Flixel.game == null) {
         return 1f;
       }
       cam = Flixel.cameras.first();

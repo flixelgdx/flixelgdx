@@ -501,7 +501,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
     // Builds the full web app then starts an embedded HTTP dev server that serves the output directory.
     // The server keeps running until the developer presses Ctrl+C.
     project.getTasks().register("run", task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup("application");
       task.setDescription("Builds the web app and starts a local HTTP dev server. Press Ctrl+C to stop.");
       task.doLast(t -> {
         File webRoot = teaVmWebRoot.get().getAsFile();

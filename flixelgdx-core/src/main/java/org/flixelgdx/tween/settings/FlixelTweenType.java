@@ -46,8 +46,18 @@ public enum FlixelTweenType {
     return this == LOOPING || this == PINGPONG;
   }
 
+  /** Returns true for LOOPING and PINGPONG tween types. */
+  public boolean getLooping() {
+    return this == LOOPING || this == PINGPONG;
+  }
+
   /** True if this type plays in reverse (initial direction for {@link #BACKWARD}). Toggled each cycle for {@link #PINGPONG}. */
   public boolean isBackward() {
+    return this == BACKWARD;
+  }
+
+  /** Returns true if this tween type plays in reverse. */
+  public boolean getBackward() {
     return this == BACKWARD;
   }
 

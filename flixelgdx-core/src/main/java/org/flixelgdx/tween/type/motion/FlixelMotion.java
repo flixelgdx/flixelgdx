@@ -126,7 +126,17 @@ public abstract class FlixelMotion extends FlixelTween {
     return priorImmovable;
   }
 
+  /** Returns whether the motion target was immovable before this tween started. */
+  public boolean getPriorImmovable() {
+    return priorImmovable;
+  }
+
   public boolean isImmovableCaptured() {
+    return immovableCaptured;
+  }
+
+  /** Returns whether the prior immovable state has been captured from the motion target. */
+  public boolean getImmovableCaptured() {
     return immovableCaptured;
   }
 }

@@ -26,7 +26,7 @@ package org.flixelgdx.backend.ios.alert;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
 
-import org.flixelgdx.backend.alert.FlixelAlerter;
+import org.flixelgdx.backend.FlixelAlerter;
 import org.robovm.apple.dispatch.DispatchQueue;
 import org.robovm.apple.uikit.UIAlertAction;
 import org.robovm.apple.uikit.UIAlertActionStyle;
@@ -40,17 +40,17 @@ import org.robovm.apple.uikit.UIViewController;
 public class FlixelIOSAlerter implements FlixelAlerter {
 
   @Override
-  public void showInfoAlert(String title, String message) {
+  public void info(String title, String message) {
     showAlert(title, message);
   }
 
   @Override
-  public void showWarningAlert(String title, String message) {
+  public void warn(String title, String message) {
     showAlert(title, message);
   }
 
   @Override
-  public void showErrorAlert(String title, String message) {
+  public void error(String title, String message) {
     showAlert(title, message);
   }
 
