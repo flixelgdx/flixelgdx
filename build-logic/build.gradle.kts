@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-  implementation("com.diffplug.spotless:spotless-plugin-gradle:8.6.0")
+  implementation("com.diffplug.spotless:spotless-plugin-gradle:8.8.0")
   implementation("com.vanniktech:gradle-maven-publish-plugin:0.33.0")
   implementation("com.android.tools.build:gradle:8.7.3")
   // Needed by DownloadVlcNativesTask to extract .deb, .7z, and tar archives in-process.
