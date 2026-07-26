@@ -484,6 +484,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       // this is just a sensible default for the very first frame.
       setSize(first.originalWidth, first.originalHeight);
       setOriginCenter();
+      if (antialiasing) {
+        newGraphic.getTexture().setFilter(
+            Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+      }
     }
   }
 
@@ -532,8 +536,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     secondaryGraphics.add(graphic);
 
-    if (antialiasing && graphic.isLoaded()) {
-      graphic.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    if (graphic.isLoaded()) {
+      graphic.getTexture().setFilter(
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 
@@ -946,6 +952,14 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       texture.setFilter(
           antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
           antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+    }
+    if (secondaryGraphics != null) {
+      for (FlixelGraphic g : secondaryGraphics) {
+        var t = g.getTexture();
+        t.setFilter(
+            antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+            antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+      }
     }
   }
 

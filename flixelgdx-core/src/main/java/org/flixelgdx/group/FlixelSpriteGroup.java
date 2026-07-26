@@ -348,6 +348,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
+    super.setAntialiasing(antialiasing);
     FlixelSprite[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
       FlixelSprite s = items[i];
