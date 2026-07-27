@@ -36,6 +36,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.XmlReader;
 
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
@@ -230,7 +231,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Returns the existing controller or creates and assigns a new {@link FlixelAnimationController} for {@code this} sprite.
+   * Returns the existing controller or creates and assigns a new {@link FlixelAnimationController}
+   * for {@code this} sprite.
    */
   @NotNull
   public FlixelAnimationController ensureAnimation() {
@@ -325,6 +327,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     frames = wrapFrames(regions);
     currentFrame = frames[0][0];
     updateHitbox(frameWidth, frameHeight);
+    setAntialiasing(antialiasing);
     return this;
   }
 
@@ -412,6 +415,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       animation.clear();
     }
     updateHitbox(frameWidth, frameHeight);
+    setAntialiasing(antialiasing);
     return this;
   }
 
@@ -459,10 +463,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#addSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link FlixelAnimationController#addSparrowFrames(String, XmlReader.Element)} and
    * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with
+   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get(...)} with
    *     {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
@@ -484,10 +488,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       // this is just a sensible default for the very first frame.
       setSize(first.originalWidth, first.originalHeight);
       setOriginCenter();
-      if (antialiasing) {
-        newGraphic.getTexture().setFilter(
-            Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-      }
+      newGraphic.getTexture().setFilter(
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 

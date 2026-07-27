@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import com.badlogic.gdx.Preferences;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -50,6 +51,7 @@ import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
@@ -1333,6 +1335,10 @@ public final class Flixel {
    * value to actually apply to any {@link FlixelSprite} / {@link FlixelAntialiasable} object being
    * added to a {@link FlixelState}, set {@link #applyAntialiasingOnStateAdd} to {@code true}.
    *
+   * <p>After propagating the new value to every state member, this method calls
+   * {@link #refreshAntialiasing()} to guarantee that members sharing the same underlying texture
+   * end up with a consistent filter. See that method's documentation for details.
+   *
    * @param enabled If antialiasing should be applied to all current
    *     {@link FlixelSprite} / {@link FlixelAntialiasable} objects.
    */
@@ -1358,6 +1364,68 @@ public final class Flixel {
       }
       if (member instanceof FlixelAntialiasable m) {
         m.setAntialiasing(enabled);
+      }
+    }
+    members.end();
+    refreshAntialiasing();
+  }
+
+  /**
+   * Re-applies texture filter settings for every {@link FlixelAntialiasable} member of the current
+   * state in a two-pass order that resolves conflicts on shared textures.
+   *
+   * <p>OpenGL texture filtering is a property of the texture object itself, not of each individual
+   * sprite. When multiple sprites share the same underlying texture (for example, every arrow in a
+   * rhythm game's strumline atlas), the last call sets the filter for the texture directly, regardless
+   * of which sprite made the call. This can leave sprites with {@code antialiasing = true} rendering with
+   * a {@link Texture.TextureFilter#Nearest} filter if a sprite with {@code antialiasing = false} that
+   * uses the same texture was set up last.
+   *
+   * <p>This method fixes that by always processing members in two passes:
+   * <ol>
+   *   <li>First, all members whose {@code antialiasing} flag is {@code false} re-apply Nearest.</li>
+   *   <li>Then, all members whose {@code antialiasing} flag is {@code true} re-apply Linear.</li>
+   * </ol>
+   * Because the Linear pass runs last, any texture shared between a "smooth" and a "pixelated"
+   * member will end up with a {@link Texture.TextureFilter#Linear}, matching what a developer who requested
+   * antialiasing would expect.
+   *
+   * <p>Call this after finishing the setup of a state (for example, at the end of
+   * {@link FlixelState#create()}), especially when some state members share textures but have
+   * different antialiasing settings.
+   *
+   * <p>Example usage:
+   * <pre>{@code
+   * @Override
+   * public void create() {
+   *   // ... add all sprites, groups, etc. ...
+   *   Flixel.refreshAntialiasing();
+   * }
+   * }</pre>
+   */
+  public static void refreshAntialiasing() {
+    if (state == null) {
+      return;
+    }
+    var members = state.getMembers();
+    if (members == null) {
+      return;
+    }
+
+    var mbrs = members.begin();
+    for (int i = 0; i < members.size; i++) {
+      var member = mbrs[i];
+      if (member instanceof FlixelAntialiasable m && !m.isAntialiasing()) {
+        m.setAntialiasing(false);
+      }
+    }
+    members.end();
+
+    mbrs = members.begin();
+    for (int i = 0; i < members.size; i++) {
+      var member = mbrs[i];
+      if (member instanceof FlixelAntialiasable m && m.isAntialiasing()) {
+        m.setAntialiasing(true);
       }
     }
     members.end();
