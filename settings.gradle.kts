@@ -66,6 +66,9 @@ include(
   "flixelgdx-logging-plugin",
   "flixelgdx-basisu-plugin",
   "flixelgdx-video-core",
+  "flixelgdx-video-vlc-natives-windows-amd64",
+  "flixelgdx-video-vlc-natives-linux-amd64",
+  "flixelgdx-video-vlc-natives-macos-universal",
   "flixelgdx-video-lwjgl3",
   "flixelgdx-video-teavm",
   "flixelgdx-test"
