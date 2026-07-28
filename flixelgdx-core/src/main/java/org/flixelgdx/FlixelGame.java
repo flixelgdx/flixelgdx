@@ -865,11 +865,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (state != null) {
       state.onFocusGained();
     }
-    if (autoPause && !gamePaused) {
-      Flixel.sound.resume();
-      Gdx.graphics.setContinuousRendering(true);
-      Gdx.graphics.requestRendering();
+    if (autoPause) {
       shouldUpdate = true;
+      if (!gamePaused) {
+        Flixel.sound.resume();
+        Gdx.graphics.setContinuousRendering(true);
+        Gdx.graphics.requestRendering();
+      }
     }
     Flixel.Signals.windowFocused.dispatch();
   }
@@ -1508,6 +1510,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Returns whether the global overlay camera is enabled. */
   public boolean getGlobalOverlayEnabled() {
     return overlayEnabled;
+  }
+
+  public boolean getShouldUpdate() {
+    return isShouldUpdate();
+  }
+
+  public boolean isShouldUpdate() {
+    return shouldUpdate;
   }
 
   /**
