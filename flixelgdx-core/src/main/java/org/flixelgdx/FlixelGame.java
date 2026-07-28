@@ -522,6 +522,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         current = sub;
       }
 
+      if (Flixel.sound != null) {
+        Flixel.sound.update(elapsed);
+      }
+
       // Update all cameras.
       for (FlixelCamera camera : cameras) {
         camera.update(elapsed);

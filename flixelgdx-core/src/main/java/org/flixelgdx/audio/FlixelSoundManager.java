@@ -369,6 +369,31 @@ public class FlixelSoundManager implements FlixelDestroyable, Disposable {
   }
 
   /**
+   * Ticks all active sounds so that {@link FlixelSound#onComplete} fires and
+   * {@link FlixelSound#setAutoDestroy auto-destroy} is honored.
+   *
+   * <p>Called automatically by {@link org.flixelgdx.FlixelGame FlixelGame} every frame
+   * inside the game-update block; do not call this manually.
+   *
+   * <p>Sounds whose {@link FlixelSound#isExists() exists} flag is {@code false} (e.g.
+   * because they auto-destroyed inside their own {@code update()}) are pruned from the
+   * tracking list during this pass.
+   *
+   * @param elapsed Time in seconds since the last frame.
+   */
+  public void update(float elapsed) {
+    for (int i = activeSounds.size - 1; i >= 0; i--) {
+      FlixelSound s = activeSounds.get(i);
+      if (s.isExists()) {
+        s.update(elapsed);
+      }
+      if (!s.isExists()) {
+        activeSounds.removeIndex(i);
+      }
+    }
+  }
+
+  /**
    * Pauses all currently playing sounds. Used when the game loses focus or
    * is minimized. Only sounds that were playing are paused; they can be
    * resumed with {@link #resume()}.
