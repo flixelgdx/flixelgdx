@@ -195,6 +195,10 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
     if (playing) {
       return;
     }
+    manuallyStopped = false;
+    if (ended) {
+      pauseOffset = 0.0;
+    }
     ended = false;
     if (!decoded) {
       pendingPlay = true;
@@ -345,7 +349,10 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
     }
     if (!looping) {
       playing = false;
-      pauseOffset = 0.0;
+      // Keep the cursor at the end so getCursorPosition() returns totalLength
+      // after natural completion, allowing callers to detect the song ended via
+      // time/length comparisons.
+      pauseOffset = totalLength;
       ended = true;
     }
   }
