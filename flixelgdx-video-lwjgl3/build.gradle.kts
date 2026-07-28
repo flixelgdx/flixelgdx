@@ -12,7 +12,9 @@ dependencies {
   implementation(project(":flixelgdx-lwjgl3"))
   implementation(libs.gdx.backend.lwjgl3)
   implementation(libs.jetbrains.annotations)
-  runtimeOnly(project(":flixelgdx-video-vlc-natives"))
+  runtimeOnly(project(":flixelgdx-video-vlc-natives-windows-amd64"))
+  runtimeOnly(project(":flixelgdx-video-vlc-natives-linux-amd64"))
+  runtimeOnly(project(":flixelgdx-video-vlc-natives-macos-universal"))
 
   // Provides the Feature interface and RuntimeJNIAccess used by FlixelVideoGraalFeature.
   // Compile-only: the class runs inside native-image at build time, not in user runtimes.

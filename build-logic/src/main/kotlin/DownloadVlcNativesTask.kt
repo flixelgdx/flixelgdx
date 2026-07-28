@@ -1,6 +1,4 @@
-import org.apache.commons.compress.archivers.ar.ArArchiveInputStream
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ArchiveOperations
@@ -12,12 +10,10 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.tukaani.xz.XZInputStream
 import java.io.File
 import java.net.URI
 import java.security.MessageDigest
 import java.util.Locale
-import java.util.zip.GZIPInputStream
 import javax.inject.Inject
 
 /**
@@ -108,29 +104,29 @@ abstract class DownloadVlcNativesTask @Inject constructor(
   }
 
   private fun extractDeb(deb: File, destDir: File) {
-    deb.inputStream().use { fis ->
-      val ar = ArArchiveInputStream(fis)
-      var entry = ar.nextEntry
-      while (entry != null) {
-        if (entry.name.startsWith("data.tar")) {
-          val dataStream = when {
-            entry.name.endsWith(".xz") -> XZInputStream(ar)
-            entry.name.endsWith(".gz") -> GZIPInputStream(ar)
-            else -> ar
-          }
-          val tar = TarArchiveInputStream(dataStream)
-          var tarEntry = tar.nextEntry
-          while (tarEntry != null) {
-            if (tarEntry.isFile) {
-              val out = File(destDir, tarEntry.name)
-              out.parentFile.mkdirs()
-              out.outputStream().use { tar.copyTo(it) }
-            }
-            tarEntry = tar.nextEntry
-          }
-        }
-        entry = ar.nextEntry
+    // Use system ar/tar instead of commons-compress to avoid classloader version conflicts
+    // with the Android Gradle Plugin, which pulls commons-compress 1.21 into a shared
+    // parent classloader that overrides build-logic's 1.27.x at runtime.
+    destDir.mkdirs()
+    val arStage = createTempDir("deb-ar-")
+    try {
+      val arResult = ProcessBuilder("ar", "x", deb.absolutePath)
+        .directory(arStage)
+        .redirectErrorStream(true)
+        .start()
+      val arOut = arResult.inputStream.bufferedReader().readText()
+      val arExit = arResult.waitFor()
+      if (arExit != 0) throw GradleException("ar x failed for ${deb.name} (exit $arExit): $arOut")
+      arStage.listFiles()?.filter { it.name.startsWith("data.tar") }?.forEach { dataTar ->
+        val tarResult = ProcessBuilder("tar", "xf", dataTar.absolutePath, "-C", destDir.absolutePath)
+          .redirectErrorStream(true)
+          .start()
+        val tarOut = tarResult.inputStream.bufferedReader().readText()
+        val tarExit = tarResult.waitFor()
+        if (tarExit != 0) throw GradleException("tar xf failed for ${dataTar.name} (exit $tarExit): $tarOut")
       }
+    } finally {
+      arStage.deleteRecursively()
     }
   }
 
@@ -152,18 +148,18 @@ abstract class DownloadVlcNativesTask @Inject constructor(
     }
   }
 
-  private fun findFile(files: Map<String, File>, suffix: String): File =
+  private fun findFile(files: Map<String, File>, suffix: String): File? =
     files.entries.firstOrNull { (name, _) -> name.endsWith(suffix) }?.value
-      ?: throw GradleException("No download spec found with name suffix '$suffix'")
 
   private fun extractWindows(version: String, files: Map<String, File>, outRoot: File) {
+    val zip = findFile(files, "-win64.zip") ?: return
     val blocklist = pluginBlocklist.get()
     val winDir = File(outRoot, "windows-amd64")
     val zipRoot = "vlc-$version/"
     if (!File(winDir, "libvlc.dll").exists()) {
       logger.lifecycle("Extracting Windows natives...")
       fs.copy {
-        from(archives.zipTree(findFile(files, "-win64.zip"))) {
+        from(archives.zipTree(zip)) {
           include("${zipRoot}libvlc.dll", "${zipRoot}libvlccore.dll", "${zipRoot}plugins/**")
           blocklist.forEach { exclude("${zipRoot}plugins/$it/**") }
           eachFile { path = path.substring(zipRoot.length) }
@@ -172,20 +168,23 @@ abstract class DownloadVlcNativesTask @Inject constructor(
         into(winDir)
       }
     }
-    if (!File(winDir, "sdk/libvlc.lib").exists()) {
+    val sevenZip = findFile(files, "-win64.7z")
+    if (sevenZip != null && !File(winDir, "sdk/libvlc.lib").exists()) {
       logger.lifecycle("Extracting Windows SDK import libraries...")
-      extractLibsFrom7z(findFile(files, "-win64.7z"), "vlc-$version/sdk/lib/", File(winDir, "sdk"))
+      extractLibsFrom7z(sevenZip, "vlc-$version/sdk/lib/", File(winDir, "sdk"))
     }
   }
 
   private fun extractLinux(files: Map<String, File>, outRoot: File, dlDir: File) {
+    val debs = downloadSpecs.get().filter { it["name"]!!.endsWith(".deb") }
+    if (debs.isEmpty()) return
     val blocklist = pluginBlocklist.get()
     val linuxDir = File(outRoot, "linux-amd64")
     if (!File(linuxDir, "libvlc.so.5").exists()) {
       logger.lifecycle("Extracting Linux natives...")
       val debStage = File(dlDir, "deb-stage")
       fs.delete { delete(debStage) }
-      downloadSpecs.get().filter { it["name"]!!.endsWith(".deb") }.forEach { spec ->
+      debs.forEach { spec ->
         extractDeb(files[spec["name"]]!!, debStage)
       }
       val usrLib = File(debStage, "usr/lib/x86_64-linux-gnu")
@@ -213,7 +212,7 @@ abstract class DownloadVlcNativesTask @Inject constructor(
   private fun extractMacOS(version: String, files: Map<String, File>, outRoot: File, dlDir: File) {
     val macDir = File(outRoot, "macos-universal")
     if (File(macDir, "lib/libvlc.dylib").exists()) return
-    val dmg = findFile(files, "-universal.dmg")
+    val dmg = findFile(files, "-universal.dmg") ?: return
     val sevenZip = listOf("7z", "7za").firstOrNull { tool ->
       try { ProcessBuilder(tool).start().waitFor(); true } catch (_: Exception) { false }
     }
@@ -223,13 +222,14 @@ abstract class DownloadVlcNativesTask @Inject constructor(
       fs.delete { delete(dmgStage) }
       dmgStage.mkdirs()
       val appPath = "VLC media player/VLC.app/Contents/MacOS"
-      val proc = ProcessBuilder(
+      val exitCode = ProcessBuilder(
         sevenZip, "x", "-y", "-o${dmgStage.absolutePath}", dmg.absolutePath,
         "$appPath/lib/*", "$appPath/plugins/*"
-      ).start()
-      proc.inputStream.use { }
-      proc.errorStream.use { }
-      proc.waitFor()
+      )
+        .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+        .redirectError(ProcessBuilder.Redirect.DISCARD)
+        .start()
+        .waitFor()
       val macSrc = File(dmgStage, appPath)
       if (File(macSrc, "lib").exists()) {
         fs.copy {

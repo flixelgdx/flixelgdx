@@ -1,11 +1,3 @@
-// Packages libvlc native libraries for Windows, macOS, and Linux into a single JAR.
-// flixelgdx-video-lwjgl3 pulls this as a runtimeOnly dependency; FlixelVlcDiscovery
-// extracts the correct platform's files to a per-user cache at runtime.
-//
-// Download and packaging are gated behind -PpackageVlcNatives=true so normal developer
-// builds stay fast and network-free. The publish workflow sets this flag when cutting a
-// release so that the natives JAR is always up to date on Maven Central.
-
 plugins {
   id("flixelgdx.java-library")
 }
@@ -13,21 +5,6 @@ plugins {
 val vlcVersionString = libs.versions.vlc.get()
 
 val vlcDownloads = listOf(
-  mapOf(
-    "name" to "vlc-${vlcVersionString}-win64.zip",
-    "url" to "https://download.videolan.org/pub/videolan/vlc/${vlcVersionString}/win64/vlc-${vlcVersionString}-win64.zip",
-    "sha256" to "992d19dbd0b8a7cde9167d2f7780b1ef6f92acc8a71acfa736101a21f35181e1"
-  ),
-  mapOf(
-    "name" to "vlc-${vlcVersionString}-win64.7z",
-    "url" to "https://download.videolan.org/pub/videolan/vlc/${vlcVersionString}/win64/vlc-${vlcVersionString}-win64.7z",
-    "sha256" to "eb4fd8a28291da73608c733786a09610fea865fbe94113bcb60b91c1ebb8404a"
-  ),
-  mapOf(
-    "name" to "vlc-${vlcVersionString}-universal.dmg",
-    "url" to "https://download.videolan.org/pub/videolan/vlc/${vlcVersionString}/macosx/vlc-${vlcVersionString}-universal.dmg",
-    "sha256" to "56ee657c3aaf5c71b4ab7d6e4f4a77f6eca54633e0bf42a93b8116eb1d1f6ec9"
-  ),
   mapOf(
     "name" to "libvlc5_${vlcVersionString}-0+deb12u1_amd64.deb",
     "url" to "https://deb.debian.org/debian/pool/main/v/vlc/libvlc5_${vlcVersionString}-0%2Bdeb12u1_amd64.deb",
@@ -50,8 +27,6 @@ val vlcDownloads = listOf(
   )
 )
 
-// Plugin categories no game playback path needs (interface, scripting, streaming out,
-// discovery). Dropping them roughly halves the Windows natives payload.
 val vlcPluginBlocklist = listOf(
   "gui", "lua", "control", "services_discovery", "visualization",
   "mux", "stream_out", "access_output", "meta_engine", "keystore", "logger"
@@ -63,7 +38,7 @@ val vlcNativesDir = layout.buildDirectory.dir("vlc-natives")
 if ((findProperty("packageVlcNatives") ?: "false") == "true") {
   val downloadVlcNatives = tasks.register<DownloadVlcNativesTask>("downloadVlcNatives") {
     group = "flixelgdx"
-    description = "Downloads libvlc $vlcVersionString natives (Windows, macOS, Linux) for JAR packaging."
+    description = "Downloads libvlc $vlcVersionString Linux natives for JAR packaging."
     vlcVersion.set(vlcVersionString)
     downloadSpecs.set(vlcDownloads)
     pluginBlocklist.set(vlcPluginBlocklist)
@@ -75,7 +50,6 @@ if ((findProperty("packageVlcNatives") ?: "false") == "true") {
     dependsOn(downloadVlcNatives)
     from(vlcNativesDir) {
       into("org/flixelgdx/video/natives")
-      exclude("**/sdk/**")
     }
   }
 }
