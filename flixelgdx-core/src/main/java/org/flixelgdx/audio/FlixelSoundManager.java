@@ -30,6 +30,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.functional.FlixelUpdatable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * otherwise enqueue and block-load that source before creating a {@link FlixelSound}.
  * External paths still bypass the asset manager and hit the backend directly.
  */
-public class FlixelSoundManager implements FlixelDestroyable, Disposable {
+public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, Disposable {
 
   private final FlixelSoundBackend.Factory factory;
   private final Array<FlixelSound> activeSounds = new Array<>(false, 8);
@@ -381,6 +382,7 @@ public class FlixelSoundManager implements FlixelDestroyable, Disposable {
    *
    * @param elapsed Time in seconds since the last frame.
    */
+  @Override
   public void update(float elapsed) {
     for (int i = activeSounds.size - 1; i >= 0; i--) {
       FlixelSound s = activeSounds.get(i);
