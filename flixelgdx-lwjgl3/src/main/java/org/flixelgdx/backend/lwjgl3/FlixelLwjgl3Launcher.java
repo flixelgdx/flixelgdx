@@ -35,8 +35,6 @@ import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
-import org.flixelgdx.backend.lwjgl3.alert.FlixelLwjgl3Alerter;
-import org.flixelgdx.backend.lwjgl3.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3HapticsProvider;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;

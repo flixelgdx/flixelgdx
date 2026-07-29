@@ -13,8 +13,6 @@
  *       implementations differ across desktop, web, mobile, or headless platforms.</li>
  *   <li><b>Device Integration:</b> Handles native dialogs, input devices, file operations,
  *       windowing, and system-level operations to offer consistent behavior across targets.</li>
- *   <li><b>Low-Level Functionality:</b> Exposes utilities for performance-sensitive operations
- *       and engine internals such as timing, memory management, texture uploading, and more.</li>
  *   <li><b>Extensibility:</b> Enables custom backends to be plugged in, making FlixelGDX adaptable
  *       for non-standard or future platforms.</li>
  * </ul>
@@ -43,5 +41,4 @@
  * or integrate with specialized runtime features, refer to the source code in this package and
  * related documentation in the FlixelGDX repository.
  */
-
 package org.flixelgdx.backend;

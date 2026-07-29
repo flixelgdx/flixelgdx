@@ -25,6 +25,7 @@ package org.flixelgdx.backend.teavm.audio;
 
 import com.github.xpenatan.gdx.teavm.backends.web.dom.typedarray.TypedArrays;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundBackend;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.teavm.jso.JSBody;
@@ -59,8 +60,6 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
   private double startContextTime;
   private double pauseOffset;
   private double totalLength;
-  // Context time recorded when play() is called before decode completes. Used to
-  // compensate for decode lag so tracks started together stay in sync.
   private double pendingStartContextTime = -1.0;
 
   private final JSObject context;
@@ -118,7 +117,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
    *
    * <p>Because the buffer is already decoded, this constructor never blocks and the
    * sound is ready to play immediately. Use {@link FlixelTeaVMSoundHandler#prewarmSound}
-   * (via {@link FlixelSoundManager#prewarmSound FlixelSoundManager.prewarmSound}) to populate the
+   * (via {@code FlixelDefaultAssetManager.prewarmAudio(String)}) to populate the
    * cache before calling play.
    *
    * @param path The asset path, used only for error messages.
@@ -127,8 +126,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
    * @param context The shared {@code AudioContext} created by the factory.
    * @param masterGainNode The factory-owned master gain node to connect into.
    */
-  FlixelTeaVMSound(String path, JSObject audioBuffer, double length,
-      JSObject context, JSObject masterGainNode) {
+  FlixelTeaVMSound(String path, JSObject audioBuffer, double length, JSObject context, JSObject masterGainNode) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -162,10 +160,9 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
    * @param context The shared {@code AudioContext} created by the factory.
    * @param masterGainNode The factory-owned master gain node to connect into.
    * @param onDecoded Called once with the decoded buffer when decoding succeeds,
-   *                  or {@code null} if no notification is needed.
+   *     or {@code null} if no notification is needed.
    */
-  FlixelTeaVMSound(String path, byte[] data, JSObject context, JSObject masterGainNode,
-      AudioBufferCallback onDecoded) {
+  FlixelTeaVMSound(String path, byte[] data, JSObject context, JSObject masterGainNode, AudioBufferCallback onDecoded) {
     this.path = path;
     this.context = context;
     this.gainNode = jsCreateGain(context);
@@ -187,13 +184,16 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
             playInternal();
           }
         },
-        () -> System.err.println("[FlixelGDX] Failed to decode audio: " + path));
+        () -> Flixel.error("FlixelGDX-TeaVM", "Failed to decode audio: " + path));
   }
 
   @Override
   public void play() {
     if (playing) {
       return;
+    }
+    if (ended) {
+      pauseOffset = 0.0;
     }
     ended = false;
     if (!decoded) {
@@ -345,7 +345,10 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
     }
     if (!looping) {
       playing = false;
-      pauseOffset = 0.0;
+      // Keep the cursor at the end so getCursorPosition() returns totalLength
+      // after natural completion, allowing callers to detect the song ended via
+      // time/length comparisons.
+      pauseOffset = totalLength;
       ended = true;
     }
   }
@@ -388,8 +391,7 @@ final class FlixelTeaVMSound implements FlixelSoundBackend, FlixelTeaVMAudioNode
   @JSBody(params = { "node" }, script = "try { node.disconnect(); } catch(e) {}")
   private static native void jsDisconnect(JSObject node);
 
-  @JSBody(params = { "ctx", "buf", "onOk", "onErr" },
-      script = "ctx.decodeAudioData(buf, onOk, onErr);")
+  @JSBody(params = { "ctx", "buf", "onOk", "onErr" }, script = "ctx.decodeAudioData(buf, onOk, onErr);")
   private static native void jsDecodeAudioData(JSObject ctx, ArrayBuffer buf,
       DecodeSuccessHandler onOk, DecodeErrorHandler onErr);
 
