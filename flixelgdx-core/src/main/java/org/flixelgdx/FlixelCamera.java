@@ -533,10 +533,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param worldY World-space Y to center on.
    */
   public void focusOn(float worldX, float worldY) {
-    // Scroll = point - full camera buffer/2, not inner view/2, so worldToView*
-    // centers stay correct when zoom != 1.
-    scrollX = worldX - width * 0.5f;
-    scrollY = worldY - height * 0.5f;
+    scrollX = worldX - getViewMarginX() - camera.viewportWidth / (2f * zoom);
+    scrollY = worldY - getViewMarginY() - camera.viewportHeight / (2f * zoom);
   }
 
   /**
@@ -1216,11 +1214,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   private float scrollXForFollowCenter(float tx, float sx) {
-    return (tx - getViewMarginX() - getViewWidth() * 0.5f) / sx;
+    return (tx - getViewMarginX() - camera.viewportWidth / (2f * zoom)) / sx;
   }
 
   private float scrollYForFollowCenter(float ty, float sy) {
-    return (ty - getViewMarginY() - getViewHeight() * 0.5f) / sy;
+    return (ty - getViewMarginY() - camera.viewportHeight / (2f * zoom)) / sy;
   }
 
   private float scrollXForFollowEdge(float numerator, float sx) {
@@ -1248,8 +1246,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float ty = target.getY() + target.getHeight() / 2f + targetOffsetY + followLeadY;
 
     if (style == FollowStyle.SCREEN_BY_SCREEN) {
-      float vw = getViewWidth();
-      float vh = getViewHeight();
+      float vw = camera.viewportWidth / zoom;
+      float vh = camera.viewportHeight / zoom;
       float viewLeft = scrollX + getViewMarginX();
       float viewTop = scrollY + getViewMarginY();
       if (tx < viewLeft) {
@@ -1309,8 +1307,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       return;
     }
 
-    float vw = getViewWidth();
-    float vh = getViewHeight();
+    float vw = camera.viewportWidth / zoom;
+    float vh = camera.viewportHeight / zoom;
     float w, h;
     switch (style) {
       case LOCKON -> {
