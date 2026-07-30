@@ -53,9 +53,6 @@ final class LibVlc {
   /** libvlc_state_t: media player reached the end of the media. */
   static final int STATE_ENDED = 6;
 
-  /** libvlc_state_t: media player hit an unrecoverable error. */
-  static final int STATE_ERROR = 7;
-
   /** libvlc_event_e: playback reached the end of the stream. */
   static final int EVENT_END_REACHED = 265;
 
@@ -116,22 +113,19 @@ final class LibVlc {
 
   static native int libvlc_audio_set_volume(Pointer mediaPlayer, int volume);
 
-  static native int libvlc_video_get_size(Pointer mediaPlayer, int num, IntByReference width,
-      IntByReference height);
+  static native int libvlc_video_get_size(Pointer mediaPlayer, int num, IntByReference width, IntByReference height);
 
-  static native void libvlc_video_set_callbacks(Pointer mediaPlayer, LockCallback lock,
-      UnlockCallback unlock, DisplayCallback display, Pointer opaque);
+  static native void libvlc_video_set_callbacks(Pointer mediaPlayer, LockCallback lock, UnlockCallback unlock,
+      DisplayCallback display, Pointer opaque);
 
   static native void libvlc_video_set_format_callbacks(Pointer mediaPlayer, FormatCallback setup,
       CleanupCallback cleanup);
 
   static native Pointer libvlc_media_player_event_manager(Pointer mediaPlayer);
 
-  static native int libvlc_event_attach(Pointer eventManager, int eventType, EventCallback callback,
-      Pointer userData);
+  static native int libvlc_event_attach(Pointer eventManager, int eventType, EventCallback callback, Pointer userData);
 
-  static native void libvlc_event_detach(Pointer eventManager, int eventType, EventCallback callback,
-      Pointer userData);
+  static native void libvlc_event_detach(Pointer eventManager, int eventType, EventCallback callback, Pointer userData);
 
   /**
    * libvlc_video_lock_cb: libvlc asks where to decode the next frame into.

@@ -77,7 +77,7 @@ public final class FlixelGamepadDevice {
   /**
    * Returns {@code true} when this controller is currently pressing the given button.
    *
-   * @param logicalButton A logical button constant from {@link FlixelGamepadButton}.
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
    * @return {@code true} when the button is held this frame.
    */
   public boolean pressed(int logicalButton) {
@@ -87,7 +87,7 @@ public final class FlixelGamepadDevice {
   /**
    * Returns {@code true} when this controller first pressed the button this frame.
    *
-   * @param logicalButton A logical button constant from {@link FlixelGamepadButton}.
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
    * @return {@code true} on the first frame the button is pressed.
    */
   public boolean justPressed(int logicalButton) {
@@ -97,7 +97,7 @@ public final class FlixelGamepadDevice {
   /**
    * Returns {@code true} when this controller released the button this frame.
    *
-   * @param logicalButton A logical button constant from {@link FlixelGamepadButton}.
+   * @param logicalButton A logical button constant from {@link FlixelGamepadInput}.
    * @return {@code true} on the first frame the button is no longer pressed.
    */
   public boolean justReleased(int logicalButton) {
@@ -153,7 +153,7 @@ public final class FlixelGamepadDevice {
   /**
    * Returns the current value of a logical axis on this controller, after dead-zone processing.
    *
-   * @param logicalAxis A logical axis constant from {@link FlixelGamepadButton}.
+   * @param logicalAxis A logical axis constant from {@link FlixelGamepadInput}.
    * @return Axis value in the range {@code [-1, 1]}, or {@code 0f} when inactive or within the
    *     dead zone.
    */
@@ -162,21 +162,21 @@ public final class FlixelGamepadDevice {
   }
 
   /**
-   * Shorthand for the left stick horizontal axis ({@link FlixelGamepadButton#AXIS_LEFT_X}).
+   * Shorthand for the left stick horizontal axis ({@link FlixelGamepadInput#AXIS_LEFT_X}).
    *
    * @return Horizontal axis value in the range {@code [-1, 1]}.
    */
   public float getXAxis() {
-    return manager.getAxis(id, FlixelGamepadButton.AXIS_LEFT_X);
+    return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_X);
   }
 
   /**
-   * Shorthand for the left stick vertical axis ({@link FlixelGamepadButton#AXIS_LEFT_Y}).
+   * Shorthand for the left stick vertical axis ({@link FlixelGamepadInput#AXIS_LEFT_Y}).
    *
    * @return Vertical axis value in the range {@code [-1, 1]}.
    */
   public float getYAxis() {
-    return manager.getAxis(id, FlixelGamepadButton.AXIS_LEFT_Y);
+    return manager.getAxis(id, FlixelGamepadInput.AXIS_LEFT_Y);
   }
 
   /**
@@ -185,7 +185,7 @@ public final class FlixelGamepadDevice {
    *
    * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
    * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
-   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadButton#L2} there instead.
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadInput#L2} there instead.
    *
    * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
    */
@@ -199,7 +199,7 @@ public final class FlixelGamepadDevice {
    *
    * <p>On Jamepad/SDL desktop, triggers are axes; this reads the trigger axis directly.
    * On web (TeaVM/W3C Gamepad API), triggers are digital buttons and this always returns {@code 0};
-   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadButton#R2} there instead.
+   * because of this, use {@link #pressed(int)} with {@link FlixelGamepadInput#R2} there instead.
    *
    * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
    */

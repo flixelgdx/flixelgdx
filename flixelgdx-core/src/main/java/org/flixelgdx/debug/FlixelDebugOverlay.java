@@ -44,7 +44,9 @@ import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
+import org.flixelgdx.input.mouse.FlixelMouseManager;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
@@ -487,14 +489,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer (typically the imgui
    * debug overlay) is currently capturing the mouse. When this returns {@code true},
-   * {@link org.flixelgdx.input.mouse.FlixelMouseManager#pressed(int) FlixelMouseManager.pressed(int)} and
+   * {@link FlixelMouseManager#pressed(int) FlixelMouseManager.pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, and the debug camera tools / sprite picker also skip
    * their work, so clicking inside (for example) a Dear ImGui window does not bleed through
    * into the game logic. Defaults to {@code false}.
    *
    * <p>The debug overlay's own mouse-driven tools (sprite picker, camera pan) read
-   * {@link org.flixelgdx.input.mouse.FlixelMouseManager#rawPressed(int) FlixelMouseManager.rawPressed(int)} so they
+   * {@link FlixelMouseManager#rawPressed(int) FlixelMouseManager.rawPressed(int)} so they
    * can opt in to "ignore the suppression" while still respecting this hook for the early-exit
    * gate.
    *
@@ -507,14 +509,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer is currently consuming
    * keyboard input. When this returns {@code true},
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#pressed(int) FlixelKeyInputManager.pressed(int)} and
+   * {@link FlixelKeyInputManager#pressed(int) FlixelKeyInputManager.pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, so typing in (for example) a Dear ImGui text field
    * cannot also capture game input and activate game-level actions like {@code ui_accept}.
    * Defaults to {@code false}.
    *
    * <p>The debug overlay's own toggle keys (debug overlay toggle, hitbox toggle, pause) read
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)}
+   * {@link FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)}
    * so they keep working even when this returns {@code true}.
    *
    * @return {@code true} if a foreground UI element is consuming keyboard input this frame.
@@ -566,19 +568,16 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
-      if (Flixel.mouse.rawJustPressed(cameraPanButton)) {
-        lastPanScreenX = sx;
-        lastPanScreenY = sy;
-      } else {
+      if (!Flixel.mouse.rawJustPressed(cameraPanButton)) {
         panUnprojectA.set(lastPanScreenX, lastPanScreenY);
         cam.getViewport().unproject(panUnprojectA);
         panUnprojectB.set(sx, sy);
         cam.getViewport().unproject(panUnprojectB);
         cam.scrollX -= panUnprojectB.x - panUnprojectA.x;
         cam.scrollY -= panUnprojectB.y - panUnprojectA.y;
-        lastPanScreenX = sx;
-        lastPanScreenY = sy;
       }
+      lastPanScreenX = sx;
+      lastPanScreenY = sy;
     }
   }
 
@@ -779,8 +778,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   /**
-   * View-space hit test aligned with {@link FlixelDrawable#draw(FlixelBatch) FlixelSprite.draw(Batch)}: uses world position
-   * plus each object's scroll factors so parallax sprites and grouped layers match what the player sees.
+   * View-space hit test aligned with {@link FlixelDrawable#draw(FlixelBatch) FlixelSprite.draw(Batch)}:
+   * uses world position plus each object's scroll factors so parallax sprites and grouped layers match
+   * what the player sees.
    */
   private static boolean overlapsObjectInView(@NotNull FlixelCamera cam, @NotNull FlixelObject obj,
       float viewX, float viewY) {

@@ -51,7 +51,7 @@ import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.input.gamepad.FlixelGamepadButton;
+import org.flixelgdx.input.gamepad.FlixelGamepadInput;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
@@ -568,7 +568,7 @@ public final class Flixel {
    *
    * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
    * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
-   * defined in {@link FlixelGamepadButton}, so the same game code works across different controller
+   * defined in {@link FlixelGamepadInput}, so the same game code works across different controller
    * layouts without any platform-specific branching.
    *
    * <p>Each connected controller is identified by a zero-based index. Player 1's controller is
@@ -583,16 +583,16 @@ public final class Flixel {
    * Flixel.gamepads.enabled = true;
    *
    * // Check if player 1 pressed the A button this frame.
-   * if (Flixel.gamepads.justPressed(0, FlixelGamepadButton.A)) {
+   * if (Flixel.gamepads.justPressed(0, FlixelGamepadInput.A)) {
    *   player.jump();
    * }
    *
    * // Read the left stick's horizontal axis for movement.
-   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadButton.AXIS_LEFT_X);
+   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadInput.AXIS_LEFT_X);
    * player.setVelocityX(horizontal * MOVE_SPEED * elapsed);
    * }</pre>
    *
-   * @see FlixelGamepadButton
+   * @see FlixelGamepadInput
    */
   @NotNull
   public static FlixelGamepadInputManager gamepads;

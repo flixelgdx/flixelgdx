@@ -24,6 +24,8 @@
 package org.flixelgdx.graphics;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+import org.flixelgdx.debug.FlixelDebugManager;
+import org.flixelgdx.debug.FlixelDebugOverlay;
 
 /**
  * Extension of the libGDX {@link Batch} interface that adds render-call tracking.
@@ -36,9 +38,8 @@ import com.badlogic.gdx.graphics.g2d.Batch;
  * since the most recent {@link #begin()}, mirroring {@code SpriteBatch.renderCalls}.
  * {@link #getTotalRenderCalls()} is the cumulative count since the batch was constructed,
  * mirroring {@code SpriteBatch.totalRenderCalls}. Both values are used by
- * {@link org.flixelgdx.debug.FlixelDebugManager FlixelDebugManager} and
- * {@link org.flixelgdx.debug.FlixelDebugOverlay FlixelDebugOverlay} to display stats in the
- * debug panel.
+ * {@link FlixelDebugManager FlixelDebugManager} and {@link FlixelDebugOverlay FlixelDebugOverlay} to
+ * display stats in the debug panel.
  *
  * <p>The built-in implementation is {@link FlixelSpriteBatch}. Custom implementations that wrap
  * a third-party renderer only need to forward these two values from whatever the underlying
