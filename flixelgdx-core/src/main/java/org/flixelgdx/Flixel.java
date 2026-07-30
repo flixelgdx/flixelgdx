@@ -55,7 +55,7 @@ import org.flixelgdx.input.gamepad.FlixelGamepadInput;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
-import org.flixelgdx.input.mouse.FlixelMouseManager;
+import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.input.touch.FlixelTouch;
 import org.flixelgdx.input.touch.FlixelTouchManager;
 import org.flixelgdx.logging.FlixelLogConsoleSink;
@@ -529,7 +529,7 @@ public final class Flixel {
    * @see FlixelMouseButton
    */
   @NotNull
-  public static FlixelMouseManager mouse;
+  public static FlixelMouseInputManager mouse;
 
   /**
    * The multitouch input manager for the game.
@@ -828,7 +828,7 @@ public final class Flixel {
     watch = new FlixelDebugWatchManager();
     debug = new FlixelDebugManager();
     save = new FlixelSave();
-    mouse = new FlixelMouseManager();
+    mouse = new FlixelMouseInputManager();
     touches = new FlixelTouchManager();
     gamepads = new FlixelGamepadInputManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);

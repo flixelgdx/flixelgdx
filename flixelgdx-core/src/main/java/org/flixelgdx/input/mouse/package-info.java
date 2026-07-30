@@ -1,7 +1,7 @@
 /**
  * Mouse and pointer input for FlixelGDX.
  *
- * <p>{@link org.flixelgdx.input.mouse.FlixelMouseManager FlixelMouseManager} is the global entry
+ * <p>{@link org.flixelgdx.input.mouse.FlixelMouseInputManager FlixelMouseInputManager} is the global entry
  * point, accessible via {@link org.flixelgdx.Flixel#mouse Flixel.mouse}. It exposes pressed,
  * justPressed, and justReleased queries for each {@link org.flixelgdx.input.mouse.FlixelMouseButton
  * FlixelMouseButton}, along with screen-space and world-space coordinate reads.

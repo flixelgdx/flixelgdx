@@ -46,7 +46,7 @@ import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
-import org.flixelgdx.input.mouse.FlixelMouseManager;
+import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
@@ -489,14 +489,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer (typically the imgui
    * debug overlay) is currently capturing the mouse. When this returns {@code true},
-   * {@link FlixelMouseManager#pressed(int) FlixelMouseManager.pressed(int)} and
+   * {@link FlixelMouseInputManager#pressed(int) FlixelMouseInputManager.pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, and the debug camera tools / sprite picker also skip
    * their work, so clicking inside (for example) a Dear ImGui window does not bleed through
    * into the game logic. Defaults to {@code false}.
    *
    * <p>The debug overlay's own mouse-driven tools (sprite picker, camera pan) read
-   * {@link FlixelMouseManager#rawPressed(int) FlixelMouseManager.rawPressed(int)} so they
+   * {@link FlixelMouseInputManager#rawPressed(int) FlixelMouseInputManager.rawPressed(int)} so they
    * can opt in to "ignore the suppression" while still respecting this hook for the early-exit
    * gate.
    *
