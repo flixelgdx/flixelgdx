@@ -49,9 +49,9 @@ import java.util.Locale;
  * without per-device tables. Games that need perfect parity can offer a remap screen or branch on
  * {@link com.badlogic.gdx.Application#getType()} and {@link Controller#getName()}.
  */
-public final class FlixelGamepadButton {
+public final class FlixelGamepadInput {
 
-  private FlixelGamepadButton() {}
+  private FlixelGamepadInput() {}
 
   public static final int NONE = -2;
   public static final int ANY = -1;

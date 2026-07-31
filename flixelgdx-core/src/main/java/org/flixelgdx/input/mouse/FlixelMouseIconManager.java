@@ -26,7 +26,7 @@ package org.flixelgdx.input.mouse;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Platform native cursor styling, exposed through {@link FlixelMouseManager#icons}.
+ * Platform native cursor styling, exposed through {@link FlixelMouseInputManager#icons}.
  *
  * <p>Games that need the default Flixel cursor behavior never have to touch this type. When you
  * do need OS-level feedback (text field, busy state, resize handles), call
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
  * Flixel.mouse.icons.resetCursor();
  * }</pre>
  *
- * @see FlixelMouseManager#icons
+ * @see FlixelMouseInputManager#icons
  */
 public interface FlixelMouseIconManager {
 

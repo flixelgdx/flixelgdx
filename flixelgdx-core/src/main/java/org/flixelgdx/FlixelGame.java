@@ -522,6 +522,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         current = sub;
       }
 
+      if (Flixel.sound != null) {
+        Flixel.sound.update(elapsed);
+      }
+
       // Update all cameras.
       for (FlixelCamera camera : cameras) {
         camera.update(elapsed);
@@ -865,11 +869,13 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (state != null) {
       state.onFocusGained();
     }
-    if (autoPause && !gamePaused) {
-      Flixel.sound.resume();
-      Gdx.graphics.setContinuousRendering(true);
-      Gdx.graphics.requestRendering();
+    if (autoPause) {
       shouldUpdate = true;
+      if (!gamePaused) {
+        Flixel.sound.resume();
+        Gdx.graphics.setContinuousRendering(true);
+        Gdx.graphics.requestRendering();
+      }
     }
     Flixel.Signals.windowFocused.dispatch();
   }
@@ -1202,6 +1208,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     camera.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera.centerCameraOnResize);
     cameras.clear();
     cameras.add(camera);
+    // The debug-pause snapshot refers to cameras that no longer exist after this reset,
+    // so discard it. restoreCamerasAfterDebugPause() already handles null gracefully.
+    debugPauseCameraScroll = null;
+    debugPauseCameraZoom = null;
     if (desktopTransparencyActive) {
       applyDesktopTransparencyBackdropOnly();
     }
@@ -1508,6 +1518,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Returns whether the global overlay camera is enabled. */
   public boolean getGlobalOverlayEnabled() {
     return overlayEnabled;
+  }
+
+  public boolean getShouldUpdate() {
+    return isShouldUpdate();
+  }
+
+  public boolean isShouldUpdate() {
+    return shouldUpdate;
   }
 
   /**

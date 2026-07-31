@@ -36,6 +36,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.XmlReader;
 
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
@@ -56,15 +57,43 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The core building block of all FlixelGDX games. Extends {@link FlixelObject} with graphical
- * capabilities including texture rendering, scaling, rotation, tinting, and flipping.
+ * capabilities: texture rendering, frame grids, Sparrow XML atlases, scaling, rotation, tinting,
+ * flipping, blend modes, per-sprite shaders, and scissor clip rects.
  *
- * <p>Frame-based clips, Sparrow/XML atlases, and playback use a {@link FlixelAnimationController} that is
- * <strong>not</strong> allocated by default (saves memory for large sprite counts on the order of thousands of
- * extra sprites before overhead dominates). Call {@link #ensureAnimation()} or assign a controller directly
- * when you need clips, then use {@code sprite.ensureAnimation().addSparrowAtlas(...)}, {@code .playAnimation(...)}, etc.
+ * <h2>Loading graphics</h2>
+ * <p>Use {@link #loadGraphic(String)} for asset-managed textures (the texture is cached and
+ * reference-counted by {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager}).
+ * {@link #makeGraphic(int, int, Color)} generates a solid-color rectangle on the fly and
+ * owns the resulting texture. For Sparrow XML atlases, call
+ * {@link #ensureAnimation()}{@code .addSparrowAtlas(...)} instead of loading the texture directly.
+ *
+ * <h2>Rendering model</h2>
+ * <p>Each frame the sprite converts its world position through the active camera to a screen
+ * coordinate, then adds {@link #offsetX}/{@link #offsetY} to get the final draw point. Offset
+ * shifts the visible artwork relative to the hitbox without moving the physics body - useful for
+ * centering asymmetric artwork on a hitbox. {@link #originX}/{@link #originY} sets the pivot used
+ * for rotation and scale; call {@link #setOriginCenter()} after every hitbox resize to keep the
+ * pivot centered. {@link #scaleX}/{@link #scaleY} multiply each drawn frame's pixel dimensions.
+ *
+ * <h2>Facing and flip</h2>
+ * <p>{@link #facing} automatically mirrors the sprite on X when set to {@link FlixelDirectionFlags#LEFT},
+ * so directional sprites do not need a manual flip call on every direction change. {@link #flipX}
+ * and {@link #flipY} stack on top of facing for additional control.
+ *
+ * <h2>Animation</h2>
+ * <p>The {@link FlixelAnimationController} is {@code null} by default to save memory for large
+ * sprite counts. Call {@link #ensureAnimation()} to create it lazily, then register clips:
+ * <pre>{@code
+ * FlixelSprite sprite = new FlixelSprite(0, 0, "player.png");
+ * sprite.ensureAnimation().add("walk", new int[]{0, 1, 2, 3}, 12, true);
+ * sprite.ensureAnimation().playAnimation("walk");
+ * }</pre>
  *
  * <p>It is common to extend {@code FlixelSprite} for your own game's needs; for example, a
  * {@code SpaceShip} class may extend {@code FlixelSprite} but add additional game-specific fields.
+ *
+ * @see FlixelObject
+ * @see FlixelAnimationController
  */
 public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable, FlixelShaderable {
 
@@ -230,7 +259,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Returns the existing controller or creates and assigns a new {@link FlixelAnimationController} for {@code this} sprite.
+   * Returns the existing controller or creates and assigns a new {@link FlixelAnimationController}
+   * for {@code this} sprite.
    */
   @NotNull
   public FlixelAnimationController ensureAnimation() {
@@ -325,6 +355,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     frames = wrapFrames(regions);
     currentFrame = frames[0][0];
     updateHitbox(frameWidth, frameHeight);
+    setAntialiasing(antialiasing);
     return this;
   }
 
@@ -412,6 +443,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       animation.clear();
     }
     updateHitbox(frameWidth, frameHeight);
+    setAntialiasing(antialiasing);
     return this;
   }
 
@@ -459,10 +491,10 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#addSparrowFrames(String, com.badlogic.gdx.utils.XmlReader.Element)} and
+   * {@link FlixelAnimationController#addSparrowFrames(String, XmlReader.Element)} and
    * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get}(...) with
+   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get(...)} with
    *     {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
@@ -484,6 +516,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       // this is just a sensible default for the very first frame.
       setSize(first.originalWidth, first.originalHeight);
       setOriginCenter();
+      newGraphic.getTexture().setFilter(
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 
@@ -532,11 +567,27 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     }
     secondaryGraphics.add(graphic);
 
-    if (antialiasing && graphic.isLoaded()) {
-      graphic.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    if (graphic.isLoaded()) {
+      graphic.getTexture().setFilter(
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
   }
 
+  /**
+   * Renders this sprite for the current camera pass.
+   *
+   * <p>The pipeline runs in order: visibility and camera-assignment check, per-frame null guard,
+   * world-to-screen coordinate transform, rotation-aware AABB cull against the camera viewport,
+   * blend-mode isolation (flush before and after when non-NORMAL), per-sprite shader switch,
+   * trim-aware inset calculation for Sparrow atlas frames, optional scissor push, and finally the
+   * batch draw call with scale, rotation, and flip applied around {@link #originX}/{@link #originY}.
+   *
+   * <p>Override this to add custom rendering on top of the default sprite, but call
+   * {@code super.draw(batch)} to keep the standard pipeline intact.
+   *
+   * @param batch The batch to draw into.
+   */
   @Override
   public void draw(@NotNull FlixelBatch batch) {
     if (!visible) {
@@ -855,11 +906,24 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return graphic != null && graphic.isOwned();
   }
 
+  /**
+   * Returns the {@link FlixelGraphic} currently loaded onto this sprite, or {@code null} if no
+   * graphic has been loaded. The graphic is reference-counted; do not call {@link FlixelGraphic#release()}
+   * on the returned instance unless you called {@link FlixelGraphic#retain()} on it yourself.
+   *
+   * @return The active graphic, or {@code null}.
+   */
   @Nullable
   public FlixelGraphic getGraphic() {
     return graphic;
   }
 
+  /**
+   * Returns the backing {@link Texture} of the current frame, or {@code null} if no frame is
+   * loaded. The texture is owned by the sprite's {@link FlixelGraphic}; do not dispose it directly.
+   *
+   * @return The current frame's texture, or {@code null}.
+   */
   public Texture getTexture() {
     return currentFrame != null ? currentFrame.getTexture() : null;
   }
@@ -872,10 +936,26 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return scaleY;
   }
 
+  /**
+   * Sets both {@link #scaleX} and {@link #scaleY} to the same value. For non-uniform scale use
+   * {@link #setScale(float, float)} instead.
+   *
+   * @param scaleXY Scale multiplier applied to both axes.
+   */
   public void setScale(float scaleXY) {
     scaleX = scaleY = scaleXY;
   }
 
+  /**
+   * Sets horizontal and vertical scale independently.
+   *
+   * <p>Negative values flip the drawn image on the corresponding axis, but prefer
+   * {@link #setFlipX(boolean)} / {@link #setFlipY(boolean)} for explicit mirroring so intent is
+   * clear. Call {@link #updateHitbox()} afterward if the hitbox should match the new drawn size.
+   *
+   * @param scaleX Horizontal scale multiplier.
+   * @param scaleY Vertical scale multiplier.
+   */
   public void setScale(float scaleX, float scaleY) {
     this.scaleX = scaleX;
     this.scaleY = scaleY;
@@ -897,11 +977,26 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return originY;
   }
 
+  /**
+   * Sets the pivot point used for rotation and scale, measured from the sprite's bottom-left draw
+   * corner in pixels. Default is {@code (0, 0)}, which rotates and scales around the bottom-left
+   * corner. Call {@link #setOriginCenter()} to rotate around the center instead.
+   *
+   * @param originX Horizontal pivot offset in pixels.
+   * @param originY Vertical pivot offset in pixels.
+   */
   public void setOrigin(float originX, float originY) {
     this.originX = originX;
     this.originY = originY;
   }
 
+  /**
+   * Sets the rotation and scale pivot to the center of the current hitbox.
+   *
+   * <p>Call this after every hitbox resize (for example after {@link #updateHitbox()} or
+   * {@link #setSize(float, float)}) to keep the pivot centered - it is not updated automatically
+   * when the hitbox changes.
+   */
   public void setOriginCenter() {
     originX = getWidth() / 2f;
     originY = getHeight() / 2f;
@@ -923,6 +1018,16 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.offsetY = offsetY;
   }
 
+  /**
+   * Sets both graphic offset components at once.
+   *
+   * <p>Offset shifts the visible artwork relative to the hitbox position without moving the physics
+   * body. A common use is to nudge artwork that does not perfectly align with its hitbox after
+   * trimming (for example, centering a 64x64 sprite on a 32x32 hitbox: {@code setOffset(-16, -16)}).
+   *
+   * @param x Horizontal offset in pixels.
+   * @param y Vertical offset in pixels.
+   */
   public void setOffset(float x, float y) {
     this.offsetX = x;
     this.offsetY = y;
@@ -947,6 +1052,14 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
           antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
           antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
     }
+    if (secondaryGraphics != null) {
+      for (FlixelGraphic g : secondaryGraphics) {
+        var t = g.getTexture();
+        t.setFilter(
+            antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
+            antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+      }
+    }
   }
 
   @Override
@@ -954,23 +1067,60 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     setAntialiasing(!isAntialiasing());
   }
 
+  /**
+   * Returns the alpha component of this sprite's tint color, in the range {@code [0, 1]}.
+   * This is sugar for {@link #getGdxColor()}{@code .a}; both refer to the same underlying value.
+   *
+   * @return Alpha transparency, where {@code 0} is fully transparent and {@code 1} is fully opaque.
+   */
   public float getAlpha() {
     return color.a;
   }
 
+  /**
+   * Returns the current facing direction. The value is one of the {@link FlixelDirectionFlags}
+   * constants; default is {@link FlixelDirectionFlags#RIGHT}.
+   *
+   * @return Current facing direction flag.
+   */
   public int getFacing() {
     return facing;
   }
 
+  /**
+   * Sets the direction this sprite faces. When set to {@link FlixelDirectionFlags#LEFT}, the draw
+   * pipeline automatically mirrors the graphic on the X axis as if {@link #flipX} were {@code true},
+   * so directional characters do not need a manual flip on every direction change. {@link #flipX}
+   * and {@link #flipY} stack on top of this for additional control.
+   *
+   * @param facing A {@link FlixelDirectionFlags} constant - typically {@link FlixelDirectionFlags#LEFT}
+   *     or {@link FlixelDirectionFlags#RIGHT}.
+   */
   public void setFacing(int facing) {
     this.facing = facing;
   }
 
+  /**
+   * Returns the current blend mode. Never {@code null} - defaults to {@link FlixelBlendMode#NORMAL}.
+   *
+   * @return The active blend mode.
+   */
   @NotNull
   public FlixelBlendMode getBlendMode() {
     return blendMode;
   }
 
+  /**
+   * Sets the blend mode applied when this sprite is drawn.
+   *
+   * <p>{@link FlixelBlendMode#LIGHTEN} and {@link FlixelBlendMode#DARKEN} require OpenGL ES 3.0.
+   * On devices that do not support it, the mode silently falls back to {@link FlixelBlendMode#NORMAL}
+   * and a warning is logged. All non-NORMAL modes force a GPU batch flush before and after this
+   * sprite, which can reduce draw-call batching efficiency when many sprites use different blend modes
+   * in the same draw pass. Passing {@code null} is safe and resets to {@link FlixelBlendMode#NORMAL}.
+   *
+   * @param blendMode The blend mode to apply, or {@code null} to reset to NORMAL.
+   */
   public void setBlendMode(FlixelBlendMode blendMode) {
     this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
     if (!isBlendMinMaxSupported()) {
@@ -1007,6 +1157,14 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     color.set(tint.getGdxColor());
   }
 
+  /**
+   * Sets the tint color by individual RGBA components, each in the range {@code [0, 1]}.
+   *
+   * @param r Red channel.
+   * @param g Green channel.
+   * @param b Blue channel.
+   * @param a Alpha channel ({@code 0} = transparent, {@code 1} = opaque).
+   */
   public void setColor(float r, float g, float b, float a) {
     color.set(r, g, b, a);
   }
@@ -1030,10 +1188,30 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     offsetY = y;
   }
 
+  /**
+   * Sets the alpha component of this sprite's tint color, clamped by libGDX to {@code [0, 1]}.
+   * Equivalent to {@code getGdxColor().a = a}. RGB channels are unchanged.
+   *
+   * @param a New alpha value, where {@code 0} is fully transparent and {@code 1} is fully opaque.
+   */
   public void setAlpha(float a) {
     color.a = a;
   }
 
+  /**
+   * Toggles the flip state on the requested axes using XOR, so calling this twice with the same
+   * arguments returns to the original orientation.
+   *
+   * <p>Unlike {@link #setFlipX(boolean)}/{@link #setFlipY(boolean)}, which force a specific state,
+   * this is a toggle, which is useful for one-shot direction reversal without tracking current state:
+   * <pre>{@code
+   * sprite.flip(true, false); // now mirrored on X
+   * sprite.flip(true, false); // back to normal
+   * }</pre>
+   *
+   * @param x {@code true} to toggle the horizontal flip.
+   * @param y {@code true} to toggle the vertical flip.
+   */
   public void flip(boolean x, boolean y) {
     flipX ^= x;
     flipY ^= y;
@@ -1063,6 +1241,14 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.flipY = flipY;
   }
 
+  /**
+   * Replaces the currently displayed frame with a wrapper around the given {@link TextureRegion},
+   * bypassing the frame grid and animation system. Useful for one-off sprites that source a region
+   * from an existing atlas without going through {@link #loadGraphic(String)} or
+   * {@link #applySparrowAtlas(FlixelGraphic, Array)}. Pass {@code null} to clear the displayed frame.
+   *
+   * @param region The region to display, or {@code null} to stop rendering.
+   */
   public void setRegion(TextureRegion region) {
     currentFrame = region != null ? new FlixelFrame(region) : null;
   }

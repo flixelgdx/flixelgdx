@@ -11,7 +11,6 @@ graalvm = "24.2.0"
 imgui = "1.90.0"
 jansi = "2.4.2"
 jetbrainsAnnotations = "26.1.0"
-jna = "5.17.0"
 junit = "5.10.0"
 miniaudio = "0.7"
 multidex = "2.0.1"
@@ -20,7 +19,6 @@ spotless = "8.6.0"
 teavm = "0.13.0"
 utils = "0.13.7"
 vanniktech = "0.33.0"
-vlc = "3.0.23"
 
 [libraries]
 anim8 = { module = "com.github.tommyettinger:anim8-gdx", version.ref = "anim8" }
@@ -50,7 +48,6 @@ imgui-natives-macos = { module = "io.github.spair:imgui-java-natives-macos", ver
 imgui-natives-windows = { module = "io.github.spair:imgui-java-natives-windows", version.ref = "imgui" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
-jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

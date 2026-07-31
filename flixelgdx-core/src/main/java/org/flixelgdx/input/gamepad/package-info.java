@@ -7,7 +7,7 @@
  * alongside analog axis reads.
  *
  * <p>Logical button and axis constants live on
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadButton FlixelGamepadButton} and are resolved to
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput} and are resolved to
  * native hardware indices through each
  * {@link com.badlogic.gdx.controllers.Controller#getMapping() Controller.getMapping()} at query
  * time. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the

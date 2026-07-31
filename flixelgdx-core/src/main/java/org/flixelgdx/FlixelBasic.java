@@ -23,6 +23,7 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.functional.FlixelExistable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
@@ -31,8 +32,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * The most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
  * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
- * It implements {@link org.flixelgdx.functional.IFlixelBasic IFlixelBasic}, the full contract
- * used by {@link org.flixelgdx.FlixelState FlixelState} and {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}.
+ * It implements {@link IFlixelBasic}, the full contract used by {@link FlixelState} and
+ * {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}. The existence and active flags
+ * ({@link #exists}, {@link #active}) are defined by {@link FlixelExistable}.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
  * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
@@ -90,7 +92,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
   @Nullable
   public FlixelCamera[] cameras;
 
-  /** Controls whether {@link #update(float)} is automatically called. */
+  /**
+   * Controls whether {@link #update(float)} is automatically called.
+   *
+   * @see FlixelExistable#isActive()
+   */
   public boolean active = true;
 
   /**
@@ -101,7 +107,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
    */
   public boolean alive = true;
 
-  /** Controls whether {@link #update(float)} and {@link org.flixelgdx.functional.FlixelDrawable#draw(FlixelBatch)} are automatically called. */
+  /**
+   * Controls whether {@link #update(float)} and {@link org.flixelgdx.functional.FlixelDrawable#draw(FlixelBatch)} are automatically called.
+   *
+   * @see FlixelExistable#isExists()
+   */
   public boolean exists = true;
 
   /**

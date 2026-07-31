@@ -12,11 +12,6 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-ios`**: The backend for iOS using [MobiVM](https://github.com/MobiVM/robovm) (a maintained fork of RoboVM). Not supported yet.
 - **`flixelgdx-teavm`**: The backend for the web using TeaVM to transpile Java bytecode to JavaScript, allowing games to run seamlessly in a browser.
 - **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for TeaVM or other non-JVM targets (stack traces, optional log files, etc.).
-- **`flixelgdx-video`**: Optional video playback extension (i.e., for cutscenes), split into per-platform modules so games only ship the decoder they need.
-  - **`flixelgdx-video-core`**: The platform-agnostic API (`FlixelVideo`, `FlixelVideos`, `FlixelBaseVideo`, `FlixelVideoBackend`). Depends only on `flixelgdx-core`.
-  - **`flixelgdx-video-lwjgl3`**: Desktop backend powered by [libvlc](https://www.videolan.org/vlc/libvlc.html).
-  - **`flixelgdx-video-teavm`**: Web backend built on a hidden HTML video element, which the browser decodes and each frame is transferred GPU-to-GPU with `texImage2D`.
-  - **`flixelgdx-video-android`**: Android backend that decodes with the platform `MediaPlayer` into a `SurfaceTexture` bound to a `GL_TEXTURE_EXTERNAL_OES` texture, then blits each frame into a normal framebuffer texture so videos draw through the regular batch and follow state draw order (added first draws under, added last draws over).
 - **`flixelgdx-basisu-plugin`**: Compression plugin that automatically downloads a Basis Universal binary for the current OS and applies `.ktx2` compression for every `.png` asset.
 - **`flixelgdx-teavm-plugin`**: Plugin that automates the workflow for web games. This includes copying assets, creating the HTML index file, extracting native scripts, and more.
 - **`flixelgdx-logging-plugin`**: Plugin that runs after `compileJava` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on TeaVM and helpful on the JVM).
@@ -24,17 +19,20 @@ The project is split into several modules, each serving a specific purpose:
 
 ## Build System
 
-FlixelGDX uses **Gradle** as its build system. 
+FlixelGDX uses **Gradle** with Kotlin DSL as its build system. 
 
-### Key Files
+### Key Files and Folders
 
-- **`build.gradle`**: The root aggregator where the build system enters. It triggers other task-specific scripts inside of [`gradle/`](./gradle).
-- **`settings.gradle`**: Defines all the modules included in the project.
-- **`gradle.properties`**: Contains version numbers for libGDX and other dependencies, as well as JVM settings for the build process.
+- **`build.gradle.kts`**: The root aggregator where the build system enters. It only registers the `javadocsAll` task, nothing else.
+- **`settings.gradle.kts`**: Defines all the modules included in the project. Note that `flixelgdx-android` is excluded by default unless
+  `includeAndroid` is set to true in a `local.properties` file or passed as a command argument in the terminal via `PincludeAndroid=true`.
+  Refer to the [COMPILING.md](COMPILING.md) file for more information.
+- **`gradle.properties`**: Contains JVM settings for the build process, Maven publishing details and various other properties.
+- **`build-logic/`**: Where the build system's logic lies. It contains various build scripts for systems like Maven central publishing and more.
 
 ### Dependency Management
 
-Dependencies are managed in the `build.gradle` file of each module. We use `api` and `implementation` configurations to control which dependencies are exposed to downstream projects.
+Dependencies are managed in the `build.gradle.kts` file of each module. We use `api` and `implementation` configurations to control which dependencies are exposed to downstream projects.
 For example, the `flixelgdx-core` module uses `api` for libGDX, which means any project using FlixelGDX will also have access to the underlying libGDX classes.
 
 ## GitHub Integration

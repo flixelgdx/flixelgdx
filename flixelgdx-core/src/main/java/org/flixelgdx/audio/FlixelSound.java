@@ -90,7 +90,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @Nullable
   private Float endTimeMs;
 
-  /** Current fade tween, so it can be cancelled when starting a new fade. */
+  /** Current fade tween, so it can be canceled when starting a new fade. */
   @Nullable
   private FlixelTween fadeTween;
 
@@ -106,6 +106,9 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   /** When true, this sound is not automatically destroyed on state switch. */
   private boolean persist;
+
+  /** Guards {@link #onComplete} so it fires at most once per play session. */
+  private boolean completeFired;
 
   /**
    * Creates a new Flixel sound wrapping the given file path.
@@ -384,6 +387,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   @NotNull
   public FlixelSound play(boolean forceRestart, float startTimeMs) {
     cancelFadeTween();
+    completeFired = false;
     if (forceRestart) {
       setTime(startTimeMs);
     }
@@ -602,7 +606,8 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
       return;
     }
 
-    if (sound.isEnd() && !sound.isLooping()) {
+    if (sound.isEnd() && !sound.isLooping() && !completeFired) {
+      completeFired = true;
       onComplete.dispatch();
       if (autoDestroy) {
         destroy();
@@ -771,6 +776,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
     endTimeMs = null;
     autoDestroy = false;
     persist = false;
+    completeFired = false;
   }
 
   private static FlixelSoundBackend createSoundForHandle(@NotNull FileHandle path) {

@@ -97,7 +97,7 @@ public final class FlixelActionDigital extends FlixelAction {
    *
    * <pre>{@code
    * jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
-   * jump.addBinding("gamepad", FlixelDigitalBinding.gamepadButton(0, FlixelGamepadButton.A));
+   * jump.addBinding("gamepad", FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
    *
    * // Player rebinds the keyboard slot at runtime.
    * jump.addBinding("keyboard", FlixelDigitalBinding.key(newKey));

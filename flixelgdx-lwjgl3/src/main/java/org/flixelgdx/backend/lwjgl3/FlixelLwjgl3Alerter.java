@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.lwjgl3.alert;
+package org.flixelgdx.backend.lwjgl3;
 
 import org.flixelgdx.backend.FlixelAlerter;
 

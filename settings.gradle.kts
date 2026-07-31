@@ -65,12 +65,9 @@ include(
   "flixelgdx-teavm-plugin",
   "flixelgdx-logging-plugin",
   "flixelgdx-basisu-plugin",
-  "flixelgdx-video-core",
-  "flixelgdx-video-lwjgl3",
-  "flixelgdx-video-teavm",
   "flixelgdx-test"
 )
 
 if (includeAndroid) {
-  include("flixelgdx-android", "flixelgdx-video-android")
+  include("flixelgdx-android")
 }
