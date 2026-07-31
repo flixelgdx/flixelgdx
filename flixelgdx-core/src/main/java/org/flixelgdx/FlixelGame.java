@@ -1208,6 +1208,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     camera.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera.centerCameraOnResize);
     cameras.clear();
     cameras.add(camera);
+    // The debug-pause snapshot refers to cameras that no longer exist after this reset,
+    // so discard it. restoreCamerasAfterDebugPause() already handles null gracefully.
+    debugPauseCameraScroll = null;
+    debugPauseCameraZoom = null;
     if (desktopTransparencyActive) {
       applyDesktopTransparencyBackdropOnly();
     }
