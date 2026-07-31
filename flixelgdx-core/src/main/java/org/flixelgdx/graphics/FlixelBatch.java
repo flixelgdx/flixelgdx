@@ -24,6 +24,7 @@
 package org.flixelgdx.graphics;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
+
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 
