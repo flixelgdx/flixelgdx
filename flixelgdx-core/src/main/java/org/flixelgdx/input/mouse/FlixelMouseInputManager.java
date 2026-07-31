@@ -63,7 +63,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #endFrame()} clears it (same timing as other per-frame input you consume in your game loop).
  * </p>
  */
-public class FlixelMouseManager implements FlixelInputProcessorManager {
+public class FlixelMouseInputManager implements FlixelInputProcessorManager {
 
   private static final int MAX_BUTTON = 4;
 
@@ -140,7 +140,7 @@ public class FlixelMouseManager implements FlixelInputProcessorManager {
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
 
-  public FlixelMouseManager() {}
+  public FlixelMouseInputManager() {}
 
   /**
    * Replaces the active {@link FlixelMouseIconManager}, for example with an LWJGL3 or web backend.
