@@ -24,7 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.debug.FlixelDebugDrawable;
-import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.functional.FlixelPhysical;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.util.FlixelDirectionFlags;
 
@@ -44,7 +44,7 @@ import org.flixelgdx.util.FlixelDirectionFlags;
  * by adjusting positions and velocities.
  *
  */
-public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, FlixelPositional, FlixelShakeable {
+public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, FlixelPhysical, FlixelShakeable {
 
   /**
    * Maximum number of pixels two objects can intersect before {@link #separate(FlixelObject, FlixelObject)} gives up

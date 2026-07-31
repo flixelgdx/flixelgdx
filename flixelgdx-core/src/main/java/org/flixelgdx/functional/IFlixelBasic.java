@@ -28,14 +28,16 @@ import com.badlogic.gdx.utils.Pool;
 
 /**
  * Full {@link org.flixelgdx.FlixelBasic FlixelBasic}-style contract: per-frame update and draw hooks,
- * existence and active flags, visibility, kill and revive, teardown, and libGDX {@link Disposable} /
- * {@link Pool.Poolable} hooks. Extend {@link org.flixelgdx.FlixelBasic FlixelBasic} when you want the
- * default field-based implementation, or implement this interface on your own type when you need a
- * custom base class but still want to add instances to a {@link org.flixelgdx.FlixelState FlixelState}
- * or {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}.
+ * existence and active flags (see {@link FlixelExistable}), visibility, kill and revive, teardown, and
+ * libGDX {@link Disposable} / {@link Pool.Poolable} hooks. Extend
+ * {@link org.flixelgdx.FlixelBasic FlixelBasic} when you want the default field-based implementation,
+ * or implement this interface on your own type when you need a custom base class but still want to add
+ * instances to a {@link org.flixelgdx.FlixelState FlixelState} or
+ * {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}.
  *
  * @see org.flixelgdx.FlixelBasic
  * @see org.flixelgdx.group.FlixelBasicGroup
+ * @see FlixelExistable
  */
 public interface IFlixelBasic extends
     FlixelUpdatable,
@@ -43,30 +45,7 @@ public interface IFlixelBasic extends
     FlixelDestroyable,
     FlixelKillable,
     FlixelVisible,
+    FlixelExistable,
     Disposable,
     Pool.Poolable {
-
-  /**
-   * When {@code false}, groups and states skip this instance for automatic {@link #update(float)}.
-   *
-   * @return The current {@code exists} flag.
-   */
-  boolean isExists();
-
-  /**
-   * @param exists The new {@code exists} flag.
-   */
-  void setExists(boolean exists);
-
-  /**
-   * When {@code false}, {@link #update(float)} is skipped even if {@link #isExists()} is {@code true}.
-   *
-   * @return The current {@code active} flag.
-   */
-  boolean isActive();
-
-  /**
-   * @param active The new {@code active} flag.
-   */
-  void setActive(boolean active);
 }
