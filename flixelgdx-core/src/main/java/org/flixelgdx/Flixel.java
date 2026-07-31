@@ -1241,9 +1241,10 @@ public final class Flixel {
    */
   public static void resetState() {
     Objects.requireNonNull(game, "Game is not initialized. Call initialize(...) first.");
-    FlixelState next = currentStateFactory != null ? currentStateFactory.get() : null;
+    Supplier<FlixelState> factory = currentStateFactory;
+    FlixelState next = factory != null ? factory.get() : null;
     if (next != null) {
-      switchState(next);
+      switchState(next, true, true, true, factory);
     }
   }
 
