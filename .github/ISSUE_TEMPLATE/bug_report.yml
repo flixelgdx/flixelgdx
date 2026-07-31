@@ -55,6 +55,5 @@ body:
         - Core (Every Platform)
         - Desktop (LWJGL3)
         - Android
-        - iOS (RoboVM)
         - Web (TeaVM)
         - Other (please specify in description)

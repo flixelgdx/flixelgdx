@@ -19,17 +19,20 @@ The project is split into several modules, each serving a specific purpose:
 
 ## Build System
 
-FlixelGDX uses **Gradle** as its build system. 
+FlixelGDX uses **Gradle** with Kotlin DSL as its build system. 
 
-### Key Files
+### Key Files and Folders
 
-- **`build.gradle`**: The root aggregator where the build system enters. It triggers other task-specific scripts inside of [`gradle/`](./gradle).
-- **`settings.gradle`**: Defines all the modules included in the project.
-- **`gradle.properties`**: Contains version numbers for libGDX and other dependencies, as well as JVM settings for the build process.
+- **`build.gradle.kts`**: The root aggregator where the build system enters. It only registers the `javadocsAll` task, nothing else.
+- **`settings.gradle.kts`**: Defines all the modules included in the project. Note that `flixelgdx-android` is excluded by default unless
+  `includeAndroid` is set to true in a `local.properties` file or passed as a command argument in the terminal via `PincludeAndroid=true`.
+  Refer to the [COMPILING.md](COMPILING.md) file for more information.
+- **`gradle.properties`**: Contains JVM settings for the build process, Maven publishing details and various other properties.
+- **`build-logic/`**: Where the build system's logic lies. It contains various build scripts for systems like Maven central publishing and more.
 
 ### Dependency Management
 
-Dependencies are managed in the `build.gradle` file of each module. We use `api` and `implementation` configurations to control which dependencies are exposed to downstream projects.
+Dependencies are managed in the `build.gradle.kts` file of each module. We use `api` and `implementation` configurations to control which dependencies are exposed to downstream projects.
 For example, the `flixelgdx-core` module uses `api` for libGDX, which means any project using FlixelGDX will also have access to the underlying libGDX classes.
 
 ## GitHub Integration
