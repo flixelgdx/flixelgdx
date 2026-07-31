@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.functional.FlixelPhysical;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -31,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Base class for motion tweens that drive an optional {@link FlixelPositional} position. When a target is set, it is
- * marked {@linkplain FlixelPositional#setImmovable(boolean) immovable} while the tween runs and restored on end.
+ * Base class for motion tweens that drive an optional {@link FlixelPhysical} target. When a target is set, it is
+ * marked {@linkplain FlixelPhysical#setImmovable(boolean) immovable} while the tween runs and restored on end.
  *
  * <p>Subclasses should create a {@code setMotion()} method that sets the motion for the tween.
  */
@@ -44,7 +44,7 @@ public abstract class FlixelMotion extends FlixelTween {
   /** Current world Y for this motion. */
   public float motionY;
 
-  protected @Nullable FlixelPositional motionTarget;
+  protected @Nullable FlixelPhysical motionTarget;
 
   private boolean priorImmovable;
   private boolean immovableCaptured;
@@ -59,7 +59,7 @@ public abstract class FlixelMotion extends FlixelTween {
    * @param target The object to move.
    * @return {@code this} for chaining.
    */
-  public FlixelMotion setMotionObject(@Nullable FlixelPositional target) {
+  public FlixelMotion setMotionObject(@Nullable FlixelPhysical target) {
     clearImmovableCapture();
     this.motionTarget = target;
     if (target != null) {
@@ -70,7 +70,7 @@ public abstract class FlixelMotion extends FlixelTween {
     return this;
   }
 
-  public @Nullable FlixelPositional getMotionTarget() {
+  public @Nullable FlixelPhysical getMotionTarget() {
     return motionTarget;
   }
 

@@ -29,7 +29,7 @@ import com.badlogic.gdx.utils.Pool;
 
 import org.flixelgdx.functional.FlixelAngleable;
 import org.flixelgdx.functional.FlixelColorable;
-import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.functional.FlixelPhysical;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.functional.FlixelVisible;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
@@ -501,7 +501,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween linearMotion(
-      @Nullable FlixelPositional target,
+      @Nullable FlixelPhysical target,
       float fromX,
       float fromY,
       float toX,
@@ -532,7 +532,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween circularMotion(
-      @Nullable FlixelPositional target,
+      @Nullable FlixelPhysical target,
       float centerX,
       float centerY,
       float radius,
@@ -564,7 +564,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @param useDuration Whether to use the duration or speed.
    */
   public static FlixelTween quadMotion(
-      @Nullable FlixelPositional target,
+      @Nullable FlixelPhysical target,
       float fromX,
       float fromY,
       float cx,
@@ -601,7 +601,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween cubicMotion(
-      @Nullable FlixelPositional target,
+      @Nullable FlixelPhysical target,
       float p0x,
       float p0y,
       float p1x,
@@ -632,7 +632,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween linearPath(
-      @Nullable FlixelPositional target,
+      @Nullable FlixelPhysical target,
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings,
@@ -665,7 +665,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * @return The newly created and started tween.
    */
   public static FlixelTween quadPath(
-      @Nullable FlixelPositional target,
+      @Nullable FlixelPhysical target,
       float durationOrSpeed,
       boolean useDuration,
       FlixelTweenSettings tweenSettings,
