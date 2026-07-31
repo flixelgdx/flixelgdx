@@ -50,16 +50,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Install p7zip (required to extract the macOS VLC DMG on Linux)
-        run: sudo apt-get install -y p7zip-full
-
       - name: Publish to Maven Central
         # Secrets are injected as Gradle project properties via the ORG_GRADLE_PROJECT_ prefix.
         # signingInMemoryKey is the ASCII-armored GPG private key (supports newlines safely as an env var).
         # The artifact version is derived from the git tag: v1.2.3 -> 1.2.3.
-        # packageVlcNatives=true triggers DownloadVlcNativesTask in flixelgdx-video-vlc-natives,
-        # which downloads and strips all three platform bundles before they are JAR-packaged and
-        # published alongside the rest of the framework artifacts.
         env:
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
@@ -70,6 +64,5 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           ./gradlew publishAllPublicationsToMavenCentralRepository \
             -PprojectVersion=$VERSION \
-            -PpackageVlcNatives=true \
             --no-daemon \
             --warning-mode all

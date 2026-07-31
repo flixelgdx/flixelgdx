@@ -63,9 +63,8 @@ public class FlixelLwjgl3WindowListener implements Lwjgl3WindowListener {
    * Registers a pair of callbacks that fire on every focus-gained and focus-lost event,
    * after the built-in Flixel lifecycle hooks run.
    *
-   * <p>Intended for backend modules (such as the LWJGL3/VLC video module) that need reliable
-   * focus notifications without relying on {@link Flixel.Signals}, which
-   * can be cleared by developer code.
+   * <p>Intended for backend or extension modules that need reliable focus notifications without
+   * relying on {@link Flixel.Signals}, which can be cleared by developer code.
    *
    * @param onFocusGained Called when the window regains focus.
    * @param onFocusLost Called when the window loses focus.
