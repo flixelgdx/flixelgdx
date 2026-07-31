@@ -21,7 +21,7 @@ FlixelGDX is a featherweight powerhouse of a Java game framework built on top of
 > FlixelGDX is an independent project and is not officially affiliated with HaxeFlixel or libGDX.
 
 > [!IMPORTANT]
-> FlixelGDX is still relatively new and currently supports desktop and web. Mobile support is coming soon!
+> FlixelGDX is still relatively new and currently supports desktop, web and Android. iOS support is coming soon!
 
 ---
 
@@ -61,7 +61,7 @@ people with a lot of money and an expensive gaming rig.
 - **Saves** - `FlixelSave` for cross-platform persistent game data.
 - **Debug overlay** - `FlixelImGuiDebugOverlay` (desktop) provides a live, in-game debug panel powered by Dear ImGui.
 - **Logging** - `FlixelLogger` with accurate stack traces via a compile-time bytecode plugin, multiple log levels, console and file sinks.
-- **Multi-platform** - desktop via LWJGL3 and browser via TeaVM. (Android and iOS support is in progress!)
+- **Multi-platform** - desktop via LWJGL3, browser via TeaVM and Android. (iOS support is planned!)
 
 ---
 
@@ -171,7 +171,7 @@ for (int i = 0; i < 10; i++) {
   actors.add(new MyActor(i * 60f, 100f));
 }
 
-// update() and draw() are your responsibility.
+// update() / act() and draw() are your responsibility.
 actors.forEachMember(e -> e.act(elapsed));
 actors.forEachMember(e -> e.draw(batch));
 ```
