@@ -261,14 +261,14 @@ For widely used classes, fields, methods, or anything central to correctness, in
     - "Fix rendering bug in FlixelCamera"
     - "Add missing Javadoc to FlixelCamera"
 - If the current branch is not up to date with the remote, always pull the latest changes before changing any code.
-- If the current branch is set to either `master`, `develop` or something else, **create a new branch off of the latest changes from `develop`**.
+- If the current branch is set to `master` or something else, **create a new branch off of the latest changes from `master`**.
 - When you're done with a task (and you haven't yet made one), **create a pull request**. Make sure it follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
   exactly with all of your changes.
 - Pull request titles should be read as **past tense**, in the format as if it was a new update to a game. Examples:
     - "Added experimental controller/gamepad support for games to be playable on more platforms such as console"
     - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
     - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
-- All pull requests should target the **`develop`** branch, **never** the `master` branch unless it's absolutely necessary and explicity asked by the user.
+- All pull requests should target the **`master`** branch.
 
 ---
 

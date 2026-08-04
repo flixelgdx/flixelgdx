@@ -261,7 +261,7 @@ Other modules include `flixelgdx-teavm` and `flixelgdx-teavm-plugin` for browser
 
 ### Using JitPack for snapshots
 
-If you need the latest unreleased code from `develop` or a specific commit, [JitPack](https://jitpack.io/#flixelgdx/flixelgdx) can build any branch or commit on demand. Add the JitPack repository and use the `com.github.flixelgdx.flixelgdx` group:
+If you need the latest unreleased code from `master` or a specific commit, [JitPack](https://jitpack.io/#flixelgdx/flixelgdx) can build any branch or commit on demand. Add the JitPack repository and use the `com.github.flixelgdx.flixelgdx` group:
 
 ```gradle
 repositories {
@@ -270,7 +270,7 @@ repositories {
 }
 
 dependencies {
-  implementation 'com.github.flixelgdx.flixelgdx:flixelgdx-core:develop-SNAPSHOT'
+  implementation 'com.github.flixelgdx.flixelgdx:flixelgdx-core:master-SNAPSHOT'
 }
 ```
 

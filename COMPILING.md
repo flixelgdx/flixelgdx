@@ -112,9 +112,9 @@ sudo pacman -S jdk17-openjdk
   ```bash
    git remote add upstream https://github.com/flixelgdx/flixelgdx.git
    git fetch upstream
-   git checkout develop
+   git checkout master
   ```
-3. **Use the `develop` branch** for development and PRs (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+3. **Branch off `master`** for development and PRs (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ---
 

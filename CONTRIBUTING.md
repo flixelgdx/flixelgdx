@@ -49,7 +49,7 @@ Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx
 
 To maintain a stable code base, we follow a specific branching model:
 
-1. **The Develop Branch**: All pull requests must be made against the `develop` branch. Pull requests targeting the `master` branch will not be merged.
+1. **Target Branch**: All pull requests must be made against the `master` branch.
 2. **Build Checks**: Your PR **MUST** pass all automated build checks. If the build fails, **the PR will not be considered for merging until the issues are resolved.**
 3. **Commit Messages**: Keep commit messages concise and descriptive. Use the imperative mood (e.g. "Add tween callback" not "Added tween callback"). If the change fixes an issue, reference it in the message (e.g. "Fix NPE when sprite has no graphic (#123)").
 4. **Scope**: Prefer one logical change per PR. Large features can be split into smaller, reviewable PRs (e.g. API first, then implementation).
