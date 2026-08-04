@@ -1,16 +1,16 @@
 # FlixelGDX Migration: Off libGDX
 
-> **Status:** Planning. No migration code has been written yet.
-> **Owner:** stringdotjar
-> **Started:** 2026-08-03
-> **This is a living document.** Every big decision made during the migration should be
-> recorded here in the Decision Log so future contributors (and future AI sessions) never
-> lose the thread.
+> **Status:** Planning. No migration code has been written yet.  
+> **Owner:** stringdotjar  
+> **Started:** 2026-08-03  
+> **This is a living document.** Every big decision made during the migration should be  
+> recorded here in the Decision Log so future contributors (and future AI sessions) never  
+> lose the thread.  
 >
-> **Execution model:** No one depends on the framework yet, so **breaking changes are fully
-> acceptable** - we optimize for the cleanest end design, not backward compatibility. Once this
-> plan is finalized, the actual migration will be carried out in a focused, roughly one-to-two
-> week sprint using Opus and Fable, converting and testing subsystems one at a time.
+> **Execution model:** No one depends on the framework yet, so **breaking changes are fully  
+> acceptable** - we optimize for the cleanest end design, not backward compatibility. Once this  
+> plan is finalized, the actual migration will be carried out in a focused, roughly one-to-two  
+> week sprint using Opus and Fable, converting and testing subsystems one at a time.  
 
 ---
 
