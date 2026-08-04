@@ -158,7 +158,7 @@ FlixelGDX public API (core)
         |
 +-------------------------------------------+
 |  FlixelGDX abstraction seam (interfaces)  |
-|  - FlixelGraphics / renderer              |
+|  - FlixelGraphicsManager (Flixel.graphics)|
 |  - FlixelWindow / app lifecycle           |
 |  - FlixelInput                            |
 |  - FlixelFiles                            |
@@ -177,33 +177,39 @@ implementation behind the same seam and switch over per subsystem.
 
 ### 4.1 Graphics API structure (decided)
 
-The graphics surface is a **single, backend-agnostic abstraction in two tiers**. Backends are
-strictly internal and are never exposed as per-API surfaces (no `Flixel.opengl` /
-`Flixel.vulkan`).
+**One public surface, one internal seam.** Game code touches only `Flixel.graphics`; the
+GPU-library backend is strictly internal and never exposed (no `Flixel.opengl` / `Flixel.vulkan`,
+and no public device/RHI tier - that would be over-abstraction for a 2D framework).
 
 ```
-Flixel.graphics        FlixelGraphics        high-level, game-facing: sprites, batches, cameras,
-                                             blend modes, render targets. 99% of game code lives
-                                             here. Fully backend-agnostic.
-      .device()        FlixelGraphicsDevice  mid-level RHI: textures, buffers, pipelines, passes,
-                                             draw calls (modern GPU concepts, still backend-
-                                             agnostic). The power-user control tier.
-  (internal only)      BgfxBackend (native) / WebGpuBackend (web)   the real backend, selected at
-                                             startup, implementing FlixelGraphicsDevice. Never
-                                             referenced by game code.
+Flixel.graphics  ->  FlixelGraphicsManager     the ONLY public surface: cameras, the sprite batch,
+                                              blend modes, render targets, draw API. Backend-
+                                              agnostic; ~all game code lives here.
+                         |
+                    FlixelGraphicsBackend      INTERNAL interface (textures, buffers, pipelines,
+                         |                      draw submission) - the bgfx/WebGPU swap point.
+                                                Never referenced by game code.
+                    BgfxBackend (native) / WebGpuBackend (web)   the real backend, selected at
+                                              startup.
 ```
 
-- **`FlixelGraphicsManager`** is the coordinator: it selects and owns the active backend and hands
-  out `FlixelGraphics` (high) and `FlixelGraphicsDevice` (mid).
-- **Introspection, not per-backend APIs:** `device.backendType()` returns an enum for "what was
-  injected at startup". Per-backend method surfaces are intentionally NOT exposed - a
-  no-op-if-not-selected API would be a silent-failure footgun and would re-fragment the public
-  surface.
-- **Escape hatch:** a documented, explicitly-unsafe `device.nativeHandle()` (or a sealed-type
-  downcast) lets the rare power user reach raw handles without polluting the portable contract.
-- **Why this shape:** it keeps the exact coupling mistake that sank us with libGDX out of the
-  public API (backends stay swappable behind our own interface) while the device tier preserves
-  fine-grained control. See decision 5.2.
+- **`FlixelGraphicsManager`** (at `Flixel.graphics`) owns the active backend, the sprite batch, and
+  cameras, and exposes the drawing API. It is the single public entry point.
+- **`FlixelGraphicsBackend`** is *internal*; `BgfxBackend` / `WebGpuBackend` implement it. It is the
+  seam that keeps bgfx and WebGPU interchangeable - the manager talks to it, never to a GPU library
+  directly. Keeping it internal (not a public tier) avoids over-abstraction while preserving the
+  swap point.
+- **Texture source of truth:** `FlixelGraphic` (the existing ref-counted texture-resource handle)
+  stays the cross-platform representation of a loaded image; post-migration it holds an opaque
+  backend texture instead of a libGDX `Texture`. `FlixelFrame` and `FlixelSpriteBatch` sit on top.
+- **Introspection + escape hatch:** `Flixel.graphics.backendType()` returns an enum for "what was
+  injected at startup"; a documented, explicitly-unsafe native-handle accessor covers the rare
+  power user. No per-backend method surfaces (a no-op-if-not-selected API would be a silent-failure
+  footgun).
+- **Naming:** there is deliberately no public class named `FlixelGraphics` - that avoids a collision
+  with `FlixelGraphic` (one letter apart, opposite meaning: the renderer vs. a single texture).
+- **Why this shape:** keeps libGDX-style coupling out of the public API (backend stays swappable
+  behind our own interface) with one simple public surface. See decision 5.2.
 
 ## 5. Strategic decisions (open questions)
 
@@ -318,7 +324,9 @@ without losing earlier phases. Completed phases merge forward in order and ultim
 | 2026-08-03 | `FlixelRandom` is instance-based with a default exposed at `Flixel.random`; `FlixelArray` gets a built-in snapshot mode (no separate `FlixelSnapshotArray`) | Familiar global for veterans (like HaxeFlixel `FlxG.random`) plus seedable determinism; one array type instead of two. |
 | 2026-08-03 | Breaking changes are acceptable; no backward-compatibility constraint | No one depends on the framework yet. Optimize for the cleanest final design. |
 | 2026-08-03 | Execute the migration as a focused ~1-2 week sprint via Opus + Fable, testing subsystems one by one | Small dedicated sprint keeps momentum and lets each converted subsystem be verified in isolation. |
-| 2026-08-03 | Graphics = single backend-agnostic abstraction in two tiers (`FlixelGraphics` + `FlixelGraphicsDevice`); backends internal and swappable; no per-backend public APIs, only a `backendType()` enum + unsafe escape hatch | Keeps libGDX-style coupling out of the public surface while preserving fine-grained control (see 4.1). |
+| 2026-08-03 | Graphics: one PUBLIC surface `FlixelGraphicsManager` at `Flixel.graphics`; the bgfx/WebGPU backend sits behind an INTERNAL `FlixelGraphicsBackend` seam (no public device/RHI tier, no per-backend APIs; `backendType()` enum + unsafe native-handle escape hatch) | Simpler for a 2D framework and avoids the `FlixelGraphic`/`FlixelGraphics` name collision, while the internal seam keeps bgfx/WebGPU swappable (see 4.1). |
+| 2026-08-03 | `FlixelGraphic` stays the cross-platform texture-resource handle (holds an opaque backend texture post-migration) | One source of truth for a loaded image across all platforms. |
+| 2026-08-03 | JSON: own a reflection-free layer - `FlixelJsonObject`/`FlixelJsonArray` DOM in `org.flixelgdx.json`, a `Flixel.json` (`FlixelJson`) facade, and **annotation-processor codegen** for automatic object mapping | Reflection-free removes TeaVM reflection-config pain; codegen gives the best DX (automatic + reflection-free); prefixed names + dedicated package avoid collisions. Lands as a later slice, not Phase 1. |
 | 2026-08-03 | Back the graphics device with existing cross-platform libs, not hand-written raw backends; raw stays an optional future impl of the same interface | The libs absorb the multi-codebase renderer + shader-toolchain burden and do not lock us in behind our own seam (WebGPU is a W3C standard). Native-vs-web split resolved (next rows). |
 | 2026-08-03 | GPU backends: **bgfx** for native (desktop/Android/iOS), **WebGPU via our own TeaVM bindings** for web | bgfx is proven and LWJGL-bound (Java 17, no Panama); bgfx's emscripten web path clashes with TeaVM, so browser-native WebGPU is the natural web fit. |
 | 2026-08-03 | Web strategy: WebGPU through our own TeaVM JS-interop bindings (`flixelgdx-web`), **with a WebGL fallback** for browsers without WebGPU | TeaVM already bridges Java to JS/WASM, so we bind `navigator.gpu` directly; WebGL fallback keeps web reach wide. |
@@ -409,7 +417,10 @@ pooling go in a new **`org.flixelgdx.collections`**. The existing `FlixelMathUti
 **Deferred out of Phase 1:**
 - *Render/native-coupled (die with libGDX, not before):* `Affine2`, `Matrix4`, `BufferUtils`,
   `ScreenUtils`.
-- *Heavy, standalone, low usage - decide later:* `Json`/`JsonReader`/`JsonValue`, `XmlReader`.
+- *Own later as its own slice:* `Json`/`JsonReader`/`JsonValue` -> a reflection-free JSON layer
+  (`FlixelJsonObject`/`FlixelJsonArray` DOM in `org.flixelgdx.json`, a `Flixel.json` /
+  `FlixelJson` facade, and annotation-processor codegen for automatic mapping). `XmlReader`
+  similarly deferred.
 - *g2d that leaks but is not a utility:* e.g. `Animation<FlixelFrame>` - tracked with the render
   migration.
 
@@ -527,7 +538,6 @@ through `FlixelGraphicsManager`.*
 
 - [ ] **6a.** Remove all remaining gdx dependencies across every module.
 - [ ] **6b.** Update PROJECT.md, README, and all Markdown docs.
-- [ ] **6c.** Ship the `1.0` line.
 
 ---
 
