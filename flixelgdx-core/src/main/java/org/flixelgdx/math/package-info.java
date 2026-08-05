@@ -21,49 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class FlixelMathUtilTest {
-
-  private static final float DELTA = 1e-5f;
-
-  @Test
-  void roundTwoDecimals() {
-    assertEquals(3.15f, FlixelMathUtil.round(3.145f, 2), DELTA);
-  }
-
-  @Test
-  void roundZeroPlaces() {
-    assertEquals(4f, FlixelMathUtil.round(3.7f, 0), DELTA);
-  }
-
-  @Test
-  void roundZeroValue() {
-    assertEquals(0f, FlixelMathUtil.round(0f, 2), DELTA);
-  }
-
-  @Test
-  void roundNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0f) = -16, so result is -1.6 exactly.
-    assertEquals(-1.6f, FlixelMathUtil.round(-1.6f, 1), DELTA);
-  }
-
-  @Test
-  void roundHalfUp() {
-    assertEquals(1f, FlixelMathUtil.round(0.5f, 0), DELTA);
-  }
-
-  @Test
-  void roundLargeWholeNumber() {
-    assertEquals(1000f, FlixelMathUtil.round(999.9f, 0), DELTA);
-  }
-
-  @Test
-  void roundOneDecimalPlace() {
-    assertEquals(1.2f, FlixelMathUtil.round(1.23f, 1), DELTA);
-  }
-}
+/**
+ * Math value types and helpers owned by FlixelGDX.
+ *
+ * <p>This package holds the framework's own math surface: the geometric value
+ * types ({@link org.flixelgdx.math.FlixelPoint}, {@link org.flixelgdx.math.FlixelRect}),
+ * the static math helpers in {@link org.flixelgdx.math.FlixelMathUtil}, and the
+ * seedable random generator {@link org.flixelgdx.math.FlixelRandom}. These are
+ * clean-room reimplementations that replace the libGDX math utilities the
+ * framework used to lean on, so game code never has to touch a third-party math
+ * API.
+ *
+ * <p>The designs here take cues from HaxeFlixel and libGDX (algorithms and API
+ * shapes are not copyrightable), but every line is our own. A courtesy credit to
+ * both projects is enough; there is no copied source to attribute.
+ */
+package org.flixelgdx.math;
