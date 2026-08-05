@@ -1,0 +1,80 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2026 stringdotjar
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package org.flixelgdx.collections;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class FlixelIntSetTest {
+
+  @Test
+  void addContainsRemove() {
+    FlixelIntSet set = new FlixelIntSet();
+    assertTrue(set.add(5));
+    assertFalse(set.add(5));
+    assertTrue(set.contains(5));
+    assertTrue(set.remove(5));
+    assertFalse(set.contains(5));
+    assertTrue(set.isEmpty());
+  }
+
+  @Test
+  void zeroIsHandledSpecially() {
+    FlixelIntSet set = new FlixelIntSet();
+    assertFalse(set.contains(0));
+    assertTrue(set.add(0));
+    assertFalse(set.add(0));
+    assertTrue(set.contains(0));
+    assertEquals(1, set.size());
+    assertTrue(set.remove(0));
+    assertFalse(set.contains(0));
+  }
+
+  @Test
+  void behavesLikeHashSetUnderRandomOps() {
+    FlixelIntSet ours = new FlixelIntSet(4);
+    Set<Integer> ref = new HashSet<>();
+    Random random = new Random(13);
+
+    for (int i = 0; i < 20000; i++) {
+      int value = random.nextInt(300) - 40;
+      int op = random.nextInt(3);
+      if (op == 0) {
+        assertEquals(ref.add(value), ours.add(value));
+      } else if (op == 1) {
+        assertEquals(ref.remove(value), ours.remove(value));
+      } else {
+        assertEquals(ref.contains(value), ours.contains(value));
+      }
+      assertEquals(ref.size(), ours.size());
+    }
+  }
+}
