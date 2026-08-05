@@ -25,7 +25,6 @@ package org.flixelgdx.animation;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
@@ -35,6 +34,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.math.FlixelAffine;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,7 +73,7 @@ import java.util.Objects;
  *
  * <h2>Matrix convention</h2>
  * Flash stores affines as six-element arrays {@code [a, b, c, d, tx, ty]} representing
- * {@code x' = a*x + c*y + tx}, {@code y' = b*x + d*y + ty}. libGDX's {@link Affine2} uses the fields
+ * {@code x' = a*x + c*y + tx}, {@code y' = b*x + d*y + ty}. an {@link FlixelAffine} uses the fields
  * {@code m00, m01, m02, m10, m11, m12} with {@code x' = m00*x + m01*y + m02},
  * {@code y' = m10*x + m11*y + m12}, so the packing is:
  * <pre>
@@ -124,10 +124,10 @@ final class FlixelAnimateRigLoader {
   private static final int MAX_NEST = 8;
 
   /** Scratch affine used by {@link #matrixFromFlashMx} to avoid allocating during parsing. */
-  private final Affine2 scratchMx = new Affine2();
+  private final FlixelAffine scratchMx = new FlixelAffine();
 
-  /** Shared identity template for resetting {@link Affine2} instances cheaply. */
-  private static final Affine2 IDENTITY = new Affine2();
+  /** Shared identity template for resetting {@link FlixelAffine} instances cheaply. */
+  private static final FlixelAffine IDENTITY = new FlixelAffine();
 
   /**
    * Cache of {@code SN -> total timeline length} for every visited symbol. Used to evaluate the loop
@@ -569,7 +569,7 @@ final class FlixelAnimateRigLoader {
    * @param y The y-coordinate of the point to transform.
    * @param out The output bounding box.
    */
-  private static void accumulateTransformedCorner(@NotNull Affine2 m, float x, float y, @NotNull float[] out) {
+  private static void accumulateTransformedCorner(@NotNull FlixelAffine m, float x, float y, @NotNull float[] out) {
     float tx = m.m00 * x + m.m01 * y + m.m02;
     float ty = m.m10 * x + m.m11 * y + m.m12;
     if (tx < out[0])
@@ -622,7 +622,7 @@ final class FlixelAnimateRigLoader {
         return;
       }
 
-      Affine2 rootMatrix = new Affine2();
+      FlixelAffine rootMatrix = new FlixelAffine();
       matrixFromFlashMxOrM3d(rootSi.get("MX"), rootSi.get("M3D"), rootMatrix);
 
       // Apply the root SI's FF (first frame) and LP (loop mode) the same way visitSymbol handles
@@ -695,7 +695,7 @@ final class FlixelAnimateRigLoader {
       @NotNull FlixelMap<String, Integer> nameToIndex,
       @NotNull String symbolName,
       int localTime,
-      @NotNull Affine2 worldMatrix,
+      @NotNull FlixelAffine worldMatrix,
       @NotNull FlixelArray<RawPart> out,
       int depth) {
     if (depth > MAX_NEST) {
@@ -797,7 +797,7 @@ final class FlixelAnimateRigLoader {
         int firstFrame = readIntOr(si, "FF", 0);
         String loopMode = readStringOr(si, "LP", "loop");
 
-        Affine2 childWorld = new Affine2().set(worldMatrix);
+        FlixelAffine childWorld = new FlixelAffine().set(worldMatrix);
         matrixFromFlashMxOrM3d(si.get("MX"), si.get("M3D"), scratchMx);
         childWorld.mul(scratchMx);
 
@@ -974,13 +974,14 @@ final class FlixelAnimateRigLoader {
 
   /**
    * Converts Flash's {@code MX} (six values) or {@code M3D} (16 values, column-major 4x4) into a libGDX
-   * {@link Affine2}. {@code M3D} is preferred when present and long enough; otherwise {@code MX} is used.
+   * {@link FlixelAffine}. {@code M3D} is preferred when present and long enough; otherwise {@code MX} is used.
    *
    * @param mx Optional {@code MX} array ({@code [a, b, c, d, tx, ty]}).
    * @param m3d Optional {@code M3D} array (16 floats).
    * @param out Destination affine; never reallocated.
    */
-  private static void matrixFromFlashMxOrM3d(@Nullable JsonValue mx, @Nullable JsonValue m3d, @NotNull Affine2 out) {
+  private static void matrixFromFlashMxOrM3d(@Nullable JsonValue mx, @Nullable JsonValue m3d,
+      @NotNull FlixelAffine out) {
     if (m3d != null && m3d.isArray() && m3d.size >= 16) {
       matrixFromFlashM3d(m3d, out);
       return;
@@ -989,13 +990,13 @@ final class FlixelAnimateRigLoader {
   }
 
   /**
-   * Converts a column-major Flash / Animate {@code 4x4} matrix into a 2D {@link Affine2}. The upper-left
+   * Converts a column-major Flash / Animate {@code 4x4} matrix into a 2D {@link FlixelAffine}. The upper-left
    * {@code 2x2} carries scale and rotation; translation is {@code m[12], m[13]}.
    *
    * @param m3d The {@code M3D} JSON array with at least 16 entries. Must not be {@code null}.
    * @param out The destination; always written to.
    */
-  private static void matrixFromFlashM3d(@NotNull JsonValue m3d, @NotNull Affine2 out) {
+  private static void matrixFromFlashM3d(@NotNull JsonValue m3d, @NotNull FlixelAffine out) {
     out.m00 = m3d.get(0).asFloat();
     out.m01 = m3d.get(4).asFloat();
     out.m02 = m3d.get(12).asFloat();
@@ -1005,15 +1006,15 @@ final class FlixelAnimateRigLoader {
   }
 
   /**
-   * Converts a Flash {@code [a, b, c, d, tx, ty]} matrix into a libGDX {@link Affine2}, in-place. The
-   * Flash row-major convention is unpacked into {@link Affine2}'s {@code m00, m01, m02, m10, m11, m12}
+   * Converts a Flash {@code [a, b, c, d, tx, ty]} matrix into a {@link FlixelAffine}, in-place. The
+   * Flash row-major convention is unpacked into {@link FlixelAffine}'s {@code m00, m01, m02, m10, m11, m12}
    * fields without any temporary objects.
    *
    * @param mx The {@code MX} JSON array. If {@code null} or shorter than six elements, {@code out} is
    * reset to identity.
    * @param out The destination; always written to, never reallocated.
    */
-  private static void matrixFromFlashMx(@Nullable JsonValue mx, @NotNull Affine2 out) {
+  private static void matrixFromFlashMx(@Nullable JsonValue mx, @NotNull FlixelAffine out) {
     if (mx == null || !mx.isArray() || mx.size < 6) {
       out.set(IDENTITY);
       return;
@@ -1059,8 +1060,8 @@ final class FlixelAnimateRigLoader {
    * @param anchorHeight The height of the anchor bounding box.
    */
   static void bakePartAffine(
-      @NotNull Affine2 out,
-      @NotNull Affine2 flashWorld,
+      @NotNull FlixelAffine out,
+      @NotNull FlixelAffine flashWorld,
       float origW,
       float origH,
       boolean rotated,
@@ -1108,7 +1109,7 @@ final class FlixelAnimateRigLoader {
   private static final class RawPart {
     final int atlasIndex;
     @NotNull
-    final Affine2 flashMatrix = new Affine2();
+    final FlixelAffine flashMatrix = new FlixelAffine();
 
     RawPart(int atlasIndex) {
       this.atlasIndex = atlasIndex;

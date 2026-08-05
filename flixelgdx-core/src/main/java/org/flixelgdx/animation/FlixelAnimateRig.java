@@ -23,12 +23,11 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.math.FlixelAffine;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +48,7 @@ import java.util.Objects;
  * <p>Each {@link Part} stores:
  * <ul>
  *   <li>An integer index into {@link #atlas} selecting which bitmap slice to draw.</li>
- *   <li>A fully baked {@link Affine2} that already contains (a) the Flash {@code MX} or {@code M3D}
+ *   <li>A fully baked {@link FlixelAffine} that already contains (a) the Flash {@code MX} or {@code M3D}
  *   matrix chain from the root symbol or stage down to the leaf bitmap, (b) a Y-axis flip that converts
  *   Adobe Animate's Y-down bitmap space into libGDX's Y-up texture-region space, and (c) an anchor translation
  *   that shifts the whole rig so the anchor-clip bounding box starts at {@code (0, 0)}.</li>
@@ -184,14 +183,14 @@ public final class FlixelAnimateRig {
     public final int atlasIndex;
 
     /**
-     * The composed affine to pass to {@link com.badlogic.gdx.graphics.g2d.SpriteBatch#draw(TextureRegion,
-     * float, float, Affine2)} (after the sprite's world translate and scale are applied on top).
+     * The composed affine used to draw this part, applied on top of the sprite's world translate
+     * and scale.
      *
      * <p>Mathematically this is {@code anchorShift * flipRig * P_flash * flipBitmap}, where {@code P_flash}
      * is the product of {@code MX} matrices walked from the root symbol down to the leaf bitmap.
      */
     @NotNull
-    public final Affine2 local = new Affine2();
+    public final FlixelAffine local = new FlixelAffine();
 
     /**
      * Creates a part with the given atlas index. The affine starts as identity and is filled by the
