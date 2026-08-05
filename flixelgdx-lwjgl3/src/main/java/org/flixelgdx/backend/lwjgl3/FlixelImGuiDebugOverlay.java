@@ -28,13 +28,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
 import org.flixelgdx.input.keyboard.FlixelKey;
@@ -173,7 +173,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
 
   // Snapshot of the log buffer taken once per frame to avoid holding logBuffer during draw.
-  private final Array<BufferedLogLine> logSnapshot = new Array<>();
+  private final FlixelArray<BufferedLogLine> logSnapshot = new FlixelArray<>();
 
   // Window visibility flags (toggled from the debug menu).
   private final ImBoolean showStatsWindow = new ImBoolean(true);
@@ -981,7 +981,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       text(COLOR_OK, "RUNNING");
     }
 
-    Array<FlixelCamera> cams = Flixel.cameras;
+    FlixelArray<FlixelCamera> cams = Flixel.cameras;
     int camCount = cams != null ? cams.size : 0;
     int inspect = getInspectCameraIndex();
     text(COLOR_KEY, "Cameras");
@@ -1139,7 +1139,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     ImGui.separator();
     if (ImGui.button("Reset zoom on inspected camera")) {
-      Array<FlixelCamera> cams = Flixel.cameras;
+      FlixelArray<FlixelCamera> cams = Flixel.cameras;
       if (cams != null && cams.size > 0) {
         FlixelCamera cam = cams.get(getInspectCameraIndex());
         cam.setZoom(1f);
@@ -1470,7 +1470,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * newest clears the buffer.
    */
   private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
-    Array<String> history = Flixel.debug.getCommandHistory();
+    FlixelArray<String> history = Flixel.debug.getCommandHistory();
     if (history.size == 0) {
       return;
     }
