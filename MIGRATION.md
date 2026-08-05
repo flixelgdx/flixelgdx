@@ -477,18 +477,35 @@ Correctness discipline (non-negotiable):
 
 ### 9.4 Steps
 
-- [ ] **1a - Groundwork.** Create the `org.flixelgdx.math` and `org.flixelgdx.collections` packages;
+- [x] **1a - Groundwork.** Create the `org.flixelgdx.math` and `org.flixelgdx.collections` packages;
   move the existing `FlixelMathUtil` from `org.flixelgdx.util` into `org.flixelgdx.math`; add a
   courtesy credit to libGDX/HaxeFlixel in the docs (clean-room, so no `NOTICE` needed).
-- [ ] **1b - Tier 1 (trivial, render-neutral).** `FlixelPool`/`FlixelPoolable` (with dev-mode leak
-  stats), `Disposable` -> `FlixelDestroyable` consolidation, `FlixelAlign`, `FlixelArraySupplier`.
-- [ ] **1c - Tier 2 (math).** `FlixelMathUtil` (+ game helpers), `FlixelPoint` / `FlixelRect`
+- [x] **1b - Tier 1 (trivial, render-neutral).** `FlixelPool`/`FlixelPoolable` (with dev-mode leak
+  stats), `FlixelAlign`, `FlixelArraySupplier`. (`Disposable` -> `FlixelDestroyable` consolidation
+  is deferred to the 1e sweep, where the callers are actually swapped.)
+- [x] **1c - Tier 2 (math).** `FlixelMathUtil` (+ game helpers), `FlixelPoint` / `FlixelRect`
   (poolable), and `FlixelRandom` (instance-based, wired to `Flixel.random`).
-- [ ] **1d - Tier 3 (collections).** The big ones first - `FlixelArray` (with snapshot mode),
+- [x] **1d - Tier 3 (collections).** The big ones first - `FlixelArray` (with snapshot mode),
   `FlixelMap`, `FlixelSet` - then the specialized ones (`FlixelIntArray`, `FlixelFloatArray`,
   `FlixelCharArray`, `FlixelIntMap`, `FlixelIntSet`, `FlixelIdentityMap`).
 - [ ] **1e - Sweep.** Confirm no core file imports `com.badlogic.gdx.utils.*` or
   `com.badlogic.gdx.math.{Vector2,Rectangle,MathUtils}` anymore; update Markdown docs.
+
+> **Progress note (build vs. sweep).** Slices 1a-1d - building and fully unit-testing every
+> replacement type - are complete on the `phase-1-utilities` branch (all new types have tests,
+> including differential tests vs. `java.util` for the hash collections and vs. proven snapshot
+> semantics for `FlixelArray`). What remains is 1e: the file-by-file sweep that swaps ~56 core
+> files off the gdx utility imports and onto the new types. That step is intentionally separate
+> because it is where the *breaking public-API changes* land (for example `FlixelGroup.getMembers()`
+> switching from `SnapshotArray<T>` to `FlixelArray<T>`).
+>
+> **Deferred/adjusted during 1a-1d (revisit in 1e or later):**
+> - `FlixelRandom.color()` is not implemented yet: `FlixelColor` still wraps a libGDX `Color`, so
+>   adding it now would pull gdx back into the clean `math` package. Add it once color is decoupled.
+> - RNG helpers use Java-idiomatic names (`nextInt`, `nextFloat`, `nextBool`) rather than the
+>   literal `int()` / `float()` from 9.2, since those are reserved words in Java.
+> - `FlixelMap` insertion-order preservation (the "optional ordered mode" from 9.2) is not built
+>   yet; the current map is unordered. Add it if/when an ordered use case appears.
 
 ## 10. Phase 2 - Introduce the abstraction seam
 
@@ -585,4 +602,5 @@ through `FlixelGraphicsManager`.*
 - [x] Branching decided: each phase on its own branch (5.5).
 - [x] **All Part I strategic decisions resolved.**
 - [ ] Phase 0 validation spikes run (bgfx desktop, WebGPU-via-TeaVM web).
-- [ ] Phase 1 started.
+- [x] Phase 1 started; slices 1a-1d (build + test all replacement utilities) complete on
+  `phase-1-utilities`. Slice 1e (file-by-file sweep off gdx utils) still pending.
