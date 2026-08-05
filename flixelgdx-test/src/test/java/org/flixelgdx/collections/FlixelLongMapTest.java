@@ -29,71 +29,80 @@ package org.flixelgdx.collections;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelIntSetTest {
+class FlixelLongMapTest {
 
   @Test
-  void addContainsRemove() {
-    FlixelIntSet set = new FlixelIntSet();
-    assertTrue(set.add((int) 5));
-    assertFalse(set.add((int) 5));
-    assertTrue(set.contains((int) 5));
-    assertTrue(set.remove((int) 5));
-    assertFalse(set.contains((int) 5));
-    assertTrue(set.isEmpty());
+  void putGetReplace() {
+    FlixelLongMap<String> map = new FlixelLongMap<>();
+    assertNull(map.put((long) 1, "a"));
+    assertEquals("a", map.get((long) 1));
+    assertEquals("a", map.put((long) 1, "b"));
+    assertEquals("b", map.get((long) 1));
+    assertEquals(1, map.size());
   }
 
   @Test
-  void zeroIsHandledSpecially() {
-    FlixelIntSet set = new FlixelIntSet();
-    assertFalse(set.contains(0));
-    assertTrue(set.add(0));
-    assertFalse(set.add(0));
-    assertTrue(set.contains(0));
-    assertEquals(1, set.size());
-    assertTrue(set.remove(0));
-    assertFalse(set.contains(0));
+  void zeroKeyIsHandledSpecially() {
+    FlixelLongMap<String> map = new FlixelLongMap<>();
+    assertFalse(map.containsKey(0L));
+    map.put(0L, "zero");
+    assertTrue(map.containsKey(0L));
+    assertEquals("zero", map.get(0L));
+    assertEquals(1, map.size());
+    assertEquals("zero", map.remove(0L));
+    assertFalse(map.containsKey(0L));
+    assertEquals(0, map.size());
   }
 
   @Test
-  void iteratorVisitsEveryValue() {
-    FlixelIntSet set = new FlixelIntSet();
-    set.add(0);
-    set.add((int) 1);
-    set.add((int) 2);
+  void missingKeyDefaults() {
+    FlixelLongMap<String> map = new FlixelLongMap<>();
+    assertNull(map.get((long) 42));
+    assertEquals("x", map.getOrDefault((long) 42, "x"));
+  }
 
-    long sum = 0;
-    int count = 0;
-    for (FlixelIntSet.IntSetIterator it = set.iterator(); it.hasNext;) {
-      sum += it.next();
-      count++;
+  @Test
+  void entriesIterationIncludesZeroKey() {
+    FlixelLongMap<Integer> map = new FlixelLongMap<>();
+    map.put(0L, 100);
+    map.put((long) 1, 1);
+    map.put((long) 2, 2);
+
+    long keySum = 0;
+    int valueSum = 0;
+    for (FlixelLongMap.Entry<Integer> e : map.entries()) {
+      keySum += e.key;
+      valueSum += e.value;
     }
-    assertEquals(3, count);
-    assertEquals(3, sum);
+    assertEquals(3, keySum);
+    assertEquals(103, valueSum);
   }
 
   @Test
-  void behavesLikeHashSetUnderRandomOps() {
-    FlixelIntSet ours = new FlixelIntSet(4);
-    Set<Integer> ref = new HashSet<>();
-    Random random = new Random(13);
+  void behavesLikeHashMapUnderRandomOps() {
+    FlixelLongMap<Integer> ours = new FlixelLongMap<>(4);
+    Map<Long, Integer> ref = new HashMap<>();
+    Random random = new Random(11);
 
     for (int i = 0; i < 20000; i++) {
-      int value = (int) (random.nextInt(300) - 40);
+      long key = (long) (random.nextInt(400) - 50);
       int op = random.nextInt(3);
       if (op == 0) {
-        assertEquals(ref.add(value), ours.add(value));
+        int value = random.nextInt();
+        assertEquals(ref.put(key, value), ours.put(key, value));
       } else if (op == 1) {
-        assertEquals(ref.remove(value), ours.remove(value));
+        assertEquals(ref.remove(key), ours.remove(key));
       } else {
-        assertEquals(ref.contains(value), ours.contains(value));
+        assertEquals(ref.get(key), ours.get(key));
       }
       assertEquals(ref.size(), ours.size());
     }

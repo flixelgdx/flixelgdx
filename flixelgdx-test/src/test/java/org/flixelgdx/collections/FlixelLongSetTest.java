@@ -37,41 +37,41 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelIntSetTest {
+class FlixelLongSetTest {
 
   @Test
   void addContainsRemove() {
-    FlixelIntSet set = new FlixelIntSet();
-    assertTrue(set.add((int) 5));
-    assertFalse(set.add((int) 5));
-    assertTrue(set.contains((int) 5));
-    assertTrue(set.remove((int) 5));
-    assertFalse(set.contains((int) 5));
+    FlixelLongSet set = new FlixelLongSet();
+    assertTrue(set.add((long) 5));
+    assertFalse(set.add((long) 5));
+    assertTrue(set.contains((long) 5));
+    assertTrue(set.remove((long) 5));
+    assertFalse(set.contains((long) 5));
     assertTrue(set.isEmpty());
   }
 
   @Test
   void zeroIsHandledSpecially() {
-    FlixelIntSet set = new FlixelIntSet();
-    assertFalse(set.contains(0));
-    assertTrue(set.add(0));
-    assertFalse(set.add(0));
-    assertTrue(set.contains(0));
+    FlixelLongSet set = new FlixelLongSet();
+    assertFalse(set.contains(0L));
+    assertTrue(set.add(0L));
+    assertFalse(set.add(0L));
+    assertTrue(set.contains(0L));
     assertEquals(1, set.size());
-    assertTrue(set.remove(0));
-    assertFalse(set.contains(0));
+    assertTrue(set.remove(0L));
+    assertFalse(set.contains(0L));
   }
 
   @Test
   void iteratorVisitsEveryValue() {
-    FlixelIntSet set = new FlixelIntSet();
-    set.add(0);
-    set.add((int) 1);
-    set.add((int) 2);
+    FlixelLongSet set = new FlixelLongSet();
+    set.add(0L);
+    set.add((long) 1);
+    set.add((long) 2);
 
     long sum = 0;
     int count = 0;
-    for (FlixelIntSet.IntSetIterator it = set.iterator(); it.hasNext;) {
+    for (FlixelLongSet.LongSetIterator it = set.iterator(); it.hasNext;) {
       sum += it.next();
       count++;
     }
@@ -81,12 +81,12 @@ class FlixelIntSetTest {
 
   @Test
   void behavesLikeHashSetUnderRandomOps() {
-    FlixelIntSet ours = new FlixelIntSet(4);
-    Set<Integer> ref = new HashSet<>();
+    FlixelLongSet ours = new FlixelLongSet(4);
+    Set<Long> ref = new HashSet<>();
     Random random = new Random(13);
 
     for (int i = 0; i < 20000; i++) {
-      int value = (int) (random.nextInt(300) - 40);
+      long value = (long) (random.nextInt(300) - 40);
       int op = random.nextInt(3);
       if (op == 0) {
         assertEquals(ref.add(value), ours.add(value));

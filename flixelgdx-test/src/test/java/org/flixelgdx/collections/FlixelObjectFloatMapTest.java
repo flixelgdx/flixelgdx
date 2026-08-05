@@ -29,71 +29,65 @@ package org.flixelgdx.collections;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelIntSetTest {
+class FlixelObjectFloatMapTest {
 
   @Test
-  void addContainsRemove() {
-    FlixelIntSet set = new FlixelIntSet();
-    assertTrue(set.add((int) 5));
-    assertFalse(set.add((int) 5));
-    assertTrue(set.contains((int) 5));
-    assertTrue(set.remove((int) 5));
-    assertFalse(set.contains((int) 5));
-    assertTrue(set.isEmpty());
+  void basicsAndDefaults() {
+    FlixelObjectFloatMap<String> map = new FlixelObjectFloatMap<>();
+    assertEquals(0.0f, map.get("x", 0.0f), 1e-6f);
+    map.put("x", (float) 10);
+    assertEquals((float) 10, map.get("x", 0.0f), 1e-6f);
+    assertEquals((float) 11, map.increment("x", (float) 1), 1e-6f);
+    assertTrue(map.containsKey("x"));
+    assertThrows(IllegalArgumentException.class, () -> map.put(null, (float) 1));
+    assertEquals((float) 11, map.remove("x", (float) -1), 1e-6f);
+    assertFalse(map.containsKey("x"));
   }
 
   @Test
-  void zeroIsHandledSpecially() {
-    FlixelIntSet set = new FlixelIntSet();
-    assertFalse(set.contains(0));
-    assertTrue(set.add(0));
-    assertFalse(set.add(0));
-    assertTrue(set.contains(0));
-    assertEquals(1, set.size());
-    assertTrue(set.remove(0));
-    assertFalse(set.contains(0));
-  }
+  void entriesIterateEveryEntry() {
+    FlixelObjectFloatMap<String> map = new FlixelObjectFloatMap<>();
+    map.put("a", (float) 1);
+    map.put("b", (float) 2);
+    map.put("c", (float) 3);
 
-  @Test
-  void iteratorVisitsEveryValue() {
-    FlixelIntSet set = new FlixelIntSet();
-    set.add(0);
-    set.add((int) 1);
-    set.add((int) 2);
-
-    long sum = 0;
     int count = 0;
-    for (FlixelIntSet.IntSetIterator it = set.iterator(); it.hasNext;) {
-      sum += it.next();
+    float sum = 0.0f;
+    for (FlixelObjectFloatMap.Entry<String> e : map.entries()) {
+      sum += e.value;
       count++;
     }
     assertEquals(3, count);
-    assertEquals(3, sum);
+    assertEquals((float) 6, sum, 1e-6f);
   }
 
   @Test
-  void behavesLikeHashSetUnderRandomOps() {
-    FlixelIntSet ours = new FlixelIntSet(4);
-    Set<Integer> ref = new HashSet<>();
-    Random random = new Random(13);
-
+  void behavesLikeHashMapUnderRandomOps() {
+    FlixelObjectFloatMap<Integer> ours = new FlixelObjectFloatMap<>(4);
+    Map<Integer, Float> ref = new HashMap<>();
+    Random random = new Random(33);
     for (int i = 0; i < 20000; i++) {
-      int value = (int) (random.nextInt(300) - 40);
+      Integer key = random.nextInt(400);
       int op = random.nextInt(3);
       if (op == 0) {
-        assertEquals(ref.add(value), ours.add(value));
+        float value = (float) random.nextInt(1000);
+        ref.put(key, value);
+        ours.put(key, value);
       } else if (op == 1) {
-        assertEquals(ref.remove(value), ours.remove(value));
+        Float removed = ref.remove(key);
+        assertEquals(removed == null ? (float) -999 : removed, ours.remove(key, (float) -999), 1e-6f);
       } else {
-        assertEquals(ref.contains(value), ours.contains(value));
+        Float v = ref.get(key);
+        assertEquals(v == null ? (float) -999 : v, ours.get(key, (float) -999), 1e-6f);
       }
       assertEquals(ref.size(), ours.size());
     }

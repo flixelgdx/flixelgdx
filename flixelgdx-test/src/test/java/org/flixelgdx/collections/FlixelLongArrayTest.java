@@ -34,72 +34,72 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class FlixelIntArrayTest {
+class FlixelLongArrayTest {
 
   @Test
   void addGetSet() {
-    FlixelIntArray array = new FlixelIntArray();
-    array.add(10);
-    array.add(20);
+    FlixelLongArray array = new FlixelLongArray();
+    array.add(10L);
+    array.add(20L);
     assertEquals(2, array.size);
-    assertTrue(array.get(0) == 10);
-    array.set(0, 99);
-    assertTrue(array.get(0) == 99);
+    assertTrue(array.get(0) == 10L);
+    array.set(0, 99L);
+    assertTrue(array.get(0) == 99L);
   }
 
   @Test
   void orderedRemoveShifts() {
-    FlixelIntArray array = new FlixelIntArray();
-    array.add(10);
-    array.add(20);
-    array.add(99);
-    assertTrue(array.removeIndex(1) == 20);
+    FlixelLongArray array = new FlixelLongArray();
+    array.add(10L);
+    array.add(20L);
+    array.add(99L);
+    assertTrue(array.removeIndex(1) == 20L);
     assertEquals(2, array.size);
-    assertTrue(array.get(1) == 99);
+    assertTrue(array.get(1) == 99L);
   }
 
   @Test
   void unorderedRemoveSwapsLast() {
-    FlixelIntArray array = new FlixelIntArray(false, 8);
-    array.add(10);
-    array.add(20);
-    array.add(99);
-    assertTrue(array.removeIndex(0) == 10);
-    assertTrue(array.get(0) == 99);
+    FlixelLongArray array = new FlixelLongArray(false, 8);
+    array.add(10L);
+    array.add(20L);
+    array.add(99L);
+    assertTrue(array.removeIndex(0) == 10L);
+    assertTrue(array.get(0) == 99L);
     assertEquals(2, array.size);
   }
 
   @Test
   void indexOfAndContains() {
-    FlixelIntArray array = new FlixelIntArray();
-    array.add(10);
-    array.add(20);
-    assertEquals(1, array.indexOf(20));
-    assertTrue(array.contains(10));
-    assertTrue(array.removeValue(20));
-    assertFalse(array.contains(20));
+    FlixelLongArray array = new FlixelLongArray();
+    array.add(10L);
+    array.add(20L);
+    assertEquals(1, array.indexOf(20L));
+    assertTrue(array.contains(10L));
+    assertTrue(array.removeValue(20L));
+    assertFalse(array.contains(20L));
   }
 
   @Test
   void stackAndEnds() {
-    FlixelIntArray array = new FlixelIntArray();
-    array.add(10);
-    array.add(20);
-    array.add(99);
-    assertTrue(array.first() == 10);
-    assertTrue(array.peek() == 99);
-    assertTrue(array.pop() == 99);
+    FlixelLongArray array = new FlixelLongArray();
+    array.add(10L);
+    array.add(20L);
+    array.add(99L);
+    assertTrue(array.first() == 10L);
+    assertTrue(array.peek() == 99L);
+    assertTrue(array.pop() == 99L);
     assertEquals(2, array.size);
   }
 
   @Test
   void growSetSizeAndToArray() {
-    FlixelIntArray array = new FlixelIntArray(2);
+    FlixelLongArray array = new FlixelLongArray(2);
     for (int i = 0; i < 50; i++) {
-      array.add(10);
+      array.add(10L);
     }
     assertEquals(50, array.size);
-    int[] copy = array.toArray();
+    long[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);
     assertTrue(array.isEmpty());
@@ -107,7 +107,7 @@ class FlixelIntArrayTest {
 
   @Test
   void emptyAccessThrows() {
-    FlixelIntArray array = new FlixelIntArray();
+    FlixelLongArray array = new FlixelLongArray();
     assertTrue(array.isEmpty());
     assertThrows(IndexOutOfBoundsException.class, array::pop);
     assertThrows(IndexOutOfBoundsException.class, () -> array.get(0));
