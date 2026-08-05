@@ -32,37 +32,40 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * An unordered set of primitive {@code int} values.
+ * An unordered set of primitive {@code long} values.
  *
- * <p>It stores {@code int}s directly (no {@code Integer} boxing), making it
+ * <p>It stores {@code long}s directly (no {@code Long} boxing), making it
  * ideal for tracking sets of ids or handles (answering "have I already processed
  * this id?") with no garbage.
  *
- * <p>As in {@link FlixelIntMap}, the value {@code 0} is tracked with
- * a dedicated flag because {@code 0} marks empty slots in the hash table.
+ * <p>As in {@link FlixelLongMap}, the value {@code 0L} is tracked with
+ * a dedicated flag because {@code 0L} marks empty slots in the hash table.
  * Iteration order is undefined.
+ *
+ * <p>The hash folds the high 32 bits of the key with XOR before multiplying,
+ * so keys that differ only in the upper word map to different buckets.
  *
  * <p>This class is not thread safe.
  */
-public class FlixelIntSet {
+public class FlixelLongSet {
 
   private static final int DEFAULT_CAPACITY = 16;
   private static final float LOAD_FACTOR = 0.75f;
   private static final int HASH_MULTIPLIER = 0x9E3779B1;
 
-  private int[] keyTable;
+  private long[] keyTable;
   private int size;
   private int mask;
   private int threshold;
   private int shift;
   private boolean hasZeroKey;
 
-  private IntSetIterator iterator;
+  private LongSetIterator iterator;
 
   /**
    * Creates an empty set with the default initial capacity.
    */
-  public FlixelIntSet() {
+  public FlixelLongSet() {
     this(DEFAULT_CAPACITY);
   }
 
@@ -72,9 +75,9 @@ public class FlixelIntSet {
    *
    * @param initialCapacity The expected value count.
    */
-  public FlixelIntSet(int initialCapacity) {
+  public FlixelLongSet(int initialCapacity) {
     int cap = tableSizeFor(Math.max(1, initialCapacity));
-    keyTable = new int[cap];
+    keyTable = new long[cap];
     mask = cap - 1;
     threshold = (int) (cap * LOAD_FACTOR);
     shift = Integer.numberOfLeadingZeros(mask);
@@ -87,8 +90,8 @@ public class FlixelIntSet {
    * @return {@code true} if the value was added, {@code false} if it was already
    *     in the set.
    */
-  public boolean add(int value) {
-    if (value == 0) {
+  public boolean add(long value) {
+    if (value == 0L) {
       if (hasZeroKey) {
         return false;
       }
@@ -97,7 +100,7 @@ public class FlixelIntSet {
       return true;
     }
     int i = locate(value);
-    if (keyTable[i] != 0) {
+    if (keyTable[i] != 0L) {
       return false;
     }
     keyTable[i] = value;
@@ -113,11 +116,11 @@ public class FlixelIntSet {
    * @param value The value to check.
    * @return {@code true} if present.
    */
-  public boolean contains(int value) {
-    if (value == 0) {
+  public boolean contains(long value) {
+    if (value == 0L) {
       return hasZeroKey;
     }
-    return keyTable[locate(value)] != 0;
+    return keyTable[locate(value)] != 0L;
   }
 
   /**
@@ -126,8 +129,8 @@ public class FlixelIntSet {
    * @param value The value to remove.
    * @return {@code true} if the value was in the set.
    */
-  public boolean remove(int value) {
-    if (value == 0) {
+  public boolean remove(long value) {
+    if (value == 0L) {
       if (!hasZeroKey) {
         return false;
       }
@@ -136,11 +139,11 @@ public class FlixelIntSet {
       return true;
     }
     int i = locate(value);
-    if (keyTable[i] == 0) {
+    if (keyTable[i] == 0L) {
       return false;
     }
     int next = (i + 1) & mask;
-    while (keyTable[next] != 0) {
+    while (keyTable[next] != 0L) {
       int ideal = place(keyTable[next]);
       if (((next - ideal) & mask) >= ((next - i) & mask)) {
         keyTable[i] = keyTable[next];
@@ -148,7 +151,7 @@ public class FlixelIntSet {
       }
       next = (next + 1) & mask;
     }
-    keyTable[i] = 0;
+    keyTable[i] = 0L;
     size--;
     return true;
   }
@@ -157,7 +160,7 @@ public class FlixelIntSet {
    * Removes every value, leaving the set empty.
    */
   public void clear() {
-    Arrays.fill(keyTable, 0);
+    Arrays.fill(keyTable, 0L);
     hasZeroKey = false;
     size = 0;
   }
@@ -185,12 +188,12 @@ public class FlixelIntSet {
    *
    * @param other The set whose values to add.
    */
-  public void addAll(@NotNull FlixelIntSet other) {
+  public void addAll(@NotNull FlixelLongSet other) {
     if (other.hasZeroKey) {
-      add(0);
+      add(0L);
     }
-    for (int key : other.keyTable) {
-      if (key != 0) {
+    for (long key : other.keyTable) {
+      if (key != 0L) {
         add(key);
       }
     }
@@ -204,23 +207,23 @@ public class FlixelIntSet {
    *
    * @return An iterator over the primitive values.
    */
-  public @NotNull IntSetIterator iterator() {
+  public @NotNull LongSetIterator iterator() {
     if (iterator == null) {
-      iterator = new IntSetIterator(this);
+      iterator = new LongSetIterator(this);
     }
     iterator.reset();
     return iterator;
   }
 
-  private int place(int key) {
-    return (key * HASH_MULTIPLIER) >>> shift;
+  private int place(long key) {
+    return ((int) (key ^ (key >>> 32)) * HASH_MULTIPLIER) >>> shift;
   }
 
-  private int locate(int value) {
+  private int locate(long value) {
     int i = place(value);
     while (true) {
-      int existing = keyTable[i];
-      if (existing == 0 || existing == value) {
+      long existing = keyTable[i];
+      if (existing == 0L || existing == value) {
         return i;
       }
       i = (i + 1) & mask;
@@ -228,13 +231,13 @@ public class FlixelIntSet {
   }
 
   private void resize(int newSize) {
-    int[] oldKeys = keyTable;
-    keyTable = new int[newSize];
+    long[] oldKeys = keyTable;
+    keyTable = new long[newSize];
     mask = newSize - 1;
     threshold = (int) (newSize * LOAD_FACTOR);
     shift = Integer.numberOfLeadingZeros(mask);
-    for (int key : oldKeys) {
-      if (key != 0) {
+    for (long key : oldKeys) {
+      if (key != 0L) {
         keyTable[locate(key)] = key;
       }
     }
@@ -250,26 +253,26 @@ public class FlixelIntSet {
   }
 
   /**
-   * A reusable iterator over a set's primitive {@code int} values.
+   * A reusable iterator over a set's primitive {@code long} values.
    *
    * <p>Iterate with the {@link #hasNext} field and {@link #next()}:
    *
    * <pre>{@code
-   * for (FlixelIntSet.IntSetIterator it = set.iterator(); it.hasNext; ) {
-   *   int value = it.next();
+   * for (FlixelLongSet.LongSetIterator it = set.iterator(); it.hasNext; ) {
+   *   long value = it.next();
    * }
    * }</pre>
    */
-  public static final class IntSetIterator {
+  public static final class LongSetIterator {
 
     /** Whether another value is available from {@link #next()}. */
     public boolean hasNext;
 
-    private final FlixelIntSet set;
+    private final FlixelLongSet set;
     private int index;
     private boolean zeroPending;
 
-    IntSetIterator(FlixelIntSet set) {
+    LongSetIterator(FlixelLongSet set) {
       this.set = set;
     }
 
@@ -285,9 +288,9 @@ public class FlixelIntSet {
         return;
       }
       hasNext = false;
-      int[] keyTable = set.keyTable;
+      long[] keyTable = set.keyTable;
       for (index++; index < keyTable.length; index++) {
-        if (keyTable[index] != 0) {
+        if (keyTable[index] != 0L) {
           hasNext = true;
           break;
         }
@@ -299,11 +302,11 @@ public class FlixelIntSet {
      *
      * @return The next value in the set.
      */
-    public int next() {
-      int value;
+    public long next() {
+      long value;
       if (zeroPending) {
         zeroPending = false;
-        value = 0;
+        value = 0L;
       } else {
         value = set.keyTable[index];
       }
