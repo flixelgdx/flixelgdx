@@ -488,13 +488,22 @@ Correctness discipline (non-negotiable):
 - [x] **1d - Tier 3 (collections).** The big ones first - `FlixelArray` (with snapshot mode),
   `FlixelMap`, `FlixelSet` - then the specialized ones (`FlixelIntArray`, `FlixelFloatArray`,
   `FlixelCharArray`, `FlixelIntMap`, `FlixelIntSet`, `FlixelIdentityMap`).
+- [x] **1d.1 - Collection code generation.** Replaced the hand-duplicated primitive collections
+  with a template-driven generator (`scripts/generate_primitive_collections.py` plus templates
+  under `scripts/templates`). One template now drives every primitive array, primitive-keyed map,
+  primitive-keyed set, and object-keyed primitive-value map, along with their unit tests. The
+  generated Java files are still committed so IDEs and Javadoc treat them as normal source. This
+  sweep also dropped the unused prim-to-prim maps (`FlixelIntIntMap`, `FlixelIntFloatMap`,
+  `FlixelBoolMap`, `FlixelCharMap`) and added `FlixelLongSet`.
 - [ ] **1e - Sweep.** Confirm no core file imports `com.badlogic.gdx.utils.*` or
   `com.badlogic.gdx.math.{Vector2,Rectangle,MathUtils}` anymore; update Markdown docs.
 
 > **Progress note (build vs. sweep).** Slices 1a-1d - building and fully unit-testing every
 > replacement type - are complete on the `phase-1-utilities` branch (all new types have tests,
 > including differential tests vs. `java.util` for the hash collections and vs. proven snapshot
-> semantics for `FlixelArray`). What remains is 1e: the file-by-file sweep that swaps ~56 core
+> semantics for `FlixelArray`). The primitive collections have also been consolidated behind a
+> template-driven generator (1d.1), so the whole family is authored from one template per shape
+> instead of hand-copied files. What remains is 1e: the file-by-file sweep that swaps ~56 core
 > files off the gdx utility imports and onto the new types. That step is intentionally separate
 > because it is where the *breaking public-API changes* land (for example `FlixelGroup.getMembers()`
 > switching from `SnapshotArray<T>` to `FlixelArray<T>`).
@@ -603,4 +612,5 @@ through `FlixelGraphicsManager`.*
 - [x] **All Part I strategic decisions resolved.**
 - [ ] Phase 0 validation spikes run (bgfx desktop, WebGPU-via-TeaVM web).
 - [x] Phase 1 started; slices 1a-1d (build + test all replacement utilities) complete on
-  `phase-1-utilities`. Slice 1e (file-by-file sweep off gdx utils) still pending.
+  `phase-1-utilities`, and the primitive collections are now generated from templates (1d.1).
+  Slice 1e (file-by-file sweep off gdx utils) still pending.
