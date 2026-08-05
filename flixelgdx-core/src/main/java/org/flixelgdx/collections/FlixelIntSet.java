@@ -30,10 +30,9 @@ import java.util.Arrays;
 /**
  * An unordered set of primitive {@code int} values.
  *
- * <p>This is the framework's own replacement for libGDX's {@code IntSet}. It
- * stores {@code int}s directly (no {@code Integer} boxing), making it ideal for
- * tracking sets of ids or handles - "have I already processed this id?" - with
- * no garbage.
+ * <p>It stores {@code int}s directly (no {@code Integer} boxing), making it ideal
+ * for tracking sets of ids or handles (answering "have I already processed this
+ * id?") with no garbage.
  *
  * <p>As in {@link FlixelIntMap}, the value {@code 0} is tracked with a dedicated
  * flag because {@code 0} marks empty slots in the hash table. Iteration order is

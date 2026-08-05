@@ -26,12 +26,11 @@ package org.flixelgdx.math;
 /**
  * Static math helpers used across FlixelGDX.
  *
- * <p>This is the framework's own replacement for the general-purpose math
- * utilities games reach for every frame: clamping, interpolation, angle work,
- * and a handful of game-feel helpers ({@link #approach(float, float, float)},
- * {@link #wrap(float, float, float)}, {@link #remap}) that libGDX never shipped.
- * Everything here is allocation-free and safe to call inside update or render
- * loops.
+ * <p>These are the general-purpose math routines games reach for every frame:
+ * clamping, interpolation, angle work, and a handful of game-feel helpers
+ * ({@link #approach(float, float, float)}, {@link #wrap(float, float, float)},
+ * {@link #remap}). Everything here is allocation-free and safe to call inside
+ * update or render loops.
  *
  * <p>Trigonometry ({@link #sin(float)} / {@link #cos(float)}) is served from a
  * precomputed lookup table. That trades a little accuracy for a large speed win,

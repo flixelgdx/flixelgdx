@@ -25,7 +25,7 @@ package org.flixelgdx.tween.type.motion;
 
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.math.FlixelMathUtil;
-import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /** Piecewise-linear path through a polyline. */
 public class FlixelLinearPath extends FlixelMotion {
 
-  private final FlixelArray<FlixelPoint> points = new FlixelArray<>();
+  private final FlixelArray<FlixelVector> points = new FlixelArray<>();
   private float[] cumulativeT = new float[8];
   private int pointCount;
   private float totalDistance;
@@ -50,7 +50,7 @@ public class FlixelLinearPath extends FlixelMotion {
   }
 
   public FlixelLinearPath addPoint(float x, float y) {
-    points.add(new FlixelPoint(x, y));
+    points.add(new FlixelVector(x, y));
     return this;
   }
 
@@ -104,7 +104,7 @@ public class FlixelLinearPath extends FlixelMotion {
   @Override
   public FlixelTween start() {
     if (points.size > 0) {
-      FlixelPoint p = points.first();
+      FlixelVector p = points.first();
       motionX = p.x;
       motionY = p.y;
     }
@@ -126,8 +126,8 @@ public class FlixelLinearPath extends FlixelMotion {
     float t1 = cumulativeT[seg + 1];
     float u = (t1 - t0) > 1e-8f ? (pathT - t0) / (t1 - t0) : 0f;
     u = FlixelMathUtil.clamp(u, 0f, 1f);
-    FlixelPoint a = points.get(seg);
-    FlixelPoint b = points.get(seg + 1);
+    FlixelVector a = points.get(seg);
+    FlixelVector b = points.get(seg + 1);
     motionX = a.x + (b.x - a.x) * u;
     motionY = a.y + (b.y - a.y) * u;
   }

@@ -42,7 +42,6 @@ import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.math.FlixelMathUtil;
-import org.flixelgdx.math.FlixelPoint;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
@@ -461,7 +460,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Pushes {@link #scrollX}/{@link #scrollY}, zoom, angle, and shake offsets into the underlying libGDX {@link Camera}.
    *
    * <p>Call this after mutating scroll outside {@link #update(float)} (e.g., during a debug pause pan) and before
-   * {@link Viewport#unproject(FlixelPoint)} or any rendering.
+   * {@link Viewport#unproject(com.badlogic.gdx.math.Vector2)} or any rendering.
    * Safe to call every frame; {@link #update(float)} ends with this automatically.
    *
    * <p>Drawables use view (batch) coordinates from {@link #worldToViewX(float, float)} and

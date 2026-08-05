@@ -30,13 +30,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * An axis-aligned rectangle defined by a top-left corner and a size.
  *
- * <p>This is the framework's own replacement for a libGDX {@code Rectangle},
- * mirroring HaxeFlixel's {@code FlxRect}. It is the workhorse for hit testing,
- * camera dead zones, and culling, so it ships with {@link #contains(float,
- * float)}, {@link #overlaps(FlixelRect)}, {@link #union(FlixelRect)}, and
- * {@link #intersection(FlixelRect)}.
+ * <p>It is the workhorse for hit testing, camera dead zones, and culling, so it
+ * ships with {@link #contains(float, float)}, {@link #overlaps(FlixelRect)},
+ * {@link #union(FlixelRect)}, and {@link #intersection(FlixelRect)}.
  *
- * <p>Like {@link FlixelPoint}, rectangles are poolable to avoid per-frame
+ * <p>Like {@link FlixelVector}, rectangles are poolable to avoid per-frame
  * allocations: borrow one with {@link #get()} and return it with {@link #put()},
  * or use {@link #weak()} for the throwaway "pass it once and forget it" pattern
  * (the receiving method calls {@link #putWeak()}). You may also {@code new} a
@@ -203,7 +201,7 @@ public final class FlixelRect implements FlixelPoolable {
    * @param point The point to test.
    * @return {@code true} if the point is inside.
    */
-  public boolean contains(@NotNull FlixelPoint point) {
+  public boolean contains(@NotNull FlixelVector point) {
     return contains(point.x, point.y);
   }
 

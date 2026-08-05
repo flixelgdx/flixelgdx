@@ -25,7 +25,7 @@ package org.flixelgdx.tween.type.motion;
 
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.math.FlixelMathUtil;
-import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelQuadPath extends FlixelMotion {
 
-  private final FlixelArray<FlixelPoint> points = new FlixelArray<>();
+  private final FlixelArray<FlixelVector> points = new FlixelArray<>();
   private float[] cumulativeT = new float[8];
   private float[] segmentLen = new float[8];
   private int numSegs;
@@ -54,7 +54,7 @@ public class FlixelQuadPath extends FlixelMotion {
   }
 
   public FlixelQuadPath addPoint(float x, float y) {
-    points.add(new FlixelPoint(x, y));
+    points.add(new FlixelVector(x, y));
     return this;
   }
 
@@ -87,9 +87,9 @@ public class FlixelQuadPath extends FlixelMotion {
     ensureCap(numSegs + 1);
     totalDistance = 0f;
     for (int i = 0; i < numSegs; i++) {
-      FlixelPoint a = points.get(i * 2);
-      FlixelPoint b = points.get(i * 2 + 1);
-      FlixelPoint c = points.get(i * 2 + 2);
+      FlixelVector a = points.get(i * 2);
+      FlixelVector b = points.get(i * 2 + 1);
+      FlixelVector c = points.get(i * 2 + 2);
       float len = approxQuadLength(a, b, c);
       segmentLen[i] = len;
       totalDistance += len;
@@ -105,14 +105,14 @@ public class FlixelQuadPath extends FlixelMotion {
     }
   }
 
-  private static float approxQuadLength(FlixelPoint a, FlixelPoint b, FlixelPoint c) {
+  private static float approxQuadLength(FlixelVector a, FlixelVector b, FlixelVector c) {
     return a.distanceTo(b) + b.distanceTo(c) + a.distanceTo(c) * 0.5f;
   }
 
   @Override
   public FlixelTween start() {
     if (points.size > 0) {
-      FlixelPoint p = points.first();
+      FlixelVector p = points.first();
       motionX = p.x;
       motionY = p.y;
     }
@@ -134,16 +134,16 @@ public class FlixelQuadPath extends FlixelMotion {
     float t1 = cumulativeT[seg + 1];
     float u = (t1 - t0) > 1e-8f ? (pathT - t0) / (t1 - t0) : 0f;
     u = FlixelMathUtil.clamp(u, 0f, 1f);
-    FlixelPoint a = points.get(seg * 2);
-    FlixelPoint b = points.get(seg * 2 + 1);
-    FlixelPoint c = points.get(seg * 2 + 2);
+    FlixelVector a = points.get(seg * 2);
+    FlixelVector b = points.get(seg * 2 + 1);
+    FlixelVector c = points.get(seg * 2 + 2);
     float s = u;
     float r = 1f - s;
     motionX = a.x * r * r + b.x * 2f * r * s + c.x * s * s;
     motionY = a.y * r * r + b.y * 2f * r * s + c.y * s * s;
   }
 
-  public FlixelArray<FlixelPoint> getPoints() {
+  public FlixelArray<FlixelVector> getPoints() {
     return points;
   }
 

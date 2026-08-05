@@ -28,8 +28,7 @@ import java.util.Arrays;
 /**
  * A growable list of primitive {@code float} values.
  *
- * <p>This is the framework's own replacement for libGDX's {@code FloatArray}.
- * Like {@link FlixelIntArray}, it stores primitives directly to avoid boxing,
+ * <p>Like {@link FlixelIntArray}, it stores primitives directly to avoid boxing,
  * which matters for the vertex, timing, and geometry buffers rendering code
  * fills every frame. The backing array {@link #items} and count {@link #size}
  * are public for zero-allocation indexed iteration.

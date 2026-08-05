@@ -62,8 +62,8 @@ import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
-import org.flixelgdx.math.FlixelPoint;
 import org.flixelgdx.math.FlixelRandom;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.type.FlixelAngleTween;
 import org.flixelgdx.tween.type.FlixelColorTween;
@@ -1193,9 +1193,9 @@ public final class Flixel {
    *
    * <p>Unlike {@link #getWidth()} and {@link #getHeight()}, this always reflects the fixed design
    * dimensions that were set upon the game's initialization and is not affected by the active viewport
-   * type. The returned {@link FlixelPoint} is the live internal vector. Do not modify it.
+   * type. The returned {@link FlixelVector} is the live internal vector. Do not modify it.
    */
-  public static FlixelPoint getSize() {
+  public static FlixelVector getSize() {
     return game.initialSize;
   }
 

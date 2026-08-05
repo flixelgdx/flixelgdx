@@ -33,8 +33,7 @@ import java.util.NoSuchElementException;
 /**
  * An unordered map from primitive {@code int} keys to object values.
  *
- * <p>This is the framework's own replacement for libGDX's {@code IntMap}. Using
- * {@code int} keys directly avoids the {@code Integer} boxing a
+ * <p>Using {@code int} keys directly avoids the {@code Integer} boxing a
  * {@link FlixelMap} would incur, which is the whole point when the keys are ids,
  * handles, or indices looked up every frame.
  *

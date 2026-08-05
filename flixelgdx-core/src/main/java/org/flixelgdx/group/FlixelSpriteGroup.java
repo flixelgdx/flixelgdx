@@ -30,8 +30,8 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.math.FlixelMathUtil;
-import org.flixelgdx.math.FlixelPoint;
 import org.flixelgdx.math.FlixelRect;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
@@ -769,9 +769,9 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param out An optional output vector. If {@code null}, a new one is created.
    * @return The midpoint of the group's bounds.
    */
-  public FlixelPoint getMidpoint(FlixelPoint out) {
+  public FlixelVector getMidpoint(FlixelVector out) {
     if (out == null) {
-      out = new FlixelPoint();
+      out = new FlixelVector();
     }
     FlixelRect bounds = getBounds(tmpBoundsRect);
     out.set(bounds.x + bounds.width / 2f, bounds.y + bounds.height / 2f);

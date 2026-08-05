@@ -47,8 +47,8 @@ class FlixelRectTest {
   @Test
   void containsPointOverload() {
     FlixelRect rect = new FlixelRect(0f, 0f, 4f, 4f);
-    assertTrue(rect.contains(new FlixelPoint(2f, 2f)));
-    assertFalse(rect.contains(new FlixelPoint(5f, 2f)));
+    assertTrue(rect.contains(new FlixelVector(2f, 2f)));
+    assertFalse(rect.contains(new FlixelVector(5f, 2f)));
   }
 
   @Test

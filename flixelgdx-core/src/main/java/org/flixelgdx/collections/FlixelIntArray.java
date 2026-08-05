@@ -28,8 +28,7 @@ import java.util.Arrays;
 /**
  * A growable list of primitive {@code int} values.
  *
- * <p>This is the framework's own replacement for libGDX's {@code IntArray}.
- * Storing primitives directly (rather than {@code Integer} objects in a
+ * <p>Storing primitives directly (rather than {@code Integer} objects in a
  * {@link FlixelArray}) avoids boxing entirely: no wrapper objects are created,
  * so there is nothing for the garbage collector to clean up and the values sit
  * contiguously in memory for fast iteration.

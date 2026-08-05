@@ -28,17 +28,16 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A seedable pseudo-random number generator with game-friendly helpers.
  *
- * <p>This is FlixelGDX's own randomness source, exposed globally as
- * {@code Flixel.random} while still being an ordinary object you can create as
- * many of as you like. Being instance based and seedable is the whole point:
- * give two runs the same seed and they produce the same sequence, which is what
- * makes deterministic replays, seeded procedural generation, and reproducible
- * tests possible.
+ * <p>The framework exposes one globally as {@code Flixel.random}, but it is an
+ * ordinary object you can create as many of as you like. Being instance based
+ * and seedable is the whole point: give two runs the same seed and they produce
+ * the same sequence, which is what makes deterministic replays, seeded
+ * procedural generation, and reproducible tests possible.
  *
- * <p>The generator is a clean-room {@code xorshift64*}, a small, fast, and
- * well-distributed algorithm. Because the math is fully specified here rather
- * than borrowed from a platform's {@link java.util.Random}, the same seed yields
- * the same numbers on desktop, web, and mobile alike.
+ * <p>The generator is an {@code xorshift64*}, a small, fast, and well-distributed
+ * algorithm. Because the math is fully specified here rather than delegated to a
+ * platform's {@link java.util.Random}, the same seed yields the same numbers on
+ * desktop, web, and mobile alike.
  *
  * <p>Example:
  *

@@ -33,10 +33,9 @@ import java.util.NoSuchElementException;
 /**
  * An unordered map from keys to values, backed by an open-addressing hash table.
  *
- * <p>This is the framework's own replacement for libGDX's {@code ObjectMap}. It
- * stores keys and values in flat arrays and resolves collisions by linear
- * probing, which keeps memory compact and lookups cache friendly - a good fit
- * for the per-frame lookups games do constantly.
+ * <p>It stores keys and values in flat arrays and resolves collisions by linear
+ * probing, which keeps memory compact and lookups cache friendly, a good fit for
+ * the per-frame lookups games do constantly.
  *
  * <p>Keys must not be {@code null}; values may be. Iteration order is not
  * defined and can change as the map grows.

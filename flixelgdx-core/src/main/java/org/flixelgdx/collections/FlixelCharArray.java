@@ -31,10 +31,10 @@ import java.util.Arrays;
  * A growable buffer of primitive {@code char} values that doubles as a mutable,
  * allocation-friendly text builder.
  *
- * <p>This is the framework's own replacement for libGDX's {@code CharArray}. Like
- * {@link FlixelIntArray} it stores primitives directly (no boxing), but it also
- * implements {@link CharSequence} and {@link Appendable} so it can stand in for a
- * {@link StringBuilder} in hot paths. That is exactly what on-screen text needs:
+ * <p>Like {@link FlixelIntArray} it stores primitives directly (no boxing), but
+ * it also implements {@link CharSequence} and {@link Appendable} so it can stand
+ * in for a {@link StringBuilder} in hot paths. That is exactly what on-screen
+ * text needs:
  * numbers and labels that change every frame can be rebuilt in place with the
  * {@code append} family instead of allocating a fresh {@code String} each time,
  * which keeps the garbage collector quiet.

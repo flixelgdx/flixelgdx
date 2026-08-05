@@ -24,7 +24,7 @@
 package org.flixelgdx.input.action;
 
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,7 +100,7 @@ public final class FlixelActionAnalog extends FlixelAction {
 
   private final FlixelMap<String, FlixelAnalogBinding> namedBindings = new FlixelMap<>(12);
 
-  private final FlixelPoint scratch = new FlixelPoint();
+  private final FlixelVector scratch = new FlixelVector();
 
   private float x;
   private float y;

@@ -45,8 +45,8 @@ import java.util.Arrays;
  * on {@link #free(Object)} so no stale state carries over.
  *
  * <p>In development builds the pool tracks live-borrow statistics
- * ({@link #getOutstandingCount()}, {@link #peak}) to help find leaks - objects
- * obtained but never freed. These counters are cheap and always on.
+ * ({@link #getOutstandingCount()}, {@link #peak}) to help find leaks, meaning
+ * objects obtained but never freed. These counters are cheap and always on.
  *
  * <p>Example:
  *

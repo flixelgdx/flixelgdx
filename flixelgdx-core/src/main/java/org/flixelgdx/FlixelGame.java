@@ -51,7 +51,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelSpriteBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.input.action.FlixelActionSets;
-import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelRuntimeUtil;
@@ -114,7 +114,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * The size of the game's starting window position and its first camera. Only used at startup time
    * during the game's boot sequence.
    */
-  protected FlixelPoint initialSize;
+  protected FlixelVector initialSize;
 
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs. Use {@code () -> new MyState()} for a fresh
@@ -373,7 +373,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory,
       int framerate, boolean vsync, boolean fullscreen) {
     this.title = title;
-    this.initialSize = new FlixelPoint(width, height);
+    this.initialSize = new FlixelVector(width, height);
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "The initial state factory cannot be null!");
     this.framerate = framerate;
     this.vsync = vsync;

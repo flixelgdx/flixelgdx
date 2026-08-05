@@ -239,10 +239,10 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * <p>Override this function to clean up any resources used by this object,
    * such as textures, fonts, sounds, etc.
    *
-   * <p>This function is called automatically when {@link #dispose()} or
-   * {@link #reset()} is executed, so you don't need to call it manually.
+   * <p>This function is called automatically when {@link #reset()} is executed
+   * (for example when this object is returned to a pool), so you don't need to
+   * call it manually.
    *
-   * @see #dispose()
    * @see #reset()
    */
   @Override

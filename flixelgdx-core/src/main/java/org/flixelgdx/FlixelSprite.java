@@ -1246,7 +1246,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Replaces the currently displayed frame with a wrapper around the given {@link TextureRegion},
    * bypassing the frame grid and animation system. Useful for one-off sprites that source a region
    * from an existing atlas without going through {@link #loadGraphic(String)} or
-   * {@link #applySparrowAtlas(FlixelGraphic, FlixelArray)}. Pass {@code null} to clear the displayed frame.
+   * {@link #applySparrowAtlas(FlixelGraphic, com.badlogic.gdx.utils.Array)}. Pass {@code null} to clear the displayed frame.
    *
    * @param region The region to display, or {@code null} to stop rendering.
    */

@@ -32,10 +32,9 @@ import java.util.NoSuchElementException;
 /**
  * An unordered set of unique elements, backed by an open-addressing hash table.
  *
- * <p>This is the framework's own replacement for libGDX's {@code ObjectSet}. It
- * shares the compact, cache-friendly linear-probing design of {@link FlixelMap}
- * but stores only membership - use it to answer "have I already seen this?"
- * without the overhead of values.
+ * <p>It shares the compact, cache-friendly linear-probing design of
+ * {@link FlixelMap} but stores only membership. Use it to answer "have I already
+ * seen this?" without the overhead of values.
  *
  * <p>Elements must not be {@code null}. Iteration order is undefined and may
  * change as the set grows. Like the map, {@link #iterator()} is reused between

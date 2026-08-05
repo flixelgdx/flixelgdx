@@ -35,9 +35,9 @@ import java.util.NoSuchElementException;
 /**
  * A growable, ordered list backed by a plain Java array.
  *
- * <p>This is the framework's own replacement for libGDX's {@code Array}, and it
- * also folds in {@code SnapshotArray}'s job (see the snapshot section below), so
- * there is a single array type to learn instead of two.
+ * <p>A single growable list that also folds in a built-in snapshot mode (see the
+ * snapshot section below), so there is one array type to learn for both plain
+ * use and safe mutation during iteration.
  *
  * <p><b>Zero-allocation iteration.</b> The backing array {@link #items} and the
  * live element count {@link #size} are public on purpose. Hot loops should walk
@@ -60,7 +60,7 @@ import java.util.NoSuchElementException;
  *
  * <p><b>Ordered vs. unordered.</b> An {@link #ordered} list keeps insertion
  * order and shifts elements down on removal. An unordered list may fill a
- * removed slot with the last element instead, making removal O(1) - ideal for
+ * removed slot with the last element instead, making removal O(1) and ideal for
  * bags where order does not matter.
  *
  * <p><b>Snapshot mode.</b> Modifying a list while a {@code for-each} loop walks
@@ -105,7 +105,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * plain {@code Object[]}.
    *
    * <p>Use this when you do not need {@link #items} to be a genuinely typed
-   * {@code T[]} - which is the common case, and the only option for a generic
+   * {@code T[]}, which is the common case and the only option for a generic
    * container that cannot name {@code T} at runtime. Reading elements by index
    * still returns {@code T}. When you do want a real typed backing array (for
    * example to hand {@code items} to an API expecting {@code String[]}), use the

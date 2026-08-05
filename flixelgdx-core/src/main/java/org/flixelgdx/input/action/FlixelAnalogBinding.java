@@ -25,12 +25,12 @@ package org.flixelgdx.input.action;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.input.gamepad.FlixelGamepadInput;
-import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelVector;
 
 /**
  * Two-axis input contributor for a {@link FlixelActionAnalog}.
  *
- * <p>Each binding adds its contribution to a shared {@link FlixelPoint} accumulator each frame.
+ * <p>Each binding adds its contribution to a shared {@link FlixelVector} accumulator each frame.
  * Multiple bindings on the same action are summed, then normalized to a maximum length of 1 so
  * diagonals do not exceed unit speed when mixing keys and sticks.
  *
@@ -63,7 +63,7 @@ public interface FlixelAnalogBinding {
    *
    * @param out Accumulator to modify in place.
    */
-  void accumulate(FlixelPoint out);
+  void accumulate(FlixelVector out);
 
   /**
    * Subtracts 1 from {@code out.x} while the key is held (left / negative X).

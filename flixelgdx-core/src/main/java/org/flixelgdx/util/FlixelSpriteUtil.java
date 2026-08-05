@@ -38,7 +38,7 @@ import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.math.FlixelMathUtil;
-import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -581,7 +581,7 @@ public final class FlixelSpriteUtil {
    * @return The midpoint of the sprite.
    */
   @NotNull
-  public static FlixelPoint getMidpoint(@NotNull FlixelSprite sprite, @NotNull FlixelPoint out) {
+  public static FlixelVector getMidpoint(@NotNull FlixelSprite sprite, @NotNull FlixelVector out) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     float w = sprite.getWidth() * Math.abs(sprite.getScaleX());
     float h = sprite.getHeight() * Math.abs(sprite.getScaleY());

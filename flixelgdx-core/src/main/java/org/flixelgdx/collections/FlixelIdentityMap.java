@@ -34,8 +34,7 @@ import java.util.NoSuchElementException;
  * An unordered map that compares keys by identity ({@code ==}) rather than
  * {@link Object#equals(Object)}.
  *
- * <p>This is the framework's own replacement for libGDX's {@code IdentityMap}.
- * It behaves like {@link FlixelMap}, except two keys are considered the same
+ * <p>It behaves like {@link FlixelMap}, except two keys are considered the same
  * only when they are the exact same object. That is what you want when the key
  * is a live object instance (a sprite, a node) and you must not conflate two
  * distinct objects that happen to be {@code equals}. Keys are hashed with
