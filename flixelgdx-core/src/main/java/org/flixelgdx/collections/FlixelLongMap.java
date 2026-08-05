@@ -1,0 +1,444 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2026 stringdotjar
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package org.flixelgdx.collections;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
+/**
+ * An unordered map from primitive {@code long} keys to object values.
+ *
+ * <p>Using {@code long} keys directly avoids the {@code Long} boxing a
+ * {@link FlixelMap} would incur, which suits keys that are ids, handles, or
+ * codes looked up every frame.
+ *
+ * <p>The key {@code 0L} is stored in a dedicated slot rather than the
+ * hash table, because it doubles as the "empty" marker inside the table. Values
+ * may be {@code null}. Iteration order is undefined.
+ *
+ * <p>This class is not thread safe.
+ *
+ * @param <V> The value type.
+ */
+public class FlixelLongMap<V> {
+
+  private static final int DEFAULT_CAPACITY = 16;
+  private static final float LOAD_FACTOR = 0.75f;
+  private static final int HASH_MULTIPLIER = 0x9E3779B1;
+
+  private long[] keyTable;
+  private V[] valueTable;
+  private V zeroValue;
+  private int size;
+  private int mask;
+  private int threshold;
+  private int shift;
+  private boolean hasZeroKey;
+
+  private Entries<V> entries;
+  private Values<V> values;
+
+  /**
+   * Creates an empty map with the default initial capacity.
+   */
+  public FlixelLongMap() {
+    this(DEFAULT_CAPACITY);
+  }
+
+  /**
+   * Creates an empty map sized to hold at least the given number of entries
+   * before it needs to grow.
+   *
+   * @param initialCapacity The expected entry count.
+   */
+  @SuppressWarnings("unchecked")
+  public FlixelLongMap(int initialCapacity) {
+    int cap = tableSizeFor(Math.max(1, initialCapacity));
+    keyTable = new long[cap];
+    valueTable = (V[]) new Object[cap];
+    mask = cap - 1;
+    threshold = (int) (cap * LOAD_FACTOR);
+    shift = Integer.numberOfLeadingZeros(mask);
+  }
+
+  /**
+   * Associates a value with a key, replacing any previous value.
+   *
+   * @param key The key.
+   * @param value The value to store (may be {@code null}).
+   * @return The value previously stored under {@code key}, or {@code null} if
+   *     there was none.
+   */
+  public @Nullable V put(long key, @Nullable V value) {
+    if (key == 0L) {
+      V old = zeroValue;
+      if (!hasZeroKey) {
+        hasZeroKey = true;
+        size++;
+      }
+      zeroValue = value;
+      return old;
+    }
+    int i = locate(key);
+    if (keyTable[i] != 0L) {
+      V old = valueTable[i];
+      valueTable[i] = value;
+      return old;
+    }
+    keyTable[i] = key;
+    valueTable[i] = value;
+    if (++size >= threshold) {
+      resize(keyTable.length << 1);
+    }
+    return null;
+  }
+
+  /**
+   * Returns the value stored under a key.
+   *
+   * @param key The key to look up.
+   * @return The associated value, or {@code null} if the key is absent.
+   */
+  public @Nullable V get(long key) {
+    if (key == 0L) {
+      return hasZeroKey ? zeroValue : null;
+    }
+    int i = locate(key);
+    return keyTable[i] == 0L ? null : valueTable[i];
+  }
+
+  /**
+   * Returns the value stored under a key, or a fallback if the key is absent.
+   *
+   * @param key The key to look up.
+   * @param defaultValue The value to return when the key is not present.
+   * @return The associated value, or {@code defaultValue} if the key is absent.
+   */
+  public @Nullable V getOrDefault(long key, @Nullable V defaultValue) {
+    if (key == 0L) {
+      return hasZeroKey ? zeroValue : defaultValue;
+    }
+    int i = locate(key);
+    return keyTable[i] == 0L ? defaultValue : valueTable[i];
+  }
+
+  /**
+   * Reports whether a key is present.
+   *
+   * @param key The key to check.
+   * @return {@code true} if the key has an entry.
+   */
+  public boolean containsKey(long key) {
+    if (key == 0L) {
+      return hasZeroKey;
+    }
+    return keyTable[locate(key)] != 0L;
+  }
+
+  /**
+   * Removes the entry for a key, if present.
+   *
+   * @param key The key to remove.
+   * @return The value that was removed, or {@code null} if the key was absent.
+   */
+  public @Nullable V remove(long key) {
+    if (key == 0L) {
+      if (!hasZeroKey) {
+        return null;
+      }
+      hasZeroKey = false;
+      V old = zeroValue;
+      zeroValue = null;
+      size--;
+      return old;
+    }
+    int i = locate(key);
+    if (keyTable[i] == 0L) {
+      return null;
+    }
+    V oldValue = valueTable[i];
+    int next = (i + 1) & mask;
+    while (keyTable[next] != 0L) {
+      int ideal = place(keyTable[next]);
+      if (((next - ideal) & mask) >= ((next - i) & mask)) {
+        keyTable[i] = keyTable[next];
+        valueTable[i] = valueTable[next];
+        i = next;
+      }
+      next = (next + 1) & mask;
+    }
+    keyTable[i] = 0L;
+    valueTable[i] = null;
+    size--;
+    return oldValue;
+  }
+
+  /**
+   * Removes every entry, leaving the map empty.
+   */
+  public void clear() {
+    Arrays.fill(keyTable, (long) 0L);
+    Arrays.fill(valueTable, null);
+    zeroValue = null;
+    hasZeroKey = false;
+    size = 0;
+  }
+
+  /**
+   * Returns the number of entries.
+   *
+   * @return The entry count.
+   */
+  public int size() {
+    return size;
+  }
+
+  /**
+   * Reports whether the map has no entries.
+   *
+   * @return {@code true} if empty.
+   */
+  public boolean isEmpty() {
+    return size == 0;
+  }
+
+  /**
+   * Returns a reusable iterable over the map's entries.
+   *
+   * @return An iterable whose {@link Entry} is reused each step.
+   */
+  public @NotNull Entries<V> entries() {
+    if (entries == null) {
+      entries = new Entries<>(this);
+    }
+    entries.reset();
+    return entries;
+  }
+
+  /**
+   * Returns a reusable iterable over the map's values.
+   *
+   * @return An iterable over the values.
+   */
+  public @NotNull Values<V> values() {
+    if (values == null) {
+      values = new Values<>(this);
+    }
+    values.reset();
+    return values;
+  }
+
+  private int place(long key) {
+    return ((int) (key ^ (key >>> 32)) * HASH_MULTIPLIER) >>> shift;
+  }
+
+  private int locate(long key) {
+    int i = place(key);
+    while (true) {
+      long existing = keyTable[i];
+      if (existing == 0L || existing == key) {
+        return i;
+      }
+      i = (i + 1) & mask;
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void resize(int newSize) {
+    long[] oldKeys = keyTable;
+    V[] oldValues = valueTable;
+    keyTable = new long[newSize];
+    valueTable = (V[]) new Object[newSize];
+    mask = newSize - 1;
+    threshold = (int) (newSize * LOAD_FACTOR);
+    shift = Integer.numberOfLeadingZeros(mask);
+    for (int i = 0; i < oldKeys.length; i++) {
+      long key = oldKeys[i];
+      if (key != 0L) {
+        int j = locate(key);
+        keyTable[j] = key;
+        valueTable[j] = oldValues[i];
+      }
+    }
+  }
+
+  private static int tableSizeFor(int capacity) {
+    int needed = (int) (capacity / LOAD_FACTOR) + 1;
+    int size = 2;
+    while (size < needed) {
+      size <<= 1;
+    }
+    return size;
+  }
+
+  /**
+   * A single key-value pair yielded by {@link #entries()}.
+   *
+   * <p>The same instance is reused across iteration steps.
+   *
+   * @param <V> The value type.
+   */
+  public static final class Entry<V> {
+
+    /** The entry's value. */
+    public V value;
+
+    /** The entry's key. */
+    public long key;
+  }
+
+  /**
+   * A reusable iterable over a map's entries.
+   *
+   * @param <V> The value type.
+   */
+  public static final class Entries<V> implements Iterable<Entry<V>>, Iterator<Entry<V>> {
+
+    private final FlixelLongMap<V> map;
+    private final Entry<V> entry = new Entry<>();
+    private int index;
+    private boolean zeroPending;
+    private boolean hasNext;
+
+    Entries(FlixelLongMap<V> map) {
+      this.map = map;
+    }
+
+    void reset() {
+      index = -1;
+      zeroPending = map.hasZeroKey;
+      advance();
+    }
+
+    void advance() {
+      if (zeroPending) {
+        hasNext = true;
+        return;
+      }
+      hasNext = false;
+      long[] keyTable = map.keyTable;
+      for (index++; index < keyTable.length; index++) {
+        if (keyTable[index] != 0L) {
+          hasNext = true;
+          break;
+        }
+      }
+    }
+
+    @Override
+    public @NotNull Iterator<Entry<V>> iterator() {
+      return this;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return hasNext;
+    }
+
+    @Override
+    public Entry<V> next() {
+      if (!hasNext) {
+        throw new NoSuchElementException();
+      }
+      if (zeroPending) {
+        zeroPending = false;
+        entry.key = 0L;
+        entry.value = map.zeroValue;
+        advance();
+        return entry;
+      }
+      entry.key = map.keyTable[index];
+      entry.value = map.valueTable[index];
+      advance();
+      return entry;
+    }
+  }
+
+  /**
+   * A reusable iterable over a map's values.
+   *
+   * @param <V> The value type.
+   */
+  public static final class Values<V> implements Iterable<V>, Iterator<V> {
+
+    private final FlixelLongMap<V> map;
+    private int index;
+    private boolean zeroPending;
+    private boolean hasNext;
+
+    Values(FlixelLongMap<V> map) {
+      this.map = map;
+    }
+
+    void reset() {
+      index = -1;
+      zeroPending = map.hasZeroKey;
+      advance();
+    }
+
+    void advance() {
+      if (zeroPending) {
+        hasNext = true;
+        return;
+      }
+      hasNext = false;
+      long[] keyTable = map.keyTable;
+      for (index++; index < keyTable.length; index++) {
+        if (keyTable[index] != 0L) {
+          hasNext = true;
+          break;
+        }
+      }
+    }
+
+    @Override
+    public @NotNull Iterator<V> iterator() {
+      return this;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return hasNext;
+    }
+
+    @Override
+    public V next() {
+      if (!hasNext) {
+        throw new NoSuchElementException();
+      }
+      if (zeroPending) {
+        zeroPending = false;
+        advance();
+        return map.zeroValue;
+      }
+      V value = map.valueTable[index];
+      advance();
+      return value;
+    }
+  }
+}
