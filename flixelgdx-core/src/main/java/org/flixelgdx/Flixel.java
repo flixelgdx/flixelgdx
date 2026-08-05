@@ -63,6 +63,7 @@ import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
+import org.flixelgdx.math.FlixelRandom;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.type.FlixelAngleTween;
 import org.flixelgdx.tween.type.FlixelColorTween;
@@ -276,6 +277,31 @@ public final class Flixel {
    */
   @NotNull
   public static final Array<FlixelCamera> cameras = new Array<>(FlixelCamera[]::new);
+
+  /**
+   * The framework's default random number generator.
+   *
+   * <p>This is a ready-to-use {@link FlixelRandom} for the common case where you
+   * just want "a random number" without managing your own generator - much like
+   * HaxeFlixel's {@code FlxG.random}. Because it is seedable, you can make an
+   * entire run reproducible by calling {@link FlixelRandom#setSeed(long)} once at
+   * startup, which is invaluable for deterministic replays, seeded procedural
+   * generation, and debugging.
+   *
+   * <p>Create your own {@link FlixelRandom} instead when you need an independent,
+   * separately-seeded stream (for example, cosmetic effects that should not
+   * disturb gameplay determinism).
+   *
+   * <p>Example:
+   * <pre>{@code
+   * int damage = Flixel.random.nextInt(8, 12);
+   * if (Flixel.random.nextBool(0.1f)) {
+   *   spawnRareDrop();
+   * }
+   * }</pre>
+   */
+  @NotNull
+  public static final FlixelRandom random = new FlixelRandom();
 
   /**
    * The platform-specific alert dialog provider.
