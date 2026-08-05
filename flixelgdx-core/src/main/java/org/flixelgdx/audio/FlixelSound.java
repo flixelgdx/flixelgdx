@@ -24,11 +24,11 @@
 package org.flixelgdx.audio;
 
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.asset.FlixelAsset;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
@@ -95,7 +95,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   private FlixelTween fadeTween;
 
   /** Tail-ordered effect nodes attached to the audio graph. */
-  private final Array<FlixelSoundBackend.EffectNode> audioEffectNodes = new Array<>(4);
+  private final FlixelArray<FlixelSoundBackend.EffectNode> audioEffectNodes = new FlixelArray<>(4);
 
   /** Signal dispatched when the sound reaches its end (non-looping). */
   @NotNull
@@ -635,7 +635,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    *
    * @return A read-only view of the effect chain.
    */
-  public Array<FlixelSoundBackend.EffectNode> getEffectNodes() {
+  public FlixelArray<FlixelSoundBackend.EffectNode> getEffectNodes() {
     return audioEffectNodes;
   }
 

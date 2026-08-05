@@ -37,11 +37,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import org.flixelgdx.backend.FlixelWindow;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDestroyable;
@@ -52,6 +51,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelSpriteBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.input.action.FlixelActionSets;
+import org.flixelgdx.math.FlixelPoint;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelRuntimeUtil;
@@ -114,7 +114,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * The size of the game's starting window position and its first camera. Only used at startup time
    * during the game's boot sequence.
    */
-  protected Vector2 initialSize;
+  protected FlixelPoint initialSize;
 
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs. Use {@code () -> new MyState()} for a fresh
@@ -137,7 +137,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   protected Texture bgTexture;
 
   /** Convenience reference to the global {@link Flixel#cameras} list (the single source of truth). */
-  protected final Array<FlixelCamera> cameras = Flixel.cameras;
+  protected final FlixelArray<FlixelCamera> cameras = Flixel.cameras;
 
   /** The camera used to render the global overlay. Not registered in {@link Flixel#cameras}. */
   @Nullable
@@ -167,7 +167,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   @Nullable
   private float[][] debugPauseCameraScroll;
 
-  /** Array of saved camera zoom values when the game is paused for debugging. */
+  /** FlixelArray of saved camera zoom values when the game is paused for debugging. */
   @Nullable
   private float[] debugPauseCameraZoom;
 
@@ -196,7 +196,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * <p>Managed via {@link #addGlobalShader(FlixelShader)} and
    * {@link #removeGlobalShader(FlixelShader)}.
    */
-  private final Array<FlixelShader> globalShaders = new Array<>();
+  private final FlixelArray<FlixelShader> globalShaders = new FlixelArray<>();
 
   /**
    * Primary scene framebuffer for the global shader pass.
@@ -373,7 +373,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory,
       int framerate, boolean vsync, boolean fullscreen) {
     this.title = title;
-    this.initialSize = new Vector2(width, height);
+    this.initialSize = new FlixelPoint(width, height);
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "The initial state factory cannot be null!");
     this.framerate = framerate;
     this.vsync = vsync;
@@ -1144,7 +1144,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
 
     if (Flixel.assets != null) {
-      Flixel.assets.dispose();
+      Flixel.assets.destroy();
       Flixel.assets = null;
     }
     if (Flixel.sound != null) {
@@ -1273,7 +1273,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return overlayEnabled;
   }
 
-  public Array<FlixelCamera> getCameras() {
+  public FlixelArray<FlixelCamera> getCameras() {
     return cameras;
   }
 

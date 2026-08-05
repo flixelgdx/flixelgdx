@@ -29,9 +29,10 @@ import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
-import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;
@@ -133,7 +134,7 @@ final class FlixelAnimateRigLoader {
    * mode ({@code LP}) of a child symbol instance without re-walking its layer/frame tree on every
    * keyframe of every clip.
    */
-  private final ObjectMap<String, Integer> symbolDurations = new ObjectMap<>();
+  private final FlixelMap<String, Integer> symbolDurations = new FlixelMap<>();
 
   /**
    * Loads the given spritemap/animation pair, builds a fully baked {@link FlixelAnimateRig}, and installs
@@ -210,7 +211,7 @@ final class FlixelAnimateRigLoader {
    * his playable miss animations).
    *
    * <p>Clip-name collisions silently overwrite the previously registered clip on both the rig and
-   * the controller (matching {@link ObjectMap#put} semantics), allowing later loads to act as
+   * the controller (matching {@link FlixelMap#put} semantics), allowing later loads to act as
    * costume / behavior overrides.
    *
    * @param sprite The sprite to append onto. Must already have a rig (for example the first triple loaded through
@@ -266,7 +267,7 @@ final class FlixelAnimateRigLoader {
     Texture texture = graphic.getTexture();
 
     // Build the atlas region list and the "ATLAS name -> region index" lookup shared by every ASI reference.
-    ObjectMap<String, Integer> nameToIndex = new ObjectMap<>();
+    FlixelMap<String, Integer> nameToIndex = new FlixelMap<>();
     Array<FlixelFrame> atlas = FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, nameToIndex);
     if (atlas.size == 0) {
       throw new IllegalArgumentException("Spritemap JSON produced zero atlas regions.");
@@ -304,7 +305,7 @@ final class FlixelAnimateRigLoader {
     float anchorWidth = anchorBox[2] - anchorMinX;
     float anchorHeight = anchorBox[3] - anchorMinY;
 
-    ObjectMap<String, FlixelAnimateRig.Clip> clips = new ObjectMap<>();
+    FlixelMap<String, FlixelAnimateRig.Clip> clips = new FlixelMap<>();
     bakeClipsInto(parsed, fps, atlas, nameToIndex, anchorMinX, anchorMinY, anchorHeight, controller, clips);
 
     String resolvedAnchorName = parsed.clipDefs.get(anchorClipIndex).name;
@@ -331,7 +332,7 @@ final class FlixelAnimateRigLoader {
    * by reference with the owning sprite, so {@link org.flixelgdx.FlixelSprite#getAtlasRegions() FlixelSprite.getAtlasRegions()}
    * keeps working) and the new label-layer clips are added to {@link FlixelAnimateRig#clips}. Clip
    * names that collide with existing ones are silently overwritten on both the rig and the controller,
-   * matching {@link ObjectMap#put}.
+   * matching {@link FlixelMap#put}.
    *
    * @param sprite The owning sprite (used to retain the appended {@link FlixelGraphic}).
    * @param controller The animation controller to register the new clips on.
@@ -362,7 +363,7 @@ final class FlixelAnimateRigLoader {
     // into the merged atlas (existing rig frames first, appended frames after). This lets the bake
     // path reuse a single Array<FlixelFrame> without ever discriminating between "old" and "new"
     // frames at runtime.
-    ObjectMap<String, Integer> localNameToIndex = new ObjectMap<>();
+    FlixelMap<String, Integer> localNameToIndex = new FlixelMap<>();
     Array<FlixelFrame> newAtlasFrames =
         FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, localNameToIndex);
     if (newAtlasFrames.size == 0) {
@@ -371,8 +372,8 @@ final class FlixelAnimateRigLoader {
     int atlasOffset = existing.atlas.size;
     existing.atlas.addAll(newAtlasFrames);
 
-    ObjectMap<String, Integer> nameToIndex = new ObjectMap<>(localNameToIndex.size);
-    for (ObjectMap.Entry<String, Integer> e : localNameToIndex.entries()) {
+    FlixelMap<String, Integer> nameToIndex = new FlixelMap<>(localNameToIndex.getSize());
+    for (FlixelMap.Entry<String, Integer> e : localNameToIndex.entries()) {
       nameToIndex.put(e.key, e.value + atlasOffset);
     }
 
@@ -430,13 +431,13 @@ final class FlixelAnimateRigLoader {
       @NotNull ParsedAnimation parsed,
       float fps,
       @NotNull Array<FlixelFrame> atlas,
-      @NotNull ObjectMap<String, Integer> nameToIndex,
+      @NotNull FlixelMap<String, Integer> nameToIndex,
       float anchorMinX,
       float anchorMinY,
       float anchorHeight,
       @NotNull FlixelAnimationController controller,
-      @NotNull ObjectMap<String, FlixelAnimateRig.Clip> clipsOut) {
-    Array<RawPart> scratchRaw = new Array<>(32);
+      @NotNull FlixelMap<String, FlixelAnimateRig.Clip> clipsOut) {
+    FlixelArray<RawPart> scratchRaw = new FlixelArray<>(32);
     for (int clipIndex = 0; clipIndex < parsed.clipDefs.size; clipIndex++) {
       ClipDef clip = parsed.clipDefs.get(clipIndex);
       if (clip.duration < 1) {
@@ -490,7 +491,7 @@ final class FlixelAnimateRigLoader {
    * @return The index into {@code clipDefs} whose name is the chosen anchor clip.
    */
   private static int pickAnchorClipIndex(
-      @NotNull Array<ClipDef> clipDefs, @Nullable String requestedName) {
+      @NotNull FlixelArray<ClipDef> clipDefs, @Nullable String requestedName) {
     if (requestedName != null && !requestedName.isEmpty()) {
       for (int i = 0; i < clipDefs.size; i++) {
         if (requestedName.equals(clipDefs.get(i).name)) {
@@ -514,7 +515,7 @@ final class FlixelAnimateRigLoader {
   private void computeAnchorBbox(
       @NotNull ParsedAnimation parsed,
       int anchorClipIndex,
-      @NotNull ObjectMap<String, Integer> nameToIndex,
+      @NotNull FlixelMap<String, Integer> nameToIndex,
       @NotNull Array<FlixelFrame> atlas,
       @NotNull float[] out) {
     ClipDef clip = parsed.clipDefs.get(anchorClipIndex);
@@ -523,7 +524,7 @@ final class FlixelAnimateRigLoader {
       return;
     }
     int frameLocalTime = clip.startTick - readIntOr(mainFrame, "I", 0);
-    Array<RawPart> tmp = new Array<>(16);
+    FlixelArray<RawPart> tmp = new FlixelArray<>(16);
     collectKeyframeParts(parsed, mainFrame, frameLocalTime, nameToIndex, tmp);
     for (int i = 0; i < tmp.size; i++) {
       RawPart p = tmp.get(i);
@@ -547,7 +548,7 @@ final class FlixelAnimateRigLoader {
    * @return The matching {@link JsonValue} FR, or {@code null} if no FR covers this tick.
    */
   @Nullable
-  private static JsonValue findMainFrameAt(@NotNull Array<JsonValue> mainFrames, int absoluteTick) {
+  private static JsonValue findMainFrameAt(@NotNull FlixelArray<JsonValue> mainFrames, int absoluteTick) {
     for (int i = 0; i < mainFrames.size; i++) {
       JsonValue fr = mainFrames.get(i);
       int frI = readIntOr(fr, "I", 0);
@@ -599,8 +600,8 @@ final class FlixelAnimateRigLoader {
       @NotNull ParsedAnimation parsed,
       @NotNull JsonValue mainFrame,
       int frameTime,
-      @NotNull ObjectMap<String, Integer> nameToIndex,
-      @NotNull Array<RawPart> out) {
+      @NotNull FlixelMap<String, Integer> nameToIndex,
+      @NotNull FlixelArray<RawPart> out) {
     JsonValue elements = mainFrame.get("E");
     if (elements == null || !elements.isArray() || elements.size == 0) {
       return;
@@ -652,8 +653,8 @@ final class FlixelAnimateRigLoader {
    */
   private void collectDirectAsiElements(
       @NotNull JsonValue elements,
-      @NotNull ObjectMap<String, Integer> nameToIndex,
-      @NotNull Array<RawPart> out) {
+      @NotNull FlixelMap<String, Integer> nameToIndex,
+      @NotNull FlixelArray<RawPart> out) {
     for (JsonValue element = elements.child; element != null; element = element.next) {
       JsonValue asi = element.get("ASI");
       if (asi == null) {
@@ -690,12 +691,12 @@ final class FlixelAnimateRigLoader {
    * @param depth Current recursion depth; used only to guard against cyclic graphs.
    */
   private void visitSymbol(
-      @NotNull ObjectMap<String, JsonValue> symbolsByName,
-      @NotNull ObjectMap<String, Integer> nameToIndex,
+      @NotNull FlixelMap<String, JsonValue> symbolsByName,
+      @NotNull FlixelMap<String, Integer> nameToIndex,
       @NotNull String symbolName,
       int localTime,
       @NotNull Affine2 worldMatrix,
-      @NotNull Array<RawPart> out,
+      @NotNull FlixelArray<RawPart> out,
       int depth) {
     if (depth > MAX_NEST) {
       return;
@@ -869,7 +870,7 @@ final class FlixelAnimateRigLoader {
    *   modes can divide safely.
    */
   private int computeSymbolDuration(
-      @NotNull ObjectMap<String, JsonValue> symbolsByName, @NotNull String symbolName) {
+      @NotNull FlixelMap<String, JsonValue> symbolsByName, @NotNull String symbolName) {
     Integer cached = symbolDurations.get(symbolName);
     if (cached != null) {
       return cached;
@@ -944,7 +945,7 @@ final class FlixelAnimateRigLoader {
    * @param nameToIndex The {@code ATLAS.SPRITES} name-to-index lookup.
    * @return The atlas index, or {@code -1} if no variant matches.
    */
-  private static int resolveAtlasIndex(@NotNull String name, @NotNull ObjectMap<String, Integer> nameToIndex) {
+  private static int resolveAtlasIndex(@NotNull String name, @NotNull FlixelMap<String, Integer> nameToIndex) {
     if (name.isEmpty()) {
       return -1;
     }
@@ -1146,8 +1147,8 @@ final class FlixelAnimateRigLoader {
    * @param usesSymbolGraph {@code true} when the main layer uses root {@code E.SI} entries and {@link #symbolsByName()} defines
    * nested timelines. {@code false} for direct {@code E.ASI} document timelines.
    */
-  private record ParsedAnimation(@NotNull Array<ClipDef> clipDefs, @NotNull Array<JsonValue> mainFrames,
-      @NotNull ObjectMap<String, JsonValue> symbolsByName, float framesPerSecond,
+  private record ParsedAnimation(@NotNull FlixelArray<ClipDef> clipDefs, @NotNull FlixelArray<JsonValue> mainFrames,
+      @NotNull FlixelMap<String, JsonValue> symbolsByName, float framesPerSecond,
       boolean usesSymbolGraph) {
     @NotNull
     static ParsedAnimation parse(@NotNull JsonValue animationRoot) {
@@ -1170,7 +1171,7 @@ final class FlixelAnimateRigLoader {
                 + "list atlas sprite instances (\"E\".\"ASI\").");
       }
 
-      Array<ClipDef> clipDefs = new Array<>();
+      FlixelArray<ClipDef> clipDefs = new FlixelArray<>();
       for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
         JsonValue frs = layer.get("FR");
         if (frs == null || !frs.isArray() || frs == mainFrameList) {
@@ -1190,7 +1191,7 @@ final class FlixelAnimateRigLoader {
         }
       }
 
-      Array<JsonValue> mainFrames = new Array<>();
+      FlixelArray<JsonValue> mainFrames = new FlixelArray<>();
       for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
         mainFrames.add(fr);
       }
@@ -1207,7 +1208,7 @@ final class FlixelAnimateRigLoader {
             new ClipDef(deriveDefaultClipName(an), 0, computeExclusiveTimelineEnd(mainFrameList)));
       }
 
-      ObjectMap<String, JsonValue> symbolsByName = new ObjectMap<>();
+      FlixelMap<String, JsonValue> symbolsByName = new FlixelMap<>();
       JsonValue sd = animationRoot.get("SD");
       if (sd != null) {
         JsonValue s = sd.get("S");
@@ -1221,7 +1222,7 @@ final class FlixelAnimateRigLoader {
         }
       }
 
-      if (usesSymbolGraph && symbolsByName.size == 0) {
+      if (usesSymbolGraph && symbolsByName.getSize() == 0) {
         throw new IllegalArgumentException(
             "Animation JSON uses root symbol instances (\"E\".\"SI\") but \"SD.S\" is empty or missing.");
       }

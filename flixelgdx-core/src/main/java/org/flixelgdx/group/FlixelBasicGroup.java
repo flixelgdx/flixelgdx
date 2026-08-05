@@ -23,12 +23,11 @@
  */
 package org.flixelgdx.group;
 
-import com.badlogic.gdx.utils.ArraySupplier;
-import com.badlogic.gdx.utils.SnapshotArray;
-
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.FlixelState;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelArraySupplier;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
@@ -53,11 +52,11 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
 
   private final FlixelGroup<T> memberList;
 
-  protected FlixelBasicGroup(@NotNull ArraySupplier<T[]> arrayFactory) {
+  protected FlixelBasicGroup(@NotNull FlixelArraySupplier<T[]> arrayFactory) {
     this(arrayFactory, 0);
   }
 
-  protected FlixelBasicGroup(@NotNull ArraySupplier<T[]> arrayFactory, int maxSize) {
+  protected FlixelBasicGroup(@NotNull FlixelArraySupplier<T[]> arrayFactory, int maxSize) {
     memberList = new FlixelGroup<>(arrayFactory, maxSize);
   }
 
@@ -99,7 +98,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
 
   @Override
   public void update(float elapsed) {
-    SnapshotArray<T> members = memberList.getMembers();
+    FlixelArray<T> members = memberList.getMembers();
     if (members == null) {
       return;
     }
@@ -122,7 +121,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
 
   @Override
   public void draw(@NotNull FlixelBatch batch) {
-    SnapshotArray<T> members = memberList.getMembers();
+    FlixelArray<T> members = memberList.getMembers();
     if (members == null) {
       return;
     }
@@ -146,7 +145,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
   @Override
   public void destroy() {
     super.destroy();
-    SnapshotArray<T> members = memberList.getMembers();
+    FlixelArray<T> members = memberList.getMembers();
     if (members != null) {
       try {
         T[] items = members.begin();
@@ -196,7 +195,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
 
   @Override
   @Nullable
-  public SnapshotArray<T> getMembers() {
+  public FlixelArray<T> getMembers() {
     return memberList.getMembers();
   }
 

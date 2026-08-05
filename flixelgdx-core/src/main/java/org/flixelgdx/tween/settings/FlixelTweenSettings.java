@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.tween.settings;
 
-import com.badlogic.gdx.utils.Array;
+import org.flixelgdx.collections.FlixelArray;
 
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.tween.FlixelTween;
@@ -49,7 +49,7 @@ public class FlixelTweenSettings {
   private FlixelEaseStartCallback onStart;
   private FlixelEaseUpdateCallback onUpdate;
   private FlixelEaseCompleteCallback onComplete;
-  private final Array<FlixelTweenGoal> goals;
+  private final FlixelArray<FlixelTweenGoal> goals;
 
   public FlixelTweenSettings() {
     this(FlixelTweenType.ONESHOT, FlixelEase::linear);
@@ -78,7 +78,7 @@ public class FlixelTweenSettings {
     this.onStart = null;
     this.onUpdate = null;
     this.onComplete = null;
-    this.goals = new Array<>(false, 16);
+    this.goals = new FlixelArray<>(false, 16);
   }
 
   /**
@@ -136,7 +136,7 @@ public class FlixelTweenSettings {
     return onComplete;
   }
 
-  public Array<FlixelTweenGoal> getGoals() {
+  public FlixelArray<FlixelTweenGoal> getGoals() {
     return goals;
   }
 

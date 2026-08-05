@@ -23,19 +23,19 @@
  */
 package org.flixelgdx.util.signal;
 
-import com.badlogic.gdx.utils.SnapshotArray;
+import org.flixelgdx.collections.FlixelArray;
 
 /**
  * Utility class for creating objects that can execute multiple callbacks when it is dispatched (or triggered).
  */
 public class FlixelSignal<T> {
 
-  private final SnapshotArray<SignalHandler<T>> callbacks;
-  private final SnapshotArray<SignalHandler<T>> tempCallbacks;
+  private final FlixelArray<SignalHandler<T>> callbacks;
+  private final FlixelArray<SignalHandler<T>> tempCallbacks;
 
   public FlixelSignal() {
-    callbacks = new SnapshotArray<>();
-    tempCallbacks = new SnapshotArray<>();
+    callbacks = new FlixelArray<>();
+    tempCallbacks = new FlixelArray<>();
   }
 
   /**

@@ -62,6 +62,7 @@ public class FlixelIntMap<V> {
   private boolean hasZeroKey;
 
   private Entries<V> entries;
+  private Values<V> values;
 
   /**
    * Creates an empty map with the default initial capacity.
@@ -240,6 +241,19 @@ public class FlixelIntMap<V> {
     return entries;
   }
 
+  /**
+   * Returns a reusable iterable over the map's values.
+   *
+   * @return An iterable over the values.
+   */
+  public @NotNull Values<V> values() {
+    if (values == null) {
+      values = new Values<>(this);
+    }
+    values.reset();
+    return values;
+  }
+
   private int place(int key) {
     return (key * HASH_MULTIPLIER) >>> shift;
   }
@@ -363,6 +377,69 @@ public class FlixelIntMap<V> {
       entry.value = map.valueTable[index];
       advance();
       return entry;
+    }
+  }
+
+  /**
+   * A reusable iterable over an int map's values.
+   *
+   * @param <V> The value type.
+   */
+  public static final class Values<V> implements Iterable<V>, Iterator<V> {
+
+    private final FlixelIntMap<V> map;
+    private int index;
+    private boolean zeroPending;
+    private boolean hasNext;
+
+    Values(FlixelIntMap<V> map) {
+      this.map = map;
+    }
+
+    void reset() {
+      index = -1;
+      zeroPending = map.hasZeroKey;
+      advance();
+    }
+
+    void advance() {
+      if (zeroPending) {
+        hasNext = true;
+        return;
+      }
+      hasNext = false;
+      int[] keyTable = map.keyTable;
+      for (index++; index < keyTable.length; index++) {
+        if (keyTable[index] != 0) {
+          hasNext = true;
+          break;
+        }
+      }
+    }
+
+    @Override
+    public @NotNull Iterator<V> iterator() {
+      return this;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return hasNext;
+    }
+
+    @Override
+    public V next() {
+      if (!hasNext) {
+        throw new NoSuchElementException();
+      }
+      if (zeroPending) {
+        zeroPending = false;
+        advance();
+        return map.zeroValue;
+      }
+      V value = map.valueTable[index];
+      advance();
+      return value;
     }
   }
 }

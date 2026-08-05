@@ -223,7 +223,8 @@ public class FlixelSet<T> implements Iterable<T> {
 
   private static final class SetIterator<T> implements Iterator<T> {
     private final FlixelSet<T> set;
-    private int index;
+    private int nextIndex;
+    private int currentIndex;
     private boolean hasNext;
 
     SetIterator(FlixelSet<T> set) {
@@ -231,15 +232,16 @@ public class FlixelSet<T> implements Iterable<T> {
     }
 
     void reset() {
-      index = -1;
+      nextIndex = -1;
+      currentIndex = -1;
       advance();
     }
 
     void advance() {
       hasNext = false;
       T[] keyTable = set.keyTable;
-      for (index++; index < keyTable.length; index++) {
-        if (keyTable[index] != null) {
+      for (nextIndex++; nextIndex < keyTable.length; nextIndex++) {
+        if (keyTable[nextIndex] != null) {
           hasNext = true;
           break;
         }
@@ -256,9 +258,36 @@ public class FlixelSet<T> implements Iterable<T> {
       if (!hasNext) {
         throw new NoSuchElementException();
       }
-      T value = set.keyTable[index];
+      currentIndex = nextIndex;
+      T value = set.keyTable[nextIndex];
       advance();
       return value;
+    }
+
+    @Override
+    public void remove() {
+      int i = currentIndex;
+      if (i < 0) {
+        throw new IllegalStateException("next() must be called before remove().");
+      }
+      T[] keyTable = set.keyTable;
+      int mask = set.mask;
+      int next = (i + 1) & mask;
+      T key;
+      while ((key = keyTable[next]) != null) {
+        int ideal = set.place(key);
+        if (((next - ideal) & mask) >= ((next - i) & mask)) {
+          keyTable[i] = key;
+          i = next;
+        }
+        next = (next + 1) & mask;
+      }
+      keyTable[i] = null;
+      set.size--;
+      // A later element may have been pulled into the vacated slot; rescan.
+      nextIndex = currentIndex - 1;
+      currentIndex = -1;
+      advance();
     }
   }
 }

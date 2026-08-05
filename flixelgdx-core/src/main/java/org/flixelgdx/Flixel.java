@@ -25,8 +25,6 @@ package org.flixelgdx;
 
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import org.flixelgdx.asset.FlixelAssetManager;
@@ -42,6 +40,7 @@ import org.flixelgdx.backend.FlixelNoopHostIntegration;
 import org.flixelgdx.backend.FlixelNoopWindow;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
@@ -63,6 +62,7 @@ import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
+import org.flixelgdx.math.FlixelPoint;
 import org.flixelgdx.math.FlixelRandom;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.type.FlixelAngleTween;
@@ -263,7 +263,7 @@ public final class Flixel {
    * <p>This reference is {@code final} and never {@code null}: the framework creates a default camera
    * at startup and refreshes the list (in place) on a state switch, so it is safe to read from your
    * state's {@code create()} onward. Mutate it through the list's own methods (for example
-   * {@link Array#add}); the array itself is never replaced.
+   * {@link FlixelArray#add}); the array itself is never replaced.
    *
    * <p>Example:
    * <pre>{@code
@@ -276,7 +276,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static final Array<FlixelCamera> cameras = new Array<>(FlixelCamera[]::new);
+  public static final FlixelArray<FlixelCamera> cameras = new FlixelArray<>(FlixelCamera[]::new);
 
   /**
    * The framework's default random number generator.
@@ -1193,9 +1193,9 @@ public final class Flixel {
    *
    * <p>Unlike {@link #getWidth()} and {@link #getHeight()}, this always reflects the fixed design
    * dimensions that were set upon the game's initialization and is not affected by the active viewport
-   * type. The returned {@link Vector2} is the live internal vector. Do not modify it.
+   * type. The returned {@link FlixelPoint} is the live internal vector. Do not modify it.
    */
-  public static Vector2 getSize() {
+  public static FlixelPoint getSize() {
     return game.initialSize;
   }
 
@@ -1543,7 +1543,7 @@ public final class Flixel {
     boolean result = false;
 
     if (obj1 instanceof FlixelGroupable<?> group1) {
-      Array<?> members = group1.getMembers();
+      FlixelArray<?> members = group1.getMembers();
       if (members != null) {
         for (Object o : members) {
           if (o instanceof FlixelBasic member && member.isExists()) {
@@ -1555,7 +1555,7 @@ public final class Flixel {
     }
 
     if (obj2 instanceof FlixelGroupable<?> group2) {
-      Array<?> members = group2.getMembers();
+      FlixelArray<?> members = group2.getMembers();
       if (members != null) {
         for (Object o : members) {
           if (o instanceof FlixelBasic member && member.isExists()) {

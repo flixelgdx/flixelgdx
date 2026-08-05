@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.util.timer;
 
-import com.badlogic.gdx.utils.Pool;
-
+import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>The timer is removed from its manager before the final callback runs.
  */
-public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, Pool.Poolable {
+public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPoolable {
 
   /** Global timer manager, updated from {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)}. */
   @NotNull

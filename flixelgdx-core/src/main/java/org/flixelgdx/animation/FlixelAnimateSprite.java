@@ -30,7 +30,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Affine2;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
@@ -40,6 +39,7 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.math.FlixelMathUtil;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
@@ -828,8 +828,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float rigBottom = wy - getOffsetY();
     float rigAngle = getAngle();
     if (rigAngle != 0f) {
-      float cos = Math.abs(MathUtils.cosDeg(rigAngle));
-      float sin = Math.abs(MathUtils.sinDeg(rigAngle));
+      float cos = Math.abs(FlixelMathUtil.cosDeg(rigAngle));
+      float sin = Math.abs(FlixelMathUtil.sinDeg(rigAngle));
       float rotW = cos * rigCullW + sin * rigCullH;
       float rotH = sin * rigCullW + cos * rigCullH;
       rigLeft -= (rotW - rigCullW) * 0.5f;

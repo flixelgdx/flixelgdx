@@ -33,9 +33,10 @@ import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Affine2;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.BufferUtils;
+
+import org.flixelgdx.math.FlixelMathUtil;
 
 import java.nio.IntBuffer;
 
@@ -627,8 +628,8 @@ public class FlixelSpriteBatch implements FlixelBatch {
 
     float x1, y1, x2, y2, x3, y3, x4, y4;
     if (rotation != 0f) {
-      float cos = MathUtils.cosDeg(rotation);
-      float sin = MathUtils.sinDeg(rotation);
+      float cos = FlixelMathUtil.cosDeg(rotation);
+      float sin = FlixelMathUtil.sinDeg(rotation);
       x1 = cos * fx - sin * fy;
       y1 = sin * fx + cos * fy;
       x2 = cos * fx - sin * fy2;

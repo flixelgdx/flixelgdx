@@ -23,11 +23,10 @@
  */
 package org.flixelgdx.debug;
 
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectMap;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelObject;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,21 +84,21 @@ public class FlixelDebugManager {
   /** Maximum entries kept in the input history (oldest are dropped first). */
   public static final int MAX_HISTORY_ENTRIES = 64;
 
-  private final ObjectMap<String, RegisteredCommand> commands = new ObjectMap<>();
-  private final Array<String> commandHistory = new Array<>(MAX_HISTORY_ENTRIES);
+  private final FlixelMap<String, RegisteredCommand> commands = new FlixelMap<>();
+  private final FlixelArray<String> commandHistory = new FlixelArray<>(MAX_HISTORY_ENTRIES);
 
   /**
    * Extra {@link FlixelBatch} instances registered by game code via {@link #trackBatch(FlixelBatch)}.
    * The framework's own batch is counted separately in {@link FlixelDebugOverlay}, so only user-supplied
    * batches live here.
    */
-  private final Array<FlixelBatch> trackedBatches = new Array<>(false, 4);
+  private final FlixelArray<FlixelBatch> trackedBatches = new FlixelArray<>(false, 4);
 
   /**
    * Custom entries shown in the overlay's Tracker panel, registered via
    * {@link #addTrackerEntry(FlixelDebugTrackerEntry)}.
    */
-  private final Array<FlixelDebugTrackerEntry> trackerEntries = new Array<>(FlixelDebugTrackerEntry[]::new);
+  private final FlixelArray<FlixelDebugTrackerEntry> trackerEntries = new FlixelArray<>(FlixelDebugTrackerEntry[]::new);
 
   /**
    * The active debug overlay. Defaults to {@link FlixelNoopDebugOverlay#INSTANCE} so this field
@@ -240,7 +239,7 @@ public class FlixelDebugManager {
     }
   }
 
-  public Array<FlixelBatch> getTrackedBatches() {
+  public FlixelArray<FlixelBatch> getTrackedBatches() {
     return trackedBatches;
   }
 
@@ -274,7 +273,7 @@ public class FlixelDebugManager {
   }
 
   /** Returns the live array of registered tracker entries. Package-private; consumed by the debug overlay. */
-  Array<FlixelDebugTrackerEntry> getTrackerEntries() {
+  FlixelArray<FlixelDebugTrackerEntry> getTrackerEntries() {
     return trackerEntries;
   }
 
@@ -388,20 +387,20 @@ public class FlixelDebugManager {
 
   /**
    * Returns the in-memory command history (oldest first). The returned array is the live backing
-   * store and must not be modified. Use {@link Array#size} and indexed access to read it.
+   * store and must not be modified. Use {@link FlixelArray#size} and indexed access to read it.
    *
    * @return The command history (live, do not modify).
    */
   @NotNull
-  public Array<String> getCommandHistory() {
+  public FlixelArray<String> getCommandHistory() {
     return commandHistory;
   }
 
-  /** Returns the {@link Array} of registered command names. The returned array is freshly allocated. */
+  /** Returns the {@link FlixelArray} of registered command names. The returned array is freshly allocated. */
   @NotNull
-  public Array<String> getRegisteredCommandNames() {
-    Array<String> out = new Array<>(commands.size);
-    for (ObjectMap.Entry<String, RegisteredCommand> e : commands.entries()) {
+  public FlixelArray<String> getRegisteredCommandNames() {
+    FlixelArray<String> out = new FlixelArray<>(commands.getSize());
+    for (FlixelMap.Entry<String, RegisteredCommand> e : commands.entries()) {
       out.add(e.key);
     }
     out.sort();
@@ -416,7 +415,7 @@ public class FlixelDebugManager {
   private void registerBuiltinCommands() {
     registerCommand("help", args -> {
       String filter = args.getString(0, null);
-      Array<String> names = getRegisteredCommandNames();
+      FlixelArray<String> names = getRegisteredCommandNames();
       Flixel.info("FlixelDebug", "Registered commands:");
       for (int i = 0; i < names.size; i++) {
         String n = names.get(i);

@@ -161,4 +161,24 @@ class FlixelMathUtilTest {
     assertTrue(FlixelMathUtil.isEqual(1.0f, 1.0000001f, 1e-5f));
     assertFalse(FlixelMathUtil.isEqual(1.0f, 1.1f, 1e-5f));
   }
+
+  @Test
+  void isEqualWithDefaultTolerance() {
+    assertTrue(FlixelMathUtil.isEqual(1.0f, 1.0f));
+    assertFalse(FlixelMathUtil.isEqual(1.0f, 1.001f));
+  }
+
+  @Test
+  void sinDegAndCosDegMatchDegrees() {
+    assertEquals(0f, FlixelMathUtil.sinDeg(0f), TRIG_DELTA);
+    assertEquals(1f, FlixelMathUtil.sinDeg(90f), TRIG_DELTA);
+    assertEquals(1f, FlixelMathUtil.cosDeg(0f), TRIG_DELTA);
+    assertEquals(0f, FlixelMathUtil.cosDeg(90f), TRIG_DELTA);
+  }
+
+  @Test
+  void atan2MatchesMath() {
+    assertEquals(0f, FlixelMathUtil.atan2(0f, 1f), DELTA);
+    assertEquals((float) Math.atan2(1, 1), FlixelMathUtil.atan2(1f, 1f), DELTA);
+  }
 }

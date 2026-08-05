@@ -24,8 +24,8 @@
 package org.flixelgdx.util;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.math.MathUtils;
 
+import org.flixelgdx.math.FlixelMathUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,10 +84,10 @@ public class FlixelColor {
    * @param a The alpha component (ranged from {@code [0, 1]}).
    */
   public FlixelColor(int r, int g, int b, float a) {
-    float nr = MathUtils.clamp(r, 0, 255) / 255f;
-    float ng = MathUtils.clamp(g, 0, 255) / 255f;
-    float nb = MathUtils.clamp(b, 0, 255) / 255f;
-    float na = MathUtils.clamp(a, 0, 1);
+    float nr = FlixelMathUtil.clamp(r, 0, 255) / 255f;
+    float ng = FlixelMathUtil.clamp(g, 0, 255) / 255f;
+    float nb = FlixelMathUtil.clamp(b, 0, 255) / 255f;
+    float na = FlixelMathUtil.clamp(a, 0, 1);
     color = new Color(nr, ng, nb, na);
   }
 

@@ -24,9 +24,9 @@
 package org.flixelgdx.tween;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Pool;
 
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelAngleable;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPhysical;
@@ -134,7 +134,7 @@ import java.util.function.Supplier;
  *
  * @author stringdotjar
  */
-public abstract class FlixelTween implements Pool.Poolable {
+public abstract class FlixelTween implements FlixelPoolable {
 
   /** The global tween manager for the entire game. */
   private static final FlixelTweenManager globalManager = new FlixelTweenManager();
@@ -197,7 +197,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    */
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
-    Array<FlixelTweenSettings.FlixelTweenGoal> propGoals = tweenSettings.getGoals();
+    FlixelArray<FlixelTweenSettings.FlixelTweenGoal> propGoals = tweenSettings.getGoals();
     if (propGoals == null || propGoals.size == 0) {
       throw new IllegalArgumentException(
           "FlixelTweenSettings requires at least one property goal from addGoal(getter, toValue, setter).");
@@ -1008,7 +1008,7 @@ public abstract class FlixelTween implements Pool.Poolable {
    * want a full reset (as {@link org.flixelgdx.Flixel#switchState Flixel.switchState} does when {@code clearTweens} is true).
    */
   public static void cancelActiveTweens() {
-    Array<FlixelTween> list = globalManager.getActiveTweens();
+    FlixelArray<FlixelTween> list = globalManager.getActiveTweens();
     for (int i = list.size - 1; i >= 0; i--) {
       FlixelTween t = list.get(i);
       if (t != null) {

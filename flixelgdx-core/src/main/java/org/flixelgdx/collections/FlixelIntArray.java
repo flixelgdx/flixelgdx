@@ -169,6 +169,21 @@ public class FlixelIntArray {
   }
 
   /**
+   * Removes the first occurrence of a value.
+   *
+   * @param value The value to remove.
+   * @return {@code true} if a value was removed.
+   */
+  public boolean removeValue(int value) {
+    int index = indexOf(value);
+    if (index == -1) {
+      return false;
+    }
+    removeIndex(index);
+    return true;
+  }
+
+  /**
    * Removes and returns the last value (a stack pop).
    *
    * @return The former last value.

@@ -26,8 +26,8 @@ package org.flixelgdx.animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Affine2;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectMap;
 
+import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -87,7 +87,7 @@ public final class FlixelAnimateRig {
 
   /** Map of clip name (for example {@code "Idle"}) to its baked {@link Clip}. */
   @NotNull
-  public final ObjectMap<String, Clip> clips;
+  public final FlixelMap<String, Clip> clips;
 
   /**
    * Name of the clip whose frame-zero bounding box defines the rig's anchor-space rectangle. Usually the
@@ -133,7 +133,7 @@ public final class FlixelAnimateRig {
    */
   FlixelAnimateRig(
       @NotNull Array<FlixelFrame> atlas,
-      @NotNull ObjectMap<String, Clip> clips,
+      @NotNull FlixelMap<String, Clip> clips,
       @NotNull String anchorClipName,
       float anchorMinX,
       float anchorMinY,
@@ -170,7 +170,7 @@ public final class FlixelAnimateRig {
    * @return The internal clip map. Never {@code null}.
    */
   @NotNull
-  public ObjectMap<String, Clip> getClips() {
+  public FlixelMap<String, Clip> getClips() {
     return clips;
   }
 

@@ -23,13 +23,12 @@
  */
 package org.flixelgdx.functional;
 
-import com.badlogic.gdx.utils.Disposable;
-import com.badlogic.gdx.utils.Pool;
+import org.flixelgdx.collections.FlixelPoolable;
 
 /**
  * Full {@link org.flixelgdx.FlixelBasic FlixelBasic}-style contract: per-frame update and draw hooks,
- * existence and active flags (see {@link FlixelExistable}), visibility, kill and revive, teardown, and
- * libGDX {@link Disposable} / {@link Pool.Poolable} hooks. Extend
+ * existence and active flags (see {@link FlixelExistable}), visibility, kill and revive, teardown
+ * ({@link FlixelDestroyable}), and the {@link FlixelPoolable} reset hook. Extend
  * {@link org.flixelgdx.FlixelBasic FlixelBasic} when you want the default field-based implementation,
  * or implement this interface on your own type when you need a custom base class but still want to add
  * instances to a {@link org.flixelgdx.FlixelState FlixelState} or
@@ -46,6 +45,5 @@ public interface IFlixelBasic extends
     FlixelKillable,
     FlixelVisible,
     FlixelExistable,
-    Disposable,
-    Pool.Poolable {
+    FlixelPoolable {
 }

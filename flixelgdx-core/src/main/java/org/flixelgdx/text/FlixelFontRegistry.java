@@ -29,10 +29,10 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.IntMap;
-import com.badlogic.gdx.utils.ObjectMap;
 
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelIntMap;
+import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -93,12 +93,12 @@ public final class FlixelFontRegistry {
    * Shared libGDX default {@link BitmapFont} instances, one per requested pixel size (after
    * scaling the built-in 15px font to match).
    */
-  private static final IntMap<BitmapFont> defaultBitmapFontsBySize = new IntMap<>();
+  private static final FlixelIntMap<BitmapFont> defaultBitmapFontsBySize = new FlixelIntMap<>();
 
   /**
    * FreeType-generated bitmap fonts keyed by {@link #freeTypeBitmapFontKey(String, int, int)}.
    */
-  private static final ObjectMap<String, BitmapFont> freeTypeBitmapFonts = new ObjectMap<>();
+  private static final FlixelMap<String, BitmapFont> freeTypeBitmapFonts = new FlixelMap<>();
 
   private FlixelFontRegistry() {}
 
@@ -384,7 +384,7 @@ public final class FlixelFontRegistry {
   }
 
   private static void removeFreeTypeBitmapFontsForPrefix(String keyPrefix) {
-    Array<String> toRemove = new Array<>();
+    FlixelArray<String> toRemove = new FlixelArray<>();
     for (String key : freeTypeBitmapFonts.keys()) {
       if (key.startsWith(keyPrefix)) {
         toRemove.add(key);

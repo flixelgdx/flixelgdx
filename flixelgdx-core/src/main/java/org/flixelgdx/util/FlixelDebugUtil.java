@@ -23,10 +23,9 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.utils.SnapshotArray;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.functional.FlixelVisible;
 import org.flixelgdx.functional.IFlixelBasic;
@@ -68,7 +67,7 @@ public final class FlixelDebugUtil {
     return count;
   }
 
-  private static int countActiveMembersRecursive(SnapshotArray<?> members) {
+  private static int countActiveMembersRecursive(FlixelArray<?> members) {
     int count = 0;
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
@@ -80,7 +79,7 @@ public final class FlixelDebugUtil {
         count++;
       }
       if (member instanceof FlixelGroupable<?> group) {
-        SnapshotArray<?> nested = group.getMembers();
+        FlixelArray<?> nested = group.getMembers();
         if (nested != null) {
           count += countActiveMembersRecursive(nested);
         }
@@ -109,7 +108,7 @@ public final class FlixelDebugUtil {
     }
   }
 
-  private static void forEachDebugDrawableRecursive(@NotNull SnapshotArray<?> members,
+  private static void forEachDebugDrawableRecursive(@NotNull FlixelArray<?> members,
       @NotNull Consumer<FlixelDebugDrawable> callback) {
     Object[] items = members.begin();
     for (int i = 0, n = members.size; i < n; i++) {
@@ -121,7 +120,7 @@ public final class FlixelDebugUtil {
         callback.accept(drawable);
       }
       if (member instanceof FlixelGroupable<?> group) {
-        SnapshotArray<?> nested = group.getMembers();
+        FlixelArray<?> nested = group.getMembers();
         if (nested != null) {
           forEachDebugDrawableRecursive(nested, callback);
         }

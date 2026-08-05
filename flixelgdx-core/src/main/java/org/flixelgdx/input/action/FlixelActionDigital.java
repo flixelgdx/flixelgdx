@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.ObjectMap;
-
+import org.flixelgdx.collections.FlixelMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,7 +64,7 @@ import java.util.Objects;
  */
 public final class FlixelActionDigital extends FlixelAction {
 
-  private final ObjectMap<String, FlixelDigitalBinding> namedBindings = new ObjectMap<>(8);
+  private final FlixelMap<String, FlixelDigitalBinding> namedBindings = new FlixelMap<>(8);
 
   private float holdAccum;
 
@@ -144,7 +143,7 @@ public final class FlixelActionDigital extends FlixelAction {
    * @return {@code true} if the binding was found and removed.
    */
   public boolean removeBinding(@NotNull FlixelDigitalBinding binding) {
-    ObjectMap.Keys<String> keys = namedBindings.keys();
+    FlixelMap.Keys<String> keys = namedBindings.keys();
     while (keys.hasNext()) {
       String key = keys.next();
       if (namedBindings.get(key) == binding) {
@@ -169,7 +168,7 @@ public final class FlixelActionDigital extends FlixelAction {
     if (steam != null && steam.getDigital(getName())) {
       v = true;
     }
-    ObjectMap.Values<FlixelDigitalBinding> vals = namedBindings.values();
+    FlixelMap.Values<FlixelDigitalBinding> vals = namedBindings.values();
     while (vals.hasNext()) {
       v |= vals.next().evaluate();
     }

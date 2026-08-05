@@ -23,9 +23,8 @@
  */
 package org.flixelgdx.group;
 
-import com.badlogic.gdx.utils.SnapshotArray;
-
 import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.jetbrains.annotations.Nullable;
@@ -52,7 +51,7 @@ public interface FlixelBasicGroupable<T extends IFlixelBasic> extends FlixelGrou
     if (member == null) {
       return;
     }
-    SnapshotArray<T> members = getMembers();
+    FlixelArray<T> members = getMembers();
     if (members == null || !members.contains(member, true)) {
       return;
     }
@@ -67,7 +66,7 @@ public interface FlixelBasicGroupable<T extends IFlixelBasic> extends FlixelGrou
    */
   @Nullable
   default T getFirstDead() {
-    SnapshotArray<T> members = getMembers();
+    FlixelArray<T> members = getMembers();
     if (members == null) {
       return null;
     }

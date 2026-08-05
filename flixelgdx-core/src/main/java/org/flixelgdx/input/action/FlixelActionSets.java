@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.Array;
+import org.flixelgdx.collections.FlixelArray;
 
 import org.flixelgdx.functional.FlixelDrawable;
 import org.jetbrains.annotations.NotNull;
@@ -52,7 +52,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelActionSets {
 
-  private static final Array<FlixelActionSet> registered = new Array<>(8);
+  private static final FlixelArray<FlixelActionSet> registered = new FlixelArray<>(8);
 
   private FlixelActionSets() {}
 

@@ -32,7 +32,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
 import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
@@ -41,6 +40,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.util.FlixelAlign;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelString;
 import org.flixelgdx.util.FlixelStringUtil;
@@ -951,7 +951,8 @@ public class FlixelText extends FlixelSprite {
 
   /** @throws UnsupportedOperationException always; text objects cannot use Sparrow atlases. */
   @Override
-  public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
+  public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic,
+      @NotNull Array<FlixelFrame> parsedFrames) {
     throw new UnsupportedOperationException("FlixelText does not support addSparrowAtlas().");
   }
 
@@ -1264,9 +1265,9 @@ public class FlixelText extends FlixelSprite {
 
   /** Horizontal alignment options for text within its field. */
   public enum Alignment {
-    LEFT(Align.left),
-    CENTER(Align.center),
-    RIGHT(Align.right);
+    LEFT(FlixelAlign.LEFT),
+    CENTER(FlixelAlign.CENTER),
+    RIGHT(FlixelAlign.RIGHT);
 
     final int gdxAlign;
 
@@ -1293,9 +1294,9 @@ public class FlixelText extends FlixelSprite {
 
     public int toGdxAlign() {
       return switch (this) {
-        case LEFT -> Align.left;
-        case CENTER -> Align.center;
-        case RIGHT -> Align.right;
+        case LEFT -> FlixelAlign.LEFT;
+        case CENTER -> FlixelAlign.CENTER;
+        case RIGHT -> FlixelAlign.RIGHT;
       };
     }
   }

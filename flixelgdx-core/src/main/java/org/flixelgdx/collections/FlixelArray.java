@@ -24,11 +24,11 @@
 package org.flixelgdx.collections;
 
 import org.flixelgdx.math.FlixelRandom;
-import org.flixelgdx.util.FlixelArraySupplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -95,14 +95,52 @@ public class FlixelArray<T> implements Iterable<T> {
    */
   public boolean ordered;
 
-  private final FlixelArraySupplier<T[]> supplier;
   private T[] snapshot;
   private int snapshotDepth;
   private FlixelArrayIterator<T> iterator1;
   private FlixelArrayIterator<T> iterator2;
 
   /**
-   * Creates an ordered list with the default initial capacity.
+   * Creates an ordered list with the default initial capacity, backed by a
+   * plain {@code Object[]}.
+   *
+   * <p>Use this when you do not need {@link #items} to be a genuinely typed
+   * {@code T[]} - which is the common case, and the only option for a generic
+   * container that cannot name {@code T} at runtime. Reading elements by index
+   * still returns {@code T}. When you do want a real typed backing array (for
+   * example to hand {@code items} to an API expecting {@code String[]}), use the
+   * {@link FlixelArraySupplier}-based constructors instead.
+   */
+  public FlixelArray() {
+    this(DEFAULT_CAPACITY);
+  }
+
+  /**
+   * Creates an ordered {@code Object[]}-backed list with the given initial
+   * capacity.
+   *
+   * @param capacity The initial backing-array size.
+   */
+  public FlixelArray(int capacity) {
+    this(true, capacity);
+  }
+
+  /**
+   * Creates an {@code Object[]}-backed list with the given ordering and initial
+   * capacity.
+   *
+   * @param ordered Whether removals preserve order (see {@link #ordered}).
+   * @param capacity The initial backing-array size.
+   */
+  @SuppressWarnings("unchecked")
+  public FlixelArray(boolean ordered, int capacity) {
+    this.ordered = ordered;
+    this.items = (T[]) new Object[Math.max(1, capacity)];
+  }
+
+  /**
+   * Creates an ordered list with the default initial capacity and a typed
+   * backing array.
    *
    * @param supplier Builds the typed backing array, for example
    *     {@code Enemy[]::new}.
@@ -112,7 +150,8 @@ public class FlixelArray<T> implements Iterable<T> {
   }
 
   /**
-   * Creates an ordered list with the given initial capacity.
+   * Creates an ordered list with the given initial capacity and a typed backing
+   * array.
    *
    * @param supplier Builds the typed backing array.
    * @param capacity The initial backing-array size.
@@ -122,14 +161,14 @@ public class FlixelArray<T> implements Iterable<T> {
   }
 
   /**
-   * Creates a list with the given ordering and initial capacity.
+   * Creates a list with the given ordering and initial capacity and a typed
+   * backing array.
    *
    * @param supplier Builds the typed backing array.
    * @param ordered Whether removals preserve order (see {@link #ordered}).
    * @param capacity The initial backing-array size.
    */
   public FlixelArray(@NotNull FlixelArraySupplier<T[]> supplier, boolean ordered, int capacity) {
-    this.supplier = supplier;
     this.ordered = ordered;
     this.items = supplier.get(Math.max(1, capacity));
   }
@@ -340,6 +379,38 @@ public class FlixelArray<T> implements Iterable<T> {
   }
 
   /**
+   * Returns the last element without removing it.
+   *
+   * <p>This is an alias for {@link #last()}, named to match the stack-style
+   * pairing with {@link #pop()}.
+   *
+   * @return The element at index {@code size - 1}.
+   * @throws IndexOutOfBoundsException If the list is empty.
+   */
+  public @Nullable T peek() {
+    return last();
+  }
+
+  /**
+   * Sorts the live elements in place using their natural ordering.
+   *
+   * <p>Every element must implement {@link Comparable}; otherwise a
+   * {@link ClassCastException} is thrown at runtime.
+   */
+  public void sort() {
+    Arrays.sort(items, 0, size);
+  }
+
+  /**
+   * Sorts the live elements in place using the given comparator.
+   *
+   * @param comparator The comparator that defines the order.
+   */
+  public void sort(@NotNull Comparator<? super T> comparator) {
+    Arrays.sort(items, 0, size, comparator);
+  }
+
+  /**
    * Returns a random element using the given generator.
    *
    * @param rng The random source to draw from.
@@ -380,6 +451,41 @@ public class FlixelArray<T> implements Iterable<T> {
     if (capacity > items.length) {
       grow(capacity);
     }
+  }
+
+  /**
+   * Sets the live element count, growing the backing array if needed.
+   *
+   * <p>When shrinking, the trimmed slots are nulled so their elements can be
+   * garbage collected. When growing, the new slots are {@code null}.
+   *
+   * @param newSize The new value of {@link #size}.
+   * @return The backing array.
+   */
+  public @NotNull T[] setSize(int newSize) {
+    if (newSize > items.length) {
+      grow(newSize);
+    } else if (newSize < size) {
+      Arrays.fill(items, newSize, size, null);
+    }
+    size = newSize;
+    return items;
+  }
+
+  /**
+   * Swaps the elements at two indices.
+   *
+   * @param first The first index.
+   * @param second The second index.
+   * @throws IndexOutOfBoundsException If either index is out of range.
+   */
+  public void swap(int first, int second) {
+    if (first >= size || second >= size) {
+      throw new IndexOutOfBoundsException("swap(" + first + ", " + second + ") size " + size);
+    }
+    T tmp = items[first];
+    items[first] = items[second];
+    items[second] = tmp;
   }
 
   /**
@@ -454,11 +560,11 @@ public class FlixelArray<T> implements Iterable<T> {
 
   private T[] grow(int minCapacity) {
     int newCapacity = Math.max(minCapacity, items.length + (items.length >> 1) + 1);
-    T[] next = supplier.get(newCapacity);
-    System.arraycopy(items, 0, next, 0, size);
-    // Growing already allocates a fresh array, so any active snapshot (which
-    // still points at the old array) is preserved without extra work.
-    items = next;
+    // Arrays.copyOf preserves the backing array's real component type, so a
+    // typed (supplier-built) array stays typed and an Object[]-backed one stays
+    // Object[]. Growing also allocates a fresh array, so any active snapshot
+    // (which still points at the old array) is preserved without extra work.
+    items = Arrays.copyOf(items, newCapacity);
     return items;
   }
 

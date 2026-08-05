@@ -23,8 +23,14 @@
  */
 package org.flixelgdx.util;
 
+import org.flixelgdx.FlixelSprite;
+
 /**
  * Enum for the different coordinate axes.
+ *
+ * <p>This enum is typically used inside {@link FlixelSprite} and its centering
+ * methods, although they may be useful for other purposes, such as labeling
+ * on a custom game sprite what axis it's allowed to change on.
  */
 public enum FlixelAxes {
   X,

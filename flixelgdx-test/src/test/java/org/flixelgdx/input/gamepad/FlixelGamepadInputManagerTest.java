@@ -27,8 +27,8 @@ import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.ControllerMapping;
 import com.badlogic.gdx.controllers.ControllerPowerLevel;
-import com.badlogic.gdx.utils.IntArray;
 
+import org.flixelgdx.collections.FlixelIntArray;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -350,7 +350,7 @@ class FlixelGamepadInputManagerTest {
   private void addToPressedOrder(int nativeButton) throws Exception {
     Field f = FlixelGamepadInputManager.class.getDeclaredField("pressedOrder");
     f.setAccessible(true);
-    ((IntArray[]) f.get(manager))[0].add(nativeButton);
+    ((FlixelIntArray[]) f.get(manager))[0].add(nativeButton);
   }
 
   private static int syntheticTriggerL() throws Exception {

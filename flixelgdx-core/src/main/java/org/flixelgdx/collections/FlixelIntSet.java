@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.collections;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 
 /**
@@ -51,6 +53,8 @@ public class FlixelIntSet {
   private int threshold;
   private int shift;
   private boolean hasZeroKey;
+
+  private IntSetIterator iterator;
 
   /**
    * Creates an empty set with the default initial capacity.
@@ -173,6 +177,38 @@ public class FlixelIntSet {
     return size == 0;
   }
 
+  /**
+   * Adds every value from another set.
+   *
+   * @param other The set whose values to add.
+   */
+  public void addAll(@NotNull FlixelIntSet other) {
+    if (other.hasZeroKey) {
+      add(0);
+    }
+    for (int key : other.keyTable) {
+      if (key != 0) {
+        add(key);
+      }
+    }
+  }
+
+  /**
+   * Returns a reusable iterator over the values.
+   *
+   * <p>The iterator is reused between loops, so do not run two loops over the
+   * same set at the same time.
+   *
+   * @return An iterator over the primitive values.
+   */
+  public @NotNull IntSetIterator iterator() {
+    if (iterator == null) {
+      iterator = new IntSetIterator(this);
+    }
+    iterator.reset();
+    return iterator;
+  }
+
   private int place(int value) {
     return (value * HASH_MULTIPLIER) >>> shift;
   }
@@ -208,5 +244,68 @@ public class FlixelIntSet {
       size <<= 1;
     }
     return size;
+  }
+
+  /**
+   * A reusable iterator over a set's primitive {@code int} values.
+   *
+   * <p>Iterate with the {@link #hasNext} field and {@link #next()}:
+   *
+   * <pre>{@code
+   * for (FlixelIntSet.IntSetIterator it = set.iterator(); it.hasNext; ) {
+   *   int value = it.next();
+   * }
+   * }</pre>
+   */
+  public static final class IntSetIterator {
+
+    /** Whether another value is available from {@link #next()}. */
+    public boolean hasNext;
+
+    private final FlixelIntSet set;
+    private int index;
+    private boolean zeroPending;
+
+    IntSetIterator(FlixelIntSet set) {
+      this.set = set;
+    }
+
+    void reset() {
+      index = -1;
+      zeroPending = set.hasZeroKey;
+      advance();
+    }
+
+    void advance() {
+      if (zeroPending) {
+        hasNext = true;
+        return;
+      }
+      hasNext = false;
+      int[] keyTable = set.keyTable;
+      for (index++; index < keyTable.length; index++) {
+        if (keyTable[index] != 0) {
+          hasNext = true;
+          break;
+        }
+      }
+    }
+
+    /**
+     * Returns the next value and advances the iterator.
+     *
+     * @return The next value in the set.
+     */
+    public int next() {
+      int value;
+      if (zeroPending) {
+        zeroPending = false;
+        value = 0;
+      } else {
+        value = set.keyTable[index];
+      }
+      advance();
+      return value;
+    }
   }
 }

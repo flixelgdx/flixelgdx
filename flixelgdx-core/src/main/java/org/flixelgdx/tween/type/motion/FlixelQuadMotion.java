@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import com.badlogic.gdx.math.MathUtils;
+import org.flixelgdx.math.FlixelMathUtil;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -75,9 +75,9 @@ public class FlixelQuadMotion extends FlixelMotion {
     float dist = approximateQuadLength(fromX, fromY, cx, cy, toX, toY);
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(dist / speed);
       }
     }

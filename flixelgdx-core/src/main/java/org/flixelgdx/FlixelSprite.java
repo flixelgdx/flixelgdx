@@ -32,7 +32,6 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
@@ -41,12 +40,14 @@ import com.badlogic.gdx.utils.XmlReader;
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.math.FlixelMathUtil;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
@@ -127,7 +128,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Lazily allocated to avoid the per-instance footprint for sprites that only ever load one atlas.
    */
   @Nullable
-  protected Array<FlixelGraphic> secondaryGraphics;
+  protected FlixelArray<FlixelGraphic> secondaryGraphics;
 
   /**
    * Heavy controller object for handling animations. {@code null} until {@link #ensureAnimation()} or assigned directly.
@@ -563,7 +564,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    */
   public void retainSecondaryGraphic(@NotNull FlixelGraphic graphic) {
     if (secondaryGraphics == null) {
-      secondaryGraphics = new Array<>(2);
+      secondaryGraphics = new FlixelArray<>(2);
     }
     secondaryGraphics.add(graphic);
 
@@ -613,8 +614,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float cullH = f.originalHeight * Math.abs(scaleY);
     float angle = getAngle();
     if (angle != 0f) {
-      float cos = Math.abs(MathUtils.cosDeg(angle));
-      float sin = Math.abs(MathUtils.sinDeg(angle));
+      float cos = Math.abs(FlixelMathUtil.cosDeg(angle));
+      float sin = Math.abs(FlixelMathUtil.sinDeg(angle));
       float rotW = cos * cullW + sin * cullH;
       float rotH = sin * cullW + cos * cullH;
       drawLeft -= (rotW - cullW) * 0.5f;
@@ -1245,7 +1246,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Replaces the currently displayed frame with a wrapper around the given {@link TextureRegion},
    * bypassing the frame grid and animation system. Useful for one-off sprites that source a region
    * from an existing atlas without going through {@link #loadGraphic(String)} or
-   * {@link #applySparrowAtlas(FlixelGraphic, Array)}. Pass {@code null} to clear the displayed frame.
+   * {@link #applySparrowAtlas(FlixelGraphic, FlixelArray)}. Pass {@code null} to clear the displayed frame.
    *
    * @param region The region to display, or {@code null} to stop rendering.
    */
@@ -1310,8 +1311,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   public void setClipRect(float x, float y, float width, float height) {
     clipRectX = x;
     clipRectY = y;
-    clipRectWidth = MathUtils.clamp(width, 0, getWidth());
-    clipRectHeight = MathUtils.clamp(height, 0, getHeight());
+    clipRectWidth = FlixelMathUtil.clamp(width, 0, getWidth());
+    clipRectHeight = FlixelMathUtil.clamp(height, 0, getHeight());
     clipRectEnabled = true;
   }
 
@@ -1353,7 +1354,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectWidth(float clipRectWidth) {
-    this.clipRectWidth = MathUtils.clamp(clipRectWidth, 0, getWidth());
+    this.clipRectWidth = FlixelMathUtil.clamp(clipRectWidth, 0, getWidth());
   }
 
   public void changeClipRectWidth(float clipRectWidth) {
@@ -1365,7 +1366,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectHeight(float clipRectHeight) {
-    this.clipRectHeight = MathUtils.clamp(clipRectHeight, 0, getHeight());
+    this.clipRectHeight = FlixelMathUtil.clamp(clipRectHeight, 0, getHeight());
   }
 
   public void changeClipRectHeight(float clipRectHeight) {

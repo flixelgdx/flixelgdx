@@ -24,15 +24,15 @@
 package org.flixelgdx.util;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.utils.CharArray;
 
+import org.flixelgdx.collections.FlixelCharArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
 
 /**
- * Reusable mutable text buffer backed by libGDX {@link CharArray}, designed to display changing
+ * Reusable mutable text buffer backed by libGDX {@link FlixelCharArray}, designed to display changing
  * values (health, FPS, velocity) every frame without allocating garbage.
  *
  * <h2>Why not StringBuilder?</h2>
@@ -40,18 +40,18 @@ import java.util.function.Supplier;
  * <p>{@link StringBuilder#append(float)} internally calls {@link Float#toString(float)}, which
  * allocates a new {@link String} on every invocation. At 60 frames per second, even a single HUD
  * counter can produce hundreds of short-lived strings per second that pressure the garbage
- * collector. {@link CharArray} writes digits directly into its backing {@code char[]} with no
+ * collector. {@link FlixelCharArray} writes digits directly into its backing {@code char[]} with no
  * intermediate {@link String}, so {@link #set(float)}, {@link #concat(float)}, and all other
  * primitive overloads on this class are allocation-free on the hot path.
  *
  * <p>The same applies to {@code int}, {@code long}, {@code double}, {@code boolean}, {@code char},
  * {@code byte}, and {@code short}: every primitive {@link #set} and {@link #concat} overload goes
- * through {@link CharArray} appenders rather than {@link Object#toString()}.
+ * through {@link FlixelCharArray} appenders rather than {@link Object#toString()}.
  *
  * <h2>Allocation-free float formatting</h2>
  *
  * <p>{@link #setFloatRounded(float, int)} and {@link #concatFloatRounded(float, int)} delegate to
- * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}, which formats a float to any
+ * {@link FlixelStringUtil#appendFloatRounded(FlixelCharArray, float, int)}, which formats a float to any
  * number of decimal places using only integer arithmetic, meaning no {@link String} is created at
  * any point. {@link #setFloatRoundedOneDecimal(float)} and
  * {@link #concatFloatRoundedOneDecimal(float)} are convenience variants for exactly one decimal
@@ -69,7 +69,7 @@ import java.util.function.Supplier;
  * <p>{@link #set} clears the buffer and writes new content in one call, which is the typical
  * pattern for a HUD label that shows a single changing value. {@link #concat} appends without
  * clearing, which is useful when building a line from multiple parts. {@link #charBuffer()} exposes
- * the raw {@link CharArray} for advanced interop with libGDX APIs that require it directly.
+ * the raw {@link FlixelCharArray} for advanced interop with libGDX APIs that require it directly.
  *
  * <h2>Example Usage</h2>
  *
@@ -94,7 +94,7 @@ import java.util.function.Supplier;
  */
 public class FlixelString implements CharSequence {
 
-  private final CharArray buffer;
+  private final FlixelCharArray buffer;
 
   /** Creates an empty buffer with a default initial capacity. */
   public FlixelString() {
@@ -104,10 +104,10 @@ public class FlixelString implements CharSequence {
   /**
    * Creates an empty buffer with the given initial capacity hint.
    *
-   * @param initialCapacity Non-negative initial capacity for the backing {@link CharArray}.
+   * @param initialCapacity Non-negative initial capacity for the backing {@link FlixelCharArray}.
    */
   public FlixelString(int initialCapacity) {
-    buffer = new CharArray(Math.max(8, initialCapacity));
+    buffer = new FlixelCharArray(Math.max(8, initialCapacity));
   }
 
   /**
@@ -121,20 +121,20 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Returns the mutable backing {@link CharArray}. Callers must not retain references across frames if the
+   * Returns the mutable backing {@link FlixelCharArray}. Callers must not retain references across frames if the
    * owning {@link FlixelString} is reused or pooled, because the buffer contents change in place.
    *
-   * @return The internal {@link CharArray} (never {@code null}).
+   * @return The internal {@link FlixelCharArray} (never {@code null}).
    */
   @NotNull
-  public CharArray charBuffer() {
+  public FlixelCharArray charBuffer() {
     return buffer;
   }
 
   /**
    * Clears all characters without shrinking the allocated buffer.
    *
-   * @see CharArray#clear()
+   * @see FlixelCharArray#clear()
    */
   public void clear() {
     buffer.clear();
@@ -143,7 +143,7 @@ public class FlixelString implements CharSequence {
   /**
    * Shrinks the allocated buffer to the current length.
    *
-   * @see CharArray#shrink()
+   * @see FlixelCharArray#shrink()
    */
   public void shrinkToFit() {
     buffer.shrink();
@@ -389,14 +389,14 @@ public class FlixelString implements CharSequence {
 
   /**
    * Appends {@code value} rounded to {@code decimals} decimal places using the same rules as
-   * {@link FlixelStringUtil#appendFloatRounded(CharArray, float, int)}. Does not clear the buffer
+   * {@link FlixelStringUtil#appendFloatRounded(FlixelCharArray, float, int)}. Does not clear the buffer
    * first.
    *
    * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and
    * no decimal point is written. Fractional digits are zero-padded on the left so the output
    * always contains exactly {@code decimals} digits after the decimal point.
    *
-   * @param value    Value to append (non-finite values use {@link CharArray#append(float)}).
+   * @param value    Value to append (non-finite values use {@link FlixelCharArray#append(float)}).
    * @param decimals Number of digits after the decimal point; values of zero or less produce an
    *                 integer with no decimal point.
    * @return {@code this} for chaining.
@@ -411,7 +411,7 @@ public class FlixelString implements CharSequence {
    * Appends {@code value} rounded to one decimal place (tenths). Convenience wrapper for
    * {@link #concatFloatRounded(float, int)} with {@code decimals = 1}.
    *
-   * @param value Value to append (non-finite values use {@link CharArray#append(float)}).
+   * @param value Value to append (non-finite values use {@link FlixelCharArray#append(float)}).
    * @return {@code this} for chaining.
    */
   @NotNull
@@ -420,7 +420,7 @@ public class FlixelString implements CharSequence {
   }
 
   /**
-   * Appends an object the same way {@link CharArray#append(Object)} does: {@code null} becomes the literal
+   * Appends an object the same way {@link FlixelCharArray#append(Object)} does: {@code null} becomes the literal
    * {@code "null"}, {@link CharSequence} is appended without {@link Object#toString()}, and other types use
    * {@link Object#toString()}.
    *
@@ -457,14 +457,14 @@ public class FlixelString implements CharSequence {
 
   /**
    * Clears the buffer and writes {@code value} rounded to {@code decimals} decimal places using
-   * only {@link CharArray} primitive appenders, avoiding {@link Float#toString(float)} and similar
+   * only {@link FlixelCharArray} primitive appenders, avoiding {@link Float#toString(float)} and similar
    * helpers that allocate {@link String} instances.
    *
    * <p>When {@code decimals} is zero or negative, the value is rounded to the nearest integer and
    * no decimal point is written. Fractional digits are zero-padded on the left so the output
    * always contains exactly {@code decimals} digits after the decimal point.
    *
-   * @param value Value to format; non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value Value to format; non-finite values fall back to {@link FlixelCharArray#append(float)}.
    * @param decimals Number of digits after the decimal point; values of zero or less produce an
    *                 integer with no decimal point.
    * @return {@code this} for chaining.
@@ -480,7 +480,7 @@ public class FlixelString implements CharSequence {
    * Clears the buffer and writes {@code value} rounded to one decimal place (tenths). Convenience
    * wrapper for {@link #setFloatRounded(float, int)} with {@code decimals = 1}.
    *
-   * @param value Value to format. Non-finite values fall back to {@link CharArray#append(float)}.
+   * @param value Value to format. Non-finite values fall back to {@link FlixelCharArray#append(float)}.
    * @return {@code this} for chaining.
    */
   @NotNull

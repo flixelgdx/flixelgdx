@@ -24,9 +24,9 @@
 package org.flixelgdx.logging;
 
 import com.badlogic.gdx.ApplicationLogger;
-import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.FlixelAsciiCodes;
 import org.flixelgdx.util.FlixelString;
 
@@ -70,7 +70,8 @@ public class FlixelLogger implements ApplicationLogger {
   private String customLogsFolderPath = null;
 
   /** Listeners notified whenever a log message is produced (used by the debug overlay). */
-  private final Array<Consumer<FlixelLogEntry>> logListeners = new Array<Consumer<FlixelLogEntry>>(Consumer[]::new);
+  private final FlixelArray<Consumer<FlixelLogEntry>> logListeners =
+      new FlixelArray<Consumer<FlixelLogEntry>>(Consumer[]::new);
 
   /** Reused for ANSI console lines (single game thread in practice). */
   private final FlixelString consoleLine = new FlixelString(512);

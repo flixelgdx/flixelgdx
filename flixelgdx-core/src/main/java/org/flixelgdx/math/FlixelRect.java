@@ -92,6 +92,15 @@ public final class FlixelRect implements FlixelPoolable {
   }
 
   /**
+   * Creates a rectangle that copies another's position and size.
+   *
+   * @param other The rectangle to copy.
+   */
+  public FlixelRect(@NotNull FlixelRect other) {
+    this(other.x, other.y, other.width, other.height);
+  }
+
+  /**
    * Borrows a rectangle from the shared pool, set to empty at the origin.
    *
    * @return A recycled (or freshly created) rectangle.

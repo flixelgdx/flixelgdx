@@ -52,7 +52,7 @@ import java.util.NoSuchElementException;
  * FlixelMap<String, Integer> scores = new FlixelMap<>();
  * scores.put("alice", 10);
  * for (FlixelMap.Entry<String, Integer> e : scores.entries()) {
- *   System.out.println(e.key + " = " + e.value);
+ *   Flixel.info(e.key + " = " + e.value);
  * }
  * }</pre>
  *
@@ -208,7 +208,7 @@ public class FlixelMap<K, V> {
    *
    * @return The entry count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 
@@ -324,7 +324,7 @@ public class FlixelMap<K, V> {
 
   private abstract static class MapIterator<K, V> {
     final FlixelMap<K, V> map;
-    int index;
+    int nextIndex, currentIndex;
     boolean hasNext;
 
     MapIterator(FlixelMap<K, V> map) {
@@ -332,19 +332,59 @@ public class FlixelMap<K, V> {
     }
 
     void reset() {
-      index = -1;
+      nextIndex = -1;
+      currentIndex = -1;
       advance();
     }
 
     void advance() {
       hasNext = false;
       K[] keyTable = map.keyTable;
-      for (index++; index < keyTable.length; index++) {
-        if (keyTable[index] != null) {
+      for (nextIndex++; nextIndex < keyTable.length; nextIndex++) {
+        if (keyTable[nextIndex] != null) {
           hasNext = true;
           break;
         }
       }
+    }
+
+    /**
+     * Removes the entry returned by the most recent {@link Iterator#next()} call.
+     *
+     * <p>Safe to call once per {@code next()} while iterating. It performs the
+     * same backward-shift deletion the map uses, then rewinds the scan so an
+     * entry pulled into the vacated slot is still visited.
+     *
+     * @throws IllegalStateException If {@code next()} has not been called, or was
+     *     already followed by a {@code remove()}.
+     */
+    void doRemove() {
+      int i = currentIndex;
+      if (i < 0) {
+        throw new IllegalStateException("next() must be called before remove().");
+      }
+      K[] keyTable = map.keyTable;
+      V[] valueTable = map.valueTable;
+      int mask = map.mask;
+      int next = (i + 1) & mask;
+      K key;
+      while ((key = keyTable[next]) != null) {
+        int ideal = map.place(key);
+        if (((next - ideal) & mask) >= ((next - i) & mask)) {
+          keyTable[i] = key;
+          valueTable[i] = valueTable[next];
+          i = next;
+        }
+        next = (next + 1) & mask;
+      }
+      keyTable[i] = null;
+      valueTable[i] = null;
+      map.size--;
+      // A later entry may have been pulled back into the vacated slot; rescan
+      // from there so it is not skipped.
+      nextIndex = currentIndex - 1;
+      currentIndex = -1;
+      advance();
     }
   }
 
@@ -378,10 +418,16 @@ public class FlixelMap<K, V> {
       if (!hasNext) {
         throw new NoSuchElementException();
       }
-      entry.key = map.keyTable[index];
-      entry.value = map.valueTable[index];
+      currentIndex = nextIndex;
+      entry.key = map.keyTable[nextIndex];
+      entry.value = map.valueTable[nextIndex];
       advance();
       return entry;
+    }
+
+    @Override
+    public void remove() {
+      doRemove();
     }
   }
 
@@ -390,8 +436,7 @@ public class FlixelMap<K, V> {
    *
    * @param <K> The key type.
    */
-  public static final class Keys<K> extends MapIterator<K, Object>
-      implements Iterable<K>, Iterator<K> {
+  public static final class Keys<K> extends MapIterator<K, Object> implements Iterable<K>, Iterator<K> {
 
     @SuppressWarnings("unchecked")
     Keys(FlixelMap<K, ?> map) {
@@ -413,9 +458,15 @@ public class FlixelMap<K, V> {
       if (!hasNext) {
         throw new NoSuchElementException();
       }
-      K key = map.keyTable[index];
+      currentIndex = nextIndex;
+      K key = map.keyTable[nextIndex];
       advance();
       return key;
+    }
+
+    @Override
+    public void remove() {
+      doRemove();
     }
   }
 
@@ -424,8 +475,7 @@ public class FlixelMap<K, V> {
    *
    * @param <V> The value type.
    */
-  public static final class Values<V> extends MapIterator<Object, V>
-      implements Iterable<V>, Iterator<V> {
+  public static final class Values<V> extends MapIterator<Object, V> implements Iterable<V>, Iterator<V> {
 
     @SuppressWarnings("unchecked")
     Values(FlixelMap<?, V> map) {
@@ -447,9 +497,15 @@ public class FlixelMap<K, V> {
       if (!hasNext) {
         throw new NoSuchElementException();
       }
-      V value = map.valueTable[index];
+      currentIndex = nextIndex;
+      V value = map.valueTable[nextIndex];
       advance();
       return value;
+    }
+
+    @Override
+    public void remove() {
+      doRemove();
     }
   }
 }

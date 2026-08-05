@@ -12,7 +12,7 @@
  *   <li>Scaling: {@link org.flixelgdx.FlixelGame FlixelGame} passes {@code elapsed} times {@link org.flixelgdx.Flixel#timeScale Flixel.timeScale} into
  *     {@link org.flixelgdx.util.timer.FlixelTimerManager#update(float) FlixelTimerManager.update(float)}.</li>
  *   <li>Pooled instances: do not store {@link org.flixelgdx.util.timer.FlixelTimer FlixelTimer} references across {@link org.flixelgdx.util.timer.FlixelTimer#cancel() FlixelTimer.cancel()} or completion;
- *     the manager returns them to an internal {@link com.badlogic.gdx.utils.Pool}.</li>
+ *     the manager returns them to an internal {@link org.flixelgdx.collections.FlixelPool}.</li>
  * </ul>
  *
  * @see org.flixelgdx.util.timer.FlixelTimer

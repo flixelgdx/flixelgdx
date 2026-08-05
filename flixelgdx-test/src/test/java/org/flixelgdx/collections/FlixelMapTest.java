@@ -46,7 +46,7 @@ class FlixelMapTest {
     assertEquals(1, map.get("a"));
     assertEquals(1, map.put("a", 2));
     assertEquals(2, map.get("a"));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
   }
 
   @Test
@@ -66,7 +66,7 @@ class FlixelMapTest {
     assertEquals(1, map.remove("a"));
     assertFalse(map.containsKey("a"));
     assertNull(map.remove("a"));
-    assertEquals(0, map.size());
+    assertEquals(0, map.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class FlixelMapTest {
     map.put("a", 1);
     map.put("b", 2);
     map.clear();
-    assertEquals(0, map.size());
+    assertEquals(0, map.getSize());
     assertTrue(map.isEmpty());
     assertFalse(map.containsKey("a"));
   }
@@ -149,7 +149,7 @@ class FlixelMapTest {
       } else {
         assertEquals(ref.get(key), ours.get(key));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
 
     for (int key = 0; key < 500; key++) {

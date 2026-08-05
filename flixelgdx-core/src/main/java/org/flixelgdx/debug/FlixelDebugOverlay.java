@@ -28,16 +28,14 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Disposable;
-import com.badlogic.gdx.utils.ObjectMap;
-import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -92,14 +90,14 @@ import java.util.function.Consumer;
  *   <li>Caches FPS, heap, native and object counters as primitives and only refreshes them every
  *       {@value #STATS_UPDATE_INTERVAL} seconds.</li>
  *   <li>Keeps log entries as {@link BufferedLogLine} records pooled across frames; the renderer
- *       receives the level, tag, and message via {@link #copyLogBuffer(Array)} without producing
+ *       receives the level, tag, and message via {@link #copyLogBuffer(FlixelArray)} without producing
  *       any markup string.</li>
  *   <li>Refreshes watch entries at 10Hz into reusable {@link FlixelString} buffers
- *       ({@link FlixelDebugWatchManager#fillWatchEntries(Array, Array)}).</li>
+ *       ({@link FlixelDebugWatchManager#fillWatchEntries(FlixelArray, FlixelArray)}).</li>
  *   <li>Reuses {@link CachedTrackerBlock} instances across rebuilds.</li>
  * </ul>
  */
-public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable, Disposable {
+public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestroyable {
 
   /** Seconds between automatic refreshes of cached primitive stats while the overlay is visible. */
   protected static final float STATS_UPDATE_INTERVAL = 0.5f;
@@ -184,21 +182,21 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected float watchRefreshTimer = 0f;
 
   /** Cached watch keys refreshed at {@value #WATCH_REFRESH_INTERVAL}s; buffers are reused across refreshes. */
-  protected final Array<FlixelString> cachedWatchKeys = new Array<>();
+  protected final FlixelArray<FlixelString> cachedWatchKeys = new FlixelArray<>();
 
   /** Cached watch values refreshed at {@value #WATCH_REFRESH_INTERVAL}s; buffers are reused across refreshes. */
-  protected final Array<FlixelString> cachedWatchValues = new Array<>();
+  protected final FlixelArray<FlixelString> cachedWatchValues = new FlixelArray<>();
 
-  protected final Array<CachedTrackerBlock> cachedTrackerBlocks = new Array<>();
+  protected final FlixelArray<CachedTrackerBlock> cachedTrackerBlocks = new FlixelArray<>();
 
   /** Pool of tracker blocks between rebuilds to avoid reallocating block objects. */
-  private final Array<CachedTrackerBlock> cachedTrackerBlockPool = new Array<>();
+  private final FlixelArray<CachedTrackerBlock> cachedTrackerBlockPool = new FlixelArray<>();
 
   /** Latest log lines, oldest first; bounded by {@link FlixelLogger#MAX_LOG_ENTRIES}. */
   protected final Deque<BufferedLogLine> logBuffer = new ArrayDeque<>();
 
   /** Pool of {@link BufferedLogLine} instances reused as the buffer rolls over. */
-  private final Array<BufferedLogLine> logLinePool = new Array<>();
+  private final FlixelArray<BufferedLogLine> logLinePool = new FlixelArray<>();
 
   private final Consumer<FlixelLogEntry> logListener = this::onLogEntry;
 
@@ -223,7 +221,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   private boolean drawDebug = false;
 
-  /** Prevents double-dispose if {@link #dispose()} and {@link #destroy()} are both used. */
+  /** Guards against {@link #destroy()} running its teardown more than once. */
   private boolean destroyed = false;
 
   /** Constructs the shared debug overlay state. Subclasses should call this before wiring platform UI. */
@@ -265,7 +263,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /** Returns the camera currently selected by Alt+arrow cycling, clamped to a valid index. */
   public final int getInspectCameraIndex() {
-    Array<FlixelCamera> cams = Flixel.cameras;
+    FlixelArray<FlixelCamera> cams = Flixel.cameras;
     int n = (cams != null) ? cams.size : 0;
     if (n == 0) {
       return -1;
@@ -384,7 +382,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
-      Array<FlixelBatch> extra = mgr.getTrackedBatches();
+      FlixelArray<FlixelBatch> extra = mgr.getTrackedBatches();
       for (int i = 0, n = extra.size; i < n; i++) {
         FlixelBatch b = extra.get(i);
         if (b != null) {
@@ -529,7 +527,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (Flixel.mouse == null) {
       return;
     }
-    Array<FlixelCamera> cams = Flixel.cameras;
+    FlixelArray<FlixelCamera> cams = Flixel.cameras;
     if (cams == null || cams.size == 0) {
       return;
     }
@@ -603,7 +601,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
 
-    Array<FlixelCamera> cams = Flixel.cameras;
+    FlixelArray<FlixelCamera> cams = Flixel.cameras;
     if (cams == null || cams.size == 0) {
       return;
     }
@@ -721,7 +719,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   @Nullable
-  private FlixelObject pickRecursive(@Nullable SnapshotArray<?> members, @NotNull FlixelCamera cam,
+  private FlixelObject pickRecursive(@Nullable FlixelArray<?> members, @NotNull FlixelCamera cam,
       float viewX, float viewY) {
     if (members == null || members.size == 0) {
       return null;
@@ -738,7 +736,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
           // Recurse into containers and ONLY return leaf hits. The group's own FlixelObject
           // bounds (for example FlixelSpriteGroup) span all members; testing it would steal
           // clicks from individual children.
-          SnapshotArray<?> nested = group.getMembers();
+          FlixelArray<?> nested = group.getMembers();
           if (nested != null) {
             FlixelObject nestedHit = pickRecursive(nested, cam, viewX, viewY);
             if (nestedHit != null) {
@@ -882,7 +880,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
-      Array<FlixelBatch> extra = mgr.getTrackedBatches();
+      FlixelArray<FlixelBatch> extra = mgr.getTrackedBatches();
       for (int i = 0, n = extra.size; i < n; i++) {
         FlixelBatch b = extra.get(i);
         if (b != null) {
@@ -923,7 +921,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (Flixel.debug == null) {
       return;
     }
-    Array<FlixelDebugTrackerEntry> entries = Flixel.debug.getTrackerEntries();
+    FlixelArray<FlixelDebugTrackerEntry> entries = Flixel.debug.getTrackerEntries();
     if (entries == null || entries.size == 0) {
       return;
     }
@@ -932,18 +930,18 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       if (entry == null) {
         continue;
       }
-      ObjectMap<String, String> values = entry.getTrackedValues();
-      if (values == null || values.size == 0) {
+      FlixelMap<String, String> values = entry.getTrackedValues();
+      if (values == null || values.getSize() == 0) {
         continue;
       }
       CachedTrackerBlock block = obtainTrackerBlock();
       block.name.clear();
       block.name.concat(entry.getName());
-      int n = values.size;
+      int n = values.getSize();
       block.ensurePairCount(n);
-      // ObjectMap reuses its entries iterator, so this loop stays allocation-free.
+      // FlixelMap reuses its entries iterator, so this loop stays allocation-free.
       int i = 0;
-      for (ObjectMap.Entry<String, String> pair : values) {
+      for (FlixelMap.Entry<String, String> pair : values.entries()) {
         block.keys[i].clear();
         block.keys[i].concat(pair.key != null ? pair.key : "");
         block.values[i].clear();
@@ -979,7 +977,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * @param output Destination array. Cleared (resized) to match the current buffer size.
    * @return The number of log lines written.
    */
-  protected final int copyLogBuffer(@NotNull Array<BufferedLogLine> output) {
+  protected final int copyLogBuffer(@NotNull FlixelArray<BufferedLogLine> output) {
     synchronized (logBuffer) {
       int n = logBuffer.size();
       while (output.size < n) {
@@ -1004,11 +1002,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (shapeRenderer != null) {
       shapeRenderer.dispose();
     }
-  }
-
-  @Override
-  public final void dispose() {
-    destroy();
   }
 
   /** Default key codes for the debug overlay. */

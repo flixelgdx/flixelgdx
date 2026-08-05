@@ -28,9 +28,9 @@ import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.ControllerMapping;
 import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.IntArray;
 
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
@@ -95,7 +95,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   private final boolean[][] previousButtons = new boolean[MAX_GAMEPADS][MAX_BUTTONS];
 
   private final float[][] axisValues = new float[MAX_GAMEPADS][MAX_AXES];
-  private final IntArray[] pressedOrder = new IntArray[MAX_GAMEPADS];
+  private final FlixelIntArray[] pressedOrder = new FlixelIntArray[MAX_GAMEPADS];
 
   @Nullable
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
@@ -116,7 +116,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
 
   public FlixelGamepadInputManager() {
     for (int i = 0; i < MAX_GAMEPADS; i++) {
-      pressedOrder[i] = new IntArray();
+      pressedOrder[i] = new FlixelIntArray();
     }
   }
 
@@ -530,7 +530,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     if (c == null) {
       return FlixelGamepadInput.NONE;
     }
-    IntArray order = pressedOrder[gamepadId];
+    FlixelIntArray order = pressedOrder[gamepadId];
     if (order.size == 0) {
       return FlixelGamepadInput.NONE;
     }

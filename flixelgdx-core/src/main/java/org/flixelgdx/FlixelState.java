@@ -25,8 +25,8 @@ package org.flixelgdx;
 
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.utils.SnapshotArray;
 
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
@@ -179,7 +179,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
       closing.closeCallback.run();
     }
     if (destroySubStates) {
-      closing.dispose();
+      closing.destroy();
     }
   }
 
@@ -334,7 +334,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
 
   @Override
   public String toString() {
-    SnapshotArray<?> m = getMembers();
+    FlixelArray<?> m = getMembers();
     return "FlixelState(members=" + (m != null ? m.size : 0) + ", subState=" + subState + ")";
   }
 }

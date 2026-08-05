@@ -23,10 +23,9 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
-
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelPoint;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelQuadPath extends FlixelMotion {
 
-  private final Array<Vector2> points = new Array<>();
+  private final FlixelArray<FlixelPoint> points = new FlixelArray<>();
   private float[] cumulativeT = new float[8];
   private float[] segmentLen = new float[8];
   private int numSegs;
@@ -55,7 +54,7 @@ public class FlixelQuadPath extends FlixelMotion {
   }
 
   public FlixelQuadPath addPoint(float x, float y) {
-    points.add(new Vector2(x, y));
+    points.add(new FlixelPoint(x, y));
     return this;
   }
 
@@ -63,9 +62,9 @@ public class FlixelQuadPath extends FlixelMotion {
     updatePath();
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(totalDistance / speed);
       }
     }
@@ -88,15 +87,15 @@ public class FlixelQuadPath extends FlixelMotion {
     ensureCap(numSegs + 1);
     totalDistance = 0f;
     for (int i = 0; i < numSegs; i++) {
-      Vector2 a = points.get(i * 2);
-      Vector2 b = points.get(i * 2 + 1);
-      Vector2 c = points.get(i * 2 + 2);
+      FlixelPoint a = points.get(i * 2);
+      FlixelPoint b = points.get(i * 2 + 1);
+      FlixelPoint c = points.get(i * 2 + 2);
       float len = approxQuadLength(a, b, c);
       segmentLen[i] = len;
       totalDistance += len;
     }
     if (totalDistance <= 0f) {
-      totalDistance = MathUtils.FLOAT_ROUNDING_ERROR;
+      totalDistance = FlixelMathUtil.FLOAT_ROUNDING_ERROR;
     }
     float acc = 0f;
     cumulativeT[0] = 0f;
@@ -106,14 +105,14 @@ public class FlixelQuadPath extends FlixelMotion {
     }
   }
 
-  private static float approxQuadLength(Vector2 a, Vector2 b, Vector2 c) {
-    return a.dst(b) + b.dst(c) + a.dst(c) * 0.5f;
+  private static float approxQuadLength(FlixelPoint a, FlixelPoint b, FlixelPoint c) {
+    return a.distanceTo(b) + b.distanceTo(c) + a.distanceTo(c) * 0.5f;
   }
 
   @Override
   public FlixelTween start() {
     if (points.size > 0) {
-      Vector2 p = points.first();
+      FlixelPoint p = points.first();
       motionX = p.x;
       motionY = p.y;
     }
@@ -126,7 +125,7 @@ public class FlixelQuadPath extends FlixelMotion {
       return;
     }
     float pathT = backward ? 1f - scale : scale;
-    pathT = MathUtils.clamp(pathT, 0f, 1f);
+    pathT = FlixelMathUtil.clamp(pathT, 0f, 1f);
     int seg = 0;
     while (seg < numSegs - 1 && pathT > cumulativeT[seg + 1]) {
       seg++;
@@ -134,17 +133,17 @@ public class FlixelQuadPath extends FlixelMotion {
     float t0 = cumulativeT[seg];
     float t1 = cumulativeT[seg + 1];
     float u = (t1 - t0) > 1e-8f ? (pathT - t0) / (t1 - t0) : 0f;
-    u = MathUtils.clamp(u, 0f, 1f);
-    Vector2 a = points.get(seg * 2);
-    Vector2 b = points.get(seg * 2 + 1);
-    Vector2 c = points.get(seg * 2 + 2);
+    u = FlixelMathUtil.clamp(u, 0f, 1f);
+    FlixelPoint a = points.get(seg * 2);
+    FlixelPoint b = points.get(seg * 2 + 1);
+    FlixelPoint c = points.get(seg * 2 + 2);
     float s = u;
     float r = 1f - s;
     motionX = a.x * r * r + b.x * 2f * r * s + c.x * s * s;
     motionY = a.y * r * r + b.y * 2f * r * s + c.y * s * s;
   }
 
-  public Array<Vector2> getPoints() {
+  public FlixelArray<FlixelPoint> getPoints() {
     return points;
   }
 

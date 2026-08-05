@@ -23,10 +23,9 @@
  */
 package org.flixelgdx.util.timer;
 
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Pool;
-
 import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelPool;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,15 +38,15 @@ import org.jetbrains.annotations.Nullable;
  * <p>Use {@link FlixelTimer#getGlobalManager()} with {@link org.flixelgdx.FlixelGame FlixelGame} (already wired) or
  * construct a dedicated manager for isolated groups (for example add it to a {@link org.flixelgdx.FlixelState FlixelState}).
  *
- * <p>Timers are backed by a {@link Pool} to avoid per-delay allocations. {@link #start(float, FlixelTimerListener, int)}
+ * <p>Timers are backed by a {@link FlixelPool} to avoid per-delay allocations. {@link #start(float, FlixelTimerListener, int)}
  * obtains from the pool; {@link FlixelTimer#cancel()} and completed runs return instances to the pool.
  */
 public class FlixelTimerManager extends FlixelBasic {
 
   /** Timers currently stepped by {@link #update(float)}. Named {@code activeTimers} to avoid clashing with {@link #active}. */
-  protected final Array<FlixelTimer> activeTimers = new Array<>(false, 32);
+  protected final FlixelArray<FlixelTimer> activeTimers = new FlixelArray<>(false, 32);
 
-  protected final Pool<FlixelTimer> pool = new Pool<>(32) {
+  protected final FlixelPool<FlixelTimer> pool = new FlixelPool<>(32) {
     @Override
     protected FlixelTimer newObject() {
       return new FlixelTimer();

@@ -23,20 +23,31 @@
  */
 package org.flixelgdx.collections;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 
 /**
- * A growable list of primitive {@code char} values.
+ * A growable buffer of primitive {@code char} values that doubles as a mutable,
+ * allocation-friendly text builder.
  *
- * <p>This is the framework's own replacement for libGDX's {@code CharArray}.
- * Like {@link FlixelIntArray}, it stores primitives directly to avoid boxing,
- * which suits building up text and glyph buffers. The backing array
- * {@link #items} and count {@link #size} are public for zero-allocation indexed
- * iteration.
+ * <p>This is the framework's own replacement for libGDX's {@code CharArray}. Like
+ * {@link FlixelIntArray} it stores primitives directly (no boxing), but it also
+ * implements {@link CharSequence} and {@link Appendable} so it can stand in for a
+ * {@link StringBuilder} in hot paths. That is exactly what on-screen text needs:
+ * numbers and labels that change every frame can be rebuilt in place with the
+ * {@code append} family instead of allocating a fresh {@code String} each time,
+ * which keeps the garbage collector quiet.
+ *
+ * <p>Integer appends ({@link #append(int)}, {@link #append(long)}) write digits
+ * directly into the backing {@code char[]} with no intermediate allocation.
+ *
+ * <p>The backing array {@link #items} and count {@link #size} are public for
+ * zero-allocation indexed iteration.
  *
  * <p>This class is not thread safe.
  */
-public class FlixelCharArray {
+public class FlixelCharArray implements CharSequence, Appendable {
 
   private static final int DEFAULT_CAPACITY = 16;
 
@@ -53,14 +64,14 @@ public class FlixelCharArray {
   public boolean ordered;
 
   /**
-   * Creates an ordered list with the default initial capacity.
+   * Creates an ordered buffer with the default initial capacity.
    */
   public FlixelCharArray() {
     this(true, DEFAULT_CAPACITY);
   }
 
   /**
-   * Creates an ordered list with the given initial capacity.
+   * Creates an ordered buffer with the given initial capacity.
    *
    * @param capacity The initial backing-array size.
    */
@@ -69,7 +80,7 @@ public class FlixelCharArray {
   }
 
   /**
-   * Creates a list with the given ordering and initial capacity.
+   * Creates a buffer with the given ordering and initial capacity.
    *
    * @param ordered Whether removals preserve order.
    * @param capacity The initial backing-array size.
@@ -80,9 +91,9 @@ public class FlixelCharArray {
   }
 
   /**
-   * Appends a value to the end of the list.
+   * Adds a single character to the end of the buffer.
    *
-   * @param value The value to add.
+   * @param value The character to add.
    */
   public void add(char value) {
     if (size == items.length) {
@@ -141,10 +152,195 @@ public class FlixelCharArray {
   }
 
   /**
-   * Removes and returns the last value (a stack pop).
+   * Appends a single character.
    *
-   * @return The former last value.
-   * @throws IndexOutOfBoundsException If the list is empty.
+   * @param value The character to append.
+   * @return This buffer, for chaining.
+   */
+  @Override
+  public @NotNull FlixelCharArray append(char value) {
+    add(value);
+    return this;
+  }
+
+  /**
+   * Appends the characters of a sequence (such as a {@link String}).
+   *
+   * @param sequence The characters to append; a {@code null} is written as the
+   *     literal text {@code "null"}.
+   * @return This buffer, for chaining.
+   */
+  @Override
+  public @NotNull FlixelCharArray append(CharSequence sequence) {
+    CharSequence value = sequence == null ? "null" : sequence;
+    return append(value, 0, value.length());
+  }
+
+  /**
+   * Appends part of a character sequence.
+   *
+   * @param sequence The source sequence; a {@code null} is written as
+   *     {@code "null"}.
+   * @param start The index of the first character to append.
+   * @param end The index just past the last character to append.
+   * @return This buffer, for chaining.
+   */
+  @Override
+  public @NotNull FlixelCharArray append(CharSequence sequence, int start, int end) {
+    CharSequence value = sequence == null ? "null" : sequence;
+    ensureCapacity(size + (end - start));
+    for (int i = start; i < end; i++) {
+      items[size++] = value.charAt(i);
+    }
+    return this;
+  }
+
+  /**
+   * Appends every character of an array.
+   *
+   * @param chars The characters to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(char[] chars) {
+    ensureCapacity(size + chars.length);
+    System.arraycopy(chars, 0, items, size, chars.length);
+    size += chars.length;
+    return this;
+  }
+
+  /**
+   * Appends the base-10 text of an {@code int} with no intermediate allocation.
+   *
+   * @param value The value to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(int value) {
+    return append((long) value);
+  }
+
+  /**
+   * Appends the base-10 text of a {@code long} with no intermediate allocation.
+   *
+   * @param value The value to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(long value) {
+    if (value == Long.MIN_VALUE) {
+      return append("-9223372036854775808");
+    }
+    if (value < 0) {
+      add('-');
+      value = -value;
+    }
+    int digitsStart = size;
+    // Write digits least-significant first, then reverse them in place.
+    do {
+      add((char) ('0' + (int) (value % 10)));
+      value /= 10;
+    } while (value != 0);
+    for (int i = digitsStart, j = size - 1; i < j; i++, j--) {
+      char tmp = items[i];
+      items[i] = items[j];
+      items[j] = tmp;
+    }
+    return this;
+  }
+
+  /**
+   * Appends the text of a {@code float}.
+   *
+   * <p>This convenience path uses {@link Float#toString(float)} and therefore
+   * allocates. For per-frame numeric display prefer the allocation-free
+   * {@code FlixelStringUtil} float helpers.
+   *
+   * @param value The value to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(float value) {
+    return append(Float.toString(value));
+  }
+
+  /**
+   * Appends the text of a {@code double}.
+   *
+   * @param value The value to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(double value) {
+    return append(Double.toString(value));
+  }
+
+  /**
+   * Appends {@code "true"} or {@code "false"}.
+   *
+   * @param value The value to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(boolean value) {
+    return append(value ? "true" : "false");
+  }
+
+  /**
+   * Appends the text of an object via {@link String#valueOf(Object)} (so a
+   * {@code null} is written as {@code "null"}).
+   *
+   * @param value The object to append.
+   * @return This buffer, for chaining.
+   */
+  public @NotNull FlixelCharArray append(Object value) {
+    return append(String.valueOf(value));
+  }
+
+  /**
+   * Ensures the backing array can hold at least the given number of characters
+   * without another grow.
+   *
+   * @param capacity The minimum capacity to guarantee.
+   */
+  public void ensureCapacity(int capacity) {
+    if (capacity > items.length) {
+      grow(capacity);
+    }
+  }
+
+  /**
+   * Sets the live length, growing the backing array if needed. New positions are
+   * left with unspecified contents.
+   *
+   * @param newSize The new value of {@link #size}.
+   * @return The backing array.
+   */
+  public char[] setSize(int newSize) {
+    ensureCapacity(newSize);
+    size = newSize;
+    return items;
+  }
+
+  /**
+   * Trims the backing array down to exactly {@link #size}.
+   *
+   * @return The backing array after trimming.
+   */
+  public char[] shrink() {
+    if (items.length != size) {
+      items = Arrays.copyOf(items, size);
+    }
+    return items;
+  }
+
+  /**
+   * Trims the backing array down to exactly {@link #size} (an alias for
+   * {@link #shrink()}).
+   */
+  public void trimToSize() {
+    shrink();
+  }
+
+  /**
+   * Removes and returns the last character (a stack pop).
+   *
+   * @return The former last character.
+   * @throws IndexOutOfBoundsException If the buffer is empty.
    */
   public char pop() {
     if (size == 0) {
@@ -154,10 +350,10 @@ public class FlixelCharArray {
   }
 
   /**
-   * Returns the last value without removing it.
+   * Returns the last character without removing it.
    *
-   * @return The value at index {@code size - 1}.
-   * @throws IndexOutOfBoundsException If the list is empty.
+   * @return The character at index {@code size - 1}.
+   * @throws IndexOutOfBoundsException If the buffer is empty.
    */
   public char peek() {
     if (size == 0) {
@@ -167,7 +363,7 @@ public class FlixelCharArray {
   }
 
   /**
-   * Reports whether the list has no values.
+   * Reports whether the buffer has no characters.
    *
    * @return {@code true} if {@link #size} is 0.
    */
@@ -176,28 +372,52 @@ public class FlixelCharArray {
   }
 
   /**
-   * Removes every value.
+   * Removes every character.
    */
   public void clear() {
     size = 0;
   }
 
+  @Override
+  public int length() {
+    return size;
+  }
+
+  @Override
+  public char charAt(int index) {
+    if (index >= size) {
+      throw new IndexOutOfBoundsException("index " + index + " >= size " + size);
+    }
+    return items[index];
+  }
+
+  @Override
+  public @NotNull CharSequence subSequence(int start, int end) {
+    return new String(items, start, end - start);
+  }
+
   /**
-   * Returns the live values as a {@link String}.
+   * Returns the live characters as a {@link String} (an alias for
+   * {@link #toString()}).
    *
    * @return A string built from the first {@link #size} characters.
    */
   public String toStringValue() {
-    return new String(items, 0, size);
+    return toString();
   }
 
   /**
-   * Returns a trimmed copy of the live values.
+   * Returns a trimmed copy of the live characters.
    *
    * @return A new array of length {@link #size}.
    */
   public char[] toArray() {
     return Arrays.copyOf(items, size);
+  }
+
+  @Override
+  public String toString() {
+    return new String(items, 0, size);
   }
 
   private void grow(int minCapacity) {

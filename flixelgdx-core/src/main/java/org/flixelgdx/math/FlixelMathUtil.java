@@ -39,10 +39,6 @@ package org.flixelgdx.math;
  * where being off by a fraction of a degree is invisible. When you need full
  * precision, call {@link Math#sin(double)} directly instead.
  *
- * <p>Randomness deliberately does not live here; it lives in
- * {@link FlixelRandom} (exposed globally as {@code Flixel.random}) so it can be
- * seeded for deterministic replays and procedural generation.
- *
  * <p>Example:
  *
  * <pre>{@code
@@ -81,6 +77,12 @@ public final class FlixelMathUtil {
    */
   public static final float RAD_TO_DEG = 180f / PI;
 
+  /**
+   * A tiny tolerance used as the default when comparing floats for near
+   * equality (see {@link #isEqual(float, float)}).
+   */
+  public static final float FLOAT_ROUNDING_ERROR = 0.000001f;
+
   private static final int SIN_BITS = 14;
   private static final int SIN_MASK = ~(-1 << SIN_BITS);
   private static final int SIN_COUNT = SIN_MASK + 1;
@@ -116,6 +118,43 @@ public final class FlixelMathUtil {
    */
   public static float cos(float radians) {
     return SIN_TABLE[(int) ((radians + HALF_PI) * RAD_TO_INDEX) & SIN_MASK];
+  }
+
+  /**
+   * Returns the sine of an angle given in degrees, using the fast lookup table.
+   *
+   * @param degrees The angle, in degrees.
+   * @return The approximate sine of {@code degrees}, in the range -1 to 1.
+   */
+  public static float sinDeg(float degrees) {
+    return sin(degrees * DEG_TO_RAD);
+  }
+
+  /**
+   * Returns the cosine of an angle given in degrees, using the fast lookup
+   * table.
+   *
+   * @param degrees The angle, in degrees.
+   * @return The approximate cosine of {@code degrees}, in the range -1 to 1.
+   */
+  public static float cosDeg(float degrees) {
+    return cos(degrees * DEG_TO_RAD);
+  }
+
+  /**
+   * Returns the angle, in radians, of the vector from the origin to
+   * {@code (x, y)}.
+   *
+   * <p>This is a thin, full-precision wrapper over {@link Math#atan2(double,
+   * double)} that returns a {@code float}, provided for convenience alongside
+   * the rest of the framework's angle helpers.
+   *
+   * @param y The vertical component.
+   * @param x The horizontal component.
+   * @return The angle in radians, in the range -pi to pi.
+   */
+  public static float atan2(float y, float x) {
+    return (float) Math.atan2(y, x);
   }
 
   /**
@@ -189,8 +228,7 @@ public final class FlixelMathUtil {
    * @param value The current value.
    * @param target The value to move toward.
    * @param maxDelta The largest step allowed this call (should be non-negative).
-   * @return The value stepped toward {@code target}, clamped so it never passes
-   *     it.
+   * @return The value stepped toward {@code target}, clamped so it never passes it.
    */
   public static float approach(float value, float target, float maxDelta) {
     if (value < target) {
@@ -258,6 +296,18 @@ public final class FlixelMathUtil {
    */
   public static int signOf(float value) {
     return Float.compare(value, 0f);
+  }
+
+  /**
+   * Reports whether two floats are equal within the default tolerance
+   * {@link #FLOAT_ROUNDING_ERROR}.
+   *
+   * @param a The first value.
+   * @param b The second value.
+   * @return {@code true} if the values are nearly equal.
+   */
+  public static boolean isEqual(float a, float b) {
+    return Math.abs(a - b) <= FLOAT_ROUNDING_ERROR;
   }
 
   /**

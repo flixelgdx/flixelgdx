@@ -23,10 +23,9 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.utils.ObjectMap;
-import com.badlogic.gdx.utils.ObjectSet;
-
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.collections.FlixelSet;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.util.signal.FlixelSignal;
@@ -114,7 +113,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
 
   /** Registered states, keyed by their logical name. */
   @NotNull
-  private final ObjectMap<String, State> states = new ObjectMap<>();
+  private final FlixelMap<String, State> states = new FlixelMap<>();
 
   /** Listener kept so it can be detached again in {@link #destroy()}. */
   @NotNull
@@ -381,7 +380,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
 
     /** Allowed transition targets, or {@code null} when transitions out of this state are unrestricted. */
     @Nullable
-    private ObjectSet<String> allowed;
+    private FlixelSet<String> allowed;
 
     /** Seconds to hold the final frame before auto-advancing. {@code 0} advances immediately. */
     private float delay;
@@ -468,7 +467,7 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
      */
     public State allowTo(@NotNull String... targets) {
       if (allowed == null) {
-        allowed = new ObjectSet<>();
+        allowed = new FlixelSet<>();
       }
       for (String target : targets) {
         allowed.add(target);

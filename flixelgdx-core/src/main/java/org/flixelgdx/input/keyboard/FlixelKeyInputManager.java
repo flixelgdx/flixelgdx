@@ -27,10 +27,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.utils.IntArray;
-import com.badlogic.gdx.utils.IntSet;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelIntArray;
+import org.flixelgdx.collections.FlixelIntSet;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.input.FlixelInputProcessorManager;
 
@@ -56,13 +56,13 @@ import org.flixelgdx.input.FlixelInputProcessorManager;
 public class FlixelKeyInputManager implements FlixelInputProcessorManager {
 
   /** Keys currently pressed (updated only by {@code this} manager's {@link InputProcessor}). */
-  private final IntSet currentPressedKeys = new IntSet();
+  private final FlixelIntSet currentPressedKeys = new FlixelIntSet();
 
   /** Keys that were pressed last frame, used to compute {@link #justPressed(int)} and {@link #justReleased(int)}. */
-  private final IntSet previousPressedKeys = new IntSet();
+  private final FlixelIntSet previousPressedKeys = new FlixelIntSet();
 
   /** Order keys were pressed (chronological), so {@link #firstPressed()} returns the first key held. */
-  private final IntArray pressedOrder = new IntArray();
+  private final FlixelIntArray pressedOrder = new FlixelIntArray();
 
   /** Input processor that tracks key state. */
   private final InputProcessor inputProcessor = new InputProcessor() {
@@ -199,7 +199,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      return currentPressedKeys.size > 0;
+      return currentPressedKeys.size() > 0;
     }
     if (!isValidKeycode(key)) {
       return false;
@@ -236,7 +236,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
+      for (FlixelIntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
         int pressedKey = it.next();
         if (!previousPressedKeys.contains(pressedKey)) {
           return true;
@@ -276,7 +276,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
+      for (FlixelIntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
         int pressedKey = it.next();
         if (!currentPressedKeys.contains(pressedKey)) {
           return true;
@@ -618,7 +618,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     if (isCapturedByDebugUI() || !enabled) {
       return FlixelKey.NONE;
     }
-    for (IntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
+    for (FlixelIntSet.IntSetIterator it = currentPressedKeys.iterator(); it.hasNext;) {
       int key = it.next();
       if (!previousPressedKeys.contains(key)) {
         return key;
@@ -637,7 +637,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
     if (isCapturedByDebugUI() || !enabled) {
       return FlixelKey.NONE;
     }
-    for (IntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
+    for (FlixelIntSet.IntSetIterator it = previousPressedKeys.iterator(); it.hasNext;) {
       int key = it.next();
       if (!currentPressedKeys.contains(key)) {
         return key;

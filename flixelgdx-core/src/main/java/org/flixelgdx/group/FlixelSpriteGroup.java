@@ -25,13 +25,13 @@ package org.flixelgdx.group;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelPoint;
+import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +76,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private static final Random RANDOM = new Random();
 
   /** The members belonging to this group. */
-  protected final SnapshotArray<FlixelSprite> members;
+  protected final FlixelArray<FlixelSprite> members;
 
   /** Maximum members allowed. When {@code 0}, the group can grow without limit. */
   protected int maxSize;
@@ -85,7 +85,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private float rotationRadius;
 
   /** Reusable rectangle for internal calculations that would otherwise allocate. */
-  private final Rectangle tmpBoundsRect = new Rectangle();
+  private final FlixelRect tmpBoundsRect = new FlixelRect();
 
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
   private int facing = FlixelDirectionFlags.RIGHT;
@@ -108,7 +108,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     this.maxSize = Math.max(0, maxSize);
     this.rotationRadius = rotationRadius;
     super.setAngle(rotation);
-    members = new SnapshotArray<>(FlixelSprite[]::new);
+    members = new FlixelArray<>(FlixelSprite[]::new);
   }
 
   @Override
@@ -458,7 +458,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       return;
     }
     preAdd(sprite);
-    index = MathUtils.clamp(index, 0, members.size);
+    index = FlixelMathUtil.clamp(index, 0, members.size);
     members.insert(index, sprite);
   }
 
@@ -597,7 +597,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   @Override
   @NotNull
-  public SnapshotArray<FlixelSprite> getMembers() {
+  public FlixelArray<FlixelSprite> getMembers() {
     return members;
   }
 
@@ -617,7 +617,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (members.size == 0) {
       return null;
     }
-    startIndex = MathUtils.clamp(startIndex, 0, members.size - 1);
+    startIndex = FlixelMathUtil.clamp(startIndex, 0, members.size - 1);
     if (length <= 0) {
       length = members.size;
     }
@@ -725,9 +725,9 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param out An optional output rectangle. If {@code null}, a new one is created.
    * @return The bounding rectangle.
    */
-  public Rectangle getBounds(Rectangle out) {
+  public FlixelRect getBounds(FlixelRect out) {
     if (out == null) {
-      out = new Rectangle();
+      out = new FlixelRect();
     }
     if (members.size == 0) {
       out.set(getX(), getY(), 0, 0);
@@ -769,11 +769,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param out An optional output vector. If {@code null}, a new one is created.
    * @return The midpoint of the group's bounds.
    */
-  public Vector2 getMidpoint(Vector2 out) {
+  public FlixelPoint getMidpoint(FlixelPoint out) {
     if (out == null) {
-      out = new Vector2();
+      out = new FlixelPoint();
     }
-    Rectangle bounds = getBounds(tmpBoundsRect);
+    FlixelRect bounds = getBounds(tmpBoundsRect);
     out.set(bounds.x + bounds.width / 2f, bounds.y + bounds.height / 2f);
     return out;
   }
@@ -909,8 +909,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * {@link RotationMode#ORBIT}.
    */
   private void orbitMembersAroundCenter(float angleDelta) {
-    float cos = MathUtils.cosDeg(angleDelta);
-    float sin = MathUtils.sinDeg(angleDelta);
+    float cos = FlixelMathUtil.cosDeg(angleDelta);
+    float sin = FlixelMathUtil.sinDeg(angleDelta);
 
     for (int i = 0, n = members.size; i < n; i++) {
       FlixelSprite s = members.get(i);
@@ -945,8 +945,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       }
 
       float angleDeg = getAngle() + angleStep * i;
-      float px = getX() + rotationRadius * MathUtils.cosDeg(angleDeg);
-      float py = getY() + rotationRadius * MathUtils.sinDeg(angleDeg);
+      float px = getX() + rotationRadius * FlixelMathUtil.cosDeg(angleDeg);
+      float py = getY() + rotationRadius * FlixelMathUtil.sinDeg(angleDeg);
       s.setPosition(px, py);
       s.setAngle(angleDeg);
     }
