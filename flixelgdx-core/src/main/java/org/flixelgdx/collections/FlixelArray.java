@@ -39,10 +39,12 @@ import java.util.NoSuchElementException;
  * snapshot section below), so there is one array type to learn for both plain
  * use and safe mutation during iteration.
  *
- * <p><b>Zero-allocation iteration.</b> The backing array {@link #items} and the
- * live element count {@link #size} are public on purpose. Hot loops should walk
- * them by index rather than using an iterator, which allocates nothing:
+ * <h2>Zero-allocation iteration</h2>
+ * It is a common and good practice to use index-based for-loops when iterating
+ * through an array. Doing this doesn't allocate garbage and keeps framerates
+ * stable throughout gameplay.
  *
+ * <p>Example:
  * <pre>{@code
  * for (int i = 0; i < list.size; i++) {
  *   Enemy e = list.items[i];
@@ -58,17 +60,17 @@ import java.util.NoSuchElementException;
  * FlixelArray<Enemy> enemies = new FlixelArray<>(Enemy[]::new);
  * }</pre>
  *
- * <p><b>Ordered vs. unordered.</b> An {@link #ordered} list keeps insertion
- * order and shifts elements down on removal. An unordered list may fill a
- * removed slot with the last element instead, making removal O(1) and ideal for
- * bags where order does not matter.
+ * <h2>Ordered vs. unordered</h2>
+ * An {@link #ordered} list keeps insertion order and shifts elements down on
+ * removal. An unordered list may fill a removed slot with the last element instead,
+ * making removal O(1) and ideal for bags where order does not matter.
  *
- * <p><b>Snapshot mode.</b> Modifying a list while a {@code for-each} loop walks
- * it normally corrupts the traversal. Wrap the loop in {@link #begin()} /
- * {@link #end()} to iterate a stable snapshot: any add or remove during the loop
- * transparently swaps in a fresh backing array, so the elements you are looping
- * over never shift under you. This is exactly what update loops need when
- * objects can spawn or destroy their neighbors mid-frame.
+ * <h2>Snapshot mode</h2>
+ * Modifying a list while a {@code for-each} loop walks it normally corrupts the
+ * traversal. Wrap the loop in {@link #begin()} / {@link #end()} to iterate a stable
+ * snapshot: any add or remove during the loop transparently swaps in a fresh backing
+ * array, so the elements you are looping over never shift under you. This is exactly
+ * what update loops need when objects can spawn or destroy their neighbors mid-frame.
  *
  * <p>This class is not thread safe.
  *

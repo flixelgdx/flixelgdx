@@ -73,7 +73,7 @@ import java.util.Objects;
  *
  * <h2>Matrix convention</h2>
  * Flash stores affines as six-element arrays {@code [a, b, c, d, tx, ty]} representing
- * {@code x' = a*x + c*y + tx}, {@code y' = b*x + d*y + ty}. an {@link FlixelAffine} uses the fields
+ * {@code x' = a*x + c*y + tx}, {@code y' = b*x + d*y + ty}. A {@link FlixelAffine} uses the fields
  * {@code m00, m01, m02, m10, m11, m12} with {@code x' = m00*x + m01*y + m02},
  * {@code y' = m10*x + m11*y + m12}, so the packing is:
  * <pre>

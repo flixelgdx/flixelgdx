@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# MIT License
-#
-# Copyright (c) 2026 stringdotjar
 #
 # Author tool that generates the primitive collection classes (and their unit
 # tests) in org.flixelgdx.collections from the templates under scripts/templates.
