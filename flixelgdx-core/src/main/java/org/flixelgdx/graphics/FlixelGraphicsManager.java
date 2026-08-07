@@ -62,8 +62,6 @@ public interface FlixelGraphicsManager {
   /**
    * Returns the shared sprite batch every drawable in the framework renders through.
    *
-   * <p>In Kotlin this reads as {@code Flixel.graphics.batch}.
-   *
    * @return The active batch, or {@code null} when no backend is present (headless or pre-startup).
    */
   @Nullable
