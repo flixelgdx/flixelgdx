@@ -49,7 +49,7 @@ import java.util.List;
  * <p>Example:
  *
  * <pre>{@code
- * FlixelBatch batch = Flixel.graphics.getBatch();      // reads as Flixel.graphics.batch in Kotlin
+ * FlixelBatch batch = Flixel.graphics.getBatch();
  * Flixel.graphics.setVSync(true);
  * int fps = Flixel.graphics.getFps();
  * }</pre>

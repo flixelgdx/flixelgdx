@@ -59,7 +59,7 @@ import java.util.Objects;
  * {@link FlixelAssetManager#clearNonPersist()}. Owned graphics always use
  * {@code persist = false} and are evicted at refcount zero regardless.
  */
-public final class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
+public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   @NotNull
   private final FlixelAssetManager assets;

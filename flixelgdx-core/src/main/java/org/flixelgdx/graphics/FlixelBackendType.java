@@ -70,5 +70,5 @@ public enum FlixelBackendType {
    * <p>This is reported by the safe default manager on headless, server, or not-yet-initialized
    * sessions, where drawing is a no-op.
    */
-  NOOP;
+  NOOP
 }
