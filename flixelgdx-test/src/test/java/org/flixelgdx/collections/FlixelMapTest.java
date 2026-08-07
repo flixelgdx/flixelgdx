@@ -53,9 +53,9 @@ class FlixelMapTest {
   void getMissingReturnsNullAndDefault() {
     FlixelMap<String, Integer> map = new FlixelMap<>();
     assertNull(map.get("missing"));
-    assertEquals(99, map.getOrDefault("missing", 99));
+    assertEquals(99, map.get("missing", 99));
     map.put("here", 5);
-    assertEquals(5, map.getOrDefault("here", 99));
+    assertEquals(5, map.get("here", 99));
   }
 
   @Test
