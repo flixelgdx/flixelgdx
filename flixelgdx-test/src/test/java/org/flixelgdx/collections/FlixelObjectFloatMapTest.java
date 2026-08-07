@@ -89,7 +89,7 @@ class FlixelObjectFloatMapTest {
         Float v = ref.get(key);
         assertEquals(v == null ? (float) -999 : v, ours.get(key, (float) -999), 1e-6f);
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

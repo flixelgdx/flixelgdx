@@ -42,8 +42,8 @@ import java.util.Arrays;
  * <p>Integer appends ({@link #append(int)}, {@link #append(long)}) write digits
  * directly into the backing {@code char[]} with no intermediate allocation.
  *
- * <p>The backing array {@link #items} and count {@link #size} are public for
- * zero-allocation indexed iteration.
+ * <p>The backing array {@link #getItems()} and count {@link #getSize()} are
+ * exposed for zero-allocation indexed iteration.
  *
  * <p>This class is not thread safe.
  */
@@ -52,16 +52,16 @@ public class FlixelCharArray implements CharSequence, Appendable {
   private static final int DEFAULT_CAPACITY = 16;
 
   /**
-   * The backing array. Only the first {@link #size} entries are live. Safe to
-   * read by index in hot loops.
+   * The backing array. Only the first {@link #getSize()} entries are live. Safe
+   * to read by index in hot loops.
    */
-  public char[] items;
+  private char[] items;
 
   /** The number of live values. */
-  public int size;
+  private int size;
 
-  /** Whether removals preserve order (see {@link FlixelArray#ordered}). */
-  public boolean ordered;
+  /** Whether removals preserve order (see {@link FlixelArray#isOrdered()}). */
+  private boolean ordered;
 
   /**
    * Creates an ordered buffer with the default initial capacity.
@@ -307,7 +307,7 @@ public class FlixelCharArray implements CharSequence, Appendable {
    * Sets the live length, growing the backing array if needed. New positions are
    * left with unspecified contents.
    *
-   * @param newSize The new value of {@link #size}.
+   * @param newSize The new value of {@link #getSize()}.
    * @return The backing array.
    */
   public char[] setSize(int newSize) {
@@ -317,7 +317,7 @@ public class FlixelCharArray implements CharSequence, Appendable {
   }
 
   /**
-   * Trims the backing array down to exactly {@link #size}.
+   * Trims the backing array down to exactly {@link #getSize()}.
    *
    * @return The backing array after trimming.
    */
@@ -329,7 +329,7 @@ public class FlixelCharArray implements CharSequence, Appendable {
   }
 
   /**
-   * Trims the backing array down to exactly {@link #size} (an alias for
+   * Trims the backing array down to exactly {@link #getSize()} (an alias for
    * {@link #shrink()}).
    */
   public void trimToSize() {
@@ -365,7 +365,7 @@ public class FlixelCharArray implements CharSequence, Appendable {
   /**
    * Reports whether the buffer has no characters.
    *
-   * @return {@code true} if {@link #size} is 0.
+   * @return {@code true} if {@link #getSize()} is 0.
    */
   public boolean isEmpty() {
     return size == 0;
@@ -400,7 +400,7 @@ public class FlixelCharArray implements CharSequence, Appendable {
    * Returns the live characters as a {@link String} (an alias for
    * {@link #toString()}).
    *
-   * @return A string built from the first {@link #size} characters.
+   * @return A string built from the first {@link #getSize()} characters.
    */
   public String toStringValue() {
     return toString();
@@ -409,7 +409,7 @@ public class FlixelCharArray implements CharSequence, Appendable {
   /**
    * Returns a trimmed copy of the live characters.
    *
-   * @return A new array of length {@link #size}.
+   * @return A new array of length {@link #getSize()}.
    */
   public char[] toArray() {
     return Arrays.copyOf(items, size);
@@ -418,6 +418,31 @@ public class FlixelCharArray implements CharSequence, Appendable {
   @Override
   public String toString() {
     return new String(items, 0, size);
+  }
+
+  /** Returns the backing array. Only the first {@link #getSize()} entries are live. */
+  public char[] getItems() {
+    return items;
+  }
+
+  /** Returns the number of live elements. */
+  public int getSize() {
+    return size;
+  }
+
+  /** Returns whether removals preserve insertion order. */
+  public boolean isOrdered() {
+    return ordered;
+  }
+
+  /**
+   * Sets whether removals should preserve insertion order. Changing this mid-use
+   * only affects future removals.
+   *
+   * @param ordered Whether removals should preserve insertion order.
+   */
+  public void setOrdered(boolean ordered) {
+    this.ordered = ordered;
   }
 
   private void grow(int minCapacity) {

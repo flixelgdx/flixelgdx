@@ -218,7 +218,7 @@ public class FlixelIntMap<V> {
    *
    * @return The entry count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 

@@ -46,8 +46,9 @@ import java.util.NoSuchElementException;
  *
  * <p>Example:
  * <pre>{@code
- * for (int i = 0; i < list.size; i++) {
- *   Enemy e = list.items[i];
+ * T[] items = list.getItems();
+ * for (int i = 0; i < list.getSize(); i++) {
+ *   Enemy e = items[i];
  *   e.update(elapsed);
  * }
  * }</pre>
@@ -61,7 +62,7 @@ import java.util.NoSuchElementException;
  * }</pre>
  *
  * <h2>Ordered vs. unordered</h2>
- * An {@link #ordered} list keeps insertion order and shifts elements down on
+ * An {@link #isOrdered() ordered} list keeps insertion order and shifts elements down on
  * removal. An unordered list may fill a removed slot with the last element instead,
  * making removal O(1) and ideal for bags where order does not matter.
  *
@@ -81,32 +82,33 @@ public class FlixelArray<T> implements Iterable<T> {
   private static final int DEFAULT_CAPACITY = 16;
 
   /**
-   * The backing array. Only the first {@link #size} entries are live; the rest
-   * are unspecified. Safe to read by index in hot loops; prefer the list's
+   * The backing array. Only the first {@link #getSize()} entries are live; the
+   * rest are unspecified. Safe to read by index in hot loops; prefer the list's
    * methods for mutation.
    */
-  public T[] items;
+  private T[] items;
+
+  private T[] snapshot;
+  private FlixelArrayIterator<T> iterator1;
+  private FlixelArrayIterator<T> iterator2;
 
   /** The number of live elements. */
-  public int size;
+  private int size;
+
+  private int snapshotDepth;
 
   /**
    * Whether removals preserve order. When {@code true}, removing shifts later
    * elements down; when {@code false}, a removed slot may be filled by the last
    * element for O(1) removal.
    */
-  public boolean ordered;
-
-  private T[] snapshot;
-  private int snapshotDepth;
-  private FlixelArrayIterator<T> iterator1;
-  private FlixelArrayIterator<T> iterator2;
+  private boolean ordered;
 
   /**
    * Creates an ordered list with the default initial capacity, backed by a
    * plain {@code Object[]}.
    *
-   * <p>Use this when you do not need {@link #items} to be a genuinely typed
+   * <p>Use this when you do not need {@link #getItems()} to be a genuinely typed
    * {@code T[]}, which is the common case and the only option for a generic
    * container that cannot name {@code T} at runtime. Reading elements by index
    * still returns {@code T}. When you do want a real typed backing array (for
@@ -131,7 +133,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * Creates an {@code Object[]}-backed list with the given ordering and initial
    * capacity.
    *
-   * @param ordered Whether removals preserve order (see {@link #ordered}).
+   * @param ordered Whether removals preserve order (see {@link #isOrdered()}).
    * @param capacity The initial backing-array size.
    */
   @SuppressWarnings("unchecked")
@@ -167,7 +169,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * backing array.
    *
    * @param supplier Builds the typed backing array.
-   * @param ordered Whether removals preserve order (see {@link #ordered}).
+   * @param ordered Whether removals preserve order (see {@link #isOrdered()}).
    * @param capacity The initial backing-array size.
    */
   public FlixelArray(@NotNull FlixelArraySupplier<T[]> supplier, boolean ordered, int capacity) {
@@ -428,7 +430,7 @@ public class FlixelArray<T> implements Iterable<T> {
   /**
    * Reports whether the list has no elements.
    *
-   * @return {@code true} if {@link #size} is 0.
+   * @return {@code true} if {@link #getSize()} is 0.
    */
   public boolean isEmpty() {
     return size == 0;
@@ -461,7 +463,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * <p>When shrinking, the trimmed slots are nulled so their elements can be
    * garbage collected. When growing, the new slots are {@code null}.
    *
-   * @param newSize The new value of {@link #size}.
+   * @param newSize The new value of {@link #getSize()}.
    * @return The backing array.
    */
   public @NotNull T[] setSize(int newSize) {
@@ -494,11 +496,11 @@ public class FlixelArray<T> implements Iterable<T> {
    * Begins a stable iteration snapshot.
    *
    * <p>Between this call and {@link #end()}, any modification transparently
-   * copies the backing array, so an in-progress loop over {@link #items} is not
+   * copies the backing array, so an in-progress loop over {@link #getItems()} is not
    * disturbed. Calls may nest; each {@code begin()} needs a matching
    * {@code end()}.
    *
-   * @return The backing array to iterate (its first {@link #size} entries).
+   * @return The backing array to iterate (its first {@link #getSize()} entries).
    */
   public @NotNull T[] begin() {
     snapshotDepth++;
@@ -524,7 +526,7 @@ public class FlixelArray<T> implements Iterable<T> {
    *
    * <p>The iterator is reused between loops to avoid allocation, so do not run
    * two independent {@code for-each} loops over the same list at the same time.
-   * In hot paths prefer indexing {@link #items} directly.
+   * In hot paths prefer indexing {@link #getItems()} directly.
    *
    * @return A reusable iterator.
    */
@@ -568,6 +570,31 @@ public class FlixelArray<T> implements Iterable<T> {
     // (which still points at the old array) is preserved without extra work.
     items = Arrays.copyOf(items, newCapacity);
     return items;
+  }
+
+  /** Returns the backing array. Only the first {@link #getSize()} entries are live. */
+  public T[] getItems() {
+    return items;
+  }
+
+  /** Returns the number of live elements. */
+  public int getSize() {
+    return size;
+  }
+
+  /** Returns whether removals preserve insertion order. */
+  public boolean isOrdered() {
+    return ordered;
+  }
+
+  /**
+   * Sets whether removals should preserve insertion order. Changing this mid-use
+   * only affects future removals.
+   *
+   * @param ordered Whether removals should preserve insertion order.
+   */
+  public void setOrdered(boolean ordered) {
+    this.ordered = ordered;
   }
 
   private static final class FlixelArrayIterator<T> implements Iterator<T> {

@@ -184,7 +184,7 @@ public class FlixelObjectFloatMap<K> {
    *
    * @return The entry count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 

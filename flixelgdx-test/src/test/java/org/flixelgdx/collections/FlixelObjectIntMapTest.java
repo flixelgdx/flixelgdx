@@ -89,7 +89,7 @@ class FlixelObjectIntMapTest {
         Integer v = ref.get(key);
         assertEquals(v == null ? (int) -999 : v, ours.get(key, (int) -999));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

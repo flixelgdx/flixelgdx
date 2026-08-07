@@ -41,7 +41,7 @@ class FlixelByteArrayTest {
     FlixelByteArray array = new FlixelByteArray();
     array.add((byte) 10);
     array.add((byte) 20);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(0) == (byte) 10);
     array.set(0, (byte) 99);
     assertTrue(array.get(0) == (byte) 99);
@@ -54,7 +54,7 @@ class FlixelByteArrayTest {
     array.add((byte) 20);
     array.add((byte) 99);
     assertTrue(array.removeIndex(1) == (byte) 20);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(1) == (byte) 99);
   }
 
@@ -66,7 +66,7 @@ class FlixelByteArrayTest {
     array.add((byte) 99);
     assertTrue(array.removeIndex(0) == (byte) 10);
     assertTrue(array.get(0) == (byte) 99);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class FlixelByteArrayTest {
     assertTrue(array.first() == (byte) 10);
     assertTrue(array.peek() == (byte) 99);
     assertTrue(array.pop() == (byte) 99);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -98,7 +98,7 @@ class FlixelByteArrayTest {
     for (int i = 0; i < 50; i++) {
       array.add((byte) 10);
     }
-    assertEquals(50, array.size);
+    assertEquals(50, array.getSize());
     byte[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);

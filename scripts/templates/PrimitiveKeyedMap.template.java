@@ -218,7 +218,7 @@ public class Flixel{{TypeName}}Map<V> {
    *
    * @return The entry count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 

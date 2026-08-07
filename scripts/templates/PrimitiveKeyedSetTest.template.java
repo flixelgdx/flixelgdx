@@ -57,7 +57,7 @@ class Flixel{{TypeName}}SetTest {
     assertTrue(set.add({{zero}}));
     assertFalse(set.add({{zero}}));
     assertTrue(set.contains({{zero}}));
-    assertEquals(1, set.size());
+    assertEquals(1, set.getSize());
     assertTrue(set.remove({{zero}}));
     assertFalse(set.contains({{zero}}));
   }
@@ -95,7 +95,7 @@ class Flixel{{TypeName}}SetTest {
       } else {
         assertEquals(ref.contains(value), ours.contains(value));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

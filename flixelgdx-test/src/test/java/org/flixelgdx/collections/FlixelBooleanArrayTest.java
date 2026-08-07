@@ -41,7 +41,7 @@ class FlixelBooleanArrayTest {
     FlixelBooleanArray array = new FlixelBooleanArray();
     array.add(true);
     array.add(false);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(0) == true);
     array.set(0, true);
     assertTrue(array.get(0) == true);
@@ -54,7 +54,7 @@ class FlixelBooleanArrayTest {
     array.add(false);
     array.add(true);
     assertTrue(array.removeIndex(1) == false);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(1) == true);
   }
 
@@ -66,7 +66,7 @@ class FlixelBooleanArrayTest {
     array.add(true);
     assertTrue(array.removeIndex(0) == true);
     assertTrue(array.get(0) == true);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class FlixelBooleanArrayTest {
     assertTrue(array.first() == true);
     assertTrue(array.peek() == true);
     assertTrue(array.pop() == true);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -98,7 +98,7 @@ class FlixelBooleanArrayTest {
     for (int i = 0; i < 50; i++) {
       array.add(true);
     }
-    assertEquals(50, array.size);
+    assertEquals(50, array.getSize());
     boolean[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);

@@ -47,7 +47,7 @@ class FlixelLongMapTest {
     assertEquals("a", map.get((long) 1));
     assertEquals("a", map.put((long) 1, "b"));
     assertEquals("b", map.get((long) 1));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
   }
 
   @Test
@@ -57,10 +57,10 @@ class FlixelLongMapTest {
     map.put(0L, "zero");
     assertTrue(map.containsKey(0L));
     assertEquals("zero", map.get(0L));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
     assertEquals("zero", map.remove(0L));
     assertFalse(map.containsKey(0L));
-    assertEquals(0, map.size());
+    assertEquals(0, map.getSize());
   }
 
   @Test
@@ -104,7 +104,7 @@ class FlixelLongMapTest {
       } else {
         assertEquals(ref.get(key), ours.get(key));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

@@ -57,7 +57,7 @@ class FlixelIntSetTest {
     assertTrue(set.add(0));
     assertFalse(set.add(0));
     assertTrue(set.contains(0));
-    assertEquals(1, set.size());
+    assertEquals(1, set.getSize());
     assertTrue(set.remove(0));
     assertFalse(set.contains(0));
   }
@@ -95,7 +95,7 @@ class FlixelIntSetTest {
       } else {
         assertEquals(ref.contains(value), ours.contains(value));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

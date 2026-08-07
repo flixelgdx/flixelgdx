@@ -41,7 +41,7 @@ class Flixel{{TypeName}}ArrayTest {
     Flixel{{TypeName}}Array array = new Flixel{{TypeName}}Array();
     array.add({{v0}});
     array.add({{v1}});
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(0) == {{v0}});
     array.set(0, {{v2}});
     assertTrue(array.get(0) == {{v2}});
@@ -54,7 +54,7 @@ class Flixel{{TypeName}}ArrayTest {
     array.add({{v1}});
     array.add({{v2}});
     assertTrue(array.removeIndex(1) == {{v1}});
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(1) == {{v2}});
   }
 
@@ -66,7 +66,7 @@ class Flixel{{TypeName}}ArrayTest {
     array.add({{v2}});
     assertTrue(array.removeIndex(0) == {{v0}});
     assertTrue(array.get(0) == {{v2}});
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class Flixel{{TypeName}}ArrayTest {
     assertTrue(array.first() == {{v0}});
     assertTrue(array.peek() == {{v2}});
     assertTrue(array.pop() == {{v2}});
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -98,7 +98,7 @@ class Flixel{{TypeName}}ArrayTest {
     for (int i = 0; i < 50; i++) {
       array.add({{v0}});
     }
-    assertEquals(50, array.size);
+    assertEquals(50, array.getSize());
     {{type}}[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);

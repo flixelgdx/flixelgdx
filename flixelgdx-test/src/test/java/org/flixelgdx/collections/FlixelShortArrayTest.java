@@ -41,7 +41,7 @@ class FlixelShortArrayTest {
     FlixelShortArray array = new FlixelShortArray();
     array.add((short) 10);
     array.add((short) 20);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(0) == (short) 10);
     array.set(0, (short) 99);
     assertTrue(array.get(0) == (short) 99);
@@ -54,7 +54,7 @@ class FlixelShortArrayTest {
     array.add((short) 20);
     array.add((short) 99);
     assertTrue(array.removeIndex(1) == (short) 20);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(1) == (short) 99);
   }
 
@@ -66,7 +66,7 @@ class FlixelShortArrayTest {
     array.add((short) 99);
     assertTrue(array.removeIndex(0) == (short) 10);
     assertTrue(array.get(0) == (short) 99);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class FlixelShortArrayTest {
     assertTrue(array.first() == (short) 10);
     assertTrue(array.peek() == (short) 99);
     assertTrue(array.pop() == (short) 99);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -98,7 +98,7 @@ class FlixelShortArrayTest {
     for (int i = 0; i < 50; i++) {
       array.add((short) 10);
     }
-    assertEquals(50, array.size);
+    assertEquals(50, array.getSize());
     short[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);

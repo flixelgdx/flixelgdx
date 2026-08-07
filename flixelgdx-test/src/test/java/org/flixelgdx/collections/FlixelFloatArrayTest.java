@@ -41,7 +41,7 @@ class FlixelFloatArrayTest {
     FlixelFloatArray array = new FlixelFloatArray();
     array.add(10.0f);
     array.add(20.0f);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(0) == 10.0f);
     array.set(0, 99.0f);
     assertTrue(array.get(0) == 99.0f);
@@ -54,7 +54,7 @@ class FlixelFloatArrayTest {
     array.add(20.0f);
     array.add(99.0f);
     assertTrue(array.removeIndex(1) == 20.0f);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(1) == 99.0f);
   }
 
@@ -66,7 +66,7 @@ class FlixelFloatArrayTest {
     array.add(99.0f);
     assertTrue(array.removeIndex(0) == 10.0f);
     assertTrue(array.get(0) == 99.0f);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class FlixelFloatArrayTest {
     assertTrue(array.first() == 10.0f);
     assertTrue(array.peek() == 99.0f);
     assertTrue(array.pop() == 99.0f);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -98,7 +98,7 @@ class FlixelFloatArrayTest {
     for (int i = 0; i < 50; i++) {
       array.add(10.0f);
     }
-    assertEquals(50, array.size);
+    assertEquals(50, array.getSize());
     float[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);

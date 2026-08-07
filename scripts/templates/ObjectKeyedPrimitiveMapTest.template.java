@@ -89,7 +89,7 @@ class FlixelObject{{ValueTypeName}}MapTest {
         {{ValueBoxed}} v = ref.get(key);
         assertEquals(v == null ? ({{valueType}}) -999 : v, ours.get(key, ({{valueType}}) -999){{valueDelta}});
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

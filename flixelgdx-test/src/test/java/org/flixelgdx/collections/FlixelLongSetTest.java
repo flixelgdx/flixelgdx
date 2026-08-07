@@ -57,7 +57,7 @@ class FlixelLongSetTest {
     assertTrue(set.add(0L));
     assertFalse(set.add(0L));
     assertTrue(set.contains(0L));
-    assertEquals(1, set.size());
+    assertEquals(1, set.getSize());
     assertTrue(set.remove(0L));
     assertFalse(set.contains(0L));
   }
@@ -95,7 +95,7 @@ class FlixelLongSetTest {
       } else {
         assertEquals(ref.contains(value), ours.contains(value));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

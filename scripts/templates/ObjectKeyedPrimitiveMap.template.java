@@ -184,7 +184,7 @@ public class FlixelObject{{ValueTypeName}}Map<K> {
    *
    * @return The entry count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 

@@ -47,7 +47,7 @@ class Flixel{{TypeName}}MapTest {
     assertEquals("a", map.get(({{type}}) 1));
     assertEquals("a", map.put(({{type}}) 1, "b"));
     assertEquals("b", map.get(({{type}}) 1));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
   }
 
   @Test
@@ -57,10 +57,10 @@ class Flixel{{TypeName}}MapTest {
     map.put({{zero}}, "zero");
     assertTrue(map.containsKey({{zero}}));
     assertEquals("zero", map.get({{zero}}));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
     assertEquals("zero", map.remove({{zero}}));
     assertFalse(map.containsKey({{zero}}));
-    assertEquals(0, map.size());
+    assertEquals(0, map.getSize());
   }
 
   @Test
@@ -104,7 +104,7 @@ class Flixel{{TypeName}}MapTest {
       } else {
         assertEquals(ref.get(key), ours.get(key));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

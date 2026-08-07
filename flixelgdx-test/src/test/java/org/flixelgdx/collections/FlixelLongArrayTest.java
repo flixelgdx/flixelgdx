@@ -41,7 +41,7 @@ class FlixelLongArrayTest {
     FlixelLongArray array = new FlixelLongArray();
     array.add(10L);
     array.add(20L);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(0) == 10L);
     array.set(0, 99L);
     assertTrue(array.get(0) == 99L);
@@ -54,7 +54,7 @@ class FlixelLongArrayTest {
     array.add(20L);
     array.add(99L);
     assertTrue(array.removeIndex(1) == 20L);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertTrue(array.get(1) == 99L);
   }
 
@@ -66,7 +66,7 @@ class FlixelLongArrayTest {
     array.add(99L);
     assertTrue(array.removeIndex(0) == 10L);
     assertTrue(array.get(0) == 99L);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -89,7 +89,7 @@ class FlixelLongArrayTest {
     assertTrue(array.first() == 10L);
     assertTrue(array.peek() == 99L);
     assertTrue(array.pop() == 99L);
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -98,7 +98,7 @@ class FlixelLongArrayTest {
     for (int i = 0; i < 50; i++) {
       array.add(10L);
     }
-    assertEquals(50, array.size);
+    assertEquals(50, array.getSize());
     long[] copy = array.toArray();
     assertEquals(50, copy.length);
     array.setSize(0);

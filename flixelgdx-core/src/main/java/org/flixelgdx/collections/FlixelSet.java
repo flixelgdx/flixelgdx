@@ -152,7 +152,7 @@ public class FlixelSet<T> implements Iterable<T> {
    *
    * @return The element count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 

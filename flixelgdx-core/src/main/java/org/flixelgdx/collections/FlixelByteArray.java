@@ -37,8 +37,8 @@ import java.util.Arrays;
  * so there is nothing for the garbage collector to clean up and the values sit
  * contiguously in memory for fast iteration.
  *
- * <p>The backing array {@link #items} and count {@link #size} are public for
- * zero-allocation indexed iteration.
+ * <p>The backing array {@link #getItems()} and count {@link #getSize()} are
+ * exposed for zero-allocation indexed iteration.
  *
  * <p>This class is not thread safe.
  */
@@ -47,16 +47,16 @@ public class FlixelByteArray {
   private static final int DEFAULT_CAPACITY = 16;
 
   /**
-   * The backing array. Only the first {@link #size} entries are live. Safe to
-   * read by index in hot loops.
+   * The backing array. Only the first {@link #getSize()} entries are live. Safe
+   * to read by index in hot loops.
    */
-  public byte[] items;
+  private byte[] items;
 
   /** The number of live values. */
-  public int size;
+  private int size;
 
-  /** Whether removals preserve order (see {@link FlixelArray#ordered}). */
-  public boolean ordered;
+  /** Whether removals preserve order (see {@link FlixelArray#isOrdered()}). */
+  private boolean ordered;
 
   /**
    * Creates an ordered list with the default initial capacity.
@@ -228,7 +228,7 @@ public class FlixelByteArray {
   /**
    * Reports whether the list has no values.
    *
-   * @return {@code true} if {@link #size} is 0.
+   * @return {@code true} if {@link #getSize()} is 0.
    */
   public boolean isEmpty() {
     return size == 0;
@@ -237,7 +237,7 @@ public class FlixelByteArray {
   /**
    * Sets the live value count, growing the backing array if needed.
    *
-   * @param newSize The new value of {@link #size}.
+   * @param newSize The new value of {@link #getSize()}.
    * @return The backing array.
    */
   public byte[] setSize(int newSize) {
@@ -258,10 +258,35 @@ public class FlixelByteArray {
   /**
    * Returns a trimmed copy of the live values.
    *
-   * @return A new array of length {@link #size}.
+   * @return A new array of length {@link #getSize()}.
    */
   public byte[] toArray() {
     return Arrays.copyOf(items, size);
+  }
+
+  /** Returns the backing array. Only the first {@link #getSize()} entries are live. */
+  public byte[] getItems() {
+    return items;
+  }
+
+  /** Returns the number of live elements. */
+  public int getSize() {
+    return size;
+  }
+
+  /** Returns whether removals preserve insertion order. */
+  public boolean isOrdered() {
+    return ordered;
+  }
+
+  /**
+   * Sets whether removals should preserve insertion order. Changing this mid-use
+   * only affects future removals.
+   *
+   * @param ordered Whether removals should preserve insertion order.
+   */
+  public void setOrdered(boolean ordered) {
+    this.ordered = ordered;
   }
 
   private void grow(int minCapacity) {

@@ -167,7 +167,7 @@ public class FlixelIntSet {
    *
    * @return The value count.
    */
-  public int size() {
+  public int getSize() {
     return size;
   }
 

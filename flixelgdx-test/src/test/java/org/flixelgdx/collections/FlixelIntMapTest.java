@@ -47,7 +47,7 @@ class FlixelIntMapTest {
     assertEquals("a", map.get((int) 1));
     assertEquals("a", map.put((int) 1, "b"));
     assertEquals("b", map.get((int) 1));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
   }
 
   @Test
@@ -57,10 +57,10 @@ class FlixelIntMapTest {
     map.put(0, "zero");
     assertTrue(map.containsKey(0));
     assertEquals("zero", map.get(0));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
     assertEquals("zero", map.remove(0));
     assertFalse(map.containsKey(0));
-    assertEquals(0, map.size());
+    assertEquals(0, map.getSize());
   }
 
   @Test
@@ -104,7 +104,7 @@ class FlixelIntMapTest {
       } else {
         assertEquals(ref.get(key), ours.get(key));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }
