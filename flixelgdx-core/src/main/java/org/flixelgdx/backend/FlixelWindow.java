@@ -26,9 +26,17 @@ package org.flixelgdx.backend;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.functional.FlixelShakeable;
+import org.flixelgdx.graphics.FlixelDisplayMode;
 
 /**
- * Desktop window controls that stay safe on every platform.
+ * The game's window, browser tab, or mobile activity, with controls that stay safe on every platform.
+ *
+ * <p>This is the single surface for talking to whatever hosts the game on screen: the title,
+ * the window size, fullscreen, and closing all live here. Where a control has no meaning on a
+ * platform (for example, moving a browser tab), it simply does nothing, so the same code is safe
+ * everywhere. Anything about the drawing surface itself (frame rate, vertical sync, display modes,
+ * pixel density) lives on {@link org.flixelgdx.graphics.FlixelGraphicsManager Flixel.graphics}
+ * instead.
  *
  * <p>Use {@link org.flixelgdx.Flixel#window Flixel.window} after {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
  * The implementation only adjusts backdrop drawing and, on desktop with a transparent-capable framebuffer, an end-of-frame
@@ -99,7 +107,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * <p>When {@code true}, clears and camera backdrop fills use alpha zero so unchanged
    * pixels show whatever is behind the window (when the framebuffer was created with transparency support).
    * When {@code false}, restores backdrop colors cached the first time transparency was enabled this session,
-   * or falls back to opaque {@link com.badlogic.gdx.graphics.Color#BLACK} if transparency was never enabled.
+   * or falls back to opaque black if transparency was never enabled.
    *
    * @param active {@code true} to composite with the desktop through alpha; {@code false} for a normal opaque window interior.
    */
@@ -236,8 +244,8 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * When {@code true}, the GLFW close event is absorbed so the window does not exit until you stop absorbing or call
-   * {@code Gdx.app.exit()} yourself.
+   * When {@code true}, the close event is absorbed so the window does not exit until you stop absorbing or call
+   * {@link #close()} (or {@link org.flixelgdx.Flixel#exit() Flixel.exit()}) yourself.
    *
    * <p><b>CAUTION:</b> Players expect the window close control to quit. If you absorb close requests, you must
    * explain that ahead of time (splash text, settings, store description) and always provide another obvious way to exit.
@@ -276,4 +284,153 @@ public interface FlixelWindow extends FlixelShakeable {
   default boolean isDecorated() {
     return true;
   }
+
+  /**
+   * Returns the current window title.
+   *
+   * <p>On desktop this is the text in the title bar, on web it is the browser tab title
+   * ({@code document.title}), and on mobile it is the task or recents label where the platform
+   * exposes one.
+   *
+   * @return The current title, or an empty string when unknown; never {@code null}.
+   */
+  default String getTitle() {
+    return "";
+  }
+
+  /**
+   * Sets the window title (title bar on desktop, browser tab on web, task label on mobile).
+   *
+   * @param title The new title; ignored when {@code null}.
+   */
+  default void setTitle(String title) {}
+
+  /**
+   * Returns the window's width in logical screen coordinates.
+   *
+   * <p><b>Do not confuse this with {@link #getBackBufferWidth()}.</b> This is the logical size of
+   * the window as the operating system reports it, which is what you use for placing and sizing the
+   * window. On a high-DPI display (Retina and similar), one logical unit covers several physical
+   * pixels, so this value is smaller than the back buffer width. For anything that touches actual
+   * pixels on the GPU, use {@link #getBackBufferWidth()} instead.
+   *
+   * @return Logical window width, or {@code 0} when unknown.
+   */
+  default int getWidth() {
+    return 0;
+  }
+
+  /**
+   * Returns the window's height in logical screen coordinates.
+   *
+   * <p><b>Do not confuse this with {@link #getBackBufferHeight()}.</b> See {@link #getWidth()} for
+   * the full explanation of logical size versus back buffer size.
+   *
+   * @return Logical window height, or {@code 0} when unknown.
+   */
+  default int getHeight() {
+    return 0;
+  }
+
+  /**
+   * Returns the drawing surface's width in real physical pixels.
+   *
+   * <p><b>This is not the same as {@link #getWidth()}.</b> The back buffer is the actual grid of
+   * pixels the GPU renders into. On a high-DPI display it is larger than the logical window width
+   * (often by 2x). Use this value for framebuffer math, viewports, and anything measured in real
+   * pixels; use {@link #getWidth()} for logical window sizing and positioning.
+   *
+   * @return Back buffer width in physical pixels, or {@code 0} when unknown.
+   */
+  default int getBackBufferWidth() {
+    return 0;
+  }
+
+  /**
+   * Returns the drawing surface's height in real physical pixels.
+   *
+   * <p><b>This is not the same as {@link #getHeight()}.</b> See {@link #getBackBufferWidth()} for
+   * the full explanation of back buffer pixels versus logical size.
+   *
+   * @return Back buffer height in physical pixels, or {@code 0} when unknown.
+   */
+  default int getBackBufferHeight() {
+    return 0;
+  }
+
+  /**
+   * Resizes the window's client area, in logical screen coordinates, when supported.
+   *
+   * @param width Target logical width.
+   * @param height Target logical height.
+   */
+  default void setSize(int width, int height) {}
+
+  /**
+   * @return {@code true} while the game is presented fullscreen (or in the browser's fullscreen
+   *     state on web); {@code false} for a normal windowed presentation.
+   */
+  default boolean isFullscreen() {
+    return false;
+  }
+
+  /**
+   * Switches to fullscreen at the given display mode, when supported.
+   *
+   * <p>Obtain a mode from
+   * {@link org.flixelgdx.graphics.FlixelGraphicsManager#getDisplayModes() Flixel.graphics.getDisplayModes()}.
+   * On web this requests the browser's fullscreen state; on mobile it toggles immersive mode. Return
+   * to a window with {@link #setWindowed(int, int)}.
+   *
+   * @param mode The display mode to use; ignored when {@code null} or unsupported.
+   */
+  default void setFullscreen(FlixelDisplayMode mode) {}
+
+  /**
+   * Returns to a normal window at the given logical size, leaving fullscreen if it was active.
+   *
+   * @param width Target logical width.
+   * @param height Target logical height.
+   */
+  default void setWindowed(int width, int height) {}
+
+  /**
+   * @return {@code true} if {@link #setFullscreen(FlixelDisplayMode)} can take effect on this session.
+   */
+  default boolean supportsFullscreen() {
+    return false;
+  }
+
+  /**
+   * Sets whether the user may resize the window by dragging its edges, when supported.
+   *
+   * @param resizable {@code true} to allow user resizing, {@code false} to lock the size.
+   */
+  default void setResizable(boolean resizable) {}
+
+  /**
+   * @return {@code true} when the window may currently be resized by the user, if the backend can
+   *     report it; {@code false} otherwise.
+   */
+  default boolean isResizable() {
+    return false;
+  }
+
+  /**
+   * @return {@code true} when the window (or browser tab) currently has input focus.
+   */
+  default boolean isFocused() {
+    return true;
+  }
+
+  /**
+   * Requests that the game window close, ending the game.
+   *
+   * <p>This is the same request the user makes by clicking the window's close control. If close
+   * absorption is active (see {@link #setAbsorbCloseRequests(boolean)}), it still applies. On web
+   * and mobile, where the host owns the lifecycle, this may do nothing.
+   *
+   * <p>Prefer {@link org.flixelgdx.Flixel#exit() Flixel.exit()} from game code, which forwards here.
+   */
+  default void close() {}
 }

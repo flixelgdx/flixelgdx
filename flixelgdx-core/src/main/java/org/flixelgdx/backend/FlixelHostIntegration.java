@@ -28,6 +28,9 @@ import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Host platform integration for notifications, display management, and clipboard access.
  *
@@ -181,4 +184,29 @@ public interface FlixelHostIntegration {
    */
   @NotNull
   FlixelSignal<String> onTextPasted();
+
+  /**
+   * Lists the physical monitors attached to the machine.
+   *
+   * <p>This is mainly a desktop feature: use it to build a "which screen" setting or to place a
+   * fullscreen window on a chosen display. Each returned {@link FlixelMonitor} also reports its own
+   * size and position, so this is where you obtain monitor dimensions too. On platforms without a
+   * real monitor list (web, mobile), the list is empty.
+   *
+   * @return An unmodifiable list of monitors, possibly empty; never {@code null}.
+   */
+  @NotNull
+  default List<FlixelMonitor> getMonitors() {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Returns the primary monitor, where the OS usually places new windows and system UI.
+   *
+   * @return The primary {@link FlixelMonitor}, or {@code null} when the platform cannot report one.
+   */
+  @Nullable
+  default FlixelMonitor getPrimaryMonitor() {
+    return null;
+  }
 }
