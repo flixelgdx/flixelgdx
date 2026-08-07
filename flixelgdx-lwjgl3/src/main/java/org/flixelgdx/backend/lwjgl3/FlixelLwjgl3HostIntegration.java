@@ -27,6 +27,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.backend.FlixelNoopMonitor;
+import org.flixelgdx.backend.FlixelPlatform;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +65,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
+  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   @Nullable
   private Process wakeLockProcess;
@@ -199,6 +204,24 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return onTextPasted;
+  }
+
+  @Override
+  @NotNull
+  public FlixelArray<FlixelMonitor> getMonitors() {
+    return monitors;
+  }
+
+  @Override
+  @NotNull
+  public FlixelMonitor getPrimaryMonitor() {
+    return FlixelNoopMonitor.INSTANCE;
+  }
+
+  @Override
+  @NotNull
+  public FlixelPlatform getPlatform() {
+    return FlixelPlatform.Desktop;
   }
 
   private static void notifyLinux(@Nullable String title, String message) {

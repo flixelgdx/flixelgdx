@@ -24,12 +24,10 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Host platform integration for notifications, display management, and clipboard access.
@@ -191,22 +189,38 @@ public interface FlixelHostIntegration {
    * <p>This is mainly a desktop feature: use it to build a "which screen" setting or to place a
    * fullscreen window on a chosen display. Each returned {@link FlixelMonitor} also reports its own
    * size and position, so this is where you obtain monitor dimensions too. On platforms without a
-   * real monitor list (web, mobile), the list is empty.
+   * real monitor list, return an empty array.
    *
-   * @return An unmodifiable list of monitors, possibly empty; never {@code null}.
+   * <p>Implementations should return a cached array rather than building a new one per call, so
+   * reading this every frame does not allocate.
+   *
+   * @return The attached monitors, possibly empty; never {@code null}.
    */
   @NotNull
-  default List<FlixelMonitor> getMonitors() {
-    return Collections.emptyList();
-  }
+  FlixelArray<FlixelMonitor> getMonitors();
 
   /**
    * Returns the primary monitor, where the OS usually places new windows and system UI.
    *
-   * @return The primary {@link FlixelMonitor}, or {@code null} when the platform cannot report one.
+   * <p>Platforms that cannot report a monitor return {@link FlixelNoopMonitor#INSTANCE} rather than
+   * {@code null}, so callers never have to null-check.
+   *
+   * @return The primary monitor; never {@code null}.
    */
-  @Nullable
-  default FlixelMonitor getPrimaryMonitor() {
-    return null;
+  @NotNull
+  FlixelMonitor getPrimaryMonitor();
+
+  /**
+   * Returns the platform this game is running on.
+   *
+   * <p>Compare against the {@link FlixelPlatform} constants with {@code ==}, for example
+   * {@code Flixel.host.getPlatform() == FlixelPlatform.Desktop}. Defaults to
+   * {@link FlixelPlatform#Unknown} until a host integration is installed.
+   *
+   * @return The current platform; never {@code null}.
+   */
+  @NotNull
+  default FlixelPlatform getPlatform() {
+    return FlixelPlatform.Unknown;
   }
 }

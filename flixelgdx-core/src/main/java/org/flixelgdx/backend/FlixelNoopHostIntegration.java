@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +42,7 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   INSTANCE;
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
+  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   @Override
   public void requestNotificationPermission() {}
@@ -86,5 +88,17 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return onTextPasted;
+  }
+
+  @Override
+  @NotNull
+  public FlixelArray<FlixelMonitor> getMonitors() {
+    return monitors;
+  }
+
+  @Override
+  @NotNull
+  public FlixelMonitor getPrimaryMonitor() {
+    return FlixelNoopMonitor.INSTANCE;
   }
 }

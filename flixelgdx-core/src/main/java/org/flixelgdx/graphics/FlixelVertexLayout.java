@@ -23,11 +23,8 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.collections.FlixelArray;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Describes how the floats (and bytes) of one vertex are laid out in memory.
@@ -54,16 +51,17 @@ import java.util.List;
  */
 public final class FlixelVertexLayout {
 
-  private final List<Element> elements;
+  private final FlixelArray<Element> elements;
   private final int stride;
 
-  private FlixelVertexLayout(List<Element> elements) {
+  private FlixelVertexLayout(FlixelArray<Element> elements) {
     int computed = 0;
-    for (int i = 0; i < elements.size(); i++) {
-      Element e = elements.get(i);
+    Element[] items = elements.getItems();
+    for (int i = 0; i < elements.getSize(); i++) {
+      Element e = items[i];
       computed += e.components() * e.type().bytes();
     }
-    this.elements = Collections.unmodifiableList(elements);
+    this.elements = elements;
     this.stride = computed;
   }
 
@@ -84,10 +82,15 @@ public final class FlixelVertexLayout {
   }
 
   /**
-   * @return The ordered, unmodifiable list of elements that make up one vertex.
+   * Returns the ordered elements that make up one vertex.
+   *
+   * <p>Treat the returned array as read-only; do not modify it. Iterate it with an indexed loop
+   * over {@link FlixelArray#getItems()} to stay allocation-free.
+   *
+   * @return The layout's elements, in order; never {@code null}.
    */
   @NotNull
-  public List<Element> getElements() {
+  public FlixelArray<Element> getElements() {
     return elements;
   }
 
@@ -96,7 +99,7 @@ public final class FlixelVertexLayout {
    */
   public static final class Builder {
 
-    private final List<Element> elements = new ArrayList<>();
+    private final FlixelArray<Element> elements = new FlixelArray<>(Element[]::new);
 
     private Builder() {}
 
@@ -119,7 +122,9 @@ public final class FlixelVertexLayout {
      * @return A new immutable layout describing the added elements in order.
      */
     public FlixelVertexLayout build() {
-      return new FlixelVertexLayout(new ArrayList<>(elements));
+      FlixelArray<Element> copy = new FlixelArray<>(Element[]::new, elements.getSize());
+      copy.addAll(elements);
+      return new FlixelVertexLayout(copy);
     }
   }
 
