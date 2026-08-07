@@ -59,7 +59,7 @@ import java.nio.IntBuffer;
  * </ul>
  *
  * <p>The slot count is determined at construction from {@code GL_MAX_TEXTURE_IMAGE_UNITS},
- * capped at 16 so the fragment shader's if-else chain stays reasonable on all drivers.
+ * capped at 32 so the fragment shader's if-else chain stays reasonable on all drivers.
  *
  * <p>Usage example:
  * <pre>{@code

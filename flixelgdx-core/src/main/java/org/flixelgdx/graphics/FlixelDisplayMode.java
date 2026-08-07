@@ -23,13 +23,14 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.backend.FlixelWindow;
+
 /**
  * A single video mode a monitor can present: a resolution, refresh rate, and color depth.
  *
  * <p>Use these to build a resolution picker in a settings menu. Query the list from
  * {@link FlixelGraphicsManager#getDisplayModes() Flixel.graphics.getDisplayModes()}, let the
- * player choose one, then hand it to
- * {@link org.flixelgdx.backend.FlixelWindow#setFullscreen(FlixelDisplayMode) Flixel.window.setFullscreen(mode)}.
+ * player choose one, then hand it to {@link FlixelWindow#setFullscreen(FlixelDisplayMode)}.
  *
  * <p>Display modes are a desktop concept. On platforms that do not expose them (web, mobile), the
  * mode list is empty and the current mode simply reflects the surface the game is drawn to.
@@ -38,7 +39,7 @@ package org.flixelgdx.graphics;
  *
  * <pre>{@code
  * for (FlixelDisplayMode mode : Flixel.graphics.getDisplayModes()) {
- *   System.out.println(mode.width() + "x" + mode.height() + " @ " + mode.refreshRate() + "Hz");
+ *   Flixel.info(mode.width() + "x" + mode.height() + " @ " + mode.refreshRate() + "Hz");
  * }
  * }</pre>
  *

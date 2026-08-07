@@ -24,6 +24,7 @@
 package org.flixelgdx.graphics;
 
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.functional.FlixelDrawable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ import java.nio.ByteBuffer;
  *
  * <p>Each backend (for example, bgfx on native, WebGPU or WebGL in the browser) implements this
  * interface, so the same game code runs unchanged no matter which one is active. The underlying GPU
- * library is never named in the public API; you only ever talk to this device.
+ * library is never named in the public API; you only ever talk to this manager.
  *
  * <p>The members fall into two groups. Most game code only uses the <b>high-level</b> ones: the
  * shared sprite batch, timing (frame rate, vertical sync), and display information (modes, density).
@@ -73,13 +74,17 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * Returns the shared sprite batch every drawable in the framework renders through.
+   * Returns the shared sprite batch every {@link FlixelDrawable} in the framework renders through.
    *
-   * @return The active batch, or {@code null} when no backend is present (headless or pre-startup).
+   * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedBatch},
+   * a no-op implementation whose operations do nothing. Check {@link #getApi()} if you need to know
+   * whether a real GPU is available.
+   *
+   * @return The active batch; never {@code null}.
    */
-  @Nullable
+  @NotNull
   default FlixelBatch getBatch() {
-    return null;
+    return FlixelUnsupportedBatch.INSTANCE;
   }
 
   /**
@@ -127,27 +132,34 @@ public interface FlixelGraphicsManager {
   /**
    * Compiles a shader source bundle into a usable program on the active backend.
    *
+   * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedShader},
+   * a no-op implementation. Always check {@link FlixelShader#isValid()} before using the result to
+   * distinguish a real compiled shader from this stub.
+   *
    * @param source The per-backend shader variants (see {@link FlixelShaderSource}).
-   * @return A compiled {@link FlixelShader}, or {@code null} when no backend is present. Check
-   *     {@link FlixelShader#isValid()} before using the result.
+   * @return A compiled {@link FlixelShader}; never {@code null}.
    */
-  @Nullable
+  @NotNull
   default FlixelShader compileShader(@NotNull FlixelShaderSource source) {
-    return null;
+    return FlixelUnsupportedShader.INSTANCE;
   }
 
   /**
    * Allocates a reusable mesh backed by GPU buffers.
    *
+   * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedMesh},
+   * a no-op implementation whose vertex and index counts are always {@code 0}. Check {@link #getApi()}
+   * if you need to know whether a real GPU is available.
+   *
    * @param layout Describes how each vertex is arranged.
    * @param maxVertices Maximum number of vertices the buffer must hold.
    * @param maxIndices Maximum number of indices the buffer must hold, or {@code 0} for no index buffer.
    * @param isStatic {@code true} to hint the data changes rarely, {@code false} for frequently updated data.
-   * @return A new mesh, or {@code null} when no backend is present.
+   * @return A new mesh; never {@code null}.
    */
-  @Nullable
+  @NotNull
   default FlixelMesh createMesh(@NotNull FlixelVertexLayout layout, int maxVertices, int maxIndices, boolean isStatic) {
-    return null;
+    return FlixelUnsupportedMesh.INSTANCE;
   }
 
   /**

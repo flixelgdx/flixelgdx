@@ -39,8 +39,7 @@ import java.util.Objects;
  *
  * <p>Game code rarely needs this; it exists mostly for introspection, such as logging what is
  * running or showing it on a debug overlay. The underlying drawing library is never exposed to game
- * code directly. Read the current backend from
- * {@link FlixelGraphicsManager#getApi() Flixel.graphics.getApi()}.
+ * code directly. Read the current backend from {@link FlixelGraphicsManager#getApi()}.
  *
  * <p>Every ID is interned, so the same ID always yields the same instance, and you can compare with
  * {@code ==}:
@@ -81,17 +80,17 @@ public final class FlixelGraphicsApi {
   }
 
   /**
-   * Returns the canonical backend type for the given id, creating and interning it on first use.
+   * Returns the canonical backend type for the given ID, creating and interning it on first use.
    *
-   * <p>Calling this twice with the same id returns the very same instance, so results compare equal
-   * with {@code ==}. Use this to define a custom backend's identity, or to look one up by id.
+   * <p>Calling this twice with the same ID returns the very same instance, so results compare equal
+   * with {@code ==}. Use this to define a custom backend's identity, or to look one up by ID.
    *
-   * @param id The backend id, for example {@code "bgfx"}; must not be {@code null}.
+   * @param id The backend ID, for example {@code "bgfx"}; must not be {@code null}.
    * @return The one shared {@link FlixelGraphicsApi} for that id.
    */
   @NotNull
   public static FlixelGraphicsApi of(@NotNull String id) {
-    Objects.requireNonNull(id, "The provided graphics API ID cannot be null.");
+    Objects.requireNonNull(id, "The ID for the provided graphics API cannot be null.");
     FlixelGraphicsApi existing = REGISTRY.get(id);
     if (existing != null) {
       return existing;

@@ -1224,7 +1224,7 @@ public final class Flixel {
   }
 
   /**
-   * Requests that the game quit.
+   * Requests that the game quits.
    *
    * <p>This is a convenience that forwards to {@link FlixelWindow#close() Flixel.window.close()}. If
    * the window is absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}),
