@@ -27,14 +27,14 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -130,8 +130,7 @@ public class FlixelBar extends FlixelSprite {
   private Color borderColor;
   private float borderThickness = 0f;
 
-  // Threshold coloring: libGDX Array for indexed hot-path iteration (no per-frame Iterator).
-  private final Array<ThresholdStop> thresholdStops = new Array<>(true, 8);
+  private final FlixelArray<ThresholdStop> thresholdStops = new FlixelArray<>(true, 8);
   private float thresholdColorLerp = 1f;
   private float lastPercentForThreshold = 1f;
   private final Color thresholdCurrentColor = new Color(Color.WHITE);
@@ -141,6 +140,7 @@ public class FlixelBar extends FlixelSprite {
   /** Current overlay label source, or {@code null} for none. May be a live {@link FlixelString} you mutate. */
   @Nullable
   private CharSequence overlayText;
+
   /**
    * Snapshot of the last label pushed to {@link FlixelText#setText}; used to skip redundant updates when the
    * overlay text has not changed. Never the same instance as {@link #overlayText}.
@@ -323,7 +323,7 @@ public class FlixelBar extends FlixelSprite {
    * @return {@code this} for chaining.
    */
   public FlixelBar setLerp(float lerp) {
-    this.lerp = MathUtils.clamp(lerp, 0f, 1f);
+    this.lerp = FlixelMath.clamp(lerp, 0f, 1f);
     if (this.lerp >= 1f) {
       this.displayedValue = this.value;
     }
@@ -474,7 +474,7 @@ public class FlixelBar extends FlixelSprite {
   public FlixelBar setThresholdColors(@NotNull Color fullColor, @NotNull Color lowColor, float lowPercent) {
     Objects.requireNonNull(fullColor);
     Objects.requireNonNull(lowColor);
-    lowPercent = MathUtils.clamp(lowPercent, 0f, 1f);
+    lowPercent = FlixelMath.clamp(lowPercent, 0f, 1f);
 
     thresholdStops.clear();
     thresholdStops.add(new ThresholdStop(lowPercent, lowColor));
@@ -490,11 +490,11 @@ public class FlixelBar extends FlixelSprite {
 
   /**
    * Replaces threshold stops from a {@link Collection}. Values are copied into an internal
-   * {@link Array} and sorted by percent. Null entries are skipped.
+   * {@link FlixelArray} and sorted by percent. Null entries are skipped.
    *
    * <p>For {@link List} implementations that also implement {@link RandomAccess}, copying uses index
-   * loops and avoids iterator allocation on this (typically rare) call. For a libGDX {@link Array}, use
-   * {@link #setThresholdStops(Array)}.
+   * loops and avoids iterator allocation on this (typically rare) call. For a libGDX {@link FlixelArray}, use
+   * {@link #setThresholdStops(FlixelArray)}.
    *
    * @param stops Non-null collection; may be empty to clear thresholds.
    * @return {@code this} for chaining.
@@ -508,16 +508,16 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Same as {@link #setThresholdStops(Collection)} but reads stops from a libGDX {@link Array} by index
+   * Same as {@link #setThresholdStops(Collection)} but reads stops from a libGDX {@link FlixelArray} by index
    * (no iterator on the source).
    *
    * @param stops Non-null libGDX array; null entries are skipped.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setThresholdStops(@NotNull Array<ThresholdStop> stops) {
+  public FlixelBar setThresholdStops(@NotNull FlixelArray<ThresholdStop> stops) {
     Objects.requireNonNull(stops);
     thresholdStops.clear();
-    for (int i = 0, n = stops.size; i < n; i++) {
+    for (int i = 0, n = stops.getSize(); i < n; i++) {
       ThresholdStop s = stops.get(i);
       if (s != null) {
         thresholdStops.add(s);
@@ -558,7 +558,7 @@ public class FlixelBar extends FlixelSprite {
    * @return {@code this} for chaining.
    */
   public FlixelBar setThresholdSmoothing(float lerp, boolean onDecreaseOnly) {
-    this.thresholdColorLerp = MathUtils.clamp(lerp, 0f, 1f);
+    this.thresholdColorLerp = FlixelMath.clamp(lerp, 0f, 1f);
     this.thresholdSmoothOnDecreaseOnly = onDecreaseOnly;
     return this;
   }
@@ -616,7 +616,7 @@ public class FlixelBar extends FlixelSprite {
 
     if (maxSupplier != null) {
       float newMax = maxSupplier.getAsFloat();
-      if (Float.isFinite(newMax) && !MathUtils.isEqual(max, newMax)) {
+      if (Float.isFinite(newMax) && !FlixelMath.isEqual(max, newMax)) {
         setRange(min, newMax);
       }
     }
@@ -631,7 +631,7 @@ public class FlixelBar extends FlixelSprite {
       displayedValue = value;
     } else {
       float lerpFactor = resolveFrameRateIndependentLerp(lerp, elapsed);
-      displayedValue = MathUtils.lerp(displayedValue, value, lerpFactor);
+      displayedValue = FlixelMath.lerp(displayedValue, value, lerpFactor);
     }
 
     if (text != null && overlayText != null) {
@@ -728,7 +728,7 @@ public class FlixelBar extends FlixelSprite {
     if (percent <= 0f) {
       return;
     }
-    percent = MathUtils.clamp(percent, 0f, 1f);
+    percent = FlixelMath.clamp(percent, 0f, 1f);
 
     if (gradientStart != null && gradientEnd != null) {
       rebuildGradientIfNeeded();
@@ -759,7 +759,7 @@ public class FlixelBar extends FlixelSprite {
     if (gradientRegion != null) {
       return Color.WHITE;
     }
-    if (!thresholdEnabled || thresholdStops.size == 0) {
+    if (!thresholdEnabled || thresholdStops.getSize() == 0) {
       return filledColor;
     }
 
@@ -783,10 +783,10 @@ public class FlixelBar extends FlixelSprite {
   }
 
   private Color sampleThresholdColorIntoScratch(float percent) {
-    percent = MathUtils.clamp(percent, 0f, 1f);
+    percent = FlixelMath.clamp(percent, 0f, 1f);
 
     ThresholdStop prev = null;
-    for (int i = 0, n = thresholdStops.size; i < n; i++) {
+    for (int i = 0, n = thresholdStops.getSize(); i < n; i++) {
       ThresholdStop stop = thresholdStops.get(i);
       if (stop.percent >= percent) {
         if (prev == null) {
@@ -794,18 +794,18 @@ public class FlixelBar extends FlixelSprite {
           return thresholdScratch;
         }
         float t = (percent - prev.percent) / Math.max(0.00001f, (stop.percent - prev.percent));
-        thresholdScratch.set(prev.color).lerp(stop.color, MathUtils.clamp(t, 0f, 1f));
+        thresholdScratch.set(prev.color).lerp(stop.color, FlixelMath.clamp(t, 0f, 1f));
         return thresholdScratch;
       }
       prev = stop;
     }
-    thresholdScratch.set(thresholdStops.get(thresholdStops.size - 1).color);
+    thresholdScratch.set(thresholdStops.get(thresholdStops.getSize() - 1).color);
     return thresholdScratch;
   }
 
   private void sortThresholdStopsAndUpdateEnabled() {
     thresholdStops.sort(THRESHOLD_BY_PERCENT);
-    thresholdEnabled = thresholdStops.size > 0;
+    thresholdEnabled = thresholdStops.getSize() > 0;
   }
 
   private void copyThresholdStopsFromCollection(Collection<? extends ThresholdStop> stops) {
@@ -909,7 +909,7 @@ public class FlixelBar extends FlixelSprite {
     if (!Float.isFinite(v)) {
       return min;
     }
-    return MathUtils.clamp(v, min, max);
+    return FlixelMath.clamp(v, min, max);
   }
 
   private float resolvePercent(float v) {
@@ -917,7 +917,7 @@ public class FlixelBar extends FlixelSprite {
     if (denom <= 0f) {
       return 0f;
     }
-    return MathUtils.clamp((v - min) / denom, 0f, 1f);
+    return FlixelMath.clamp((v - min) / denom, 0f, 1f);
   }
 
   private void rebuildGradientIfNeeded() {
@@ -946,7 +946,8 @@ public class FlixelBar extends FlixelSprite {
       desiredH = Math.max(2, Math.min(256, Math.round(getHeight())));
     }
 
-    if (MathUtils.isEqual(lastGradientBasisW, getWidth()) && MathUtils.isEqual(lastGradientBasisH, getHeight())
+    if (FlixelMath.isEqual(lastGradientBasisW, getWidth())
+        && FlixelMath.isEqual(lastGradientBasisH, getHeight())
         && gradientTexture != null && desiredW == gradientTexW && desiredH == gradientTexH) {
       return;
     }
@@ -992,7 +993,7 @@ public class FlixelBar extends FlixelSprite {
      * @param color Stop color; copied internally.
      */
     public ThresholdStop(float percent, @NotNull Color color) {
-      this.percent = MathUtils.clamp(percent, 0f, 1f);
+      this.percent = FlixelMath.clamp(percent, 0f, 1f);
       this.color = new Color(Objects.requireNonNull(color));
     }
   }

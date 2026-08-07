@@ -21,24 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util;
+package org.flixelgdx.collections;
 
 /**
- * Utility class for various math related functions used in FlixelGDX.
+ * Marks an object that can be reused by a {@link FlixelPool}.
+ *
+ * <p>When a pooled object is handed back with {@link FlixelPool#free(Object)},
+ * the pool calls {@link #reset()} so the object can clear its state and be ready
+ * for the next caller. Implement this to avoid stale data leaking from one use
+ * of an object into the next.
+ *
+ * <p>Example:
+ *
+ * <pre>{@code
+ * public class Bullet implements FlixelPoolable {
+ *
+ *   public float x, y, speed;
+ *   public boolean alive;
+ *
+ *   // Called automatically when the bullet is returned to its pool.
+ *   @Override
+ *   public void reset() {
+ *     x = 0f;
+ *     y = 0f;
+ *     speed = 0f;
+ *   }
+ * }
+ * }</pre>
  */
-public final class FlixelMathUtil {
+public interface FlixelPoolable {
 
   /**
-   * Rounds a float value to a specified number of decimal places.
+   * Clears this object's state so it is safe to reuse.
    *
-   * @param value The float value to round.
-   * @param decimalPlaces The number of decimal places to round to.
-   * @return The rounded float value.
+   * <p>Called by {@link FlixelPool#free(Object)} the moment the object returns
+   * to the pool. Reset every field the object owns; do not assume the object
+   * will be garbage collected.
    */
-  public static float round(float value, int decimalPlaces) {
-    float scale = (float) Math.pow(10, decimalPlaces);
-    return Math.round(value * scale) / scale;
-  }
-
-  private FlixelMathUtil() {}
+  void reset();
 }

@@ -24,7 +24,8 @@
 package org.flixelgdx;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.utils.SnapshotArray;
+
+import org.flixelgdx.collections.FlixelArray;
 
 /**
  * A {@code FlixelSubState} can be opened inside a {@link FlixelState}. By default, it
@@ -82,7 +83,7 @@ public abstract class FlixelSubState extends FlixelState {
 
   @Override
   public String toString() {
-    SnapshotArray<?> m = getMembers();
-    return "FlixelSubState(members=" + (m != null ? m.size : 0) + ")";
+    FlixelArray<?> m = getMembers();
+    return "FlixelSubState(members=" + (m != null ? m.getSize() : 0) + ")";
   }
 }

@@ -30,7 +30,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Affine2;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
 import com.badlogic.gdx.utils.Array;
@@ -40,6 +39,8 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.math.FlixelAffine;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
@@ -58,8 +59,8 @@ import java.util.Objects;
  * <p>Rendering is fully data-driven by the rig: every draw call looks up the clip that the inherited
  * {@link FlixelAnimationController} is currently playing, grabs the keyframe at
  * {@link FlixelAnimationController#getCurrentKeyframeIndex()}, and walks the keyframe's pre-baked
- * parts back-to-front. Every part carries a fully composed {@link Affine2}, so the inner loop is a
- * single {@link Affine2#setToProduct} plus one
+ * parts back-to-front. Every part carries a fully composed {@link FlixelAffine}, so the inner loop is a
+ * single {@link FlixelAffine#setToProduct} plus one
  * {@link Batch#draw(TextureRegion, float, float, Affine2)} per
  * visible bitmap.
  *
@@ -140,18 +141,24 @@ public class FlixelAnimateSprite extends FlixelSprite {
   /**
    * Preallocated affine reused by {@link #draw(FlixelBatch)} so we never allocate on the hot path. At the
    * start of each draw call it is set to a translate, rotate, scale, and origin pivot composing the
-   * sprite's world transform; each part's baked affine is then post-multiplied into {@link #drawAffine}
-   * for the {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call.
+   * sprite's world transform; each part's baked affine is then post-multiplied into {@link #drawAffine}.
    */
   @NotNull
-  private final Affine2 baseAffine = new Affine2();
+  private final FlixelAffine baseAffine = new FlixelAffine();
 
   /**
-   * Scratch affine used to hold the per-part composed matrix passed to
-   * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)}.
+   * Scratch affine holding the per-part composed transform for each drawn piece.
    */
   @NotNull
-  private final Affine2 drawAffine = new Affine2();
+  private final FlixelAffine drawAffine = new FlixelAffine();
+
+  /**
+   * Scratch gdx affine used only to hand {@link #drawAffine} to the batch's
+   * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call, which
+   * takes a gdx transform. Kept as a reused field so the bridge allocates nothing per frame.
+   */
+  @NotNull
+  private final Affine2 batchAffine = new Affine2();
 
   /**
    * Preallocated clip bounds rect reused by {@link #draw(FlixelBatch)} to avoid per-frame
@@ -828,8 +835,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float rigBottom = wy - getOffsetY();
     float rigAngle = getAngle();
     if (rigAngle != 0f) {
-      float cos = Math.abs(MathUtils.cosDeg(rigAngle));
-      float sin = Math.abs(MathUtils.sinDeg(rigAngle));
+      float cos = Math.abs(FlixelMath.cosDeg(rigAngle));
+      float sin = Math.abs(FlixelMath.sinDeg(rigAngle));
       float rotW = cos * rigCullW + sin * rigCullH;
       float rotH = sin * rigCullW + cos * rigCullH;
       rigLeft -= (rotW - rigCullW) * 0.5f;
@@ -936,7 +943,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
       // (w, 0), (w, h), (0, h) that Batch.draw() will emit, where (w, h) are the region's
       // pixel dimensions.
       drawAffine.setToProduct(baseAffine, part.local);
-      batch.draw(frame.getRegion(), frame.getRegionWidth(), frame.getRegionHeight(), drawAffine);
+      batchAffine.m00 = drawAffine.m00;
+      batchAffine.m01 = drawAffine.m01;
+      batchAffine.m02 = drawAffine.m02;
+      batchAffine.m10 = drawAffine.m10;
+      batchAffine.m11 = drawAffine.m11;
+      batchAffine.m12 = drawAffine.m12;
+      batch.draw(frame.getRegion(), frame.getRegionWidth(), frame.getRegionHeight(), batchAffine);
     }
 
     batch.setColor(Color.WHITE);

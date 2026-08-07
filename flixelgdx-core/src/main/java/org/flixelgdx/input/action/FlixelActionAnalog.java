@@ -23,9 +23,8 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.ObjectMap;
-
+import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,9 +98,9 @@ public final class FlixelActionAnalog extends FlixelAction {
    */
   private float flickThreshold = 0.3f;
 
-  private final ObjectMap<String, FlixelAnalogBinding> namedBindings = new ObjectMap<>(12);
+  private final FlixelMap<String, FlixelAnalogBinding> namedBindings = new FlixelMap<>(12);
 
-  private final Vector2 scratch = new Vector2();
+  private final FlixelVector scratch = new FlixelVector();
 
   private float x;
   private float y;
@@ -174,7 +173,7 @@ public final class FlixelActionAnalog extends FlixelAction {
    * @return {@code true} if the binding was found and removed.
    */
   public boolean removeBinding(@NotNull FlixelAnalogBinding binding) {
-    ObjectMap.Keys<String> keys = namedBindings.keys();
+    FlixelMap.Keys<String> keys = namedBindings.keys();
     while (keys.hasNext()) {
       String key = keys.next();
       if (namedBindings.get(key) == binding) {
@@ -209,7 +208,7 @@ public final class FlixelActionAnalog extends FlixelAction {
       return;
     }
     scratch.set(0f, 0f);
-    ObjectMap.Values<FlixelAnalogBinding> vals = namedBindings.values();
+    FlixelMap.Values<FlixelAnalogBinding> vals = namedBindings.values();
     while (vals.hasNext()) {
       vals.next().accumulate(scratch);
     }

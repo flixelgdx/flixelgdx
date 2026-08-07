@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.debug;
 
-import com.badlogic.gdx.utils.ObjectMap;
+import org.flixelgdx.collections.FlixelMap;
 
 /**
  * Abstract base for custom entries shown in the debug overlay's <b>Tracker</b> panel.
@@ -33,7 +33,7 @@ import com.badlogic.gdx.utils.ObjectMap;
  * of related values, such as an inventory, an AI state machine, or a table of spawn weights, that would be
  * hard to read as a flood of {@code Flixel.info} log lines.
  *
- * <p>To keep the overlay allocation-free, hold a single reusable {@link ObjectMap} as a field and return it
+ * <p>To keep the overlay allocation-free, hold a single reusable {@link FlixelMap} as a field and return it
  * from {@link #getTrackedValues()}, only updating its values in place each frame. Keep the same set of keys
  * between frames so the panel's row order stays stable. Register instances via
  * {@link FlixelDebugManager#addTrackerEntry(FlixelDebugTrackerEntry)} (for example
@@ -45,7 +45,7 @@ import com.badlogic.gdx.utils.ObjectMap;
  *
  *   private final EnemyManager manager;
  *   // Reuse one map; we only update its values each frame, never reallocate it.
- *   private final ObjectMap<String, String> values = new ObjectMap<>();
+ *   private final FlixelMap<String, String> values = new FlixelMap<>();
  *
  *   public EnemyTrackerEntry(EnemyManager manager) {
  *     super("Enemies");
@@ -53,7 +53,7 @@ import com.badlogic.gdx.utils.ObjectMap;
  *   }
  *
  *   @Override
- *   public ObjectMap<String, String> getTrackedValues() {
+ *   public FlixelMap<String, String> getTrackedValues() {
  *     values.put("Alive", String.valueOf(manager.getAliveCount()));
  *     values.put("Pooled", String.valueOf(manager.getPooledCount()));
  *     return values;
@@ -84,10 +84,10 @@ public abstract class FlixelDebugTrackerEntry {
    * Called by the debug overlay (on its refresh interval) to retrieve the {@code label -> value} pairs this
    * entry wants to display. Return an empty map to hide the entry temporarily.
    *
-   * <p>Prefer returning a single reused {@link ObjectMap} field whose values you update in place, rather than
+   * <p>Prefer returning a single reused {@link FlixelMap} field whose values you update in place, rather than
    * allocating a new map each call. This keeps the debugger free of per-frame garbage.
    *
    * @return The label-to-value map to display, never {@code null}.
    */
-  public abstract ObjectMap<String, String> getTrackedValues();
+  public abstract FlixelMap<String, String> getTrackedValues();
 }

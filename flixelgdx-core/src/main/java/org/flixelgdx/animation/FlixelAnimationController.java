@@ -27,16 +27,16 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.XmlReader;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,7 +66,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
   /** A map of animation names to their respective {@link Animation} instances. */
   @NotNull
-  private final ObjectMap<String, Animation<FlixelFrame>> animations = new ObjectMap<>();
+  private final FlixelMap<String, Animation<FlixelFrame>> animations = new FlixelMap<>();
 
   /**
    * Per-animation pixel offsets applied to the owner when a clip starts.
@@ -75,7 +75,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * which keeps the feature opt-in and out of the way of manual {@link FlixelSprite#setOffset} calls.
    */
   @NotNull
-  private final ObjectMap<String, float[]> animationOffsets = new ObjectMap<>();
+  private final FlixelMap<String, float[]> animationOffsets = new FlixelMap<>();
 
   /**
    * Optional state machine to update automatically alongside this controller. When non-null,
@@ -468,7 +468,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   public void setPlayDirection(int playDirection) {
-    playDirection = MathUtils.clamp(playDirection, -1, 1);
+    playDirection = FlixelMath.clamp(playDirection, -1, 1);
     this.playDirection = playDirection >= 0 ? 1 : -1;
   }
 
@@ -649,7 +649,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param name The animation that is starting.
    */
   private void applyAnimationOffset(@NotNull String name) {
-    if (animationOffsets.size == 0) {
+    if (animationOffsets.getSize() == 0) {
       return;
     }
     float[] offset = animationOffsets.get(name);
@@ -676,7 +676,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
   @Override
   public void update(float elapsed) {
-    if (animations.size == 0 || paused || currentAnim.isEmpty()) {
+    if (animations.getSize() == 0 || paused || currentAnim.isEmpty()) {
       return;
     }
     Animation<FlixelFrame> anim = animations.get(currentAnim);
@@ -693,7 +693,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
         }
       }
     } else if (duration > 0f) {
-      stateTime = MathUtils.clamp(stateTime, 0f, duration);
+      stateTime = FlixelMath.clamp(stateTime, 0f, duration);
     }
 
     int frameIndex = computeKeyframeIndex(anim);
@@ -730,7 +730,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   @NotNull
-  public ObjectMap<String, Animation<FlixelFrame>> getAnimations() {
+  public FlixelMap<String, Animation<FlixelFrame>> getAnimations() {
     return animations;
   }
 

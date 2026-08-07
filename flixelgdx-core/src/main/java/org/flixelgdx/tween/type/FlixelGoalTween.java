@@ -23,9 +23,8 @@
  */
 package org.flixelgdx.tween.type;
 
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.FloatArray;
-
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelFloatArray;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -76,13 +75,13 @@ public class FlixelGoalTween extends FlixelTween {
    * Cached property goals captured at {@link #start()} to avoid re-allocating the list every
    * frame inside {@link #updateTweenValues()}.
    */
-  protected Array<FlixelTweenSettings.FlixelTweenGoal> cachedPropertyGoals = new Array<>();
+  protected FlixelArray<FlixelTweenSettings.FlixelTweenGoal> cachedPropertyGoals = new FlixelArray<>();
 
   /**
    * Initial values of each property goal, captured from their getter at {@link #start()}, indexed
    * parallel to {@link #cachedPropertyGoals}.
    */
-  protected FloatArray propertyGoalStartValues = new FloatArray();
+  protected FlixelFloatArray propertyGoalStartValues = new FlixelFloatArray();
 
   /**
    * Constructs a new goal tween with the given settings. Goals must be added via
@@ -166,7 +165,7 @@ public class FlixelGoalTween extends FlixelTween {
 
   @Override
   protected void updateTweenValues() {
-    for (int i = 0; i < cachedPropertyGoals.size; i++) {
+    for (int i = 0; i < cachedPropertyGoals.getSize(); i++) {
       float startValue = propertyGoalStartValues.get(i);
       var goal = cachedPropertyGoals.get(i);
       if (goal == null) {
@@ -239,7 +238,7 @@ public class FlixelGoalTween extends FlixelTween {
     var propertyGoals = tweenSettings.getGoals();
     cachedPropertyGoals.clear();
     propertyGoalStartValues.clear();
-    for (int i = 0; i < propertyGoals.size; i++) {
+    for (int i = 0; i < propertyGoals.getSize(); i++) {
       var goal = propertyGoals.get(i);
       if (goal == null) {
         continue;

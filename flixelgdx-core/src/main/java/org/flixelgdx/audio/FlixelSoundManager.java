@@ -23,12 +23,10 @@
  */
 package org.flixelgdx.audio;
 
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Disposable;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.jetbrains.annotations.NotNull;
@@ -47,10 +45,10 @@ import org.jetbrains.annotations.Nullable;
  * otherwise enqueue and block-load that source before creating a {@link FlixelSound}.
  * External paths still bypass the asset manager and hit the backend directly.
  */
-public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, Disposable {
+public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
 
   private final FlixelSoundBackend.Factory factory;
-  private final Array<FlixelSound> activeSounds = new Array<>(false, 8);
+  private final FlixelArray<FlixelSound> activeSounds = new FlixelArray<>(false, 8);
   private Object sfxGroup;
   private Object musicGroup;
 
@@ -79,10 +77,10 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, D
    */
   public void resetSession() {
     if (music != null) {
-      music.dispose();
+      music.destroy();
       music = null;
     }
-    for (int i = 0; i < activeSounds.size; i++) {
+    for (int i = 0; i < activeSounds.getSize(); i++) {
       FlixelSound s = activeSounds.get(i);
       if (s.isExists()) {
         s.destroy();
@@ -113,7 +111,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, D
    * pruned from the tracking list without being double-destroyed.
    */
   public void clearNonPersist() {
-    for (int i = activeSounds.size - 1; i >= 0; i--) {
+    for (int i = activeSounds.getSize() - 1; i >= 0; i--) {
       FlixelSound s = activeSounds.get(i);
       if (!s.isExists()) {
         activeSounds.removeIndex(i);
@@ -384,7 +382,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, D
    */
   @Override
   public void update(float elapsed) {
-    for (int i = activeSounds.size - 1; i >= 0; i--) {
+    for (int i = activeSounds.getSize() - 1; i >= 0; i--) {
       FlixelSound s = activeSounds.get(i);
       if (s.isExists()) {
         s.update(elapsed);
@@ -417,10 +415,10 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, D
   @Override
   public void destroy() {
     if (music != null) {
-      music.dispose();
+      music.destroy();
       music = null;
     }
-    for (int i = 0; i < activeSounds.size; i++) {
+    for (int i = 0; i < activeSounds.getSize(); i++) {
       FlixelSound s = activeSounds.get(i);
       if (s.isExists()) {
         s.destroy();
@@ -430,10 +428,5 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable, D
     factory.disposeGroup(sfxGroup);
     factory.disposeGroup(musicGroup);
     factory.disposeEngine();
-  }
-
-  @Override
-  public final void dispose() {
-    destroy();
   }
 }

@@ -39,8 +39,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
  * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
  * it clears lifecycle state and, in subclasses such as {@link FlixelSprite}, releases graphics and
- * other resources. {@link #dispose()} and {@link #reset()} (for {@link com.badlogic.gdx.utils.Pool}) delegate to
- * {@link #destroy()}, which aligns with libGDX's {@link com.badlogic.gdx.utils.Disposable} expectations.
+ * other resources. {@link #reset()} (the {@link org.flixelgdx.collections.FlixelPoolable} hook) delegates to
+ * {@link #destroy()}, so returning an instance to a {@link org.flixelgdx.collections.FlixelPool} cleans it up.
  *
  * <table border="1">
  *   <caption><strong>Lifecycle cheat sheet</strong></caption>
@@ -239,10 +239,10 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * <p>Override this function to clean up any resources used by this object,
    * such as textures, fonts, sounds, etc.
    *
-   * <p>This function is called automatically when {@link #dispose()} or
-   * {@link #reset()} is executed, so you don't need to call it manually.
+   * <p>This function is called automatically when {@link #reset()} is executed
+   * (for example when this object is returned to a pool), so you don't need to
+   * call it manually.
    *
-   * @see #dispose()
    * @see #reset()
    */
   @Override
@@ -271,15 +271,6 @@ public abstract class FlixelBasic implements IFlixelBasic {
   public void revive() {
     alive = true;
     exists = true;
-  }
-
-  /**
-   * Automatically calls {@link #destroy()}. Marked as final to prevent subclasses from overriding it,
-   * they should call {@link #destroy()} instead.
-   */
-  @Override
-  public final void dispose() {
-    destroy();
   }
 
   /**

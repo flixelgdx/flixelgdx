@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.Array;
+import org.flixelgdx.collections.FlixelArray;
 
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -113,7 +113,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
 
-  protected final Array<FlixelAction> members;
+  protected final FlixelArray<FlixelAction> members;
 
   /**
    * Optional Steam Input bridge; when non-null, digital and analog actions also read these values
@@ -136,7 +136,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
    *   {@code false} and call {@link #update(float)} / {@link #endFrame()} manually.
    */
   protected FlixelActionSet(boolean registerForGlobalLifecycle) {
-    this.members = new Array<>(16);
+    this.members = new FlixelArray<>(16);
     this.registerForGlobalLifecycle = registerForGlobalLifecycle;
     if (registerForGlobalLifecycle) {
       FlixelActionSets.register(this);
@@ -160,7 +160,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
    */
   @Override
   public void update(float elapsed) {
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       members.get(i).updateAction(elapsed);
     }
   }
@@ -170,7 +170,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
    * after keys, mouse, and gamepads {@code endFrame()}.
    */
   public void endFrame() {
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       members.get(i).endFrameAction();
     }
   }
@@ -180,7 +180,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
     if (registerForGlobalLifecycle) {
       FlixelActionSets.unregister(this);
     }
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelAction a = members.get(i);
       a.setOwner(null);
       a.resetAction();

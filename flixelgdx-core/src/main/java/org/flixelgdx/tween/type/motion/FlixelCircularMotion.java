@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import com.badlogic.gdx.math.MathUtils;
+import org.flixelgdx.math.FlixelMath;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -64,17 +64,17 @@ public class FlixelCircularMotion extends FlixelMotion {
     this.centerX = centerX;
     this.centerY = centerY;
     this.radius = radius;
-    this.angleStartRad = angleDeg * MathUtils.degreesToRadians;
-    this.angleSweepRad = MathUtils.PI2 * (clockwise ? 1f : -1f);
+    this.angleStartRad = angleDeg * FlixelMath.DEG_TO_RAD;
+    this.angleSweepRad = FlixelMath.PI2 * (clockwise ? 1f : -1f);
     float a = angleStartRad;
-    motionX = centerX + MathUtils.cos(a) * radius;
-    motionY = centerY + MathUtils.sin(a) * radius;
-    float circumference = radius * MathUtils.PI2;
+    motionX = centerX + FlixelMath.cos(a) * radius;
+    motionY = centerY + FlixelMath.sin(a) * radius;
+    float circumference = radius * FlixelMath.PI2;
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(circumference / speed);
       }
     }
@@ -84,8 +84,8 @@ public class FlixelCircularMotion extends FlixelMotion {
   @Override
   protected void computeMotion() {
     float a = angleStartRad + angleSweepRad * scale;
-    motionX = centerX + MathUtils.cos(a) * radius;
-    motionY = centerY + MathUtils.sin(a) * radius;
+    motionX = centerX + FlixelMath.cos(a) * radius;
+    motionY = centerY + FlixelMath.sin(a) * radius;
   }
 
   public float getCenterX() {

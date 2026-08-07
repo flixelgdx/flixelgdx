@@ -24,7 +24,6 @@
 package org.flixelgdx.asset;
 
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.utils.Disposable;
 
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
@@ -69,7 +68,7 @@ import org.jetbrains.annotations.Nullable;
  * <p><b>For advanced libGDX interop</b> (custom loaders, asset descriptors, raw API access),
  * use {@link #getManager()} to reach the underlying {@link AssetManager} directly.
  */
-public interface FlixelAssetManager extends FlixelDestroyable, Disposable {
+public interface FlixelAssetManager extends FlixelDestroyable {
 
   /**
    * Queues an asset for loading using the file extension to select a loader from the registry.

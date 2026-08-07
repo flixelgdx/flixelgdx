@@ -34,9 +34,6 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -44,6 +41,8 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.functional.FlixelShaderable;
+import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelShader;
@@ -213,7 +212,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * bounds. For rapid prototyping, use the preset styles via
    * {@link #follow(FlixelPositional, FollowStyle, float)}.
    */
-  public Rectangle deadzone;
+  public FlixelRect deadzone;
 
   /** The current follow style used when a {@link #target} is set. */
   public FollowStyle style = FollowStyle.LOCKON;
@@ -257,7 +256,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   private final Camera camera;
   private final Color fadeColor = new Color(Color.BLACK);
   private final Color flashColor = new Color(Color.WHITE);
-  private final Rectangle tmpRect = new Rectangle();
+  private final FlixelRect tmpRect = new FlixelRect();
   private final Viewport viewport;
   private Runnable fadeOnComplete;
   private Runnable flashOnComplete;
@@ -461,7 +460,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Pushes {@link #scrollX}/{@link #scrollY}, zoom, angle, and shake offsets into the underlying libGDX {@link Camera}.
    *
    * <p>Call this after mutating scroll outside {@link #update(float)} (e.g., during a debug pause pan) and before
-   * {@link Viewport#unproject(Vector2)} or any rendering.
+   * {@link Viewport#unproject(com.badlogic.gdx.math.Vector2)} or any rendering.
    * Safe to call every frame; {@link #update(float)} ends with this automatically.
    *
    * <p>Drawables use view (batch) coordinates from {@link #worldToViewX(float, float)} and
@@ -971,7 +970,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param rect The rectangle to test.
    * @return {@code true} if the rectangle overlaps the camera display.
    */
-  public boolean containsRect(Rectangle rect) {
+  public boolean containsRect(FlixelRect rect) {
     return containsPoint(rect.x, rect.y, rect.width, rect.height);
   }
 
@@ -1090,7 +1089,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     followLeadY = other.followLeadY;
     followLerp = other.followLerp;
     style = other.style;
-    deadzone = (other.deadzone != null) ? new Rectangle(other.deadzone) : null;
+    deadzone = (other.deadzone != null) ? new FlixelRect(other.deadzone) : null;
 
     minScrollX = other.minScrollX;
     maxScrollX = other.maxScrollX;
@@ -1185,8 +1184,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       return;
     }
 
-    float sx = (shakeAxes == FlixelAxes.Y) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * width);
-    float sy = (shakeAxes == FlixelAxes.X) ? 0 : (MathUtils.random(-1f, 1f) * shakeIntensity * height);
+    float sx = (shakeAxes == FlixelAxes.Y) ? 0 : (Flixel.random.nextFloat(-1f, 1f) * shakeIntensity * width);
+    float sy = (shakeAxes == FlixelAxes.X) ? 0 : (Flixel.random.nextFloat(-1f, 1f) * shakeIntensity * height);
 
     if (pixelPerfectShake || pixelPerfectRender) {
       sx = Math.round(sx);
@@ -1297,8 +1296,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       scrollY = desiredY;
     } else {
       float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * 60f);
-      scrollX = MathUtils.lerp(scrollX, desiredX, lerpFactor);
-      scrollY = MathUtils.lerp(scrollY, desiredY, lerpFactor);
+      scrollX = FlixelMath.lerp(scrollX, desiredX, lerpFactor);
+      scrollY = FlixelMath.lerp(scrollY, desiredY, lerpFactor);
     }
   }
 
@@ -1336,7 +1335,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
         return;
       }
     }
-    deadzone = new Rectangle((vw - w) / 2f, (vh - h) / 2f, w, h);
+    deadzone = new FlixelRect((vw - w) / 2f, (vh - h) / 2f, w, h);
   }
 
   private static int resolveWindowWidth() {
@@ -1422,7 +1421,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       return true;
     }
     FlixelGame game = Flixel.game;
-    if (game == null || game.getCameras() == null || game.getCameras().size <= 1) {
+    if (game == null || game.getCameras() == null || game.getCameras().getSize() <= 1) {
       return false;
     }
     boolean coversFullWindow = x <= 0f && y <= 0f && width >= screenWidth && height >= screenHeight;
@@ -1443,7 +1442,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * should convert to libGDX bottom-left coordinates right before
    * {@link Viewport#setScreenBounds(int, int, int, int)}.
    */
-  private void resolveScreenRegionTopLeft(int screenWidth, int screenHeight, Rectangle out) {
+  private void resolveScreenRegionTopLeft(int screenWidth, int screenHeight, FlixelRect out) {
     int resolvedRegionWidth = hasCustomPixelRegion
         ? regionWidth
         : ((width > 0) ? width : screenWidth);
@@ -1468,10 +1467,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
         topLeftY = py - (resolvedRegionHeight / 2f);
       }
       case NORMALIZED_RECT -> {
-        float nx = MathUtils.clamp(normalizedRegionX, 0f, 1f);
-        float ny = MathUtils.clamp(normalizedRegionY, 0f, 1f);
-        float nw = MathUtils.clamp(normalizedRegionWidth, 0f, 1f);
-        float nh = MathUtils.clamp(normalizedRegionHeight, 0f, 1f);
+        float nx = FlixelMath.clamp(normalizedRegionX, 0f, 1f);
+        float ny = FlixelMath.clamp(normalizedRegionY, 0f, 1f);
+        float nw = FlixelMath.clamp(normalizedRegionWidth, 0f, 1f);
+        float nh = FlixelMath.clamp(normalizedRegionHeight, 0f, 1f);
         float resolvedW = Math.max(1f, nw * screenWidth);
         float resolvedH = Math.max(1f, nh * screenHeight);
         topLeftX = nx * screenWidth;
@@ -1688,10 +1687,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * Returns a rectangle representing the view area within the camera buffer, using view-space
-   * coordinates. The returned {@link Rectangle} is an internal temporary instance shared by this
+   * coordinates. The returned {@link FlixelRect} is an internal temporary instance shared by this
    * camera - copy the result if you need to hold onto it past the current frame.
    */
-  public Rectangle getViewMarginRect() {
+  public FlixelRect getViewMarginRect() {
     return tmpRect.set(getViewMarginLeft(), getViewMarginTop(), getViewWidth(), getViewHeight());
   }
 

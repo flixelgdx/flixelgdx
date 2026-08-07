@@ -25,13 +25,13 @@ package org.flixelgdx.group;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.SnapshotArray;
 
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelRect;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +76,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private static final Random RANDOM = new Random();
 
   /** The members belonging to this group. */
-  protected final SnapshotArray<FlixelSprite> members;
+  protected final FlixelArray<FlixelSprite> members;
 
   /** Maximum members allowed. When {@code 0}, the group can grow without limit. */
   protected int maxSize;
@@ -85,7 +85,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private float rotationRadius;
 
   /** Reusable rectangle for internal calculations that would otherwise allocate. */
-  private final Rectangle tmpBoundsRect = new Rectangle();
+  private final FlixelRect tmpBoundsRect = new FlixelRect();
 
   private RotationMode rotationMode = RotationMode.INDIVIDUAL;
   private int facing = FlixelDirectionFlags.RIGHT;
@@ -108,7 +108,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     this.maxSize = Math.max(0, maxSize);
     this.rotationRadius = rotationRadius;
     super.setAngle(rotation);
-    members = new SnapshotArray<>(FlixelSprite[]::new);
+    members = new FlixelArray<>(FlixelSprite[]::new);
   }
 
   @Override
@@ -204,7 +204,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setAlpha(float a) {
     super.setAlpha(a);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setAlpha(a);
@@ -222,7 +222,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setColor(@NotNull Color tint) {
     super.setColor(tint);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setColor(tint);
@@ -236,7 +236,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setColor(float r, float g, float b, float a) {
     super.setColor(r, g, b, a);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setColor(r, g, b, a);
@@ -250,7 +250,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setColor(@NotNull FlixelColor tint) {
     super.setColor(tint);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setColor(tint);
@@ -264,7 +264,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setScale(float scaleXY) {
     super.setScale(scaleXY);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setScale(scaleXY);
@@ -278,7 +278,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setScale(float scaleX, float scaleY) {
     super.setScale(scaleX, scaleY);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setScale(scaleX, scaleY);
@@ -292,7 +292,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void flip(boolean x, boolean y) {
     super.flip(x, y);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.flip(x, y);
@@ -313,7 +313,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       super.flip(true, false);
     }
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s == null || s.isFlipX() == flipX) {
         continue;
@@ -335,7 +335,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       super.flip(false, true);
     }
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s == null || s.isFlipY() == flipY) {
         continue;
@@ -350,7 +350,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     this.antialiasing = antialiasing;
     super.setAntialiasing(antialiasing);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setAntialiasing(antialiasing);
@@ -377,7 +377,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setFacing(int facing) {
     this.facing = facing;
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setFacing(facing);
@@ -391,7 +391,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setOrigin(float originX, float originY) {
     super.setOrigin(originX, originY);
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setOrigin(originX, originY);
@@ -405,7 +405,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void setOriginCenter() {
     super.setOriginCenter();
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setOriginCenter();
@@ -424,7 +424,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   @Override
   public void add(@NotNull FlixelSprite sprite) {
     Objects.requireNonNull(sprite);
-    if (maxSize > 0 && members.size >= maxSize) {
+    if (maxSize > 0 && members.getSize() >= maxSize) {
       return;
     }
     preAdd(sprite);
@@ -454,11 +454,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (sprite == null) {
       return;
     }
-    if (maxSize > 0 && members.size >= maxSize) {
+    if (maxSize > 0 && members.getSize() >= maxSize) {
       return;
     }
     preAdd(sprite);
-    index = MathUtils.clamp(index, 0, members.size);
+    index = FlixelMath.clamp(index, 0, members.getSize());
     members.insert(index, sprite);
   }
 
@@ -495,7 +495,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       dead.visible = true;
       return dead;
     }
-    if (maxSize > 0 && members.size >= maxSize) {
+    if (maxSize > 0 && members.getSize() >= maxSize) {
       return null;
     }
     FlixelSprite fresh = new FlixelSprite();
@@ -536,7 +536,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void clear() {
     FlixelSprite[] items = members.begin();
     try {
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         FlixelSprite s = items[i];
         if (s != null) {
           restoreLocalCoordinates(s);
@@ -555,20 +555,20 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @return The member at the given index, or {@code null} if the index is out of bounds.
    */
   public FlixelSprite get(int index) {
-    if (index < 0 || index >= members.size) {
+    if (index < 0 || index >= members.getSize()) {
       return null;
     }
     return members.get(index);
   }
 
   public int getLength() {
-    return members.size;
+    return members.getSize();
   }
 
   /** Returns the number of non-null members, which may differ from {@link #getLength()}. */
   public int countMembers() {
     int count = 0;
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       if (members.get(i) != null) {
         count++;
       }
@@ -577,12 +577,12 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   public boolean isEmpty() {
-    return members.size == 0;
+    return members.getSize() == 0;
   }
 
   /** Returns whether this group contains no members. */
   public boolean getEmpty() {
-    return members.size == 0;
+    return members.getSize() == 0;
   }
 
   @Override
@@ -597,13 +597,13 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   @Override
   @NotNull
-  public SnapshotArray<FlixelSprite> getMembers() {
+  public FlixelArray<FlixelSprite> getMembers() {
     return members;
   }
 
   /** Returns a random member, or {@code null} if the group is empty. */
   public FlixelSprite getRandom() {
-    return getRandom(0, members.size);
+    return getRandom(0, members.getSize());
   }
 
   /**
@@ -614,14 +614,14 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @return A random member from the range, or {@code null} if the range is empty.
    */
   public FlixelSprite getRandom(int startIndex, int length) {
-    if (members.size == 0) {
+    if (members.getSize() == 0) {
       return null;
     }
-    startIndex = MathUtils.clamp(startIndex, 0, members.size - 1);
+    startIndex = FlixelMath.clamp(startIndex, 0, members.getSize() - 1);
     if (length <= 0) {
-      length = members.size;
+      length = members.getSize();
     }
-    int end = Math.min(startIndex + length, members.size);
+    int end = Math.min(startIndex + length, members.getSize());
     int span = end - startIndex;
     if (span <= 0) {
       return null;
@@ -650,7 +650,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       return null;
     }
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null && predicate.test(s)) {
         return s;
@@ -712,7 +712,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param index2 The index of the second sprite to swap.
    */
   public void swapMembers(int index1, int index2) {
-    if (index1 < 0 || index1 >= members.size || index2 < 0 || index2 >= members.size) {
+    if (index1 < 0 || index1 >= members.getSize() || index2 < 0 || index2 >= members.getSize()) {
       return;
     }
     members.swap(index1, index2);
@@ -725,11 +725,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param out An optional output rectangle. If {@code null}, a new one is created.
    * @return The bounding rectangle.
    */
-  public Rectangle getBounds(Rectangle out) {
+  public FlixelRect getBounds(FlixelRect out) {
     if (out == null) {
-      out = new Rectangle();
+      out = new FlixelRect();
     }
-    if (members.size == 0) {
+    if (members.getSize() == 0) {
       out.set(getX(), getY(), 0, 0);
       return out;
     }
@@ -739,7 +739,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     float maxX = -Float.MAX_VALUE;
     float maxY = -Float.MAX_VALUE;
 
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = members.get(i);
       if (s == null) {
         continue;
@@ -769,11 +769,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * @param out An optional output vector. If {@code null}, a new one is created.
    * @return The midpoint of the group's bounds.
    */
-  public Vector2 getMidpoint(Vector2 out) {
+  public FlixelVector getMidpoint(FlixelVector out) {
     if (out == null) {
-      out = new Vector2();
+      out = new FlixelVector();
     }
-    Rectangle bounds = getBounds(tmpBoundsRect);
+    FlixelRect bounds = getBounds(tmpBoundsRect);
     out.set(bounds.x + bounds.width / 2f, bounds.y + bounds.height / 2f);
     return out;
   }
@@ -783,7 +783,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     super.update(elapsed);
 
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite member = items[i];
       if (member != null) {
         member.update(elapsed);
@@ -802,13 +802,13 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       return;
     }
 
-    if (members.size == 0) {
+    if (members.getSize() == 0) {
       super.draw(batch);
       return;
     }
 
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite member = items[i];
       if (member != null) {
         member.draw(batch);
@@ -821,7 +821,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   public void destroy() {
     FlixelSprite[] items = members.begin();
     try {
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         FlixelSprite s = items[i];
         if (s != null) {
           restoreLocalCoordinates(s);
@@ -857,7 +857,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   private void transformMembersX(float dx) {
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setX(s.getX() + dx);
@@ -868,7 +868,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   private void transformMembersY(float dy) {
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setY(s.getY() + dy);
@@ -879,7 +879,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
 
   private void transformMembersPosition(float dx, float dy) {
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setPosition(s.getX() + dx, s.getY() + dy);
@@ -894,7 +894,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    */
   private void transformMembersIndividualRotation(float delta) {
     FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = items[i];
       if (s != null) {
         s.setAngle(s.getAngle() + delta);
@@ -909,10 +909,10 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * {@link RotationMode#ORBIT}.
    */
   private void orbitMembersAroundCenter(float angleDelta) {
-    float cos = MathUtils.cosDeg(angleDelta);
-    float sin = MathUtils.sinDeg(angleDelta);
+    float cos = FlixelMath.cosDeg(angleDelta);
+    float sin = FlixelMath.sinDeg(angleDelta);
 
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelSprite s = members.get(i);
       if (s == null) {
         continue;
@@ -932,7 +932,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * frame from {@link #update(float)} when using {@link RotationMode#WHEEL}.
    */
   private void applyWheelRotation() {
-    int n = members.size;
+    int n = members.getSize();
     if (n == 0) {
       return;
     }
@@ -945,8 +945,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       }
 
       float angleDeg = getAngle() + angleStep * i;
-      float px = getX() + rotationRadius * MathUtils.cosDeg(angleDeg);
-      float py = getY() + rotationRadius * MathUtils.sinDeg(angleDeg);
+      float px = getX() + rotationRadius * FlixelMath.cosDeg(angleDeg);
+      float py = getY() + rotationRadius * FlixelMath.sinDeg(angleDeg);
       s.setPosition(px, py);
       s.setAngle(angleDeg);
     }

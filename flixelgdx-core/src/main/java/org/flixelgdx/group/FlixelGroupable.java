@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.group;
 
-import com.badlogic.gdx.utils.SnapshotArray;
-
+import org.flixelgdx.collections.FlixelArray;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
@@ -56,7 +55,7 @@ public interface FlixelGroupable<T> {
    * Returns the backing array, or {@code null} if the implementation has not allocated it yet ({@link FlixelGroup}).
    */
   @Nullable
-  SnapshotArray<T> getMembers();
+  FlixelArray<T> getMembers();
 
   /**
    * Returns the maximum number of members allowed. When {@code 0}, the group can grow without limit.
@@ -74,7 +73,7 @@ public interface FlixelGroupable<T> {
    * @param member The member to remove.
    */
   default void detach(T member) {
-    SnapshotArray<T> members = getMembers();
+    FlixelArray<T> members = getMembers();
     if (member == null || members == null) {
       return;
     }
@@ -83,13 +82,13 @@ public interface FlixelGroupable<T> {
 
   /** Index of the first {@code null} slot in {@link #getMembers()}, or {@code -1} if none. */
   default int getFirstNullIndex() {
-    SnapshotArray<T> members = getMembers();
+    FlixelArray<T> members = getMembers();
     if (members == null) {
       return -1;
     }
     T[] items = members.begin();
     try {
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         if (items[i] == null) {
           return i;
         }
@@ -115,7 +114,7 @@ public interface FlixelGroupable<T> {
     }
     try {
       T[] items = members.begin();
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T member = items[i];
         if (member == null) {
           continue;
@@ -144,7 +143,7 @@ public interface FlixelGroupable<T> {
     }
     try {
       T[] items = members.begin();
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T member = items[i];
         if (type.isInstance(member)) {
           callback.accept(type.cast(member));

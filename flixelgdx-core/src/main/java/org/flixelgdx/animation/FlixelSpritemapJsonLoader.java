@@ -30,10 +30,10 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
-import com.badlogic.gdx.utils.ObjectMap;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAssetPaths;
+import org.flixelgdx.collections.FlixelObjectIntMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;
@@ -125,7 +125,7 @@ public final class FlixelSpritemapJsonLoader {
   public static Array<FlixelFrame> parseAtlasSprites(
       @NotNull JsonValue spritemapRoot,
       @NotNull Texture texture,
-      @NotNull ObjectMap<String, Integer> nameToIndexOut) {
+      @NotNull FlixelObjectIntMap<String> nameToIndexOut) {
     nameToIndexOut.clear();
     JsonValue atlas = spritemapRoot.get("ATLAS");
     JsonValue sprites = (atlas != null) ? atlas.get("SPRITES") : null;
@@ -260,7 +260,7 @@ public final class FlixelSpritemapJsonLoader {
   private static Array<FlixelFrame> buildSimpleFrames(@NotNull JsonValue root, @NotNull Texture texture) {
     JsonValue atlas = root.get("ATLAS");
     if (atlas != null) {
-      ObjectMap<String, Integer> ignore = new ObjectMap<>();
+      FlixelObjectIntMap<String> ignore = new FlixelObjectIntMap<>();
       return parseAtlasSprites(root, texture, ignore);
     }
     JsonValue framesNode = root.get("frames");

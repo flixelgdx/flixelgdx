@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.tween.type;
 
-import com.badlogic.gdx.math.MathUtils;
-
+import org.flixelgdx.Flixel;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
@@ -132,8 +131,8 @@ public class FlixelShakeTween extends FlixelTween {
     float taper = fadeOut ? (1f - scale) : 1f;
     float halfX = halfRangePixelsX();
     float halfY = halfRangePixelsY();
-    float ix = (axes == FlixelAxes.Y) ? 0f : MathUtils.random(-halfX, halfX) * taper;
-    float iy = (axes == FlixelAxes.X) ? 0f : MathUtils.random(-halfY, halfY) * taper;
+    float ix = (axes == FlixelAxes.Y) ? 0f : Flixel.random.nextFloat(-halfX, halfX) * taper;
+    float iy = (axes == FlixelAxes.X) ? 0f : Flixel.random.nextFloat(-halfY, halfY) * taper;
     target.setShake(savedX + ix, savedY + iy);
   }
 

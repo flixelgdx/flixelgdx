@@ -23,16 +23,15 @@
  */
 package org.flixelgdx.group;
 
-import com.badlogic.gdx.utils.ArraySupplier;
-import com.badlogic.gdx.utils.SnapshotArray;
-
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelArraySupplier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
- * Framework-agnostic member list backed by a {@link SnapshotArray}. Use this in a plain libGDX {@code Screen} or game
+ * Framework-agnostic member list backed by a {@link FlixelArray}. Use this in a plain libGDX {@code Screen} or game
  * loop with <em>any</em> member type ({@code FlixelGroup<Actor>}, {@code FlixelGroup<YourEntity>}, etc.): call
  * {@link #add}, {@link #remove}, and {@link #forEachMember} yourself; there is no automatic {@code update}/{@code draw}.
  *
@@ -45,9 +44,9 @@ import java.util.Objects;
  */
 public class FlixelGroup<T> implements FlixelGroupable<T> {
 
-  protected SnapshotArray<T> members;
+  protected FlixelArray<T> members;
 
-  private final ArraySupplier<T[]> memberArrayFactory;
+  private final FlixelArraySupplier<T[]> memberArrayFactory;
 
   protected int maxSize;
 
@@ -56,7 +55,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
    *
    * @param arrayFactory The array factory to use.
    */
-  public FlixelGroup(@NotNull ArraySupplier<T[]> arrayFactory) {
+  public FlixelGroup(@NotNull FlixelArraySupplier<T[]> arrayFactory) {
     this(arrayFactory, 0);
   }
 
@@ -66,15 +65,15 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
    * @param arrayFactory The array factory to use.
    * @param maxSize The maximum size of the group.
    */
-  public FlixelGroup(@NotNull ArraySupplier<T[]> arrayFactory, int maxSize) {
-    this.memberArrayFactory = Objects.requireNonNull(arrayFactory, "Array factory cannot be null");
+  public FlixelGroup(@NotNull FlixelArraySupplier<T[]> arrayFactory, int maxSize) {
+    this.memberArrayFactory = Objects.requireNonNull(arrayFactory, "FlixelArray factory cannot be null");
     this.maxSize = Math.max(0, maxSize);
-    members = new SnapshotArray<>(arrayFactory);
+    members = new FlixelArray<>(arrayFactory);
   }
 
   public void ensureMembers() {
     if (members == null) {
-      members = new SnapshotArray<>(memberArrayFactory);
+      members = new FlixelArray<>(memberArrayFactory);
     }
   }
 
@@ -84,7 +83,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
       return;
     }
     ensureMembers();
-    if (maxSize > 0 && members.size >= maxSize) {
+    if (maxSize > 0 && members.getSize() >= maxSize) {
       return;
     }
     members.add(member);
@@ -107,7 +106,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
   }
 
   /**
-   * Clears the member list and discards the backing {@link SnapshotArray} so the next {@link #ensureMembers()} or
+   * Clears the member list and discards the backing {@link FlixelArray} so the next {@link #ensureMembers()} or
    * {@link #add} allocates a fresh array. Does not call any method on member instances.
    */
   public void resetStorage() {
@@ -119,7 +118,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
 
   @Override
   @Nullable
-  public SnapshotArray<T> getMembers() {
+  public FlixelArray<T> getMembers() {
     return members;
   }
 

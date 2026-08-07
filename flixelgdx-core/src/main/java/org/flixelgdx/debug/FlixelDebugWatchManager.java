@@ -24,9 +24,9 @@
 package org.flixelgdx.debug;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.supplier.ByteSupplier;
 import org.flixelgdx.functional.supplier.CharSupplier;
 import org.flixelgdx.functional.supplier.FloatSupplier;
@@ -208,7 +208,7 @@ public class FlixelDebugWatchManager {
   /**
    * Iterates every watch entry, invoking the callback with each display name and its
    * current resolved value string. The value string is materialized for the callback; prefer
-   * {@link #fillWatchLines(Array)} when drawing to avoid per-entry {@link String} churn in tight loops.
+   * {@link #fillWatchLines(FlixelArray)} when drawing to avoid per-entry {@link String} churn in tight loops.
    *
    * @param callback Receives (displayName, currentValueString) for every entry.
    */
@@ -224,16 +224,16 @@ public class FlixelDebugWatchManager {
    * Formats all watch lines into {@code output}, reusing existing {@link FlixelString} slots and
    * shrinking the array when fewer watches are registered. Each line includes markup for the debug overlay.
    *
-   * <p>Prefer {@link #fillWatchEntries(Array, Array)} when the renderer (for example a Dear ImGui based
+   * <p>Prefer {@link #fillWatchEntries(FlixelArray, FlixelArray)} when the renderer (for example a Dear ImGui based
    * overlay) is responsible for coloring keys and values separately, since that path avoids appending
    * markup tokens that the renderer has to ignore anyway.
    *
    * @param output Cleared and filled with one {@link FlixelString} per watch entry (order follows
    *   {@link Map#entrySet()}).
    */
-  public void fillWatchLines(@NotNull Array<FlixelString> output) {
+  public void fillWatchLines(@NotNull FlixelArray<FlixelString> output) {
     int n = watches.size();
-    while (output.size < n) {
+    while (output.getSize() < n) {
       output.add(new FlixelString(64));
     }
     output.setSize(n);
@@ -257,12 +257,12 @@ public class FlixelDebugWatchManager {
    * @param keys Cleared and filled with one entry per watch's display name.
    * @param values Cleared and filled with one entry per watch's current value (no formatting prefix).
    */
-  public void fillWatchEntries(@NotNull Array<FlixelString> keys, @NotNull Array<FlixelString> values) {
+  public void fillWatchEntries(@NotNull FlixelArray<FlixelString> keys, @NotNull FlixelArray<FlixelString> values) {
     int n = watches.size();
-    while (keys.size < n) {
+    while (keys.getSize() < n) {
       keys.add(new FlixelString(32));
     }
-    while (values.size < n) {
+    while (values.getSize() < n) {
       values.add(new FlixelString(48));
     }
     keys.setSize(n);

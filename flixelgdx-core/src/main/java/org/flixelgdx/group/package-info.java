@@ -1,7 +1,7 @@
 /**
  * Group and collection types for FlixelGDX.
  *
- * <p>{@link org.flixelgdx.group.FlixelGroup FlixelGroup} is a generic {@link com.badlogic.gdx.utils.SnapshotArray}
+ * <p>{@link org.flixelgdx.group.FlixelGroup FlixelGroup} is a generic {@link org.flixelgdx.collections.FlixelArray}
  * wrapper for any member type (useful in plain libGDX projects). {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}
  * adds {@link org.flixelgdx.functional.IFlixelBasic IFlixelBasic} update/draw/recycle/destroy semantics.
  *

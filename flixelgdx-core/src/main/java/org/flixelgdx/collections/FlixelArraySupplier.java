@@ -21,49 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util;
+package org.flixelgdx.collections;
 
-import org.junit.jupiter.api.Test;
+/**
+ * Creates a typed array of a requested size.
+ *
+ * <p>Java erases generic type information at runtime, so code that stores its
+ * elements in a real {@code T[]} (rather than an {@code Object[]}) cannot write
+ * {@code new T[size]} directly. This functional interface bridges that gap: a
+ * caller passes an array constructor reference, and the collection uses it to
+ * build a properly typed backing array on demand.
+ *
+ * <p>The idiomatic way to supply one is an array-constructor method reference:
+ *
+ * <pre>{@code
+ * FlixelArraySupplier<FlixelCamera[]> factory = FlixelCamera[]::new;
+ * FlixelCamera[] cameras = factory.get(8); // a new FlixelCamera[8]
+ * }</pre>
+ *
+ * @param <T> The array type produced, for example {@code String[]}.
+ */
+@FunctionalInterface
+public interface FlixelArraySupplier<T> {
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-class FlixelMathUtilTest {
-
-  private static final float DELTA = 1e-5f;
-
-  @Test
-  void roundTwoDecimals() {
-    assertEquals(3.15f, FlixelMathUtil.round(3.145f, 2), DELTA);
-  }
-
-  @Test
-  void roundZeroPlaces() {
-    assertEquals(4f, FlixelMathUtil.round(3.7f, 0), DELTA);
-  }
-
-  @Test
-  void roundZeroValue() {
-    assertEquals(0f, FlixelMathUtil.round(0f, 2), DELTA);
-  }
-
-  @Test
-  void roundNegativeValue() {
-    // -1.6 * 10 = -16.0, Math.round(-16.0f) = -16, so result is -1.6 exactly.
-    assertEquals(-1.6f, FlixelMathUtil.round(-1.6f, 1), DELTA);
-  }
-
-  @Test
-  void roundHalfUp() {
-    assertEquals(1f, FlixelMathUtil.round(0.5f, 0), DELTA);
-  }
-
-  @Test
-  void roundLargeWholeNumber() {
-    assertEquals(1000f, FlixelMathUtil.round(999.9f, 0), DELTA);
-  }
-
-  @Test
-  void roundOneDecimalPlace() {
-    assertEquals(1.2f, FlixelMathUtil.round(1.23f, 1), DELTA);
-  }
+  /**
+   * Creates a new array of the given size.
+   *
+   * @param size The length of the array to create.
+   * @return A newly allocated array of length {@code size}.
+   */
+  T get(int size);
 }

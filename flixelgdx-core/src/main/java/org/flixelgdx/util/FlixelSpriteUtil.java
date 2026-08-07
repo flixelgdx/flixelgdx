@@ -29,8 +29,6 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.TextureData;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -39,6 +37,8 @@ import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -246,10 +246,10 @@ public final class FlixelSpriteUtil {
       float b0, float b1, float a0, float a1) {
     float t = dimension <= 1 ? 1f : (position / (float) (dimension - 1));
     pm.setColor(
-        MathUtils.lerp(r0, r1, t),
-        MathUtils.lerp(g0, g1, t),
-        MathUtils.lerp(b0, b1, t),
-        MathUtils.lerp(a0, a1, t));
+        FlixelMath.lerp(r0, r1, t),
+        FlixelMath.lerp(g0, g1, t),
+        FlixelMath.lerp(b0, b1, t),
+        FlixelMath.lerp(a0, a1, t));
   }
 
   /**
@@ -447,21 +447,21 @@ public final class FlixelSpriteUtil {
    */
   public static void setBrightness(@NotNull FlixelSprite sprite, float brightness) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    brightness = MathUtils.clamp(brightness, -1f, 1f);
+    brightness = FlixelMath.clamp(brightness, -1f, 1f);
     Color c = sprite.getGdxColor();
     float r = c.r;
     float g = c.g;
     float b = c.b;
     float a = c.a;
     if (brightness >= 0f) {
-      r = MathUtils.lerp(r, 1f, brightness);
-      g = MathUtils.lerp(g, 1f, brightness);
-      b = MathUtils.lerp(b, 1f, brightness);
+      r = FlixelMath.lerp(r, 1f, brightness);
+      g = FlixelMath.lerp(g, 1f, brightness);
+      b = FlixelMath.lerp(b, 1f, brightness);
     } else {
       float t = -brightness;
-      r = MathUtils.lerp(r, 0f, t);
-      g = MathUtils.lerp(g, 0f, t);
-      b = MathUtils.lerp(b, 0f, t);
+      r = FlixelMath.lerp(r, 0f, t);
+      g = FlixelMath.lerp(g, 0f, t);
+      b = FlixelMath.lerp(b, 0f, t);
     }
     sprite.setColor(r, g, b, a);
   }
@@ -566,7 +566,7 @@ public final class FlixelSpriteUtil {
     if (len <= 0.0001f) {
       return;
     }
-    float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+    float angle = FlixelMath.atan2(dy, dx) * FlixelMath.RAD_TO_DEG;
     batch.setColor(color);
     batch.draw(whitePixel, startX, startY - thickness * 0.5f, 0f, thickness * 0.5f, len, thickness, 1f, 1f, angle, 0, 0,
         1, 1, false, false);
@@ -581,7 +581,7 @@ public final class FlixelSpriteUtil {
    * @return The midpoint of the sprite.
    */
   @NotNull
-  public static Vector2 getMidpoint(@NotNull FlixelSprite sprite, @NotNull Vector2 out) {
+  public static FlixelVector getMidpoint(@NotNull FlixelSprite sprite, @NotNull FlixelVector out) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     float w = sprite.getWidth() * Math.abs(sprite.getScaleX());
     float h = sprite.getHeight() * Math.abs(sprite.getScaleY());

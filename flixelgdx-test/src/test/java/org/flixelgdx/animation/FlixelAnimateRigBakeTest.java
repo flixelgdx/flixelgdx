@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.math.Affine2;
-
+import org.flixelgdx.math.FlixelAffine;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,7 +45,7 @@ class FlixelAnimateRigBakeTest {
   private static final float DELTA = 1e-4f;
 
   /** Applies the affine to the given local point and returns (x', y'). */
-  private static float[] apply(Affine2 a, float x, float y) {
+  private static float[] apply(FlixelAffine a, float x, float y) {
     return new float[] { a.m00 * x + a.m01 * y + a.m02, a.m10 * x + a.m11 * y + a.m12 };
   }
 
@@ -58,8 +57,8 @@ class FlixelAnimateRigBakeTest {
   void nonRotatedIdentityFlashMatrix() {
     float origW = 100f;
     float origH = 60f;
-    Affine2 identity = new Affine2();
-    Affine2 out = new Affine2();
+    FlixelAffine identity = new FlixelAffine();
+    FlixelAffine out = new FlixelAffine();
 
     FlixelAnimateRigLoader.bakePartAffine(out, identity, origW, origH, false, 0f, 0f, origH);
 
@@ -87,8 +86,8 @@ class FlixelAnimateRigBakeTest {
   void rotatedIdentityFlashMatrix() {
     float origW = 100f;
     float origH = 60f;
-    Affine2 identity = new Affine2();
-    Affine2 out = new Affine2();
+    FlixelAffine identity = new FlixelAffine();
+    FlixelAffine out = new FlixelAffine();
 
     FlixelAnimateRigLoader.bakePartAffine(out, identity, origW, origH, true, 0f, 0f, origH);
 
@@ -128,11 +127,11 @@ class FlixelAnimateRigBakeTest {
 
     // Placing the sprite at the anchor position so the anchor shift cancels out and the baked
     // affine should reduce to identity for the non-rotated case.
-    Affine2 flashAtAnchor = new Affine2();
+    FlixelAffine flashAtAnchor = new FlixelAffine();
     flashAtAnchor.m02 = anchorMinX;
     flashAtAnchor.m12 = anchorMinY;
 
-    Affine2 outNormal = new Affine2();
+    FlixelAffine outNormal = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(
         outNormal, flashAtAnchor, origW, origH, false, anchorMinX, anchorMinY, origH);
 
@@ -147,7 +146,7 @@ class FlixelAnimateRigBakeTest {
 
     // The rotated case with the same Flash translate and anchor should also cancel to a known result.
     // Atlas quad is (0..origH) x (0..origW); atlas top-left (0, origW) holds the bottom-left pixel.
-    Affine2 outRotated = new Affine2();
+    FlixelAffine outRotated = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(
         outRotated, flashAtAnchor, origW, origH, true, anchorMinX, anchorMinY, origH);
 
@@ -174,14 +173,14 @@ class FlixelAnimateRigBakeTest {
   void rotatedAndNonRotatedHaveSameWorldBoundingBox() {
     float origW = 120f;
     float origH = 80f;
-    Affine2 flashTranslate = new Affine2();
+    FlixelAffine flashTranslate = new FlixelAffine();
     flashTranslate.m02 = 20f;
     flashTranslate.m12 = 15f;
 
-    Affine2 outNormal = new Affine2();
+    FlixelAffine outNormal = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(outNormal, flashTranslate, origW, origH, false, 0f, 0f, origH);
 
-    Affine2 outRotated = new Affine2();
+    FlixelAffine outRotated = new FlixelAffine();
     FlixelAnimateRigLoader.bakePartAffine(outRotated, flashTranslate, origW, origH, true, 0f, 0f, origH);
 
     // 4 corners of the non-rotated quad: (0..origW) x (0..origH)

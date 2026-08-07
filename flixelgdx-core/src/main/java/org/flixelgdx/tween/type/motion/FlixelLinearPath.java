@@ -23,10 +23,9 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
-
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /** Piecewise-linear path through a polyline. */
 public class FlixelLinearPath extends FlixelMotion {
 
-  private final Array<Vector2> points = new Array<>();
+  private final FlixelArray<FlixelVector> points = new FlixelArray<>();
   private float[] cumulativeT = new float[8];
   private int pointCount;
   private float totalDistance;
@@ -51,7 +50,7 @@ public class FlixelLinearPath extends FlixelMotion {
   }
 
   public FlixelLinearPath addPoint(float x, float y) {
-    points.add(new Vector2(x, y));
+    points.add(new FlixelVector(x, y));
     return this;
   }
 
@@ -66,9 +65,9 @@ public class FlixelLinearPath extends FlixelMotion {
     updatePath();
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(totalDistance / speed);
       }
     }
@@ -82,30 +81,30 @@ public class FlixelLinearPath extends FlixelMotion {
   }
 
   private void updatePath() {
-    if (points.size < 2) {
+    if (points.getSize() < 2) {
       throw new IllegalStateException("FlixelLinearPath needs at least two points.");
     }
-    pointCount = points.size;
+    pointCount = points.getSize();
     totalDistance = 0f;
-    for (int i = 1; i < points.size; i++) {
-      totalDistance += points.get(i - 1).dst(points.get(i));
+    for (int i = 1; i < points.getSize(); i++) {
+      totalDistance += points.get(i - 1).distanceTo(points.get(i));
     }
     if (totalDistance <= 0f) {
-      totalDistance = MathUtils.FLOAT_ROUNDING_ERROR;
+      totalDistance = FlixelMath.FLOAT_ROUNDING_ERROR;
     }
     ensureCumulativeCapacity(pointCount);
     float acc = 0f;
     cumulativeT[0] = 0f;
     for (int i = 1; i < pointCount; i++) {
-      acc += points.get(i - 1).dst(points.get(i));
+      acc += points.get(i - 1).distanceTo(points.get(i));
       cumulativeT[i] = acc / totalDistance;
     }
   }
 
   @Override
   public FlixelTween start() {
-    if (points.size > 0) {
-      Vector2 p = points.first();
+    if (points.getSize() > 0) {
+      FlixelVector p = points.first();
       motionX = p.x;
       motionY = p.y;
     }
@@ -114,11 +113,11 @@ public class FlixelLinearPath extends FlixelMotion {
 
   @Override
   protected void computeMotion() {
-    if (points.size < 2) {
+    if (points.getSize() < 2) {
       return;
     }
     float pathT = backward ? 1f - scale : scale;
-    pathT = MathUtils.clamp(pathT, 0f, 1f);
+    pathT = FlixelMath.clamp(pathT, 0f, 1f);
     int seg = 0;
     while (seg < pointCount - 2 && pathT > cumulativeT[seg + 1]) {
       seg++;
@@ -126,9 +125,9 @@ public class FlixelLinearPath extends FlixelMotion {
     float t0 = cumulativeT[seg];
     float t1 = cumulativeT[seg + 1];
     float u = (t1 - t0) > 1e-8f ? (pathT - t0) / (t1 - t0) : 0f;
-    u = MathUtils.clamp(u, 0f, 1f);
-    Vector2 a = points.get(seg);
-    Vector2 b = points.get(seg + 1);
+    u = FlixelMath.clamp(u, 0f, 1f);
+    FlixelVector a = points.get(seg);
+    FlixelVector b = points.get(seg + 1);
     motionX = a.x + (b.x - a.x) * u;
     motionY = a.y + (b.y - a.y) * u;
   }

@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.utils.Array;
+import org.flixelgdx.collections.FlixelArray;
 
 import org.flixelgdx.functional.FlixelDrawable;
 import org.jetbrains.annotations.NotNull;
@@ -52,12 +52,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelActionSets {
 
-  private static final Array<FlixelActionSet> registered = new Array<>(8);
+  private static final FlixelArray<FlixelActionSet> registered = new FlixelArray<>(8);
 
   private FlixelActionSets() {}
 
   static void register(@NotNull FlixelActionSet set) {
-    for (int i = 0, n = registered.size; i < n; i++) {
+    for (int i = 0, n = registered.getSize(); i < n; i++) {
       if (registered.get(i) == set) {
         return;
       }
@@ -75,7 +75,7 @@ public final class FlixelActionSets {
    * @param elapsed Seconds since last frame (same as game update).
    */
   public static void update(float elapsed) {
-    for (int i = 0, n = registered.size; i < n; i++) {
+    for (int i = 0, n = registered.getSize(); i < n; i++) {
       registered.get(i).update(elapsed);
     }
   }
@@ -85,14 +85,14 @@ public final class FlixelActionSets {
    * {@code endFrame()}.
    */
   public static void endFrameAll() {
-    for (int i = 0, n = registered.size; i < n; i++) {
+    for (int i = 0, n = registered.getSize(); i < n; i++) {
       registered.get(i).endFrame();
     }
   }
 
   /** For tests: number of registered sets. */
   public static int registeredCountForTests() {
-    return registered.size;
+    return registered.getSize();
   }
 
   /** For tests: clear registry without calling destroy on sets. */

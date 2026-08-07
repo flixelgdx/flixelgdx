@@ -28,14 +28,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ObjectMap;
-import com.badlogic.gdx.utils.ObjectSet;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.audio.FlixelSoundSource;
 import org.flixelgdx.audio.FlixelSoundSourceLoader;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.collections.FlixelSet;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +49,7 @@ import java.util.Objects;
 /**
  * Default concrete asset manager for FlixelGDX.
  *
- * <p>Maintains a single {@code ObjectMap<String, FlixelAsset<?>>} cache as the source of truth.
+ * <p>Maintains a single {@code FlixelMap<String, FlixelAsset<?>>} cache as the source of truth.
  * The underlying libGDX {@link AssetManager} is used only for async I/O; once a raw asset is
  * available, game code works exclusively with the typed {@link FlixelAsset} handles returned by
  * {@link #get(String)}.
@@ -90,11 +90,11 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   private AssetManager manager;
 
-  private final ObjectMap<String, FlixelAsset<?>> cache = new ObjectMap<>();
-  private final ObjectMap<String, LoaderEntry<?>> loaderRegistry = new ObjectMap<>();
-  private final ObjectMap<String, String> audioPathCache = new ObjectMap<>();
-  private final ObjectMap<String, String> texturePathCache = new ObjectMap<>();
-  private final ObjectSet<String> pendingPersistKeys = new ObjectSet<>();
+  private final FlixelMap<String, FlixelAsset<?>> cache = new FlixelMap<>();
+  private final FlixelMap<String, LoaderEntry<?>> loaderRegistry = new FlixelMap<>();
+  private final FlixelMap<String, String> audioPathCache = new FlixelMap<>();
+  private final FlixelMap<String, String> texturePathCache = new FlixelMap<>();
+  private final FlixelSet<String> pendingPersistKeys = new FlixelSet<>();
   private final FlixelString diagnosticsString = new FlixelString();
   private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
   private int syntheticKeyId;
@@ -265,7 +265,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public int getLoadedAssetCount() {
-    return cache.size;
+    return cache.getSize();
   }
 
   @Override
@@ -314,7 +314,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     }
     diagnosticsString.concat("Mode: ").concat(assetMode.name()).concat("\n");
     diagnosticsString.concat("------------------------- ASSET CACHE -------------------------\n");
-    for (ObjectMap.Entry<String, FlixelAsset<?>> e : cache) {
+    for (FlixelMap.Entry<String, FlixelAsset<?>> e : cache.entries()) {
       FlixelAsset<?> asset = e.value;
       diagnosticsString
           .concat("\tKey: ")
@@ -367,20 +367,20 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public void clearNonPersist() {
-    Array<String> toRemove = null;
-    for (ObjectMap.Entry<String, FlixelAsset<?>> e : cache) {
+    FlixelArray<String> toRemove = null;
+    for (FlixelMap.Entry<String, FlixelAsset<?>> e : cache.entries()) {
       FlixelAsset<?> asset = e.value;
       if (asset.getRefCount() > 0 || asset.isPersist()) {
         continue;
       }
       evict(e.key, asset);
       if (toRemove == null) {
-        toRemove = new Array<>();
+        toRemove = new FlixelArray<>();
       }
       toRemove.add(e.key);
     }
     if (toRemove != null) {
-      for (int i = 0; i < toRemove.size; i++) {
+      for (int i = 0; i < toRemove.getSize(); i++) {
         cache.remove(toRemove.get(i));
       }
     }
@@ -388,7 +388,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
 
   @Override
   public void clear() {
-    for (ObjectMap.Entry<String, FlixelAsset<?>> e : cache) {
+    for (FlixelMap.Entry<String, FlixelAsset<?>> e : cache.entries()) {
       evict(e.key, e.value);
     }
     cache.clear();
@@ -407,11 +407,6 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
     pendingPersistKeys.clear();
     syntheticKeyId = 0;
     assetMode = FlixelAssetMode.STANDARD;
-  }
-
-  @Override
-  public void dispose() {
-    destroy();
   }
 
   @NotNull

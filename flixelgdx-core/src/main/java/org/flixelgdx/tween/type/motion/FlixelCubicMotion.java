@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import com.badlogic.gdx.math.MathUtils;
+import org.flixelgdx.math.FlixelMath;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -84,9 +84,9 @@ public class FlixelCubicMotion extends FlixelMotion {
         dist(p0x, p0y, p1x, p1y) + dist(p1x, p1y, p2x, p2y) + dist(p2x, p2y, p3x, p3y);
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, MathUtils.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(dist / speed);
       }
     }
