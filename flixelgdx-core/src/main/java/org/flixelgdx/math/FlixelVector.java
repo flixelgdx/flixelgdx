@@ -36,7 +36,8 @@ import org.jetbrains.annotations.NotNull;
  * {@link #normalize}, plus per-axis and arithmetic convenience methods that all
  * return {@code this} for chaining.
  *
- * <p><b>Pooling.</b> Vectors are the classic per-frame allocation trap: a game
+ * <h2>Pooling</h2>
+ * Vectors are the classic per-frame allocation trap: a game
  * that creates a fresh vector for every distance check quickly floods the
  * garbage collector. To avoid that, borrow vectors from the shared pool with
  * {@link #get()} and return them with {@link #put()}:
@@ -47,7 +48,8 @@ import org.jetbrains.annotations.NotNull;
  * v.put(); // Back to the pool, no garbage created.
  * }</pre>
  *
- * <p><b>Weak vectors.</b> For the common "make a throwaway vector, pass it to
+ * <h2>Weak vectors</h2>
+ * For the common "make a throwaway vector, pass it to
  * one method, forget it" pattern, {@link #weak()} hands out a vector flagged for
  * auto-recycling. A method that receives one calls {@link #putWeak()} when it is
  * finished, and the vector returns itself to the pool, so callers never have to
@@ -101,7 +103,9 @@ public class FlixelVector implements FlixelPoolable {
    * @param other The vector to copy.
    */
   public FlixelVector(@NotNull FlixelVector other) {
-    this(other.x, other.y);
+    this.x = other.x;
+    this.y = other.y;
+    this.weak = other.weak;
   }
 
   /**
