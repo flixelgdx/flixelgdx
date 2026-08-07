@@ -155,7 +155,7 @@ public final class FlixelVertexLayout {
     NORMAL,
 
     /** Any other custom per-vertex value (for example, the sprite batch's texture-slot index). */
-    GENERIC;
+    GENERIC
   }
 
   /**
