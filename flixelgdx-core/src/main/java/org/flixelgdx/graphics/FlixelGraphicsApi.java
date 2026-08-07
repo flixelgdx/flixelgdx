@@ -27,34 +27,34 @@ import org.flixelgdx.collections.FlixelMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Identifies which graphics backend is running, using an open, extensible id string.
+ * Identifies which graphics backend is running, using an open, extensible ID string.
  *
  * <p>This is intentionally not an enum. An enum is a fixed, closed set: it can only ever name the
  * backends the framework hard-codes, so a power user plugging in their own renderer could never
- * identify it. An id-string identity has no such ceiling. The framework provides the common
+ * identify it. An ID-string identity has no such ceiling. The framework provides the common
  * backends as constants, and anyone can mint a new one with {@link #of(String)} without the
  * framework needing to know it exists.
  *
  * <p>Game code rarely needs this; it exists mostly for introspection, such as logging what is
  * running or showing it on a debug overlay. The actual drawing library stays behind the internal
  * {@link FlixelGraphicsBackend} seam and is never exposed to game code directly. Read the current
- * backend from {@link FlixelGraphicsManager#getBackendType() Flixel.graphics.getBackendType()}.
+ * backend from {@link FlixelGraphicsManager#getGraphicsApi() Flixel.graphics.getBackendType()}.
  *
- * <p>Every id is interned, so the same id always yields the same instance and you can compare with
+ * <p>Every ID is interned, so the same id always yields the same instance and you can compare with
  * {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.graphics.getBackendType() == FlixelBackendType.WebGl) {
+ * if (Flixel.graphics.getBackendType() == FlixelGraphicsApi.WebGL) {
  *   // Fall back to a simpler effect on the WebGL path.
  * }
  * }</pre>
  *
- * @see FlixelGraphicsManager#getBackendType()
+ * @see FlixelGraphicsManager#getGraphicsApi()
  */
-public final class FlixelBackendType {
+public final class FlixelGraphicsApi {
 
   // Declared before the constants below so their of(...) calls can register into it.
-  private static final FlixelMap<String, FlixelBackendType> REGISTRY = new FlixelMap<>();
+  private static final FlixelMap<String, FlixelGraphicsApi> REGISTRY = new FlixelMap<>();
 
   /**
    * No real backend is present.
@@ -62,20 +62,20 @@ public final class FlixelBackendType {
    * <p>This is reported by the safe default manager on headless or not-yet-initialized sessions,
    * where drawing is a no-op.
    */
-  public static final FlixelBackendType Noop = of("Noop");
+  public static final FlixelGraphicsApi Noop = of("Noop");
 
   /** The native backend built on bgfx. */
-  public static final FlixelBackendType Bgfx = of("bgfx");
+  public static final FlixelGraphicsApi Bgfx = of("bgfx");
 
   /** The web backend built on the browser's native WebGPU. */
-  public static final FlixelBackendType WebGpu = of("WebGPU");
+  public static final FlixelGraphicsApi WebGPU = of("WebGPU");
 
   /** The web backend built on WebGL. */
-  public static final FlixelBackendType WebGl = of("WebGL");
+  public static final FlixelGraphicsApi WebGL = of("WebGL");
 
   private final String id;
 
-  private FlixelBackendType(String id) {
+  private FlixelGraphicsApi(String id) {
     this.id = id;
   }
 
@@ -86,15 +86,15 @@ public final class FlixelBackendType {
    * with {@code ==}. Use this to define a custom backend's identity, or to look one up by id.
    *
    * @param id The backend id, for example {@code "bgfx"}; must not be {@code null}.
-   * @return The one shared {@link FlixelBackendType} for that id.
+   * @return The one shared {@link FlixelGraphicsApi} for that id.
    */
   @NotNull
-  public static FlixelBackendType of(@NotNull String id) {
-    FlixelBackendType existing = REGISTRY.get(id);
+  public static FlixelGraphicsApi of(@NotNull String id) {
+    FlixelGraphicsApi existing = REGISTRY.get(id);
     if (existing != null) {
       return existing;
     }
-    FlixelBackendType created = new FlixelBackendType(id);
+    FlixelGraphicsApi created = new FlixelGraphicsApi(id);
     REGISTRY.put(id, created);
     return created;
   }
@@ -104,10 +104,10 @@ public final class FlixelBackendType {
     if (this == other) {
       return true;
     }
-    if (!(other instanceof FlixelBackendType)) {
+    if (!(other instanceof FlixelGraphicsApi)) {
       return false;
     }
-    return id.equals(((FlixelBackendType) other).id);
+    return id.equals(((FlixelGraphicsApi) other).id);
   }
 
   @Override

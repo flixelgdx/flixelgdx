@@ -44,7 +44,7 @@ import java.util.List;
  *
  * <p>Every method has a safe default here so backends can implement only what a platform supports;
  * unsupported queries return neutral values and unsupported actions do nothing. Read
- * {@link #getBackendType()} to learn what is actually running.
+ * {@link #getGraphicsApi()} to learn what is actually running.
  *
  * <p>Example:
  *
@@ -55,7 +55,7 @@ import java.util.List;
  * }</pre>
  *
  * @see org.flixelgdx.Flixel#graphics
- * @see FlixelBackendType
+ * @see FlixelGraphicsApi
  */
 public interface FlixelGraphicsManager {
 
@@ -70,25 +70,11 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * @return Which graphics backend is running this session. Defaults to {@link FlixelBackendType#Noop}.
+   * @return Which graphics backend is running this session. Defaults to {@link FlixelGraphicsApi#Noop}.
    */
   @NotNull
-  default FlixelBackendType getBackendType() {
-    return FlixelBackendType.Noop;
-  }
-
-  /**
-   * Returns an opaque native handle to the underlying graphics library for the rare power user who
-   * genuinely needs it.
-   *
-   * <p><b>Explicitly unsafe.</b> The meaning of this value depends entirely on
-   * {@link #getBackendType()}, it may be {@code 0} on any backend, and reaching past the seam with
-   * it voids the framework's cross-platform guarantees. Almost no game should call this.
-   *
-   * @return A backend-specific native handle, or {@code 0} when there is none.
-   */
-  default long getNativeHandle() {
-    return 0L;
+  default FlixelGraphicsApi getGraphicsApi() {
+    return FlixelGraphicsApi.Noop;
   }
 
   /**

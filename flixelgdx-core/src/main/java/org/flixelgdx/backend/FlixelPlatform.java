@@ -36,7 +36,7 @@ import org.jetbrains.annotations.NotNull;
  * with {@link #of(String)} without the framework needing to know it exists.
  *
  * <p>Read the current platform from {@link FlixelHostIntegration#getPlatform() Flixel.host.getPlatform()}.
- * Every id is interned, so the same id always yields the exact same instance and you can compare
+ * Every id is interned, so the same ID always yields the exact same instance, and you can compare
  * with {@code ==}:
  *
  * <pre>{@code
@@ -48,7 +48,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>To define a custom platform, hold a constant your backend returns:
  *
  * <pre>{@code
- * public static final FlixelPlatform MY_CONSOLE = FlixelPlatform.of("MyConsole");
+ * public static final FlixelPlatform MyConsole = FlixelPlatform.of("MyConsole");
  * }</pre>
  *
  * @see FlixelHostIntegration#getPlatform()
@@ -71,7 +71,7 @@ public final class FlixelPlatform {
   public static final FlixelPlatform Web = of("Web");
 
   /** An iOS device. */
-  public static final FlixelPlatform Ios = of("iOS");
+  public static final FlixelPlatform iOS = of("iOS");
 
   private final String id;
 
@@ -121,7 +121,7 @@ public final class FlixelPlatform {
   }
 
   /**
-   * @return The platform's id string (for example, {@code "Desktop"}); never {@code null}.
+   * @return The platform's ID string (for example, {@code "Desktop"}). Never {@code null}.
    */
   @NotNull
   public String getId() {

@@ -44,7 +44,7 @@ import java.nio.ByteBuffer;
  * resources the sprite batch needs. New backends implement it in full.
  *
  * @see FlixelGraphicsManager
- * @see FlixelBackendType
+ * @see FlixelGraphicsApi
  */
 public interface FlixelGraphicsBackend {
 
@@ -52,7 +52,7 @@ public interface FlixelGraphicsBackend {
    * @return Which concrete backend this is.
    */
   @NotNull
-  FlixelBackendType getType();
+  FlixelGraphicsApi getType();
 
   /**
    * @return An opaque native handle for power users who must reach the underlying library, or
