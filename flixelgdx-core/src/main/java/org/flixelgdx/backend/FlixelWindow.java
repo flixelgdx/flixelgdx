@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.graphics.FlixelDisplayMode;
+import org.flixelgdx.tween.FlixelTween;
 
 /**
  * The game's window, browser tab, or mobile activity, with controls that stay safe on every platform.
@@ -38,29 +39,26 @@ import org.flixelgdx.graphics.FlixelDisplayMode;
  * pixel density) lives on {@link org.flixelgdx.graphics.FlixelGraphicsManager Flixel.graphics}
  * instead.
  *
- * <p>Use {@link org.flixelgdx.Flixel#window Flixel.window} after {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
- * The implementation only adjusts backdrop drawing and, on desktop with a transparent-capable framebuffer, an end-of-frame
+ * <p>Use {@link Flixel#window} after {@link Flixel#initialize(FlixelGame)}. The implementation only
+ * adjusts backdrop drawing and, on desktop with a transparent-capable framebuffer, an end-of-frame
  * alpha fix so normal gameplay is not composited through the desktop unless this mode is on.
- *
- * <p>Desktop games default to an alpha-capable framebuffer (see {@link FlixelGame#isTransparentFramebufferRequested()}).
- * Call {@link #setTransparencyActive(boolean)} any time to show the real desktop through unused pixels, or turn it back off.
  *
  * <p>Example:
  * <pre>{@code
  * // Change the title of the window, tab or task label.
  * Flixel.window.setTitle("New Title");
  * // Have sprites render over the desktop.
- * Flixel.window.setDesktopTransparencyActive(true);
+ * Flixel.window.setTransparencyActive(true);
  * // Disable resizing the window.
  * Flixel.window.setResizable(false);
  * // Close the game.
  * Flixel.window.close();
  * }</pre>
  *
- * <p>This interface extends {@link org.flixelgdx.functional.FlixelShakeable FlixelShakeable} so you can pass {@code Flixel.window} to
- * {@link org.flixelgdx.tween.FlixelTween#shake FlixelTween.shake} when you want the OS window itself to jitter.
+ * <p>This interface extends {@link FlixelShakeable} so you can pass {@link Flixel#window} to
+ * {@link FlixelTween#shake} when you want the OS window itself to jitter.
  *
- * @see org.flixelgdx.Flixel#window
+ * @see Flixel#window
  */
 public interface FlixelWindow extends FlixelShakeable {
 
@@ -249,7 +247,7 @@ public interface FlixelWindow extends FlixelShakeable {
 
   /**
    * When {@code true}, the close event is absorbed so the window does not exit until you stop absorbing or call
-   * {@link #close()} (or {@link org.flixelgdx.Flixel#exit() Flixel.exit()}) yourself.
+   * {@link #close()} (or {@link Flixel#exit()}) yourself.
    *
    * <p><b>CAUTION:</b> Players expect the window close control to quit. If you absorb close requests, you must
    * explain that ahead of time (splash text, settings, store description) and always provide another obvious way to exit.
@@ -428,13 +426,13 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * Requests that the game window close, ending the game.
+   * Requests that the game's window closes, ending the game.
    *
    * <p>This is the same request the user makes by clicking the window's close control. If close
    * absorption is active (see {@link #setAbsorbCloseRequests(boolean)}), it still applies. On web
    * and mobile, where the host owns the lifecycle, this may do nothing.
    *
-   * <p>Prefer {@link org.flixelgdx.Flixel#exit() Flixel.exit()} from game code, which forwards here.
+   * <p>Prefer {@link Flixel#exit()} from game code, which forwards here.
    */
   default void close() {}
 }

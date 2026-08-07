@@ -87,7 +87,7 @@ public final class FlixelPlatform {
    * with {@code ==}. Use this to define a custom platform, or to look one up by ID.
    *
    * @param id The platform ID, for example {@code "Desktop"}; must not be {@code null}.
-   * @return The one shared {@link FlixelPlatform} for that id.
+   * @return The one shared {@link FlixelPlatform} for that ID.
    */
   @NotNull
   public static FlixelPlatform of(@NotNull String id) {
