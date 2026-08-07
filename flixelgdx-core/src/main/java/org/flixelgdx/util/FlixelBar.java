@@ -130,7 +130,6 @@ public class FlixelBar extends FlixelSprite {
   private Color borderColor;
   private float borderThickness = 0f;
 
-  // Threshold coloring: libGDX FlixelArray for indexed hot-path iteration (no per-frame Iterator).
   private final FlixelArray<ThresholdStop> thresholdStops = new FlixelArray<>(true, 8);
   private float thresholdColorLerp = 1f;
   private float lastPercentForThreshold = 1f;
@@ -141,6 +140,7 @@ public class FlixelBar extends FlixelSprite {
   /** Current overlay label source, or {@code null} for none. May be a live {@link FlixelString} you mutate. */
   @Nullable
   private CharSequence overlayText;
+
   /**
    * Snapshot of the last label pushed to {@link FlixelText#setText}; used to skip redundant updates when the
    * overlay text has not changed. Never the same instance as {@link #overlayText}.

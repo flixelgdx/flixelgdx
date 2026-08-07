@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Supplier;
 
 /**
- * Reusable mutable text buffer backed by libGDX {@link FlixelCharArray}, designed to display changing
+ * Reusable mutable text buffer backed by a {@link FlixelCharArray}, designed to display changing
  * values (health, FPS, velocity) every frame without allocating garbage.
  *
  * <h2>Why not StringBuilder?</h2>

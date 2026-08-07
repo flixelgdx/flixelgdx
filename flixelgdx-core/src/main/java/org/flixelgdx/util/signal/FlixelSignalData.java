@@ -27,13 +27,13 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelState;
 
 /**
- * Convenience class for holding all signal data types used in the default signals stored in
- * the global {@link Flixel} manager class.
+ * Convenience class for holding all signal data types used in the default signals,
+ * which are stored in the global {@link Flixel} manager class.
  *
- * <p>{@link UpdateSignalData} is a mutable, reusable class rather than a record because it is
- * dispatched every frame. Allocating a new object 120 times per second (pre+post, and assuming the FPS is 60)
- * adds GC pressure that causes frame stutters. Signal handlers must not hold a reference to the data
- * object past the callback return.
+ * <p>{@link UpdateSignalData} is a mutable, reusable class rather than a record
+ * because it is dispatched every frame. Allocating a new object 120 times per second
+ * (pre+post, and assuming the FPS is 60) adds GC pressure that causes frame stutters.
+ * Signal handlers must not hold a reference to the data object past the callback return.
  */
 public final class FlixelSignalData {
 
@@ -44,12 +44,6 @@ public final class FlixelSignalData {
    */
   public static final class UpdateSignalData {
     private float elapsed;
-
-    public UpdateSignalData() {}
-
-    public UpdateSignalData(float elapsed) {
-      this.elapsed = elapsed;
-    }
 
     public float elapsed() {
       return elapsed;

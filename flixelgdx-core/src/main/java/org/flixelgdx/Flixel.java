@@ -282,11 +282,10 @@ public final class Flixel {
    * The framework's default random number generator.
    *
    * <p>This is a ready-to-use {@link FlixelRandom} for the common case where you
-   * just want "a random number" without managing your own generator - much like
-   * HaxeFlixel's {@code FlxG.random}. Because it is seedable, you can make an
-   * entire run reproducible by calling {@link FlixelRandom#setSeed(long)} once at
-   * startup, which is invaluable for deterministic replays, seeded procedural
-   * generation, and debugging.
+   * just want "a random number" without managing your own generator. Because it is
+   * seedable, you can make an entire run reproducible by calling
+   * {@link FlixelRandom#setSeed(long)} once at startup, which is invaluable for
+   * deterministic replays, seeded procedural generation, and debugging.
    *
    * <p>Create your own {@link FlixelRandom} instead when you need an independent,
    * separately-seeded stream (for example, cosmetic effects that should not
