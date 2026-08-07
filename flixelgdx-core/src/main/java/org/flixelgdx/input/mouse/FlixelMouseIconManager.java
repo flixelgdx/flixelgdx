@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.input.mouse;
 
+import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -68,8 +69,39 @@ public interface FlixelMouseIconManager {
   void resetCursor();
 
   /**
+   * Replaces the mouse cursor with a custom image.
+   *
+   * <p>Use this for a themed game cursor instead of one of the OS presets. The hotspot is the exact
+   * pixel inside the image that counts as "the point" of the cursor (for an arrow, its tip; for a
+   * crosshair, its center), given relative to the image's top-left corner.
+   *
+   * <p>This is primarily a desktop feature. On backends where {@link #supportsCustomCursors()}
+   * returns {@code false}, this call is ignored. Call {@link #resetCursor()} to return to the
+   * default pointer.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.mouse.icons.setCustomCursor(cursorGraphic, 0, 0); // hotspot at the top-left tip
+   * }</pre>
+   *
+   * @param image The cursor image; must not be {@code null}.
+   * @param hotspotX The click point's X offset from the image's left edge, in pixels.
+   * @param hotspotY The click point's Y offset from the image's top edge, in pixels.
+   */
+  default void setCustomCursor(@NotNull FlixelGraphic image, int hotspotX, int hotspotY) {}
+
+  /**
    * @return {@code true} when {@link #setCursor(FlixelMouseCursor)} may change what
    *     the user sees for this target.
    */
   boolean supportsCursors();
+
+  /**
+   * @return {@code true} when {@link #setCustomCursor(FlixelGraphic, int, int)} can change the
+   *     cursor image on this session.
+   */
+  default boolean supportsCustomCursors() {
+    return false;
+  }
 }

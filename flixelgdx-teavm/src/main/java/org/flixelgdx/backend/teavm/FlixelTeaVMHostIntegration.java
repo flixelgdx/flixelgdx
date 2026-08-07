@@ -24,6 +24,11 @@
 package org.flixelgdx.backend.teavm;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.backend.FlixelNoopMonitor;
+import org.flixelgdx.backend.FlixelPlatform;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +46,7 @@ import java.util.Objects;
 final class FlixelTeaVMHostIntegration implements FlixelHostIntegration {
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
+  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   @Override
   public void requestNotificationPermission() {
@@ -122,6 +128,24 @@ final class FlixelTeaVMHostIntegration implements FlixelHostIntegration {
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return onTextPasted;
+  }
+
+  @Override
+  @NotNull
+  public FlixelList<FlixelMonitor> getMonitors() {
+    return monitors;
+  }
+
+  @Override
+  @NotNull
+  public FlixelMonitor getPrimaryMonitor() {
+    return FlixelNoopMonitor.INSTANCE;
+  }
+
+  @Override
+  @NotNull
+  public FlixelPlatform getPlatform() {
+    return FlixelPlatform.Web;
   }
 
   @JSBody(script = "if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {"

@@ -77,7 +77,7 @@ import java.util.NoSuchElementException;
  *
  * @param <T> The element type.
  */
-public class FlixelArray<T> implements Iterable<T> {
+public class FlixelArray<T> implements FlixelList<T> {
 
   private static final int DEFAULT_CAPACITY = 16;
 
@@ -212,6 +212,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * @return The element at {@code index}.
    * @throws IndexOutOfBoundsException If {@code index} is out of range.
    */
+  @Override
   public @Nullable T get(int index) {
     if (index >= size) {
       throw new IndexOutOfBoundsException("index " + index + " >= size " + size);
@@ -326,6 +327,7 @@ public class FlixelArray<T> implements Iterable<T> {
    *     {@link Object#equals(Object)}.
    * @return The index, or -1 if not found.
    */
+  @Override
   public int indexOf(@Nullable T value, boolean identity) {
     T[] target = items;
     if (identity || value == null) {
@@ -352,6 +354,7 @@ public class FlixelArray<T> implements Iterable<T> {
    *     {@link Object#equals(Object)}.
    * @return {@code true} if a matching element exists.
    */
+  @Override
   public boolean contains(@Nullable T value, boolean identity) {
     return indexOf(value, identity) != -1;
   }
@@ -362,6 +365,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * @return The element at index 0.
    * @throws IndexOutOfBoundsException If the list is empty.
    */
+  @Override
   public @Nullable T first() {
     if (size == 0) {
       throw new IndexOutOfBoundsException("array is empty");
@@ -375,6 +379,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * @return The element at index {@code size - 1}.
    * @throws IndexOutOfBoundsException If the list is empty.
    */
+  @Override
   public @Nullable T last() {
     if (size == 0) {
       throw new IndexOutOfBoundsException("array is empty");
@@ -420,6 +425,7 @@ public class FlixelArray<T> implements Iterable<T> {
    * @param rng The random source to draw from.
    * @return A random element, or {@code null} if the list is empty.
    */
+  @Override
   public @Nullable T getRandom(@NotNull FlixelRandom rng) {
     if (size == 0) {
       return null;
@@ -432,6 +438,7 @@ public class FlixelArray<T> implements Iterable<T> {
    *
    * @return {@code true} if {@link #getSize()} is 0.
    */
+  @Override
   public boolean isEmpty() {
     return size == 0;
   }
@@ -573,16 +580,19 @@ public class FlixelArray<T> implements Iterable<T> {
   }
 
   /** Returns the backing array. Only the first {@link #getSize()} entries are live. */
+  @Override
   public T[] getItems() {
     return items;
   }
 
   /** Returns the number of live elements. */
+  @Override
   public int getSize() {
     return size;
   }
 
   /** Returns whether removals preserve insertion order. */
+  @Override
   public boolean isOrdered() {
     return ordered;
   }

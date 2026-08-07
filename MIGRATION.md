@@ -522,8 +522,15 @@ Correctness discipline (non-negotiable):
 by libGDX. After this phase, core no longer imports `com.badlogic.gdx` directly - only the
 transitional libGDX backend does.*
 
-- [ ] **2a.** Design the seam interfaces: renderer/graphics, window/app lifecycle, input, files,
-  assets (see [Section 4](#4-target-architecture-sketch)).
+- [x] **2a.** Design the seam interfaces: renderer/graphics, window/app lifecycle, input, files,
+  assets (see [Section 4](#4-target-architecture-sketch)). *Graphics + platform surface landed: the
+  public `FlixelGraphicsManager` (at `Flixel.graphics`) over the internal `FlixelGraphicsBackend`
+  swap point, plus `FlixelBatch`, `FlixelShader`/`FlixelShaderSource`, `FlixelVertexLayout`,
+  `FlixelMesh`, and `FlixelDisplayMode`; `FlixelWindow` grew into the full window/tab/activity
+  surface with `Flixel.exit()`, and monitors (`FlixelMonitor`) moved onto `FlixelHostIntegration`.
+  Backend and platform identity use an extensible id-string system (`FlixelBackendType`,
+  `FlixelPlatform`) instead of closed enums, so third parties can register their own. Input, files,
+  and assets seams are still pending.*
 - [ ] **2b.** Implement each interface with a **transitional libGDX backend** that simply delegates
   to `Gdx.*`, so behavior is unchanged.
 - [ ] **2c.** Route all core code through the seam; remove direct `com.badlogic.gdx` imports from
@@ -614,3 +621,5 @@ through `FlixelGraphicsManager`.*
 - [x] Phase 1 started; slices 1a-1d (build + test all replacement utilities) complete on
   `phase-1-utilities`, and the primitive collections are now generated from templates (1d.1).
   Slice 1e (file-by-file sweep off gdx utils) still pending.
+- [x] Phase 2 started; slice 2a (graphics + platform seam interfaces) landed on `phase-2-graphics`.
+  Input/files/assets seams, the transitional backend (2b), and the routing sweep (2c) still pending.

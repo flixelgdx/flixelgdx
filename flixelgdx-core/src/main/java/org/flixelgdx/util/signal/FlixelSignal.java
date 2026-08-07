@@ -62,7 +62,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <pre>{@code
  * FlixelSignal<Void> onPlayerDied = new FlixelSignal<>();
- * onPlayerDied.add(ignored -> respawnPlayer());
+ * onPlayerDied.add(_ -> respawnPlayer());
  * onPlayerDied.dispatch();
  * }</pre>
  *

@@ -42,6 +42,11 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.backend.FlixelNoopMonitor;
+import org.flixelgdx.backend.FlixelPlatform;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +90,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   private static final String NOTIFICATION_CHANNEL_NAME = "Game Notifications";
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
+  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
   private final Activity activity;
   private final NotificationManager notificationManager;
   private final ClipboardManager clipboardManager;
@@ -187,7 +193,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
       return;
     }
     CharSequence text = clip.getItemAt(0).coerceToText(activity);
-    if (text != null && text.length() > 0) {
+    if (text != null && !text.isEmpty()) {
       onTextPasted.dispatch(text.toString());
     }
   }
@@ -211,6 +217,24 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return onTextPasted;
+  }
+
+  @Override
+  @NotNull
+  public FlixelList<FlixelMonitor> getMonitors() {
+    return monitors;
+  }
+
+  @Override
+  @NotNull
+  public FlixelMonitor getPrimaryMonitor() {
+    return FlixelNoopMonitor.INSTANCE;
+  }
+
+  @Override
+  @NotNull
+  public FlixelPlatform getPlatform() {
+    return FlixelPlatform.Android;
   }
 
   @SuppressWarnings("deprecation")

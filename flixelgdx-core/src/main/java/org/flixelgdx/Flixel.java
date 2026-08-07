@@ -49,6 +49,8 @@ import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
+import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.gamepad.FlixelGamepadInput;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
@@ -686,6 +688,29 @@ public final class Flixel {
   public static FlixelWindow window = FlixelNoopWindow.INSTANCE;
 
   /**
+   * The single public surface for drawing and GPU state (the sprite batch, frame rate, vertical
+   * sync, display modes, and pixel density).
+   *
+   * <p>The active graphics backend is installed here before {@link Flixel#initialize(FlixelGame)}
+   * runs. Until then, and on headless targets, it falls back to {@link FlixelNoopGraphicsManager},
+   * so calls are always safe to make. The underlying GPU library is never exposed; game code only
+   * ever talks to this manager.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * // Grab the shared batch used throughout the game.
+   * FlixelBatch batch = Flixel.graphics.getBatch();
+   *
+   * // Cap the frame rate and turn on vertical sync.
+   * Flixel.graphics.setTargetFps(60);
+   * Flixel.graphics.setVSync(true);
+   * }</pre>
+   */
+  @NotNull
+  public static FlixelGraphicsManager graphics = FlixelNoopGraphicsManager.INSTANCE;
+
+  /**
    * Host OS integration for toast notifications and taskbar attention signals.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a platform-specific implementation before
@@ -1196,6 +1221,17 @@ public final class Flixel {
    */
   public static FlixelVector getSize() {
     return game.initialSize;
+  }
+
+  /**
+   * Requests that the game quit.
+   *
+   * <p>This is a convenience that forwards to {@link FlixelWindow#close() Flixel.window.close()}. If
+   * the window is absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}),
+   * that still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
+   */
+  public static void exit() {
+    window.close();
   }
 
   /**
