@@ -84,20 +84,6 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * Returns an opaque native handle to the underlying graphics library for the rare power user who
-   * genuinely needs it.
-   *
-   * <p><b>Explicitly unsafe.</b> The meaning of this value depends entirely on
-   * {@link #getGraphicsApi()}, it may be {@code 0} on any backend, and reaching past the device with
-   * it voids the framework's cross-platform guarantees. Almost no game should call this.
-   *
-   * @return A backend-specific native handle, or {@code 0} when there is none.
-   */
-  default long getNativeHandle() {
-    return 0L;
-  }
-
-  /**
    * Runs a task on the main render thread at a safe point.
    *
    * <p>Some work (loading callbacks, input events, network results) can arrive on a background
@@ -161,8 +147,7 @@ public interface FlixelGraphicsManager {
    * @return A new mesh, or {@code null} when no backend is present.
    */
   @Nullable
-  default FlixelMesh createMesh(@NotNull FlixelVertexLayout layout, int maxVertices, int maxIndices,
-      boolean isStatic) {
+  default FlixelMesh createMesh(@NotNull FlixelVertexLayout layout, int maxVertices, int maxIndices, boolean isStatic) {
     return null;
   }
 

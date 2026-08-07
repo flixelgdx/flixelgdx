@@ -46,11 +46,15 @@ import org.flixelgdx.graphics.FlixelDisplayMode;
  * Call {@link #setTransparencyActive(boolean)} any time to show the real desktop through unused pixels, or turn it back off.
  *
  * <p>Example:
- *
  * <pre>{@code
- * Flixel.window.setDesktopTransparencyActive(true);  // Sprites over the desktop.
- * // ...
- * Flixel.window.setDesktopTransparencyActive(false); // Normal opaque letterboxing again.
+ * // Change the title of the window, tab or task label.
+ * Flixel.window.setTitle("New Title");
+ * // Have sprites render over the desktop.
+ * Flixel.window.setDesktopTransparencyActive(true);
+ * // Disable resizing the window.
+ * Flixel.window.setResizable(false);
+ * // Close the game.
+ * Flixel.window.close();
  * }</pre>
  *
  * <p>This interface extends {@link org.flixelgdx.functional.FlixelShakeable FlixelShakeable} so you can pass {@code Flixel.window} to
