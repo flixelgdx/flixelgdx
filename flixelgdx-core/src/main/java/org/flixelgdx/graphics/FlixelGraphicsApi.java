@@ -26,6 +26,8 @@ package org.flixelgdx.graphics;
 import org.flixelgdx.collections.FlixelMap;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Identifies which graphics backend is running, using an open, extensible ID string.
  *
@@ -38,31 +40,22 @@ import org.jetbrains.annotations.NotNull;
  * <p>Game code rarely needs this; it exists mostly for introspection, such as logging what is
  * running or showing it on a debug overlay. The underlying drawing library is never exposed to game
  * code directly. Read the current backend from
- * {@link FlixelGraphicsManager#getGraphicsApi() Flixel.graphics.getGraphicsApi()}.
+ * {@link FlixelGraphicsManager#getApi() Flixel.graphics.getApi()}.
  *
- * <p>Every ID is interned, so the same id always yields the same instance and you can compare with
+ * <p>Every ID is interned, so the same ID always yields the same instance, and you can compare with
  * {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.graphics.getGraphicsApi() == FlixelGraphicsApi.WebGL) {
+ * if (Flixel.graphics.getApi() == FlixelGraphicsApi.WebGL) {
  *   // Fall back to a simpler effect on the WebGL path.
  * }
  * }</pre>
  *
- * @see FlixelGraphicsManager#getGraphicsApi()
+ * @see FlixelGraphicsManager#getApi()
  */
 public final class FlixelGraphicsApi {
 
-  // Declared before the constants below so their of(...) calls can register into it.
   private static final FlixelMap<String, FlixelGraphicsApi> REGISTRY = new FlixelMap<>();
-
-  /**
-   * No real backend is present.
-   *
-   * <p>This is reported by the safe default manager on headless or not-yet-initialized sessions,
-   * where drawing is a no-op.
-   */
-  public static final FlixelGraphicsApi Noop = of("Noop");
 
   /** The native backend built on bgfx. */
   public static final FlixelGraphicsApi Bgfx = of("bgfx");
@@ -72,6 +65,14 @@ public final class FlixelGraphicsApi {
 
   /** The web backend built on WebGL. */
   public static final FlixelGraphicsApi WebGL = of("WebGL");
+
+  /**
+   * No real backend is present.
+   *
+   * <p>This is reported by the safe default manager on headless or not-yet-initialized sessions,
+   * where drawing is a no-op.
+   */
+  public static final FlixelGraphicsApi Noop = of("Noop");
 
   private final String id;
 
@@ -90,6 +91,7 @@ public final class FlixelGraphicsApi {
    */
   @NotNull
   public static FlixelGraphicsApi of(@NotNull String id) {
+    Objects.requireNonNull(id, "The provided graphics API ID cannot be null.");
     FlixelGraphicsApi existing = REGISTRY.get(id);
     if (existing != null) {
       return existing;
@@ -121,7 +123,7 @@ public final class FlixelGraphicsApi {
   }
 
   /**
-   * @return The backend's id string (for example, {@code "bgfx"}); never {@code null}.
+   * @return The backend's ID string (for example, {@code "bgfx"}); never {@code null}.
    */
   @NotNull
   public String getId() {

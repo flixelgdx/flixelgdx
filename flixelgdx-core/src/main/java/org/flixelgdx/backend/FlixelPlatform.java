@@ -26,12 +26,14 @@ package org.flixelgdx.backend;
 import org.flixelgdx.collections.FlixelMap;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
- * Identifies the platform a game is running on, using an open, extensible id string.
+ * Identifies the platform a game is running on, using an open, extensible ID string.
  *
  * <p>This is intentionally not an enum. An enum is a fixed, closed set: it can only ever hold the
  * values the framework hard-codes, so a power user shipping their own platform (a console port, an
- * embedded device, an experimental target) could never name it. An id-string identity has no such
+ * embedded device, an experimental target) could never name it. An ID-string identity has no such
  * ceiling. The framework provides the common platforms as constants, and anyone can mint a new one
  * with {@link #of(String)} without the framework needing to know it exists.
  *
@@ -55,23 +57,22 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelPlatform {
 
-  // Declared before the constants below so their of(...) calls can register into it.
   private static final FlixelMap<String, FlixelPlatform> REGISTRY = new FlixelMap<>();
 
-  /** The platform is not known, typically because no host integration has been installed yet. */
-  public static final FlixelPlatform Unknown = of("Unknown");
-
-  /** A desktop computer (Windows, macOS, or Linux). */
+  /** A desktop computer (Windows, macOS, Linux and similar). */
   public static final FlixelPlatform Desktop = of("Desktop");
-
-  /** An Android device. */
-  public static final FlixelPlatform Android = of("Android");
 
   /** A web browser. */
   public static final FlixelPlatform Web = of("Web");
 
-  /** An iOS device. */
+  /** An Android mobile device. */
+  public static final FlixelPlatform Android = of("Android");
+
+  /** An iOS mobile device. */
   public static final FlixelPlatform iOS = of("iOS");
+
+  /** The platform is not known, typically because no host integration has been installed yet. */
+  public static final FlixelPlatform Unknown = of("Unknown");
 
   private final String id;
 
@@ -80,16 +81,17 @@ public final class FlixelPlatform {
   }
 
   /**
-   * Returns the canonical platform for the given id, creating and interning it on first use.
+   * Returns the canonical platform for the given ID, creating and interning it on first use.
    *
-   * <p>Calling this twice with the same id returns the very same instance, so results compare equal
-   * with {@code ==}. Use this to define a custom platform, or to look one up by id.
+   * <p>Calling this twice with the same ID returns the very same instance, so results compare equal
+   * with {@code ==}. Use this to define a custom platform, or to look one up by ID.
    *
-   * @param id The platform id, for example {@code "Desktop"}; must not be {@code null}.
+   * @param id The platform ID, for example {@code "Desktop"}; must not be {@code null}.
    * @return The one shared {@link FlixelPlatform} for that id.
    */
   @NotNull
   public static FlixelPlatform of(@NotNull String id) {
+    Objects.requireNonNull(id, "The provided platform ID cannot be null.");
     FlixelPlatform existing = REGISTRY.get(id);
     if (existing != null) {
       return existing;

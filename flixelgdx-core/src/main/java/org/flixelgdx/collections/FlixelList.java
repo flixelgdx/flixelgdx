@@ -51,8 +51,8 @@ import org.jetbrains.annotations.Nullable;
  * FlixelList<FlixelDisplayMode> modes = Flixel.graphics.getDisplayModes();
  * FlixelDisplayMode[] items = modes.getItems();
  * for (int i = 0; i < modes.getSize(); i++) {
- *     FlixelDisplayMode mode = items[i];
- *     // ...
+ *   FlixelDisplayMode mode = items[i];
+ *   // ...
  * }
  * }</pre>
  *
