@@ -699,7 +699,6 @@ public final class Flixel {
    * <p>Example:
    *
    * <pre>{@code
-   * // Grab the shared batch (reads as Flixel.graphics.batch in Kotlin).
    * FlixelBatch batch = Flixel.graphics.getBatch();
    *
    * // Cap the frame rate and turn on vertical sync.
@@ -1229,13 +1228,6 @@ public final class Flixel {
    * <p>This is a convenience that forwards to {@link FlixelWindow#close() Flixel.window.close()}. If
    * the window is absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}),
    * that still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
-   *
-   * <p>Example:
-   *
-   * <pre>{@code
-   * // Quit from a main-menu "Exit" button.
-   * Flixel.exit();
-   * }</pre>
    */
   public static void exit() {
     window.close();
