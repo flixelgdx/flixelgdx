@@ -138,8 +138,7 @@ public class FlixelMap<K, V> {
    *     to {@code null}).
    */
   public @Nullable V get(@NotNull K key) {
-    int i = locate(key);
-    return keyTable[i] == null ? null : valueTable[i];
+    return get(key, null);
   }
 
   /**
@@ -149,7 +148,7 @@ public class FlixelMap<K, V> {
    * @param defaultValue The value to return when the key is not present.
    * @return The associated value, or {@code defaultValue} if the key is absent.
    */
-  public @Nullable V getOrDefault(@NotNull K key, @Nullable V defaultValue) {
+  public @Nullable V get(@NotNull K key, @Nullable V defaultValue) {
     int i = locate(key);
     return keyTable[i] == null ? defaultValue : valueTable[i];
   }

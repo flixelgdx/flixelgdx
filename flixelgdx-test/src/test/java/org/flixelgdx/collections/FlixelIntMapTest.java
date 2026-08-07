@@ -67,7 +67,7 @@ class FlixelIntMapTest {
   void missingKeyDefaults() {
     FlixelIntMap<String> map = new FlixelIntMap<>();
     assertNull(map.get((int) 42));
-    assertEquals("x", map.getOrDefault((int) 42, "x"));
+    assertEquals("x", map.get((int) 42, "x"));
   }
 
   @Test

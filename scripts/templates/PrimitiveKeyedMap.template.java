@@ -123,17 +123,14 @@ public class Flixel{{TypeName}}Map<V> {
   }
 
   /**
-   * Returns the value stored under a key.
+   * Returns the value stored under a key, with {@code null} as the default
+   * fallback value.
    *
    * @param key The key to look up.
    * @return The associated value, or {@code null} if the key is absent.
    */
   public @Nullable V get({{type}} key) {
-    if (key == {{zero}}) {
-      return hasZeroKey ? zeroValue : null;
-    }
-    int i = locate(key);
-    return keyTable[i] == {{zero}} ? null : valueTable[i];
+    return get(key, null);
   }
 
   /**
@@ -143,7 +140,7 @@ public class Flixel{{TypeName}}Map<V> {
    * @param defaultValue The value to return when the key is not present.
    * @return The associated value, or {@code defaultValue} if the key is absent.
    */
-  public @Nullable V getOrDefault({{type}} key, @Nullable V defaultValue) {
+  public @Nullable V get({{type}} key, @Nullable V defaultValue) {
     if (key == {{zero}}) {
       return hasZeroKey ? zeroValue : defaultValue;
     }

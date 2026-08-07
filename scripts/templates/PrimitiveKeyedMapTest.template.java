@@ -67,7 +67,7 @@ class Flixel{{TypeName}}MapTest {
   void missingKeyDefaults() {
     Flixel{{TypeName}}Map<String> map = new Flixel{{TypeName}}Map<>();
     assertNull(map.get(({{type}}) 42));
-    assertEquals("x", map.getOrDefault(({{type}}) 42, "x"));
+    assertEquals("x", map.get(({{type}}) 42, "x"));
   }
 
   @Test

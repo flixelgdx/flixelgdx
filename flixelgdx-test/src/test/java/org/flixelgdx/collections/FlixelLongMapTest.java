@@ -67,7 +67,7 @@ class FlixelLongMapTest {
   void missingKeyDefaults() {
     FlixelLongMap<String> map = new FlixelLongMap<>();
     assertNull(map.get((long) 42));
-    assertEquals("x", map.getOrDefault((long) 42, "x"));
+    assertEquals("x", map.get((long) 42, "x"));
   }
 
   @Test
