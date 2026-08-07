@@ -91,7 +91,7 @@ public class FlixelSignal<T> {
   @SuppressWarnings("unchecked")
   public void dispatch(T data) {
     Object[] items = callbacks.begin();
-    for (int i = 0, n = callbacks.size; i < n; i++) {
+    for (int i = 0, n = callbacks.getSize(); i < n; i++) {
       SignalHandler<T> callback = (SignalHandler<T>) items[i];
       if (callback != null) {
         callback.execute(data);
@@ -99,9 +99,9 @@ public class FlixelSignal<T> {
     }
     callbacks.end();
 
-    if (tempCallbacks.size > 0) {
+    if (tempCallbacks.getSize() > 0) {
       Object[] tempItems = tempCallbacks.begin();
-      for (int i = 0, n = tempCallbacks.size; i < n; i++) {
+      for (int i = 0, n = tempCallbacks.getSize(); i < n; i++) {
         SignalHandler<T> callback = (SignalHandler<T>) tempItems[i];
         if (callback != null) {
           callback.execute(data);

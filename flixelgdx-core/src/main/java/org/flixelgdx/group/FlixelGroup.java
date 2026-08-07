@@ -83,7 +83,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
       return;
     }
     ensureMembers();
-    if (maxSize > 0 && members.size >= maxSize) {
+    if (maxSize > 0 && members.getSize() >= maxSize) {
       return;
     }
     members.add(member);

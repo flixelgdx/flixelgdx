@@ -41,7 +41,7 @@ class FlixelSetTest {
     FlixelSet<String> set = new FlixelSet<>();
     assertTrue(set.add("a"));
     assertFalse(set.add("a"));
-    assertEquals(1, set.size());
+    assertEquals(1, set.getSize());
   }
 
   @Test
@@ -67,7 +67,7 @@ class FlixelSetTest {
     set.add("a");
     set.add("b");
     set.clear();
-    assertEquals(0, set.size());
+    assertEquals(0, set.getSize());
     assertFalse(set.contains("a"));
   }
 
@@ -100,7 +100,7 @@ class FlixelSetTest {
       } else {
         assertEquals(ref.contains(value), ours.contains(value));
       }
-      assertEquals(ref.size(), ours.size());
+      assertEquals(ref.size(), ours.getSize());
     }
   }
 }

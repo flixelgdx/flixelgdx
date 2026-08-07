@@ -96,11 +96,11 @@ public class FlixelTimerManager extends FlixelBasic {
     if (!active || !exists || !alive) {
       return;
     }
-    if (activeTimers.size == 0 || activeTimers.isEmpty()) {
+    if (activeTimers.getSize() == 0 || activeTimers.isEmpty()) {
       return;
     }
-    for (int i = activeTimers.size - 1; i >= 0; i--) {
-      if (i >= activeTimers.size) {
+    for (int i = activeTimers.getSize() - 1; i >= 0; i--) {
+      if (i >= activeTimers.getSize()) {
         continue;
       }
       activeTimers.get(i).update(elapsed);
@@ -164,7 +164,7 @@ public class FlixelTimerManager extends FlixelBasic {
 
   /** Stops every running timer and returns instances to the pool. */
   public void cancelAll() {
-    while (activeTimers.size > 0) {
+    while (activeTimers.getSize() > 0) {
       FlixelTimer timer = activeTimers.pop();
       timer.markFinished();
       pool.free(timer);

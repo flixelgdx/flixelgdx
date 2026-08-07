@@ -88,7 +88,7 @@ public interface FlixelGroupable<T> {
     }
     T[] items = members.begin();
     try {
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         if (items[i] == null) {
           return i;
         }
@@ -114,7 +114,7 @@ public interface FlixelGroupable<T> {
     }
     try {
       T[] items = members.begin();
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T member = items[i];
         if (member == null) {
           continue;
@@ -143,7 +143,7 @@ public interface FlixelGroupable<T> {
     }
     try {
       T[] items = members.begin();
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T member = items[i];
         if (type.isInstance(member)) {
           callback.accept(type.cast(member));

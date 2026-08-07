@@ -531,7 +531,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       return FlixelGamepadInput.NONE;
     }
     FlixelIntArray order = pressedOrder[gamepadId];
-    if (order.size == 0) {
+    if (order.getSize() == 0) {
       return FlixelGamepadInput.NONE;
     }
     return nativeButtonToLogical(c, order.first());

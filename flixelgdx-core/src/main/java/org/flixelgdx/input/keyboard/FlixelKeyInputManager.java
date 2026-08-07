@@ -199,7 +199,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
       return false;
     }
     if (key == FlixelKey.ANY) {
-      return currentPressedKeys.size() > 0;
+      return currentPressedKeys.getSize() > 0;
     }
     if (!isValidKeycode(key)) {
       return false;
@@ -602,7 +602,7 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
    * @return First pressed key code, or {@link FlixelKey#NONE} if none.
    */
   public int firstPressed() {
-    if (isCapturedByDebugUI() || !enabled || pressedOrder.size == 0) {
+    if (isCapturedByDebugUI() || !enabled || pressedOrder.getSize() == 0) {
       return FlixelKey.NONE;
     }
     return pressedOrder.first();

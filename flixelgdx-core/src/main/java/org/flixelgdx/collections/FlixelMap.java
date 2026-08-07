@@ -40,7 +40,8 @@ import java.util.NoSuchElementException;
  * <p>Keys must not be {@code null}; values may be. Iteration order is not
  * defined and can change as the map grows.
  *
- * <p><b>Zero-allocation iteration.</b> {@link #keys()}, {@link #values()}, and
+ * <h2>Zero-allocation iteration</h2>
+ * {@link #keys()}, {@link #values()}, and
  * {@link #entries()} return iterators that are reused between loops, so ordinary
  * traversal allocates nothing. The trade-off is that you must not run two loops
  * of the same kind over one map at the same time. The shared {@link Entry} handed

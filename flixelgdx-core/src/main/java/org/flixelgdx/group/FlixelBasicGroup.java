@@ -104,7 +104,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
     }
     try {
       T[] items = members.begin();
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T member = items[i];
         if (member == null) {
           continue;
@@ -127,7 +127,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
     }
     try {
       T[] items = members.begin();
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T member = items[i];
         if (member == null) {
           continue;
@@ -149,7 +149,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
     if (members != null) {
       try {
         T[] items = members.begin();
-        for (int i = 0, n = members.size; i < n; i++) {
+        for (int i = 0, n = members.getSize(); i < n; i++) {
           T m = items[i];
           if (m != null) {
             m.destroy();
@@ -179,7 +179,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
       return dead;
     }
     if (memberList.getMaxSize() > 0 && memberList.getMembers() != null
-        && memberList.getMembers().size >= memberList.getMaxSize()) {
+        && memberList.getMembers().getSize() >= memberList.getMaxSize()) {
       return null;
     }
     T fresh = createMemberForRecycle();

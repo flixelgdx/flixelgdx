@@ -198,7 +198,7 @@ public abstract class FlixelTween implements FlixelPoolable {
   public static FlixelTween tween(Object object, FlixelTweenSettings tweenSettings) {
     Objects.requireNonNull(tweenSettings, "tweenSettings");
     FlixelArray<FlixelTweenSettings.FlixelTweenGoal> propGoals = tweenSettings.getGoals();
-    if (propGoals == null || propGoals.size == 0) {
+    if (propGoals == null || propGoals.getSize() == 0) {
       throw new IllegalArgumentException(
           "FlixelTweenSettings requires at least one property goal from addGoal(getter, toValue, setter).");
     }
@@ -1009,7 +1009,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    */
   public static void cancelActiveTweens() {
     FlixelArray<FlixelTween> list = globalManager.getActiveTweens();
-    for (int i = list.size - 1; i >= 0; i--) {
+    for (int i = list.getSize() - 1; i >= 0; i--) {
       FlixelTween t = list.get(i);
       if (t != null) {
         t.cancel();

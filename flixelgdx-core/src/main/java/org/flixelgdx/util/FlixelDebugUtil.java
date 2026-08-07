@@ -70,7 +70,7 @@ public final class FlixelDebugUtil {
   private static int countActiveMembersRecursive(FlixelArray<?> members) {
     int count = 0;
     Object[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       Object o = items[i];
       if (!(o instanceof IFlixelBasic member)) {
         continue;
@@ -111,7 +111,7 @@ public final class FlixelDebugUtil {
   private static void forEachDebugDrawableRecursive(@NotNull FlixelArray<?> members,
       @NotNull Consumer<FlixelDebugDrawable> callback) {
     Object[] items = members.begin();
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       Object o = items[i];
       if (!(o instanceof IFlixelBasic member)) {
         continue;

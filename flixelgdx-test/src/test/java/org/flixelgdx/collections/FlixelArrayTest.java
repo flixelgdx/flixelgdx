@@ -45,7 +45,7 @@ class FlixelArrayTest {
   @Test
   void addAndGet() {
     FlixelArray<String> array = of("a", "b", "c");
-    assertEquals(3, array.size);
+    assertEquals(3, array.getSize());
     assertEquals("a", array.get(0));
     assertEquals("c", array.get(2));
   }
@@ -55,7 +55,7 @@ class FlixelArrayTest {
     FlixelArray<String> array = of("a", "b");
     array.set(1, "z");
     assertEquals("z", array.get(1));
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
   }
 
   @Test
@@ -71,7 +71,7 @@ class FlixelArrayTest {
   void orderedRemoveShiftsDown() {
     FlixelArray<String> array = of("a", "b", "c", "d");
     assertEquals("b", array.removeIndex(1));
-    assertEquals(3, array.size);
+    assertEquals(3, array.getSize());
     assertEquals("a", array.get(0));
     assertEquals("c", array.get(1));
     assertEquals("d", array.get(2));
@@ -86,7 +86,7 @@ class FlixelArrayTest {
     array.add("d");
     // Removing index 1 in an unordered list fills the gap with the last element.
     assertEquals("b", array.removeIndex(1));
-    assertEquals(3, array.size);
+    assertEquals(3, array.getSize());
     assertEquals("d", array.get(1));
   }
 
@@ -106,7 +106,7 @@ class FlixelArrayTest {
   void popReturnsAndRemovesLast() {
     FlixelArray<String> array = of("a", "b");
     assertEquals("b", array.pop());
-    assertEquals(1, array.size);
+    assertEquals(1, array.getSize());
     assertEquals("a", array.last());
   }
 
@@ -130,11 +130,11 @@ class FlixelArrayTest {
   void clearNullsSlots() {
     FlixelArray<String> array = of("a", "b");
     array.clear();
-    assertEquals(0, array.size);
+    assertEquals(0, array.getSize());
     assertTrue(array.isEmpty());
     // The backing slots must be nulled so elements can be collected.
-    assertNull(array.items[0]);
-    assertNull(array.items[1]);
+    assertNull(array.getItems()[0]);
+    assertNull(array.getItems()[1]);
   }
 
   @Test
@@ -143,7 +143,7 @@ class FlixelArrayTest {
     for (int i = 0; i < 100; i++) {
       array.add(i);
     }
-    assertEquals(100, array.size);
+    assertEquals(100, array.getSize());
     assertEquals(0, array.get(0));
     assertEquals(99, array.get(99));
   }
@@ -153,7 +153,7 @@ class FlixelArrayTest {
     FlixelArray<String> a = of("a", "b");
     FlixelArray<String> b = of("c", "d");
     a.addAll(b);
-    assertEquals(4, a.size);
+    assertEquals(4, a.getSize());
     assertEquals("c", a.get(2));
     assertEquals("d", a.get(3));
   }
@@ -189,7 +189,7 @@ class FlixelArrayTest {
   void snapshotStaysStableWhileMutating() {
     FlixelArray<String> array = of("x", "y", "z");
     String[] snap = array.begin();
-    int snapSize = array.size;
+    int snapSize = array.getSize();
 
     // Mutate the list mid-iteration: the snapshot must not shift under us.
     array.add("w");
@@ -203,7 +203,7 @@ class FlixelArrayTest {
     array.end();
 
     // After the snapshot ends, the live list reflects the changes.
-    assertEquals(3, array.size);
+    assertEquals(3, array.getSize());
     assertEquals("x", array.get(0));
     assertEquals("z", array.get(1));
     assertEquals("w", array.get(2));

@@ -165,7 +165,7 @@ public class FlixelGoalTween extends FlixelTween {
 
   @Override
   protected void updateTweenValues() {
-    for (int i = 0; i < cachedPropertyGoals.size; i++) {
+    for (int i = 0; i < cachedPropertyGoals.getSize(); i++) {
       float startValue = propertyGoalStartValues.get(i);
       var goal = cachedPropertyGoals.get(i);
       if (goal == null) {
@@ -238,7 +238,7 @@ public class FlixelGoalTween extends FlixelTween {
     var propertyGoals = tweenSettings.getGoals();
     cachedPropertyGoals.clear();
     propertyGoalStartValues.clear();
-    for (int i = 0; i < propertyGoals.size; i++) {
+    for (int i = 0; i < propertyGoals.getSize(); i++) {
       var goal = propertyGoals.get(i);
       if (goal == null) {
         continue;

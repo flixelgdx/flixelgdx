@@ -1384,7 +1384,7 @@ public final class Flixel {
       return;
     }
     var mbrs = members.begin();
-    for (int i = 0; i < members.size; i++) {
+    for (int i = 0; i < members.getSize(); i++) {
       var member = mbrs[i];
       if (member == null) {
         continue;
@@ -1440,7 +1440,7 @@ public final class Flixel {
     }
 
     var mbrs = members.begin();
-    for (int i = 0; i < members.size; i++) {
+    for (int i = 0; i < members.getSize(); i++) {
       var member = mbrs[i];
       if (member instanceof FlixelAntialiasable m && !m.isAntialiasing()) {
         m.setAntialiasing(false);
@@ -1449,7 +1449,7 @@ public final class Flixel {
     members.end();
 
     mbrs = members.begin();
-    for (int i = 0; i < members.size; i++) {
+    for (int i = 0; i < members.getSize(); i++) {
       var member = mbrs[i];
       if (member instanceof FlixelAntialiasable m && m.isAntialiasing()) {
         m.setAntialiasing(true);

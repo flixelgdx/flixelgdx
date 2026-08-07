@@ -517,7 +517,7 @@ public class FlixelBar extends FlixelSprite {
   public FlixelBar setThresholdStops(@NotNull FlixelArray<ThresholdStop> stops) {
     Objects.requireNonNull(stops);
     thresholdStops.clear();
-    for (int i = 0, n = stops.size; i < n; i++) {
+    for (int i = 0, n = stops.getSize(); i < n; i++) {
       ThresholdStop s = stops.get(i);
       if (s != null) {
         thresholdStops.add(s);
@@ -759,7 +759,7 @@ public class FlixelBar extends FlixelSprite {
     if (gradientRegion != null) {
       return Color.WHITE;
     }
-    if (!thresholdEnabled || thresholdStops.size == 0) {
+    if (!thresholdEnabled || thresholdStops.getSize() == 0) {
       return filledColor;
     }
 
@@ -786,7 +786,7 @@ public class FlixelBar extends FlixelSprite {
     percent = FlixelMath.clamp(percent, 0f, 1f);
 
     ThresholdStop prev = null;
-    for (int i = 0, n = thresholdStops.size; i < n; i++) {
+    for (int i = 0, n = thresholdStops.getSize(); i < n; i++) {
       ThresholdStop stop = thresholdStops.get(i);
       if (stop.percent >= percent) {
         if (prev == null) {
@@ -799,13 +799,13 @@ public class FlixelBar extends FlixelSprite {
       }
       prev = stop;
     }
-    thresholdScratch.set(thresholdStops.get(thresholdStops.size - 1).color);
+    thresholdScratch.set(thresholdStops.get(thresholdStops.getSize() - 1).color);
     return thresholdScratch;
   }
 
   private void sortThresholdStopsAndUpdateEnabled() {
     thresholdStops.sort(THRESHOLD_BY_PERCENT);
-    thresholdEnabled = thresholdStops.size > 0;
+    thresholdEnabled = thresholdStops.getSize() > 0;
   }
 
   private void copyThresholdStopsFromCollection(Collection<? extends ThresholdStop> stops) {

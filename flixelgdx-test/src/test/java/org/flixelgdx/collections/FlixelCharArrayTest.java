@@ -36,7 +36,7 @@ class FlixelCharArrayTest {
     FlixelCharArray array = new FlixelCharArray();
     array.add('a');
     array.add('b');
-    assertEquals(2, array.size);
+    assertEquals(2, array.getSize());
     assertEquals('a', array.get(0));
     array.set(1, 'z');
     assertEquals('z', array.get(1));
@@ -68,7 +68,7 @@ class FlixelCharArrayTest {
     array.add('y');
     assertEquals('y', array.peek());
     assertEquals('y', array.pop());
-    assertEquals(1, array.size);
+    assertEquals(1, array.getSize());
   }
 
   @Test
@@ -77,7 +77,7 @@ class FlixelCharArrayTest {
     for (int i = 0; i < 30; i++) {
       array.add((char) ('a' + (i % 26)));
     }
-    assertEquals(30, array.size);
+    assertEquals(30, array.getSize());
   }
 
   @Test

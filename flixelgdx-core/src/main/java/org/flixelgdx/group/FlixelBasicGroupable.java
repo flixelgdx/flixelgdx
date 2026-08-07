@@ -72,7 +72,7 @@ public interface FlixelBasicGroupable<T extends IFlixelBasic> extends FlixelGrou
     }
     T[] items = members.begin();
     try {
-      for (int i = 0, n = members.size; i < n; i++) {
+      for (int i = 0, n = members.getSize(); i < n; i++) {
         T m = items[i];
         if (m != null && !m.isExists()) {
           return m;

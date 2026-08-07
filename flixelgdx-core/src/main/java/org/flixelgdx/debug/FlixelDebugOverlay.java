@@ -264,7 +264,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Returns the camera currently selected by Alt+arrow cycling, clamped to a valid index. */
   public final int getInspectCameraIndex() {
     FlixelArray<FlixelCamera> cams = Flixel.cameras;
-    int n = (cams != null) ? cams.size : 0;
+    int n = (cams != null) ? cams.getSize() : 0;
     if (n == 0) {
       return -1;
     }
@@ -383,7 +383,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
       FlixelArray<FlixelBatch> extra = mgr.getTrackedBatches();
-      for (int i = 0, n = extra.size; i < n; i++) {
+      for (int i = 0, n = extra.getSize(); i < n; i++) {
         FlixelBatch b = extra.get(i);
         if (b != null) {
           total += b.getRenderCalls();
@@ -528,10 +528,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     FlixelArray<FlixelCamera> cams = Flixel.cameras;
-    if (cams == null || cams.size == 0) {
+    if (cams == null || cams.getSize() == 0) {
       return;
     }
-    if (debugInspectCameraIndex < 0 || debugInspectCameraIndex >= cams.size) {
+    if (debugInspectCameraIndex < 0 || debugInspectCameraIndex >= cams.getSize()) {
       debugInspectCameraIndex = 0;
     }
     // Use the raw* helpers throughout so the inspect camera tools keep responding while the
@@ -541,11 +541,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
     if (alt && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
         && !shouldSuppressDebugRawKeybind(cameraCycleLeftKey)) {
-      debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.size) % cams.size;
+      debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.getSize()) % cams.getSize();
     }
     if (alt && Flixel.keys.rawJustPressed(cameraCycleRightKey)
         && !shouldSuppressDebugRawKeybind(cameraCycleRightKey)) {
-      debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.size;
+      debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.getSize();
     }
 
     FlixelCamera cam = cams.get(debugInspectCameraIndex);
@@ -602,7 +602,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
 
     FlixelArray<FlixelCamera> cams = Flixel.cameras;
-    if (cams == null || cams.size == 0) {
+    if (cams == null || cams.getSize() == 0) {
       return;
     }
     int idx = getInspectCameraIndex();
@@ -721,13 +721,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   @Nullable
   private FlixelObject pickRecursive(@Nullable FlixelArray<?> members, @NotNull FlixelCamera cam,
       float viewX, float viewY) {
-    if (members == null || members.size == 0) {
+    if (members == null || members.getSize() == 0) {
       return null;
     }
     Object[] items = members.begin();
     FlixelObject hit = null;
     try {
-      for (int i = members.size - 1; i >= 0; i--) {
+      for (int i = members.getSize() - 1; i >= 0; i--) {
         Object o = items[i];
         if (!(o instanceof FlixelBasic basic) || !basic.exists || !basic.visible) {
           continue;
@@ -881,7 +881,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     FlixelDebugManager mgr = Flixel.debug;
     if (mgr != null) {
       FlixelArray<FlixelBatch> extra = mgr.getTrackedBatches();
-      for (int i = 0, n = extra.size; i < n; i++) {
+      for (int i = 0, n = extra.getSize(); i < n; i++) {
         FlixelBatch b = extra.get(i);
         if (b != null) {
           total += b.getRenderCalls();
@@ -904,14 +904,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   public void resize(int width, int height) {}
 
   private void reclaimTrackerBlocksToPool() {
-    for (int i = 0; i < cachedTrackerBlocks.size; i++) {
+    for (int i = 0; i < cachedTrackerBlocks.getSize(); i++) {
       cachedTrackerBlockPool.add(cachedTrackerBlocks.get(i));
     }
     cachedTrackerBlocks.clear();
   }
 
   private CachedTrackerBlock obtainTrackerBlock() {
-    return cachedTrackerBlockPool.size > 0
+    return cachedTrackerBlockPool.getSize() > 0
         ? cachedTrackerBlockPool.pop()
         : new CachedTrackerBlock();
   }
@@ -922,10 +922,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     FlixelArray<FlixelDebugTrackerEntry> entries = Flixel.debug.getTrackerEntries();
-    if (entries == null || entries.size == 0) {
+    if (entries == null || entries.getSize() == 0) {
       return;
     }
-    for (int e = 0; e < entries.size; e++) {
+    for (int e = 0; e < entries.getSize(); e++) {
       FlixelDebugTrackerEntry entry = entries.get(e);
       if (entry == null) {
         continue;
@@ -963,7 +963,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         BufferedLogLine old = logBuffer.removeFirst();
         logLinePool.add(old);
       }
-      BufferedLogLine line = logLinePool.size > 0 ? logLinePool.pop() : new BufferedLogLine();
+      BufferedLogLine line = logLinePool.getSize() > 0 ? logLinePool.pop() : new BufferedLogLine();
       line.set(entry);
       logBuffer.addLast(line);
       onLogEntryAppended(line);
@@ -980,7 +980,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected final int copyLogBuffer(@NotNull FlixelArray<BufferedLogLine> output) {
     synchronized (logBuffer) {
       int n = logBuffer.size();
-      while (output.size < n) {
+      while (output.getSize() < n) {
         output.add(new BufferedLogLine());
       }
       output.setSize(n);

@@ -455,7 +455,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   @Override
   protected void onWatchEntriesRefreshed() {
-    int n = cachedWatchKeys.size;
+    int n = cachedWatchKeys.getSize();
     if (watchKeyStr.length < n) {
       watchKeyStr = new String[Math.max(n, watchKeyStr.length * 2)];
       watchValueStr = new String[watchKeyStr.length];
@@ -469,7 +469,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   @Override
   protected void onTrackerBlocksRebuilt() {
-    int n = cachedTrackerBlocks.size;
+    int n = cachedTrackerBlocks.getSize();
     if (trackerNameStr.length < n) {
       String[] nb = new String[Math.max(n, trackerNameStr.length * 2)];
       String[][] nk = new String[nb.length][];
@@ -982,7 +982,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
 
     FlixelArray<FlixelCamera> cams = Flixel.cameras;
-    int camCount = cams != null ? cams.size : 0;
+    int camCount = cams != null ? cams.getSize() : 0;
     int inspect = getInspectCameraIndex();
     text(COLOR_KEY, "Cameras");
     ImGui.sameLine();
@@ -1140,7 +1140,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.separator();
     if (ImGui.button("Reset zoom on inspected camera")) {
       FlixelArray<FlixelCamera> cams = Flixel.cameras;
-      if (cams != null && cams.size > 0) {
+      if (cams != null && cams.getSize() > 0) {
         FlixelCamera cam = cams.get(getInspectCameraIndex());
         cam.setZoom(1f);
       }
@@ -1244,7 +1244,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
 
     if (ImGui.beginChild("log_scroll", 0, 0, false, ImGuiWindowFlags.HorizontalScrollbar)) {
-      for (int i = 0; i < logSnapshot.size; i++) {
+      for (int i = 0; i < logSnapshot.getSize(); i++) {
         BufferedLogLine line = logSnapshot.get(i);
         if (line == null || !isLogLevelVisible(line.level)) {
           continue;
@@ -1471,20 +1471,20 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    */
   private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
     FlixelArray<String> history = Flixel.debug.getCommandHistory();
-    if (history.size == 0) {
+    if (history.getSize() == 0) {
       return;
     }
     if (commandHistoryCursor < 0) {
-      commandHistoryCursor = history.size;
+      commandHistoryCursor = history.getSize();
     }
     int next = commandHistoryCursor + direction;
     if (next < 0) {
       next = 0;
-    } else if (next > history.size) {
-      next = history.size;
+    } else if (next > history.getSize()) {
+      next = history.getSize();
     }
     commandHistoryCursor = next;
-    String line = next == history.size ? "" : history.get(next);
+    String line = next == history.getSize() ? "" : history.get(next);
     data.deleteChars(0, data.getBufTextLen());
     if (!line.isEmpty()) {
       data.insertChars(0, line);

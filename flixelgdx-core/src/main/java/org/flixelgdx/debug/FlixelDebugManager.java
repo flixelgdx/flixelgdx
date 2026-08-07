@@ -376,10 +376,10 @@ public class FlixelDebugManager {
 
   private void addToHistory(@NotNull String line) {
     // Skip duplicate of the most recent entry to avoid spamming the up-arrow buffer.
-    if (commandHistory.size > 0 && commandHistory.peek().equals(line)) {
+    if (commandHistory.getSize() > 0 && commandHistory.peek().equals(line)) {
       return;
     }
-    while (commandHistory.size >= MAX_HISTORY_ENTRIES) {
+    while (commandHistory.getSize() >= MAX_HISTORY_ENTRIES) {
       commandHistory.removeIndex(0);
     }
     commandHistory.add(line);
@@ -417,7 +417,7 @@ public class FlixelDebugManager {
       String filter = args.getString(0, null);
       FlixelArray<String> names = getRegisteredCommandNames();
       Flixel.info("FlixelDebug", "Registered commands:");
-      for (int i = 0; i < names.size; i++) {
+      for (int i = 0; i < names.getSize(); i++) {
         String n = names.get(i);
         if (filter != null && !n.startsWith(filter)) {
           continue;

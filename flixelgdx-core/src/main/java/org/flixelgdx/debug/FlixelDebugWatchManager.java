@@ -233,7 +233,7 @@ public class FlixelDebugWatchManager {
    */
   public void fillWatchLines(@NotNull FlixelArray<FlixelString> output) {
     int n = watches.size();
-    while (output.size < n) {
+    while (output.getSize() < n) {
       output.add(new FlixelString(64));
     }
     output.setSize(n);
@@ -259,10 +259,10 @@ public class FlixelDebugWatchManager {
    */
   public void fillWatchEntries(@NotNull FlixelArray<FlixelString> keys, @NotNull FlixelArray<FlixelString> values) {
     int n = watches.size();
-    while (keys.size < n) {
+    while (keys.getSize() < n) {
       keys.add(new FlixelString(32));
     }
-    while (values.size < n) {
+    while (values.getSize() < n) {
       values.add(new FlixelString(48));
     }
     keys.setSize(n);

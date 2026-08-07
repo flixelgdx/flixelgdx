@@ -160,7 +160,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
    */
   @Override
   public void update(float elapsed) {
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       members.get(i).updateAction(elapsed);
     }
   }
@@ -170,7 +170,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
    * after keys, mouse, and gamepads {@code endFrame()}.
    */
   public void endFrame() {
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       members.get(i).endFrameAction();
     }
   }
@@ -180,7 +180,7 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
     if (registerForGlobalLifecycle) {
       FlixelActionSets.unregister(this);
     }
-    for (int i = 0, n = members.size; i < n; i++) {
+    for (int i = 0, n = members.getSize(); i < n; i++) {
       FlixelAction a = members.get(i);
       a.setOwner(null);
       a.resetAction();

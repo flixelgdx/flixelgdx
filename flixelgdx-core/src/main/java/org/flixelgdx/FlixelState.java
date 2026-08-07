@@ -335,6 +335,6 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   @Override
   public String toString() {
     FlixelArray<?> m = getMembers();
-    return "FlixelState(members=" + (m != null ? m.size : 0) + ", subState=" + subState + ")";
+    return "FlixelState(members=" + (m != null ? m.getSize() : 0) + ", subState=" + subState + ")";
   }
 }

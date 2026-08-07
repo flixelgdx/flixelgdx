@@ -645,7 +645,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
    */
   public void clearAudioEffectChain() {
     FlixelSoundBackend.Factory factory = Flixel.soundFactory;
-    for (int i = audioEffectNodes.size - 1; i >= 0; i--) {
+    for (int i = audioEffectNodes.getSize() - 1; i >= 0; i--) {
       FlixelSoundBackend.EffectNode n = audioEffectNodes.get(i);
       n.detach(0);
       n.dispose();
@@ -743,7 +743,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
 
   private void attachEffectNode(@NotNull FlixelSoundBackend.EffectNode node) {
     FlixelSoundBackend.Factory factory = Flixel.soundFactory;
-    if (audioEffectNodes.size == 0) {
+    if (audioEffectNodes.getSize() == 0) {
       node.attachToUpstream(sound, 0);
     } else {
       node.attachToUpstreamNode(audioEffectNodes.peek(), 0);

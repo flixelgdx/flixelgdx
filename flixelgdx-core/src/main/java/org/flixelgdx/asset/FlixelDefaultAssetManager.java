@@ -380,7 +380,7 @@ public class FlixelDefaultAssetManager implements FlixelAssetManager {
       toRemove.add(e.key);
     }
     if (toRemove != null) {
-      for (int i = 0; i < toRemove.size; i++) {
+      for (int i = 0; i < toRemove.getSize(); i++) {
         cache.remove(toRemove.get(i));
       }
     }

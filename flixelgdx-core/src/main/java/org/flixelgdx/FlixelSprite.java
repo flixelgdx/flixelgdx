@@ -849,7 +849,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (secondaryGraphics != null) {
       // Balance every retain from merged sheets (get() + retain()); the primary graphic below is
       // released separately through its own field.
-      for (int i = 0; i < secondaryGraphics.size; i++) {
+      for (int i = 0; i < secondaryGraphics.getSize(); i++) {
         FlixelGraphic g = secondaryGraphics.get(i);
         if (g != null) {
           g.release();

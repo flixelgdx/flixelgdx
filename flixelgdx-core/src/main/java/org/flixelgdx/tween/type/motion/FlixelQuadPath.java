@@ -79,11 +79,11 @@ public class FlixelQuadPath extends FlixelMotion {
   }
 
   private void updatePath() {
-    if (points.size < 3 || (points.size - 1) % 2 != 0) {
+    if (points.getSize() < 3 || (points.getSize() - 1) % 2 != 0) {
       throw new IllegalStateException(
           "FlixelQuadPath needs at least 3 points and an odd point count (start, control, end, ...).");
     }
-    numSegs = (points.size - 1) / 2;
+    numSegs = (points.getSize() - 1) / 2;
     ensureCap(numSegs + 1);
     totalDistance = 0f;
     for (int i = 0; i < numSegs; i++) {
@@ -111,7 +111,7 @@ public class FlixelQuadPath extends FlixelMotion {
 
   @Override
   public FlixelTween start() {
-    if (points.size > 0) {
+    if (points.getSize() > 0) {
       FlixelVector p = points.first();
       motionX = p.x;
       motionY = p.y;
@@ -121,7 +121,7 @@ public class FlixelQuadPath extends FlixelMotion {
 
   @Override
   protected void computeMotion() {
-    if (numSegs < 1 || points.size < 3) {
+    if (numSegs < 1 || points.getSize() < 3) {
       return;
     }
     float pathT = backward ? 1f - scale : scale;

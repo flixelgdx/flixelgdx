@@ -80,7 +80,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       music.destroy();
       music = null;
     }
-    for (int i = 0; i < activeSounds.size; i++) {
+    for (int i = 0; i < activeSounds.getSize(); i++) {
       FlixelSound s = activeSounds.get(i);
       if (s.isExists()) {
         s.destroy();
@@ -111,7 +111,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * pruned from the tracking list without being double-destroyed.
    */
   public void clearNonPersist() {
-    for (int i = activeSounds.size - 1; i >= 0; i--) {
+    for (int i = activeSounds.getSize() - 1; i >= 0; i--) {
       FlixelSound s = activeSounds.get(i);
       if (!s.isExists()) {
         activeSounds.removeIndex(i);
@@ -382,7 +382,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    */
   @Override
   public void update(float elapsed) {
-    for (int i = activeSounds.size - 1; i >= 0; i--) {
+    for (int i = activeSounds.getSize() - 1; i >= 0; i--) {
       FlixelSound s = activeSounds.get(i);
       if (s.isExists()) {
         s.update(elapsed);
@@ -418,7 +418,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       music.destroy();
       music = null;
     }
-    for (int i = 0; i < activeSounds.size; i++) {
+    for (int i = 0; i < activeSounds.getSize(); i++) {
       FlixelSound s = activeSounds.get(i);
       if (s.isExists()) {
         s.destroy();

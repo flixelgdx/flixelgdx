@@ -40,7 +40,7 @@ class FlixelIdentityMapTest {
     // a.equals(b) is true, but they are different objects.
     map.put(a, 1);
     map.put(b, 2);
-    assertEquals(2, map.size());
+    assertEquals(2, map.getSize());
     assertEquals(1, map.get(a));
     assertEquals(2, map.get(b));
   }
@@ -52,7 +52,7 @@ class FlixelIdentityMapTest {
     assertNull(map.put(key, 1));
     assertEquals(1, map.put(key, 2));
     assertEquals(2, map.get(key));
-    assertEquals(1, map.size());
+    assertEquals(1, map.getSize());
   }
 
   @Test
@@ -94,6 +94,6 @@ class FlixelIdentityMapTest {
     for (int i = 0; i < keys.length; i++) {
       assertEquals(i, map.get(keys[i]));
     }
-    assertEquals(200, map.size());
+    assertEquals(200, map.getSize());
   }
 }

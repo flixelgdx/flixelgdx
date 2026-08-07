@@ -196,7 +196,7 @@ public class FlixelString implements CharSequence {
       return set((CharSequence) null);
     }
     buffer.clear();
-    buffer.append(other.buffer, 0, other.buffer.size);
+    buffer.append(other.buffer, 0, other.buffer.getSize());
     return this;
   }
 
@@ -287,7 +287,7 @@ public class FlixelString implements CharSequence {
    */
   @NotNull
   public FlixelString concat(@NotNull FlixelString other) {
-    buffer.append(other.buffer, 0, other.buffer.size);
+    buffer.append(other.buffer, 0, other.buffer.getSize());
     return this;
   }
 
@@ -496,8 +496,8 @@ public class FlixelString implements CharSequence {
    */
   @NotNull
   public String copyContentToNewString() {
-    int n = buffer.size;
-    return n == 0 ? "" : new String(buffer.items, 0, n);
+    int n = buffer.getSize();
+    return n == 0 ? "" : new String(buffer.getItems(), 0, n);
   }
 
   @Override
@@ -525,7 +525,7 @@ public class FlixelString implements CharSequence {
   @Override
   @NotNull
   public String toString() {
-    int n = buffer.size;
-    return n == 0 ? "" : new String(buffer.items, 0, n);
+    int n = buffer.getSize();
+    return n == 0 ? "" : new String(buffer.getItems(), 0, n);
   }
 }

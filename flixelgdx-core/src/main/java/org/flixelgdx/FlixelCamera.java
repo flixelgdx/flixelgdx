@@ -1421,7 +1421,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       return true;
     }
     FlixelGame game = Flixel.game;
-    if (game == null || game.getCameras() == null || game.getCameras().size <= 1) {
+    if (game == null || game.getCameras() == null || game.getCameras().getSize() <= 1) {
       return false;
     }
     boolean coversFullWindow = x <= 0f && y <= 0f && width >= screenWidth && height >= screenHeight;

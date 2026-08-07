@@ -81,12 +81,12 @@ public class FlixelLinearPath extends FlixelMotion {
   }
 
   private void updatePath() {
-    if (points.size < 2) {
+    if (points.getSize() < 2) {
       throw new IllegalStateException("FlixelLinearPath needs at least two points.");
     }
-    pointCount = points.size;
+    pointCount = points.getSize();
     totalDistance = 0f;
-    for (int i = 1; i < points.size; i++) {
+    for (int i = 1; i < points.getSize(); i++) {
       totalDistance += points.get(i - 1).distanceTo(points.get(i));
     }
     if (totalDistance <= 0f) {
@@ -103,7 +103,7 @@ public class FlixelLinearPath extends FlixelMotion {
 
   @Override
   public FlixelTween start() {
-    if (points.size > 0) {
+    if (points.getSize() > 0) {
       FlixelVector p = points.first();
       motionX = p.x;
       motionY = p.y;
@@ -113,7 +113,7 @@ public class FlixelLinearPath extends FlixelMotion {
 
   @Override
   protected void computeMotion() {
-    if (points.size < 2) {
+    if (points.getSize() < 2) {
       return;
     }
     float pathT = backward ? 1f - scale : scale;

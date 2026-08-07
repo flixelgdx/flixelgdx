@@ -475,7 +475,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
 
     if (!globalShaders.isEmpty()) {
-      initSceneFbos(globalShaders.size > 1);
+      initSceneFbos(globalShaders.getSize() > 1);
     }
   }
 
@@ -569,8 +569,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
-    FlixelCamera[] cameraItems = cameras.items;
-    for (int ci = 0, cn = cameras.size; ci < cn; ci++) {
+    FlixelCamera[] cameraItems = cameras.getItems();
+    for (int ci = 0, cn = cameras.getSize(); ci < cn; ci++) {
       FlixelCamera camera = cameraItems[ci];
       Flixel.setDrawCamera(camera);
       try {
@@ -671,7 +671,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
     if (Flixel.debug != null) {
-      Flixel.debug.overlay.drawBoundingBoxes(cameras.items);
+      Flixel.debug.overlay.drawBoundingBoxes(cameras.getItems());
       Flixel.debug.overlay.draw();
     }
 
@@ -765,12 +765,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   private void snapshotCamerasForDebugPause() {
-    if (cameras.size == 0) {
+    if (cameras.getSize() == 0) {
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
     }
-    int n = cameras.size;
+    int n = cameras.getSize();
     debugPauseCameraScroll = new float[n][2];
     debugPauseCameraZoom = new float[n];
     for (int i = 0; i < n; i++) {
@@ -787,7 +787,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       debugPauseCameraZoom = null;
       return;
     }
-    int n = Math.min(debugPauseCameraScroll.length, Math.min(debugPauseCameraZoom.length, cameras.size));
+    int n = Math.min(debugPauseCameraScroll.length, Math.min(debugPauseCameraZoom.length, cameras.getSize()));
     for (int i = 0; i < n; i++) {
       FlixelCamera c = cameras.get(i);
       float sx = debugPauseCameraScroll[i][0];
@@ -976,7 +976,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     boolean needsPingPong = !globalShaders.isEmpty();
     globalShaders.add(shader);
-    initSceneFbos(needsPingPong || globalShaders.size > 1);
+    initSceneFbos(needsPingPong || globalShaders.getSize() > 1);
   }
 
   /**
@@ -994,7 +994,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       if (globalShaders.isEmpty()) {
         disposeSceneFbos();
       } else {
-        initSceneFbos(globalShaders.size > 1);
+        initSceneFbos(globalShaders.getSize() > 1);
       }
     }
     return removed;
@@ -1042,7 +1042,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     int h = Gdx.graphics.getBackBufferHeight();
     boolean usingA = true;
     TextureRegion src = sceneFboRegionA;
-    int n = globalShaders.size;
+    int n = globalShaders.getSize();
 
     for (int i = 0; i < n; i++) {
       FlixelShader gs = globalShaders.get(i);
@@ -1358,8 +1358,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   private void applyDesktopTransparencyBackdropOnly() {
     bgColor.a = 0f;
-    FlixelCamera[] camItems = cameras.items;
-    for (int i = 0, n = cameras.size; i < n; i++) {
+    FlixelCamera[] camItems = cameras.getItems();
+    for (int i = 0, n = cameras.getSize(); i < n; i++) {
       FlixelCamera cam = camItems[i];
       if (cam == null) {
         continue;
@@ -1378,9 +1378,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     g[1] = bgColor.g;
     g[2] = bgColor.b;
     g[3] = bgColor.a;
-    int n = cameras.size;
+    int n = cameras.getSize();
     ensureDesktopTransparencyCameraSnapshotCapacity(n);
-    FlixelCamera[] camItems = n == 0 ? null : cameras.items;
+    FlixelCamera[] camItems = n == 0 ? null : cameras.getItems();
     float[] p = desktopTransparencyRestoreCamerasPacked;
     for (int i = 0; i < n; i++) {
       FlixelCamera cam = camItems[i];
@@ -1422,8 +1422,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     } else {
       bgColor.set(Color.BLACK);
     }
-    FlixelCamera[] camItems = cameras.items;
-    int n = cameras.size;
+    FlixelCamera[] camItems = cameras.getItems();
+    int n = cameras.getSize();
     int saved = desktopTransparencyRestoreCameraCount;
     float[] p = desktopTransparencyRestoreCamerasPacked;
     for (int i = 0; i < n; i++) {
