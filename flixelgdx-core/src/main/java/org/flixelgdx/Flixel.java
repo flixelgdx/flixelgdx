@@ -699,6 +699,7 @@ public final class Flixel {
    * <p>Example:
    *
    * <pre>{@code
+   * // Grab the shared batch used throughout the game.
    * FlixelBatch batch = Flixel.graphics.getBatch();
    *
    * // Cap the frame rate and turn on vertical sync.
