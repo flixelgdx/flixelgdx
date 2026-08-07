@@ -47,14 +47,15 @@ When explaining code or introducing patterns:
 
 - **Do not allocate objects inside loops or in methods invoked every frame.** That rule is strict. Prefer reuse, pooling (FlixelGDX and libGDX), 
 indexed `for` loops, and performance-oriented helpers such as FlixelGDX's `FlixelString` or libGDX's `ObjectMap`.
-- **Always put fields in the correct order for each class**. This one is also an extremely important rule to follow, and it's
-  vital you **do not forget this**. This rule is specifically for ensuring objects are as lean and small as possible and to keep
-  alignment padding as tight as possible. Follow the order below:
+- **Always put fields in the correct order for each class**. Follow the order below:
 
   1. `long`s and `double`s
   2. `int`s, `float`s, and object references 
   3. `short`s and `char`s
   4. `boolean`s and `byte`s
+
+- **Standard Java collections are completely banned**. They take up too much memory and allocate too many objects when they're
+  used. Prefer FlixelGDX collections instead, which are significantly more lean and don't allocate garbage when used.
 
 ### Coding style
 
