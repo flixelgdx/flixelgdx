@@ -36,15 +36,15 @@ import org.jetbrains.annotations.NotNull;
  * framework needing to know it exists.
  *
  * <p>Game code rarely needs this; it exists mostly for introspection, such as logging what is
- * running or showing it on a debug overlay. The actual drawing library stays behind the internal
- * {@link FlixelGraphicsBackend} seam and is never exposed to game code directly. Read the current
- * backend from {@link FlixelGraphicsManager#getGraphicsApi() Flixel.graphics.getBackendType()}.
+ * running or showing it on a debug overlay. The underlying drawing library is never exposed to game
+ * code directly. Read the current backend from
+ * {@link FlixelGraphicsManager#getGraphicsApi() Flixel.graphics.getGraphicsApi()}.
  *
  * <p>Every ID is interned, so the same id always yields the same instance and you can compare with
  * {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.graphics.getBackendType() == FlixelGraphicsApi.WebGL) {
+ * if (Flixel.graphics.getGraphicsApi() == FlixelGraphicsApi.WebGL) {
  *   // Fall back to a simpler effect on the WebGL path.
  * }
  * }</pre>
