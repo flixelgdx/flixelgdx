@@ -71,7 +71,7 @@ public final class FlixelPlatform {
   /** An iOS mobile device. */
   public static final FlixelPlatform iOS = of("iOS");
 
-  /** The platform is not known, typically because no host integration has been installed yet. */
+  /** A platform that isn't known, typically because no host integration has been installed yet. */
   public static final FlixelPlatform Unknown = of("Unknown");
 
   private final String id;
