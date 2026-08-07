@@ -38,7 +38,7 @@ import java.util.Objects;
  * with {@link #of(String)} without the framework needing to know it exists.
  *
  * <p>Read the current platform from {@link FlixelHostIntegration#getPlatform() Flixel.host.getPlatform()}.
- * Every id is interned, so the same ID always yields the exact same instance, and you can compare
+ * Every ID is interned, so the same ID always yields the exact same instance, and you can compare
  * with {@code ==}:
  *
  * <pre>{@code
