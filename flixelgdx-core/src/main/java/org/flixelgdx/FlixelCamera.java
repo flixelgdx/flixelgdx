@@ -41,7 +41,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.functional.FlixelShaderable;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelColor;
@@ -1296,8 +1296,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       scrollY = desiredY;
     } else {
       float lerpFactor = 1f - (float) Math.pow(1f - followLerp, elapsed * 60f);
-      scrollX = FlixelMathUtil.lerp(scrollX, desiredX, lerpFactor);
-      scrollY = FlixelMathUtil.lerp(scrollY, desiredY, lerpFactor);
+      scrollX = FlixelMath.lerp(scrollX, desiredX, lerpFactor);
+      scrollY = FlixelMath.lerp(scrollY, desiredY, lerpFactor);
     }
   }
 
@@ -1467,10 +1467,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
         topLeftY = py - (resolvedRegionHeight / 2f);
       }
       case NORMALIZED_RECT -> {
-        float nx = FlixelMathUtil.clamp(normalizedRegionX, 0f, 1f);
-        float ny = FlixelMathUtil.clamp(normalizedRegionY, 0f, 1f);
-        float nw = FlixelMathUtil.clamp(normalizedRegionWidth, 0f, 1f);
-        float nh = FlixelMathUtil.clamp(normalizedRegionHeight, 0f, 1f);
+        float nx = FlixelMath.clamp(normalizedRegionX, 0f, 1f);
+        float ny = FlixelMath.clamp(normalizedRegionY, 0f, 1f);
+        float nw = FlixelMath.clamp(normalizedRegionWidth, 0f, 1f);
+        float nh = FlixelMath.clamp(normalizedRegionHeight, 0f, 1f);
         float resolvedW = Math.max(1f, nw * screenWidth);
         float resolvedH = Math.max(1f, nh * screenHeight);
         topLeftX = nx * screenWidth;

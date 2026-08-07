@@ -24,7 +24,7 @@
 package org.flixelgdx.tween.type.motion;
 
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -65,9 +65,9 @@ public class FlixelLinearPath extends FlixelMotion {
     updatePath();
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(totalDistance / speed);
       }
     }
@@ -90,7 +90,7 @@ public class FlixelLinearPath extends FlixelMotion {
       totalDistance += points.get(i - 1).distanceTo(points.get(i));
     }
     if (totalDistance <= 0f) {
-      totalDistance = FlixelMathUtil.FLOAT_ROUNDING_ERROR;
+      totalDistance = FlixelMath.FLOAT_ROUNDING_ERROR;
     }
     ensureCumulativeCapacity(pointCount);
     float acc = 0f;
@@ -117,7 +117,7 @@ public class FlixelLinearPath extends FlixelMotion {
       return;
     }
     float pathT = backward ? 1f - scale : scale;
-    pathT = FlixelMathUtil.clamp(pathT, 0f, 1f);
+    pathT = FlixelMath.clamp(pathT, 0f, 1f);
     int seg = 0;
     while (seg < pointCount - 2 && pathT > cumulativeT[seg + 1]) {
       seg++;
@@ -125,7 +125,7 @@ public class FlixelLinearPath extends FlixelMotion {
     float t0 = cumulativeT[seg];
     float t1 = cumulativeT[seg + 1];
     float u = (t1 - t0) > 1e-8f ? (pathT - t0) / (t1 - t0) : 0f;
-    u = FlixelMathUtil.clamp(u, 0f, 1f);
+    u = FlixelMath.clamp(u, 0f, 1f);
     FlixelVector a = points.get(seg);
     FlixelVector b = points.get(seg + 1);
     motionX = a.x + (b.x - a.x) * u;

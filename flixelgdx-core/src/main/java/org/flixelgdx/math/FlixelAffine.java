@@ -156,8 +156,8 @@ public final class FlixelAffine {
     if (degrees == 0f) {
       return this;
     }
-    float cos = FlixelMathUtil.cosDeg(degrees);
-    float sin = FlixelMathUtil.sinDeg(degrees);
+    float cos = FlixelMath.cosDeg(degrees);
+    float sin = FlixelMath.sinDeg(degrees);
     float tmp00 = m00 * cos + m01 * sin;
     float tmp01 = m00 * -sin + m01 * cos;
     float tmp10 = m10 * cos + m11 * sin;

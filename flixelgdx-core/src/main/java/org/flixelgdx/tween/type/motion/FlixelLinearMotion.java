@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.tween.type.motion;
 
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
@@ -62,9 +62,9 @@ public class FlixelLinearMotion extends FlixelMotion {
     float dist = (float) Math.sqrt(moveX * moveX + moveY * moveY);
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(dist / speed);
       }
     }

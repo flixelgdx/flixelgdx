@@ -37,7 +37,7 @@ import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -246,10 +246,10 @@ public final class FlixelSpriteUtil {
       float b0, float b1, float a0, float a1) {
     float t = dimension <= 1 ? 1f : (position / (float) (dimension - 1));
     pm.setColor(
-        FlixelMathUtil.lerp(r0, r1, t),
-        FlixelMathUtil.lerp(g0, g1, t),
-        FlixelMathUtil.lerp(b0, b1, t),
-        FlixelMathUtil.lerp(a0, a1, t));
+        FlixelMath.lerp(r0, r1, t),
+        FlixelMath.lerp(g0, g1, t),
+        FlixelMath.lerp(b0, b1, t),
+        FlixelMath.lerp(a0, a1, t));
   }
 
   /**
@@ -447,21 +447,21 @@ public final class FlixelSpriteUtil {
    */
   public static void setBrightness(@NotNull FlixelSprite sprite, float brightness) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    brightness = FlixelMathUtil.clamp(brightness, -1f, 1f);
+    brightness = FlixelMath.clamp(brightness, -1f, 1f);
     Color c = sprite.getGdxColor();
     float r = c.r;
     float g = c.g;
     float b = c.b;
     float a = c.a;
     if (brightness >= 0f) {
-      r = FlixelMathUtil.lerp(r, 1f, brightness);
-      g = FlixelMathUtil.lerp(g, 1f, brightness);
-      b = FlixelMathUtil.lerp(b, 1f, brightness);
+      r = FlixelMath.lerp(r, 1f, brightness);
+      g = FlixelMath.lerp(g, 1f, brightness);
+      b = FlixelMath.lerp(b, 1f, brightness);
     } else {
       float t = -brightness;
-      r = FlixelMathUtil.lerp(r, 0f, t);
-      g = FlixelMathUtil.lerp(g, 0f, t);
-      b = FlixelMathUtil.lerp(b, 0f, t);
+      r = FlixelMath.lerp(r, 0f, t);
+      g = FlixelMath.lerp(g, 0f, t);
+      b = FlixelMath.lerp(b, 0f, t);
     }
     sprite.setColor(r, g, b, a);
   }
@@ -566,7 +566,7 @@ public final class FlixelSpriteUtil {
     if (len <= 0.0001f) {
       return;
     }
-    float angle = FlixelMathUtil.atan2(dy, dx) * FlixelMathUtil.RAD_TO_DEG;
+    float angle = FlixelMath.atan2(dy, dx) * FlixelMath.RAD_TO_DEG;
     batch.setColor(color);
     batch.draw(whitePixel, startX, startY - thickness * 0.5f, 0f, thickness * 0.5f, len, thickness, 1f, 1f, angle, 0, 0,
         1, 1, false, false);

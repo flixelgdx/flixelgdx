@@ -34,16 +34,17 @@ package org.flixelgdx.collections;
  * <p>Example:
  *
  * <pre>{@code
- * public final class Bullet implements FlixelPoolable {
+ * public class Bullet implements FlixelPoolable {
+ *
  *   public float x, y, speed;
  *   public boolean alive;
  *
  *   // Called automatically when the bullet is returned to its pool.
+ *   @Override
  *   public void reset() {
  *     x = 0f;
  *     y = 0f;
  *     speed = 0f;
- *     alive = false;
  *   }
  * }
  * }</pre>

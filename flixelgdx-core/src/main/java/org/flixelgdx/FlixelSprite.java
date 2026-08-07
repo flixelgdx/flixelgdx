@@ -47,7 +47,7 @@ import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
@@ -614,8 +614,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float cullH = f.originalHeight * Math.abs(scaleY);
     float angle = getAngle();
     if (angle != 0f) {
-      float cos = Math.abs(FlixelMathUtil.cosDeg(angle));
-      float sin = Math.abs(FlixelMathUtil.sinDeg(angle));
+      float cos = Math.abs(FlixelMath.cosDeg(angle));
+      float sin = Math.abs(FlixelMath.sinDeg(angle));
       float rotW = cos * cullW + sin * cullH;
       float rotH = sin * cullW + cos * cullH;
       drawLeft -= (rotW - cullW) * 0.5f;
@@ -1311,8 +1311,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   public void setClipRect(float x, float y, float width, float height) {
     clipRectX = x;
     clipRectY = y;
-    clipRectWidth = FlixelMathUtil.clamp(width, 0, getWidth());
-    clipRectHeight = FlixelMathUtil.clamp(height, 0, getHeight());
+    clipRectWidth = FlixelMath.clamp(width, 0, getWidth());
+    clipRectHeight = FlixelMath.clamp(height, 0, getHeight());
     clipRectEnabled = true;
   }
 
@@ -1354,7 +1354,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectWidth(float clipRectWidth) {
-    this.clipRectWidth = FlixelMathUtil.clamp(clipRectWidth, 0, getWidth());
+    this.clipRectWidth = FlixelMath.clamp(clipRectWidth, 0, getWidth());
   }
 
   public void changeClipRectWidth(float clipRectWidth) {
@@ -1366,7 +1366,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   public void setClipRectHeight(float clipRectHeight) {
-    this.clipRectHeight = FlixelMathUtil.clamp(clipRectHeight, 0, getHeight());
+    this.clipRectHeight = FlixelMath.clamp(clipRectHeight, 0, getHeight());
   }
 
   public void changeClipRectHeight(float clipRectHeight) {

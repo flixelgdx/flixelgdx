@@ -44,7 +44,7 @@ import org.jetbrains.annotations.NotNull;
  * <pre>{@code
  * FlixelVector v = FlixelVector.get(playerX, playerY);
  * float dist = v.distanceTo(target);
- * v.put(); // back to the pool, no garbage created
+ * v.put(); // Back to the pool, no garbage created.
  * }</pre>
  *
  * <p><b>Weak vectors.</b> For the common "make a throwaway vector, pass it to
@@ -59,7 +59,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>This class is not thread safe; the shared pool assumes single-threaded
  * (game-loop) use.
  */
-public final class FlixelVector implements FlixelPoolable {
+public class FlixelVector implements FlixelPoolable {
 
   private static final FlixelPool<FlixelVector> POOL =
       new FlixelPool<>() {
@@ -360,7 +360,7 @@ public final class FlixelVector implements FlixelPoolable {
    * @return The angle to {@code other}, in degrees.
    */
   public float angleTo(@NotNull FlixelVector other) {
-    return (float) Math.atan2(other.y - y, other.x - x) * FlixelMathUtil.RAD_TO_DEG;
+    return (float) Math.atan2(other.y - y, other.x - x) * FlixelMath.RAD_TO_DEG;
   }
 
   /**
@@ -373,9 +373,9 @@ public final class FlixelVector implements FlixelPoolable {
    * @return This vector, for chaining.
    */
   public @NotNull FlixelVector rotate(float pivotX, float pivotY, float degrees) {
-    float radians = degrees * FlixelMathUtil.DEG_TO_RAD;
-    float cos = FlixelMathUtil.cos(radians);
-    float sin = FlixelMathUtil.sin(radians);
+    float radians = degrees * FlixelMath.DEG_TO_RAD;
+    float cos = FlixelMath.cos(radians);
+    float sin = FlixelMath.sin(radians);
     float dx = x - pivotX;
     float dy = y - pivotY;
     this.x = pivotX + dx * cos - dy * sin;

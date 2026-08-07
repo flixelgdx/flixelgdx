@@ -40,7 +40,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.math.FlixelAffine;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
@@ -835,8 +835,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
     float rigBottom = wy - getOffsetY();
     float rigAngle = getAngle();
     if (rigAngle != 0f) {
-      float cos = Math.abs(FlixelMathUtil.cosDeg(rigAngle));
-      float sin = Math.abs(FlixelMathUtil.sinDeg(rigAngle));
+      float cos = Math.abs(FlixelMath.cosDeg(rigAngle));
+      float sin = Math.abs(FlixelMath.sinDeg(rigAngle));
       float rotW = cos * rigCullW + sin * rigCullH;
       float rotH = sin * rigCullW + cos * rigCullH;
       rigLeft -= (rotW - rigCullW) * 0.5f;

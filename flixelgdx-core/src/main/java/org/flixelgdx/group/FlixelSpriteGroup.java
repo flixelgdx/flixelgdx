@@ -29,7 +29,7 @@ import com.badlogic.gdx.graphics.Texture;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
@@ -458,7 +458,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       return;
     }
     preAdd(sprite);
-    index = FlixelMathUtil.clamp(index, 0, members.size);
+    index = FlixelMath.clamp(index, 0, members.size);
     members.insert(index, sprite);
   }
 
@@ -617,7 +617,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     if (members.size == 0) {
       return null;
     }
-    startIndex = FlixelMathUtil.clamp(startIndex, 0, members.size - 1);
+    startIndex = FlixelMath.clamp(startIndex, 0, members.size - 1);
     if (length <= 0) {
       length = members.size;
     }
@@ -909,8 +909,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
    * {@link RotationMode#ORBIT}.
    */
   private void orbitMembersAroundCenter(float angleDelta) {
-    float cos = FlixelMathUtil.cosDeg(angleDelta);
-    float sin = FlixelMathUtil.sinDeg(angleDelta);
+    float cos = FlixelMath.cosDeg(angleDelta);
+    float sin = FlixelMath.sinDeg(angleDelta);
 
     for (int i = 0, n = members.size; i < n; i++) {
       FlixelSprite s = members.get(i);
@@ -945,8 +945,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       }
 
       float angleDeg = getAngle() + angleStep * i;
-      float px = getX() + rotationRadius * FlixelMathUtil.cosDeg(angleDeg);
-      float py = getY() + rotationRadius * FlixelMathUtil.sinDeg(angleDeg);
+      float px = getX() + rotationRadius * FlixelMath.cosDeg(angleDeg);
+      float py = getY() + rotationRadius * FlixelMath.sinDeg(angleDeg);
       s.setPosition(px, py);
       s.setAngle(angleDeg);
     }

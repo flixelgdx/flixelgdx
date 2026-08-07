@@ -24,7 +24,7 @@
 package org.flixelgdx.tween.type.motion;
 
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -62,9 +62,9 @@ public class FlixelQuadPath extends FlixelMotion {
     updatePath();
     if (tweenSettings != null) {
       if (useDuration) {
-        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR));
+        tweenSettings.setDuration(Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR));
       } else {
-        float speed = Math.max(durationOrSpeed, FlixelMathUtil.FLOAT_ROUNDING_ERROR);
+        float speed = Math.max(durationOrSpeed, FlixelMath.FLOAT_ROUNDING_ERROR);
         tweenSettings.setDuration(totalDistance / speed);
       }
     }
@@ -95,7 +95,7 @@ public class FlixelQuadPath extends FlixelMotion {
       totalDistance += len;
     }
     if (totalDistance <= 0f) {
-      totalDistance = FlixelMathUtil.FLOAT_ROUNDING_ERROR;
+      totalDistance = FlixelMath.FLOAT_ROUNDING_ERROR;
     }
     float acc = 0f;
     cumulativeT[0] = 0f;
@@ -125,7 +125,7 @@ public class FlixelQuadPath extends FlixelMotion {
       return;
     }
     float pathT = backward ? 1f - scale : scale;
-    pathT = FlixelMathUtil.clamp(pathT, 0f, 1f);
+    pathT = FlixelMath.clamp(pathT, 0f, 1f);
     int seg = 0;
     while (seg < numSegs - 1 && pathT > cumulativeT[seg + 1]) {
       seg++;
@@ -133,7 +133,7 @@ public class FlixelQuadPath extends FlixelMotion {
     float t0 = cumulativeT[seg];
     float t1 = cumulativeT[seg + 1];
     float u = (t1 - t0) > 1e-8f ? (pathT - t0) / (t1 - t0) : 0f;
-    u = FlixelMathUtil.clamp(u, 0f, 1f);
+    u = FlixelMath.clamp(u, 0f, 1f);
     FlixelVector a = points.get(seg * 2);
     FlixelVector b = points.get(seg * 2 + 1);
     FlixelVector c = points.get(seg * 2 + 2);

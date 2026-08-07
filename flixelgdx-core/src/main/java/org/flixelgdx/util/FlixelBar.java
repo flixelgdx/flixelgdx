@@ -34,7 +34,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -323,7 +323,7 @@ public class FlixelBar extends FlixelSprite {
    * @return {@code this} for chaining.
    */
   public FlixelBar setLerp(float lerp) {
-    this.lerp = FlixelMathUtil.clamp(lerp, 0f, 1f);
+    this.lerp = FlixelMath.clamp(lerp, 0f, 1f);
     if (this.lerp >= 1f) {
       this.displayedValue = this.value;
     }
@@ -474,7 +474,7 @@ public class FlixelBar extends FlixelSprite {
   public FlixelBar setThresholdColors(@NotNull Color fullColor, @NotNull Color lowColor, float lowPercent) {
     Objects.requireNonNull(fullColor);
     Objects.requireNonNull(lowColor);
-    lowPercent = FlixelMathUtil.clamp(lowPercent, 0f, 1f);
+    lowPercent = FlixelMath.clamp(lowPercent, 0f, 1f);
 
     thresholdStops.clear();
     thresholdStops.add(new ThresholdStop(lowPercent, lowColor));
@@ -558,7 +558,7 @@ public class FlixelBar extends FlixelSprite {
    * @return {@code this} for chaining.
    */
   public FlixelBar setThresholdSmoothing(float lerp, boolean onDecreaseOnly) {
-    this.thresholdColorLerp = FlixelMathUtil.clamp(lerp, 0f, 1f);
+    this.thresholdColorLerp = FlixelMath.clamp(lerp, 0f, 1f);
     this.thresholdSmoothOnDecreaseOnly = onDecreaseOnly;
     return this;
   }
@@ -616,7 +616,7 @@ public class FlixelBar extends FlixelSprite {
 
     if (maxSupplier != null) {
       float newMax = maxSupplier.getAsFloat();
-      if (Float.isFinite(newMax) && !FlixelMathUtil.isEqual(max, newMax)) {
+      if (Float.isFinite(newMax) && !FlixelMath.isEqual(max, newMax)) {
         setRange(min, newMax);
       }
     }
@@ -631,7 +631,7 @@ public class FlixelBar extends FlixelSprite {
       displayedValue = value;
     } else {
       float lerpFactor = resolveFrameRateIndependentLerp(lerp, elapsed);
-      displayedValue = FlixelMathUtil.lerp(displayedValue, value, lerpFactor);
+      displayedValue = FlixelMath.lerp(displayedValue, value, lerpFactor);
     }
 
     if (text != null && overlayText != null) {
@@ -728,7 +728,7 @@ public class FlixelBar extends FlixelSprite {
     if (percent <= 0f) {
       return;
     }
-    percent = FlixelMathUtil.clamp(percent, 0f, 1f);
+    percent = FlixelMath.clamp(percent, 0f, 1f);
 
     if (gradientStart != null && gradientEnd != null) {
       rebuildGradientIfNeeded();
@@ -783,7 +783,7 @@ public class FlixelBar extends FlixelSprite {
   }
 
   private Color sampleThresholdColorIntoScratch(float percent) {
-    percent = FlixelMathUtil.clamp(percent, 0f, 1f);
+    percent = FlixelMath.clamp(percent, 0f, 1f);
 
     ThresholdStop prev = null;
     for (int i = 0, n = thresholdStops.size; i < n; i++) {
@@ -794,7 +794,7 @@ public class FlixelBar extends FlixelSprite {
           return thresholdScratch;
         }
         float t = (percent - prev.percent) / Math.max(0.00001f, (stop.percent - prev.percent));
-        thresholdScratch.set(prev.color).lerp(stop.color, FlixelMathUtil.clamp(t, 0f, 1f));
+        thresholdScratch.set(prev.color).lerp(stop.color, FlixelMath.clamp(t, 0f, 1f));
         return thresholdScratch;
       }
       prev = stop;
@@ -909,7 +909,7 @@ public class FlixelBar extends FlixelSprite {
     if (!Float.isFinite(v)) {
       return min;
     }
-    return FlixelMathUtil.clamp(v, min, max);
+    return FlixelMath.clamp(v, min, max);
   }
 
   private float resolvePercent(float v) {
@@ -917,7 +917,7 @@ public class FlixelBar extends FlixelSprite {
     if (denom <= 0f) {
       return 0f;
     }
-    return FlixelMathUtil.clamp((v - min) / denom, 0f, 1f);
+    return FlixelMath.clamp((v - min) / denom, 0f, 1f);
   }
 
   private void rebuildGradientIfNeeded() {
@@ -946,8 +946,8 @@ public class FlixelBar extends FlixelSprite {
       desiredH = Math.max(2, Math.min(256, Math.round(getHeight())));
     }
 
-    if (FlixelMathUtil.isEqual(lastGradientBasisW, getWidth())
-        && FlixelMathUtil.isEqual(lastGradientBasisH, getHeight())
+    if (FlixelMath.isEqual(lastGradientBasisW, getWidth())
+        && FlixelMath.isEqual(lastGradientBasisH, getHeight())
         && gradientTexture != null && desiredW == gradientTexW && desiredH == gradientTexH) {
       return;
     }
@@ -993,7 +993,7 @@ public class FlixelBar extends FlixelSprite {
      * @param color Stop color; copied internally.
      */
     public ThresholdStop(float percent, @NotNull Color color) {
-      this.percent = FlixelMathUtil.clamp(percent, 0f, 1f);
+      this.percent = FlixelMath.clamp(percent, 0f, 1f);
       this.color = new Color(Objects.requireNonNull(color));
     }
   }

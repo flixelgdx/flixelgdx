@@ -36,7 +36,7 @@ import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
-import org.flixelgdx.math.FlixelMathUtil;
+import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -468,7 +468,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   public void setPlayDirection(int playDirection) {
-    playDirection = FlixelMathUtil.clamp(playDirection, -1, 1);
+    playDirection = FlixelMath.clamp(playDirection, -1, 1);
     this.playDirection = playDirection >= 0 ? 1 : -1;
   }
 
@@ -693,7 +693,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
         }
       }
     } else if (duration > 0f) {
-      stateTime = FlixelMathUtil.clamp(stateTime, 0f, duration);
+      stateTime = FlixelMath.clamp(stateTime, 0f, duration);
     }
 
     int frameIndex = computeKeyframeIndex(anim);

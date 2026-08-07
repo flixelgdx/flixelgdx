@@ -42,13 +42,13 @@ package org.flixelgdx.math;
  *
  * <pre>{@code
  * // Ease a health bar toward its target without overshooting.
- * displayed = FlixelMathUtil.approach(displayed, target, 120f * elapsed);
+ * displayed = FlixelMath.approach(displayed, target, 120f * elapsed);
  *
  * // Keep an angle in the -180..180 range.
- * float a = FlixelMathUtil.wrap(angle, -180f, 180f);
+ * float a = FlixelMath.wrap(angle, -180f, 180f);
  * }</pre>
  */
-public final class FlixelMathUtil {
+public final class FlixelMath {
 
   /**
    * The mathematical constant pi (the ratio of a circle's circumference to its
@@ -336,5 +336,5 @@ public final class FlixelMathUtil {
     return Math.round(value * scale) / scale;
   }
 
-  private FlixelMathUtil() {}
+  private FlixelMath() {}
 }

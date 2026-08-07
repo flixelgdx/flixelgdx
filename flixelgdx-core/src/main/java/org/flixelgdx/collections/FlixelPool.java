@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.collections;
 
+import org.flixelgdx.group.FlixelBasicGroup;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,8 +60,13 @@ import java.util.Arrays;
  *
  * Bullet b = bullets.obtain();
  * // ...use the bullet...
- * bullets.free(b); // reset() runs here if Bullet is FlixelPoolable
+ * bullets.free(b); // reset() runs here if Bullet is FlixelPoolable.
  * }</pre>
+ *
+ * <p>Note that this pooling system is different from what's used in
+ * {@link FlixelBasicGroup}. Unlike toggling simple kill flags, this system
+ * completely resets the object. It's advised you don't use this class for
+ * heavy objects like animated sprites, or you might experience stutters.
  *
  * <p>This class is not thread safe. Confine each pool to a single thread (the
  * game loop), which is the common case.
