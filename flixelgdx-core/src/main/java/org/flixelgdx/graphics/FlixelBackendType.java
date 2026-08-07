@@ -23,52 +23,108 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.collections.FlixelMap;
+import org.jetbrains.annotations.NotNull;
+
 /**
- * Identifies which graphics backend was selected when the game started.
+ * Identifies which graphics backend is running, using an open, extensible id string.
  *
- * <p>Game code never chooses a backend, and it should almost never need to branch on one either.
- * This enum exists mostly for introspection: logging what is running, showing it on a debug
- * overlay, or guarding a rare, backend-specific workaround. Read it from
- * {@link FlixelGraphicsManager#getBackendType() Flixel.graphics.getBackendType()}.
+ * <p>This is intentionally not an enum. An enum is a fixed, closed set: it can only ever name the
+ * backends the framework hard-codes, so a power user plugging in their own renderer could never
+ * identify it. An id-string identity has no such ceiling. The framework provides the common
+ * backends as constants, and anyone can mint a new one with {@link #of(String)} without the
+ * framework needing to know it exists.
  *
- * <p>The actual drawing library sits behind the internal {@link FlixelGraphicsBackend} seam and is
- * never exposed to game code directly. This enum only names it.
+ * <p>Game code rarely needs this; it exists mostly for introspection, such as logging what is
+ * running or showing it on a debug overlay. The actual drawing library stays behind the internal
+ * {@link FlixelGraphicsBackend} seam and is never exposed to game code directly. Read the current
+ * backend from {@link FlixelGraphicsManager#getBackendType() Flixel.graphics.getBackendType()}.
  *
- * <p>Example:
+ * <p>Every id is interned, so the same id always yields the same instance and you can compare with
+ * {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.graphics.getBackendType() == FlixelBackendType.WEBGL) {
+ * if (Flixel.graphics.getBackendType() == FlixelBackendType.WebGl) {
  *   // Fall back to a simpler effect on the WebGL path.
  * }
  * }</pre>
  *
  * @see FlixelGraphicsManager#getBackendType()
  */
-public enum FlixelBackendType {
+public final class FlixelBackendType {
 
-  /**
-   * The transitional libGDX-backed implementation used while the framework migrates off libGDX.
-   *
-   * <p>This is what runs today. It exists so the abstraction seam can be introduced and tested
-   * before any native backend is written, and it is expected to be removed once the native and web
-   * backends reach parity.
-   */
-  LIBGDX,
-
-  /** The native backend built on bgfx (desktop, Android, and eventually iOS via Metal). */
-  BGFX,
-
-  /** The web backend built on the browser's native WebGPU, through the framework's own bindings. */
-  WEBGPU,
-
-  /** The web fallback backend built on WebGL, used when the browser has no WebGPU support. */
-  WEBGL,
+  // Declared before the constants below so their of(...) calls can register into it.
+  private static final FlixelMap<String, FlixelBackendType> REGISTRY = new FlixelMap<>();
 
   /**
    * No real backend is present.
    *
-   * <p>This is reported by the safe default manager on headless, server, or not-yet-initialized
-   * sessions, where drawing is a no-op.
+   * <p>This is reported by the safe default manager on headless or not-yet-initialized sessions,
+   * where drawing is a no-op.
    */
-  NOOP
+  public static final FlixelBackendType Noop = of("Noop");
+
+  /** The native backend built on bgfx. */
+  public static final FlixelBackendType Bgfx = of("bgfx");
+
+  /** The web backend built on the browser's native WebGPU. */
+  public static final FlixelBackendType WebGpu = of("WebGPU");
+
+  /** The web backend built on WebGL. */
+  public static final FlixelBackendType WebGl = of("WebGL");
+
+  private final String id;
+
+  private FlixelBackendType(String id) {
+    this.id = id;
+  }
+
+  /**
+   * Returns the canonical backend type for the given id, creating and interning it on first use.
+   *
+   * <p>Calling this twice with the same id returns the very same instance, so results compare equal
+   * with {@code ==}. Use this to define a custom backend's identity, or to look one up by id.
+   *
+   * @param id The backend id, for example {@code "bgfx"}; must not be {@code null}.
+   * @return The one shared {@link FlixelBackendType} for that id.
+   */
+  @NotNull
+  public static FlixelBackendType of(@NotNull String id) {
+    FlixelBackendType existing = REGISTRY.get(id);
+    if (existing != null) {
+      return existing;
+    }
+    FlixelBackendType created = new FlixelBackendType(id);
+    REGISTRY.put(id, created);
+    return created;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    if (!(other instanceof FlixelBackendType)) {
+      return false;
+    }
+    return id.equals(((FlixelBackendType) other).id);
+  }
+
+  @Override
+  public int hashCode() {
+    return id.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return id;
+  }
+
+  /**
+   * @return The backend's id string (for example, {@code "bgfx"}); never {@code null}.
+   */
+  @NotNull
+  public String getId() {
+    return id;
+  }
 }

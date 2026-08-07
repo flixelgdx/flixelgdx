@@ -36,7 +36,7 @@ import java.util.List;
  * <p>This is the only graphics surface game code touches. It owns the shared sprite batch, reports
  * timing and display information, and compiles shaders. The real GPU library lives behind the
  * internal {@link FlixelGraphicsBackend} seam and is never exposed here, so the same game code runs
- * unchanged whether the backend is bgfx, WebGPU, WebGL, or the transitional libGDX layer.
+ * unchanged no matter which backend is active.
  *
  * <p>A safe default is installed before startup, so {@code Flixel.graphics} is never {@code null};
  * on headless or not-yet-initialized sessions its methods simply do nothing and report neutral
@@ -70,11 +70,11 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * @return Which graphics backend is running this session. Defaults to {@link FlixelBackendType#NOOP}.
+   * @return Which graphics backend is running this session. Defaults to {@link FlixelBackendType#Noop}.
    */
   @NotNull
   default FlixelBackendType getBackendType() {
-    return FlixelBackendType.NOOP;
+    return FlixelBackendType.Noop;
   }
 
   /**

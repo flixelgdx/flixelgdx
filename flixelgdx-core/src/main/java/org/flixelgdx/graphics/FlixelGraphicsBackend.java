@@ -30,19 +30,18 @@ import java.nio.ByteBuffer;
 /**
  * The internal seam where the real GPU library plugs in. <b>Not part of the public API.</b>
  *
- * <p>This is the single interface the framework swaps to change graphics libraries. One
- * implementation wraps bgfx (native), another the browser's WebGPU, another WebGL, and a
- * transitional one wraps libGDX during the migration. {@link FlixelGraphicsManager} talks to this
- * seam and nothing else, which is what keeps the backends interchangeable.
+ * <p>This is the single interface the framework swaps to change graphics libraries: one
+ * implementation per GPU library (for example, bgfx on native, WebGPU or WebGL in the browser).
+ * {@link FlixelGraphicsManager} talks to this seam and nothing else, which is what keeps the
+ * backends interchangeable.
  *
  * <p><b>Game code must never touch this.</b> It deals in low-level GPU resources (textures, meshes,
  * shaders, frame boundaries) and exists only so the manager and the sprite batch have a uniform way
  * to reach the hardware. The public surface a game uses is {@link FlixelGraphicsManager} at
  * {@link org.flixelgdx.Flixel#graphics Flixel.graphics}.
  *
- * <p>This interface is expected to grow and change as the native and web backends are built out. It
- * is deliberately small for now: just enough to describe the frame lifecycle and the resources the
- * sprite batch needs. Treat its shape as provisional until Phase 3 lands a real backend.
+ * <p>The interface is deliberately small: just enough to describe the frame lifecycle and the
+ * resources the sprite batch needs. New backends implement it in full.
  *
  * @see FlixelGraphicsManager
  * @see FlixelBackendType

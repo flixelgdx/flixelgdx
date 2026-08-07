@@ -29,7 +29,7 @@ package org.flixelgdx.graphics;
  *
  * <p>Every operation is a no-op and every query returns the neutral default defined by the
  * interface, so {@link org.flixelgdx.Flixel#graphics Flixel.graphics} is always safe to call even
- * with no GPU present. {@link #getBackendType()} reports {@link FlixelBackendType#NOOP}.
+ * with no GPU present. {@link #getBackendType()} reports {@link FlixelBackendType#Noop}.
  */
 public enum FlixelNoopGraphicsManager implements FlixelGraphicsManager {
 

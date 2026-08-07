@@ -691,10 +691,10 @@ public final class Flixel {
    * The single public surface for drawing and GPU state (the sprite batch, frame rate, vertical
    * sync, display modes, and pixel density).
    *
-   * <p>The active graphics backend (bgfx, WebGPU, WebGL, or the transitional libGDX layer) is
-   * installed here before {@link Flixel#initialize(FlixelGame)} runs. Until then, and on headless
-   * targets, it falls back to {@link FlixelNoopGraphicsManager}, so calls are always safe to make.
-   * The underlying GPU library is never exposed; game code only ever talks to this manager.
+   * <p>The active graphics backend is installed here before {@link Flixel#initialize(FlixelGame)}
+   * runs. Until then, and on headless targets, it falls back to {@link FlixelNoopGraphicsManager},
+   * so calls are always safe to make. The underlying GPU library is never exposed; game code only
+   * ever talks to this manager.
    *
    * <p>Example:
    *
