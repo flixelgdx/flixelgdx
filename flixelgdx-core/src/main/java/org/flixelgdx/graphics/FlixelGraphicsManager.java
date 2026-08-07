@@ -23,12 +23,11 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.collections.FlixelList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * The graphics device: the one interface a graphics backend implements and the surface game code
@@ -50,7 +49,7 @@ import java.util.List;
  *
  * <p>Every method has a safe default here so a backend can implement only what its platform
  * supports; unsupported queries return neutral values and unsupported actions do nothing. Read
- * {@link #getGraphicsApi()} to learn what is actually running.
+ * {@link #getApi()} to learn what is actually running.
  *
  * <p>Example:
  *
@@ -69,7 +68,7 @@ public interface FlixelGraphicsManager {
    * @return Which graphics backend is running this session. Defaults to {@link FlixelGraphicsApi#Noop}.
    */
   @NotNull
-  default FlixelGraphicsApi getGraphicsApi() {
+  default FlixelGraphicsApi getApi() {
     return FlixelGraphicsApi.Noop;
   }
 
@@ -204,9 +203,7 @@ public interface FlixelGraphicsManager {
    * @return An unmodifiable list of available display modes, possibly empty; never {@code null}.
    */
   @NotNull
-  default List<FlixelDisplayMode> getDisplayModes() {
-    return Collections.emptyList();
-  }
+  FlixelList<FlixelDisplayMode> getDisplayModes();
 
   /**
    * Returns the pixel density of the display, useful for scaling UI on high-DPI screens.

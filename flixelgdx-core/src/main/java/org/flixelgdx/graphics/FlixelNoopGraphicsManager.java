@@ -23,16 +23,27 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Safe default {@link FlixelGraphicsManager} used before a backend is installed and on headless
  * targets.
  *
  * <p>Every operation is a no-op and every query returns the neutral default defined by the
  * interface, so {@link org.flixelgdx.Flixel#graphics Flixel.graphics} is always safe to call even
- * with no GPU present. {@link #getGraphicsApi()} reports {@link FlixelGraphicsApi#Noop}.
+ * with no GPU present. {@link #getApi()} reports {@link FlixelGraphicsApi#Noop}.
  */
 public enum FlixelNoopGraphicsManager implements FlixelGraphicsManager {
 
   /** Shared no-op instance. */
   INSTANCE;
+
+  private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
+
+  @Override
+  public @NotNull FlixelList<FlixelDisplayMode> getDisplayModes() {
+    return displayModes;
+  }
 }
