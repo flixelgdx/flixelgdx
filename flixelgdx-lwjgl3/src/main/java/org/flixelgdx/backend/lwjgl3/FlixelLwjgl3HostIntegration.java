@@ -31,6 +31,7 @@ import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -208,7 +209,7 @@ public final class FlixelLwjgl3HostIntegration implements FlixelHostIntegration 
 
   @Override
   @NotNull
-  public FlixelArray<FlixelMonitor> getMonitors() {
+  public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
   }
 

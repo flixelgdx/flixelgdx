@@ -46,6 +46,7 @@ import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -192,7 +193,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
       return;
     }
     CharSequence text = clip.getItemAt(0).coerceToText(activity);
-    if (text != null && text.length() > 0) {
+    if (text != null && !text.isEmpty()) {
       onTextPasted.dispatch(text.toString());
     }
   }
@@ -220,7 +221,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
   @Override
   @NotNull
-  public FlixelArray<FlixelMonitor> getMonitors() {
+  public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
   }
 

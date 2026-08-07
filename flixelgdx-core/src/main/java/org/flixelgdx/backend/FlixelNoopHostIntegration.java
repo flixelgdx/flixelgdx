@@ -24,6 +24,7 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +93,7 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
 
   @Override
   @NotNull
-  public FlixelArray<FlixelMonitor> getMonitors() {
+  public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
   }
 

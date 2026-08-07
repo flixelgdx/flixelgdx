@@ -24,7 +24,7 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -197,7 +197,7 @@ public interface FlixelHostIntegration {
    * @return The attached monitors, possibly empty; never {@code null}.
    */
   @NotNull
-  FlixelArray<FlixelMonitor> getMonitors();
+  FlixelList<FlixelMonitor> getMonitors();
 
   /**
    * Returns the primary monitor, where the OS usually places new windows and system UI.
