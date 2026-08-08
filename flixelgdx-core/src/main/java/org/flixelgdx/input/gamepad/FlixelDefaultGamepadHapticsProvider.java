@@ -24,7 +24,7 @@
 package org.flixelgdx.input.gamepad;
 
 /**
- * Fallback {@link FlixelHapticsProvider} backed by {@link FlixelGamepad#startVibration}.
+ * Fallback {@link FlixelGamepadHapticsProvider} backed by {@link FlixelGamepad#startVibration}.
  *
  * <p>This implementation is installed automatically at startup, but each backend launcher
  * immediately replaces it with a platform-specific provider that supports true dual-motor
@@ -37,11 +37,11 @@ package org.flixelgdx.input.gamepad;
  * {@code Math.max(leftIntensity, rightIntensity)}. Both values are clamped to {@code [0, 1]}
  * first.
  */
-final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
+final class FlixelDefaultGamepadHapticsProvider implements FlixelGamepadHapticsProvider {
 
   private final FlixelGamepadInputManager manager;
 
-  FlixelDefaultHapticsProvider(FlixelGamepadInputManager manager) {
+  FlixelDefaultGamepadHapticsProvider(FlixelGamepadInputManager manager) {
     this.manager = manager;
   }
 

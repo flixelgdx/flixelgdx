@@ -43,8 +43,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>This interface is the extension point for both the framework and user code. The framework
  * registers its own resolvers (for example a resolver backed by the SDL3 community controller
- * database in Phase 3). User code adds resolvers for exotic or custom hardware without the
- * framework needing to know they exist:
+ * database). User code adds resolvers for exotic or custom hardware without the framework needing
+ * to know they exist:
  *
  * <pre>{@code
  * public class NesAdapterResolver implements FlixelGamepadMappingResolver {

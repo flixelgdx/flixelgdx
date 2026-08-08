@@ -141,7 +141,7 @@ public class FlixelGraalFeature implements Feature {
   /**
    * Registers Jamepad reflection entries needed by {@link org.flixelgdx.backend.lwjgl3.FlixelLwjgl3HapticsProvider}.
    *
-   * <p>{@code FlixelLwjgl3HapticsProvider} reads the private {@code controllerIndex} field from
+   * <p>{@code FlixelLwjgl3GamepadHapticsProvider} reads the private {@code controllerIndex} field from
    * {@link JamepadController} to call {@code ControllerIndex.doVibration} directly for true
    * independent dual-motor vibration. Without this registration, GraalVM native image discards
    * the field and the reflective read fails at runtime.

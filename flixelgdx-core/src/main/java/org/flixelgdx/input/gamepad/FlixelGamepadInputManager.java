@@ -108,10 +108,10 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
 
   @NotNull
-  private FlixelHapticsProvider hapticsProvider = new FlixelDefaultHapticsProvider(this);
+  private FlixelGamepadHapticsProvider hapticsProvider = new FlixelDefaultGamepadHapticsProvider(this);
 
   @Nullable
-  private FlixelAnalogButtonReader analogButtonReader;
+  private FlixelGamepadAnalogButtonReader analogButtonReader;
 
   @NotNull
   private FlixelGamepadProvider gamepadProvider = FlixelNoopGamepadProvider.INSTANCE;
@@ -729,7 +729,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
    * @param provider Non-null replacement provider.
    * @throws NullPointerException If {@code provider} is {@code null}.
    */
-  public void setHapticsProvider(@NotNull FlixelHapticsProvider provider) {
+  public void setHapticsProvider(@NotNull FlixelGamepadHapticsProvider provider) {
     hapticsProvider = Objects.requireNonNull(provider, "provider cannot be null.");
   }
 
@@ -744,7 +744,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
    *
    * @param reader Reader to install, or {@code null} to clear any existing reader.
    */
-  public void setAnalogButtonReader(@Nullable FlixelAnalogButtonReader reader) {
+  public void setAnalogButtonReader(@Nullable FlixelGamepadAnalogButtonReader reader) {
     analogButtonReader = reader;
   }
 

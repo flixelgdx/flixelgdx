@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>This is only the raw feed. It deliberately holds <b>no</b> gamepad logic: slot assignment,
  * button and axis polling, dead zones, press-order tracking, and event dispatch all live in the
  * manager. Each backend implements this to expose its own controllers, and the manager stays the
- * single owner of behavior. It works exactly like {@link FlixelHapticsProvider}: a thin, swappable
+ * single owner of behavior. It works exactly like {@link FlixelGamepadHapticsProvider}: a thin, swappable
  * platform binding the manager drives.
  *
  * <p>The manager enumerates gamepads every frame through {@link #getGamepadCount()} and

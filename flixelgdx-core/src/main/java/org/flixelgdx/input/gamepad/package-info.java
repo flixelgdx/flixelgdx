@@ -21,7 +21,7 @@
  * <h2>Haptics and vibration</h2>
  *
  * <p>Vibration is routed through a pluggable
- * {@link org.flixelgdx.input.gamepad.FlixelHapticsProvider FlixelHapticsProvider}. Each backend
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider FlixelGamepadHapticsProvider}. Each backend
  * launcher installs the correct platform implementation automatically:
  *
  * <ul>
@@ -47,7 +47,7 @@
  * }</pre>
  *
  * <p>For platform-specific haptics (for example DualSense adaptive triggers), supply a custom
- * {@link org.flixelgdx.input.gamepad.FlixelHapticsProvider} via
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider} via
  * {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager#setHapticsProvider}.
  */
 package org.flixelgdx.input.gamepad;

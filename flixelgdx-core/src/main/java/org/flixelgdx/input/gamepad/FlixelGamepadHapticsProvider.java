@@ -26,7 +26,7 @@ package org.flixelgdx.input.gamepad;
 /**
  * Pluggable vibration backend for {@link FlixelGamepadInputManager}.
  *
- * <p>The built-in implementation, {@link FlixelDefaultHapticsProvider}, delegates to
+ * <p>The built-in implementation, {@link FlixelDefaultGamepadHapticsProvider}, delegates to
  * {@link FlixelGamepad#startVibration} and works on desktop (SDL) and web (W3C Gamepad API)
  * without any extra setup. For platform-specific features such as dual-motor channels, haptic
  * patterns, or DualSense adaptive triggers, supply a custom implementation via
@@ -44,7 +44,7 @@ package org.flixelgdx.input.gamepad;
  * manager already validates that the slot is in range and that the gamepad system is enabled
  * before calling the provider, so implementations do not need to repeat those checks.
  */
-public interface FlixelHapticsProvider {
+public interface FlixelGamepadHapticsProvider {
 
   /**
    * Vibrates the controller in the given slot.

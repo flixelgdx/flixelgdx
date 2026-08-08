@@ -25,14 +25,14 @@ package org.flixelgdx.backend.teavm;
 
 import com.badlogic.gdx.controllers.Controller;
 
-import org.flixelgdx.input.gamepad.FlixelAnalogButtonReader;
+import org.flixelgdx.input.gamepad.FlixelGamepadAnalogButtonReader;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadInput;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 
 /**
- * Web-backend {@link FlixelAnalogButtonReader} that reads analog button pressure directly from
+ * Web-backend {@link FlixelGamepadAnalogButtonReader} that reads analog button pressure directly from
  * the W3C Gamepad API via {@link JSBody} inline JavaScript.
  *
  * <p>On the web, triggers (L2/R2) are represented as {@code GamepadButton} objects with both a
@@ -46,7 +46,7 @@ import org.teavm.jso.JSBody;
  * {@link FlixelGamepadInput#AXIS_TRIGGER_R AXIS_TRIGGER_R} on web.
  * You do not need to install it manually.
  */
-final class FlixelTeaVMAnalogButtonReader implements FlixelAnalogButtonReader {
+final class FlixelTeaVMGamepadAnalogButtonReader implements FlixelGamepadAnalogButtonReader {
 
   @Override
   public float read(@NotNull FlixelGamepad gamepad, int nativeButtonIndex) {

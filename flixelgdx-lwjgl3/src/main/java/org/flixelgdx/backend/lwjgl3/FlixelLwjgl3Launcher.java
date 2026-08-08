@@ -36,10 +36,7 @@ import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
 import org.flixelgdx.backend.lwjgl3.file.FlixelLwjgl3Files;
-import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3GamepadProvider;
-import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3HapticsProvider;
-import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3InputDevice;
-import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
+import org.flixelgdx.backend.lwjgl3.input.*;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
@@ -187,7 +184,7 @@ public class FlixelLwjgl3Launcher {
     FlixelLwjgl3GamepadProvider gamepadProvider = new FlixelLwjgl3GamepadProvider();
     Flixel.gamepads.setGamepadProvider(gamepadProvider);
     Flixel.gamepads.addMappingResolver(gamepadProvider);
-    Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
+    Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3GamepadHapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 
     new Lwjgl3Application(game, configuration);

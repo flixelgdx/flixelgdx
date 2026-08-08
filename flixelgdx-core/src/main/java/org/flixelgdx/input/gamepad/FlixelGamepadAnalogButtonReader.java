@@ -36,16 +36,16 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>The primary use case is populating trigger pressure on backends where L2 and R2 are mapped
  * to button indices rather than dedicated axes. Install a platform implementation via
- * {@link FlixelGamepadInputManager#setAnalogButtonReader(FlixelAnalogButtonReader)}.
+ * {@link FlixelGamepadInputManager#setAnalogButtonReader(FlixelGamepadAnalogButtonReader)}.
  *
  * <p>On the SDL desktop backend, triggers are already reported as raw axes and no reader is needed.
  * {@code FlixelTeaVMAnalogButtonReader} (in the {@code flixelgdx-teavm} module) covers the web case
  * and is installed automatically by {@code FlixelTeaVMLauncher}.
  *
- * @see FlixelGamepadInputManager#setAnalogButtonReader(FlixelAnalogButtonReader)
+ * @see FlixelGamepadInputManager#setAnalogButtonReader(FlixelGamepadAnalogButtonReader)
  */
 @FunctionalInterface
-public interface FlixelAnalogButtonReader {
+public interface FlixelGamepadAnalogButtonReader {
 
   /**
    * Returns the raw analog value of the button at {@code nativeButtonIndex} on the given

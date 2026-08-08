@@ -25,11 +25,11 @@ package org.flixelgdx.backend.teavm;
 
 import com.badlogic.gdx.controllers.Controllers;
 
-import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
+import org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider;
 import org.teavm.jso.JSBody;
 
 /**
- * Web-backend {@link FlixelHapticsProvider} that calls the W3C Gamepad Haptics API directly via
+ * Web-backend {@link FlixelGamepadHapticsProvider} that calls the W3C Gamepad Haptics API directly via
  * {@link JSBody} inline JavaScript, bypassing the xpenatan gdx-teavm controller layer entirely.
  *
  * <p>This provider is installed automatically by {@link FlixelTeaVMLauncher} and replaces the
@@ -53,7 +53,7 @@ import org.teavm.jso.JSBody;
  * browsers. Firefox does not expose {@code vibrationActuator}, so {@link #canVibrate} returns
  * {@code false} there, and vibration calls are silently skipped.
  */
-final class FlixelTeaVMHapticsProvider implements FlixelHapticsProvider {
+final class FlixelTeaVMGamepadHapticsProvider implements FlixelGamepadHapticsProvider {
 
   @Override
   public void vibrate(int slot, float leftIntensity, float rightIntensity, float durationSecs) {

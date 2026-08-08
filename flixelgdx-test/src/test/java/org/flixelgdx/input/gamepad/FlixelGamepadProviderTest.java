@@ -99,10 +99,10 @@ class FlixelGamepadProviderTest {
     }
 
     @Override
-    public void addListener(FlixelGamepadListener listener) {}
+    public void addListener(@NotNull FlixelGamepadListener listener) {}
 
     @Override
-    public void removeListener(FlixelGamepadListener listener) {}
+    public void removeListener(@NotNull FlixelGamepadListener listener) {}
   }
 
   private static FlixelGamepadMapping buildTestMapping() {

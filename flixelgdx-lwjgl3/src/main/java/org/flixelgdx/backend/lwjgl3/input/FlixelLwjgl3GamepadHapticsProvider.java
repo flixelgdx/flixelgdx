@@ -30,12 +30,12 @@ import com.studiohartman.jamepad.ControllerUnpluggedException;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
-import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
+import org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider;
 
 import java.lang.reflect.Field;
 
 /**
- * Desktop {@link FlixelHapticsProvider} backed by SDL via Jamepad. Supports true independent
+ * Desktop {@link FlixelGamepadHapticsProvider} backed by SDL via Jamepad. Supports true independent
  * dual-motor vibration by calling {@code ControllerIndex.doVibration(left, right, duration)}
  * directly, which maps to {@code SDL_JoystickRumble} with separate low-frequency (left) and
  * high-frequency (right) motor channels.
@@ -51,7 +51,7 @@ import java.lang.reflect.Field;
  * hardening), the provider falls back to {@link FlixelGamepad#startVibration} with the stronger of
  * the two intensities driving both motors, matching the behavior of the default provider.
  */
-public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
+public final class FlixelLwjgl3GamepadHapticsProvider implements FlixelGamepadHapticsProvider {
 
   private static final Field CONTROLLER_INDEX_FIELD;
 

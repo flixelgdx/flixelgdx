@@ -40,9 +40,8 @@ import org.jetbrains.annotations.Nullable;
  * time via its {@link FlixelGamepadMappingResolver} chain.
  *
  * <p>Vendor and product IDs are the preferred way for resolvers to identify a gamepad. They are
- * stable across OS versions and driver updates. When a backend cannot expose them (for example the
- * transitional LWJGL3 / gdx-controllers path before SDL3 is adopted), both return {@code 0} and
- * resolvers should fall back to {@link #getName()}.
+ * stable across OS versions and driver updates. When a backend cannot expose them, both return
+ * {@code 0} and resolvers should fall back to {@link #getName()}.
  *
  * @see FlixelGamepadProvider
  * @see FlixelGamepadMapping
@@ -114,7 +113,7 @@ public interface FlixelGamepad {
 
   /**
    * Starts a rumble at the given unified strength for the given time. Backends with independent
-   * motors are driven through {@link FlixelHapticsProvider} instead; this is the simple fallback.
+   * motors are driven through {@link FlixelGamepadHapticsProvider} instead; this is the simple fallback.
    *
    * @param durationMs How long to vibrate, in milliseconds.
    * @param strength Motor strength in the range {@code [0, 1]}.
