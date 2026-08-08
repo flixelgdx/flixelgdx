@@ -21,38 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.input.gamepad;
+package org.flixelgdx.input;
 
 /**
- * High-level controller family used for UI prompts (for example "press A" vs "press X") and
- * telemetry. Input indices still come from each {@link FlixelController#getMapping()}.
+ * Safe default {@link FlixelInputDevice} for headless and not-yet-initialized sessions.
+ *
+ * <p>Every poll reports "nothing pressed" and it drops any processor handed to it, so framework code
+ * can read {@link org.flixelgdx.Flixel#input Flixel.input} unconditionally before a real backend is
+ * installed. It relies entirely on the interface's neutral defaults.
  */
-public enum FlixelGamepadModel {
+public enum FlixelNoopInputDevice implements FlixelInputDevice {
 
-  /** Sony DualShock 4 and compatible controllers. */
-  PS4,
-
-  /** Sony DualSense and compatible controllers. */
-  PS5,
-
-  /** Microsoft Xbox 360 style layout. */
-  XBOX_360,
-
-  /** Microsoft Xbox One and Series style layout. */
-  XBOX_ONE,
-
-  /** Nintendo Switch Pro Controller and similar layouts. */
-  SWITCH_PRO,
-
-  /** Nintendo Wii and Wii U style controllers when reported as such by the backend. */
-  WII,
-
-  /** OUYA controller. */
-  OUYA,
-
-  /**
-   * Family isn't recognized from the runtime name. Polling still uses that controller's
-   * {@link FlixelController#getMapping()} like any other model.
-   */
-  UNKNOWN
+  /** Shared no-op instance. */
+  INSTANCE
 }

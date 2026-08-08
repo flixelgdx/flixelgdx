@@ -23,39 +23,37 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-
 import org.flixelgdx.Flixel;
+import org.flixelgdx.file.FlixelFile;
 
 // TODO: Remove this class and find a better way to generically handle paths, this is only here because of
 // FlixelGDX recently being moved from Polyverse.
 
-/** Utility class for simplifying asset paths and libGDX {@link FileHandle}s. */
+/** Utility class for simplifying asset paths and {@link FlixelFile} handles. */
 public final class FlixelPathsUtil {
 
-  public static FileHandle asset(String path) {
-    return Gdx.files.internal(path);
+  public static FlixelFile asset(String path) {
+    return Flixel.files.internal(path);
   }
 
-  public static FileHandle shared(String path) {
+  public static FlixelFile shared(String path) {
     return asset(String.format("shared/%s", path));
   }
 
-  public static FileHandle fontAsset(String path) {
+  public static FlixelFile fontAsset(String path) {
     return asset(String.format("fonts/%s.ttf", path));
   }
 
-  public static FileHandle xmlAsset(String path) {
+  public static FlixelFile xmlAsset(String path) {
     return asset(String.format("%s.xml", path));
   }
 
-  public static FileHandle sharedImageAsset(String path) {
+  public static FlixelFile sharedImageAsset(String path) {
     return shared(String.format("images/%s.png", path));
   }
 
-  public static FileHandle external(String path) {
-    return Gdx.files.external(path);
+  public static FlixelFile external(String path) {
+    return Flixel.files.external(path);
   }
 
   /**

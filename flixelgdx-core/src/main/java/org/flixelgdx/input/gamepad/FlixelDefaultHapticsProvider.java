@@ -23,19 +23,16 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.controllers.Controller;
-
 /**
- * Fallback {@link FlixelHapticsProvider} backed by gdx-controllers'
- * {@link Controller#startVibration}.
+ * Fallback {@link FlixelHapticsProvider} backed by {@link FlixelController#startVibration}.
  *
  * <p>This implementation is installed automatically at startup, but each backend launcher
  * immediately replaces it with a platform-specific provider that supports true dual-motor
- * vibration. On desktop, {@code FlixelLwjgl3HapticsProvider} uses Jamepad's SDL rumble API
- * directly; on web, {@code FlixelTeaVMHapticsProvider} calls the W3C Gamepad Haptics API.
- * This class is only used if the game bypasses the standard launchers.
+ * vibration. On desktop, {@code FlixelLwjgl3HapticsProvider} uses SDL's rumble API directly; on
+ * web, {@code FlixelTeaVMHapticsProvider} calls the W3C Gamepad Haptics API. This class is only
+ * used if the game bypasses the standard launchers.
  *
- * <p>Because {@link Controller#startVibration} accepts a single unified strength rather than
+ * <p>Because {@link FlixelController#startVibration} accepts a single unified strength rather than
  * separate motor channels, {@code leftIntensity} and {@code rightIntensity} are collapsed to
  * {@code Math.max(leftIntensity, rightIntensity)}. Both values are clamped to {@code [0, 1]}
  * first.
@@ -50,7 +47,7 @@ final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
 
   @Override
   public void vibrate(int slot, float leftIntensity, float rightIntensity, float durationSecs) {
-    Controller c = manager.controllerAt(slot);
+    FlixelController c = manager.controllerAt(slot);
     if (c == null || !c.canVibrate()) {
       return;
     }
@@ -61,7 +58,7 @@ final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
 
   @Override
   public void stopVibration(int slot) {
-    Controller c = manager.controllerAt(slot);
+    FlixelController c = manager.controllerAt(slot);
     if (c != null) {
       c.cancelVibration();
     }
@@ -69,7 +66,7 @@ final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
 
   @Override
   public boolean canVibrate(int slot) {
-    Controller c = manager.controllerAt(slot);
+    FlixelController c = manager.controllerAt(slot);
     return c != null && c.canVibrate();
   }
 }

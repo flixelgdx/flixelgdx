@@ -23,13 +23,13 @@
  */
 package org.flixelgdx.backend.lwjgl3.input;
 
-import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.desktop.support.JamepadController;
 import com.studiohartman.jamepad.ControllerIndex;
 import com.studiohartman.jamepad.ControllerUnpluggedException;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
+import org.flixelgdx.input.gamepad.FlixelController;
 import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
 
 import java.lang.reflect.Field;
@@ -48,7 +48,7 @@ import java.lang.reflect.Field;
  *
  * <p>Reflection is used to reach the private {@code controllerIndex} field on {@link JamepadController}.
  * If reflection is unavailable (for example, under certain security managers or after module-system
- * hardening), the provider falls back to {@link Controller#startVibration} with the stronger of
+ * hardening), the provider falls back to {@link FlixelController#startVibration} with the stronger of
  * the two intensities driving both motors, matching the behavior of the default provider.
  */
 public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
@@ -77,7 +77,7 @@ public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider 
       }
       return;
     }
-    Controller c = Flixel.gamepads.controllerAt(slot);
+    FlixelController c = Flixel.gamepads.controllerAt(slot);
     if (c != null && c.canVibrate()) {
       float peak = Math.max(0f, Math.min(1f, Math.max(leftIntensity, rightIntensity)));
       c.startVibration((int) (durationSecs * 1000f), peak);
@@ -86,7 +86,7 @@ public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider 
 
   @Override
   public void stopVibration(int slot) {
-    Controller c = Flixel.gamepads.controllerAt(slot);
+    FlixelController c = Flixel.gamepads.controllerAt(slot);
     if (c != null) {
       c.cancelVibration();
     }
@@ -94,7 +94,7 @@ public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider 
 
   @Override
   public boolean canVibrate(int slot) {
-    Controller c = Flixel.gamepads.controllerAt(slot);
+    FlixelController c = Flixel.gamepads.controllerAt(slot);
     return c != null && c.canVibrate();
   }
 
@@ -102,12 +102,16 @@ public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider 
     if (CONTROLLER_INDEX_FIELD == null) {
       return null;
     }
-    Controller c = Flixel.gamepads.controllerAt(slot);
-    if (c != null && !(c instanceof JamepadController)) {
+    FlixelController c = Flixel.gamepads.controllerAt(slot);
+    if (c == null) {
+      return null;
+    }
+    Object handle = c.getNativeHandle();
+    if (!(handle instanceof JamepadController)) {
       return null;
     }
     try {
-      return (ControllerIndex) CONTROLLER_INDEX_FIELD.get(c);
+      return (ControllerIndex) CONTROLLER_INDEX_FIELD.get(handle);
     } catch (Throwable ignored) {
       return null;
     }

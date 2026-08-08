@@ -21,38 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.input.gamepad;
+package org.flixelgdx.file;
 
 /**
- * High-level controller family used for UI prompts (for example "press A" vs "press X") and
- * telemetry. Input indices still come from each {@link FlixelController#getMapping()}.
+ * A {@link FlixelFile} that points at nothing and reads as empty.
+ *
+ * <p>This is the safe default before a backend installs a real file system, and on headless
+ * sessions. It reports {@link #exists()} as {@code false} and returns empty content from the read
+ * methods, so code that reads files never crashes when no backend is present. It inherits every
+ * method from {@link FlixelFile}, whose defaults already describe an empty handle.
  */
-public enum FlixelGamepadModel {
+public enum FlixelNoopFile implements FlixelFile {
 
-  /** Sony DualShock 4 and compatible controllers. */
-  PS4,
-
-  /** Sony DualSense and compatible controllers. */
-  PS5,
-
-  /** Microsoft Xbox 360 style layout. */
-  XBOX_360,
-
-  /** Microsoft Xbox One and Series style layout. */
-  XBOX_ONE,
-
-  /** Nintendo Switch Pro Controller and similar layouts. */
-  SWITCH_PRO,
-
-  /** Nintendo Wii and Wii U style controllers when reported as such by the backend. */
-  WII,
-
-  /** OUYA controller. */
-  OUYA,
-
-  /**
-   * Family isn't recognized from the runtime name. Polling still uses that controller's
-   * {@link FlixelController#getMapping()} like any other model.
-   */
-  UNKNOWN
+  /** The single shared no-op file instance. */
+  INSTANCE
 }

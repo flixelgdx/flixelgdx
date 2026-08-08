@@ -23,12 +23,6 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.ControllerListener;
-import com.badlogic.gdx.controllers.ControllerMapping;
-import com.badlogic.gdx.controllers.Controllers;
-import com.badlogic.gdx.utils.Array;
-
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.input.FlixelInputManager;
@@ -40,21 +34,22 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * Global gamepad manager backed by gdx-controllers. Polls controllers each frame and mirrors the
- * keyboard and mouse frame contract from {@link FlixelGame}.
+ * Global gamepad manager. Polls connected controllers each frame through the active
+ * {@link FlixelControllerProvider} and mirrors the keyboard and mouse frame contract from
+ * {@link FlixelGame}.
  *
- * <p>The gamepad system is <strong>disabled by default</strong>. Set {@link #enabled} to {@code true} before the game
- * loop starts to opt in:
+ * <p>The gamepad system is <strong>enabled by default</strong>. Set {@link #enabled} to {@code false}
+ * if a game never uses controllers and wants to skip polling entirely:
  *
  * <pre>{@code
- * Flixel.gamepads.enabled = true;
+ * Flixel.gamepads.enabled = false;
  * }</pre>
  *
  * <p>Use logical button and axis constants from {@link FlixelGamepadInput} (for example {@link FlixelGamepadInput#A})
- * with {@link #pressed(int, int)}; each {@link Controller#getMapping()} supplies native indices.
+ * with {@link #pressed(int, int)}; each {@link FlixelController#getMapping()} supplies native indices.
  * {@link FlixelGamepadDevice} is optional; call {@link #ensureDevice(int)} once per slot you want a facade for.
  */
-public class FlixelGamepadInputManager implements FlixelInputManager, ControllerListener {
+public class FlixelGamepadInputManager implements FlixelInputManager, FlixelControllerListener {
 
   /** Maximum supported simultaneous controllers. */
   public static final int MAX_GAMEPADS = 8;
@@ -64,7 +59,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
 
   // Reserved slots in currentButtons/previousButtons for synthesized trigger state. Used on
   // backends such as Jamepad/SDL where L2 and R2 are reported as analog axes instead of buttons,
-  // leaving ControllerMapping.buttonL2 / buttonR2 as UNDEFINED.
+  // leaving FlixelControllerMapping.buttonL2 / buttonR2 as UNDEFINED.
   private static final int SYNTHETIC_TRIGGER_L = 249;
   private static final int SYNTHETIC_TRIGGER_R = 250;
   private static final float TRIGGER_BUTTON_THRESHOLD = 0.5f;
@@ -88,7 +83,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   private final GamepadConnectedEvent connectPayload = new GamepadConnectedEvent();
   private final GamepadDisconnectedEvent disconnectPayload = new GamepadDisconnectedEvent();
 
-  private final Controller[] slotController = new Controller[MAX_GAMEPADS];
+  private final FlixelController[] slotController = new FlixelController[MAX_GAMEPADS];
   private final FlixelGamepadModel[] slotModel = new FlixelGamepadModel[MAX_GAMEPADS];
 
   private final boolean[][] currentButtons = new boolean[MAX_GAMEPADS][MAX_BUTTONS];
@@ -106,11 +101,14 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   @Nullable
   private FlixelAnalogButtonReader analogButtonReader;
 
+  @NotNull
+  private FlixelControllerProvider controllerProvider = FlixelNoopControllerProvider.INSTANCE;
+
   /**
    * Whether the gamepad system is active. When {@code false}, all queries return inactive state and no hardware is
-   * polled. Defaults to {@code false}; set to {@code true} to opt in before the game loop starts.
+   * polled. Defaults to {@code true}; set to {@code false} to skip controller polling entirely.
    */
-  public boolean enabled = false;
+  public boolean enabled = true;
 
   private boolean listenerAttached;
 
@@ -121,18 +119,15 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   }
 
   /**
-   * Registers a {@link ControllerListener} with gdx-controllers. Safe to call more than once.
+   * Registers this manager as a listener on the active {@link FlixelControllerProvider}. Safe to
+   * call more than once.
    */
   public void attach() {
     if (listenerAttached) {
       return;
     }
-    try {
-      Controllers.addListener(this);
-      listenerAttached = true;
-    } catch (Throwable ignored) {
-      // Some backends may not expose Controllers until fully booted.
-    }
+    controllerProvider.addListener(this);
+    listenerAttached = true;
   }
 
   /**
@@ -140,14 +135,28 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
    */
   public void detach() {
     if (listenerAttached) {
-      try {
-        Controllers.removeListener(this);
-      } catch (Throwable ignored) {
-        // Ignore.
-      }
+      controllerProvider.removeListener(this);
       listenerAttached = false;
     }
     reset();
+  }
+
+  /**
+   * Installs the platform's controller source. Each backend launcher installs one automatically at
+   * startup. Until then the manager sees no controllers and reports zero active gamepads.
+   *
+   * @param provider Non-null controller source.
+   * @throws NullPointerException If {@code provider} is {@code null}.
+   */
+  public void setControllerProvider(@NotNull FlixelControllerProvider provider) {
+    boolean wasAttached = listenerAttached;
+    if (wasAttached) {
+      detach();
+    }
+    controllerProvider = Objects.requireNonNull(provider, "provider cannot be null.");
+    if (wasAttached) {
+      attach();
+    }
   }
 
   @Override
@@ -415,7 +424,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       return false;
     }
 
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return false;
     }
@@ -444,7 +453,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       return false;
     }
 
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return false;
     }
@@ -480,7 +489,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       return false;
     }
 
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return false;
     }
@@ -526,7 +535,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return FlixelGamepadInput.NONE;
     }
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return FlixelGamepadInput.NONE;
     }
@@ -559,7 +568,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return FlixelGamepadInput.NONE;
     }
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return FlixelGamepadInput.NONE;
     }
@@ -573,13 +582,13 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
         }
       }
     }
-    ControllerMapping m = c.getMapping();
-    if (m.buttonL2 == ControllerMapping.UNDEFINED
+    FlixelControllerMapping m = c.getMapping();
+    if (m.buttonL2 == FlixelControllerMapping.UNDEFINED
         && currentButtons[gamepadId][SYNTHETIC_TRIGGER_L]
         && !previousButtons[gamepadId][SYNTHETIC_TRIGGER_L]) {
       return FlixelGamepadInput.L2;
     }
-    if (m.buttonR2 == ControllerMapping.UNDEFINED
+    if (m.buttonR2 == FlixelControllerMapping.UNDEFINED
         && currentButtons[gamepadId][SYNTHETIC_TRIGGER_R]
         && !previousButtons[gamepadId][SYNTHETIC_TRIGGER_R]) {
       return FlixelGamepadInput.R2;
@@ -609,7 +618,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return FlixelGamepadInput.NONE;
     }
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return FlixelGamepadInput.NONE;
     }
@@ -623,13 +632,13 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
         }
       }
     }
-    ControllerMapping m = c.getMapping();
-    if (m.buttonL2 == ControllerMapping.UNDEFINED
+    FlixelControllerMapping m = c.getMapping();
+    if (m.buttonL2 == FlixelControllerMapping.UNDEFINED
         && !currentButtons[gamepadId][SYNTHETIC_TRIGGER_L]
         && previousButtons[gamepadId][SYNTHETIC_TRIGGER_L]) {
       return FlixelGamepadInput.L2;
     }
-    if (m.buttonR2 == ControllerMapping.UNDEFINED
+    if (m.buttonR2 == FlixelControllerMapping.UNDEFINED
         && !currentButtons[gamepadId][SYNTHETIC_TRIGGER_R]
         && previousButtons[gamepadId][SYNTHETIC_TRIGGER_R]) {
       return FlixelGamepadInput.R2;
@@ -820,14 +829,17 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   }
 
   /**
-   * Returns the raw, underlying gdx-controllers {@link Controller} object at the given index.
+   * Returns the {@link FlixelController} bound to the given slot, or {@code null} when none.
+   *
+   * <p>This is the escape hatch for advanced or platform-specific gamepad work (haptics providers use
+   * it, and {@link FlixelController#getNativeHandle()} reaches the raw backend controller from here).
+   * Ordinary games use the higher-level query methods on this manager instead.
    *
    * @param slot Slot index.
-   * @return The gdx-controllers {@link Controller} object from the provided index, or {@code null}
-   *     if it could not be found.
+   * @return The controller at the given slot, or {@code null} if there is none.
    */
   @Nullable
-  public Controller controllerAt(int slot) {
+  public FlixelController controllerAt(int slot) {
     if (slot < 0 || slot >= MAX_GAMEPADS) {
       return null;
     }
@@ -835,27 +847,27 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   }
 
   @Override
-  public void connected(@NotNull Controller controller) {
+  public void connected(@NotNull FlixelController controller) {
     syncControllers();
   }
 
   @Override
-  public void disconnected(@NotNull Controller controller) {
+  public void disconnected(@NotNull FlixelController controller) {
     syncControllers();
   }
 
   @Override
-  public boolean buttonDown(@NotNull Controller controller, int buttonIndex) {
+  public boolean buttonDown(@NotNull FlixelController controller, int buttonIndex) {
     return false;
   }
 
   @Override
-  public boolean buttonUp(@NotNull Controller controller, int buttonIndex) {
+  public boolean buttonUp(@NotNull FlixelController controller, int buttonIndex) {
     return false;
   }
 
   @Override
-  public boolean axisMoved(@NotNull Controller controller, int axisIndex, float value) {
+  public boolean axisMoved(@NotNull FlixelController controller, int axisIndex, float value) {
     return false;
   }
 
@@ -872,14 +884,14 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
    * <p>Returns {@link FlixelGamepadInput#NONE} for native indices that do not correspond to any
    * known logical button on this controller.
    */
-  private int nativeButtonToLogical(@NotNull Controller c, int nativeButton) {
+  private int nativeButtonToLogical(@NotNull FlixelController c, int nativeButton) {
     if (nativeButton == SYNTHETIC_TRIGGER_L) {
       return FlixelGamepadInput.L2;
     }
     if (nativeButton == SYNTHETIC_TRIGGER_R) {
       return FlixelGamepadInput.R2;
     }
-    ControllerMapping m = c.getMapping();
+    FlixelControllerMapping m = c.getMapping();
     if (nativeButton == m.buttonA) {
       return FlixelGamepadInput.A;
     }
@@ -933,12 +945,12 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
 
   /**
    * Resolves a logical button to its native index, falling back to a synthetic trigger index for
-   * L2 and R2 when the backend leaves their {@link ControllerMapping} entries as
-   * {@link ControllerMapping#UNDEFINED}.
+   * L2 and R2 when the backend leaves their {@link FlixelControllerMapping} entries as
+   * {@link FlixelControllerMapping#UNDEFINED}.
    */
-  private int resolvedNativeButton(@NotNull Controller c, int logicalButton) {
+  private int resolvedNativeButton(@NotNull FlixelController c, int logicalButton) {
     int code = FlixelGamepadInput.logicalButtonToNative(c, logicalButton);
-    if (code != ControllerMapping.UNDEFINED) {
+    if (code != FlixelControllerMapping.UNDEFINED) {
       return code;
     }
     if (logicalButton == FlixelGamepadInput.L2) {
@@ -947,28 +959,21 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     if (logicalButton == FlixelGamepadInput.R2) {
       return SYNTHETIC_TRIGGER_R;
     }
-    return ControllerMapping.UNDEFINED;
+    return FlixelControllerMapping.UNDEFINED;
   }
 
-  private boolean slotHasTriggerActivity(int slot, @NotNull Controller c) {
-    ControllerMapping m = c.getMapping();
-    if (m.buttonL2 == ControllerMapping.UNDEFINED && currentButtons[slot][SYNTHETIC_TRIGGER_L]) {
+  private boolean slotHasTriggerActivity(int slot, @NotNull FlixelController c) {
+    FlixelControllerMapping m = c.getMapping();
+    if (m.buttonL2 == FlixelControllerMapping.UNDEFINED && currentButtons[slot][SYNTHETIC_TRIGGER_L]) {
       return true;
     }
-    return m.buttonR2 == ControllerMapping.UNDEFINED && currentButtons[slot][SYNTHETIC_TRIGGER_R];
+    return m.buttonR2 == FlixelControllerMapping.UNDEFINED && currentButtons[slot][SYNTHETIC_TRIGGER_R];
   }
 
   private void syncControllers() {
-    Array<Controller> list;
-    try {
-      list = Controllers.getControllers();
-    } catch (Throwable ignored) {
-      numActiveGamepads = 0;
-      return;
-    }
-    int n = Math.min(list.size, MAX_GAMEPADS);
+    int n = Math.min(controllerProvider.getControllerCount(), MAX_GAMEPADS);
     for (int i = 0; i < MAX_GAMEPADS; i++) {
-      Controller newC = i < n ? list.get(i) : null;
+      FlixelController newC = i < n ? controllerProvider.getControllerAt(i) : null;
       if (slotController[i] != newC) {
         if (slotController[i] != null) {
           disconnectPayload.set(i);
@@ -998,7 +1003,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
 
   private void pollHardware() {
     for (int s = 0; s < numActiveGamepads; s++) {
-      Controller c = slotController[s];
+      FlixelController c = slotController[s];
       if (c == null) {
         continue;
       }
@@ -1021,22 +1026,22 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
       for (int a = 0; a < ac; a++) {
         axisValues[s][a] = c.getAxis(a);
       }
-      ControllerMapping m = c.getMapping();
+      FlixelControllerMapping m = c.getMapping();
       // On platforms where triggers are analog buttons (e.g. web W3C Gamepad API), populate the
       // trigger axis slots from the reader so that getTriggerL/R() returns pressure values.
       if (analogButtonReader != null) {
-        if (m.buttonL2 != ControllerMapping.UNDEFINED) {
+        if (m.buttonL2 != FlixelControllerMapping.UNDEFINED) {
           axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_L] = analogButtonReader.read(c, m.buttonL2);
         }
-        if (m.buttonR2 != ControllerMapping.UNDEFINED) {
+        if (m.buttonR2 != FlixelControllerMapping.UNDEFINED) {
           axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_R] = analogButtonReader.read(c, m.buttonR2);
         }
       }
       // On backends such as Jamepad/SDL, triggers are analog axes rather than digital buttons,
-      // so ControllerMapping.buttonL2 and buttonR2 are UNDEFINED. Synthesize a boolean button
+      // so FlixelControllerMapping.buttonL2 and buttonR2 are UNDEFINED. Synthesize a boolean button
       // state from the trigger axis value so that pressed(), justPressed(), and justReleased()
       // work correctly on those backends.
-      if (m.buttonL2 == ControllerMapping.UNDEFINED) {
+      if (m.buttonL2 == FlixelControllerMapping.UNDEFINED) {
         float v = FlixelGamepadInput.AXIS_TRIGGER_L < ac ? axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_L] : 0f;
         boolean newTriggerL = v > TRIGGER_BUTTON_THRESHOLD;
         if (newTriggerL && !previousButtons[s][SYNTHETIC_TRIGGER_L]) {
@@ -1048,7 +1053,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
         }
         currentButtons[s][SYNTHETIC_TRIGGER_L] = newTriggerL;
       }
-      if (m.buttonR2 == ControllerMapping.UNDEFINED) {
+      if (m.buttonR2 == FlixelControllerMapping.UNDEFINED) {
         float v = FlixelGamepadInput.AXIS_TRIGGER_R < ac ? axisValues[s][FlixelGamepadInput.AXIS_TRIGGER_R] : 0f;
         boolean newTriggerR = v > TRIGGER_BUTTON_THRESHOLD;
         if (newTriggerR && !previousButtons[s][SYNTHETIC_TRIGGER_R]) {
@@ -1063,7 +1068,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     }
   }
 
-  private boolean slotAnyPhysicalButton(int slot, @NotNull Controller c) {
+  private boolean slotAnyPhysicalButton(int slot, @NotNull FlixelController c) {
     int min = c.getMinButtonIndex();
     int max = c.getMaxButtonIndex();
     for (int b = min; b <= max; b++) {
@@ -1074,7 +1079,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     return false;
   }
 
-  private boolean slotHasAxisBeyondDeadzone(int slot, @NotNull Controller c) {
+  private boolean slotHasAxisBeyondDeadzone(int slot, @NotNull FlixelController c) {
     float dz = deadZoneValue();
     int ax = FlixelGamepadInput.logicalAxisToNative(c, FlixelGamepadInput.AXIS_LEFT_X);
     if (isAxisActive(slot, ax, dz)) {
@@ -1093,14 +1098,14 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
   }
 
   private boolean isAxisActive(int slot, int nativeAxis, float dz) {
-    if (nativeAxis <= ControllerMapping.UNDEFINED || nativeAxis >= MAX_AXES) {
+    if (nativeAxis <= FlixelControllerMapping.UNDEFINED || nativeAxis >= MAX_AXES) {
       return false;
     }
     return Math.abs(axisValues[slot][nativeAxis]) > dz;
   }
 
   private boolean slotHasAnalogOrButtonActivity(int slot) {
-    Controller c = slotController[slot];
+    FlixelController c = slotController[slot];
     if (c == null) {
       return false;
     }
@@ -1112,7 +1117,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, Controller
     if (!enabled || gamepadId < 0 || gamepadId >= numActiveGamepads) {
       return 0f;
     }
-    Controller c = slotController[gamepadId];
+    FlixelController c = slotController[gamepadId];
     if (c == null) {
       return 0f;
     }

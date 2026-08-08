@@ -35,7 +35,10 @@ import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
+import org.flixelgdx.backend.lwjgl3.file.FlixelLwjgl3Files;
+import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3ControllerProvider;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3HapticsProvider;
+import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3InputDevice;
 import org.flixelgdx.backend.lwjgl3.input.FlixelLwjgl3MouseIconManager;
 import org.flixelgdx.backend.lwjgl3.window.FlixelLwjgl3Window;
 import org.flixelgdx.util.FlixelRuntimeUtil;
@@ -165,6 +168,8 @@ public class FlixelLwjgl3Launcher {
     Flixel.alert = new FlixelLwjgl3Alerter();
     Flixel.window = new FlixelLwjgl3Window();
     Flixel.host = new FlixelLwjgl3HostIntegration();
+    Flixel.files = new FlixelLwjgl3Files();
+    Flixel.input = new FlixelLwjgl3InputDevice();
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = new FlixelMiniAudioSoundHandler();
@@ -179,6 +184,7 @@ public class FlixelLwjgl3Launcher {
     Flixel.initialize(game);
     Flixel.assets.setKtx2LoaderInstaller(
         manager -> manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
+    Flixel.gamepads.setControllerProvider(new FlixelLwjgl3ControllerProvider());
     Flixel.gamepads.setHapticsProvider(new FlixelLwjgl3HapticsProvider());
     Flixel.mouse.setMouseIconManager(new FlixelLwjgl3MouseIconManager());
 

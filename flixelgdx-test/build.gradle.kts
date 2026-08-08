@@ -11,6 +11,7 @@ java {
 
 dependencies {
   implementation(project(":flixelgdx-core"))
+  implementation(libs.jetbrains.annotations)
 
   testRuntimeOnly(libs.gdx.controllers.desktop)
   testRuntimeOnly(libs.junit.platform.launcher)

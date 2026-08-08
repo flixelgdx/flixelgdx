@@ -23,15 +23,14 @@
  */
 package org.flixelgdx.asset;
 
-import com.badlogic.gdx.Gdx;
-
+import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Canonical path helpers for internal asset keys used with {@link FlixelAssetManager} and libGDX file APIs.
+ * Canonical path helpers for internal asset keys used with {@link FlixelAssetManager} and the file system.
  *
  * <p>Accidentally duplicated slashes (for example {@code "ui//mainmenu/bg.png"}) or backslashes can confuse loaders,
  * especially on HTML backends where manifest paths often match internal keys literally.
@@ -95,8 +94,8 @@ public final class FlixelAssetPaths {
    *
    * <p>Callers are expected to only invoke this when
    * {@link FlixelAssetManager#isCompressedTexturesEnabled()} is {@code true}, since the
-   * existence check touches the file system. Returns {@code path} unchanged when libGDX is
-   * not yet initialized.
+   * existence check touches the file system. Returns {@code path} unchanged when no compressed
+   * sibling is found or the file system is not yet available.
    *
    * @param path Internal asset path. Must not be {@code null}.
    * @return The best available path for this texture, never {@code null}.
@@ -104,20 +103,17 @@ public final class FlixelAssetPaths {
   @NotNull
   public static String resolveCompressedTexturePath(@NotNull String path) {
     Objects.requireNonNull(path, "path cannot be null.");
-    if (Gdx.files == null) {
-      return path;
-    }
     String lc = path.toLowerCase(Locale.ROOT);
     if (lc.endsWith(".png")) {
       String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
-      return Gdx.files.internal(ktxPath).exists() ? ktxPath : path;
+      return Flixel.files.internal(ktxPath).exists() ? ktxPath : path;
     }
     if (lc.endsWith(".ktx2")) {
-      if (Gdx.files.internal(path).exists()) {
+      if (Flixel.files.internal(path).exists()) {
         return path;
       }
       String pngPath = path.substring(0, path.length() - ".ktx2".length()) + ".png";
-      return Gdx.files.internal(pngPath).exists() ? pngPath : path;
+      return Flixel.files.internal(pngPath).exists() ? pngPath : path;
     }
     return path;
   }

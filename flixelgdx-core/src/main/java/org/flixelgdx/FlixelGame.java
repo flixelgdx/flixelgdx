@@ -26,8 +26,6 @@ package org.flixelgdx;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -50,6 +48,8 @@ import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelSpriteBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
+import org.flixelgdx.input.FlixelInputMultiplexer;
+import org.flixelgdx.input.FlixelInputProcessor;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -422,16 +422,16 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     var mouseMgr = Flixel.mouse;
     var touchesMgr = Flixel.touches;
     if (keysMgr != null || mouseMgr != null || touchesMgr != null) {
-      InputProcessor current = Gdx.input.getInputProcessor();
-      InputMultiplexer m;
-      if (current instanceof InputMultiplexer multiplexer) {
+      FlixelInputProcessor current = Flixel.input.getInputProcessor();
+      FlixelInputMultiplexer m;
+      if (current instanceof FlixelInputMultiplexer multiplexer) {
         m = multiplexer;
       } else {
-        m = new InputMultiplexer();
+        m = new FlixelInputMultiplexer();
         if (current != null) {
           m.addProcessor(current);
         }
-        Gdx.input.setInputProcessor(m);
+        Flixel.input.setInputProcessor(m);
       }
       int idx = 0;
       if (keysMgr != null) {
@@ -1108,8 +1108,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       Flixel.clearDebugOverlay();
     }
 
-    InputProcessor processor = Gdx.input.getInputProcessor();
-    if (processor instanceof InputMultiplexer multiplexer) {
+    FlixelInputProcessor processor = Flixel.input.getInputProcessor();
+    if (processor instanceof FlixelInputMultiplexer multiplexer) {
       multiplexer.clear();
     }
 

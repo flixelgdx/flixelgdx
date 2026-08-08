@@ -23,10 +23,6 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.ControllerMapping;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,20 +30,19 @@ import java.util.Locale;
 
 /**
  * Logical gamepad button and axis identifiers for {@link FlixelGamepadInputManager}, resolved to native
- * indices through each {@link Controller#getMapping()} (gdx-controllers SDL-style layout).
+ * indices through each {@link FlixelController#getMapping()} (SDL-style layout).
  *
- * <h2>Important Note for Desktop (LWJGL3) vs Web (TeaVM)</h2>
+ * <h2>Important note on cross-platform button layouts</h2>
  *
- * <p>On LWJGL3, {@code gdx-controllers-desktop} uses SDL with a large
- * controller database, so many USB pads are remapped to the same logical layout. On web,
- * {@code gdx-controllers-teavm} reads the browser Gamepad API and always exposes the W3C
+ * <p>The desktop backend uses SDL with a large controller database, so many USB pads are remapped to
+ * the same logical layout. The web backend reads the browser Gamepad API and always exposes the W3C
  * standard face-button indices (south, east, west, north) through a fixed
- * {@link ControllerMapping}. If a device reports non-standard button ordering but the browser still
- * labels the mapping as standard (or the hardware wires two actions to overlapping reports), logical
- * {@code A} and {@code Y} can disagree with what you see on desktop for the same physical pad.
+ * {@link FlixelControllerMapping}. If a device reports non-standard button ordering but the browser
+ * still labels the mapping as standard (or the hardware wires two actions to overlapping reports),
+ * logical {@code A} and {@code Y} can disagree with what you see on desktop for the same physical pad.
  * That is a platform and driver limitation, not something {@code logicalButtonToNative} can infer
- * without per-device tables. Games that need perfect parity can offer a remap screen or branch on
- * {@link com.badlogic.gdx.Application#getType()} and {@link Controller#getName()}.
+ * without per-device tables. Games that need perfect parity can offer a remap screen or branch on the
+ * running platform and {@link FlixelController#getName()}.
  */
 public final class FlixelGamepadInput {
 
@@ -88,12 +83,12 @@ public final class FlixelGamepadInput {
   /**
    * Resolves a logical button code to the native button index for the given controller.
    *
-   * @param controller Controller whose {@link Controller#getMapping()} is used.
+   * @param controller Controller whose {@link FlixelController#getMapping()} is used.
    * @param logicalButton Value from this class, except {@link #ANY} and {@link #NONE}.
-   * @return Native index, or {@link ControllerMapping#UNDEFINED} when unsupported.
+   * @return Native index, or {@link FlixelControllerMapping#UNDEFINED} when unsupported.
    */
-  public static int logicalButtonToNative(@NotNull Controller controller, int logicalButton) {
-    ControllerMapping m = controller.getMapping();
+  public static int logicalButtonToNative(@NotNull FlixelController controller, int logicalButton) {
+    FlixelControllerMapping m = controller.getMapping();
     if (logicalButton == A) {
       return m.buttonA;
     }
@@ -142,24 +137,24 @@ public final class FlixelGamepadInput {
     if (logicalButton == DPAD_RIGHT) {
       return m.buttonDpadRight;
     }
-    return ControllerMapping.UNDEFINED;
+    return FlixelControllerMapping.UNDEFINED;
   }
 
   /**
    * Resolves a logical axis constant to the native axis index for the given controller.
    *
    * <p>Stick axes ({@link #AXIS_LEFT_X}, {@link #AXIS_LEFT_Y}, {@link #AXIS_RIGHT_X},
-   * {@link #AXIS_RIGHT_Y}) are resolved through the controller's {@link ControllerMapping}.
+   * {@link #AXIS_RIGHT_Y}) are resolved through the controller's {@link FlixelControllerMapping}.
    * Trigger axes ({@link #AXIS_TRIGGER_L}, {@link #AXIS_TRIGGER_R}) return fixed SDL ordinals
-   * (4 and 5) because {@link ControllerMapping} has no axis fields for triggers; this is only
+   * (4 and 5) because {@link FlixelControllerMapping} has no axis fields for triggers; this is only
    * meaningful on the Jamepad/SDL desktop backend.
    *
-   * @param controller Controller whose {@link Controller#getMapping()} is used.
+   * @param controller Controller whose {@link FlixelController#getMapping()} is used.
    * @param logicalAxis One of the {@code AXIS_*} constants in this class.
-   * @return Native axis index, or {@link ControllerMapping#UNDEFINED} when unsupported.
+   * @return Native axis index, or {@link FlixelControllerMapping#UNDEFINED} when unsupported.
    */
-  public static int logicalAxisToNative(@NotNull Controller controller, int logicalAxis) {
-    ControllerMapping m = controller.getMapping();
+  public static int logicalAxisToNative(@NotNull FlixelController controller, int logicalAxis) {
+    FlixelControllerMapping m = controller.getMapping();
     if (logicalAxis == AXIS_LEFT_X) {
       return m.axisLeftX;
     }
@@ -172,7 +167,7 @@ public final class FlixelGamepadInput {
     if (logicalAxis == AXIS_RIGHT_Y) {
       return m.axisRightY;
     }
-    // ControllerMapping has no axisL2/axisR2 fields; these ordinals are defined by SDL and
+    // FlixelControllerMapping has no axisL2/axisR2 fields; these ordinals are defined by SDL and
     // fixed in Jamepad (ControllerAxis.TRIGGERLEFT = 4, TRIGGERRIGHT = 5).
     if (logicalAxis == AXIS_TRIGGER_L) {
       return 4;
@@ -180,18 +175,18 @@ public final class FlixelGamepadInput {
     if (logicalAxis == AXIS_TRIGGER_R) {
       return 5;
     }
-    return ControllerMapping.UNDEFINED;
+    return FlixelControllerMapping.UNDEFINED;
   }
 
   /**
    * Resolves a button name to a logical button code.
    *
    * @param name Human-readable name (case-insensitive), for example {@code "A"} or {@code "START"}.
-   * @return A logical code from this class, or {@link Input.Keys#UNKNOWN} when not recognized.
+   * @return A logical code from this class, or {@link #NONE} when not recognized.
    */
   public static int fromString(@Nullable String name) {
     if (name == null) {
-      return Input.Keys.UNKNOWN;
+      return NONE;
     }
     return switch (name.trim().toUpperCase(Locale.ROOT)) {
       case "A" -> A;
@@ -216,7 +211,7 @@ public final class FlixelGamepadInput {
       case "DPAD_RIGHT", "RIGHT" -> DPAD_RIGHT;
       case "ANY" -> ANY;
       case "NONE" -> NONE;
-      default -> Input.Keys.UNKNOWN;
+      default -> NONE;
     };
   }
 

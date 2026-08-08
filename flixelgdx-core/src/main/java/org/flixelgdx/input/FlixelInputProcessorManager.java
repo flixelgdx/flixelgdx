@@ -23,23 +23,21 @@
  */
 package org.flixelgdx.input;
 
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.controllers.ControllerListener;
-
 /**
- * Input manager that participates in libGDX {@link InputMultiplexer} wiring.
+ * Input manager that delivers live events through a {@link FlixelInputProcessor}.
  *
- * <p>Gamepads use {@link ControllerListener} instead and therefore
- * implement only {@link FlixelInputManager}.
+ * <p>Managers of this kind (keyboard, mouse, touch) hand their processor to a
+ * {@link FlixelInputMultiplexer} so they all share the one input stream the platform backend
+ * provides. Gamepads work differently (they observe controller connect/disconnect and button
+ * events), so they implement only the plain {@link FlixelInputManager}.
  */
 public interface FlixelInputProcessorManager extends FlixelInputManager {
 
   /**
-   * Stable {@link InputProcessor} instance safe to register on the multiplexer for the whole game
-   * session.
+   * Returns this manager's stable {@link FlixelInputProcessor}, safe to register on a multiplexer
+   * for the whole game session.
    *
    * @return Non-null processor instance.
    */
-  InputProcessor getInputProcessor();
+  FlixelInputProcessor getInputProcessor();
 }

@@ -23,16 +23,14 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.controllers.Controller;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
 /**
- * Maps a controller name string (for example from {@link com.badlogic.gdx.controllers.Controller#getName()})
- * to a {@link FlixelGamepadModel}. Intended for connect-time use only; do not call from per-frame
+ * Maps a controller name string (for example from {@link FlixelController#getName()}) to a
+ * {@link FlixelGamepadModel}. Intended for connect-time use only; do not call from per-frame
  * hot paths.
  *
  * <p>Matching uses ordered substring checks on a once-normalized lowercase name. Add new literal
@@ -50,7 +48,7 @@ public final class FlixelGamepadDetector {
    * @return Never {@code null}; {@link FlixelGamepadModel#UNKNOWN} when no rule matches.
    */
   @NotNull
-  public static FlixelGamepadModel detect(@Nullable Controller controller) {
+  public static FlixelGamepadModel detect(@Nullable FlixelController controller) {
     if (controller == null) {
       return FlixelGamepadModel.UNKNOWN;
     }

@@ -9,8 +9,8 @@
  * <p>Logical button and axis constants live on
  * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput} and are resolved to
  * native hardware indices through each
- * {@link com.badlogic.gdx.controllers.Controller#getMapping() Controller.getMapping()} at query
- * time. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the
+ * {@link org.flixelgdx.input.gamepad.FlixelController#getMapping() FlixelController.getMapping()} at
+ * query time. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the
  * controller family (PS4, Xbox, Switch Pro, etc.) so games can display the right button prompts.
  *
  * <p>The optional per-slot {@link org.flixelgdx.input.gamepad.FlixelGamepadDevice FlixelGamepadDevice}

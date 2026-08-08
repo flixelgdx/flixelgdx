@@ -23,11 +23,14 @@
  */
 package org.flixelgdx.input.keyboard;
 
-import com.badlogic.gdx.Input;
+import org.flixelgdx.collections.FlixelMap;
 
 /**
- * Keyboard key codes used for {@link FlixelKeyInputManager}. Values match {@link com.badlogic.gdx.Input.Keys}
- * for backwards compatibility with libGDX.
+ * Keyboard key codes used for {@link FlixelKeyInputManager}.
+ *
+ * <p>The numeric values are stable identifiers for each physical key; treat them as opaque and refer
+ * to keys by name (for example {@link #SPACE} or {@link #A}). Use {@link #toString(int)} to turn a
+ * code into a readable label and {@link #fromString(String)} to turn a label back into a code.
  */
 public final class FlixelKey {
 
@@ -204,26 +207,203 @@ public final class FlixelKey {
   public static final int F24 = 194;
   public static final int MAX_KEYCODE = 255;
 
+  /** Code-to-name lookup, indexed by key code; {@code null} where no key uses that code. */
+  private static final String[] NAMES = new String[MAX_KEYCODE + 1];
+
+  /** Name-to-code lookup, including alias names that share a code. */
+  private static final FlixelMap<String, Integer> CODES = new FlixelMap<>();
+
+  static {
+    register(UNKNOWN, "UNKNOWN");
+    register(SOFT_LEFT, "SOFT_LEFT");
+    register(SOFT_RIGHT, "SOFT_RIGHT");
+    register(HOME, "HOME");
+    register(BACK, "BACK");
+    register(CALL, "CALL");
+    register(ENDCALL, "ENDCALL");
+    register(NUM_0, "NUM_0");
+    register(NUM_1, "NUM_1");
+    register(NUM_2, "NUM_2");
+    register(NUM_3, "NUM_3");
+    register(NUM_4, "NUM_4");
+    register(NUM_5, "NUM_5");
+    register(NUM_6, "NUM_6");
+    register(NUM_7, "NUM_7");
+    register(NUM_8, "NUM_8");
+    register(NUM_9, "NUM_9");
+    register(STAR, "STAR");
+    register(POUND, "POUND");
+    register(UP, "UP");
+    register(DOWN, "DOWN");
+    register(LEFT, "LEFT");
+    register(RIGHT, "RIGHT");
+    register(DPAD_CENTER, "DPAD_CENTER");
+    register(VOLUME_UP, "VOLUME_UP");
+    register(VOLUME_DOWN, "VOLUME_DOWN");
+    register(POWER, "POWER");
+    register(CAMERA, "CAMERA");
+    register(CLEAR, "CLEAR");
+    register(A, "A");
+    register(B, "B");
+    register(C, "C");
+    register(D, "D");
+    register(E, "E");
+    register(F, "F");
+    register(G, "G");
+    register(H, "H");
+    register(I, "I");
+    register(J, "J");
+    register(K, "K");
+    register(L, "L");
+    register(M, "M");
+    register(N, "N");
+    register(O, "O");
+    register(P, "P");
+    register(Q, "Q");
+    register(R, "R");
+    register(S, "S");
+    register(T, "T");
+    register(U, "U");
+    register(V, "V");
+    register(W, "W");
+    register(X, "X");
+    register(Y, "Y");
+    register(Z, "Z");
+    register(COMMA, "COMMA");
+    register(PERIOD, "PERIOD");
+    register(ALT_LEFT, "ALT_LEFT");
+    register(ALT_RIGHT, "ALT_RIGHT");
+    register(SHIFT_LEFT, "SHIFT_LEFT");
+    register(SHIFT_RIGHT, "SHIFT_RIGHT");
+    register(TAB, "TAB");
+    register(SPACE, "SPACE");
+    register(SYM, "SYM");
+    register(EXPLORER, "EXPLORER");
+    register(ENVELOPE, "ENVELOPE");
+    register(ENTER, "ENTER");
+    register(DEL, "DEL");
+    register(GRAVE, "GRAVE");
+    register(MINUS, "MINUS");
+    register(EQUALS, "EQUALS");
+    register(LEFT_BRACKET, "LEFT_BRACKET");
+    register(RIGHT_BRACKET, "RIGHT_BRACKET");
+    register(BACKSLASH, "BACKSLASH");
+    register(SEMICOLON, "SEMICOLON");
+    register(APOSTROPHE, "APOSTROPHE");
+    register(SLASH, "SLASH");
+    register(AT, "AT");
+    register(NUM, "NUM");
+    register(HEADSETHOOK, "HEADSETHOOK");
+    register(FOCUS, "FOCUS");
+    register(PLUS, "PLUS");
+    register(MENU, "MENU");
+    register(NOTIFICATION, "NOTIFICATION");
+    register(SEARCH, "SEARCH");
+    register(MEDIA_PLAY_PAUSE, "MEDIA_PLAY_PAUSE");
+    register(MEDIA_STOP, "MEDIA_STOP");
+    register(MEDIA_NEXT, "MEDIA_NEXT");
+    register(MEDIA_PREVIOUS, "MEDIA_PREVIOUS");
+    register(MEDIA_REWIND, "MEDIA_REWIND");
+    register(MEDIA_FAST_FORWARD, "MEDIA_FAST_FORWARD");
+    register(MUTE, "MUTE");
+    register(PAGE_UP, "PAGE_UP");
+    register(PAGE_DOWN, "PAGE_DOWN");
+    register(PICTSYMBOLS, "PICTSYMBOLS");
+    register(SWITCH_CHARSET, "SWITCH_CHARSET");
+    register(ESCAPE, "ESCAPE");
+    register(FORWARD_DEL, "FORWARD_DEL");
+    register(CAPS_LOCK, "CAPS_LOCK");
+    register(SCROLL_LOCK, "SCROLL_LOCK");
+    register(PRINT_SCREEN, "PRINT_SCREEN");
+    register(PAUSE, "PAUSE");
+    register(END, "END");
+    register(INSERT, "INSERT");
+    register(CONTROL_LEFT, "CONTROL_LEFT");
+    register(CONTROL_RIGHT, "CONTROL_RIGHT");
+    register(F1, "F1");
+    register(F2, "F2");
+    register(F3, "F3");
+    register(F4, "F4");
+    register(F5, "F5");
+    register(F6, "F6");
+    register(F7, "F7");
+    register(F8, "F8");
+    register(F9, "F9");
+    register(F10, "F10");
+    register(F11, "F11");
+    register(F12, "F12");
+    register(NUM_LOCK, "NUM_LOCK");
+    register(NUMPAD_0, "NUMPAD_0");
+    register(NUMPAD_1, "NUMPAD_1");
+    register(NUMPAD_2, "NUMPAD_2");
+    register(NUMPAD_3, "NUMPAD_3");
+    register(NUMPAD_4, "NUMPAD_4");
+    register(NUMPAD_5, "NUMPAD_5");
+    register(NUMPAD_6, "NUMPAD_6");
+    register(NUMPAD_7, "NUMPAD_7");
+    register(NUMPAD_8, "NUMPAD_8");
+    register(NUMPAD_9, "NUMPAD_9");
+    register(NUMPAD_DIVIDE, "NUMPAD_DIVIDE");
+    register(NUMPAD_MULTIPLY, "NUMPAD_MULTIPLY");
+    register(NUMPAD_SUBTRACT, "NUMPAD_SUBTRACT");
+    register(NUMPAD_ADD, "NUMPAD_ADD");
+    register(NUMPAD_DOT, "NUMPAD_DOT");
+    register(NUMPAD_COMMA, "NUMPAD_COMMA");
+    register(NUMPAD_ENTER, "NUMPAD_ENTER");
+    register(NUMPAD_EQUALS, "NUMPAD_EQUALS");
+    register(NUMPAD_LEFT_PAREN, "NUMPAD_LEFT_PAREN");
+    register(NUMPAD_RIGHT_PAREN, "NUMPAD_RIGHT_PAREN");
+    register(F13, "F13");
+    register(F14, "F14");
+    register(F15, "F15");
+    register(F16, "F16");
+    register(F17, "F17");
+    register(F18, "F18");
+    register(F19, "F19");
+    register(F20, "F20");
+    register(F21, "F21");
+    register(F22, "F22");
+    register(F23, "F23");
+    register(F24, "F24");
+    register(WORLD_1, "WORLD_1");
+    register(WORLD_2, "WORLD_2");
+    register(COLON, "COLON");
+
+    // Aliases: alternate names that map to a code already registered above. These resolve through
+    // fromString(...) but are never returned by toString(...), which keeps one canonical label per code.
+    alias("BACKSPACE", DEL);
+    alias("CENTER", DPAD_CENTER);
+    alias("DPAD_UP", UP);
+    alias("DPAD_DOWN", DOWN);
+    alias("DPAD_LEFT", LEFT);
+    alias("DPAD_RIGHT", RIGHT);
+  }
+
   /**
-   * Resolves a key name (as returned by {@link FlixelKey#toString(int)} or
-   * {@link Input.Keys#toString(int)}) to a key code.
+   * Resolves a key name (as returned by {@link #toString(int)}) back to its key code. Recognizes
+   * both canonical names and the documented aliases (for example {@code "BACKSPACE"} maps to the
+   * same code as {@code "DEL"}).
    *
-   * @param keyname Key name from {@link FlixelKey#toString(int)}.
-   * @return The key code, or {@link #NONE} if not found.
+   * @param keyname Key name from {@link #toString(int)}; case-sensitive.
+   * @return The key code, or {@link #NONE} if the name is unknown.
    */
   public static int fromString(String keyname) {
     if (keyname == null || keyname.equalsIgnoreCase("NONE")) {
       return NONE;
     }
-    return Input.Keys.valueOf(keyname);
+    if (keyname.equalsIgnoreCase("ANY")) {
+      return ANY;
+    }
+    Integer code = CODES.get(keyname);
+    return code != null ? code : NONE;
   }
 
   /**
-   * Returns a human-readable string for the given key code.
+   * Returns a readable label for the given key code, suitable for a rebinding UI or debug overlay.
    *
-   * @param keycode Key code from this class (same values as {@link Input.Keys}).
-   * @return Human-readable key name, or "NONE" if the key code is {@link #NONE} or
-   * "ANY" if the key code is {@link #ANY}.
+   * @param keycode Key code from this class.
+   * @return The key's canonical name, {@code "NONE"} for {@link #NONE}, {@code "ANY"} for
+   *     {@link #ANY}, or {@code "UNKNOWN"} for a code no key uses.
    */
   public static String toString(int keycode) {
     if (keycode == NONE) {
@@ -232,6 +412,18 @@ public final class FlixelKey {
     if (keycode == ANY) {
       return "ANY";
     }
-    return Input.Keys.toString(keycode);
+    if (keycode >= 0 && keycode <= MAX_KEYCODE && NAMES[keycode] != null) {
+      return NAMES[keycode];
+    }
+    return "UNKNOWN";
+  }
+
+  private static void register(int keycode, String name) {
+    NAMES[keycode] = name;
+    CODES.put(name, keycode);
+  }
+
+  private static void alias(String name, int keycode) {
+    CODES.put(name, keycode);
   }
 }

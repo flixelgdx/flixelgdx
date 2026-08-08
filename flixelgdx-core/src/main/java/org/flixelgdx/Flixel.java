@@ -46,12 +46,16 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.debug.FlixelNoopDebugOverlay;
+import org.flixelgdx.file.FlixelFiles;
+import org.flixelgdx.file.FlixelNoopFiles;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
 import org.flixelgdx.group.FlixelGroupable;
+import org.flixelgdx.input.FlixelInputDevice;
+import org.flixelgdx.input.FlixelNoopInputDevice;
 import org.flixelgdx.input.gamepad.FlixelGamepadInput;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -759,6 +763,57 @@ public final class Flixel {
    */
   @NotNull
   public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
+
+  /**
+   * The low-level input backend that reads the keyboard and pointer for the current platform.
+   *
+   * <p>This is the plumbing beneath {@link #keys}, {@link #mouse}, and {@link #touches}: those
+   * managers poll it each frame and register their event processors with it. Game code rarely
+   * touches it directly, but it is available for a quick poll or to install a custom
+   * {@link org.flixelgdx.input.FlixelInputProcessor FlixelInputProcessor}.
+   *
+   * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
+   * (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
+   * safe.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * if (Flixel.input.isKeyPressed(FlixelKey.ESCAPE)) {
+   *   openPauseMenu();
+   * }
+   * }</pre>
+   *
+   * @see org.flixelgdx.input.FlixelInputDevice
+   */
+  @NotNull
+  public static FlixelInputDevice input = FlixelNoopInputDevice.INSTANCE;
+
+  /**
+   * The file system used to read assets, save data, and any other files the game needs.
+   *
+   * <p>This is the seam beneath every file read in FlixelGDX. Open a handle from one of its roots
+   * (for example {@link FlixelFiles#internal internal} for bundled assets or
+   * {@link FlixelFiles#external external} for save data), then query or read it. Asset loading, fonts,
+   * and sounds all resolve their files through here.
+   *
+   * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
+   * (and on headless sessions) it is a safe no-op that reports every file as missing, so reads never
+   * crash.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelFile level = Flixel.files.internal("levels/level1.json");
+   * if (level.exists()) {
+   *   parseLevel(level.readString());
+   * }
+   * }</pre>
+   *
+   * @see org.flixelgdx.file.FlixelFiles
+   */
+  @NotNull
+  public static FlixelFiles files = FlixelNoopFiles.INSTANCE;
 
   /**
    * Global timescale applied to the game's update loop each frame.
