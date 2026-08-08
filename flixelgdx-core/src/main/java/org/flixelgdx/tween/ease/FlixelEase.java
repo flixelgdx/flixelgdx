@@ -23,7 +23,47 @@
  */
 package org.flixelgdx.tween.ease;
 
-/** Class where all easer functions are stored, mostly used for tweening. */
+import org.flixelgdx.tween.FlixelTween;
+import org.flixelgdx.tween.settings.FlixelTweenSettings;
+
+/**
+ * The framework's default easer functions, used for tweening to add vibrant animations.
+ *
+ * <p>Almost every easer typically has three main types: {@code *In}, {@code *Out}, and
+ * {@code *InOut}. {@code *In} means the <i>first</i> half of the ease, {@code *Out}
+ * means the <i>second</i> half, and {@code *InOut} is both halves combined.
+ *
+ * <p>You can think of easers and their rate of change like walking over a hill:
+ * <ul>
+ *   <li>
+ *     <b>{@code *In}</b> - You walk <i>up</i> the hill: you start a little gentle at first,
+ *     but you gradually put more effort as you go up.
+ *   </li>
+ *   <li>
+ *     <b>{@code *Out}</b> - You walk <i>down</i> the hill: you start fast because gravity
+ *     helps, but gradually slow down as you reach the bottom.
+ *   </li>
+ *   <li>
+ *     <b>{@code *InOut}</b> - You walk <i>up</i> the hill, reach the peak, then start descending
+ *     <i>down</i> the hill and gradually slow down.
+ *   </li>
+ * </ul>
+ *
+ * <p>Note that every easer always covers the same distance in the same time. The only
+ * difference is <i>how</i> they handle it.
+ *
+ * <p>You typically pass these functions down as lambda expressions for a {@link FlixelTweenSettings}
+ * object when using them in the framework's tweening engine, like so:
+ *
+ * <pre>{@code
+ * FlixelTween.tween(myObject, new FlixelTweenSettings()
+ *     .setEase(FlixelEase::quadOut));
+ * }</pre>
+ *
+ * @see FlixelTween
+ * @see FlixelTweenSettings
+ * @author stringdotjar
+ */
 public final class FlixelEase {
 
   // Easing constants for specific functions.

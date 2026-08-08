@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.input.gamepad;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,12 +51,12 @@ class FlixelControllerProviderTest {
     }
 
     @Override
-    public String getName() {
+    public @NotNull String getName() {
       return "FakeController";
     }
 
     @Override
-    public FlixelControllerMapping getMapping() {
+    public @NotNull FlixelControllerMapping getMapping() {
       return mapping;
     }
 

@@ -24,6 +24,7 @@
 package org.flixelgdx.input.gamepad;
 
 import org.flixelgdx.collections.FlixelIntArray;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -102,7 +103,7 @@ class FlixelGamepadInputManagerTest {
     }
 
     @Override
-    public FlixelControllerMapping getMapping() {
+    public @NotNull FlixelControllerMapping getMapping() {
       return mapping;
     }
 
@@ -127,7 +128,7 @@ class FlixelGamepadInputManagerTest {
     }
 
     @Override
-    public String getName() {
+    public @NotNull String getName() {
       return "StubController";
     }
 
