@@ -27,7 +27,7 @@ package org.flixelgdx.input.gamepad;
  * Pluggable vibration backend for {@link FlixelGamepadInputManager}.
  *
  * <p>The built-in implementation, {@link FlixelDefaultHapticsProvider}, delegates to
- * {@link FlixelController#startVibration} and works on desktop (SDL) and web (W3C Gamepad API)
+ * {@link FlixelGamepad#startVibration} and works on desktop (SDL) and web (W3C Gamepad API)
  * without any extra setup. For platform-specific features such as dual-motor channels, haptic
  * patterns, or DualSense adaptive triggers, supply a custom implementation via
  * {@link FlixelGamepadInputManager#setHapticsProvider}.

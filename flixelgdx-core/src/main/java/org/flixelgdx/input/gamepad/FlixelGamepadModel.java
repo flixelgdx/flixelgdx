@@ -24,8 +24,8 @@
 package org.flixelgdx.input.gamepad;
 
 /**
- * High-level controller family used for UI prompts (for example "press A" vs "press X") and
- * telemetry. Input indices still come from each {@link FlixelController#getMapping()}.
+ * High-level gamepad family used for UI prompts (for example "press A" vs "press X") and
+ * telemetry. Input indices come from the {@link FlixelGamepadMapping} resolved at connect time.
  */
 public enum FlixelGamepadModel {
 
@@ -51,8 +51,8 @@ public enum FlixelGamepadModel {
   OUYA,
 
   /**
-   * Family isn't recognized from the runtime name. Polling still uses that controller's
-   * {@link FlixelController#getMapping()} like any other model.
+   * Family is not recognized from the runtime name. Polling still uses the gamepad's resolved
+   * {@link FlixelGamepadMapping} like any other model.
    */
   UNKNOWN
 }

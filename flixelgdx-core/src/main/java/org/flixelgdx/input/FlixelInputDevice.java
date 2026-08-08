@@ -25,22 +25,22 @@ package org.flixelgdx.input;
 
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * The low-level input backend: the one interface each platform implements so the framework can read
  * the keyboard and pointer without naming a specific windowing library. Reached through
  * {@link org.flixelgdx.Flixel#input Flixel.input}.
  *
- * <p>It offers input two complementary ways. Most of the framework's own trackers <b>poll</b>: they
- * ask "is this key down right now?" each frame through {@link #isKeyPressed(int)} and the pointer
- * position getters. Anything that needs to react the instant something happens instead <b>listens</b>
- * by handing a {@link FlixelInputProcessor} to {@link #setInputProcessor(FlixelInputProcessor)}; the
- * backend then calls that processor as events arrive. The two views describe the same hardware.
+ * <p>Input arrives two complementary ways. Framework managers (keyboard, mouse, touch) <b>listen</b>:
+ * they register a {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, or
+ * {@link FlixelTouchListener} with the device so the backend delivers each event to them as it
+ * happens. Game code typically <b>polls</b> instead: it asks "is this key down right now?" each
+ * frame through {@link #isKeyPressed(int)} and the pointer position getters. The two views describe
+ * the same hardware.
  *
  * <p>A safe default ({@link FlixelNoopInputDevice}) is installed before startup, so
  * {@code Flixel.input} is never {@code null}; on headless or not-yet-initialized sessions its polls
- * report "nothing pressed" and it forgets any processor handed to it. The real desktop, mobile, and
+ * report "nothing pressed" and it drops any listeners handed to it. The real desktop, mobile, and
  * web backends replace it at launch. Every method has a neutral default here, so a backend only
  * implements what its platform actually supports.
  *
@@ -59,7 +59,9 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  *
  * @see org.flixelgdx.Flixel#input
- * @see FlixelInputProcessor
+ * @see FlixelKeyboardListener
+ * @see FlixelMouseListener
+ * @see FlixelTouchListener
  */
 public interface FlixelInputDevice {
 
@@ -116,21 +118,44 @@ public interface FlixelInputDevice {
   }
 
   /**
-   * Installs the processor that receives live input events, replacing any previous one.
+   * Registers a listener to receive keyboard events.
    *
-   * <p>Pass a {@link FlixelInputMultiplexer} when more than one thing needs the events. Pass
-   * {@code null} to stop delivery entirely.
-   *
-   * @param processor The processor to deliver events to, or {@code null} to deliver to nothing.
+   * @param listener The listener to add. Ignored when {@code null}.
    */
-  default void setInputProcessor(@Nullable FlixelInputProcessor processor) {}
+  default void addKeyboardListener(FlixelKeyboardListener listener) {}
 
   /**
-   * @return The processor currently receiving events, or {@code null} when none is installed. This
-   *     is exactly what was last passed to {@link #setInputProcessor(FlixelInputProcessor)}.
+   * Removes a previously registered keyboard listener. Does nothing if the listener is not registered.
+   *
+   * @param listener The listener to remove.
    */
-  @Nullable
-  default FlixelInputProcessor getInputProcessor() {
-    return null;
-  }
+  default void removeKeyboardListener(FlixelKeyboardListener listener) {}
+
+  /**
+   * Registers a listener to receive mouse events.
+   *
+   * @param listener The listener to add. Ignored when {@code null}.
+   */
+  default void addMouseListener(FlixelMouseListener listener) {}
+
+  /**
+   * Removes a previously registered mouse listener. Does nothing if the listener is not registered.
+   *
+   * @param listener The listener to remove.
+   */
+  default void removeMouseListener(FlixelMouseListener listener) {}
+
+  /**
+   * Registers a listener to receive touch events.
+   *
+   * @param listener The listener to add. Ignored when {@code null}.
+   */
+  default void addTouchListener(FlixelTouchListener listener) {}
+
+  /**
+   * Removes a previously registered touch listener. Does nothing if the listener is not registered.
+   *
+   * @param listener The listener to remove.
+   */
+  default void removeTouchListener(FlixelTouchListener listener) {}
 }

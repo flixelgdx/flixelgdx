@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@link FlixelGamepadInputManager#firstJustPressed(int)}, and
  * {@link FlixelGamepadInputManager#firstJustReleased(int)}.
  *
- * <p>Internal state (slotController, currentButtons, previousButtons, pressedOrder) is injected via
- * reflection so tests remain isolated from any real controller hardware.
+ * <p>Internal state (slotGamepads, slotMappings, currentButtons, previousButtons, pressedOrder) is
+ * injected via reflection so tests remain isolated from any real controller hardware.
  */
 class FlixelGamepadInputManagerTest {
 
   /**
-   * Predictable, fixed button and axis indices for tests, with L2/R2 left
-   * {@link FlixelControllerMapping#UNDEFINED} to exercise the synthetic trigger path.
+   * Predictable, fixed button and axis indices for tests, with L2/R2 left unmapped to exercise
+   * the synthetic trigger path.
    */
   private static final class TestMapping {
 
@@ -66,45 +66,39 @@ class FlixelGamepadInputManagerTest {
 
     private TestMapping() {}
 
-    static FlixelControllerMapping create() {
-      FlixelControllerMapping m = new FlixelControllerMapping();
-      m.axisLeftX = 0;
-      m.axisLeftY = 1;
-      m.axisRightX = 2;
-      m.axisRightY = 3;
-      m.buttonA = NATIVE_A;
-      m.buttonB = NATIVE_B;
-      m.buttonX = NATIVE_X;
-      m.buttonY = NATIVE_Y;
-      m.buttonBack = NATIVE_BACK;
-      m.buttonStart = NATIVE_START;
-      m.buttonL1 = NATIVE_L1;
-      m.buttonR1 = NATIVE_R1;
-      m.buttonLeftStick = NATIVE_LEFT_STICK;
-      m.buttonRightStick = NATIVE_RIGHT_STICK;
-      m.buttonDpadUp = NATIVE_DPAD_UP;
-      m.buttonDpadDown = NATIVE_DPAD_DOWN;
-      m.buttonDpadLeft = NATIVE_DPAD_LEFT;
-      m.buttonDpadRight = NATIVE_DPAD_RIGHT;
-      // buttonL2 and buttonR2 stay UNDEFINED to drive the synthetic trigger path.
+    static FlixelGamepadMapping create() {
+      FlixelGamepadMapping m = new FlixelGamepadMapping();
+      m.registerAxis(FlixelGamepadAxis.LEFT_X, 0);
+      m.registerAxis(FlixelGamepadAxis.LEFT_Y, 1);
+      m.registerAxis(FlixelGamepadAxis.RIGHT_X, 2);
+      m.registerAxis(FlixelGamepadAxis.RIGHT_Y, 3);
+      m.register(FlixelGamepadButton.A, NATIVE_A);
+      m.register(FlixelGamepadButton.B, NATIVE_B);
+      m.register(FlixelGamepadButton.X, NATIVE_X);
+      m.register(FlixelGamepadButton.Y, NATIVE_Y);
+      m.register(FlixelGamepadButton.BACK, NATIVE_BACK);
+      m.register(FlixelGamepadButton.START, NATIVE_START);
+      m.register(FlixelGamepadButton.L1, NATIVE_L1);
+      m.register(FlixelGamepadButton.R1, NATIVE_R1);
+      m.register(FlixelGamepadButton.LEFT_STICK, NATIVE_LEFT_STICK);
+      m.register(FlixelGamepadButton.RIGHT_STICK, NATIVE_RIGHT_STICK);
+      m.register(FlixelGamepadButton.DPAD_UP, NATIVE_DPAD_UP);
+      m.register(FlixelGamepadButton.DPAD_DOWN, NATIVE_DPAD_DOWN);
+      m.register(FlixelGamepadButton.DPAD_LEFT, NATIVE_DPAD_LEFT);
+      m.register(FlixelGamepadButton.DPAD_RIGHT, NATIVE_DPAD_RIGHT);
+      // L2 and R2 are intentionally not registered to drive the synthetic trigger path.
       return m;
     }
   }
 
-  /** Minimal {@link FlixelController} stub backed by a configurable boolean button array. */
-  private static final class StubController implements FlixelController {
+  /** Minimal {@link FlixelGamepad} stub backed by a configurable boolean button array. */
+  private static final class StubGamepad implements FlixelGamepad {
 
     private final boolean[] buttons = new boolean[TestMapping.MAX_BUTTON + 1];
-    private final FlixelControllerMapping mapping = TestMapping.create();
 
     @Override
     public boolean getButton(int buttonCode) {
       return buttonCode >= 0 && buttonCode < buttons.length && buttons[buttonCode];
-    }
-
-    @Override
-    public @NotNull FlixelControllerMapping getMapping() {
-      return mapping;
     }
 
     @Override
@@ -129,7 +123,7 @@ class FlixelGamepadInputManagerTest {
 
     @Override
     public @NotNull String getName() {
-      return "StubController";
+      return "StubGamepad";
     }
 
     @Override
@@ -151,8 +145,9 @@ class FlixelGamepadInputManagerTest {
     manager = new FlixelGamepadInputManager();
     manager.enabled = true;
     manager.numActiveGamepads = 1;
-    StubController stub = new StubController();
-    injectController(stub);
+    StubGamepad stub = new StubGamepad();
+    injectGamepad(stub);
+    injectMapping(TestMapping.create());
   }
 
   @Test
@@ -229,7 +224,7 @@ class FlixelGamepadInputManagerTest {
 
   @Test
   void firstJustPressedReturnsSyntheticL2WhenTriggerCrossesThreshold() throws Exception {
-    // L2 mapping is UNDEFINED in TestMapping, so the synthetic trigger slot is used.
+    // L2 is not registered in TestMapping, so the synthetic trigger slot is used.
     int syntheticL = syntheticTriggerL();
     setCurrent(syntheticL);
 
@@ -292,10 +287,16 @@ class FlixelGamepadInputManagerTest {
     assertEquals(FlixelGamepadInput.R2, manager.firstJustReleased(0));
   }
 
-  private void injectController(FlixelController c) throws Exception {
-    Field f = FlixelGamepadInputManager.class.getDeclaredField("slotController");
+  private void injectGamepad(FlixelGamepad g) throws Exception {
+    Field f = FlixelGamepadInputManager.class.getDeclaredField("slotGamepads");
     f.setAccessible(true);
-    ((FlixelController[]) f.get(manager))[0] = c;
+    ((FlixelGamepad[]) f.get(manager))[0] = g;
+  }
+
+  private void injectMapping(FlixelGamepadMapping m) throws Exception {
+    Field f = FlixelGamepadInputManager.class.getDeclaredField("slotMappings");
+    f.setAccessible(true);
+    ((FlixelGamepadMapping[]) f.get(manager))[0] = m;
   }
 
   private void setCurrent(int button) throws Exception {

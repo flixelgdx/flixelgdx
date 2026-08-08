@@ -31,62 +31,84 @@ import org.jetbrains.annotations.Nullable;
  * library.
  *
  * <p>Each platform backend implements this over its own controller objects and hands them to
- * {@link FlixelGamepadInputManager} through a {@link FlixelControllerProvider}. The manager reads raw
- * button and axis state through here every frame and resolves it against {@link #getMapping()}; game
- * code stays one level up, at {@code Flixel.gamepads}, and never touches this interface directly.
+ * {@link FlixelGamepadInputManager} through a {@link FlixelGamepadProvider}. The manager reads raw
+ * button and axis state through here every frame; game code stays one level up, at
+ * {@code Flixel.gamepads}, and never touches this interface directly.
  *
- * <p>Button and axis indices here are the controller's own <b>native</b> indices, not the logical
- * {@link FlixelGamepadInput} constants. Translate between the two with {@link #getMapping()}.
+ * <p>Button and axis indices here are the controller's own <b>native</b> indices. Translate between
+ * native and logical inputs with the {@link FlixelGamepadMapping} the manager resolves at connect
+ * time via its {@link FlixelGamepadMappingResolver} chain.
  *
- * @see FlixelControllerProvider
- * @see FlixelControllerMapping
+ * <p>Vendor and product IDs are the preferred way for resolvers to identify a gamepad. They are
+ * stable across OS versions and driver updates. When a backend cannot expose them (for example the
+ * transitional LWJGL3 / gdx-controllers path before SDL3 is adopted), both return {@code 0} and
+ * resolvers should fall back to {@link #getName()}.
+ *
+ * @see FlixelGamepadProvider
+ * @see FlixelGamepadMapping
+ * @see FlixelGamepadMappingResolver
  */
-public interface FlixelController {
+public interface FlixelGamepad {
 
   /**
-   * @return A human-readable device name (for example {@code "Xbox Wireless Controller"}), used for
-   *     model detection; never {@code null}.
+   * @return A human-readable device name (for example {@code "Xbox Wireless Controller"}); never
+   *     {@code null}. Useful as a fallback in resolvers when VID/PID are unavailable, but avoid
+   *     matching on names alone - they vary across drivers and OS versions.
    */
   @NotNull
   String getName();
 
   /**
-   * @return This controller's translation table from logical inputs to native indices; never
-   *     {@code null}.
+   * Returns the USB vendor ID for this gamepad, or {@code 0} when unavailable.
+   *
+   * <p>Together with {@link #getProductId()}, this is the most reliable way to identify a specific
+   * controller model. Resolvers should prefer VID/PID checks over name matching.
+   *
+   * @return USB vendor ID in the range {@code [0, 0xFFFF]}, or {@code 0} when unknown.
    */
-  @NotNull
-  FlixelControllerMapping getMapping();
+  default int getVendorId() {
+    return 0;
+  }
 
   /**
-   * @return The lowest native button index this controller can report. Together with
+   * Returns the USB product ID for this gamepad, or {@code 0} when unavailable.
+   *
+   * @return USB product ID in the range {@code [0, 0xFFFF]}, or {@code 0} when unknown.
+   */
+  default int getProductId() {
+    return 0;
+  }
+
+  /**
+   * @return The lowest native button index this gamepad can report. Together with
    *     {@link #getMaxButtonIndex()} it bounds the range to scan when polling buttons.
    */
   int getMinButtonIndex();
 
   /**
-   * @return The highest native button index this controller can report.
+   * @return The highest native button index this gamepad can report.
    */
   int getMaxButtonIndex();
 
   /**
-   * @param buttonIndex A native button index (not a {@link FlixelGamepadInput} constant).
+   * @param buttonIndex A native button index.
    * @return {@code true} while that button is held down.
    */
   boolean getButton(int buttonIndex);
 
   /**
-   * @return How many analog axes this controller exposes.
+   * @return How many analog axes this gamepad exposes.
    */
   int getAxisCount();
 
   /**
-   * @param axisIndex A native axis index (not a {@link FlixelGamepadInput} constant).
+   * @param axisIndex A native axis index.
    * @return The axis value, normally in the range {@code [-1, 1]}.
    */
   float getAxis(int axisIndex);
 
   /**
-   * @return {@code true} when this controller reports that it can vibrate.
+   * @return {@code true} when this gamepad reports that it can vibrate.
    */
   boolean canVibrate();
 
@@ -99,16 +121,16 @@ public interface FlixelController {
    */
   void startVibration(int durationMs, float strength);
 
-  /** Stops any active vibration on this controller immediately. */
+  /** Stops any active vibration on this gamepad immediately. */
   void cancelVibration();
 
   /**
    * Returns the backend's underlying native controller object, or {@code null} when there is none.
    *
    * <p>This is a deliberate, explicitly-unsafe escape hatch for advanced platform-specific features
-   * (for example reaching a backend's raw rumble API). The returned type depends entirely on the
-   * active backend and is not part of the stable API, so casting it ties your code to that backend.
-   * Ordinary games never need this.
+   * (for example reaching a backend's raw rumble API or resolving VID/PID when the backend does not
+   * expose them directly). The returned type depends entirely on the active backend and is not part
+   * of the stable API, so casting it ties your code to that backend. Ordinary games never need this.
    *
    * @return The native controller handle, or {@code null} when unavailable.
    */

@@ -31,33 +31,20 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Verifies that {@link FlixelGamepadInputManager} discovers and polls controllers end to end through
- * a {@link FlixelControllerProvider}, without any real controller hardware.
+ * Verifies that {@link FlixelGamepadInputManager} discovers and polls gamepads end to end through
+ * a {@link FlixelGamepadProvider} and a {@link FlixelGamepadMappingResolver}, without any real
+ * controller hardware.
  */
-class FlixelControllerProviderTest {
+class FlixelGamepadProviderTest {
 
-  /** A fake controller whose button state the test drives directly. */
-  private static final class FakeController implements FlixelController {
+  /** A fake gamepad whose button state the test drives directly. */
+  private static final class FakeGamepad implements FlixelGamepad {
 
     final boolean[] buttons = new boolean[16];
 
-    private final FlixelControllerMapping mapping = new FlixelControllerMapping();
-
-    FakeController() {
-      mapping.buttonA = 0;
-      mapping.buttonB = 1;
-      mapping.axisLeftX = 0;
-      mapping.axisLeftY = 1;
-    }
-
     @Override
     public @NotNull String getName() {
-      return "FakeController";
-    }
-
-    @Override
-    public @NotNull FlixelControllerMapping getMapping() {
-      return mapping;
+      return "FakeGamepad";
     }
 
     @Override
@@ -97,35 +84,52 @@ class FlixelControllerProviderTest {
     public void cancelVibration() {}
   }
 
-  /** A provider that exposes a single, swappable fake controller. */
-  private static final class FakeProvider implements FlixelControllerProvider {
-    FlixelController controller;
+  /** A provider that exposes a single, swappable fake gamepad. */
+  private static final class FakeProvider implements FlixelGamepadProvider {
+    FlixelGamepad gamepad;
 
     @Override
-    public int getControllerCount() {
-      return controller != null ? 1 : 0;
+    public int getGamepadCount() {
+      return gamepad != null ? 1 : 0;
     }
 
     @Override
-    public FlixelController getControllerAt(int index) {
-      return index == 0 ? controller : null;
+    public FlixelGamepad getGamepadAt(int index) {
+      return index == 0 ? gamepad : null;
     }
+
+    @Override
+    public void addListener(FlixelGamepadListener listener) {}
+
+    @Override
+    public void removeListener(FlixelGamepadListener listener) {}
+  }
+
+  private static FlixelGamepadMapping buildTestMapping() {
+    FlixelGamepadMapping m = new FlixelGamepadMapping();
+    m.register(FlixelGamepadButton.A, 0);
+    m.register(FlixelGamepadButton.B, 1);
+    m.registerAxis(FlixelGamepadAxis.LEFT_X, 0);
+    m.registerAxis(FlixelGamepadAxis.LEFT_Y, 1);
+    return m;
   }
 
   @Test
-  void discoversAndPollsControllerThroughProvider() {
-    FakeController pad = new FakeController();
+  void discoversAndPollsGamepadThroughProvider() {
+    FakeGamepad pad = new FakeGamepad();
     FakeProvider provider = new FakeProvider();
-    provider.controller = pad;
+    provider.gamepad = pad;
+    FlixelGamepadMapping mapping = buildTestMapping();
 
     FlixelGamepadInputManager manager = new FlixelGamepadInputManager();
-    manager.setControllerProvider(provider);
+    manager.setGamepadProvider(provider);
+    manager.addMappingResolver(g -> mapping);
 
     manager.update();
-    assertEquals(1, manager.numActiveGamepads, "The provider's controller should occupy one slot.");
+    assertEquals(1, manager.numActiveGamepads, "The provider's gamepad should occupy one slot.");
     assertFalse(manager.pressed(0, FlixelGamepadInput.A));
 
-    pad.buttons[pad.getMapping().buttonA] = true;
+    pad.buttons[0] = true; // FlixelGamepadButton.A mapped to native index 0
     manager.update();
     assertTrue(manager.pressed(0, FlixelGamepadInput.A));
     assertTrue(manager.justPressed(0, FlixelGamepadInput.A));
@@ -139,7 +143,7 @@ class FlixelControllerProviderTest {
   @Test
   void reportsNoGamepadsWhenProviderIsEmpty() {
     FlixelGamepadInputManager manager = new FlixelGamepadInputManager();
-    manager.setControllerProvider(new FakeProvider());
+    manager.setGamepadProvider(new FakeProvider());
     manager.update();
     assertEquals(0, manager.numActiveGamepads);
     assertFalse(manager.anyPressed(FlixelGamepadInput.A));

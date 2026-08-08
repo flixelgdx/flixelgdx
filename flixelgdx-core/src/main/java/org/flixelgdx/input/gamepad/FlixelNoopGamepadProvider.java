@@ -24,13 +24,13 @@
 package org.flixelgdx.input.gamepad;
 
 /**
- * Safe default {@link FlixelControllerProvider} that reports no controllers.
+ * Safe default {@link FlixelGamepadProvider} that reports no gamepads.
  *
- * <p>Installed on headless sessions and platforms without a controller backend yet, so
+ * <p>Installed on headless sessions and platforms without a gamepad backend yet, so
  * {@link FlixelGamepadInputManager} runs cleanly and simply sees zero gamepads. It relies entirely
  * on the interface's neutral defaults.
  */
-public enum FlixelNoopControllerProvider implements FlixelControllerProvider {
+public enum FlixelNoopGamepadProvider implements FlixelGamepadProvider {
 
   /** Shared no-op instance. */
   INSTANCE

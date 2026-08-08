@@ -8,10 +8,11 @@
  *
  * <p>Logical button and axis constants live on
  * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput} and are resolved to
- * native hardware indices through each
- * {@link org.flixelgdx.input.gamepad.FlixelController#getMapping() FlixelController.getMapping()} at
- * query time. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the
- * controller family (PS4, Xbox, Switch Pro, etc.) so games can display the right button prompts.
+ * native hardware indices through the
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadMapping FlixelGamepadMapping} produced at connect
+ * time by the resolver chain. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel}
+ * identifies the gamepad family (PS4, Xbox, Switch Pro, etc.) so games can display the right button
+ * prompts.
  *
  * <p>The optional per-slot {@link org.flixelgdx.input.gamepad.FlixelGamepadDevice FlixelGamepadDevice}
  * facade exposes the same queries without passing a slot id on every call. Create one via

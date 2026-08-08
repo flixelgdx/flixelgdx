@@ -27,32 +27,52 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
 
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.input.FlixelInputDevice;
-import org.flixelgdx.input.FlixelInputProcessor;
-import org.jetbrains.annotations.Nullable;
+import org.flixelgdx.input.FlixelKeyboardListener;
+import org.flixelgdx.input.FlixelMouseListener;
+import org.flixelgdx.input.FlixelTouchListener;
 
 /**
  * Desktop (LWJGL3) implementation of {@link FlixelInputDevice}, delegating to {@code Gdx.input}.
  *
- * <p>This is the transitional backend the framework installs while the desktop platform still runs
- * on libGDX. Polling calls forward straight to {@code Gdx.input}; the live-event side wraps the
- * framework's {@link FlixelInputProcessor} in a libGDX {@link InputProcessor} adapter and registers
- * it, so the rest of FlixelGDX never has to name libGDX to read the keyboard or pointer.
+ * <p>Polling calls forward straight to {@code Gdx.input}. On construction a single libGDX
+ * {@link InputProcessor} adapter is installed, which fans keyboard, mouse, and touch events out to
+ * every registered {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, and
+ * {@link FlixelTouchListener} in order.
  *
- * <p>When a processor is installed, any processor libGDX already had is preserved (the two run side
- * by side through an {@link InputMultiplexer}) so tools that register their own libGDX processor,
- * such as a debug overlay, keep working.
+ * <p>On desktop, GLFW reports pointer 0 for mouse events, so any libGDX {@code touchDown} or
+ * {@code touchUp} with {@code pointer == 0} is routed as a mouse click; pointers beyond 0 (from a
+ * touchscreen attached to the machine) are routed as touch events.
+ *
+ * <p>Any libGDX {@link InputProcessor} already installed before this device is created is
+ * preserved alongside the adapter in an {@link InputMultiplexer}, so tools such as debug overlays
+ * that register their own processor keep working.
  */
 public final class FlixelLwjgl3InputDevice implements FlixelInputDevice {
 
-  @Nullable
-  private FlixelInputProcessor processor;
-
-  @Nullable
-  private InputProcessor installedAdapter;
+  private final FlixelArray<FlixelKeyboardListener> keyboardListeners =
+      new FlixelArray<>(FlixelKeyboardListener[]::new);
+  private final FlixelArray<FlixelMouseListener> mouseListeners =
+      new FlixelArray<>(FlixelMouseListener[]::new);
+  private final FlixelArray<FlixelTouchListener> touchListeners =
+      new FlixelArray<>(FlixelTouchListener[]::new);
 
   /** Creates a device bound to the shared {@code Gdx.input} for this session. */
-  public FlixelLwjgl3InputDevice() {}
+  public FlixelLwjgl3InputDevice() {
+    InputProcessor adapter = new GdxEventDispatcher();
+    InputProcessor current = Gdx.input.getInputProcessor();
+    if (current == null) {
+      Gdx.input.setInputProcessor(adapter);
+    } else if (current instanceof InputMultiplexer multiplexer) {
+      multiplexer.addProcessor(0, adapter);
+    } else {
+      InputMultiplexer mux = new InputMultiplexer();
+      mux.addProcessor(adapter);
+      mux.addProcessor(current);
+      Gdx.input.setInputProcessor(mux);
+    }
+  }
 
   @Override
   public boolean isKeyPressed(int key) {
@@ -85,88 +105,171 @@ public final class FlixelLwjgl3InputDevice implements FlixelInputDevice {
   }
 
   @Override
-  public void setInputProcessor(@Nullable FlixelInputProcessor processor) {
-    this.processor = processor;
-    InputProcessor adapter = processor == null ? null : new GdxProcessorAdapter(processor);
-    InputProcessor current = Gdx.input.getInputProcessor();
-    if (current instanceof InputMultiplexer multiplexer) {
-      if (installedAdapter != null) {
-        multiplexer.removeProcessor(installedAdapter);
-      }
-      if (adapter != null) {
-        multiplexer.addProcessor(0, adapter);
-      }
-    } else if (current == null || current == installedAdapter) {
-      Gdx.input.setInputProcessor(adapter);
-    } else {
-      InputMultiplexer multiplexer = new InputMultiplexer();
-      if (adapter != null) {
-        multiplexer.addProcessor(adapter);
-      }
-      multiplexer.addProcessor(current);
-      Gdx.input.setInputProcessor(multiplexer);
+  public void addKeyboardListener(FlixelKeyboardListener listener) {
+    if (listener != null && !keyboardListeners.contains(listener, true)) {
+      keyboardListeners.add(listener);
     }
-    installedAdapter = adapter;
   }
 
   @Override
-  @Nullable
-  public FlixelInputProcessor getInputProcessor() {
-    return processor;
+  public void removeKeyboardListener(FlixelKeyboardListener listener) {
+    keyboardListeners.removeValue(listener, true);
   }
 
-  /** Bridges libGDX input events onto a {@link FlixelInputProcessor}. */
-  private static final class GdxProcessorAdapter implements InputProcessor {
-
-    private final FlixelInputProcessor delegate;
-
-    GdxProcessorAdapter(FlixelInputProcessor delegate) {
-      this.delegate = delegate;
+  @Override
+  public void addMouseListener(FlixelMouseListener listener) {
+    if (listener != null && !mouseListeners.contains(listener, true)) {
+      mouseListeners.add(listener);
     }
+  }
+
+  @Override
+  public void removeMouseListener(FlixelMouseListener listener) {
+    mouseListeners.removeValue(listener, true);
+  }
+
+  @Override
+  public void addTouchListener(FlixelTouchListener listener) {
+    if (listener != null && !touchListeners.contains(listener, true)) {
+      touchListeners.add(listener);
+    }
+  }
+
+  @Override
+  public void removeTouchListener(FlixelTouchListener listener) {
+    touchListeners.removeValue(listener, true);
+  }
+
+  /** Fans libGDX input events out to registered FlixelGDX listeners. */
+  private final class GdxEventDispatcher implements InputProcessor {
 
     @Override
     public boolean keyDown(int keycode) {
-      return delegate.keyDown(keycode);
+      FlixelKeyboardListener[] items = keyboardListeners.getItems();
+      for (int i = 0, n = keyboardListeners.getSize(); i < n; i++) {
+        if (items[i].keyDown(keycode)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override
     public boolean keyUp(int keycode) {
-      return delegate.keyUp(keycode);
+      FlixelKeyboardListener[] items = keyboardListeners.getItems();
+      for (int i = 0, n = keyboardListeners.getSize(); i < n; i++) {
+        if (items[i].keyUp(keycode)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override
     public boolean keyTyped(char character) {
-      return delegate.keyTyped(character);
+      FlixelKeyboardListener[] items = keyboardListeners.getItems();
+      for (int i = 0, n = keyboardListeners.getSize(); i < n; i++) {
+        if (items[i].keyTyped(character)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-      return delegate.touchDown(screenX, screenY, pointer, button);
+    public boolean touchDown(int x, int y, int pointer, int button) {
+      if (pointer == 0) {
+        FlixelMouseListener[] items = mouseListeners.getItems();
+        for (int i = 0, n = mouseListeners.getSize(); i < n; i++) {
+          if (items[i].mouseDown(button, x, y)) {
+            return true;
+          }
+        }
+      } else {
+        FlixelTouchListener[] items = touchListeners.getItems();
+        for (int i = 0, n = touchListeners.getSize(); i < n; i++) {
+          if (items[i].touched(pointer, x, y)) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-      return delegate.touchUp(screenX, screenY, pointer, button);
+    public boolean touchUp(int x, int y, int pointer, int button) {
+      if (pointer == 0) {
+        FlixelMouseListener[] items = mouseListeners.getItems();
+        for (int i = 0, n = mouseListeners.getSize(); i < n; i++) {
+          if (items[i].mouseUp(button, x, y)) {
+            return true;
+          }
+        }
+      } else {
+        FlixelTouchListener[] items = touchListeners.getItems();
+        for (int i = 0, n = touchListeners.getSize(); i < n; i++) {
+          if (items[i].touchReleased(pointer, x, y)) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     @Override
-    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-      return delegate.touchCancelled(screenX, screenY, pointer, button);
+    public boolean touchCancelled(int x, int y, int pointer, int button) {
+      if (pointer == 0) {
+        return false;
+      }
+      FlixelTouchListener[] items = touchListeners.getItems();
+      for (int i = 0, n = touchListeners.getSize(); i < n; i++) {
+        if (items[i].touchCancelled(pointer, x, y)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) {
-      return delegate.touchDragged(screenX, screenY, pointer);
+    public boolean touchDragged(int x, int y, int pointer) {
+      if (pointer == 0) {
+        FlixelMouseListener[] items = mouseListeners.getItems();
+        for (int i = 0, n = mouseListeners.getSize(); i < n; i++) {
+          if (items[i].mouseDragged(x, y)) {
+            return true;
+          }
+        }
+      } else {
+        FlixelTouchListener[] items = touchListeners.getItems();
+        for (int i = 0, n = touchListeners.getSize(); i < n; i++) {
+          if (items[i].touchDragged(pointer, x, y)) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     @Override
-    public boolean mouseMoved(int screenX, int screenY) {
-      return delegate.mouseMoved(screenX, screenY);
+    public boolean mouseMoved(int x, int y) {
+      FlixelMouseListener[] items = mouseListeners.getItems();
+      for (int i = 0, n = mouseListeners.getSize(); i < n; i++) {
+        if (items[i].mouseMoved(x, y)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     @Override
     public boolean scrolled(float amountX, float amountY) {
-      return delegate.scrolled(amountX, amountY);
+      FlixelMouseListener[] items = mouseListeners.getItems();
+      for (int i = 0, n = mouseListeners.getSize(); i < n; i++) {
+        if (items[i].scrolled(amountX, amountY)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }

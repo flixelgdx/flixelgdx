@@ -48,8 +48,6 @@ import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelSpriteBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
-import org.flixelgdx.input.FlixelInputMultiplexer;
-import org.flixelgdx.input.FlixelInputProcessor;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -417,32 +415,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     bgTexture = new Texture(pixmap);
     pixmap.dispose();
 
-    // Keyboard, mouse, and touch processors on the multiplexer.
-    var keysMgr = Flixel.keys;
-    var mouseMgr = Flixel.mouse;
-    var touchesMgr = Flixel.touches;
-    if (keysMgr != null || mouseMgr != null || touchesMgr != null) {
-      FlixelInputProcessor current = Flixel.input.getInputProcessor();
-      FlixelInputMultiplexer m;
-      if (current instanceof FlixelInputMultiplexer multiplexer) {
-        m = multiplexer;
-      } else {
-        m = new FlixelInputMultiplexer();
-        if (current != null) {
-          m.addProcessor(current);
-        }
-        Flixel.input.setInputProcessor(m);
-      }
-      int idx = 0;
-      if (keysMgr != null) {
-        m.addProcessor(idx++, keysMgr.getInputProcessor());
-      }
-      if (mouseMgr != null) {
-        m.addProcessor(idx++, mouseMgr.getInputProcessor());
-      }
-      if (touchesMgr != null) {
-        m.addProcessor(idx, touchesMgr.getInputProcessor());
-      }
+    // Register keyboard, mouse, and touch listeners with the input device.
+    if (Flixel.keys != null) {
+      Flixel.input.addKeyboardListener(Flixel.keys);
+    }
+    if (Flixel.mouse != null) {
+      Flixel.input.addMouseListener(Flixel.mouse);
+    }
+    if (Flixel.touches != null) {
+      Flixel.input.addTouchListener(Flixel.touches);
     }
 
     // Create the debug overlay when debug mode is enabled.
@@ -1106,11 +1087,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
       Flixel.debug.overlay.destroy();
       Flixel.clearDebugOverlay();
-    }
-
-    FlixelInputProcessor processor = Flixel.input.getInputProcessor();
-    if (processor instanceof FlixelInputMultiplexer multiplexer) {
-      multiplexer.clear();
     }
 
     if (Flixel.gamepads != null) {

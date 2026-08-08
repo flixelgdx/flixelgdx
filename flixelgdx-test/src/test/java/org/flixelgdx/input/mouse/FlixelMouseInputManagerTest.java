@@ -38,7 +38,7 @@ class FlixelMouseInputManagerTest {
   @Test
   void scrollAccumulatesUntilEndFrame() {
     FlixelMouseInputManager m = new FlixelMouseInputManager();
-    m.getInputProcessor().scrolled(0f, -2f);
+    m.scrolled(0f, -2f);
     assertEquals(-2f, m.getScrollDeltaY(), 1e-6f);
     m.endFrame();
     assertEquals(0f, m.getScrollDeltaY(), 1e-6f);

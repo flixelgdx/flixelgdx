@@ -29,8 +29,8 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
-import org.flixelgdx.input.FlixelInputProcessor;
-import org.flixelgdx.input.FlixelInputProcessorManager;
+import org.flixelgdx.input.FlixelInputManager;
+import org.flixelgdx.input.FlixelMouseListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Scroll wheel deltas</h2>
  * <p>
- * {@link FlixelInputProcessor#scrolled(float, float)} supplies {@code amountX} and {@code amountY}.
+ * {@link FlixelMouseListener#scrolled(float, float)} supplies {@code amountX} and {@code amountY}.
  * This manager <strong>accumulates</strong> them into {@link #getScrollDeltaX()} and
  * {@link #getScrollDeltaY()} until {@link #endFrame()}.
  * </p>
@@ -62,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #endFrame()} clears it (same timing as other per-frame input you consume in your game loop).
  * </p>
  */
-public class FlixelMouseInputManager implements FlixelInputProcessorManager {
+public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseListener {
 
   private static final int MAX_BUTTON = 4;
 
@@ -87,15 +87,6 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
 
   private final Vector2 tmpUnproject = new Vector2();
 
-  private final FlixelInputProcessor inputProcessor = new FlixelInputProcessor() {
-    @Override
-    public boolean scrolled(float amountX, float amountY) {
-      scrollDeltaX += amountX;
-      scrollDeltaY += amountY;
-      return false;
-    }
-  };
-
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
 
@@ -111,12 +102,15 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
     icons = iconManager != null ? iconManager : FlixelNoopMouseIconManager.INSTANCE;
   }
 
-  @NotNull
-  public FlixelInputProcessor getInputProcessor() {
-    return inputProcessor;
+  @Override
+  public boolean scrolled(float amountX, float amountY) {
+    scrollDeltaX += amountX;
+    scrollDeltaY += amountY;
+    return false;
   }
 
   /** Call once per frame at the start of the game update (with {@link Flixel#keys}). */
+  @Override
   public void update() {
     if (!enabled) {
       return;
@@ -168,6 +162,7 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
    * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#endFrame() FlixelKeyInputManager.endFrame()}). Resets
    * {@link #getScrollDeltaX()} and {@link #getScrollDeltaY()} to zero for the next frame.
    */
+  @Override
   public void endFrame() {
     for (int i = 0; i <= MAX_BUTTON; i++) {
       prevPressed[i] = Flixel.input.isButtonPressed(i);
@@ -205,7 +200,7 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
   }
 
   /**
-   * Sum of horizontal scroll amounts received this frame via {@link FlixelInputProcessor#scrolled(float, float)}
+   * Sum of horizontal scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountX} (not cleared until {@link #endFrame()}). Use for sideways scroll; for typical wheel
    * up/down use {@link #getScrollDeltaY()}.
    */
@@ -214,7 +209,7 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
   }
 
   /**
-   * Sum of vertical scroll amounts received this frame via {@link FlixelInputProcessor#scrolled(float, float)}
+   * Sum of vertical scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountY} (not cleared until {@link #endFrame()}). Sign and magnitude are device-dependent; see
    * class Javadoc.
    */

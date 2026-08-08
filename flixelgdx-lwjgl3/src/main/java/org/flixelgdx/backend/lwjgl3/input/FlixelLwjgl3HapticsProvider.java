@@ -29,7 +29,7 @@ import com.studiohartman.jamepad.ControllerUnpluggedException;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
-import org.flixelgdx.input.gamepad.FlixelController;
+import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
 
 import java.lang.reflect.Field;
@@ -48,7 +48,7 @@ import java.lang.reflect.Field;
  *
  * <p>Reflection is used to reach the private {@code controllerIndex} field on {@link JamepadController}.
  * If reflection is unavailable (for example, under certain security managers or after module-system
- * hardening), the provider falls back to {@link FlixelController#startVibration} with the stronger of
+ * hardening), the provider falls back to {@link FlixelGamepad#startVibration} with the stronger of
  * the two intensities driving both motors, matching the behavior of the default provider.
  */
 public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
@@ -77,36 +77,36 @@ public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider 
       }
       return;
     }
-    FlixelController c = Flixel.gamepads.controllerAt(slot);
-    if (c != null && c.canVibrate()) {
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    if (g != null && g.canVibrate()) {
       float peak = Math.max(0f, Math.min(1f, Math.max(leftIntensity, rightIntensity)));
-      c.startVibration((int) (durationSecs * 1000f), peak);
+      g.startVibration((int) (durationSecs * 1000f), peak);
     }
   }
 
   @Override
   public void stopVibration(int slot) {
-    FlixelController c = Flixel.gamepads.controllerAt(slot);
-    if (c != null) {
-      c.cancelVibration();
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    if (g != null) {
+      g.cancelVibration();
     }
   }
 
   @Override
   public boolean canVibrate(int slot) {
-    FlixelController c = Flixel.gamepads.controllerAt(slot);
-    return c != null && c.canVibrate();
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    return g != null && g.canVibrate();
   }
 
   private static ControllerIndex indexAt(int slot) {
     if (CONTROLLER_INDEX_FIELD == null) {
       return null;
     }
-    FlixelController c = Flixel.gamepads.controllerAt(slot);
-    if (c == null) {
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    if (g == null) {
       return null;
     }
-    Object handle = c.getNativeHandle();
+    Object handle = g.getNativeHandle();
     if (!(handle instanceof JamepadController)) {
       return null;
     }

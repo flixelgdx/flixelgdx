@@ -29,20 +29,19 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
 
 /**
- * Logical gamepad button and axis identifiers for {@link FlixelGamepadInputManager}, resolved to native
- * indices through each {@link FlixelController#getMapping()} (SDL-style layout).
+ * Logical gamepad button and axis identifiers for {@link FlixelGamepadInputManager}, resolved to
+ * native indices through the {@link FlixelGamepadMapping} produced by the manager's resolver chain
+ * at connect time.
  *
  * <h2>Important note on cross-platform button layouts</h2>
  *
- * <p>The desktop backend uses SDL with a large controller database, so many USB pads are remapped to
- * the same logical layout. The web backend reads the browser Gamepad API and always exposes the W3C
- * standard face-button indices (south, east, west, north) through a fixed
- * {@link FlixelControllerMapping}. If a device reports non-standard button ordering but the browser
- * still labels the mapping as standard (or the hardware wires two actions to overlapping reports),
- * logical {@code A} and {@code Y} can disagree with what you see on desktop for the same physical pad.
- * That is a platform and driver limitation, not something {@code logicalButtonToNative} can infer
- * without per-device tables. Games that need perfect parity can offer a remap screen or branch on the
- * running platform and {@link FlixelController#getName()}.
+ * <p>The desktop backend uses SDL with a large controller database, so many USB pads are remapped
+ * to the same logical layout. The web backend reads the browser Gamepad API and always exposes the
+ * W3C standard face-button indices through a fixed mapping. If a device reports non-standard button
+ * ordering but the browser still labels the mapping as standard, logical {@code A} and {@code Y}
+ * can disagree with what you see on desktop for the same physical pad. That is a platform and
+ * driver limitation. Games that need perfect parity can offer a remap screen or branch on the
+ * running platform and {@link FlixelGamepad#getName()}.
  */
 public final class FlixelGamepadInput {
 
@@ -77,105 +76,113 @@ public final class FlixelGamepadInput {
   public static final int AXIS_LEFT_Y = 1;
   public static final int AXIS_RIGHT_X = 2;
   public static final int AXIS_RIGHT_Y = 3;
+
+  /**
+   * Logical constant for left trigger (L2) pressure, as returned by
+   * {@link FlixelGamepadInputManager#getTriggerL(int)}.
+   */
   public static final int AXIS_TRIGGER_L = 4;
+
+  /**
+   * Logical constant for right trigger (R2) pressure, as returned by
+   * {@link FlixelGamepadInputManager#getTriggerR(int)}.
+   */
   public static final int AXIS_TRIGGER_R = 5;
 
   /**
-   * Resolves a logical button code to the native button index for the given controller.
+   * Resolves a logical button code to the native button index for the given mapping.
    *
-   * @param controller Controller whose {@link FlixelController#getMapping()} is used.
+   * @param mapping The mapping to look up against; must not be {@code null}.
    * @param logicalButton Value from this class, except {@link #ANY} and {@link #NONE}.
-   * @return Native index, or {@link FlixelControllerMapping#UNDEFINED} when unsupported.
+   * @return Native index, or {@link FlixelGamepadMapping#UNDEFINED} when unsupported.
    */
-  public static int logicalButtonToNative(@NotNull FlixelController controller, int logicalButton) {
-    FlixelControllerMapping m = controller.getMapping();
+  public static int logicalButtonToNative(@NotNull FlixelGamepadMapping mapping, int logicalButton) {
     if (logicalButton == A) {
-      return m.buttonA;
+      return mapping.getButtonIndex(FlixelGamepadButton.A);
     }
     if (logicalButton == B) {
-      return m.buttonB;
+      return mapping.getButtonIndex(FlixelGamepadButton.B);
+    }
+    if (logicalButton == C) {
+      return mapping.getButtonIndex(FlixelGamepadButton.C);
     }
     if (logicalButton == X) {
-      return m.buttonX;
+      return mapping.getButtonIndex(FlixelGamepadButton.X);
     }
     if (logicalButton == Y) {
-      return m.buttonY;
+      return mapping.getButtonIndex(FlixelGamepadButton.Y);
+    }
+    if (logicalButton == Z) {
+      return mapping.getButtonIndex(FlixelGamepadButton.Z);
     }
     if (logicalButton == L1) {
-      return m.buttonL1;
+      return mapping.getButtonIndex(FlixelGamepadButton.L1);
     }
     if (logicalButton == R1) {
-      return m.buttonR1;
+      return mapping.getButtonIndex(FlixelGamepadButton.R1);
     }
     if (logicalButton == L2) {
-      return m.buttonL2;
+      return mapping.getButtonIndex(FlixelGamepadButton.L2);
     }
     if (logicalButton == R2) {
-      return m.buttonR2;
+      return mapping.getButtonIndex(FlixelGamepadButton.R2);
     }
     if (logicalButton == THUMBL) {
-      return m.buttonLeftStick;
+      return mapping.getButtonIndex(FlixelGamepadButton.LEFT_STICK);
     }
     if (logicalButton == THUMBR) {
-      return m.buttonRightStick;
+      return mapping.getButtonIndex(FlixelGamepadButton.RIGHT_STICK);
     }
     if (logicalButton == START) {
-      return m.buttonStart;
+      return mapping.getButtonIndex(FlixelGamepadButton.START);
     }
     if (logicalButton == SELECT) {
-      return m.buttonBack;
+      return mapping.getButtonIndex(FlixelGamepadButton.BACK);
+    }
+    if (logicalButton == MODE) {
+      return mapping.getButtonIndex(FlixelGamepadButton.MODE);
     }
     if (logicalButton == DPAD_UP) {
-      return m.buttonDpadUp;
+      return mapping.getButtonIndex(FlixelGamepadButton.DPAD_UP);
     }
     if (logicalButton == DPAD_DOWN) {
-      return m.buttonDpadDown;
+      return mapping.getButtonIndex(FlixelGamepadButton.DPAD_DOWN);
     }
     if (logicalButton == DPAD_LEFT) {
-      return m.buttonDpadLeft;
+      return mapping.getButtonIndex(FlixelGamepadButton.DPAD_LEFT);
     }
     if (logicalButton == DPAD_RIGHT) {
-      return m.buttonDpadRight;
+      return mapping.getButtonIndex(FlixelGamepadButton.DPAD_RIGHT);
     }
-    return FlixelControllerMapping.UNDEFINED;
+    return FlixelGamepadMapping.UNDEFINED;
   }
 
   /**
-   * Resolves a logical axis constant to the native axis index for the given controller.
+   * Resolves a logical axis constant to the native axis index for the given mapping.
    *
    * <p>Stick axes ({@link #AXIS_LEFT_X}, {@link #AXIS_LEFT_Y}, {@link #AXIS_RIGHT_X},
-   * {@link #AXIS_RIGHT_Y}) are resolved through the controller's {@link FlixelControllerMapping}.
-   * Trigger axes ({@link #AXIS_TRIGGER_L}, {@link #AXIS_TRIGGER_R}) return fixed SDL ordinals
-   * (4 and 5) because {@link FlixelControllerMapping} has no axis fields for triggers; this is only
-   * meaningful on the Jamepad/SDL desktop backend.
+   * {@link #AXIS_RIGHT_Y}) are resolved through the mapping's axis table. Trigger axes
+   * ({@link #AXIS_TRIGGER_L}, {@link #AXIS_TRIGGER_R}) are handled separately by
+   * {@link FlixelGamepadInputManager} and return {@link FlixelGamepadMapping#UNDEFINED} here.
    *
-   * @param controller Controller whose {@link FlixelController#getMapping()} is used.
+   * @param mapping The mapping to look up against; must not be {@code null}.
    * @param logicalAxis One of the {@code AXIS_*} constants in this class.
-   * @return Native axis index, or {@link FlixelControllerMapping#UNDEFINED} when unsupported.
+   * @return Native axis index, or {@link FlixelGamepadMapping#UNDEFINED} when unsupported.
    */
-  public static int logicalAxisToNative(@NotNull FlixelController controller, int logicalAxis) {
-    FlixelControllerMapping m = controller.getMapping();
+  public static int logicalAxisToNative(@NotNull FlixelGamepadMapping mapping, int logicalAxis) {
     if (logicalAxis == AXIS_LEFT_X) {
-      return m.axisLeftX;
+      return mapping.getAxisIndex(FlixelGamepadAxis.LEFT_X);
     }
     if (logicalAxis == AXIS_LEFT_Y) {
-      return m.axisLeftY;
+      return mapping.getAxisIndex(FlixelGamepadAxis.LEFT_Y);
     }
     if (logicalAxis == AXIS_RIGHT_X) {
-      return m.axisRightX;
+      return mapping.getAxisIndex(FlixelGamepadAxis.RIGHT_X);
     }
     if (logicalAxis == AXIS_RIGHT_Y) {
-      return m.axisRightY;
+      return mapping.getAxisIndex(FlixelGamepadAxis.RIGHT_Y);
     }
-    // FlixelControllerMapping has no axisL2/axisR2 fields; these ordinals are defined by SDL and
-    // fixed in Jamepad (ControllerAxis.TRIGGERLEFT = 4, TRIGGERRIGHT = 5).
-    if (logicalAxis == AXIS_TRIGGER_L) {
-      return 4;
-    }
-    if (logicalAxis == AXIS_TRIGGER_R) {
-      return 5;
-    }
-    return FlixelControllerMapping.UNDEFINED;
+    return FlixelGamepadMapping.UNDEFINED;
   }
 
   /**

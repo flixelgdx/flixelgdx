@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The platform's supply of connected controllers: how {@link FlixelGamepadInputManager} discovers
+ * The platform's supply of connected gamepads: how {@link FlixelGamepadInputManager} discovers
  * pads and hears about them connecting or disconnecting, without naming a controller library.
  *
  * <p>This is only the raw feed. It deliberately holds <b>no</b> gamepad logic: slot assignment,
@@ -36,34 +36,34 @@ import org.jetbrains.annotations.Nullable;
  * single owner of behavior. It works exactly like {@link FlixelHapticsProvider}: a thin, swappable
  * platform binding the manager drives.
  *
- * <p>The manager enumerates controllers every frame through {@link #getControllerCount()} and
- * {@link #getControllerAt(int)}, so implementations must return the <b>same</b>
- * {@link FlixelController} instance for the same physical device across calls (the manager tracks
+ * <p>The manager enumerates gamepads every frame through {@link #getGamepadCount()} and
+ * {@link #getGamepadAt(int)}, so implementations must return the <b>same</b>
+ * {@link FlixelGamepad} instance for the same physical device across calls (the manager tracks
  * slots by identity), and must not allocate on these calls.
  *
- * <p>A safe default ({@link FlixelNoopControllerProvider}) reports no controllers, so the manager
- * runs cleanly on headless sessions and platforms without a controller backend yet.
+ * <p>A safe default ({@link FlixelNoopGamepadProvider}) reports no gamepads, so the manager
+ * runs cleanly on headless sessions and platforms without a gamepad backend yet.
  *
- * @see FlixelGamepadInputManager#setControllerProvider(FlixelControllerProvider)
+ * @see FlixelGamepadInputManager#setGamepadProvider(FlixelGamepadProvider)
  */
-public interface FlixelControllerProvider {
+public interface FlixelGamepadProvider {
 
   /**
-   * @return How many controllers are connected right now. Defaults to {@code 0}.
+   * @return How many gamepads are connected right now. Defaults to {@code 0}.
    */
-  default int getControllerCount() {
+  default int getGamepadCount() {
     return 0;
   }
 
   /**
-   * Returns the connected controller at the given position.
+   * Returns the connected gamepad at the given position.
    *
-   * @param index A position from {@code 0} to {@link #getControllerCount()} minus one.
-   * @return The controller at that position, or {@code null} when the index is out of range. The
+   * @param index A position from {@code 0} to {@link #getGamepadCount()} minus one.
+   * @return The gamepad at that position, or {@code null} when the index is out of range. The
    *     same physical device must always map to the same instance.
    */
   @Nullable
-  default FlixelController getControllerAt(int index) {
+  default FlixelGamepad getGamepadAt(int index) {
     return null;
   }
 
@@ -72,12 +72,12 @@ public interface FlixelControllerProvider {
    *
    * @param listener The listener to notify; ignored when {@code null}.
    */
-  default void addListener(@NotNull FlixelControllerListener listener) {}
+  default void addListener(@NotNull FlixelGamepadListener listener) {}
 
   /**
    * Stops delivering events to the given listener.
    *
    * @param listener The listener to remove; ignored when {@code null}.
    */
-  default void removeListener(@NotNull FlixelControllerListener listener) {}
+  default void removeListener(@NotNull FlixelGamepadListener listener) {}
 }

@@ -26,62 +26,62 @@ package org.flixelgdx.input.gamepad;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Notified when controllers connect or disconnect, and (optionally) on individual button and axis
+ * Notified when gamepads connect or disconnect, and (optionally) on individual button and axis
  * events.
  *
  * <p>{@link FlixelGamepadInputManager} implements this and registers itself with the active
- * {@link FlixelControllerProvider} so it can keep its slots in sync as pads come and go. Every method
+ * {@link FlixelGamepadProvider} so it can keep its slots in sync as pads come and go. Every method
  * has a do-nothing default, so an implementation only overrides what it cares about.
  *
- * @see FlixelControllerProvider#addListener(FlixelControllerListener)
+ * @see FlixelGamepadProvider#addListener(FlixelGamepadListener)
  */
-public interface FlixelControllerListener {
+public interface FlixelGamepadListener {
 
   /**
-   * Called when a controller is connected.
+   * Called when a gamepad is connected.
    *
-   * @param controller The controller that connected.
+   * @param gamepad The gamepad that connected.
    */
-  default void connected(@NotNull FlixelController controller) {}
+  default void connected(@NotNull FlixelGamepad gamepad) {}
 
   /**
-   * Called when a controller is disconnected.
+   * Called when a gamepad is disconnected.
    *
-   * @param controller The controller that disconnected.
+   * @param gamepad The gamepad that disconnected.
    */
-  default void disconnected(@NotNull FlixelController controller) {}
+  default void disconnected(@NotNull FlixelGamepad gamepad) {}
 
   /**
-   * Called when a button is pressed on a controller.
+   * Called when a button is pressed on a gamepad.
    *
-   * @param controller The controller the event came from.
+   * @param gamepad The gamepad the event came from.
    * @param buttonIndex The native button index that went down.
    * @return {@code true} to consume the event.
    */
-  default boolean buttonDown(@NotNull FlixelController controller, int buttonIndex) {
+  default boolean buttonDown(@NotNull FlixelGamepad gamepad, int buttonIndex) {
     return false;
   }
 
   /**
-   * Called when a button is released on a controller.
+   * Called when a button is released on a gamepad.
    *
-   * @param controller The controller the event came from.
+   * @param gamepad The gamepad the event came from.
    * @param buttonIndex The native button index that came up.
    * @return {@code true} to consume the event.
    */
-  default boolean buttonUp(@NotNull FlixelController controller, int buttonIndex) {
+  default boolean buttonUp(@NotNull FlixelGamepad gamepad, int buttonIndex) {
     return false;
   }
 
   /**
-   * Called when an axis moves on a controller.
+   * Called when an axis moves on a gamepad.
    *
-   * @param controller The controller the event came from.
+   * @param gamepad The gamepad the event came from.
    * @param axisIndex The native axis index that moved.
    * @param value The new axis value, normally in the range {@code [-1, 1]}.
    * @return {@code true} to consume the event.
    */
-  default boolean axisMoved(@NotNull FlixelController controller, int axisIndex, float value) {
+  default boolean axisMoved(@NotNull FlixelGamepad gamepad, int axisIndex, float value) {
     return false;
   }
 }

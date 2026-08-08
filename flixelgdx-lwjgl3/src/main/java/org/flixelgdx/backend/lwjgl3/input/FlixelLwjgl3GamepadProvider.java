@@ -30,36 +30,48 @@ import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.utils.Array;
 
 import org.flixelgdx.collections.FlixelIdentityMap;
-import org.flixelgdx.input.gamepad.FlixelController;
-import org.flixelgdx.input.gamepad.FlixelControllerListener;
-import org.flixelgdx.input.gamepad.FlixelControllerMapping;
-import org.flixelgdx.input.gamepad.FlixelControllerProvider;
+import org.flixelgdx.input.gamepad.FlixelGamepad;
+import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
+import org.flixelgdx.input.gamepad.FlixelGamepadListener;
+import org.flixelgdx.input.gamepad.FlixelGamepadMapping;
+import org.flixelgdx.input.gamepad.FlixelGamepadMappingResolver;
+import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Desktop (LWJGL3) {@link FlixelControllerProvider} backed by gdx-controllers (SDL via Jamepad).
+ * Desktop (LWJGL3) {@link FlixelGamepadProvider} backed by gdx-controllers (SDL via Jamepad).
  *
- * <p>This is the transitional controller source the framework installs while the desktop platform
+ * <p>This is the transitional gamepad source the framework installs while the desktop platform
  * still runs on libGDX; a native SDL3 provider replaces it later. It wraps each gdx
- * {@link Controller} in a {@link FlixelController} and forwards connect/disconnect events, so
+ * {@link Controller} in a {@link FlixelGamepad} and forwards connect/disconnect events, so
  * {@code FlixelGamepadInputManager} never names gdx-controllers. All gamepad logic stays in the
  * manager; this class is only the raw feed.
  *
  * <p>Wrappers are cached by controller identity so the same physical pad always maps to the same
- * {@link FlixelController} instance, which the manager relies on to track slots.
+ * {@link FlixelGamepad} instance, which the manager relies on to track slots.
+ *
+ * <p>This class also implements {@link FlixelGamepadMappingResolver} so the launcher can install
+ * it in the resolver chain. It translates the gdx-controllers SDL mapping database to
+ * {@link FlixelGamepadMapping} at connect time by reading the gdx {@link ControllerMapping}
+ * through {@link FlixelGamepad#getNativeHandle()}.
+ *
+ * <p>Vendor and product IDs are not available from the gdx-controllers API and always return
+ * {@code 0}. Resolvers that need VID/PID should wait for the SDL3 provider in Phase 3.
  */
-public final class FlixelLwjgl3ControllerProvider implements FlixelControllerProvider {
+public final class FlixelLwjgl3GamepadProvider implements FlixelGamepadProvider,
+    FlixelGamepadMappingResolver {
 
-  private final FlixelIdentityMap<Controller, FlixelGdxController> wrappers = new FlixelIdentityMap<>();
-  private final FlixelIdentityMap<FlixelControllerListener, ControllerListener> adapters =
+  private final FlixelIdentityMap<Controller, FlixelGdxGamepad> wrappers = new FlixelIdentityMap<>();
+  private final FlixelIdentityMap<FlixelGamepadListener, ControllerListener> adapters =
       new FlixelIdentityMap<>();
 
   /** Creates a provider over the shared gdx-controllers registry for this session. */
-  public FlixelLwjgl3ControllerProvider() {}
+  public FlixelLwjgl3GamepadProvider() {}
 
   @Override
-  public int getControllerCount() {
+  public int getGamepadCount() {
     try {
       return Controllers.getControllers().size;
     } catch (Throwable ignored) {
@@ -69,7 +81,7 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
 
   @Override
   @Nullable
-  public FlixelController getControllerAt(int index) {
+  public FlixelGamepad getGamepadAt(int index) {
     try {
       Array<Controller> list = Controllers.getControllers();
       if (index < 0 || index >= list.size) {
@@ -82,7 +94,7 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
   }
 
   @Override
-  public void addListener(@NotNull FlixelControllerListener listener) {
+  public void addListener(@NotNull FlixelGamepadListener listener) {
     if (listener == null || adapters.get(listener) != null) {
       return;
     }
@@ -96,7 +108,7 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
   }
 
   @Override
-  public void removeListener(@NotNull FlixelControllerListener listener) {
+  public void removeListener(@NotNull FlixelGamepadListener listener) {
     if (listener == null) {
       return;
     }
@@ -110,22 +122,69 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
     }
   }
 
-  private FlixelGdxController wrap(Controller controller) {
-    FlixelGdxController existing = wrappers.get(controller);
+  @Override
+  @Nullable
+  public FlixelGamepadMapping resolve(@NotNull FlixelGamepad gamepad) {
+    Object handle = gamepad.getNativeHandle();
+    if (!(handle instanceof Controller)) {
+      return null;
+    }
+    ControllerMapping gdxMapping = ((Controller) handle).getMapping();
+    if (gdxMapping == null) {
+      return null;
+    }
+    return translate(gdxMapping);
+  }
+
+  private FlixelGdxGamepad wrap(Controller controller) {
+    FlixelGdxGamepad existing = wrappers.get(controller);
     if (existing != null) {
       return existing;
     }
-    FlixelGdxController created = new FlixelGdxController(controller);
+    FlixelGdxGamepad created = new FlixelGdxGamepad(controller);
     wrappers.put(controller, created);
     return created;
   }
 
-  /** Translates gdx controller events onto a {@link FlixelControllerListener}. */
+  private static FlixelGamepadMapping translate(ControllerMapping m) {
+    FlixelGamepadMapping out = new FlixelGamepadMapping();
+    out.register(FlixelGamepadButton.A, m.buttonA);
+    out.register(FlixelGamepadButton.B, m.buttonB);
+    out.register(FlixelGamepadButton.X, m.buttonX);
+    out.register(FlixelGamepadButton.Y, m.buttonY);
+    out.register(FlixelGamepadButton.L1, m.buttonL1);
+    out.register(FlixelGamepadButton.R1, m.buttonR1);
+    out.register(FlixelGamepadButton.L2, m.buttonL2);
+    out.register(FlixelGamepadButton.R2, m.buttonR2);
+    out.register(FlixelGamepadButton.LEFT_STICK, m.buttonLeftStick);
+    out.register(FlixelGamepadButton.RIGHT_STICK, m.buttonRightStick);
+    out.register(FlixelGamepadButton.START, m.buttonStart);
+    out.register(FlixelGamepadButton.BACK, m.buttonBack);
+    out.register(FlixelGamepadButton.DPAD_UP, m.buttonDpadUp);
+    out.register(FlixelGamepadButton.DPAD_DOWN, m.buttonDpadDown);
+    out.register(FlixelGamepadButton.DPAD_LEFT, m.buttonDpadLeft);
+    out.register(FlixelGamepadButton.DPAD_RIGHT, m.buttonDpadRight);
+    out.registerAxis(FlixelGamepadAxis.LEFT_X, m.axisLeftX);
+    out.registerAxis(FlixelGamepadAxis.LEFT_Y, m.axisLeftY);
+    out.registerAxis(FlixelGamepadAxis.RIGHT_X, m.axisRightX);
+    out.registerAxis(FlixelGamepadAxis.RIGHT_Y, m.axisRightY);
+    // On Jamepad/SDL, triggers arrive as axes 4 and 5. Register them as L2/R2 axes so the manager
+    // can read trigger pressure and synthesize button state when buttonL2/R2 are UNDEFINED.
+    if (m.buttonL2 == ControllerMapping.UNDEFINED) {
+      out.registerAxis(FlixelGamepadAxis.L2, 4);
+    }
+    if (m.buttonR2 == ControllerMapping.UNDEFINED) {
+      out.registerAxis(FlixelGamepadAxis.R2, 5);
+    }
+    return out;
+  }
+
+  /** Translates gdx controller events onto a {@link FlixelGamepadListener}. */
   private final class GdxListenerAdapter implements ControllerListener {
 
-    private final FlixelControllerListener delegate;
+    private final FlixelGamepadListener delegate;
 
-    GdxListenerAdapter(FlixelControllerListener delegate) {
+    GdxListenerAdapter(FlixelGamepadListener delegate) {
       this.delegate = delegate;
     }
 
@@ -156,15 +215,12 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
     }
   }
 
-  /** Wraps a single gdx {@link Controller} as a {@link FlixelController}. */
-  private static final class FlixelGdxController implements FlixelController {
+  /** Wraps a single gdx {@link Controller} as a {@link FlixelGamepad}. */
+  private static final class FlixelGdxGamepad implements FlixelGamepad {
 
     private final Controller controller;
 
-    @Nullable
-    private FlixelControllerMapping mapping;
-
-    FlixelGdxController(Controller controller) {
+    FlixelGdxGamepad(Controller controller) {
       this.controller = controller;
     }
 
@@ -173,15 +229,6 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
     public String getName() {
       String name = controller.getName();
       return name != null ? name : "";
-    }
-
-    @Override
-    @NotNull
-    public FlixelControllerMapping getMapping() {
-      if (mapping == null) {
-        mapping = translate(controller.getMapping());
-      }
-      return mapping;
     }
 
     @Override
@@ -228,31 +275,6 @@ public final class FlixelLwjgl3ControllerProvider implements FlixelControllerPro
     @NotNull
     public Object getNativeHandle() {
       return controller;
-    }
-
-    private static FlixelControllerMapping translate(ControllerMapping m) {
-      FlixelControllerMapping out = new FlixelControllerMapping();
-      out.buttonA = m.buttonA;
-      out.buttonB = m.buttonB;
-      out.buttonX = m.buttonX;
-      out.buttonY = m.buttonY;
-      out.buttonL1 = m.buttonL1;
-      out.buttonR1 = m.buttonR1;
-      out.buttonL2 = m.buttonL2;
-      out.buttonR2 = m.buttonR2;
-      out.buttonLeftStick = m.buttonLeftStick;
-      out.buttonRightStick = m.buttonRightStick;
-      out.buttonStart = m.buttonStart;
-      out.buttonBack = m.buttonBack;
-      out.buttonDpadUp = m.buttonDpadUp;
-      out.buttonDpadDown = m.buttonDpadDown;
-      out.buttonDpadLeft = m.buttonDpadLeft;
-      out.buttonDpadRight = m.buttonDpadRight;
-      out.axisLeftX = m.axisLeftX;
-      out.axisLeftY = m.axisLeftY;
-      out.axisRightX = m.axisRightX;
-      out.axisRightY = m.axisRightY;
-      return out;
     }
   }
 }

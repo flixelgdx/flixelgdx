@@ -63,7 +63,7 @@ class FlixelActionSystemTest {
     fire.addBinding("key", FlixelDigitalBinding.key(Input.Keys.F));
     set.add(fire);
 
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.F);
+    Flixel.keys.keyDown(Input.Keys.F);
     set.update(0f);
     assertTrue(fire.pressed());
     assertTrue(fire.justPressed());
@@ -73,7 +73,7 @@ class FlixelActionSystemTest {
     assertTrue(fire.pressed());
     assertFalse(fire.justPressed());
 
-    Flixel.keys.getInputProcessor().keyUp(Input.Keys.F);
+    Flixel.keys.keyUp(Input.Keys.F);
     set.update(0f);
     assertFalse(fire.pressed());
     assertTrue(fire.justReleased());
@@ -92,11 +92,11 @@ class FlixelActionSystemTest {
     any.addBinding("b", FlixelDigitalBinding.key(Input.Keys.B));
     set.add(any);
 
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.B);
+    Flixel.keys.keyDown(Input.Keys.B);
     set.update(0f);
     assertTrue(any.pressed());
-    Flixel.keys.getInputProcessor().keyUp(Input.Keys.B);
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.A);
+    Flixel.keys.keyUp(Input.Keys.B);
+    Flixel.keys.keyDown(Input.Keys.A);
     set.update(0f);
     assertTrue(any.pressed());
   }
@@ -140,8 +140,8 @@ class FlixelActionSystemTest {
     move.addBinding("posY", FlixelAnalogBinding.posYKey(Input.Keys.UP));
     set.add(move);
 
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.RIGHT);
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.UP);
+    Flixel.keys.keyDown(Input.Keys.RIGHT);
+    Flixel.keys.keyDown(Input.Keys.UP);
     set.update(0f);
     float len = (float) Math.sqrt(move.getX() * move.getX() + move.getY() * move.getY());
     assertEquals(1f, len, 1e-5f);
@@ -166,7 +166,7 @@ class FlixelActionSystemTest {
     set.add(navigate);
 
     // First press: flicked() fires on the first frame.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    Flixel.keys.keyDown(Input.Keys.DOWN);
     set.update(0f);
     assertTrue(navigate.flicked());
 
@@ -176,13 +176,13 @@ class FlixelActionSystemTest {
     assertFalse(navigate.flicked());
 
     // Released: magnitude drops below threshold, flicked() stays false.
-    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    Flixel.keys.keyUp(Input.Keys.DOWN);
     set.endFrame();
     set.update(0f);
     assertFalse(navigate.flicked());
 
     // Second press in the opposite direction: flicked() fires again.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.UP);
+    Flixel.keys.keyDown(Input.Keys.UP);
     set.endFrame();
     set.update(0f);
     assertTrue(navigate.flicked());
@@ -199,7 +199,7 @@ class FlixelActionSystemTest {
     set.add(scroll);
 
     // Initial press: repeated() fires immediately.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    Flixel.keys.keyDown(Input.Keys.DOWN);
     set.update(0f);
     assertTrue(scroll.held());
 
@@ -224,7 +224,7 @@ class FlixelActionSystemTest {
     assertTrue(scroll.held());
 
     // Released: no repeat.
-    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    Flixel.keys.keyUp(Input.Keys.DOWN);
     set.endFrame();
     set.update(0f);
     assertFalse(scroll.held());
@@ -241,7 +241,7 @@ class FlixelActionSystemTest {
     set.add(navigate);
 
     // Initial flick: flickedRepeating() fires on the first frame.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.DOWN);
+    Flixel.keys.keyDown(Input.Keys.DOWN);
     set.update(0f);
     assertTrue(navigate.flickedRepeating());
 
@@ -256,7 +256,7 @@ class FlixelActionSystemTest {
     assertTrue(navigate.flickedRepeating());
 
     // Released (magnitude drops below threshold): no repeat.
-    Flixel.keys.getInputProcessor().keyUp(Input.Keys.DOWN);
+    Flixel.keys.keyUp(Input.Keys.DOWN);
     set.endFrame();
     set.update(0f);
     assertFalse(navigate.flickedRepeating());
@@ -272,12 +272,12 @@ class FlixelActionSystemTest {
     set.add(jump);
 
     // Old key (F) must no longer fire.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.F);
+    Flixel.keys.keyDown(Input.Keys.F);
     set.update(0f);
     assertFalse(jump.pressed());
 
     // New key (G) must fire.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.G);
+    Flixel.keys.keyDown(Input.Keys.G);
     set.update(0f);
     assertTrue(jump.pressed());
   }
@@ -291,7 +291,7 @@ class FlixelActionSystemTest {
     set.add(jump);
 
     assertTrue(jump.removeBinding("keyboard"));
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.SPACE);
+    Flixel.keys.keyDown(Input.Keys.SPACE);
     set.update(0f);
     assertFalse(jump.pressed());
   }
@@ -315,7 +315,7 @@ class FlixelActionSystemTest {
     set.add(jump);
 
     assertTrue(jump.removeBinding(binding));
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.SPACE);
+    Flixel.keys.keyDown(Input.Keys.SPACE);
     set.update(0f);
     assertFalse(jump.pressed());
   }
@@ -330,8 +330,8 @@ class FlixelActionSystemTest {
     set.add(jump);
 
     jump.clearBindings();
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.SPACE);
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.ENTER);
+    Flixel.keys.keyDown(Input.Keys.SPACE);
+    Flixel.keys.keyDown(Input.Keys.ENTER);
     set.update(0f);
     assertFalse(jump.pressed());
   }
@@ -346,12 +346,12 @@ class FlixelActionSystemTest {
     set.add(move);
 
     // Old key (LEFT) must no longer contribute.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.LEFT);
+    Flixel.keys.keyDown(Input.Keys.LEFT);
     set.update(0f);
     assertEquals(0f, move.getX(), 1e-5f);
 
     // New key (A) must contribute.
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.A);
+    Flixel.keys.keyDown(Input.Keys.A);
     set.update(0f);
     assertEquals(-1f, move.getX(), 1e-5f);
   }
@@ -365,7 +365,7 @@ class FlixelActionSystemTest {
     set.add(move);
 
     assertTrue(move.removeBinding("right"));
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.RIGHT);
+    Flixel.keys.keyDown(Input.Keys.RIGHT);
     set.update(0f);
     assertEquals(0f, move.getX(), 1e-5f);
   }
@@ -380,7 +380,7 @@ class FlixelActionSystemTest {
     set.add(move);
 
     assertTrue(move.removeBinding(binding));
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.RIGHT);
+    Flixel.keys.keyDown(Input.Keys.RIGHT);
     set.update(0f);
     assertEquals(0f, move.getX(), 1e-5f);
   }
@@ -395,7 +395,7 @@ class FlixelActionSystemTest {
     set.add(move);
 
     move.clearBindings();
-    Flixel.keys.getInputProcessor().keyDown(Input.Keys.RIGHT);
+    Flixel.keys.keyDown(Input.Keys.RIGHT);
     set.update(0f);
     assertEquals(0f, move.getX(), 1e-5f);
   }

@@ -27,28 +27,26 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntSet;
 import org.flixelgdx.debug.FlixelDebugOverlay;
-import org.flixelgdx.input.FlixelInputMultiplexer;
-import org.flixelgdx.input.FlixelInputProcessor;
-import org.flixelgdx.input.FlixelInputProcessorManager;
+import org.flixelgdx.input.FlixelInputManager;
+import org.flixelgdx.input.FlixelKeyboardListener;
 
 /**
  * Keyboard input manager, reached through {@code Flixel.keys} after the framework is initialized.
  *
- * <p>Tracks pressed keys via an internal {@link FlixelInputProcessor}. The processor is the
+ * <p>Tracks pressed keys by implementing {@link FlixelKeyboardListener} directly. This is the
  * authoritative source of "is key X currently pressed", which keeps state correct across every
  * platform backend. Some backends (notably the web one) do not reliably report every key through
  * polling, so the framework cannot rebuild its set from {@link org.flixelgdx.Flixel#input Flixel.input}
- * each frame; doing so would erase any state the processor just wrote and break
+ * each frame; doing so would erase any state the listener callbacks just wrote and break
  * {@link #justPressed(int)} / {@link #justReleased(int)} there. Instead, {@link #update()} simply
  * records this frame's snapshot for "just" detection without ever touching {@link #currentPressedKeys}.
  *
- * <p>The processor returned by {@link #getInputProcessor()} is added to the shared input chain
- * automatically in {@code FlixelGame.create()} via a {@link FlixelInputMultiplexer}. If you install
- * your own processor, add this one first so key state still updates.
+ * <p>This manager is registered with the active {@link org.flixelgdx.input.FlixelInputDevice FlixelInputDevice}
+ * automatically in {@code FlixelGame.create()}.
  */
-public class FlixelKeyInputManager implements FlixelInputProcessorManager {
+public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboardListener {
 
-  /** Keys currently pressed (updated only by {@code this} manager's {@link FlixelInputProcessor}). */
+  /** Keys currently pressed (updated only by {@link #keyDown(int)} and {@link #keyUp(int)}). */
   private final FlixelIntSet currentPressedKeys = new FlixelIntSet();
 
   /** Keys that were pressed last frame, used to compute {@link #justPressed(int)} and {@link #justReleased(int)}. */
@@ -57,60 +55,49 @@ public class FlixelKeyInputManager implements FlixelInputProcessorManager {
   /** Order keys were pressed (chronological), so {@link #firstPressed()} returns the first key held. */
   private final FlixelIntArray pressedOrder = new FlixelIntArray();
 
-  /** Input processor that tracks key state. */
-  private final FlixelInputProcessor inputProcessor = new FlixelInputProcessor() {
-    @Override
-    public boolean keyDown(int keycode) {
-      if (keycode < 0) {
-        return false;
-      }
-      if (currentPressedKeys.add(keycode) && pressedOrder.indexOf(keycode) < 0) {
-        pressedOrder.add(keycode);
-      }
-      return false;
-    }
-
-    @Override
-    public boolean keyUp(int keycode) {
-      if (keycode < 0) {
-        return false;
-      }
-      currentPressedKeys.remove(keycode);
-      pressedOrder.removeValue(keycode);
-      return false;
-    }
-  };
-
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;
 
   public FlixelKeyInputManager() {}
 
-  /**
-   * Returns the input processor that tracks key state. Add this first to a
-   * {@link FlixelInputMultiplexer} (before other processors) so key state is correct.
-   */
-  public FlixelInputProcessor getInputProcessor() {
-    return inputProcessor;
+  @Override
+  public boolean keyDown(int keycode) {
+    if (keycode < 0) {
+      return false;
+    }
+    if (currentPressedKeys.add(keycode) && pressedOrder.indexOf(keycode) < 0) {
+      pressedOrder.add(keycode);
+    }
+    return false;
+  }
+
+  @Override
+  public boolean keyUp(int keycode) {
+    if (keycode < 0) {
+      return false;
+    }
+    currentPressedKeys.remove(keycode);
+    pressedOrder.removeValue(keycode);
+    return false;
   }
 
   /**
    * Called once per frame from the game loop. Reserved for future polling-based fallbacks; today
-   * the {@link FlixelInputProcessor} keeps {@link #currentPressedKeys} up to date in real time, so this
-   * method intentionally does nothing.
+   * {@link #keyDown(int)} and {@link #keyUp(int)} keep {@link #currentPressedKeys} up to date in
+   * real time, so this method intentionally does nothing.
    *
    * <p>Earlier versions rebuilt {@link #currentPressedKeys} from
    * {@link org.flixelgdx.Flixel#input Flixel.input.isKeyPressed} every frame, which clobbered any
-   * state the {@link FlixelInputProcessor} had just written and silently broke {@link #justPressed(int)},
+   * state the listener callbacks had just written and silently broke {@link #justPressed(int)},
    * {@link #justReleased(int)}, and the "first" helpers on the web backend (where not every key is
-   * exposed through polling). The processor is now the only writer.
+   * exposed through polling). The listener is now the only writer.
    *
    * <p>Call {@link #endFrame()} at the end of the frame so "just pressed/released" detection works
    * next frame.
    */
   @Override
   public void update() {
-    // Intentionally empty: state is maintained by the FlixelInputProcessor.
+    // Intentionally empty: state is maintained by keyDown/keyUp callbacks.
   }
 
   /**

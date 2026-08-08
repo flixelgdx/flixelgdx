@@ -768,9 +768,11 @@ public final class Flixel {
    * The low-level input backend that reads the keyboard and pointer for the current platform.
    *
    * <p>This is the plumbing beneath {@link #keys}, {@link #mouse}, and {@link #touches}: those
-   * managers poll it each frame and register their event processors with it. Game code rarely
-   * touches it directly, but it is available for a quick poll or to install a custom
-   * {@link org.flixelgdx.input.FlixelInputProcessor FlixelInputProcessor}.
+   * managers poll it each frame and register their event listeners with it. Game code rarely
+   * touches it directly, but it is available for a quick poll or to register a custom
+   * {@link org.flixelgdx.input.FlixelKeyboardListener FlixelKeyboardListener},
+   * {@link org.flixelgdx.input.FlixelMouseListener FlixelMouseListener}, or
+   * {@link org.flixelgdx.input.FlixelTouchListener FlixelTouchListener}.
    *
    * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
    * (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
