@@ -257,4 +257,78 @@ public final class FlixelMatrix {
     a[M33] = t33;
     return this;
   }
+
+  /**
+   * Post-multiplies this matrix with a translation, so the translation applies first when the
+   * matrix transforms a point.
+   *
+   * @param x Translation along the x axis.
+   * @param y Translation along the y axis.
+   * @param z Translation along the z axis.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix translate(float x, float y, float z) {
+    float[] v = val;
+    v[M03] = v[M00] * x + v[M01] * y + v[M02] * z + v[M03];
+    v[M13] = v[M10] * x + v[M11] * y + v[M12] * z + v[M13];
+    v[M23] = v[M20] * x + v[M21] * y + v[M22] * z + v[M23];
+    v[M33] = v[M30] * x + v[M31] * y + v[M32] * z + v[M33];
+    return this;
+  }
+
+  /**
+   * Post-multiplies this matrix with a counter-clockwise rotation around the z axis, the only
+   * rotation a 2D renderer needs.
+   *
+   * @param degrees Rotation angle in degrees.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix rotateZ(float degrees) {
+    float radians = degrees * FlixelMath.DEG_TO_RAD;
+    float cos = (float) Math.cos(radians);
+    float sin = (float) Math.sin(radians);
+    float[] v = val;
+    float t00 = v[M00] * cos + v[M01] * sin;
+    float t01 = v[M00] * -sin + v[M01] * cos;
+    float t10 = v[M10] * cos + v[M11] * sin;
+    float t11 = v[M10] * -sin + v[M11] * cos;
+    float t20 = v[M20] * cos + v[M21] * sin;
+    float t21 = v[M20] * -sin + v[M21] * cos;
+    float t30 = v[M30] * cos + v[M31] * sin;
+    float t31 = v[M30] * -sin + v[M31] * cos;
+    v[M00] = t00;
+    v[M01] = t01;
+    v[M10] = t10;
+    v[M11] = t11;
+    v[M20] = t20;
+    v[M21] = t21;
+    v[M30] = t30;
+    v[M31] = t31;
+    return this;
+  }
+
+  /**
+   * Post-multiplies this matrix with a scale.
+   *
+   * @param x Scale factor along the x axis.
+   * @param y Scale factor along the y axis.
+   * @param z Scale factor along the z axis.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix scale(float x, float y, float z) {
+    float[] v = val;
+    v[M00] *= x;
+    v[M10] *= x;
+    v[M20] *= x;
+    v[M30] *= x;
+    v[M01] *= y;
+    v[M11] *= y;
+    v[M21] *= y;
+    v[M31] *= y;
+    v[M02] *= z;
+    v[M12] *= z;
+    v[M22] *= z;
+    v[M32] *= z;
+    return this;
+  }
 }

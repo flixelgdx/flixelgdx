@@ -221,4 +221,20 @@ public interface FlixelBatch extends FlixelDestroyable {
    * @param projection The new projection matrix; copied.
    */
   void setProjection(@NotNull FlixelMatrix projection);
+
+  /**
+   * Returns the model transform applied to quads before projection. Identity by default.
+   *
+   * @return The live transform matrix; use {@link #setTransform(FlixelMatrix)} to change it.
+   */
+  @NotNull
+  FlixelMatrix getTransform();
+
+  /**
+   * Sets the model transform applied to quads before projection, flushing pending quads first.
+   * Text uses this for rotation and scaling around an origin.
+   *
+   * @param transform The new transform matrix; copied.
+   */
+  void setTransform(@NotNull FlixelMatrix transform);
 }

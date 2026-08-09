@@ -23,37 +23,31 @@
  */
 package org.flixelgdx.text;
 
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
-import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.utils.Array;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelAlign;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelString;
 import org.flixelgdx.util.FlixelStringUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A display object for rendering text on screen.
  *
  * <p>Extends {@link FlixelSprite} so that text objects can be added to sprite groups and
- * states, with full support for tinting, fading, rotation, and scaling. Uses libGDX's
- * {@link BitmapFont} for rendering and optionally {@link FreeTypeFontGenerator} for
- * dynamic font generation from {@code .ttf}/{@code .otf} files.
+ * states, with full support for tinting, fading, rotation, and scaling. Text renders through
+ * {@link FlixelFont} glyph atlases: scalable {@code .ttf}/{@code .otf} files are baked at the
+ * exact pixel size needed via the platform's {@link FlixelFontRasterizer}, and the packaged
+ * bitmap font covers the default case on every platform.
  *
  * <h2>Auto-sizing</h2>
  * <p>By default, {@code FlixelText} auto-sizes to fit its text content. To use a fixed
@@ -61,13 +55,13 @@ import org.jetbrains.annotations.NotNull;
  * {@link #setFieldWidth(float)}. A fixed height can be set via {@link #setFieldHeight(float)}.
  *
  * <h2>Fonts</h2>
- * <p>The default font is libGDX's built-in bitmap font (Arial 15px), scaled to the
- * requested size. For best quality at any size, supply a {@code .ttf} or {@code .otf}
- * file via {@link #setFont(FileHandle)}, which uses FreeType to generate a crisp
- * bitmap font at the exact pixel size requested.
+ * <p>The default font is the packaged bitmap font, scaled to the requested size. For best
+ * quality at any size, register a {@code .ttf} or {@code .otf} in {@link FlixelFontRegistry}
+ * and select it with {@link #setFont(String)}, or point at a file directly with
+ * {@link #setFont(FlixelFile)}.
  *
  * <h2>Border Styles</h2>
- * <p>Text can be rendered with borders via {@link #setBorderStyle(BorderStyle, Color, float, float)}.
+ * <p>Text can be rendered with borders via {@link #setBorderStyle(BorderStyle, FlixelColor, float, float)}.
  * Supported styles are {@link BorderStyle#SHADOW}, {@link BorderStyle#OUTLINE}, and
  * {@link BorderStyle#OUTLINE_FAST}.
  *
@@ -99,7 +93,7 @@ public class FlixelText extends FlixelSprite {
   private BorderStyle borderStyle = BorderStyle.NONE;
 
   /** The color of the border in RGBA. */
-  private final Color borderColor = new Color(Color.CLEAR);
+  private final FlixelColor borderColor = new FlixelColor(FlixelColor.CLEAR);
 
   /** The size of the border in pixels. */
   private float borderSize = 1;
@@ -116,38 +110,36 @@ public class FlixelText extends FlixelSprite {
    */
   private float lastBakeScreenScale = 0f;
 
-  /** The font used for text rendering. */
-  private BitmapFont bitmapFont;
+  /** Game pixels per baked font pixel for the current font. */
+  private float fontScale = 1f;
 
-  /** Reused when generating FreeType fonts from a private {@link #fontFile}. */
-  private final FreeTypeFontParameter freeTypeParams = new FreeTypeFontParameter();
+  /** The font used for text rendering; resolved lazily from the registry cascade. */
+  @Nullable
+  private FlixelFont font;
 
   /** Cached text layout used for measurement and drawing. */
-  private final GlyphLayout glyphLayout = new GlyphLayout();
+  private final FlixelTextLayout layout = new FlixelTextLayout();
 
-  /** The TrueType font file used for FreeType generation, or {@code null} for the default font. */
-  private FileHandle fontFile;
+  /** The scalable font file used for baking, or {@code null} for the registry or default font. */
+  @Nullable
+  private FlixelFile fontFile;
 
   /**
    * The {@link FlixelFontRegistry} ID for the font, or {@code null} if a direct
-   * {@link FileHandle} or the default font is used instead.
+   * {@link FlixelFile} or the default font is used instead.
    */
+  @Nullable
   private String fontRegistryId;
 
-  /**
-   * The FreeType generator used by this instance. May be owned by
-   * {@link FlixelFontRegistry} (shared) or by this instance (private).
-   */
-  private FreeTypeFontGenerator generator;
-
-  /** The path used to create a privately-owned {@link #generator}, for change detection. */
-  private String currentGeneratorPath;
+  /** A font supplied directly through {@link #setFont(FlixelFont)}, bypassing the cascade. */
+  @Nullable
+  private FlixelFont directFont;
 
   /** Reusable matrix to save the batch's transform before applying text transforms. */
-  private final Matrix4 savedTransform = new Matrix4();
+  private final FlixelMatrix savedTransform = new FlixelMatrix();
 
   /** Reusable matrix for applying rotation/scale transforms during drawing. */
-  private final Matrix4 textTransform = new Matrix4();
+  private final FlixelMatrix textTransform = new FlixelMatrix();
 
   /** Whether text wraps at {@link #fieldWidth}. Defaults to {@code true}. */
   private boolean wordWrap = true;
@@ -158,23 +150,13 @@ public class FlixelText extends FlixelSprite {
    */
   private boolean autoSize = true;
 
-  /** Whether to render bold text. Only effective with FreeType fonts. */
+  /** Whether to render bold text. Only effective when the font file provides a bold variant. */
   private boolean bold = false;
 
-  /** Whether to render italic text. Only effective with FreeType fonts. */
+  /** Whether to render italic text. Only effective when the font file provides an italic variant. */
   private boolean italic = false;
 
-  /**
-   * {@code true} if {@link #bitmapFont} was produced by FreeType for a direct
-   * {@link #fontFile} (not registry-cached); such fonts are disposed when replaced or on
-   * {@link #destroy()}.
-   */
-  private boolean privateBitmapFontOwned;
-
-  /** Whether this instance created (and therefore owns) the current {@link #generator}. */
-  private boolean ownsGenerator;
-
-  /** Whether the font needs to be regenerated (size, bold, italic, or font file changed). */
+  /** Whether the font needs to be re-resolved (size, font source, or filtering changed). */
   private boolean fontDirty = true;
 
   /** Whether the text layout needs to be recalculated. */
@@ -284,8 +266,8 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
-   * Sets the font size in pixels. When using a FreeType font, this triggers font
-   * regeneration. When using the default font, the built-in bitmap font is scaled.
+   * Sets the font size in pixels. When using a scalable font, this triggers a re-bake at the
+   * new size. When using the packaged default font, the atlas is scaled.
    *
    * @param size The new font size (minimum 1).
    */
@@ -376,196 +358,150 @@ public class FlixelText extends FlixelSprite {
    * @param fieldWidth The field width in pixels.
    */
   public void setFieldWidth(float fieldWidth) {
-    float newWidth = Math.max(0, fieldWidth);
-    if (this.fieldWidth != newWidth) {
-      this.fieldWidth = newWidth;
-      autoSize = newWidth <= 0;
+    if (this.fieldWidth != fieldWidth) {
+      this.fieldWidth = fieldWidth;
+      autoSize = fieldWidth <= 0;
       layoutDirty = true;
     }
   }
 
-  /** Returns the height of the text field, or {@code 0} if auto-height. */
+  /** Returns the height of the text field, or {@code 0} if auto-sizing. */
   public float getFieldHeight() {
     return fieldHeight;
   }
 
   /**
-   * Sets the height of the text field. When {@code <= 0}, height is determined
-   * automatically from the text content. Has no effect when {@link #isAutoSize()}
-   * is {@code true}.
+   * Sets the height of the text field. Only used when {@link #isAutoSize()} is {@code false}.
    *
    * @param fieldHeight The field height in pixels.
    */
   public void setFieldHeight(float fieldHeight) {
-    float newHeight = Math.max(0, fieldHeight);
-    if (this.fieldHeight != newHeight) {
-      this.fieldHeight = newHeight;
+    if (this.fieldHeight != fieldHeight) {
+      this.fieldHeight = fieldHeight;
       layoutDirty = true;
     }
   }
 
-  /** Returns whether bold text is enabled. */
+  /** Returns whether bold rendering is requested. */
   public boolean isBold() {
     return bold;
   }
 
-  /** Returns whether bold text is enabled. */
+  /** Returns whether bold rendering is requested. */
   public boolean getBold() {
     return bold;
   }
 
   /**
-   * Sets whether to use bold text. Only takes visual effect when a {@code .ttf}
-   * font has been set via {@link #setFont(FileHandle)}, since the default bitmap
-   * font does not support runtime weight changes.
+   * Requests bold rendering. Takes effect only when the selected font file provides a bold
+   * variant; regular fonts render unchanged.
    *
-   * @param bold Whether to use bold.
+   * @param bold Whether to request bold rendering.
    */
   public void setBold(boolean bold) {
     if (this.bold != bold) {
       this.bold = bold;
-      if (fontFile != null || fontRegistryId != null) {
-        fontDirty = true;
-      }
-      layoutDirty = true;
+      fontDirty = true;
     }
   }
 
-  /** Returns whether italic text is enabled. */
+  /** Returns whether italic rendering is requested. */
   public boolean isItalic() {
     return italic;
   }
 
-  /** Returns whether italic text is enabled. */
+  /** Returns whether italic rendering is requested. */
   public boolean getItalic() {
     return italic;
   }
 
   /**
-   * Sets whether to use italic text. Only takes visual effect when a {@code .ttf}
-   * font has been set via {@link #setFont(FileHandle)}, since the default bitmap
-   * font does not support runtime style changes.
+   * Requests italic rendering. Takes effect only when the selected font file provides an
+   * italic variant; regular fonts render unchanged.
    *
-   * @param italic Whether to use italic.
+   * @param italic Whether to request italic rendering.
    */
   public void setItalic(boolean italic) {
     if (this.italic != italic) {
       this.italic = italic;
-      if (fontFile != null || fontRegistryId != null) {
-        fontDirty = true;
-      }
-      layoutDirty = true;
+      fontDirty = true;
     }
   }
 
-  /** Returns the letter spacing in pixels. */
+  /** Returns the extra spacing between characters, in pixels. */
   public float getLetterSpacing() {
     return letterSpacing;
   }
 
   /**
-   * Sets the spacing between characters in pixels. Only takes visual effect
-   * when a {@code .ttf} font has been set via {@link #setFont(FileHandle)},
-   * as FreeType uses this value during glyph generation.
+   * Sets extra horizontal spacing between characters.
    *
-   * @param letterSpacing The spacing in pixels.
+   * @param letterSpacing Spacing in pixels; {@code 0} uses the font's natural spacing.
    */
   public void setLetterSpacing(float letterSpacing) {
     if (this.letterSpacing != letterSpacing) {
       this.letterSpacing = letterSpacing;
-      if (fontFile != null || fontRegistryId != null) {
-        fontDirty = true;
-      }
       layoutDirty = true;
     }
   }
 
   /**
-   * Returns whether this text uses a custom embedded font ({@code true}) or the
-   * default libGDX bitmap font ({@code false}). A font is considered embedded when
-   * set via {@link #setFont(FileHandle)}, {@link #setFont(String)}, or when a
-   * {@linkplain FlixelFontRegistry#setDefault(String) registry default} is active.
+   * Returns whether a scalable font is active (registry id or direct file), meaning glyphs
+   * re-bake crisply when the display scale changes.
    */
   public boolean isEmbedded() {
-    return fontFile != null || fontRegistryId != null
-        || FlixelFontRegistry.getDefault() != null;
+    return fontRegistryId != null || fontFile != null || FlixelFontRegistry.getDefault() != null;
   }
 
-  /**
-   * Returns whether this text uses a custom embedded font ({@code true}) or the
-   * default libGDX bitmap font ({@code false}). A font is considered embedded when
-   * set via {@link #setFont(FileHandle)}, {@link #setFont(String)}, or when a
-   * {@linkplain FlixelFontRegistry#setDefault(String) registry default} is active.
-   */
+  /** Returns whether a scalable font is active. */
   public boolean getEmbedded() {
     return isEmbedded();
   }
 
-  /**
-   * Returns the {@link FlixelFontRegistry} ID currently set on this text, or
-   * {@code null} if a direct {@link FileHandle} or the default font is used.
-   */
+  /** Returns the current {@link FlixelFontRegistry} font id, or {@code null}. */
+  @Nullable
   public String getFont() {
     return fontRegistryId;
   }
 
   /**
-   * Sets the font by its {@link FlixelFontRegistry} identifier.
+   * Selects a font registered in {@link FlixelFontRegistry}.
    *
-   * <p>The font must have been previously registered via {@link FlixelFontRegistry#register(String, FileHandle)}.
-   * Pass {@code null} to clear the registry reference and fall back to the default resolution order
-   * (direct file -> registry default -> built-in font).
-   *
-   * @param id The registered font ID, or {@code null} to clear.
-   * @throws IllegalArgumentException if {@code id} is non-null but not registered.
+   * @param id The registry id, or {@code null} to fall back to the default cascade.
    */
-  public void setFont(String id) {
+  public void setFont(@Nullable String id) {
     if (id != null && !FlixelFontRegistry.has(id)) {
-      throw new IllegalArgumentException("No font registered with id \"" + id + "\".");
+      Flixel.warn("Fonts", "No font registered under id '" + id + "'; using the default font.");
     }
-    disposeOwnedGenerator();
-    this.fontRegistryId = id;
-    this.fontFile = null;
+    fontRegistryId = id;
+    fontFile = null;
+    directFont = null;
     fontDirty = true;
-    layoutDirty = true;
   }
 
   /**
-   * Sets a custom TrueType font file for this text. Uses FreeType to generate a
-   * bitmap font at the current size. Pass {@code null} to revert to the default
-   * font. This clears any previously set {@linkplain #setFont(String) registry ID}.
+   * Selects a scalable font file directly, without registering it globally.
    *
-   * @param fontFile The {@code .ttf} or {@code .otf} file handle, or {@code null}.
+   * @param fontFile The {@code .ttf} or {@code .otf} file to bake from.
    */
-  public void setFont(FileHandle fontFile) {
-    disposeOwnedGenerator();
+  public void setFont(@NotNull FlixelFile fontFile) {
     this.fontFile = fontFile;
-    this.fontRegistryId = null;
+    fontRegistryId = null;
+    directFont = null;
     fontDirty = true;
-    layoutDirty = true;
   }
 
   /**
-   * Sets a pre-built {@link BitmapFont} directly, bypassing FreeType generation.
-   * This gives full control over font settings. The caller is responsible for the
-   * font's lifecycle if this text is destroyed or the font is replaced.
-   * Clears any previously set font file or registry ID.
+   * Sets a pre-built {@link FlixelFont} directly, bypassing the registry cascade. The caller
+   * keeps ownership of the font.
    *
-   * @param font The bitmap font to use. Must not be {@code null}.
-   * @throws IllegalArgumentException if {@code font} is {@code null}.
+   * @param font The font to render with.
    */
-  public void setBitmapFont(BitmapFont font) {
-    if (font == null) {
-      throw new IllegalArgumentException("BitmapFont cannot be null.");
-    }
-    disposeFont();
-    this.bitmapFont = font;
-    this.fontFile = null;
-    this.fontRegistryId = null;
-    privateBitmapFontOwned = false;
-    fontDirty = false;
-    layoutDirty = true;
-    font.setUseIntegerPositions(!antialiasing);
+  public void setFont(@NotNull FlixelFont font) {
+    directFont = font;
+    fontRegistryId = null;
+    fontFile = null;
+    fontDirty = true;
   }
 
   /** Returns the current border style. */
@@ -573,98 +509,73 @@ public class FlixelText extends FlixelSprite {
     return borderStyle;
   }
 
-  /** Returns the border color. */
-  public Color getBorderColor() {
+  /** Returns the border color. Treat as read-only. */
+  public FlixelColor getBorderColor() {
     return borderColor;
   }
 
-  /** Returns the border size in pixels. */
+  /** Returns the border thickness in pixels. */
   public float getBorderSize() {
     return borderSize;
   }
 
-  /** Returns the border rendering quality. */
+  /** Returns the border quality factor. */
   public float getBorderQuality() {
     return borderQuality;
   }
 
   /**
-   * Sets the border style, color, size, and quality in one call.
+   * Configures the text border.
    *
-   * @param style The border style.
-   * @param color The border color in RGBA. Pass {@code null} for transparent.
-   * @param size The border size in pixels.
-   * @param quality Rendering quality. {@code 0}: single iteration, {@code 1}: one
-   *   iteration per pixel in {@code size}.
+   * @param style The border style; {@link BorderStyle#NONE} disables borders.
+   * @param color The border color; {@code null} keeps the current color.
+   * @param size The border thickness in pixels.
+   * @param quality Iterations per border pixel for {@link BorderStyle#OUTLINE} ({@code 0} to {@code 1}).
    */
-  public void setBorderStyle(BorderStyle style, Color color, float size, float quality) {
+  public void setBorderStyle(BorderStyle style, @Nullable FlixelColor color, float size, float quality) {
     this.borderStyle = (style != null) ? style : BorderStyle.NONE;
-    this.borderColor.set((color != null) ? color : Color.CLEAR);
-    this.borderSize = Math.max(0, size);
-    this.borderQuality = Math.max(0, quality);
+    if (color != null) {
+      this.borderColor.setColor(color);
+    }
+    this.borderSize = size;
+    this.borderQuality = Math.max(0, Math.min(1, quality));
   }
 
   /**
-   * Sets the border style and color with default size (1) and quality (1).
-   *
-   * @param style The border style.
-   * @param color The border color.
-   */
-  public void setBorderStyle(BorderStyle style, Color color) {
-    setBorderStyle(style, color, 1, 1);
-  }
-
-  /**
-   * Sets the border style and color with default size (1) and quality (1).
+   * Configures the text border with default size and quality.
    *
    * @param style The border style.
    * @param color The border color.
    */
   public void setBorderStyle(BorderStyle style, @NotNull FlixelColor color) {
-    setBorderStyle(style, color.getGdxColor(), 1, 1);
+    setBorderStyle(style, color, 1, 1);
   }
 
   /**
-   * Sets the border style, color, size, and quality in one call.
-   *
-   * @param style The border style.
-   * @param color The border color. Pass {@code null} for transparent.
-   * @param size The border size in pixels.
-   * @param quality Rendering quality. {@code 0}: single iteration, {@code 1}: one
-   * iteration per pixel in {@code size}.
-   */
-  public void setBorderStyle(BorderStyle style, @NotNull FlixelColor color, float size, float quality) {
-    setBorderStyle(style, color.getGdxColor(), size, quality);
-  }
-
-  /**
-   * Sets the border style with a default black color, size of 1, and quality of 1.
+   * Configures a black border with default size and quality.
    *
    * @param style The border style.
    */
   public void setBorderStyle(BorderStyle style) {
-    setBorderStyle(style, Color.BLACK, 1, 1);
+    setBorderStyle(style, FlixelColor.BLACK, 1, 1);
   }
 
   /**
-   * Convenience method to set many text properties at once. Pass {@code null} or
-   * {@code 0} for any parameter to keep its current value.
+   * Applies several format settings at once from a font file.
    *
-   * @param fontFile The {@code .ttf}/{@code .otf} font file, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
+   * @param fontFile The scalable font file, or {@code null} to keep the current font.
+   * @param size The font size in pixels.
    * @param color The text color, or {@code null} to keep current.
-   * @param alignment The text alignment, or {@code null} to keep current.
+   * @param alignment The alignment, or {@code null} to keep current.
    * @param borderStyle The border style, or {@code null} to keep current.
    * @param borderColor The border color, or {@code null} to keep current.
    */
-  public void setFormat(FileHandle fontFile, int size, Color color,
-      Alignment alignment, BorderStyle borderStyle, Color borderColor) {
+  public void setFormat(@Nullable FlixelFile fontFile, int size, @Nullable FlixelColor color,
+      @Nullable Alignment alignment, @Nullable BorderStyle borderStyle, @Nullable FlixelColor borderColor) {
     if (fontFile != null) {
       setFont(fontFile);
     }
-    if (size > 0) {
-      setTextSize(size);
-    }
+    setTextSize(size);
     if (color != null) {
       setColor(color);
     }
@@ -674,72 +585,37 @@ public class FlixelText extends FlixelSprite {
     if (borderStyle != null) {
       setBorderStyle(borderStyle, (borderColor != null) ? borderColor : this.borderColor);
     } else if (borderColor != null) {
-      this.borderColor.set(borderColor);
+      this.borderColor.setColor(borderColor);
     }
   }
 
   /**
-   * Simplified format setter with font file, size, and color.
+   * Applies font file, size, and color at once.
    *
-   * @param fontFile The font file, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
+   * @param fontFile The scalable font file, or {@code null} to keep the current font.
+   * @param size The font size in pixels.
+   * @param color The text color.
    */
-  public void setFormat(FileHandle fontFile, int size, Color color) {
+  public void setFormat(@Nullable FlixelFile fontFile, int size, @NotNull FlixelColor color) {
     setFormat(fontFile, size, color, null, null, null);
   }
 
   /**
-   * Convenience method to set many text properties at once using a {@link FlixelColor}.
-   * Pass {@code null} or {@code 0} for any parameter to keep its current value.
+   * Applies several format settings at once from a registered font id.
    *
-   * @param fontFile The {@code .ttf}/{@code .otf} font file, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
+   * @param fontId The {@link FlixelFontRegistry} id, or {@code null} to keep the current font.
+   * @param size The font size in pixels.
    * @param color The text color, or {@code null} to keep current.
-   * @param alignment The text alignment, or {@code null} to keep current.
+   * @param alignment The alignment, or {@code null} to keep current.
    * @param borderStyle The border style, or {@code null} to keep current.
    * @param borderColor The border color, or {@code null} to keep current.
    */
-  public void setFormat(FileHandle fontFile, int size, FlixelColor color,
-      Alignment alignment, BorderStyle borderStyle,
-      FlixelColor borderColor) {
-    setFormat(fontFile, size,
-        color != null ? color.getGdxColor() : null,
-        alignment, borderStyle,
-        borderColor != null ? borderColor.getGdxColor() : null);
-  }
-
-  /**
-   * Simplified format setter with font file, size, and a {@link FlixelColor}.
-   *
-   * @param fontFile The font file, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
-   */
-  public void setFormat(FileHandle fontFile, int size, @NotNull FlixelColor color) {
-    setFormat(fontFile, size, color.getGdxColor(), null, null, null);
-  }
-
-  /**
-   * Convenience format setter using a {@link FlixelFontRegistry} font ID.
-   * Pass {@code null} for any parameter to keep its current value.
-   *
-   * @param fontId The registered font ID, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
-   * @param alignment The text alignment, or {@code null} to keep current.
-   * @param borderStyle The border style, or {@code null} to keep current.
-   * @param borderColor The border color, or {@code null} to keep current.
-   */
-  public void setFormat(String fontId, int size, Color color,
-      Alignment alignment, BorderStyle borderStyle,
-      Color borderColor) {
+  public void setFormat(@Nullable String fontId, int size, @Nullable FlixelColor color,
+      @Nullable Alignment alignment, @Nullable BorderStyle borderStyle, @Nullable FlixelColor borderColor) {
     if (fontId != null) {
       setFont(fontId);
     }
-    if (size > 0) {
-      setTextSize(size);
-    }
+    setTextSize(size);
     if (color != null) {
       setColor(color);
     }
@@ -749,128 +625,57 @@ public class FlixelText extends FlixelSprite {
     if (borderStyle != null) {
       setBorderStyle(borderStyle, (borderColor != null) ? borderColor : this.borderColor);
     } else if (borderColor != null) {
-      this.borderColor.set(borderColor);
+      this.borderColor.setColor(borderColor);
     }
   }
 
   /**
-   * Simplified format setter with a registry font ID, size, and color.
+   * Applies registered font id, size, and color at once.
    *
-   * @param fontId The registered font ID, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
+   * @param fontId The {@link FlixelFontRegistry} id, or {@code null} to keep the current font.
+   * @param size The font size in pixels.
+   * @param color The text color.
    */
-  public void setFormat(String fontId, int size, Color color) {
+  public void setFormat(@Nullable String fontId, int size, @NotNull FlixelColor color) {
     setFormat(fontId, size, color, null, null, null);
   }
 
   /**
-   * Convenience format setter using a {@link FlixelFontRegistry} font ID and a {@link FlixelColor}.
-   * Pass {@code null} or {@code 0} for any parameter to keep its current value.
+   * Applies size and color at once, keeping the current font.
    *
-   * @param fontId The registered font ID, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
-   * @param alignment The text alignment, or {@code null} to keep current.
-   * @param borderStyle The border style, or {@code null} to keep current.
-   * @param borderColor The border color, or {@code null} to keep current.
-   */
-  public void setFormat(String fontId, int size, FlixelColor color,
-      Alignment alignment, BorderStyle borderStyle,
-      FlixelColor borderColor) {
-    setFormat(fontId, size,
-        color != null ? color.getGdxColor() : null,
-        alignment, borderStyle,
-        borderColor != null ? borderColor.getGdxColor() : null);
-  }
-
-  /**
-   * Simplified format setter with a registry font ID, size, and a {@link FlixelColor}.
-   *
-   * @param fontId The registered font ID, or {@code null} to keep current.
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
-   */
-  public void setFormat(String fontId, int size, @NotNull FlixelColor color) {
-    setFormat(fontId, size, color.getGdxColor(), null, null, null);
-  }
-
-  /**
-   * Simplified format setter with size and color only.
-   *
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
-   */
-  public void setFormat(int size, Color color) {
-    setFormat((FileHandle) null, size, color, null, null, null);
-  }
-
-  /**
-   * Simplified format setter with size and a {@link FlixelColor} only.
-   *
-   * @param size The font size, or {@code 0} to keep current.
-   * @param color The text color, or {@code null} to keep current.
+   * @param size The font size in pixels.
+   * @param color The text color.
    */
   public void setFormat(int size, @NotNull FlixelColor color) {
-    setFormat((FileHandle) null, size, color.getGdxColor(), null, null, null);
+    setFormat((String) null, size, color, null, null, null);
   }
 
-  /**
-   * Returns the hitbox width, triggering a layout rebuild first if any text
-   * attributes have changed since the last rebuild.
-   *
-   * <p>This ensures that callers such as {@link #screenCenter()} always operate
-   * on up-to-date dimensions, even before the first {@link #draw(FlixelBatch)} call.
-   *
-   * <p>If no font is available yet (for example, before a GL context exists),
-   * the returned value is {@code 0} until the first successful rebuild.
-   */
+  /** Returns the display width: the field width when fixed, otherwise the measured text width. */
   @Override
   public float getWidth() {
     rebuildIfDirty();
     return super.getWidth();
   }
 
-  /**
-   * Returns the hitbox height, triggering a layout rebuild first if any text
-   * attributes have changed since the last rebuild.
-   *
-   * <p>This ensures that callers such as {@link #screenCenter()} always operate
-   * on up-to-date dimensions, even before the first {@link #draw(FlixelBatch)} call.
-   *
-   * <p>If no font is available yet (for example, before a GL context exists),
-   * the returned value is {@code 0} until the first successful rebuild.
-   */
+  /** Returns the display height: the field height when fixed, otherwise the measured text height. */
   @Override
   public float getHeight() {
     rebuildIfDirty();
     return super.getHeight();
   }
 
-  /**
-   * Returns the actual rendered width of the text content (which may differ from
-   * {@link #getFieldWidth()} when a fixed field width is set). Triggers a layout
-   * rebuild if necessary.
-   */
+  /** Returns the measured width of the laid-out text, ignoring any fixed field size. */
   public float getTextWidth() {
     rebuildIfDirty();
-    return glyphLayout.width;
+    return layout.getWidth();
   }
 
-  /**
-   * Returns the actual rendered height of the text content (which may differ from
-   * {@link #getFieldHeight()} when a fixed field height is set). Triggers a layout
-   * rebuild if necessary.
-   */
+  /** Returns the measured height of the laid-out text, ignoring any fixed field size. */
   public float getTextHeight() {
     rebuildIfDirty();
-    return glyphLayout.height;
+    return layout.getHeight();
   }
 
-  /**
-   * Text objects do not use frame-based animation. This override prevents the
-   * animation state machine in {@link FlixelSprite} from running.
-   */
   @Override
   public final void update(float elapsed) {
     // No-op: text does not animate.
@@ -885,7 +690,7 @@ public class FlixelText extends FlixelSprite {
       return;
     }
     rebuildIfDirty();
-    if (bitmapFont == null) {
+    if (font == null) {
       return;
     }
 
@@ -901,20 +706,20 @@ public class FlixelText extends FlixelSprite {
     float textTop = getHeight();
 
     if (needsTransform) {
-      savedTransform.set(batch.getTransformMatrix());
+      savedTransform.set(batch.getTransform());
 
       float ox = getOriginX();
       float oy = getOriginY();
       textTransform.set(savedTransform);
       textTransform.translate(wx + ox, wy + oy, 0);
-      textTransform.rotate(0, 0, 1, rotation);
+      textTransform.rotateZ(rotation);
       textTransform.scale(scaleX, scaleY, 1);
       textTransform.translate(-ox, -oy, 0);
-      batch.setTransformMatrix(textTransform);
+      batch.setTransform(textTransform);
 
       drawTextContent(batch, 0, textTop);
 
-      batch.setTransformMatrix(savedTransform);
+      batch.setTransform(savedTransform);
     } else {
       drawTextContent(batch, wx, wy + textTop);
     }
@@ -922,7 +727,7 @@ public class FlixelText extends FlixelSprite {
 
   @Override
   public void setAntialiasing(boolean antialiasing) {
-    this.antialiasing = antialiasing;
+    super.setAntialiasing(antialiasing);
     fontDirty = true;
   }
 
@@ -946,30 +751,30 @@ public class FlixelText extends FlixelSprite {
 
   /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
   @Override
-  public final FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
+  public final FlixelSprite loadGraphic(FlixelTexture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
   /** @throws UnsupportedOperationException always; text objects cannot use Sparrow atlases. */
   @Override
   public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic,
-      @NotNull Array<FlixelFrame> parsedFrames) {
+      @NotNull FlixelArray<FlixelFrame> parsedFrames) {
     throw new UnsupportedOperationException("FlixelText does not support addSparrowAtlas().");
   }
 
-  /** @return {@code null} always; text has no atlas regions. */
+  /** @return Never returns; text has no atlas regions. */
   @Override
-  public final Array<FlixelFrame> getAtlasRegions() {
+  public final FlixelArray<FlixelFrame> getAtlasRegions() {
     throw new UnsupportedOperationException("FlixelText does not support atlas regions.");
   }
 
-  /** @return {@code null} always; text has no animation frames. */
+  /** @return Never returns; text has no animation frames. */
   @Override
   public final FlixelFrame getCurrentFrame() {
     throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
-  /** @return {@code null} always; text has no image frames. */
+  /** @return Never returns; text has no image frames. */
   @Override
   public final FlixelFrame[][] getFrames() {
     throw new UnsupportedOperationException("FlixelText does not support animations.");
@@ -978,7 +783,8 @@ public class FlixelText extends FlixelSprite {
   @Override
   public void destroy() {
     super.destroy();
-    disposeFont();
+    font = null;
+    directFont = null;
     textBuffer.clear();
     textBuffer.trimToSize();
     size = 8;
@@ -991,15 +797,12 @@ public class FlixelText extends FlixelSprite {
     italic = false;
     letterSpacing = 0;
     borderStyle = BorderStyle.NONE;
-    borderColor.set(Color.CLEAR);
+    borderColor.setColor(FlixelColor.CLEAR);
     borderSize = 1;
     borderQuality = 1;
     lastBakeScreenScale = 0f;
     fontFile = null;
     fontRegistryId = null;
-    privateBitmapFontOwned = false;
-    currentGeneratorPath = null;
-    ownsGenerator = false;
     fontDirty = true;
     layoutDirty = true;
   }
@@ -1016,14 +819,14 @@ public class FlixelText extends FlixelSprite {
    * Called lazily before drawing or when dimensions are queried.
    */
   private void rebuildIfDirty() {
-    if (!fontDirty && isEmbedded()) {
+    if (!fontDirty && directFont == null && isEmbedded()) {
       float s = currentScreenScale();
       if (Math.abs(s - lastBakeScreenScale) > 0.01f) {
         fontDirty = true;
       }
     }
     if (fontDirty) {
-      rebuildFont();
+      resolveFont();
       fontDirty = false;
       layoutDirty = true;
     }
@@ -1034,69 +837,52 @@ public class FlixelText extends FlixelSprite {
   }
 
   /**
-   * Regenerates the {@link BitmapFont} based on current settings. The font source
-   * is resolved in this order:
-   * <ol>
-   *   <li>{@link #fontRegistryId}: generator from {@link FlixelFontRegistry}</li>
-   *   <li>{@link #fontFile}: privately-owned generator for a direct file</li>
-   *   <li>{@link FlixelFontRegistry#getDefault()}: global registry default</li>
-   *   <li>libGDX built-in bitmap font (lsans-15, scaled)</li>
-   * </ol>
+   * Resolves the active {@link FlixelFont} following the cascade: direct font, registry id,
+   * direct file, registry default, packaged bitmap font.
    *
-   * <p>When a FreeType generator is available the font texture is baked at the current
-   * screen-pixel size (see {@link #currentScreenScale()}) so glyphs are crisp at any
-   * display resolution. The resulting {@link BitmapFont} is always owned by this instance
-   * and is disposed when replaced or when {@link #destroy()} is called.
+   * <p>Scalable sources are baked at the current screen-pixel size (see
+   * {@link #currentScreenScale()}) so glyphs stay crisp at any display resolution; the layout
+   * then measures in game pixels through {@link #fontScale}.
    */
-  private void rebuildFont() {
-    BitmapFont oldFont = bitmapFont;
-    boolean oldPrivate = privateBitmapFontOwned;
+  private void resolveFont() {
+    if (directFont != null) {
+      font = directFont;
+      fontScale = 1f;
+      return;
+    }
 
-    FreeTypeFontGenerator gen = resolveGenerator();
-    if (gen != null) {
-      float screenScale = currentScreenScale();
-      lastBakeScreenScale = screenScale;
-      int bakeSize = Math.max(1, Math.round(size * screenScale));
-      int space = (int) letterSpacing;
+    float screenScale = currentScreenScale();
+    lastBakeScreenScale = screenScale;
+    int bakeSize = Math.max(1, Math.round(size * screenScale));
+    boolean smooth = isAntialiasing();
 
-      freeTypeParams.size = bakeSize;
-      freeTypeParams.spaceX = space;
-      freeTypeParams.mono = !antialiasing;
-      freeTypeParams.hinting = antialiasing ? FreeTypeFontGenerator.Hinting.Full : FreeTypeFontGenerator.Hinting.None;
-      freeTypeParams.minFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
-      freeTypeParams.magFilter = antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
+    FlixelFont resolved = null;
+    if (fontRegistryId != null) {
+      resolved = FlixelFontRegistry.getFont(fontRegistryId, bakeSize, smooth);
+    }
+    if (resolved == null && fontFile != null) {
+      resolved = FlixelFontRegistry.getFont(fontFile, bakeSize, smooth);
+    }
+    if (resolved != null) {
+      font = resolved;
+      fontScale = 1f / screenScale;
+      return;
+    }
 
-      // Incremental generation (glyphs on demand) only makes sense for a private file handle;
-      // registry generators serve multiple callers and work better with an upfront bake.
-      if (fontFile != null) {
-        freeTypeParams.incremental = true;
-        freeTypeParams.genMipMaps = false;
-      } else {
-        freeTypeParams.incremental = false;
-        freeTypeParams.genMipMaps = true;
-      }
-
-      bitmapFont = gen.generateFont(freeTypeParams);
-      // Scale glyph metrics down so the layout measures in game pixels, not baked pixels.
-      // The viewport's world-to-screen projection then maps those game pixels to the
-      // correct screen pixels automatically.
-      bitmapFont.getData().setScale(1f / screenScale);
-      privateBitmapFontOwned = true;
+    resolved = FlixelFontRegistry.getDefaultFont(bakeSize, smooth);
+    font = resolved;
+    if (resolved == null) {
+      fontScale = 1f;
+      return;
+    }
+    // The packaged bitmap font has a fixed baked size; scale its base height to the
+    // requested size. A registry default bakes at the exact size, where base maps back
+    // to the screen scale.
+    if (FlixelFontRegistry.getDefault() != null) {
+      fontScale = 1f / screenScale;
     } else {
-      bitmapFont = FlixelFontRegistry.obtainDefaultBitmapFont(size);
-      privateBitmapFontOwned = false;
-    }
-
-    if (oldFont != null && oldFont != bitmapFont && oldPrivate) {
-      oldFont.dispose();
-    }
-
-    // bitmapFont can legitimately be null on platforms where the packaged default font
-    // is unavailable (for example, a TeaVM build that has not run the FlixelGDX TeaVM
-    // plugin's asset copy task). Skip the integer-position toggle so rendering simply
-    // becomes a no-op rather than crashing.
-    if (bitmapFont != null) {
-      bitmapFont.setUseIntegerPositions(!antialiasing);
+      float base = Math.max(1f, resolved.getBase());
+      fontScale = size / base;
     }
   }
 
@@ -1109,74 +895,41 @@ public class FlixelText extends FlixelSprite {
   private float currentScreenScale() {
     FlixelCamera cam = Flixel.getDrawCamera();
     if (cam == null) {
-      if (Flixel.game == null) {
+      if (Flixel.game == null || Flixel.cameras.isEmpty()) {
         return 1f;
       }
       cam = Flixel.cameras.first();
     }
-    float worldH = cam.getViewport().getWorldHeight();
-    float screenH = cam.getViewport().getScreenHeight();
+    float worldH = cam.getWorldHeight();
+    float screenH = cam.getScreenHeight();
     if (worldH <= 0f || screenH <= 0f) {
       return 1f;
     }
     return screenH / worldH;
   }
 
-  /**
-   * Resolves the {@link FreeTypeFontGenerator} to use, following the cascade:
-   * registry ID -> direct file -> registry default -> {@code null}.
-   */
-  private FreeTypeFontGenerator resolveGenerator() {
-    if (fontRegistryId != null) {
-      generator = FlixelFontRegistry.getGenerator(fontRegistryId);
-      ownsGenerator = false;
-      return generator;
-    }
-
-    if (fontFile != null) {
-      String path = fontFile.path();
-      if (!ownsGenerator || generator == null || !path.equals(currentGeneratorPath)) {
-        disposeOwnedGenerator();
-        generator = new FreeTypeFontGenerator(fontFile);
-        currentGeneratorPath = path;
-        ownsGenerator = true;
-      }
-      return generator;
-    }
-
-    FreeTypeFontGenerator defaultGen = FlixelFontRegistry.getDefaultGenerator();
-    if (defaultGen != null) {
-      generator = defaultGen;
-      ownsGenerator = false;
-      return generator;
-    }
-
-    return null;
-  }
-
   /** Recalculates the text layout and updates the sprite dimensions. */
   private void rebuildLayout() {
-    if (bitmapFont == null) {
+    if (font == null) {
+      resolveFont();
+    }
+    if (font == null) {
       return;
     }
 
     boolean fixedWidth = fieldWidth > 0 && !autoSize;
+    float layoutFieldWidth = fixedWidth ? fieldWidth : 0f;
+    layout.set(font, textBuffer, fontScale, layoutFieldWidth, wordWrap && fixedWidth,
+        alignment.align, letterSpacing);
 
-    if (fixedWidth) {
-      glyphLayout.setText(bitmapFont, textBuffer, Color.WHITE, fieldWidth,
-          alignment.gdxAlign, wordWrap);
-    } else if (alignment != Alignment.LEFT) {
-      glyphLayout.setText(bitmapFont, textBuffer);
-      float naturalWidth = glyphLayout.width;
-      if (naturalWidth > 0) {
-        glyphLayout.setText(bitmapFont, textBuffer, Color.WHITE, naturalWidth, alignment.gdxAlign, false);
-      }
-    } else {
-      glyphLayout.setText(bitmapFont, textBuffer);
+    // Alignment without a fixed field aligns within the natural width, matching the old
+    // behavior where centered auto-sized text still centers its shorter lines.
+    if (!fixedWidth && alignment != Alignment.LEFT && layout.getWidth() > 0) {
+      layout.set(font, textBuffer, fontScale, layout.getWidth(), false, alignment.align, letterSpacing);
     }
 
-    float w = fixedWidth ? fieldWidth : glyphLayout.width;
-    float h = (fieldHeight > 0 && !autoSize) ? fieldHeight : glyphLayout.height;
+    float w = fixedWidth ? fieldWidth : layout.getWidth();
+    float h = (fieldHeight > 0 && !autoSize) ? fieldHeight : layout.getHeight();
     setSize(w, h);
     setOriginCenter();
   }
@@ -1186,31 +939,29 @@ public class FlixelText extends FlixelSprite {
    *
    * @param batch The sprite batch.
    * @param x The x coordinate of the text's left edge.
-   * @param y The y coordinate of the text's <em>top</em> edge (BitmapFont convention).
+   * @param y The y coordinate of the text's <em>top</em> edge.
    */
-  private void drawTextContent(Batch batch, float x, float y) {
-    Color spriteColor = getGdxColor();
-
+  private void drawTextContent(FlixelBatch batch, float x, float y) {
     if (borderStyle != BorderStyle.NONE && borderColor.a > 0 && borderSize > 0) {
       drawBorder(batch, x, y);
     }
-
-    updateLayoutColors(spriteColor);
-    bitmapFont.draw(batch, glyphLayout, x, y);
+    batch.setColor(getColor());
+    layout.draw(batch, x, y);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   /** Draws the text border/outline by rendering the layout at offset positions. */
-  private void drawBorder(Batch batch, float x, float y) {
-    updateLayoutColors(borderColor);
+  private void drawBorder(FlixelBatch batch, float x, float y) {
+    batch.setColor(borderColor);
 
     switch (borderStyle) {
-      case SHADOW -> bitmapFont.draw(batch, glyphLayout, x + borderSize, y - borderSize);
+      case SHADOW -> layout.draw(batch, x + borderSize, y - borderSize);
 
       case OUTLINE_FAST -> {
-        bitmapFont.draw(batch, glyphLayout, x - borderSize, y);
-        bitmapFont.draw(batch, glyphLayout, x + borderSize, y);
-        bitmapFont.draw(batch, glyphLayout, x, y - borderSize);
-        bitmapFont.draw(batch, glyphLayout, x, y + borderSize);
+        layout.draw(batch, x - borderSize, y);
+        layout.draw(batch, x + borderSize, y);
+        layout.draw(batch, x, y - borderSize);
+        layout.draw(batch, x, y + borderSize);
       }
 
       case OUTLINE -> {
@@ -1218,50 +969,19 @@ public class FlixelText extends FlixelSprite {
         float step = borderSize / iterations;
         for (int i = 1; i <= iterations; i++) {
           float offset = step * i;
-          bitmapFont.draw(batch, glyphLayout, x - offset, y - offset);
-          bitmapFont.draw(batch, glyphLayout, x, y - offset);
-          bitmapFont.draw(batch, glyphLayout, x + offset, y - offset);
-          bitmapFont.draw(batch, glyphLayout, x - offset, y);
-          bitmapFont.draw(batch, glyphLayout, x + offset, y);
-          bitmapFont.draw(batch, glyphLayout, x - offset, y + offset);
-          bitmapFont.draw(batch, glyphLayout, x, y + offset);
-          bitmapFont.draw(batch, glyphLayout, x + offset, y + offset);
+          layout.draw(batch, x - offset, y - offset);
+          layout.draw(batch, x, y - offset);
+          layout.draw(batch, x + offset, y - offset);
+          layout.draw(batch, x - offset, y);
+          layout.draw(batch, x + offset, y);
+          layout.draw(batch, x - offset, y + offset);
+          layout.draw(batch, x, y + offset);
+          layout.draw(batch, x + offset, y + offset);
         }
       }
 
       default -> throw new IllegalArgumentException("Unexpected value: " + borderStyle);
     }
-  }
-
-  /**
-   * Updates the color of all glyphs in the cached layout. The layout stores colors
-   * as (glyphIndex, ABGR8888) pairs in {@link GlyphLayout#colors}.
-   */
-  private void updateLayoutColors(Color color) {
-    int colorBits = color.toIntBits();
-    for (int i = 1; i < glyphLayout.colors.size; i += 2) {
-      glyphLayout.colors.set(i, colorBits);
-    }
-  }
-
-  /** Releases font references; disposes only instance-owned FreeType bitmap fonts. */
-  private void disposeFont() {
-    if (bitmapFont != null && privateBitmapFontOwned) {
-      bitmapFont.dispose();
-    }
-    bitmapFont = null;
-    privateBitmapFontOwned = false;
-    disposeOwnedGenerator();
-  }
-
-  /** Disposes the generator only if this instance owns it (not borrowed from the registry). */
-  private void disposeOwnedGenerator() {
-    if (generator != null && ownsGenerator) {
-      generator.dispose();
-    }
-    generator = null;
-    currentGeneratorPath = null;
-    ownsGenerator = false;
   }
 
   /** Horizontal alignment options for text within its field. */
@@ -1270,10 +990,10 @@ public class FlixelText extends FlixelSprite {
     CENTER(FlixelAlign.CENTER),
     RIGHT(FlixelAlign.RIGHT);
 
-    final int gdxAlign;
+    final int align;
 
-    Alignment(int gdxAlign) {
-      this.gdxAlign = gdxAlign;
+    Alignment(int align) {
+      this.align = align;
     }
 
     public static Alignment fromInt(int value) {
@@ -1292,26 +1012,17 @@ public class FlixelText extends FlixelSprite {
         case RIGHT -> 2;
       };
     }
-
-    public int toGdxAlign() {
-      return switch (this) {
-        case LEFT -> FlixelAlign.LEFT;
-        case CENTER -> FlixelAlign.CENTER;
-        case RIGHT -> FlixelAlign.RIGHT;
-      };
-    }
   }
 
-  /** Border/outline styles for text rendering. */
+  /** Border rendering styles for text. */
   public enum BorderStyle {
-
     /** No border. */
     NONE,
-    /** A simple drop-shadow offset below and to the right of the text. */
+    /** A single offset copy drawn down-right, like a drop shadow. */
     SHADOW,
-    /** A full outline drawn in all 8 directions around each glyph. */
+    /** A full outline built from multiple passes; smoothest, most draw calls. */
     OUTLINE,
-    /** A faster outline using only the 4 cardinal directions. */
+    /** A four-direction outline; cheaper than {@link #OUTLINE} with slightly rougher corners. */
     OUTLINE_FAST
   }
 }
