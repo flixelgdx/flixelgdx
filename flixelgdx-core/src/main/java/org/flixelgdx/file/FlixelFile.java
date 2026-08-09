@@ -120,6 +120,50 @@ public interface FlixelFile {
   }
 
   /**
+   * Returns the size of this file in bytes.
+   *
+   * @return The file length, or {@code 0} when the file does not exist or the backend cannot
+   *     report sizes.
+   */
+  default long length() {
+    return 0L;
+  }
+
+  /**
+   * Writes text to this file, replacing any existing contents. Parent folders are created as
+   * needed on backends that support writing.
+   *
+   * <p>Only writable roots (such as {@link FlixelFiles#external external} and
+   * {@link FlixelFiles#local local}) support this; read-only roots return {@code false}.
+   *
+   * @param content The text to write.
+   * @return {@code true} when the write succeeded.
+   */
+  default boolean writeString(@NotNull String content) {
+    return false;
+  }
+
+  /**
+   * Writes raw bytes to this file, replacing any existing contents. Parent folders are created
+   * as needed on backends that support writing.
+   *
+   * @param content The bytes to write.
+   * @return {@code true} when the write succeeded.
+   */
+  default boolean writeBytes(byte @NotNull [] content) {
+    return false;
+  }
+
+  /**
+   * Deletes this file.
+   *
+   * @return {@code true} when the file existed and was removed.
+   */
+  default boolean delete() {
+    return false;
+  }
+
+  /**
    * Returns the backend's native file object for advanced interop, or {@code null} when there is
    * none.
    *

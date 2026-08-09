@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.asset;
 
-import com.badlogic.gdx.assets.AssetManager;
-
+import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,9 +32,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Asset manager interface for FlixelGDX.
  *
- * <p>This is the public seam used by sprites and other runtime systems. The default
- * implementation is {@link FlixelDefaultAssetManager}. Access via
- * {@link org.flixelgdx.Flixel#assets Flixel.assets}.
+ * <p>This is the public seam used by sprites and other runtime systems. It is a pure interface:
+ * each platform installs its own implementation (the shared JVM one for desktop and Android, a
+ * browser-based one for web), and a safe no-op ({@link FlixelNoopAssetManager}) is in place
+ * before any backend starts. Access via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
  *
  * <p><b>Basic workflow:</b>
  *
@@ -58,15 +59,27 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  *
  * <p>{@link #load(String)} infers the asset type from the file extension using the
- * per-manager loader registry ({@link #registerLoader}). Prefer it over explicit type
- * parameters for common asset types. Use {@link #registerLoader} to add custom extensions.
+ * per-manager loader registry ({@link #registerLoader}). On platforms that support
+ * multithreading, queued assets load asynchronously on worker threads and finish (for example,
+ * upload to the GPU) during {@link #update()} on the main thread.
  *
  * <p>Path keys are normalized (collapsed slashes, unified separators) via
  * {@link FlixelAssetPaths#normalizeAssetPath(String)} so duplicate slashes or backslashes
  * do not cause mismatches on web builds or other backends where paths are compared literally.
  *
- * <p><b>For advanced libGDX interop</b> (custom loaders, asset descriptors, raw API access),
- * use {@link #getManager()} to reach the underlying {@link AssetManager} directly.
+ * <p><b>Files, not strings.</b> Every read goes through the {@link FlixelFiles} seam: the
+ * manager turns each path into a {@link FlixelFile} with its file resolver (by default,
+ * {@code Flixel.files.internal(path)}). Games that must also run from inside a packaged JAR
+ * should install a resolver that switches the root type, which is slightly more to write but
+ * keeps every asset read consistent and safe:
+ *
+ * <pre>{@code
+ * // In your launcher, before Flixel.start(...):
+ * Flixel.assets.setFileResolver(path -> {
+ *   FlixelFile onDisk = Flixel.files.internal(path);
+ *   return onDisk.exists() ? onDisk : Flixel.files.classpath(path);
+ * });
+ * }</pre>
  */
 public interface FlixelAssetManager extends FlixelDestroyable {
 
@@ -126,26 +139,19 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   FlixelAsset<?> peek(@NotNull String path);
 
   /**
-   * Registers a loader for a file extension. The {@code rawType} is what libGDX's
-   * {@link AssetManager} will load under the hood (e.g. {@link com.badlogic.gdx.graphics.Texture}
-   * for image files). The {@code loader} wraps the path into a {@link FlixelAsset} handle.
+   * Registers a loader for a file extension.
    *
    * <p>Example: adding a custom config extension that loads text:
    *
    * <pre>{@code
-   * Flixel.assets.registerLoader(".cfg", String.class,
-   *     (assets, path) -> new FlixelDefaultAsset<>(assets, path, String.class));
+   * Flixel.assets.registerLoader(".cfg", myConfigLoader);
    * }</pre>
    *
    * @param extension File extension with or without a leading dot (e.g. {@code ".png"} or {@code "png"}).
-   * @param rawType The libGDX raw type to load.
-   * @param loader Creates handles for paths with this extension.
+   * @param loader Loads content and creates handles for paths with this extension.
    * @param <T> The wrapper type the loader produces.
    */
-  <T> void registerLoader(
-      @NotNull String extension,
-      @NotNull Class<?> rawType,
-      @NotNull FlixelAssetLoader<T> loader);
+  <T> void registerLoader(@NotNull String extension, @NotNull FlixelAssetLoader<T> loader);
 
   /**
    * Removes a previously registered loader for the given extension.
@@ -157,7 +163,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   /**
    * Registers a caller-constructed asset handle directly with the manager cache. Use this for
    * assets created outside the normal loading pipeline (e.g. a texture built from a
-   * {@link com.badlogic.gdx.graphics.Pixmap}).
+   * {@link org.flixelgdx.graphics.FlixelImage FlixelImage}).
    *
    * <p>The handle is keyed by {@link FlixelAsset#getPath()}. If a handle is already registered
    * under that key, it is replaced.
@@ -177,14 +183,16 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   String allocateSyntheticKey();
 
   /**
-   * Processes one loading task on the underlying {@link AssetManager}.
+   * Advances the loading pipeline: finishes assets whose background work completed (uploading
+   * textures, caching decoded audio) and, on single-threaded platforms, loads the next queued
+   * asset. Call once per frame in a loading state.
    *
    * @return {@code true} when all queued loading is finished.
    */
   boolean update();
 
   /**
-   * Processes loading for up to {@code millis} milliseconds.
+   * Advances the loading pipeline for up to {@code millis} milliseconds.
    *
    * @param millis Maximum time to spend updating.
    * @return {@code true} when all queued loading is finished.
@@ -231,7 +239,8 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   void finishLoadingAsset(@NotNull String path);
 
   /**
-   * Unloads the asset at {@code path} from the underlying libGDX {@link AssetManager}.
+   * Unloads the raw content cached for {@code path}, destroying GPU or native resources it
+   * holds. The wrapper handle, if any, stays registered and will reload on next use.
    *
    * @param path Asset key to unload.
    */
@@ -239,7 +248,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
 
   /**
    * Returns multi-line diagnostics: every cached handle with its path, type, reference count,
-   * persist flag, and whether the underlying libGDX asset is loaded.
+   * persist flag, and whether its content is loaded.
    *
    * @return Diagnostic string; never {@code null}.
    */
@@ -262,8 +271,8 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * Returns the default {@link FlixelAsset#isPersist()} value assigned to newly created handles.
    *
    * <p>When {@code true}, new handles survive {@link #clearNonPersist()} when unreferenced.
-   * Owned assets (e.g. textures created from a {@link com.badlogic.gdx.graphics.Pixmap}) always
-   * use {@code persist = false} regardless of this setting.
+   * Owned assets (e.g. textures created from a {@link org.flixelgdx.graphics.FlixelImage
+   * FlixelImage}) always use {@code persist = false} regardless of this setting.
    *
    * @return The global persist default.
    */
@@ -294,26 +303,6 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   void setAssetMode(@NotNull FlixelAssetMode mode);
 
   /**
-   * Resolves an internal audio path to an absolute filesystem path suitable for native backends.
-   * Results are cached after the first call.
-   *
-   * @param path Internal asset path.
-   * @return Resolved absolute path; never {@code null}.
-   */
-  @NotNull
-  String resolveAudioPath(@NotNull String path);
-
-  /**
-   * Converts an internal path to an absolute filesystem path, extracting to a temp file when the
-   * asset lives inside a JAR.
-   *
-   * @param path Internal asset path.
-   * @return Absolute path; never {@code null}.
-   */
-  @NotNull
-  String extractAssetPath(@NotNull String path);
-
-  /**
    * Called by {@link FlixelAsset#release()} when a handle's reference count reaches zero.
    *
    * <p>In {@link FlixelAssetMode#AGGRESSIVE} mode the default implementation triggers an
@@ -325,68 +314,84 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   default void onAssetReleased(@NotNull FlixelAsset<?> handle) {}
 
   /**
-   * Returns the underlying libGDX {@link AssetManager} for advanced use such as custom loaders,
-   * asset descriptors, or raw API access not covered by this interface.
+   * Returns the finished raw content cached for {@code path}, or {@code null} when it has not
+   * been loaded yet.
    *
-   * @return The underlying manager; never {@code null}.
+   * <p>This is the storage half of the loader pipeline: wrapper handles such as
+   * {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} call it to look up their content
+   * (a texture, a string, decoded audio) without knowing how it was produced.
+   *
+   * @param path Normalized asset path.
+   * @return The raw content, or {@code null} when not loaded.
+   */
+  @Nullable
+  Object getRaw(@NotNull String path);
+
+  /**
+   * Loads the asset at {@code path} synchronously right now and returns its raw content.
+   *
+   * <p>This is the mid-frame fallback used by wrapper handles when their content was never
+   * queued; it stalls the frame for as long as the load takes. Prefer {@link #load(String)}
+   * plus {@link #update()} in a loading state.
+   *
+   * @param path Normalized asset path.
+   * @return The finished raw content; never {@code null}.
+   * @throws IllegalArgumentException if no loader is registered for the path's extension.
    */
   @NotNull
-  AssetManager getManager();
+  Object loadRawSync(@NotNull String path);
 
   /**
-   * Registers a KTX2/Basis Universal texture loader so {@code .png} requests transparently use a
-   * compressed {@code .ktx2} sibling when one exists next to the requested path.
+   * Turns an asset path into the {@link FlixelFile} it will be read from, using the installed
+   * file resolver.
    *
-   * <p>{@link org.flixelgdx.FlixelGame#create() FlixelGame.create()} calls this automatically on
-   * every backend, after the platform application object has created a GL context (this method
-   * queries {@code Gdx.gl} for supported compressed texture formats, so it cannot run any
-   * earlier). Calling it on a backend without the Basis Universal transcoder natives available is
-   * harmless but pointless, since {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} only
-   * looks for a {@code .ktx2} sibling after this has been called, and no {@code .ktx2} files exist
-   * unless the {@code org.flixelgdx.basisu} Gradle plugin compressed them into the build.
-   * Idempotent: calling it more than once has no additional effect.
-   *
-   * @see #isCompressedTexturesEnabled()
+   * @param path Normalized asset path.
+   * @return The file to read; never {@code null}, though it may not {@link FlixelFile#exists() exist}.
    */
-  void enableCompressedTextures();
+  @NotNull
+  FlixelFile resolveFile(@NotNull String path);
 
   /**
-   * Returns whether {@link #enableCompressedTextures()} has been called on this manager.
+   * Installs the function that turns asset paths into {@link FlixelFile}s.
    *
-   * @return {@code true} if compressed {@code .ktx2} textures are recognized by this manager.
+   * <p>The default resolver reads from {@code Flixel.files.internal(path)}. Games that also run
+   * packaged (from a JAR or similar) should install a helper that switches the root type when
+   * the on-disk file is missing; see the class Javadoc for an example.
+   *
+   * @param resolver The resolver to install, or {@code null} to restore the default.
    */
-  boolean isCompressedTexturesEnabled();
+  void setFileResolver(@Nullable FlixelAssetFileResolver resolver);
 
   /**
-   * Registers the platform installer that adds the KTX2 (Basis Universal) texture loader.
-   *
-   * <p>Called once by a platform launcher that bundles the basisu natives (the desktop and
-   * Android launchers do this). The core module must never reference the loader directly:
-   * Basis Universal disposes native byte buffers through
-   * {@code BufferUtils.isUnsafeByteBuffer(...)}, a method TeaVM cannot compile, so a direct
-   * reference would fail the entire web build during reachability analysis. Routing the
-   * registration through this installer keeps the compressed-texture code out of the shared
-   * module, so platforms without it (such as web) simply leave the feature unsupported.
-   *
-   * @param installer The installer to run when compressed textures are enabled, or
-   *     {@code null} to leave them unsupported.
-   */
-  void setKtx2LoaderInstaller(@Nullable FlixelKtx2LoaderInstaller installer);
-
-  /**
-   * Resolves {@code path} to the key that should be used with the underlying libGDX
-   * {@link AssetManager} for a texture load, returning a {@code .ktx2} sibling instead of
-   * {@code path} when {@link #enableCompressedTextures()} has been called and that sibling
-   * exists. Every part of the framework that needs to know whether a texture path has a
+   * Resolves {@code path} to the key actually loaded for a texture request, returning a
+   * {@code .ktx2} sibling instead of {@code path} when compressed textures are enabled and that
+   * sibling exists. Every part of the framework that needs to know whether a texture path has a
    * compressed variant (loading, unloading, checking load state) should go through this method
    * rather than re-implementing the check, so the compressed/plain decision is made in exactly
    * one place. Results are cached, since a path's compressed-sibling status never changes at
    * runtime.
    *
    * @param path Normalized asset path.
-   * @return The path to use with the underlying {@link AssetManager}.
-   * @see #enableCompressedTextures()
+   * @return The key to load for this texture.
+   * @see #setCompressedTexturesEnabled(boolean)
    */
   @NotNull
   String resolveTexturePath(@NotNull String path);
+
+  /**
+   * Turns transparent {@code .ktx2} sibling substitution on or off. Enabled by default on
+   * platforms whose graphics backend can transcode compressed textures.
+   *
+   * @param enabled {@code true} to look for {@code .ktx2} siblings next to texture paths.
+   */
+  default void setCompressedTexturesEnabled(boolean enabled) {}
+
+  /**
+   * Returns whether compressed {@code .ktx2} sibling textures are recognized by this manager.
+   *
+   * @return {@code true} if {@code .ktx2} siblings are used when present.
+   */
+  default boolean isCompressedTexturesEnabled() {
+    return false;
+  }
 }

@@ -23,24 +23,37 @@
  */
 package org.flixelgdx.asset;
 
-import com.badlogic.gdx.assets.AssetManager;
-
+import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Installs the KTX2 (Basis Universal) texture loader onto a libGDX {@link AssetManager}.
+ * Turns an asset path into the {@link FlixelFile} it should be read from.
  *
- * <p>Implemented by platform launchers that bundle the basisu natives and passed to
- * {@link FlixelAssetManager#setKtx2LoaderInstaller(FlixelKtx2LoaderInstaller)}, so this shared module never
- * references Basis Universal directly (which would break the TeaVM web build).
+ * <p>The default resolver used by asset managers is {@code Flixel.files.internal(path)}, which
+ * reads from the game's asset folder on disk. Install a custom resolver with
+ * {@link FlixelAssetManager#setFileResolver(FlixelAssetFileResolver)} when your game also needs
+ * to run packaged inside a JAR, where assets live on the classpath instead:
+ *
+ * <pre>{@code
+ * Flixel.assets.setFileResolver(path -> {
+ *   FlixelFile onDisk = Flixel.files.internal(path);
+ *   return onDisk.exists() ? onDisk : Flixel.files.classpath(path);
+ * });
+ * }</pre>
+ *
+ * <p>Writing the helper once is slightly more work than passing raw strings around, but it is
+ * safer: every asset read in the framework flows through the same decision, so a path that
+ * works in development keeps working in the packaged build.
  */
 @FunctionalInterface
-public interface FlixelKtx2LoaderInstaller {
+public interface FlixelAssetFileResolver {
 
   /**
-   * Registers the {@code .ktx2} loader on the given manager.
+   * Resolves an asset path to a readable file.
    *
-   * @param manager The libGDX asset manager to register the loader on.
+   * @param path Normalized asset path (e.g. {@code "images/player.png"}).
+   * @return The file to read; never {@code null}, though it may not exist.
    */
-  void install(@NotNull AssetManager manager);
+  @NotNull
+  FlixelFile resolve(@NotNull String path);
 }
