@@ -562,7 +562,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       }
       cam.setZoom(newZoom);
     }
-    cam.applyLibCameraTransform();
+    cam.applyCameraTransform();
 
     if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
@@ -614,7 +614,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // Make sure the camera matrix reflects the latest scroll / zoom values before we
     // unproject. handleInspectCameraTools also calls this (it runs first when both are active),
     // but calling it here too is cheap and guarantees correctness if the call order ever shifts.
-    cam.applyLibCameraTransform();
+    cam.applyCameraTransform();
 
     // The viewport's unproject returns coordinates in VIEW space (the same space the batch
     // draws into). Sprite hitboxes live in world space (their x and y fields), so we need to

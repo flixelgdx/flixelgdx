@@ -244,20 +244,6 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     members.end();
   }
 
-  /** Sets a color tint on the group and propagates it to all current members. */
-  @Override
-  public void setColor(@NotNull FlixelColor tint) {
-    super.setColor(tint);
-    FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.getSize(); i < n; i++) {
-      FlixelSprite s = items[i];
-      if (s != null) {
-        s.setColor(tint);
-      }
-    }
-    members.end();
-  }
-
   /** Sets a uniform scale on the group and propagates it to all current members. */
   @Override
   public void setScale(float scaleXY) {

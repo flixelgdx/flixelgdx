@@ -15,12 +15,7 @@ tasks.processResources {
 }
 
 dependencies {
-  api(libs.gdx)
-  api(libs.gdx.freetype)
-  api(libs.gdx.controllers.core)
-  api(libs.basisu.gdx)
-  api(libs.anim8)
-  api(libs.utils)
-
+  // The core module is backend-agnostic: it depends on no GPU or platform library. All rendering,
+  // input, audio, and file access flow through the seams the platform backends implement.
   implementation(libs.jetbrains.annotations)
 }

@@ -23,7 +23,10 @@
  */
 package org.flixelgdx.animation;
 
+import org.flixelgdx.collections.FlixelArray;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
 
 /**
  * A time-indexed sequence of key frames: give it a running state time and it hands back the
@@ -61,6 +64,29 @@ public final class FlixelAnimation<T> {
   public FlixelAnimation(float frameDuration, T @NotNull [] keyFrames) {
     this.frameDuration = frameDuration;
     this.keyFrames = keyFrames;
+  }
+
+  /**
+   * Creates an animation from a {@link FlixelArray}, copying its frames into a right-sized array.
+   *
+   * @param frameDuration Seconds each frame is shown.
+   * @param keyFrames The ordered frames; copied to the exact size.
+   */
+  public FlixelAnimation(float frameDuration, @NotNull FlixelArray<T> keyFrames) {
+    this(frameDuration, keyFrames, PlayMode.NORMAL);
+  }
+
+  /**
+   * Creates an animation from a {@link FlixelArray} with an explicit play mode.
+   *
+   * @param frameDuration Seconds each frame is shown.
+   * @param keyFrames The ordered frames; copied to the exact size.
+   * @param playMode How the frames are walked over time.
+   */
+  public FlixelAnimation(float frameDuration, @NotNull FlixelArray<T> keyFrames, @NotNull PlayMode playMode) {
+    this.frameDuration = frameDuration;
+    this.keyFrames = Arrays.copyOf(keyFrames.getItems(), keyFrames.getSize());
+    this.playMode = playMode;
   }
 
   /**

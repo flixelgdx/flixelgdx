@@ -47,6 +47,7 @@ public enum FlixelUnsupportedBatch implements FlixelBatch {
 
   private final FlixelColor color = new FlixelColor();
   private final FlixelMatrix projection = new FlixelMatrix();
+  private final FlixelMatrix transform = new FlixelMatrix();
 
   @Nullable
   private FlixelShader shader;
@@ -140,5 +141,16 @@ public enum FlixelUnsupportedBatch implements FlixelBatch {
   @Override
   public void setProjection(@NotNull FlixelMatrix projection) {
     this.projection.set(projection);
+  }
+
+  @NotNull
+  @Override
+  public FlixelMatrix getTransform() {
+    return transform;
+  }
+
+  @Override
+  public void setTransform(@NotNull FlixelMatrix transform) {
+    this.transform.set(transform);
   }
 }

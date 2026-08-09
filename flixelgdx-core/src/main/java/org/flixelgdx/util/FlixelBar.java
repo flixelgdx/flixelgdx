@@ -336,7 +336,7 @@ public class FlixelBar extends FlixelSprite {
    * Sets the tint for the empty (background) strip when no {@link #setEmptyGraphic(FlixelFrame)} is set.
    * Clears any empty graphic region so the bar uses solid color for the background again.
    *
-   * @param c libGDX color; not null.
+   * @param c The color; not null.
    * @return {@code this} for chaining.
    */
   public FlixelBar setEmptyColor(@NotNull FlixelColor c) {
@@ -346,36 +346,16 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Same as {@link #setEmptyColor(FlixelColor)} using a {@link FlixelColor} object.
-   *
-   * @param c Engine color wrapper; not null.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setEmptyColor(@NotNull FlixelColor c) {
-    return setEmptyColor(Objects.requireNonNull(c).getColor());
-  }
-
-  /**
    * Sets the tint for the filled portion when no {@link #setFilledGraphic(FlixelFrame)} or gradient is used,
    * unless threshold coloring overrides the fill color. Clears any filled graphic region.
    *
-   * @param c LibGDX color; not null.
+   * @param c The color; not null.
    * @return {@code this} for chaining.
    */
   public FlixelBar setFilledColor(@NotNull FlixelColor c) {
     filledColor.set(Objects.requireNonNull(c));
     filledRegion = null;
     return this;
-  }
-
-  /**
-   * Same as {@link #setFilledColor(FlixelColor)} using {@link FlixelColor}.
-   *
-   * @param c Engine color wrapper; not null.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setFilledColor(@NotNull FlixelColor c) {
-    return setFilledColor(Objects.requireNonNull(c).getColor());
   }
 
   /**
@@ -419,19 +399,6 @@ public class FlixelBar extends FlixelSprite {
     this.gradientEnd = end != null ? new FlixelColor(end) : null;
     rebuildGradientIfNeeded();
     return this;
-  }
-
-  /**
-   * Same as {@link #setGradient(FlixelColor, FlixelColor)} using {@link FlixelColor}.
-   *
-   * @param start Start color, or {@code null} to help disable the gradient.
-   * @param end End color, or {@code null} to help disable the gradient.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setGradient(@Nullable FlixelColor start, @Nullable FlixelColor end) {
-    FlixelColor s = start != null ? start.getColor() : null;
-    FlixelColor e = end != null ? end.getColor() : null;
-    return setGradient(s, e);
   }
 
   /**

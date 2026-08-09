@@ -362,7 +362,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * ready, so it is not necessary to call it manually in most cases. However, it can be overridden
    * to perform custom initialization when the game is created.
    */
-  @Override
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
 
@@ -734,7 +733,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /**
    * Do not override this method. Override {@link #onFocusLost()} instead.
    */
-  @Override
   public final void pause() {
     onFocusLost();
   }
@@ -742,7 +740,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /**
    * Do not override this method. Override {@link #onFocusGained()} instead.
    */
-  @Override
   public final void resume() {
     onFocusGained();
   }
@@ -873,7 +870,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /** @see #destroy() */
-  @Override
   public final void dispose() {
     destroy();
   }

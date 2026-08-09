@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelTouchListener;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.Nullable;
 
 /**

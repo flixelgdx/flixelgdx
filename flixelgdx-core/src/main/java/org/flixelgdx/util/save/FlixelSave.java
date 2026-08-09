@@ -139,7 +139,7 @@ public class FlixelSave implements FlixelDestroyable {
     try {
       FlixelJsonValue root = FlixelJson.parse(file.readString());
       readObjectInto(root, data);
-      status = data.isEmpty() ? FlixelSaveStatus.EMPTY : FlixelSaveStatus.LOADED;
+      status = data.isEmpty() ? FlixelSaveStatus.EMPTY : FlixelSaveStatus.OK;
     } catch (Exception e) {
       Flixel.error("Save", "Could not parse save file '" + file.getPath() + "'.", e);
       status = FlixelSaveStatus.ERROR;
@@ -158,7 +158,7 @@ public class FlixelSave implements FlixelDestroyable {
     FlixelString out = new FlixelString(256);
     writeValue(out, data);
     boolean ok = resolveFile().writeString(out.toString());
-    status = ok ? FlixelSaveStatus.SAVED : FlixelSaveStatus.ERROR;
+    status = ok ? FlixelSaveStatus.OK : FlixelSaveStatus.ERROR;
     return ok;
   }
 

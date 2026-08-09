@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.util.FlixelColor;
 
 /**
  * A {@code FlixelSubState} can be opened inside a {@link FlixelState}. By default, it

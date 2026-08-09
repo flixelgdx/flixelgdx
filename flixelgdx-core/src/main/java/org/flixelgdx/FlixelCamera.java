@@ -415,7 +415,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     updateFlash(elapsed);
     updateFade(elapsed);
     updateShake(elapsed);
-    applyLibCameraTransform();
+    applyCameraTransform();
   }
 
   /**
@@ -1089,11 +1089,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   private float scrollXForFollowCenter(float tx, float sx) {
-    return (tx - getViewMarginX() - camera.viewportWidth / (2f * zoom)) / sx;
+    return (tx - getViewMarginX() - viewport.getWorldWidth() / (2f * zoom)) / sx;
   }
 
   private float scrollYForFollowCenter(float ty, float sy) {
-    return (ty - getViewMarginY() - camera.viewportHeight / (2f * zoom)) / sy;
+    return (ty - getViewMarginY() - viewport.getWorldHeight() / (2f * zoom)) / sy;
   }
 
   private float scrollXForFollowEdge(float numerator, float sx) {
@@ -1121,8 +1121,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     float ty = target.getY() + target.getHeight() / 2f + targetOffsetY + followLeadY;
 
     if (style == FollowStyle.SCREEN_BY_SCREEN) {
-      float vw = camera.viewportWidth / zoom;
-      float vh = camera.viewportHeight / zoom;
+      float vw = viewport.getWorldWidth() / zoom;
+      float vh = viewport.getWorldHeight() / zoom;
       float viewLeft = scrollX + getViewMarginX();
       float viewTop = scrollY + getViewMarginY();
       if (tx < viewLeft) {
@@ -1182,8 +1182,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       return;
     }
 
-    float vw = camera.viewportWidth / zoom;
-    float vh = camera.viewportHeight / zoom;
+    float vw = viewport.getWorldWidth() / zoom;
+    float vh = viewport.getWorldHeight() / zoom;
     float w, h;
     switch (style) {
       case LOCKON -> {
@@ -1733,13 +1733,6 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /** {@inheritDoc} */
   @Override
-  public int getColor() {
-    return color.getColor();
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  @NotNull
   @NotNull
   public FlixelColor getColor() {
     return color;

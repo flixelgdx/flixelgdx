@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.utils.Array;
-
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.math.FlixelAffine;
@@ -82,7 +81,7 @@ public final class FlixelAnimateRig {
    * either way.
    */
   @NotNull
-  public final Array<FlixelFrame> atlas;
+  public final FlixelArray<FlixelFrame> atlas;
 
   /** Map of clip name (for example {@code "Idle"}) to its baked {@link Clip}. */
   @NotNull
@@ -131,7 +130,7 @@ public final class FlixelAnimateRig {
    * @param anchorHeight The height of the anchor bounding box in pixels.
    */
   FlixelAnimateRig(
-      @NotNull Array<FlixelFrame> atlas,
+      @NotNull FlixelArray<FlixelFrame> atlas,
       @NotNull FlixelMap<String, Clip> clips,
       @NotNull String anchorClipName,
       float anchorMinX,

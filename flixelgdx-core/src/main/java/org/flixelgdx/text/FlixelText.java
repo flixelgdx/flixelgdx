@@ -900,8 +900,8 @@ public class FlixelText extends FlixelSprite {
       }
       cam = Flixel.cameras.first();
     }
-    float worldH = cam.getWorldHeight();
-    float screenH = cam.getScreenHeight();
+    float worldH = cam.getViewport().getWorldHeight();
+    float screenH = cam.getViewport().getScreenHeight();
     if (worldH <= 0f || screenH <= 0f) {
       return 1f;
     }
