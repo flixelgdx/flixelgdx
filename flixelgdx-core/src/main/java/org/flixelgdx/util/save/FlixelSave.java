@@ -23,66 +23,51 @@
  */
 package org.flixelgdx.util.save;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Preferences;
-import com.badlogic.gdx.utils.Json;
-import com.badlogic.gdx.utils.ObjectMap;
-
+import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.json.FlixelJson;
+import org.flixelgdx.json.FlixelJsonValue;
+import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-
 /**
- * Utility class that provides a high-level, cross-platform mechanism for saving and
- * loading persistent game data within the FlixelGDX framework using libGDX's Preferences API.
+ * A bound, named key-value save store that persists between sessions.
  *
- * <p>This utility abstracts away the complexities of serialization and platform-specific details,
- * allowing you to bind to a uniquely identified save slot, manipulate a structured {@link ObjectMap}
- * of key-value pairs (which can contain nested structures compatible with libGDX's {@link Json} API),
- * and safely flush or clear saved progress.
+ * <p>Bind to a uniquely identified save slot, manipulate the structured {@link #data} map, and
+ * flush changes to disk. Saves serialize to a JSON file through the
+ * {@link org.flixelgdx.file.FlixelFiles Flixel.files} seam's {@code local} root, so the same
+ * code works on every platform that can write files (web backends map the root to browser
+ * storage).
  *
- * <h2>Key Features:</h2>
- * <ul>
- *     <li><b>Slot-based Save Management:</b> Bind to a specific save "slot" using {@link #bind}, supporting multiple profiles or manual slots.</li>
- *     <li><b>Automatic JSON Serialization:</b> All data stored is serialized to JSON transparently via {@link Json}, enabling nested objects, numeric arrays, etc.</li>
- *     <li><b>Safe</b>: Handles error states and empty preferences files systematically. Check {@link #getStatus()} and {@link #isBound()} for reliability.</li>
- *     <li><b>Merging and Flushing:</b> Easily merge external data with conflict resolution, and flush changes immediately to disk.</li>
- *     <li><b>Destroy/Clear:</b> Data can be programmatically wiped for a "reset save" experience.</li>
- * </ul>
+ * <p>Supported value types are {@link String}, {@link Number}, {@link Boolean}, nested
+ * {@link FlixelMap}{@code <String, Object>} objects, and {@link FlixelArray}{@code <Object>}
+ * lists. Anything else is stored via {@code toString()}.
  *
- * <h2>Typical Usage:</h2>
+ * <p>Example:
+ *
  * <pre>{@code
- * FlixelSave save = new FlixelSave();
- * save.bind("savefile", null); // or ("savefile", "slot1")
- * save.data.put("score", 12345);
- * save.flush();
- *
- * int highScore = (int)save.data.get("score", 0);
+ * Flixel.save.bind("MyGame", "slot1");
+ * int best = Flixel.save.getInt("highScore", 0);
+ * if (score > best) {
+ *   Flixel.save.data.put("highScore", score);
+ *   Flixel.save.flush();
+ * }
  * }</pre>
- *
- * <h2>Threading and Platform Notes:</h2>
- * <ul>
- *     <li>This class operates on the main thread. Use after libGDX's application context is initialized.</li>
- *     <li>Data is written using libGDX's {@link Preferences#flush()} to work in harmony with the libGDX ecosystem.</li>
- *     <li>Intended for small to medium-sized game progress data, not binary assets or large files.</li>
- * </ul>
- *
- * @see com.badlogic.gdx.Preferences
- * @see com.badlogic.gdx.utils.Json
- * @see com.badlogic.gdx.utils.ObjectMap
- * @see FlixelSaveStatus
  */
-
 public class FlixelSave implements FlixelDestroyable {
 
-  private static final String DATA_KEY = "flixelgdx.save.data";
+  /** Folder under the local file root where save files live. */
+  private static final String SAVE_FOLDER = "flixel-saves/";
 
-  private final Json json = new Json();
-
-  @Nullable
-  private Preferences preferences;
+  /**
+   * Root data object. Read and write entries directly, then call {@link #flush()} to persist.
+   */
+  @NotNull
+  public final FlixelMap<String, Object> data = new FlixelMap<>();
 
   @NotNull
   private String boundName = "";
@@ -93,48 +78,33 @@ public class FlixelSave implements FlixelDestroyable {
   @NotNull
   private FlixelSaveStatus status = FlixelSaveStatus.EMPTY;
 
-  /**
-   * Root data object (JSON-compatible tree via libGDX {@link ObjectMap}).
-   *
-   * <p>This is where all of your save data is stored. Use this to set any kind of
-   * data you want to preserve after the game is closed. Remember to call {@link #flush()}
-   * to actually save the data to disk!
-   */
-  @NotNull
-  public final ObjectMap<String, Object> data = new ObjectMap<>();
-
   private boolean bound;
 
   /**
-   * Binds to local preferences. {@code slot} selects a separate file name suffix for multiple slots.
+   * Binds this save object to a named file (and optional slot), then loads any existing data.
    *
-   * @param name Primary preferences name (no spaces; safe for file names).
-   * @param slot Optional suffix, e.g. {@code "slot1"} -> {@code name_slot1}.
-   * @return {@code true} if bind succeeded, and data was loaded (or empty new save).
+   * @param name The save name, typically your game's name.
+   * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
+   * @return {@code true} when the bind succeeded.
    */
   public boolean bind(@NotNull String name, @Nullable String slot) {
     if (name.isEmpty()) {
-      status = FlixelSaveStatus.ERROR;
-      bound = false;
       return false;
     }
     boundName = name;
     boundSlot = slot;
-    String prefName = slot != null && !slot.isEmpty() ? name + "_" + slot : name;
-    preferences = Gdx.app.getPreferences(prefName);
     bound = true;
-    status = FlixelSaveStatus.OK;
     load();
     return true;
   }
 
   public boolean isBound() {
-    return bound && preferences != null;
+    return bound;
   }
 
-  /** Returns whether this save is bound to a named preferences file and ready to use. */
+  /** Returns whether this save object is bound to a file. */
   public boolean getBound() {
-    return bound && preferences != null;
+    return bound;
   }
 
   @NotNull
@@ -152,123 +122,251 @@ public class FlixelSave implements FlixelDestroyable {
     return status;
   }
 
-  /** Loads the last saved data from disk and refreshes the {@link #data} map. */
+  /**
+   * Reloads {@link #data} from disk, replacing any unsaved changes.
+   */
   public void load() {
-    if (preferences == null) {
+    data.clear();
+    if (!bound) {
+      status = FlixelSaveStatus.EMPTY;
       return;
     }
-    data.clear();
-    String raw = preferences.getString(DATA_KEY, "");
-    if (raw.isEmpty()) {
-      legacyMergeFlatStringKeys();
+    FlixelFile file = resolveFile();
+    if (!file.exists()) {
+      status = FlixelSaveStatus.EMPTY;
       return;
     }
     try {
-      @SuppressWarnings("unchecked")
-      ObjectMap<String, Object> parsed = json.fromJson(ObjectMap.class, raw);
-      if (parsed != null) {
-        data.putAll(parsed);
-      }
+      FlixelJsonValue root = FlixelJson.parse(file.readString());
+      readObjectInto(root, data);
+      status = data.isEmpty() ? FlixelSaveStatus.EMPTY : FlixelSaveStatus.LOADED;
     } catch (Exception e) {
+      Flixel.error("Save", "Could not parse save file '" + file.getPath() + "'.", e);
       status = FlixelSaveStatus.ERROR;
     }
-
   }
 
   /**
-   * Writes {@link #data} to preferences and flushes.
+   * Writes {@link #data} to disk.
    *
-   * @return {@code true} if the data was successfully written to disk.
+   * @return {@code true} when the write succeeded.
    */
   public boolean flush() {
-    if (preferences == null) {
+    if (!bound) {
       return false;
     }
-    try {
-      String serialized = json.toJson(data);
-      preferences.putString(DATA_KEY, serialized);
-      preferences.flush();
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
+    FlixelString out = new FlixelString(256);
+    writeValue(out, data);
+    boolean ok = resolveFile().writeString(out.toString());
+    status = ok ? FlixelSaveStatus.SAVED : FlixelSaveStatus.ERROR;
+    return ok;
   }
 
   /**
-   * Erases the save data and flushes automatically.
+   * Clears {@link #data} and deletes the save file.
    *
-   * @return {@code true} if the data was successfully erased and flushed.
+   * @return {@code true} when the file was removed (or never existed).
    */
   public boolean erase() {
-    if (preferences == null) {
+    data.clear();
+    if (!bound) {
       return false;
     }
-    data.clear();
-    preferences.clear();
-    preferences.flush();
-    return true;
+    FlixelFile file = resolveFile();
+    boolean ok = !file.exists() || file.delete();
+    status = FlixelSaveStatus.EMPTY;
+    return ok;
   }
 
   public boolean isEmpty() {
-    return data.size == 0;
+    return data.isEmpty();
   }
 
-  /** Returns whether this save contains no stored data. */
+  /** Returns whether the bound save currently holds no data. */
   public boolean getEmpty() {
-    return data.size == 0;
+    return data.isEmpty();
+  }
+
+  /**
+   * Convenience typed read.
+   *
+   * @param key The entry key.
+   * @param defaultValue Returned when the entry is absent or not a number.
+   * @return The stored int or the default.
+   */
+  public int getInt(@NotNull String key, int defaultValue) {
+    Object value = data.get(key);
+    return value instanceof Number number ? number.intValue() : defaultValue;
+  }
+
+  /**
+   * Convenience typed read.
+   *
+   * @param key The entry key.
+   * @param defaultValue Returned when the entry is absent or not a number.
+   * @return The stored float or the default.
+   */
+  public float getFloat(@NotNull String key, float defaultValue) {
+    Object value = data.get(key);
+    return value instanceof Number number ? number.floatValue() : defaultValue;
+  }
+
+  /**
+   * Convenience typed read.
+   *
+   * @param key The entry key.
+   * @param defaultValue Returned when the entry is absent or not a boolean.
+   * @return The stored boolean or the default.
+   */
+  public boolean getBool(@NotNull String key, boolean defaultValue) {
+    Object value = data.get(key);
+    return value instanceof Boolean bool ? bool : defaultValue;
+  }
+
+  /**
+   * Convenience typed read.
+   *
+   * @param key The entry key.
+   * @param defaultValue Returned when the entry is absent.
+   * @return The stored string or the default.
+   */
+  public String getString(@NotNull String key, @Nullable String defaultValue) {
+    Object value = data.get(key);
+    return value instanceof String string ? string : defaultValue;
+  }
+
+  /**
+   * Merges entries from another map into {@link #data}.
+   *
+   * @param source The entries to merge.
+   * @param overwrite When {@code true}, existing keys are replaced.
+   * @param flushAfter When {@code true}, {@link #flush()} runs after merging.
+   * @return {@code true} when a flush was requested and succeeded, or no flush was requested.
+   */
+  public boolean mergeData(@NotNull FlixelMap<String, Object> source, boolean overwrite, boolean flushAfter) {
+    for (FlixelMap.Entry<String, Object> e : source.entries()) {
+      if (overwrite || !data.containsKey(e.key)) {
+        data.put(e.key, e.value);
+      }
+    }
+    return !flushAfter || flush();
   }
 
   @Override
   public void destroy() {
     data.clear();
-    preferences = null;
     bound = false;
     boundName = "";
     boundSlot = null;
     status = FlixelSaveStatus.EMPTY;
   }
 
-  /**
-   * Merges another data map into this save (optionally overwriting keys).
-   *
-   * @param source The data map to merge into this save.
-   * @param overwrite Whether to overwrite existing keys.
-   * @param flushAfter Whether to flush the data after merging.
-   * @return {@code true} if data changed and flush succeeded when {@code flushAfter} is true.
-   */
-  public boolean mergeData(@NotNull ObjectMap<String, Object> source, boolean overwrite, boolean flushAfter) {
-    boolean changed = false;
-    for (ObjectMap.Entry<String, Object> e : source.entries()) {
-      if (overwrite || !data.containsKey(e.key)) {
-        data.put(e.key, e.value);
-        changed = true;
-      }
-    }
-    if (changed && flushAfter) {
-      return flush();
-    }
-    return changed;
+  /** The bound save file under the local root. */
+  @NotNull
+  private FlixelFile resolveFile() {
+    String fileName = boundSlot != null && !boundSlot.isEmpty()
+        ? boundName + "." + boundSlot
+        : boundName;
+    return Flixel.files.local(SAVE_FOLDER + fileName + ".json");
   }
 
-  public boolean close(int minFileSize) {
-    return flush();
+  /** Converts a parsed JSON object node into plain map entries. */
+  private static void readObjectInto(@NotNull FlixelJsonValue object, @NotNull FlixelMap<String, Object> out) {
+    for (int i = 0; i < object.getSize(); i++) {
+      FlixelJsonValue child = object.get(i);
+      if (child != null && child.getName() != null) {
+        out.put(child.getName(), toPlainValue(child));
+      }
+    }
   }
 
-  /** Merges legacy flat string keys (excluding blob key) into {@link #data} for backwards compatibility. */
-  private void legacyMergeFlatStringKeys() {
-    if (preferences == null) {
-      return;
-    }
-    Map<String, ?> all = preferences.get();
-    if (all == null) {
-      return;
-    }
-    for (Map.Entry<String, ?> e : all.entrySet()) {
-      if (DATA_KEY.equals(e.getKey())) {
-        continue;
+  /** Converts one parsed JSON node into a plain Java value. */
+  @Nullable
+  private static Object toPlainValue(@NotNull FlixelJsonValue value) {
+    return switch (value.getKind()) {
+      case STRING -> value.asString();
+      case NUMBER -> value.asDouble();
+      case BOOL -> value.asBool();
+      case NULL -> null;
+      case OBJECT -> {
+        FlixelMap<String, Object> map = new FlixelMap<>();
+        readObjectInto(value, map);
+        yield map;
       }
-      Object v = e.getValue();
-      data.put(e.getKey(), v != null ? v.toString() : "");
+      case ARRAY -> {
+        FlixelArray<Object> list = new FlixelArray<>(value.getSize());
+        for (int i = 0; i < value.getSize(); i++) {
+          FlixelJsonValue child = value.get(i);
+          list.add(child != null ? toPlainValue(child) : null);
+        }
+        yield list;
+      }
+    };
+  }
+
+  /** Serializes one supported value into JSON text. */
+  private static void writeValue(@NotNull FlixelString out, @Nullable Object value) {
+    if (value == null) {
+      out.concat("null");
+    } else if (value instanceof String string) {
+      writeString(out, string);
+    } else if (value instanceof Boolean bool) {
+      out.concat(bool.booleanValue());
+    } else if (value instanceof Number number) {
+      double d = number.doubleValue();
+      // Integers write without a decimal point so they read back naturally.
+      if (d == Math.floor(d) && !Double.isInfinite(d) && Math.abs(d) < 1e15) {
+        out.concat((long) d);
+      } else {
+        out.concat(String.valueOf(d));
+      }
+    } else if (value instanceof FlixelMap<?, ?> map) {
+      out.concat('{');
+      boolean first = true;
+      for (FlixelMap.Entry<?, ?> e : map.entries()) {
+        if (!first) {
+          out.concat(',');
+        }
+        first = false;
+        writeString(out, String.valueOf(e.key));
+        out.concat(':');
+        writeValue(out, e.value);
+      }
+      out.concat('}');
+    } else if (value instanceof FlixelArray<?> list) {
+      out.concat('[');
+      for (int i = 0; i < list.getSize(); i++) {
+        if (i > 0) {
+          out.concat(',');
+        }
+        writeValue(out, list.get(i));
+      }
+      out.concat(']');
+    } else {
+      writeString(out, String.valueOf(value));
     }
+  }
+
+  /** Writes a JSON string literal with escaping. */
+  private static void writeString(@NotNull FlixelString out, @NotNull String value) {
+    out.concat('"');
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      switch (c) {
+        case '"' -> out.concat("\\\"");
+        case '\\' -> out.concat("\\\\");
+        case '\n' -> out.concat("\\n");
+        case '\r' -> out.concat("\\r");
+        case '\t' -> out.concat("\\t");
+        default -> {
+          if (c < 0x20) {
+            out.concat("\\u").concat(String.format("%04x", (int) c));
+          } else {
+            out.concat(c);
+          }
+        }
+      }
+    }
+    out.concat('"');
   }
 }

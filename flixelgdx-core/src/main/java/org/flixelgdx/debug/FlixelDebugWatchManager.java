@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.debug;
 
-import com.badlogic.gdx.Gdx;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.supplier.ByteSupplier;
@@ -423,7 +421,7 @@ public class FlixelDebugWatchManager {
         if (Flixel.mouse != null) {
           out.concat(Flixel.mouse.getScreenX()).concat(", ").concat(Flixel.mouse.getScreenY());
         } else {
-          out.concat(Gdx.input.getX()).concat(", ").concat(Gdx.input.getY());
+          out.concat(Flixel.input.getX()).concat(", ").concat(Flixel.input.getY());
         }
       } catch (Exception e) {
         out.concat("<error>");

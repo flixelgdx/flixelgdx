@@ -23,14 +23,13 @@
  */
 package org.flixelgdx.input.mouse;
 
-import com.badlogic.gdx.math.Vector2;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelMouseListener;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,7 +84,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   @Nullable
   private FlixelCamera worldCamera;
 
-  private final Vector2 tmpUnproject = new Vector2();
+  private final FlixelVector tmpUnproject = new FlixelVector();
 
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
@@ -133,7 +132,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
       return;
     }
     tmpUnproject.set(screenX, screenY);
-    cam.getViewport().unproject(tmpUnproject);
+    cam.unproject(tmpUnproject);
     worldX = tmpUnproject.x;
     worldY = tmpUnproject.y;
   }
@@ -189,13 +188,13 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   public float getWorldX(@NotNull FlixelCamera cam) {
     tmpUnproject.set(screenX, screenY);
-    cam.getViewport().unproject(tmpUnproject);
+    cam.unproject(tmpUnproject);
     return tmpUnproject.x;
   }
 
   public float getWorldY(@NotNull FlixelCamera cam) {
     tmpUnproject.set(screenX, screenY);
-    cam.getViewport().unproject(tmpUnproject);
+    cam.unproject(tmpUnproject);
     return tmpUnproject.y;
   }
 

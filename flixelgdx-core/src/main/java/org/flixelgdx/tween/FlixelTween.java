@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.tween;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelAngleable;
@@ -310,7 +308,7 @@ public abstract class FlixelTween implements FlixelPoolable {
   }
 
   /**
-   * Creates a new color tween using libGDX {@link Color} values with the provided settings and
+   * Creates a new color tween using raw color values with the provided settings and
    * adds it to the global tween manager.
    *
    * <p>It's advised you use this method rather than directly changing the color of a sprite, as
@@ -325,14 +323,14 @@ public abstract class FlixelTween implements FlixelPoolable {
    */
   public static FlixelTween color(
       @Nullable FlixelColorable colorable,
-      @Nullable Color from,
-      @Nullable Color to,
+      @Nullable FlixelColor from,
+      @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings) {
     return color(colorable, from, to, tweenSettings, null);
   }
 
   /**
-   * Creates a new color tween using libGDX {@link Color} values with the provided settings and
+   * Creates a new color tween using raw color values with the provided settings and
    * adds it to the global tween manager.
    *
    * <p>It's advised you use this method rather than directly changing the color of a sprite, as
@@ -348,8 +346,8 @@ public abstract class FlixelTween implements FlixelPoolable {
    */
   public static FlixelTween color(
       @Nullable FlixelColorable colorable,
-      @Nullable Color from,
-      @Nullable Color to,
+      @Nullable FlixelColor from,
+      @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings,
       @Nullable Runnable onColor) {
     FlixelColorTween tween =
@@ -376,7 +374,7 @@ public abstract class FlixelTween implements FlixelPoolable {
   public static FlixelTween color(
       @Nullable FlixelColorable colorable,
       @Nullable FlixelColor from,
-      @Nullable Color to,
+      @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings) {
     return color(colorable, from.getGdxColor(), to, tweenSettings, null);
   }
@@ -397,7 +395,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    */
   public static FlixelTween color(
       @Nullable FlixelColorable colorable,
-      @Nullable Color from,
+      @Nullable FlixelColor from,
       @Nullable FlixelColor to,
       FlixelTweenSettings tweenSettings) {
     return color(colorable, from, to.getGdxColor(), tweenSettings, null);

@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.tween.type;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
@@ -38,9 +36,9 @@ import java.util.Objects;
  */
 public class FlixelColorTween extends FlixelTween {
 
-  protected final Color workFrom = new Color();
-  protected final Color workTo = new Color();
-  protected final Color workOut = new Color();
+  protected final FlixelColor workFrom = new FlixelColor();
+  protected final FlixelColor workTo = new FlixelColor();
+  protected final FlixelColor workOut = new FlixelColor();
 
   @Nullable
   protected FlixelColor fromFlixel;
@@ -76,7 +74,8 @@ public class FlixelColorTween extends FlixelTween {
   }
 
   /**
-   * Tween between two libGDX {@link Color} values (copied into internal buffers).
+   * Tween between two color values copied into internal buffers, so later changes to the
+   * arguments do not affect the running tween.
    *
    * @param target The tint target to tween.
    * @param from The starting color.
@@ -84,18 +83,18 @@ public class FlixelColorTween extends FlixelTween {
    * @param onColor The callback to run when the tween is complete.
    * @return {@code this} for chaining.
    */
-  public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelColorable target, @Nullable Color from,
-      @Nullable Color to, @Nullable Runnable onColor) {
+  public FlixelColorTween setColorEndpointsRaw(@Nullable FlixelColorable target, @Nullable FlixelColor from,
+      @Nullable FlixelColor to, @Nullable Runnable onColor) {
     this.useRawColor = true;
     this.colorTarget = target;
     this.fromFlixel = null;
     this.toFlixel = null;
     this.onColor = onColor;
     if (from != null) {
-      workFrom.set(from);
+      workFrom.setColor(from);
     }
     if (to != null) {
-      workTo.set(to);
+      workTo.setColor(to);
     }
     return this;
   }
@@ -103,12 +102,14 @@ public class FlixelColorTween extends FlixelTween {
   @Override
   protected void updateTweenValues() {
     if (useRawColor) {
-      workOut.set(workFrom).lerp(workTo, scale);
+      workOut.setColor(workFrom);
+      workOut.lerp(workTo, scale);
     } else {
       if (fromFlixel == null || toFlixel == null) {
         return;
       }
-      workOut.set(fromFlixel.getGdxColor()).lerp(toFlixel.getGdxColor(), scale);
+      workOut.setColor(fromFlixel);
+      workOut.lerp(toFlixel, scale);
     }
 
     if (colorTarget != null) {

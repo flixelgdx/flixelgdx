@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-
 import org.flixelgdx.collections.FlixelCharArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,7 +58,7 @@ import java.util.function.Supplier;
  * <h2>Passing to libGDX drawing APIs</h2>
  *
  * <p>This class implements {@link CharSequence}, so instances can be passed directly to APIs such
- * as {@link BitmapFont#draw} without building a temporary {@link String}. Avoid calling {@link #toString()}
+ * as text rendering without building a temporary {@link String}. Avoid calling {@link #toString()}
  * or using string concatenation on this type in per-frame code: both allocate. Pass {@code this} as a
  * {@link CharSequence} instead.
  *

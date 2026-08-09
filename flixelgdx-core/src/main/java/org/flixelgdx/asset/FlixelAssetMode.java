@@ -82,7 +82,7 @@ public enum FlixelAssetMode {
    *     in AGGRESSIVE mode. It is fine in LAZY and STANDARD since those only unload at state
    *     switch boundaries, which is always on the GL thread.</li>
    *   <li>After an aggressive eviction, the underlying libGDX asset is disposed. Any code that
-   *     still holds a raw reference to the same {@link com.badlogic.gdx.graphics.Texture Texture} (or
+   *     still holds a raw reference to the same {@link org.flixelgdx.graphics.FlixelTexture FlixelTexture} (or
    *     other resource) object will encounter a disposed object. The automated sprite pipeline
    *     ({@code loadGraphic} and {@code destroy}) handles this correctly; direct raw-asset usage
    *     outside that pipeline must ensure no other references remain before releasing.</li>

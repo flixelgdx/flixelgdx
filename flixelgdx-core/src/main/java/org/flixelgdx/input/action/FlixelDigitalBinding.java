@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.input.action;
 
-import com.badlogic.gdx.Gdx;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
@@ -66,7 +64,7 @@ public interface FlixelDigitalBinding {
   /**
    * Keyboard key binding using {@link org.flixelgdx.Flixel#keys Flixel.keys}.
    *
-   * @param keycode libGDX keycode (for example {@link com.badlogic.gdx.Input.Keys#SPACE}).
+   * @param keycode Key constant (for example {@link org.flixelgdx.input.keyboard.FlixelKey#SPACE FlixelKey.SPACE}).
    * @return Binding that fires while the key is held.
    */
   static FlixelDigitalBinding key(int keycode) {
@@ -138,8 +136,8 @@ public interface FlixelDigitalBinding {
       if (Flixel.touches == null || !Flixel.touches.enabled) {
         return false;
       }
-      int bw = Gdx.graphics.getBackBufferWidth();
-      int bh = Gdx.graphics.getBackBufferHeight();
+      int bw = Flixel.graphics.getBackBufferWidth();
+      int bh = Flixel.graphics.getBackBufferHeight();
       if (bw <= 0 || bh <= 0) {
         return false;
       }

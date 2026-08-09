@@ -23,36 +23,24 @@
  */
 package org.flixelgdx.functional;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Something with a tint you can read or write as either a libGDX {@link Color} or a
- * {@link FlixelColor} wrapper. Implementations should keep both APIs in sync on the same backing RGBA.
+ * Something with a tint you can read or write as a {@link FlixelColor}.
  *
  * @see org.flixelgdx.FlixelSprite
  */
 public interface FlixelColorable {
 
   /**
-   * @return Packed RGBA8888 tint (see {@link Color#rgba8888(Color)}).
-   */
-  int getColor();
-
-  /**
-   * @return The backing libGDX color (often mutable). Must not be {@code null}.
+   * Returns the live backing tint. Mutating it changes the tint directly; use
+   * {@link #setColor(FlixelColor)} when copying from another color.
+   *
+   * @return The backing color; never {@code null}.
    */
   @NotNull
-  Color getGdxColor();
-
-  /**
-   * Copies RGBA from {@code color} into this tint.
-   *
-   * @param color The color to copy. Must not be {@code null}.
-   */
-  void setColor(@NotNull Color color);
+  FlixelColor getColor();
 
   /**
    * Copies RGBA from {@code color} into this tint.
@@ -60,4 +48,11 @@ public interface FlixelColorable {
    * @param color The wrapper to copy from. Must not be {@code null}.
    */
   void setColor(@NotNull FlixelColor color);
+
+  /**
+   * @return Packed RGBA8888 tint.
+   */
+  default int getPackedColor() {
+    return getColor().getColor();
+  }
 }

@@ -1,5 +1,5 @@
 /**
- * Persistent preferences and JSON-friendly save data built on libGDX {@link com.badlogic.gdx.Preferences}.
+ * Persistent, JSON-backed save data written through the FlixelGDX file seam.
  *
  * <p>The main entry point is {@link org.flixelgdx.util.save.FlixelSave FlixelSave}, exposed as {@link org.flixelgdx.Flixel#save Flixel.save}.
  * Call {@link org.flixelgdx.util.save.FlixelSave#bind(String, String)} before writing keys, then use {@code data} and

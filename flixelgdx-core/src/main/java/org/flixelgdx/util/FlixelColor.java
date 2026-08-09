@@ -163,6 +163,21 @@ public class FlixelColor {
   }
 
   /**
+   * Copies RGBA from {@code other} into this color.
+   *
+   * @param other The color to copy.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor set(@NotNull FlixelColor other) {
+    r = other.r;
+    g = other.g;
+    b = other.b;
+    a = other.a;
+    return this;
+  }
+
+  /**
    * Sets all four components at once.
    *
    * @param r The red component in {@code [0, 1]}.

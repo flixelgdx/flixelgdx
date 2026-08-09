@@ -23,13 +23,12 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.group.FlixelBasicGroup;
+import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -286,9 +285,9 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
    *
    * @return The background color of the first camera.
    */
-  public Color getBgColor() {
+  public FlixelColor getBgColor() {
     if (Flixel.game == null) {
-      return Color.BLACK;
+      return FlixelColor.BLACK;
     }
     return Flixel.cameras.first().bgColor;
   }
@@ -298,7 +297,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
    *
    * @param value The background color to set.
    */
-  public void setBgColor(@Nullable Color value) {
+  public void setBgColor(@Nullable FlixelColor value) {
     if (value == null) {
       return;
     }

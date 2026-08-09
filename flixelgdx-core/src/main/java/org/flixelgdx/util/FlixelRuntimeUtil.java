@@ -261,6 +261,26 @@ public final class FlixelRuntimeUtil {
    * implementation from {@code flixelgdx-jvm} (see {@code FlixelJvmRuntimeProbe}) at startup.
    */
   public interface RuntimeProbe {
+
+    /**
+     * Returns the bytes of managed (Java) heap currently in use, or {@code 0} when the
+     * platform cannot report it.
+     *
+     * @return Used managed heap in bytes.
+     */
+    default long getJavaHeapBytes() {
+      return 0L;
+    }
+
+    /**
+     * Returns the bytes of native (off-heap) memory currently in use, or {@code 0} when the
+     * platform cannot report it.
+     *
+     * @return Used native memory in bytes.
+     */
+    default long getNativeHeapBytes() {
+      return 0L;
+    }
     boolean isRunningFromJar();
 
     boolean isRunningInIDE();
@@ -294,4 +314,24 @@ public final class FlixelRuntimeUtil {
   }
 
   private FlixelRuntimeUtil() {}
+
+  /**
+   * Returns the bytes of managed (Java) heap currently in use, as reported by the active
+   * runtime probe.
+   *
+   * @return Used managed heap in bytes, or {@code 0} when unknown.
+   */
+  public static long getJavaHeapBytes() {
+    return getRuntimeProbe().getJavaHeapBytes();
+  }
+
+  /**
+   * Returns the bytes of native (off-heap) memory currently in use, as reported by the active
+   * runtime probe.
+   *
+   * @return Used native memory in bytes, or {@code 0} when unknown.
+   */
+  public static long getNativeHeapBytes() {
+    return getRuntimeProbe().getNativeHeapBytes();
+  }
 }

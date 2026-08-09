@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.input.touch;
 
-import com.badlogic.gdx.math.Vector2;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.input.FlixelInputManager;
@@ -102,7 +100,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   @Nullable
   private FlixelCamera worldCamera;
 
-  private final Vector2 tmpUnproject = new Vector2();
+  private final FlixelVector tmpUnproject = new FlixelVector();
 
   private int maxPointers;
 
@@ -229,7 +227,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
       t.screenY = Flixel.input.getY(p);
       if (cam != null) {
         tmpUnproject.set(t.screenX, t.screenY);
-        cam.getViewport().unproject(tmpUnproject);
+        cam.unproject(tmpUnproject);
         t.worldX = tmpUnproject.x + cam.getViewX();
         t.worldY = tmpUnproject.y + cam.getViewY();
       } else {

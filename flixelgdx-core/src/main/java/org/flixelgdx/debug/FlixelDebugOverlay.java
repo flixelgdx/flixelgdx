@@ -23,11 +23,6 @@
  */
 package org.flixelgdx.debug;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
@@ -50,6 +45,11 @@ import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelDebugUtil;
 import org.flixelgdx.util.FlixelString;
+import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.math.FlixelVector;
+import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelRuntimeUtil;
+import org.flixelgdx.util.FlixelSpriteUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -136,7 +136,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   public int cameraPanButton = FlixelMouseButton.RIGHT;
 
   @Nullable
-  private ShapeRenderer shapeRenderer;
 
   protected float statsTimer = 0f;
   protected int cachedFps;
@@ -206,11 +205,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private int lastPanScreenX;
   private int lastPanScreenY;
 
-  private final Vector2 panUnprojectA = new Vector2();
-  private final Vector2 panUnprojectB = new Vector2();
+  private final FlixelColor boundingBoxColor = new FlixelColor();
+
+  private final FlixelVector panUnprojectA = new FlixelVector();
+  private final FlixelVector panUnprojectB = new FlixelVector();
 
   /** Cached unproject scratch used while picking/dragging objects (kept off the per-frame allocation path). */
-  private final Vector2 pickUnproject = new Vector2();
+  private final FlixelVector pickUnproject = new FlixelVector();
 
   /** World-space offset between cursor and dragged sprite's origin so it does not snap on grab. */
   private float dragOffsetX;
@@ -331,9 +332,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
     if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
-      cachedFps = Gdx.graphics.getFramesPerSecond();
-      cachedHeapMegabytes = Gdx.app.getJavaHeap() / (1024f * 1024f);
-      cachedNativeMegabytes = Gdx.app.getNativeHeap() / (1024f * 1024f);
+      cachedFps = Flixel.graphics.getFps();
+      cachedHeapMegabytes = FlixelRuntimeUtil.getJavaHeapBytes() / (1024f * 1024f);
+      cachedNativeMegabytes = FlixelRuntimeUtil.getNativeHeapBytes() / (1024f * 1024f);
       cachedObjectCount = FlixelDebugUtil.countActiveMembers();
       cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
@@ -359,9 +360,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected void pushPerfSample(float elapsed) {
     int idx = perfHead;
     perfFrameMs[idx] = Flixel.getRawElapsed() * 1000f;
-    perfHeapMb[idx] = Gdx.app.getJavaHeap() / (1024f * 1024f);
-    perfNativeMb[idx] = Gdx.app.getNativeHeap() / (1024f * 1024f);
-    perfFps[idx] = Gdx.graphics.getFramesPerSecond();
+    perfHeapMb[idx] = FlixelRuntimeUtil.getJavaHeapBytes() / (1024f * 1024f);
+    perfNativeMb[idx] = FlixelRuntimeUtil.getNativeHeapBytes() / (1024f * 1024f);
+    perfFps[idx] = Flixel.graphics.getFps();
     perfRenderCalls[idx] = sampleRenderCallsNow();
     perfHead = (idx + 1) % PERF_HISTORY_SIZE;
     if (perfCount < PERF_HISTORY_SIZE) {
@@ -443,7 +444,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * normally type into that field (letters, punctuation, arrows, Enter, and so on). Return {@code false} by default so
    * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)} shortcuts keep working.
    *
-   * @param keycode FlixelGDX {@link FlixelKey} or libGDX {@link Input.Keys} key code being handled by a debug binding.
+   * @param keycode FlixelGDX {@link FlixelKey} key code being handled by a debug binding.
    * @return {@code true} to skip handling this key for debug shortcuts this frame.
    */
   protected boolean shouldSuppressDebugRawKeybind(int keycode) {
@@ -538,7 +539,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // imgui debugger is focused (otherwise our own debug controls would be filtered out by the
     // input suppression we set up to protect the game's regular input).
     boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
-        || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+        || Flixel.input.isKeyPressed(FlixelKey.ALT_LEFT) || Flixel.input.isKeyPressed(FlixelKey.ALT_RIGHT);
     if (alt && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
         && !shouldSuppressDebugRawKeybind(cameraCycleLeftKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.getSize()) % cams.getSize();
@@ -568,9 +569,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       int sy = Flixel.mouse.getScreenY();
       if (!Flixel.mouse.rawJustPressed(cameraPanButton)) {
         panUnprojectA.set(lastPanScreenX, lastPanScreenY);
-        cam.getViewport().unproject(panUnprojectA);
+        cam.unproject(panUnprojectA);
         panUnprojectB.set(sx, sy);
-        cam.getViewport().unproject(panUnprojectB);
+        cam.unproject(panUnprojectB);
         cam.scrollX -= panUnprojectB.x - panUnprojectA.x;
         cam.scrollY -= panUnprojectB.y - panUnprojectA.y;
       }
@@ -621,7 +622,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // FlixelCamera.worldToViewX() subtracts during draw). Without this conversion the picker would
     // feel off when the camera is scrolled or zoomed: clicks would land on the wrong sprite or miss entirely.
     pickUnproject.set(Flixel.mouse.getScreenX(), Flixel.mouse.getScreenY());
-    cam.getViewport().unproject(pickUnproject);
+    cam.unproject(pickUnproject);
 
     // View-space coordinates match FlixelSprite.draw() (worldToViewX / worldToViewY). Hit-testing
     // in view space fixes mis-picks when members use scroll factors (common in layered stages
@@ -801,20 +802,16 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
 
-    if (shapeRenderer == null) {
-      shapeRenderer = new ShapeRenderer();
-    }
-
-    Gdx.gl.glEnable(GL20.GL_BLEND);
-    Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+    FlixelBatch batch = Flixel.graphics.getBatch();
+    FlixelFrame whitePixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
 
     for (FlixelCamera cam : cameras) {
       if (cam == null) {
         continue;
       }
-      cam.getViewport().apply();
-      shapeRenderer.setProjectionMatrix(cam.getCamera().combined);
-      shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+      cam.applyViewport();
+      batch.setProjection(cam.getCombinedMatrix());
+      batch.begin();
       FlixelDebugUtil.forEachDebugDrawable(drawable -> {
         if (drawable == null) {
           return;
@@ -842,14 +839,12 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         if (c == null || c.length < 4) {
           c = FALLBACK_BOUNDING_BOX_COLOR;
         }
-        shapeRenderer.setColor(c[0], c[1], c[2], c[3]);
-        shapeRenderer.rect(drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
-            drawable.getDebugWidth(), drawable.getDebugHeight());
+        boundingBoxColor.set(c[0], c[1], c[2], c[3]);
+        FlixelSpriteUtil.drawBorder(batch, whitePixel, drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
+            drawable.getDebugWidth(), drawable.getDebugHeight(), 1f, boundingBoxColor);
       });
-      shapeRenderer.end();
+      batch.end();
     }
-
-    Gdx.gl.glDisable(GL20.GL_BLEND);
   }
 
   /**
@@ -999,9 +994,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     destroyed = true;
-    if (shapeRenderer != null) {
-      shapeRenderer.dispose();
-    }
   }
 
   /** Default key codes for the debug overlay. */

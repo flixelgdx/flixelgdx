@@ -41,6 +41,12 @@ import java.util.jar.JarFile;
 public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimeProbe {
 
   @Override
+  public long getJavaHeapBytes() {
+    Runtime runtime = Runtime.getRuntime();
+    return runtime.totalMemory() - runtime.freeMemory();
+  }
+
+  @Override
   public RunEnvironment detectEnvironment() {
     if (isRunningInIDE()) {
       return RunEnvironment.IDE;

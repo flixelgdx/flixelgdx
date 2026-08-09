@@ -23,21 +23,14 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Graphics;
-import com.badlogic.gdx.graphics.Camera;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
-
+import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelRenderTarget;
+import org.flixelgdx.graphics.FlixelViewport;
+import org.flixelgdx.math.FlixelMatrix;
+import org.flixelgdx.math.FlixelVector;
+import org.flixelgdx.util.FlixelBlendMode;
+import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.functional.FlixelShaderable;
@@ -58,17 +51,16 @@ import org.jetbrains.annotations.Nullable;
  * {@link Flixel#game} is {@code null}, window size and follow frame rate fall back to
  * {@link Gdx#graphics} (call {@link #update(int, int, boolean)} from {@code resize} as usual).
  *
- * <p>Every camera wraps a libGDX {@link Camera} and {@link Viewport} internally. By default, an
- * {@link OrthographicCamera} and {@link FitViewport} are used. The viewport type is controlled by
+ * <p>Every camera wraps a {@link FlixelViewport} internally. By default, a letterboxing
+ * ({@link FlixelViewport.Scaling#FIT}) viewport is used. The viewport type is controlled by
  * the static {@link #viewportFactory}; platform launchers override it to supply a different
  * viewport (for example, the Android launcher installs an
- * {@link com.badlogic.gdx.utils.viewport.ExtendViewport} so the game fills the screen without
+ * an extend-style viewport so the game fills the screen without
  * letterboxing). Custom types can also be provided directly via the constructor overloads.
  *
  * <p>{@link FitViewport} scales the game world to the window, so the world-to-screen factor is often
  * not a whole number when the window is larger than the camera's internal size (e.g. fullscreen).
- * libGDX {@link BitmapFont} defaults to integer-snapped glyph quads, which looks blocky under
- * that scaling. Set {@link BitmapFont#setUseIntegerPositions(boolean)} to {@code false} on fonts
+ * integer-snapped glyph quads can look blocky under that scaling; prefer smooth text filtering
  * you draw through this pipeline (FlixelGDX does this for {@link org.flixelgdx.text.FlixelText FlixelText}
  * and registry fonts automatically).
  */
@@ -81,23 +73,23 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public static float defaultZoom = 1.0f;
 
   /**
-   * Factory used to create the default {@link Viewport} whenever a new {@link FlixelCamera} is
-   * constructed without an explicit viewport.
+   * Factory used to create the default {@link FlixelViewport} whenever a new {@link FlixelCamera}
+   * is constructed without an explicit viewport.
    *
-   * <p>The built-in default creates a {@link FitViewport}, which letterboxes the game world to
-   * fit the window. Platform launchers replace this before any camera is built - for example,
-   * the Android launcher assigns an {@link com.badlogic.gdx.utils.viewport.ExtendViewport} so
-   * the game fills the device screen without black bars.
+   * <p>The built-in default creates a letterboxing (FIT) viewport, which scales the game world
+   * to fit the window. Platform launchers may replace this before any camera is built - for
+   * example, a mobile launcher can assign an EXTEND viewport so the game fills the device
+   * screen without black bars.
    *
    * <p>To use a custom viewport for every camera created after the assignment:
    *
    * <pre>{@code
-   * FlixelCamera.viewportFactory = (w, h, cam) -> new ScreenViewport(cam);
+   * FlixelCamera.viewportFactory = (w, h) -> new FlixelViewport(w, h, FlixelViewport.Scaling.EXTEND);
    * }</pre>
    *
-   * <p>Passing a custom {@link Viewport} to the constructor always takes priority over this field.
+   * <p>Passing a custom {@link FlixelViewport} to the constructor always takes priority over this field.
    */
-  public static ViewportFactory viewportFactory = (w, h, cam) -> new FitViewport(w, h, cam);
+  public static ViewportFactory viewportFactory = FlixelViewport::new;
 
   /** Zoom captured at construction time; useful for resetting to the original scale. */
   public final float initialZoom;
@@ -200,10 +192,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public int height;
 
   /** The natural background color of the camera. Defaults to black. */
-  public Color bgColor = new Color(Color.BLACK);
+  public FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
 
   /** The color tint of the camera display. */
-  public Color color = new Color(Color.WHITE);
+  public FlixelColor color = new FlixelColor(FlixelColor.WHITE);
 
   /**
    * The dead zone rectangle, measured from the camera's bottom-left corner in game pixels.
@@ -253,18 +245,16 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   private int regionHeight = 0;
   private int regionWidth = 0;
 
-  private final Camera camera;
-  private final Color fadeColor = new Color(Color.BLACK);
-  private final Color flashColor = new Color(Color.WHITE);
+  private final FlixelColor fadeColor = new FlixelColor(FlixelColor.BLACK);
+  private final FlixelColor flashColor = new FlixelColor(FlixelColor.WHITE);
   private final FlixelRect tmpRect = new FlixelRect();
-  private final Viewport viewport;
+  private final FlixelViewport viewport;
   private Runnable fadeOnComplete;
   private Runnable flashOnComplete;
   private Runnable shakeOnComplete;
   private FlixelAxes shakeAxes = FlixelAxes.XY;
   private FlixelShader shader;
-  private FrameBuffer fbo;
-  private TextureRegion fboRegion;
+  private FlixelRenderTarget fbo;
 
   private RegionMode regionMode = RegionMode.PIXEL_TOP_LEFT;
 
@@ -309,8 +299,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   private boolean shakeActive = false;
 
   /**
-   * Creates a camera sized to the current window using the default
-   * {@link OrthographicCamera} and {@link #viewportFactory}.
+   * Creates a camera sized to the current window using the default {@link #viewportFactory}.
    */
   public FlixelCamera() {
     this(0f, 0f, resolveWindowWidth(), resolveWindowHeight(), 0f);
@@ -327,25 +316,14 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Creates a camera with a custom libGDX {@link Camera}, wrapped in the default viewport from {@link #viewportFactory}.
+   * Creates a camera with a custom {@link FlixelViewport}.
    *
    * @param width The width of the camera display in game pixels.
    * @param height The height of the camera display in game pixels.
-   * @param camera A custom libGDX Camera (e.g. {@link com.badlogic.gdx.graphics.PerspectiveCamera}).
+   * @param viewport A custom viewport (for example, one with the EXTEND scaling policy).
    */
-  public FlixelCamera(int width, int height, Camera camera) {
-    this(0f, 0f, width, height, 0f, camera, null);
-  }
-
-  /**
-   * Creates a camera with a custom libGDX {@link Viewport}. The camera is extracted from the viewport.
-   *
-   * @param width The width of the camera display in game pixels.
-   * @param height The height of the camera display in game pixels.
-   * @param viewport A custom libGDX Viewport (e.g. {@link com.badlogic.gdx.utils.viewport.ScreenViewport}).
-   */
-  public FlixelCamera(int width, int height, Viewport viewport) {
-    this(0f, 0f, width, height, 0f, null, viewport);
+  public FlixelCamera(int width, int height, FlixelViewport viewport) {
+    this(0f, 0f, width, height, 0f, viewport);
   }
 
   /**
@@ -358,46 +336,30 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param zoom The initial zoom level. {@code 0} = {@link #defaultZoom}.
    */
   public FlixelCamera(float x, float y, int width, int height, float zoom) {
-    this(x, y, width, height, zoom, null, null);
+    this(x, y, width, height, zoom, null);
   }
 
   /**
-   * Full constructor allowing fully custom libGDX {@link Camera} and {@link Viewport} types.
-   *
-   * <p>If {@code viewport} is provided, its camera is used (the {@code camera} parameter is ignored).
-   * If only {@code camera} is provided, it is wrapped in a default viewport.
-   * If neither is provided, an {@link OrthographicCamera} and a default viewport are created.
+   * Full constructor allowing a fully custom {@link FlixelViewport}.
    *
    * <p>When {@code viewport} is {@code null}, the viewport is created by {@link #viewportFactory}.
    * Platform launchers set this factory before any camera is built, so the right viewport type
-   * is used automatically (for example, {@link com.badlogic.gdx.utils.viewport.FitViewport} on
-   * desktop and {@link com.badlogic.gdx.utils.viewport.ExtendViewport} on Android).
+   * is used automatically.
    *
    * @param x X location of the camera's display in native screen pixels.
    * @param y Y location of the camera's display in native screen pixels.
    * @param width The width of the camera display in game pixels. {@code 0} = window width.
    * @param height The height of the camera display in game pixels. {@code 0} = window height.
    * @param zoom The initial zoom level. {@code 0} = {@link #defaultZoom}. {@code 2} = 2x magnification.
-   * @param camera Custom libGDX Camera, or {@code null} for a default {@link OrthographicCamera}.
-   * @param viewport Custom libGDX Viewport, or {@code null} to use {@link #viewportFactory}.
+   * @param viewport Custom viewport, or {@code null} to use {@link #viewportFactory}.
    */
-  public FlixelCamera(float x, float y, int width, int height, float zoom, Camera camera, Viewport viewport) {
+  public FlixelCamera(float x, float y, int width, int height, float zoom, FlixelViewport viewport) {
     super();
     this.x = x;
     this.y = y;
     this.width = (width <= 0) ? resolveWindowWidth() : width;
     this.height = (height <= 0) ? resolveWindowHeight() : height;
-
-    if (viewport != null) {
-      this.viewport = viewport;
-      this.camera = viewport.getCamera();
-    } else if (camera != null) {
-      this.camera = camera;
-      this.viewport = viewportFactory.create(this.width, this.height, this.camera);
-    } else {
-      this.camera = new OrthographicCamera(this.width, this.height);
-      this.viewport = viewportFactory.create(this.width, this.height, this.camera);
-    }
+    this.viewport = viewport != null ? viewport : viewportFactory.create(this.width, this.height);
 
     this.zoom = (zoom == 0f) ? defaultZoom : zoom;
     this.initialZoom = this.zoom;
@@ -407,11 +369,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Applies the viewport's OpenGL scissor rectangle.
+   * Activates this camera's viewport rectangle on the graphics backend.
    *
    * <p>Call before rendering through {@code this} camera.</p>
    */
-  public void apply() {
+  public void applyViewport() {
     viewport.apply();
   }
 
@@ -428,9 +390,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     } else {
       viewport.update(screenWidth, screenHeight, centerCamera);
     }
-    // Viewport.apply(centerCamera) resets the libGDX camera to the world center when centerCamera is true.
-    // Flixel owns the visible region via scrollX/scrollY, so re-apply the transform to stay correct.
-    applyLibCameraTransform();
+    // The viewport update recenters the camera when centerCamera is true; Flixel owns the
+    // visible region via scrollX/scrollY, so re-apply the transform to stay correct.
+    applyCameraTransform();
   }
 
   /**
@@ -457,38 +419,26 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Pushes {@link #scrollX}/{@link #scrollY}, zoom, angle, and shake offsets into the underlying libGDX {@link Camera}.
+   * Pushes {@link #scrollX}/{@link #scrollY}, zoom, angle, and shake offsets into the viewport's
+   * projection.
    *
    * <p>Call this after mutating scroll outside {@link #update(float)} (e.g., during a debug pause pan) and before
-   * {@link Viewport#unproject(com.badlogic.gdx.math.Vector2)} or any rendering.
+   * {@link #unproject(FlixelVector)} or any rendering.
    * Safe to call every frame; {@link #update(float)} ends with this automatically.
    *
    * <p>Drawables use view (batch) coordinates from {@link #worldToViewX(float, float)} and
    * {@link #worldToViewY(float, float)} (see {@link FlixelSprite#draw}).
    * The camera is positioned at the center of the full visible world so that view-space (0, 0)
    * lands at the screen's top-left corner. For viewports that extend the world beyond the design
-   * dimensions (e.g. {@link com.badlogic.gdx.utils.viewport.ExtendViewport} on Android),
-   * the camera accounts for the extended area so world (0, 0) still maps to the screen edge
-   * and {@link Flixel#getWidth()} correctly reflects the full visible width.
+   * dimensions, the camera accounts for the extended area so world (0, 0) still maps to the
+   * screen edge and {@link Flixel#getWidth()} correctly reflects the full visible width.
    */
-  public void applyLibCameraTransform() {
-    // TODO: Find a way to avoid explicit casting.
-    if (camera instanceof OrthographicCamera ortho) {
-      ortho.up.set(0, 1, 0);
-      ortho.direction.set(0, 0, -1);
-      if (angle != 0f) {
-        ortho.rotate(angle);
-      }
-    }
-
-    // Use the viewport's actual world dimensions (camera.viewportWidth/Height) rather than the
-    // design dimensions (width/height) so that viewports that extend beyond the design size
-    // (e.g. ExtendViewport on Android) correctly left-align world (0, 0) with the screen edge.
-    // Dividing by zoom mirrors the ortho.zoom = 1/zoom applied in applyZoom().
-    float camX = camera.viewportWidth / (2f * zoom) + shakeOffsetX;
-    float camY = camera.viewportHeight / (2f * zoom) + shakeOffsetY;
-    camera.position.set(camX, camY, 0);
-    camera.update();
+  public void applyCameraTransform() {
+    viewport.setRotation(angle);
+    // Divide by zoom to mirror the view scale of 1/zoom applied in applyZoom().
+    float camX = viewport.getWorldWidth() / (2f * zoom) + shakeOffsetX;
+    float camY = viewport.getWorldHeight() / (2f * zoom) + shakeOffsetY;
+    viewport.setCameraPosition(camX, camY);
   }
 
   /**
@@ -532,8 +482,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param worldY World-space Y to center on.
    */
   public void focusOn(float worldX, float worldY) {
-    scrollX = worldX - getViewMarginX() - camera.viewportWidth / (2f * zoom);
-    scrollY = worldY - getViewMarginY() - camera.viewportHeight / (2f * zoom);
+    scrollX = worldX - getViewMarginX() - viewport.getWorldWidth() / (2f * zoom);
+    scrollY = worldY - getViewMarginY() - viewport.getWorldHeight() / (2f * zoom);
   }
 
   /**
@@ -623,7 +573,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /** Flashes white for 1 second. */
   public void flash() {
-    flash(Color.WHITE, 1f, null, false);
+    flash(FlixelColor.WHITE, 1f, null, false);
   }
 
   /**
@@ -631,7 +581,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * @param color The color to flash.
    */
-  public void flash(@NotNull Color color) {
+  public void flash(@NotNull FlixelColor color) {
     flash(color, 1f, null, false);
   }
 
@@ -641,7 +591,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param color The color to flash.
    * @param duration How long the flash takes to fade out, in seconds.
    */
-  public void flash(@NotNull Color color, float duration) {
+  public void flash(@NotNull FlixelColor color, float duration) {
     flash(color, duration, null, false);
   }
 
@@ -653,7 +603,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param onComplete Callback invoked when the flash finishes, or {@code null}.
    * @param force If {@code true}, resets any currently running flash.
    */
-  public void flash(Color color, float duration, Runnable onComplete, boolean force) {
+  public void flash(FlixelColor color, float duration, Runnable onComplete, boolean force) {
     if (flashActive && !force) {
       return;
     }
@@ -665,40 +615,12 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     flashOnComplete = onComplete;
   }
 
-  /**
-   * Flashes the given color for 1 second.
-   *
-   * @param color The color to flash.
-   */
-  public void flash(@NotNull FlixelColor color) {
-    flash(color.getGdxColor(), 1f, null, false);
-  }
 
-  /**
-   * Flashes the given color for the specified duration.
-   *
-   * @param color The color to flash.
-   * @param duration How long the flash takes to fade out, in seconds.
-   */
-  public void flash(@NotNull FlixelColor color, float duration) {
-    flash(color.getGdxColor(), duration, null, false);
-  }
 
-  /**
-   * Fills the screen with the given color and gradually fades it back to normal.
-   *
-   * @param color The color to flash.
-   * @param duration How long the flash takes to fade out, in seconds.
-   * @param onComplete Callback invoked when the flash finishes, or {@code null}.
-   * @param force If {@code true}, resets any currently running flash.
-   */
-  public void flash(@NotNull FlixelColor color, float duration, Runnable onComplete, boolean force) {
-    flash(color.getGdxColor(), duration, onComplete, force);
-  }
 
   /** Fades to black over 1 second. */
   public void fade() {
-    fade(Color.BLACK, 1f, false, null, false);
+    fade(FlixelColor.BLACK, 1f, false, null, false);
   }
 
   /**
@@ -706,7 +628,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * @param color The color to fade to.
    */
-  public void fade(@NotNull Color color) {
+  public void fade(@NotNull FlixelColor color) {
     fade(color, 1f, false, null, false);
   }
 
@@ -716,7 +638,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param color The color to fade to.
    * @param duration How long the fade takes, in seconds.
    */
-  public void fade(@NotNull Color color, float duration) {
+  public void fade(@NotNull FlixelColor color, float duration) {
     fade(color, duration, false, null, false);
   }
 
@@ -727,7 +649,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param duration How long the fade takes, in seconds.
    * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
    */
-  public void fade(@NotNull Color color, float duration, boolean fadeIn) {
+  public void fade(@NotNull FlixelColor color, float duration, boolean fadeIn) {
     fade(color, duration, fadeIn, null, false);
   }
 
@@ -740,7 +662,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param onComplete Callback invoked when the fade finishes, or {@code null}.
    * @param force If {@code true}, resets any currently running fade.
    */
-  public void fade(Color color, float duration, boolean fadeIn, Runnable onComplete, boolean force) {
+  public void fade(FlixelColor color, float duration, boolean fadeIn, Runnable onComplete, boolean force) {
     if (fadeActive && !force) {
       return;
     }
@@ -753,48 +675,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     fadeOnComplete = onComplete;
   }
 
-  /**
-   * Fades to the given color over 1 second.
-   *
-   * @param color The color to fade to.
-   */
-  public void fade(@NotNull FlixelColor color) {
-    fade(color.getGdxColor(), 1f, false, null, false);
-  }
 
-  /**
-   * Fades to the given color over the specified duration.
-   *
-   * @param color The color to fade to.
-   * @param duration How long the fade takes, in seconds.
-   */
-  public void fade(@NotNull FlixelColor color, float duration) {
-    fade(color.getGdxColor(), duration, false, null, false);
-  }
 
-  /**
-   * Fades to or from the given color.
-   *
-   * @param color The color to fade to or from.
-   * @param duration How long the fade takes, in seconds.
-   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
-   */
-  public void fade(@NotNull FlixelColor color, float duration, boolean fadeIn) {
-    fade(color.getGdxColor(), duration, fadeIn, null, false);
-  }
 
-  /**
-   * Gradually fills the screen with or clears it of the given color.
-   *
-   * @param color The color to fade to or from.
-   * @param duration How long the fade takes, in seconds.
-   * @param fadeIn {@code true} = fade FROM the color to clear. {@code false} = fade TO the color.
-   * @param onComplete Callback invoked when the fade finishes, or {@code null}.
-   * @param force If {@code true}, resets any currently running fade.
-   */
-  public void fade(@NotNull FlixelColor color, float duration, boolean fadeIn, Runnable onComplete, boolean force) {
-    fade(color.getGdxColor(), duration, fadeIn, onComplete, force);
-  }
 
   /** Shakes with default intensity ({@code 0.05}) for {@code 0.5} seconds on both axes. */
   public void shake() {
@@ -871,16 +754,16 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Fills the camera display with the specified color using the given batch and a 1x1 white
-   * {@link Texture}.
+   * Fills the camera display with the specified color using the given batch and the shared
+   * 1x1 white pixel.
    *
    * @param fillColor The color to fill with (alpha channel is respected).
    * @param blendAlpha Whether to blend the alpha or overwrite previous contents.
    * @param fxAlpha Additional alpha multiplier, from {@code 0.0} to {@code 1.0}.
-   * @param batch An active {@link Batch} (must be between {@code begin()} and {@code end()}).
-   * @param whitePixel A 1x1 white {@link Texture} used for color drawing.
+   * @param batch An active {@link FlixelBatch} (must be between {@code begin()} and {@code end()}).
+   * @param whitePixel The shared 1x1 white pixel frame used for color drawing.
    */
-  public void fill(Color fillColor, boolean blendAlpha, float fxAlpha, Batch batch, Texture whitePixel) {
+  public void fill(FlixelColor fillColor, boolean blendAlpha, float fxAlpha, FlixelBatch batch, FlixelFrame whitePixel) {
     float r = fillColor.r;
     float g = fillColor.g;
     float b = fillColor.b;
@@ -891,8 +774,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     // so the fill rect is derived from it to stay correctly anchored.
     float fw = viewport.getWorldWidth() / zoom;
     float fh = viewport.getWorldHeight() / zoom;
-    float fx = camera.position.x - fw / 2f;
-    float fy = camera.position.y - fh / 2f;
+    float fx = viewport.getCameraX() - fw / 2f;
+    float fy = viewport.getCameraY() - fh / 2f;
     if (blendAlpha) {
       if (a <= 0f) {
         return;
@@ -900,32 +783,30 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       batch.setColor(r, g, b, a);
       batch.draw(whitePixel, fx, fy, fw, fh);
     } else {
-      boolean wasBlending = batch.isBlendingEnabled();
-      batch.disableBlending();
+      FlixelBlendMode wasBlending = batch.getBlendMode();
+      batch.setBlendMode(FlixelBlendMode.NONE);
       batch.setColor(r, g, b, a);
       batch.draw(whitePixel, fx, fy, fw, fh);
-      if (wasBlending) {
-        batch.enableBlending();
-      }
+      batch.setBlendMode(wasBlending);
     }
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   /**
    * Draws active screen effects (flash and fade overlays) using the given batch. Call this after
    * drawing all game objects but before {@code batch.end()}.
    *
-   * @param batch An active {@link Batch} (must be between begin/end).
-   * @param whitePixel A 1x1 white {@link Texture} used for color drawing.
+   * @param batch An active {@link FlixelBatch} (must be between begin/end).
+   * @param whitePixel The shared 1x1 white pixel frame used for color drawing.
    */
-  public void drawFX(Batch batch, Texture whitePixel) {
+  public void drawFX(FlixelBatch batch, FlixelFrame whitePixel) {
     if ((!flashActive || flashAlpha <= 0f) && !fadeActive && fadeAlpha <= 0f) {
       return;
     }
     float fw = viewport.getWorldWidth() / zoom;
     float fh = viewport.getWorldHeight() / zoom;
-    float fx = camera.position.x - fw / 2f;
-    float fy = camera.position.y - fh / 2f;
+    float fx = viewport.getCameraX() - fw / 2f;
+    float fy = viewport.getCameraY() - fh / 2f;
     if (flashActive && flashAlpha > 0f) {
       batch.setColor(flashColor.r, flashColor.g, flashColor.b, flashAlpha * alpha);
       batch.draw(whitePixel, fx, fy, fw, fh);
@@ -934,7 +815,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       batch.setColor(fadeColor.r, fadeColor.g, fadeColor.b, fadeAlpha * alpha);
       batch.draw(whitePixel, fx, fy, fw, fh);
     }
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   /**
@@ -1125,16 +1006,13 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   private void initFbo() {
     disposeFbo();
-    fbo = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, false);
-    fboRegion = new TextureRegion(fbo.getColorBufferTexture());
-    fboRegion.flip(false, true);
+    fbo = Flixel.graphics.createRenderTarget(width, height);
   }
 
   private void disposeFbo() {
     if (fbo != null) {
-      fbo.dispose();
+      fbo.destroy();
       fbo = null;
-      fboRegion = null;
     }
   }
 
@@ -1197,9 +1075,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   private void applyZoom() {
-    if (camera instanceof OrthographicCamera ortho) {
-      ortho.zoom = 1f / zoom;
-    }
+    viewport.setViewScale(1f / zoom);
   }
 
   private float followScrollFactorX(FlixelPositional t) {
@@ -1342,51 +1218,43 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     if (Flixel.game != null) {
       return Flixel.getWidth();
     }
-    if (Gdx.graphics != null) {
-      return Math.max(1, Gdx.graphics.getWidth());
-    }
-    return 1;
+    int backBufferWidth = Flixel.graphics.getBackBufferWidth();
+    return backBufferWidth > 0 ? backBufferWidth : 1;
   }
 
   /**
-   * Window height for defaults: {@link Flixel#getHeight()} when a game exists, otherwise
-   * {@link com.badlogic.gdx.Graphics#getHeight()}.
+   * Window height for defaults: {@link Flixel#getHeight()} when a game exists, otherwise the
+   * back buffer height.
    */
   private static int resolveWindowHeight() {
     if (Flixel.game != null) {
       return Flixel.getHeight();
     }
-    if (Gdx.graphics != null) {
-      return Math.max(1, Gdx.graphics.getHeight());
-    }
-    return 1;
+    int backBufferHeight = Flixel.graphics.getBackBufferHeight();
+    return backBufferHeight > 0 ? backBufferHeight : 1;
   }
 
   /**
-   * Returns the actual screen width in pixels from {@link Graphics}, falling back to
-   * {@link #resolveWindowWidth()} when no GL context exists (e.g. unit tests).
+   * Returns the actual screen width in pixels from the graphics backend, falling back to
+   * {@link #resolveWindowWidth()} when no backend exists (e.g. unit tests).
    *
    * <p>This differs from {@link #resolveWindowWidth()}, which returns the game's design width.
    * Use this method wherever a viewport needs the real screen dimensions, not the design resolution.
    */
   private static int resolveActualScreenWidth() {
-    if (Gdx.graphics != null) {
-      return Math.max(1, Gdx.graphics.getWidth());
-    }
-    return resolveWindowWidth();
+    int backBufferWidth = Flixel.graphics.getBackBufferWidth();
+    return backBufferWidth > 0 ? backBufferWidth : resolveWindowWidth();
   }
 
   /**
-   * Returns the actual screen height in pixels from {@link Graphics}, falling back to
-   * {@link #resolveWindowHeight()} when no GL context exists (e.g. unit tests).
+   * Returns the actual screen height in pixels from the graphics backend, falling back to
+   * {@link #resolveWindowHeight()} when no backend exists (e.g. unit tests).
    *
    * @see #resolveActualScreenWidth()
    */
   private static int resolveActualScreenHeight() {
-    if (Gdx.graphics != null) {
-      return Math.max(1, Gdx.graphics.getHeight());
-    }
-    return resolveWindowHeight();
+    int backBufferHeight = Flixel.graphics.getBackBufferHeight();
+    return backBufferHeight > 0 ? backBufferHeight : resolveWindowHeight();
   }
 
   /**
@@ -1413,7 +1281,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
         regionBottomY + fittedY,
         fittedW,
         fittedH);
-    viewport.apply(centerCamera);
+    viewport.apply();
   }
 
   private boolean shouldUseSubScreenViewport(int screenWidth, int screenHeight) {
@@ -1489,8 +1357,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * Assigns a post-processing shader to this camera. When set, the camera renders its scene into
-   * an internal {@link FrameBuffer} each frame and then composites the result to screen using
-   * the given shader.
+   * an internal {@link FlixelRenderTarget} each frame and then composites the result to screen
+   * using the given shader.
    *
    * <p>The shader is NOT owned by the camera. Call {@link FlixelShader#destroy()} yourself
    * when you are done with it. To remove the shader and return to direct rendering, pass
@@ -1523,33 +1391,39 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
-   * Returns the internal {@link FrameBuffer} used for post-processing, or {@code null} if no
-   * shader has been assigned via {@link #setShader(FlixelShader)}.
+   * Returns the internal {@link FlixelRenderTarget} used for post-processing, or {@code null}
+   * if no shader has been assigned via {@link #setShader(FlixelShader)}.
    *
-   * @return The camera's framebuffer, or {@code null}.
+   * @return The camera's render target, or {@code null}.
    */
-  public FrameBuffer getFbo() {
+  public FlixelRenderTarget getFbo() {
     return fbo;
   }
 
   /**
-   * Returns a Y-flipped {@link TextureRegion} wrapping the internal framebuffer's color texture.
-   * Used by {@link FlixelGame} to draw the captured scene through the camera's shader.
-   * Returns {@code null} if no shader has been assigned.
+   * Returns the combined view-projection matrix for drawing through this camera.
    *
-   * @return The framebuffer region, or {@code null}.
+   * @return The matrix mapping world coordinates to the screen; never {@code null}.
    */
-  public TextureRegion getFboRegion() {
-    return fboRegion;
+  @NotNull
+  public FlixelMatrix getCombinedMatrix() {
+    return viewport.getCombined();
   }
 
-  /** Returns the underlying libGDX {@link Camera} used for projection. */
-  public Camera getCamera() {
-    return camera;
+  /**
+   * Converts window coordinates (pixels, y measured downward from the window's top) into world
+   * coordinates, writing the result in place.
+   *
+   * @param screenCoords In: window coordinates; out: world coordinates.
+   * @return The same vector, for chaining.
+   */
+  @NotNull
+  public FlixelVector unproject(@NotNull FlixelVector screenCoords) {
+    return viewport.unproject(screenCoords);
   }
 
-  /** Returns the underlying libGDX {@link Viewport} used for screen scaling. */
-  public Viewport getViewport() {
+  /** Returns the underlying {@link FlixelViewport} used for screen scaling. */
+  public FlixelViewport getViewport() {
     return viewport;
   }
 
@@ -1644,9 +1518,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public boolean isInView(float viewX, float viewY, float width, float height) {
     // Use the viewport's actual visible world size rather than the design size so that viewports
     // wider than the design (e.g. ExtendViewport) do not incorrectly cull objects in the
-    // extended region. camera.viewportWidth / zoom matches the world range the camera covers.
-    return viewX + width > 0f && viewX < camera.viewportWidth / zoom
-        && viewY + height > 0f && viewY < camera.viewportHeight / zoom;
+    // extended region. getWorldWidth() / zoom matches the world range the camera covers.
+    return viewX + width > 0f && viewX < viewport.getWorldWidth() / zoom
+        && viewY + height > 0f && viewY < viewport.getWorldHeight() / zoom;
   }
 
   /**
@@ -1838,7 +1712,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /** Returns the current flash overlay color. */
-  public Color getFlashColor() {
+  public FlixelColor getFlashColor() {
     return flashColor;
   }
 
@@ -1848,7 +1722,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /** Returns the current fade overlay color. */
-  public Color getFadeColor() {
+  public FlixelColor getFadeColor() {
     return fadeColor;
   }
 
@@ -1860,35 +1734,21 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /** {@inheritDoc} */
   @Override
   public int getColor() {
-    return Color.rgba8888(color);
+    return color.getColor();
   }
 
   /** {@inheritDoc} */
   @Override
   @NotNull
-  public Color getGdxColor() {
+  @NotNull
+  public FlixelColor getColor() {
     return color;
   }
 
   /** {@inheritDoc} */
   @Override
-  public void setColor(@NotNull Color tint) {
-    color.set(tint);
-  }
-
-  /** {@inheritDoc} */
-  @Override
   public void setColor(@NotNull FlixelColor tint) {
-    color.set(tint.getGdxColor());
-  }
-
-  /**
-   * Sets the background color of this camera.
-   *
-   * @param tint The background color to set. Must not be {@code null}.
-   */
-  public void setBgColor(@NotNull Color tint) {
-    bgColor.set(tint);
+    color.set(tint);
   }
 
   /**
@@ -1897,29 +1757,28 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param tint The background color to set. Must not be {@code null}.
    */
   public void setBgColor(@NotNull FlixelColor tint) {
-    bgColor.set(tint.getGdxColor());
+    bgColor.set(tint);
   }
 
   /**
-   * Factory that creates a libGDX {@link Viewport} for a new {@link FlixelCamera}.
+   * Factory that creates a {@link FlixelViewport} for a new {@link FlixelCamera}.
    *
    * <p>Assign a custom implementation to {@link #viewportFactory} to control the default viewport
    * type for all subsequently created cameras. Platform launchers use this to install the
-   * appropriate viewport without touching game code. For one-off cameras, pass a {@link Viewport}
-   * directly to the constructor instead.
+   * appropriate viewport without touching game code. For one-off cameras, pass a
+   * {@link FlixelViewport} directly to the constructor instead.
    */
   @FunctionalInterface
   public interface ViewportFactory {
 
     /**
-     * Creates a new {@link Viewport} for a camera with the given design dimensions.
+     * Creates a new {@link FlixelViewport} for a camera with the given design dimensions.
      *
      * @param width The camera's design width in game pixels.
      * @param height The camera's design height in game pixels.
-     * @param camera The libGDX camera this viewport will wrap.
-     * @return A new Viewport instance. Must not be {@code null}.
+     * @return A new viewport instance. Must not be {@code null}.
      */
-    Viewport create(int width, int height, Camera camera);
+    FlixelViewport create(float width, float height);
   }
 
   /**

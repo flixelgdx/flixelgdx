@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.functional;
 
-import com.badlogic.gdx.Gdx;
+import org.flixelgdx.Flixel;
 
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
@@ -89,10 +89,10 @@ public interface FlixelShakeable {
    * @return Positive width in pixels, or {@code 0f} if unknown.
    */
   default float shakeFractionWidthFromGraphics() {
-    if (Gdx.graphics == null) {
+    if (Flixel.graphics.getBackBufferWidth() <= 0) {
       return 0f;
     }
-    int w = Gdx.graphics.getBackBufferWidth();
+    int w = Flixel.graphics.getBackBufferWidth();
     return w > 0 ? w : 0f;
   }
 
@@ -102,10 +102,10 @@ public interface FlixelShakeable {
    * @return Positive height in pixels, or {@code 0f} if unknown.
    */
   default float shakeFractionHeightFromGraphics() {
-    if (Gdx.graphics == null) {
+    if (Flixel.graphics.getBackBufferWidth() <= 0) {
       return 0f;
     }
-    int h = Gdx.graphics.getBackBufferHeight();
+    int h = Flixel.graphics.getBackBufferHeight();
     return h > 0 ? h : 0f;
   }
 }

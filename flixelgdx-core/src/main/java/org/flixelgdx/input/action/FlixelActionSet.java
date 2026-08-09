@@ -34,8 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
  * contract as {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager}. Actions read {@link org.flixelgdx.Flixel#keys Flixel.keys},
  * {@link org.flixelgdx.Flixel#mouse Flixel.mouse}, {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}, and {@code Gdx.input}
- * during {@link #update(float)}. This class is <strong>not</strong> an {@link com.badlogic.gdx.InputProcessor}: you do not add
- * it to {@link com.badlogic.gdx.InputMultiplexer}. Framework keyboard and mouse processors stay the single libGDX entry
+ * during {@link #update(float)}. This class does not hook platform input events directly. Framework keyboard and mouse managers stay the single entry
  * points for those devices.
  *
  * <h2>Lifecycle (normal games)</h2>

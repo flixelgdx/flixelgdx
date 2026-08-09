@@ -19,7 +19,7 @@
  * </ul>
  *
  * <p>
- * Action sets do <strong>not</strong> implement {@link com.badlogic.gdx.InputProcessor}; they poll the managers above each frame.
+ * Action sets do not hook platform input events directly; they poll the managers above each frame.
  * See {@link org.flixelgdx.input.action.FlixelActionSet FlixelActionSet} for lifecycle and examples.
  */
 package org.flixelgdx.input;
