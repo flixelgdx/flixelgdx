@@ -59,7 +59,7 @@ rootProject.name = "flixelgdx"
 include(
   "flixelgdx-core",
   "flixelgdx-jvm",
-  "flixelgdx-lwjgl3",
+  "flixelgdx-desktop",
   "flixelgdx-ios",
   "flixelgdx-teavm",
   "flixelgdx-teavm-plugin",

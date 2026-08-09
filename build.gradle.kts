@@ -38,7 +38,7 @@ tasks.register("javadocAll") {
   dependsOn(
     ":flixelgdx-core:javadoc",
     ":flixelgdx-jvm:javadoc",
-    ":flixelgdx-lwjgl3:javadoc",
+    ":flixelgdx-desktop:javadoc",
     ":flixelgdx-ios:javadoc",
     ":flixelgdx-teavm:javadoc",
     ":flixelgdx-teavm-plugin:javadoc",
