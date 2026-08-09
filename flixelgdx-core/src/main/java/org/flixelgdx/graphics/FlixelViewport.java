@@ -25,6 +25,7 @@ package org.flixelgdx.graphics;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.math.FlixelMatrix;
+import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 
@@ -183,6 +184,34 @@ public class FlixelViewport {
     screenCoords.x = cameraX + (relX - 0.5f) * visibleW;
     screenCoords.y = cameraY + (relY - 0.5f) * visibleH;
     return screenCoords;
+  }
+
+  /**
+   * Projects an axis-aligned rectangle from world coordinates into framebuffer pixels (measured
+   * from the window's bottom-left corner), the form the graphics scissor takes.
+   *
+   * <p>Used for sprite clip rectangles. Because it derives the mapping from the same visible-world
+   * rectangle the projection matrix uses, the scissor lines up exactly with what the batch draws.
+   * Rotation is ignored, which is fine for the axis-aligned clip rectangles game code sets.
+   *
+   * @param worldX Left edge in world coordinates.
+   * @param worldY Bottom edge in world coordinates.
+   * @param worldW Width in world units.
+   * @param worldH Height in world units.
+   * @param out Reused output rectangle: {@code (x, y, width, height)} in framebuffer pixels.
+   * @return The same {@code out} rectangle, for chaining.
+   */
+  @NotNull
+  public FlixelRect projectToScissor(float worldX, float worldY, float worldW, float worldH, @NotNull FlixelRect out) {
+    float visibleW = worldWidth * viewScale;
+    float visibleH = worldHeight * viewScale;
+    float left = cameraX - visibleW / 2f;
+    float bottom = cameraY - visibleH / 2f;
+    float sx = screenX + ((worldX - left) / visibleW) * screenWidth;
+    float sy = screenY + ((worldY - bottom) / visibleH) * screenHeight;
+    float sw = (worldW / visibleW) * screenWidth;
+    float sh = (worldH / visibleH) * screenHeight;
+    return out.set(sx, sy, sw, sh);
   }
 
   /**

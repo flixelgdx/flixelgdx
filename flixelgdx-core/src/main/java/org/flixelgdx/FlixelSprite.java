@@ -23,19 +23,6 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.GL30;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.XmlReader;
-
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
@@ -47,7 +34,11 @@ import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.graphics.FlixelViewport;
 import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
@@ -64,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Loading graphics</h2>
  * <p>Use {@link #loadGraphic(String)} for asset-managed textures (the texture is cached and
  * reference-counted by {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager}).
- * {@link #makeGraphic(int, int, Color)} generates a solid-color rectangle on the fly and
+ * {@link #makeGraphic(int, int, FlixelColor)} generates a solid-color rectangle on the fly and
  * owns the resulting texture. For Sparrow XML atlases, call
  * {@link #ensureAnimation()}{@code .addSparrowAtlas(...)} instead of loading the texture directly.
  *
@@ -98,27 +89,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable, FlixelShaderable {
 
-  @Nullable
-  private static ShaderProgram premultipliedShader;
-  @Nullable
-  private static ShaderProgram whiteMixShader;
-
   /** Shared scratch rectangle for clip rect bounds; reused across all sprite draw calls. */
-  private static final Rectangle tempClipBounds = new Rectangle();
+  private static final FlixelRect tempClipBounds = new FlixelRect();
 
-  /** Shared scratch rectangle for scissor pixel coordinates; reused across all sprite draw calls. */
-  private static final Rectangle tempScissors = new Rectangle();
-
-  private static boolean blendMinMaxChecked;
-  private static boolean blendMinMaxSupported;
-
-  /** Graphic backing this sprite (shared/cached wrapper around a Texture). */
+  /** Graphic backing this sprite (shared/cached wrapper around a texture). */
   @Nullable
   protected FlixelGraphic graphic;
 
   /** The atlas frames used in this sprite (used for animations). */
   @Nullable
-  protected Array<FlixelFrame> atlasFrames;
+  protected FlixelArray<FlixelFrame> atlasFrames;
 
   /**
    * Extra {@link FlixelGraphic} handles retained when additional spritesheets are merged onto this
@@ -166,7 +146,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   protected float offsetY = 0f;
 
   /** The color tint applied when drawing this sprite. */
-  protected final Color color = new Color(Color.WHITE);
+  protected final FlixelColor color = new FlixelColor(FlixelColor.WHITE);
 
   /**
    * Blending mode, functions similarly to Photoshop or Gimp, e.g. "multiply", "screen", etc.
@@ -337,7 +317,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Loads a texture and automatically resizes the size of {@code this} sprite.
    *
-   * <p>This backs {@link #makeGraphic(int, int, Color)} and other in-memory texture sources, so it
+   * <p>This backs {@link #makeGraphic(int, int, FlixelColor)} and other in-memory texture sources, so it
    * is {@code protected} rather than public: game code loads art through the file and asset-key
    * overloads, keeping backend texture types out of the public surface, while subclasses can still
    * override it to guard or specialize in-memory loading.
@@ -347,7 +327,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @param frameHeight How tall the sprite should be.
    * @return {@code this} sprite for chaining.
    */
-  protected FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
+  protected FlixelSprite loadGraphic(FlixelTexture texture, int frameWidth, int frameHeight) {
     if (graphic != null) {
       graphic.release();
     }
@@ -357,8 +337,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     assets.register(g);
     graphic = g.retain();
 
-    TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
-    frames = wrapFrames(regions);
+    frames = splitFrames(texture, frameWidth, frameHeight);
     currentFrame = frames[0][0];
     updateHitbox(frameWidth, frameHeight);
     setAntialiasing(antialiasing);
@@ -374,7 +353,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    */
   public FlixelSprite loadGraphic(String assetKey) {
     FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
-    Texture t = g.getTexture();
+    FlixelTexture t = g.getTexture();
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
 
@@ -388,7 +367,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
     FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
-    Texture t = g.getTexture();
+    FlixelTexture t = g.getTexture();
     return loadGraphic(g, frameWidth, t.getHeight());
   }
 
@@ -440,9 +419,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       graphic.release();
     }
     graphic = g;
-    Texture texture = g.getTexture();
-    TextureRegion[][] regions = TextureRegion.split(texture, frameWidth, frameHeight);
-    frames = wrapFrames(regions);
+    FlixelTexture texture = g.getTexture();
+    frames = splitFrames(texture, frameWidth, frameHeight);
     currentFrame = frames[0][0];
     atlasFrames = null;
     if (animation != null) {
@@ -453,13 +431,15 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return this;
   }
 
-  private static FlixelFrame[][] wrapFrames(TextureRegion[][] regions) {
-    FlixelFrame[][] out = new FlixelFrame[regions.length][];
-    for (int i = 0; i < regions.length; i++) {
-      TextureRegion[] row = regions[i];
-      FlixelFrame[] rowFrames = new FlixelFrame[row.length];
-      for (int j = 0; j < row.length; j++) {
-        rowFrames[j] = new FlixelFrame(row[j]);
+  /** Cuts a texture into a grid of equally sized frames, row by row from the top-left. */
+  private static FlixelFrame[][] splitFrames(FlixelTexture texture, int frameWidth, int frameHeight) {
+    int cols = Math.max(1, texture.getWidth() / Math.max(1, frameWidth));
+    int rows = Math.max(1, texture.getHeight() / Math.max(1, frameHeight));
+    FlixelFrame[][] out = new FlixelFrame[rows][];
+    for (int i = 0; i < rows; i++) {
+      FlixelFrame[] rowFrames = new FlixelFrame[cols];
+      for (int j = 0; j < cols; j++) {
+        rowFrames[j] = new FlixelFrame(texture, j * frameWidth, i * frameHeight, frameWidth, frameHeight);
       }
       out[i] = rowFrames;
     }
@@ -474,37 +454,22 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @param color The color of the graphic.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
-    Pixmap pixmap = new Pixmap(width, height, Pixmap.Format.RGBA8888);
-    pixmap.setColor(color);
-    pixmap.fill();
-    Texture texture = new Texture(pixmap);
-    pixmap.dispose();
-    return loadGraphic(texture, width, height);
-  }
-
-  /**
-   * Creates a solid color rectangular texture on the fly.
-   *
-   * @param width The width of the graphic.
-   * @param height The height of the graphic.
-   * @param color The color of the graphic.
-   * @return {@code this} sprite for chaining.
-   */
   public FlixelSprite makeGraphic(int width, int height, @NotNull FlixelColor color) {
-    return makeGraphic(width, height, color.getGdxColor());
+    FlixelImage image = new FlixelImage(width, height);
+    image.fill(color);
+    return loadGraphic(Flixel.graphics.createTexture(image), width, height);
   }
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#addSparrowFrames(String, XmlReader.Element)} and
+   * {@link FlixelAnimationController#addSparrowFrames(String)} and
    * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
    * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get(...)} with
    *     {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */
-  public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
+  public void applySparrowAtlas(@NotNull FlixelGraphic newGraphic, @NotNull FlixelArray<FlixelFrame> parsedFrames) {
     if (graphic != null) {
       graphic.release();
     }
@@ -514,7 +479,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (animation != null) {
       animation.clear();
     }
-    if (parsedFrames.size > 0) {
+    if (parsedFrames.getSize() > 0) {
       FlixelFrame first = parsedFrames.first();
       setCurrentFrameForAnimation(first);
       // Size to the untrimmed source frame, not the trimmed region, so the hitbox and debug box
@@ -522,9 +487,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       // this is just a sensible default for the very first frame.
       setSize(first.originalWidth, first.originalHeight);
       setOriginCenter();
-      newGraphic.getTexture().setFilter(
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+      newGraphic.getTexture().setSmooth(antialiasing);
     }
   }
 
@@ -544,7 +507,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @param parsedFrames The frames to append, which may be empty.
    */
   public void mergeSparrowAtlas(
-      @NotNull FlixelGraphic newGraphic, @NotNull Array<FlixelFrame> parsedFrames) {
+      @NotNull FlixelGraphic newGraphic, @NotNull FlixelArray<FlixelFrame> parsedFrames) {
     retainSecondaryGraphic(newGraphic);
     if (atlasFrames == null) {
       atlasFrames = parsedFrames;
@@ -574,9 +537,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     secondaryGraphics.add(graphic);
 
     if (graphic.isLoaded()) {
-      graphic.getTexture().setFilter(
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+      graphic.getTexture().setSmooth(antialiasing);
     }
   }
 
@@ -632,14 +593,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       return;
     }
 
-    // Non-NORMAL blend modes need this sprite's geometry isolated in its own batch flush, since
-    // the blend function/equation (and, for LIGHTEN/DARKEN, the shader) applies to everything the
-    // GPU draws until it's restored below.
+    // Non-NORMAL blend modes need this sprite's geometry isolated in its own batch flush, since the
+    // blend state applies to everything the GPU draws until it's restored below. The batch flushes
+    // pending geometry internally when the mode changes, so no explicit flush is needed here.
     boolean blending = blendMode != FlixelBlendMode.NORMAL;
-    ShaderProgram previousShader = null;
     if (blending) {
-      previousShader = batch.getShader();
-      applyBlendMode(batch, blendMode);
+      batch.setBlendMode(blendMode);
     }
 
     // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
@@ -674,35 +633,20 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float originYParam = srcH / 2f - insetY;
 
     boolean clipEnabled = clipRectEnabled;
-    boolean clipPushed = false;
     if (clipEnabled) {
       // Flush before changing scissor state so previously batched sprites are not retroactively clipped.
       batch.flush();
-      float clipScreenX = wx + offsetX + clipRectX;
-      float clipScreenY = wy + offsetY + clipRectY;
-      float clipScreenW = clipRectWidth;
-      float clipScreenH = clipRectHeight;
-      tempClipBounds.set(clipScreenX, clipScreenY, clipScreenW, clipScreenH);
-      ScissorStack.calculateScissors(
-          cam.getCamera(),
-          cam.getViewport().getScreenX(), cam.getViewport().getScreenY(),
-          cam.getViewport().getScreenWidth(), cam.getViewport().getScreenHeight(),
-          batch.getTransformMatrix(), tempClipBounds, tempScissors);
-      clipPushed = ScissorStack.pushScissors(tempScissors);
-      if (!clipPushed) {
-        if (spriteShader != null) {
-          batch.setShader(null);
-        }
-        if (blending) {
-          resetBlendMode(batch, previousShader);
-        }
-        return;
-      }
+      float clipViewX = wx + offsetX + clipRectX;
+      float clipViewY = wy + offsetY + clipRectY;
+      cam.getViewport().projectToScissor(clipViewX, clipViewY, clipRectWidth, clipRectHeight, tempClipBounds);
+      Flixel.graphics.setScissor(
+          Math.round(tempClipBounds.x), Math.round(tempClipBounds.y),
+          Math.round(tempClipBounds.width), Math.round(tempClipBounds.height));
     }
 
     batch.setColor(color);
     batch.draw(
-        f.getTexture(),
+        f,
         drawX,
         drawY,
         originXParam,
@@ -712,17 +656,13 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
         scaleX,
         scaleY,
         getAngle(),
-        f.getRegionX(),
-        f.getRegionY(),
-        regW,
-        regH,
         isFlippedX,
         isFlippedY);
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
 
-    if (clipEnabled && clipPushed) {
+    if (clipEnabled) {
       batch.flush();
-      ScissorStack.popScissors();
+      Flixel.graphics.clearScissor();
     }
 
     if (spriteShader != null) {
@@ -731,7 +671,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
     if (blending) {
       batch.flush(); // Commit this sprite under the special blend state.
-      resetBlendMode(batch, previousShader);
+      batch.setBlendMode(FlixelBlendMode.NORMAL);
     }
   }
 
@@ -739,10 +679,9 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Sets how large the graphic is drawn on screen (in pixels), without changing which part of the texture is used.
    *
    * <p>This adjusts {@link #setScale(float, float)} so the full current frame/region maps to the
-   * given size. It does <em>not</em> change {@link TextureRegion} bounds: {@code
-   * TextureRegion#setRegionWidth}/{@code setRegionHeight} only resize the <strong>source</strong>
-   * rectangle inside the texture (UVs), which crops or re-samples texels; the drawable size in
-   * this class comes from {@link #getWidth()}/{@link #getHeight()} and scale in {@link #draw}.
+   * given size. It does <em>not</em> change the frame's source region bounds inside the texture;
+   * the drawable size in this class comes from {@link #getWidth()}/{@link #getHeight()} and scale
+   * in {@link #draw}.
    *
    * @param width The drawn width in pixels (must be {@code > 0}).
    * @param height The drawn height in pixels (must be {@code > 0}).
@@ -836,7 +775,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     spriteShader = null;
     blendMode = FlixelBlendMode.NORMAL;
     antialiasing = false;
-    color.set(Color.WHITE);
+    color.set(FlixelColor.WHITE);
     flipX = false;
     flipY = false;
     setAngle(0f);
@@ -905,7 +844,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Whether {@code this} sprite holds an owned {@link FlixelGraphic} (e.g. from {@link #makeGraphic(int, int, Color)}),
+   * Whether {@code this} sprite holds an owned {@link FlixelGraphic} (e.g. from {@link #makeGraphic(int, int, FlixelColor)}),
    * so CPU-side pixmap uploads are allowed without mutating a shared atlas.
    */
   public boolean hasOwnedGraphic() {
@@ -925,12 +864,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Returns the backing {@link Texture} of the current frame, or {@code null} if no frame is
-   * loaded. The texture is owned by the sprite's {@link FlixelGraphic}; do not dispose it directly.
+   * Returns the backing {@link FlixelTexture} of the current frame, or {@code null} if no frame is
+   * loaded. The texture is owned by the sprite's {@link FlixelGraphic}; do not destroy it directly.
    *
    * @return The current frame's texture, or {@code null}.
    */
-  public Texture getTexture() {
+  public FlixelTexture getTexture() {
     return currentFrame != null ? currentFrame.getTexture() : null;
   }
 
@@ -1052,18 +991,13 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
-    Texture texture = currentFrame != null ? currentFrame.getTexture() : null;
+    FlixelTexture texture = currentFrame != null ? currentFrame.getTexture() : null;
     if (texture != null) {
-      texture.setFilter(
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-          antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+      texture.setSmooth(antialiasing);
     }
     if (secondaryGraphics != null) {
       for (FlixelGraphic g : secondaryGraphics) {
-        var t = g.getTexture();
-        t.setFilter(
-            antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest,
-            antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest);
+        g.getTexture().setSmooth(antialiasing);
       }
     }
   }
@@ -1075,7 +1009,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Returns the alpha component of this sprite's tint color, in the range {@code [0, 1]}.
-   * This is sugar for {@link #getGdxColor()}{@code .a}; both refer to the same underlying value.
+   * This is sugar for {@link #getColor()}{@code .a}; both refer to the same underlying value.
    *
    * @return Alpha transparency, where {@code 0} is fully transparent and {@code 1} is fully opaque.
    */
@@ -1119,48 +1053,30 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Sets the blend mode applied when this sprite is drawn.
    *
-   * <p>{@link FlixelBlendMode#LIGHTEN} and {@link FlixelBlendMode#DARKEN} require OpenGL ES 3.0.
-   * On devices that do not support it, the mode silently falls back to {@link FlixelBlendMode#NORMAL}
-   * and a warning is logged. All non-NORMAL modes force a GPU batch flush before and after this
-   * sprite, which can reduce draw-call batching efficiency when many sprites use different blend modes
-   * in the same draw pass. Passing {@code null} is safe and resets to {@link FlixelBlendMode#NORMAL}.
+   * <p>Some modes (for example {@link FlixelBlendMode#LIGHTEN} and {@link FlixelBlendMode#DARKEN})
+   * require capabilities not present on every backend; the active graphics backend falls back to
+   * {@link FlixelBlendMode#NORMAL} when it cannot honor a mode. All non-NORMAL modes force a GPU
+   * batch flush before and after this sprite, which can reduce draw-call batching efficiency when
+   * many sprites use different blend modes in the same draw pass. Passing {@code null} is safe and
+   * resets to {@link FlixelBlendMode#NORMAL}.
    *
    * @param blendMode The blend mode to apply, or {@code null} to reset to NORMAL.
    */
   public void setBlendMode(FlixelBlendMode blendMode) {
     this.blendMode = blendMode == null ? FlixelBlendMode.NORMAL : blendMode;
-    if (!isBlendMinMaxSupported()) {
-      if (blendMode == FlixelBlendMode.LIGHTEN || blendMode == FlixelBlendMode.DARKEN) {
-        Flixel.warn("FlixelSprite", blendMode
-            + " blend mode requires OpenGL ES 3.0, which is not available on this device. Falling back to NORMAL.");
-        this.blendMode = FlixelBlendMode.NORMAL;
-      }
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public int getColor() {
-    return Color.rgba8888(color);
   }
 
   /** {@inheritDoc} */
   @Override
   @NotNull
-  public Color getGdxColor() {
+  public FlixelColor getColor() {
     return color;
   }
 
   /** {@inheritDoc} */
   @Override
-  public void setColor(@NotNull Color tint) {
-    color.set(tint);
-  }
-
-  /** {@inheritDoc} */
-  @Override
   public void setColor(@NotNull FlixelColor tint) {
-    color.set(tint.getGdxColor());
+    color.set(tint);
   }
 
   /**
@@ -1195,8 +1111,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Sets the alpha component of this sprite's tint color, clamped by libGDX to {@code [0, 1]}.
-   * Equivalent to {@code getGdxColor().a = a}. RGB channels are unchanged.
+   * Sets the alpha component of this sprite's tint color. Values are expected in {@code [0, 1]}.
+   * Equivalent to {@code getColor().a = a}. RGB channels are unchanged.
    *
    * @param a New alpha value, where {@code 0} is fully transparent and {@code 1} is fully opaque.
    */
@@ -1248,23 +1164,23 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Replaces the currently displayed frame with a wrapper around the given {@link TextureRegion},
-   * bypassing the frame grid and animation system. Useful for one-off sprites that source a region
-   * from an existing atlas without going through {@link #loadGraphic(String)} or
-   * {@link #applySparrowAtlas(FlixelGraphic, com.badlogic.gdx.utils.Array)}. Pass {@code null} to clear the displayed frame.
+   * Replaces the currently displayed frame directly, bypassing the frame grid and animation
+   * system. Useful for one-off sprites that source a frame from an existing atlas without going
+   * through {@link #loadGraphic(String)} or {@link #applySparrowAtlas(FlixelGraphic, FlixelArray)}.
+   * Pass {@code null} to clear the displayed frame.
    *
-   * @param region The region to display, or {@code null} to stop rendering.
+   * @param region The frame to display, or {@code null} to stop rendering.
    */
-  public void setRegion(TextureRegion region) {
-    currentFrame = region != null ? new FlixelFrame(region) : null;
+  public void setRegion(FlixelFrame region) {
+    currentFrame = region;
   }
 
   public FlixelFrame getFrame() {
     return currentFrame;
   }
 
-  public TextureRegion getRegion() {
-    return currentFrame != null ? currentFrame.getRegion() : null;
+  public FlixelFrame getRegion() {
+    return currentFrame;
   }
 
   public int getRegionWidth() {
@@ -1275,7 +1191,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return currentFrame != null ? currentFrame.getRegionHeight() : 0;
   }
 
-  public Array<FlixelFrame> getAtlasRegions() {
+  public FlixelArray<FlixelFrame> getAtlasRegions() {
     return atlasFrames;
   }
 
@@ -1376,83 +1292,5 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   public void changeClipRectHeight(float clipRectHeight) {
     setClipRectHeight(this.clipRectHeight + clipRectHeight);
-  }
-
-  private void applyBlendMode(FlixelBatch batch, FlixelBlendMode mode) {
-    switch (mode) {
-      case ADD -> batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
-      case MULTIPLY -> {
-        batch.setBlendFunction(GL20.GL_DST_COLOR, GL20.GL_ZERO);
-        batch.setShader(getWhiteMixShader());
-      }
-      case SCREEN -> {
-        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE_MINUS_SRC_COLOR);
-        batch.setShader(getPremultipliedShader());
-      }
-      case SUBTRACT -> {
-        batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
-        batch.setShader(getPremultipliedShader());
-        Gdx.gl.glBlendEquation(GL20.GL_FUNC_REVERSE_SUBTRACT);
-      }
-      case LIGHTEN -> {
-        if (isBlendMinMaxSupported()) {
-          batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
-          batch.setShader(getPremultipliedShader());
-          setBlendEquationMinMax(GL30.GL_MAX);
-        }
-      }
-      case DARKEN -> {
-        if (isBlendMinMaxSupported()) {
-          batch.setBlendFunction(GL20.GL_ONE, GL20.GL_ONE);
-          batch.setShader(getWhiteMixShader());
-          setBlendEquationMinMax(GL30.GL_MIN);
-        }
-      }
-      case NORMAL -> {
-        // Do nothing.
-      }
-    }
-  }
-
-  private void resetBlendMode(FlixelBatch batch, @Nullable ShaderProgram previousShader) {
-    batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-    Gdx.gl.glBlendEquation(GL20.GL_FUNC_ADD);
-    batch.setShader(previousShader);
-  }
-
-  private void setBlendEquationMinMax(int mode) {
-    Gdx.gl.glBlendEquation(mode);
-  }
-
-  private static ShaderProgram getPremultipliedShader() {
-    if (premultipliedShader == null) {
-      premultipliedShader = compileBlendShader(FlixelBlendMode.PREMULTIPLIED_FRAGMENT_SHADER);
-    }
-    return premultipliedShader;
-  }
-
-  private static ShaderProgram getWhiteMixShader() {
-    if (whiteMixShader == null) {
-      whiteMixShader = compileBlendShader(FlixelBlendMode.WHITE_MIX_FRAGMENT_SHADER);
-    }
-    return whiteMixShader;
-  }
-
-  private static ShaderProgram compileBlendShader(String fragmentSource) {
-    ShaderProgram.pedantic = false;
-    return new ShaderProgram(FlixelBlendMode.BLEND_VERTEX_SHADER, fragmentSource);
-  }
-
-  private static boolean isBlendMinMaxSupported() {
-    if (!blendMinMaxChecked) {
-      blendMinMaxChecked = true;
-      if (Gdx.graphics.isGL30Available()) {
-        blendMinMaxSupported = true;
-      } else {
-        String extensions = Gdx.gl.glGetString(GL20.GL_EXTENSIONS);
-        blendMinMaxSupported = extensions != null && extensions.contains("GL_EXT_blend_minmax");
-      }
-    }
-    return blendMinMaxSupported;
   }
 }
