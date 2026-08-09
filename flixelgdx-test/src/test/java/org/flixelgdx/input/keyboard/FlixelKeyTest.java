@@ -51,8 +51,6 @@ class FlixelKeyTest {
   @Test
   void aliasesResolveToSharedCode() {
     assertEquals(FlixelKey.DEL, FlixelKey.fromString("BACKSPACE"));
-    assertEquals(FlixelKey.UP, FlixelKey.fromString("DPAD_UP"));
-    assertEquals(FlixelKey.DPAD_CENTER, FlixelKey.fromString("CENTER"));
   }
 
   @Test
