@@ -426,6 +426,23 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
+   * Turns continuous rendering on or off.
+   *
+   * <p>When continuous rendering is off, the loop only redraws when {@link #requestRendering()}
+   * is called, which the framework uses to idle the game while the window is unfocused. Backends
+   * that always render every frame may ignore this.
+   *
+   * @param continuous {@code true} to render every frame, {@code false} to render on request only.
+   */
+  default void setContinuousRendering(boolean continuous) {}
+
+  /**
+   * Requests that at least one more frame be rendered while continuous rendering is off. Has no
+   * effect when continuous rendering is on.
+   */
+  default void requestRendering() {}
+
+  /**
    * Requests that the game's window closes, ending the game.
    *
    * <p>This is the same request the user makes by clicking the window's close control. If close

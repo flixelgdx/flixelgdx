@@ -38,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
  * immediately.
  *
  * <p>The runner is expected to call {@link FlixelGame#create()} once the platform surface is
- * ready, then {@link FlixelGame#render()} every frame, {@link FlixelGame#resize(int, int)} on
+ * ready, then {@link FlixelGame#render(float)} every frame, {@link FlixelGame#resize(int, int)} on
  * size changes, and the focus/lifecycle hooks as its platform reports them.
  */
 @FunctionalInterface

@@ -214,6 +214,16 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Forces the whole draw surface's alpha channel to fully opaque without touching its color
+   * channels.
+   *
+   * <p>This is only meaningful on desktop backends that requested a transparent-capable
+   * framebuffer: after drawing, the framework calls this so tinted sprites do not composite
+   * through the real desktop. Every other backend leaves it a no-op.
+   */
+  default void forceOpaqueAlpha() {}
+
+  /**
    * Compiles a shader source bundle into a usable program on the active backend.
    *
    * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedShader},

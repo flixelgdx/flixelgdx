@@ -49,10 +49,16 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface FlixelRenderTarget extends FlixelDestroyable {
 
-  /** Redirects subsequent drawing into this target. */
+  /**
+   * Redirects subsequent drawing into this target.
+   *
+   * <p>Targets nest: if another target is already active when this one begins, {@link #end()}
+   * returns drawing to that outer target rather than to the screen. This is what lets a camera's
+   * post-processing target render inside a whole-scene global target.
+   */
   void begin();
 
-  /** Ends redirection, so drawing goes back to the previous surface (usually the screen). */
+  /** Ends redirection, so drawing goes back to the previously active target (or the screen). */
   void end();
 
   /**
