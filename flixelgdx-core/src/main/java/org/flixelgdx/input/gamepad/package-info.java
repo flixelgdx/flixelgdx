@@ -6,8 +6,9 @@
  * controllers each frame and exposes familiar pressed/justPressed/justReleased semantics
  * alongside analog axis reads.
  *
- * <p>Logical button and axis constants live on
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput} and are resolved to
+ * <p>Logical button and axis tokens live on
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadButton FlixelGamepadButton} and
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadAxis FlixelGamepadAxis}, and are resolved to
  * native hardware indices through the
  * {@link org.flixelgdx.input.gamepad.FlixelGamepadMapping FlixelGamepadMapping} produced at connect
  * time by the resolver chain. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel}

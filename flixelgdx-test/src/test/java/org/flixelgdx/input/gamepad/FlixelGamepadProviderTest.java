@@ -127,17 +127,17 @@ class FlixelGamepadProviderTest {
 
     manager.update();
     assertEquals(1, manager.numActiveGamepads, "The provider's gamepad should occupy one slot.");
-    assertFalse(manager.pressed(0, FlixelGamepadInput.A));
+    assertFalse(manager.pressed(0, FlixelGamepadButton.A));
 
     pad.buttons[0] = true; // FlixelGamepadButton.A mapped to native index 0
     manager.update();
-    assertTrue(manager.pressed(0, FlixelGamepadInput.A));
-    assertTrue(manager.justPressed(0, FlixelGamepadInput.A));
+    assertTrue(manager.pressed(0, FlixelGamepadButton.A));
+    assertTrue(manager.justPressed(0, FlixelGamepadButton.A));
 
     manager.endFrame();
     manager.update();
-    assertTrue(manager.pressed(0, FlixelGamepadInput.A), "Still held, so still pressed.");
-    assertFalse(manager.justPressed(0, FlixelGamepadInput.A), "Held since last frame, so no longer 'just'.");
+    assertTrue(manager.pressed(0, FlixelGamepadButton.A), "Still held, so still pressed.");
+    assertFalse(manager.justPressed(0, FlixelGamepadButton.A), "Held since last frame, so no longer 'just'.");
   }
 
   @Test
@@ -146,6 +146,6 @@ class FlixelGamepadProviderTest {
     manager.setGamepadProvider(new FakeProvider());
     manager.update();
     assertEquals(0, manager.numActiveGamepads);
-    assertFalse(manager.anyPressed(FlixelGamepadInput.A));
+    assertFalse(manager.anyPressed(FlixelGamepadButton.A));
   }
 }

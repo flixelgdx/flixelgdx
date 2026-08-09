@@ -25,6 +25,7 @@ package org.flixelgdx.input.gamepad;
 
 import org.flixelgdx.collections.FlixelMap;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Translates logical gamepad inputs to the native button and axis indices a specific device reports.
@@ -76,6 +77,7 @@ public class FlixelGamepadMapping {
 
   private final FlixelMap<FlixelGamepadButton, Integer> buttons = new FlixelMap<>();
   private final FlixelMap<FlixelGamepadAxis, Integer> axes = new FlixelMap<>();
+  private final FlixelMap<Integer, FlixelGamepadButton> buttonsByIndex = new FlixelMap<>();
 
   /** Creates an empty mapping; populate with {@link #register} and {@link #registerAxis}. */
   public FlixelGamepadMapping() {}
@@ -90,10 +92,16 @@ public class FlixelGamepadMapping {
    * @param nativeIndex The hardware button index this controller reports for that button.
    */
   public void register(@NotNull FlixelGamepadButton button, int nativeIndex) {
+    Integer previous = buttons.get(button);
+    if (previous != null && buttonsByIndex.get(previous) == button) {
+      // Drop the stale reverse entry so it does not outlive its logical button.
+      buttonsByIndex.remove(previous);
+    }
     if (nativeIndex == UNDEFINED) {
       buttons.remove(button);
     } else {
       buttons.put(button, nativeIndex);
+      buttonsByIndex.put(nativeIndex, button);
     }
   }
 
@@ -127,6 +135,23 @@ public class FlixelGamepadMapping {
   }
 
   /**
+   * Returns the logical button registered at the given native index, or {@code null} when no button
+   * maps to it.
+   *
+   * <p>This is the reverse of {@link #register(FlixelGamepadButton, int)}, letting the manager turn a
+   * hardware button index back into the logical {@link FlixelGamepadButton} it stands for without
+   * scanning every registration. When two buttons share a native index (unusual), the most recently
+   * registered one wins.
+   *
+   * @param nativeIndex A native hardware button index.
+   * @return The logical button at that index, or {@code null} when unmapped.
+   */
+  @Nullable
+  public FlixelGamepadButton getButtonForIndex(int nativeIndex) {
+    return buttonsByIndex.get(nativeIndex);
+  }
+
+  /**
    * Returns the native axis index for the given logical axis, or {@link #UNDEFINED} if the axis
    * is not registered in this mapping.
    *
@@ -142,5 +167,6 @@ public class FlixelGamepadMapping {
   public void clear() {
     buttons.clear();
     axes.clear();
+    buttonsByIndex.clear();
   }
 }

@@ -26,7 +26,7 @@ package org.flixelgdx.input.action;
 import com.badlogic.gdx.Gdx;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.input.gamepad.FlixelGamepadInput;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.touch.FlixelTouch;
 
@@ -42,7 +42,7 @@ import org.flixelgdx.input.touch.FlixelTouch;
  *
  * <pre>{@code
  * jump.addBinding("keyboard", FlixelDigitalBinding.key(FlixelKey.SPACE));
- * jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadInput.A));
+ * jump.addBinding("gamepad",  FlixelDigitalBinding.gamepadButton(0, FlixelGamepadButton.A));
  * jump.addBinding("touch",    FlixelDigitalBinding.touch(0));
  * jump.addBinding("sensor",   () -> myCustomSensor.isActive());
  * }</pre>
@@ -52,7 +52,7 @@ import org.flixelgdx.input.touch.FlixelTouch;
 @FunctionalInterface
 public interface FlixelDigitalBinding {
 
-  /** Pass to {@link #gamepadButton(int, int)} so any active gamepad slot counts. */
+  /** Pass to {@link #gamepadButton(int, FlixelGamepadButton)} so any active gamepad slot counts. */
   int GAMEPAD_SLOT_ANY = -1;
 
   /**
@@ -86,19 +86,18 @@ public interface FlixelDigitalBinding {
    * Gamepad button binding using {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}.
    *
    * @param slot Gamepad slot (0 and up), or {@link #GAMEPAD_SLOT_ANY} to match any connected slot.
-   * @param logicalButton Logical button value from
-   *   {@link FlixelGamepadInput FlixelGamepadInput}.
+   * @param button Logical button token from {@link FlixelGamepadButton}.
    * @return Binding that fires while the button is held on the given slot.
    */
-  static FlixelDigitalBinding gamepadButton(int slot, int logicalButton) {
+  static FlixelDigitalBinding gamepadButton(int slot, FlixelGamepadButton button) {
     return () -> {
       if (Flixel.gamepads == null || !Flixel.gamepads.enabled) {
         return false;
       }
       if (slot == GAMEPAD_SLOT_ANY) {
-        return Flixel.gamepads.anyPressed(logicalButton);
+        return Flixel.gamepads.anyPressed(button);
       }
-      return Flixel.gamepads.pressed(slot, logicalButton);
+      return Flixel.gamepads.pressed(slot, button);
     };
   }
 

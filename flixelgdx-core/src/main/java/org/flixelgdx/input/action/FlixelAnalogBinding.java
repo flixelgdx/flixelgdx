@@ -24,7 +24,7 @@
 package org.flixelgdx.input.action;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.input.gamepad.FlixelGamepadInput;
+import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.math.FlixelVector;
 
 /**
@@ -40,18 +40,18 @@ import org.flixelgdx.math.FlixelVector;
  * <pre>{@code
  * move.addBinding("negX",   FlixelAnalogBinding.negXKey(FlixelKey.A));
  * move.addBinding("posX",   FlixelAnalogBinding.posXKey(FlixelKey.D));
- * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadInput.AXIS_LEFT_X));
- * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadInput.AXIS_LEFT_Y));
+ * move.addBinding("stickX", FlixelAnalogBinding.gamepadAxisX(0, FlixelGamepadAxis.LEFT_X));
+ * move.addBinding("stickY", FlixelAnalogBinding.gamepadAxisY(0, FlixelGamepadAxis.LEFT_Y));
  * move.addBinding("custom", out -> out.x += myJoystick.getX());
  * }</pre>
  *
  * <h2>Axis conventions</h2>
  *
  * <p>Key bindings contribute exactly -1 or +1 per axis. Gamepad axes contribute a smooth value in
- * the range -1..1. {@link #gamepadAxisY(int, int)} corrects the hardware Y axis (where up is
- * negative in screen-space) so that up = positive Y, matching key bindings. Use
- * {@link #gamepadAxisY(int, int, boolean) gamepadAxisY(slot, axis, true)} when you need the raw
- * hardware value instead.
+ * the range -1..1. {@link #gamepadAxisY(int, FlixelGamepadAxis)} corrects the hardware Y axis (where
+ * up is negative in screen-space) so that up = positive Y, matching key bindings. Use
+ * {@link #gamepadAxisY(int, FlixelGamepadAxis, boolean) gamepadAxisY(slot, axis, true)} when you need
+ * the raw hardware value instead.
  *
  * @see FlixelActionAnalog
  */
@@ -126,13 +126,13 @@ public interface FlixelAnalogBinding {
    * negative, right is positive), so no correction is applied.
    *
    * @param slot Gamepad slot (0 and up).
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_X} or similar.
+   * @param axis {@link FlixelGamepadAxis#LEFT_X} or similar.
    * @return Binding that contributes the stick X value.
    */
-  static FlixelAnalogBinding gamepadAxisX(int slot, int logicalAxis) {
+  static FlixelAnalogBinding gamepadAxisX(int slot, FlixelGamepadAxis axis) {
     return out -> {
       if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-        out.x += Flixel.gamepads.getAxis(slot, logicalAxis);
+        out.x += Flixel.gamepads.getAxis(slot, axis);
       }
     };
   }
@@ -142,33 +142,33 @@ public interface FlixelAnalogBinding {
    * up = positive Y, matching key bindings. This is the right choice for almost every game.
    *
    * @param slot Gamepad slot (0 and up).
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
+   * @param axis {@link FlixelGamepadAxis#LEFT_Y} or similar.
    * @return Binding that contributes the stick Y value (up = positive).
    */
-  static FlixelAnalogBinding gamepadAxisY(int slot, int logicalAxis) {
-    return gamepadAxisY(slot, logicalAxis, false);
+  static FlixelAnalogBinding gamepadAxisY(int slot, FlixelGamepadAxis axis) {
+    return gamepadAxisY(slot, axis, false);
   }
 
   /**
    * Adds the Y component of a gamepad stick.
    *
    * @param slot Gamepad slot (0 and up).
-   * @param logicalAxis {@link FlixelGamepadInput#AXIS_LEFT_Y} or similar.
+   * @param axis {@link FlixelGamepadAxis#LEFT_Y} or similar.
    * @param raw When {@code false} (the default), the raw hardware Y is negated so that up = positive
    *   Y, matching key bindings. Pass {@code true} to use the raw screen-space value unchanged.
    * @return Binding that contributes the stick Y value.
    */
-  static FlixelAnalogBinding gamepadAxisY(int slot, int logicalAxis, boolean raw) {
+  static FlixelAnalogBinding gamepadAxisY(int slot, FlixelGamepadAxis axis, boolean raw) {
     if (raw) {
       return out -> {
         if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-          out.y += Flixel.gamepads.getAxis(slot, logicalAxis);
+          out.y += Flixel.gamepads.getAxis(slot, axis);
         }
       };
     }
     return out -> {
       if (Flixel.gamepads != null && Flixel.gamepads.enabled) {
-        out.y -= Flixel.gamepads.getAxis(slot, logicalAxis);
+        out.y -= Flixel.gamepads.getAxis(slot, axis);
       }
     };
   }
