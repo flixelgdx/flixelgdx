@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
@@ -37,6 +35,7 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.math.FlixelAffine;
@@ -216,9 +215,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
     // Resolve a .ktx2 sibling before checking existence, since compressed builds delete the
     // plain PNG once its .ktx2 replacement exists.
     String resolvedPngPath = Flixel.ensureAssets().resolveTexturePath(pngPath);
-    if (!Gdx.files.internal(resolvedPngPath).exists()
-        || !Gdx.files.internal(spritemapJsonPath).exists()
-        || !Gdx.files.internal(animationJsonPath).exists()) {
+    if (!Flixel.files.internal(resolvedPngPath).exists()
+        || !Flixel.files.internal(spritemapJsonPath).exists()
+        || !Flixel.files.internal(animationJsonPath).exists()) {
       throw new IllegalArgumentException(
           "The provided path is either not a real folder, one of the required files is missing, or doesn't exist.");
     }
@@ -228,7 +227,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   /**
    * Adds an Adobe Animate texture atlas from a single provided directory handle.
    *
-   * <p>Equivalent to {@link #addSpritemapAndAnimation(String)}, but accepts a libGDX {@link FileHandle}
+   * <p>Equivalent to {@link #addSpritemapAndAnimation(String)}, but accepts a {@link FlixelFile}
    * for callers that already resolved the directory through a file resolver instead of holding a raw path.
    *
    * @param path The directory handle where all three core files are stored. Must be a directory.
@@ -240,7 +239,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * @see #defaultAnimationFileName
    */
   @NotNull
-  public FlixelAnimateSprite addSpritemapAndAnimation(@NotNull FileHandle path) {
+  public FlixelAnimateSprite addSpritemapAndAnimation(@NotNull FlixelFile path) {
     return addSpritemapAndAnimation(pathOf(path, "path"));
   }
 
@@ -266,7 +265,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code textureKey}
-   * as a {@link FileHandle} instead of a path string.
+   * as a {@link FlixelFile} instead of a path string.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -276,7 +275,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
+      @NotNull FlixelFile textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath) {
     return addSpritemapAndAnimation(pathOf(textureKey, "textureKey"), spritemapJsonPath, animationJsonPath);
@@ -284,7 +283,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code spritemapJsonPath}
-   * as a {@link FileHandle} instead of a path string.
+   * as a {@link FlixelFile} instead of a path string.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -295,14 +294,14 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
-      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FlixelFile spritemapJsonPath,
       @NotNull String animationJsonPath) {
     return addSpritemapAndAnimation(textureKey, pathOf(spritemapJsonPath, "spritemapJsonPath"), animationJsonPath);
   }
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code animationJsonPath}
-   * as a {@link FileHandle} instead of a path string.
+   * as a {@link FlixelFile} instead of a path string.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -314,13 +313,13 @@ public class FlixelAnimateSprite extends FlixelSprite {
   public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath) {
+      @NotNull FlixelFile animationJsonPath) {
     return addSpritemapAndAnimation(textureKey, spritemapJsonPath, pathOf(animationJsonPath, "animationJsonPath"));
   }
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code textureKey}
-   * and {@code spritemapJsonPath} as {@link FileHandle}s instead of path strings.
+   * and {@code spritemapJsonPath} as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -330,8 +329,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
-      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FlixelFile textureKey,
+      @NotNull FlixelFile spritemapJsonPath,
       @NotNull String animationJsonPath) {
     return addSpritemapAndAnimation(
         pathOf(textureKey, "textureKey"), pathOf(spritemapJsonPath, "spritemapJsonPath"), animationJsonPath);
@@ -339,7 +338,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code textureKey}
-   * and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   * and {@code animationJsonPath} as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -349,16 +348,16 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
+      @NotNull FlixelFile textureKey,
       @NotNull String spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath) {
+      @NotNull FlixelFile animationJsonPath) {
     return addSpritemapAndAnimation(
         pathOf(textureKey, "textureKey"), spritemapJsonPath, pathOf(animationJsonPath, "animationJsonPath"));
   }
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts {@code spritemapJsonPath}
-   * and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   * and {@code animationJsonPath} as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -369,15 +368,15 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
-      @NotNull FileHandle spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath) {
+      @NotNull FlixelFile spritemapJsonPath,
+      @NotNull FlixelFile animationJsonPath) {
     return addSpritemapAndAnimation(
         textureKey, pathOf(spritemapJsonPath, "spritemapJsonPath"), pathOf(animationJsonPath, "animationJsonPath"));
   }
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String)} that accepts all three core
-   * parameters as {@link FileHandle}s instead of path strings.
+   * parameters as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -387,9 +386,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
-      @NotNull FileHandle spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath) {
+      @NotNull FlixelFile textureKey,
+      @NotNull FlixelFile spritemapJsonPath,
+      @NotNull FlixelFile animationJsonPath) {
     return addSpritemapAndAnimation(
         pathOf(textureKey, "textureKey"),
         pathOf(spritemapJsonPath, "spritemapJsonPath"),
@@ -429,7 +428,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
-   * {@code textureKey} as a {@link FileHandle} instead of a path string.
+   * {@code textureKey} as a {@link FlixelFile} instead of a path string.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -440,7 +439,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
+      @NotNull FlixelFile textureKey,
       @NotNull String spritemapJsonPath,
       @NotNull String animationJsonPath,
       @Nullable String anchorClipName) {
@@ -450,7 +449,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
-   * {@code spritemapJsonPath} as a {@link FileHandle} instead of a path string.
+   * {@code spritemapJsonPath} as a {@link FlixelFile} instead of a path string.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -462,7 +461,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
-      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FlixelFile spritemapJsonPath,
       @NotNull String animationJsonPath,
       @Nullable String anchorClipName) {
     return addSpritemapAndAnimation(
@@ -471,7 +470,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
-   * {@code animationJsonPath} as a {@link FileHandle} instead of a path string.
+   * {@code animationJsonPath} as a {@link FlixelFile} instead of a path string.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -484,7 +483,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
       @NotNull String spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath,
+      @NotNull FlixelFile animationJsonPath,
       @Nullable String anchorClipName) {
     return addSpritemapAndAnimation(
         textureKey, spritemapJsonPath, pathOf(animationJsonPath, "animationJsonPath"), anchorClipName);
@@ -492,7 +491,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
-   * {@code textureKey} and {@code spritemapJsonPath} as {@link FileHandle}s instead of path strings.
+   * {@code textureKey} and {@code spritemapJsonPath} as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -503,8 +502,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
-      @NotNull FileHandle spritemapJsonPath,
+      @NotNull FlixelFile textureKey,
+      @NotNull FlixelFile spritemapJsonPath,
       @NotNull String animationJsonPath,
       @Nullable String anchorClipName) {
     return addSpritemapAndAnimation(
@@ -516,7 +515,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
-   * {@code textureKey} and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   * {@code textureKey} and {@code animationJsonPath} as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON. Must not be {@code null}.
@@ -527,9 +526,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
+      @NotNull FlixelFile textureKey,
       @NotNull String spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath,
+      @NotNull FlixelFile animationJsonPath,
       @Nullable String anchorClipName) {
     return addSpritemapAndAnimation(
         pathOf(textureKey, "textureKey"),
@@ -540,7 +539,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts
-   * {@code spritemapJsonPath} and {@code animationJsonPath} as {@link FileHandle}s instead of path strings.
+   * {@code spritemapJsonPath} and {@code animationJsonPath} as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -552,8 +551,8 @@ public class FlixelAnimateSprite extends FlixelSprite {
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
       @NotNull String textureKey,
-      @NotNull FileHandle spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath,
+      @NotNull FlixelFile spritemapJsonPath,
+      @NotNull FlixelFile animationJsonPath,
       @Nullable String anchorClipName) {
     return addSpritemapAndAnimation(
         textureKey,
@@ -564,7 +563,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
   /**
    * Overload of {@link #addSpritemapAndAnimation(String, String, String, String)} that accepts all
-   * three core parameters as {@link FileHandle}s instead of path strings.
+   * three core parameters as {@link FlixelFile}s instead of path strings.
    *
    * @param textureKey The asset key of the spritemap PNG, as a file handle. Must not be {@code null}.
    * @param spritemapJsonPath The path to the spritemap JSON, as a file handle. Must not be {@code null}.
@@ -575,9 +574,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
    */
   @NotNull
   public FlixelAnimateSprite addSpritemapAndAnimation(
-      @NotNull FileHandle textureKey,
-      @NotNull FileHandle spritemapJsonPath,
-      @NotNull FileHandle animationJsonPath,
+      @NotNull FlixelFile textureKey,
+      @NotNull FlixelFile spritemapJsonPath,
+      @NotNull FlixelFile animationJsonPath,
       @Nullable String anchorClipName) {
     return addSpritemapAndAnimation(
         pathOf(textureKey, "textureKey"),
@@ -587,19 +586,20 @@ public class FlixelAnimateSprite extends FlixelSprite {
   }
 
   /**
-   * Resolves a {@link FileHandle} into the path string the rest of {@code addSpritemapAndAnimation}
+   * Resolves a {@link FlixelFile} into the path string the rest of {@code addSpritemapAndAnimation}
    * overloads operate on. Asset-manager lookups (the spritemap PNG) and direct JSON reads both resolve
-   * a plain path through {@code Gdx.files}, so converting up front lets every {@link FileHandle} overload
-   * delegate straight into the existing {@code String} pipeline without duplicating loading logic.
+   * a plain path through {@link org.flixelgdx.Flixel#files Flixel.files}, so converting up front lets
+   * every {@link FlixelFile} overload delegate straight into the existing {@code String} pipeline
+   * without duplicating loading logic.
    *
    * @param handle The file handle to resolve. Must not be {@code null}.
    * @param paramName The parameter name to report if {@code handle} is {@code null}.
-   * @return The handle's path, as returned by {@link FileHandle#path()}.
+   * @return The handle's path, as returned by {@link FlixelFile#getPath()}.
    */
   @NotNull
-  private static String pathOf(@NotNull FileHandle handle, @NotNull String paramName) {
+  private static String pathOf(@NotNull FlixelFile handle, @NotNull String paramName) {
     Objects.requireNonNull(handle, paramName + " cannot be null.");
-    return handle.path();
+    return handle.getPath();
   }
 
   @Nullable

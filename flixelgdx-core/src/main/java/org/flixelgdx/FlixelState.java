@@ -23,7 +23,6 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 
 import org.flixelgdx.collections.FlixelArray;
@@ -40,21 +39,21 @@ import org.jetbrains.annotations.Nullable;
  * <p>A state is a collection of {@link IFlixelBasic} objects that can be used for any
  * important part of your game. This can be a level, a menu, or anything else.
  *
- * <p>Members are not pooled by the engine: {@link #remove} only unlinks objects. Prefer {@link FlixelBasic#kill()} /
- * {@link FlixelBasic#revive()} or {@link FlixelBasicGroup#recycle()} for reuse. {@link #createMemberForRecycle()} supplies
- * new {@link FlixelSprite} instances when {@link FlixelBasicGroup#recycle()} has no dead member to revive. Override it if
- * your state recycles another {@link IFlixelBasic} implementation.
+ * <p>Members are not pooled by the engine: {@link #remove} only unlinks objects. Prefer
+ * {@link FlixelBasic#kill()} / {@link FlixelBasic#revive()} or {@link FlixelBasicGroup#recycle()}
+ * for reuse. {@link #createMemberForRecycle()} supplies new {@link FlixelSprite} instances when
+ * {@link FlixelBasicGroup#recycle()} has no dead member to revive. Override it if your state recycles
+ * another {@link IFlixelBasic} implementation.
  *
- * <p>A state can open a {@link FlixelSubState} on top of itself.
- * By default, when a substate is active the parent state will continue to be drawn
- * ({@link #persistentDraw} = {@code true}) but will stop updating
- * ({@link #persistentUpdate} = {@code false}).
+ * <p>A state can open a {@link FlixelSubState} on top of itself. By default, when a substate is active
+ * the parent state will continue to be drawn ({@link #persistentDraw} = {@code true}) but will stop
+ * updating= ({@link #persistentUpdate} = {@code false}).
  *
  * @see IFlixelBasic
  * @see FlixelBasic
  * @see FlixelBasicGroup
  */
-public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> implements Screen {
+public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
 
   /** The currently active substate opened on top of {@code this} state. */
   private FlixelSubState subState;
@@ -97,16 +96,6 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
       sprite.setAntialiasing(Flixel.isAntialiasing());
     }
     return member;
-  }
-
-  @Override
-  public void show() {
-    create();
-  }
-
-  @Override
-  public void render(float delta) {
-    update(delta);
   }
 
   /**
@@ -194,9 +183,9 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   }
 
   /**
-   * Called from {@link org.flixelgdx.Flixel#switchState(FlixelState) Flixel.switchState(FlixelState)} before
-   * the actual state switch happens. Override this to play an exit animation or transition,
-   * then call {@code onOutroComplete} when finished.
+   * Called from {@link Flixel#switchState(FlixelState)} before the actual state switch
+   * happens. Override this to play an exit animation or transition, then call
+   * {@code onOutroComplete} when finished.
    *
    * <p>The default implementation calls {@code onOutroComplete} immediately.
    *
@@ -208,24 +197,17 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
     }
   }
 
-  @Override
+  /**
+   * Called when the game's display is resized, typically from the window for desktop.
+   *
+   * <p>This is automatically called by {@link FlixelGame#resize(int, int)} whenever the display
+   * size is changed. On web and mobile where the display usually stays the same, this will
+   * typically have no effect.
+   *
+   * @param width The new display width.
+   * @param height The new display height.
+   */
   public void resize(int width, int height) {}
-
-  /**
-   * Do not override this method. Override {@link #onFocusLost()} instead.
-   */
-  @Override
-  public final void pause() {
-    onFocusLost();
-  }
-
-  /**
-   * Do not override this method. Override {@link #onFocusGained()} instead.
-   */
-  @Override
-  public final void resume() {
-    onFocusGained();
-  }
 
   /**
    * Called when the game window loses focus or the application goes to the background.
@@ -274,11 +256,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> impleme
   }
 
   @Override
-  public void hide() {}
-
-  @Override
   public void destroy() {
-    hide();
     if (subState != null) {
       closeSubState();
     }

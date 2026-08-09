@@ -23,11 +23,14 @@
  */
 package org.flixelgdx.input.keyboard;
 
-import com.badlogic.gdx.Input;
+import org.flixelgdx.collections.FlixelMap;
 
 /**
- * Keyboard key codes used for {@link FlixelKeyInputManager}. Values match {@link com.badlogic.gdx.Input.Keys}
- * for backwards compatibility with libGDX.
+ * Keyboard key codes used for {@link FlixelKeyInputManager}.
+ *
+ * <p>The numeric values are stable identifiers for each physical key; treat them as opaque and refer
+ * to keys by name (for example {@link #SPACE} or {@link #A}). Use {@link #toString(int)} to turn a
+ * code into a readable label and {@link #fromString(String)} to turn a label back into a code.
  */
 public final class FlixelKey {
 
@@ -204,26 +207,351 @@ public final class FlixelKey {
   public static final int F24 = 194;
   public static final int MAX_KEYCODE = 255;
 
+  /** Code-to-name lookup, indexed by key code; {@code null} where no key uses that code. */
+  private static final String[] NAMES = new String[MAX_KEYCODE + 1];
+
+  /** Name-to-code lookup, including alias names that map to the same code as a canonical key. */
+  private static final FlixelMap<String, Integer> CODES = new FlixelMap<>();
+
+  static {
+    NAMES[UNKNOWN] = "UNKNOWN";
+    CODES.put("UNKNOWN", UNKNOWN);
+    NAMES[SOFT_LEFT] = "SOFT_LEFT";
+    CODES.put("SOFT_LEFT", SOFT_LEFT);
+    NAMES[SOFT_RIGHT] = "SOFT_RIGHT";
+    CODES.put("SOFT_RIGHT", SOFT_RIGHT);
+    NAMES[HOME] = "HOME";
+    CODES.put("HOME", HOME);
+    NAMES[BACK] = "BACK";
+    CODES.put("BACK", BACK);
+    NAMES[CALL] = "CALL";
+    CODES.put("CALL", CALL);
+    NAMES[ENDCALL] = "ENDCALL";
+    CODES.put("ENDCALL", ENDCALL);
+    NAMES[NUM_0] = "NUM_0";
+    CODES.put("NUM_0", NUM_0);
+    NAMES[NUM_1] = "NUM_1";
+    CODES.put("NUM_1", NUM_1);
+    NAMES[NUM_2] = "NUM_2";
+    CODES.put("NUM_2", NUM_2);
+    NAMES[NUM_3] = "NUM_3";
+    CODES.put("NUM_3", NUM_3);
+    NAMES[NUM_4] = "NUM_4";
+    CODES.put("NUM_4", NUM_4);
+    NAMES[NUM_5] = "NUM_5";
+    CODES.put("NUM_5", NUM_5);
+    NAMES[NUM_6] = "NUM_6";
+    CODES.put("NUM_6", NUM_6);
+    NAMES[NUM_7] = "NUM_7";
+    CODES.put("NUM_7", NUM_7);
+    NAMES[NUM_8] = "NUM_8";
+    CODES.put("NUM_8", NUM_8);
+    NAMES[NUM_9] = "NUM_9";
+    CODES.put("NUM_9", NUM_9);
+    NAMES[STAR] = "STAR";
+    CODES.put("STAR", STAR);
+    NAMES[POUND] = "POUND";
+    CODES.put("POUND", POUND);
+    NAMES[UP] = "UP";
+    CODES.put("UP", UP);
+    NAMES[DOWN] = "DOWN";
+    CODES.put("DOWN", DOWN);
+    NAMES[LEFT] = "LEFT";
+    CODES.put("LEFT", LEFT);
+    NAMES[RIGHT] = "RIGHT";
+    CODES.put("RIGHT", RIGHT);
+    NAMES[DPAD_CENTER] = "DPAD_CENTER";
+    CODES.put("DPAD_CENTER", DPAD_CENTER);
+    NAMES[VOLUME_UP] = "VOLUME_UP";
+    CODES.put("VOLUME_UP", VOLUME_UP);
+    NAMES[VOLUME_DOWN] = "VOLUME_DOWN";
+    CODES.put("VOLUME_DOWN", VOLUME_DOWN);
+    NAMES[POWER] = "POWER";
+    CODES.put("POWER", POWER);
+    NAMES[CAMERA] = "CAMERA";
+    CODES.put("CAMERA", CAMERA);
+    NAMES[CLEAR] = "CLEAR";
+    CODES.put("CLEAR", CLEAR);
+    NAMES[A] = "A";
+    CODES.put("A", A);
+    NAMES[B] = "B";
+    CODES.put("B", B);
+    NAMES[C] = "C";
+    CODES.put("C", C);
+    NAMES[D] = "D";
+    CODES.put("D", D);
+    NAMES[E] = "E";
+    CODES.put("E", E);
+    NAMES[F] = "F";
+    CODES.put("F", F);
+    NAMES[G] = "G";
+    CODES.put("G", G);
+    NAMES[H] = "H";
+    CODES.put("H", H);
+    NAMES[I] = "I";
+    CODES.put("I", I);
+    NAMES[J] = "J";
+    CODES.put("J", J);
+    NAMES[K] = "K";
+    CODES.put("K", K);
+    NAMES[L] = "L";
+    CODES.put("L", L);
+    NAMES[M] = "M";
+    CODES.put("M", M);
+    NAMES[N] = "N";
+    CODES.put("N", N);
+    NAMES[O] = "O";
+    CODES.put("O", O);
+    NAMES[P] = "P";
+    CODES.put("P", P);
+    NAMES[Q] = "Q";
+    CODES.put("Q", Q);
+    NAMES[R] = "R";
+    CODES.put("R", R);
+    NAMES[S] = "S";
+    CODES.put("S", S);
+    NAMES[T] = "T";
+    CODES.put("T", T);
+    NAMES[U] = "U";
+    CODES.put("U", U);
+    NAMES[V] = "V";
+    CODES.put("V", V);
+    NAMES[W] = "W";
+    CODES.put("W", W);
+    NAMES[X] = "X";
+    CODES.put("X", X);
+    NAMES[Y] = "Y";
+    CODES.put("Y", Y);
+    NAMES[Z] = "Z";
+    CODES.put("Z", Z);
+    NAMES[COMMA] = "COMMA";
+    CODES.put("COMMA", COMMA);
+    NAMES[PERIOD] = "PERIOD";
+    CODES.put("PERIOD", PERIOD);
+    NAMES[ALT_LEFT] = "ALT_LEFT";
+    CODES.put("ALT_LEFT", ALT_LEFT);
+    NAMES[ALT_RIGHT] = "ALT_RIGHT";
+    CODES.put("ALT_RIGHT", ALT_RIGHT);
+    NAMES[SHIFT_LEFT] = "SHIFT_LEFT";
+    CODES.put("SHIFT_LEFT", SHIFT_LEFT);
+    NAMES[SHIFT_RIGHT] = "SHIFT_RIGHT";
+    CODES.put("SHIFT_RIGHT", SHIFT_RIGHT);
+    NAMES[TAB] = "TAB";
+    CODES.put("TAB", TAB);
+    NAMES[SPACE] = "SPACE";
+    CODES.put("SPACE", SPACE);
+    NAMES[SYM] = "SYM";
+    CODES.put("SYM", SYM);
+    NAMES[EXPLORER] = "EXPLORER";
+    CODES.put("EXPLORER", EXPLORER);
+    NAMES[ENVELOPE] = "ENVELOPE";
+    CODES.put("ENVELOPE", ENVELOPE);
+    NAMES[ENTER] = "ENTER";
+    CODES.put("ENTER", ENTER);
+    NAMES[DEL] = "DEL";
+    CODES.put("DEL", DEL);
+    NAMES[GRAVE] = "GRAVE";
+    CODES.put("GRAVE", GRAVE);
+    NAMES[MINUS] = "MINUS";
+    CODES.put("MINUS", MINUS);
+    NAMES[EQUALS] = "EQUALS";
+    CODES.put("EQUALS", EQUALS);
+    NAMES[LEFT_BRACKET] = "LEFT_BRACKET";
+    CODES.put("LEFT_BRACKET", LEFT_BRACKET);
+    NAMES[RIGHT_BRACKET] = "RIGHT_BRACKET";
+    CODES.put("RIGHT_BRACKET", RIGHT_BRACKET);
+    NAMES[BACKSLASH] = "BACKSLASH";
+    CODES.put("BACKSLASH", BACKSLASH);
+    NAMES[SEMICOLON] = "SEMICOLON";
+    CODES.put("SEMICOLON", SEMICOLON);
+    NAMES[APOSTROPHE] = "APOSTROPHE";
+    CODES.put("APOSTROPHE", APOSTROPHE);
+    NAMES[SLASH] = "SLASH";
+    CODES.put("SLASH", SLASH);
+    NAMES[AT] = "AT";
+    CODES.put("AT", AT);
+    NAMES[NUM] = "NUM";
+    CODES.put("NUM", NUM);
+    NAMES[HEADSETHOOK] = "HEADSETHOOK";
+    CODES.put("HEADSETHOOK", HEADSETHOOK);
+    NAMES[FOCUS] = "FOCUS";
+    CODES.put("FOCUS", FOCUS);
+    NAMES[PLUS] = "PLUS";
+    CODES.put("PLUS", PLUS);
+    NAMES[MENU] = "MENU";
+    CODES.put("MENU", MENU);
+    NAMES[NOTIFICATION] = "NOTIFICATION";
+    CODES.put("NOTIFICATION", NOTIFICATION);
+    NAMES[SEARCH] = "SEARCH";
+    CODES.put("SEARCH", SEARCH);
+    NAMES[MEDIA_PLAY_PAUSE] = "MEDIA_PLAY_PAUSE";
+    CODES.put("MEDIA_PLAY_PAUSE", MEDIA_PLAY_PAUSE);
+    NAMES[MEDIA_STOP] = "MEDIA_STOP";
+    CODES.put("MEDIA_STOP", MEDIA_STOP);
+    NAMES[MEDIA_NEXT] = "MEDIA_NEXT";
+    CODES.put("MEDIA_NEXT", MEDIA_NEXT);
+    NAMES[MEDIA_PREVIOUS] = "MEDIA_PREVIOUS";
+    CODES.put("MEDIA_PREVIOUS", MEDIA_PREVIOUS);
+    NAMES[MEDIA_REWIND] = "MEDIA_REWIND";
+    CODES.put("MEDIA_REWIND", MEDIA_REWIND);
+    NAMES[MEDIA_FAST_FORWARD] = "MEDIA_FAST_FORWARD";
+    CODES.put("MEDIA_FAST_FORWARD", MEDIA_FAST_FORWARD);
+    NAMES[MUTE] = "MUTE";
+    CODES.put("MUTE", MUTE);
+    NAMES[PAGE_UP] = "PAGE_UP";
+    CODES.put("PAGE_UP", PAGE_UP);
+    NAMES[PAGE_DOWN] = "PAGE_DOWN";
+    CODES.put("PAGE_DOWN", PAGE_DOWN);
+    NAMES[PICTSYMBOLS] = "PICTSYMBOLS";
+    CODES.put("PICTSYMBOLS", PICTSYMBOLS);
+    NAMES[SWITCH_CHARSET] = "SWITCH_CHARSET";
+    CODES.put("SWITCH_CHARSET", SWITCH_CHARSET);
+    NAMES[ESCAPE] = "ESCAPE";
+    CODES.put("ESCAPE", ESCAPE);
+    NAMES[FORWARD_DEL] = "FORWARD_DEL";
+    CODES.put("FORWARD_DEL", FORWARD_DEL);
+    NAMES[CAPS_LOCK] = "CAPS_LOCK";
+    CODES.put("CAPS_LOCK", CAPS_LOCK);
+    NAMES[SCROLL_LOCK] = "SCROLL_LOCK";
+    CODES.put("SCROLL_LOCK", SCROLL_LOCK);
+    NAMES[PRINT_SCREEN] = "PRINT_SCREEN";
+    CODES.put("PRINT_SCREEN", PRINT_SCREEN);
+    NAMES[PAUSE] = "PAUSE";
+    CODES.put("PAUSE", PAUSE);
+    NAMES[END] = "END";
+    CODES.put("END", END);
+    NAMES[INSERT] = "INSERT";
+    CODES.put("INSERT", INSERT);
+    NAMES[CONTROL_LEFT] = "CONTROL_LEFT";
+    CODES.put("CONTROL_LEFT", CONTROL_LEFT);
+    NAMES[CONTROL_RIGHT] = "CONTROL_RIGHT";
+    CODES.put("CONTROL_RIGHT", CONTROL_RIGHT);
+    NAMES[F1] = "F1";
+    CODES.put("F1", F1);
+    NAMES[F2] = "F2";
+    CODES.put("F2", F2);
+    NAMES[F3] = "F3";
+    CODES.put("F3", F3);
+    NAMES[F4] = "F4";
+    CODES.put("F4", F4);
+    NAMES[F5] = "F5";
+    CODES.put("F5", F5);
+    NAMES[F6] = "F6";
+    CODES.put("F6", F6);
+    NAMES[F7] = "F7";
+    CODES.put("F7", F7);
+    NAMES[F8] = "F8";
+    CODES.put("F8", F8);
+    NAMES[F9] = "F9";
+    CODES.put("F9", F9);
+    NAMES[F10] = "F10";
+    CODES.put("F10", F10);
+    NAMES[F11] = "F11";
+    CODES.put("F11", F11);
+    NAMES[F12] = "F12";
+    CODES.put("F12", F12);
+    NAMES[NUM_LOCK] = "NUM_LOCK";
+    CODES.put("NUM_LOCK", NUM_LOCK);
+    NAMES[NUMPAD_0] = "NUMPAD_0";
+    CODES.put("NUMPAD_0", NUMPAD_0);
+    NAMES[NUMPAD_1] = "NUMPAD_1";
+    CODES.put("NUMPAD_1", NUMPAD_1);
+    NAMES[NUMPAD_2] = "NUMPAD_2";
+    CODES.put("NUMPAD_2", NUMPAD_2);
+    NAMES[NUMPAD_3] = "NUMPAD_3";
+    CODES.put("NUMPAD_3", NUMPAD_3);
+    NAMES[NUMPAD_4] = "NUMPAD_4";
+    CODES.put("NUMPAD_4", NUMPAD_4);
+    NAMES[NUMPAD_5] = "NUMPAD_5";
+    CODES.put("NUMPAD_5", NUMPAD_5);
+    NAMES[NUMPAD_6] = "NUMPAD_6";
+    CODES.put("NUMPAD_6", NUMPAD_6);
+    NAMES[NUMPAD_7] = "NUMPAD_7";
+    CODES.put("NUMPAD_7", NUMPAD_7);
+    NAMES[NUMPAD_8] = "NUMPAD_8";
+    CODES.put("NUMPAD_8", NUMPAD_8);
+    NAMES[NUMPAD_9] = "NUMPAD_9";
+    CODES.put("NUMPAD_9", NUMPAD_9);
+    NAMES[NUMPAD_DIVIDE] = "NUMPAD_DIVIDE";
+    CODES.put("NUMPAD_DIVIDE", NUMPAD_DIVIDE);
+    NAMES[NUMPAD_MULTIPLY] = "NUMPAD_MULTIPLY";
+    CODES.put("NUMPAD_MULTIPLY", NUMPAD_MULTIPLY);
+    NAMES[NUMPAD_SUBTRACT] = "NUMPAD_SUBTRACT";
+    CODES.put("NUMPAD_SUBTRACT", NUMPAD_SUBTRACT);
+    NAMES[NUMPAD_ADD] = "NUMPAD_ADD";
+    CODES.put("NUMPAD_ADD", NUMPAD_ADD);
+    NAMES[NUMPAD_DOT] = "NUMPAD_DOT";
+    CODES.put("NUMPAD_DOT", NUMPAD_DOT);
+    NAMES[NUMPAD_COMMA] = "NUMPAD_COMMA";
+    CODES.put("NUMPAD_COMMA", NUMPAD_COMMA);
+    NAMES[NUMPAD_ENTER] = "NUMPAD_ENTER";
+    CODES.put("NUMPAD_ENTER", NUMPAD_ENTER);
+    NAMES[NUMPAD_EQUALS] = "NUMPAD_EQUALS";
+    CODES.put("NUMPAD_EQUALS", NUMPAD_EQUALS);
+    NAMES[NUMPAD_LEFT_PAREN] = "NUMPAD_LEFT_PAREN";
+    CODES.put("NUMPAD_LEFT_PAREN", NUMPAD_LEFT_PAREN);
+    NAMES[NUMPAD_RIGHT_PAREN] = "NUMPAD_RIGHT_PAREN";
+    CODES.put("NUMPAD_RIGHT_PAREN", NUMPAD_RIGHT_PAREN);
+    NAMES[F13] = "F13";
+    CODES.put("F13", F13);
+    NAMES[F14] = "F14";
+    CODES.put("F14", F14);
+    NAMES[F15] = "F15";
+    CODES.put("F15", F15);
+    NAMES[F16] = "F16";
+    CODES.put("F16", F16);
+    NAMES[F17] = "F17";
+    CODES.put("F17", F17);
+    NAMES[F18] = "F18";
+    CODES.put("F18", F18);
+    NAMES[F19] = "F19";
+    CODES.put("F19", F19);
+    NAMES[F20] = "F20";
+    CODES.put("F20", F20);
+    NAMES[F21] = "F21";
+    CODES.put("F21", F21);
+    NAMES[F22] = "F22";
+    CODES.put("F22", F22);
+    NAMES[F23] = "F23";
+    CODES.put("F23", F23);
+    NAMES[F24] = "F24";
+    CODES.put("F24", F24);
+    NAMES[WORLD_1] = "WORLD_1";
+    CODES.put("WORLD_1", WORLD_1);
+    NAMES[WORLD_2] = "WORLD_2";
+    CODES.put("WORLD_2", WORLD_2);
+    NAMES[COLON] = "COLON";
+
+    CODES.put("COLON", COLON);
+    CODES.put("BACKSPACE", DEL);
+    CODES.put("CENTER", DPAD_CENTER);
+  }
+
   /**
-   * Resolves a key name (as returned by {@link FlixelKey#toString(int)} or
-   * {@link Input.Keys#toString(int)}) to a key code.
+   * Resolves a key name (as returned by {@link #toString(int)}) back to its key code. Recognizes
+   * both canonical names and the documented aliases (for example {@code "BACKSPACE"} maps to the
+   * same code as {@code "DEL"}).
    *
-   * @param keyname Key name from {@link FlixelKey#toString(int)}.
-   * @return The key code, or {@link #NONE} if not found.
+   * @param keyname Key name from {@link #toString(int)}; case-sensitive.
+   * @return The key code, or {@link #NONE} if the name is unknown.
    */
   public static int fromString(String keyname) {
     if (keyname == null || keyname.equalsIgnoreCase("NONE")) {
       return NONE;
     }
-    return Input.Keys.valueOf(keyname);
+    if (keyname.equalsIgnoreCase("ANY")) {
+      return ANY;
+    }
+    Integer code = CODES.get(keyname);
+    return code != null ? code : NONE;
   }
 
   /**
-   * Returns a human-readable string for the given key code.
+   * Returns a readable label for the given key code, suitable for a rebinding UI or debug overlay.
    *
-   * @param keycode Key code from this class (same values as {@link Input.Keys}).
-   * @return Human-readable key name, or "NONE" if the key code is {@link #NONE} or
-   * "ANY" if the key code is {@link #ANY}.
+   * @param keycode Key code from this class.
+   * @return The key's canonical name, {@code "NONE"} for {@link #NONE}, {@code "ANY"} for
+   *     {@link #ANY}, or {@code "UNKNOWN"} for a code no key uses.
    */
   public static String toString(int keycode) {
     if (keycode == NONE) {
@@ -232,6 +560,9 @@ public final class FlixelKey {
     if (keycode == ANY) {
       return "ANY";
     }
-    return Input.Keys.toString(keycode);
+    if (keycode >= 0 && keycode <= MAX_KEYCODE && NAMES[keycode] != null) {
+      return NAMES[keycode];
+    }
+    return "UNKNOWN";
   }
 }

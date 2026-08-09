@@ -21,11 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.tween.ease;
+package org.flixelgdx.input;
 
-import org.flixelgdx.tween.FlixelTween;
+/**
+ * Safe default {@link FlixelInputDevice} for headless and not-yet-initialized sessions.
+ *
+ * <p>Every poll reports "nothing pressed" and it drops any processor handed to it, so framework code
+ * can read {@link org.flixelgdx.Flixel#input Flixel.input} unconditionally before a real backend is
+ * installed. It relies entirely on the interface's neutral defaults.
+ */
+public enum FlixelNoopInputDevice implements FlixelInputDevice {
 
-@FunctionalInterface
-public interface FlixelEaseCompleteCallback {
-  void run(FlixelTween tween);
+  /** Shared no-op instance. */
+  INSTANCE
 }

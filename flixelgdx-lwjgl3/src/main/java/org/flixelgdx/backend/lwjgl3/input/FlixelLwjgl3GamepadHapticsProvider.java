@@ -23,19 +23,19 @@
  */
 package org.flixelgdx.backend.lwjgl3.input;
 
-import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.desktop.support.JamepadController;
 import com.studiohartman.jamepad.ControllerIndex;
 import com.studiohartman.jamepad.ControllerUnpluggedException;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.lwjgl3.FlixelLwjgl3Launcher;
-import org.flixelgdx.input.gamepad.FlixelHapticsProvider;
+import org.flixelgdx.input.gamepad.FlixelGamepad;
+import org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider;
 
 import java.lang.reflect.Field;
 
 /**
- * Desktop {@link FlixelHapticsProvider} backed by SDL via Jamepad. Supports true independent
+ * Desktop {@link FlixelGamepadHapticsProvider} backed by SDL via Jamepad. Supports true independent
  * dual-motor vibration by calling {@code ControllerIndex.doVibration(left, right, duration)}
  * directly, which maps to {@code SDL_JoystickRumble} with separate low-frequency (left) and
  * high-frequency (right) motor channels.
@@ -48,10 +48,10 @@ import java.lang.reflect.Field;
  *
  * <p>Reflection is used to reach the private {@code controllerIndex} field on {@link JamepadController}.
  * If reflection is unavailable (for example, under certain security managers or after module-system
- * hardening), the provider falls back to {@link Controller#startVibration} with the stronger of
+ * hardening), the provider falls back to {@link FlixelGamepad#startVibration} with the stronger of
  * the two intensities driving both motors, matching the behavior of the default provider.
  */
-public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider {
+public final class FlixelLwjgl3GamepadHapticsProvider implements FlixelGamepadHapticsProvider {
 
   private static final Field CONTROLLER_INDEX_FIELD;
 
@@ -77,37 +77,41 @@ public final class FlixelLwjgl3HapticsProvider implements FlixelHapticsProvider 
       }
       return;
     }
-    Controller c = Flixel.gamepads.controllerAt(slot);
-    if (c != null && c.canVibrate()) {
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    if (g != null && g.canVibrate()) {
       float peak = Math.max(0f, Math.min(1f, Math.max(leftIntensity, rightIntensity)));
-      c.startVibration((int) (durationSecs * 1000f), peak);
+      g.startVibration((int) (durationSecs * 1000f), peak);
     }
   }
 
   @Override
   public void stopVibration(int slot) {
-    Controller c = Flixel.gamepads.controllerAt(slot);
-    if (c != null) {
-      c.cancelVibration();
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    if (g != null) {
+      g.cancelVibration();
     }
   }
 
   @Override
   public boolean canVibrate(int slot) {
-    Controller c = Flixel.gamepads.controllerAt(slot);
-    return c != null && c.canVibrate();
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    return g != null && g.canVibrate();
   }
 
   private static ControllerIndex indexAt(int slot) {
     if (CONTROLLER_INDEX_FIELD == null) {
       return null;
     }
-    Controller c = Flixel.gamepads.controllerAt(slot);
-    if (c != null && !(c instanceof JamepadController)) {
+    FlixelGamepad g = Flixel.gamepads.gamepadAt(slot);
+    if (g == null) {
+      return null;
+    }
+    Object handle = g.getNativeHandle();
+    if (!(handle instanceof JamepadController)) {
       return null;
     }
     try {
-      return (ControllerIndex) CONTROLLER_INDEX_FIELD.get(c);
+      return (ControllerIndex) CONTROLLER_INDEX_FIELD.get(handle);
     } catch (Throwable ignored) {
       return null;
     }

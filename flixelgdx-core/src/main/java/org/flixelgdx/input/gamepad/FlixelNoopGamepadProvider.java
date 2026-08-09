@@ -21,11 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.tween.ease;
+package org.flixelgdx.input.gamepad;
 
-import org.flixelgdx.tween.FlixelTween;
+/**
+ * Safe default {@link FlixelGamepadProvider} that reports no gamepads.
+ *
+ * <p>Installed on headless sessions and platforms without a gamepad backend yet, so
+ * {@link FlixelGamepadInputManager} runs cleanly and simply sees zero gamepads. It relies entirely
+ * on the interface's neutral defaults.
+ */
+public enum FlixelNoopGamepadProvider implements FlixelGamepadProvider {
 
-@FunctionalInterface
-public interface FlixelEaseUpdateCallback {
-  void run(FlixelTween tween);
+  /** Shared no-op instance. */
+  INSTANCE
 }

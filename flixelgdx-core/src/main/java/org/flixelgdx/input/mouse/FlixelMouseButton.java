@@ -23,8 +23,29 @@
  */
 package org.flixelgdx.input.mouse;
 
-import com.badlogic.gdx.Input;
+/**
+ * Mouse button codes for {@link FlixelMouseInputManager} and the pointer events on
+ * {@link org.flixelgdx.input.FlixelMouseListener FlixelMouseListener}.
+ *
+ * <p>These are plain integer constants so they cost nothing and read clearly at the call site, for
+ * example {@code Flixel.mouse.pressed(FlixelMouseButton.LEFT)}.
+ */
+public final class FlixelMouseButton {
 
-/** Simple class that extends {@link Input.Buttons} to provide a more straightforward API. */
-public final class FlixelMouseButton extends Input.Buttons {
+  /** The primary (usually left) mouse button. */
+  public static final int LEFT = 0;
+
+  /** The secondary (usually right) mouse button. */
+  public static final int RIGHT = 1;
+
+  /** The middle mouse button, typically the scroll-wheel click. */
+  public static final int MIDDLE = 2;
+
+  /** The "back" side button found on many mice. */
+  public static final int BACK = 3;
+
+  /** The "forward" side button found on many mice. */
+  public static final int FORWARD = 4;
+
+  private FlixelMouseButton() {}
 }

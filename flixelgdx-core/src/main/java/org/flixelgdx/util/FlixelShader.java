@@ -72,7 +72,7 @@ import org.flixelgdx.FlixelCamera;
  * <p>HaxeFlixel mode example using a {@code .frag} file from disk:
  *
  * <pre>{@code
- * String src = Gdx.files.internal("shaders/bloom.frag").readString();
+ * String src = Flixel.files.internal("shaders/bloom.frag").readString();
  * FlixelShader bloom = FlixelShader.fromHaxeFlixel(src);
  * Flixel.cameras.first().setShader(bloom);
  * }</pre>
@@ -226,7 +226,7 @@ public class FlixelShader extends FlixelBasic {
    * <p>Example:
    *
    * <pre>{@code
-   * String src = Gdx.files.internal("shaders/crt.frag").readString();
+   * String src = Flixel.files.internal("shaders/crt.frag").readString();
    * FlixelShader crt = FlixelShader.fromHaxeFlixel(src);
    * Flixel.cameras.first().setShader(crt);
    * }</pre>

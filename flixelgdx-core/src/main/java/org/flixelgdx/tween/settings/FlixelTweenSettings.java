@@ -27,16 +27,45 @@ import org.flixelgdx.collections.FlixelArray;
 
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.tween.FlixelTween;
+import org.flixelgdx.tween.FlixelTweenCallback;
 import org.flixelgdx.tween.ease.FlixelEase;
-import org.flixelgdx.tween.ease.FlixelEaseCompleteCallback;
 import org.flixelgdx.tween.ease.FlixelEaseFunction;
-import org.flixelgdx.tween.ease.FlixelEaseStartCallback;
-import org.flixelgdx.tween.ease.FlixelEaseUpdateCallback;
+import org.flixelgdx.tween.type.FlixelGoalTween;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Class for holding basic data, containing configurations to be used on a {@link FlixelTween}.
+ * Holds the configuration that drives how a {@link FlixelTween} animates.
+ *
+ * <p>Think of {@code FlixelTweenSettings} as the blueprint you hand to a tween before starting it.
+ * It lets you define what values to change ({@link #addGoal}), how long the animation lasts
+ * ({@link #setDuration}), the curve of the motion ({@link #setEase}), whether the tween loops or
+ * ping-pongs ({@link #setType}), optional delays ({@link #setStartDelay}), and lifecycle callbacks
+ * that fire when the tween starts, updates each frame, or finishes ({@link #setOnStart},
+ * {@link #setOnUpdate}, {@link #setOnComplete}).
+ *
+ * <p>All setters return {@code this}, so you can chain them in a single expression. Example - moving
+ * a sprite's x position from its current location to 400 over half a second with a smooth ease and
+ * a completion log:
+ *
+ * <pre>{@code
+ * FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *     .addGoal(sprite::getX, 400f, sprite::setX)
+ *     .setDuration(0.5f)
+ *     .setEase(FlixelEase::quadOut)
+ *     .setOnComplete(tween -> Flixel.info("Slide done!")));
+ * }</pre>
+ *
+ * <p>Goals are the properties the tween interpolates in a {@link FlixelGoalTween} via
+ * {@link FlixelTween#tween(Object, FlixelTweenSettings)}. Each goal captures the starting value
+ * once via a getter when the tween begins, then drives the value toward the target on every
+ * frame via a setter. You can register multiple goals on a single tween to animate several
+ * properties in lockstep, such as sliding a sprite both horizontally and vertically at once.
+ *
+ * @see FlixelTween
+ * @see FlixelEase
+ * @see FlixelTweenCallback
+ * @see FlixelTweenType
  */
 public class FlixelTweenSettings {
 
@@ -46,16 +75,23 @@ public class FlixelTweenSettings {
   private float framerate;
   private FlixelTweenType type;
   private FlixelEaseFunction ease;
-  private FlixelEaseStartCallback onStart;
-  private FlixelEaseUpdateCallback onUpdate;
-  private FlixelEaseCompleteCallback onComplete;
+  private FlixelTweenCallback onStart;
+  private FlixelTweenCallback onUpdate;
+  private FlixelTweenCallback onComplete;
   private final FlixelArray<FlixelTweenGoal> goals;
 
+  /**
+   * Constructs a new tween settings object with {@link FlixelTweenType#ONESHOT} as the default
+   * type and {@link FlixelEase#linear(float)} for the default easer.
+   */
   public FlixelTweenSettings() {
     this(FlixelTweenType.ONESHOT, FlixelEase::linear);
   }
 
   /**
+   * Constructs a new tween settings object with {@link FlixelEase#linear(float)} as the
+   * default easer.
+   *
    * @param type The type of tween it should be.
    */
   public FlixelTweenSettings(@NotNull FlixelTweenType type) {
@@ -63,6 +99,8 @@ public class FlixelTweenSettings {
   }
 
   /**
+   * Constructs a new tween settings object
+   *
    * @param type The type of tween it should be.
    * @param ease The easer function the tween should use (aka how it should be animated).
    */
@@ -124,15 +162,15 @@ public class FlixelTweenSettings {
     return ease;
   }
 
-  public FlixelEaseStartCallback getOnStart() {
+  public FlixelTweenCallback getOnStart() {
     return onStart;
   }
 
-  public FlixelEaseUpdateCallback getOnUpdate() {
+  public FlixelTweenCallback getOnUpdate() {
     return onUpdate;
   }
 
-  public FlixelEaseCompleteCallback getOnComplete() {
+  public FlixelTweenCallback getOnComplete() {
     return onComplete;
   }
 
@@ -181,17 +219,17 @@ public class FlixelTweenSettings {
     return this;
   }
 
-  public FlixelTweenSettings setOnStart(FlixelEaseStartCallback onStart) {
+  public FlixelTweenSettings setOnStart(FlixelTweenCallback onStart) {
     this.onStart = onStart;
     return this;
   }
 
-  public FlixelTweenSettings setOnUpdate(FlixelEaseUpdateCallback onUpdate) {
+  public FlixelTweenSettings setOnUpdate(FlixelTweenCallback onUpdate) {
     this.onUpdate = onUpdate;
     return this;
   }
 
-  public FlixelTweenSettings setOnComplete(FlixelEaseCompleteCallback onComplete) {
+  public FlixelTweenSettings setOnComplete(FlixelTweenCallback onComplete) {
     this.onComplete = onComplete;
     return this;
   }

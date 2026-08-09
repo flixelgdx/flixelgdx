@@ -32,6 +32,7 @@ import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelPhysical;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.functional.FlixelVisible;
+import org.flixelgdx.tween.ease.FlixelEase;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
@@ -129,6 +130,7 @@ import java.util.function.Supplier;
  * Tweens and their managers are generally intended for use on the game thread only.
  * </p>
  *
+ * @see FlixelEase
  * @see FlixelTweenManager
  * @see FlixelTweenSettings
  *

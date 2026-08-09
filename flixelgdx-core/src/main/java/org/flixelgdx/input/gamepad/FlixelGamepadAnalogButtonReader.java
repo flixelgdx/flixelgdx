@@ -23,45 +23,40 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.ControllerMapping;
-
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Platform bridge for reading the analog float value of a gamepad button.
  *
- * <p>The gdx-controllers {@link Controller} interface only exposes digital button state via
- * {@code getButton(int)}, which returns a boolean. On platforms such as web (W3C Gamepad API),
- * trigger buttons carry an analog pressure value in {@code [0, 1]} that is otherwise inaccessible
- * through the standard interface. Implementations of this interface read that value through
- * platform-specific means.
+ * <p>The {@link FlixelGamepad} interface only exposes digital button state via
+ * {@link FlixelGamepad#getButton(int)}, which returns a boolean. On platforms such as web (W3C
+ * Gamepad API), trigger buttons carry an analog pressure value in {@code [0, 1]} that is otherwise
+ * inaccessible through the standard interface. Implementations of this interface read that value
+ * through platform-specific means.
  *
- * <p>The primary use case is populating {@link FlixelGamepadInput#AXIS_TRIGGER_L} and
- * {@link FlixelGamepadInput#AXIS_TRIGGER_R} on backends where L2 and R2 are mapped to button
- * indices (for example {@link ControllerMapping#buttonL2} on web) rather than dedicated axes.
- * Install a platform implementation via
- * {@link FlixelGamepadInputManager#setAnalogButtonReader(FlixelAnalogButtonReader)}.
+ * <p>The primary use case is populating trigger pressure on backends where L2 and R2 are mapped
+ * to button indices rather than dedicated axes. Install a platform implementation via
+ * {@link FlixelGamepadInputManager#setAnalogButtonReader(FlixelGamepadAnalogButtonReader)}.
  *
- * <p>On the Jamepad/SDL desktop backend, triggers are already reported as raw axes and no reader
- * is needed. {@code FlixelTeaVMAnalogButtonReader} (in the {@code flixelgdx-teavm} module) covers
- * the web case and is installed automatically by {@code FlixelTeaVMLauncher}.
+ * <p>On the SDL desktop backend, triggers are already reported as raw axes and no reader is needed.
+ * {@code FlixelTeaVMAnalogButtonReader} (in the {@code flixelgdx-teavm} module) covers the web case
+ * and is installed automatically by {@code FlixelTeaVMLauncher}.
  *
- * @see FlixelGamepadInputManager#setAnalogButtonReader(FlixelAnalogButtonReader)
+ * @see FlixelGamepadInputManager#setAnalogButtonReader(FlixelGamepadAnalogButtonReader)
  */
 @FunctionalInterface
-public interface FlixelAnalogButtonReader {
+public interface FlixelGamepadAnalogButtonReader {
 
   /**
    * Returns the raw analog value of the button at {@code nativeButtonIndex} on the given
-   * controller, in the range {@code [0, 1]}.
+   * gamepad, in the range {@code [0, 1]}.
    *
    * <p>This is called from the per-frame polling loop, so the implementation must not allocate
    * or block.
    *
-   * @param controller The controller to read from.
-   * @param nativeButtonIndex Raw button index (for example {@link ControllerMapping#buttonL2}).
+   * @param gamepad The gamepad to read from.
+   * @param nativeButtonIndex Raw button index for the trigger on this gamepad.
    * @return Analog value in the range {@code [0, 1]}, or {@code 0f} when unavailable.
    */
-  float read(@NotNull Controller controller, int nativeButtonIndex);
+  float read(@NotNull FlixelGamepad gamepad, int nativeButtonIndex);
 }

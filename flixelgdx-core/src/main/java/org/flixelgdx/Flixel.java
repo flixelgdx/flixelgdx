@@ -46,13 +46,21 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.debug.FlixelNoopDebugOverlay;
+import org.flixelgdx.file.FlixelFiles;
+import org.flixelgdx.file.FlixelNoopFiles;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
 import org.flixelgdx.group.FlixelGroupable;
-import org.flixelgdx.input.gamepad.FlixelGamepadInput;
+import org.flixelgdx.input.FlixelInputDevice;
+import org.flixelgdx.input.FlixelKeyboardListener;
+import org.flixelgdx.input.FlixelMouseListener;
+import org.flixelgdx.input.FlixelNoopInputDevice;
+import org.flixelgdx.input.FlixelTouchListener;
+import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
@@ -593,16 +601,18 @@ public final class Flixel {
    * Flixel.gamepads.enabled = true;
    * }</pre>
    *
-   * <p>FlixelGDX's gamepad system is built on the gdx-controllers extension. It abstracts physical
-   * controllers (Xbox, PlayStation, generic USB) behind a set of logical button and axis codes
-   * defined in {@link FlixelGamepadInput}, so the same game code works across different controller
-   * layouts without any platform-specific branching.
+   * <p>The gamepad system abstracts physical controllers (Xbox, PlayStation, generic USB) behind
+   * logical button and axis tokens from {@link FlixelGamepadButton} and {@link FlixelGamepadAxis}, so
+   * the same game code works across different controller layouts without any platform-specific
+   * branching. The same tokens build custom mappings, so a button minted with
+   * {@link FlixelGamepadButton#of(String)} is polled exactly like the built-in ones.
    *
    * <p>Each connected controller is identified by a zero-based index. Player 1's controller is
    * index {@code 0}, player 2's is index {@code 1}, and so on. Query button states with
-   * {@link FlixelGamepadInputManager#pressed(int, int)}, {@link FlixelGamepadInputManager#justPressed(int, int)},
-   * and {@link FlixelGamepadInputManager#justReleased(int, int)}, or read analog axes with
-   * {@link FlixelGamepadInputManager#getAxis(int, int)}.
+   * {@link FlixelGamepadInputManager#pressed(int, FlixelGamepadButton)},
+   * {@link FlixelGamepadInputManager#justPressed(int, FlixelGamepadButton)}, and
+   * {@link FlixelGamepadInputManager#justReleased(int, FlixelGamepadButton)}, or read analog axes with
+   * {@link FlixelGamepadInputManager#getAxis(int, FlixelGamepadAxis)}.
    *
    * <p>Example:
    * <pre>{@code
@@ -610,16 +620,17 @@ public final class Flixel {
    * Flixel.gamepads.enabled = true;
    *
    * // Check if player 1 pressed the A button this frame.
-   * if (Flixel.gamepads.justPressed(0, FlixelGamepadInput.A)) {
+   * if (Flixel.gamepads.justPressed(0, FlixelGamepadButton.A)) {
    *   player.jump();
    * }
    *
    * // Read the left stick's horizontal axis for movement.
-   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadInput.AXIS_LEFT_X);
+   * float horizontal = Flixel.gamepads.getAxis(0, FlixelGamepadAxis.LEFT_X);
    * player.setVelocityX(horizontal * MOVE_SPEED * elapsed);
    * }</pre>
    *
-   * @see FlixelGamepadInput
+   * @see FlixelGamepadButton
+   * @see FlixelGamepadAxis
    */
   @NotNull
   public static FlixelGamepadInputManager gamepads;
@@ -759,6 +770,57 @@ public final class Flixel {
    */
   @NotNull
   public static FlixelHaptics haptics = FlixelNoopHaptics.INSTANCE;
+
+  /**
+   * The low-level input backend that reads the keyboard and pointer for the current platform.
+   *
+   * <p>This is the plumbing beneath {@link #keys}, {@link #mouse}, and {@link #touches}: those
+   * managers poll it each frame and register their event listeners with it. Game code rarely
+   * touches it directly, but it is available for a quick poll or to register a custom
+   * {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, or {@link FlixelTouchListener}.
+   *
+   * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
+   * (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
+   * safe.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * if (Flixel.input.isKeyPressed(FlixelKey.ESCAPE)) {
+   *   openPauseMenu();
+   * }
+   * }</pre>
+   *
+   * @see FlixelInputDevice
+   */
+  @NotNull
+  public static FlixelInputDevice input = FlixelNoopInputDevice.INSTANCE;
+
+  /**
+   * The file system used to read assets, save data, and any other files the game needs.
+   *
+   * <p>This is the seam beneath every file read in FlixelGDX. Open a handle from one of its roots
+   * (for example {@link FlixelFiles#internal internal} for bundled assets or
+   * {@link FlixelFiles#external external} for save data), then query or read it. Asset loading, fonts,
+   * and sounds all resolve their files through here.
+   *
+   * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
+   * (and on headless sessions) it is a safe no-op that reports every file as missing, so reads never
+   * crash.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelFile level = Flixel.files.internal("levels/level1.json");
+   * if (level.exists()) {
+   *   parseLevel(level.readString());
+   * }
+   * }</pre>
+   *
+   * @see org.flixelgdx.file.FlixelFiles
+   */
+  @NotNull
+  public static FlixelFiles files = FlixelNoopFiles.INSTANCE;
 
   /**
    * Global timescale applied to the game's update loop each frame.

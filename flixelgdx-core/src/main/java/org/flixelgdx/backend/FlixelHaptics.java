@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.Flixel;
+
 /**
  * Platform-specific haptic (vibration) feedback for mobile devices.
  *
@@ -49,7 +51,7 @@ package org.flixelgdx.backend;
  * Flixel.haptics.cancel();
  * }</pre>
  *
- * @see org.flixelgdx.Flixel#haptics
+ * @see Flixel#haptics
  */
 public interface FlixelHaptics {
 

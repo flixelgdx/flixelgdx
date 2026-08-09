@@ -21,11 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.tween.ease;
+package org.flixelgdx.tween;
 
-import org.flixelgdx.tween.FlixelTween;
+import org.flixelgdx.tween.settings.FlixelTweenSettings;
 
+/**
+ * A callback fired at a specific point in a tween's lifecycle.
+ *
+ * <p>The same interface is used for all three lifecycle hooks (start, update, and complete) so a
+ * single lambda or method reference can be reused across hooks or shared between tweens without any
+ * type-specific boilerplate.
+ *
+ * <p>Example - logging a message when a tween finishes:
+ *
+ * <pre>{@code
+ * FlixelTweenCallback onDone = tween -> Flixel.info("Tween finished!");
+ *
+ * FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *     .addGoal(sprite::getX, 200f, sprite::setX)
+ *     .setDuration(0.5f)
+ *     .setOnStart(tween -> Flixel.info("Tween started!"))
+ *     .setOnComplete(onDone));
+ * }</pre>
+ *
+ * @see FlixelTweenSettings#setOnStart(FlixelTweenCallback)
+ * @see FlixelTweenSettings#setOnUpdate(FlixelTweenCallback)
+ * @see FlixelTweenSettings#setOnComplete(FlixelTweenCallback)
+ */
 @FunctionalInterface
-public interface FlixelEaseStartCallback {
+public interface FlixelTweenCallback {
+
+  /**
+   * Called when the lifecycle event occurs.
+   *
+   * @param tween The tween that triggered this callback.
+   */
   void run(FlixelTween tween);
 }

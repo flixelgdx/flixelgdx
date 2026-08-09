@@ -23,53 +23,50 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.controllers.Controller;
-
 /**
- * Fallback {@link FlixelHapticsProvider} backed by gdx-controllers'
- * {@link Controller#startVibration}.
+ * Fallback {@link FlixelGamepadHapticsProvider} backed by {@link FlixelGamepad#startVibration}.
  *
  * <p>This implementation is installed automatically at startup, but each backend launcher
  * immediately replaces it with a platform-specific provider that supports true dual-motor
- * vibration. On desktop, {@code FlixelLwjgl3HapticsProvider} uses Jamepad's SDL rumble API
- * directly; on web, {@code FlixelTeaVMHapticsProvider} calls the W3C Gamepad Haptics API.
- * This class is only used if the game bypasses the standard launchers.
+ * vibration. On desktop, {@code FlixelLwjgl3HapticsProvider} uses SDL's rumble API directly; on
+ * web, {@code FlixelTeaVMHapticsProvider} calls the W3C Gamepad Haptics API. This class is only
+ * used if the game bypasses the standard launchers.
  *
- * <p>Because {@link Controller#startVibration} accepts a single unified strength rather than
+ * <p>Because {@link FlixelGamepad#startVibration} accepts a single unified strength rather than
  * separate motor channels, {@code leftIntensity} and {@code rightIntensity} are collapsed to
  * {@code Math.max(leftIntensity, rightIntensity)}. Both values are clamped to {@code [0, 1]}
  * first.
  */
-final class FlixelDefaultHapticsProvider implements FlixelHapticsProvider {
+final class FlixelDefaultGamepadHapticsProvider implements FlixelGamepadHapticsProvider {
 
   private final FlixelGamepadInputManager manager;
 
-  FlixelDefaultHapticsProvider(FlixelGamepadInputManager manager) {
+  FlixelDefaultGamepadHapticsProvider(FlixelGamepadInputManager manager) {
     this.manager = manager;
   }
 
   @Override
   public void vibrate(int slot, float leftIntensity, float rightIntensity, float durationSecs) {
-    Controller c = manager.controllerAt(slot);
-    if (c == null || !c.canVibrate()) {
+    FlixelGamepad g = manager.gamepadAt(slot);
+    if (g == null || !g.canVibrate()) {
       return;
     }
     float left = Math.max(0f, Math.min(1f, leftIntensity));
     float right = Math.max(0f, Math.min(1f, rightIntensity));
-    c.startVibration((int) (durationSecs * 1000f), Math.max(left, right));
+    g.startVibration((int) (durationSecs * 1000f), Math.max(left, right));
   }
 
   @Override
   public void stopVibration(int slot) {
-    Controller c = manager.controllerAt(slot);
-    if (c != null) {
-      c.cancelVibration();
+    FlixelGamepad g = manager.gamepadAt(slot);
+    if (g != null) {
+      g.cancelVibration();
     }
   }
 
   @Override
   public boolean canVibrate(int slot) {
-    Controller c = manager.controllerAt(slot);
-    return c != null && c.canVibrate();
+    FlixelGamepad g = manager.gamepadAt(slot);
+    return g != null && g.canVibrate();
   }
 }

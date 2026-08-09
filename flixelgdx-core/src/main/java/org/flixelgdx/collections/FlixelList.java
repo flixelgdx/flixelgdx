@@ -68,7 +68,6 @@ public interface FlixelList<T> extends Iterable<T> {
    * @return The element at {@code index}.
    * @throws IndexOutOfBoundsException If {@code index} is out of range.
    */
-  @Nullable
   T get(int index);
 
   /**
@@ -77,7 +76,6 @@ public interface FlixelList<T> extends Iterable<T> {
    * @return The element at index 0.
    * @throws IndexOutOfBoundsException If the list is empty.
    */
-  @Nullable
   T first();
 
   /**
@@ -86,7 +84,6 @@ public interface FlixelList<T> extends Iterable<T> {
    * @return The element at index {@code getSize() - 1}.
    * @throws IndexOutOfBoundsException If the list is empty.
    */
-  @Nullable
   T last();
 
   /**
@@ -95,7 +92,6 @@ public interface FlixelList<T> extends Iterable<T> {
    * @param rng The random source to draw from.
    * @return A random element, or {@code null} if the list is empty.
    */
-  @Nullable
   T getRandom(@NotNull FlixelRandom rng);
 
   /**

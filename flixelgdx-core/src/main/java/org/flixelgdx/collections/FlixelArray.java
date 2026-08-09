@@ -83,8 +83,7 @@ public class FlixelArray<T> implements FlixelList<T> {
 
   /**
    * The backing array. Only the first {@link #getSize()} entries are live; the
-   * rest are unspecified. Safe to read by index in hot loops; prefer the list's
-   * methods for mutation.
+   * rest are unspecified.
    */
   private T[] items;
 
@@ -213,7 +212,7 @@ public class FlixelArray<T> implements FlixelList<T> {
    * @throws IndexOutOfBoundsException If {@code index} is out of range.
    */
   @Override
-  public @Nullable T get(int index) {
+  public T get(int index) {
     if (index >= size) {
       throw new IndexOutOfBoundsException("index " + index + " >= size " + size);
     }
@@ -308,7 +307,7 @@ public class FlixelArray<T> implements FlixelList<T> {
    * @return The former last element.
    * @throws IndexOutOfBoundsException If the list is empty.
    */
-  public @Nullable T pop() {
+  public T pop() {
     if (size == 0) {
       throw new IndexOutOfBoundsException("array is empty");
     }
@@ -366,7 +365,7 @@ public class FlixelArray<T> implements FlixelList<T> {
    * @throws IndexOutOfBoundsException If the list is empty.
    */
   @Override
-  public @Nullable T first() {
+  public T first() {
     if (size == 0) {
       throw new IndexOutOfBoundsException("array is empty");
     }
@@ -380,7 +379,7 @@ public class FlixelArray<T> implements FlixelList<T> {
    * @throws IndexOutOfBoundsException If the list is empty.
    */
   @Override
-  public @Nullable T last() {
+  public T last() {
     if (size == 0) {
       throw new IndexOutOfBoundsException("array is empty");
     }
@@ -396,7 +395,7 @@ public class FlixelArray<T> implements FlixelList<T> {
    * @return The element at index {@code size - 1}.
    * @throws IndexOutOfBoundsException If the list is empty.
    */
-  public @Nullable T peek() {
+  public T peek() {
     return last();
   }
 
@@ -426,7 +425,7 @@ public class FlixelArray<T> implements FlixelList<T> {
    * @return A random element, or {@code null} if the list is empty.
    */
   @Override
-  public @Nullable T getRandom(@NotNull FlixelRandom rng) {
+  public T getRandom(@NotNull FlixelRandom rng) {
     if (size == 0) {
       return null;
     }

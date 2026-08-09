@@ -6,12 +6,14 @@
  * controllers each frame and exposes familiar pressed/justPressed/justReleased semantics
  * alongside analog axis reads.
  *
- * <p>Logical button and axis constants live on
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadInput FlixelGamepadInput} and are resolved to
- * native hardware indices through each
- * {@link com.badlogic.gdx.controllers.Controller#getMapping() Controller.getMapping()} at query
- * time. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the
- * controller family (PS4, Xbox, Switch Pro, etc.) so games can display the right button prompts.
+ * <p>Logical button and axis tokens live on
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadButton FlixelGamepadButton} and
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadAxis FlixelGamepadAxis}, and are resolved to
+ * native hardware indices through the
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadMapping FlixelGamepadMapping} produced at connect
+ * time by the resolver chain. {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel}
+ * identifies the gamepad family (PS4, Xbox, Switch Pro, etc.) so games can display the right button
+ * prompts.
  *
  * <p>The optional per-slot {@link org.flixelgdx.input.gamepad.FlixelGamepadDevice FlixelGamepadDevice}
  * facade exposes the same queries without passing a slot id on every call. Create one via
@@ -20,7 +22,7 @@
  * <h2>Haptics and vibration</h2>
  *
  * <p>Vibration is routed through a pluggable
- * {@link org.flixelgdx.input.gamepad.FlixelHapticsProvider FlixelHapticsProvider}. Each backend
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider FlixelGamepadHapticsProvider}. Each backend
  * launcher installs the correct platform implementation automatically:
  *
  * <ul>
@@ -46,7 +48,7 @@
  * }</pre>
  *
  * <p>For platform-specific haptics (for example DualSense adaptive triggers), supply a custom
- * {@link org.flixelgdx.input.gamepad.FlixelHapticsProvider} via
+ * {@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider} via
  * {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager#setHapticsProvider}.
  */
 package org.flixelgdx.input.gamepad;

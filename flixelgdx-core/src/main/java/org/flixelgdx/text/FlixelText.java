@@ -37,6 +37,7 @@ import com.badlogic.gdx.utils.Array;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
@@ -927,19 +928,19 @@ public class FlixelText extends FlixelSprite {
 
   /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
   @Override
-  public final FlixelSprite loadGraphic(FileHandle path) {
+  public final FlixelSprite loadGraphic(FlixelFile file) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
   /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
   @Override
-  public final FlixelSprite loadGraphic(FileHandle path, int frameWidth) {
+  public final FlixelSprite loadGraphic(FlixelFile file, int frameWidth) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
   /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
   @Override
-  public final FlixelSprite loadGraphic(FileHandle path, int frameWidth, int frameHeight) {
+  public final FlixelSprite loadGraphic(FlixelFile file, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 

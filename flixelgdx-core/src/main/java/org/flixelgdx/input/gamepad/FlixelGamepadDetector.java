@@ -23,16 +23,14 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import com.badlogic.gdx.controllers.Controller;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
 /**
- * Maps a controller name string (for example from {@link com.badlogic.gdx.controllers.Controller#getName()})
- * to a {@link FlixelGamepadModel}. Intended for connect-time use only; do not call from per-frame
+ * Maps a gamepad name string (for example from {@link FlixelGamepad#getName()}) to a
+ * {@link FlixelGamepadModel}. Intended for connect-time use only; do not call from per-frame
  * hot paths.
  *
  * <p>Matching uses ordered substring checks on a once-normalized lowercase name. Add new literal
@@ -44,31 +42,31 @@ public final class FlixelGamepadDetector {
   private FlixelGamepadDetector() {}
 
   /**
-   * Detects the best {@link FlixelGamepadModel} for the given controller.
+   * Detects the best {@link FlixelGamepadModel} for the given gamepad.
    *
-   * @param controller The controller to detect, or {@code null}.
+   * @param gamepad The gamepad to detect, or {@code null}.
    * @return Never {@code null}; {@link FlixelGamepadModel#UNKNOWN} when no rule matches.
    */
   @NotNull
-  public static FlixelGamepadModel detect(@Nullable Controller controller) {
-    if (controller == null) {
+  public static FlixelGamepadModel detect(@Nullable FlixelGamepad gamepad) {
+    if (gamepad == null) {
       return FlixelGamepadModel.UNKNOWN;
     }
-    return detect(controller.getName());
+    return detect(gamepad.getName());
   }
 
   /**
-   * Detects the best {@link FlixelGamepadModel} for the given controller name.
+   * Detects the best {@link FlixelGamepadModel} for the given gamepad name.
    *
-   * @param controllerName Raw name from the backend, or {@code null}.
+   * @param gamepadName Raw name from the backend, or {@code null}.
    * @return Never {@code null}; {@link FlixelGamepadModel#UNKNOWN} when no rule matches.
    */
   @NotNull
-  public static FlixelGamepadModel detect(@Nullable String controllerName) {
-    if (controllerName == null) {
+  public static FlixelGamepadModel detect(@Nullable String gamepadName) {
+    if (gamepadName == null) {
       return FlixelGamepadModel.UNKNOWN;
     }
-    String trimmed = controllerName.trim();
+    String trimmed = gamepadName.trim();
     if (trimmed.isEmpty()) {
       return FlixelGamepadModel.UNKNOWN;
     }

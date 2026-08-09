@@ -26,8 +26,6 @@ package org.flixelgdx;
 import com.badlogic.gdx.Application;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -417,32 +415,15 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     bgTexture = new Texture(pixmap);
     pixmap.dispose();
 
-    // Keyboard, mouse, and touch processors on the multiplexer.
-    var keysMgr = Flixel.keys;
-    var mouseMgr = Flixel.mouse;
-    var touchesMgr = Flixel.touches;
-    if (keysMgr != null || mouseMgr != null || touchesMgr != null) {
-      InputProcessor current = Gdx.input.getInputProcessor();
-      InputMultiplexer m;
-      if (current instanceof InputMultiplexer multiplexer) {
-        m = multiplexer;
-      } else {
-        m = new InputMultiplexer();
-        if (current != null) {
-          m.addProcessor(current);
-        }
-        Gdx.input.setInputProcessor(m);
-      }
-      int idx = 0;
-      if (keysMgr != null) {
-        m.addProcessor(idx++, keysMgr.getInputProcessor());
-      }
-      if (mouseMgr != null) {
-        m.addProcessor(idx++, mouseMgr.getInputProcessor());
-      }
-      if (touchesMgr != null) {
-        m.addProcessor(idx, touchesMgr.getInputProcessor());
-      }
+    // Register keyboard, mouse, and touch listeners with the input device.
+    if (Flixel.keys != null) {
+      Flixel.input.addKeyboardListener(Flixel.keys);
+    }
+    if (Flixel.mouse != null) {
+      Flixel.input.addMouseListener(Flixel.mouse);
+    }
+    if (Flixel.touches != null) {
+      Flixel.input.addTouchListener(Flixel.touches);
     }
 
     // Create the debug overlay when debug mode is enabled.
@@ -1106,11 +1087,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       }
       Flixel.debug.overlay.destroy();
       Flixel.clearDebugOverlay();
-    }
-
-    InputProcessor processor = Gdx.input.getInputProcessor();
-    if (processor instanceof InputMultiplexer multiplexer) {
-      multiplexer.clear();
     }
 
     if (Flixel.gamepads != null) {

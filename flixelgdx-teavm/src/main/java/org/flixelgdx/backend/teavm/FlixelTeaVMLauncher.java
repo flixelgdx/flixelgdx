@@ -202,8 +202,8 @@ public class FlixelTeaVMLauncher {
       onBeforeInitialize.run();
     }
     Flixel.initialize(game);
-    Flixel.gamepads.setHapticsProvider(new FlixelTeaVMHapticsProvider());
-    Flixel.gamepads.setAnalogButtonReader(new FlixelTeaVMAnalogButtonReader());
+    Flixel.gamepads.setHapticsProvider(new FlixelTeaVMGamepadHapticsProvider());
+    Flixel.gamepads.setAnalogButtonReader(new FlixelTeaVMGamepadAnalogButtonReader());
 
     Flixel.log.setCanStoreLogs(false);
 

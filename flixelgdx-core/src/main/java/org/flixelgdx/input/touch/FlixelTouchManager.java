@@ -23,18 +23,16 @@
  */
 package org.flixelgdx.input.touch;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.math.Vector2;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.input.FlixelInputProcessorManager;
-import org.jetbrains.annotations.NotNull;
+import org.flixelgdx.input.FlixelInputManager;
+import org.flixelgdx.input.FlixelTouchListener;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Multitouch input manager backed by libGDX's {@link InputProcessor} callbacks.
+ * Multitouch input manager whose state is driven by {@link FlixelTouchListener} callbacks.
  *
  * <p>Access via {@link org.flixelgdx.Flixel#touches Flixel.touches} after the framework is
  * initialized. The manager tracks up to {@link #getMaxPointers()} simultaneous fingers in the
@@ -68,15 +66,15 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Coordinate systems</h2>
  *
- * <p>Each {@link FlixelTouch} carries both screen and world coordinates. Screen coordinates use
- * libGDX's top-left origin (Y increases downward). World coordinates are unprojected via the
+ * <p>Each {@link FlixelTouch} carries both screen and world coordinates. Screen coordinates use the
+ * top-left origin (Y increases downward). World coordinates are unprojected via the
  * manager's active camera and use the standard bottom-left origin (Y increases upward), matching
  * the rest of the scene. Set a custom camera with {@link #setWorldCamera(FlixelCamera)};
  * otherwise the first camera in {@link Flixel#cameras} is used.
  *
  * <h2>Frame contract</h2>
  *
- * <p>The {@link InputProcessor} is the authoritative source for {@code justPressed},
+ * <p>The {@link FlixelTouchListener} callbacks are the authoritative source for {@code justPressed},
  * {@code justReleased}, and {@code justCancelled} flags; they are set inside the callbacks and
  * cleared by {@link #endFrame()}. {@link #update()} refreshes screen and world coordinates each
  * frame for all active pointers.
@@ -87,7 +85,7 @@ import org.jetbrains.annotations.Nullable;
  * virtually all Android hardware. Call {@link #setMaxPointers(int)} to raise or lower the limit;
  * existing live touch state is preserved for pointers that fall within the new size.
  */
-public class FlixelTouchManager implements FlixelInputProcessorManager {
+public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListener {
 
   /** Default maximum number of simultaneous touch pointers tracked. */
   public static final int DEFAULT_MAX_POINTERS = 10;
@@ -105,84 +103,6 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
   private FlixelCamera worldCamera;
 
   private final Vector2 tmpUnproject = new Vector2();
-
-  private final InputProcessor inputProcessor = new InputProcessor() {
-    @Override
-    public boolean keyDown(int keycode) {
-      return false;
-    }
-
-    @Override
-    public boolean keyUp(int keycode) {
-      return false;
-    }
-
-    @Override
-    public boolean keyTyped(char character) {
-      return false;
-    }
-
-    @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-      if (pointer >= list.length) {
-        return false;
-      }
-      FlixelTouch t = list[pointer];
-      t.screenX = screenX;
-      t.screenY = screenY;
-      t.pressed = true;
-      t.justPressed = true;
-      return false;
-    }
-
-    @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-      if (pointer >= list.length) {
-        return false;
-      }
-      FlixelTouch t = list[pointer];
-      t.screenX = screenX;
-      t.screenY = screenY;
-      t.pressed = false;
-      t.justReleased = true;
-      t.dragging = false;
-      return false;
-    }
-
-    @Override
-    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-      if (pointer >= list.length) {
-        return false;
-      }
-      FlixelTouch t = list[pointer];
-      t.pressed = false;
-      t.justCancelled = true;
-      t.dragging = false;
-      return false;
-    }
-
-    @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) {
-      if (pointer >= list.length) {
-        return false;
-      }
-      FlixelTouch t = list[pointer];
-      t.screenX = screenX;
-      t.screenY = screenY;
-      t.dragging = true;
-      return false;
-    }
-
-    @Override
-    public boolean mouseMoved(int screenX, int screenY) {
-      return false;
-    }
-
-    @Override
-    public boolean scrolled(float amountX, float amountY) {
-      return false;
-    }
-  };
 
   private int maxPointers;
 
@@ -206,6 +126,57 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
       t.pointer = i;
       list[i] = t;
     }
+  }
+
+  @Override
+  public boolean touched(int pointer, int x, int y) {
+    if (pointer >= list.length) {
+      return false;
+    }
+    FlixelTouch t = list[pointer];
+    t.screenX = x;
+    t.screenY = y;
+    t.pressed = true;
+    t.justPressed = true;
+    return false;
+  }
+
+  @Override
+  public boolean touchReleased(int pointer, int x, int y) {
+    if (pointer >= list.length) {
+      return false;
+    }
+    FlixelTouch t = list[pointer];
+    t.screenX = x;
+    t.screenY = y;
+    t.pressed = false;
+    t.justReleased = true;
+    t.dragging = false;
+    return false;
+  }
+
+  @Override
+  public boolean touchDragged(int pointer, int x, int y) {
+    if (pointer >= list.length) {
+      return false;
+    }
+    FlixelTouch t = list[pointer];
+    t.screenX = x;
+    t.screenY = y;
+    t.dragging = true;
+    return false;
+  }
+
+  @Override
+  public boolean touchCancelled(int pointer, int x, int y) {
+    if (pointer >= list.length) {
+      return false;
+    }
+    FlixelTouch t = list[pointer];
+    t.pressed = false;
+    t.justCancelled = true;
+    t.dragging = false;
+    return false;
   }
 
   /**
@@ -240,17 +211,6 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
   }
 
   /**
-   * Returns the stable {@link InputProcessor} that must be registered on the
-   * {@link com.badlogic.gdx.InputMultiplexer InputMultiplexer} for the lifetime of the game
-   * session. Registered automatically by {@code FlixelGame.create()}.
-   */
-  @Override
-  @NotNull
-  public InputProcessor getInputProcessor() {
-    return inputProcessor;
-  }
-
-  /**
    * Refreshes screen and world coordinates for all active pointers. Called once per frame by
    * {@code FlixelGame.update()} before game logic runs.
    */
@@ -265,8 +225,8 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
       if (!t.pressed) {
         continue;
       }
-      t.screenX = Gdx.input.getX(p);
-      t.screenY = Gdx.input.getY(p);
+      t.screenX = Flixel.input.getX(p);
+      t.screenY = Flixel.input.getY(p);
       if (cam != null) {
         tmpUnproject.set(t.screenX, t.screenY);
         cam.getViewport().unproject(tmpUnproject);
@@ -487,8 +447,8 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
    * use {@link #justTouchedScreen(float, float, float, float)} instead.
    *
    * <pre>{@code
-   * float half = Gdx.graphics.getWidth() / 2f;
-   * if (Flixel.touches.touchingScreen(half, 0, half, Gdx.graphics.getHeight())) {
+   * float half = Flixel.getWidth() / 2f;
+   * if (Flixel.touches.touchingScreen(half, 0, half, Flixel.getHeight())) {
    *   moveRight();
    * }
    * }</pre>
@@ -557,8 +517,8 @@ public class FlixelTouchManager implements FlixelInputProcessorManager {
    * {@link FlixelTouch#justPressed()}.
    *
    * <pre>{@code
-   * if (Flixel.touches.justTouchedScreen(0, 0, Gdx.graphics.getWidth() / 2f,
-   *         Gdx.graphics.getHeight())) {
+   * if (Flixel.touches.justTouchedScreen(0, 0, Flixel.getWidth() / 2f,
+   *         Flixel.getHeight())) {
    *   onLeftSideTapped();
    * }
    * }</pre>

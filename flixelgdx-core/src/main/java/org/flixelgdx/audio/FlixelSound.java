@@ -32,7 +32,6 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
-import org.flixelgdx.util.FlixelPathsUtil;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -780,7 +779,7 @@ public class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSoundB
   }
 
   private static FlixelSoundBackend createSoundForHandle(@NotNull FileHandle path) {
-    String resolvedPath = FlixelPathsUtil.resolveAudioPath(path.path());
+    String resolvedPath = Flixel.ensureAssets().resolveAudioPath(path.path());
     FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     Object sfxGroup = Flixel.sound != null ? Flixel.sound.getSfxGroup() : null;
     return factory.createSound(resolvedPath, (short) 0, sfxGroup, false);

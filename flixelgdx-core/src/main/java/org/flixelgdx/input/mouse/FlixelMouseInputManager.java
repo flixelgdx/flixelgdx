@@ -23,15 +23,14 @@
  */
 package org.flixelgdx.input.mouse;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.math.Vector2;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
-import org.flixelgdx.input.FlixelInputProcessorManager;
+import org.flixelgdx.input.FlixelInputManager;
+import org.flixelgdx.input.FlixelMouseListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Scroll wheel deltas</h2>
  * <p>
- * {@link InputProcessor#scrolled(float, float)} supplies {@code amountX} and {@code amountY} from libGDX.
+ * {@link FlixelMouseListener#scrolled(float, float)} supplies {@code amountX} and {@code amountY}.
  * This manager <strong>accumulates</strong> them into {@link #getScrollDeltaX()} and
  * {@link #getScrollDeltaY()} until {@link #endFrame()}.
  * </p>
@@ -63,7 +62,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #endFrame()} clears it (same timing as other per-frame input you consume in your game loop).
  * </p>
  */
-public class FlixelMouseInputManager implements FlixelInputProcessorManager {
+public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseListener {
 
   private static final int MAX_BUTTON = 4;
 
@@ -88,55 +87,6 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
 
   private final Vector2 tmpUnproject = new Vector2();
 
-  private final InputProcessor inputProcessor = new InputProcessor() {
-    @Override
-    public boolean keyDown(int keycode) {
-      return false;
-    }
-
-    @Override
-    public boolean keyUp(int keycode) {
-      return false;
-    }
-
-    @Override
-    public boolean keyTyped(char character) {
-      return false;
-    }
-
-    @Override
-    public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-      return false;
-    }
-
-    @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-      return false;
-    }
-
-    @Override
-    public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-      return false;
-    }
-
-    @Override
-    public boolean touchDragged(int screenX, int screenY, int pointer) {
-      return false;
-    }
-
-    @Override
-    public boolean mouseMoved(int screenX, int screenY) {
-      return false;
-    }
-
-    @Override
-    public boolean scrolled(float amountX, float amountY) {
-      scrollDeltaX += amountX;
-      scrollDeltaY += amountY;
-      return false;
-    }
-  };
-
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
 
@@ -152,20 +102,23 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
     icons = iconManager != null ? iconManager : FlixelNoopMouseIconManager.INSTANCE;
   }
 
-  @NotNull
-  public InputProcessor getInputProcessor() {
-    return inputProcessor;
+  @Override
+  public boolean scrolled(float amountX, float amountY) {
+    scrollDeltaX += amountX;
+    scrollDeltaY += amountY;
+    return false;
   }
 
   /** Call once per frame at the start of the game update (with {@link Flixel#keys}). */
+  @Override
   public void update() {
     if (!enabled) {
       return;
     }
-    screenX = Gdx.input.getX();
-    screenY = Gdx.input.getY();
+    screenX = Flixel.input.getX();
+    screenY = Flixel.input.getY();
     for (int i = 0; i <= MAX_BUTTON; i++) {
-      boolean cur = Gdx.input.isButtonPressed(i);
+      boolean cur = Flixel.input.isButtonPressed(i);
       justPressed[i] = cur && !prevPressed[i];
       justReleased[i] = !cur && prevPressed[i];
     }
@@ -209,9 +162,10 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
    * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#endFrame() FlixelKeyInputManager.endFrame()}). Resets
    * {@link #getScrollDeltaX()} and {@link #getScrollDeltaY()} to zero for the next frame.
    */
+  @Override
   public void endFrame() {
     for (int i = 0; i <= MAX_BUTTON; i++) {
-      prevPressed[i] = Gdx.input.isButtonPressed(i);
+      prevPressed[i] = Flixel.input.isButtonPressed(i);
     }
     scrollDeltaX = 0f;
     scrollDeltaY = 0f;
@@ -246,7 +200,7 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
   }
 
   /**
-   * Sum of horizontal scroll amounts received this frame via {@link InputProcessor#scrolled(float, float)}
+   * Sum of horizontal scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountX} (not cleared until {@link #endFrame()}). Use for sideways scroll; for typical wheel
    * up/down use {@link #getScrollDeltaY()}.
    */
@@ -255,7 +209,7 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
   }
 
   /**
-   * Sum of vertical scroll amounts received this frame via {@link InputProcessor#scrolled(float, float)}
+   * Sum of vertical scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountY} (not cleared until {@link #endFrame()}). Sign and magnitude are device-dependent; see
    * class Javadoc.
    */
@@ -289,7 +243,7 @@ public class FlixelMouseInputManager implements FlixelInputProcessorManager {
    * @return {@code true} if the button is pressed and input is enabled, regardless of UI capture.
    */
   public boolean rawPressed(int button) {
-    return enabled && button >= 0 && button <= MAX_BUTTON && Gdx.input.isButtonPressed(button);
+    return enabled && button >= 0 && button <= MAX_BUTTON && Flixel.input.isButtonPressed(button);
   }
 
   /**

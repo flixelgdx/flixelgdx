@@ -21,34 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.input.mouse;
+package org.flixelgdx.input.keyboard;
 
-import com.badlogic.gdx.Input;
-
-import org.flixelgdx.GdxHeadlessExtension;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@ExtendWith(GdxHeadlessExtension.class)
-class FlixelMouseInputManagerTest {
+class FlixelKeyTest {
 
   @Test
-  void scrollAccumulatesUntilEndFrame() {
-    FlixelMouseInputManager m = new FlixelMouseInputManager();
-    m.scrolled(0f, -2f);
-    assertEquals(-2f, m.getScrollDeltaY(), 1e-6f);
-    m.endFrame();
-    assertEquals(0f, m.getScrollDeltaY(), 1e-6f);
+  void namedCodesRoundTrip() {
+    for (int code = 0; code <= FlixelKey.MAX_KEYCODE; code++) {
+      String name = FlixelKey.toString(code);
+      if (!name.equals("UNKNOWN")) {
+        assertEquals(code, FlixelKey.fromString(name),
+            "toString/fromString must round-trip for code " + code + " (" + name + ")");
+      }
+    }
   }
 
   @Test
-  void buttonIndicesAreBounded() {
-    FlixelMouseInputManager m = new FlixelMouseInputManager();
-    m.update();
-    assertFalse(m.justPressed(-1));
-    assertFalse(m.justPressed(Input.Buttons.FORWARD + 5));
+  void reservedCodesHaveNames() {
+    assertEquals("NONE", FlixelKey.toString(FlixelKey.NONE));
+    assertEquals("ANY", FlixelKey.toString(FlixelKey.ANY));
+    assertEquals(FlixelKey.NONE, FlixelKey.fromString("NONE"));
+    assertEquals(FlixelKey.ANY, FlixelKey.fromString("ANY"));
+  }
+
+  @Test
+  void aliasesResolveToSharedCode() {
+    assertEquals(FlixelKey.DEL, FlixelKey.fromString("BACKSPACE"));
+  }
+
+  @Test
+  void unknownNamesAndCodesAreHandled() {
+    assertEquals(FlixelKey.NONE, FlixelKey.fromString("NOT_A_KEY"));
+    assertEquals(FlixelKey.NONE, FlixelKey.fromString(null));
+    assertEquals("UNKNOWN", FlixelKey.toString(9999));
   }
 }

@@ -25,31 +25,35 @@ package org.flixelgdx.backend.teavm;
 
 import com.badlogic.gdx.controllers.Controller;
 
-import org.flixelgdx.input.gamepad.FlixelAnalogButtonReader;
-import org.flixelgdx.input.gamepad.FlixelGamepadInput;
+import org.flixelgdx.input.gamepad.FlixelGamepad;
+import org.flixelgdx.input.gamepad.FlixelGamepadAnalogButtonReader;
+import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 
 /**
- * Web-backend {@link FlixelAnalogButtonReader} that reads analog button pressure directly from
+ * Web-backend {@link FlixelGamepadAnalogButtonReader} that reads analog button pressure directly from
  * the W3C Gamepad API via {@link JSBody} inline JavaScript.
  *
  * <p>On the web, triggers (L2/R2) are represented as {@code GamepadButton} objects with both a
- * {@code pressed} boolean and a {@code value} float in {@code [0, 1]}. The gdx-controllers
- * {@link Controller} interface only exposes the boolean half via {@code getButton(int)}, so this
- * reader bypasses the gdx-controllers layer and fetches {@code value} from
+ * {@code pressed} boolean and a {@code value} float in {@code [0, 1]}. The standard button query
+ * only exposes the boolean half, so this reader reaches the backend's underlying controller through
+ * {@link FlixelGamepad#getNativeHandle()} for its index, then fetches {@code value} from
  * {@code navigator.getGamepads()[index].buttons[buttonIndex].value} instead.
  *
  * <p>This reader is installed automatically by {@link FlixelTeaVMLauncher} and covers
- * {@link FlixelGamepadInput#AXIS_TRIGGER_L AXIS_TRIGGER_L} and
- * {@link FlixelGamepadInput#AXIS_TRIGGER_R AXIS_TRIGGER_R} on web.
+ * {@link FlixelGamepadAxis#L2 L2} and {@link FlixelGamepadAxis#R2 R2} trigger pressure on web.
  * You do not need to install it manually.
  */
-final class FlixelTeaVMAnalogButtonReader implements FlixelAnalogButtonReader {
+final class FlixelTeaVMGamepadAnalogButtonReader implements FlixelGamepadAnalogButtonReader {
 
   @Override
-  public float read(@NotNull Controller controller, int nativeButtonIndex) {
-    String uid = controller.getUniqueId();
+  public float read(@NotNull FlixelGamepad gamepad, int nativeButtonIndex) {
+    Object handle = gamepad.getNativeHandle();
+    if (!(handle instanceof Controller)) {
+      return 0f;
+    }
+    String uid = ((Controller) handle).getUniqueId();
     int index;
     try {
       index = Integer.parseInt(uid);

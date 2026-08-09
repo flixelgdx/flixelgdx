@@ -21,25 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.input;
-
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.controllers.ControllerListener;
+package org.flixelgdx.file;
 
 /**
- * Input manager that participates in libGDX {@link InputMultiplexer} wiring.
+ * A {@link FlixelFile} that points at nothing and reads as empty.
  *
- * <p>Gamepads use {@link ControllerListener} instead and therefore
- * implement only {@link FlixelInputManager}.
+ * <p>This is the safe default before a backend installs a real file system, and on headless
+ * sessions. It reports {@link #exists()} as {@code false} and returns empty content from the read
+ * methods, so code that reads files never crashes when no backend is present. It inherits every
+ * method from {@link FlixelFile}, whose defaults already describe an empty handle.
  */
-public interface FlixelInputProcessorManager extends FlixelInputManager {
+public enum FlixelNoopFile implements FlixelFile {
 
-  /**
-   * Stable {@link InputProcessor} instance safe to register on the multiplexer for the whole game
-   * session.
-   *
-   * @return Non-null processor instance.
-   */
-  InputProcessor getInputProcessor();
+  /** The single shared no-op file instance. */
+  INSTANCE
 }
