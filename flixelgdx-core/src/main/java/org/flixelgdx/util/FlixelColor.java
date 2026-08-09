@@ -23,47 +23,57 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.math.FlixelMath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Mutable color wrapper that owns a single {@link Color} instance for stable tinting
- * and tween endpoints without per-frame allocations.
+ * Mutable RGBA color with float components, used for tinting, backgrounds, and tween endpoints
+ * without per-frame allocations.
  *
- * <p>Shared presets such as {@link #WHITE} and {@link #RED} point at the same instances as libGDX
- * {@link Color} namesakes. Mutating a preset affects every place that uses that reference. For a
- * private copy, use {@code new FlixelColor(FlixelColor.RED)} or {@link #setColor(FlixelColor)} on your
- * own instance.
+ * <p>Each component lives in {@code [0, 1]}. The components are public fields so hot paths can
+ * read and write them directly ({@code color.a = 0.5f}); the setter methods exist for chained or
+ * validated updates.
  *
- * <p>Use {@link #getGdxColor()} when you need component access, lerping, or batch tinting; use
- * {@link #getColor()} when you need a compact RGBA8888 value.
+ * <p>Shared presets such as {@link #WHITE} and {@link #RED} are single shared instances. Mutating
+ * a preset affects every place that uses that reference. For a private copy, use
+ * {@code new FlixelColor(FlixelColor.RED)} or {@link #setColor(FlixelColor)} on your own instance.
+ *
+ * <p>Use {@link #getColor()} when you need a compact packed RGBA8888 value.
  */
 public class FlixelColor {
 
-  public static final FlixelColor WHITE = new FlixelColor(Color.WHITE);
-  public static final FlixelColor BLACK = new FlixelColor(Color.BLACK);
-  public static final FlixelColor RED = new FlixelColor(Color.RED);
-  public static final FlixelColor GREEN = new FlixelColor(Color.GREEN);
-  public static final FlixelColor BLUE = new FlixelColor(Color.BLUE);
-  public static final FlixelColor YELLOW = new FlixelColor(Color.YELLOW);
-  public static final FlixelColor CYAN = new FlixelColor(Color.CYAN);
-  public static final FlixelColor MAGENTA = new FlixelColor(Color.MAGENTA);
-  public static final FlixelColor GRAY = new FlixelColor(Color.GRAY);
-  public static final FlixelColor CLEAR = new FlixelColor(Color.CLEAR);
-  public static final FlixelColor ORANGE = new FlixelColor(Color.ORANGE);
-  public static final FlixelColor PINK = new FlixelColor(Color.PINK);
-  public static final FlixelColor PURPLE = new FlixelColor(Color.PURPLE);
-  public static final FlixelColor BROWN = new FlixelColor(Color.BROWN);
-  public static final FlixelColor OLIVE = new FlixelColor(Color.OLIVE);
-  public static final FlixelColor MAROON = new FlixelColor(Color.MAROON);
-  public static final FlixelColor NAVY = new FlixelColor(Color.NAVY);
-  public static final FlixelColor TEAL = new FlixelColor(Color.TEAL);
+  public static final FlixelColor WHITE = new FlixelColor(1f, 1f, 1f, 1f);
+  public static final FlixelColor BLACK = new FlixelColor(0f, 0f, 0f, 1f);
+  public static final FlixelColor RED = new FlixelColor(1f, 0f, 0f, 1f);
+  public static final FlixelColor GREEN = new FlixelColor(0f, 1f, 0f, 1f);
+  public static final FlixelColor BLUE = new FlixelColor(0f, 0f, 1f, 1f);
+  public static final FlixelColor YELLOW = new FlixelColor(1f, 1f, 0f, 1f);
+  public static final FlixelColor CYAN = new FlixelColor(0f, 1f, 1f, 1f);
+  public static final FlixelColor MAGENTA = new FlixelColor(1f, 0f, 1f, 1f);
+  public static final FlixelColor GRAY = new FlixelColor(0.5f, 0.5f, 0.5f, 1f);
+  public static final FlixelColor CLEAR = new FlixelColor(0f, 0f, 0f, 0f);
+  public static final FlixelColor ORANGE = new FlixelColor(1f, 0.65f, 0f, 1f);
+  public static final FlixelColor PINK = new FlixelColor(1f, 0.41f, 0.71f, 1f);
+  public static final FlixelColor PURPLE = new FlixelColor(0.63f, 0.13f, 0.94f, 1f);
+  public static final FlixelColor BROWN = new FlixelColor(0.545f, 0.271f, 0.075f, 1f);
+  public static final FlixelColor OLIVE = new FlixelColor(0.5f, 0.5f, 0f, 1f);
+  public static final FlixelColor MAROON = new FlixelColor(0.69f, 0.19f, 0.38f, 1f);
+  public static final FlixelColor NAVY = new FlixelColor(0f, 0f, 0.5f, 1f);
+  public static final FlixelColor TEAL = new FlixelColor(0f, 0.5f, 0.5f, 1f);
 
-  @NotNull
-  private final Color color;
+  /** The red component in {@code [0, 1]}. */
+  public float r;
+
+  /** The green component in {@code [0, 1]}. */
+  public float g;
+
+  /** The blue component in {@code [0, 1]}. */
+  public float b;
+
+  /** The alpha component in {@code [0, 1]}; {@code 0} is fully transparent. */
+  public float a;
+
   @Nullable
   private float[] hsv;
 
@@ -71,7 +81,25 @@ public class FlixelColor {
    * Creates a new color with the default white color.
    */
   public FlixelColor() {
-    color = new Color(Color.WHITE);
+    this(1f, 1f, 1f, 1f);
+  }
+
+  /**
+   * Creates a new color from the given packed RGBA8888 value.
+   *
+   * @param rgba8888 The packed RGBA8888 value.
+   */
+  public FlixelColor(int rgba8888) {
+    setPackedColor(rgba8888);
+  }
+
+  /**
+   * Creates a new color from the given {@code FlixelColor} value.
+   *
+   * @param source The {@code FlixelColor} value to copy.
+   */
+  public FlixelColor(@NotNull FlixelColor source) {
+    this(source.r, source.g, source.b, source.a);
   }
 
   /**
@@ -84,11 +112,10 @@ public class FlixelColor {
    * @param a The alpha component (ranged from {@code [0, 1]}).
    */
   public FlixelColor(int r, int g, int b, float a) {
-    float nr = FlixelMath.clamp(r, 0, 255) / 255f;
-    float ng = FlixelMath.clamp(g, 0, 255) / 255f;
-    float nb = FlixelMath.clamp(b, 0, 255) / 255f;
-    float na = FlixelMath.clamp(a, 0, 1);
-    color = new Color(nr, ng, nb, na);
+    this.r = FlixelMath.clamp(r, 0, 255) / 255f;
+    this.g = FlixelMath.clamp(g, 0, 255) / 255f;
+    this.b = FlixelMath.clamp(b, 0, 255) / 255f;
+    this.a = FlixelMath.clamp(a, 0f, 1f);
   }
 
   /**
@@ -100,140 +127,218 @@ public class FlixelColor {
    * @param a The alpha component.
    */
   public FlixelColor(float r, float g, float b, float a) {
-    color = new Color(r, g, b, a);
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.a = a;
   }
 
   /**
-   * Creates a new color from the given packed RGBA8888 value.
+   * Copies RGBA from {@code other} into this color.
    *
-   * @param rgba8888 The packed RGBA8888 value.
-   */
-  public FlixelColor(int rgba8888) {
-    color = new Color(rgba8888);
-  }
-
-  /**
-   * Creates a new color from the given {@link Color} value.
-   *
-   * @param source The {@link Color} value to copy.
-   */
-  public FlixelColor(@NotNull Color source) {
-    color = new Color(source);
-  }
-
-  /**
-   * Creates a new color from the given {@code FlixelColor} value.
-   *
-   * @param source The {@code FlixelColor} value to copy.
-   */
-  public FlixelColor(@NotNull FlixelColor source) {
-    color = new Color(source.color);
-  }
-
-  /**
-   * @return Packed RGBA8888, same as libGDX {@link Color#rgba8888(Color)} on the backing color.
-   */
-  public int getColor() {
-    return Color.rgba8888(color);
-  }
-
-  /**
-   * Copies RGBA from {@code other} into this wrapper.
-   *
-   * @param other The libGDX color to copy. Must not be {@code null}.
-   */
-  public void setColor(@NotNull Color other) {
-    color.set(other);
-  }
-
-  /**
-   * Copies RGBA from {@code other} into this wrapper.
-   *
-   * @param other The Flixel color to copy. Must not be {@code null}.
+   * @param other The color to copy. Must not be {@code null}.
    */
   public void setColor(@NotNull FlixelColor other) {
-    color.set(other.color);
+    r = other.r;
+    g = other.g;
+    b = other.b;
+    a = other.a;
   }
 
   /**
-   * Sets this color from a hex string, same format accepted by libGDX {@link Color#valueOf(String)}
-   * (for example {@code "ff0000"} or {@code "ff0000ff"}).
+   * Sets this color from a hex string such as {@code "#FF00FF"}, {@code "FF00FF"}, or an
+   * eight-digit form with alpha such as {@code "#FF00FF80"}.
    *
    * @param hexFormat The hex string to parse. Must not be {@code null}.
+   * @throws NumberFormatException If the string is not valid hexadecimal.
    */
   public void setColor(@NotNull String hexFormat) {
-    color.set(Color.valueOf(hexFormat));
+    String hex = hexFormat.startsWith("#") ? hexFormat.substring(1) : hexFormat;
+    long value = Long.parseLong(hex, 16);
+    if (hex.length() <= 6) {
+      setPackedColor((int) ((value << 8) | 0xFF));
+    } else {
+      setPackedColor((int) value);
+    }
   }
 
   /**
-   * @return The hue component of this color, in degrees {@code [0, 360)}.
+   * Sets all four components at once.
+   *
+   * @param r The red component in {@code [0, 1]}.
+   * @param g The green component in {@code [0, 1]}.
+   * @param b The blue component in {@code [0, 1]}.
+   * @param a The alpha component in {@code [0, 1]}.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor set(float r, float g, float b, float a) {
+    this.r = r;
+    this.g = g;
+    this.b = b;
+    this.a = a;
+    return this;
+  }
+
+  /**
+   * Sets this color from a packed RGBA8888 value.
+   *
+   * @param rgba8888 The packed value, red in the highest byte.
+   */
+  public void setPackedColor(int rgba8888) {
+    r = ((rgba8888 >>> 24) & 0xFF) / 255f;
+    g = ((rgba8888 >>> 16) & 0xFF) / 255f;
+    b = ((rgba8888 >>> 8) & 0xFF) / 255f;
+    a = (rgba8888 & 0xFF) / 255f;
+  }
+
+  /**
+   * Linearly interpolates this color toward {@code target}, writing the result in place.
+   *
+   * @param target The color to move toward.
+   * @param t Interpolation factor in {@code [0, 1]}; {@code 0} keeps this color, {@code 1} becomes the target.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelColor lerp(@NotNull FlixelColor target, float t) {
+    r += (target.r - r) * t;
+    g += (target.g - g) * t;
+    b += (target.b - b) * t;
+    a += (target.a - a) * t;
+    return this;
+  }
+
+  /**
+   * @return Packed RGBA8888 with red in the highest byte.
+   */
+  public int getColor() {
+    return ((int) (r * 255f) << 24) | ((int) (g * 255f) << 16) | ((int) (b * 255f) << 8) | (int) (a * 255f);
+  }
+
+  /**
+   * Returns the hue of this color in degrees.
+   *
+   * @return Hue in {@code [0, 360)}.
    */
   public float getHue() {
-    return hsv()[0];
+    updateHsv();
+    return hsv[0];
   }
 
   /**
-   * @return The saturation component of this color, in the range {@code [0, 1]}.
+   * Returns the saturation of this color.
+   *
+   * @return Saturation in {@code [0, 1]}.
    */
   public float getSaturation() {
-    return hsv()[1];
+    updateHsv();
+    return hsv[1];
   }
 
   /**
-   * @return The value (brightness) component of this color, in the range {@code [0, 1]}.
+   * Returns the value (brightness) of this color.
+   *
+   * @return Value in {@code [0, 1]}.
    */
   public float getValue() {
-    return hsv()[2];
+    updateHsv();
+    return hsv[2];
   }
 
   /**
-   * Sets the hue component of this color, leaving saturation, value, and alpha unchanged.
+   * Sets the hue of this color, keeping saturation and value.
    *
-   * @param hue The new hue, in degrees {@code [0, 360)}.
+   * @param hue Hue in degrees; wrapped into {@code [0, 360)}.
    */
   public void setHue(float hue) {
-    float[] v = hsv();
-    color.fromHsv(hue, v[1], v[2]);
+    updateHsv();
+    hsv[0] = ((hue % 360f) + 360f) % 360f;
+    applyHsv();
   }
 
   /**
-   * Sets the saturation component of this color, leaving hue, value, and alpha unchanged.
+   * Sets the saturation of this color, keeping hue and value.
    *
-   * @param saturation The new saturation, in the range {@code [0, 1]}.
+   * @param saturation Saturation in {@code [0, 1]}.
    */
   public void setSaturation(float saturation) {
-    float[] v = hsv();
-    color.fromHsv(v[0], saturation, v[2]);
+    updateHsv();
+    hsv[1] = FlixelMath.clamp(saturation, 0f, 1f);
+    applyHsv();
   }
 
   /**
-   * Sets the value (brightness) component of this color, leaving hue, saturation, and alpha unchanged.
+   * Sets the value (brightness) of this color, keeping hue and saturation.
    *
-   * @param value The new value, in the range {@code [0, 1]}.
+   * @param value Value in {@code [0, 1]}.
    */
   public void setValue(float value) {
-    float[] v = hsv();
-    color.fromHsv(v[0], v[1], value);
+    updateHsv();
+    hsv[2] = FlixelMath.clamp(value, 0f, 1f);
+    applyHsv();
   }
 
-  /**
-   * @return The backing libGDX color (mutable).
-   */
-  @NotNull
-  public Color getGdxColor() {
-    return color;
-  }
-
-  /**
-   * Lazily allocates the backing HSV scratch array, then refreshes it from the current color.
-   *
-   * @return The reused HSV scratch array, refreshed to match {@link #color}.
-   */
-  @NotNull
-  private float[] hsv() {
+  /** Recomputes the cached HSV triple from the current RGB components. */
+  private void updateHsv() {
     if (hsv == null) {
       hsv = new float[3];
     }
-    return color.toHsv(hsv);
+    float max = Math.max(r, Math.max(g, b));
+    float min = Math.min(r, Math.min(g, b));
+    float range = max - min;
+    float hue;
+    if (range == 0f) {
+      hue = 0f;
+    } else if (max == r) {
+      hue = (60f * (g - b) / range + 360f) % 360f;
+    } else if (max == g) {
+      hue = 60f * (b - r) / range + 120f;
+    } else {
+      hue = 60f * (r - g) / range + 240f;
+    }
+    hsv[0] = hue;
+    hsv[1] = max == 0f ? 0f : range / max;
+    hsv[2] = max;
+  }
+
+  /** Writes the cached HSV triple back into the RGB components. */
+  private void applyHsv() {
+    float h = hsv[0];
+    float s = hsv[1];
+    float v = hsv[2];
+    float c = v * s;
+    float x = c * (1f - Math.abs((h / 60f) % 2f - 1f));
+    float m = v - c;
+    float tr;
+    float tg;
+    float tb;
+    if (h < 60f) {
+      tr = c;
+      tg = x;
+      tb = 0f;
+    } else if (h < 120f) {
+      tr = x;
+      tg = c;
+      tb = 0f;
+    } else if (h < 180f) {
+      tr = 0f;
+      tg = c;
+      tb = x;
+    } else if (h < 240f) {
+      tr = 0f;
+      tg = x;
+      tb = c;
+    } else if (h < 300f) {
+      tr = x;
+      tg = 0f;
+      tb = c;
+    } else {
+      tr = c;
+      tg = 0f;
+      tb = x;
+    }
+    r = tr + m;
+    g = tg + m;
+    b = tb + m;
   }
 }

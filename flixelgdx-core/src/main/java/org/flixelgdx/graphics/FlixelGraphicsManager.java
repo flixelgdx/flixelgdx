@@ -116,18 +116,102 @@ public interface FlixelGraphicsManager {
    * @param width Texture width in pixels.
    * @param height Texture height in pixels.
    * @param rgba Tightly packed 8-bit-per-channel RGBA pixels, row by row.
-   * @return An opaque backend texture handle, or {@code 0} on failure or when no backend is present.
+   * @return A texture handle; a size-only stand-in when no backend is present.
    */
-  default long createTexture(int width, int height, @NotNull ByteBuffer rgba) {
-    return 0L;
+  @NotNull
+  default FlixelTexture createTexture(int width, int height, @NotNull ByteBuffer rgba) {
+    return new FlixelNoopTexture(width, height);
   }
 
   /**
-   * Releases a texture previously returned by {@link #createTexture(int, int, ByteBuffer)}.
+   * Uploads a CPU-side image to a new GPU texture.
    *
-   * @param handle The texture handle to free; ignored when {@code 0}.
+   * @param image The pixels to upload.
+   * @return A texture handle; a size-only stand-in when no backend is present.
    */
-  default void destroyTexture(long handle) {}
+  @NotNull
+  default FlixelTexture createTexture(@NotNull FlixelImage image) {
+    return createTexture(image.getWidth(), image.getHeight(), image.getPixels());
+  }
+
+  /**
+   * Decodes an encoded image file (PNG, JPEG, and other common formats) into CPU-side pixels.
+   *
+   * <p>Decoding is a backend service because the codec differs per platform (stb on desktop, the
+   * browser on web). Returns {@code null} when the data cannot be decoded or no backend is
+   * present. Most games load images through the asset manager instead of calling this directly.
+   *
+   * @param encoded The raw bytes of the encoded file.
+   * @return The decoded image, or {@code null} when decoding is unavailable or fails.
+   */
+  @Nullable
+  default FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
+    return null;
+  }
+
+  /**
+   * Creates an off-screen render target for post-processing passes.
+   *
+   * <p>When no backend is present this returns {@link FlixelUnsupportedRenderTarget}, whose
+   * operations do nothing.
+   *
+   * @param width Target width in pixels.
+   * @param height Target height in pixels.
+   * @return A new render target; never {@code null}.
+   */
+  @NotNull
+  default FlixelRenderTarget createRenderTarget(int width, int height) {
+    return FlixelUnsupportedRenderTarget.INSTANCE;
+  }
+
+  /**
+   * Clears the current draw surface (screen or active render target) to one color.
+   *
+   * @param r Red component in {@code [0, 1]}.
+   * @param g Green component in {@code [0, 1]}.
+   * @param b Blue component in {@code [0, 1]}.
+   * @param a Alpha component in {@code [0, 1]}.
+   */
+  default void clear(float r, float g, float b, float a) {}
+
+  /**
+   * Restricts drawing to a rectangle of the draw surface, in framebuffer pixels measured from
+   * the bottom-left corner. Used for sprite clip rectangles.
+   *
+   * @param x Left edge of the scissor rectangle.
+   * @param y Bottom edge of the scissor rectangle.
+   * @param width Scissor width; values below {@code 1} are clamped to {@code 1}.
+   * @param height Scissor height; values below {@code 1} are clamped to {@code 1}.
+   */
+  default void setScissor(int x, int y, int width, int height) {}
+
+  /** Removes the scissor rectangle so drawing covers the whole surface again. */
+  default void clearScissor() {}
+
+  /**
+   * Sets the rectangle of the draw surface that rendering maps into, in framebuffer pixels
+   * measured from the bottom-left corner. Cameras call this to place their viewport.
+   *
+   * @param x Left edge of the viewport.
+   * @param y Bottom edge of the viewport.
+   * @param width Viewport width.
+   * @param height Viewport height.
+   */
+  default void setViewport(int x, int y, int width, int height) {}
+
+  /**
+   * @return The drawable surface width in physical pixels, or {@code 0} when unknown.
+   */
+  default int getBackBufferWidth() {
+    return 0;
+  }
+
+  /**
+   * @return The drawable surface height in physical pixels, or {@code 0} when unknown.
+   */
+  default int getBackBufferHeight() {
+    return 0;
+  }
 
   /**
    * Compiles a shader source bundle into a usable program on the active backend.

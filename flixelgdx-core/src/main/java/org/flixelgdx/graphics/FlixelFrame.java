@@ -23,19 +23,16 @@
  */
 package org.flixelgdx.graphics;
 
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
- * Frame wrapper around a libGDX {@link TextureRegion}.
+ * A rectangular region of a {@link FlixelTexture}: one frame of a sprite sheet or atlas.
  *
  * <p>This carries the extra metadata needed for Sparrow/atlas frames (original size and offsets),
- * similar to libGDX's {@code TextureAtlas.AtlasRegion}, but without depending on an atlas type.
+ * so a single texture can hold many frames without per-frame textures.
  *
  * <h2>Why these extra fields exist</h2>
  * Sparrow (Starling) atlases ship <em>trimmed</em> frames: transparent borders are cut away to pack
@@ -47,13 +44,23 @@ import java.util.Objects;
  *
  * <p>The static {@link #regionInsetX(int, int, int, boolean)} and
  * {@link #regionInsetY(int, int, int, boolean)} helpers turn that metadata into the pixel offset at
- * which the trimmed region should be drawn inside the source box. They are pure functions (no libGDX
- * state) so the geometry can be unit tested without a GPU texture.
+ * which the trimmed region should be drawn inside the source box. They are pure functions (no GPU
+ * state) so the geometry can be unit tested without a texture.
  */
 public final class FlixelFrame {
 
   @NotNull
-  private final TextureRegion region;
+  private final FlixelTexture texture;
+
+  private final int regionX;
+  private final int regionY;
+  private final int regionWidth;
+  private final int regionHeight;
+
+  private final float u;
+  private final float v;
+  private final float u2;
+  private final float v2;
 
   /** Optional frame name (used by Sparrow prefix animations). */
   @Nullable
@@ -86,24 +93,49 @@ public final class FlixelFrame {
    * Whether this frame was packed into its atlas rotated 90 degrees clockwise.
    *
    * <p>When {@code true}, Adobe Animate stores the sprite sideways in the PNG to save space.
-   * The backing {@link TextureRegion} covers the on-disk footprint as-is (width = logical height,
-   * height = logical width), while {@link #originalWidth} and {@link #originalHeight} always hold
-   * the logical (pre-rotation) dimensions. The rig baker applies a rotation-correction matrix so
-   * the part renders upright in rig space regardless of how it was packed.
+   * The region covers the on-disk footprint as-is (width = logical height, height = logical
+   * width), while {@link #originalWidth} and {@link #originalHeight} always hold the logical
+   * (pre-rotation) dimensions. The rig baker applies a rotation-correction matrix so the part
+   * renders upright in rig space regardless of how it was packed.
    */
   public boolean rotated;
 
   /**
-   * Constructs a new FlixelFrame with the given region.
+   * Constructs a frame that covers an entire texture.
    *
-   * @param region The region to wrap.
-   * @throws NullPointerException If the provided region is {@code null}.
+   * @param texture The texture to wrap.
+   * @throws NullPointerException If the provided texture is {@code null}.
    */
-  public FlixelFrame(@NotNull TextureRegion region) {
-    this.region = Objects.requireNonNull(region, "TextureRegion cannot be null.");
+  public FlixelFrame(@NotNull FlixelTexture texture) {
+    this(texture, 0, 0, texture.getWidth(), texture.getHeight());
+  }
+
+  /**
+   * Constructs a frame covering the given rectangle of a texture, in pixels measured from the
+   * texture's top-left corner.
+   *
+   * @param texture The texture the region lives in.
+   * @param regionX Left edge of the region in pixels.
+   * @param regionY Top edge of the region in pixels.
+   * @param regionWidth Region width in pixels.
+   * @param regionHeight Region height in pixels.
+   * @throws NullPointerException If the provided texture is {@code null}.
+   */
+  public FlixelFrame(@NotNull FlixelTexture texture, int regionX, int regionY, int regionWidth, int regionHeight) {
+    this.texture = Objects.requireNonNull(texture, "Texture cannot be null.");
+    this.regionX = regionX;
+    this.regionY = regionY;
+    this.regionWidth = regionWidth;
+    this.regionHeight = regionHeight;
+    float texW = Math.max(1, texture.getWidth());
+    float texH = Math.max(1, texture.getHeight());
+    this.u = regionX / texW;
+    this.v = regionY / texH;
+    this.u2 = (regionX + regionWidth) / texW;
+    this.v2 = (regionY + regionHeight) / texH;
     this.name = null;
-    this.originalWidth = region.getRegionWidth();
-    this.originalHeight = region.getRegionHeight();
+    this.originalWidth = regionWidth;
+    this.originalHeight = regionHeight;
     this.offsetX = 0;
     this.offsetY = 0;
   }
@@ -149,28 +181,43 @@ public final class FlixelFrame {
   }
 
   @NotNull
-  public TextureRegion getRegion() {
-    return region;
-  }
-
-  @NotNull
-  public Texture getTexture() {
-    return region.getTexture();
+  public FlixelTexture getTexture() {
+    return texture;
   }
 
   public int getRegionX() {
-    return region.getRegionX();
+    return regionX;
   }
 
   public int getRegionY() {
-    return region.getRegionY();
+    return regionY;
   }
 
   public int getRegionWidth() {
-    return region.getRegionWidth();
+    return regionWidth;
   }
 
   public int getRegionHeight() {
-    return region.getRegionHeight();
+    return regionHeight;
+  }
+
+  /** Returns the left texture coordinate of this region in {@code [0, 1]}. */
+  public float getU() {
+    return u;
+  }
+
+  /** Returns the top texture coordinate of this region in {@code [0, 1]}. */
+  public float getV() {
+    return v;
+  }
+
+  /** Returns the right texture coordinate of this region in {@code [0, 1]}. */
+  public float getU2() {
+    return u2;
+  }
+
+  /** Returns the bottom texture coordinate of this region in {@code [0, 1]}. */
+  public float getV2() {
+    return v2;
   }
 }
