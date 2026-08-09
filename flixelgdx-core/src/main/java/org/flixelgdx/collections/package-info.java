@@ -6,9 +6,9 @@
  * {@link org.flixelgdx.collections.FlixelPoolable}) plus the growable arrays,
  * maps, and sets that game code and the framework itself iterate every frame.
  *
- * <p>Everything here is built for the framework's no-per-frame-allocation rule:
- * backing arrays are reused, iteration is index based, growth is amortized, and
- * the hash containers hand out reusable iterators. Prefer the public
- * {@code items}/{@code size} fields on the array types for the tightest loops.
+ * <p>Everything here is designed to be light and to not produce allocations
+ * every frame when being used. It's highly advised you use this collection
+ * system over standard Java's, which consumes more memory and allocates
+ * objects when being iterated, especially in hot loops.
  */
 package org.flixelgdx.collections;

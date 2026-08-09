@@ -25,21 +25,13 @@ package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Host platform integration for notifications, display management, and clipboard access.
- *
- * <p>This is separate from {@link FlixelAlerter}, which shows blocking dialog popups.
- * Use {@link Flixel#host Flixel.host} from game code.
- *
- * <p>Desktop LWJGL3 ships a full implementation: freedesktop {@code notify-send} on Linux,
- * {@code osascript} on macOS, WinRT toasts via PowerShell on Windows, GLFW window attention,
- * AWT clipboard, and platform-specific screen wake lock. Web (TeaVM) implements the Browser
- * Notification API, tab-title attention, the Screen Wake Lock API, the {@code beforeunload}
- * exit guard, and the Clipboard API. Mobile builds use the safe no-op implementation.
  *
  * <h2>Web notification permission</h2>
  *
@@ -53,13 +45,13 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Paste operations are asynchronous. Register a handler on {@link #onTextPasted()} before
  * calling {@link #pasteFromClipboard()}. The signal fires once the platform has retrieved the
- * data. Handlers may not be called on the GL thread; because of this, wrap any libGDX calls
- * with {@code Gdx.app.postRunnable(...)}.
+ * data. Handlers may not be called on the GL thread; because of this, wrap any calls
+ * with {@link FlixelGraphicsManager#queueMainThread(Runnable) Flixel.graphics.queueMainThread()}.
  *
  * <p>Example:
  *
  * <pre>{@code
- * // Notifications
+ * // Send a notification and flash the game's icon in the task bar.
  * Flixel.host.sendNotification("Ready", "Your level finished loading.");
  * Flixel.host.requestAttention();
  *
@@ -69,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
  * // Clipboard (paste).
  * Flixel.host.onTextPasted().add(text -> {
  *   if (text != null) {
- *     Gdx.app.postRunnable(() -> saveCodeField.setText(text));
+ *     Flixel.graphics.queueMainThread(() -> saveCodeField.setText(text));
  *   }
  * });
  * Flixel.host.pasteFromClipboard();
@@ -112,7 +104,7 @@ public interface FlixelHostIntegration {
   void keepScreenAwake(boolean awake);
 
   /**
-   * Sets a message shown to the user when they attempt to close or navigate away from the game.
+   * Sets a message shown to the user when they attempt to close the game.
    *
    * <p>On the web backend this hooks {@code window.beforeunload}. Pass {@code null} to remove the
    * guard. On desktop this is a no-op.
