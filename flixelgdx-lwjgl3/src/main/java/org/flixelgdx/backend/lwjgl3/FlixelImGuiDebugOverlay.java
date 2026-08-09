@@ -37,7 +37,6 @@ import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
-import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.glfw.GLFW;
