@@ -40,17 +40,25 @@ import org.jetbrains.annotations.Nullable;
  * separate groups for sound effects and music, global master volume, and
  * automatic pause when the game loses focus (and resume when it regains focus).
  *
- * <p>For internal paths, {@link #play} and {@link #playMusic} resolve audio through
- * {@link Flixel#ensureAssets()}, which uses a loaded {@link FlixelSoundSource} when present,
- * otherwise enqueue and block-load that source before creating a {@link FlixelSound}.
- * External paths still bypass the asset manager and hit the backend directly.
+ * <p>The platform's {@link FlixelSoundFactory} powers everything: install one before
+ * {@link org.flixelgdx.Flixel#start Flixel.start} (the desktop launcher does this for you) and
+ * the manager builds its groups and sounds through it. Most games only need
+ * {@link #play}, {@link #playMusic}, and the volume controls; use {@link #create} when you want
+ * a {@link FlixelSound} configured up front without hearing it yet.
+ *
+ * <p>For internal paths, sounds resolve through the asset pipeline: a loaded
+ * {@link FlixelSoundSource} is used when present, otherwise the source is block-loaded first.
+ * All file access goes through the {@link org.flixelgdx.file.FlixelFiles Flixel.files} seam, so
+ * audio works identically from a folder, a packaged JAR, or any custom file root.
  */
 public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
 
-  private final FlixelSoundBackend.Factory factory;
+  private static final String[] AUDIO_EXTENSIONS = { ".mp3", ".ogg", ".wav", ".flac" };
+
+  private final FlixelSoundFactory factory;
   private final FlixelArray<FlixelSound> activeSounds = new FlixelArray<>(false, 8);
-  private Object sfxGroup;
-  private Object musicGroup;
+  private FlixelSoundGroup sfxGroup;
+  private FlixelSoundGroup musicGroup;
 
   private float masterVolume = 1f;
 
@@ -60,12 +68,16 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   /**
    * Constructs a new audio manager using the given backend factory.
    *
-   * @param factory The platform-specific sound backend factory.
+   * @param factory The platform-specific sound factory.
    */
-  public FlixelSoundManager(@NotNull FlixelSoundBackend.Factory factory) {
+  public FlixelSoundManager(@NotNull FlixelSoundFactory factory) {
     this.factory = factory;
     sfxGroup = factory.createGroup();
     musicGroup = factory.createGroup();
+    FlixelSoundSourceLoader loader = new FlixelSoundSourceLoader();
+    for (String ext : AUDIO_EXTENSIONS) {
+      Flixel.assets.registerLoader(ext, loader);
+    }
   }
 
   /**
@@ -88,10 +100,10 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
     }
     activeSounds.clear();
     if (sfxGroup != null) {
-      factory.disposeGroup(sfxGroup);
+      sfxGroup.destroy();
     }
     if (musicGroup != null) {
-      factory.disposeGroup(musicGroup);
+      musicGroup.destroy();
     }
     sfxGroup = factory.createGroup();
     musicGroup = factory.createGroup();
@@ -129,41 +141,41 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   /**
    * Returns the underlying backend factory for advanced use.
    *
-   * @return The backend factory powering this manager.
+   * @return The sound factory powering this manager.
    */
   @NotNull
-  public FlixelSoundBackend.Factory getFactory() {
+  public FlixelSoundFactory getFactory() {
     return factory;
   }
 
   /**
-   * Returns the SFX group handle. Use for playing sounds or custom sounds
+   * Returns the SFX group. Use for playing sounds or custom sounds
    * that should be categorised as SFX.
    *
-   * @return The SFX group handle.
+   * @return The SFX group.
    */
   @NotNull
-  public Object getSfxGroup() {
+  public FlixelSoundGroup getSfxGroup() {
     return sfxGroup;
   }
 
   /**
-   * Returns the music group handle. Used by {@link #playMusic}.
+   * Returns the music group. Used by {@link #playMusic}.
    *
-   * @return The music group handle.
+   * @return The music group.
    */
   @NotNull
-  public Object getMusicGroup() {
+  public FlixelSoundGroup getMusicGroup() {
     return musicGroup;
   }
 
   /**
    * Returns the default group used when no group is specified (SFX group).
    *
-   * @return The SFX group handle.
+   * @return The SFX group.
    */
   @NotNull
-  public Object getSoundsGroup() {
+  public FlixelSoundGroup getSoundsGroup() {
     return sfxGroup;
   }
 
@@ -197,6 +209,50 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    */
   public float changeMasterVolume(float amount) {
     return setMasterVolume(masterVolume + amount);
+  }
+
+  /**
+   * Creates a sound without playing it: the escape hatch for configuring a {@link FlixelSound}
+   * (volume, effects, looping) before its first {@link FlixelSound#play()}.
+   *
+   * <p>The sound joins the SFX group and is tracked by this manager like any played sound, so
+   * state-switch cleanup and focus pausing still apply.
+   *
+   * @param path Internal asset key / path.
+   * @return The new, idle {@link FlixelSound} instance.
+   */
+  @NotNull
+  public FlixelSound create(@NotNull String path) {
+    return create(path, null, false);
+  }
+
+  /**
+   * Creates a sound without playing it, in the given group.
+   *
+   * @param path Internal asset key / path.
+   * @param group Sound group, or {@code null} to use the default SFX group.
+   * @return The new, idle {@link FlixelSound} instance.
+   */
+  @NotNull
+  public FlixelSound create(@NotNull String path, @Nullable FlixelSoundGroup group) {
+    return create(path, group, false);
+  }
+
+  /**
+   * Creates a sound without playing it.
+   *
+   * @param path Internal asset key / path, or an absolute path when {@code external} is {@code true}.
+   * @param group Sound group, or {@code null} to use the default SFX group.
+   * @param external If {@code true}, the path is read from the absolute file root.
+   * @return The new, idle {@link FlixelSound} instance.
+   */
+  @NotNull
+  public FlixelSound create(@NotNull String path, @Nullable FlixelSoundGroup group, boolean external) {
+    FlixelSoundGroup targetGroup = (group != null) ? group : sfxGroup;
+    FlixelSound sound = buildSound(path, external, targetGroup);
+    sound.setManager(this);
+    activeSounds.add(sound);
+    return sound;
   }
 
   /**
@@ -245,7 +301,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable Object group) {
+  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable FlixelSoundGroup group) {
     return play(path, volume, looping, group, false);
   }
 
@@ -256,13 +312,13 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * @param volume Volume to play with.
    * @param looping Whether to loop.
    * @param group Sound group, or {@code null} to use the default SFX group.
-   * @param external If {@code true}, the path is used as-is (for external files).
+   * @param external If {@code true}, the path is read from the absolute file root.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
   public FlixelSound play(@NotNull String path, float volume, boolean looping,
-      @Nullable Object group, boolean external) {
-    Object targetGroup = (group != null) ? group : sfxGroup;
+      @Nullable FlixelSoundGroup group, boolean external) {
+    FlixelSoundGroup targetGroup = (group != null) ? group : sfxGroup;
     return createAndPlaySoundFromPath(path, external, volume, looping, targetGroup);
   }
 
@@ -308,7 +364,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * @param path Path to the music file.
    * @param volume Volume.
    * @param looping Whether to loop.
-   * @param external If {@code true}, the path is used as-is (e.g. for mobile external storage).
+   * @param external If {@code true}, the path is read from the absolute file root.
    * @return The new music {@link FlixelSound} instance.
    */
   @NotNull
@@ -322,14 +378,40 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   }
 
   /**
-   * Builds a new {@link FlixelSound} for {@code path}, starts playback, and returns it.
+   * Builds a new {@link FlixelSound} for {@code path} without starting playback.
    *
-   * <p>When {@code external} is {@code false}, uses {@link Flixel#ensureAssets()} to read or
-   * synchronously load a {@link FlixelSoundSource} for {@code path}, then {@link FlixelSoundSource#create(Object)}
-   * with {@code targetGroup}. External paths keep the previous behavior: direct backend creation from {@code path}.
+   * <p>When {@code external} is {@code false}, reads or synchronously loads a
+   * {@link FlixelSoundSource} through the asset manager and retains its handle for the sound's
+   * lifetime. External paths read the file bytes from
+   * {@link org.flixelgdx.file.FlixelFiles#absolute Flixel.files.absolute} directly.
    *
    * @param path The path to the sound file.
-   * @param external If {@code true}, the path is used as-is (for external files).
+   * @param external If {@code true}, the path is read from the absolute file root.
+   * @param targetGroup The group to create the sound in.
+   * @return The new {@link FlixelSound} instance.
+   */
+  @NotNull
+  private FlixelSound buildSound(@NotNull String path, boolean external, @NotNull FlixelSoundGroup targetGroup) {
+    if (external) {
+      FlixelSoundBuffer buffer = FlixelSoundBuffer.read(path, Flixel.files.absolute(path));
+      return factory.createSound(buffer, targetGroup);
+    }
+    FlixelAssetManager assets = Flixel.assets;
+    if (!assets.isLoaded(path)) {
+      assets.load(path);
+      assets.finishLoadingAsset(path);
+    }
+    FlixelAsset<FlixelSoundSource> sourceHandle = assets.<FlixelSoundSource>get(path).retain();
+    FlixelSound sound = sourceHandle.get().create(targetGroup);
+    sound.setSourceAsset(sourceHandle);
+    return sound;
+  }
+
+  /**
+   * Builds a new {@link FlixelSound} for {@code path}, starts playback, and returns it.
+   *
+   * @param path The path to the sound file.
+   * @param external If {@code true}, the path is read from the absolute file root.
    * @param volume The volume to play the sound at.
    * @param looping If {@code true}, the sound will loop.
    * @param targetGroup The group to play the sound in.
@@ -341,30 +423,14 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       boolean external,
       float volume,
       boolean looping,
-      @NotNull Object targetGroup) {
-    if (external) {
-      FlixelSoundBackend backend = factory.createSound(path, (short) 0, targetGroup, true);
-      FlixelSound s = new FlixelSound(backend);
-      s.setVolume(volume);
-      s.setLooped(looping);
-      s.play();
-      activeSounds.add(s);
-      return s;
-    }
-    FlixelAssetManager assets = Flixel.ensureAssets();
-    if (!assets.isLoaded(path)) {
-      assets.load(path);
-      assets.finishLoadingAsset(path);
-    }
-    FlixelAsset<FlixelSoundSource> sourceHandle = assets.<FlixelSoundSource>get(path).retain();
-    FlixelSoundSource source = sourceHandle.get();
-    FlixelSound flixelSound = source.create(targetGroup);
-    flixelSound.setSourceAsset(sourceHandle);
-    flixelSound.setVolume(volume);
-    flixelSound.setLooped(looping);
-    flixelSound.play();
-    activeSounds.add(flixelSound);
-    return flixelSound;
+      @NotNull FlixelSoundGroup targetGroup) {
+    FlixelSound sound = buildSound(path, external, targetGroup);
+    sound.setManager(this);
+    sound.setVolume(volume);
+    sound.setLooped(looping);
+    sound.play();
+    activeSounds.add(sound);
+    return sound;
   }
 
   /**
@@ -399,8 +465,8 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * resumed with {@link #resume()}.
    */
   public void pause() {
-    factory.groupPause(sfxGroup);
-    factory.groupPause(musicGroup);
+    sfxGroup.pause();
+    musicGroup.pause();
   }
 
   /**
@@ -408,8 +474,8 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * game regains focus.
    */
   public void resume() {
-    factory.groupPlay(sfxGroup);
-    factory.groupPlay(musicGroup);
+    sfxGroup.resume();
+    musicGroup.resume();
   }
 
   @Override
@@ -425,8 +491,8 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       }
     }
     activeSounds.clear();
-    factory.disposeGroup(sfxGroup);
-    factory.disposeGroup(musicGroup);
-    factory.disposeEngine();
+    sfxGroup.destroy();
+    musicGroup.destroy();
+    factory.destroyEngine();
   }
 }
