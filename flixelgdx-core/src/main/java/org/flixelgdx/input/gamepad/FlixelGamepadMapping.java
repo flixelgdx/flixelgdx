@@ -36,28 +36,28 @@ import org.jetbrains.annotations.Nullable;
  * through {@link FlixelGamepadInputManager}, which resolves logical inputs through the mapping
  * stored on each connected {@link FlixelGamepad}.
  *
- * <p>A backend populates a mapping by calling {@link #register(FlixelGamepadButton, int)} and
+ * <p>A backend populates a mapping by calling {@link #registerButton(FlixelGamepadButton, int)} and
  * {@link #registerAxis(FlixelGamepadAxis, int)} for each input the hardware actually exposes.
  * Any button or axis not registered returns {@link #UNDEFINED} from its getter, signalling the
  * manager that the input is unavailable on this device.
  *
- * <p>The L2/R2 trigger duality is handled naturally: register L2 as a button index when the
- * hardware reports it digitally, or register {@link FlixelGamepadAxis#L2} as an axis index when
- * the hardware reports it as an analog value. The manager checks both and synthesizes button state
+ * <p>The L2/R2 trigger duality is handled naturally: call {@link #registerButton} for L2 when the
+ * hardware reports it digitally, or call {@link #registerAxis} with {@link FlixelGamepadAxis#L2}
+ * when the hardware reports it as an analog value. The manager checks both and synthesizes button state
  * from the axis when only the axis is present.
  *
  * <p>Example - building a mapping for an Xbox-style controller:
  *
  * <pre>{@code
  * FlixelGamepadMapping mapping = new FlixelGamepadMapping();
- * mapping.register(FlixelGamepadButton.A,     0);
- * mapping.register(FlixelGamepadButton.B,     1);
- * mapping.register(FlixelGamepadButton.X,     2);
- * mapping.register(FlixelGamepadButton.Y,     3);
- * mapping.register(FlixelGamepadButton.L1,    4);
- * mapping.register(FlixelGamepadButton.R1,    5);
- * mapping.register(FlixelGamepadButton.BACK,  6);
- * mapping.register(FlixelGamepadButton.START, 7);
+ * mapping.registerButton(FlixelGamepadButton.A,     0);
+ * mapping.registerButton(FlixelGamepadButton.B,     1);
+ * mapping.registerButton(FlixelGamepadButton.X,     2);
+ * mapping.registerButton(FlixelGamepadButton.Y,     3);
+ * mapping.registerButton(FlixelGamepadButton.L1,    4);
+ * mapping.registerButton(FlixelGamepadButton.R1,    5);
+ * mapping.registerButton(FlixelGamepadButton.BACK,  6);
+ * mapping.registerButton(FlixelGamepadButton.START, 7);
  * mapping.registerAxis(FlixelGamepadAxis.LEFT_X,  0);
  * mapping.registerAxis(FlixelGamepadAxis.LEFT_Y,  1);
  * mapping.registerAxis(FlixelGamepadAxis.RIGHT_X, 2);
@@ -79,7 +79,7 @@ public class FlixelGamepadMapping {
   private final FlixelMap<FlixelGamepadAxis, Integer> axes = new FlixelMap<>();
   private final FlixelMap<Integer, FlixelGamepadButton> buttonsByIndex = new FlixelMap<>();
 
-  /** Creates an empty mapping; populate with {@link #register} and {@link #registerAxis}. */
+  /** Creates an empty mapping; populate with {@link #registerButton} and {@link #registerAxis}. */
   public FlixelGamepadMapping() {}
 
   /**
@@ -91,7 +91,7 @@ public class FlixelGamepadMapping {
    * @param button The logical button; must not be {@code null}.
    * @param nativeIndex The hardware button index this controller reports for that button.
    */
-  public void register(@NotNull FlixelGamepadButton button, int nativeIndex) {
+  public void registerButton(@NotNull FlixelGamepadButton button, int nativeIndex) {
     Integer previous = buttons.get(button);
     if (previous != null && buttonsByIndex.get(previous) == button) {
       // Drop the stale reverse entry so it does not outlive its logical button.
@@ -138,7 +138,7 @@ public class FlixelGamepadMapping {
    * Returns the logical button registered at the given native index, or {@code null} when no button
    * maps to it.
    *
-   * <p>This is the reverse of {@link #register(FlixelGamepadButton, int)}, letting the manager turn a
+   * <p>This is the reverse of {@link #registerButton(FlixelGamepadButton, int)}, letting the manager turn a
    * hardware button index back into the logical {@link FlixelGamepadButton} it stands for without
    * scanning every registration. When two buttons share a native index (unusual), the most recently
    * registered one wins.

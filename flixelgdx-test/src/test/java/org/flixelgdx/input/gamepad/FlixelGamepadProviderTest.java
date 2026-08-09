@@ -107,8 +107,8 @@ class FlixelGamepadProviderTest {
 
   private static FlixelGamepadMapping buildTestMapping() {
     FlixelGamepadMapping m = new FlixelGamepadMapping();
-    m.register(FlixelGamepadButton.A, 0);
-    m.register(FlixelGamepadButton.B, 1);
+    m.registerButton(FlixelGamepadButton.A, 0);
+    m.registerButton(FlixelGamepadButton.B, 1);
     m.registerAxis(FlixelGamepadAxis.LEFT_X, 0);
     m.registerAxis(FlixelGamepadAxis.LEFT_Y, 1);
     return m;

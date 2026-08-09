@@ -55,7 +55,10 @@ import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelNoopGraphicsManager;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.FlixelInputDevice;
+import org.flixelgdx.input.FlixelKeyboardListener;
+import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.FlixelNoopInputDevice;
+import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
@@ -774,9 +777,7 @@ public final class Flixel {
    * <p>This is the plumbing beneath {@link #keys}, {@link #mouse}, and {@link #touches}: those
    * managers poll it each frame and register their event listeners with it. Game code rarely
    * touches it directly, but it is available for a quick poll or to register a custom
-   * {@link org.flixelgdx.input.FlixelKeyboardListener FlixelKeyboardListener},
-   * {@link org.flixelgdx.input.FlixelMouseListener FlixelMouseListener}, or
-   * {@link org.flixelgdx.input.FlixelTouchListener FlixelTouchListener}.
+   * {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, or {@link FlixelTouchListener}.
    *
    * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
    * (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
@@ -790,7 +791,7 @@ public final class Flixel {
    * }
    * }</pre>
    *
-   * @see org.flixelgdx.input.FlixelInputDevice
+   * @see FlixelInputDevice
    */
   @NotNull
   public static FlixelInputDevice input = FlixelNoopInputDevice.INSTANCE;

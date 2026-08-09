@@ -39,10 +39,6 @@ package org.flixelgdx.input;
  * pointer rather than assuming a fixed mapping to fingers. Screen coordinates use the top-left
  * origin: X grows right, Y grows down.
  *
- * <p>On desktop with GLFW, touchscreen taps are routed as mouse events and will not appear here.
- * This interface receives genuine touch input from platforms that report it separately (for example
- * Android, iOS, and SDL3 when supported in a future phase).
- *
  * @see FlixelInputDevice#addTouchListener(FlixelTouchListener)
  * @see FlixelKeyboardListener
  * @see FlixelMouseListener

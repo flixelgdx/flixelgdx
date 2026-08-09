@@ -27,7 +27,7 @@ import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 
 /**
- * The framework's default easer functions, used for tweening to add vibrant animations.
+ * The framework's default easer functions, used for tweening to add visual animations.
  *
  * <p>Almost every easer typically has three main types: {@code *In}, {@code *Out}, and
  * {@code *InOut}. {@code *In} means the <i>first</i> half of the ease, {@code *Out}

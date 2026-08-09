@@ -73,20 +73,20 @@ class FlixelGamepadInputManagerTest {
       m.registerAxis(FlixelGamepadAxis.LEFT_Y, 1);
       m.registerAxis(FlixelGamepadAxis.RIGHT_X, 2);
       m.registerAxis(FlixelGamepadAxis.RIGHT_Y, 3);
-      m.register(FlixelGamepadButton.A, NATIVE_A);
-      m.register(FlixelGamepadButton.B, NATIVE_B);
-      m.register(FlixelGamepadButton.X, NATIVE_X);
-      m.register(FlixelGamepadButton.Y, NATIVE_Y);
-      m.register(FlixelGamepadButton.BACK, NATIVE_BACK);
-      m.register(FlixelGamepadButton.START, NATIVE_START);
-      m.register(FlixelGamepadButton.L1, NATIVE_L1);
-      m.register(FlixelGamepadButton.R1, NATIVE_R1);
-      m.register(FlixelGamepadButton.LEFT_STICK, NATIVE_LEFT_STICK);
-      m.register(FlixelGamepadButton.RIGHT_STICK, NATIVE_RIGHT_STICK);
-      m.register(FlixelGamepadButton.DPAD_UP, NATIVE_DPAD_UP);
-      m.register(FlixelGamepadButton.DPAD_DOWN, NATIVE_DPAD_DOWN);
-      m.register(FlixelGamepadButton.DPAD_LEFT, NATIVE_DPAD_LEFT);
-      m.register(FlixelGamepadButton.DPAD_RIGHT, NATIVE_DPAD_RIGHT);
+      m.registerButton(FlixelGamepadButton.A, NATIVE_A);
+      m.registerButton(FlixelGamepadButton.B, NATIVE_B);
+      m.registerButton(FlixelGamepadButton.X, NATIVE_X);
+      m.registerButton(FlixelGamepadButton.Y, NATIVE_Y);
+      m.registerButton(FlixelGamepadButton.BACK, NATIVE_BACK);
+      m.registerButton(FlixelGamepadButton.START, NATIVE_START);
+      m.registerButton(FlixelGamepadButton.L1, NATIVE_L1);
+      m.registerButton(FlixelGamepadButton.R1, NATIVE_R1);
+      m.registerButton(FlixelGamepadButton.LEFT_STICK, NATIVE_LEFT_STICK);
+      m.registerButton(FlixelGamepadButton.RIGHT_STICK, NATIVE_RIGHT_STICK);
+      m.registerButton(FlixelGamepadButton.DPAD_UP, NATIVE_DPAD_UP);
+      m.registerButton(FlixelGamepadButton.DPAD_DOWN, NATIVE_DPAD_DOWN);
+      m.registerButton(FlixelGamepadButton.DPAD_LEFT, NATIVE_DPAD_LEFT);
+      m.registerButton(FlixelGamepadButton.DPAD_RIGHT, NATIVE_DPAD_RIGHT);
       // L2 and R2 are intentionally not registered to drive the synthetic trigger path.
       return m;
     }
@@ -294,7 +294,7 @@ class FlixelGamepadInputManagerTest {
     // minted, registered in a mapping, and then polled through the exact same calls as A/B/X/Y.
     FlixelGamepadButton turbo = FlixelGamepadButton.of("Turbo");
     FlixelGamepadMapping custom = new FlixelGamepadMapping();
-    custom.register(turbo, TestMapping.NATIVE_A);
+    custom.registerButton(turbo, TestMapping.NATIVE_A);
     injectMapping(custom);
 
     setCurrent(TestMapping.NATIVE_A);

@@ -148,22 +148,22 @@ public final class FlixelLwjgl3GamepadProvider implements FlixelGamepadProvider,
 
   private static FlixelGamepadMapping translate(ControllerMapping m) {
     FlixelGamepadMapping out = new FlixelGamepadMapping();
-    out.register(FlixelGamepadButton.A, m.buttonA);
-    out.register(FlixelGamepadButton.B, m.buttonB);
-    out.register(FlixelGamepadButton.X, m.buttonX);
-    out.register(FlixelGamepadButton.Y, m.buttonY);
-    out.register(FlixelGamepadButton.L1, m.buttonL1);
-    out.register(FlixelGamepadButton.R1, m.buttonR1);
-    out.register(FlixelGamepadButton.L2, m.buttonL2);
-    out.register(FlixelGamepadButton.R2, m.buttonR2);
-    out.register(FlixelGamepadButton.LEFT_STICK, m.buttonLeftStick);
-    out.register(FlixelGamepadButton.RIGHT_STICK, m.buttonRightStick);
-    out.register(FlixelGamepadButton.START, m.buttonStart);
-    out.register(FlixelGamepadButton.BACK, m.buttonBack);
-    out.register(FlixelGamepadButton.DPAD_UP, m.buttonDpadUp);
-    out.register(FlixelGamepadButton.DPAD_DOWN, m.buttonDpadDown);
-    out.register(FlixelGamepadButton.DPAD_LEFT, m.buttonDpadLeft);
-    out.register(FlixelGamepadButton.DPAD_RIGHT, m.buttonDpadRight);
+    out.registerButton(FlixelGamepadButton.A, m.buttonA);
+    out.registerButton(FlixelGamepadButton.B, m.buttonB);
+    out.registerButton(FlixelGamepadButton.X, m.buttonX);
+    out.registerButton(FlixelGamepadButton.Y, m.buttonY);
+    out.registerButton(FlixelGamepadButton.L1, m.buttonL1);
+    out.registerButton(FlixelGamepadButton.R1, m.buttonR1);
+    out.registerButton(FlixelGamepadButton.L2, m.buttonL2);
+    out.registerButton(FlixelGamepadButton.R2, m.buttonR2);
+    out.registerButton(FlixelGamepadButton.LEFT_STICK, m.buttonLeftStick);
+    out.registerButton(FlixelGamepadButton.RIGHT_STICK, m.buttonRightStick);
+    out.registerButton(FlixelGamepadButton.START, m.buttonStart);
+    out.registerButton(FlixelGamepadButton.BACK, m.buttonBack);
+    out.registerButton(FlixelGamepadButton.DPAD_UP, m.buttonDpadUp);
+    out.registerButton(FlixelGamepadButton.DPAD_DOWN, m.buttonDpadDown);
+    out.registerButton(FlixelGamepadButton.DPAD_LEFT, m.buttonDpadLeft);
+    out.registerButton(FlixelGamepadButton.DPAD_RIGHT, m.buttonDpadRight);
     out.registerAxis(FlixelGamepadAxis.LEFT_X, m.axisLeftX);
     out.registerAxis(FlixelGamepadAxis.LEFT_Y, m.axisLeftY);
     out.registerAxis(FlixelGamepadAxis.RIGHT_X, m.axisRightX);

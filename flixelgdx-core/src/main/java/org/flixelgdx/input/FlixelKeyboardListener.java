@@ -30,8 +30,8 @@ import org.flixelgdx.input.keyboard.FlixelKey;
  *
  * <p>Register an implementation with {@link FlixelInputDevice#addKeyboardListener} and the active
  * backend will deliver key presses, releases, and typed characters to it as events arrive. Every
- * method has a do-nothing default that returns
- * {@code false}, so an implementation only overrides the events it actually cares about.
+ * method has a do-nothing default that returns {@code false}, so an implementation only overrides
+ * the events it actually cares about.
  *
  * <p>Returning {@code true} from a method signals that the event was consumed and no further
  * listeners in the chain should see it. Returning {@code false} lets it propagate. Most observers
@@ -41,6 +41,7 @@ import org.flixelgdx.input.keyboard.FlixelKey;
  *
  * <pre>{@code
  * Flixel.input.addKeyboardListener(new FlixelKeyboardListener() {
+ *   @Override
  *   public boolean keyDown(int keycode) {
  *     if (keycode == FlixelKey.ESCAPE) {
  *       openPauseMenu();

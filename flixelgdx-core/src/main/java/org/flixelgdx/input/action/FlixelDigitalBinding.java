@@ -29,6 +29,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.touch.FlixelTouch;
+import org.flixelgdx.input.touch.FlixelTouchManager;
 
 /**
  * Boolean input contributor for a {@link FlixelActionDigital}.
@@ -167,7 +168,7 @@ public interface FlixelDigitalBinding {
    *
    * <p>World coordinates are taken from {@link FlixelTouch#worldX} and {@link FlixelTouch#worldY},
    * which are unprojected each frame via the touch manager's active camera (configurable with
-   * {@link org.flixelgdx.input.touch.FlixelTouchManager#setWorldCamera FlixelTouchManager.setWorldCamera(...)}).
+   * {@link FlixelTouchManager#setWorldCamera}).
    *
    * <pre>{@code
    * // Virtual jump button occupying the left half of a 480x270 world.

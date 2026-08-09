@@ -1170,23 +1170,23 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     int cl = this.cameraCycleLeftKey;
     int cr = this.cameraCycleRightKey;
     if (t != cachedToggleKey || keybindToggleLabel == null) {
-      keybindToggleLabel = FlixelKey.toString(t);
+      keybindToggleLabel = String.valueOf(t);
       cachedToggleKey = t;
     }
     if (h != cachedHitboxKey || keybindHitboxLabel == null) {
-      keybindHitboxLabel = FlixelKey.toString(h);
+      keybindHitboxLabel = String.valueOf(h);
       cachedHitboxKey = h;
     }
     if (p != cachedPauseKey || keybindPauseLabel == null) {
-      keybindPauseLabel = FlixelKey.toString(p);
+      keybindPauseLabel = String.valueOf(p);
       cachedPauseKey = p;
     }
     if (cl != cachedCycleLeftKey || keybindCycleLeftLabel == null) {
-      keybindCycleLeftLabel = "Alt + " + FlixelKey.toString(cl);
+      keybindCycleLeftLabel = "Alt + " + cl;
       cachedCycleLeftKey = cl;
     }
     if (cr != cachedCycleRightKey || keybindCycleRightLabel == null) {
-      keybindCycleRightLabel = "Alt + " + FlixelKey.toString(cr);
+      keybindCycleRightLabel = "Alt + " + cr;
       cachedCycleRightKey = cr;
     }
   }

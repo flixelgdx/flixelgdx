@@ -27,7 +27,6 @@ import com.badlogic.gdx.files.FileHandle;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAssetPaths;
-import org.flixelgdx.util.FlixelPathsUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -101,7 +100,7 @@ public final class FlixelSoundSource {
    */
   @NotNull
   public FlixelSound create(@Nullable Object group) {
-    String resolvedPath = external ? assetKey : FlixelPathsUtil.resolveAudioPath(assetKey);
+    String resolvedPath = external ? assetKey : Flixel.ensureAssets().resolveAudioPath(assetKey);
     Object targetGroup = (group != null) ? group : Flixel.sound.getSfxGroup();
     FlixelSoundBackend.Factory factory = Flixel.soundFactory;
     FlixelSoundBackend backend = factory.createSound(resolvedPath, (short) 0, targetGroup, external);
