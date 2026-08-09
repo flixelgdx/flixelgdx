@@ -23,18 +23,17 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Preferences;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
-
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
-import org.flixelgdx.asset.FlixelDefaultAssetManager;
-import org.flixelgdx.audio.FlixelSoundBackend;
+import org.flixelgdx.asset.FlixelNoopAssetManager;
+import org.flixelgdx.audio.FlixelNoopSoundFactory;
+import org.flixelgdx.audio.FlixelSoundFactory;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelAlerter;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelHaptics;
 import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelNoopAlerter;
 import org.flixelgdx.backend.FlixelNoopHaptics;
 import org.flixelgdx.backend.FlixelNoopHostIntegration;
 import org.flixelgdx.backend.FlixelNoopWindow;
@@ -71,6 +70,7 @@ import org.flixelgdx.logging.FlixelLogConsoleSink;
 import org.flixelgdx.logging.FlixelLogFileHandler;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.flixelgdx.math.FlixelRandom;
 import org.flixelgdx.math.FlixelVector;
@@ -209,7 +209,7 @@ import java.util.function.Supplier;
  *
  * <h2>Threading</h2>
  * <p>
- * All Flixel APIs, unless otherwise noted, are intended to be called from the main libGDX rendering thread.
+ * All Flixel APIs, unless otherwise noted, are intended to be called from the main main rendering thread.
  * </p>
  *
  * <h2>Lifecycle</h2>
@@ -246,7 +246,7 @@ public final class Flixel {
   /**
    * The active {@link FlixelGame} instance driving the game lifecycle.
    *
-   * <p>This reference is set during {@link #initialize(FlixelGame)} before any other system is
+   * <p>This reference is set during {@link #start(FlixelGame)} before any other system is
    * brought up. It exposes the main render loop, the camera list, window dimensions, and low-level
    * controls such as fullscreen toggling and framerate caps.
    *
@@ -328,7 +328,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static FlixelAlerter alert;
+  public static FlixelAlerter alert = FlixelNoopAlerter.INSTANCE;
 
   /**
    * The currently active state.
@@ -398,7 +398,7 @@ public final class Flixel {
    * controls for each category plus a master volume knob that scales both.
    *
    * <p>The audio backend is platform-specific and is injected by the launcher before
-   * {@link #initialize(FlixelGame)}. On all platforms, it's typically powered by miniaudio,
+   * {@link #start(FlixelGame)}. On all platforms, it's typically powered by miniaudio,
    * and for web (TeaVM) it utilizes the Web Audio API.
    *
    * <p>Example:
@@ -439,7 +439,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static FlixelAssetManager assets;
+  public static FlixelAssetManager assets = FlixelNoopAssetManager.INSTANCE;
 
   /**
    * The debug watch manager for the game.
@@ -496,7 +496,7 @@ public final class Flixel {
    * typically supply a richer overlay (for example, one built with Dear ImGui), while headless or
    * web builds fall back to {@link FlixelHeadlessDebugOverlay}. Use
    * {@link Flixel#setDebugOverlay(Supplier)} to install a custom factory before
-   * {@link Flixel#initialize(FlixelGame)}.
+   * {@link Flixel#start(FlixelGame)}.
    *
    * <p>Example:
    * <pre>{@code
@@ -516,9 +516,9 @@ public final class Flixel {
   /**
    * The preferences-based save data helper for the game.
    *
-   * <p>{@link FlixelSave} wraps libGDX's {@link Preferences} system to provide a simple key-value
-   * store that persists between sessions. It is backed by platform-native storage: a {@code .prefs}
-   * file on desktop, browser {@code localStorage} on web, and the equivalent on mobile.
+   * <p>{@link FlixelSave} is a simple key-value store that persists between sessions. It is
+   * backed by platform-native storage through the file seam: a save file on desktop, browser
+   * {@code localStorage} on web, and the equivalent on mobile.
    *
    * <p>Call {@link FlixelSave#bind(String, String)} once before using any other method to open (or
    * create) the named preferences file. After that, read and write values directly through the
@@ -678,7 +678,7 @@ public final class Flixel {
    * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a real implementation before
-   * {@link Flixel#initialize(FlixelGame)} runs. On an unknown platform it falls back to
+   * {@link Flixel#start(FlixelGame)} runs. On an unknown platform it falls back to
    * {@link FlixelNoopWindow}, which silently ignores every call, so you can always write
    * {@code Flixel.window.setOpacity(0.8f)} without wrapping it in a platform check.
    *
@@ -702,7 +702,7 @@ public final class Flixel {
    * The single public surface for drawing and GPU state (the sprite batch, frame rate, vertical
    * sync, display modes, and pixel density).
    *
-   * <p>The active graphics backend is installed here before {@link Flixel#initialize(FlixelGame)}
+   * <p>The active graphics backend is installed here before {@link Flixel#start(FlixelGame)}
    * runs. Until then, and on headless targets, it falls back to {@link FlixelNoopGraphicsManager},
    * so calls are always safe to make. The underlying GPU library is never exposed; game code only
    * ever talks to this manager.
@@ -725,7 +725,7 @@ public final class Flixel {
    * Host OS integration for toast notifications and taskbar attention signals.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a platform-specific implementation before
-   * {@link Flixel#initialize(FlixelGame)} runs. On all other platforms it falls back to
+   * {@link Flixel#start(FlixelGame)} runs. On all other platforms it falls back to
    * {@link FlixelNoopHostIntegration}, so calls are always safe to make regardless of platform.
    *
    * <p>This is distinct from the blocking alert dialogs exposed by
@@ -779,7 +779,7 @@ public final class Flixel {
    * touches it directly, but it is available for a quick poll or to register a custom
    * {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, or {@link FlixelTouchListener}.
    *
-   * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
+   * <p>The active backend is installed here before {@link Flixel#start(FlixelGame)}. Until then
    * (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
    * safe.
    *
@@ -804,7 +804,7 @@ public final class Flixel {
    * {@link FlixelFiles#external external} for save data), then query or read it. Asset loading, fonts,
    * and sounds all resolve their files through here.
    *
-   * <p>The active backend is installed here before {@link Flixel#initialize(FlixelGame)}. Until then
+   * <p>The active backend is installed here before {@link Flixel#start(FlixelGame)}. Until then
    * (and on headless sessions) it is a safe no-op that reports every file as missing, so reads never
    * crash.
    *
@@ -855,7 +855,7 @@ public final class Flixel {
 
   /** System used to detect where a log comes from when a log is created. **/
   @NotNull
-  public static FlixelStackTraceProvider stackTraceProvider;
+  public static FlixelStackTraceProvider stackTraceProvider = FlixelNoopStackTraceProvider.INSTANCE;
 
   /**
    * Platform-specific handler for writing log output to a file. May be
@@ -866,17 +866,42 @@ public final class Flixel {
 
   /**
    * When non-null, {@link FlixelLogger} sends each console line here instead of {@code System.out} (for example, styled
-   * output in the browser). Set before {@link #initialize(FlixelGame)}.
+   * output in the browser). Set before {@link #start(FlixelGame)}.
    */
   @Nullable
   public static FlixelLogConsoleSink logConsoleSink;
 
   /**
-   * Platform-specific factory for creating sounds, groups, and effect nodes.
-   * Set by the launcher before {@link #initialize(FlixelGame)}.
+   * Platform-specific factory for creating sounds and sound groups.
+   * Set by the launcher before {@link #start(FlixelGame)}; defaults to a silent no-op so audio
+   * calls are always safe.
    */
-  @Nullable
-  public static FlixelSoundBackend.Factory soundFactory;
+  @NotNull
+  public static FlixelSoundFactory soundFactory = FlixelNoopSoundFactory.INSTANCE;
+
+  /**
+   * The platform's main-loop runner, installed by the backend launcher before
+   * {@link #start(FlixelGame)}. {@code start} hands the game to this runner once the core
+   * systems are wired; the default no-op returns immediately (headless sessions and tests).
+   */
+  @NotNull
+  public static FlixelGameRunner runner = FlixelGameRunner.NOOP;
+
+  /**
+   * Callbacks run at the very top of {@link #start(FlixelGame)}, before any core system is
+   * created. Both the framework and games may add to this list: use it to install or replace
+   * implementations (a custom asset manager, logger, sound factory) before anything reads them.
+   */
+  @NotNull
+  public static final FlixelArray<Runnable> beforeStart = new FlixelArray<>();
+
+  /**
+   * Callbacks run at the end of {@link #start(FlixelGame)}, after every core system exists but
+   * before the platform runner takes over the loop. Use these to tweak fully constructed
+   * systems (register asset loaders, add signal listeners) right before the game runs.
+   */
+  @NotNull
+  public static final FlixelArray<Runnable> afterStart = new FlixelArray<>();
 
   /** The runtime mode (TEST, DEBUG, RELEASE) set by the launcher. */
   private static FlixelRuntimeMode runtimeMode = FlixelRuntimeMode.RELEASE;
@@ -901,42 +926,44 @@ public final class Flixel {
   private static boolean runtimeModeSet = false;
 
   /**
-   * Initializes the entire Flixel system.
+   * Starts the entire Flixel system and runs the game.
    *
-   * <p>This gets called BEFORE {@link FlixelGame#create()} is executed.
-   * It sets up every core system that Flixel needs to work, such as {@link FlixelAssetManager}, audio system,
-   * key input manager, logger, backend systems for different platforms, and more.
+   * <p>This is the single entry point a launcher calls. It runs the {@link #beforeStart}
+   * callbacks, wires up every core system Flixel needs ({@link FlixelAssetManager}, the audio
+   * system, input managers, the logger, and more), runs the {@link #afterStart} callbacks, and
+   * finally hands the game to the platform {@link #runner}, which owns the update/draw loop
+   * from there.
    *
-   * @param gameInstance The {@link FlixelGame} instance to use.
-   * @throws IllegalStateException If Flixel has already been initialized.
+   * <p>Missing platform pieces never crash startup: any backend hook that was not installed
+   * (alerter, sound factory, stack trace provider, runner) simply stays a safe no-op. Advanced
+   * users can swap implementations from a {@link #beforeStart} callback before any core system
+   * reads them.
+   *
+   * <p>Example launcher:
+   *
+   * <pre>{@code
+   * public static void main(String[] args) {
+   *   FlixelDesktopLauncher.install();
+   *   Flixel.start(new MyGame());
+   * }
+   * }</pre>
+   *
+   * @param gameInstance The {@link FlixelGame} instance to run.
    */
-  public static void initialize(@NotNull FlixelGame gameInstance) {
+  public static void start(@NotNull FlixelGame gameInstance) {
     if (initialized) {
-      throw new IllegalStateException("Flixel has already been initialized!");
+      warn("Flixel.start(...) was called more than once; ignoring the extra call.");
+      return;
     }
 
-    // Set the game and backend systems.
+    for (int i = 0; i < beforeStart.getSize(); i++) {
+      beforeStart.get(i).run();
+    }
+
     game = gameInstance;
-    if (alert == null) {
-      throw new IllegalStateException(
-          "Flixel alerter not set. Assign Flixel.alerter before calling Flixel.initialize(...).");
-    }
-    if (stackTraceProvider == null) {
-      throw new IllegalStateException(
-          "Flixel stack trace provider not set. Assign Flixel.stackTraceProvider before calling Flixel.initialize(...).");
-    }
-    if (soundFactory == null) {
-      throw new IllegalStateException(
-          "Flixel sound backend factory not set. Assign Flixel.soundFactory before calling Flixel.initialize(...).");
-    }
 
     // Initialize the core systems.
     keys = new FlixelKeyInputManager();
-    if (sound == null) {
-      sound = new FlixelSoundManager(soundFactory);
-    } else {
-      sound.resetSession();
-    }
     watch = new FlixelDebugWatchManager();
     debug = new FlixelDebugManager();
     save = new FlixelSave();
@@ -944,8 +971,10 @@ public final class Flixel {
     touches = new FlixelTouchManager();
     gamepads = new FlixelGamepadInputManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
-    if (assets == null) {
-      assets = new FlixelDefaultAssetManager();
+    if (sound == null) {
+      sound = new FlixelSoundManager(soundFactory);
+    } else {
+      sound.resetSession();
     }
 
     // Register default tween pools (pool factories avoid extra allocations when pooling tweens).
@@ -963,6 +992,12 @@ public final class Flixel {
         .registerTweenType(FlixelQuadPath.class, () -> new FlixelQuadPath(null));
 
     initialized = true;
+
+    for (int i = 0; i < afterStart.getSize(); i++) {
+      afterStart.get(i).run();
+    }
+
+    runner.run(gameInstance);
   }
 
   /**
@@ -1235,16 +1270,13 @@ public final class Flixel {
   }
 
   /**
-   * Ensures {@link #assets} is available for embedded libGDX usage.
+   * Returns {@link #assets}, which is never {@code null} thanks to the no-op default.
    *
-   * <p>If Flixel has not been initialized yet, this creates a default asset manager on first use.
-   * Note that audio loaders are only registered once the global audio system is initialized.
+   * <p>Kept as a method for call sites that want to be explicit about touching the asset
+   * system before startup.
    */
   @NotNull
   public static FlixelAssetManager ensureAssets() {
-    if (assets == null) {
-      assets = new FlixelDefaultAssetManager();
-    }
     return assets;
   }
 
@@ -1252,10 +1284,10 @@ public final class Flixel {
    * Returns the visible width of the game world in game pixels.
    *
    * <p>When cameras are active, this equals the first camera's viewport world width, which
-   * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
-   * the launcher installs a libGDX {@link ExtendViewport}, the value is the full screen-filling
-   * width rather than the fixed design width. Before any camera is created, the initial width
-   * from the {@link FlixelGame} constructor is returned instead.
+   * accounts for the active viewport policy. For example, with an extend-style viewport the
+   * value is the full screen-filling width rather than the fixed design width. Before any
+   * camera is created, the initial width from the {@link FlixelGame} constructor is returned
+   * instead.
    */
   public static int getWidth() {
     return cameras.isEmpty() ? (int) game.initialSize.x : (int) cameras.first().getWorldWidth();
@@ -1265,10 +1297,10 @@ public final class Flixel {
    * Returns the visible height of the game world in game pixels.
    *
    * <p>When cameras are active, this equals the first camera's viewport world height, which
-   * accounts for the active {@link FlixelCamera#viewportFactory}. For example, on Android where
-   * the launcher installs a libGDX {@link com.badlogic.gdx.utils.viewport.ExtendViewport ExtendViewport},
-   * the value is the full screen-filling height rather than the fixed design height. Before any camera is
-   * created, the initial height from the {@link FlixelGame} constructor is returned instead.
+   * accounts for the active viewport policy. For example, with an extend-style viewport the
+   * value is the full screen-filling height rather than the fixed design height. Before any
+   * camera is created, the initial height from the {@link FlixelGame} constructor is returned
+   * instead.
    */
   public static int getHeight() {
     return cameras.isEmpty() ? (int) game.initialSize.y : (int) cameras.first().getWorldHeight();
@@ -1363,7 +1395,7 @@ public final class Flixel {
    * <p>This is the equivalent of calling {@code Flixel.switchState(new CurrentState())}.
    */
   public static void resetState() {
-    Objects.requireNonNull(game, "Game is not initialized. Call initialize(...) first.");
+    Objects.requireNonNull(game, "Game is not initialized. Call start(...) first.");
     Supplier<FlixelState> factory = currentStateFactory;
     FlixelState next = factory != null ? factory.get() : null;
     if (next != null) {
@@ -1381,7 +1413,7 @@ public final class Flixel {
    *
    * <p>The default factory builds {@link FlixelHeadlessDebugOverlay} (no extra UI panels). Desktop
    * launchers normally replace this with a richer overlay (for example, Dear ImGui) before
-   * {@link Flixel#initialize}.
+   * {@link Flixel#start}.
    *
    * <p>Example:
    * <pre>{@code
