@@ -37,6 +37,7 @@ import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
+import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.glfw.GLFW;
@@ -1169,23 +1170,23 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     int cl = this.cameraCycleLeftKey;
     int cr = this.cameraCycleRightKey;
     if (t != cachedToggleKey || keybindToggleLabel == null) {
-      keybindToggleLabel = String.valueOf(t);
+      keybindToggleLabel = FlixelKey.toString(t);
       cachedToggleKey = t;
     }
     if (h != cachedHitboxKey || keybindHitboxLabel == null) {
-      keybindHitboxLabel = String.valueOf(h);
+      keybindHitboxLabel = FlixelKey.toString(h);
       cachedHitboxKey = h;
     }
     if (p != cachedPauseKey || keybindPauseLabel == null) {
-      keybindPauseLabel = String.valueOf(p);
+      keybindPauseLabel = FlixelKey.toString(p);
       cachedPauseKey = p;
     }
     if (cl != cachedCycleLeftKey || keybindCycleLeftLabel == null) {
-      keybindCycleLeftLabel = "Alt + " + cl;
+      keybindCycleLeftLabel = "Alt + " + FlixelKey.toString(cl);
       cachedCycleLeftKey = cl;
     }
     if (cr != cachedCycleRightKey || keybindCycleRightLabel == null) {
-      keybindCycleRightLabel = "Alt + " + cr;
+      keybindCycleRightLabel = "Alt + " + FlixelKey.toString(cr);
       cachedCycleRightKey = cr;
     }
   }
