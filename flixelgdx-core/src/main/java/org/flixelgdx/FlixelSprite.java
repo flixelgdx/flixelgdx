@@ -24,7 +24,6 @@
 package org.flixelgdx;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.GL30;
@@ -41,6 +40,7 @@ import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelColorable;
 import org.flixelgdx.functional.FlixelShaderable;
@@ -142,7 +142,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Where all the image frames are stored. This is also where the main image is stored when using
-   * {@link #loadGraphic(FileHandle)}.
+   * {@link #loadGraphic(FlixelFile)}.
    */
   @Nullable
   protected FlixelFrame[][] frames;
@@ -304,45 +304,50 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Load's a texture and automatically resizes the size of {@code this} sprite.
    *
-   * @param path The directory of the {@code .png} to load onto {@code this} sprite.
+   * @param file A handle to the {@code .png} to load onto {@code this} sprite.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(FileHandle path) {
-    return loadGraphic(path.path());
+  public FlixelSprite loadGraphic(FlixelFile file) {
+    return loadGraphic(file.getPath());
   }
 
   /**
    * Load's a texture and automatically resizes the size of {@code this} sprite.
    *
-   * @param path The directory of the {@code .png} to load onto {@code this} sprite.
+   * @param file A handle to the {@code .png} to load onto {@code this} sprite.
    * @param frameWidth How wide the sprite should be.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(FileHandle path, int frameWidth) {
-    return loadGraphic(path.path(), frameWidth);
+  public FlixelSprite loadGraphic(FlixelFile file, int frameWidth) {
+    return loadGraphic(file.getPath(), frameWidth);
   }
 
   /**
    * Load's a texture and automatically resizes the size of {@code this} sprite.
    *
-   * @param path The directory of the {@code .png} to load onto {@code this} sprite.
+   * @param file A handle to the {@code .png} to load onto {@code this} sprite.
    * @param frameWidth How wide the sprite should be.
    * @param frameHeight How tall the sprite should be.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(FileHandle path, int frameWidth, int frameHeight) {
-    return loadGraphic(path.path(), frameWidth, frameHeight);
+  public FlixelSprite loadGraphic(FlixelFile file, int frameWidth, int frameHeight) {
+    return loadGraphic(file.getPath(), frameWidth, frameHeight);
   }
 
   /**
    * Loads a texture and automatically resizes the size of {@code this} sprite.
+   *
+   * <p>This backs {@link #makeGraphic(int, int, Color)} and other in-memory texture sources, so it
+   * is {@code protected} rather than public: game code loads art through the file and asset-key
+   * overloads, keeping backend texture types out of the public surface, while subclasses can still
+   * override it to guard or specialize in-memory loading.
    *
    * @param texture The texture to load onto {@code this} sprite (owned by caller).
    * @param frameWidth How wide the sprite should be.
    * @param frameHeight How tall the sprite should be.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
+  protected FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
     if (graphic != null) {
       graphic.release();
     }
