@@ -69,6 +69,11 @@ final class FlixelStbImage {
         pixels.flip();
         return new FlixelImage(width, height, pixels);
       } finally {
+        // put(decoded) above advanced decoded's position to its limit. stbi_image_free frees the
+        // address at the buffer's CURRENT position, so it would otherwise free base + capacity
+        // rather than the allocation's start, aborting the process with an invalid free. Rewind
+        // to position 0 first so the correct pointer is released.
+        decoded.rewind();
         STBImage.stbi_image_free(decoded);
       }
     }
