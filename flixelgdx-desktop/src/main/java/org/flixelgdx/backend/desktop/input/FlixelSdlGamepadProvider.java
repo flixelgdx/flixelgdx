@@ -27,6 +27,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
+import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
 import org.flixelgdx.input.gamepad.FlixelGamepadListener;
 import org.flixelgdx.input.gamepad.FlixelGamepadMapping;
 import org.flixelgdx.input.gamepad.FlixelGamepadMappingResolver;
@@ -41,11 +42,11 @@ import java.nio.IntBuffer;
  * The desktop gamepad feed, backed by SDL3.
  *
  * <p>SDL recognizes controllers through its built-in community mapping database and presents them
- * all in one standard layout, so this provider hands {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager
- * FlixelGamepadInputManager} a stable {@link FlixelSdlGamepad} per physical device and a single
- * shared {@link FlixelGamepadMapping}. Because that standard layout is the same for every SDL pad,
- * this class also serves as the {@link FlixelGamepadMappingResolver}: it returns the same mapping
- * for any gamepad the manager asks about.
+ * all in one standard layout, so this provider hands {@link FlixelGamepadInputManager} a stable
+ * {@link FlixelSdlGamepad} per physical device and a single shared {@link FlixelGamepadMapping}.
+ * Because that standard layout is the same for every SDL pad, this class also serves as the
+ * {@link FlixelGamepadMappingResolver}: it returns the same mapping for any gamepad the manager
+ * asks about.
  *
  * <p>The desktop runner drives the lifecycle: it calls {@link #openConnected()} once SDL is up to
  * pick up pads that were already plugged in, and forwards SDL's add and remove events to

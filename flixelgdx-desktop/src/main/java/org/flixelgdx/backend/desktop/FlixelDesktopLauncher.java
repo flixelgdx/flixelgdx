@@ -41,14 +41,13 @@ import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * The one-line entry point for a desktop (SDL3 + bgfx + miniaudio) FlixelGDX game.
+ * The one-line entry point for a desktop FlixelGDX game.
  *
  * <p>Call {@link #launch(FlixelGame)} from your {@code main} method and nothing else is required:
  * the launcher installs every desktop backend piece (window, input, graphics, audio, files,
- * logging) and then starts the game. Developers never call {@link Flixel#start(FlixelGame)}
+ * logging) and then starts the game. Developers do not need to call {@link Flixel#start(FlixelGame)}
  * themselves; it is the internal step this launcher performs once the backend is wired.
  *
  * <pre>{@code
@@ -56,12 +55,9 @@ import org.jetbrains.annotations.Nullable;
  *   public static void main(String[] args) {
  *     FlixelDesktopLauncher.launch(new MyGame());
  *   }
+ *   private DesktopLauncher() {}
  * }
  * }</pre>
- *
- * <p>The overloads let you pick a {@link FlixelRuntimeMode} and run a callback just before the game
- * starts, which is the place to override any installed default (for example a custom asset manager
- * or debug overlay) before a core system reads it.
  */
 public final class FlixelDesktopLauncher {
 
@@ -74,17 +70,7 @@ public final class FlixelDesktopLauncher {
    * @param game The game instance to run.
    */
   public static void launch(@NotNull FlixelGame game) {
-    launch(game, FlixelRuntimeMode.RELEASE, null);
-  }
-
-  /**
-   * Launches the game in the given runtime mode.
-   *
-   * @param game The game instance to run.
-   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   */
-  public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
-    launch(game, runtimeMode, null);
+    launch(game, FlixelRuntimeMode.RELEASE);
   }
 
   /**
@@ -96,10 +82,8 @@ public final class FlixelDesktopLauncher {
    *
    * @param game The game instance to run.
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   * @param onBeforeStart Optional callback run just before the game starts. Pass {@code null} to skip.
    */
-  public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode,
-      @Nullable Runnable onBeforeStart) {
+  public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
     FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe());
     if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
@@ -142,10 +126,6 @@ public final class FlixelDesktopLauncher {
 
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
-
-    if (onBeforeStart != null) {
-      onBeforeStart.run();
-    }
 
     try {
       Flixel.start(game);

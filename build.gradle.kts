@@ -43,6 +43,7 @@ tasks.register("javadocAll") {
     ":flixelgdx-teavm:javadoc",
     ":flixelgdx-teavm-plugin:javadoc",
     ":flixelgdx-logging-plugin:javadoc",
-    ":flixelgdx-basisu-plugin:javadoc"
+    ":flixelgdx-basisu-plugin:javadoc",
+    ":flixelgdx-json-processor:javadoc"
   )
 }
