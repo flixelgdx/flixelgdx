@@ -151,7 +151,12 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
     }
     try (BGFXInit init = BGFXInit.calloc()) {
       BGFX.bgfx_init_ctor(init);
-      init.type(BGFX.BGFX_RENDERER_TYPE_COUNT); // Let bgfx auto-pick the best backend.
+      // Force the OpenGL backend rather than letting bgfx auto-pick (BGFX_RENDERER_TYPE_COUNT).
+      // On Linux the auto-pick often lands on Vulkan, whose bgfx + SDL surface path is the least
+      // stable of the backends and can corrupt the native heap (the process aborts with
+      // "free(): invalid pointer" shortly after the window appears). OpenGL is bgfx's most portable
+      // backend and pairs with the glsl shaders this module already builds.
+      init.type(BGFX.BGFX_RENDERER_TYPE_OPENGL);
       init.resolution(res -> res.width(width).height(height).reset(BGFX.BGFX_RESET_VSYNC));
       init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
       if (!BGFX.bgfx_init(init)) {
