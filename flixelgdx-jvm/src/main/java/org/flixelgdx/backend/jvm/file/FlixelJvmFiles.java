@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.desktop.file;
+package org.flixelgdx.backend.jvm.file;
 
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
@@ -43,7 +43,7 @@ import java.io.File;
  *   <li>{@link #absolute(String)} - an absolute filesystem path.</li>
  * </ul>
  */
-public final class FlixelDesktopFiles implements FlixelFiles {
+public final class FlixelJvmFiles implements FlixelFiles {
 
   @NotNull
   private final String externalRoot = System.getProperty("user.home", ".");
@@ -56,37 +56,37 @@ public final class FlixelDesktopFiles implements FlixelFiles {
   public FlixelFile internal(@NotNull String path) {
     File onDisk = new File(localRoot, "assets/" + path);
     if (onDisk.exists()) {
-      return new FlixelDesktopFile(path, onDisk, false);
+      return new FlixelJvmFile(path, onDisk, false);
     }
     File direct = new File(localRoot, path);
     if (direct.exists()) {
-      return new FlixelDesktopFile(path, direct, false);
+      return new FlixelJvmFile(path, direct, false);
     }
     // Fall back to the classpath so packaged games still resolve their assets.
-    return new FlixelDesktopFile(path, null, true);
+    return new FlixelJvmFile(path, null, true);
   }
 
   @NotNull
   @Override
   public FlixelFile classpath(@NotNull String path) {
-    return new FlixelDesktopFile(path, null, true);
+    return new FlixelJvmFile(path, null, true);
   }
 
   @NotNull
   @Override
   public FlixelFile external(@NotNull String path) {
-    return new FlixelDesktopFile(path, new File(externalRoot, path), false);
+    return new FlixelJvmFile(path, new File(externalRoot, path), false);
   }
 
   @NotNull
   @Override
   public FlixelFile local(@NotNull String path) {
-    return new FlixelDesktopFile(path, new File(localRoot, path), false);
+    return new FlixelJvmFile(path, new File(localRoot, path), false);
   }
 
   @NotNull
   @Override
   public FlixelFile absolute(@NotNull String path) {
-    return new FlixelDesktopFile(path, new File(path), false);
+    return new FlixelJvmFile(path, new File(path), false);
   }
 }

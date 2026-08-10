@@ -23,16 +23,14 @@
  */
 package org.flixelgdx.input.mouse;
 
-import com.badlogic.gdx.Input;
-
-import org.flixelgdx.GdxHeadlessExtension;
+import org.flixelgdx.FlixelHeadlessExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@ExtendWith(GdxHeadlessExtension.class)
+@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelMouseInputManagerTest {
 
   @Test
@@ -49,6 +47,6 @@ class FlixelMouseInputManagerTest {
     FlixelMouseInputManager m = new FlixelMouseInputManager();
     m.update();
     assertFalse(m.justPressed(-1));
-    assertFalse(m.justPressed(Input.Buttons.FORWARD + 5));
+    assertFalse(m.justPressed(99));
   }
 }

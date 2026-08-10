@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.desktop.file;
+package org.flixelgdx.backend.jvm.file;
 
 import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
@@ -39,10 +39,10 @@ import java.nio.file.Files;
  * A desktop {@link FlixelFile}. Files rooted on disk are read and written through {@code java.io};
  * classpath files are read through the class loader (and are read-only).
  *
- * <p>Instances are created by {@link FlixelDesktopFiles}; game code obtains them through
+ * <p>Instances are created by {@link FlixelJvmFiles}; game code obtains them through
  * {@link org.flixelgdx.Flixel#files Flixel.files} and never constructs them directly.
  */
-public final class FlixelDesktopFile implements FlixelFile {
+public final class FlixelJvmFile implements FlixelFile {
 
   @NotNull
   private final String path;
@@ -53,7 +53,7 @@ public final class FlixelDesktopFile implements FlixelFile {
 
   private final boolean classpath;
 
-  FlixelDesktopFile(@NotNull String path, @Nullable File file, boolean classpath) {
+  FlixelJvmFile(@NotNull String path, @Nullable File file, boolean classpath) {
     this.path = path;
     this.file = file;
     this.classpath = classpath;
@@ -163,7 +163,7 @@ public final class FlixelDesktopFile implements FlixelFile {
   @Nullable
   private InputStream openClasspath() {
     String resource = path.startsWith("/") ? path : "/" + path;
-    return FlixelDesktopFile.class.getResourceAsStream(resource);
+    return FlixelJvmFile.class.getResourceAsStream(resource);
   }
 
   private static byte @NotNull [] readAll(@NotNull InputStream in) throws IOException {

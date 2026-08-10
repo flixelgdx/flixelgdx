@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.util;
 
-import org.flixelgdx.GdxHeadlessExtension;
+import org.flixelgdx.FlixelHeadlessExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(GdxHeadlessExtension.class)
+@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelStringTest {
 
   @Test

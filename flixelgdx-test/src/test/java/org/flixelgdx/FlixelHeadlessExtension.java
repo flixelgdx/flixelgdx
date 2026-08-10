@@ -23,38 +23,27 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.backends.headless.HeadlessApplication;
-import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration;
+import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
 
-import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * Starts a minimal libGDX headless application so {@link com.badlogic.gdx.Gdx#app} and related statics are valid for tests.
+ * Installs the minimal framework state a unit test needs, without any GPU or windowing backend.
+ *
+ * <p>The framework's systems are normally brought up by a platform launcher. Tests do not have one,
+ * so this extension fills the one gap that pure logic tests still hit: file access. It installs the
+ * real java.io {@link FlixelJvmFiles} backend on {@code Flixel.files} so anything that reads or
+ * writes files (for example {@code FlixelSave}) works against a real temp directory instead of the
+ * silent no-op default. Everything else the framework exposes already defaults to a safe no-op, so
+ * no rendering, audio, or input backend is required.
  */
-public final class GdxHeadlessExtension implements BeforeAllCallback, AfterAllCallback {
-
-  private static HeadlessApplication application;
-  private static int refCount;
+public final class FlixelHeadlessExtension implements BeforeAllCallback {
 
   @Override
   public synchronized void beforeAll(ExtensionContext context) {
-    if (refCount == 0) {
-      HeadlessApplicationConfiguration configuration = new HeadlessApplicationConfiguration();
-      application = new HeadlessApplication(new ApplicationAdapter() {
-      }, configuration);
-    }
-    refCount++;
-  }
-
-  @Override
-  public synchronized void afterAll(ExtensionContext context) {
-    refCount--;
-    if (refCount == 0 && application != null) {
-      application.exit();
-      application = null;
+    if (!(Flixel.files instanceof FlixelJvmFiles)) {
+      Flixel.files = new FlixelJvmFiles();
     }
   }
 }

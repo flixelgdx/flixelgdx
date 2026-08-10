@@ -23,9 +23,8 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.utils.Array;
-
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,7 +48,7 @@ class FlixelAnimationStateMachineTest {
     fsm.addState("idle", "idle");
     fsm.addState("run", "run");
 
-    Array<String> seen = new Array<>();
+    FlixelArray<String> seen = new FlixelArray<>();
     fsm.onStateChanged.add(seen::add);
 
     assertTrue(fsm.setState("idle"));
@@ -60,7 +59,7 @@ class FlixelAnimationStateMachineTest {
     assertTrue(fsm.setState("run"));
 
     assertEquals("run", fsm.getState());
-    assertEquals(2, seen.size, "Signal should fire only on real state changes.");
+    assertEquals(2, seen.getSize(), "Signal should fire only on real state changes.");
     assertEquals("idle", seen.get(0));
     assertEquals("run", seen.get(1));
   }
@@ -88,14 +87,14 @@ class FlixelAnimationStateMachineTest {
   @Test
   void enterAndExitHooksRunInOrder() {
     FlixelAnimationStateMachine fsm = new FlixelAnimationStateMachine(new FlixelSprite());
-    Array<String> log = new Array<>();
+    FlixelArray<String> log = new FlixelArray<>();
     fsm.addState("idle", "idle").onExit(() -> log.add("exit-idle"));
     fsm.addState("run", "run").onEnter(() -> log.add("enter-run"));
 
     fsm.setState("idle");
     fsm.setState("run");
 
-    assertEquals(2, log.size);
+    assertEquals(2, log.getSize());
     assertEquals("exit-idle", log.get(0), "The old state must exit before the new one enters.");
     assertEquals("enter-run", log.get(1));
   }

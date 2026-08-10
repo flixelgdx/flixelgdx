@@ -23,47 +23,24 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.utils.viewport.FitViewport;
-
 import org.flixelgdx.FlixelCamera.FollowStyle;
 import org.flixelgdx.functional.FlixelPositional;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(GdxHeadlessExtension.class)
+/**
+ * Exercises {@link FlixelCamera} follow and scroll-clamp math.
+ *
+ * <p>No graphics backend is installed, so the camera's viewport applies through the no-op graphics
+ * manager. That is fine here: every assertion is about {@code scrollX}/{@code scrollY}, which the
+ * follow and clamp math derives from the camera's own width and zoom, not from any GPU state.
+ */
 class FlixelCameraTest {
 
   private static final float DELTA = 1f / 60f;
   private static final float EPS = 0.5f;
-
-  private static FlixelCamera.ViewportFactory savedFactory;
-
-  @BeforeAll
-  static void installNoOpViewport() {
-    savedFactory = FlixelCamera.viewportFactory;
-    // Replace the viewport factory with one that skips the Gdx.gl.glViewport call, which is
-    // unavailable in the headless test environment. Camera matrices are still updated so that
-    // the follow and clamp math (which uses this.width / zoom, not camera.viewportWidth) works.
-    FlixelCamera.viewportFactory = (w, h, cam) -> new FitViewport(w, h, cam) {
-      @Override
-      public void apply(boolean centerCamera) {
-        if (centerCamera) {
-          getCamera().position.set(getWorldWidth() / 2f, getWorldHeight() / 2f, 0);
-          getCamera().update();
-        }
-      }
-    };
-  }
-
-  @AfterAll
-  static void restoreViewport() {
-    FlixelCamera.viewportFactory = savedFactory;
-  }
 
   private FlixelCamera camera;
 

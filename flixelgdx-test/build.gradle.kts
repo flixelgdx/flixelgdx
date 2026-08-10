@@ -11,14 +11,13 @@ java {
 
 dependencies {
   implementation(project(":flixelgdx-core"))
+  // The JVM module supplies the real java.io file backend so save round-trip tests persist to disk.
+  implementation(project(":flixelgdx-jvm"))
   implementation(libs.jetbrains.annotations)
 
-  testRuntimeOnly(libs.gdx.controllers.desktop)
   testRuntimeOnly(libs.junit.platform.launcher)
-  testRuntimeOnly("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-desktop")
   testImplementation(platform(libs.junit.bom))
   testImplementation(libs.junit.jupiter)
-  testImplementation(libs.gdx.backend.headless)
 }
 
 tasks.named<Test>("test") {
