@@ -1136,7 +1136,8 @@ final class FlixelAnimateRigLoader {
    * @param usesSymbolGraph {@code true} when the main layer uses root {@code E.SI} entries and {@link #symbolsByName()} defines
    * nested timelines. {@code false} for direct {@code E.ASI} document timelines.
    */
-  private record ParsedAnimation(@NotNull FlixelArray<ClipDef> clipDefs, @NotNull FlixelArray<FlixelJsonValue> mainFrames,
+  private record ParsedAnimation(@NotNull FlixelArray<ClipDef> clipDefs,
+      @NotNull FlixelArray<FlixelJsonValue> mainFrames,
       @NotNull FlixelMap<String, FlixelJsonValue> symbolsByName, float framesPerSecond,
       boolean usesSymbolGraph) {
     @NotNull

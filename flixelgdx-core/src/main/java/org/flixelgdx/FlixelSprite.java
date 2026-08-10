@@ -36,7 +36,6 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
-import org.flixelgdx.graphics.FlixelViewport;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelAxes;

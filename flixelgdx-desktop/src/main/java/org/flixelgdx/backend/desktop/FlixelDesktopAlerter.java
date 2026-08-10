@@ -21,49 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.lwjgl3;
+package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelAlerter;
+import org.lwjgl.sdl.SDLMessageBox;
 
-import java.awt.EventQueue;
-import java.lang.reflect.InvocationTargetException;
-
-import javax.swing.JOptionPane;
-
-public class FlixelLwjgl3Alerter implements FlixelAlerter {
+/**
+ * The desktop alert dialog provider, backed by SDL's simple message boxes.
+ *
+ * <p>These are blocking modal dialogs; reserve them for critical events. Non-blocking OS toasts go
+ * through {@link org.flixelgdx.Flixel#host Flixel.host} instead.
+ */
+public final class FlixelDesktopAlerter implements FlixelAlerter {
 
   @Override
   public void info(String title, String message) {
-    showAlert(title, message, JOptionPane.INFORMATION_MESSAGE);
+    show(SDLMessageBox.SDL_MESSAGEBOX_INFORMATION, title, message);
   }
 
   @Override
   public void warn(String title, String message) {
-    showAlert(title, message, JOptionPane.WARNING_MESSAGE);
+    show(SDLMessageBox.SDL_MESSAGEBOX_WARNING, title, message);
   }
 
   @Override
   public void error(String title, String message) {
-    showAlert(title, message, JOptionPane.ERROR_MESSAGE);
+    show(SDLMessageBox.SDL_MESSAGEBOX_ERROR, title, message);
   }
 
-  private void showAlert(String title, Object message, int type) {
-    String msg = message != null ? message.toString() : "null";
-    // AWT cannot be used in a GraalVM native image binary: Toolkit.<clinit> loads
-    // native AWT libraries via JNI_FatalError, which is non-recoverable. Fall back
-    // to stderr so the user still sees the alert text.
-    if (System.getProperty("org.graalvm.nativeimage.imagecode") != null) {
-      System.err.println("[FlixelGDX Alert] " + title + ": " + msg);
-      return;
-    }
-    if (EventQueue.isDispatchThread()) {
-      JOptionPane.showMessageDialog(null, msg, title, type);
-    } else {
-      try {
-        EventQueue.invokeAndWait(() -> JOptionPane.showMessageDialog(null, msg, title, type));
-      } catch (InterruptedException | InvocationTargetException e) {
-        // Ignore.
-      }
+  private static void show(int flags, String title, String message) {
+    try {
+      SDLMessageBox.SDL_ShowSimpleMessageBox(flags,
+          title != null ? title : "",
+          message != null ? message : "",
+          0L);
+    } catch (Throwable ignored) {
+      // Never let a failed dialog crash the game; the message is already logged by the caller.
     }
   }
 }

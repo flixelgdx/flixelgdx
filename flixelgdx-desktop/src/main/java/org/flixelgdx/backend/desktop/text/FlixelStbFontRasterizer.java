@@ -21,21 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
+package org.flixelgdx.backend.desktop.text;
+
+import org.flixelgdx.text.FlixelFontRasterizer;
+import org.flixelgdx.text.FlixelRasterizedFont;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Safe default {@link FlixelWindow} for mobile, web, and headless targets.
+ * The desktop font rasterizer, built on stb_truetype.
+ *
+ * <p>stb_truetype reads TrueType ({@code .ttf}) and OpenType ({@code .otf}) outlines and renders
+ * individual glyphs to 8-bit coverage bitmaps. This class installs itself on the font registry so
+ * scalable fonts bake into glyph atlases the same way on desktop as any other platform.
+ *
+ * @see FlixelStbRasterizedFont
  */
-public enum FlixelNoopWindow implements FlixelWindow {
+public final class FlixelStbFontRasterizer implements FlixelFontRasterizer {
 
-  /** Shared no-op instance. */
-  INSTANCE;
-
+  @Nullable
   @Override
-  public void setOpacity(float opacity) {}
-
-  @Override
-  public boolean supportsOpacity() {
-    return false;
+  public FlixelRasterizedFont open(byte @NotNull [] data, float pixelHeight) {
+    return FlixelStbRasterizedFont.open(data, pixelHeight);
   }
 }

@@ -23,20 +23,19 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.functional.FlixelColorable;
+import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelViewport;
-import org.flixelgdx.math.FlixelMatrix;
-import org.flixelgdx.math.FlixelVector;
-import org.flixelgdx.util.FlixelBlendMode;
-import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.functional.FlixelColorable;
-import org.flixelgdx.functional.FlixelPositional;
-import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelRect;
+import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelAxes;
+import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
@@ -615,9 +614,6 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     flashOnComplete = onComplete;
   }
 
-
-
-
   /** Fades to black over 1 second. */
   public void fade() {
     fade(FlixelColor.BLACK, 1f, false, null, false);
@@ -674,10 +670,6 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     fadeAlpha = fadeIn ? 1f : 0f;
     fadeOnComplete = onComplete;
   }
-
-
-
-
 
   /** Shakes with default intensity ({@code 0.05}) for {@code 0.5} seconds on both axes. */
   public void shake() {
@@ -763,7 +755,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * @param batch An active {@link FlixelBatch} (must be between {@code begin()} and {@code end()}).
    * @param whitePixel The shared 1x1 white pixel frame used for color drawing.
    */
-  public void fill(FlixelColor fillColor, boolean blendAlpha, float fxAlpha, FlixelBatch batch, FlixelFrame whitePixel) {
+  public void fill(FlixelColor fillColor, boolean blendAlpha, float fxAlpha, FlixelBatch batch,
+      FlixelFrame whitePixel) {
     float r = fillColor.r;
     float g = fillColor.g;
     float b = fillColor.b;

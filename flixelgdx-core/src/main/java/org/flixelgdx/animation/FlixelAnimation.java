@@ -46,7 +46,7 @@ import java.util.Arrays;
  *
  * @param <T> The key-frame payload type.
  */
-public final class FlixelAnimation<T> {
+public class FlixelAnimation<T> {
 
   private float frameDuration;
 

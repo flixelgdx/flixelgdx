@@ -23,14 +23,13 @@
  */
 package org.flixelgdx.group;
 
-
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
-import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.jetbrains.annotations.NotNull;

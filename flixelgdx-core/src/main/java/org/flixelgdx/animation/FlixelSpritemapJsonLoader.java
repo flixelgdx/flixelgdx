@@ -252,7 +252,8 @@ public final class FlixelSpritemapJsonLoader {
    * block, a top-level {@code frames} array, or a top-level {@code frames} object keyed by name).
    */
   @NotNull
-  private static FlixelArray<FlixelFrame> buildSimpleFrames(@NotNull FlixelJsonValue root, @NotNull FlixelTexture texture) {
+  private static FlixelArray<FlixelFrame> buildSimpleFrames(@NotNull FlixelJsonValue root,
+      @NotNull FlixelTexture texture) {
     FlixelJsonValue atlas = root.get("ATLAS");
     if (atlas != null) {
       FlixelObjectIntMap<String> ignore = new FlixelObjectIntMap<>();

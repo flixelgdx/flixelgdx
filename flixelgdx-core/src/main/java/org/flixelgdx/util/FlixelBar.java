@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.util;
 
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
@@ -813,7 +812,8 @@ public class FlixelBar extends FlixelSprite {
     batch.draw(Objects.requireNonNull(whitePixel), fx, fy, fw, fh);
   }
 
-  private void drawFilledRegion(FlixelBatch batch, FlixelFrame region, float x, float y, float w, float h, float percent) {
+  private void drawFilledRegion(FlixelBatch batch, FlixelFrame region, float x, float y, float w, float h,
+      float percent) {
     float fx = x;
     float fy = y;
     float fw = w;

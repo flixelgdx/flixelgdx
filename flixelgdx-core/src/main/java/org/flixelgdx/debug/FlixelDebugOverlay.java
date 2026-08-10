@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.debug;
 
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
@@ -35,6 +34,7 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -43,13 +43,12 @@ import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
-import org.flixelgdx.util.FlixelDebugUtil;
-import org.flixelgdx.util.FlixelString;
-import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelDebugUtil;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.flixelgdx.util.FlixelSpriteUtil;
+import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

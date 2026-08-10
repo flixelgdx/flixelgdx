@@ -936,15 +936,15 @@ public final class Flixel {
    *
    * <p>Missing platform pieces never crash startup: any backend hook that was not installed
    * (alerter, sound factory, stack trace provider, runner) simply stays a safe no-op. Advanced
-   * users can swap implementations from a {@link #beforeStart} callback before any core system
+   * users can swap implementations from an {@link #afterStart} callback before any core system
    * reads them.
    *
-   * <p>Example launcher:
+   * <p>Game code does not call this directly. The platform launcher installs the backend and
+   * calls it for you, so starting a game is a single line:
    *
    * <pre>{@code
    * public static void main(String[] args) {
-   *   FlixelDesktopLauncher.install();
-   *   Flixel.start(new MyGame());
+   *   FlixelDesktopLauncher.launch(new MyGame());
    * }
    * }</pre>
    *
@@ -971,11 +971,7 @@ public final class Flixel {
     touches = new FlixelTouchManager();
     gamepads = new FlixelGamepadInputManager();
     log = new FlixelLogger(FlixelLogMode.SIMPLE);
-    if (sound == null) {
-      sound = new FlixelSoundManager(soundFactory);
-    } else {
-      sound.resetSession();
-    }
+    sound = new FlixelSoundManager(soundFactory);
 
     // Register default tween pools (pool factories avoid extra allocations when pooling tweens).
     FlixelTween.registerTweenType(FlixelGoalTween.class, () -> new FlixelGoalTween(null))

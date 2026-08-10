@@ -81,7 +81,7 @@ final class FlixelMiniAudio {
       Path temp = Files.createTempFile("flixel_miniaudio", libName.substring(libName.lastIndexOf('.')));
       temp.toFile().deleteOnExit();
       Files.copy(in, temp, StandardCopyOption.REPLACE_EXISTING);
-      System.load(temp.toAbsolutePath().toString());
+      System.loadLibrary(temp.toAbsolutePath().toString());
       loaded = true;
       return true;
     } catch (IOException | UnsatisfiedLinkError e) {

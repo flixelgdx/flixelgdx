@@ -45,7 +45,8 @@ import org.jetbrains.annotations.NotNull;
 public interface FlixelGameRunner {
 
   /** A runner that returns immediately, used on headless sessions and in unit tests. */
-  FlixelGameRunner NOOP = game -> {};
+  FlixelGameRunner NOOP = game -> {
+  };
 
   /**
    * Runs the game to completion. On most platforms this blocks until the game exits; on

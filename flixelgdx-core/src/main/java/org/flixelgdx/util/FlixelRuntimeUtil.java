@@ -281,6 +281,7 @@ public final class FlixelRuntimeUtil {
     default long getNativeHeapBytes() {
       return 0L;
     }
+
     boolean isRunningFromJar();
 
     boolean isRunningInIDE();
