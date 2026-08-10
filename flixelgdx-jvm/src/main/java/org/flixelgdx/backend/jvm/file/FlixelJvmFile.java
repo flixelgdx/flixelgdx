@@ -87,6 +87,44 @@ public final class FlixelJvmFile implements FlixelFile {
 
   @NotNull
   @Override
+  public FlixelFile[] list() {
+    File[] children = childFiles();
+    if (children == null) {
+      return new FlixelFile[0];
+    }
+    FlixelFile[] out = new FlixelFile[children.length];
+    for (int i = 0; i < children.length; i++) {
+      out[i] = new FlixelJvmFile(childPath(children[i].getName()), children[i], false);
+    }
+    return out;
+  }
+
+  @NotNull
+  @Override
+  public FlixelFile[] list(@NotNull String suffix) {
+    File[] children = childFiles();
+    if (children == null) {
+      return new FlixelFile[0];
+    }
+    int matches = 0;
+    for (int i = 0; i < children.length; i++) {
+      if (children[i].getName().endsWith(suffix)) {
+        matches++;
+      }
+    }
+    FlixelFile[] out = new FlixelFile[matches];
+    int idx = 0;
+    for (int i = 0; i < children.length; i++) {
+      File child = children[i];
+      if (child.getName().endsWith(suffix)) {
+        out[idx++] = new FlixelJvmFile(childPath(child.getName()), child, false);
+      }
+    }
+    return out;
+  }
+
+  @NotNull
+  @Override
   public String readString() {
     return readString("UTF-8");
   }
@@ -158,6 +196,26 @@ public final class FlixelJvmFile implements FlixelFile {
   @Override
   public Object getNativeHandle() {
     return file;
+  }
+
+  /**
+   * Returns the on-disk children of this handle, or {@code null} when it is not a listable
+   * directory. Classpath handles cannot be walked, matching the seam's documented behavior.
+   */
+  @Nullable
+  private File[] childFiles() {
+    if (classpath || file == null || !file.isDirectory()) {
+      return null;
+    }
+    return file.listFiles();
+  }
+
+  @NotNull
+  private String childPath(@NotNull String childName) {
+    if (path.isEmpty()) {
+      return childName;
+    }
+    return path.endsWith("/") ? path + childName : path + "/" + childName;
   }
 
   @Nullable

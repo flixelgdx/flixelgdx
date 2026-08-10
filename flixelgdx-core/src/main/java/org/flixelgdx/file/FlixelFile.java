@@ -88,6 +88,45 @@ public interface FlixelFile {
   }
 
   /**
+   * Lists the immediate children of this handle when it points at a directory.
+   *
+   * <p>Only the direct children are returned, not the whole tree. The order is not guaranteed. When
+   * this handle is not a directory, or the backend cannot enumerate it (for example a directory
+   * packed inside a JAR, which most backends cannot walk), an empty array is returned rather than
+   * {@code null}.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelFile[] levels = Flixel.files.internal("levels").list();
+   * for (int i = 0; i < levels.length; i++) {
+   *   loadLevel(levels[i]);
+   * }
+   * }</pre>
+   *
+   * @return The child handles, or an empty array when there are none. Never {@code null}.
+   */
+  @NotNull
+  default FlixelFile[] list() {
+    return new FlixelFile[0];
+  }
+
+  /**
+   * Lists the immediate children whose file name ends with the given suffix.
+   *
+   * <p>This is a convenience filter over {@link #list()}. The suffix is matched against the child's
+   * file name, so passing {@code "png"} keeps every child whose name ends with {@code png} (such as
+   * {@code hero.png}). The same empty-array rules as {@link #list()} apply.
+   *
+   * @param suffix The file-name suffix to keep, for example {@code "png"} or {@code ".ogg"}.
+   * @return The matching child handles, or an empty array when there are none. Never {@code null}.
+   */
+  @NotNull
+  default FlixelFile[] list(@NotNull String suffix) {
+    return new FlixelFile[0];
+  }
+
+  /**
    * Reads the whole file as text using the platform's default charset.
    *
    * @return The file contents, or an empty string when the file does not exist. Never {@code null}.
