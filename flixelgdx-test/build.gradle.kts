@@ -18,6 +18,10 @@ dependencies {
   testRuntimeOnly(libs.junit.platform.launcher)
   testImplementation(platform(libs.junit.bom))
   testImplementation(libs.junit.jupiter)
+
+  // Runs the @JsonSerializable annotation processor over the test sources so the generated
+  // serializers can be exercised by the round-trip test.
+  testAnnotationProcessor(project(":flixelgdx-json-processor"))
 }
 
 tasks.named<Test>("test") {
