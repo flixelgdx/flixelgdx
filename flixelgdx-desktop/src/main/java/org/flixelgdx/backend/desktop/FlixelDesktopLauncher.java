@@ -30,6 +30,7 @@ import org.flixelgdx.backend.desktop.audio.FlixelMiniAudioFactory;
 import org.flixelgdx.backend.desktop.file.FlixelDesktopFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
+import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
@@ -105,6 +106,7 @@ public final class FlixelDesktopLauncher {
     FlixelSdlWindow window = new FlixelSdlWindow();
     FlixelDesktopInputDevice input = new FlixelDesktopInputDevice();
     FlixelBgfxGraphics graphics = new FlixelBgfxGraphics();
+    FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
     int width = game.getInitialWidth();
     int height = game.getInitialHeight();
 
@@ -117,9 +119,16 @@ public final class FlixelDesktopLauncher {
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = FlixelMiniAudioFactory.create();
-    Flixel.runner = new FlixelDesktopRunner(window, input, graphics, width, height);
+    Flixel.runner = new FlixelDesktopRunner(window, input, graphics, gamepads, width, height);
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
+
+    // The gamepad manager is created inside Flixel.start, so wire the SDL provider (which is also
+    // the mapping resolver) once it exists, just before the runner takes over the loop.
+    Flixel.afterStart.add(() -> {
+      Flixel.gamepads.setGamepadProvider(gamepads);
+      Flixel.gamepads.addMappingResolver(gamepads);
+    });
 
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);

@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
+import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlKeyMap;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.bgfx.BGFX;
@@ -61,6 +62,9 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
   @NotNull
   private final FlixelBgfxGraphics graphics;
 
+  @NotNull
+  private final FlixelSdlGamepadProvider gamepads;
+
   private long windowHandle;
   private int width;
   private int height;
@@ -71,14 +75,16 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
    * @param window The window wrapper to bind to the created SDL window.
    * @param input The input device to feed SDL events into.
    * @param graphics The bgfx graphics manager to initialize.
+   * @param gamepads The gamepad provider to open devices on and feed connect events into.
    * @param width The initial window width in pixels.
    * @param height The initial window height in pixels.
    */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
-      @NotNull FlixelBgfxGraphics graphics, int width, int height) {
+      @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads, int width, int height) {
     this.window = window;
     this.input = input;
     this.graphics = graphics;
+    this.gamepads = gamepads;
     this.width = width;
     this.height = height;
   }
@@ -105,6 +111,9 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
     }
     graphics.onInitialized(width, height);
 
+    // Pick up any gamepads that were already plugged in before the game started.
+    gamepads.openConnected();
+
     game.create();
 
     long lastNanos = System.nanoTime();
@@ -126,6 +135,7 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
     }
 
     game.destroy();
+    gamepads.dispose();
     BGFX.bgfx_shutdown();
     SDLVideo.SDL_DestroyWindow(windowHandle);
     SDLInit.SDL_Quit();
@@ -185,6 +195,10 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
         input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
       } else if (type == SDLEvents.SDL_EVENT_MOUSE_WHEEL) {
         input.onScrolled(event.wheel().x(), event.wheel().y());
+      } else if (type == SDLEvents.SDL_EVENT_GAMEPAD_ADDED) {
+        gamepads.onDeviceAdded(event.gdevice().which());
+      } else if (type == SDLEvents.SDL_EVENT_GAMEPAD_REMOVED) {
+        gamepads.onDeviceRemoved(event.gdevice().which());
       }
     }
     return false;

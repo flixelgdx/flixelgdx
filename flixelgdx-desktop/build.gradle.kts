@@ -21,11 +21,11 @@ dependencies {
   api(project(":flixelgdx-jvm"))
 
   api(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
-  api("org.lwjgl:lwjgl")
-  api("org.lwjgl:lwjgl-sdl")
-  api("org.lwjgl:lwjgl-bgfx")
-  api("org.lwjgl:lwjgl-stb")
-  api("org.lwjgl:lwjgl-zstd")
+  api(libs.lwjgl)
+  api(libs.lwjgl.sdl)
+  api(libs.lwjgl.bgfx)
+  api(libs.lwjgl.stb)
+  api(libs.lwjgl.zstd)
 
   lwjglNatives.forEach { classifier ->
     runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$classifier")
