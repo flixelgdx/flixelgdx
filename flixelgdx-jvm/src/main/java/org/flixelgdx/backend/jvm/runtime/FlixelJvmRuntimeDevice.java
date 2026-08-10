@@ -48,7 +48,7 @@ public final class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Override
-  public FlixelRunEnvironment detectEnvironment() {
+  public FlixelRunEnvironment getEnvironment() {
     if (isRunningInIDE()) {
       return FlixelRunEnvironment.IDE;
     }

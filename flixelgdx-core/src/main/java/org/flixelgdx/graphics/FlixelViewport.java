@@ -108,9 +108,9 @@ public class FlixelViewport {
   public void update(int newScreenWidth, int newScreenHeight, boolean centerCamera) {
     int sw = Math.max(1, newScreenWidth);
     int sh = Math.max(1, newScreenHeight);
+    final float scale = Math.min(sw / designWidth, sh / designHeight);
     switch (scaling) {
       case FIT -> {
-        float scale = Math.min(sw / designWidth, sh / designHeight);
         int vw = Math.max(1, Math.round(designWidth * scale));
         int vh = Math.max(1, Math.round(designHeight * scale));
         screenX = (sw - vw) / 2;
@@ -121,7 +121,6 @@ public class FlixelViewport {
         worldHeight = designHeight;
       }
       case EXTEND -> {
-        float scale = Math.min(sw / designWidth, sh / designHeight);
         screenX = 0;
         screenY = 0;
         screenWidth = sw;

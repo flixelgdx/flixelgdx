@@ -66,8 +66,12 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
   private final FlixelSdlGamepadProvider gamepads;
 
   private long windowHandle;
+  /** Minimum nanoseconds per frame derived from the game's framerate, or {@code 0} for uncapped. */
+  private long targetFrameNanos;
   private int width;
   private int height;
+
+  private boolean vsync = true;
 
   /**
    * Creates a runner wired to the desktop backend objects the launcher installed.
@@ -91,6 +95,10 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
 
   @Override
   public void run(@NotNull FlixelGame game) {
+    vsync = game.isVsync();
+    int framerate = game.getFramerate();
+    targetFrameNanos = framerate > 0 ? 1_000_000_000L / framerate : 0L;
+
     if (!SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS | SDLInit.SDL_INIT_GAMEPAD)) {
       Flixel.error("Desktop", "SDL_Init failed; cannot open a window.");
       return;
@@ -102,6 +110,7 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
       SDLInit.SDL_Quit();
       return;
     }
+    SDLVideo.SDL_SetWindowPosition(windowHandle, SDLVideo.SDL_WINDOWPOS_CENTERED, SDLVideo.SDL_WINDOWPOS_CENTERED);
     window.bind(windowHandle);
 
     if (!initBgfx(windowHandle)) {
@@ -109,9 +118,9 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
       SDLInit.SDL_Quit();
       return;
     }
-    graphics.onInitialized(width, height);
 
-    // Pick up any gamepads that were already plugged in before the game started.
+    graphics.onInitialized(width, height);
+    graphics.setVSync(vsync);
     gamepads.openConnected();
 
     game.create();
@@ -131,6 +140,8 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
         graphics.beginFrame();
         game.render(deltaSeconds);
         graphics.endFrame();
+
+        limitFrameRate(now);
       }
     }
 
@@ -139,6 +150,26 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
     BGFX.bgfx_shutdown();
     SDLVideo.SDL_DestroyWindow(windowHandle);
     SDLInit.SDL_Quit();
+  }
+
+  /**
+   * Sleeps just enough to keep the current frame from finishing faster than the game's target
+   * framerate. Does nothing when the framerate is uncapped.
+   *
+   * @param frameStartNanos The {@link System#nanoTime()} timestamp captured at the top of the frame.
+   */
+  private void limitFrameRate(long frameStartNanos) {
+    if (targetFrameNanos <= 0L) {
+      return;
+    }
+    long remaining = targetFrameNanos - (System.nanoTime() - frameStartNanos);
+    if (remaining > 0L) {
+      try {
+        Thread.sleep(remaining / 1_000_000L, (int) (remaining % 1_000_000L));
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
   /** Initializes bgfx with the SDL window's native handle. */
@@ -151,8 +182,9 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
     }
     try (BGFXInit init = BGFXInit.calloc()) {
       BGFX.bgfx_init_ctor(init);
-      init.type(BGFX.BGFX_RENDERER_TYPE_COUNT); // Let bgfx auto-pick the best backend.
-      init.resolution(res -> res.width(width).height(height).reset(BGFX.BGFX_RESET_VSYNC));
+      init.type(resolveRendererType());
+      int resetFlags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
+      init.resolution(res -> res.width(width).height(height).reset(resetFlags));
       init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
       if (!BGFX.bgfx_init(init)) {
         Flixel.error("Desktop", "bgfx could not be initialized.");
@@ -160,6 +192,56 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
       }
     }
     return true;
+  }
+
+  /**
+   * Resolves the bgfx renderer backend to request at initialization.
+   *
+   * <p>By default bgfx auto-picks the best backend for the platform. Some systems have a driver
+   * that bgfx would prefer but that crashes or misbehaves (a common example is Mesa's Intel Vulkan
+   * driver on Linux). The {@code flixel.render.backend} system property forces a specific backend
+   * so those machines can fall back to a working one without a code change, for example:
+   *
+   * <pre>{@code
+   * java -Dflixel.render.backend=opengl -jar mygame.jar
+   * }</pre>
+   *
+   * <p>Recognized values are {@code auto} (the default), {@code opengl}, {@code vulkan},
+   * {@code metal}, {@code direct3d11}, {@code direct3d12}, and {@code noop}. An unrecognized value
+   * is ignored with a warning and auto-selection is used.
+   *
+   * @return The bgfx renderer type constant to hand to {@link BGFXInit#type(int)}.
+   */
+  private static int resolveRendererType() {
+    String backend = System.getProperty("flixel.render.backend", "auto").trim().toLowerCase();
+    switch (backend) {
+      case "auto", "" -> {
+        return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
+      }
+      case "opengl", "gl" -> {
+        return BGFX.BGFX_RENDERER_TYPE_OPENGL;
+      }
+      case "vulkan", "vk" -> {
+        return BGFX.BGFX_RENDERER_TYPE_VULKAN;
+      }
+      case "metal" -> {
+        return BGFX.BGFX_RENDERER_TYPE_METAL;
+      }
+      case "direct3d11", "d3d11" -> {
+        return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
+      }
+      case "direct3d12", "d3d12" -> {
+        return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
+      }
+      case "noop" -> {
+        return BGFX.BGFX_RENDERER_TYPE_NOOP;
+      }
+      default -> {
+        Flixel.warn("Desktop", "Unknown flixel.render.backend '" + backend
+            + "'; letting bgfx auto-pick the renderer.");
+        return BGFX.BGFX_RENDERER_TYPE_COUNT;
+      }
+    }
   }
 
   /**

@@ -796,6 +796,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     if ((!flashActive || flashAlpha <= 0f) && !fadeActive && fadeAlpha <= 0f) {
       return;
     }
+    Flixel.info("Graphics", "flash whitePixel handle=" + whitePixel.getTexture().getHandle());
     float fw = viewport.getWorldWidth() / zoom;
     float fh = viewport.getWorldHeight() / zoom;
     float fx = viewport.getCameraX() - fw / 2f;

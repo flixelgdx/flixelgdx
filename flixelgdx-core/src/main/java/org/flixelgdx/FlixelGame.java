@@ -523,6 +523,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     FlixelCamera[] cameraItems = cameras.getItems();
     for (int ci = 0, cn = cameras.getSize(); ci < cn; ci++) {
       FlixelCamera camera = cameraItems[ci];
+      Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(camera);
       try {
         if (gamePaused) {
@@ -592,6 +593,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
+      Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(overlayCamera);
       try {
         if (gamePaused) {

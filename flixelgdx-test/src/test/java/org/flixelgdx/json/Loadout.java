@@ -21,32 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
+package org.flixelgdx.json;
 
 /**
- * High-level classification of how the game's code is being loaded, used for logging and tooling.
- *
- * <p>This describes the shape of the running program (is it a loose classpath, a packaged JAR, an
- * IDE launch), which is a separate question from {@link FlixelRuntimeMode}. {@code FlixelRuntimeMode}
- * says whether the game was started in test, debug, or release; this enum says how the classes and
- * assets are physically laid out on the current platform.
- *
- * <p>Reported by {@link FlixelRuntimeDevice#getEnvironment()}. Platforms that cannot classify the
- * layout (a web browser, for example) report {@link #UNKNOWN}.
- *
- * @see FlixelRuntimeDevice#getEnvironment()
+ * A sample data class exercising the array and enum support of the {@code @JsonSerializable}
+ * annotation processor: a primitive array, a String array, an enum, an enum array, and an array of
+ * nested {@code @JsonSerializable} types.
  */
-public enum FlixelRunEnvironment {
+@JsonSerializable
+public class Loadout {
 
-  /** The game is running from an IDE launch (IntelliJ, Eclipse, and similar). */
-  IDE,
+  public int[] scores;
+  public String[] tags;
+  public Rarity rarity;
+  public Rarity[] unlocked;
+  public SaveData[] saves;
 
-  /** The game is running from a packaged distribution JAR. */
-  JAR,
-
-  /** The game is running from a plain classpath (loose class output, no packaging). */
-  CLASSPATH,
-
-  /** The layout could not be classified, typically because the platform cannot report it. */
-  UNKNOWN
+  /** Item rarity tiers, mapped by name through the generated serializer. */
+  public enum Rarity {
+    COMMON,
+    RARE,
+    LEGENDARY
+  }
 }

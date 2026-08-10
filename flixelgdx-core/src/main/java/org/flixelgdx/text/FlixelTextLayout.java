@@ -45,7 +45,7 @@ import org.jetbrains.annotations.NotNull;
 public final class FlixelTextLayout {
 
   @NotNull
-  private final FlixelArray<FlixelFrame> frames = new FlixelArray<>(64);
+  private final FlixelArray<FlixelFrame> frames = new FlixelArray<>(FlixelFrame[]::new, 64);
 
   @NotNull
   private final FlixelFloatArray xs = new FlixelFloatArray(64);

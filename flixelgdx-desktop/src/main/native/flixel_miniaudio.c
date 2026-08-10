@@ -14,12 +14,26 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
-/* A loaded sound keeps its decoder and a private copy of the encoded bytes alive for the voice's
- * lifetime, since miniaudio's memory decoder references the buffer rather than copying it. */
+/* miniaudio has built-in decoders for WAV, MP3, and FLAC, but not Ogg Vorbis. We add Vorbis by
+ * fully decoding it to PCM with stb_vorbis and playing that back through an in-memory audio buffer.
+ * Decoding up front is a good fit here (these are game sound effects loaded whole into memory
+ * anyway) and keeps length, cursor, and seeking exact, which miniaudio's push-mode Vorbis path
+ * cannot guarantee. We only decode from memory, so the file-based stb_vorbis API is left out. */
+#define STB_VORBIS_NO_STDIO
+#include "stb_vorbis.c"
+
+/* A loaded sound owns whichever data source is live for the voice's lifetime. WAV, MP3, and FLAC
+ * play from a miniaudio decoder over a private copy of the encoded bytes (the memory decoder
+ * references that buffer rather than copying it). Ogg Vorbis plays from an audio buffer over the
+ * PCM that stb_vorbis decoded. In both cases audioData holds the allocation that must outlive the
+ * sound: the encoded bytes for the decoder path, or the decoded PCM for the Vorbis path. */
 typedef struct {
-    ma_sound   sound;
-    ma_decoder decoder;
-    void*      audioData;
+    ma_sound        sound;
+    ma_decoder      decoder;
+    ma_audio_buffer buffer;
+    void*           audioData;
+    ma_uint32       sampleRate;
+    int             isVorbis;
 } flixel_sound;
 
 JNIEXPORT jlong JNICALL
@@ -128,6 +142,44 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundLoad(JNIEnv* env, 
     }
     (*env)->GetByteArrayRegion(env, data, 0, length, (jbyte*) s->audioData);
 
+    /* Ogg streams begin with the "OggS" capture pattern. Route those through stb_vorbis, since
+     * miniaudio cannot decode Vorbis on its own; everything else goes to the built-in decoders. */
+    if (length >= 4 && memcmp(s->audioData, "OggS", 4) == 0) {
+        int channels = 0;
+        int sampleRate = 0;
+        short* pcm = NULL;
+        int frameCount = stb_vorbis_decode_memory((const unsigned char*) s->audioData, length,
+                                                  &channels, &sampleRate, &pcm);
+        free(s->audioData);
+        s->audioData = NULL;
+        if (frameCount < 0 || pcm == NULL) {
+            free(s);
+            return 0;
+        }
+        s->audioData = pcm;
+        s->sampleRate = (ma_uint32) sampleRate;
+        s->isVorbis = 1;
+
+        ma_audio_buffer_config cfg = ma_audio_buffer_config_init(
+            ma_format_s16, (ma_uint32) channels, (ma_uint64) frameCount, pcm, NULL);
+        /* The config initializer does not take a sample rate, so it defaults to zero. Without the
+         * real rate the engine would not resample the decoded PCM to its own rate, and the sound
+         * would play back at the wrong speed. */
+        cfg.sampleRate = (ma_uint32) sampleRate;
+        if (ma_audio_buffer_init(&cfg, &s->buffer) != MA_SUCCESS) {
+            free(pcm);
+            free(s);
+            return 0;
+        }
+        if (ma_sound_init_from_data_source(engine, &s->buffer, 0, group, &s->sound) != MA_SUCCESS) {
+            ma_audio_buffer_uninit(&s->buffer);
+            free(pcm);
+            free(s);
+            return 0;
+        }
+        return (jlong) (intptr_t) s;
+    }
+
     if (ma_decoder_init_memory(s->audioData, (size_t) length, NULL, &s->decoder) != MA_SUCCESS) {
         free(s->audioData);
         free(s);
@@ -139,6 +191,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundLoad(JNIEnv* env, 
         free(s);
         return 0;
     }
+    s->sampleRate = s->decoder.outputSampleRate;
     return (jlong) (intptr_t) s;
 }
 
@@ -149,7 +202,11 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundUninit(JNIEnv* env
     flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
     if (s != NULL) {
         ma_sound_uninit(&s->sound);
-        ma_decoder_uninit(&s->decoder);
+        if (s->isVorbis) {
+            ma_audio_buffer_uninit(&s->buffer);
+        } else {
+            ma_decoder_uninit(&s->decoder);
+        }
         free(s->audioData);
         free(s);
     }
@@ -250,7 +307,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSeek(JNIEnv* env, 
     if (s == NULL) {
         return;
     }
-    ma_uint32 sampleRate = s->decoder.outputSampleRate;
+    ma_uint32 sampleRate = s->sampleRate;
     if (sampleRate == 0) {
         sampleRate = 48000;
     }

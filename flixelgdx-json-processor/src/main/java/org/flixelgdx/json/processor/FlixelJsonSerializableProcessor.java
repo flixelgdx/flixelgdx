@@ -38,6 +38,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -119,21 +120,41 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
     src.append("    w.beginObject();\n");
     for (VariableElement field : fields) {
       String name = field.getSimpleName().toString();
-      src.append("    w.name(\"").append(name).append("\")");
       TypeMirror t = field.asType();
-      if (isString(t)) {
-        src.append(".value(value.").append(name).append(")");
-      } else if (t.getKind().isPrimitive()) {
-        src.append(".value(value.").append(name).append(")");
+      src.append("    w.name(\"").append(name).append("\");\n");
+      if (isArray(t)) {
+        appendArrayWrite(src, "value." + name, componentType(t));
       } else {
-        String serializer = serializerFqn(t);
-        src.append(".raw(").append(serializer).append(".toJson(value.").append(name).append("))");
+        src.append("    ").append(writeSingle("value." + name, t)).append(";\n");
       }
-      src.append(";\n");
     }
     src.append("    w.endObject();\n");
     src.append("    return w.toString();\n");
     src.append("  }\n");
+  }
+
+  /** Emits the statements that write one array field as a JSON array. */
+  private void appendArrayWrite(StringBuilder src, String accessor, TypeMirror element) {
+    src.append("    if (").append(accessor).append(" == null) {\n");
+    src.append("      w.value((String) null);\n");
+    src.append("    } else {\n");
+    src.append("      w.beginArray();\n");
+    src.append("      for (int i = 0; i < ").append(accessor).append(".length; i++) {\n");
+    src.append("        ").append(writeSingle(accessor + "[i]", element)).append(";\n");
+    src.append("      }\n");
+    src.append("      w.endArray();\n");
+    src.append("    }\n");
+  }
+
+  /** Returns the writer call (without a trailing semicolon) that writes one non-array value. */
+  private String writeSingle(String accessor, TypeMirror t) {
+    if (isString(t) || t.getKind().isPrimitive()) {
+      return "w.value(" + accessor + ")";
+    }
+    if (isEnum(t)) {
+      return "w.value(" + accessor + " == null ? null : " + accessor + ".name())";
+    }
+    return "w.raw(" + serializerFqn(t) + ".toJson(" + accessor + "))";
   }
 
   private void appendFromJson(StringBuilder src, String simpleName, List<VariableElement> fields) {
@@ -142,15 +163,58 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
     src.append("    ").append(simpleName).append(" value = new ").append(simpleName).append("();\n");
     for (VariableElement field : fields) {
       String name = field.getSimpleName().toString();
-      src.append("    value.").append(name).append(" = ").append(readExpression(field, name)).append(";\n");
+      TypeMirror t = field.asType();
+      if (isArray(t)) {
+        appendArrayRead(src, name, componentType(t));
+      } else if (isEnum(t)) {
+        appendEnumRead(src, name, t);
+      } else {
+        src.append("    value.").append(name).append(" = ").append(readExpression(t, name)).append(";\n");
+      }
     }
     src.append("    return value;\n");
     src.append("  }\n");
   }
 
-  /** Builds the right-hand-side expression that reads one field from {@code json}. */
-  private String readExpression(VariableElement field, String name) {
-    TypeMirror t = field.asType();
+  /** Emits a block that reads one enum field, tolerating a missing or null value. */
+  private void appendEnumRead(StringBuilder src, String name, TypeMirror t) {
+    String key = "\"" + name + "\"";
+    String typeName = typeName(t);
+    src.append("    {\n");
+    src.append("      FlixelJsonValue n = json.has(").append(key).append(") ? json.get(").append(key)
+        .append(") : null;\n");
+    src.append("      String s = n == null ? null : n.asString();\n");
+    src.append("      value.").append(name).append(" = s == null ? null : ").append(typeName).append(".valueOf(s);\n");
+    src.append("    }\n");
+  }
+
+  /** Emits a block that reads one array field, defaulting to an empty array when absent. */
+  private void appendArrayRead(StringBuilder src, String name, TypeMirror element) {
+    String key = "\"" + name + "\"";
+    String elementType = typeName(element);
+    src.append("    {\n");
+    src.append("      FlixelJsonValue a = json.has(").append(key).append(") ? json.get(").append(key)
+        .append(") : null;\n");
+    src.append("      if (a != null && a.isArray()) {\n");
+    src.append("        int count = a.getSize();\n");
+    src.append("        ").append(elementType).append("[] out = new ").append(elementType).append("[count];\n");
+    src.append("        for (int i = 0; i < count; i++) {\n");
+    if (isEnum(element)) {
+      src.append("          String s = a.get(i) == null ? null : a.get(i).asString();\n");
+      src.append("          out[i] = s == null ? null : ").append(elementType).append(".valueOf(s);\n");
+    } else {
+      src.append("          out[i] = ").append(readFromNode(element)).append(";\n");
+    }
+    src.append("        }\n");
+    src.append("        value.").append(name).append(" = out;\n");
+    src.append("      } else {\n");
+    src.append("        value.").append(name).append(" = new ").append(elementType).append("[0];\n");
+    src.append("      }\n");
+    src.append("    }\n");
+  }
+
+  /** Builds the expression that reads one non-array, non-enum field by name from {@code json}. */
+  private String readExpression(TypeMirror t, String name) {
     String key = "\"" + name + "\"";
     return switch (t.getKind()) {
       case INT -> "json.getInt(" + key + ", 0)";
@@ -167,6 +231,26 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
         }
         String serializer = serializerFqn(t);
         yield "json.has(" + key + ") ? " + serializer + ".fromJson(json.get(" + key + ")) : null";
+      }
+    };
+  }
+
+  /** Builds the expression that reads one value (primitive, String, or nested type) from a node. */
+  private String readFromNode(TypeMirror t) {
+    return switch (t.getKind()) {
+      case INT -> "a.get(i)" + ".asInt()";
+      case SHORT -> "(short) " + "a.get(i)" + ".asInt()";
+      case BYTE -> "(byte) " + "a.get(i)" + ".asInt()";
+      case CHAR -> "(char) " + "a.get(i)" + ".asInt()";
+      case LONG -> "(long) " + "a.get(i)" + ".asDouble()";
+      case FLOAT -> "a.get(i)" + ".asFloat()";
+      case DOUBLE -> "a.get(i)" + ".asDouble()";
+      case BOOLEAN -> "a.get(i)" + ".asBool()";
+      default -> {
+        if (isString(t)) {
+          yield "a.get(i)" + ".asString()";
+        }
+        yield serializerFqn(t) + ".fromJson(" + "a.get(i)" + ")";
       }
     };
   }
@@ -190,7 +274,8 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
       }
       if (!isSupported(field.asType())) {
         error(field, "@JsonSerializable does not support the type of field '" + field.getSimpleName()
-            + "'. Supported types are primitives, String, and other @JsonSerializable types.");
+            + "'. Supported types are primitives, String, enums, other @JsonSerializable types, "
+            + "and one-dimensional arrays of those.");
         continue;
       }
       result.add(field);
@@ -199,20 +284,51 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
   }
 
   private boolean isSupported(TypeMirror t) {
-    if (t.getKind().isPrimitive() || isString(t)) {
-      return true;
+    return isElementSupported(t) || (isArray(t) && isElementSupported(componentType(t)));
+  }
+
+  /** Whether a type is supported as a field value or as an array element (arrays are not nested). */
+  private boolean isElementSupported(TypeMirror t) {
+    return t.getKind().isPrimitive() || isString(t) || isEnum(t) || isSerializable(t);
+  }
+
+  private boolean isSerializable(TypeMirror t) {
+    if (t.getKind() != TypeKind.DECLARED) {
+      return false;
     }
-    if (t.getKind() == TypeKind.DECLARED) {
-      Element element = ((DeclaredType) t).asElement();
-      return element.getAnnotationMirrors().stream()
-          .anyMatch(a -> a.getAnnotationType().toString().equals(ANNOTATION));
-    }
-    return false;
+    Element element = ((DeclaredType) t).asElement();
+    return element.getAnnotationMirrors().stream()
+        .anyMatch(a -> a.getAnnotationType().toString().equals(ANNOTATION));
+  }
+
+  private boolean isEnum(TypeMirror t) {
+    return t.getKind() == TypeKind.DECLARED
+        && ((DeclaredType) t).asElement().getKind() == ElementKind.ENUM;
+  }
+
+  private boolean isArray(TypeMirror t) {
+    return t.getKind() == TypeKind.ARRAY;
+  }
+
+  private TypeMirror componentType(TypeMirror t) {
+    return ((ArrayType) t).getComponentType();
   }
 
   private boolean isString(TypeMirror t) {
     return t.getKind() == TypeKind.DECLARED
         && ((DeclaredType) t).asElement().toString().equals("java.lang.String");
+  }
+
+  /**
+   * Returns a name usable to declare a variable or array of the given element type in generated
+   * source: the keyword for a primitive (for example {@code int}), or the fully-qualified name for a
+   * String, enum, or {@code @JsonSerializable} type.
+   */
+  private String typeName(TypeMirror t) {
+    if (t.getKind().isPrimitive()) {
+      return t.toString();
+    }
+    return ((TypeElement) ((DeclaredType) t).asElement()).getQualifiedName().toString();
   }
 
   /** Returns the fully-qualified name of the generated serializer for a nested annotated type. */

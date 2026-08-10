@@ -25,6 +25,8 @@ package org.flixelgdx.input.mouse;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputManager;
@@ -35,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Mouse and pointer polling with screen/world coordinates. Access via {@code Flixel.mouse} after
- * {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
+ * {@link Flixel#start(FlixelGame, FlixelGameRunner)}.
  *
  * <h2>Scroll wheel deltas</h2>
  * <p>

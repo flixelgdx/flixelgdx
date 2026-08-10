@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Example:
  *
  * <pre>{@code
- * if (Flixel.runtime.detectEnvironment() == FlixelRunEnvironment.JAR) {
+ * if (Flixel.runtime.getEnvironment() == FlixelRunEnvironment.JAR) {
  *   // Loading from a packaged distribution.
  * }
  * long heapUsed = Flixel.runtime.getJavaHeapBytes();
@@ -117,7 +117,7 @@ public interface FlixelRuntimeDevice {
    * @return The detected environment; {@link FlixelRunEnvironment#UNKNOWN} when the platform cannot
    *     classify its layout.
    */
-  default FlixelRunEnvironment detectEnvironment() {
+  default FlixelRunEnvironment getEnvironment() {
     return FlixelRunEnvironment.UNKNOWN;
   }
 }

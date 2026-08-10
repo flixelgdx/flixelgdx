@@ -133,8 +133,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Mouse button used to pan the debug camera while paused. Set to a negative value to disable. */
   public int cameraPanButton = FlixelMouseButton.RIGHT;
 
-  @Nullable
-
   protected float statsTimer = 0f;
   protected int cachedFps;
   protected float cachedHeapMegabytes;
@@ -614,17 +612,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // but calling it here too is cheap and guarantees correctness if the call order ever shifts.
     cam.applyCameraTransform();
 
-    // The viewport's unproject returns coordinates in VIEW space (the same space the batch
-    // draws into). Sprite hitboxes live in world space (their x and y fields), so we need to
-    // add the camera's scroll back in plus the view margin (the offset induced by zoom that
-    // FlixelCamera.worldToViewX() subtracts during draw). Without this conversion the picker would
-    // feel off when the camera is scrolled or zoomed: clicks would land on the wrong sprite or miss entirely.
+    // The viewport's unproject returns coordinates in VIEW space (the same space the batch draws into).
     pickUnproject.set(Flixel.mouse.getScreenX(), Flixel.mouse.getScreenY());
     cam.unproject(pickUnproject);
 
-    // View-space coordinates match FlixelSprite.draw() (worldToViewX / worldToViewY). Hit-testing
-    // in view space fixes mis-picks when members use scroll factors (common in layered stages
-    // and sprite groups where siblings overlap in world AABB but render at different parallax).
     float viewPickX = pickUnproject.x;
     float viewPickY = pickUnproject.y;
     float worldX = viewPickX + cam.scrollX + cam.getViewMarginX();
@@ -807,9 +798,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       if (cam == null) {
         continue;
       }
+      Flixel.graphics.beginCameraPass();
       cam.applyViewport();
       batch.setProjection(cam.getCombinedMatrix());
       batch.begin();
+      // Scale the outline thickness by the inverse zoom so it stays a constant width on screen and
+      // does not thin out to nothing when the camera is zoomed out.
+      final float thickness = Math.max(1f, 1f / Math.max(0.0001f, cam.getZoom()));
       FlixelDebugUtil.forEachDebugDrawable(drawable -> {
         if (drawable == null) {
           return;
@@ -839,7 +834,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         }
         boundingBoxColor.set(c[0], c[1], c[2], c[3]);
         FlixelSpriteUtil.drawBorder(batch, whitePixel, drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
-            drawable.getDebugWidth(), drawable.getDebugHeight(), 1f, boundingBoxColor);
+            drawable.getDebugWidth(), drawable.getDebugHeight(), thickness, boundingBoxColor);
       });
       batch.end();
     }
@@ -858,6 +853,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     snapshotRenderCalls();
+    // The debug UI draws in screen space, so give it its own render pass rather than inheriting the
+    // last camera's projection.
+    Flixel.graphics.beginCameraPass();
     drawUI();
   }
 

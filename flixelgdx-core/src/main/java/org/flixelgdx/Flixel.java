@@ -680,7 +680,7 @@ public final class Flixel {
    * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a real implementation before
-   * {@link Flixel#start(FlixelGame)} runs. On an unknown platform it falls back to
+   * {@link Flixel#start(FlixelGame, FlixelGameRunner)} runs. On an unknown platform it falls back to
    * {@link FlixelNoopWindow}, which silently ignores every call, so you can always write
    * {@code Flixel.window.setOpacity(0.8f)} without wrapping it in a platform check.
    *
@@ -704,7 +704,7 @@ public final class Flixel {
    * The single public surface for drawing and GPU state (the sprite batch, frame rate, vertical
    * sync, display modes, and pixel density).
    *
-   * <p>The active graphics backend is installed here before {@link Flixel#start(FlixelGame)}
+   * <p>The active graphics backend is installed here before {@link Flixel#start(FlixelGame, FlixelGameRunner)}
    * runs. Until then, and on headless targets, it falls back to {@link FlixelNoopGraphicsManager},
    * so calls are always safe to make. The underlying GPU library is never exposed; game code only
    * ever talks to this manager.
@@ -727,7 +727,7 @@ public final class Flixel {
    * Host OS integration for toast notifications and taskbar attention signals.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a platform-specific implementation before
-   * {@link Flixel#start(FlixelGame)} runs. On all other platforms it falls back to
+   * {@link Flixel#start(FlixelGame, FlixelGameRunner)} runs. On all other platforms it falls back to
    * {@link FlixelNoopHostIntegration}, so calls are always safe to make regardless of platform.
    *
    * <p>This is distinct from the blocking alert dialogs exposed by
@@ -781,13 +781,24 @@ public final class Flixel {
    * touches it directly, but it is available for a quick poll or to register a custom
    * {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, or {@link FlixelTouchListener}.
    *
-   * <p>The active backend is installed here before {@link Flixel#start(FlixelGame)}. Until then
-   * (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
+   * <p>The active backend is installed here before {@link Flixel#start(FlixelGame, FlixelGameRunner)}.
+   * Until then (and on headless sessions) it is a safe no-op that reports nothing pressed, so reads are always
    * safe.
    *
    * <p>Example:
    *
    * <pre>{@code
+   * // Register a custom keyboard listener.
+   * Flixel.input.addKeyboardListener(new FlixelKeyboardListener() {
+   *   @Override
+   *   public boolean keyDown(int keycode) {
+   *     if (keycode == FlixelKey.F7) {
+   *       triggerDebugFunction();
+   *     }
+   *   }
+   * });
+   *
+   * // Check keyboard press directly instead of using the polled keys manager.
    * if (Flixel.input.isKeyPressed(FlixelKey.ESCAPE)) {
    *   openPauseMenu();
    * }
@@ -806,9 +817,9 @@ public final class Flixel {
    * {@link FlixelFiles#external external} for save data), then query or read it. Asset loading, fonts,
    * and sounds all resolve their files through here.
    *
-   * <p>The active backend is installed here before {@link Flixel#start(FlixelGame)}. Until then
-   * (and on headless sessions) it is a safe no-op that reports every file as missing, so reads never
-   * crash.
+   * <p>The active backend is installed here before {@link Flixel#start(FlixelGame, FlixelGameRunner)}.
+   * Until then (and on headless sessions) it is a safe no-op that reports every file as missing, so reads
+   * never crash.
    *
    * <p>Example:
    *
@@ -830,8 +841,8 @@ public final class Flixel {
    *
    * <p>All of this is platform-specific, so like {@link #host} and {@link #window} it is a backend
    * seam. Desktop JVM builds install {@code FlixelJvmRuntimeDevice} here before
-   * {@link Flixel#start(FlixelGame)}. Until then (and on platforms that cannot report it) it falls
-   * back to {@link FlixelNoopRuntimeDevice}, so calls are always safe.
+   * {@link Flixel#start(FlixelGame, FlixelGameRunner)}. Until then (and on platforms that cannot
+   * report it) it falls back to {@link FlixelNoopRuntimeDevice}, so calls are always safe.
    *
    * <p>Example:
    *
@@ -873,7 +884,7 @@ public final class Flixel {
    */
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
-  /** The camera currently being drawn in {@link FlixelDrawable#draw(org.flixelgdx.graphics.FlixelBatch)}. */
+  /** The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)}. */
   @Nullable
   private static FlixelCamera drawCamera;
 
@@ -889,22 +900,22 @@ public final class Flixel {
   public static FlixelLogFileHandler logFileHandler;
 
   /**
-   * When non-null, {@link FlixelLogger} sends each console line here instead of {@code System.out} (for example, styled
-   * output in the browser). Set before {@link #start(FlixelGame)}.
+   * When non-null, {@link FlixelLogger} sends each console line here instead of {@code System.out}
+   * (for example, styled output in the browser). Set before {@link #start(FlixelGame, FlixelGameRunner)}.
    */
   @Nullable
   public static FlixelLogConsoleSink logConsoleSink;
 
   /**
    * Platform-specific factory for creating sounds and sound groups.
-   * Set by the launcher before {@link #start(FlixelGame)}; defaults to a silent no-op so audio
+   * Set by the launcher before {@link #start(FlixelGame, FlixelGameRunner)}; defaults to a silent no-op so audio
    * calls are always safe.
    */
   @NotNull
   public static FlixelSoundFactory soundFactory = FlixelNoopSoundFactory.INSTANCE;
 
   /**
-   * Callbacks run at the very top of {@link #start(FlixelGame)}, before any core system is
+   * Callbacks run at the very top of {@link #start(FlixelGame, FlixelGameRunner)}, before any core system is
    * created. Both the framework and games may add to this list: use it to install or replace
    * implementations (a custom asset manager, logger, sound factory) before anything reads them.
    */
@@ -912,9 +923,10 @@ public final class Flixel {
   public static final FlixelArray<Runnable> beforeStart = new FlixelArray<>();
 
   /**
-   * Callbacks run at the end of {@link #start(FlixelGame)}, after every core system exists but
-   * before the platform runner takes over the loop. Use these to tweak fully constructed
-   * systems (register asset loaders, add signal listeners) right before the game runs.
+   * Callbacks run at the end of {@link #start(FlixelGame, FlixelGameRunner)}, after every
+   * core system exists but before the platform runner takes over the loop. Use these to tweak
+   * fully constructed systems (register asset loaders, add signal listeners) right before the
+   * game runs.
    */
   @NotNull
   public static final FlixelArray<Runnable> afterStart = new FlixelArray<>();

@@ -100,7 +100,9 @@ public final class FlixelSpriteUtil {
   public static FlixelTexture createWhitePixelTexture() {
     FlixelImage px = new FlixelImage(1, 1);
     px.fill(FlixelColor.WHITE);
-    return Flixel.graphics.createTexture(px);
+    FlixelTexture t = Flixel.graphics.createTexture(px);
+    Flixel.info("Graphics", "white pixel CREATED handle=" + t.getHandle());
+    return t;
   }
 
   /**

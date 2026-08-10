@@ -111,6 +111,18 @@ public interface FlixelGraphicsManager {
   default void endFrame() {}
 
   /**
+   * Marks the start of one camera's on-screen draw pass. The framework calls this before drawing
+   * each camera (and the overlay and debug passes) so a backend can isolate that camera's
+   * projection from the others.
+   *
+   * <p>This matters on backends where the view or projection is shared state for a whole render
+   * pass rather than per draw call. Without a fresh pass per camera, the last camera's projection
+   * would apply to every camera drawn into the same pass, breaking per-camera zoom, scroll, and
+   * debug overlays. Backends that set the projection per draw call can leave this as a no-op.
+   */
+  default void beginCameraPass() {}
+
+  /**
    * Uploads pixel data to a new GPU texture.
    *
    * @param width Texture width in pixels.

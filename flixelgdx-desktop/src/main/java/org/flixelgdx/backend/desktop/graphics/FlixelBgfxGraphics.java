@@ -68,11 +68,21 @@ import java.nio.FloatBuffer;
  */
 public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
-  /** bgfx view id used for the main (screen) pass. */
-  private static final int SCREEN_VIEW = 0;
+  /** bgfx view id used to clear the whole back buffer at the start of a frame. */
+  private static final int SCREEN_CLEAR_VIEW = 0;
 
-  /** First view id handed out to render targets. */
-  private static final int FIRST_TARGET_VIEW = 1;
+  /** First view id handed out to on-screen camera passes (view 0 is reserved for the clear). */
+  private static final int FIRST_SCREEN_VIEW = 1;
+
+  /**
+   * Number of view ids reserved for on-screen camera passes. bgfx renders views in ascending id
+   * order, so keeping camera views below the render-target range makes each camera draw over the
+   * clear and lets render targets share the frame without id collisions.
+   */
+  private static final int MAX_SCREEN_VIEWS = 64;
+
+  /** First view id handed out to render targets, above the reserved on-screen range. */
+  private static final int FIRST_TARGET_VIEW = MAX_SCREEN_VIEWS;
 
   @NotNull
   private final FlixelBgfxBatch batch = new FlixelBgfxBatch(this);
@@ -102,6 +112,7 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
   private int scissorWidth = -1;
   private int scissorHeight = -1;
   private int nextTargetView = FIRST_TARGET_VIEW;
+  private int nextScreenView = FIRST_SCREEN_VIEW;
   private int viewStackDepth;
 
   private int clearColor;
@@ -121,7 +132,7 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     this.backBufferHeight = height;
     this.viewportWidth = width;
     this.viewportHeight = height;
-    this.viewStack[0] = SCREEN_VIEW;
+    this.viewStack[0] = SCREEN_CLEAR_VIEW;
     this.viewStackDepth = 1;
 
     BGFX.bgfx_vertex_layout_begin(vertexLayout, BGFX.bgfx_get_renderer_type());
@@ -158,14 +169,38 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public void beginFrame() {
     nextTargetView = FIRST_TARGET_VIEW;
+    nextScreenView = FIRST_SCREEN_VIEW;
     viewStackDepth = 1;
-    BGFX.bgfx_touch(SCREEN_VIEW);
+    viewStack[0] = SCREEN_CLEAR_VIEW;
+    // The clear view covers the whole back buffer and renders first; camera passes draw over it.
+    BGFX.bgfx_set_view_rect(SCREEN_CLEAR_VIEW, 0, 0, Math.max(1, backBufferWidth), Math.max(1, backBufferHeight));
+    BGFX.bgfx_touch(SCREEN_CLEAR_VIEW);
   }
 
   @Override
   public void endFrame() {
     // Advance bgfx to the next frame; 0 means "do not capture this frame".
     BGFX.bgfx_frame(0);
+  }
+
+  @Override
+  public void beginCameraPass() {
+    // Each camera draws into its own bgfx view so its projection does not leak into the others.
+    // bgfx applies the view transform per view for the whole frame, so sharing one view would let
+    // the last camera's zoom and scroll overwrite every other camera's.
+    //
+    // Only top-level (screen) passes are isolated here. When a render target is already active (for
+    // example a global shader FBO that wraps every camera), we keep drawing into that target's view
+    // rather than popping it off the stack.
+    if (viewStackDepth != 1) {
+      return;
+    }
+    int view = nextScreenView;
+    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+      nextScreenView++;
+    }
+    viewStack[0] = view;
+    BGFX.bgfx_touch(view);
   }
 
   @NotNull
@@ -331,7 +366,7 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     if (program == -1 || texture == null) {
       if (!programWarned && program == -1) {
         programWarned = true;
-        Flixel.warn("Graphics", "No sprite shader program is available; run scripts/build_shaders.sh. "
+        Flixel.warn("Graphics", "No sprite shader program is available. "
             + "Rendering is a no-op until compiled shaders are bundled.");
       }
       return;
@@ -365,7 +400,7 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     try (MemoryStack stack = MemoryStack.stackPush()) {
       FloatBuffer proj = stack.mallocFloat(16);
       combine(projection, transform, proj);
-      BGFX.bgfx_set_view_transform(view, (FloatBuffer) null, proj);
+      BGFX.bgfx_set_view_transform(view, null, proj);
     }
 
     BGFX.bgfx_set_view_rect(view, viewportX, viewportY, viewportWidth, viewportHeight);

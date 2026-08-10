@@ -48,8 +48,9 @@ import java.lang.annotation.Target;
  *   <li>Mapped fields must be non-{@code private} (the generated class lives in the same package and
  *       reads and writes fields directly). {@code static}, {@code transient}, and {@code final}
  *       fields are skipped.</li>
- *   <li>Supported field types: the primitives, {@link String}, and other {@code @JsonSerializable}
- *       types (which map through their own generated serializer).</li>
+ *   <li>Supported field types: the primitives, {@link String}, enums (mapped by
+ *       {@link Enum#name()}), other {@code @JsonSerializable} types (which map through their own
+ *       generated serializer), and one-dimensional arrays of any of those.</li>
  * </ul>
  *
  * <p>Example:

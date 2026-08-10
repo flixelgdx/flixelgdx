@@ -25,6 +25,7 @@ package org.flixelgdx.json;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -68,6 +69,36 @@ class FlixelJsonSerializableTest {
     assertNotNull(back.best);
     assertEquals(999, back.best.highScore);
     assertEquals("Grace", back.best.playerName);
+  }
+
+  @Test
+  void arraysAndEnumsRoundTrip() {
+    Loadout loadout = new Loadout();
+    loadout.scores = new int[] { 10, 20, 30 };
+    loadout.tags = new String[] { "fire", "ice" };
+    loadout.rarity = Loadout.Rarity.LEGENDARY;
+    loadout.unlocked = new Loadout.Rarity[] { Loadout.Rarity.COMMON, Loadout.Rarity.RARE };
+
+    SaveData first = new SaveData();
+    first.highScore = 5;
+    first.playerName = "A";
+    SaveData second = new SaveData();
+    second.highScore = 9;
+    second.playerName = "B";
+    loadout.saves = new SaveData[] { first, second };
+
+    String json = LoadoutJsonSerializer.toJson(loadout);
+    Loadout back = LoadoutJsonSerializer.fromJson(FlixelJson.parse(json));
+
+    assertArrayEquals(new int[] { 10, 20, 30 }, back.scores);
+    assertArrayEquals(new String[] { "fire", "ice" }, back.tags);
+    assertEquals(Loadout.Rarity.LEGENDARY, back.rarity);
+    assertArrayEquals(new Loadout.Rarity[] { Loadout.Rarity.COMMON, Loadout.Rarity.RARE }, back.unlocked);
+    assertEquals(2, back.saves.length);
+    assertEquals(5, back.saves[0].highScore);
+    assertEquals("A", back.saves[0].playerName);
+    assertEquals(9, back.saves[1].highScore);
+    assertEquals("B", back.saves[1].playerName);
   }
 
   @Test
