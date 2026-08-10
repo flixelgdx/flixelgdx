@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.backend.jvm.logging;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.logging.FlixelLogFileHandler;
-import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -161,7 +161,7 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
   @Override
   @Nullable
   public String getDefaultLogsFolderPath() {
-    return FlixelRuntimeUtil.getDefaultLogsFolderPath();
+    return Flixel.runtime.getDefaultLogsFolderPath();
   }
 
   /**

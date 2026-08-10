@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.backend.jvm.runtime;
 
-import org.flixelgdx.util.FlixelRuntimeUtil;
-import org.flixelgdx.util.FlixelRuntimeUtil.RunEnvironment;
+import org.flixelgdx.backend.FlixelRunEnvironment;
+import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,10 +35,11 @@ import java.util.ArrayList;
 import java.util.jar.JarFile;
 
 /**
- * JVM desktop implementation of {@link FlixelRuntimeUtil.RuntimeProbe}: classpath and JAR checks,
- * IDE detection, and default log directory resolution. Not used on TeaVM or other non-JVM targets.
+ * JVM desktop implementation of {@link FlixelRuntimeDevice}: heap sampling, classpath and JAR
+ * checks, IDE detection, and default log directory resolution. Not used on TeaVM or other non-JVM
+ * targets.
  */
-public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimeProbe {
+public final class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
 
   @Override
   public long getJavaHeapBytes() {
@@ -47,14 +48,14 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
   }
 
   @Override
-  public RunEnvironment detectEnvironment() {
+  public FlixelRunEnvironment detectEnvironment() {
     if (isRunningInIDE()) {
-      return RunEnvironment.IDE;
+      return FlixelRunEnvironment.IDE;
     }
     if (isRunningFromJar()) {
-      return RunEnvironment.JAR;
+      return FlixelRunEnvironment.JAR;
     }
-    return RunEnvironment.CLASSPATH;
+    return FlixelRunEnvironment.CLASSPATH;
   }
 
   @Override
@@ -113,7 +114,7 @@ public final class FlixelJvmRuntimeProbe implements FlixelRuntimeUtil.RuntimePro
   @Nullable
   public String getWorkingDirectory() {
     try {
-      URI uri = FlixelRuntimeUtil.class.getProtectionDomain()
+      URI uri = FlixelJvmRuntimeDevice.class.getProtectionDomain()
           .getCodeSource()
           .getLocation()
           .toURI();

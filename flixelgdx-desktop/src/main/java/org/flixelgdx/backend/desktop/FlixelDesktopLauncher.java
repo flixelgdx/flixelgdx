@@ -36,9 +36,8 @@ import org.flixelgdx.backend.jvm.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
-import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeProbe;
+import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.text.FlixelFontRegistry;
-import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
 
@@ -84,8 +83,8 @@ public final class FlixelDesktopLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
-    FlixelRuntimeUtil.setRuntimeProbe(new FlixelJvmRuntimeProbe());
-    if (FlixelRuntimeUtil.isRunningFromJar() && !AnsiConsole.isInstalled()) {
+    Flixel.runtime = new FlixelJvmRuntimeDevice();
+    if (Flixel.runtime.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
     }
 

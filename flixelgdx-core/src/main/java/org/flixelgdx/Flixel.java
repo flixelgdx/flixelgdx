@@ -36,7 +36,9 @@ import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelNoopAlerter;
 import org.flixelgdx.backend.FlixelNoopHaptics;
 import org.flixelgdx.backend.FlixelNoopHostIntegration;
+import org.flixelgdx.backend.FlixelNoopRuntimeDevice;
 import org.flixelgdx.backend.FlixelNoopWindow;
+import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
@@ -821,6 +823,28 @@ public final class Flixel {
    */
   @NotNull
   public static FlixelFiles files = FlixelNoopFiles.INSTANCE;
+
+  /**
+   * The current machine and program layout: memory usage, whether the game runs from a JAR or an
+   * IDE, the working directory, and where log files should go.
+   *
+   * <p>All of this is platform-specific, so like {@link #host} and {@link #window} it is a backend
+   * seam. Desktop JVM builds install {@code FlixelJvmRuntimeDevice} here before
+   * {@link Flixel#start(FlixelGame)}. Until then (and on platforms that cannot report it) it falls
+   * back to {@link FlixelNoopRuntimeDevice}, so calls are always safe.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * if (Flixel.runtime.isRunningFromJar()) {
+   *   // Behavior for a packaged build.
+   * }
+   * }</pre>
+   *
+   * @see FlixelRuntimeDevice
+   */
+  @NotNull
+  public static FlixelRuntimeDevice runtime = FlixelNoopRuntimeDevice.INSTANCE;
 
   /**
    * Global timescale applied to the game's update loop each frame.
