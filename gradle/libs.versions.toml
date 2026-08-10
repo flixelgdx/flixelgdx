@@ -2,8 +2,6 @@
 agp = "8.7.3"
 asm = "9.7.1"
 desugarJdkLibs = "2.1.5"
-gdx = "1.14.0"
-gdxControllers = "2.2.4"
 graalvm = "24.2.0"
 jansi = "2.4.2"
 jetbrainsAnnotations = "26.1.0"
@@ -19,8 +17,6 @@ android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
-gdx-backend-headless = { module = "com.badlogicgames.gdx:gdx-backend-headless", version.ref = "gdx" }
-gdx-controllers-desktop = { module = "com.badlogicgames.gdx-controllers:gdx-controllers-desktop", version.ref = "gdxControllers" }
 graalvm-nativeimage = { module = "org.graalvm.sdk:nativeimage", version.ref = "graalvm" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }

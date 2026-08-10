@@ -98,8 +98,8 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
   }
 
   /**
-   * Rewrites {@code FlixelLogger} and {@code Gdx.app} call sites inside a single JAR file,
-   * writing the result to {@code output}. Entries that are not {@code .class} files are copied
+   * Rewrites {@code FlixelLogger} and {@code Flixel} static logging call sites inside a single JAR
+   * file, writing the result to {@code output}. Entries that are not {@code .class} files are copied
    * verbatim. If the weaver throws for a particular class, the original bytes are kept so the
    * output JAR is always a valid copy of the input.
    *
