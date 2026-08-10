@@ -904,14 +904,6 @@ public final class Flixel {
   public static FlixelSoundFactory soundFactory = FlixelNoopSoundFactory.INSTANCE;
 
   /**
-   * The platform's main-loop runner, installed by the backend launcher before
-   * {@link #start(FlixelGame)}. {@code start} hands the game to this runner once the core
-   * systems are wired; the default no-op returns immediately (headless sessions and tests).
-   */
-  @NotNull
-  public static FlixelGameRunner runner = FlixelGameRunner.NOOP;
-
-  /**
    * Callbacks run at the very top of {@link #start(FlixelGame)}, before any core system is
    * created. Both the framework and games may add to this list: use it to install or replace
    * implementations (a custom asset manager, logger, sound factory) before anything reads them.
@@ -955,15 +947,14 @@ public final class Flixel {
    * <p>This is the single entry point a launcher calls. It runs the {@link #beforeStart}
    * callbacks, wires up every core system Flixel needs ({@link FlixelAssetManager}, the audio
    * system, input managers, the logger, and more), runs the {@link #afterStart} callbacks, and
-   * finally hands the game to the platform {@link #runner}, which owns the update/draw loop
-   * from there.
+   * finally hands the game to the given platform {@link FlixelGameRunner}, which owns the
+   * update/draw loop from there.
    *
    * <p>Missing platform pieces never crash startup: any backend hook that was not installed
-   * (alerter, sound factory, stack trace provider, runner) simply stays a safe no-op. Advanced
-   * users can swap implementations from an {@link #afterStart} callback before any core system
-   * reads them.
+   * (alerter, sound factory, stack trace provider) simply stays a safe no-op. Advanced users can
+   * swap implementations from an {@link #afterStart} callback before any core system reads them.
    *
-   * <p>Game code does not call this directly. The platform launcher installs the backend and
+   * <p>Game code does not call this directly. The platform launcher builds the backend runner and
    * calls it for you, so starting a game is a single line:
    *
    * <pre>{@code
@@ -973,8 +964,10 @@ public final class Flixel {
    * }</pre>
    *
    * @param gameInstance The {@link FlixelGame} instance to run.
+   * @param runner The platform runner that owns the window and the update/draw loop. Use
+   *     {@link FlixelGameRunner#NOOP} for headless sessions and tests.
    */
-  public static void start(@NotNull FlixelGame gameInstance) {
+  public static void start(@NotNull FlixelGame gameInstance, @NotNull FlixelGameRunner runner) {
     if (initialized) {
       warn("Flixel.start(...) was called more than once; ignoring the extra call.");
       return;
@@ -1082,7 +1075,7 @@ public final class Flixel {
       state.destroy();
     }
 
-    FlixelAssetMode mode = assets != null ? assets.getAssetMode() : FlixelAssetMode.STANDARD;
+    FlixelAssetMode mode = assets.getAssetMode();
     if (mode == FlixelAssetMode.STANDARD || mode == FlixelAssetMode.AGGRESSIVE) {
       if (sound != null) {
         sound.clearNonPersist();

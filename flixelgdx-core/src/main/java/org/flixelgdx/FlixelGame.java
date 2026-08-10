@@ -76,15 +76,14 @@ import java.util.function.Supplier;
  * }
  * }</pre>
  *
- * Then, in a platform-specific launcher, install that platform's backend and hand your game to
- * {@link Flixel#start(FlixelGame)}, which drives the loop through the installed runner:
+ * Then hand your game to the platform launcher, which installs that platform's backend, builds its
+ * runner, and starts the game for you:
  *
  * <pre>{@code
  * public class DesktopLauncher {
  *
  *   public static void main(String[] args) {
- *     FlixelDesktopLauncher.install();
- *     Flixel.start(new MyGame());
+ *     FlixelDesktopLauncher.launch(new MyGame());
  *   }
  * }
  * }</pre>

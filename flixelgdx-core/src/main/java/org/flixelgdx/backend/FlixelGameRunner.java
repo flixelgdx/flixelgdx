@@ -30,12 +30,11 @@ import org.jetbrains.annotations.NotNull;
  * The platform's main loop: creates the window (where one exists) and drives the game's
  * update/draw cycle until the application exits.
  *
- * <p>Each backend installs its runner on {@link org.flixelgdx.Flixel#runner Flixel.runner}
- * before {@link org.flixelgdx.Flixel#start Flixel.start} is called; {@code start} wires the
- * core systems, then hands the game to the runner, which owns the loop from there. Desktop
- * pumps SDL events and renders through bgfx; web schedules browser animation frames; a
- * headless session leaves the default no-op runner in place so {@code start} returns
- * immediately.
+ * <p>Each backend builds its runner and passes it to
+ * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, FlixelGameRunner) Flixel.start};
+ * {@code start} wires the core systems, then hands the game to the runner, which owns the loop
+ * from there. Desktop pumps SDL events and renders through bgfx; web schedules browser animation
+ * frames; a headless session passes the {@link #NOOP} runner so {@code start} returns immediately.
  *
  * <p>The runner is expected to call {@link FlixelGame#create()} once the platform surface is
  * ready, then {@link FlixelGame#render(float)} every frame, {@link FlixelGame#resize(int, int)} on

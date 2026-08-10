@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.audio.FlixelMiniAudioFactory;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
@@ -104,7 +105,7 @@ public final class FlixelDesktopLauncher {
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = FlixelMiniAudioFactory.create();
-    Flixel.runner = new FlixelDesktopRunner(window, input, graphics, gamepads, width, height);
+    FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads, width, height);
 
     // Install the threaded JVM asset manager and teach it to load .ktx2 compressed textures, which
     // the bgfx backend uploads straight to the GPU. Registering the loader also lets the manager
@@ -127,7 +128,7 @@ public final class FlixelDesktopLauncher {
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
 
     try {
-      Flixel.start(game);
+      Flixel.start(game, runner);
     } finally {
       if (AnsiConsole.isInstalled()) {
         AnsiConsole.systemUninstall();
