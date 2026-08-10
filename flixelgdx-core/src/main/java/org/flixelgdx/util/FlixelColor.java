@@ -231,6 +231,32 @@ public class FlixelColor {
   }
 
   /**
+   * Packs this color into a single float for a vertex color attribute.
+   *
+   * <p>The bits are laid out as ABGR8888 (alpha in the highest byte), the order the sprite batch's
+   * per-vertex color expects. This is meant for building custom vertex arrays passed to
+   * {@link org.flixelgdx.graphics.FlixelBatch#draw(org.flixelgdx.graphics.FlixelTexture, float[], int, int)};
+   * for normal drawing, tint through the batch or sprite instead.
+   *
+   * @return This color packed as ABGR8888, reinterpreted as a float.
+   */
+  public float toFloatBits() {
+    int r8 = clampByte(r);
+    int g8 = clampByte(g);
+    int b8 = clampByte(b);
+    int a8 = clampByte(a);
+    return Float.intBitsToFloat((a8 << 24) | (b8 << 16) | (g8 << 8) | r8);
+  }
+
+  private static int clampByte(float value) {
+    int scaled = (int) (value * 255f + 0.5f);
+    if (scaled < 0) {
+      return 0;
+    }
+    return Math.min(scaled, 255);
+  }
+
+  /**
    * Returns the hue of this color in degrees.
    *
    * @return Hue in {@code [0, 360)}.

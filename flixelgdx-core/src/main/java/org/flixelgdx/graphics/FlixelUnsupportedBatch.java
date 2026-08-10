@@ -85,6 +85,9 @@ public enum FlixelUnsupportedBatch implements FlixelBatch {
   public void draw(@NotNull FlixelFrame frame, float width, float height, @NotNull FlixelAffine transform) {}
 
   @Override
+  public void draw(@NotNull FlixelTexture texture, float @NotNull [] vertices, int offset, int count) {}
+
+  @Override
   public int getRenderCalls() {
     return 0;
   }

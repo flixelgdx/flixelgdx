@@ -140,6 +140,40 @@ public interface FlixelBatch extends FlixelDestroyable {
   void draw(@NotNull FlixelFrame frame, float width, float height, @NotNull FlixelAffine transform);
 
   /**
+   * Draws raw textured quads from a caller-built vertex array, for custom meshes such as corner-pin
+   * warps, skewed grids, and other effects the fixed overloads above cannot express.
+   *
+   * <p>Each vertex is five floats in this exact order: {@code x}, {@code y} (world position),
+   * {@code u}, {@code v} (texture coordinates in {@code [0, 1]}), and a packed color float from
+   * {@link org.flixelgdx.util.FlixelColor#toFloatBits()}. Four consecutive vertices form one quad,
+   * wound bottom-left, bottom-right, top-right, top-left. The batch's tint, blend mode, shader, and
+   * transforms still apply, exactly as they do for the other overloads.
+   *
+   * <p>{@code offset} and {@code count} are measured in floats, not vertices. {@code count} should
+   * be a whole number of quads (a multiple of twenty floats); any trailing floats that do not
+   * complete a quad are ignored.
+   *
+   * <p>Example (one quad):
+   *
+   * <pre>{@code
+   * float c = sprite.getColor().toFloatBits();
+   * float[] quad = {
+   *   x0, y0, 0f, 1f, c,   // bottom-left
+   *   x1, y1, 1f, 1f, c,   // bottom-right
+   *   x2, y2, 1f, 0f, c,   // top-right
+   *   x3, y3, 0f, 0f, c,   // top-left
+   * };
+   * batch.draw(frame.getTexture(), quad, 0, quad.length);
+   * }</pre>
+   *
+   * @param texture The texture the vertices sample from.
+   * @param vertices The packed vertex floats, five per vertex as described above.
+   * @param offset The starting index into {@code vertices}, in floats.
+   * @param count The number of floats to read, ideally a multiple of twenty.
+   */
+  void draw(@NotNull FlixelTexture texture, float @NotNull [] vertices, int offset, int count);
+
+  /**
    * Returns the number of GPU draw submissions issued by this batch since the last
    * {@link #begin()} call. This counter resets to zero at the start of each session.
    *

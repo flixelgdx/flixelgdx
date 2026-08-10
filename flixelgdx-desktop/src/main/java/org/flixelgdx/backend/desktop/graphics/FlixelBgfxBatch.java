@@ -181,6 +181,19 @@ final class FlixelBgfxBatch implements FlixelBatch {
     pushQuadCorners(x0, y0, x1, y1, x2, y2, x3, y3, frame.getU(), frame.getV(), frame.getU2(), frame.getV2());
   }
 
+  @Override
+  public void draw(@NotNull FlixelTexture texture, float @NotNull [] vertices, int offset, int count) {
+    int floatsPerQuad = VERTICES_PER_QUAD * FLOATS_PER_VERTEX;
+    int end = offset + count;
+    // The caller's layout already matches this batch's internal one, so whole quads copy directly.
+    for (int i = offset; i + floatsPerQuad <= end; i += floatsPerQuad) {
+      switchTexture(texture);
+      int base = quadCount * floatsPerQuad;
+      System.arraycopy(vertices, i, this.vertices, base, floatsPerQuad);
+      quadCount++;
+    }
+  }
+
   private void switchTexture(@NotNull FlixelTexture texture) {
     FlixelBgfxTexture bgfxTexture = (texture instanceof FlixelBgfxTexture t) ? t : null;
     if (bgfxTexture != currentTexture) {
