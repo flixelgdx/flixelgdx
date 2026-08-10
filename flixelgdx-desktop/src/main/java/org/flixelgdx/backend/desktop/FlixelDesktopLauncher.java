@@ -28,9 +28,11 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.audio.FlixelMiniAudioFactory;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
+import org.flixelgdx.backend.desktop.graphics.FlixelKtx2Loader;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
+import org.flixelgdx.backend.jvm.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
 import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
@@ -120,6 +122,14 @@ public final class FlixelDesktopLauncher {
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = FlixelMiniAudioFactory.create();
     Flixel.runner = new FlixelDesktopRunner(window, input, graphics, gamepads, width, height);
+
+    // Install the threaded JVM asset manager and teach it to load .ktx2 compressed textures, which
+    // the bgfx backend uploads straight to the GPU. Registering the loader also lets the manager
+    // transparently prefer a .ktx2 sibling next to a plain image when one exists.
+    FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
+    assets.registerLoader(".ktx2", new FlixelKtx2Loader());
+    assets.setCompressedTexturesEnabled(true);
+    Flixel.assets = assets;
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 

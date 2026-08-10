@@ -150,6 +150,28 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Uploads a GPU texture-container file (for example KTX2) straight to the GPU, keeping it in its
+   * compressed form.
+   *
+   * <p>Unlike {@link #decodeImage(ByteBuffer)}, the bytes here are a full container (with header,
+   * mip levels, and a compressed pixel format), not a plain image to unpack into RGBA. The backend
+   * hands the whole container to the GPU driver, which keeps the compressed data resident and saves
+   * both memory and upload bandwidth. This is how {@code .ktx2} siblings load when a backend
+   * supports them; see {@link org.flixelgdx.asset.FlixelAssetManager#setCompressedTexturesEnabled(boolean)}.
+   *
+   * <p>Returns {@code null} when the running backend cannot consume compressed containers, so the
+   * asset system can fall back to the plain image. The default is {@code null} (unsupported).
+   *
+   * @param container The raw bytes of a GPU texture-container file.
+   * @return The uploaded texture, or {@code null} when compressed containers are unsupported or the
+   *     data is invalid.
+   */
+  @Nullable
+  default FlixelTexture createCompressedTexture(@NotNull ByteBuffer container) {
+    return null;
+  }
+
+  /**
    * Creates an off-screen render target for post-processing passes.
    *
    * <p>When no backend is present this returns {@link FlixelUnsupportedRenderTarget}, whose
