@@ -51,11 +51,8 @@ val generateTeaVmReflectionConfig = tasks.register("generateTeaVmReflectionConfi
 
     // Add core classes and profile-selected dependencies.
     val interestingPrefixes = mutableListOf("org/flixelgdx/")
-    if (reflectionProfile == "STANDARD" || reflectionProfile == "ALL") {
-      interestingPrefixes += "com/badlogic/gdx/"
-    }
     if (reflectionProfile == "ALL") {
-      interestingPrefixes += listOf("com/github/tommyettinger/", "games/rednblack/miniaudio/")
+      interestingPrefixes += listOf("com/github/tommyettinger/")
     }
     reflectionExtraPackages.forEach { pkg ->
       interestingPrefixes += pkg.replace('.', '/') + "/"
@@ -104,8 +101,5 @@ tasks.processResources {
 
 dependencies {
   api(project(":flixelgdx-core"))
-  api(libs.gdx.teavm.backend)
-  api(libs.gdx.teavm.controllers)
-  implementation(libs.gdx.teavm.freetype)
   implementation(libs.jetbrains.annotations)
 }

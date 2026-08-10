@@ -23,112 +23,33 @@
  */
 package org.flixelgdx.backend.android;
 
-import com.badlogic.gdx.backends.android.AndroidApplication;
-import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.crashinvaders.basisu.gdx.Ktx2TextureLoader;
-
-import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.backend.android.alert.FlixelAndroidAlerter;
-import org.flixelgdx.backend.android.haptics.FlixelAndroidHaptics;
-import org.flixelgdx.backend.jvm.audio.FlixelMiniAudioSoundHandler;
-import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
-import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
-import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Launches the Android version of the FlixelGDX game.
+ * Placeholder launcher for the Android backend.
  *
- * <p>The developer creates a subclass of {@link FlixelGame} and an Android launcher activity that
- * extends {@link AndroidApplication}. In {@code onCreate}, create the game instance and call
- * {@link #launch(FlixelGame, AndroidApplication)}.
+ * <p>The Android backend is not implemented on the framework's current rendering and platform stack
+ * (bgfx for drawing, SDL3 for windowing and input). The desktop backend is the reference those
+ * systems are proven against first; Android is brought online in a later phase, using bgfx and SDL3
+ * through the NDK.
+ *
+ * <p>This entry point fails fast with a clear message rather than starting a half-initialized game.
+ * Use {@code flixelgdx-desktop} to run games today.
  */
-public class FlixelAndroidLauncher {
+public final class FlixelAndroidLauncher {
+
+  private FlixelAndroidLauncher() {}
 
   /**
-   * Launches the Android version of the game in {@link FlixelRuntimeMode#RELEASE RELEASE} mode.
+   * Fails fast: the Android backend is not available yet.
    *
-   * @param game The game instance to launch.
-   * @param activity The Android application activity.
+   * @param game The game instance that would be launched.
+   * @throws UnsupportedOperationException Always, because the Android backend is not implemented.
    */
-  public static void launch(FlixelGame game, AndroidApplication activity) {
-    launch(game, activity, FlixelRuntimeMode.RELEASE);
-  }
-
-  /**
-   * Launches the Android version of the game with the given runtime mode.
-   *
-   * <p>Call this from the {@code onCreate} method of your {@link AndroidApplication} activity.
-   * Create your {@link FlixelGame} subclass instance and pass it here along with the activity
-   * (typically {@code this}).
-   *
-   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
-   * @param activity The Android application activity (must extend {@link AndroidApplication}).
-   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   */
-  public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode) {
-    launch(game, activity, runtimeMode, null);
-  }
-
-  /**
-   * Launches the Android version of the game with an optional pre-initialization callback.
-   *
-   * <p>{@code onBeforeInitialize} fires after all default FlixelGDX backend services (alerter,
-   * audio, etc.) have been registered but before {@link Flixel#initialize} is called. Use it to
-   * override any of those defaults without needing to duplicate the rest of the launcher wiring:
-   *
-   * <pre>{@code
-   * public class MyAndroidLauncher extends AndroidApplication {
-   *   protected void onCreate(Bundle savedInstanceState) {
-   *     super.onCreate(savedInstanceState);
-   *     FlixelAndroidLauncher.launch(
-   *         new MyGame("My Game", 800, 600, new InitialState()),
-   *         this,
-   *         FlixelRuntimeMode.RELEASE,
-   *         () -> Flixel.alerter = myCustomAlerter
-   *     );
-   *   }
-   * }
-   * }</pre>
-   *
-   * @param game The game instance to launch (e.g. {@code new MyGame(...)}).
-   * @param activity The Android application activity (must extend {@link AndroidApplication}).
-   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
-   * @param onBeforeInitialize Optional callback invoked just before {@link Flixel#initialize}.
-   *     Pass {@code null} to skip.
-   */
-  public static void launch(FlixelGame game, AndroidApplication activity, FlixelRuntimeMode runtimeMode,
-      Runnable onBeforeInitialize) {
-    FlixelCamera.viewportFactory = ExtendViewport::new;
-    Flixel.alert = new FlixelAndroidAlerter(activity);
-    Flixel.host = new FlixelAndroidHostIntegration(activity);
-    Flixel.haptics = new FlixelAndroidHaptics(activity);
-    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
-    Flixel.logFileHandler = new FlixelJvmLogFileHandler();
-    FlixelMiniAudioSoundHandler soundHandler = new FlixelMiniAudioSoundHandler();
-    // MiniAudio on Android requires the native AAssetManager to open files from
-    // the assets/ folder. setupAndroid() must receive the AssetManager (not the
-    // Activity) so the JNI side can read AssetManager.mObject for the native pointer.
-    soundHandler.getEngine().setupAndroid(activity.getAssets());
-    Flixel.soundFactory = soundHandler;
-    Flixel.setRuntimeMode(runtimeMode);
-    Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
-    if (onBeforeInitialize != null) {
-      onBeforeInitialize.run();
-    }
-    Flixel.initialize(game);
-    Flixel.assets.setKtx2LoaderInstaller(manager ->
-        manager.setLoader(Texture.class, ".ktx2", new Ktx2TextureLoader(manager.getFileHandleResolver())));
-    Flixel.keys.enabled = false;
-    Flixel.mouse.enabled = false;
-    Flixel.touches.enabled = true;
-
-    AndroidApplicationConfiguration configuration = new AndroidApplicationConfiguration();
-    configuration.useImmersiveMode = true;
-
-    activity.initialize(game, configuration);
+  public static void launch(@NotNull FlixelGame game) {
+    throw new UnsupportedOperationException(
+        "The Android backend is not available yet. Run games on flixelgdx-desktop, which is the "
+            + "reference backend (bgfx + SDL3); Android support lands in a later phase.");
   }
 }
