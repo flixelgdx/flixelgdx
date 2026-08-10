@@ -674,7 +674,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static FlixelLogger log;
+  public static FlixelLogger log = new FlixelLogger(FlixelLogMode.SIMPLE);
 
   /**
    * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
