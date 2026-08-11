@@ -155,7 +155,7 @@ final class FlixelStbRasterizedFont implements FlixelRasterizedFont {
         int width = bw.get(0);
         int height = bh.get(0);
         FlixelImage image = new FlixelImage(width, height);
-        ByteBuffer pixels = image.getPixels();
+        ByteBuffer pixels = image.pixels();
         for (int i = 0, n = width * height; i < n; i++) {
           byte alpha = coverage.get(i);
           int o = i * 4;

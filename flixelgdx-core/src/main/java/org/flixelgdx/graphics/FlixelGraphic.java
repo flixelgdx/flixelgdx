@@ -25,6 +25,7 @@ package org.flixelgdx.graphics;
 
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.asset.FlixelAssetMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,11 +45,12 @@ import java.util.Objects;
  * texture is not yet loaded it is fetched synchronously; queue the asset with
  * {@link FlixelAssetManager#load(String)} in a loading state to avoid mid-frame stalls.
  *
- * <p><b>Owned vs path-keyed graphics</b>
+ * <h2>Owned vs path-keyed graphics</h2>
  * <ul>
  *   <li><b>Path-keyed</b> - Created from a file path (e.g. {@code "images/player.png"}).
  *     The texture is managed by the asset manager and unloaded when the reference count drops
- *     to zero and {@link FlixelAssetManager#clearNonPersist()} runs.</li>
+ *     to zero and {@link FlixelAssetManager#clearNonPersist()} runs, depending on the
+ *     {@link FlixelAssetMode configured asset mode}.</li>
  *   <li><b>Owned</b> - Created with a dedicated {@link FlixelTexture} (e.g. from
  *     {@link org.flixelgdx.FlixelSprite#makeGraphic FlixelSprite.makeGraphic}). The texture is
  *     destroyed directly when the graphic is evicted. {@link #isOwned()} is {@code true}.</li>

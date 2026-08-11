@@ -76,10 +76,10 @@ public final class FlixelMiniAudioFactory implements FlixelSoundFactory {
   @Override
   public FlixelSound createSound(@NotNull FlixelSoundBuffer buffer, @Nullable FlixelSoundGroup group) {
     long groupHandle = (group instanceof FlixelMiniAudioGroup g) ? g.getHandle() : 0L;
-    byte[] data = buffer.getData();
+    byte[] data = buffer.data();
     long handle = FlixelMiniAudio.soundLoad(engine, data, data.length, groupHandle);
     if (handle == 0L) {
-      Flixel.warn("Audio", "Could not decode audio '" + buffer.getPath() + "'.");
+      Flixel.warn("Audio", "Could not decode audio '" + buffer.path() + "'.");
     }
     return new FlixelMiniAudioSound(handle);
   }

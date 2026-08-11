@@ -48,8 +48,6 @@ public final class FlixelAndroidLauncher {
    * @throws UnsupportedOperationException Always, because the Android backend is not implemented.
    */
   public static void launch(@NotNull FlixelGame game) {
-    throw new UnsupportedOperationException(
-        "The Android backend is not available yet. Run games on flixelgdx-desktop, which is the "
-            + "reference backend (bgfx + SDL3); Android support lands in a later phase.");
+    throw new UnsupportedOperationException("The Android backend is not available yet.");
   }
 }

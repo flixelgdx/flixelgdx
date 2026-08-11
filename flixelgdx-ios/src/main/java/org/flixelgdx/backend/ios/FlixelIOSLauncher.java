@@ -48,8 +48,6 @@ public final class FlixelIOSLauncher {
    * @throws UnsupportedOperationException Always, because the iOS backend is not implemented.
    */
   public static void launch(@NotNull FlixelGame game) {
-    throw new UnsupportedOperationException(
-        "The iOS backend is not available yet. Run games on flixelgdx-desktop, which is the "
-            + "reference backend (bgfx + SDL3); iOS support lands in a later phase.");
+    throw new UnsupportedOperationException("The iOS backend is not available yet.");
   }
 }

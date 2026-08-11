@@ -85,9 +85,16 @@ final class FlixelBgfxBatch implements FlixelBatch {
   private int totalRenderCalls;
 
   private boolean drawing;
+  // True on non-OpenGL backends (Vulkan, Metal, D3D) where the color attribute uses BGRA memory order.
+  private boolean bgra;
 
   FlixelBgfxBatch(@NotNull FlixelBgfxGraphics graphics) {
     this.graphics = graphics;
+  }
+
+  /** Switches between RGBA (OpenGL) and BGRA (Vulkan, Metal, D3D) vertex color packing. */
+  void setBgra(boolean bgra) {
+    this.bgra = bgra;
   }
 
   @Override
@@ -229,12 +236,23 @@ final class FlixelBgfxBatch implements FlixelBatch {
     vertices[i + 4] = packed;
   }
 
-  /** Packs the current tint into ABGR8888, the order bgfx's color0 attribute expects. */
+  /**
+   * Packs the current tint into a 32-bit integer whose bytes match the memory layout the active
+   * backend expects for the vertex color attribute.
+   *
+   * <p>On OpenGL the layout is RGBA in memory, expressed as the ABGR integer
+   * {@code (a<<24)|(b<<16)|(g<<8)|r}. On Vulkan, Metal, and Direct3D, bgfx maps the color
+   * attribute to BGRA memory order, so the bytes must be reversed to BGRA, expressed as the ARGB
+   * integer {@code (a<<24)|(r<<16)|(g<<8)|b}.
+   */
   private int packAbgr() {
     int r = clamp255(color.r);
     int g = clamp255(color.g);
     int b = clamp255(color.b);
     int a = clamp255(color.a);
+    if (bgra) {
+      return (a << 24) | (r << 16) | (g << 8) | b;
+    }
     return (a << 24) | (b << 16) | (g << 8) | r;
   }
 

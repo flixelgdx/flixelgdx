@@ -50,13 +50,7 @@ import java.nio.ByteOrder;
  * FlixelTexture texture = Flixel.graphics.createTexture(image);
  * }</pre>
  */
-public final class FlixelImage {
-
-  private final int width;
-  private final int height;
-
-  @NotNull
-  private final ByteBuffer pixels;
+public record FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
 
   /**
    * Creates a blank, fully transparent image.
@@ -75,13 +69,10 @@ public final class FlixelImage {
    * @param height Height in pixels; must be positive.
    * @param pixels Tightly packed RGBA pixels; must hold at least {@code width * height * 4} bytes.
    */
-  public FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
+  public FlixelImage {
     if (width <= 0 || height <= 0) {
       throw new IllegalArgumentException("Image size must be positive, got " + width + "x" + height + ".");
     }
-    this.width = width;
-    this.height = height;
-    this.pixels = pixels;
   }
 
   /**
@@ -144,9 +135,9 @@ public final class FlixelImage {
     }
     int o = (y * width + x) * 4;
     return ((pixels.get(o) & 0xFF) << 24)
-        | ((pixels.get(o + 1) & 0xFF) << 16)
-        | ((pixels.get(o + 2) & 0xFF) << 8)
-        | (pixels.get(o + 3) & 0xFF);
+      | ((pixels.get(o + 1) & 0xFF) << 16)
+      | ((pixels.get(o + 2) & 0xFF) << 8)
+      | (pixels.get(o + 3) & 0xFF);
   }
 
   /**
@@ -180,14 +171,6 @@ public final class FlixelImage {
     }
   }
 
-  public int getWidth() {
-    return width;
-  }
-
-  public int getHeight() {
-    return height;
-  }
-
   /**
    * Returns the backing pixel buffer for direct access (decoding, uploads).
    *
@@ -196,8 +179,9 @@ public final class FlixelImage {
    *
    * @return The RGBA8888 pixel buffer; never {@code null}.
    */
+  @Override
   @NotNull
-  public ByteBuffer getPixels() {
+  public ByteBuffer pixels() {
     return pixels;
   }
 }

@@ -68,6 +68,10 @@ import java.nio.FloatBuffer;
  */
 public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
+  private long lastFrameTime = System.nanoTime();
+  private double averageFps = 0;
+  private double smoothingFactor = 0.1;
+
   /** bgfx view id used to clear the whole back buffer at the start of a frame. */
   private static final int SCREEN_CLEAR_VIEW = 0;
 
@@ -89,6 +93,9 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @NotNull
   private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
+
+  @NotNull
+  private FlixelGraphicsApi api = FlixelGraphicsApi.OpenGL;
 
   /** Stack of active view ids; the top is where the batch currently submits. */
   @NotNull
@@ -135,6 +142,9 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     this.viewStack[0] = SCREEN_CLEAR_VIEW;
     this.viewStackDepth = 1;
 
+    this.api = apiFromRenderer(BGFX.bgfx_get_renderer_type());
+    batch.setBgra(isDepthZeroToOne());
+    FlixelBgfxTexture.swapRB = isDepthZeroToOne();
     BGFX.bgfx_vertex_layout_begin(vertexLayout, BGFX.bgfx_get_renderer_type());
     BGFX.bgfx_vertex_layout_add(vertexLayout, BGFX.BGFX_ATTRIB_POSITION, 2, BGFX.BGFX_ATTRIB_TYPE_FLOAT, false, false);
     BGFX.bgfx_vertex_layout_add(vertexLayout, BGFX.BGFX_ATTRIB_TEXCOORD0, 2, BGFX.BGFX_ATTRIB_TYPE_FLOAT, false, false);
@@ -157,7 +167,13 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @NotNull
   @Override
   public FlixelGraphicsApi getApi() {
-    return FlixelGraphicsApi.Bgfx;
+    return api;
+  }
+
+  @Override
+  public boolean isDepthZeroToOne() {
+    // OpenGL and OpenGL ES map NDC depth to [-1, 1]; every other bgfx backend uses [0, 1].
+    return api != FlixelGraphicsApi.OpenGL && api != FlixelGraphicsApi.OpenGLES;
   }
 
   @NotNull
@@ -173,8 +189,16 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     viewStackDepth = 1;
     viewStack[0] = SCREEN_CLEAR_VIEW;
     // The clear view covers the whole back buffer and renders first; camera passes draw over it.
+    BGFX.bgfx_set_view_mode(SCREEN_CLEAR_VIEW, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_set_view_rect(SCREEN_CLEAR_VIEW, 0, 0, Math.max(1, backBufferWidth), Math.max(1, backBufferHeight));
     BGFX.bgfx_touch(SCREEN_CLEAR_VIEW);
+
+    long currentTime = System.nanoTime();
+    long deltaTime = currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+
+    double instantFps = 1_000_000_000.0 / deltaTime;
+    averageFps = (averageFps * (1 - smoothingFactor)) + (instantFps * smoothingFactor);
   }
 
   @Override
@@ -200,6 +224,9 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
       nextScreenView++;
     }
     viewStack[0] = view;
+    // Draw in submission order (painter's algorithm). Without this, bgfx sorts draws within the view
+    // to minimize state changes, which reorders 2D layers - the flash overlay ends up under the scene.
+    BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_touch(view);
   }
 
@@ -261,9 +288,13 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public void setScissor(int x, int y, int width, int height) {
     scissorX = x;
-    scissorY = y;
     scissorWidth = Math.max(1, width);
     scissorHeight = Math.max(1, height);
+    // bgfx's scissor API always measures y from the top of the back buffer. projectToScissor
+    // returns y from the bottom (OpenGL convention), so flip here. bgfx internally re-flips for
+    // OpenGL via glScissor(rect.x, height - rect.height - rect.y, ...), so passing top-left y
+    // is correct for every backend.
+    scissorY = backBufferHeight - y - scissorHeight;
   }
 
   @Override
@@ -326,6 +357,11 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     }
   }
 
+  @Override
+  public int getFps() {
+    return (int) averageFps;
+  }
+
   /** Directs subsequent submissions into a render target's framebuffer via a fresh view. */
   void pushRenderTarget(short frameBuffer, int width, int height) {
     int view = nextTargetView++;
@@ -333,6 +369,7 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
       viewStack[viewStackDepth++] = view;
     }
     BGFX.bgfx_set_view_frame_buffer(view, frameBuffer);
+    BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_set_view_rect(view, 0, 0, width, height);
     BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_COLOR, 0, 1f, 0);
   }
@@ -447,9 +484,9 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   /** Loads the precompiled sprite shader program for the active renderer, or {@code -1} when absent. */
   private short loadSpriteProgram() {
-    String rendererDir = rendererShaderDir();
-    byte[] vs = readShaderResource("org/flixelgdx/shaders/" + rendererDir + "/vs_sprite.bin");
-    byte[] fs = readShaderResource("org/flixelgdx/shaders/" + rendererDir + "/fs_sprite.bin");
+    String dir = shaderDirFromApi(api);
+    byte[] vs = readShaderResource("org/flixelgdx/shaders/" + dir + "/vs_sprite.bin");
+    byte[] fs = readShaderResource("org/flixelgdx/shaders/" + dir + "/fs_sprite.bin");
     if (vs.length == 0 || fs.length == 0) {
       return -1;
     }
@@ -461,16 +498,35 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     return BGFX.bgfx_create_program(vsh, fsh, true);
   }
 
-  /** Returns the shader subfolder for the active bgfx renderer. */
-  private static String rendererShaderDir() {
-    int type = BGFX.bgfx_get_renderer_type();
-    if (type == BGFX.BGFX_RENDERER_TYPE_DIRECT3D11 || type == BGFX.BGFX_RENDERER_TYPE_DIRECT3D12) {
-      return "dx11";
+  /** Maps a bgfx renderer type constant to the corresponding {@link FlixelGraphicsApi}. */
+  private static FlixelGraphicsApi apiFromRenderer(int type) {
+    if (type == BGFX.BGFX_RENDERER_TYPE_DIRECT3D11) {
+      return FlixelGraphicsApi.Direct3D11;
+    }
+    if (type == BGFX.BGFX_RENDERER_TYPE_DIRECT3D12) {
+      return FlixelGraphicsApi.Direct3D12;
     }
     if (type == BGFX.BGFX_RENDERER_TYPE_METAL) {
-      return "metal";
+      return FlixelGraphicsApi.Metal;
     }
     if (type == BGFX.BGFX_RENDERER_TYPE_VULKAN) {
+      return FlixelGraphicsApi.Vulkan;
+    }
+    if (type == BGFX.BGFX_RENDERER_TYPE_OPENGLES) {
+      return FlixelGraphicsApi.OpenGLES;
+    }
+    return FlixelGraphicsApi.OpenGL;
+  }
+
+  /** Returns the shader subfolder that corresponds to a given graphics API. */
+  private static String shaderDirFromApi(@NotNull FlixelGraphicsApi api) {
+    if (api == FlixelGraphicsApi.Direct3D11 || api == FlixelGraphicsApi.Direct3D12) {
+      return "dx11";
+    }
+    if (api == FlixelGraphicsApi.Metal) {
+      return "metal";
+    }
+    if (api == FlixelGraphicsApi.Vulkan) {
       return "spirv";
     }
     return "glsl";

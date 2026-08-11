@@ -224,7 +224,8 @@ public class FlixelViewport {
       matrixDirty = false;
       float visibleW = worldWidth * viewScale;
       float visibleH = worldHeight * viewScale;
-      combined.setToOrtho2D(cameraX - visibleW / 2f, cameraY - visibleH / 2f, visibleW, visibleH);
+      combined.setToOrtho2D(cameraX - visibleW / 2f, cameraY - visibleH / 2f, visibleW, visibleH,
+          Flixel.graphics.isDepthZeroToOne());
       if (rotation != 0f) {
         combined.translate(cameraX, cameraY, 0f);
         combined.rotateZ(-rotation);

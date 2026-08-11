@@ -251,36 +251,35 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
    */
   private boolean pumpEvents(@NotNull SDL_Event event, @NotNull FlixelGame game) {
     while (SDLEvents.SDL_PollEvent(event)) {
-      int type = event.type();
-      if (type == SDLEvents.SDL_EVENT_QUIT) {
-        return true;
-      } else if (type == SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED
-          || type == SDLEvents.SDL_EVENT_WINDOW_RESIZED) {
-        handleResize(game);
-      } else if (type == SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST) {
-        game.onFocusLost();
-      } else if (type == SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED) {
-        game.onFocusGained();
-      } else if (type == SDLEvents.SDL_EVENT_WINDOW_MINIMIZED) {
-        game.onMinimized();
-      } else if (type == SDLEvents.SDL_EVENT_KEY_DOWN) {
-        if (!event.key().repeat()) {
-          input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+      switch (event.type()) {
+        case SDLEvents.SDL_EVENT_QUIT -> {
+          return true;
         }
-      } else if (type == SDLEvents.SDL_EVENT_KEY_UP) {
-        input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
-      } else if (type == SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN) {
-        input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-      } else if (type == SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP) {
-        input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-      } else if (type == SDLEvents.SDL_EVENT_MOUSE_MOTION) {
-        input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
-      } else if (type == SDLEvents.SDL_EVENT_MOUSE_WHEEL) {
-        input.onScrolled(event.wheel().x(), event.wheel().y());
-      } else if (type == SDLEvents.SDL_EVENT_GAMEPAD_ADDED) {
-        gamepads.onDeviceAdded(event.gdevice().which());
-      } else if (type == SDLEvents.SDL_EVENT_GAMEPAD_REMOVED) {
-        gamepads.onDeviceRemoved(event.gdevice().which());
+        case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+            SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
+          handleResize(game);
+        case SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST -> game.onFocusLost();
+        case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
+        case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
+        case SDLEvents.SDL_EVENT_KEY_DOWN -> {
+          if (!event.key().repeat()) {
+            input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+          }
+        }
+        case SDLEvents.SDL_EVENT_KEY_UP ->
+          input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+        case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
+          input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+        case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
+          input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+        case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
+          input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
+        case SDLEvents.SDL_EVENT_MOUSE_WHEEL ->
+          input.onScrolled(event.wheel().x(), event.wheel().y());
+        case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
+        case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
+        default -> {
+        }
       }
     }
     return false;

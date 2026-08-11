@@ -569,8 +569,7 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
 
     @NotNull
     @Override
-    public Object loadRaw(@NotNull FlixelAssetManager assets, @NotNull String path, @NotNull FlixelFile file)
-        throws Exception {
+    public Object loadRaw(@NotNull FlixelAssetManager assets, @NotNull String path, @NotNull FlixelFile file) {
       byte[] bytes = file.readBytes();
       if (bytes.length == 0) {
         throw new IllegalStateException("Image file not found or empty: '" + path + "'.");

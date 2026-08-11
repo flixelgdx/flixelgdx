@@ -83,7 +83,13 @@ public final class FlixelSpriteUtil {
       }
       FlixelTexture t = createWhitePixelTexture();
       FlixelGraphic g = new FlixelGraphic(assets, WHITE_PIXEL_TEXTURE_KEY, t);
-      g.setPersist(true);
+      // This is an owned graphic (it wraps a generated texture rather than a file path). Owned
+      // graphics ignore setPersist(...) and are always treated as non-persistent, so they get
+      // evicted by clearNonPersist() at the next state switch whenever their reference count is
+      // zero. The white pixel must outlive every state switch because cameras draw their
+      // background fill and flash/fade overlays through it, so hold one permanent reference here.
+      // Only the full asset-manager teardown in clear() destroys it, which is exactly what we want.
+      g.retain();
       assets.register(g);
       return g.getFrame();
     }
@@ -100,9 +106,7 @@ public final class FlixelSpriteUtil {
   public static FlixelTexture createWhitePixelTexture() {
     FlixelImage px = new FlixelImage(1, 1);
     px.fill(FlixelColor.WHITE);
-    FlixelTexture t = Flixel.graphics.createTexture(px);
-    Flixel.info("Graphics", "white pixel CREATED handle=" + t.getHandle());
-    return t;
+    return Flixel.graphics.createTexture(px);
   }
 
   /**

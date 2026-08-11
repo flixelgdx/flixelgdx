@@ -74,6 +74,23 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Returns whether the active backend maps the NDC depth range to {@code [0, 1]} (Vulkan, Metal,
+   * Direct3D) rather than {@code [-1, 1]} (OpenGL, WebGL).
+   *
+   * <p>Orthographic projection matrices must match the backend's convention or all geometry at
+   * the default depth will be depth-clipped. Renderers such as bgfx expose this as a capability
+   * flag; query it here instead of hard-coding per-backend checks outside the graphics layer.
+   *
+   * <p>Defaults to {@code false}, the OpenGL convention, which is what headless and web backends
+   * use.
+   *
+   * @return {@code true} when NDC depth runs from {@code 0} to {@code 1}.
+   */
+  default boolean isDepthZeroToOne() {
+    return false;
+  }
+
+  /**
    * Returns the shared sprite batch every {@link FlixelDrawable} in the framework renders through.
    *
    * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedBatch},
@@ -143,7 +160,7 @@ public interface FlixelGraphicsManager {
    */
   @NotNull
   default FlixelTexture createTexture(@NotNull FlixelImage image) {
-    return createTexture(image.getWidth(), image.getHeight(), image.getPixels());
+    return createTexture(image.width(), image.height(), image.pixels());
   }
 
   /**

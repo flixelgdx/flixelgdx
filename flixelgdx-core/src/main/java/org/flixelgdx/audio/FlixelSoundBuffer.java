@@ -37,12 +37,7 @@ import java.util.Objects;
  * identically from a folder on disk, a packaged JAR, or any other file root, with no
  * temp-file extraction or string-path tricks.
  */
-public final class FlixelSoundBuffer {
-
-  @NotNull
-  private final String path;
-
-  private final byte @NotNull [] data;
+public record FlixelSoundBuffer(@NotNull String path, byte @NotNull [] data) {
 
   /**
    * Wraps encoded audio bytes.
@@ -72,13 +67,9 @@ public final class FlixelSoundBuffer {
     return new FlixelSoundBuffer(path, bytes);
   }
 
-  @NotNull
-  public String getPath() {
-    return path;
-  }
-
   /** Returns the encoded file bytes. Treat as read-only. */
-  public byte @NotNull [] getData() {
+  @Override
+  public byte @NotNull [] data() {
     return data;
   }
 }

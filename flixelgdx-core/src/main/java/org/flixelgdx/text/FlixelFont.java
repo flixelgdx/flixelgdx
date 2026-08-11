@@ -106,8 +106,8 @@ public final class FlixelFont implements FlixelDestroyable {
       if (bitmap == null || bitmap.image == null) {
         continue;
       }
-      int w = bitmap.image.getWidth() + BAKE_PADDING;
-      int h = bitmap.image.getHeight() + BAKE_PADDING;
+      int w = bitmap.image.width() + BAKE_PADDING;
+      int h = bitmap.image.height() + BAKE_PADDING;
       if (penX + w > BAKE_PAGE_WIDTH) {
         penX = BAKE_PADDING;
         penY += shelfHeight;
@@ -133,8 +133,8 @@ public final class FlixelFont implements FlixelDestroyable {
       glyph.xOffset = bitmap.bearingX;
       glyph.page = 0;
       if (bitmap.image != null) {
-        int w = bitmap.image.getWidth();
-        int h = bitmap.image.getHeight();
+        int w = bitmap.image.width();
+        int h = bitmap.image.height();
         if (penX + w + BAKE_PADDING > BAKE_PAGE_WIDTH) {
           penX = BAKE_PADDING;
           penY += shelfHeight;

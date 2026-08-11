@@ -44,9 +44,6 @@ public final class FlixelTeaVMLauncher {
    * @param args Ignored.
    */
   public static void main(String[] args) {
-    throw new UnsupportedOperationException(
-        "The web (TeaVM) backend is not available yet. Run games on flixelgdx-desktop, which is "
-            + "the reference backend (bgfx + SDL3); web support (WebGPU + WebGL fallback) lands in "
-            + "a later phase.");
+    throw new UnsupportedOperationException("The web backend is not available yet.");
   }
 }
