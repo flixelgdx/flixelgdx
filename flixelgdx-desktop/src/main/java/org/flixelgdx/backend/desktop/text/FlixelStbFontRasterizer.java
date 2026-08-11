@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see FlixelStbRasterizedFont
  */
-public final class FlixelStbFontRasterizer implements FlixelFontRasterizer {
+public class FlixelStbFontRasterizer implements FlixelFontRasterizer {
 
   @Nullable
   @Override

@@ -32,6 +32,7 @@ import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.graphics.FlixelKtx2Loader;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
+import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.jvm.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
@@ -93,6 +94,7 @@ public final class FlixelDesktopLauncher {
     FlixelDesktopInputDevice input = new FlixelDesktopInputDevice();
     FlixelBgfxGraphics graphics = new FlixelBgfxGraphics();
     FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
+    FlixelSdlMouseIconManager iconManager = new FlixelSdlMouseIconManager();
     int width = game.getInitialWidth();
     int height = game.getInitialHeight();
 
@@ -105,11 +107,8 @@ public final class FlixelDesktopLauncher {
     Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = FlixelMiniAudioFactory.create();
-    FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads, width, height);
+    FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads, iconManager, width, height);
 
-    // Install the threaded JVM asset manager and teach it to load .ktx2 compressed textures, which
-    // the bgfx backend uploads straight to the GPU. Registering the loader also lets the manager
-    // transparently prefer a .ktx2 sibling next to a plain image when one exists.
     FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
     assets.registerLoader(".ktx2", new FlixelKtx2Loader());
     assets.setCompressedTexturesEnabled(true);
@@ -117,11 +116,12 @@ public final class FlixelDesktopLauncher {
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 
-    // The gamepad manager is created inside Flixel.start, so wire the SDL provider (which is also
-    // the mapping resolver) once it exists, just before the runner takes over the loop.
+    // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire their desktop
+    // implementations once they exist, just before the runner takes over the loop.
     Flixel.afterStart.add(() -> {
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
+      Flixel.mouse.setMouseIconManager(iconManager);
     });
 
     Flixel.setRuntimeMode(runtimeMode);

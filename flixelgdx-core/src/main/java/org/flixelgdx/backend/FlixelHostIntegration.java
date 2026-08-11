@@ -81,14 +81,14 @@ public interface FlixelHostIntegration {
    *
    * <p>On desktop, permission is implicit and this method does nothing.
    */
-  void requestNotificationPermission();
+  default void requestNotificationPermission() {}
 
   /**
    * Asks the window manager to highlight this app (taskbar entry flash, dock bounce, and similar).
    *
    * <p>On the web backend, this flashes the browser tab title while the tab is in the background.
    */
-  void requestAttention();
+  default void requestAttention() {}
 
   /**
    * Prevents the display from sleeping while the game is running.
@@ -101,7 +101,7 @@ public interface FlixelHostIntegration {
    *
    * @param awake {@code true} to keep the screen on, {@code false} to release the lock.
    */
-  void keepScreenAwake(boolean awake);
+  default void keepScreenAwake(boolean awake) {}
 
   /**
    * Sets a message shown to the user when they attempt to close the game.
@@ -111,7 +111,7 @@ public interface FlixelHostIntegration {
    *
    * @param message The warning message, or {@code null} to clear the exit guard.
    */
-  void setExitConfirmation(@Nullable String message);
+  default void setExitConfirmation(@Nullable String message) {}
 
   /**
    * Shows a non-blocking desktop notification using the platform provider (Action Center on
@@ -124,7 +124,7 @@ public interface FlixelHostIntegration {
    * @param title Short title, or {@code null} to use a blank title when the OS allows it.
    * @param message Body text; must not be {@code null}.
    */
-  void sendNotification(@Nullable String title, @NotNull String message);
+  default void sendNotification(@Nullable String title, @NotNull String message) {}
 
   /**
    * Copies {@code text} to the system clipboard.
@@ -133,7 +133,7 @@ public interface FlixelHostIntegration {
    *
    * @param text The text to copy; must not be {@code null}.
    */
-  void copyToClipboard(@NotNull String text);
+  default void copyToClipboard(@NotNull String text) {}
 
   /**
    * Requests a text read from the system clipboard.
@@ -144,25 +144,31 @@ public interface FlixelHostIntegration {
    *
    * <p>Has no effect on platforms where {@link #supportsClipboard()} returns {@code false}.
    */
-  void pasteFromClipboard();
+  default void pasteFromClipboard() {}
 
   /**
    * @return {@code true} if {@link #sendNotification(String, String)} is expected to do useful
    *     work on this platform session. On the web backend, returns {@code true} only after
    *     {@link #requestNotificationPermission()} has been granted by the user.
    */
-  boolean supportsNotifications();
+  default boolean supportsNotifications() {
+    return false;
+  }
 
   /**
    * @return {@code true} if {@link #keepScreenAwake(boolean)} is supported on this platform.
    */
-  boolean supportsWakeLock();
+  default boolean supportsWakeLock() {
+    return false;
+  }
 
   /**
    * @return {@code true} if text clipboard operations ({@link #copyToClipboard(String)} and
    *     {@link #pasteFromClipboard()}) are supported on this platform.
    */
-  boolean supportsClipboard();
+  default boolean supportsClipboard() {
+    return false;
+  }
 
   /**
    * Signal dispatched when {@link #pasteFromClipboard()} resolves with text content.
@@ -200,7 +206,9 @@ public interface FlixelHostIntegration {
    * @return The primary monitor; never {@code null}.
    */
   @NotNull
-  FlixelMonitor getPrimaryMonitor();
+  default FlixelMonitor getPrimaryMonitor() {
+    return FlixelNoopMonitor.INSTANCE;
+  }
 
   /**
    * Returns the platform this game is running on.

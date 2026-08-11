@@ -37,7 +37,7 @@ import org.lwjgl.bgfx.BGFX;
  * cache their values and apply them to bgfx uniforms when the program is bound for a draw. Custom
  * per-camera and global effect shaders wrap one of these.
  */
-final class FlixelBgfxShader implements FlixelShader {
+public class FlixelBgfxShader implements FlixelShader {
 
   private short program;
 

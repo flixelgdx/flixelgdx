@@ -47,7 +47,7 @@ import java.nio.file.StandardCopyOption;
  *
  * <p>All calls must run on one thread; the framework only ever calls audio from the main thread.
  */
-final class FlixelMiniAudio {
+public class FlixelMiniAudio {
 
   /** {@code true} once {@link #ensureLoaded()} has successfully loaded the native library. */
   private static boolean loaded;

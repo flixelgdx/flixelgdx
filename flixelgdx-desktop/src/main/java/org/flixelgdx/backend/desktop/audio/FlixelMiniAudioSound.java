@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>The effect-node factory methods return the no-op sentinels for now: miniaudio's node graph
  * is a follow-up slice, so reverb/echo/low-pass are accepted but do nothing rather than failing.
  */
-final class FlixelMiniAudioSound extends FlixelSound {
+public class FlixelMiniAudioSound extends FlixelSound {
 
   /** Native miniaudio sound handle, or {@code 0} once disposed. */
   private long handle;

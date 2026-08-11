@@ -54,7 +54,7 @@ import java.nio.IntBuffer;
  * (slot assignment, press tracking, dead zones) stays in the manager; this class is only the raw
  * feed plus the mapping.
  */
-public final class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGamepadMappingResolver {
+public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGamepadMappingResolver {
 
   /** Connected pads in a stable order; the manager tracks slots by instance identity. */
   private final FlixelArray<FlixelSdlGamepad> gamepads = new FlixelArray<>();

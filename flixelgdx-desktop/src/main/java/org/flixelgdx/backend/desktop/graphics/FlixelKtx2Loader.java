@@ -49,7 +49,7 @@ import java.nio.ByteOrder;
  * {@code .ktx2} loader is registered, the asset manager transparently prefers a {@code .ktx2}
  * sibling over the plain image when one exists and compressed textures are enabled.
  */
-public final class FlixelKtx2Loader implements FlixelAssetLoader<FlixelGraphic> {
+public class FlixelKtx2Loader implements FlixelAssetLoader<FlixelGraphic> {
 
   @NotNull
   @Override

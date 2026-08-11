@@ -30,6 +30,7 @@ import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlKeyMap;
+import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
@@ -51,7 +52,11 @@ import java.nio.IntBuffer;
  * event pump (translated into the input device), and the frame timing passed to
  * {@link FlixelGame#render(float)}.
  */
-public final class FlixelDesktopRunner implements FlixelGameRunner {
+public class FlixelDesktopRunner implements FlixelGameRunner {
+
+  private long windowHandle;
+  /** Minimum nanoseconds per frame derived from the game's framerate, or {@code 0} for uncapped. */
+  private long targetFrameNanos;
 
   @NotNull
   private final FlixelSdlWindow window;
@@ -65,9 +70,9 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
   @NotNull
   private final FlixelSdlGamepadProvider gamepads;
 
-  private long windowHandle;
-  /** Minimum nanoseconds per frame derived from the game's framerate, or {@code 0} for uncapped. */
-  private long targetFrameNanos;
+  @NotNull
+  private final FlixelSdlMouseIconManager iconManager;
+
   private int width;
   private int height;
 
@@ -80,15 +85,18 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
    * @param input The input device to feed SDL events into.
    * @param graphics The bgfx graphics manager to initialize.
    * @param gamepads The gamepad provider to open devices on and feed connect events into.
+   * @param iconManager The SDL cursor manager to dispose before SDL shuts down.
    * @param width The initial window width in pixels.
    * @param height The initial window height in pixels.
    */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
-      @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads, int width, int height) {
+      @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
+      @NotNull FlixelSdlMouseIconManager iconManager, int width, int height) {
     this.window = window;
     this.input = input;
     this.graphics = graphics;
     this.gamepads = gamepads;
+    this.iconManager = iconManager;
     this.width = width;
     this.height = height;
   }
@@ -104,7 +112,11 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
       return;
     }
 
-    windowHandle = SDLVideo.SDL_CreateWindow(game.getTitle(), width, height, SDLVideo.SDL_WINDOW_RESIZABLE);
+    long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
+    if (game.isTransparentFramebufferRequested()) {
+      windowFlags |= SDLVideo.SDL_WINDOW_TRANSPARENT;
+    }
+    windowHandle = SDLVideo.SDL_CreateWindow(game.getTitle(), width, height, windowFlags);
     if (windowHandle == 0L) {
       Flixel.error("Desktop", "The SDL window could not be created.");
       SDLInit.SDL_Quit();
@@ -133,6 +145,11 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
           break;
         }
 
+        if (!window.isContinuousRendering() && !window.consumeRenderRequest()) {
+          Thread.yield();
+          continue;
+        }
+
         long now = System.nanoTime();
         float deltaSeconds = (now - lastNanos) / 1_000_000_000f;
         lastNanos = now;
@@ -147,6 +164,7 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
 
     game.destroy();
     gamepads.dispose();
+    iconManager.dispose();
     BGFX.bgfx_shutdown();
     SDLVideo.SDL_DestroyWindow(windowHandle);
     SDLInit.SDL_Quit();
@@ -184,7 +202,8 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
       BGFX.bgfx_init_ctor(init);
       init.type(resolveRendererType());
       int resetFlags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
-      init.resolution(res -> res.width(width).height(height).reset(resetFlags));
+      init.resolution(
+          res -> res.width(width).height(height).reset(resetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
       init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
       if (!BGFX.bgfx_init(init)) {
         Flixel.error("Desktop", "bgfx could not be initialized.");
@@ -253,8 +272,12 @@ public final class FlixelDesktopRunner implements FlixelGameRunner {
     while (SDLEvents.SDL_PollEvent(event)) {
       switch (event.type()) {
         case SDLEvents.SDL_EVENT_QUIT -> {
-          return true;
+          if (!window.isAbsorbCloseRequests()) {
+            return true;
+          }
         }
+        case SDLEvents.SDL_EVENT_WINDOW_MOVED ->
+          window.onMoved(event.window().data1(), event.window().data2());
         case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
             SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
           handleResize(game);

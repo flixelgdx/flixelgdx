@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  * through the file seam), which miniaudio decodes internally. This keeps audio working the same
  * from a folder, a packaged JAR, or any other file root.
  */
-public final class FlixelMiniAudioFactory implements FlixelSoundFactory {
+public class FlixelMiniAudioFactory implements FlixelSoundFactory {
 
   /** Native miniaudio engine handle. */
   private final long engine;

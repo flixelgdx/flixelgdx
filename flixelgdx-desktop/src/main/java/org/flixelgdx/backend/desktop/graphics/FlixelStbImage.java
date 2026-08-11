@@ -40,7 +40,7 @@ import java.nio.IntBuffer;
  * manager's {@code decodeImage}. The decoded pixels are copied into a Java-owned direct buffer so
  * the caller does not have to track stb's native allocation.
  */
-final class FlixelStbImage {
+public class FlixelStbImage {
 
   private FlixelStbImage() {}
 

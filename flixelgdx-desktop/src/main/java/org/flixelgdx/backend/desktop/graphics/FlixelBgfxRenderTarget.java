@@ -36,7 +36,7 @@ import org.lwjgl.bgfx.BGFX;
  * batch to submit there. {@link #begin()} pushes that view; {@link #end()} pops back to the
  * previous one, which is what lets a per-camera target render inside a whole-scene target.
  */
-final class FlixelBgfxRenderTarget implements FlixelRenderTarget {
+public class FlixelBgfxRenderTarget implements FlixelRenderTarget {
 
   @NotNull
   private final FlixelBgfxGraphics graphics;

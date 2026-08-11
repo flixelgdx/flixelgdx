@@ -42,7 +42,7 @@ import org.lwjgl.sdl.SDLGamepad;
  * triggers span zero to the maximum. Both are scaled here into the {@code [-1, 1]} range the
  * framework expects.
  */
-final class FlixelSdlGamepad implements FlixelGamepad {
+public class FlixelSdlGamepad implements FlixelGamepad {
 
   /** SDL reports axes as Sint16; this is the divisor that scales them into [-1, 1]. */
   private static final float AXIS_SCALE = 32767f;

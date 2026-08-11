@@ -43,7 +43,7 @@ import java.nio.IntBuffer;
  * later tints. The metrics are converted from font units into pixels with the scale stb computes
  * for the requested pixel height.
  */
-final class FlixelStbRasterizedFont implements FlixelRasterizedFont {
+public class FlixelStbRasterizedFont implements FlixelRasterizedFont {
 
   /** The raw font file bytes, kept alive because stb references them for the font's lifetime. */
   private final ByteBuffer fontData;
@@ -75,7 +75,7 @@ final class FlixelStbRasterizedFont implements FlixelRasterizedFont {
    * @return The opened font, or {@code null} when the data is not a supported font.
    */
   @Nullable
-  static FlixelStbRasterizedFont open(byte[] data, float pixelHeight) {
+  public static FlixelStbRasterizedFont open(byte[] data, float pixelHeight) {
     ByteBuffer fontData = ByteBuffer.allocateDirect(data.length).order(ByteOrder.nativeOrder());
     fontData.put(data).flip();
 

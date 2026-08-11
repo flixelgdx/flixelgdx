@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * shader only applies the view-projection matrix. This keeps the shader trivial and identical
  * across every sprite.
  */
-final class FlixelBgfxBatch implements FlixelBatch {
+public class FlixelBgfxBatch implements FlixelBatch {
 
   /** Maximum quads buffered before an automatic flush. */
   private static final int MAX_QUADS = 8192;

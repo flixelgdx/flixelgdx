@@ -549,7 +549,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     boolean uiCapturedMouse = isMouseCapturedByUI();
     float scrollDelta = Flixel.mouse.getScrollDeltaY();
     if (!uiCapturedMouse && scrollDelta != 0f) {
-      float newZoom = cam.getZoom() + scrollDelta * -0.08f;
+      float newZoom = cam.getZoom() + scrollDelta * 0.08f;
       if (newZoom < 0.05f) {
         newZoom = 0.05f;
       }

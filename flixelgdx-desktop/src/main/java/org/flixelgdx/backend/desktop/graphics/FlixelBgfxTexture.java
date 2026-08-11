@@ -43,7 +43,7 @@ import java.nio.ByteBuffer;
  * then swaps the red and blue bytes on the CPU before handing the data to bgfx. This is a one-time
  * cost per texture at load time, not per frame.
  */
-final class FlixelBgfxTexture implements FlixelTexture {
+public class FlixelBgfxTexture implements FlixelTexture {
 
   /**
    * Sampler flags for nearest-neighbor (crisp) filtering: point min, mag, and mip.

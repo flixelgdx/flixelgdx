@@ -645,7 +645,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    *
    * <p>You should not (and cannot) override this method. You are encouraged to override either
    * {@link #update(float)} or {@link #draw(FlixelBatch)} instead, as they separate logic
-   * and rendering correctly.
+   * and drawing correctly.
    *
    * @param rawDeltaSeconds The raw time since the last frame, in seconds.
    * @see #update(float)

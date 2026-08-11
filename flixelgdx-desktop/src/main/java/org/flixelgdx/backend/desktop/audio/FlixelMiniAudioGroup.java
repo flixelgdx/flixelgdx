@@ -31,7 +31,7 @@ import org.flixelgdx.audio.FlixelSoundGroup;
  * <p>Groups let the framework pause and resume whole categories of audio (sound effects, music)
  * at once, which is how focus-based auto-pause works.
  */
-final class FlixelMiniAudioGroup implements FlixelSoundGroup {
+public class FlixelMiniAudioGroup implements FlixelSoundGroup {
 
   /** Native miniaudio group handle, or {@code 0} once destroyed. */
   private long handle;

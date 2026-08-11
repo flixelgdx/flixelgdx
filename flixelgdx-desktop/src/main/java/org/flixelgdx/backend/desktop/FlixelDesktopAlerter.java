@@ -32,7 +32,7 @@ import org.lwjgl.sdl.SDLMessageBox;
  * <p>These are blocking modal dialogs; reserve them for critical events. Non-blocking OS toasts go
  * through {@link org.flixelgdx.Flixel#host Flixel.host} instead.
  */
-public final class FlixelDesktopAlerter implements FlixelAlerter {
+public class FlixelDesktopAlerter implements FlixelAlerter {
 
   @Override
   public void info(String title, String message) {

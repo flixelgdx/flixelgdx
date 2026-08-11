@@ -66,7 +66,7 @@ import java.nio.FloatBuffer;
  * no-op with a one-time warning so the game still runs (useful headless), while everything else
  * (textures, render targets, clears) works normally.
  */
-public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
+public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   private long lastFrameTime = System.nanoTime();
   private double averageFps = 0;
@@ -93,6 +93,10 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @NotNull
   private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
+
+  /** Tasks queued from background threads, drained on the render thread at the start of each frame. */
+  @NotNull
+  private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
 
   @NotNull
   private FlixelGraphicsApi api = FlixelGraphicsApi.OpenGL;
@@ -183,7 +187,23 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
   }
 
   @Override
+  public void queueMainThread(@Nullable Runnable action) {
+    if (action == null) {
+      return;
+    }
+    synchronized (mainThreadQueue) {
+      mainThreadQueue.add(action);
+    }
+  }
+
+  @Override
   public void beginFrame() {
+    synchronized (mainThreadQueue) {
+      for (int i = 0; i < mainThreadQueue.getSize(); i++) {
+        mainThreadQueue.get(i).run();
+      }
+      mainThreadQueue.clear();
+    }
     nextTargetView = FIRST_TARGET_VIEW;
     nextScreenView = FIRST_SCREEN_VIEW;
     viewStackDepth = 1;
@@ -290,10 +310,6 @@ public final class FlixelBgfxGraphics implements FlixelGraphicsManager {
     scissorX = x;
     scissorWidth = Math.max(1, width);
     scissorHeight = Math.max(1, height);
-    // bgfx's scissor API always measures y from the top of the back buffer. projectToScissor
-    // returns y from the bottom (OpenGL convention), so flip here. bgfx internally re-flips for
-    // OpenGL via glScissor(rect.x, height - rect.height - rect.y, ...), so passing top-left y
-    // is correct for every backend.
     scissorY = backBufferHeight - y - scissorHeight;
   }
 

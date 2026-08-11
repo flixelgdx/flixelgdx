@@ -26,6 +26,8 @@ package org.flixelgdx.backend.desktop.input;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.lwjgl.sdl.SDLScancode;
 
+import java.util.Arrays;
+
 /**
  * Translates SDL3 physical scancodes into FlixelGDX {@link FlixelKey} codes.
  *
@@ -45,9 +47,7 @@ public final class FlixelSdlKeyMap {
   private static final int[] TABLE = new int[512];
 
   static {
-    for (int i = 0; i < TABLE.length; i++) {
-      TABLE[i] = FlixelKey.NONE;
-    }
+    Arrays.fill(TABLE, FlixelKey.NONE);
 
     put(SDLScancode.SDL_SCANCODE_A, FlixelKey.A);
     put(SDLScancode.SDL_SCANCODE_B, FlixelKey.B);

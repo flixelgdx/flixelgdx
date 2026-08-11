@@ -38,7 +38,7 @@ import org.flixelgdx.input.FlixelTouchListener;
  * {@link FlixelKeyboardListener} and {@link FlixelMouseListener} instances that the framework's
  * input managers install.
  */
-public final class FlixelDesktopInputDevice implements FlixelInputDevice {
+public class FlixelDesktopInputDevice implements FlixelInputDevice {
 
   /** Down state per FlixelKey code; sized to cover the whole key-code range. */
   private final boolean[] keyDown = new boolean[512];

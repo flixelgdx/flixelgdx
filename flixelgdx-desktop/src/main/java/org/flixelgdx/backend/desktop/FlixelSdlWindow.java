@@ -34,24 +34,54 @@ import java.nio.IntBuffer;
  * The desktop window, wrapping the SDL3 window the {@link FlixelDesktopRunner} created.
  *
  * <p>Exposes the window controls game code reaches through {@link org.flixelgdx.Flixel#window
- * Flixel.window}: title, size, fullscreen, and closing. The continuous-rendering hooks let the
- * framework idle the loop while the window is unfocused; the runner reads that flag.
+ * Flixel.window}: title, size, position, fullscreen, decoration, focus, opacity, and closing.
+ * The continuous-rendering hooks let the framework idle the loop while the window is unfocused;
+ * the runner reads that flag via {@link #isContinuousRendering()} and {@link #consumeRenderRequest()}.
+ *
+ * <p>Window position is cached locally rather than queried from SDL on each read. The cache is
+ * initialized when the window is bound and updated both from set calls and from
+ * {@code SDL_EVENT_WINDOW_MOVED} events (user drag), so reads are always fast and
+ * {@link #setX(int)}/{@link #setY(int)} never query SDL for the axis they are not changing.
  */
-public final class FlixelSdlWindow implements FlixelWindow {
+public class FlixelSdlWindow implements FlixelWindow {
 
   /** The SDL window handle, or {@code 0} before the runner creates one. */
   private long handle;
 
+  private int cachedX;
+  private int cachedY;
+
   private boolean continuousRendering = true;
   private boolean closeRequested;
+  private boolean absorbCloseRequests;
+  private boolean renderRequested;
 
   /**
-   * Binds this wrapper to the SDL window created by the runner.
+   * Binds this wrapper to the SDL window created by the runner and seeds the position cache.
    *
    * @param handle The SDL window handle.
    */
   void bind(long handle) {
     this.handle = handle;
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      IntBuffer x = stack.mallocInt(1);
+      IntBuffer y = stack.mallocInt(1);
+      SDLVideo.SDL_GetWindowPosition(handle, x, y);
+      cachedX = x.get(0);
+      cachedY = y.get(0);
+    }
+  }
+
+  /**
+   * Updates the cached position when the OS moves the window (for example after a user drag).
+   * The runner calls this on {@code SDL_EVENT_WINDOW_MOVED}.
+   *
+   * @param x New X position in screen coordinates.
+   * @param y New Y position in screen coordinates.
+   */
+  void onMoved(int x, int y) {
+    cachedX = x;
+    cachedY = y;
   }
 
   /**
@@ -68,6 +98,21 @@ public final class FlixelSdlWindow implements FlixelWindow {
     return continuousRendering;
   }
 
+  /**
+   * Returns {@code true} and clears the one-shot render flag when {@link #requestRendering()} was
+   * called while continuous rendering was off. The runner calls this once per iteration so that
+   * exactly one extra frame is drawn in response to each request.
+   *
+   * @return {@code true} if a render was requested and the flag has now been consumed.
+   */
+  boolean consumeRenderRequest() {
+    if (renderRequested) {
+      renderRequested = false;
+      return true;
+    }
+    return false;
+  }
+
   @Override
   public void setContinuousRendering(boolean continuous) {
     this.continuousRendering = continuous;
@@ -75,7 +120,7 @@ public final class FlixelSdlWindow implements FlixelWindow {
 
   @Override
   public void requestRendering() {
-    // The desktop loop always renders the next frame, so this is a no-op here.
+    renderRequested = true;
   }
 
   @Override
@@ -154,12 +199,137 @@ public final class FlixelSdlWindow implements FlixelWindow {
 
   @Override
   public float getOpacity() {
-    return SDLVideo.SDL_GetWindowOpacity(handle);
+    return handle != 0L ? SDLVideo.SDL_GetWindowOpacity(handle) : 1f;
   }
 
   @Override
   public void setOpacity(float opacity) {
-    SDLVideo.SDL_SetWindowOpacity(handle, opacity);
+    if (handle != 0L) {
+      SDLVideo.SDL_SetWindowOpacity(handle, opacity);
+    }
+  }
+
+  @Override
+  public void setX(int x) {
+    if (handle != 0L) {
+      cachedX = x;
+      SDLVideo.SDL_SetWindowPosition(handle, cachedX, cachedY);
+    }
+  }
+
+  @Override
+  public void setY(int y) {
+    if (handle != 0L) {
+      cachedY = y;
+      SDLVideo.SDL_SetWindowPosition(handle, cachedX, cachedY);
+    }
+  }
+
+  @Override
+  public void setPosition(int x, int y) {
+    if (handle != 0L) {
+      cachedX = x;
+      cachedY = y;
+      SDLVideo.SDL_SetWindowPosition(handle, x, y);
+    }
+  }
+
+  @Override
+  public void changeX(int deltaX) {
+    setPosition(cachedX + deltaX, cachedY);
+  }
+
+  @Override
+  public void changeY(int deltaY) {
+    setPosition(cachedX, cachedY + deltaY);
+  }
+
+  @Override
+  public boolean supportsDecorated() {
+    return true;
+  }
+
+  @Override
+  public void setDecorated(boolean decorated) {
+    if (handle != 0L) {
+      SDLVideo.SDL_SetWindowBordered(handle, decorated);
+    }
+  }
+
+  @Override
+  public boolean isDecorated() {
+    return handle == 0L || (SDLVideo.SDL_GetWindowFlags(handle) & SDLVideo.SDL_WINDOW_BORDERLESS) == 0L;
+  }
+
+  @Override
+  public boolean supportsBringToForeground() {
+    return true;
+  }
+
+  @Override
+  public void bringToForeground() {
+    if (handle != 0L) {
+      SDLVideo.SDL_RaiseWindow(handle);
+    }
+  }
+
+  @Override
+  public boolean isFocused() {
+    return handle != 0L && (SDLVideo.SDL_GetWindowFlags(handle) & SDLVideo.SDL_WINDOW_INPUT_FOCUS) != 0L;
+  }
+
+  @Override
+  public boolean supportsFloating() {
+    return true;
+  }
+
+  @Override
+  public void setFloating(boolean floating) {
+    if (handle != 0L) {
+      SDLVideo.SDL_SetWindowAlwaysOnTop(handle, floating);
+    }
+  }
+
+  @Override
+  public boolean isFloating() {
+    return handle != 0L && (SDLVideo.SDL_GetWindowFlags(handle) & SDLVideo.SDL_WINDOW_ALWAYS_ON_TOP) != 0L;
+  }
+
+  @Override
+  public void setResizable(boolean resizable) {
+    if (handle != 0L) {
+      SDLVideo.SDL_SetWindowResizable(handle, resizable);
+    }
+  }
+
+  @Override
+  public boolean isResizable() {
+    return handle != 0L && (SDLVideo.SDL_GetWindowFlags(handle) & SDLVideo.SDL_WINDOW_RESIZABLE) != 0L;
+  }
+
+  @Override
+  public boolean supportsAbsorbCloseRequests() {
+    return true;
+  }
+
+  @Override
+  public void setAbsorbCloseRequests(boolean absorb) {
+    absorbCloseRequests = absorb;
+  }
+
+  @Override
+  public boolean isAbsorbCloseRequests() {
+    return absorbCloseRequests;
+  }
+
+  @Override
+  public int getX() {
+    return cachedX;
+  }
+
+  @Override
+  public int getY() {
+    return cachedY;
   }
 
   private int querySize(boolean wantWidth) {

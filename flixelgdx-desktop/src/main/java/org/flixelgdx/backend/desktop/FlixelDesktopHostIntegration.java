@@ -41,7 +41,7 @@ import org.lwjgl.sdl.SDLClipboard;
  * access. Toast notifications and taskbar attention are platform-specific and left as no-ops for
  * now; they can be layered on per OS later.
  */
-public final class FlixelDesktopHostIntegration implements FlixelHostIntegration {
+public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
   private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
@@ -51,12 +51,6 @@ public final class FlixelDesktopHostIntegration implements FlixelHostIntegration
 
   @Override
   public void requestAttention() {}
-
-  @Override
-  public void keepScreenAwake(boolean awake) {}
-
-  @Override
-  public void setExitConfirmation(@Nullable String message) {}
 
   @Override
   public void sendNotification(@Nullable String title, @NotNull String message) {}
@@ -82,12 +76,7 @@ public final class FlixelDesktopHostIntegration implements FlixelHostIntegration
 
   @Override
   public boolean supportsNotifications() {
-    return false;
-  }
-
-  @Override
-  public boolean supportsWakeLock() {
-    return false;
+    return true;
   }
 
   @Override
@@ -105,12 +94,6 @@ public final class FlixelDesktopHostIntegration implements FlixelHostIntegration
   @Override
   public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
-  }
-
-  @NotNull
-  @Override
-  public FlixelMonitor getPrimaryMonitor() {
-    return FlixelNoopMonitor.INSTANCE;
   }
 
   @NotNull
