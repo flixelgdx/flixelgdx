@@ -11,6 +11,7 @@ setup: `FlixelMiniAudio` extracts the matching file to a temp path and loads it.
 | macOS   | `libflixel_miniaudio.dylib` |
 
 Rebuild with `./scripts/build_miniaudio_natives.sh` from the repository root whenever
-`flixelgdx-desktop/src/main/native/flixel_miniaudio.c` or `miniaudio.h` changes. The macOS slice
-must be built on a Mac or with an osxcross toolchain; the Linux and Windows slices cross-compile
-from Linux with gcc and mingw-w64.
+`flixelgdx-desktop/src/main/native/flixel_miniaudio.c` or `miniaudio.h` changes. If you need
+to use the `miniaudio.h` or `stb_vorbis.c` files, download them from the 
+[official miniaudio repository](https://github.com/mackron/miniaudio). They are kept out of the
+framework due to the sheer sizes of both of the files.
