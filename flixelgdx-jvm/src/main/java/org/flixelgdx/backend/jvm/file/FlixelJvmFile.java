@@ -67,6 +67,12 @@ public final class FlixelJvmFile implements FlixelFile {
 
   @NotNull
   @Override
+  public String getAbsolutePath() {
+    return file != null ? file.getAbsolutePath() : path;
+  }
+
+  @NotNull
+  @Override
   public String getName() {
     int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
     return slash >= 0 ? path.substring(slash + 1) : path;

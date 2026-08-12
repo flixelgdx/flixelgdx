@@ -23,10 +23,15 @@
  */
 package org.flixelgdx.util.save;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.file.FlixelFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,23 +40,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FlixelSaveTest {
 
   @Test
-  void bindFlushRoundTrip() {
+  void bindFlushRoundTrip(@TempDir Path tempDir) {
+    FlixelFile dir = Flixel.files.absolute(tempDir.toString());
     String name = "flixelgdx_junit_save_" + System.nanoTime();
     FlixelSave a = new FlixelSave();
-    assertTrue(a.bind(name, null));
+    assertTrue(a.bind(name, null, dir));
     a.data.put("score", 42);
     assertTrue(a.flush());
 
     FlixelSave b = new FlixelSave();
-    assertTrue(b.bind(name, null));
+    assertTrue(b.bind(name, null, dir));
     Object v = b.data.get("score");
     assertEquals(42.0, ((Number) v).doubleValue(), 1e-6);
   }
 
   @Test
-  void mergeDataRespectsOverwrite() {
+  void mergeDataRespectsOverwrite(@TempDir Path tempDir) {
+    FlixelFile dir = Flixel.files.absolute(tempDir.toString());
     FlixelSave s = new FlixelSave();
-    assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null));
+    assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null, dir));
     s.data.put("k", "a");
     FlixelMap<String, Object> in = new FlixelMap<>();
     in.put("k", "b");

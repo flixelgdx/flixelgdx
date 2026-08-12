@@ -116,4 +116,29 @@ public interface FlixelFiles {
   default FlixelFile absolute(@NotNull String path) {
     return FlixelNoopFile.INSTANCE;
   }
+
+  /**
+   * Opens a handle to a file under the OS-specific application preferences directory for the
+   * given organization and application name.
+   *
+   * <p>The resolved root directory is platform-dependent:
+   * <ul>
+   *   <li><b>Windows</b>: {@code %APPDATA%\org\app\}</li>
+   *   <li><b>macOS</b>: {@code ~/Library/Application Support/org/app/}</li>
+   *   <li><b>Linux / Unix</b>: {@code $XDG_DATA_HOME/org/app/} (defaults to {@code ~/.local/share/org/app/}
+   *       when {@code XDG_DATA_HOME} is not set)</li>
+   * </ul>
+   *
+   * <p>This is the correct root for persistent user data such as save files. The no-op default
+   * returns an empty handle; backends that support preference paths override this method.
+   *
+   * @param org The organization or company name (for example {@code "My Studio"}).
+   * @param app The application name (for example {@code "My Game"}).
+   * @param path The relative path within the preferences directory.
+   * @return A handle under the platform-appropriate preferences directory; never {@code null}.
+   */
+  @NotNull
+  default FlixelFile pref(@NotNull String org, @NotNull String app, @NotNull String path) {
+    return FlixelNoopFile.INSTANCE;
+  }
 }

@@ -24,6 +24,7 @@
 package org.flixelgdx.util.save;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
@@ -33,6 +34,8 @@ import org.flixelgdx.json.FlixelJsonValue;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * A bound, named key-value save store that persists between sessions.
@@ -60,9 +63,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelSave implements FlixelDestroyable {
 
-  /** Folder under the local file root where save files live. */
-  private static final String SAVE_FOLDER = "flixel-saves/";
-
   /**
    * Root data object. Read and write entries directly, then call {@link #flush()} to persist.
    */
@@ -78,12 +78,32 @@ public class FlixelSave implements FlixelDestroyable {
   @NotNull
   private FlixelSaveStatus status = FlixelSaveStatus.EMPTY;
 
+  /**
+   * When non-null, save files are written into this directory instead of the OS-specific
+   * preferences directory. Set by {@link #bind(String, String, FlixelFile)}.
+   */
+  @Nullable
+  private FlixelFile customDirectory;
+
   private boolean bound;
 
   /**
    * Binds this save object to a named file (and optional slot), then loads any existing data.
    *
-   * @param name The save name, typically your game's name.
+   * <p>Save files are written to the OS-specific application preferences directory, determined
+   * by the company name and game title set in {@link org.flixelgdx.FlixelGameConfig}:
+   * <ul>
+   *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
+   *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
+   *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
+   * </ul>
+   *
+   * <p>A company name <b>must</b> be set via {@link org.flixelgdx.FlixelGameConfig#company(String)}
+   * before calling this method. If it is missing, this method logs an error and returns
+   * {@code false}. Use {@link #bind(String, String, FlixelFile)} to supply a custom directory as an
+   * alternative.
+   *
+   * @param name The save name, typically your game's name or the player's profile identifier.
    * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
    * @return {@code true} when the bind succeeded.
    */
@@ -91,6 +111,40 @@ public class FlixelSave implements FlixelDestroyable {
     if (name.isEmpty()) {
       return false;
     }
+    FlixelGame game = Flixel.game;
+    if (game == null || game.getCompany().isEmpty()) {
+      Flixel.error("Save", "bind() requires a company name to resolve the correct save directory. "
+          + "Set it via FlixelGameConfig.company(...) in your FlixelGame subclass constructor, "
+          + "or use bind(name, slot, directory) to supply a custom save path instead.");
+      return false;
+    }
+    customDirectory = null;
+    return bindInternal(name, slot);
+  }
+
+  /**
+   * Binds this save object to a named file inside a specific directory, then loads any existing
+   * data. Use this when you want saves to land somewhere other than the OS-specific preferences
+   * directory (for example a cloud-sync folder or a temporary test path).
+   *
+   * <p>No company name check is performed when a custom directory is provided. The save file is
+   * written as {@code <directory>/<name>.<slot>.json} (or {@code <directory>/<name>.json} when
+   * {@code slot} is {@code null}).
+   *
+   * @param name The save name, typically your game's name or the player's profile identifier.
+   * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
+   * @param directory The directory where the save file should be written. Must not be {@code null}.
+   * @return {@code true} when the bind succeeded.
+   */
+  public boolean bind(@NotNull String name, @Nullable String slot, @NotNull FlixelFile directory) {
+    if (name.isEmpty()) {
+      return false;
+    }
+    customDirectory = Objects.requireNonNull(directory, "directory cannot be null");
+    return bindInternal(name, slot);
+  }
+
+  private boolean bindInternal(@NotNull String name, @Nullable String slot) {
     boundName = name;
     boundSlot = slot;
     bound = true;
@@ -258,16 +312,20 @@ public class FlixelSave implements FlixelDestroyable {
     bound = false;
     boundName = "";
     boundSlot = null;
+    customDirectory = null;
     status = FlixelSaveStatus.EMPTY;
   }
 
-  /** The bound save file under the local root. */
   @NotNull
   private FlixelFile resolveFile() {
     String fileName = boundSlot != null && !boundSlot.isEmpty()
         ? boundName + "." + boundSlot
         : boundName;
-    return Flixel.files.local(SAVE_FOLDER + fileName + ".json");
+    if (customDirectory != null) {
+      return Flixel.files.absolute(customDirectory.getAbsolutePath() + "/" + fileName + ".json");
+    }
+    FlixelGame game = Flixel.game;
+    return Flixel.files.pref(game.getCompany(), game.getTitle(), "saves/" + fileName + ".json");
   }
 
   /** Converts a parsed JSON object node into plain map entries. */

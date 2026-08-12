@@ -112,6 +112,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** The framerate of how fast the game should update and render. */
   private final int framerate;
 
+  /** The company or studio name. Used by the save system to build OS-specific save paths. */
+  private String company = "";
+
+  /** The game version string (for example {@code "1.0.0"}). */
+  private String version = "";
+
   /** The main batch used for rendering all sprites on screen. */
   protected FlixelBatch batch;
 
@@ -266,17 +272,44 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   private boolean desktopTransparencyRestoreSnapshotValid;
 
   /**
-   * Creates a new game instance with the details specified.
+   * Creates a new game instance with a default 640x360 window, 60 fps, and VSync enabled.
    *
    * @param title The title of the game's window.
    * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, FlixelState initialState) {
-    this(title, 640, 360, initialState);
+    this(new FlixelGameConfig(title), initialState);
   }
 
   /**
-   * Creates a new game instance with the details specified.
+   * Creates a new game instance configured entirely by the supplied {@link FlixelGameConfig}.
+   *
+   * <p>Use this when you need to set company name, version, a custom framerate, or any other
+   * option beyond the simple title-and-state shorthand:
+   *
+   * <pre>{@code
+   * super(
+   *   new FlixelGameConfig("My Game")
+   *     .company("My Studio")
+   *     .version("1.0.0")
+   *     .size(1280, 720),
+   *   () -> new MenuState()
+   * );
+   * }</pre>
+   *
+   * @param config The configuration that supplies all startup settings.
+   * @param initialState The initial state to load when the game starts.
+   */
+  public FlixelGame(@NotNull FlixelGameConfig config, FlixelState initialState) {
+    this(config, () -> initialState);
+  }
+
+  /**
+   * Creates a new game instance with a 4-parameter shorthand: title, window size, and initial state.
+   * All other settings use their defaults (60 fps, VSync on, windowed).
+   *
+   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(FlixelGameConfig, FlixelState)}
+   * with a {@link FlixelGameConfig} instead.
    *
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
@@ -284,71 +317,30 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @param initialState The initial state to load when the game starts.
    */
   public FlixelGame(String title, int width, int height, FlixelState initialState) {
-    this(title, width, height, initialState, 60);
+    this(new FlixelGameConfig(title).size(width, height), initialState);
   }
 
   /**
-   * Creates a new game instance with the details specified.
+   * Creates a new game instance configured entirely by the supplied {@link FlixelGameConfig}, using a
+   * factory that produces the initial state.
    *
-   * @param title The title of the game's window.
-   * @param width The starting width of the game's window and how wide the camera should be.
-   * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial state to load when the game starts.
-   * @param framerate The framerate of how fast the game should update and render.
-   */
-  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate) {
-    this(title, width, height, initialState, framerate, true);
-  }
-
-  /**
-   * Creates a new game instance with the details specified.
+   * <p>This is the primary constructor that all others delegate to. Use {@code () -> new MyState()} for a
+   * fresh instance each session, or {@code () -> sharedState} to reuse one object whose
+   * {@link FlixelState#destroy()} and {@link FlixelState#create()} lifecycle still runs on each
+   * {@link Flixel#switchState} call.
    *
-   * @param title The title of the game's window.
-   * @param width The starting width of the game's window and how wide the camera should be.
-   * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial state to load when the game starts.
-   * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
+   * @param config The configuration that supplies all startup settings.
+   * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync) {
-    this(title, width, height, initialState, framerate, vsync, false);
-  }
-
-  /**
-   * Creates a new game instance with the details specified.
-   *
-   * @param title The title of the game's window.
-   * @param width The starting width of the game's window and how wide the camera should be.
-   * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial state to load when the game starts.
-   * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
-   * @param fullscreen Should the game start in fullscreen mode?
-   */
-  public FlixelGame(String title, int width, int height, FlixelState initialState, int framerate, boolean vsync,
-      boolean fullscreen) {
-    this(title, width, height, () -> initialState, framerate, vsync, fullscreen);
-  }
-
-  /**
-   * Creates a new game instance with the details specified.
-   *
-   * @param title The title of the game's window.
-   * @param width The starting width of the game's window and how wide the camera should be.
-   * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialStateFactory The initial state to load when the game starts as a supplier factory.
-   * @param framerate The framerate of how fast the game should update and render.
-   * @param vsync Should the game use Vsync to limit the framerate to the monitor's refresh rate?
-   * @param fullscreen Should the game start in fullscreen mode?
-   */
-  public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory,
-      int framerate, boolean vsync, boolean fullscreen) {
-    this.title = title;
-    this.initialSize = new FlixelVector(width, height);
+  public FlixelGame(@NotNull FlixelGameConfig config, @NotNull Supplier<FlixelState> initialStateFactory) {
+    this.title = config.getTitle();
+    this.company = config.getCompany();
+    this.version = config.getVersion();
+    this.initialSize = new FlixelVector(config.getWidth(), config.getHeight());
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "The initial state factory cannot be null!");
-    this.framerate = framerate;
-    this.vsync = vsync;
-    this.fullscreen = fullscreen;
+    this.framerate = config.getFramerate();
+    this.vsync = config.isVsync();
+    this.fullscreen = config.isFullscreen();
   }
 
   /**
@@ -1351,6 +1343,14 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   public String getTitle() {
     return title;
+  }
+
+  public String getCompany() {
+    return company;
+  }
+
+  public String getVersion() {
+    return version;
   }
 
   public boolean isGamePaused() {

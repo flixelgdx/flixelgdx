@@ -63,6 +63,20 @@ public interface FlixelFile {
   }
 
   /**
+   * Returns the absolute file system path for this handle.
+   *
+   * <p>For handles backed by a real file on disk (such as those from {@link FlixelFiles#external(String)}
+   * or {@link FlixelFiles#absolute(String)}), this is the full path as the OS would see it. For
+   * classpath or no-op handles it falls back to {@link #getPath()}.
+   *
+   * @return The absolute path, or the relative path as a fallback.
+   */
+  @NotNull
+  default String getAbsolutePath() {
+    return getPath();
+  }
+
+  /**
    * Returns the file name (the last path segment), including its extension.
    *
    * @return The file name, or an empty string when this handle points at nothing.
