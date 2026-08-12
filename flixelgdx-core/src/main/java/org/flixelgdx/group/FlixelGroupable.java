@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Consumer;
 
 /**
- * Group-like containers with a typed member list. This interface is intentionally generic so libGDX projects can use
+ * Group-like containers with a typed member list. This interface is intentionally generic so any project can use
  * {@link FlixelGroup} with any member type without adopting {@link org.flixelgdx.FlixelBasic FlixelBasic}.
  *
  * <p>FlixelGDX gameplay code that uses lifecycle flags and {@link org.flixelgdx.FlixelBasic#destroy() FlixelBasic.destroy()} should

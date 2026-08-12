@@ -441,7 +441,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   /**
    * Returns {@code true} while any active pointer is inside the given screen-space rectangle.
    *
-   * <p>Coordinates use the top-left origin (Y increases downward), matching libGDX screen space.
+   * <p>Coordinates use the top-left origin (Y increases downward).
    * Use this to track a finger held inside an area. For detecting the moment a finger lands,
    * use {@link #justTouchedScreen(float, float, float, float)} instead.
    *
@@ -511,7 +511,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   /**
    * Returns {@code true} on the single frame any pointer first touches the given screen-space rectangle.
    *
-   * <p>Coordinates use the top-left origin (Y increases downward), matching libGDX screen space.
+   * <p>Coordinates use the top-left origin (Y increases downward).
    * Clears to {@code false} after the frame ends, matching the timing of
    * {@link FlixelTouch#justPressed()}.
    *

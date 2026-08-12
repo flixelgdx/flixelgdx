@@ -1031,7 +1031,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
     float maxOverlap = checkMaxOverlap ? (obj1deltaAbs + obj2deltaAbs + SEPARATE_BIAS) : 0;
     float overlap;
 
-    // libGDX Y-up: positive delta = moving up -> object1's top hits object2's bottom.
+    // Y-up: positive delta = moving up -> object1's top hits object2's bottom.
     if (obj1delta > obj2delta) {
       overlap = object1.y + object1.height - object2.y;
       if (checkMaxOverlap && overlap > maxOverlap)

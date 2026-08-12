@@ -118,7 +118,7 @@ public interface FlixelDigitalBinding {
   /**
    * Normalized screen region binding. Fires when any active touch pointer falls inside the
    * rectangle. Coordinates are fractions of the back buffer dimensions, with the origin at the
-   * top-left corner (matching libGDX screen-space Y, where Y increases downward).
+   * top-left corner (where Y increases downward).
    *
    * <pre>{@code
    * // Bottom-left quarter of the screen as a virtual jump button.

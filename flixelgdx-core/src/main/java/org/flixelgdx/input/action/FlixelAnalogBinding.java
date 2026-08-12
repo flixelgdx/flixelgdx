@@ -68,7 +68,7 @@ public interface FlixelAnalogBinding {
   /**
    * Subtracts 1 from {@code out.x} while the key is held (left / negative X).
    *
-   * @param keycode libGDX keycode.
+   * @param keycode Keycode.
    * @return Binding that contributes -1 on X when the key is pressed.
    */
   static FlixelAnalogBinding negXKey(int keycode) {
@@ -82,7 +82,7 @@ public interface FlixelAnalogBinding {
   /**
    * Adds 1 to {@code out.x} while the key is held (right / positive X).
    *
-   * @param keycode libGDX keycode.
+   * @param keycode Keycode.
    * @return Binding that contributes +1 on X when the key is pressed.
    */
   static FlixelAnalogBinding posXKey(int keycode) {
@@ -96,7 +96,7 @@ public interface FlixelAnalogBinding {
   /**
    * Subtracts 1 from {@code out.y} while the key is held (down / negative Y).
    *
-   * @param keycode libGDX keycode.
+   * @param keycode Keycode.
    * @return Binding that contributes -1 on Y when the key is pressed.
    */
   static FlixelAnalogBinding negYKey(int keycode) {
@@ -110,7 +110,7 @@ public interface FlixelAnalogBinding {
   /**
    * Adds 1 to {@code out.y} while the key is held (up / positive Y).
    *
-   * @param keycode libGDX keycode.
+   * @param keycode Keycode.
    * @return Binding that contributes +1 on Y when the key is pressed.
    */
   static FlixelAnalogBinding posYKey(int keycode) {

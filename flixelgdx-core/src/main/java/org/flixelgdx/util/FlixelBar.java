@@ -457,7 +457,7 @@ public class FlixelBar extends FlixelSprite {
    * {@link FlixelArray} and sorted by percent. Null entries are skipped.
    *
    * <p>For {@link List} implementations that also implement {@link RandomAccess}, copying uses index
-   * loops and avoids iterator allocation on this (typically rare) call. For a libGDX {@link FlixelArray}, use
+   * loops and avoids iterator allocation on this (typically rare) call. For a {@link FlixelArray}, use
    * {@link #setThresholdStops(FlixelArray)}.
    *
    * @param stops Non-null collection; may be empty to clear thresholds.
@@ -472,10 +472,10 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Same as {@link #setThresholdStops(Collection)} but reads stops from a libGDX {@link FlixelArray} by index
+   * Same as {@link #setThresholdStops(Collection)} but reads stops from a {@link FlixelArray} by index
    * (no iterator on the source).
    *
-   * @param stops Non-null libGDX array; null entries are skipped.
+   * @param stops Non-null {@link FlixelArray}; null entries are skipped.
    * @return {@code this} for chaining.
    */
   public FlixelBar setThresholdStops(@NotNull FlixelArray<ThresholdStop> stops) {

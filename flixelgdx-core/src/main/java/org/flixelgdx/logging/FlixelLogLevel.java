@@ -48,7 +48,7 @@ public enum FlixelLogLevel {
 
   /**
    * Highlighted blue in the console and used for verbose, low-priority messages that help during active
-   * development. Matches libGDX's {@code Application.debug(...)} severity level.
+   * development. The lowest severity level in the FlixelGDX logging system.
    */
   DEBUG
 }

@@ -6,7 +6,7 @@
  * {@link org.flixelgdx.util.save.FlixelSave#flush() FlixelSave.flush()} to persist. Check {@link org.flixelgdx.util.save.FlixelSave#isBound() FlixelSave.isBound()}
  * and {@link org.flixelgdx.util.save.FlixelSave#getStatus() FlixelSave.getStatus()} after load on a new install.
  *
- * <p>Use from the main libGDX thread only. This package is for small structured state, not large binary blobs.
+ * <p>Use from the main game thread only. This package is for small structured state, not large binary blobs.
  *
  * @see org.flixelgdx.util.save.FlixelSave
  * @see org.flixelgdx.util.save.FlixelSaveStatus

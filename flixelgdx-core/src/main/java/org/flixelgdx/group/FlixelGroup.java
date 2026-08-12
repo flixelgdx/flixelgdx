@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Framework-agnostic member list backed by a {@link FlixelArray}. Use this in a plain libGDX {@code Screen} or game
+ * Framework-agnostic member list backed by a {@link FlixelArray}. Use this in a plain game loop or screen
  * loop with <em>any</em> member type ({@code FlixelGroup<Actor>}, {@code FlixelGroup<YourEntity>}, etc.): call
  * {@link #add}, {@link #remove}, and {@link #forEachMember} yourself; there is no automatic {@code update}/{@code draw}.
  *

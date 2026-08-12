@@ -80,14 +80,14 @@ import java.util.Objects;
  * </pre>
  *
  * <h2>Coordinate flip</h2>
- * Adobe Animate uses Y-down pixel space (the top-left of a bitmap is {@code (0, 0)}). libGDX's
- * the batch draws a frame with its bottom-left
+ * Adobe Animate uses Y-down pixel space (the top-left of a bitmap is {@code (0, 0)}). The
+ * renderer draws a frame with its bottom-left
  * at the supplied local origin when a Y-up projection is active (which is the FlixelGDX default). The
  * loader bakes two Y-flips into every part so the draw path can stay a simple
  * {@code translate * scale * part}:
  * <ol>
- *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, origH]} that turns libGDX's
- *   local-space Y-up rectangle into Adobe's Y-down rectangle, applied on the <em>right</em> so that
+ *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, origH]} that turns the
+ *   renderer's local-space Y-up rectangle into Adobe's Y-down rectangle, applied on the <em>right</em> so that
  *   the existing {@code MX} chain keeps interpreting its input as Flash-local. Parts packed rotated
  *   90 degrees clockwise use an extended matrix {@code [0, -1, origW; -1, 0, origH]} that
  *   simultaneously un-rotates and Y-flips.</li>
@@ -252,7 +252,7 @@ final class FlixelAnimateRigLoader {
       @NotNull String animationJsonPath,
       @Nullable String anchorClipName) {
 
-    // Read and parse both JSON files up-front. libGDX's JsonReader owns no file handles after this call.
+    // Read and parse both JSON files up-front. The JSON reader owns no file handles after this call.
     String spritemapText = FlixelSpritemapJsonLoader.readUtf8Text(
         FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
     String animationText = FlixelSpritemapJsonLoader.readUtf8Text(
@@ -421,7 +421,7 @@ final class FlixelAnimateRigLoader {
    * @param anchorMinY Anchor bounding-box minimum Y in Flash Y-down world space.
    * @param anchorHeight Anchor bounding-box height in pixels (used by the Y-flip in
    *   {@link #bakePartAffine}).
-   * @param controller The controller to register clip durations on (one libGDX
+   * @param controller The controller to register clip durations on (one
    *   {@link FlixelAnimation} per clip name).
    * @param clipsOut The map to populate. Existing entries with the same name are overwritten.
    */
@@ -468,8 +468,8 @@ final class FlixelAnimateRigLoader {
       clipsOut.put(clip.name, new FlixelAnimateRig.Clip(clip.name, kfs));
 
       // Register the clip with the animation controller so getCurrentKeyframeIndex() advances over
-      // time. The actual frame indices are irrelevant (the rig draw path ignores them), but libGDX's
-      // Animation requires at least one entry, so feed it a duplicate of atlas[0] per tick. We
+      // time. The actual frame indices are irrelevant (the rig draw path ignores them), but
+      // FlixelAnimation requires at least one entry, so feed it a duplicate of atlas[0] per tick. We
       // register with loop=false, so the backing Animation's PlayMode is NORMAL; runtime looping is
       // controlled entirely by FlixelAnimationController.playAnimation(...) and its own looping
       // flag, and registering as NORMAL guarantees that a non-looping clip's last keyframe
@@ -961,7 +961,7 @@ final class FlixelAnimateRigLoader {
   }
 
   /**
-   * Converts Flash's {@code MX} (six values) or {@code M3D} (16 values, column-major 4x4) into a libGDX
+   * Converts Flash's {@code MX} (six values) or {@code M3D} (16 values, column-major 4x4) into a
    * {@link FlixelAffine}. {@code M3D} is preferred when present and long enough; otherwise {@code MX} is used.
    *
    * @param mx Optional {@code MX} array ({@code [a, b, c, d, tx, ty]}).
@@ -1025,9 +1025,9 @@ final class FlixelAnimateRigLoader {
    * Bakes the final draw-ready affine for a single part.
    *
    * <p>For a non-rotated part the result equals {@code anchorShift * flipRig * P_flash * flipBitmap},
-   * where {@code flipBitmap = [1, 0, 0; 0, -1, origH]} converts libGDX Y-up local bitmap coordinates
+   * where {@code flipBitmap = [1, 0, 0; 0, -1, origH]} converts Y-up local bitmap coordinates
    * to Flash Y-down, and {@code anchorShift * flipRig} converts the resulting Flash-world point back
-   * to libGDX Y-up while sliding the anchor bounding box's bottom-left corner onto the sprite origin.
+   * to Y-up while sliding the anchor bounding box's bottom-left corner onto the sprite origin.
    *
    * <p>For a part that was packed rotated 90 degrees clockwise in the atlas, Adobe Animate stores
    * the sprite sideways: the atlas footprint is {@code origH} pixels wide and {@code origW} pixels

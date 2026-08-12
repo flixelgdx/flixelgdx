@@ -69,7 +69,7 @@ import java.util.regex.Pattern;
  *
  * <h2>Thread safety</h2>
  *
- * <p>All public methods are intended to be called from the libGDX main thread. Reading the
+ * <p>All public methods are intended to be called from the game main thread. Reading the
  * registered commands map outside the main thread is unsupported.
  */
 public class FlixelDebugManager {

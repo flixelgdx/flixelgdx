@@ -223,7 +223,7 @@ public class FlixelShader extends FlixelBasic {
    *
    * <p>The preprocessor performs three transformations before compilation:
    * <ol>
-   *   <li>Prepends {@link #HAXEFLIXEL_DEFINES} so HaxeFlixel names alias to libGDX names.</li>
+   *   <li>Prepends {@link #HAXEFLIXEL_DEFINES} so HaxeFlixel names alias to FlixelGDX's GLSL uniform names.</li>
    *   <li>Replaces {@code #pragma header} with {@link #HAXEFLIXEL_HEADER_EXPANSION},
    *       which declares the texture sampler, size uniform, and UV varyings.</li>
    *   <li>Removes any {@code #pragma body} lines, which have no meaning outside

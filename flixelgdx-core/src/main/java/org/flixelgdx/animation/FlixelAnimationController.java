@@ -694,7 +694,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
     int frameIndex = computeKeyframeIndex(anim);
     // Pick the displayed frame by the same index the controller reports elsewhere, rather than
-    // anim.getKeyFrame(stateTime, looping). That libGDX call honors the clip's REGISTERED PlayMode,
+    // anim.getKeyFrame(stateTime, looping). That call honors the clip's REGISTERED PlayMode,
     // so a clip registered to loop but played non-looping wraps back to frame 0 when it finishes;
     // indexing the keyframes directly keeps a finished non-looping clip parked on its last frame.
     // Typed FlixelFrame[] but may be an Object[] at runtime, so cast the element, not the array.
@@ -741,7 +741,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
   /**
    * Zero-based key index in the current clip. Computed from {@link #getStateTime()} and the
-   * controller's {@link #isLooping() looping} flag rather than from the underlying libGDX
+   * controller's {@link #isLooping() looping} flag rather than from the underlying
    * {@link FlixelAnimation}'s {@code PlayMode}, so the index always matches what {@link #update(float)}
    * actually displays no matter how the clip was registered.
    *

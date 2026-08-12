@@ -173,8 +173,8 @@ public interface FlixelHostIntegration {
   /**
    * Signal dispatched when {@link #pasteFromClipboard()} resolves with text content.
    *
-   * <p>The dispatched value is the pasted text. Handlers may be called off the GL thread.
-   * Wrap any libGDX calls with {@code Gdx.app.postRunnable(...)}.
+   * <p>The dispatched value is the pasted text. Handlers may be called off the game thread.
+   * Synchronize access or post to the main thread before modifying shared game state.
    *
    * @return The signal; never {@code null}.
    */

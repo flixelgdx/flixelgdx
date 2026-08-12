@@ -227,7 +227,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * The debug overlay's own sprite picker / camera tools use the raw variants so they can opt
    * in to "ignore the suppression" when needed.
    *
-   * @param button libGDX button index (e.g. {@code 0} for left mouse button).
+   * @param button Button index (e.g. {@code 0} for left mouse button).
    * @return {@code true} if the button is pressed and input is enabled and not suppressed by UI.
    */
   public boolean pressed(int button) {
@@ -240,7 +240,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /**
    * Same as {@link #pressed(int)} but bypasses the "captured by debug UI" check.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button is pressed and input is enabled, regardless of UI capture.
    */
   public boolean rawPressed(int button) {
@@ -251,7 +251,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Returns whether the given mouse button was just pressed this frame. Returns {@code false}
    * while the debug UI reports that another UI layer is capturing mouse input.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just pressed and input is enabled and not suppressed.
    */
   public boolean justPressed(int button) {
@@ -264,7 +264,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /**
    * Same as {@link #justPressed(int)} but bypasses the "captured by debug UI" check.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just pressed and input is enabled, regardless of UI capture.
    */
   public boolean rawJustPressed(int button) {
@@ -275,7 +275,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Returns whether the given mouse button was just released this frame. Returns {@code false}
    * while the debug UI reports that another UI layer is capturing mouse input.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just released and input is enabled and not suppressed.
    */
   public boolean justReleased(int button) {
@@ -288,7 +288,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /**
    * Same as {@link #justReleased(int)} but bypasses the "captured by debug UI" check.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just released and input is enabled, regardless of UI capture.
    */
   public boolean rawJustReleased(int button) {

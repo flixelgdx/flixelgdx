@@ -158,7 +158,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Native (GL/audio) heap usage in megabytes per sample. */
   protected final float[] perfNativeMb = new float[PERF_HISTORY_SIZE];
 
-  /** FPS as reported by libGDX per sample. */
+  /** FPS per sample, as reported by the graphics backend. */
   protected final float[] perfFps = new float[PERF_HISTORY_SIZE];
 
   /**
@@ -667,7 +667,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * is {@code true}, mirroring the actual draw chain.
    *
    * <p>Only objects assigned to {@code cam} are eligible. An object with a {@code null} or
-   * empty camera list is treated as assigned to all cameras (the libGDX default).
+   * empty camera list is treated as assigned to all cameras (the default).
    *
    * <p>Hidden ({@code visible == false}) and dead ({@code exists == false}) members are skipped so
    * the picker never grabs invisible UI elements or pooled corpses.
@@ -750,7 +750,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /**
    * Returns {@code true} if {@code basic} should be rendered by {@code cam}. An object with a
-   * {@code null} or empty camera list renders to all cameras (the libGDX default).
+   * {@code null} or empty camera list renders to all cameras (the default).
    */
   private static boolean isAssignedToCamera(@NotNull FlixelBasic basic, @NotNull FlixelCamera cam) {
     FlixelCamera[] list = basic.cameras;

@@ -84,7 +84,7 @@ public interface FlixelShakeable {
   }
 
   /**
-   * Convenience default for fullscreen targets: uses the back buffer size when libGDX graphics is available.
+   * Convenience default for fullscreen targets: uses the back buffer size when the graphics backend is available.
    *
    * @return Positive width in pixels, or {@code 0f} if unknown.
    */
@@ -97,7 +97,7 @@ public interface FlixelShakeable {
   }
 
   /**
-   * Convenience default for fullscreen targets: uses the back buffer size when libGDX graphics is available.
+   * Convenience default for fullscreen targets: uses the back buffer size when the graphics backend is available.
    *
    * @return Positive height in pixels, or {@code 0f} if unknown.
    */

@@ -225,13 +225,13 @@ import java.util.function.Supplier;
 public final class Flixel {
 
   /**
-   * Minimum allowed elapsed time in seconds for one frame. {@link FlixelGame} clamps the raw libGDX delta to
+   * Minimum allowed elapsed time in seconds for one frame. {@link FlixelGame} clamps the raw frame delta to
    * at least this value so a zero-delta does not break motion and timers.
    */
   public static final float MIN_ELAPSED = 0.000001f;
 
   /**
-   * Maximum allowed elapsed time in seconds for one frame. {@link FlixelGame} clamps the raw libGDX delta
+   * Maximum allowed elapsed time in seconds for one frame. {@link FlixelGame} clamps the raw frame delta
    * to at most this value so a long hitch does not move physics too far in one step.
    */
   public static final float MAX_ELAPSED = 0.1f;
@@ -869,7 +869,7 @@ public final class Flixel {
    */
   public static float timeScale = 1f;
 
-  /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw libGDX delta. */
+  /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw frame delta. */
   static float elapsed = 0f;
 
   /** The raw clamped platform delta before {@link #timeScale} is applied. Set by {@link FlixelGame} each frame. */

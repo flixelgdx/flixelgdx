@@ -258,7 +258,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   private RegionMode regionMode = RegionMode.PIXEL_TOP_LEFT;
 
   /**
-   * Whether the libGDX viewport should re-center the camera when the game window is resized.
+   * Whether the viewport should re-center the camera when the game window is resized.
    *
    * <p>Split-screen setups often want this enabled (default) to match existing behavior.
    * Disable it to preserve the scroll position through resizes.
@@ -854,7 +854,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * @param worldX World-space X.
    * @param scrollFactor Parallax factor ({@code 1} = moves fully with the camera).
-   * @return View-space X (the same space used by {@link FlixelSprite#draw} before libGDX projection).
+   * @return View-space X (the same space used by {@link FlixelSprite#draw} before projection).
    */
   public float worldToViewX(float worldX, float scrollFactor) {
     return worldX - scrollX * scrollFactor - getViewMarginX();
@@ -1252,7 +1252,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * Fits the world into {@link #width}x{@link #height} pixels, then places that rectangle at
-   * {@link #x},{@link #y} (top-left origin, Y down, converted to libGDX bottom-left for
+   * {@link #x},{@link #y} (top-left origin, Y down, converted to bottom-left for
    * {@code glViewport}).
    */
   private void updateSubScreenViewport(int screenWidth, int screenHeight, boolean centerCamera) {
