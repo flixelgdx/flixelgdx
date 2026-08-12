@@ -92,7 +92,7 @@ import java.util.Objects;
  * <h2>Merging multiple atlases</h2>
  * Call {@link #addSpritemapAndAnimation} again with another export triple. Subsequent loads append frames to the
  * shared atlas, bake clips into the existing anchor space (the body stays pinned when you switch atlases),
- * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
+ * and register clip names on the same {@link FlixelAnimationController#play} path. Names from a later sheet
  * override earlier registrations on collisions.
  *
  * <h2>Mixing in a Sparrow atlas</h2>

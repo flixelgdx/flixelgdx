@@ -317,7 +317,7 @@ final class FlixelAnimateRigLoader {
     sprite.updateHitbox();
 
     // Start the anchor clip so the sprite has a visible pose even before game code calls playAnimation.
-    controller.playAnimation(resolvedAnchorName, true, true);
+    controller.play(resolvedAnchorName, true, true);
   }
 
   /**
@@ -475,7 +475,7 @@ final class FlixelAnimateRigLoader {
       // flag, and registering as NORMAL guarantees that a non-looping clip's last keyframe
       // stays put instead of snapping back to the first when stateTime reaches the clip's duration.
       int[] dummyFrames = new int[clip.duration];
-      controller.addAnimationFromAtlas(clip.name, dummyFrames, 1f / fps, false);
+      controller.addFromAtlas(clip.name, dummyFrames, 1f / fps, false);
     }
   }
 

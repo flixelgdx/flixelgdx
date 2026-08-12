@@ -96,6 +96,7 @@ public final class FlixelRect implements FlixelPoolable {
    */
   public FlixelRect(@NotNull FlixelRect other) {
     this(other.x, other.y, other.width, other.height);
+    weak = other.weak;
   }
 
   /**

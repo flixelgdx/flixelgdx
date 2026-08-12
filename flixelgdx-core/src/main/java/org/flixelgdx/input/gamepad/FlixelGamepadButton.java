@@ -72,7 +72,6 @@ public final class FlixelGamepadButton {
   /** Right face button (B on Xbox, Circle on PlayStation). */
   public static final FlixelGamepadButton B = of("B");
 
-
   /** Left face button (X on Xbox, Square on PlayStation). */
   public static final FlixelGamepadButton X = of("X");
 

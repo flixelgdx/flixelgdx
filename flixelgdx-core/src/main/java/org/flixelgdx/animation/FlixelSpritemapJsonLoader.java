@@ -243,7 +243,7 @@ public final class FlixelSpritemapJsonLoader {
       if (fps <= 0f) {
         fps = 24f;
       }
-      controller.addAnimationFromAtlas(name, indices, 1f / fps, loop);
+      controller.addFromAtlas(name, indices, 1f / fps, loop);
     }
   }
 

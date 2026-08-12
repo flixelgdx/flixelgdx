@@ -93,7 +93,7 @@ class FlixelAnimationPlaybackTest {
     controller.getAnimations().put("test", new FlixelAnimation<>(0.1f, frames, FlixelAnimation.PlayMode.NORMAL));
 
     assertDoesNotThrow(() -> {
-      controller.playAnimation("test", false);
+      controller.play("test", false);
       controller.update(0.05f);
       controller.update(0.5f); // advance past the end of the clip
     });

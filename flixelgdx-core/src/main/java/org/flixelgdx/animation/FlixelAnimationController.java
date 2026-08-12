@@ -403,7 +403,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * <p>This is a one-shot computation from the currently displayed {@link FlixelFrame}, independent
    * of the per-animation {@link #addOffset(String, float, float) registry}; it does not read or write
    * {@link #animationOffsets}. Calling it after a clip with a registered offset will overwrite that
-   * offset until the next {@link #playAnimation} call reapplies it.
+   * offset until the next {@link #play} call reapplies it.
    *
    * @param adjustPosition Whether to also shift the sprite's position so its origin stays anchored
    *     to the frame's center, matching HaxeFlixel's optional position correction.
@@ -476,7 +476,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param frameRate The frame rate of the animation.
    * @param loop Whether the animation should loop.
    */
-  public void addAnimationByPrefix(
+  public void addByPrefix(
       @NotNull String name,
       @NotNull String prefix,
       int frameRate,
@@ -507,12 +507,12 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * Adds a clip from the current atlas list {@link FlixelSprite#getAtlasRegions()} using zero-based indices into
    * that list. Used by spritemap JSON and by games that know frame order after a Sparrow or spritemap load.
    *
-   * @param name Clip name for {@link #playAnimation(String)}.
+   * @param name Clip name for {@link #play(String)}.
    * @param atlasFrameIndices Indices into the atlas list (out-of-range entries are skipped).
    * @param frameDuration Frame duration in seconds (reciprocal of FPS).
    * @param loop Whether the clip loops.
    */
-  public void addAnimationFromAtlas(
+  public void addFromAtlas(
       @NotNull String name, @NotNull int[] atlasFrameIndices, float frameDuration, boolean loop) {
     FlixelArray<FlixelFrame> atlas = owner.getAtlasRegions();
     if (atlas == null || atlas.getSize() == 0) {
@@ -564,8 +564,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * @param name The name of the animation to play.
    */
-  public void playAnimation(@NotNull String name) {
-    playAnimation(name, true);
+  public void play(@NotNull String name) {
+    play(name, true);
   }
 
   /**
@@ -574,8 +574,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param name The name of the animation to play.
    * @param loop Whether the animation should loop.
    */
-  public void playAnimation(@NotNull String name, boolean loop) {
-    playAnimation(name, loop, true);
+  public void play(@NotNull String name, boolean loop) {
+    play(name, loop, true);
   }
 
   /**
@@ -585,7 +585,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param loop Whether the animation should loop.
    * @param forceRestart Whether the animation should restart.
    */
-  public void playAnimation(@NotNull String name, boolean loop, boolean forceRestart) {
+  public void play(@NotNull String name, boolean loop, boolean forceRestart) {
     FlixelAnimation<FlixelFrame> anim = animations.get(name);
     if (anim == null) {
       // Unknown clip name: leave whatever is currently displayed untouched instead of blanking out.
@@ -594,7 +594,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     // Keep playing only when this exact clip is already mid-play and the caller did not force a
     // restart. A clip that has finished (or a different clip) always (re)starts, so a non-looping
     // clip can be replayed once it ends and switching clips never silently no-ops.
-    if (!shouldRestart(forceRestart, currentAnim.equals(name), isAnimationFinished())) {
+    if (!shouldRestart(forceRestart, currentAnim.equals(name), isFinished())) {
       return;
     }
 
@@ -617,7 +617,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
         owner.updateHitbox();
       }
     }
-    applyAnimationOffset(name);
+    applyOffset(name);
   }
 
   /**
@@ -644,7 +644,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * @param name The animation that is starting.
    */
-  private void applyAnimationOffset(@NotNull String name) {
+  private void applyOffset(@NotNull String name) {
     if (animationOffsets.getSize() == 0) {
       return;
     }
@@ -656,7 +656,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
   }
 
-  public boolean isAnimationFinished() {
+  public boolean isFinished() {
     FlixelAnimation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
       return true;
@@ -666,8 +666,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /** Returns whether the current animation has finished playing (only meaningful for non-looping animations). */
-  public boolean getAnimationFinished() {
-    return isAnimationFinished();
+  public boolean getFinished() {
+    return isFinished();
   }
 
   @Override
