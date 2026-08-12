@@ -27,6 +27,7 @@ tasks.withType<Javadoc>().configureEach {
     links("https://docs.oracle.com/en/java/javase/17/docs/api/")
     if (JavaVersion.current().isJava9Compatible) {
       addStringOption("Xdoclint:all,-missing", "-quiet")
+      addStringOption("Werror")
     }
   }
   setFailOnError(true)

@@ -2,14 +2,41 @@
  * Convention for FlixelGDX Android library modules.
  *
  * <p>Applies {@code flixelgdx.java-base} for shared IDE and Spotless setup, then layers on:
- * the Android library plugin and the Vanniktech Maven publish pipeline targeting Sonatype
- * Central Portal.
+ * the Android library plugin, a {@code javadoc} task over the release variant, and the Vanniktech
+ * Maven publish pipeline targeting Sonatype Central Portal.
  */
+
+import com.android.build.gradle.LibraryExtension
 
 plugins {
   id("flixelgdx.java-base")
   id("com.android.library")
   id("com.vanniktech.maven.publish")
+}
+
+// The android plugin does not register a javadoc task, so we add one here against the release
+// variant. AGP resolves bootClasspath and the compile configuration only after evaluation.
+afterEvaluate {
+  val android = extensions.getByType(LibraryExtension::class.java)
+  tasks.register("javadoc", Javadoc::class.java) {
+    group = "documentation"
+    description = "Generates Javadoc for the Android release variant."
+    source(android.sourceSets.getByName("main").java.srcDirs)
+    classpath = configurations.getByName("releaseCompileClasspath")
+      .plus(files(android.bootClasspath))
+    options.encoding = "UTF-8"
+    (options as StandardJavadocDocletOptions).apply {
+      charSet = "UTF-8"
+      docEncoding = "UTF-8"
+      memberLevel = JavadocMemberLevel.PUBLIC
+      links("https://docs.oracle.com/en/java/javase/17/docs/api/")
+      if (JavaVersion.current().isJava9Compatible) {
+        addStringOption("Xdoclint:all,-missing", "-quiet")
+        addStringOption("Werror")
+      }
+    }
+    setFailOnError(true)
+  }
 }
 
 // JitPack rewrites Gradle module metadata and drops classifier compatibility data; omit .module

@@ -35,7 +35,7 @@ idea {
 tasks.register("javadocAll") {
   group = "verification"
   description = "Runs Javadoc (with doclint) on all published Java library modules."
-  dependsOn(
+  val modules = arrayListOf(
     ":flixelgdx-core:javadoc",
     ":flixelgdx-jvm:javadoc",
     ":flixelgdx-desktop:javadoc",
@@ -46,4 +46,8 @@ tasks.register("javadocAll") {
     ":flixelgdx-basisu-plugin:javadoc",
     ":flixelgdx-json-processor:javadoc"
   )
+  if (gradle.extra["includeAndroid"] as Boolean) {
+    modules.add(":flixelgdx-android:javadoc")
+  }
+  dependsOn(modules)
 }
