@@ -25,6 +25,7 @@ package org.flixelgdx.util.save;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelGameConfig;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
@@ -91,14 +92,14 @@ public class FlixelSave implements FlixelDestroyable {
    * Binds this save object to a named file (and optional slot), then loads any existing data.
    *
    * <p>Save files are written to the OS-specific application preferences directory, determined
-   * by the company name and game title set in {@link org.flixelgdx.FlixelGameConfig}:
+   * by the company name and game title set in {@link FlixelGameConfig}:
    * <ul>
    *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
    *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
    *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
    * </ul>
    *
-   * <p>A company name <b>must</b> be set via {@link org.flixelgdx.FlixelGameConfig#company(String)}
+   * <p>A company name <b>must</b> be set via {@link FlixelGameConfig#company(String)}
    * before calling this method. If it is missing, this method logs an error and returns
    * {@code false}. Use {@link #bind(String, String, FlixelFile)} to supply a custom directory as an
    * alternative.
