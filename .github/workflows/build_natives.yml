@@ -95,8 +95,7 @@ jobs:
         working-directory: bgfx
         shell: cmd
         run: >
-          msbuild ".build\projects\vs2022\bgfx.sln"
-          /t:shaderc
+          msbuild ".build\projects\vs2022\shaderc.vcxproj"
           /m /v:minimal
           /p:Configuration=Release
           /p:Platform=x64
