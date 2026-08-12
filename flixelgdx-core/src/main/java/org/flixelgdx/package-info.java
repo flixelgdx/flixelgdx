@@ -9,14 +9,14 @@
  * <ul>
  *   <li>{@link org.flixelgdx.Flixel Flixel} - Global manager: initialization, state switching,
  *       signals, and access to core managers (input, audio, assets).</li>
- *   <li>{@link org.flixelgdx.FlixelGame FlixelGame} - libGDX application listener that drives the
+ *   <li>{@link org.flixelgdx.FlixelGame FlixelGame} - Application entry point that drives the
  *       main update and draw loop.</li>
  *   <li>{@link org.flixelgdx.FlixelState FlixelState} - Screen-like container for your game logic.</li>
  * </ul>
  *
  * <p>Assets are centralized under {@link org.flixelgdx.Flixel#assets Flixel.assets}. Prefer that API
- * and the typed handle helpers in {@link org.flixelgdx.asset asset} instead of using libGDX
- * {@code AssetManager} directly, unless you need low level features.
+ * and the typed handle helpers in {@link org.flixelgdx.asset asset} instead of raw asset
+ * management directly, unless you need low-level features.
  *
  * @see org.flixelgdx.Flixel
  * @see org.flixelgdx.FlixelGame

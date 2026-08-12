@@ -45,7 +45,7 @@ import org.jetbrains.annotations.NotNull;
  * </ul>
  *
  * <p>Access it through {@link org.flixelgdx.Flixel#files Flixel.files}. The active backend is
- * installed there before {@link org.flixelgdx.Flixel#initialize Flixel.initialize}. Until then, and
+ * installed there before {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}. Until then, and
  * on headless sessions, a safe default ({@link FlixelNoopFiles}) hands back empty handles so reads
  * never crash.
  *

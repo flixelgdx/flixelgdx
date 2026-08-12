@@ -23,18 +23,15 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.JsonReader;
-import com.badlogic.gdx.utils.JsonValue;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.collections.FlixelObjectIntMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.json.FlixelJson;
+import org.flixelgdx.json.FlixelJsonValue;
 import org.flixelgdx.math.FlixelAffine;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -83,14 +80,14 @@ import java.util.Objects;
  * </pre>
  *
  * <h2>Coordinate flip</h2>
- * Adobe Animate uses Y-down pixel space (the top-left of a bitmap is {@code (0, 0)}). libGDX's
- * {@link com.badlogic.gdx.graphics.g2d.SpriteBatch} draws a {@link TextureRegion} with its bottom-left
+ * Adobe Animate uses Y-down pixel space (the top-left of a bitmap is {@code (0, 0)}). The
+ * renderer draws a frame with its bottom-left
  * at the supplied local origin when a Y-up projection is active (which is the FlixelGDX default). The
  * loader bakes two Y-flips into every part so the draw path can stay a simple
  * {@code translate * scale * part}:
  * <ol>
- *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, origH]} that turns libGDX's
- *   local-space Y-up rectangle into Adobe's Y-down rectangle, applied on the <em>right</em> so that
+ *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, origH]} that turns the
+ *   renderer's local-space Y-up rectangle into Adobe's Y-down rectangle, applied on the <em>right</em> so that
  *   the existing {@code MX} chain keeps interpreting its input as Flash-local. Parts packed rotated
  *   90 degrees clockwise use an extended matrix {@code [0, -1, origW; -1, 0, origH]} that
  *   simultaneously un-rotates and Y-flips.</li>
@@ -255,22 +252,22 @@ final class FlixelAnimateRigLoader {
       @NotNull String animationJsonPath,
       @Nullable String anchorClipName) {
 
-    // Read and parse both JSON files up-front. libGDX's JsonReader owns no file handles after this call.
+    // Read and parse both JSON files up-front. The JSON reader owns no file handles after this call.
     String spritemapText = FlixelSpritemapJsonLoader.readUtf8Text(
         FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
     String animationText = FlixelSpritemapJsonLoader.readUtf8Text(
         FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
-    JsonValue spritemapRoot = new JsonReader().parse(spritemapText);
-    JsonValue animationRoot = new JsonReader().parse(animationText);
+    FlixelJsonValue spritemapRoot = FlixelJson.parse(spritemapText);
+    FlixelJsonValue animationRoot = FlixelJson.parse(animationText);
 
     // Obtain the backing texture. If the asset has not been preloaded, fall back to a synchronous load.
     FlixelGraphic graphic = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
-    Texture texture = graphic.getTexture();
+    FlixelTexture texture = graphic.getTexture();
 
     // Build the atlas region list and the "ATLAS name -> region index" lookup shared by every ASI reference.
     FlixelObjectIntMap<String> nameToIndex = new FlixelObjectIntMap<>();
-    Array<FlixelFrame> atlas = FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, nameToIndex);
-    if (atlas.size == 0) {
+    FlixelArray<FlixelFrame> atlas = FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, nameToIndex);
+    if (atlas.getSize() == 0) {
       throw new IllegalArgumentException("Spritemap JSON produced zero atlas regions.");
     }
 
@@ -320,7 +317,7 @@ final class FlixelAnimateRigLoader {
     sprite.updateHitbox();
 
     // Start the anchor clip so the sprite has a visible pose even before game code calls playAnimation.
-    controller.playAnimation(resolvedAnchorName, true, true);
+    controller.play(resolvedAnchorName, true, true);
   }
 
   /**
@@ -354,23 +351,23 @@ final class FlixelAnimateRigLoader {
         FlixelSpritemapJsonLoader.resolveAssetPath(spritemapJsonPath));
     String animationText = FlixelSpritemapJsonLoader.readUtf8Text(
         FlixelSpritemapJsonLoader.resolveAssetPath(animationJsonPath));
-    JsonValue spritemapRoot = new JsonReader().parse(spritemapText);
-    JsonValue animationRoot = new JsonReader().parse(animationText);
+    FlixelJsonValue spritemapRoot = FlixelJson.parse(spritemapText);
+    FlixelJsonValue animationRoot = FlixelJson.parse(animationText);
 
     FlixelGraphic graphic = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
-    Texture texture = graphic.getTexture();
+    FlixelTexture texture = graphic.getTexture();
 
     // Parse the new atlas with a fresh local lookup, then offset every entry so the indices point
     // into the merged atlas (existing rig frames first, appended frames after). This lets the bake
-    // path reuse a single Array<FlixelFrame> without ever discriminating between "old" and "new"
+    // path reuse a single FlixelArray<FlixelFrame> without ever discriminating between "old" and "new"
     // frames at runtime.
     FlixelObjectIntMap<String> localNameToIndex = new FlixelObjectIntMap<>();
-    Array<FlixelFrame> newAtlasFrames =
+    FlixelArray<FlixelFrame> newAtlasFrames =
         FlixelSpritemapJsonLoader.parseAtlasSprites(spritemapRoot, texture, localNameToIndex);
-    if (newAtlasFrames.size == 0) {
+    if (newAtlasFrames.getSize() == 0) {
       throw new IllegalArgumentException("Appended spritemap JSON produced zero atlas regions.");
     }
-    int atlasOffset = existing.atlas.size;
+    int atlasOffset = existing.atlas.getSize();
     existing.atlas.addAll(newAtlasFrames);
 
     FlixelObjectIntMap<String> nameToIndex = new FlixelObjectIntMap<>(localNameToIndex.getSize());
@@ -424,14 +421,14 @@ final class FlixelAnimateRigLoader {
    * @param anchorMinY Anchor bounding-box minimum Y in Flash Y-down world space.
    * @param anchorHeight Anchor bounding-box height in pixels (used by the Y-flip in
    *   {@link #bakePartAffine}).
-   * @param controller The controller to register clip durations on (one libGDX
-   *   {@link com.badlogic.gdx.graphics.g2d.Animation} per clip name).
+   * @param controller The controller to register clip durations on (one
+   *   {@link FlixelAnimation} per clip name).
    * @param clipsOut The map to populate. Existing entries with the same name are overwritten.
    */
   private void bakeClipsInto(
       @NotNull ParsedAnimation parsed,
       float fps,
-      @NotNull Array<FlixelFrame> atlas,
+      @NotNull FlixelArray<FlixelFrame> atlas,
       @NotNull FlixelObjectIntMap<String> nameToIndex,
       float anchorMinX,
       float anchorMinY,
@@ -449,7 +446,7 @@ final class FlixelAnimateRigLoader {
       for (int t = 0; t < clip.duration; t++) {
         scratchRaw.clear();
         int absoluteTick = clip.startTick + t;
-        JsonValue mainFrame = findMainFrameAt(parsed.mainFrames, absoluteTick);
+        FlixelJsonValue mainFrame = findMainFrameAt(parsed.mainFrames, absoluteTick);
         if (mainFrame != null) {
           int frameLocalTime = absoluteTick - readIntOr(mainFrame, "I", 0);
           collectKeyframeParts(parsed, mainFrame, frameLocalTime, nameToIndex, scratchRaw);
@@ -471,14 +468,14 @@ final class FlixelAnimateRigLoader {
       clipsOut.put(clip.name, new FlixelAnimateRig.Clip(clip.name, kfs));
 
       // Register the clip with the animation controller so getCurrentKeyframeIndex() advances over
-      // time. The actual frame indices are irrelevant (the rig draw path ignores them), but libGDX's
-      // Animation requires at least one entry, so feed it a duplicate of atlas[0] per tick. We
+      // time. The actual frame indices are irrelevant (the rig draw path ignores them), but
+      // FlixelAnimation requires at least one entry, so feed it a duplicate of atlas[0] per tick. We
       // register with loop=false, so the backing Animation's PlayMode is NORMAL; runtime looping is
       // controlled entirely by FlixelAnimationController.playAnimation(...) and its own looping
       // flag, and registering as NORMAL guarantees that a non-looping clip's last keyframe
       // stays put instead of snapping back to the first when stateTime reaches the clip's duration.
       int[] dummyFrames = new int[clip.duration];
-      controller.addAnimationFromAtlas(clip.name, dummyFrames, 1f / fps, false);
+      controller.addFromAtlas(clip.name, dummyFrames, 1f / fps, false);
     }
   }
 
@@ -517,10 +514,10 @@ final class FlixelAnimateRigLoader {
       @NotNull ParsedAnimation parsed,
       int anchorClipIndex,
       @NotNull FlixelObjectIntMap<String> nameToIndex,
-      @NotNull Array<FlixelFrame> atlas,
+      @NotNull FlixelArray<FlixelFrame> atlas,
       @NotNull float[] out) {
     ClipDef clip = parsed.clipDefs.get(anchorClipIndex);
-    JsonValue mainFrame = findMainFrameAt(parsed.mainFrames, clip.startTick);
+    FlixelJsonValue mainFrame = findMainFrameAt(parsed.mainFrames, clip.startTick);
     if (mainFrame == null) {
       return;
     }
@@ -546,12 +543,12 @@ final class FlixelAnimateRigLoader {
    *
    * @param mainFrames The main-layer FR list, in declaration order.
    * @param absoluteTick The tick on the main timeline to look up.
-   * @return The matching {@link JsonValue} FR, or {@code null} if no FR covers this tick.
+   * @return The matching {@link FlixelJsonValue} FR, or {@code null} if no FR covers this tick.
    */
   @Nullable
-  private static JsonValue findMainFrameAt(@NotNull FlixelArray<JsonValue> mainFrames, int absoluteTick) {
+  private static FlixelJsonValue findMainFrameAt(@NotNull FlixelArray<FlixelJsonValue> mainFrames, int absoluteTick) {
     for (int i = 0; i < mainFrames.getSize(); i++) {
-      JsonValue fr = mainFrames.get(i);
+      FlixelJsonValue fr = mainFrames.get(i);
       int frI = readIntOr(fr, "I", 0);
       int frDu = readIntOr(fr, "DU", 1);
       if (absoluteTick >= frI && absoluteTick < frI + frDu) {
@@ -599,26 +596,23 @@ final class FlixelAnimateRigLoader {
    */
   private void collectKeyframeParts(
       @NotNull ParsedAnimation parsed,
-      @NotNull JsonValue mainFrame,
+      @NotNull FlixelJsonValue mainFrame,
       int frameTime,
       @NotNull FlixelObjectIntMap<String> nameToIndex,
       @NotNull FlixelArray<RawPart> out) {
-    JsonValue elements = mainFrame.get("E");
-    if (elements == null || !elements.isArray() || elements.size == 0) {
+    FlixelJsonValue elements = mainFrame.get("E");
+    if (elements == null || !elements.isArray() || elements.getSize() == 0) {
       return;
     }
 
     if (parsed.usesSymbolGraph) {
       // The main layer holds exactly one SI per keyframe, which is the root symbol for the nested rig.
-      JsonValue firstElement = elements.child;
-      if (firstElement == null) {
-        firstElement = elements.get(0);
-      }
-      JsonValue rootSi = firstElement != null ? firstElement.get("SI") : null;
+      FlixelJsonValue firstElement = elements.get(0);
+      FlixelJsonValue rootSi = firstElement != null ? firstElement.get("SI") : null;
       if (rootSi == null) {
         return;
       }
-      JsonValue rootSnNode = rootSi.get("SN");
+      FlixelJsonValue rootSnNode = rootSi.get("SN");
       if (rootSnNode == null) {
         return;
       }
@@ -653,15 +647,16 @@ final class FlixelAnimateRigLoader {
    * @param out Receives one {@link RawPart} per {@code ASI} instance in declaration order.
    */
   private void collectDirectAsiElements(
-      @NotNull JsonValue elements,
+      @NotNull FlixelJsonValue elements,
       @NotNull FlixelObjectIntMap<String> nameToIndex,
       @NotNull FlixelArray<RawPart> out) {
-    for (JsonValue element = elements.child; element != null; element = element.next) {
-      JsonValue asi = element.get("ASI");
+    for (int ei = 0; ei < elements.getSize(); ei++) {
+      FlixelJsonValue element = elements.get(ei);
+      FlixelJsonValue asi = element.get("ASI");
       if (asi == null) {
         continue;
       }
-      JsonValue nameNode = asi.get("N");
+      FlixelJsonValue nameNode = asi.get("N");
       if (nameNode == null) {
         continue;
       }
@@ -692,7 +687,7 @@ final class FlixelAnimateRigLoader {
    * @param depth Current recursion depth; used only to guard against cyclic graphs.
    */
   private void visitSymbol(
-      @NotNull FlixelMap<String, JsonValue> symbolsByName,
+      @NotNull FlixelMap<String, FlixelJsonValue> symbolsByName,
       @NotNull FlixelObjectIntMap<String> nameToIndex,
       @NotNull String symbolName,
       int localTime,
@@ -702,45 +697,35 @@ final class FlixelAnimateRigLoader {
     if (depth > MAX_NEST) {
       return;
     }
-    JsonValue symbol = symbolsByName.get(symbolName);
+    FlixelJsonValue symbol = symbolsByName.get(symbolName);
     if (symbol == null) {
       return;
     }
-    JsonValue timeline = symbol.get("TL");
+    FlixelJsonValue timeline = symbol.get("TL");
     if (timeline == null) {
       return;
     }
-    JsonValue layers = timeline.get("L");
-    if (layers == null || !layers.isArray() || layers.size == 0) {
+    FlixelJsonValue layers = timeline.get("L");
+    if (layers == null || !layers.isArray() || layers.getSize() == 0) {
       return;
     }
 
-    // Build a fixed-order layer array so the loop can walk it in reverse. JsonValue's sibling list is a
-    // singly linked chain with no random access, so we have to snapshot it once.
-    int layerCount = 0;
-    for (JsonValue l = layers.child; l != null; l = l.next) {
-      layerCount++;
-    }
-    JsonValue[] layerArr = new JsonValue[layerCount];
-    int li = 0;
-    for (JsonValue l = layers.child; l != null; l = l.next) {
-      layerArr[li++] = l;
-    }
-
-    // Walk layers back-to-front (last in JSON = deepest; first in JSON = topmost).
-    for (int layerIdx = layerArr.length - 1; layerIdx >= 0; layerIdx--) {
-      JsonValue layer = layerArr[layerIdx];
-      JsonValue frames = layer.get("FR");
+    // Walk layers back-to-front (last in JSON = deepest; first in JSON = topmost). FlixelJsonValue
+    // supports random access, so no snapshot into a fixed-order array is needed.
+    for (int layerIdx = layers.getSize() - 1; layerIdx >= 0; layerIdx--) {
+      FlixelJsonValue layer = layers.get(layerIdx);
+      FlixelJsonValue frames = layer.get("FR");
       if (frames == null || !frames.isArray()) {
         continue;
       }
 
       // Find the FR range that covers this layer's current tick.
-      JsonValue activeFrame = null;
+      FlixelJsonValue activeFrame = null;
       int frameOffsetStart = 0;
-      for (JsonValue fr = frames.child; fr != null; fr = fr.next) {
-        int startIndex = fr.getInt("I");
-        int frameDuration = fr.getInt("DU");
+      for (int fi = 0; fi < frames.getSize(); fi++) {
+        FlixelJsonValue fr = frames.get(fi);
+        int startIndex = fr.getInt("I", 0);
+        int frameDuration = fr.getInt("DU", 0);
         if (localTime >= startIndex && localTime < startIndex + frameDuration) {
           activeFrame = fr;
           frameOffsetStart = startIndex;
@@ -752,17 +737,18 @@ final class FlixelAnimateRigLoader {
       }
       int frameLocalTime = localTime - frameOffsetStart;
 
-      JsonValue elements = activeFrame.get("E");
+      FlixelJsonValue elements = activeFrame.get("E");
       if (elements == null || !elements.isArray()) {
         continue;
       }
 
       // Elements within a single FR are visited forward, so their declared order is preserved in the
       // output list. Callers use that order as within-layer z-order.
-      for (JsonValue element = elements.child; element != null; element = element.next) {
-        JsonValue asi = element.get("ASI");
+      for (int ei = 0; ei < elements.getSize(); ei++) {
+        FlixelJsonValue element = elements.get(ei);
+        FlixelJsonValue asi = element.get("ASI");
         if (asi != null) {
-          JsonValue nameNode = asi.get("N");
+          FlixelJsonValue nameNode = asi.get("N");
           if (nameNode == null) {
             continue;
           }
@@ -777,11 +763,11 @@ final class FlixelAnimateRigLoader {
           continue;
         }
 
-        JsonValue si = element.get("SI");
+        FlixelJsonValue si = element.get("SI");
         if (si == null) {
           continue;
         }
-        JsonValue childSnNode = si.get("SN");
+        FlixelJsonValue childSnNode = si.get("SN");
         if (childSnNode == null) {
           continue;
         }
@@ -871,23 +857,24 @@ final class FlixelAnimateRigLoader {
    *   modes can divide safely.
    */
   private int computeSymbolDuration(
-      @NotNull FlixelMap<String, JsonValue> symbolsByName, @NotNull String symbolName) {
+      @NotNull FlixelMap<String, FlixelJsonValue> symbolsByName, @NotNull String symbolName) {
     Integer cached = symbolDurations.get(symbolName);
     if (cached != null) {
       return cached;
     }
     int dur = 1;
-    JsonValue symbol = symbolsByName.get(symbolName);
+    FlixelJsonValue symbol = symbolsByName.get(symbolName);
     if (symbol != null) {
-      JsonValue timeline = symbol.get("TL");
-      JsonValue layers = (timeline != null) ? timeline.get("L") : null;
+      FlixelJsonValue timeline = symbol.get("TL");
+      FlixelJsonValue layers = (timeline != null) ? timeline.get("L") : null;
       if (layers != null && layers.isArray()) {
-        for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-          JsonValue frames = layer.get("FR");
+        for (int layerIdx = 0; layerIdx < layers.getSize(); layerIdx++) {
+          FlixelJsonValue frames = layers.get(layerIdx).get("FR");
           if (frames == null || !frames.isArray()) {
             continue;
           }
-          for (JsonValue fr = frames.child; fr != null; fr = fr.next) {
+          for (int fi = 0; fi < frames.getSize(); fi++) {
+            FlixelJsonValue fr = frames.get(fi);
             int start = readIntOr(fr, "I", 0);
             int frameDuration = readIntOr(fr, "DU", 1);
             int end = start + frameDuration;
@@ -910,9 +897,9 @@ final class FlixelAnimateRigLoader {
    * @param dflt The fallback value.
    * @return The field's integer value, or {@code dflt}.
    */
-  private static int readIntOr(@NotNull JsonValue obj, @NotNull String key, int dflt) {
-    JsonValue v = obj.get(key);
-    if (v == null || !v.isNumber()) {
+  private static int readIntOr(@NotNull FlixelJsonValue obj, @NotNull String key, int dflt) {
+    FlixelJsonValue v = obj.get(key);
+    if (v == null || v.getKind() != FlixelJsonValue.Kind.NUMBER) {
       return dflt;
     }
     return v.asInt();
@@ -928,9 +915,9 @@ final class FlixelAnimateRigLoader {
    * @return The field's string value, or {@code dflt}.
    */
   @NotNull
-  private static String readStringOr(@NotNull JsonValue obj, @NotNull String key, @NotNull String dflt) {
-    JsonValue v = obj.get(key);
-    if (v == null || !v.isString()) {
+  private static String readStringOr(@NotNull FlixelJsonValue obj, @NotNull String key, @NotNull String dflt) {
+    FlixelJsonValue v = obj.get(key);
+    if (v == null || v.getKind() != FlixelJsonValue.Kind.STRING) {
       return dflt;
     }
     return v.asString();
@@ -974,16 +961,16 @@ final class FlixelAnimateRigLoader {
   }
 
   /**
-   * Converts Flash's {@code MX} (six values) or {@code M3D} (16 values, column-major 4x4) into a libGDX
+   * Converts Flash's {@code MX} (six values) or {@code M3D} (16 values, column-major 4x4) into a
    * {@link FlixelAffine}. {@code M3D} is preferred when present and long enough; otherwise {@code MX} is used.
    *
    * @param mx Optional {@code MX} array ({@code [a, b, c, d, tx, ty]}).
    * @param m3d Optional {@code M3D} array (16 floats).
    * @param out Destination affine; never reallocated.
    */
-  private static void matrixFromFlashMxOrM3d(@Nullable JsonValue mx, @Nullable JsonValue m3d,
+  private static void matrixFromFlashMxOrM3d(@Nullable FlixelJsonValue mx, @Nullable FlixelJsonValue m3d,
       @NotNull FlixelAffine out) {
-    if (m3d != null && m3d.isArray() && m3d.size >= 16) {
+    if (m3d != null && m3d.isArray() && m3d.getSize() >= 16) {
       matrixFromFlashM3d(m3d, out);
       return;
     }
@@ -997,7 +984,7 @@ final class FlixelAnimateRigLoader {
    * @param m3d The {@code M3D} JSON array with at least 16 entries. Must not be {@code null}.
    * @param out The destination; always written to.
    */
-  private static void matrixFromFlashM3d(@NotNull JsonValue m3d, @NotNull FlixelAffine out) {
+  private static void matrixFromFlashM3d(@NotNull FlixelJsonValue m3d, @NotNull FlixelAffine out) {
     out.m00 = m3d.get(0).asFloat();
     out.m01 = m3d.get(4).asFloat();
     out.m02 = m3d.get(12).asFloat();
@@ -1015,8 +1002,8 @@ final class FlixelAnimateRigLoader {
    * reset to identity.
    * @param out The destination; always written to, never reallocated.
    */
-  private static void matrixFromFlashMx(@Nullable JsonValue mx, @NotNull FlixelAffine out) {
-    if (mx == null || !mx.isArray() || mx.size < 6) {
+  private static void matrixFromFlashMx(@Nullable FlixelJsonValue mx, @NotNull FlixelAffine out) {
+    if (mx == null || !mx.isArray() || mx.getSize() < 6) {
       out.set(IDENTITY);
       return;
     }
@@ -1038,9 +1025,9 @@ final class FlixelAnimateRigLoader {
    * Bakes the final draw-ready affine for a single part.
    *
    * <p>For a non-rotated part the result equals {@code anchorShift * flipRig * P_flash * flipBitmap},
-   * where {@code flipBitmap = [1, 0, 0; 0, -1, origH]} converts libGDX Y-up local bitmap coordinates
+   * where {@code flipBitmap = [1, 0, 0; 0, -1, origH]} converts Y-up local bitmap coordinates
    * to Flash Y-down, and {@code anchorShift * flipRig} converts the resulting Flash-world point back
-   * to libGDX Y-up while sliding the anchor bounding box's bottom-left corner onto the sprite origin.
+   * to Y-up while sliding the anchor bounding box's bottom-left corner onto the sprite origin.
    *
    * <p>For a part that was packed rotated 90 degrees clockwise in the atlas, Adobe Animate stores
    * the sprite sideways: the atlas footprint is {@code origH} pixels wide and {@code origW} pixels
@@ -1149,19 +1136,20 @@ final class FlixelAnimateRigLoader {
    * @param usesSymbolGraph {@code true} when the main layer uses root {@code E.SI} entries and {@link #symbolsByName()} defines
    * nested timelines. {@code false} for direct {@code E.ASI} document timelines.
    */
-  private record ParsedAnimation(@NotNull FlixelArray<ClipDef> clipDefs, @NotNull FlixelArray<JsonValue> mainFrames,
-      @NotNull FlixelMap<String, JsonValue> symbolsByName, float framesPerSecond,
+  private record ParsedAnimation(@NotNull FlixelArray<ClipDef> clipDefs,
+      @NotNull FlixelArray<FlixelJsonValue> mainFrames,
+      @NotNull FlixelMap<String, FlixelJsonValue> symbolsByName, float framesPerSecond,
       boolean usesSymbolGraph) {
     @NotNull
-    static ParsedAnimation parse(@NotNull JsonValue animationRoot) {
-      JsonValue an = animationRoot.get("AN");
-      JsonValue tl = (an != null) ? an.get("TL") : null;
-      JsonValue layers = (tl != null) ? tl.get("L") : null;
+    static ParsedAnimation parse(@NotNull FlixelJsonValue animationRoot) {
+      FlixelJsonValue an = animationRoot.get("AN");
+      FlixelJsonValue tl = (an != null) ? an.get("TL") : null;
+      FlixelJsonValue layers = (tl != null) ? tl.get("L") : null;
       if (layers == null || !layers.isArray()) {
         throw new IllegalArgumentException("Animation JSON is missing \"AN.TL.L\".");
       }
 
-      JsonValue mainFrameList = findSymbolRootMainFrameList(layers);
+      FlixelJsonValue mainFrameList = findSymbolRootMainFrameList(layers);
       boolean usesSymbolGraph = mainFrameList != null;
       if (mainFrameList == null) {
         mainFrameList = findDirectAsiMainFrameList(layers);
@@ -1174,14 +1162,15 @@ final class FlixelAnimateRigLoader {
       }
 
       FlixelArray<ClipDef> clipDefs = new FlixelArray<>();
-      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-        JsonValue frs = layer.get("FR");
+      for (int layerIdx = 0; layerIdx < layers.getSize(); layerIdx++) {
+        FlixelJsonValue frs = layers.get(layerIdx).get("FR");
         if (frs == null || !frs.isArray() || frs == mainFrameList) {
           continue;
         }
-        for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-          JsonValue n = fr.get("N");
-          if (n == null || !n.isString()) {
+        for (int fi = 0; fi < frs.getSize(); fi++) {
+          FlixelJsonValue fr = frs.get(fi);
+          FlixelJsonValue n = fr.get("N");
+          if (n == null || n.getKind() != FlixelJsonValue.Kind.STRING) {
             continue;
           }
           int startTick = readIntOr(fr, "I", 0);
@@ -1193,9 +1182,9 @@ final class FlixelAnimateRigLoader {
         }
       }
 
-      FlixelArray<JsonValue> mainFrames = new FlixelArray<>();
-      for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
-        mainFrames.add(fr);
+      FlixelArray<FlixelJsonValue> mainFrames = new FlixelArray<>();
+      for (int fi = 0; fi < mainFrameList.getSize(); fi++) {
+        mainFrames.add(mainFrameList.get(fi));
       }
       if (mainFrames.getSize() == 0) {
         throw new IllegalArgumentException("Animation JSON main layer contains zero keyframes.");
@@ -1210,13 +1199,14 @@ final class FlixelAnimateRigLoader {
             new ClipDef(deriveDefaultClipName(an), 0, computeExclusiveTimelineEnd(mainFrameList)));
       }
 
-      FlixelMap<String, JsonValue> symbolsByName = new FlixelMap<>();
-      JsonValue sd = animationRoot.get("SD");
+      FlixelMap<String, FlixelJsonValue> symbolsByName = new FlixelMap<>();
+      FlixelJsonValue sd = animationRoot.get("SD");
       if (sd != null) {
-        JsonValue s = sd.get("S");
+        FlixelJsonValue s = sd.get("S");
         if (s != null && s.isArray()) {
-          for (JsonValue sym = s.child; sym != null; sym = sym.next) {
-            JsonValue sn = sym.get("SN");
+          for (int si = 0; si < s.getSize(); si++) {
+            FlixelJsonValue sym = s.get(si);
+            FlixelJsonValue sn = sym.get("SN");
             if (sn != null) {
               symbolsByName.put(sn.asString(), sym);
             }
@@ -1230,10 +1220,10 @@ final class FlixelAnimateRigLoader {
       }
 
       float fps = 24f;
-      JsonValue md = animationRoot.get("MD");
+      FlixelJsonValue md = animationRoot.get("MD");
       if (md != null) {
-        JsonValue frt = md.get("FRT");
-        if (frt != null && frt.isNumber()) {
+        FlixelJsonValue frt = md.get("FRT");
+        if (frt != null && frt.getKind() == FlixelJsonValue.Kind.NUMBER) {
           fps = frt.asFloat();
         }
       }
@@ -1249,16 +1239,16 @@ final class FlixelAnimateRigLoader {
      * @return A non-empty clip name.
      */
     @NotNull
-    private static String deriveDefaultClipName(@NotNull JsonValue an) {
-      JsonValue sn = an.get("SN");
-      if (sn != null && sn.isString()) {
+    private static String deriveDefaultClipName(@NotNull FlixelJsonValue an) {
+      FlixelJsonValue sn = an.get("SN");
+      if (sn != null && sn.getKind() == FlixelJsonValue.Kind.STRING) {
         String s = sn.asString().trim();
         if (!s.isEmpty()) {
           return s;
         }
       }
-      JsonValue n = an.get("N");
-      if (n != null && n.isString()) {
+      FlixelJsonValue n = an.get("N");
+      if (n != null && n.getKind() == FlixelJsonValue.Kind.STRING) {
         String s = n.asString().trim();
         if (!s.isEmpty()) {
           return s;
@@ -1274,9 +1264,10 @@ final class FlixelAnimateRigLoader {
      * @param mainFrameList The main layer's {@code FR} array. Must not be {@code null}.
      * @return At least {@code 1}.
      */
-    private static int computeExclusiveTimelineEnd(@NotNull JsonValue mainFrameList) {
+    private static int computeExclusiveTimelineEnd(@NotNull FlixelJsonValue mainFrameList) {
       int maxExclusiveEnd = 0;
-      for (JsonValue fr = mainFrameList.child; fr != null; fr = fr.next) {
+      for (int fi = 0; fi < mainFrameList.getSize(); fi++) {
+        FlixelJsonValue fr = mainFrameList.get(fi);
         int i = readIntOr(fr, "I", 0);
         int du = readIntOr(fr, "DU", 1);
         int end = i + du;
@@ -1295,21 +1286,18 @@ final class FlixelAnimateRigLoader {
      * @return That layer's {@code FR} array, or {@code null}.
      */
     @Nullable
-    private static JsonValue findSymbolRootMainFrameList(@NotNull JsonValue layers) {
-      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-        JsonValue frs = layer.get("FR");
-        if (frs == null || !frs.isArray() || frs.size == 0) {
+    private static FlixelJsonValue findSymbolRootMainFrameList(@NotNull FlixelJsonValue layers) {
+      for (int layerIdx = 0; layerIdx < layers.getSize(); layerIdx++) {
+        FlixelJsonValue frs = layers.get(layerIdx).get("FR");
+        if (frs == null || !frs.isArray() || frs.getSize() == 0) {
           continue;
         }
-        JsonValue firstFrame = frs.child;
-        if (firstFrame == null) {
+        FlixelJsonValue firstFrame = frs.get(0);
+        FlixelJsonValue firstE = firstFrame.get("E");
+        if (firstE == null || !firstE.isArray() || firstE.getSize() == 0) {
           continue;
         }
-        JsonValue firstE = firstFrame.get("E");
-        if (firstE == null || !firstE.isArray() || firstE.size == 0) {
-          continue;
-        }
-        JsonValue firstEv = firstE.child;
+        FlixelJsonValue firstEv = firstE.get(0);
         if (firstEv == null || firstEv.get("SI") == null) {
           continue;
         }
@@ -1326,19 +1314,19 @@ final class FlixelAnimateRigLoader {
      * @return That layer's {@code FR} array, or {@code null}.
      */
     @Nullable
-    private static JsonValue findDirectAsiMainFrameList(@NotNull JsonValue layers) {
-      for (JsonValue layer = layers.child; layer != null; layer = layer.next) {
-        JsonValue frs = layer.get("FR");
-        if (frs == null || !frs.isArray() || frs.size == 0) {
+    private static FlixelJsonValue findDirectAsiMainFrameList(@NotNull FlixelJsonValue layers) {
+      for (int layerIdx = 0; layerIdx < layers.getSize(); layerIdx++) {
+        FlixelJsonValue frs = layers.get(layerIdx).get("FR");
+        if (frs == null || !frs.isArray() || frs.getSize() == 0) {
           continue;
         }
-        for (JsonValue fr = frs.child; fr != null; fr = fr.next) {
-          JsonValue stageElements = fr.get("E");
+        for (int fi = 0; fi < frs.getSize(); fi++) {
+          FlixelJsonValue stageElements = frs.get(fi).get("E");
           if (stageElements == null || !stageElements.isArray()) {
             continue;
           }
-          for (JsonValue el = stageElements.child; el != null; el = el.next) {
-            if (el.get("ASI") != null) {
+          for (int ei = 0; ei < stageElements.getSize(); ei++) {
+            if (stageElements.get(ei).get("ASI") != null) {
               return frs;
             }
           }

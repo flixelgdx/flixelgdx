@@ -23,14 +23,14 @@
  */
 package org.flixelgdx.backend.jvm.logging;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-
+import org.flixelgdx.Flixel;
 import org.flixelgdx.logging.FlixelLogFileHandler;
-import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -75,17 +75,17 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
     }
 
     String resolvedPath = (logsFolderPath != null) ? logsFolderPath : getDefaultLogsFolderPath();
-    if (resolvedPath == null || Gdx.files == null) {
+    if (resolvedPath == null) {
       return;
     }
 
-    FileHandle logsFolder = Gdx.files.absolute(resolvedPath);
+    File logsFolder = new File(resolvedPath);
     logsFolder.mkdirs();
 
     pruneOldLogFiles(logsFolder, maxLogFiles);
 
     String timestamp = LocalDateTime.now().format(FILE_DATE_FORMAT);
-    FileHandle logFile = Gdx.files.absolute(resolvedPath + "/flixel-" + timestamp + ".log");
+    File logFile = new File(logsFolder, "flixel-" + timestamp + ".log");
 
     shutdownRequested = false;
     active = true;
@@ -101,7 +101,7 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
             break;
           }
           if (line != null) {
-            logFile.writeString(line + "\n", true);
+            appendLine(logFile, line);
             continue;
           }
           if (shutdownRequested) {
@@ -110,7 +110,7 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
         }
         String rest;
         while ((rest = logQueue.poll()) != null) {
-          logFile.writeString(rest + "\n", true);
+          appendLine(logFile, rest);
         }
       } catch (Exception ignored) {
         // Silently stop if the file becomes inaccessible.
@@ -161,7 +161,7 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
   @Override
   @Nullable
   public String getDefaultLogsFolderPath() {
-    return FlixelRuntimeUtil.getDefaultLogsFolderPath();
+    return Flixel.runtime.getDefaultLogsFolderPath();
   }
 
   /**
@@ -171,15 +171,25 @@ public class FlixelJvmLogFileHandler implements FlixelLogFileHandler {
    * @param logsFolder The directory containing log files.
    * @param maxLogFiles The maximum number of files to retain.
    */
-  private static void pruneOldLogFiles(FileHandle logsFolder, int maxLogFiles) {
-    FileHandle[] existing = logsFolder.list();
+  private static void pruneOldLogFiles(File logsFolder, int maxLogFiles) {
+    File[] existing = logsFolder.listFiles();
     if (existing == null || existing.length < maxLogFiles) {
       return;
     }
-    Arrays.sort(existing, Comparator.comparing(FileHandle::name));
+    Arrays.sort(existing, Comparator.comparing(File::getName));
     int toDelete = existing.length - maxLogFiles + 1;
     for (int i = 0; i < toDelete; i++) {
       existing[i].delete();
+    }
+  }
+
+  /** Appends one line to the log file, ignoring IO failures so logging never crashes the game. */
+  private static void appendLine(File logFile, String line) {
+    try (FileWriter writer = new FileWriter(logFile, true)) {
+      writer.write(line);
+      writer.write('\n');
+    } catch (IOException ignored) {
+      // Silently drop the line if the file becomes inaccessible.
     }
   }
 }

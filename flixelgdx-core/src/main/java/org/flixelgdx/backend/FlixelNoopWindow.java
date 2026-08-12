@@ -35,7 +35,7 @@ public enum FlixelNoopWindow implements FlixelWindow {
   public void setOpacity(float opacity) {}
 
   @Override
-  public boolean supportsWindowOpacity() {
+  public boolean supportsOpacity() {
     return false;
   }
 }

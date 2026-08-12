@@ -23,20 +23,21 @@
  */
 package org.flixelgdx.input.mouse;
 
-import com.badlogic.gdx.math.Vector2;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelMouseListener;
+import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Mouse and pointer polling with screen/world coordinates. Access via {@code Flixel.mouse} after
- * {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
+ * {@link Flixel#start(FlixelGame, FlixelGameRunner)}.
  *
  * <h2>Scroll wheel deltas</h2>
  * <p>
@@ -85,7 +86,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   @Nullable
   private FlixelCamera worldCamera;
 
-  private final Vector2 tmpUnproject = new Vector2();
+  private final FlixelVector tmpUnproject = new FlixelVector();
 
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
@@ -133,7 +134,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
       return;
     }
     tmpUnproject.set(screenX, screenY);
-    cam.getViewport().unproject(tmpUnproject);
+    cam.unproject(tmpUnproject);
     worldX = tmpUnproject.x;
     worldY = tmpUnproject.y;
   }
@@ -189,13 +190,13 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   public float getWorldX(@NotNull FlixelCamera cam) {
     tmpUnproject.set(screenX, screenY);
-    cam.getViewport().unproject(tmpUnproject);
+    cam.unproject(tmpUnproject);
     return tmpUnproject.x;
   }
 
   public float getWorldY(@NotNull FlixelCamera cam) {
     tmpUnproject.set(screenX, screenY);
-    cam.getViewport().unproject(tmpUnproject);
+    cam.unproject(tmpUnproject);
     return tmpUnproject.y;
   }
 
@@ -226,7 +227,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * The debug overlay's own sprite picker / camera tools use the raw variants so they can opt
    * in to "ignore the suppression" when needed.
    *
-   * @param button libGDX button index (e.g. {@code 0} for left mouse button).
+   * @param button Button index (e.g. {@code 0} for left mouse button).
    * @return {@code true} if the button is pressed and input is enabled and not suppressed by UI.
    */
   public boolean pressed(int button) {
@@ -239,7 +240,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /**
    * Same as {@link #pressed(int)} but bypasses the "captured by debug UI" check.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button is pressed and input is enabled, regardless of UI capture.
    */
   public boolean rawPressed(int button) {
@@ -250,7 +251,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Returns whether the given mouse button was just pressed this frame. Returns {@code false}
    * while the debug UI reports that another UI layer is capturing mouse input.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just pressed and input is enabled and not suppressed.
    */
   public boolean justPressed(int button) {
@@ -263,7 +264,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /**
    * Same as {@link #justPressed(int)} but bypasses the "captured by debug UI" check.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just pressed and input is enabled, regardless of UI capture.
    */
   public boolean rawJustPressed(int button) {
@@ -274,7 +275,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Returns whether the given mouse button was just released this frame. Returns {@code false}
    * while the debug UI reports that another UI layer is capturing mouse input.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just released and input is enabled and not suppressed.
    */
   public boolean justReleased(int button) {
@@ -287,7 +288,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /**
    * Same as {@link #justReleased(int)} but bypasses the "captured by debug UI" check.
    *
-   * @param button libGDX button index.
+   * @param button Button index.
    * @return {@code true} if the button was just released and input is enabled, regardless of UI capture.
    */
   public boolean rawJustReleased(int button) {

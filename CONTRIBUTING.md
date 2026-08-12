@@ -26,10 +26,11 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 > 4. We do not mind if you create pull request *descriptions* with AI. As long as the information provided is accurate and there's clear evidence 
 > that the pull request fulfills the task it's for, it's okay by us; *however*, you're **not allowed to use AI to comment in the PR conversation or 
 > any area where it requires human communication.** That must be done by you. It's extremely rude and unethical to use a chatbot to talk to other 
-> human collaborators for you.
+> human collaborators for you. (**NOTE**: The only exception to this rule is if you're a non-native English speaker, and you use AI to smooth out
+> your messages, which is 100% okay by us. Just please let us know beforehand so we don't mistake your communication to be disrespectful!)
 > 
-> 5. AI-generated bug reports are **not allowed**. If there's an issue with your game or the framework itself, *you* are the one who should address it.
-> AI is allowed to find the bug itself, but you need to be the one presenting it. This also includes feature requests for the same obvious reasons.
+> 5. AI-generated bug reports are **not allowed**. If  there's an issue with your game or the framework itself, *you* are the one who should address 
+> it. AI is allowed to find the bug itself, but you need to the one presenting it. This also includes feature requests for the same obvious reasons.
 
 ## Java runtime (JDK 17, Eclipse Temurin)
 

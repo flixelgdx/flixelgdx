@@ -34,14 +34,13 @@ import org.jetbrains.annotations.Nullable;
  * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
  * contract as {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager}. Actions read {@link org.flixelgdx.Flixel#keys Flixel.keys},
  * {@link org.flixelgdx.Flixel#mouse Flixel.mouse}, {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}, and {@code Gdx.input}
- * during {@link #update(float)}. This class is <strong>not</strong> an {@link com.badlogic.gdx.InputProcessor}: you do not add
- * it to {@link com.badlogic.gdx.InputMultiplexer}. Framework keyboard and mouse processors stay the single libGDX entry
+ * during {@link #update(float)}. This class does not hook platform input events directly. Framework keyboard and mouse managers stay the single entry
  * points for those devices.
  *
  * <h2>Lifecycle (normal games)</h2>
  *
  * <ol>
- *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#initialize Flixel.initialize}.</li>
+ *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}.</li>
  *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
  *       call {@link #add(FlixelAction)} for each, and add {@link FlixelDigitalBinding} / {@link FlixelAnalogBinding} instances.</li>
  *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame FlixelGame} calls

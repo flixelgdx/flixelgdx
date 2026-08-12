@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.logging;
 
-import com.badlogic.gdx.ApplicationLogger;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.FlixelAsciiCodes;
@@ -45,7 +43,7 @@ import java.util.function.Consumer;
  * {@link #setMaxLogFiles(int)} to configure file logging, then {@link #startFileLogging()} to
  * start and {@link #stopFileLogging()} to shut down the log writer thread.
  */
-public class FlixelLogger implements ApplicationLogger {
+public class FlixelLogger {
 
   private static final DateTimeFormatter LOG_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -931,32 +929,26 @@ public class FlixelLogger implements ApplicationLogger {
     this.defaultTag = defaultTag != null ? defaultTag : "";
   }
 
-  @Override
   public void log(String tag, String message) {
     info(tag, message);
   }
 
-  @Override
   public void log(String tag, String message, Throwable exception) {
     error(tag, message, exception);
   }
 
-  @Override
   public void error(String tag, String message) {
     error(tag, message, (Throwable) null);
   }
 
-  @Override
   public void error(String tag, String message, Throwable exception) {
     error(tag, (Object) message, exception);
   }
 
-  @Override
   public void debug(String tag, String message) {
     debug(tag, (Object) message);
   }
 
-  @Override
   public void debug(String tag, String message, Throwable exception) {
     String msg = (exception != null) ? (message + " | Exception: " + exception) : message;
     outputLog(tag, msg, FlixelLogLevel.DEBUG, false, null, 0, null, null);

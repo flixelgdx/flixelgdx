@@ -74,6 +74,23 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Returns whether the active backend maps the NDC depth range to {@code [0, 1]} (Vulkan, Metal,
+   * Direct3D) rather than {@code [-1, 1]} (OpenGL, WebGL).
+   *
+   * <p>Orthographic projection matrices must match the backend's convention or all geometry at
+   * the default depth will be depth-clipped. Renderers such as bgfx expose this as a capability
+   * flag; query it here instead of hard-coding per-backend checks outside the graphics layer.
+   *
+   * <p>Defaults to {@code false}, the OpenGL convention, which is what headless and web backends
+   * use.
+   *
+   * @return {@code true} when NDC depth runs from {@code 0} to {@code 1}.
+   */
+  default boolean isDepthZeroToOne() {
+    return false;
+  }
+
+  /**
    * Returns the shared sprite batch every {@link FlixelDrawable} in the framework renders through.
    *
    * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedBatch},
@@ -111,23 +128,151 @@ public interface FlixelGraphicsManager {
   default void endFrame() {}
 
   /**
+   * Marks the start of one camera's on-screen draw pass. The framework calls this before drawing
+   * each camera (and the overlay and debug passes) so a backend can isolate that camera's
+   * projection from the others.
+   *
+   * <p>This matters on backends where the view or projection is shared state for a whole render
+   * pass rather than per draw call. Without a fresh pass per camera, the last camera's projection
+   * would apply to every camera drawn into the same pass, breaking per-camera zoom, scroll, and
+   * debug overlays. Backends that set the projection per draw call can leave this as a no-op.
+   */
+  default void beginCameraPass() {}
+
+  /**
    * Uploads pixel data to a new GPU texture.
    *
    * @param width Texture width in pixels.
    * @param height Texture height in pixels.
    * @param rgba Tightly packed 8-bit-per-channel RGBA pixels, row by row.
-   * @return An opaque backend texture handle, or {@code 0} on failure or when no backend is present.
+   * @return A texture handle; a size-only stand-in when no backend is present.
    */
-  default long createTexture(int width, int height, @NotNull ByteBuffer rgba) {
-    return 0L;
+  @NotNull
+  default FlixelTexture createTexture(int width, int height, @NotNull ByteBuffer rgba) {
+    return new FlixelNoopTexture(width, height);
   }
 
   /**
-   * Releases a texture previously returned by {@link #createTexture(int, int, ByteBuffer)}.
+   * Uploads a CPU-side image to a new GPU texture.
    *
-   * @param handle The texture handle to free; ignored when {@code 0}.
+   * @param image The pixels to upload.
+   * @return A texture handle; a size-only stand-in when no backend is present.
    */
-  default void destroyTexture(long handle) {}
+  @NotNull
+  default FlixelTexture createTexture(@NotNull FlixelImage image) {
+    return createTexture(image.width(), image.height(), image.pixels());
+  }
+
+  /**
+   * Decodes an encoded image file (PNG, JPEG, and other common formats) into CPU-side pixels.
+   *
+   * <p>Decoding is a backend service because the codec differs per platform (stb on desktop, the
+   * browser on web). Returns {@code null} when the data cannot be decoded or no backend is
+   * present. Most games load images through the asset manager instead of calling this directly.
+   *
+   * @param encoded The raw bytes of the encoded file.
+   * @return The decoded image, or {@code null} when decoding is unavailable or fails.
+   */
+  @Nullable
+  default FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
+    return null;
+  }
+
+  /**
+   * Uploads a GPU texture-container file (for example KTX2) straight to the GPU, keeping it in its
+   * compressed form.
+   *
+   * <p>Unlike {@link #decodeImage(ByteBuffer)}, the bytes here are a full container (with header,
+   * mip levels, and a compressed pixel format), not a plain image to unpack into RGBA. The backend
+   * hands the whole container to the GPU driver, which keeps the compressed data resident and saves
+   * both memory and upload bandwidth. This is how {@code .ktx2} siblings load when a backend
+   * supports them; see {@link org.flixelgdx.asset.FlixelAssetManager#setCompressedTexturesEnabled(boolean)}.
+   *
+   * <p>Returns {@code null} when the running backend cannot consume compressed containers, so the
+   * asset system can fall back to the plain image. The default is {@code null} (unsupported).
+   *
+   * @param container The raw bytes of a GPU texture-container file.
+   * @return The uploaded texture, or {@code null} when compressed containers are unsupported or the
+   *     data is invalid.
+   */
+  @Nullable
+  default FlixelTexture createCompressedTexture(@NotNull ByteBuffer container) {
+    return null;
+  }
+
+  /**
+   * Creates an off-screen render target for post-processing passes.
+   *
+   * <p>When no backend is present this returns {@link FlixelUnsupportedRenderTarget}, whose
+   * operations do nothing.
+   *
+   * @param width Target width in pixels.
+   * @param height Target height in pixels.
+   * @return A new render target; never {@code null}.
+   */
+  @NotNull
+  default FlixelRenderTarget createRenderTarget(int width, int height) {
+    return FlixelUnsupportedRenderTarget.INSTANCE;
+  }
+
+  /**
+   * Clears the current draw surface (screen or active render target) to one color.
+   *
+   * @param r Red component in {@code [0, 1]}.
+   * @param g Green component in {@code [0, 1]}.
+   * @param b Blue component in {@code [0, 1]}.
+   * @param a Alpha component in {@code [0, 1]}.
+   */
+  default void clear(float r, float g, float b, float a) {}
+
+  /**
+   * Restricts drawing to a rectangle of the draw surface, in framebuffer pixels measured from
+   * the bottom-left corner. Used for sprite clip rectangles.
+   *
+   * @param x Left edge of the scissor rectangle.
+   * @param y Bottom edge of the scissor rectangle.
+   * @param width Scissor width; values below {@code 1} are clamped to {@code 1}.
+   * @param height Scissor height; values below {@code 1} are clamped to {@code 1}.
+   */
+  default void setScissor(int x, int y, int width, int height) {}
+
+  /** Removes the scissor rectangle so drawing covers the whole surface again. */
+  default void clearScissor() {}
+
+  /**
+   * Sets the rectangle of the draw surface that rendering maps into, in framebuffer pixels
+   * measured from the bottom-left corner. Cameras call this to place their viewport.
+   *
+   * @param x Left edge of the viewport.
+   * @param y Bottom edge of the viewport.
+   * @param width Viewport width.
+   * @param height Viewport height.
+   */
+  default void setViewport(int x, int y, int width, int height) {}
+
+  /**
+   * @return The drawable surface width in physical pixels, or {@code 0} when unknown.
+   */
+  default int getBackBufferWidth() {
+    return 0;
+  }
+
+  /**
+   * @return The drawable surface height in physical pixels, or {@code 0} when unknown.
+   */
+  default int getBackBufferHeight() {
+    return 0;
+  }
+
+  /**
+   * Forces the whole draw surface's alpha channel to fully opaque without touching its color
+   * channels.
+   *
+   * <p>This is only meaningful on desktop backends that requested a transparent-capable
+   * framebuffer: after drawing, the framework calls this so tinted sprites do not composite
+   * through the real desktop. Every other backend leaves it a no-op.
+   */
+  default void forceOpaqueAlpha() {}
 
   /**
    * Compiles a shader source bundle into a usable program on the active backend.

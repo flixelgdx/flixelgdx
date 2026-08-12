@@ -45,8 +45,8 @@ import java.util.Objects;
  * {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.graphics.getApi() == FlixelGraphicsApi.WebGL) {
- *   // Fall back to a simpler effect on the WebGL path.
+ * if (Flixel.graphics.getApi() == FlixelGraphicsApi.Vulkan) {
+ *   // Enable a Vulkan-specific rendering path.
  * }
  * }</pre>
  *
@@ -56,8 +56,23 @@ public final class FlixelGraphicsApi {
 
   private static final FlixelMap<String, FlixelGraphicsApi> REGISTRY = new FlixelMap<>();
 
-  /** The native backend built on bgfx. */
-  public static final FlixelGraphicsApi Bgfx = of("bgfx");
+  /** The desktop OpenGL renderer. */
+  public static final FlixelGraphicsApi OpenGL = of("OpenGL");
+
+  /** The embedded or mobile OpenGL ES renderer. */
+  public static final FlixelGraphicsApi OpenGLES = of("OpenGLES");
+
+  /** The cross-platform Vulkan renderer. */
+  public static final FlixelGraphicsApi Vulkan = of("Vulkan");
+
+  /** The Apple Metal renderer, used on macOS and iOS. */
+  public static final FlixelGraphicsApi Metal = of("Metal");
+
+  /** The Direct3D 11 renderer, used on Windows. */
+  public static final FlixelGraphicsApi Direct3D11 = of("Direct3D11");
+
+  /** The Direct3D 12 renderer, used on Windows. */
+  public static final FlixelGraphicsApi Direct3D12 = of("Direct3D12");
 
   /** The web backend built on the browser's native WebGPU. */
   public static final FlixelGraphicsApi WebGPU = of("WebGPU");

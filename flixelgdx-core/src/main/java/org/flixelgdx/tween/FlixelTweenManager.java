@@ -72,9 +72,9 @@ public class FlixelTweenManager {
   public <T extends FlixelTween> FlixelTweenManager registerTweenType(
       Class<T> tweenClass,
       Supplier<T> poolFactory) {
-    FlixelPool<FlixelTween> pool = new FlixelPool<FlixelTween>() {
+    FlixelPool<FlixelTween> pool = new FlixelPool<>() {
       @Override
-      protected FlixelTween newObject() {
+      protected @NotNull FlixelTween newObject() {
         return poolFactory.get();
       }
     };

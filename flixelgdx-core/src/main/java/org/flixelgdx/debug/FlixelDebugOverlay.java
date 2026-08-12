@@ -23,12 +23,6 @@
  */
 package org.flixelgdx.debug;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
@@ -40,6 +34,7 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.group.FlixelGroupable;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
@@ -48,7 +43,10 @@ import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.math.FlixelVector;
+import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDebugUtil;
+import org.flixelgdx.util.FlixelSpriteUtil;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,9 +133,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Mouse button used to pan the debug camera while paused. Set to a negative value to disable. */
   public int cameraPanButton = FlixelMouseButton.RIGHT;
 
-  @Nullable
-  private ShapeRenderer shapeRenderer;
-
   protected float statsTimer = 0f;
   protected int cachedFps;
   protected float cachedHeapMegabytes;
@@ -163,7 +158,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Native (GL/audio) heap usage in megabytes per sample. */
   protected final float[] perfNativeMb = new float[PERF_HISTORY_SIZE];
 
-  /** FPS as reported by libGDX per sample. */
+  /** FPS per sample, as reported by the graphics backend. */
   protected final float[] perfFps = new float[PERF_HISTORY_SIZE];
 
   /**
@@ -206,11 +201,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private int lastPanScreenX;
   private int lastPanScreenY;
 
-  private final Vector2 panUnprojectA = new Vector2();
-  private final Vector2 panUnprojectB = new Vector2();
+  private final FlixelColor boundingBoxColor = new FlixelColor();
+
+  private final FlixelVector panUnprojectA = new FlixelVector();
+  private final FlixelVector panUnprojectB = new FlixelVector();
 
   /** Cached unproject scratch used while picking/dragging objects (kept off the per-frame allocation path). */
-  private final Vector2 pickUnproject = new Vector2();
+  private final FlixelVector pickUnproject = new FlixelVector();
 
   /** World-space offset between cursor and dragged sprite's origin so it does not snap on grab. */
   private float dragOffsetX;
@@ -331,9 +328,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
     if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
-      cachedFps = Gdx.graphics.getFramesPerSecond();
-      cachedHeapMegabytes = Gdx.app.getJavaHeap() / (1024f * 1024f);
-      cachedNativeMegabytes = Gdx.app.getNativeHeap() / (1024f * 1024f);
+      cachedFps = Flixel.graphics.getFps();
+      cachedHeapMegabytes = Flixel.runtime.getJavaHeapBytes() / (1024f * 1024f);
+      cachedNativeMegabytes = Flixel.runtime.getNativeHeapBytes() / (1024f * 1024f);
       cachedObjectCount = FlixelDebugUtil.countActiveMembers();
       cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
@@ -359,9 +356,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected void pushPerfSample(float elapsed) {
     int idx = perfHead;
     perfFrameMs[idx] = Flixel.getRawElapsed() * 1000f;
-    perfHeapMb[idx] = Gdx.app.getJavaHeap() / (1024f * 1024f);
-    perfNativeMb[idx] = Gdx.app.getNativeHeap() / (1024f * 1024f);
-    perfFps[idx] = Gdx.graphics.getFramesPerSecond();
+    perfHeapMb[idx] = Flixel.runtime.getJavaHeapBytes() / (1024f * 1024f);
+    perfNativeMb[idx] = Flixel.runtime.getNativeHeapBytes() / (1024f * 1024f);
+    perfFps[idx] = Flixel.graphics.getFps();
     perfRenderCalls[idx] = sampleRenderCallsNow();
     perfHead = (idx + 1) % PERF_HISTORY_SIZE;
     if (perfCount < PERF_HISTORY_SIZE) {
@@ -443,7 +440,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * normally type into that field (letters, punctuation, arrows, Enter, and so on). Return {@code false} by default so
    * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)} shortcuts keep working.
    *
-   * @param keycode FlixelGDX {@link FlixelKey} or libGDX {@link Input.Keys} key code being handled by a debug binding.
+   * @param keycode FlixelGDX {@link FlixelKey} key code being handled by a debug binding.
    * @return {@code true} to skip handling this key for debug shortcuts this frame.
    */
   protected boolean shouldSuppressDebugRawKeybind(int keycode) {
@@ -538,7 +535,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // imgui debugger is focused (otherwise our own debug controls would be filtered out by the
     // input suppression we set up to protect the game's regular input).
     boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
-        || Gdx.input.isKeyPressed(Input.Keys.ALT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.ALT_RIGHT);
+        || Flixel.input.isKeyPressed(FlixelKey.ALT_LEFT) || Flixel.input.isKeyPressed(FlixelKey.ALT_RIGHT);
     if (alt && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
         && !shouldSuppressDebugRawKeybind(cameraCycleLeftKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.getSize()) % cams.getSize();
@@ -552,7 +549,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     boolean uiCapturedMouse = isMouseCapturedByUI();
     float scrollDelta = Flixel.mouse.getScrollDeltaY();
     if (!uiCapturedMouse && scrollDelta != 0f) {
-      float newZoom = cam.getZoom() + scrollDelta * -0.08f;
+      float newZoom = cam.getZoom() + scrollDelta * 0.08f;
       if (newZoom < 0.05f) {
         newZoom = 0.05f;
       }
@@ -561,16 +558,16 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       }
       cam.setZoom(newZoom);
     }
-    cam.applyLibCameraTransform();
+    cam.applyCameraTransform();
 
     if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
       if (!Flixel.mouse.rawJustPressed(cameraPanButton)) {
         panUnprojectA.set(lastPanScreenX, lastPanScreenY);
-        cam.getViewport().unproject(panUnprojectA);
+        cam.unproject(panUnprojectA);
         panUnprojectB.set(sx, sy);
-        cam.getViewport().unproject(panUnprojectB);
+        cam.unproject(panUnprojectB);
         cam.scrollX -= panUnprojectB.x - panUnprojectA.x;
         cam.scrollY -= panUnprojectB.y - panUnprojectA.y;
       }
@@ -613,19 +610,12 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // Make sure the camera matrix reflects the latest scroll / zoom values before we
     // unproject. handleInspectCameraTools also calls this (it runs first when both are active),
     // but calling it here too is cheap and guarantees correctness if the call order ever shifts.
-    cam.applyLibCameraTransform();
+    cam.applyCameraTransform();
 
-    // The viewport's unproject returns coordinates in VIEW space (the same space the batch
-    // draws into). Sprite hitboxes live in world space (their x and y fields), so we need to
-    // add the camera's scroll back in plus the view margin (the offset induced by zoom that
-    // FlixelCamera.worldToViewX() subtracts during draw). Without this conversion the picker would
-    // feel off when the camera is scrolled or zoomed: clicks would land on the wrong sprite or miss entirely.
+    // The viewport's unproject returns coordinates in VIEW space (the same space the batch draws into).
     pickUnproject.set(Flixel.mouse.getScreenX(), Flixel.mouse.getScreenY());
-    cam.getViewport().unproject(pickUnproject);
+    cam.unproject(pickUnproject);
 
-    // View-space coordinates match FlixelSprite.draw() (worldToViewX / worldToViewY). Hit-testing
-    // in view space fixes mis-picks when members use scroll factors (common in layered stages
-    // and sprite groups where siblings overlap in world AABB but render at different parallax).
     float viewPickX = pickUnproject.x;
     float viewPickY = pickUnproject.y;
     float worldX = viewPickX + cam.scrollX + cam.getViewMarginX();
@@ -677,7 +667,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * is {@code true}, mirroring the actual draw chain.
    *
    * <p>Only objects assigned to {@code cam} are eligible. An object with a {@code null} or
-   * empty camera list is treated as assigned to all cameras (the libGDX default).
+   * empty camera list is treated as assigned to all cameras (the default).
    *
    * <p>Hidden ({@code visible == false}) and dead ({@code exists == false}) members are skipped so
    * the picker never grabs invisible UI elements or pooled corpses.
@@ -760,7 +750,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /**
    * Returns {@code true} if {@code basic} should be rendered by {@code cam}. An object with a
-   * {@code null} or empty camera list renders to all cameras (the libGDX default).
+   * {@code null} or empty camera list renders to all cameras (the default).
    */
   private static boolean isAssignedToCamera(@NotNull FlixelBasic basic, @NotNull FlixelCamera cam) {
     FlixelCamera[] list = basic.cameras;
@@ -801,20 +791,20 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
 
-    if (shapeRenderer == null) {
-      shapeRenderer = new ShapeRenderer();
-    }
-
-    Gdx.gl.glEnable(GL20.GL_BLEND);
-    Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+    FlixelBatch batch = Flixel.graphics.getBatch();
+    FlixelFrame whitePixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
 
     for (FlixelCamera cam : cameras) {
       if (cam == null) {
         continue;
       }
-      cam.getViewport().apply();
-      shapeRenderer.setProjectionMatrix(cam.getCamera().combined);
-      shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+      Flixel.graphics.beginCameraPass();
+      cam.applyViewport();
+      batch.setProjection(cam.getCombinedMatrix());
+      batch.begin();
+      // Scale the outline thickness by the inverse zoom so it stays a constant width on screen and
+      // does not thin out to nothing when the camera is zoomed out.
+      final float thickness = Math.max(1f, 1f / Math.max(0.0001f, cam.getZoom()));
       FlixelDebugUtil.forEachDebugDrawable(drawable -> {
         if (drawable == null) {
           return;
@@ -842,14 +832,12 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         if (c == null || c.length < 4) {
           c = FALLBACK_BOUNDING_BOX_COLOR;
         }
-        shapeRenderer.setColor(c[0], c[1], c[2], c[3]);
-        shapeRenderer.rect(drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
-            drawable.getDebugWidth(), drawable.getDebugHeight());
+        boundingBoxColor.set(c[0], c[1], c[2], c[3]);
+        FlixelSpriteUtil.drawBorder(batch, whitePixel, drawable.getDebugDrawX(cam), drawable.getDebugDrawY(cam),
+            drawable.getDebugWidth(), drawable.getDebugHeight(), thickness, boundingBoxColor);
       });
-      shapeRenderer.end();
+      batch.end();
     }
-
-    Gdx.gl.glDisable(GL20.GL_BLEND);
   }
 
   /**
@@ -865,6 +853,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     snapshotRenderCalls();
+    // The debug UI draws in screen space, so give it its own render pass rather than inheriting the
+    // last camera's projection.
+    Flixel.graphics.beginCameraPass();
     drawUI();
   }
 
@@ -999,9 +990,6 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     destroyed = true;
-    if (shapeRenderer != null) {
-      shapeRenderer.dispose();
-    }
   }
 
   /** Default key codes for the debug overlay. */

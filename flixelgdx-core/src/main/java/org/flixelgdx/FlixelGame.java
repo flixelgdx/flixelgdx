@@ -23,20 +23,7 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.Application;
-import com.badlogic.gdx.ApplicationListener;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.math.Matrix4;
-import com.badlogic.gdx.utils.ScreenUtils;
-
+import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
@@ -46,14 +33,18 @@ import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
-import org.flixelgdx.graphics.FlixelSpriteBatch;
+import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.input.action.FlixelActionSets;
+import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.tween.FlixelTween;
+import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.util.FlixelSpriteUtil;
 import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.util.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
@@ -68,8 +59,8 @@ import java.util.function.Supplier;
  *
  * <p>To actually use this properly, you need to create a subclass of this and override
  * the methods you want to change. It is strongly advised that you do <b>NOT</b> use this class to
- * add the main gameplay logic to your game. Your code should go into your {@link FlixelState}s or
- * libGDX {@link Screen} implementations instead.
+ * add the main gameplay logic to your game. Your code should go into your {@link FlixelState}s
+ * instead.
  *
  * <p>It is recommended for using this in the following way:
  *
@@ -85,23 +76,19 @@ import java.util.function.Supplier;
  * }
  * }</pre>
  *
- * Then, in a platform-specific launcher, you can create a new instance of your game and run it:
+ * Then hand your game to the platform launcher, which installs that platform's backend, builds its
+ * runner, and starts the game for you:
  *
  * <pre>{@code
- * // Example of how to create a new game instance and run it using the LWJGL3 launcher.
- * public class Lwjgl3Launcher {
+ * public class DesktopLauncher {
  *
  *   public static void main(String[] args) {
- *     if (StartupHelper.startNewJvmIfRequired()) {
- *       return;
- *     }
- *
- *     FlixelLwjgl3Launcher.launch(new MyGame());
+ *     FlixelDesktopLauncher.launch(new MyGame());
  *   }
  * }
  * }</pre>
  */
-public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
+public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
   private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
 
@@ -129,10 +116,10 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   protected FlixelBatch batch;
 
   /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
-  protected Color bgColor = new Color(Color.BLACK);
+  protected FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
 
-  /** 1x1 white texture used to draw solid fills (camera bg, FX); tinted via {@link FlixelSpriteBatch#setColor(Color)}. */
-  protected Texture bgTexture;
+  /** Shared 1x1 white pixel frame used to draw solid fills (camera bg, FX). */
+  protected FlixelFrame bgPixel;
 
   /** Convenience reference to the global {@link Flixel#cameras} list (the single source of truth). */
   protected final FlixelArray<FlixelCamera> cameras = Flixel.cameras;
@@ -140,14 +127,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** The camera used to render the global overlay. Not registered in {@link Flixel#cameras}. */
   @Nullable
   private FlixelCamera overlayCamera;
-
-  /**
-   * A standard single-texture batch used only for the post-processing composite pass when a
-   * {@link FlixelCamera} has a {@link FlixelShader} assigned. Created lazily on first use and
-   * disposed in {@link #destroy()}.
-   */
-  @Nullable
-  private SpriteBatch compositeBatch;
 
   /** The member group for the global overlay. Updated and drawn when the overlay is enabled. */
   @Nullable
@@ -175,12 +154,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
 
-  /** Orthographic projection matrix reused each frame for the FBO composite pass. */
-  private final Matrix4 fboOrtho = new Matrix4();
+  /** Orthographic projection matrix reused each frame for the render-target composite pass. */
+  private final FlixelMatrix fboOrtho = new FlixelMatrix();
 
   /**
    * Camera dimensions the current {@link #fboOrtho} matrix was last built for.
-   * -1 means uninitialized; any change triggers a rebuild and a re-upload to the composite batch.
+   * -1 means uninitialized; any change triggers a rebuild and a re-upload to the batch.
    */
   private int fboOrthoW = -1;
 
@@ -188,8 +167,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * Ordered list of shaders applied to all game cameras as a group before the global overlay is
-   * drawn. Shaders are run in insertion order; two or more shaders chain via ping-pong FBOs so
-   * each pass feeds the next without re-rendering the scene.
+   * drawn. Shaders are run in insertion order; two or more shaders chain via ping-pong render
+   * targets so each pass feeds the next without re-rendering the scene.
    *
    * <p>Managed via {@link #addGlobalShader(FlixelShader)} and
    * {@link #removeGlobalShader(FlixelShader)}.
@@ -197,26 +176,20 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   private final FlixelArray<FlixelShader> globalShaders = new FlixelArray<>();
 
   /**
-   * Primary scene framebuffer for the global shader pass.
+   * Primary scene render target for the global shader pass.
    * Created on the first {@link #addGlobalShader} call and recreated on window resize.
    * Null when {@link #globalShaders} is empty.
    */
   @Nullable
-  private FrameBuffer sceneFboA;
+  private FlixelRenderTarget sceneFboA;
 
   /**
-   * Secondary scene framebuffer used only when two or more global shaders are active.
-   * Acts as the ping-pong target so each shader reads from one FBO and writes to the other.
+   * Secondary scene render target used only when two or more global shaders are active.
+   * Acts as the ping-pong target so each shader reads from one target and writes to the other.
    * Null when fewer than two shaders are present.
    */
   @Nullable
-  private FrameBuffer sceneFboB;
-
-  @Nullable
-  private TextureRegion sceneFboRegionA;
-
-  @Nullable
-  private TextureRegion sceneFboRegionB;
+  private FlixelRenderTarget sceneFboB;
 
   /**
    * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
@@ -384,36 +357,29 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * <p>This method configures the crash handler, sets up input processing, initializes the debug overlay, configures
    * the ANSI system for color output in terminals, and then switches to the initial state.
    *
-   * <p>This method is called automatically by libGDX's {@link ApplicationListener#create()} method when the game is
-   * created, so it is not necessary to call this method manually in most cases. However, it can be overridden to
-   * perform custom initialization before the game is created.
-   *
-   * @see ApplicationListener#create()
+   * <p>This method is called automatically by the platform runner once the backend surface is
+   * ready, so it is not necessary to call it manually in most cases. However, it can be overridden
+   * to perform custom initialization when the game is created.
    */
-  @Override
   public void create() {
     configureCrashHandler(); // This should ALWAYS be called first no matter what!
 
-    // Deferred to here (rather than the asset manager's constructor) since the KTX2 loader
-    // queries Gdx.gl for supported texture formats, and no GL context exists until create() runs.
-    Flixel.assets.enableCompressedTextures();
+    // Deferred to here (rather than earlier) since compressed-texture support depends on the
+    // graphics backend, which is only guaranteed to be running once create() is reached.
+    Flixel.assets.setCompressedTexturesEnabled(true);
 
     isClosed = false;
     isClosing = false;
     stateLifecyclePauseDispatched = false;
 
-    batch = new FlixelSpriteBatch();
+    batch = Flixel.graphics.getBatch();
     cameras.clear();
     cameras.add(new FlixelCamera((int) initialSize.x, (int) initialSize.y));
     overlayCamera = new FlixelCamera((int) initialSize.x, (int) initialSize.y);
     overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
     };
 
-    Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-    pixmap.setColor(Color.WHITE);
-    pixmap.fill();
-    bgTexture = new Texture(pixmap);
-    pixmap.dispose();
+    bgPixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
 
     // Register keyboard, mouse, and touch listeners with the input device.
     if (Flixel.keys != null) {
@@ -437,7 +403,12 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     Flixel.switchState(initialStateFactory.get(), true, true, true, initialStateFactory);
   }
 
-  @Override
+  /**
+   * Called by the platform runner when the game's drawable surface changes size.
+   *
+   * @param width The new surface width in pixels.
+   * @param height The new surface height in pixels.
+   */
   public void resize(int width, int height) {
     for (FlixelCamera camera : cameras) {
       camera.update(width, height, camera.centerCameraOnResize);
@@ -537,7 +508,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   public void draw(@NotNull FlixelBatch batch) {
     Flixel.Signals.preDraw.dispatch();
 
-    ScreenUtils.clear(bgColor); // Clear the screen to refresh it.
+    Flixel.graphics.clear(bgColor.r, bgColor.g, bgColor.b, bgColor.a); // Clear the screen to refresh it.
     FlixelState state = Flixel.state;
 
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
@@ -545,32 +516,31 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     boolean useGlobalFbo = !globalShaders.isEmpty() && sceneFboA != null;
     if (useGlobalFbo) {
       sceneFboA.begin();
-      Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
-      Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+      Flixel.graphics.clear(0f, 0f, 0f, 0f);
     }
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
     FlixelCamera[] cameraItems = cameras.getItems();
     for (int ci = 0, cn = cameras.getSize(); ci < cn; ci++) {
       FlixelCamera camera = cameraItems[ci];
+      Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(camera);
       try {
         if (gamePaused) {
-          camera.applyLibCameraTransform();
+          camera.applyCameraTransform();
         }
-        camera.getViewport().apply();
+        camera.applyViewport();
 
         FlixelShader cameraShader = camera.getShader();
         if (cameraShader != null) {
           camera.getFbo().begin();
-          Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
-          Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+          Flixel.graphics.clear(0f, 0f, 0f, 0f);
         }
 
-        batch.setProjectionMatrix(camera.getCamera().combined);
+        batch.setProjection(camera.getCombinedMatrix());
         batch.begin();
 
-        camera.fill(camera.bgColor, camera.useBgAlphaBlending, 1f, batch, bgTexture);
+        camera.fill(camera.bgColor, camera.useBgAlphaBlending, 1f, batch, bgPixel);
 
         // Walk the state/substate chain. Each state is drawn only if it is the
         // active (innermost) state or if its persistentDraw flag is true.
@@ -586,7 +556,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
           current = sub;
         }
 
-        camera.drawFX(batch, bgTexture);
+        camera.drawFX(batch, bgPixel);
 
         batch.end();
 
@@ -595,33 +565,22 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         batch.setShader(null);
 
         if (cameraShader != null) {
+          // Ending the camera's render target returns drawing to the global target (when active)
+          // or the screen, since render targets nest.
           camera.getFbo().end();
-          if (useGlobalFbo) {
-            // camera.getFbo().end() restores GL framebuffer to 0 (the screen).
-            Gdx.gl20.glBindFramebuffer(GL20.GL_FRAMEBUFFER, sceneFboA.getFramebufferHandle());
-          }
-          camera.getViewport().apply();
-          // FlixelSpriteBatch.flush() leaves the active GL texture unit at the last
-          // slot it bound (e.g. unit 2 after drawing 3 atlases). SpriteBatch.flush()
-          // calls Texture.bind() with no unit argument, so it binds the FBO texture
-          // to whatever unit is still active, not unit 0.
-          Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
-          if (compositeBatch == null) {
-            compositeBatch = new SpriteBatch();
-          }
+          camera.applyViewport();
           if (camera.width != fboOrthoW || camera.height != fboOrthoH) {
             fboOrthoW = camera.width;
             fboOrthoH = camera.height;
             fboOrtho.setToOrtho2D(0, 0, fboOrthoW, fboOrthoH);
-            compositeBatch.setProjectionMatrix(fboOrtho);
           }
-          if (compositeBatch.getShader() != cameraShader.getProgram()) {
-            compositeBatch.setShader(cameraShader.getProgram());
-          }
-          compositeBatch.begin();
+          batch.setProjection(fboOrtho);
+          batch.setShader(cameraShader.getProgram());
+          batch.begin();
           cameraShader.applyUniforms();
-          compositeBatch.draw(camera.getFboRegion(), 0, 0, camera.width, camera.height);
-          compositeBatch.end();
+          drawFullTarget(batch, camera.getFbo(), camera.width, camera.height);
+          batch.end();
+          batch.setShader(null);
         }
       } finally {
         Flixel.setDrawCamera(null);
@@ -634,13 +593,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
 
     if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
+      Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(overlayCamera);
       try {
         if (gamePaused) {
-          overlayCamera.applyLibCameraTransform();
+          overlayCamera.applyCameraTransform();
         }
-        overlayCamera.getViewport().apply();
-        batch.setProjectionMatrix(overlayCamera.getCamera().combined);
+        overlayCamera.applyViewport();
+        batch.setProjection(overlayCamera.getCombinedMatrix());
         batch.begin();
         overlayGroup.draw(batch);
         batch.end();
@@ -656,51 +616,43 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       Flixel.debug.overlay.draw();
     }
 
-    squashFramebufferAlpha();
+    if (!desktopTransparencyActive && transparentFramebufferRequested
+        && Flixel.host.getPlatform() == FlixelPlatform.Desktop) {
+      Flixel.graphics.forceOpaqueAlpha();
+    }
 
     Flixel.Signals.postDraw.dispatch();
   }
 
-  private void squashFramebufferAlpha() {
-    if (desktopTransparencyActive || !transparentFramebufferRequested) {
-      return;
-    }
-    if (Gdx.app.getType() != Application.ApplicationType.Desktop) {
-      return;
-    }
-    GL20 gl = Gdx.gl;
-    boolean scissorWasOn = gl.glIsEnabled(GL20.GL_SCISSOR_TEST);
-    if (scissorWasOn) {
-      gl.glDisable(GL20.GL_SCISSOR_TEST);
-    }
-    gl.glColorMask(false, false, false, true);
-    gl.glClearColor(0f, 0f, 0f, 1f);
-    gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-    gl.glColorMask(true, true, true, true);
-    if (scissorWasOn) {
-      gl.glEnable(GL20.GL_SCISSOR_TEST);
+  /**
+   * Draws a render target's whole texture into the given rectangle, flipping it vertically when
+   * the backend stores the target upside down.
+   */
+  private static void drawFullTarget(FlixelBatch batch, FlixelRenderTarget target, float width, float height) {
+    if (target.isFlipped()) {
+      batch.draw(target.getTexture(), 0, 0, width, height, 0f, 1f, 1f, 0f);
+    } else {
+      batch.draw(target.getTexture(), 0, 0, width, height);
     }
   }
 
   /**
-   * Updates the game's global and internal {@link #update(float)} and {@link #draw(FlixelBatch)} methods, with
-   * elapsed time clamped to the min and max values to prevent major lag spikes.
+   * Runs one frame: {@link #update(float)} then {@link #draw(FlixelBatch)}, with the elapsed time
+   * clamped to the min and max values to prevent major lag spikes.
    *
-   * <p>This method is called automatically by libGDX's {@link ApplicationListener#render()} method when
-   * the game is running.
+   * <p>This method is called automatically by the platform runner every frame with the raw
+   * wall-clock time since the previous frame.
    *
    * <p>You should not (and cannot) override this method. You are encouraged to override either
    * {@link #update(float)} or {@link #draw(FlixelBatch)} instead, as they separate logic
-   * and rendering correctly.
+   * and drawing correctly.
    *
+   * @param rawDeltaSeconds The raw time since the last frame, in seconds.
    * @see #update(float)
    * @see #draw(FlixelBatch)
-   * @see ApplicationListener#render()
    */
-  @Override
-  public final void render() {
-    float rawDelta = Gdx.graphics != null ? Gdx.graphics.getDeltaTime() : Flixel.MIN_ELAPSED;
-    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+  public final void render(float rawDeltaSeconds) {
+    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDeltaSeconds, Flixel.MAX_ELAPSED));
     float elapsed = rawClamped * Flixel.timeScale;
     Flixel.rawElapsed = rawClamped;
     Flixel.elapsed = elapsed;
@@ -782,7 +734,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Do not override this method. Override {@link #onFocusLost()} instead.
    */
-  @Override
   public final void pause() {
     onFocusLost();
   }
@@ -790,7 +741,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   /**
    * Do not override this method. Override {@link #onFocusGained()} instead.
    */
-  @Override
   public final void resume() {
     onFocusGained();
   }
@@ -821,7 +771,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     }
     if (autoPause) {
       Flixel.sound.pause();
-      Gdx.graphics.setContinuousRendering(false);
+      Flixel.window.setContinuousRendering(false);
       shouldUpdate = false;
     }
     Flixel.Signals.windowUnfocused.dispatch();
@@ -854,8 +804,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       shouldUpdate = true;
       if (!gamePaused) {
         Flixel.sound.resume();
-        Gdx.graphics.setContinuousRendering(true);
-        Gdx.graphics.requestRendering();
+        Flixel.window.setContinuousRendering(true);
+        Flixel.window.requestRendering();
       }
     }
     Flixel.Signals.windowFocused.dispatch();
@@ -889,16 +839,16 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    * @param enabled If the game's window should be in fullscreen mode.
    */
   public void setFullscreen(boolean enabled) {
-    boolean currentFullscreen = Gdx.graphics.isFullscreen();
+    boolean currentFullscreen = Flixel.window.isFullscreen();
     if (enabled == currentFullscreen || fullscreenChangeInProgress) {
       return;
     }
     fullscreenChangeInProgress = true;
     try {
       if (enabled) {
-        Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+        Flixel.window.setFullscreen(Flixel.graphics.getDisplayMode());
       } else {
-        Gdx.graphics.setWindowedMode((int) initialSize.x, (int) initialSize.y);
+        Flixel.window.setWindowed((int) initialSize.x, (int) initialSize.y);
       }
     } finally {
       fullscreenChangeInProgress = false;
@@ -907,7 +857,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /** Toggles fullscreen mode on or off, depending on the current state. */
   public void toggleFullscreen() {
-    setFullscreen(!Gdx.graphics.isFullscreen());
+    setFullscreen(!Flixel.window.isFullscreen());
   }
 
   /**
@@ -921,7 +871,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
   }
 
   /** @see #destroy() */
-  @Override
   public final void dispose() {
     destroy();
   }
@@ -981,94 +930,79 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return removed;
   }
 
-  /** Creates (or recreates) the scene framebuffers used by the global shader chain. */
+  /** Creates (or recreates) the scene render targets used by the global shader chain. */
   private void initSceneFbos(boolean needPingPong) {
     disposeSceneFbos();
-    int w = Gdx.graphics.getBackBufferWidth();
-    int h = Gdx.graphics.getBackBufferHeight();
-    sceneFboA = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
-    sceneFboRegionA = new TextureRegion(sceneFboA.getColorBufferTexture());
-    sceneFboRegionA.flip(false, true);
+    int w = Flixel.graphics.getBackBufferWidth();
+    int h = Flixel.graphics.getBackBufferHeight();
+    sceneFboA = Flixel.graphics.createRenderTarget(w, h);
     if (needPingPong) {
-      sceneFboB = new FrameBuffer(Pixmap.Format.RGBA8888, w, h, false);
-      sceneFboRegionB = new TextureRegion(sceneFboB.getColorBufferTexture());
-      sceneFboRegionB.flip(false, true);
+      sceneFboB = Flixel.graphics.createRenderTarget(w, h);
     }
   }
 
-  /** Releases the scene framebuffers and clears the region references. */
+  /** Releases the scene render targets. */
   private void disposeSceneFbos() {
     if (sceneFboA != null) {
-      sceneFboA.dispose();
+      sceneFboA.destroy();
       sceneFboA = null;
-      sceneFboRegionA = null;
     }
     if (sceneFboB != null) {
-      sceneFboB.dispose();
+      sceneFboB.destroy();
       sceneFboB = null;
-      sceneFboRegionB = null;
     }
   }
 
   /**
-   * Composites the scene framebuffer to the screen by running it through the global shader chain.
-   * When more than one shader is present the passes ping-pong between {@link #sceneFboA} and
-   * {@link #sceneFboB} so each shader reads from one texture and writes to the other.
+   * Composites the scene render target to the screen by running it through the global shader
+   * chain. When more than one shader is present the passes ping-pong between {@link #sceneFboA}
+   * and {@link #sceneFboB} so each shader reads from one texture and writes to the other.
    */
   private void applyGlobalShaderChain() {
-    if (compositeBatch == null) {
-      compositeBatch = new SpriteBatch();
-    }
-    int w = Gdx.graphics.getBackBufferWidth();
-    int h = Gdx.graphics.getBackBufferHeight();
+    int w = Flixel.graphics.getBackBufferWidth();
+    int h = Flixel.graphics.getBackBufferHeight();
     boolean usingA = true;
-    TextureRegion src = sceneFboRegionA;
+    FlixelRenderTarget src = sceneFboA;
     int n = globalShaders.getSize();
 
     for (int i = 0; i < n; i++) {
       FlixelShader gs = globalShaders.get(i);
       boolean isLast = (i == n - 1);
 
-      Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
-
       if (w != fboOrthoW || h != fboOrthoH) {
         fboOrthoW = w;
         fboOrthoH = h;
         fboOrtho.setToOrtho2D(0, 0, w, h);
-        compositeBatch.setProjectionMatrix(fboOrtho);
       }
-      if (compositeBatch.getShader() != gs.getProgram()) {
-        compositeBatch.setShader(gs.getProgram());
-      }
+      batch.setProjection(fboOrtho);
+      batch.setShader(gs.getProgram());
 
       if (!isLast) {
-        FrameBuffer dst = usingA ? sceneFboB : sceneFboA;
-        TextureRegion dstRegion = usingA ? sceneFboRegionB : sceneFboRegionA;
+        FlixelRenderTarget dst = usingA ? sceneFboB : sceneFboA;
         dst.begin();
-        Gdx.gl.glClearColor(0f, 0f, 0f, 0f);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        compositeBatch.begin();
+        Flixel.graphics.clear(0f, 0f, 0f, 0f);
+        batch.begin();
         gs.applyUniforms();
-        compositeBatch.draw(src, 0, 0, w, h);
-        compositeBatch.end();
+        drawFullTarget(batch, src, w, h);
+        batch.end();
         dst.end();
-        Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
-        src = dstRegion;
+        src = dst;
         usingA = !usingA;
       } else {
-        compositeBatch.begin();
+        batch.begin();
         gs.applyUniforms();
-        compositeBatch.draw(src, 0, 0, w, h);
-        compositeBatch.end();
+        drawFullTarget(batch, src, w, h);
+        batch.end();
       }
     }
+    batch.setShader(null);
   }
 
   /**
    * Destroys the game and all of its resources.
    *
    * <p>Note that this doesn't close the game entirely, it just disposes
-   * of the game's resources. If you want to close the entire game, use libGDX's {@link Application#exit()}.
+   * of the game's resources. If you want to close the entire game, use {@link Flixel#exit()}.
    */
   @Override
   public void destroy() {
@@ -1101,23 +1035,14 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     if (Flixel.state != null) {
       Flixel.state.destroy();
     }
-    if (batch != null) {
-      batch.dispose();
-      batch = null;
-    }
+    // The batch is owned by the graphics backend, not the game, so it is not destroyed here.
+    batch = null;
     disposeSceneFbos();
     globalShaders.clear();
-
-    if (compositeBatch != null) {
-      compositeBatch.dispose();
-      compositeBatch = null;
-      fboOrthoW = -1;
-      fboOrthoH = -1;
-    }
-    if (bgTexture != null) {
-      bgTexture.dispose();
-      bgTexture = null;
-    }
+    fboOrthoW = -1;
+    fboOrthoH = -1;
+    // bgPixel is a shared, persistent asset owned by the asset manager; do not destroy it here.
+    bgPixel = null;
 
     if (Flixel.assets != null) {
       Flixel.assets.destroy();
@@ -1169,9 +1094,9 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       Flixel.error(msg);
       Flixel.alert.error("Uncaught Exception", msg);
       destroy();
-      // Only use Gdx.app.exit() on non-iOS platforms to avoid App Store guideline violations!
-      if (Gdx.app.getType() != Application.ApplicationType.iOS) {
-        Gdx.app.exit();
+      // Only quit on non-iOS platforms to avoid App Store guideline violations!
+      if (Flixel.host.getPlatform() != FlixelPlatform.iOS) {
+        Flixel.exit();
       }
     });
   }
@@ -1181,7 +1106,8 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
    */
   public void resetCameras() {
     FlixelCamera camera = new FlixelCamera((int) initialSize.x, (int) initialSize.y);
-    camera.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), camera.centerCameraOnResize);
+    camera.update(Flixel.graphics.getBackBufferWidth(), Flixel.graphics.getBackBufferHeight(),
+        camera.centerCameraOnResize);
     cameras.clear();
     cameras.add(camera);
     // The debug-pause snapshot refers to cameras that no longer exist after this reset,
@@ -1258,11 +1184,6 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return batch;
   }
 
-  @Nullable
-  public SpriteBatch getCompositeBatch() {
-    return compositeBatch;
-  }
-
   /**
    * Returns the total number of {@link FlixelBatch} render calls issued during the most recently
    * completed frame, summed across all camera passes. This value is not reset by intermediate
@@ -1275,11 +1196,11 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
     return frameRenderCalls;
   }
 
-  public Color getBgColor() {
+  public FlixelColor getBgColor() {
     return bgColor;
   }
 
-  public void setBgColor(@NotNull Color bgColor) {
+  public void setBgColor(@NotNull FlixelColor bgColor) {
     if (bgColor == null) {
       return;
     }
@@ -1309,7 +1230,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
 
   /**
    * Updates global and per-camera backdrop drawing for desktop compositing. Called from
-   * {@link FlixelWindow FlixelWindow}. When desktop see-through is off but the GLFW window
+   * {@link FlixelWindow FlixelWindow}. When desktop see-through is off but the window
    * was created with a transparent-capable framebuffer, {@link FlixelDrawable#draw} also forces
    * framebuffer alpha to {@code 1} after rendering so tinted sprites do not composite through the real desktop.
    *
@@ -1396,7 +1317,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
       bgColor.b = g[2];
       bgColor.a = g[3];
     } else {
-      bgColor.set(Color.BLACK);
+      bgColor.set(FlixelColor.BLACK);
     }
     FlixelCamera[] camItems = cameras.getItems();
     int n = cameras.getSize();
@@ -1416,7 +1337,7 @@ public abstract class FlixelGame implements ApplicationListener, FlixelUpdatable
         cam.useBgAlphaBlending = p[o + 4] != 0f;
       } else {
         cam.useBgAlphaBlending = false;
-        cam.bgColor.set(Color.BLACK);
+        cam.bgColor.set(FlixelColor.BLACK);
       }
     }
   }

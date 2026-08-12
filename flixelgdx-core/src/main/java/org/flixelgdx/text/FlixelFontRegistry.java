@@ -23,412 +23,305 @@
  */
 package org.flixelgdx.text;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
-
+import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.collections.FlixelIntMap;
 import org.flixelgdx.collections.FlixelMap;
-import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.graphics.FlixelImage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 /**
- * A global registry for TrueType ({@code .ttf}/{@code .otf}) fonts that can be used
- * with {@link FlixelText}.
+ * Global registry of fonts available to {@link FlixelText}.
  *
- * <p>Fonts are registered once with a unique string identifier and an asset path, then
- * referenced by that identifier throughout the game. The registry caches
- * {@link FreeTypeFontGenerator} instances internally so that multiple {@link FlixelText}
- * objects sharing the same font ID reuse the same generator, avoiding redundant file parsing.
- * Generated {@link BitmapFont} instances are also cached (keyed by font source and glyph
- * parameters) so repeated {@link FlixelText} instances with the same settings share one
- * texture-backed font. The built-in libGDX default bitmap font is cached per pixel size.
+ * <p>Register a scalable font file ({@code .ttf} or {@code .otf}) once under a short id, then
+ * reference it from any number of text objects. Baked {@link FlixelFont} instances are cached
+ * per id, size, and filter so repeated use never re-rasterizes:
  *
- * <h2>Usage</h2>
  * <pre>{@code
- * // Register fonts at startup (e.g. in your FlixelState.create()):
- * FlixelFontRegistry.register("pixel", Gdx.files.internal("fonts/pixel.ttf"));
- * FlixelFontRegistry.register("ui",    Gdx.files.internal("fonts/opensans.ttf"));
+ * // At startup:
+ * FlixelFontRegistry.register("main", Flixel.files.internal("fonts/Nunito.ttf"));
+ * FlixelFontRegistry.setDefault("main");
  *
- * // Optionally set a global default so FlixelText objects use it automatically:
- * FlixelFontRegistry.setDefault("ui");
- *
- * // Use in FlixelText:
- * FlixelText title = new FlixelText(0, 0, 0, "Hello!", 32);
- * title.setFont("pixel");
- *
- * // Clean up when the game shuts down:
- * FlixelFontRegistry.dispose();
+ * // Anywhere:
+ * FlixelText title = new FlixelText(20, 20, 0, "Hello!", 32);
+ * title.setFont("main");
  * }</pre>
  *
- * <h2>Lifecycle</h2>
- * <p>{@link #dispose()} is called when the game shuts down (in
- * {@code FlixelGame.dispose()}) to release all cached generators. Individual entries
- * can be removed earlier with {@link #unregister(String)}.
+ * <p>Scalable fonts bake through the platform's {@link FlixelFontRasterizer}, installed by the
+ * backend via {@link #setRasterizer(FlixelFontRasterizer)}. When no rasterizer or no
+ * registered font is available, text falls back to the packaged bitmap default font
+ * (lsans-15, an AngelCode {@code .fnt}), scaled to the requested size, so text always renders.
  */
 public final class FlixelFontRegistry {
 
-  /**
-   * Packaged copy of libGDX default {@code lsans-15} ({@code .fnt} + {@code lsans-15.png} alongside), so
-   * desktop, mobile, and TeaVM can open the same path without relying on gdx JAR internal entries.
-   */
-  private static final String DEFAULT_BITMAP_FNT = "org/flixelgdx/bitmap/lsans-15.fnt";
+  private static final String PACKAGED_FONT_BASE = "org/flixelgdx/bitmap/lsans-15";
 
-  private static final Map<String, Entry> entries = new HashMap<>();
+  /** Registered font file bytes by id. */
+  private static final FlixelMap<String, byte[]> fontData = new FlixelMap<>();
 
-  /** The ID of the font that FlixelText uses when no explicit font is set. */
+  /** Baked fonts keyed by {@code id|size|smooth}. */
+  private static final FlixelMap<String, FlixelFont> bakedFonts = new FlixelMap<>();
+
+  @Nullable
+  private static FlixelFontRasterizer rasterizer;
+
+  @Nullable
+  private static FlixelFont packagedDefault;
+
+  @Nullable
   private static String defaultFontId;
 
-  /**
-   * Shared libGDX default {@link BitmapFont} instances, one per requested pixel size (after
-   * scaling the built-in 15px font to match).
-   */
-  private static final FlixelIntMap<BitmapFont> defaultBitmapFontsBySize = new FlixelIntMap<>();
-
-  /**
-   * FreeType-generated bitmap fonts keyed by {@link #freeTypeBitmapFontKey(String, int, int)}.
-   */
-  private static final FlixelMap<String, BitmapFont> freeTypeBitmapFonts = new FlixelMap<>();
+  private static boolean packagedDefaultFailed;
 
   private FlixelFontRegistry() {}
 
   /**
-   * Registers a TrueType font under the given identifier. If an entry with the same
-   * ID already exists, it is replaced (and its cached generator is disposed of).
+   * Installs the platform's font rasterizer. Called by the backend launcher before startup;
+   * replacing it invalidates nothing that is already baked.
    *
-   * @param id A unique identifier for this font (e.g. {@code "pixel"}, {@code "main"}, {@code "bold"}).
-   * @param fontFile A libGDX {@link FileHandle} pointing to the {@code .ttf} or {@code .otf} asset.
-   * @throws IllegalArgumentException if {@code id} is {@code null}/empty or {@code fontFile} is {@code null}.
+   * @param newRasterizer The rasterizer, or {@code null} to leave scalable fonts unavailable.
    */
-  public static void register(@NotNull String id, @NotNull FileHandle fontFile) {
-    if (id.isEmpty()) {
-      throw new IllegalArgumentException("Font ID must not be empty.");
-    }
-
-    Entry existing = entries.get(id);
-    if (existing != null) {
-      removeFreeTypeBitmapFontsForPrefix("reg:" + id + "|");
-      existing.destroy();
-    }
-    entries.put(id, new Entry(fontFile));
+  public static void setRasterizer(@Nullable FlixelFontRasterizer newRasterizer) {
+    rasterizer = newRasterizer;
   }
 
   /**
-   * Removes a previously registered font and disposes of its cached generator.
-   * Does nothing if the ID is not registered. If the removed font was the
-   * {@linkplain #setDefault(String) default}, the default is cleared.
+   * Registers a scalable font file under an id, replacing any previous registration and
+   * destroying fonts baked from it.
    *
-   * @param id The font identifier to remove.
+   * @param id A short identifier such as {@code "main"}.
+   * @param fontFile The {@code .ttf} or {@code .otf} file to read.
+   */
+  public static void register(@NotNull String id, @NotNull FlixelFile fontFile) {
+    byte[] data = fontFile.readBytes();
+    if (data.length == 0) {
+      Flixel.warn("Fonts", "Font file for id '" + id + "' is missing or empty: " + fontFile.getPath());
+      return;
+    }
+    if (fontData.containsKey(id)) {
+      removeBakedFontsForId(id);
+    }
+    fontData.put(id, data);
+  }
+
+  /**
+   * Removes a registered font and destroys everything baked from it.
+   *
+   * @param id The id passed to {@link #register}.
    */
   public static void unregister(String id) {
-    if (id != null) {
-      removeFreeTypeBitmapFontsForPrefix("reg:" + id + "|");
-      if (id.equals(defaultFontId)) {
-        removeFreeTypeBitmapFontsForPrefix("def:" + id + "|");
-        defaultFontId = null;
-      }
+    if (fontData.remove(id) != null) {
+      removeBakedFontsForId(id);
     }
-    Entry removed = entries.remove(id);
-    if (removed != null) {
-      removed.destroy();
+    if (id != null && id.equals(defaultFontId)) {
+      defaultFontId = null;
     }
   }
 
   /**
-   * Returns whether a font with the given ID is registered.
+   * Returns whether a font is registered under {@code id}.
    *
-   * @param id The font identifier to check.
-   * @return {@code true} if the font is registered.
+   * @param id The id to check.
+   * @return {@code true} when registered.
    */
   public static boolean has(String id) {
-    return entries.containsKey(id);
+    return id != null && fontData.containsKey(id);
   }
 
   /**
-   * Returns the {@link FileHandle} for a registered font.
+   * Returns a snapshot of all registered ids.
    *
-   * @param id The font identifier.
-   * @return The font's file handle.
-   * @throws IllegalArgumentException if the ID is not registered.
+   * @return A freshly built list of ids; never {@code null}.
    */
-  public static FileHandle getFile(String id) {
-    Entry entry = requireEntry(id);
-    return entry.fontFile;
-  }
-
-  /**
-   * Returns the cached {@link FreeTypeFontGenerator} for a registered font,
-   * creating it lazily on first access. The generator is owned by the registry
-   * and must <em>not</em> be disposed by the caller.
-   *
-   * @param id The font identifier.
-   * @return The shared font generator.
-   * @throws IllegalArgumentException if the ID is not registered.
-   */
-  public static FreeTypeFontGenerator getGenerator(String id) {
-    Entry entry = requireEntry(id);
-    return entry.getOrCreateGenerator();
-  }
-
-  /**
-   * Returns an unmodifiable view of all currently registered font IDs.
-   *
-   * @return A set of registered font identifiers.
-   */
-  public static Set<String> getRegisteredIds() {
-    return Collections.unmodifiableSet(entries.keySet());
-  }
-
-  /**
-   * Sets the global default font that {@link FlixelText} will use when no explicit
-   * font is set via {@link FlixelText#setFont(FileHandle)} or
-   * {@link FlixelText#setFont(String)}. Pass {@code null} to clear the default,
-   * which causes FlixelText to fall back to libGDX's built-in bitmap font.
-   *
-   * @param id The registered font ID to use as the default, or {@code null} to clear.
-   * @throws IllegalArgumentException if {@code id} is non-null but not registered.
-   */
-  public static void setDefault(String id) {
-    if (id != null && !entries.containsKey(id)) {
-      throw new IllegalArgumentException("Font id \"" + id + "\" is not registered.");
+  @NotNull
+  public static FlixelArray<String> getRegisteredIds() {
+    FlixelArray<String> ids = new FlixelArray<>(fontData.getSize());
+    for (String key : fontData.keys()) {
+      ids.add(key);
     }
-    if (defaultFontId != null && !defaultFontId.equals(id)) {
-      removeFreeTypeBitmapFontsForPrefix("def:" + defaultFontId + "|");
-    }
+    return ids;
+  }
+
+  /**
+   * Marks a registered font as the default used by {@link FlixelText} objects that never call
+   * {@code setFont}.
+   *
+   * @param id The id passed to {@link #register}, or {@code null} to fall back to the packaged font.
+   */
+  public static void setDefault(@Nullable String id) {
     defaultFontId = id;
   }
 
   /**
-   * Returns the ID of the current default font, or {@code null} if none is set.
+   * @return The current default font id, or {@code null} when the packaged font is the default.
    */
+  @Nullable
   public static String getDefault() {
     return defaultFontId;
   }
 
   /**
-   * Returns the {@link FreeTypeFontGenerator} for the default font, or {@code null}
-   * if no default is set.
+   * Returns a baked font for a registered id at the given pixel size, baking and caching it on
+   * first use.
+   *
+   * @param id The id passed to {@link #register}.
+   * @param pixelSize The bake size in pixels per line.
+   * @param smooth {@code true} for linear filtering on the atlas.
+   * @return The baked font, or {@code null} when the id is unknown or no rasterizer is installed.
    */
-  public static FreeTypeFontGenerator getDefaultGenerator() {
-    if (defaultFontId == null || !entries.containsKey(defaultFontId)) {
+  @Nullable
+  public static FlixelFont getFont(@NotNull String id, int pixelSize, boolean smooth) {
+    String key = id + "|" + pixelSize + "|" + smooth;
+    FlixelFont cached = bakedFonts.get(key);
+    if (cached != null) {
+      return cached;
+    }
+    byte[] data = fontData.get(id);
+    FlixelFontRasterizer raster = rasterizer;
+    if (data == null || raster == null) {
       return null;
     }
-    return entries.get(defaultFontId).getOrCreateGenerator();
+    FlixelRasterizedFont opened = raster.open(data, pixelSize);
+    if (opened == null) {
+      Flixel.warn("Fonts", "Could not open font '" + id + "'; is it a valid .ttf/.otf file?");
+      return null;
+    }
+    FlixelFont baked = FlixelFont.bake(opened, smooth);
+    opened.destroy();
+    bakedFonts.put(key, baked);
+    return baked;
   }
 
   /**
-   * Returns a shared libGDX-style default {@link BitmapFont} (packaged {@code lsans-15}, scaled) so the same
-   * path works on desktop, mobile, and web. Multiple callers asking for the same size reuse one font.
+   * Bakes a font directly from a file, cached under the file's path.
    *
-   * <p>Lookup order:
-   * <ol>
-   *   <li>{@link com.badlogic.gdx.Files#internal Gdx.files.internal} (covers web/TeaVM, where the
-   *       FlixelGDX TeaVM plugin copies {@code lsans-15.fnt}/{@code lsans-15.png} into the
-   *       {@code assets/} folder, and JVM/Android layouts that ship the font in {@code assets/}).</li>
-   *   <li>{@link com.badlogic.gdx.Files#classpath Gdx.files.classpath} (covers JVM, where
-   *       {@code flixelgdx-core} bundles the font in its JAR resources).</li>
-   *   <li>libGDX's built-in {@code new BitmapFont()} (JVM only, fails gracefully on web).</li>
-   * </ol>
-   *
-   * <p>Each step is wrapped in a guard so a missing or unsupported lookup (for example,
-   * {@code Gdx.files.classpath} on TeaVM) does not crash the caller. If every fallback fails,
-   * the method returns {@code null} so debug code can keep running without a font.
-   *
-   * @param pixelSize The target font size in pixels (clamped to at least 1).
-   * @return A cached bitmap font, or {@code null} if no default font could be loaded on the
-   *   current platform. Do not {@link BitmapFont#dispose()} it; use {@link #dispose()} at shutdown.
+   * @param fontFile The {@code .ttf} or {@code .otf} file to read.
+   * @param pixelSize The bake size in pixels per line.
+   * @param smooth {@code true} for linear filtering on the atlas.
+   * @return The baked font, or {@code null} when the file is unreadable or no rasterizer exists.
    */
   @Nullable
-  public static BitmapFont obtainDefaultBitmapFont(int pixelSize) {
-    int size = Math.max(1, pixelSize);
-    BitmapFont font = defaultBitmapFontsBySize.get(size);
-    if (font != null) {
-      return font;
-    }
-    font = loadPackagedDefaultBitmapFont();
-    if (font == null) {
-      return null;
-    }
-    float defaultHeight = font.getLineHeight();
-    if (defaultHeight > 0) {
-      font.getData().setScale(size / defaultHeight);
-    }
-    font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-    font.setUseIntegerPositions(false);
-    defaultBitmapFontsBySize.put(size, font);
-    return font;
-  }
-
-  /**
-   * Walks the platform fallback list to load the packaged {@code lsans-15} bitmap font.
-   *
-   * @return A freshly constructed {@link BitmapFont}, or {@code null} if every fallback failed.
-   */
-  @Nullable
-  private static BitmapFont loadPackagedDefaultBitmapFont() {
-    BitmapFont font = tryLoadBitmapFont(true);
-    if (font != null) {
-      return font;
-    }
-    font = tryLoadBitmapFont(false);
-    if (font != null) {
-      return font;
-    }
-    // Final fallback: libGDX's built-in default. This works on JVM/Android but throws on TeaVM
-    // because gdx-teavm cannot read JAR-internal classpath resources at runtime.
-    try {
-      return new BitmapFont();
-    } catch (Throwable ignored) {
-      return null;
-    }
-  }
-
-  /**
-   * Attempts to load the packaged default bitmap font from a single {@link FileHandle} source.
-   *
-   * @param useInternal {@code true} to look the font up via {@link com.badlogic.gdx.Files#internal Gdx.files.internal}
-   *   (the {@code assets/} folder), {@code false} to use {@link com.badlogic.gdx.Files#classpath Gdx.files.classpath}
-   *   (JAR-internal resources).
-   * @return A constructed {@link BitmapFont}, or {@code null} if the file is missing or the
-   *   backend does not support that file type.
-   */
-  @Nullable
-  private static BitmapFont tryLoadBitmapFont(boolean useInternal) {
-    try {
-      FileHandle fnt = useInternal
-          ? Gdx.files.internal(DEFAULT_BITMAP_FNT)
-          : Gdx.files.classpath(DEFAULT_BITMAP_FNT);
-      if (fnt == null || !fnt.exists()) {
+  public static FlixelFont getFont(@NotNull FlixelFile fontFile, int pixelSize, boolean smooth) {
+    String id = "file:" + fontFile.getPath();
+    if (!fontData.containsKey(id)) {
+      byte[] data = fontFile.readBytes();
+      if (data.length == 0) {
         return null;
       }
-      return new BitmapFont(fnt);
-    } catch (Throwable ignored) {
+      fontData.put(id, data);
+    }
+    return getFont(id, pixelSize, smooth);
+  }
+
+  /**
+   * Returns the font the default cascade resolves to: the {@link #setDefault default}
+   * registered font when one is set and bakeable, otherwise the packaged bitmap font.
+   *
+   * @param pixelSize The desired size in pixels (used when baking a registered default).
+   * @param smooth {@code true} for linear filtering.
+   * @return The default font, or {@code null} when even the packaged font cannot be loaded.
+   */
+  @Nullable
+  public static FlixelFont getDefaultFont(int pixelSize, boolean smooth) {
+    if (defaultFontId != null) {
+      FlixelFont font = getFont(defaultFontId, pixelSize, smooth);
+      if (font != null) {
+        return font;
+      }
+    }
+    return getPackagedFont();
+  }
+
+  /**
+   * Returns the packaged lsans-15 bitmap font, loading and caching it on first use.
+   *
+   * @return The packaged font, or {@code null} when its resources cannot be read.
+   */
+  @Nullable
+  public static FlixelFont getPackagedFont() {
+    if (packagedDefault != null) {
+      return packagedDefault;
+    }
+    if (packagedDefaultFailed) {
       return null;
     }
-  }
-
-  /**
-   * Returns a shared {@link BitmapFont} generated from the given FreeType generator with
-   * the supplied parameters. Equivalent requests reuse the same instance.
-   *
-   * @param cacheKeyPrefix A stable prefix for this font source (e.g. {@code "reg:myId"},
-   *     {@code "file:/path/font.ttf"}, {@code "def:defaultId"}).
-   * @param generator The generator to use on cache miss (must match the prefix's source).
-   * @param size Pixel size.
-   * @param letterSpacing Horizontal spacing between characters.
-   * @return A cached font; do not dispose from {@link FlixelText} it's released with the registry's
-   *     {@link #dispose()} or when the corresponding font is {@link #unregister(String)}.
-   */
-  public static BitmapFont obtainBitmapFontFromFreeType(
-      @NotNull String cacheKeyPrefix,
-      @NotNull FreeTypeFontGenerator generator,
-      int size,
-      int letterSpacing) {
-    String key = freeTypeBitmapFontKey(cacheKeyPrefix, size, letterSpacing);
-    BitmapFont existing = freeTypeBitmapFonts.get(key);
-    if (existing != null) {
-      return existing;
+    byte[] fnt = readPackagedResource(PACKAGED_FONT_BASE + ".fnt");
+    if (fnt.length == 0) {
+      packagedDefaultFailed = true;
+      Flixel.warn("Fonts", "Packaged default font is unavailable; text will not render.");
+      return null;
     }
-    FreeTypeFontParameter param = new FreeTypeFontParameter();
-    param.size = size;
-    param.spaceX = letterSpacing;
-    param.genMipMaps = true;
-    param.minFilter = Texture.TextureFilter.Linear;
-    param.magFilter = Texture.TextureFilter.Linear;
-    BitmapFont font = generator.generateFont(param);
-    font.getRegion().getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-    freeTypeBitmapFonts.put(key, font);
-    return font;
+    byte[] png = readPackagedResource(PACKAGED_FONT_BASE + ".png");
+    FlixelImage pageImage = null;
+    if (png.length > 0) {
+      ByteBuffer encoded = ByteBuffer.allocateDirect(png.length).order(ByteOrder.nativeOrder());
+      encoded.put(png).flip();
+      pageImage = Flixel.graphics.decodeImage(encoded);
+    }
+    packagedDefault = FlixelFont.fromFnt(new String(fnt, StandardCharsets.UTF_8), pageImage);
+    return packagedDefault;
   }
 
-  /**
-   * Builds the cache key used by {@link #obtainBitmapFontFromFreeType(String,
-   * FreeTypeFontGenerator, int, int)} for a given source prefix and glyph settings.
-   */
-  public static String freeTypeBitmapFontKey(String cacheKeyPrefix, int size, int letterSpacing) {
-    return cacheKeyPrefix + "|" + size + "|" + letterSpacing;
-  }
-
-  /**
-   * Disposes all cached {@link FreeTypeFontGenerator} instances and clears the
-   * registry. This should be called when the game shuts down.
-   */
+  /** Destroys every baked font and clears all registrations. Called at game shutdown. */
   public static void dispose() {
-    disposeAllCachedBitmapFonts();
-    for (Entry entry : entries.values()) {
-      entry.destroy();
+    for (FlixelMap.Entry<String, FlixelFont> entry : bakedFonts.entries()) {
+      entry.value.destroy();
     }
-    entries.clear();
+    bakedFonts.clear();
+    fontData.clear();
+    if (packagedDefault != null) {
+      packagedDefault.destroy();
+      packagedDefault = null;
+    }
+    packagedDefaultFailed = false;
     defaultFontId = null;
   }
 
-  private static void disposeAllCachedBitmapFonts() {
-    for (BitmapFont font : defaultBitmapFontsBySize.values()) {
-      font.dispose();
-    }
-    defaultBitmapFontsBySize.clear();
-    for (BitmapFont font : freeTypeBitmapFonts.values()) {
-      font.dispose();
-    }
-    freeTypeBitmapFonts.clear();
-  }
-
-  private static void removeFreeTypeBitmapFontsForPrefix(String keyPrefix) {
-    FlixelArray<String> toRemove = new FlixelArray<>();
-    for (String key : freeTypeBitmapFonts.keys()) {
-      if (key.startsWith(keyPrefix)) {
-        toRemove.add(key);
-      }
-    }
-    for (String key : toRemove) {
-      BitmapFont removed = freeTypeBitmapFonts.remove(key);
-      if (removed != null) {
-        removed.dispose();
+  /** Destroys and forgets every baked font derived from one registered id. */
+  private static void removeBakedFontsForId(@NotNull String id) {
+    String prefix = id + "|";
+    FlixelMap.Entries<String, FlixelFont> it = bakedFonts.entries();
+    while (it.hasNext()) {
+      FlixelMap.Entry<String, FlixelFont> entry = it.next();
+      if (entry.key.startsWith(prefix)) {
+        entry.value.destroy();
+        it.remove();
       }
     }
   }
 
-  private static Entry requireEntry(String id) {
-    Entry entry = entries.get(id);
-    if (entry == null) {
-      throw new IllegalArgumentException("No font registered with id \"" + id + "\".");
-    }
-    return entry;
-  }
-
-  /** Holds the file handle and a lazily created generator for a single registered font. */
-  private static final class Entry implements FlixelDestroyable {
-
-    final FileHandle fontFile;
-    FreeTypeFontGenerator generator;
-
-    Entry(FileHandle fontFile) {
-      this.fontFile = fontFile;
-    }
-
-    FreeTypeFontGenerator getOrCreateGenerator() {
-      if (generator == null) {
-        generator = new FreeTypeFontGenerator(fontFile);
+  /**
+   * Reads a packaged resource, first through the file seam's classpath root and then through
+   * the class loader, so the font loads both in development and from inside a JAR.
+   */
+  private static byte @NotNull [] readPackagedResource(@NotNull String path) {
+    FlixelFile viaSeam = Flixel.files.classpath(path);
+    if (viaSeam.exists()) {
+      byte[] bytes = viaSeam.readBytes();
+      if (bytes.length > 0) {
+        return bytes;
       }
-      return generator;
     }
-
-    @Override
-    public void destroy() {
-      if (generator != null) {
-        generator.dispose();
-        generator = null;
+    try (InputStream in = FlixelFontRegistry.class.getResourceAsStream("/" + path)) {
+      if (in == null) {
+        return new byte[0];
       }
+      ByteArrayOutputStream out = new ByteArrayOutputStream(16384);
+      byte[] chunk = new byte[8192];
+      int read;
+      while ((read = in.read(chunk)) > 0) {
+        out.write(chunk, 0, read);
+      }
+      return out.toByteArray();
+    } catch (Exception e) {
+      return new byte[0];
     }
   }
 }

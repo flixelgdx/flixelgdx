@@ -23,9 +23,7 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-
+import org.flixelgdx.graphics.FlixelImage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,41 +31,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FlixelSpriteUtilTest {
 
   @Test
-  public void linearGradientPixmap_horizontal_matchesEndpoints() {
-    Color start = new Color(1f, 0f, 0f, 1f);
-    Color end = new Color(0f, 0f, 1f, 1f);
+  public void linearGradientImage_horizontal_matchesEndpoints() {
+    FlixelColor start = new FlixelColor(1f, 0f, 0f, 1f);
+    FlixelColor end = new FlixelColor(0f, 0f, 1f, 1f);
 
-    Pixmap pm = FlixelSpriteUtil.createLinearGradientPixmap(9, 3, start, end, true);
-    try {
-      assertColorClose(read(pm, 0, 0), start);
-      assertColorClose(read(pm, 8, 2), end);
-    } finally {
-      pm.dispose();
-    }
+    FlixelImage image = FlixelSpriteUtil.createLinearGradientImage(9, 3, start, end, true);
+    assertColorClose(read(image, 0, 0), start);
+    assertColorClose(read(image, 8, 2), end);
   }
 
   @Test
-  public void linearGradientPixmap_vertical_matchesEndpoints() {
-    Color start = new Color(0f, 1f, 0f, 1f);
-    Color end = new Color(1f, 1f, 0f, 1f);
+  public void linearGradientImage_vertical_matchesEndpoints() {
+    FlixelColor start = new FlixelColor(0f, 1f, 0f, 1f);
+    FlixelColor end = new FlixelColor(1f, 1f, 0f, 1f);
 
-    Pixmap pm = FlixelSpriteUtil.createLinearGradientPixmap(4, 7, start, end, false);
-    try {
-      assertColorClose(read(pm, 0, 0), start);
-      assertColorClose(read(pm, 3, 6), end);
-    } finally {
-      pm.dispose();
-    }
+    FlixelImage image = FlixelSpriteUtil.createLinearGradientImage(4, 7, start, end, false);
+    assertColorClose(read(image, 0, 0), start);
+    assertColorClose(read(image, 3, 6), end);
   }
 
-  private static Color read(Pixmap pm, int x, int y) {
-    int rgba8888 = pm.getPixel(x, y);
-    Color out = new Color();
-    Color.rgba8888ToColor(out, rgba8888);
-    return out;
+  private static FlixelColor read(FlixelImage image, int x, int y) {
+    return new FlixelColor(image.getPixel(x, y));
   }
 
-  private static void assertColorClose(Color actual, Color expected) {
+  private static void assertColorClose(FlixelColor actual, FlixelColor expected) {
     float eps = 1f / 255f + 0.0001f;
     assertTrue(Math.abs(actual.r - expected.r) <= eps, "r differs");
     assertTrue(Math.abs(actual.g - expected.g) <= eps, "g differs");

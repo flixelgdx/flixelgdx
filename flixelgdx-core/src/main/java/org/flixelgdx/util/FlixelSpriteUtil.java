@@ -23,20 +23,16 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.TextureData;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
@@ -48,13 +44,13 @@ import java.util.Objects;
  * Helper class related to {@link org.flixelgdx.FlixelSprite FlixelSprite}.
  *
  * <p>These utilities are designed to work with FlixelGDX's normal Batch-based draw flow.
- * Avoid using ShapeRenderer in core game rendering unless you control the render pipeline.
+ * Everything draws through the shared batch; no separate shape renderer is involved.
  *
  * <p>Do not call {@link #createWhitePixelTexture()} every frame or per
- * sprite instance in hot paths. That allocates new {@link Pixmap} and {@link Texture} objects and
- * will spike heap usage on most JVMs. Prefer {@link #obtainWhitePixelTexture(FlixelAssetManager)},
- * which registers a single persistent texture with the asset manager (see
- * {@link org.flixelgdx.asset.FlixelDefaultAssetManager FlixelDefaultAssetManager}) and reuses it for the lifetime of the game.
+ * sprite instance in hot paths. That allocates new {@link FlixelImage} and {@link FlixelTexture} objects and
+ * will spike heap usage on most JVMs. Prefer {@link #obtainWhitePixel(FlixelAssetManager)},
+ * which registers a single persistent texture with the asset manager and reuses it for the
+ * lifetime of the game.
  *
  * <p>{@link #fill} writes solid pixels into the active frame when possible, and {@link #setBrightness} adjusts tint
  * like Animate brightness.
@@ -62,51 +58,55 @@ import java.util.Objects;
 public final class FlixelSpriteUtil {
 
   /**
-   * Fixed asset key for the framework-owned 1x1 white {@link Texture} registered via
-   * {@link #obtainWhitePixelTexture(FlixelAssetManager)}.
+   * Fixed asset key for the framework-owned 1x1 white texture registered via
+   * {@link #obtainWhitePixel(FlixelAssetManager)}.
    */
   public static final String WHITE_PIXEL_TEXTURE_KEY = "__flixel_internal__/white_pixel_1x1";
 
   private static final Object WHITE_PIXEL_LOCK = new Object();
 
   /**
-   * Returns the shared 1x1 white {@link Texture} registered with {@code assets}. The first call
-   * creates the texture, wraps it in a {@link FlixelGraphic} with {@link FlixelGraphic#setPersist(boolean)}
-   * {@code true}, and registers it with {@link FlixelAssetManager#register(org.flixelgdx.asset.FlixelAsset)}.
-   * Callers must not {@link Texture#dispose()} this texture; lifecycle follows the asset manager.
+   * Returns the shared 1x1 white pixel as a full-texture {@link FlixelFrame}, ready for the
+   * batch's draw calls. The first call creates the texture, wraps it in a persistent
+   * {@link FlixelGraphic}, and registers it with the asset manager; callers must not destroy
+   * the texture, since its lifecycle follows the asset manager.
    *
-   * @param assets Non-null manager from {@link org.flixelgdx.Flixel#ensureAssets() Flixel.ensureAssets()}.
+   * @param assets Non-null manager, typically {@link org.flixelgdx.Flixel#assets Flixel.assets}.
+   * @return The shared white pixel frame; never {@code null}.
    */
   @NotNull
-  public static Texture obtainWhitePixelTexture(@NotNull FlixelAssetManager assets) {
+  public static FlixelFrame obtainWhitePixel(@NotNull FlixelAssetManager assets) {
     synchronized (WHITE_PIXEL_LOCK) {
       FlixelAsset<?> existing = assets.peek(WHITE_PIXEL_TEXTURE_KEY);
       if (existing != null) {
-        return ((FlixelGraphic) existing).getTexture();
+        return ((FlixelGraphic) existing).getFrame();
       }
-      Texture t = createWhitePixelTexture();
+      FlixelTexture t = createWhitePixelTexture();
       FlixelGraphic g = new FlixelGraphic(assets, WHITE_PIXEL_TEXTURE_KEY, t);
-      g.setPersist(true);
+      // This is an owned graphic (it wraps a generated texture rather than a file path). Owned
+      // graphics ignore setPersist(...) and are always treated as non-persistent, so they get
+      // evicted by clearNonPersist() at the next state switch whenever their reference count is
+      // zero. The white pixel must outlive every state switch because cameras draw their
+      // background fill and flash/fade overlays through it, so hold one permanent reference here.
+      // Only the full asset-manager teardown in clear() destroys it, which is exactly what we want.
+      g.retain();
       assets.register(g);
-      return g.getTexture();
+      return g.getFrame();
     }
   }
 
   /**
    * Creates a 1x1 white pixel texture.
    *
-   * <p><b>Ownership:</b> Prefer {@link #obtainWhitePixelTexture(FlixelAssetManager)} so only one
-   * instance exists. If you call this directly, you own the returned texture and must dispose it.
+   * <p><b>Ownership:</b> Prefer {@link #obtainWhitePixel(FlixelAssetManager)} so only one
+   * instance exists. If you call this directly, you own the returned texture and must destroy it.
    *
    * @return The created white pixel texture.
    */
-  public static Texture createWhitePixelTexture() {
-    Pixmap px = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-    px.setColor(Color.WHITE);
-    px.fill();
-    Texture t = new Texture(px);
-    px.dispose();
-    return t;
+  public static FlixelTexture createWhitePixelTexture() {
+    FlixelImage px = new FlixelImage(1, 1);
+    px.fill(FlixelColor.WHITE);
+    return Flixel.graphics.createTexture(px);
   }
 
   /**
@@ -120,19 +120,19 @@ public final class FlixelSpriteUtil {
    * @param h The height of the rectangle.
    * @param color The color of the rectangle.
    */
-  public static void drawRect(@NotNull Batch batch,
-      @NotNull Texture whitePixel,
+  public static void drawRect(@NotNull FlixelBatch batch,
+      @NotNull FlixelFrame whitePixel,
       float x,
       float y,
       float w,
       float h,
-      @NotNull Color color) {
+      @NotNull FlixelColor color) {
     Objects.requireNonNull(batch, "The batch provided cannot be null!");
     Objects.requireNonNull(whitePixel, "The white pixel texture provided cannot be null!");
     Objects.requireNonNull(color, "The color provided cannot be null!");
     batch.setColor(color);
     batch.draw(whitePixel, x, y, w, h);
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   /**
@@ -147,14 +147,14 @@ public final class FlixelSpriteUtil {
    * @param thickness The thickness of the border.
    * @param color The color of the border.
    */
-  public static void drawBorder(@NotNull Batch batch,
-      @NotNull Texture whitePixel,
+  public static void drawBorder(@NotNull FlixelBatch batch,
+      @NotNull FlixelFrame whitePixel,
       float x,
       float y,
       float w,
       float h,
       float thickness,
-      @NotNull Color color) {
+      @NotNull FlixelColor color) {
     Objects.requireNonNull(batch, "The batch provided cannot be null!");
     Objects.requireNonNull(whitePixel, "The white pixel texture provided cannot be null!");
     Objects.requireNonNull(color, "The color provided cannot be null!");
@@ -171,85 +171,70 @@ public final class FlixelSpriteUtil {
     batch.draw(whitePixel, x, y, thickness, h);
     // Right.
     batch.draw(whitePixel, x + w - thickness, y, thickness, h);
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   /**
-   * Creates a 2-color linear gradient {@link Pixmap}.
-   *
-   * <p>Caller owns the returned Pixmap and must dispose of it through {@link Pixmap#dispose()} themselves.
+   * Creates a 2-color linear gradient {@link FlixelImage}.
    *
    * @param width The width of the gradient.
    * @param height The height of the gradient.
    * @param start The start color of the gradient.
    * @param end The end color of the gradient.
    * @param horizontal Whether the gradient is horizontal.
-   * @return The created gradient Pixmap.
+   * @return The created gradient image.
    */
-  public static Pixmap createLinearGradientPixmap(int width,
+  public static FlixelImage createLinearGradientImage(int width,
       int height,
-      @NotNull Color start,
-      @NotNull Color end,
+      @NotNull FlixelColor start,
+      @NotNull FlixelColor end,
       boolean horizontal) {
     Objects.requireNonNull(start, "The start color provided cannot be null!");
     Objects.requireNonNull(end, "The end color provided cannot be null!");
     width = Math.max(1, width);
     height = Math.max(1, height);
-    Pixmap pm = new Pixmap(width, height, Pixmap.Format.RGBA8888);
+    FlixelImage image = new FlixelImage(width, height);
 
-    float r0 = start.r;
-    float g0 = start.g;
-    float b0 = start.b;
-    float a0 = start.a;
-    float r1 = end.r;
-    float g1 = end.g;
-    float b1 = end.b;
-    float a1 = end.a;
-
-    for (int i = 0; i < (horizontal ? width : height); i++) {
-      setInterpolatedColor(pm, i, horizontal ? width : height, r0, r1, g0, g1, b0, b1, a0, a1);
+    int steps = horizontal ? width : height;
+    for (int i = 0; i < steps; i++) {
+      float t = steps <= 1 ? 1f : (i / (float) (steps - 1));
+      int rgba = packLerp(start, end, t);
       for (int j = 0; j < (horizontal ? height : width); j++) {
-        pm.drawPixel(horizontal ? i : j, horizontal ? j : i);
+        image.setPixel(horizontal ? i : j, horizontal ? j : i, rgba);
       }
     }
-
-    return pm;
+    return image;
   }
 
   /**
-   * Creates a 2-color linear gradient {@link Texture}.
+   * Creates a 2-color linear gradient {@link FlixelTexture}.
    *
-   * <p>Caller owns the returned Texture and must dispose of it through {@link Texture#dispose()} themselves.
+   * <p>Caller owns the returned texture and must destroy it themselves.
    *
    * @param width The width of the gradient.
    * @param height The height of the gradient.
    * @param start The start color of the gradient.
    * @param end The end color of the gradient.
    * @param horizontal Whether the gradient is horizontal.
-   * @return The created gradient Texture.
+   * @return The created gradient texture.
    */
-  public static Texture createLinearGradientTexture(int width,
+  public static FlixelTexture createLinearGradientTexture(int width,
       int height,
-      @NotNull Color start,
-      @NotNull Color end,
+      @NotNull FlixelColor start,
+      @NotNull FlixelColor end,
       boolean horizontal) {
     Objects.requireNonNull(start, "The start color provided cannot be null!");
     Objects.requireNonNull(end, "The end color provided cannot be null!");
-    Pixmap pm = createLinearGradientPixmap(width, height, start, end, horizontal);
-    Texture t = new Texture(pm);
-    pm.dispose();
-    return t;
+    return Flixel.graphics.createTexture(createLinearGradientImage(width, height, start, end, horizontal));
   }
 
-  private static void setInterpolatedColor(Pixmap pm, int position, int dimension,
-      float r0, float r1, float g0, float g1,
-      float b0, float b1, float a0, float a1) {
-    float t = dimension <= 1 ? 1f : (position / (float) (dimension - 1));
-    pm.setColor(
-        FlixelMath.lerp(r0, r1, t),
-        FlixelMath.lerp(g0, g1, t),
-        FlixelMath.lerp(b0, b1, t),
-        FlixelMath.lerp(a0, a1, t));
+  /** Packs the interpolation of two colors at {@code t} into RGBA8888. */
+  private static int packLerp(@NotNull FlixelColor start, @NotNull FlixelColor end, float t) {
+    int r = (int) (FlixelMath.lerp(start.r, end.r, t) * 255f);
+    int g = (int) (FlixelMath.lerp(start.g, end.g, t) * 255f);
+    int b = (int) (FlixelMath.lerp(start.b, end.b, t) * 255f);
+    int a = (int) (FlixelMath.lerp(start.a, end.a, t) * 255f);
+    return (r << 24) | (g << 16) | (b << 8) | a;
   }
 
   /**
@@ -414,12 +399,12 @@ public final class FlixelSpriteUtil {
   /**
    * Fills the active bitmap area with a solid color, similar to HaxeFlixel {@code FlxSpriteUtil.fill}.
    *
-   * <p>When the sprite uses an <strong>owned</strong> pixmap-backed {@link Texture} ({@link FlixelSprite#hasOwnedGraphic()}),
-   * every pixel in the current {@link TextureRegion} (animation frame or static region) is overwritten via
-   * {@link Texture#draw(Pixmap, int, int)} without replacing the graphic.
+   * <p>When the sprite uses an <strong>owned</strong> texture ({@link FlixelSprite#hasOwnedGraphic()}),
+   * every pixel in the current frame region is overwritten in place via
+   * {@link FlixelTexture#update(int, int, FlixelImage)} without replacing the graphic.
    *
-   * <p>Otherwise (shared atlas, unloaded graphic, or non-pixmap GPU texture) this falls back to
-   * {@link FlixelSprite#makeGraphic(int, int, Color)} sized to the logical frame ({@link FlixelFrame#originalWidth} /
+   * <p>Otherwise (shared atlas or unloaded graphic) this falls back to
+   * {@link FlixelSprite#makeGraphic(int, int, FlixelColor)} sized to the logical frame ({@link FlixelFrame#originalWidth} /
    * {@link FlixelFrame#originalHeight} when set, else region size, else object size).
    *
    * @param sprite The sprite to fill.
@@ -427,7 +412,7 @@ public final class FlixelSpriteUtil {
    * @return {@code sprite} for chaining.
    */
   @NotNull
-  public static FlixelSprite fill(@NotNull FlixelSprite sprite, @NotNull Color fillColor) {
+  public static FlixelSprite fill(@NotNull FlixelSprite sprite, @NotNull FlixelColor fillColor) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     Objects.requireNonNull(fillColor, "The fill color provided cannot be null!");
     if (tryFillActiveRegionPixels(sprite, fillColor)) {
@@ -448,7 +433,7 @@ public final class FlixelSpriteUtil {
   public static void setBrightness(@NotNull FlixelSprite sprite, float brightness) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
     brightness = FlixelMath.clamp(brightness, -1f, 1f);
-    Color c = sprite.getGdxColor();
+    FlixelColor c = sprite.getColor();
     float r = c.r;
     float g = c.g;
     float b = c.b;
@@ -466,47 +451,24 @@ public final class FlixelSpriteUtil {
     sprite.setColor(r, g, b, a);
   }
 
-  private static boolean tryFillActiveRegionPixels(@NotNull FlixelSprite sprite, @NotNull Color fillColor) {
+  private static boolean tryFillActiveRegionPixels(@NotNull FlixelSprite sprite, @NotNull FlixelColor fillColor) {
     if (!sprite.hasOwnedGraphic()) {
       return false;
     }
-    Texture tex = sprite.getTexture();
-    if (tex == null) {
-      return false;
-    }
-    TextureData data = tex.getTextureData();
-    if (!data.isPrepared()) {
-      data.prepare();
-    }
-    if (data.getType() != TextureData.TextureDataType.Pixmap) {
-      return false;
-    }
-    TextureRegion region = resolveActiveRegion(sprite);
+    FlixelFrame region = sprite.getCurrentFrame();
     if (region == null) {
       return false;
     }
+    FlixelTexture tex = region.getTexture();
     int rw = region.getRegionWidth();
     int rh = region.getRegionHeight();
-    int rx = region.getRegionX();
-    int ry = region.getRegionY();
     if (rw <= 0 || rh <= 0) {
       return false;
     }
-    Pixmap pm = new Pixmap(rw, rh, Pixmap.Format.RGBA8888);
-    pm.setColor(fillColor);
-    pm.fill();
-    tex.draw(pm, rx, ry);
-    pm.dispose();
+    FlixelImage pixels = new FlixelImage(rw, rh);
+    pixels.fill(fillColor);
+    tex.update(region.getRegionX(), region.getRegionY(), pixels);
     return true;
-  }
-
-  @Nullable
-  private static TextureRegion resolveActiveRegion(@NotNull FlixelSprite sprite) {
-    FlixelFrame anim = sprite.getCurrentFrame();
-    if (anim != null) {
-      return anim.getRegion();
-    }
-    return sprite.getRegion();
   }
 
   private static int resolveFillBufferWidth(@NotNull FlixelSprite sprite) {
@@ -534,7 +496,7 @@ public final class FlixelSpriteUtil {
   }
 
   /**
-   * Draws a line segment using a 1x1 texture and {@link Batch}. Does not allocate.
+   * Draws a line segment using the 1x1 white pixel and a {@link FlixelBatch}. Does not allocate.
    *
    * @param batch The batch to draw the line on.
    * @param whitePixel The white pixel texture to use for the line.
@@ -545,14 +507,14 @@ public final class FlixelSpriteUtil {
    * @param thickness The thickness of the line.
    * @param color The color of the line.
    */
-  public static void drawLine(@NotNull Batch batch,
-      @NotNull Texture whitePixel,
+  public static void drawLine(@NotNull FlixelBatch batch,
+      @NotNull FlixelFrame whitePixel,
       float startX,
       float startY,
       float endX,
       float endY,
       float thickness,
-      @NotNull Color color) {
+      @NotNull FlixelColor color) {
     Objects.requireNonNull(batch, "The batch provided cannot be null!");
     Objects.requireNonNull(whitePixel, "The white pixel texture provided cannot be null!");
     Objects.requireNonNull(color, "The color provided cannot be null!");
@@ -568,9 +530,9 @@ public final class FlixelSpriteUtil {
     }
     float angle = FlixelMath.atan2(dy, dx) * FlixelMath.RAD_TO_DEG;
     batch.setColor(color);
-    batch.draw(whitePixel, startX, startY - thickness * 0.5f, 0f, thickness * 0.5f, len, thickness, 1f, 1f, angle, 0, 0,
-        1, 1, false, false);
-    batch.setColor(Color.WHITE);
+    batch.draw(whitePixel, startX, startY - thickness * 0.5f, 0f, thickness * 0.5f, len, thickness, 1f, 1f, angle,
+        false, false);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   /**

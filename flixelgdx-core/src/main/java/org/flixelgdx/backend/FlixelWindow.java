@@ -39,7 +39,7 @@ import org.flixelgdx.tween.FlixelTween;
  * pixel density) lives on {@link org.flixelgdx.graphics.FlixelGraphicsManager Flixel.graphics}
  * instead.
  *
- * <p>Use {@link Flixel#window} after {@link Flixel#initialize(FlixelGame)}. The implementation only
+ * <p>Use {@link Flixel#window} after {@link Flixel#start(FlixelGame, FlixelGameRunner)}. The implementation only
  * adjusts backdrop drawing and, on desktop with a transparent-capable framebuffer, an end-of-frame
  * alpha fix so normal gameplay is not composited through the desktop unless this mode is on.
  *
@@ -143,7 +143,7 @@ public interface FlixelWindow extends FlixelShakeable {
   /**
    * @return {@code true} if {@link #setOpacity(float)} can affect the window on this session.
    */
-  boolean supportsWindowOpacity();
+  boolean supportsOpacity();
 
   /**
    * Sets whether the window uses native title bar and border decorations, when supported.
@@ -424,6 +424,23 @@ public interface FlixelWindow extends FlixelShakeable {
   default boolean isFocused() {
     return true;
   }
+
+  /**
+   * Turns continuous rendering on or off.
+   *
+   * <p>When continuous rendering is off, the loop only redraws when {@link #requestRendering()}
+   * is called, which the framework uses to idle the game while the window is unfocused. Backends
+   * that always render every frame may ignore this.
+   *
+   * @param continuous {@code true} to render every frame, {@code false} to render on request only.
+   */
+  default void setContinuousRendering(boolean continuous) {}
+
+  /**
+   * Requests that at least one more frame be rendered while continuous rendering is off. Has no
+   * effect when continuous rendering is on.
+   */
+  default void requestRendering() {}
 
   /**
    * Requests that the game's window closes, ending the game.

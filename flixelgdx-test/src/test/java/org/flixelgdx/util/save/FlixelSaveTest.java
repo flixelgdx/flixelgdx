@@ -23,16 +23,15 @@
  */
 package org.flixelgdx.util.save;
 
-import com.badlogic.gdx.utils.ObjectMap;
-
-import org.flixelgdx.GdxHeadlessExtension;
+import org.flixelgdx.FlixelHeadlessExtension;
+import org.flixelgdx.collections.FlixelMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(GdxHeadlessExtension.class)
+@ExtendWith(FlixelHeadlessExtension.class)
 class FlixelSaveTest {
 
   @Test
@@ -54,7 +53,7 @@ class FlixelSaveTest {
     FlixelSave s = new FlixelSave();
     assertTrue(s.bind("flixelgdx_junit_merge_" + System.nanoTime(), null));
     s.data.put("k", "a");
-    ObjectMap<String, Object> in = new ObjectMap<>();
+    FlixelMap<String, Object> in = new FlixelMap<>();
     in.put("k", "b");
     in.put("other", 1);
     s.mergeData(in, false, false);

@@ -72,17 +72,11 @@ public final class FlixelGamepadButton {
   /** Right face button (B on Xbox, Circle on PlayStation). */
   public static final FlixelGamepadButton B = of("B");
 
-  /** Third face button, present on some controllers (C on Sega-style pads). */
-  public static final FlixelGamepadButton C = of("C");
-
   /** Left face button (X on Xbox, Square on PlayStation). */
   public static final FlixelGamepadButton X = of("X");
 
   /** Top face button (Y on Xbox, Triangle on PlayStation). */
   public static final FlixelGamepadButton Y = of("Y");
-
-  /** Sixth face button, present on some controllers (Z on Sega-style pads). */
-  public static final FlixelGamepadButton Z = of("Z");
 
   /** Left shoulder bumper (L1 / LB). */
   public static final FlixelGamepadButton L1 = of("L1");

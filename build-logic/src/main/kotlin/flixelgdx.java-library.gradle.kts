@@ -27,9 +27,10 @@ tasks.withType<Javadoc>().configureEach {
     links("https://docs.oracle.com/en/java/javase/17/docs/api/")
     if (JavaVersion.current().isJava9Compatible) {
       addStringOption("Xdoclint:all,-missing", "-quiet")
+      addStringOption("Werror")
     }
   }
-  setFailOnError(true)
+  isFailOnError = true
 }
 
 // JitPack rewrites Gradle module metadata and drops classifier compatibility data, causing

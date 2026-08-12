@@ -23,25 +23,22 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.XmlReader;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.xml.FlixelXml;
+import org.flixelgdx.xml.FlixelXmlElement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.StringReader;
 import java.util.Comparator;
 
 /**
@@ -64,9 +61,9 @@ public class FlixelAnimationController implements FlixelUpdatable {
   @NotNull
   private final FlixelSprite owner;
 
-  /** A map of animation names to their respective {@link Animation} instances. */
+  /** A map of animation names to their respective {@link FlixelAnimation} instances. */
   @NotNull
-  private final FlixelMap<String, Animation<FlixelFrame>> animations = new FlixelMap<>();
+  private final FlixelMap<String, FlixelAnimation<FlixelFrame>> animations = new FlixelMap<>();
 
   /**
    * Per-animation pixel offsets applied to the owner when a clip starts.
@@ -180,14 +177,14 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * Overload of {@link #addSparrowFrames(String)} that accepts the base path as a {@link FileHandle}.
+   * Overload of {@link #addSparrowFrames(String)} that accepts the base path as a {@link FlixelFile}.
    *
    * @param path The base path handle, without a file extension, shared by the PNG and XML pair.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull FileHandle path) {
-    return addSparrowFrames(path.path());
+  public FlixelSprite addSparrowFrames(@NotNull FlixelFile path) {
+    return addSparrowFrames(path.getPath());
   }
 
   /**
@@ -201,22 +198,22 @@ public class FlixelAnimationController implements FlixelUpdatable {
    */
   @NotNull
   public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull String xmlPath) {
-    FileHandle xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
+    FlixelFile xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
     String text = FlixelSpritemapJsonLoader.readUtf8Text(xml);
-    return addSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
+    return addSparrowFrames(textureKey, FlixelXml.parse(text));
   }
 
   /**
-   * Overload of {@link #addSparrowFrames(String, String)} that accepts the XML as a {@link FileHandle}.
+   * Overload of {@link #addSparrowFrames(String, String)} that accepts the XML as a {@link FlixelFile}.
    *
    * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
    * @param xmlFile The Sparrow XML file, read as UTF-8. Must not be {@code null}.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FileHandle xmlFile) {
+  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FlixelFile xmlFile) {
     String text = FlixelSpritemapJsonLoader.readUtf8Text(xmlFile);
-    return addSparrowFrames(textureKey, new XmlReader().parse(new StringReader(text)));
+    return addSparrowFrames(textureKey, FlixelXml.parse(text));
   }
 
   /**
@@ -227,12 +224,12 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull XmlReader.Element xmlRoot) {
+  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FlixelXmlElement xmlRoot) {
     FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
-    Texture texture = g.getTexture();
+    FlixelTexture texture = g.getTexture();
 
-    Array<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);
-    Array<FlixelFrame> existing = owner.getAtlasRegions();
+    FlixelArray<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);
+    FlixelArray<FlixelFrame> existing = owner.getAtlasRegions();
     if (existing == null || existing.isEmpty()) {
       owner.applySparrowAtlas(g, parsed);
     } else {
@@ -245,7 +242,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * Parses Sparrow {@code SubTexture} entries into a fresh frame list without installing them on any
    * sprite.
    *
-   * <p>This is the shared parsing core used by {@link #addSparrowFrames(String, XmlReader.Element)}.
+   * <p>This is the shared parsing core used by {@link #addSparrowFrames(String, FlixelXmlElement)}.
    * Keeping it separate lets callers inspect or transform the frame list before passing it to
    * {@link FlixelSprite#applySparrowAtlas} or {@link FlixelSprite#mergeSparrowAtlas}.
    *
@@ -254,22 +251,22 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @return A newly allocated list of frames, one per valid {@code SubTexture}.
    */
   @NotNull
-  public static Array<FlixelFrame> parseSparrowFrames(
-      @NotNull Texture texture, @NotNull XmlReader.Element xmlRoot) {
+  public static FlixelArray<FlixelFrame> parseSparrowFrames(
+      @NotNull FlixelTexture texture, @NotNull FlixelXmlElement xmlRoot) {
     int texW = texture.getWidth();
     int texH = texture.getHeight();
-    Array<FlixelFrame> atlasFrames = new Array<>(FlixelFrame[]::new);
+    FlixelArray<FlixelFrame> atlasFrames = new FlixelArray<>(FlixelFrame[]::new);
 
-    Array<XmlReader.Element> subTextures = xmlRoot.getChildrenByName("SubTexture");
-    for (int i = 0; i < subTextures.size; i++) {
-      XmlReader.Element subTexture = subTextures.get(i);
+    FlixelArray<FlixelXmlElement> subTextures = xmlRoot.getChildrenByName("SubTexture");
+    for (int i = 0; i < subTextures.getSize(); i++) {
+      FlixelXmlElement subTexture = subTextures.get(i);
 
       // Sparrow always supplies x/y/width/height, but a hand-edited or truncated atlas might not.
       // Defaulting to 0 keeps a single broken entry from throwing and aborting the whole load.
-      int x = subTexture.getInt("x", 0);
-      int y = subTexture.getInt("y", 0);
-      int width = subTexture.getInt("width", 0);
-      int height = subTexture.getInt("height", 0);
+      int x = subTexture.getIntAttribute("x", 0);
+      int y = subTexture.getIntAttribute("y", 0);
+      int width = subTexture.getIntAttribute("width", 0);
+      int height = subTexture.getIntAttribute("height", 0);
 
       // A zero-area or off-texture region cannot be rendered; drop it rather than emit garbage UVs.
       if (width <= 0 || height <= 0 || x < 0 || y < 0 || x >= texW || y >= texH) {
@@ -284,8 +281,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
         height = texH - y;
       }
 
-      TextureRegion region = new TextureRegion(texture, x, y, width, height);
-      FlixelFrame frame = new FlixelFrame(region);
+      FlixelFrame frame = new FlixelFrame(texture, x, y, width, height);
 
       String name = subTexture.getAttribute("name", null);
       // Prefix animations look frames up by name, so a missing name gets a stable synthetic one
@@ -295,10 +291,10 @@ public class FlixelAnimationController implements FlixelUpdatable {
       if (subTexture.hasAttribute("frameX") || subTexture.hasAttribute("frameY")) {
         // Sparrow stores frameX/frameY as negative offsets; negate them to get the trim offset
         // measured from the source frame's top-left corner.
-        frame.offsetX = -subTexture.getInt("frameX", 0);
-        frame.offsetY = -subTexture.getInt("frameY", 0);
-        int sourceWidth = subTexture.getInt("frameWidth", width);
-        int sourceHeight = subTexture.getInt("frameHeight", height);
+        frame.offsetX = -subTexture.getIntAttribute("frameX", 0);
+        frame.offsetY = -subTexture.getIntAttribute("frameY", 0);
+        int sourceWidth = subTexture.getIntAttribute("frameWidth", width);
+        int sourceHeight = subTexture.getIntAttribute("frameHeight", height);
         // The source box can never be smaller than the trimmed region it contains; guard against
         // malformed atlases that would otherwise place art outside its own frame.
         frame.originalWidth = Math.max(sourceWidth, width);
@@ -407,7 +403,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * <p>This is a one-shot computation from the currently displayed {@link FlixelFrame}, independent
    * of the per-animation {@link #addOffset(String, float, float) registry}; it does not read or write
    * {@link #animationOffsets}. Calling it after a clip with a registered offset will overwrite that
-   * offset until the next {@link #playAnimation} call reapplies it.
+   * offset until the next {@link #play} call reapplies it.
    *
    * @param adjustPosition Whether to also shift the sprite's position so its origin stays anchored
    *     to the frame's center, matching HaxeFlixel's optional position correction.
@@ -480,63 +476,63 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param frameRate The frame rate of the animation.
    * @param loop Whether the animation should loop.
    */
-  public void addAnimationByPrefix(
+  public void addByPrefix(
       @NotNull String name,
       @NotNull String prefix,
       int frameRate,
       boolean loop) {
-    Array<FlixelFrame> atlas = owner.getAtlasRegions();
+    FlixelArray<FlixelFrame> atlas = owner.getAtlasRegions();
     if (atlas == null) {
       return;
     }
-    Array<FlixelFrame> clipFrames = new Array<>();
+    FlixelArray<FlixelFrame> clipFrames = new FlixelArray<>();
     for (FlixelFrame frame : atlas) {
       if (frame != null && frame.name != null && frame.name.startsWith(prefix)) {
         clipFrames.add(frame);
       }
     }
-    if (clipFrames.size == 0) {
+    if (clipFrames.getSize() == 0) {
       return;
     }
     clipFrames.sort(Comparator.comparing(f -> f.name));
     animations.put(
         name,
-        new Animation<>(
+        new FlixelAnimation<>(
             1f / frameRate,
             clipFrames,
-            loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
+            loop ? FlixelAnimation.PlayMode.LOOP : FlixelAnimation.PlayMode.NORMAL));
   }
 
   /**
    * Adds a clip from the current atlas list {@link FlixelSprite#getAtlasRegions()} using zero-based indices into
    * that list. Used by spritemap JSON and by games that know frame order after a Sparrow or spritemap load.
    *
-   * @param name Clip name for {@link #playAnimation(String)}.
+   * @param name Clip name for {@link #play(String)}.
    * @param atlasFrameIndices Indices into the atlas list (out-of-range entries are skipped).
-   * @param frameDuration libGDX frame duration in seconds (reciprocal of FPS).
+   * @param frameDuration Frame duration in seconds (reciprocal of FPS).
    * @param loop Whether the clip loops.
    */
-  public void addAnimationFromAtlas(
+  public void addFromAtlas(
       @NotNull String name, @NotNull int[] atlasFrameIndices, float frameDuration, boolean loop) {
-    Array<FlixelFrame> atlas = owner.getAtlasRegions();
-    if (atlas == null || atlas.size == 0) {
+    FlixelArray<FlixelFrame> atlas = owner.getAtlasRegions();
+    if (atlas == null || atlas.getSize() == 0) {
       return;
     }
-    Array<FlixelFrame> clipFrames = new Array<>();
+    FlixelArray<FlixelFrame> clipFrames = new FlixelArray<>();
     for (int i : atlasFrameIndices) {
-      if (i >= 0 && i < atlas.size) {
+      if (i >= 0 && i < atlas.getSize()) {
         clipFrames.add(atlas.get(i));
       }
     }
-    if (clipFrames.size == 0) {
+    if (clipFrames.getSize() == 0) {
       return;
     }
     animations.put(
         name,
-        new Animation<>(
+        new FlixelAnimation<>(
             frameDuration,
             clipFrames,
-            loop ? Animation.PlayMode.LOOP : Animation.PlayMode.NORMAL));
+            loop ? FlixelAnimation.PlayMode.LOOP : FlixelAnimation.PlayMode.NORMAL));
   }
 
   /**
@@ -554,13 +550,13 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
     // Get the number of columns in the grid.
     int cols = grid[0].length;
-    Array<FlixelFrame> animFrames = new Array<>();
+    FlixelArray<FlixelFrame> animFrames = new FlixelArray<>();
     for (int index : frameIndices) {
       int row = index / cols;
       int col = index % cols;
       animFrames.add(grid[row][col]);
     }
-    animations.put(name, new Animation<>(frameDuration, animFrames));
+    animations.put(name, new FlixelAnimation<>(frameDuration, animFrames));
   }
 
   /**
@@ -568,8 +564,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * @param name The name of the animation to play.
    */
-  public void playAnimation(@NotNull String name) {
-    playAnimation(name, true);
+  public void play(@NotNull String name) {
+    play(name, true);
   }
 
   /**
@@ -578,8 +574,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param name The name of the animation to play.
    * @param loop Whether the animation should loop.
    */
-  public void playAnimation(@NotNull String name, boolean loop) {
-    playAnimation(name, loop, true);
+  public void play(@NotNull String name, boolean loop) {
+    play(name, loop, true);
   }
 
   /**
@@ -589,8 +585,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param loop Whether the animation should loop.
    * @param forceRestart Whether the animation should restart.
    */
-  public void playAnimation(@NotNull String name, boolean loop, boolean forceRestart) {
-    Animation<FlixelFrame> anim = animations.get(name);
+  public void play(@NotNull String name, boolean loop, boolean forceRestart) {
+    FlixelAnimation<FlixelFrame> anim = animations.get(name);
     if (anim == null) {
       // Unknown clip name: leave whatever is currently displayed untouched instead of blanking out.
       return;
@@ -598,7 +594,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     // Keep playing only when this exact clip is already mid-play and the caller did not force a
     // restart. A clip that has finished (or a different clip) always (re)starts, so a non-looping
     // clip can be replayed once it ends and switching clips never silently no-ops.
-    if (!shouldRestart(forceRestart, currentAnim.equals(name), isAnimationFinished())) {
+    if (!shouldRestart(forceRestart, currentAnim.equals(name), isFinished())) {
       return;
     }
 
@@ -621,7 +617,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
         owner.updateHitbox();
       }
     }
-    applyAnimationOffset(name);
+    applyOffset(name);
   }
 
   /**
@@ -648,7 +644,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * @param name The animation that is starting.
    */
-  private void applyAnimationOffset(@NotNull String name) {
+  private void applyOffset(@NotNull String name) {
     if (animationOffsets.getSize() == 0) {
       return;
     }
@@ -660,8 +656,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
   }
 
-  public boolean isAnimationFinished() {
-    Animation<FlixelFrame> anim = animations.get(currentAnim);
+  public boolean isFinished() {
+    FlixelAnimation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
       return true;
     }
@@ -670,8 +666,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /** Returns whether the current animation has finished playing (only meaningful for non-looping animations). */
-  public boolean getAnimationFinished() {
-    return isAnimationFinished();
+  public boolean getFinished() {
+    return isFinished();
   }
 
   @Override
@@ -679,7 +675,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     if (animations.getSize() == 0 || paused || currentAnim.isEmpty()) {
       return;
     }
-    Animation<FlixelFrame> anim = animations.get(currentAnim);
+    FlixelAnimation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
       return;
     }
@@ -698,7 +694,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
     int frameIndex = computeKeyframeIndex(anim);
     // Pick the displayed frame by the same index the controller reports elsewhere, rather than
-    // anim.getKeyFrame(stateTime, looping). That libGDX call honors the clip's REGISTERED PlayMode,
+    // anim.getKeyFrame(stateTime, looping). That call honors the clip's REGISTERED PlayMode,
     // so a clip registered to loop but played non-looping wraps back to frame 0 when it finishes;
     // indexing the keyframes directly keeps a finished non-looping clip parked on its last frame.
     // Typed FlixelFrame[] but may be an Object[] at runtime, so cast the element, not the array.
@@ -730,7 +726,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   @NotNull
-  public FlixelMap<String, Animation<FlixelFrame>> getAnimations() {
+  public FlixelMap<String, FlixelAnimation<FlixelFrame>> getAnimations() {
     return animations;
   }
 
@@ -745,8 +741,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
   /**
    * Zero-based key index in the current clip. Computed from {@link #getStateTime()} and the
-   * controller's {@link #isLooping() looping} flag rather than from the underlying libGDX
-   * {@link Animation}'s {@code PlayMode}, so the index always matches what {@link #update(float)}
+   * controller's {@link #isLooping() looping} flag rather than from the underlying
+   * {@link FlixelAnimation}'s {@code PlayMode}, so the index always matches what {@link #update(float)}
    * actually displays no matter how the clip was registered.
    *
    * <p>For non-looping playback that has already finished, this returns the <strong>last</strong>
@@ -760,7 +756,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     if (currentAnim.isEmpty()) {
       return 0;
     }
-    Animation<FlixelFrame> anim = animations.get(currentAnim);
+    FlixelAnimation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
       return 0;
     }
@@ -770,11 +766,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
   /**
    * Returns the keyframe index for {@code anim} at the current {@link #stateTime}, honouring the
    * controller's runtime {@link #looping} flag. This deliberately bypasses
-   * {@link Animation#getKeyFrameIndex(float)} (which uses the {@link Animation#getPlayMode()
+   * {@link FlixelAnimation#getKeyFrameIndex(float)} (which uses the {@link FlixelAnimation#getPlayMode()
    * registered PlayMode}) so that:
    * <ul>
    *   <li>Non-looping playback at the end of the clip returns the <strong>last</strong> keyframe
-   *   instead of wrapping back to the first (the latter is what libGDX's {@link Animation.PlayMode#LOOP
+   *   instead of wrapping back to the first (the latter is what {@link FlixelAnimation.PlayMode#LOOP
    *   LOOP} does when {@code stateTime == duration}, and is the source of the "first frame appears at
    *   the end" bug for clips registered with {@code loop = true} but played with looping disabled).</li>
    *   <li>Looping playback always returns an in-range index, even right at the wrap point.</li>
@@ -783,7 +779,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * @param anim The clip to read the keyframe index from. Must not be {@code null}.
    * @return A keyframe index in {@code [0, keyframeCount - 1]}, or {@code 0} for degenerate clips.
    */
-  private int computeKeyframeIndex(@NotNull Animation<FlixelFrame> anim) {
+  private int computeKeyframeIndex(@NotNull FlixelAnimation<FlixelFrame> anim) {
     Object[] keyframes = anim.getKeyFrames();
     return keyframeIndex(stateTime, anim.getFrameDuration(), keyframes.length, looping);
   }

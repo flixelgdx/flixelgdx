@@ -4,6 +4,11 @@ plugins {
   id("flixelgdx.android-library")
 }
 
+// The Android backend is a fail-fast placeholder until it is brought onto the framework's bgfx +
+// SDL3 stack (through the NDK) in a later phase. It depends only on the core API, so there is no
+// libGDX, no gdx native platform jars, and no basisu on the classpath. The consumer keep-rules are
+// scoped to the framework's own packages, which is all a reflection-free core needs.
+
 val reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD")
   .toString().trim().uppercase(Locale.ROOT)
 val reflectionProfile =
@@ -15,16 +20,6 @@ val reflectionExtraPackages = (findProperty("flixelReflectionExtraPackages") ?: 
   .filter { it.isNotEmpty() }
 
 val reflectionPackagePrefixes = mutableListOf("org.flixelgdx")
-if (reflectionProfile == "STANDARD" || reflectionProfile == "ALL") {
-  reflectionPackagePrefixes += "com.badlogic.gdx"
-}
-if (reflectionProfile == "ALL") {
-  reflectionPackagePrefixes += listOf(
-    "com.github.tommyettinger",
-    "games.rednblack.miniaudio",
-    "com.badlogic.gdx.controllers"
-  )
-}
 reflectionPackagePrefixes += reflectionExtraPackages
 
 val generateReflectionConsumerRules = tasks.register("generateReflectionConsumerRules") {
@@ -46,31 +41,6 @@ $keepRules
   }
 }
 
-val gdxVersion = libs.versions.gdx.get()
-val miniaudioVersion = libs.versions.miniaudio.get()
-val basisuGdxVersion = libs.versions.basisuGdx.get()
-
-val androidNativeCoordinates = listOf(
-  "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-armeabi-v7a",
-  "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-arm64-v8a",
-  "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-x86",
-  "games.rednblack.miniaudio:gdx-miniaudio-platform:$miniaudioVersion:natives-x86_64",
-  "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-arm64-v8a",
-  "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a",
-  "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86",
-  "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64",
-  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a",
-  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a",
-  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86",
-  "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64",
-  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-arm64-v8a",
-  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-armeabi-v7a",
-  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-x86",
-  "com.crashinvaders.basisu:basisu-wrapper:$basisuGdxVersion:natives-x86_64"
-)
-
-val nativesOutputDir = layout.buildDirectory.dir("jniLibs")
-
 android {
   namespace = "org.flixelgdx"
   compileSdk = 36
@@ -85,69 +55,16 @@ android {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
-  sourceSets {
-    getByName("main") {
-      jniLibs.srcDirs(nativesOutputDir.get().asFile.path)
-    }
-  }
 }
 
 tasks.matching { it.name == "preBuild" }.configureEach {
   dependsOn(generateReflectionConsumerRules)
 }
 
-configurations {
-  create("natives")
-}
-
 dependencies {
   "coreLibraryDesugaring"(libs.desugar.jdk.libs)
 
   api(project(":flixelgdx-core"))
-  api(project(":flixelgdx-jvm"))
   api(libs.multidex)
-  androidNativeCoordinates.forEach { coordinates ->
-    add("api", coordinates)
-    add("natives", coordinates)
-  }
-  api(libs.gdx.backend.android)
-  api(libs.gdx.controllers.android)
   implementation(libs.jetbrains.annotations)
-}
-
-// Unpacks the .so files bundled at the root of libGDX's native platform jars into this
-// module's own jniLibs source set (see androidNativeCoordinates above for why).
-val copyAndroidNatives = tasks.register("copyAndroidNatives") {
-  inputs.files(configurations["natives"])
-  outputs.dir(nativesOutputDir)
-
-  doFirst {
-    val abiMap = mapOf(
-      "armeabi-v7a" to "natives-armeabi-v7a",
-      "arm64-v8a" to "natives-arm64-v8a",
-      "x86" to "natives-x86",
-      "x86_64" to "natives-x86_64"
-    )
-    configurations["natives"].copy().files.forEach { jar ->
-      val destAbi = abiMap.entries.firstOrNull { (_, suffix) -> jar.name.endsWith("$suffix.jar") }?.key
-      if (destAbi != null) {
-        val destDir = nativesOutputDir.get().dir(destAbi).asFile
-        destDir.mkdirs()
-        copy {
-          from(zipTree(jar))
-          into(destDir)
-          include("*.so")
-        }
-      }
-    }
-  }
-}
-
-afterEvaluate {
-  android.libraryVariants.all {
-    val capitalized = name.replaceFirstChar { it.uppercaseChar() }
-    val mergeJniTask = tasks.findByName("merge${capitalized}JniLibFolders")
-    mergeJniTask?.dependsOn(copyAndroidNatives)
-    assembleProvider.get().dependsOn(copyAndroidNatives)
-  }
 }

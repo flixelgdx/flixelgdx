@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelObject;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +38,7 @@ import java.util.regex.Pattern;
 /**
  * The single entry point for everything related to the FlixelGDX debugger.
  *
- * <p>An instance of this class is automatically created when {@link Flixel#initialize(org.flixelgdx.FlixelGame)}
+ * <p>An instance of this class is automatically created when {@link Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner)}
  * runs and is exposed as the static field {@link Flixel#debug}, mirroring how
  * {@link Flixel#sound}, {@link Flixel#assets}, and friends work. From your game code you can do things
  * like:
@@ -69,8 +70,10 @@ import java.util.regex.Pattern;
  *
  * <h2>Thread safety</h2>
  *
- * <p>All public methods are intended to be called from the libGDX main thread. Reading the
- * registered commands map outside the main thread is unsupported.
+ * <p>All public methods are intended to be called from the game's main thread. Reading the
+ * registered commands map outside the main thread is unsupported. If you must run it on the main
+ * thread, you can use {@link FlixelGraphicsManager#queueMainThread Flixel.graphics.queueMainThread(...)} and
+ * run a debug method there instead.
  */
 public class FlixelDebugManager {
 
@@ -387,7 +390,7 @@ public class FlixelDebugManager {
 
   /**
    * Returns the in-memory command history (oldest first). The returned array is the live backing
-   * store and must not be modified. Use {@link FlixelArray#size} and indexed access to read it.
+   * store and must not be modified. Use {@link FlixelArray#getSize()} and indexed access to read it.
    *
    * @return The command history (live, do not modify).
    */

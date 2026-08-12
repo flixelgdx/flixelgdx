@@ -27,9 +27,6 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 /**
  * Default {@link FlixelHostIntegration} used on platforms without host shell integration.
@@ -46,46 +43,6 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   @Override
-  public void requestNotificationPermission() {}
-
-  @Override
-  public void requestAttention() {}
-
-  @Override
-  public void keepScreenAwake(boolean awake) {}
-
-  @Override
-  public void setExitConfirmation(@Nullable String message) {}
-
-  @Override
-  public void sendNotification(@Nullable String title, @NotNull String message) {
-    Objects.requireNonNull(message, "message");
-  }
-
-  @Override
-  public void copyToClipboard(@NotNull String text) {
-    Objects.requireNonNull(text, "text");
-  }
-
-  @Override
-  public void pasteFromClipboard() {}
-
-  @Override
-  public boolean supportsNotifications() {
-    return false;
-  }
-
-  @Override
-  public boolean supportsWakeLock() {
-    return false;
-  }
-
-  @Override
-  public boolean supportsClipboard() {
-    return false;
-  }
-
-  @Override
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return onTextPasted;
@@ -95,11 +52,5 @@ public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
   @NotNull
   public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
-  }
-
-  @Override
-  @NotNull
-  public FlixelMonitor getPrimaryMonitor() {
-    return FlixelNoopMonitor.INSTANCE;
   }
 }

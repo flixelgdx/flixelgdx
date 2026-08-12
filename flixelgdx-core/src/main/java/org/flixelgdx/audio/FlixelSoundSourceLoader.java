@@ -23,44 +23,39 @@
  */
 package org.flixelgdx.audio;
 
-import com.badlogic.gdx.assets.AssetDescriptor;
-import com.badlogic.gdx.assets.AssetLoaderParameters;
-import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.assets.loaders.FileHandleResolver;
-import com.badlogic.gdx.assets.loaders.SynchronousAssetLoader;
-import com.badlogic.gdx.files.FileHandle;
-
-import com.badlogic.gdx.utils.Array;
+import org.flixelgdx.Flixel;
+import org.flixelgdx.asset.FlixelAsset;
+import org.flixelgdx.asset.FlixelAssetLoader;
+import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.file.FlixelFile;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * AssetManager loader that creates {@link FlixelSoundSource} instances from an asset key.
+ * Asset loader for audio files ({@code .mp3}, {@code .ogg}, {@code .wav}, {@code .flac}).
  *
- * <p>No file IO is performed here; the source spawns {@link FlixelSound} instances when played.
+ * <p>Stage one reads the encoded file into a {@link FlixelSoundBuffer} (on a worker thread
+ * where supported) and asks the active {@link FlixelSoundFactory} to pre-decode it, so the
+ * first play has no decode lag. The wrapper handle is a {@link FlixelSoundSource}, which spawns
+ * fresh {@link FlixelSound} instances on demand.
+ *
+ * <p>{@link FlixelSoundManager} registers this loader for the audio extensions when it is
+ * created; games only interact with it indirectly through {@code Flixel.assets.load(...)}.
  */
-public final class FlixelSoundSourceLoader
-    extends SynchronousAssetLoader<FlixelSoundSource, FlixelSoundSourceLoader.FlixelSoundSourceParameter> {
+public final class FlixelSoundSourceLoader implements FlixelAssetLoader<FlixelSoundSource> {
 
-  public static final class FlixelSoundSourceParameter extends AssetLoaderParameters<FlixelSoundSource> {
-    public boolean external = false;
-  }
-
-  public FlixelSoundSourceLoader(FileHandleResolver resolver) {
-    super(resolver);
-  }
-
+  @NotNull
   @Override
-  public FlixelSoundSource load(AssetManager assetManager,
-      String fileName,
-      FileHandle file,
-      FlixelSoundSourceParameter parameter) {
-    boolean external = parameter != null && parameter.external;
-    return new FlixelSoundSource(fileName, external);
+  public Object loadRaw(@NotNull FlixelAssetManager assets, @NotNull String path, @NotNull FlixelFile file) {
+    FlixelSoundBuffer buffer = FlixelSoundBuffer.read(path, file);
+    if (Flixel.sound != null) {
+      Flixel.sound.getFactory().prewarm(buffer);
+    }
+    return buffer;
   }
 
+  @NotNull
   @Override
-  @SuppressWarnings("rawtypes")
-  public Array<AssetDescriptor> getDependencies(String fileName, FileHandle file,
-      FlixelSoundSourceParameter parameter) {
-    return null;
+  public FlixelAsset<FlixelSoundSource> createHandle(@NotNull FlixelAssetManager assets, @NotNull String path) {
+    return new FlixelSoundSource(assets, path);
   }
 }

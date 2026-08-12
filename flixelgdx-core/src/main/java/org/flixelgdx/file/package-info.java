@@ -20,7 +20,7 @@
  * </ul>
  *
  * <p>The active backend installs a real {@link org.flixelgdx.file.FlixelFiles FlixelFiles} on
- * {@link org.flixelgdx.Flixel#files Flixel.files} before {@link org.flixelgdx.Flixel#initialize
- * Flixel.initialize} runs.
+ * {@link org.flixelgdx.Flixel#files Flixel.files} before
+ * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)} runs.
  */
 package org.flixelgdx.file;

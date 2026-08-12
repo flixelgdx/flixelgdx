@@ -1,0 +1,130 @@
+name: Build platform natives
+
+# Run on demand to produce the macOS dylib and DX11 shader binaries that cannot be built on the
+# local Linux dev machine. Download the artifacts after the run and commit them into the repo.
+on:
+  workflow_dispatch:
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # macOS universal dylib (arm64 + x86_64) for the miniaudio JNI backend.
+  # ---------------------------------------------------------------------------
+  macos-dylib:
+    name: Build macOS universal dylib
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build universal dylib
+        run: |
+          NATIVE_DIR="flixelgdx-desktop/src/main/native"
+          OUT_DIR="flixelgdx-desktop/src/main/resources/org/flixelgdx/natives"
+          JNI_INC="${JAVA_HOME}/include"
+
+          clang -O2 -dynamiclib -arch x86_64 \
+            -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
+            -o /tmp/libflixel_miniaudio_x86_64.dylib \
+            "${NATIVE_DIR}/flixel_miniaudio.c"
+
+          clang -O2 -dynamiclib -arch arm64 \
+            -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
+            -o /tmp/libflixel_miniaudio_arm64.dylib \
+            "${NATIVE_DIR}/flixel_miniaudio.c"
+
+          lipo -create \
+            /tmp/libflixel_miniaudio_x86_64.dylib \
+            /tmp/libflixel_miniaudio_arm64.dylib \
+            -output "${OUT_DIR}/libflixel_miniaudio.dylib"
+
+          echo "Architectures in universal dylib:"
+          lipo -info "${OUT_DIR}/libflixel_miniaudio.dylib"
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: libflixel_miniaudio-macos-universal
+          path: flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/libflixel_miniaudio.dylib
+
+  # ---------------------------------------------------------------------------
+  # DX11 shaders (vs_5_0 / ps_5_0) via bgfx's shaderc + fxc on Windows.
+  # bx and bimg are checked out as siblings of bgfx, matching the layout that
+  # GENie expects when it generates the Visual Studio solution.
+  # ---------------------------------------------------------------------------
+  dx11-shaders:
+    name: Build DX11 shaders
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout bx
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bx
+          path: bx
+
+      - name: Checkout bimg
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bimg
+          path: bimg
+
+      - name: Checkout bgfx
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bgfx
+          path: bgfx
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Generate VS project files
+        working-directory: bgfx
+        shell: cmd
+        run: ..\bx\tools\bin\windows\genie.exe --with-tools vs2022
+
+      - name: Build shaderc
+        working-directory: bgfx
+        shell: cmd
+        run: >
+          msbuild ".build\projects\vs2022\bgfx.sln"
+          /t:shaderc
+          /m /v:minimal
+          /p:Configuration=Release
+          /p:Platform=x64
+
+      - name: Compile DX11 shaders
+        shell: bash
+        run: |
+          SHADERC="bgfx/.build/win64_vs2022/bin/shadercRelease.exe"
+          SHADER_SRC="flixelgdx-desktop/src/main/shaders"
+          OUT_ROOT="flixelgdx-desktop/src/main/resources/org/flixelgdx/shaders"
+          VARYING="${SHADER_SRC}/varying.def.sc"
+          BGFX_INC="bgfx/src"
+
+          mkdir -p "${OUT_ROOT}/dx11"
+
+          "${SHADERC}" -f "${SHADER_SRC}/vs_sprite.sc" -o "${OUT_ROOT}/dx11/vs_sprite.bin" \
+            --type vertex --platform windows -p vs_5_0 \
+            --varyingdef "${VARYING}" -i "${BGFX_INC}"
+
+          "${SHADERC}" -f "${SHADER_SRC}/fs_sprite.sc" -o "${OUT_ROOT}/dx11/fs_sprite.bin" \
+            --type fragment --platform windows -p ps_5_0 \
+            --varyingdef "${VARYING}" -i "${BGFX_INC}"
+
+          echo "Compiled DX11 shader binaries:"
+          ls -lh "${OUT_ROOT}/dx11/"
+
+      - name: Upload DX11 shaders
+        uses: actions/upload-artifact@v4
+        with:
+          name: dx11-shaders
+          path: flixelgdx-desktop/src/main/resources/org/flixelgdx/shaders/dx11/

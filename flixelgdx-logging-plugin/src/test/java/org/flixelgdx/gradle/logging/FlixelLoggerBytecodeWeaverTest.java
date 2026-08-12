@@ -216,63 +216,6 @@ class FlixelLoggerBytecodeWeaverTest {
   }
 
   @Test
-  void weaveRewritesGdxAppLogCall() throws Exception {
-    Path tmp = Files.createTempDirectory("flixel-log-weave-gdxapp");
-    Path srcDir = tmp.resolve("flixel/weavetestgdxapp");
-    Files.createDirectories(srcDir);
-    Path source = srcDir.resolve("GdxAppCaller.java");
-    Files.writeString(
-        source,
-        """
-            package flixel.weavetestgdxapp;
-            import com.badlogic.gdx.Gdx;
-            public class GdxAppCaller {
-              public static void run() {
-                Gdx.app.log("TAG", "hello from gdx");
-              }
-            }
-            """);
-
-    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    assertNotNull(compiler);
-    Path out = tmp.resolve("classes");
-    Files.createDirectories(out);
-    String classpath = System.getProperty("java.class.path");
-    try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
-      Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(source.toFile());
-      boolean ok = compiler
-          .getTask(
-              null,
-              fileManager,
-              null,
-              List.of("-classpath", classpath, "-d", out.toString()),
-              null,
-              units)
-          .call();
-      assertTrue(ok, "JavaCompiler failed; check test runtime classpath includes libgdx");
-    }
-
-    Path classFile = out.resolve("flixel/weavetestgdxapp/GdxAppCaller.class");
-    assertTrue(Files.exists(classFile));
-    byte[] bytes = Files.readAllBytes(classFile);
-    ClassReader reader = new ClassReader(bytes);
-    ClassNode classNode = new ClassNode();
-    reader.accept(classNode, ClassReader.SKIP_FRAMES);
-    assertTrue(FlixelLoggerBytecodeWeaver.weave(classNode));
-
-    boolean foundGdxHook = false;
-    for (MethodNode method : classNode.methods) {
-      for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
-        if (insn instanceof MethodInsnNode min && "bcGdxLog0".equals(min.name)) {
-          assertTrue(min.owner.contains("FlixelLoggingBytecodeHooks"));
-          foundGdxHook = true;
-        }
-      }
-    }
-    assertTrue(foundGdxHook);
-  }
-
-  @Test
   void weaveSkipsFlixelStaticFacadeClass() throws Exception {
     byte[] bytes;
     try (InputStream in =

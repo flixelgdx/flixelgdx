@@ -58,7 +58,7 @@ public interface FlixelMesh extends FlixelDestroyable {
    * @param offset Index of the first float to upload.
    * @param count Number of floats to upload.
    */
-  void setVertices(@NotNull float[] vertices, int offset, int count);
+  void setVertices(float @NotNull [] vertices, int offset, int count);
 
   /**
    * Uploads index data into the mesh's index buffer, replacing whatever was there.
@@ -67,7 +67,7 @@ public interface FlixelMesh extends FlixelDestroyable {
    * @param offset Index of the first entry to upload.
    * @param count Number of entries to upload.
    */
-  void setIndices(@NotNull short[] indices, int offset, int count);
+  void setIndices(short @NotNull [] indices, int offset, int count);
 
   /**
    * @return How many vertices this mesh currently holds.

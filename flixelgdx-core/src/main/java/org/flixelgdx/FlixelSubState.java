@@ -23,9 +23,8 @@
  */
 package org.flixelgdx;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.util.FlixelColor;
 
 /**
  * A {@code FlixelSubState} can be opened inside a {@link FlixelState}. By default, it
@@ -49,13 +48,13 @@ public abstract class FlixelSubState extends FlixelState {
   FlixelState parentState;
 
   /** Preserved so {@link #syncBackgroundToCameras()} can run after the game exists (constructor may run earlier). */
-  private final Color subStateBackground;
+  private final FlixelColor subStateBackground;
 
   /**
    * Creates a new substate with a clear background.
    */
   public FlixelSubState() {
-    this(Color.CLEAR);
+    this(FlixelColor.CLEAR);
   }
 
   /**
@@ -63,9 +62,9 @@ public abstract class FlixelSubState extends FlixelState {
    *
    * @param bgColor The background color for this substate.
    */
-  public FlixelSubState(Color bgColor) {
+  public FlixelSubState(FlixelColor bgColor) {
     super();
-    subStateBackground = bgColor != null ? new Color(bgColor) : new Color(Color.CLEAR);
+    subStateBackground = bgColor != null ? new FlixelColor(bgColor) : new FlixelColor(FlixelColor.CLEAR);
     setBgColor(subStateBackground);
   }
 

@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.tween;
 
-import com.badlogic.gdx.graphics.Color;
-
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelAngleable;
@@ -307,100 +305,6 @@ public abstract class FlixelTween implements FlixelPoolable {
     tween.setTweenSettings(tweenSettings);
     tween.setColorEndpoints(colorable, from, to, onColor);
     return globalManager.addTween(tween);
-  }
-
-  /**
-   * Creates a new color tween using libGDX {@link Color} values with the provided settings and
-   * adds it to the global tween manager.
-   *
-   * <p>It's advised you use this method rather than directly changing the color of a sprite, as
-   * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
-   * than causing a flash or jump in color.
-   *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
-   * @param from The starting color.
-   * @param to The ending color.
-   * @param tweenSettings The settings that configure and determine how the tween should animate.
-   * @return The newly created and started tween.
-   */
-  public static FlixelTween color(
-      @Nullable FlixelColorable colorable,
-      @Nullable Color from,
-      @Nullable Color to,
-      FlixelTweenSettings tweenSettings) {
-    return color(colorable, from, to, tweenSettings, null);
-  }
-
-  /**
-   * Creates a new color tween using libGDX {@link Color} values with the provided settings and
-   * adds it to the global tween manager.
-   *
-   * <p>It's advised you use this method rather than directly changing the color of a sprite, as
-   * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
-   * than causing a flash or jump in color.
-   *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
-   * @param from The starting color.
-   * @param to The ending color.
-   * @param tweenSettings The settings that configure and determine how the tween should animate.
-   * @param onColor The callback to run when the tween is complete.
-   * @return The newly created and started tween.
-   */
-  public static FlixelTween color(
-      @Nullable FlixelColorable colorable,
-      @Nullable Color from,
-      @Nullable Color to,
-      FlixelTweenSettings tweenSettings,
-      @Nullable Runnable onColor) {
-    FlixelColorTween tween =
-        globalManager.obtainTween(FlixelColorTween.class, () -> new FlixelColorTween(tweenSettings));
-    tween.setTweenSettings(tweenSettings);
-    tween.setColorEndpointsRaw(colorable, from, to, onColor);
-    return globalManager.addTween(tween);
-  }
-
-  /**
-   * Creates a new color tween using mixture of libGDX's {@link Color} and FlixelGDX's {@link FlixelColor} values with
-   * the provided settings and adds it to the global tween manager.
-   *
-   * <p>It's advised you use this method rather than directly changing the color of a sprite, as
-   * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
-   * than causing a flash or jump in color.
-   *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
-   * @param from The starting color.
-   * @param to The ending color.
-   * @param tweenSettings The settings that configure and determine how the tween should animate.
-   * @return The newly created and started tween.
-   */
-  public static FlixelTween color(
-      @Nullable FlixelColorable colorable,
-      @Nullable FlixelColor from,
-      @Nullable Color to,
-      FlixelTweenSettings tweenSettings) {
-    return color(colorable, from.getGdxColor(), to, tweenSettings, null);
-  }
-
-  /**
-   * Creates a new color tween using mixture of libGDX's {@link Color} and FlixelGDX's {@link FlixelColor} values with
-   * the provided settings and adds it to the global tween manager.
-   *
-   * <p>It's advised you use this method rather than directly changing the color of a sprite, as
-   * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
-   * than causing a flash or jump in color.
-   *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
-   * @param from The starting color.
-   * @param to The ending color.
-   * @param tweenSettings The settings that configure and determine how the tween should animate.
-   * @return The newly created and started tween.
-   */
-  public static FlixelTween color(
-      @Nullable FlixelColorable colorable,
-      @Nullable Color from,
-      @Nullable FlixelColor to,
-      FlixelTweenSettings tweenSettings) {
-    return color(colorable, from, to.getGdxColor(), tweenSettings, null);
   }
 
   /**

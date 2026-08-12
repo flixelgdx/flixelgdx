@@ -2,12 +2,11 @@ plugins {
   id("flixelgdx.java-library")
 }
 
+// The iOS backend is a fail-fast placeholder until it is brought onto the framework's bgfx + SDL3
+// stack in a later phase. It depends only on the core API so the module compiles with no libGDX or
+// RoboVM on the classpath.
 dependencies {
   api(project(":flixelgdx-core"))
-  api(project(":flixelgdx-jvm"))
-  api(libs.gdx.backend.robovm)
-  api("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-ios")
-  api(libs.robovm.rt)
-  api(libs.robovm.cocoatouch)
-  api(libs.gdx.controllers.ios)
+
+  implementation(libs.jetbrains.annotations)
 }

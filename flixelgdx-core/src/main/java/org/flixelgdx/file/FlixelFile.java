@@ -88,6 +88,45 @@ public interface FlixelFile {
   }
 
   /**
+   * Lists the immediate children of this handle when it points at a directory.
+   *
+   * <p>Only the direct children are returned, not the whole tree. The order is not guaranteed. When
+   * this handle is not a directory, or the backend cannot enumerate it (for example a directory
+   * packed inside a JAR, which most backends cannot walk), an empty array is returned rather than
+   * {@code null}.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelFile[] levels = Flixel.files.internal("levels").list();
+   * for (int i = 0; i < levels.length; i++) {
+   *   loadLevel(levels[i]);
+   * }
+   * }</pre>
+   *
+   * @return The child handles, or an empty array when there are none. Never {@code null}.
+   */
+  @NotNull
+  default FlixelFile[] list() {
+    return new FlixelFile[0];
+  }
+
+  /**
+   * Lists the immediate children whose file name ends with the given suffix.
+   *
+   * <p>This is a convenience filter over {@link #list()}. The suffix is matched against the child's
+   * file name, so passing {@code "png"} keeps every child whose name ends with {@code png} (such as
+   * {@code hero.png}). The same empty-array rules as {@link #list()} apply.
+   *
+   * @param suffix The file-name suffix to keep, for example {@code "png"} or {@code ".ogg"}.
+   * @return The matching child handles, or an empty array when there are none. Never {@code null}.
+   */
+  @NotNull
+  default FlixelFile[] list(@NotNull String suffix) {
+    return new FlixelFile[0];
+  }
+
+  /**
    * Reads the whole file as text using the platform's default charset.
    *
    * @return The file contents, or an empty string when the file does not exist. Never {@code null}.
@@ -117,6 +156,50 @@ public interface FlixelFile {
   @NotNull
   default byte[] readBytes() {
     return new byte[0];
+  }
+
+  /**
+   * Returns the size of this file in bytes.
+   *
+   * @return The file length, or {@code 0} when the file does not exist or the backend cannot
+   *     report sizes.
+   */
+  default long length() {
+    return 0L;
+  }
+
+  /**
+   * Writes text to this file, replacing any existing contents. Parent folders are created as
+   * needed on backends that support writing.
+   *
+   * <p>Only writable roots (such as {@link FlixelFiles#external external} and
+   * {@link FlixelFiles#local local}) support this; read-only roots return {@code false}.
+   *
+   * @param content The text to write.
+   * @return {@code true} when the write succeeded.
+   */
+  default boolean writeString(@NotNull String content) {
+    return false;
+  }
+
+  /**
+   * Writes raw bytes to this file, replacing any existing contents. Parent folders are created
+   * as needed on backends that support writing.
+   *
+   * @param content The bytes to write.
+   * @return {@code true} when the write succeeded.
+   */
+  default boolean writeBytes(byte @NotNull [] content) {
+    return false;
+  }
+
+  /**
+   * Deletes this file.
+   *
+   * @return {@code true} when the file existed and was removed.
+   */
+  default boolean delete() {
+    return false;
   }
 
   /**

@@ -34,7 +34,7 @@ import org.flixelgdx.Flixel;
  * on knowing whether feedback will actually fire.
  *
  * <p>Launchers on supported platforms (for example, Android) install a real implementation before
- * {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(...)} runs.
+ * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)} runs.
  * You should not need to assign {@link org.flixelgdx.Flixel#haptics Flixel.haptics}
  * from game code unless you are providing a custom backend.
  *

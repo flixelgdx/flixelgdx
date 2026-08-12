@@ -1,7 +1,7 @@
 /**
  * Frame-based timers package for FlixelGDX.
  *
- * <p>Note that this package does not use libGDX {@code Timer} and does not use background threads. All global timer
+ * <p>Note that this package does not use a platform timer and does not use background threads. All global timer
  * objects are updated in the main game loop.
  *
  * <p><b>Usage</b>

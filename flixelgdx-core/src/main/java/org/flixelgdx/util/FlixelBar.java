@@ -23,17 +23,14 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +50,7 @@ import java.util.RandomAccess;
  * as other sprites.
  *
  * <p><b>Rendering</b>: The bar draws custom geometry with a shared white-pixel texture and optional
- * {@link TextureRegion} backgrounds and fills. It does not use {@link FlixelSprite#loadGraphic}; those
+ * {@link FlixelFrame} backgrounds and fills. It does not use {@link FlixelSprite#loadGraphic}; those
  * entry points are blocked so a bar never accidentally shows a loaded texture on top of the bar UI.
  *
  * <p><b>Value and range</b>: You set a logical range with {@link #setRange(float, float)} and either
@@ -103,23 +100,23 @@ public class FlixelBar extends FlixelSprite {
   private float lastElapsed = 1f / 60f;
 
   // Empty/fill rendering configuration.
-  private final Color emptyColor = new Color(0f, 0f, 0f, 0.5f);
-  private final Color filledColor = new Color(0f, 1f, 0f, 1f);
+  private final FlixelColor emptyColor = new FlixelColor(0f, 0f, 0f, 0.5f);
+  private final FlixelColor filledColor = new FlixelColor(0f, 1f, 0f, 1f);
 
   @Nullable
-  private TextureRegion emptyRegion;
+  private FlixelFrame emptyRegion;
   @Nullable
-  private TextureRegion filledRegion;
+  private FlixelFrame filledRegion;
 
   // Optional gradient (drawn instead of filledColor/filledRegion when enabled).
   @Nullable
-  private Color gradientStart;
+  private FlixelColor gradientStart;
   @Nullable
-  private Color gradientEnd;
+  private FlixelColor gradientEnd;
   @Nullable
-  private Texture gradientTexture;
+  private FlixelTexture gradientTexture;
   @Nullable
-  private TextureRegion gradientRegion;
+  private FlixelFrame gradientRegion;
   private int gradientTexW = 0;
   private int gradientTexH = 0;
   private float lastGradientBasisW = -1f;
@@ -127,15 +124,15 @@ public class FlixelBar extends FlixelSprite {
 
   // Border.
   @Nullable
-  private Color borderColor;
+  private FlixelColor borderColor;
   private float borderThickness = 0f;
 
   private final FlixelArray<ThresholdStop> thresholdStops = new FlixelArray<>(true, 8);
   private float thresholdColorLerp = 1f;
   private float lastPercentForThreshold = 1f;
-  private final Color thresholdCurrentColor = new Color(Color.WHITE);
-  private final Color thresholdDesiredColor = new Color(Color.WHITE);
-  private final Color thresholdScratch = new Color(Color.WHITE);
+  private final FlixelColor thresholdCurrentColor = new FlixelColor(FlixelColor.WHITE);
+  private final FlixelColor thresholdDesiredColor = new FlixelColor(FlixelColor.WHITE);
+  private final FlixelColor thresholdScratch = new FlixelColor(FlixelColor.WHITE);
 
   /** Current overlay label source, or {@code null} for none. May be a live {@link FlixelString} you mutate. */
   @Nullable
@@ -156,7 +153,7 @@ public class FlixelBar extends FlixelSprite {
 
   // Per-instance 1x1 texture for rectangle drawing.
   @Nullable
-  private Texture whitePixel;
+  private FlixelFrame whitePixel;
 
   private boolean screenSpace = false;
   private boolean thresholdEnabled = false;
@@ -181,13 +178,13 @@ public class FlixelBar extends FlixelSprite {
   }
 
   @Override
-  public final FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
+  public final FlixelSprite loadGraphic(FlixelTexture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException(
         "FlixelBar does not use loadGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
   }
 
   @Override
-  public final FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
+  public final FlixelSprite makeGraphic(int width, int height, @NotNull FlixelColor color) {
     throw new UnsupportedOperationException(
         "FlixelBar does not use makeGraphic; use setEmptyColor, setFilledColor, setEmptyGraphic, setFilledGraphic, or setGradient.");
   }
@@ -335,71 +332,51 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Sets the tint for the empty (background) strip when no {@link #setEmptyGraphic(TextureRegion)} is set.
+   * Sets the tint for the empty (background) strip when no {@link #setEmptyGraphic(FlixelFrame)} is set.
    * Clears any empty graphic region so the bar uses solid color for the background again.
    *
-   * @param c libGDX color; not null.
+   * @param c The color; not null.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setEmptyColor(@NotNull Color c) {
+  public FlixelBar setEmptyColor(@NotNull FlixelColor c) {
     emptyColor.set(Objects.requireNonNull(c));
     emptyRegion = null;
     return this;
   }
 
   /**
-   * Same as {@link #setEmptyColor(Color)} using a {@link FlixelColor} object.
-   *
-   * @param c Engine color wrapper; not null.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setEmptyColor(@NotNull FlixelColor c) {
-    return setEmptyColor(Objects.requireNonNull(c).getGdxColor());
-  }
-
-  /**
-   * Sets the tint for the filled portion when no {@link #setFilledGraphic(TextureRegion)} or gradient is used,
+   * Sets the tint for the filled portion when no {@link #setFilledGraphic(FlixelFrame)} or gradient is used,
    * unless threshold coloring overrides the fill color. Clears any filled graphic region.
    *
-   * @param c LibGDX color; not null.
+   * @param c The color; not null.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setFilledColor(@NotNull Color c) {
+  public FlixelBar setFilledColor(@NotNull FlixelColor c) {
     filledColor.set(Objects.requireNonNull(c));
     filledRegion = null;
     return this;
   }
 
   /**
-   * Same as {@link #setFilledColor(Color)} using {@link FlixelColor}.
-   *
-   * @param c Engine color wrapper; not null.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setFilledColor(@NotNull FlixelColor c) {
-    return setFilledColor(Objects.requireNonNull(c).getGdxColor());
-  }
-
-  /**
    * Uses a texture region for the full empty background stretched to the bar size. Set {@code null} to fall
-   * back to {@link #setEmptyColor(Color)}.
+   * back to {@link #setEmptyColor(FlixelColor)}.
    *
-   * @param region Empty-bar art, or {@code null} for solid {@link #setEmptyColor(Color)}.
+   * @param region Empty-bar art, or {@code null} for solid {@link #setEmptyColor(FlixelColor)}.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setEmptyGraphic(@Nullable TextureRegion region) {
+  public FlixelBar setEmptyGraphic(@Nullable FlixelFrame region) {
     this.emptyRegion = region;
     return this;
   }
 
   /**
    * Uses a texture region for the fill; the bar crops UVs so only a fraction matching the current percent is shown.
-   * Set {@code null} to use {@link #setFilledColor(Color)} or {@link #setGradient(Color, Color)}.
+   * Set {@code null} to use {@link #setFilledColor(FlixelColor)} or {@link #setGradient(FlixelColor, FlixelColor)}.
    *
    * @param region Fill art, or {@code null} for color or gradient fill.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setFilledGraphic(@Nullable TextureRegion region) {
+  public FlixelBar setFilledGraphic(@Nullable FlixelFrame region) {
     this.filledRegion = region;
     return this;
   }
@@ -412,28 +389,15 @@ public class FlixelBar extends FlixelSprite {
    * <p>Use this if you need something like a health bar, where at the start of the bar the color is green, and
    * at the end of the bar the color is red.
    *
-   * @param start Color at the start of the gradient axis (left or bottom of the fill direction).
-   * @param end Color at the end of the gradient axis.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setGradient(@Nullable Color start, @Nullable Color end) {
-    this.gradientStart = start != null ? new Color(start) : null;
-    this.gradientEnd = end != null ? new Color(end) : null;
-    rebuildGradientIfNeeded();
-    return this;
-  }
-
-  /**
-   * Same as {@link #setGradient(Color, Color)} using {@link FlixelColor}.
-   *
-   * @param start Start color, or {@code null} to help disable the gradient.
-   * @param end End color, or {@code null} to help disable the gradient.
+   * @param start FlixelColor at the start of the gradient axis (left or bottom of the fill direction).
+   * @param end FlixelColor at the end of the gradient axis.
    * @return {@code this} for chaining.
    */
   public FlixelBar setGradient(@Nullable FlixelColor start, @Nullable FlixelColor end) {
-    Color s = start != null ? start.getGdxColor() : null;
-    Color e = end != null ? end.getGdxColor() : null;
-    return setGradient(s, e);
+    this.gradientStart = start != null ? new FlixelColor(start) : null;
+    this.gradientEnd = end != null ? new FlixelColor(end) : null;
+    rebuildGradientIfNeeded();
+    return this;
   }
 
   /**
@@ -444,14 +408,14 @@ public class FlixelBar extends FlixelSprite {
    * @param thickness Width of each border strip in pixels; values below zero are clamped to zero.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setBorder(@Nullable Color color, float thickness) {
-    this.borderColor = color != null ? new Color(color) : null;
+  public FlixelBar setBorder(@Nullable FlixelColor color, float thickness) {
+    this.borderColor = color != null ? new FlixelColor(color) : null;
     this.borderThickness = Math.max(0f, thickness);
     return this;
   }
 
   /**
-   * Removes the border drawn by {@link #setBorder(Color, float)}.
+   * Removes the border drawn by {@link #setBorder(FlixelColor, float)}.
    *
    * @return {@code this} for chaining.
    */
@@ -466,12 +430,12 @@ public class FlixelBar extends FlixelSprite {
    * {@code fullColor} at 100% fill. Replaces any previous threshold stops from
    * {@link #setThresholdStops(Collection)}.
    *
-   * @param fullColor Color used when fill percent is at or above the top stop (full bar).
-   * @param lowColor Color blended in below {@code lowPercent}.
+   * @param fullColor FlixelColor used when fill percent is at or above the top stop (full bar).
+   * @param lowColor FlixelColor blended in below {@code lowPercent}.
    * @param lowPercent Fill fraction in {@code [0,1]} where the low color applies; clamped if out of range.
    * @return {@code this} for chaining.
    */
-  public FlixelBar setThresholdColors(@NotNull Color fullColor, @NotNull Color lowColor, float lowPercent) {
+  public FlixelBar setThresholdColors(@NotNull FlixelColor fullColor, @NotNull FlixelColor lowColor, float lowPercent) {
     Objects.requireNonNull(fullColor);
     Objects.requireNonNull(lowColor);
     lowPercent = FlixelMath.clamp(lowPercent, 0f, 1f);
@@ -493,7 +457,7 @@ public class FlixelBar extends FlixelSprite {
    * {@link FlixelArray} and sorted by percent. Null entries are skipped.
    *
    * <p>For {@link List} implementations that also implement {@link RandomAccess}, copying uses index
-   * loops and avoids iterator allocation on this (typically rare) call. For a libGDX {@link FlixelArray}, use
+   * loops and avoids iterator allocation on this (typically rare) call. For a {@link FlixelArray}, use
    * {@link #setThresholdStops(FlixelArray)}.
    *
    * @param stops Non-null collection; may be empty to clear thresholds.
@@ -508,10 +472,10 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Same as {@link #setThresholdStops(Collection)} but reads stops from a libGDX {@link FlixelArray} by index
+   * Same as {@link #setThresholdStops(Collection)} but reads stops from a {@link FlixelArray} by index
    * (no iterator on the source).
    *
-   * @param stops Non-null libGDX array; null entries are skipped.
+   * @param stops Non-null {@link FlixelArray}; null entries are skipped.
    * @return {@code this} for chaining.
    */
   public FlixelBar setThresholdStops(@NotNull FlixelArray<ThresholdStop> stops) {
@@ -528,7 +492,7 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Disables threshold-based fill coloring so the bar uses {@link #setFilledColor(Color)} or gradient only.
+   * Disables threshold-based fill coloring so the bar uses {@link #setFilledColor(FlixelColor)} or gradient only.
    *
    * @return {@code this} for chaining.
    */
@@ -696,7 +660,7 @@ public class FlixelBar extends FlixelSprite {
   public void destroy() {
     super.destroy();
     if (gradientTexture != null) {
-      gradientTexture.dispose();
+      gradientTexture.destroy();
       gradientTexture = null;
       gradientRegion = null;
     }
@@ -709,22 +673,22 @@ public class FlixelBar extends FlixelSprite {
     if (whitePixel != null) {
       return;
     }
-    whitePixel = FlixelSpriteUtil.obtainWhitePixelTexture(Flixel.ensureAssets());
+    whitePixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
   }
 
-  private void drawFullEmpty(Batch batch, float x, float y, float w, float h) {
+  private void drawFullEmpty(FlixelBatch batch, float x, float y, float w, float h) {
     if (emptyRegion != null) {
-      batch.setColor(Color.WHITE);
+      batch.setColor(FlixelColor.WHITE);
       batch.draw(emptyRegion, x, y, w, h);
-      batch.setColor(Color.WHITE);
+      batch.setColor(FlixelColor.WHITE);
       return;
     }
     batch.setColor(emptyColor);
     batch.draw(Objects.requireNonNull(whitePixel), x, y, w, h);
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
-  private void drawFilled(Batch batch, float x, float y, float w, float h, float percent) {
+  private void drawFilled(FlixelBatch batch, float x, float y, float w, float h, float percent) {
     if (percent <= 0f) {
       return;
     }
@@ -734,30 +698,30 @@ public class FlixelBar extends FlixelSprite {
       rebuildGradientIfNeeded();
     }
 
-    TextureRegion regionToDraw = resolveFilledRegionForCurrentSettings();
+    FlixelFrame regionToDraw = resolveFilledRegionForCurrentSettings();
     if (regionToDraw == null) {
       batch.setColor(resolveFilledColorForCurrentSettings(percent));
       drawFilledRect(batch, x, y, w, h, percent);
-      batch.setColor(Color.WHITE);
+      batch.setColor(FlixelColor.WHITE);
       return;
     }
 
     batch.setColor(resolveFilledColorForCurrentSettings(percent));
     drawFilledRegion(batch, regionToDraw, x, y, w, h, percent);
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   @Nullable
-  private TextureRegion resolveFilledRegionForCurrentSettings() {
+  private FlixelFrame resolveFilledRegionForCurrentSettings() {
     if (gradientRegion != null) {
       return gradientRegion;
     }
     return filledRegion;
   }
 
-  private Color resolveFilledColorForCurrentSettings(float percent) {
+  private FlixelColor resolveFilledColorForCurrentSettings(float percent) {
     if (gradientRegion != null) {
-      return Color.WHITE;
+      return FlixelColor.WHITE;
     }
     if (!thresholdEnabled || thresholdStops.getSize() == 0) {
       return filledColor;
@@ -782,7 +746,7 @@ public class FlixelBar extends FlixelSprite {
     return thresholdCurrentColor;
   }
 
-  private Color sampleThresholdColorIntoScratch(float percent) {
+  private FlixelColor sampleThresholdColorIntoScratch(float percent) {
     percent = FlixelMath.clamp(percent, 0f, 1f);
 
     ThresholdStop prev = null;
@@ -826,7 +790,7 @@ public class FlixelBar extends FlixelSprite {
     }
   }
 
-  private void drawFilledRect(Batch batch, float x, float y, float w, float h, float percent) {
+  private void drawFilledRect(FlixelBatch batch, float x, float y, float w, float h, float percent) {
     float fx = x;
     float fy = y;
     float fw = w;
@@ -848,7 +812,8 @@ public class FlixelBar extends FlixelSprite {
     batch.draw(Objects.requireNonNull(whitePixel), fx, fy, fw, fh);
   }
 
-  private void drawFilledRegion(Batch batch, TextureRegion region, float x, float y, float w, float h, float percent) {
+  private void drawFilledRegion(FlixelBatch batch, FlixelFrame region, float x, float y, float w, float h,
+      float percent) {
     float fx = x;
     float fy = y;
     float fw = w;
@@ -884,16 +849,16 @@ public class FlixelBar extends FlixelSprite {
       }
     }
 
-    Texture tex = region.getTexture();
+    FlixelTexture tex = region.getTexture();
     batch.draw(tex, fx, fy, fw, fh, u, v, u2, v2);
   }
 
-  private void drawBorder(Batch batch, float x, float y, float w, float h, Color c, float t) {
+  private void drawBorder(FlixelBatch batch, float x, float y, float w, float h, FlixelColor c, float t) {
     t = Math.max(0f, t);
     if (t <= 0f)
       return;
     batch.setColor(c);
-    Texture px = Objects.requireNonNull(whitePixel);
+    FlixelFrame px = Objects.requireNonNull(whitePixel);
     // Top.
     batch.draw(px, x, y + h - t, w, t);
     // Bottom.
@@ -902,7 +867,7 @@ public class FlixelBar extends FlixelSprite {
     batch.draw(px, x, y, t, h);
     // Right.
     batch.draw(px, x + w - t, y, t, h);
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
   }
 
   private float clampToRange(float v) {
@@ -923,7 +888,7 @@ public class FlixelBar extends FlixelSprite {
   private void rebuildGradientIfNeeded() {
     if (gradientStart == null || gradientEnd == null) {
       if (gradientTexture != null) {
-        gradientTexture.dispose();
+        gradientTexture.destroy();
       }
       gradientTexture = null;
       gradientRegion = null;
@@ -957,7 +922,7 @@ public class FlixelBar extends FlixelSprite {
     }
 
     if (gradientTexture != null) {
-      gradientTexture.dispose();
+      gradientTexture.destroy();
     }
 
     gradientTexture = FlixelSpriteUtil.createLinearGradientTexture(
@@ -966,7 +931,7 @@ public class FlixelBar extends FlixelSprite {
         gradientStart,
         gradientEnd,
         horizontal);
-    gradientRegion = new TextureRegion(gradientTexture);
+    gradientRegion = new FlixelFrame(gradientTexture);
     gradientTexW = desiredW;
     gradientTexH = desiredH;
     lastGradientBasisW = getWidth();
@@ -984,17 +949,17 @@ public class FlixelBar extends FlixelSprite {
    * {@link #color}, interpolating between stops for values in between.
    *
    * @param percent Fill fraction in {@code [0,1]} where this stop applies.
-   * @param color Color at this stop.
+   * @param color FlixelColor at this stop.
    */
-  public record ThresholdStop(float percent, Color color) {
+  public record ThresholdStop(float percent, FlixelColor color) {
 
     /**
      * @param percent Fill fraction; clamped to {@code [0,1]}.
      * @param color Stop color; copied internally.
      */
-    public ThresholdStop(float percent, @NotNull Color color) {
+    public ThresholdStop(float percent, @NotNull FlixelColor color) {
       this.percent = FlixelMath.clamp(percent, 0f, 1f);
-      this.color = new Color(Objects.requireNonNull(color));
+      this.color = new FlixelColor(Objects.requireNonNull(color));
     }
   }
 

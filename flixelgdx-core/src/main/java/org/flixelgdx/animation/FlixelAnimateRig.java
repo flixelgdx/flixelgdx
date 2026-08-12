@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.utils.Array;
-
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.math.FlixelAffine;
@@ -50,7 +49,7 @@ import java.util.Objects;
  *   <li>An integer index into {@link #atlas} selecting which bitmap slice to draw.</li>
  *   <li>A fully baked {@link FlixelAffine} that already contains (a) the Flash {@code MX} or {@code M3D}
  *   matrix chain from the root symbol or stage down to the leaf bitmap, (b) a Y-axis flip that converts
- *   Adobe Animate's Y-down bitmap space into libGDX's Y-up texture-region space, and (c) an anchor translation
+ *   Adobe Animate's Y-down bitmap space into the renderer's Y-up texture-region space, and (c) an anchor translation
  *   that shifts the whole rig so the anchor-clip bounding box starts at {@code (0, 0)}.</li>
  * </ul>
  *
@@ -82,7 +81,7 @@ public final class FlixelAnimateRig {
    * either way.
    */
   @NotNull
-  public final Array<FlixelFrame> atlas;
+  public final FlixelArray<FlixelFrame> atlas;
 
   /** Map of clip name (for example {@code "Idle"}) to its baked {@link Clip}. */
   @NotNull
@@ -131,7 +130,7 @@ public final class FlixelAnimateRig {
    * @param anchorHeight The height of the anchor bounding box in pixels.
    */
   FlixelAnimateRig(
-      @NotNull Array<FlixelFrame> atlas,
+      @NotNull FlixelArray<FlixelFrame> atlas,
       @NotNull FlixelMap<String, Clip> clips,
       @NotNull String anchorClipName,
       float anchorMinX,

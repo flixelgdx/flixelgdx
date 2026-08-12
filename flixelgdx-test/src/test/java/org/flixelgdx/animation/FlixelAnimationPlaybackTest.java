@@ -23,12 +23,11 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.utils.Array;
-
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -81,24 +80,60 @@ class FlixelAnimationPlaybackTest {
   }
 
   @Test
-  void playingAndUpdatingAnObjectBackedClipDoesNotThrow() {
-    // Clips registered through addAnimationByPrefix use a default libGDX Array, whose backing store
-    // is an Object[]. getKeyFrames() is typed FlixelFrame[], so casting the whole array (rather than
-    // each element) throws a ClassCastException at runtime. Empty TextureRegions keep this GPU-free.
+  void playingAndUpdatingAClipDoesNotThrow() {
+    // Build a clip from frames backed by a stub texture, so playback and updates run with no GPU.
     FlixelSprite sprite = new FlixelSprite();
     FlixelAnimationController controller = sprite.ensureAnimation();
 
-    Array<FlixelFrame> frames = new Array<>();
+    FlixelTexture texture = new StubTexture();
+    FlixelArray<FlixelFrame> frames = new FlixelArray<>();
     for (int i = 0; i < 3; i++) {
-      frames.add(new FlixelFrame(new TextureRegion()));
+      frames.add(new FlixelFrame(texture));
     }
-    controller.getAnimations().put("test", new Animation<>(0.1f, frames, Animation.PlayMode.NORMAL));
+    controller.getAnimations().put("test", new FlixelAnimation<>(0.1f, frames, FlixelAnimation.PlayMode.NORMAL));
 
     assertDoesNotThrow(() -> {
-      controller.playAnimation("test", false);
+      controller.play("test", false);
       controller.update(0.05f);
       controller.update(0.5f); // advance past the end of the clip
     });
     assertNotNull(sprite.getCurrentFrame());
+  }
+
+  /** A GPU-free {@link FlixelTexture} stub so frames can exist without a graphics backend. */
+  private static final class StubTexture implements FlixelTexture {
+
+    private boolean smooth;
+
+    @Override
+    public long getHandle() {
+      return 0L;
+    }
+
+    @Override
+    public int getWidth() {
+      return 1;
+    }
+
+    @Override
+    public int getHeight() {
+      return 1;
+    }
+
+    @Override
+    public boolean isSmooth() {
+      return smooth;
+    }
+
+    @Override
+    public void setSmooth(boolean smooth) {
+      this.smooth = smooth;
+    }
+
+    @Override
+    public void update(int x, int y, FlixelImage image) {}
+
+    @Override
+    public void destroy() {}
   }
 }

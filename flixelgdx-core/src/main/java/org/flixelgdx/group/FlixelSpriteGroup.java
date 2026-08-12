@@ -23,12 +23,10 @@
  */
 package org.flixelgdx.group;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
@@ -140,12 +138,12 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   @Override
-  public final FlixelSprite loadGraphic(Texture texture, int frameWidth, int frameHeight) {
+  public final FlixelSprite loadGraphic(FlixelTexture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("Loading a texture for a group is not supported. Use add() instead.");
   }
 
   @Override
-  public final FlixelSprite makeGraphic(int width, int height, @NotNull Color color) {
+  public final FlixelSprite makeGraphic(int width, int height, @NotNull FlixelColor color) {
     throw new UnsupportedOperationException("Creating a graphic for a group is not supported. Use add() instead.");
   }
 
@@ -214,12 +212,12 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   }
 
   public float getAlpha() {
-    return getGdxColor().a;
+    return getColor().a;
   }
 
   /** Sets a color tint on the group and propagates it to all current members. */
   @Override
-  public void setColor(@NotNull Color tint) {
+  public void setColor(@NotNull FlixelColor tint) {
     super.setColor(tint);
     FlixelSprite[] items = members.begin();
     for (int i = 0, n = members.getSize(); i < n; i++) {
@@ -240,20 +238,6 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       FlixelSprite s = items[i];
       if (s != null) {
         s.setColor(r, g, b, a);
-      }
-    }
-    members.end();
-  }
-
-  /** Sets a color tint on the group and propagates it to all current members. */
-  @Override
-  public void setColor(@NotNull FlixelColor tint) {
-    super.setColor(tint);
-    FlixelSprite[] items = members.begin();
-    for (int i = 0, n = members.getSize(); i < n; i++) {
-      FlixelSprite s = items[i];
-      if (s != null) {
-        s.setColor(tint);
       }
     }
     members.end();
@@ -850,7 +834,7 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   private void preAdd(FlixelSprite sprite) {
     sprite.setX(sprite.getX() + getX());
     sprite.setY(sprite.getY() + getY());
-    sprite.setAlpha(sprite.getGdxColor().a * getGdxColor().a);
+    sprite.setAlpha(sprite.getColor().a * getColor().a);
     sprite.setAntialiasing(antialiasing);
     sprite.setFacing(facing);
   }

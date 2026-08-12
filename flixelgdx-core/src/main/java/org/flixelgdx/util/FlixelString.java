@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.util;
 
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-
 import org.flixelgdx.collections.FlixelCharArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -57,10 +55,10 @@ import java.util.function.Supplier;
  * {@link #concatFloatRoundedOneDecimal(float)} are convenience variants for exactly one decimal
  * place.
  *
- * <h2>Passing to libGDX drawing APIs</h2>
+ * <h2>Passing to drawing APIs</h2>
  *
  * <p>This class implements {@link CharSequence}, so instances can be passed directly to APIs such
- * as {@link BitmapFont#draw} without building a temporary {@link String}. Avoid calling {@link #toString()}
+ * as text rendering without building a temporary {@link String}. Avoid calling {@link #toString()}
  * or using string concatenation on this type in per-frame code: both allocate. Pass {@code this} as a
  * {@link CharSequence} instead.
  *
@@ -69,7 +67,7 @@ import java.util.function.Supplier;
  * <p>{@link #set} clears the buffer and writes new content in one call, which is the typical
  * pattern for a HUD label that shows a single changing value. {@link #concat} appends without
  * clearing, which is useful when building a line from multiple parts. {@link #charBuffer()} exposes
- * the raw {@link FlixelCharArray} for advanced interop with libGDX APIs that require it directly.
+ * the raw {@link FlixelCharArray} for advanced interop with APIs that require it directly.
  *
  * <h2>Example Usage</h2>
  *

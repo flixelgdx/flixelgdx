@@ -78,11 +78,11 @@ public enum FlixelAssetMode {
    * <p><b>Important caveats:</b>
    * <ul>
    *   <li>{@link FlixelAsset#release()} must be called on the GL/render thread. Calling it from
-   *     a background thread while libGDX may be uploading or disposing GPU resources is not safe
+   *     a background thread while the renderer may be uploading or disposing GPU resources is not safe
    *     in AGGRESSIVE mode. It is fine in LAZY and STANDARD since those only unload at state
    *     switch boundaries, which is always on the GL thread.</li>
-   *   <li>After an aggressive eviction, the underlying libGDX asset is disposed. Any code that
-   *     still holds a raw reference to the same {@link com.badlogic.gdx.graphics.Texture Texture} (or
+   *   <li>After an aggressive eviction, the underlying asset is disposed. Any code that
+   *     still holds a raw reference to the same {@link org.flixelgdx.graphics.FlixelTexture FlixelTexture} (or
    *     other resource) object will encounter a disposed object. The automated sprite pipeline
    *     ({@code loadGraphic} and {@code destroy}) handles this correctly; direct raw-asset usage
    *     outside that pipeline must ensure no other references remain before releasing.</li>

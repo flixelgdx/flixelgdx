@@ -81,7 +81,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link org.flixelgdx.FlixelGame#render() FlixelGame.render()} after keys, mouse, and gamepads
+   * Invoked from {@link org.flixelgdx.FlixelGame#render(float) FlixelGame.render()} after keys, mouse, and gamepads
    * {@code endFrame()}.
    */
   public static void endFrameAll() {

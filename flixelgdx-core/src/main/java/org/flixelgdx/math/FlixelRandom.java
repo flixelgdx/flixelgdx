@@ -50,7 +50,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>This class is not thread safe; give each thread its own instance.
  */
-public final class FlixelRandom {
+public class FlixelRandom {
 
   private static final long MULTIPLIER = 0x2545F4914F6CDD1DL;
 

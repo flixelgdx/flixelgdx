@@ -23,36 +23,37 @@
  */
 package org.flixelgdx.graphics;
 
-import com.badlogic.gdx.graphics.Texture;
-
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.asset.FlixelAssetMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 /**
- * Reference-counted wrapper around a libGDX {@link Texture}, implementing
- * {@link FlixelAsset}{@code <FlixelGraphic>}.
+ * Reference-counted handle to a loaded image, implementing
+ * {@link FlixelAsset}{@code <FlixelGraphic>}. This is the cross-platform source of truth for a
+ * texture: it wraps an opaque {@link FlixelTexture} owned by the active graphics backend.
  *
  * <p>Graphics are shared: multiple sprites loading the same path get the same
  * {@code FlixelGraphic} instance from {@link FlixelAssetManager#get(String)}. Each user must
  * call {@link #retain()} on the handle and {@link #release()} when done so the manager can
  * track which textures are still in use and unload idle ones at state-switch time.
  *
- * <p>Use {@link #getTexture()} to access the underlying libGDX {@link Texture}. If the
+ * <p>Use {@link #getTexture()} to access the underlying {@link FlixelTexture}. If the
  * texture is not yet loaded it is fetched synchronously; queue the asset with
  * {@link FlixelAssetManager#load(String)} in a loading state to avoid mid-frame stalls.
  *
- * <p><b>Owned vs path-keyed graphics</b>
+ * <h2>Owned vs path-keyed graphics</h2>
  * <ul>
  *   <li><b>Path-keyed</b> - Created from a file path (e.g. {@code "images/player.png"}).
- *     The texture is managed by the libGDX {@link com.badlogic.gdx.assets.AssetManager}
- *     and unloaded when the reference count drops to zero and {@link FlixelAssetManager#clearNonPersist()} runs.</li>
- *   <li><b>Owned</b> - Created with a dedicated {@link Texture} (e.g. from
+ *     The texture is managed by the asset manager and unloaded when the reference count drops
+ *     to zero and {@link FlixelAssetManager#clearNonPersist()} runs, depending on the
+ *     {@link FlixelAssetMode configured asset mode}.</li>
+ *   <li><b>Owned</b> - Created with a dedicated {@link FlixelTexture} (e.g. from
  *     {@link org.flixelgdx.FlixelSprite#makeGraphic FlixelSprite.makeGraphic}). The texture is
- *     disposed directly when the graphic is evicted. {@link #isOwned()} is {@code true}.</li>
+ *     destroyed directly when the graphic is evicted. {@link #isOwned()} is {@code true}.</li>
  * </ul>
  *
  * <p><b>Persist</b> controls whether an unreferenced path-keyed graphic survives
@@ -68,7 +69,11 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   private final String path;
 
   @Nullable
-  private final Texture ownedTexture;
+  private final FlixelTexture ownedTexture;
+
+  /** Full-texture frame created lazily by {@link #getFrame()} and reused afterward. */
+  @Nullable
+  private FlixelFrame frame;
 
   private int refCount;
 
@@ -77,8 +82,8 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   private boolean persist;
 
   /**
-   * Creates a path-keyed graphic. The texture is loaded lazily from the libGDX
-   * {@link com.badlogic.gdx.assets.AssetManager} on the first {@link #getTexture()} call.
+   * Creates a path-keyed graphic. The texture is loaded lazily through the asset manager on the
+   * first {@link #getTexture()} call.
    *
    * @param assets The owning asset manager.
    * @param path Normalized asset path.
@@ -88,9 +93,9 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   }
 
   /**
-   * Creates an owned graphic wrapping a dedicated texture (e.g. from a
-   * {@link com.badlogic.gdx.graphics.Pixmap}). Pass {@code null} for {@code ownedTexture}
-   * to create a path-keyed graphic instead.
+   * Creates an owned graphic wrapping a dedicated texture (e.g. built from a
+   * {@link FlixelImage}). Pass {@code null} for {@code ownedTexture} to create a path-keyed
+   * graphic instead.
    *
    * @param assets The owning asset manager.
    * @param path Asset path or synthetic key.
@@ -99,7 +104,7 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   public FlixelGraphic(
       @NotNull FlixelAssetManager assets,
       @NotNull String path,
-      @Nullable Texture ownedTexture) {
+      @Nullable FlixelTexture ownedTexture) {
     this.assets = Objects.requireNonNull(assets, "assets cannot be null.");
     this.path = Objects.requireNonNull(path, "path cannot be null.");
     this.ownedTexture = ownedTexture;
@@ -122,7 +127,7 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   @Override
   public boolean isLoaded() {
-    return owned || assets.getManager().isLoaded(getResolvedPath(), Texture.class);
+    return owned || assets.getRaw(getResolvedPath()) != null;
   }
 
   /** Returns whether this graphic's texture has been loaded into memory. */
@@ -176,27 +181,46 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   }
 
   /**
-   * Returns the underlying libGDX {@link Texture}. If the texture is not yet loaded, it is
+   * Returns the underlying {@link FlixelTexture}. If the texture is not yet loaded, it is
    * fetched synchronously. Prefer loading assets in a loading state to avoid stalls.
    *
    * @return The texture; never {@code null}.
    */
   @NotNull
-  public Texture getTexture() {
+  public FlixelTexture getTexture() {
     if (owned) {
       return Objects.requireNonNull(ownedTexture, "Owned texture is null.");
     }
     String resolvedPath = getResolvedPath();
-    if (!assets.getManager().isLoaded(resolvedPath, Texture.class)) {
-      assets.getManager().load(resolvedPath, Texture.class);
-      assets.finishLoadingAsset(resolvedPath);
+    Object raw = assets.getRaw(resolvedPath);
+    if (raw == null) {
+      raw = assets.loadRawSync(resolvedPath);
     }
-    return assets.getManager().get(resolvedPath, Texture.class);
+    if (!(raw instanceof FlixelTexture texture)) {
+      throw new IllegalStateException(
+          "Asset at '" + resolvedPath + "' is not a texture (got " + raw.getClass().getSimpleName() + ").");
+    }
+    return texture;
   }
 
   /**
-   * Returns the path actually used to load the underlying texture from the libGDX
-   * {@code AssetManager}, resolved on demand through {@link FlixelAssetManager#resolveTexturePath}.
+   * Returns a frame covering this graphic's whole texture, creating it lazily and reusing it on
+   * later calls. Convenient for drawing an unanimated image through the batch.
+   *
+   * @return The cached full-texture frame; never {@code null}.
+   */
+  @NotNull
+  public FlixelFrame getFrame() {
+    FlixelTexture texture = getTexture();
+    if (frame == null || frame.getTexture() != texture) {
+      frame = new FlixelFrame(texture);
+    }
+    return frame;
+  }
+
+  /**
+   * Returns the path actually used to load the underlying texture from the asset manager,
+   * resolved on demand through {@link FlixelAssetManager#resolveTexturePath}.
    *
    * <p>Equal to {@link #getPath()} unless a {@code .ktx2} sibling was found for this graphic, in
    * which case that sibling's path is returned instead.
@@ -214,13 +238,13 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
    * @return The owned texture, or {@code null}.
    */
   @Nullable
-  public Texture getOwnedTexture() {
+  public FlixelTexture getOwnedTexture() {
     return ownedTexture;
   }
 
   /**
    * Returns {@code true} if this graphic wraps a dedicated texture (e.g. from
-   * {@link org.flixelgdx.FlixelSprite#makeGraphic FlixelSprite.makeGraphic}) that is disposed
+   * {@link org.flixelgdx.FlixelSprite#makeGraphic FlixelSprite.makeGraphic}) that is destroyed
    * directly when the graphic is evicted.
    *
    * @return {@code true} if owned.
@@ -229,7 +253,7 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     return owned;
   }
 
-  /** Returns whether this graphic owns its texture and disposes it on eviction. */
+  /** Returns whether this graphic owns its texture and destroys it on eviction. */
   public boolean getOwned() {
     return owned;
   }

@@ -36,7 +36,7 @@ package org.flixelgdx.input.touch;
  * }
  * }</pre>
  *
- * <p>Screen coordinates use libGDX's top-left origin (Y increases downward). World coordinates are
+ * <p>Screen coordinates use a top-left origin (Y increases downward). World coordinates are
  * unprojected via the touch manager's active camera and use the standard bottom-left origin
  * (Y increases upward), matching the rest of the scene.
  *
@@ -54,10 +54,10 @@ public final class FlixelTouch {
   /** World Y coordinate of this pointer, unprojected from screen space via the active camera. */
   public float worldY;
 
-  /** Screen X coordinate in pixels, top-left origin, matching libGDX conventions. */
+  /** Screen X coordinate in pixels, top-left origin (Y increases downward). */
   public int screenX;
 
-  /** Screen Y coordinate in pixels, top-left origin, matching libGDX conventions. */
+  /** Screen Y coordinate in pixels, top-left origin (Y increases downward). */
   public int screenY;
 
   /** Zero-based pointer index identifying this finger (0 = first touch, 1 = second, etc.). */

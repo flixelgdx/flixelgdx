@@ -23,23 +23,18 @@
  */
 package org.flixelgdx.animation;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Affine2;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.scenes.scene2d.utils.ScissorStack;
-import com.badlogic.gdx.utils.Array;
-
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelRect;
+import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
 import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
@@ -60,7 +55,7 @@ import java.util.Objects;
  * {@link FlixelAnimationController#getCurrentKeyframeIndex()}, and walks the keyframe's pre-baked
  * parts back-to-front. Every part carries a fully composed {@link FlixelAffine}, so the inner loop is a
  * single {@link FlixelAffine#setToProduct} plus one
- * {@link Batch#draw(TextureRegion, float, float, Affine2)} per
+ * {@link FlixelBatch#draw(FlixelFrame, float, float, FlixelAffine)} per
  * visible bitmap.
  *
  * <p>Position, scale, rotation, color tint, flip, origin, offset, antialiasing, scroll factor, and
@@ -97,7 +92,7 @@ import java.util.Objects;
  * <h2>Merging multiple atlases</h2>
  * Call {@link #addSpritemapAndAnimation} again with another export triple. Subsequent loads append frames to the
  * shared atlas, bake clips into the existing anchor space (the body stays pinned when you switch atlases),
- * and register clip names on the same {@link FlixelAnimationController#playAnimation} path. Names from a later sheet
+ * and register clip names on the same {@link FlixelAnimationController#play} path. Names from a later sheet
  * override earlier registrations on collisions.
  *
  * <h2>Mixing in a Sparrow atlas</h2>
@@ -152,26 +147,11 @@ public class FlixelAnimateSprite extends FlixelSprite {
   private final FlixelAffine drawAffine = new FlixelAffine();
 
   /**
-   * Scratch gdx affine used only to hand {@link #drawAffine} to the batch's
-   * {@link Batch#draw(com.badlogic.gdx.graphics.g2d.TextureRegion, float, float, Affine2)} call, which
-   * takes a gdx transform. Kept as a reused field so the bridge allocates nothing per frame.
-   */
-  @NotNull
-  private final Affine2 batchAffine = new Affine2();
-
-  /**
    * Preallocated clip bounds rect reused by {@link #draw(FlixelBatch)} to avoid per-frame
    * allocation when clipRect is active.
    */
   @NotNull
-  private final Rectangle clipBoundsTemp = new Rectangle();
-
-  /**
-   * Preallocated scissor rect reused by {@link #draw(FlixelBatch)} to avoid per-frame
-   * allocation when clipRect is active.
-   */
-  @NotNull
-  private final Rectangle scissorsTemp = new Rectangle();
+  private final FlixelRect clipBoundsTemp = new FlixelRect();
 
   /** Creates an empty sprite at {@code (0, 0)}. Call {@link #addSpritemapAndAnimation} before using BTA rigs. */
   public FlixelAnimateSprite() {
@@ -725,21 +705,19 @@ public class FlixelAnimateSprite extends FlixelSprite {
    * be a no-op on a rig sprite because {@link FlixelSprite#currentFrame} is {@code null} while the rig
    * is active.
    *
-   * @param antialiasing {@code true} to use {@link Texture.TextureFilter#Linear}, {@code false} for
-   *   {@link Texture.TextureFilter#Nearest}.
+   * @param antialiasing {@code true} to use smooth (linear) filtering, {@code false} for crisp
+   *   (nearest-neighbor) filtering.
    */
   @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
-    Texture.TextureFilter filter =
-        antialiasing ? Texture.TextureFilter.Linear : Texture.TextureFilter.Nearest;
 
     // Without a rig, mirror FlixelSprite.setAntialiasing() exactly: filter only the current frame's
     // texture so plain atlas usage stays cheap.
     if (rig == null) {
-      Texture texture = (currentFrame != null) ? currentFrame.getTexture() : null;
+      FlixelTexture texture = (currentFrame != null) ? currentFrame.getTexture() : null;
       if (texture != null) {
-        texture.setFilter(filter, filter);
+        texture.setSmooth(antialiasing);
       }
       return;
     }
@@ -747,27 +725,27 @@ public class FlixelAnimateSprite extends FlixelSprite {
     // With a rig installed (potentially with multiple merged atlases), every atlas brings its own
     // backing texture and currentFrame is null. Walk the rig's atlas list and set the filter on
     // every unique texture. Adjacent frames usually share the same texture, so we dedupe by
-    // identity to avoid hammering glTexParameteri on the same texture once per region.
-    Texture lastTexture = null;
-    Array<FlixelFrame> atlas = rig.atlas;
-    for (int i = 0; i < atlas.size; i++) {
+    // identity to avoid re-filtering the same texture once per region.
+    FlixelTexture lastTexture = null;
+    FlixelArray<FlixelFrame> atlas = rig.atlas;
+    for (int i = 0; i < atlas.getSize(); i++) {
       FlixelFrame frame = atlas.get(i);
       if (frame == null) {
         continue;
       }
-      Texture texture = frame.getTexture();
+      FlixelTexture texture = frame.getTexture();
       if (texture == null || texture == lastTexture) {
         continue;
       }
-      texture.setFilter(filter, filter);
+      texture.setSmooth(antialiasing);
       lastTexture = texture;
     }
   }
 
   /**
    * Draws the sprite. With a rig installed, walks the current clip's current keyframe and draws each
-   * part through the shared {@link org.flixelgdx.graphics.FlixelSpriteBatch FlixelSpriteBatch} with a preallocated
-   * {@link Affine2}. Without a rig (or with a non-sprite {@link Batch}), falls back to the inherited
+   * part through the shared {@link FlixelBatch} with a preallocated
+   * {@link FlixelAffine}. Without a rig, falls back to the inherited
    * {@link FlixelSprite} draw path.
    *
    * <p>The rig draw composes the sprite's world transform once per frame as
@@ -912,51 +890,36 @@ public class FlixelAnimateSprite extends FlixelSprite {
       float clipScreenY = (wy - getOffsetY()) + getClipRectY() * Math.abs(sy);
       float clipScreenW = getClipRectWidth() * Math.abs(sx);
       float clipScreenH = getClipRectHeight() * Math.abs(sy);
-      clipBoundsTemp.set(clipScreenX, clipScreenY, clipScreenW, clipScreenH);
-      ScissorStack.calculateScissors(
-          cam.getCamera(),
-          cam.getViewport().getScreenX(), cam.getViewport().getScreenY(),
-          cam.getViewport().getScreenWidth(), cam.getViewport().getScreenHeight(),
-          batch.getTransformMatrix(), clipBoundsTemp, scissorsTemp);
-      clipPushed = ScissorStack.pushScissors(scissorsTemp);
-      if (!clipPushed) {
-        // Entire rig is scissored out; restore shader and exit without drawing.
-        if (activeShader != null) {
-          batch.setShader(null);
-        }
-        return;
-      }
+      cam.getViewport().projectToScissor(clipScreenX, clipScreenY, clipScreenW, clipScreenH, clipBoundsTemp);
+      Flixel.graphics.setScissor(
+          Math.round(clipBoundsTemp.x), Math.round(clipBoundsTemp.y),
+          Math.round(clipBoundsTemp.width), Math.round(clipBoundsTemp.height));
+      clipPushed = true;
     }
 
-    batch.setColor(getGdxColor());
+    batch.setColor(getColor());
 
-    Array<FlixelFrame> atlas = activeRig.atlas;
+    FlixelArray<FlixelFrame> atlas = activeRig.atlas;
     FlixelAnimateRig.Part[] parts = keyframe.parts;
     for (FlixelAnimateRig.Part part : parts) {
-      if (part.atlasIndex < 0 || part.atlasIndex >= atlas.size) {
+      if (part.atlasIndex < 0 || part.atlasIndex >= atlas.getSize()) {
         continue;
       }
       FlixelFrame frame = atlas.get(part.atlasIndex);
 
       // Compose the final affine for this part. setToProduct() keeps us allocation-free and rewrites
       // all six fields in a single call. The resulting matrix acts on the quad corners (0, 0),
-      // (w, 0), (w, h), (0, h) that Batch.draw() will emit, where (w, h) are the region's
+      // (w, 0), (w, h), (0, h) that the batch draw will emit, where (w, h) are the region's
       // pixel dimensions.
       drawAffine.setToProduct(baseAffine, part.local);
-      batchAffine.m00 = drawAffine.m00;
-      batchAffine.m01 = drawAffine.m01;
-      batchAffine.m02 = drawAffine.m02;
-      batchAffine.m10 = drawAffine.m10;
-      batchAffine.m11 = drawAffine.m11;
-      batchAffine.m12 = drawAffine.m12;
-      batch.draw(frame.getRegion(), frame.getRegionWidth(), frame.getRegionHeight(), batchAffine);
+      batch.draw(frame, frame.getRegionWidth(), frame.getRegionHeight(), drawAffine);
     }
 
-    batch.setColor(Color.WHITE);
+    batch.setColor(FlixelColor.WHITE);
 
     if (hasClip && clipPushed) {
       batch.flush();
-      ScissorStack.popScissors();
+      Flixel.graphics.clearScissor();
     }
 
     if (activeShader != null) {
@@ -975,12 +938,12 @@ public class FlixelAnimateSprite extends FlixelSprite {
   void installAnimateRig(@NotNull FlixelAnimateRig installedRig) {
     this.rig = installedRig;
     setSize(installedRig.anchorWidth, installedRig.anchorHeight);
-    if (antialiasing && installedRig.atlas.size > 0) {
+    if (antialiasing && installedRig.atlas.getSize() > 0) {
       FlixelFrame anyFrame = installedRig.atlas.first();
       if (anyFrame != null) {
-        Texture texture = anyFrame.getTexture();
+        FlixelTexture texture = anyFrame.getTexture();
         if (texture != null) {
-          texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+          texture.setSmooth(true);
         }
       }
     }

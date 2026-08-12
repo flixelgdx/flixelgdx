@@ -47,10 +47,10 @@ public enum FlixelUnsupportedMesh implements FlixelMesh {
   public void destroy() {}
 
   @Override
-  public void setVertices(@NotNull float[] vertices, int offset, int count) {}
+  public void setVertices(@NotNull float @NotNull [] vertices, int offset, int count) {}
 
   @Override
-  public void setIndices(@NotNull short[] indices, int offset, int count) {}
+  public void setIndices(@NotNull short @NotNull [] indices, int offset, int count) {}
 
   @Override
   public @NotNull FlixelVertexLayout getLayout() {

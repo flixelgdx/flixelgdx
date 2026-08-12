@@ -11,14 +11,17 @@ java {
 
 dependencies {
   implementation(project(":flixelgdx-core"))
+  // The JVM module supplies the real java.io file backend so save round-trip tests persist to disk.
+  implementation(project(":flixelgdx-jvm"))
   implementation(libs.jetbrains.annotations)
 
-  testRuntimeOnly(libs.gdx.controllers.desktop)
   testRuntimeOnly(libs.junit.platform.launcher)
-  testRuntimeOnly("com.badlogicgames.gdx:gdx-platform:${libs.versions.gdx.get()}:natives-desktop")
   testImplementation(platform(libs.junit.bom))
   testImplementation(libs.junit.jupiter)
-  testImplementation(libs.gdx.backend.headless)
+
+  // Runs the @JsonSerializable annotation processor over the test sources so the generated
+  // serializers can be exercised by the round-trip test.
+  testAnnotationProcessor(project(":flixelgdx-json-processor"))
 }
 
 tasks.named<Test>("test") {

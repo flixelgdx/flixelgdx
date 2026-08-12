@@ -159,7 +159,8 @@ public final class FlixelMatrix {
   }
 
   /**
-   * Sets this matrix to a 2D orthographic projection.
+   * Sets this matrix to a 2D orthographic projection using the OpenGL NDC depth convention
+   * ({@code [-1, 1]}).
    *
    * <p>The result maps the rectangle {@code [x, x + width] x [y, y + height]}
    * onto the normalized device cube, which is exactly what a 2D camera needs to
@@ -172,11 +173,31 @@ public final class FlixelMatrix {
    * @return This matrix, for chaining.
    */
   public @NotNull FlixelMatrix setToOrtho2D(float x, float y, float width, float height) {
-    return setToOrtho(x, x + width, y, y + height, 0f, 1f);
+    return setToOrtho(x, x + width, y, y + height, 0f, 1f, false);
   }
 
   /**
-   * Sets this matrix to a general orthographic projection.
+   * Sets this matrix to a 2D orthographic projection, choosing the correct depth formula for the
+   * active backend.
+   *
+   * <p>Pass {@code true} when the backend's NDC depth range is {@code [0, 1]} (Vulkan, Metal,
+   * Direct3D) and {@code false} for the {@code [-1, 1]} convention (OpenGL, WebGL). Passing the
+   * wrong value clips all geometry at the default depth, causing a black screen.
+   *
+   * @param x The left edge of the projected region.
+   * @param y The bottom edge of the projected region.
+   * @param width The width of the projected region.
+   * @param height The height of the projected region.
+   * @param zeroToOne {@code true} for {@code [0, 1]} depth range, {@code false} for {@code [-1, 1]}.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix setToOrtho2D(float x, float y, float width, float height, boolean zeroToOne) {
+    return setToOrtho(x, x + width, y, y + height, 0f, 1f, zeroToOne);
+  }
+
+  /**
+   * Sets this matrix to a general orthographic projection using the OpenGL NDC depth convention
+   * ({@code [-1, 1]}).
    *
    * @param left The left clipping plane.
    * @param right The right clipping plane.
@@ -188,12 +209,43 @@ public final class FlixelMatrix {
    */
   public @NotNull FlixelMatrix setToOrtho(
       float left, float right, float bottom, float top, float near, float far) {
+    return setToOrtho(left, right, bottom, top, near, far, false);
+  }
+
+  /**
+   * Sets this matrix to a general orthographic projection.
+   *
+   * <p>Pass {@code true} for {@code zeroToOne} when the rendering backend maps NDC depth to
+   * {@code [0, 1]} (Vulkan, Metal, Direct3D). Pass {@code false} for the {@code [-1, 1]}
+   * convention used by OpenGL and WebGL. Using the wrong convention depth-clips all geometry at
+   * the standard near plane, producing a black screen.
+   *
+   * @param left The left clipping plane.
+   * @param right The right clipping plane.
+   * @param bottom The bottom clipping plane.
+   * @param top The top clipping plane.
+   * @param near The near clipping plane.
+   * @param far The far clipping plane.
+   * @param zeroToOne {@code true} for {@code [0, 1]} depth range, {@code false} for {@code [-1, 1]}.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix setToOrtho(
+      float left, float right, float bottom, float top, float near, float far, boolean zeroToOne) {
     float xOrth = 2f / (right - left);
     float yOrth = 2f / (top - bottom);
-    float zOrth = -2f / (far - near);
     float tx = -(right + left) / (right - left);
     float ty = -(top + bottom) / (top - bottom);
-    float tz = -(far + near) / (far - near);
+    float zOrth;
+    float tz;
+    if (zeroToOne) {
+      // [0, 1] depth range: z = near maps to 0, z = far maps to 1 (Vulkan, Metal, D3D).
+      zOrth = 1f / (far - near);
+      tz = -near / (far - near);
+    } else {
+      // [-1, 1] depth range: z = near maps to -1, z = far maps to 1 (OpenGL, WebGL).
+      zOrth = -2f / (far - near);
+      tz = -(far + near) / (far - near);
+    }
     float[] v = val;
     v[M00] = xOrth;
     v[M10] = 0f;
@@ -255,6 +307,80 @@ public final class FlixelMatrix {
     a[M31] = t31;
     a[M32] = t32;
     a[M33] = t33;
+    return this;
+  }
+
+  /**
+   * Post-multiplies this matrix with a translation, so the translation applies first when the
+   * matrix transforms a point.
+   *
+   * @param x Translation along the x axis.
+   * @param y Translation along the y axis.
+   * @param z Translation along the z axis.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix translate(float x, float y, float z) {
+    float[] v = val;
+    v[M03] = v[M00] * x + v[M01] * y + v[M02] * z + v[M03];
+    v[M13] = v[M10] * x + v[M11] * y + v[M12] * z + v[M13];
+    v[M23] = v[M20] * x + v[M21] * y + v[M22] * z + v[M23];
+    v[M33] = v[M30] * x + v[M31] * y + v[M32] * z + v[M33];
+    return this;
+  }
+
+  /**
+   * Post-multiplies this matrix with a counter-clockwise rotation around the z axis, the only
+   * rotation a 2D renderer needs.
+   *
+   * @param degrees Rotation angle in degrees.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix rotateZ(float degrees) {
+    float radians = degrees * FlixelMath.DEG_TO_RAD;
+    float cos = (float) Math.cos(radians);
+    float sin = (float) Math.sin(radians);
+    float[] v = val;
+    float t00 = v[M00] * cos + v[M01] * sin;
+    float t01 = v[M00] * -sin + v[M01] * cos;
+    float t10 = v[M10] * cos + v[M11] * sin;
+    float t11 = v[M10] * -sin + v[M11] * cos;
+    float t20 = v[M20] * cos + v[M21] * sin;
+    float t21 = v[M20] * -sin + v[M21] * cos;
+    float t30 = v[M30] * cos + v[M31] * sin;
+    float t31 = v[M30] * -sin + v[M31] * cos;
+    v[M00] = t00;
+    v[M01] = t01;
+    v[M10] = t10;
+    v[M11] = t11;
+    v[M20] = t20;
+    v[M21] = t21;
+    v[M30] = t30;
+    v[M31] = t31;
+    return this;
+  }
+
+  /**
+   * Post-multiplies this matrix with a scale.
+   *
+   * @param x Scale factor along the x axis.
+   * @param y Scale factor along the y axis.
+   * @param z Scale factor along the z axis.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix scale(float x, float y, float z) {
+    float[] v = val;
+    v[M00] *= x;
+    v[M10] *= x;
+    v[M20] *= x;
+    v[M30] *= x;
+    v[M01] *= y;
+    v[M11] *= y;
+    v[M21] *= y;
+    v[M31] *= y;
+    v[M02] *= z;
+    v[M12] *= z;
+    v[M22] *= z;
+    v[M32] *= z;
     return this;
   }
 }
