@@ -30,7 +30,7 @@ tasks.withType<Javadoc>().configureEach {
       addStringOption("Werror")
     }
   }
-  setFailOnError(true)
+  isFailOnError = true
 }
 
 // JitPack rewrites Gradle module metadata and drops classifier compatibility data, causing
