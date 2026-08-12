@@ -724,25 +724,33 @@ public final class Flixel {
   public static FlixelGraphicsManager graphics = FlixelNoopGraphicsManager.INSTANCE;
 
   /**
-   * Host OS integration for toast notifications and taskbar attention signals.
+   * Host integration for toast notifications, taskbar attention signals, clipboard access and more.
    *
-   * <p>On desktop (LWJGL3), this field is replaced by a platform-specific implementation before
-   * {@link Flixel#start(FlixelGame, FlixelGameRunner)} runs. On all other platforms it falls back to
-   * {@link FlixelNoopHostIntegration}, so calls are always safe to make regardless of platform.
+   * <p>This manager is typically what you would use to interact with the operating system or
+   * environment the game is currently running on. A common case is checking what platform
+   * is assigned for specific functionality, such as checking if it's on mobile and a mobile
+   * button should be added.
    *
-   * <p>This is distinct from the blocking alert dialogs exposed by
-   * {@link FlixelAlerter#info(String, String)}: host notifications appear as non-intrusive
-   * OS toasts (system tray popups, notification center entries) and do not interrupt gameplay. Taskbar
-   * attention requests flash the game's taskbar button to draw the user's eye after the window
-   * has been minimized or sent to the background.
+   * <p>Notifications can differ depending on the platform. For web, you need to request
+   * permission first before sending one, otherwise {@link FlixelHostIntegration#supportsNotifications()}
+   * will return false and sending a notification will do nothing. On mobile platforms like
+   * Android, you typically need to add a permission to a config before you can send one.
    *
    * <p>Example:
    * <pre>{@code
    * // Show a non-blocking OS notification when a download finishes.
-   * Flixel.host.sendNotification("Download complete", "Your level pack is ready to play.");
+   * Flixel.host.requestNotificationPermission();
+   * if (Flixel.host.supportsNotifications()) {
+   *   Flixel.host.sendNotification("Download complete", "Your level pack is ready to play.");
+   * }
    *
    * // Flash the taskbar button to get the user's attention.
    * Flixel.host.requestAttention();
+   *
+   * // Check the current platform.
+   * if (Flixel.host.getPlatform() == FlixelPlatform.Android) {
+   *   addBackButton();
+   * }
    * }</pre>
    */
   @NotNull
@@ -999,7 +1007,6 @@ public final class Flixel {
     mouse = new FlixelMouseInputManager();
     touches = new FlixelTouchManager();
     gamepads = new FlixelGamepadInputManager();
-    log = new FlixelLogger(FlixelLogMode.SIMPLE);
     sound = new FlixelSoundManager(soundFactory);
 
     // Register default tween pools (pool factories avoid extra allocations when pooling tweens).

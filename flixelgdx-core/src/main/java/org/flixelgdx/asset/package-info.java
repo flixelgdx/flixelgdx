@@ -25,12 +25,12 @@
  * Flixel.assets.load("images/player.png");
  * while (!Flixel.assets.update()) { ... }
  *
- * // Game state
+ * // Game state.
  * FlixelAsset<FlixelGraphic> asset = Flixel.assets.get("images/player.png");
  * asset.retain();
  * sprite.loadGraphic(asset.get());
  *
- * // destroy()
+ * // destroy().
  * asset.release();
  * }</pre>
  *
