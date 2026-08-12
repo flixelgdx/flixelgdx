@@ -123,9 +123,9 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x gradlew
 
-      - name: Build (LWJGL3)
+      - name: Build (Desktop)
         if: matrix.platform == 'linux' || matrix.platform == 'windows' || matrix.platform == 'macos'
-        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-lwjgl3:assemble --no-daemon
+        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-desktop:assemble --no-daemon
         shell: bash
 
       - name: Build (Android)
@@ -138,7 +138,7 @@ jobs:
         run: ./gradlew :flixelgdx-core:assemble :flixelgdx-ios:assemble --no-daemon
         shell: bash
 
-      - name: Build (TeaVM / web)
+      - name: Build (Web)
         if: matrix.platform == 'web'
         run: ./gradlew :flixelgdx-core:assemble :flixelgdx-teavm:assemble --no-daemon
         shell: bash
