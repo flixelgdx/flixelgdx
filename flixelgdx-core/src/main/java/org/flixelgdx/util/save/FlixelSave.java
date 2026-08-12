@@ -25,7 +25,6 @@ package org.flixelgdx.util.save;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.FlixelGameConfig;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
@@ -92,17 +91,17 @@ public class FlixelSave implements FlixelDestroyable {
    * Binds this save object to a named file (and optional slot), then loads any existing data.
    *
    * <p>Save files are written to the OS-specific application preferences directory, determined
-   * by the company name and game title set in {@link FlixelGameConfig}:
+   * by the company name and game title set in {@link FlixelGame.Config}:
    * <ul>
    *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
    *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
    *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
    * </ul>
    *
-   * <p>A company name <b>must</b> be set via {@link FlixelGameConfig#company(String)}
+   * <p>A company name <b>must</b> be set via {@link FlixelGame.Config.Builder#company(String)}
    * before calling this method. If it is missing, this method logs an error and returns
-   * {@code false}. Use {@link #bind(String, String, FlixelFile)} to supply a custom directory as an
-   * alternative.
+   * {@code false}. Use {@link #bind(String, String, FlixelFile)} to supply a custom directory as
+   * an alternative.
    *
    * @param name The save name, typically your game's name or the player's profile identifier.
    * @param slot An optional slot discriminator (for example {@code "slot1"}), or {@code null}.
@@ -115,7 +114,7 @@ public class FlixelSave implements FlixelDestroyable {
     FlixelGame game = Flixel.game;
     if (game == null || game.getCompany().isEmpty()) {
       Flixel.error("Save", "bind() requires a company name to resolve the correct save directory. "
-          + "Set it via FlixelGameConfig.company(...) in your FlixelGame subclass constructor, "
+          + "Set it via FlixelGame.Config.company(...) in your FlixelGame subclass constructor, "
           + "or use bind(name, slot, directory) to supply a custom save path instead.");
       return false;
     }

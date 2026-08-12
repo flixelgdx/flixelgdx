@@ -11,7 +11,7 @@
  * String text = Flixel.files.internal("data/config.json").readString();
  * FlixelJsonValue root = FlixelJson.parse(text);
  *
- * int gravity  = root.getInt("gravity", 600);   // 600 if key is missing
+ * int gravity  = root.getInt("gravity", 600);   // 600 if key is missing.
  * float speed  = root.getFloat("speed",  200f);
  * String title = root.getString("title", "Game");
  *
