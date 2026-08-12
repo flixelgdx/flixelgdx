@@ -72,7 +72,16 @@ jobs:
         run: chmod +x gradlew
 
       - name: Javadoc all Java modules
-        run: ./gradlew javadocAll --no-daemon --warning-mode all
+        run: |
+          ./gradlew javadocAll --no-daemon --warning-mode all 2>&1 | tee "$RUNNER_TEMP/javadoc.log"
+          # -Werror in the Javadoc options does not catch all doclint diagnostics (e.g. broken
+          # @link references) in JDK 17, so we grep the captured output as a second gate.
+          if grep -qE '\.java:[0-9]+: warning:' "$RUNNER_TEMP/javadoc.log"; then
+            echo "" >&2
+            echo "Javadoc produced source-level warnings (treating as errors):" >&2
+            grep -E '\.java:[0-9]+: warning:' "$RUNNER_TEMP/javadoc.log" >&2
+            exit 1
+          fi
         shell: bash
 
   build:
