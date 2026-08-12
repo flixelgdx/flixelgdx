@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.util;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Small, platform-neutral helpers for working with the runtime: reading the library's root package
  * and turning exceptions into readable text.
@@ -44,7 +46,7 @@ public final class FlixelRuntimeUtil {
    *
    * @return The root package name of the library.
    */
-  public static String getLibraryRoot() {
+  public static @NotNull String getLibraryRoot() {
     String className = FlixelRuntimeUtil.class.getName();
     int lastDot = className.lastIndexOf('.');
     String packageName = (lastDot > 0) ? className.substring(0, lastDot) : "";
@@ -59,7 +61,7 @@ public final class FlixelRuntimeUtil {
    * @param exception The exception to obtain the location from.
    * @return A string representation of where the exception was thrown from.
    */
-  public static String getExceptionLocation(Throwable exception) {
+  public static @NotNull String getExceptionLocation(Throwable exception) {
     if (exception == null) {
       return "Unknown Location";
     }
@@ -84,7 +86,7 @@ public final class FlixelRuntimeUtil {
    * @param exception The exception to obtain the message from.
    * @return A full detailed message from the exception.
    */
-  public static String getFullExceptionMessage(Throwable exception) {
+  public static @NotNull String getFullExceptionMessage(Throwable exception) {
     if (exception == null) {
       return "No exception provided.";
     }

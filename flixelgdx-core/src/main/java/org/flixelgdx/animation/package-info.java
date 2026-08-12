@@ -39,7 +39,7 @@
  * machine.addState("idle",   "idle",   true).allowTo("run", "attack");
  * machine.addState("run",    "run",    true).allowTo("idle", "attack");
  * machine.addState("attack", "attack", false).autoAdvanceTo("idle");
- * machine.start("idle");
+ * machine.setState("idle");
  * sprite.ensureAnimation().setStateMachine(machine);
  * }</pre>
  *
