@@ -59,7 +59,7 @@ public interface FlixelRuntimeDevice {
    *
    * @return Used managed heap in bytes.
    */
-  default long getJavaHeapBytes() {
+  default long getJavaHeap() {
     return 0L;
   }
 
@@ -69,7 +69,7 @@ public interface FlixelRuntimeDevice {
    *
    * @return Used native memory in bytes.
    */
-  default long getNativeHeapBytes() {
+  default long getNativeHeap() {
     return 0L;
   }
 

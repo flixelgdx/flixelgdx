@@ -42,7 +42,7 @@ import java.nio.file.Files;
  * <p>Instances are created by {@link FlixelJvmFiles}; game code obtains them through
  * {@link org.flixelgdx.Flixel#files Flixel.files} and never constructs them directly.
  */
-public final class FlixelJvmFile implements FlixelFile {
+public class FlixelJvmFile implements FlixelFile {
 
   @NotNull
   private final String path;

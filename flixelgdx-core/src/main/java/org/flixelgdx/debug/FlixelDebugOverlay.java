@@ -329,8 +329,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (statsTimer >= STATS_UPDATE_INTERVAL) {
       statsTimer = 0f;
       cachedFps = Flixel.graphics.getFps();
-      cachedHeapMegabytes = Flixel.runtime.getJavaHeapBytes() / (1024f * 1024f);
-      cachedNativeMegabytes = Flixel.runtime.getNativeHeapBytes() / (1024f * 1024f);
+      cachedHeapMegabytes = Flixel.runtime.getJavaHeap() / (1024f * 1024f);
+      cachedNativeMegabytes = Flixel.runtime.getNativeHeap() / (1024f * 1024f);
       cachedObjectCount = FlixelDebugUtil.countActiveMembers();
       cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
@@ -356,8 +356,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected void pushPerfSample(float elapsed) {
     int idx = perfHead;
     perfFrameMs[idx] = Flixel.getRawElapsed() * 1000f;
-    perfHeapMb[idx] = Flixel.runtime.getJavaHeapBytes() / (1024f * 1024f);
-    perfNativeMb[idx] = Flixel.runtime.getNativeHeapBytes() / (1024f * 1024f);
+    perfHeapMb[idx] = Flixel.runtime.getJavaHeap() / (1024f * 1024f);
+    perfNativeMb[idx] = Flixel.runtime.getNativeHeap() / (1024f * 1024f);
     perfFps[idx] = Flixel.graphics.getFps();
     perfRenderCalls[idx] = sampleRenderCallsNow();
     perfHead = (idx + 1) % PERF_HISTORY_SIZE;

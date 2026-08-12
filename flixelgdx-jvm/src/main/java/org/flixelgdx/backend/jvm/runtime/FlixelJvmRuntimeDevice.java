@@ -28,6 +28,7 @@ import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,10 +40,10 @@ import java.util.jar.JarFile;
  * checks, IDE detection, and default log directory resolution. Not used on TeaVM or other non-JVM
  * targets.
  */
-public final class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
+public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
 
   @Override
-  public long getJavaHeapBytes() {
+  public long getJavaHeap() {
     Runtime runtime = Runtime.getRuntime();
     return runtime.totalMemory() - runtime.freeMemory();
   }
@@ -357,7 +358,7 @@ public final class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   }
 
   private static char classpathSeparatorChar() {
-    String ps = System.getProperty("path.separator");
+    String ps = File.pathSeparator;
     if (ps != null && !ps.isEmpty()) {
       return ps.charAt(0);
     }

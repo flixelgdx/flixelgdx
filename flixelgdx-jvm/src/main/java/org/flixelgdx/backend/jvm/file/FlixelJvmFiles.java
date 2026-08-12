@@ -44,7 +44,7 @@ import java.util.Locale;
  *   <li>{@link #absolute(String)} - an absolute filesystem path.</li>
  * </ul>
  */
-public final class FlixelJvmFiles implements FlixelFiles {
+public class FlixelJvmFiles implements FlixelFiles {
 
   @NotNull
   private final String externalRoot = System.getProperty("user.home", ".");
@@ -111,7 +111,7 @@ public final class FlixelJvmFiles implements FlixelFiles {
     if (os.contains("mac")) {
       return System.getProperty("user.home") + "/Library/Application Support/" + org + "/" + app + "/";
     }
-    // Linux / Unix - respect XDG_DATA_HOME per the XDG base directory spec.
+    // Linux / Unix: respect XDG_DATA_HOME per the XDG base directory spec.
     String xdgDataHome = System.getenv("XDG_DATA_HOME");
     if (xdgDataHome == null || xdgDataHome.isEmpty()) {
       xdgDataHome = System.getProperty("user.home") + "/.local/share";
