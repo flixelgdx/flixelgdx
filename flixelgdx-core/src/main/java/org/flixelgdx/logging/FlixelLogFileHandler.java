@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * handler needs to be registered and the logger will simply skip file output.
  *
  * <p>Assign an implementation to {@link org.flixelgdx.Flixel#logFileHandler Flixel.logFileHandler}
- * before {@link org.flixelgdx.Flixel#initialize Flixel.initialize} in the platform launcher.
+ * before {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)} in the platform launcher.
  *
  * @see FlixelLogger
  */

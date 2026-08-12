@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 /**
  * The single entry point for everything related to the FlixelGDX debugger.
  *
- * <p>An instance of this class is automatically created when {@link Flixel#initialize(org.flixelgdx.FlixelGame)}
+ * <p>An instance of this class is automatically created when {@link Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner)}
  * runs and is exposed as the static field {@link Flixel#debug}, mirroring how
  * {@link Flixel#sound}, {@link Flixel#assets}, and friends work. From your game code you can do things
  * like:

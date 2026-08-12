@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Lifecycle (normal games)</h2>
  *
  * <ol>
- *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#initialize Flixel.initialize}.</li>
+ *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}.</li>
  *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
  *       call {@link #add(FlixelAction)} for each, and add {@link FlixelDigitalBinding} / {@link FlixelAnalogBinding} instances.</li>
  *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame FlixelGame} calls

@@ -46,9 +46,9 @@ import org.jetbrains.annotations.Nullable;
  * and screen effects such as flash, fade, and shake.
  *
  * <p>In a full FlixelGDX game, cameras are usually managed by {@link FlixelGame}.
- * You can also use {@code FlixelCamera} in a plain libGDX {@code ApplicationListener}. When
+ * You can also use {@code FlixelCamera} without a full game setup. When
  * {@link Flixel#game} is {@code null}, window size and follow frame rate fall back to
- * {@link Gdx#graphics} (call {@link #update(int, int, boolean)} from {@code resize} as usual).
+ * {@link Flixel#graphics} (call {@link #update(int, int, boolean)} from your resize hook as usual).
  *
  * <p>Every camera wraps a {@link FlixelViewport} internally. By default, a letterboxing
  * ({@link FlixelViewport.Scaling#FIT}) viewport is used. The viewport type is controlled by
@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * an extend-style viewport so the game fills the screen without
  * letterboxing). Custom types can also be provided directly via the constructor overloads.
  *
- * <p>{@link FitViewport} scales the game world to the window, so the world-to-screen factor is often
+ * <p>{@link FlixelViewport.Scaling#FIT} scales the game world to the window, so the world-to-screen factor is often
  * not a whole number when the window is larger than the camera's internal size (e.g. fullscreen).
  * integer-snapped glyph quads can look blocky under that scaling; prefer smooth text filtering
  * you draw through this pipeline (FlixelGDX does this for {@link org.flixelgdx.text.FlixelText FlixelText}
@@ -1300,8 +1300,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    *
    * <p>This method is the single source of truth for how {@link RegionMode} interprets region
    * coordinates. The returned rectangle uses top-left screen origin semantics (Y down). Callers
-   * should convert to libGDX bottom-left coordinates right before
-   * {@link Viewport#setScreenBounds(int, int, int, int)}.
+   * should convert to bottom-left coordinates right before
+   * {@link FlixelViewport#setScreenBounds(int, int, int, int)}.
    */
   private void resolveScreenRegionTopLeft(int screenWidth, int screenHeight, FlixelRect out) {
     int resolvedRegionWidth = hasCustomPixelRegion
@@ -1422,7 +1422,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * Returns the world width as reported by the viewport. May differ from {@link #width} after
-   * zoom or when a {@link FitViewport} adds letterbox bars.
+   * zoom or when a {@link FlixelViewport.Scaling#FIT} viewport adds letterbox bars.
    */
   public float getWorldWidth() {
     return viewport.getWorldWidth();
@@ -1430,7 +1430,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * Returns the world height as reported by the viewport. May differ from {@link #height} after
-   * zoom or when a {@link FitViewport} adds letterbox bars.
+   * zoom or when a {@link FlixelViewport.Scaling#FIT} viewport adds letterbox bars.
    */
   public float getWorldHeight() {
     return viewport.getWorldHeight();
@@ -1498,7 +1498,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * {@code [0, viewportWidth/zoom] x [0, viewportHeight/zoom]} and does not account for sprite
    * rotation, making it a conservative test that errs on the side of drawing.
    *
-   * <p>For viewports that extend the world beyond the design dimensions (e.g. {@link ExtendViewport}),
+   * <p>For viewports that extend the world beyond the design dimensions (e.g. {@link FlixelViewport.Scaling#EXTEND}),
    * the visible range will be larger than the camera's design width and height, so objects placed in that
    * extended area are not incorrectly culled.
    *
@@ -1822,8 +1822,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     /**
      * Pixel coordinates with a top-left origin (X right, Y down) for the camera region.
      *
-     * <p>Before calling libGDX {@link Viewport#setScreenBounds(int, int, int, int)}, FlixelGDX
-     * converts this top-left region to libGDX's bottom-left screen bounds. This is also the
+     * <p>Before calling {@link FlixelViewport#setScreenBounds(int, int, int, int)}, FlixelGDX
+     * converts this top-left region to bottom-left screen bounds. This is also the
      * default region mode.
      *
      * <p>Recommended for users familiar with HaxeFlixel-style screen layout semantics.
@@ -1833,10 +1833,10 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     /**
      * Pixel coordinates with a bottom-left origin (X right, Y up) for the camera region.
      *
-     * <p>This is already in libGDX/OpenGL viewport terms, so conversion to
-     * {@link Viewport#setScreenBounds(int, int, int, int)} is direct.
+     * <p>These are already in OpenGL viewport terms, so conversion to
+     * {@link FlixelViewport#setScreenBounds(int, int, int, int)} is direct.
      *
-     * <p>Recommended for users who prefer native libGDX viewport coordinate conventions.
+     * <p>Recommended for users who prefer native OpenGL viewport coordinate conventions.
      */
     PIXEL_BOTTOM_LEFT,
 
@@ -1844,7 +1844,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
      * Pixel coordinates where {@code x/y} represent the region center.
      *
      * <p>FlixelGDX first resolves a top-left rectangle from the center anchor, then converts to
-     * libGDX bottom-left screen bounds for {@link Viewport#setScreenBounds(int, int, int, int)}.
+     * bottom-left screen bounds for {@link FlixelViewport#setScreenBounds(int, int, int, int)}.
      *
      * <p>Recommended for stable split-screen or picture-in-picture placement across
      * resize and maximize events.
@@ -1856,8 +1856,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
      * origin.
      *
      * <p>The normalized rectangle is converted to pixel top-left coordinates, then converted
-     * again to libGDX bottom-left bounds for
-     * {@link Viewport#setScreenBounds(int, int, int, int)}.
+     * again to bottom-left bounds for
+     * {@link FlixelViewport#setScreenBounds(int, int, int, int)}.
      *
      * <p>Recommended for resolution-independent camera layouts that scale with window size.
      */

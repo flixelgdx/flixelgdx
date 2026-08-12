@@ -135,9 +135,9 @@ public record FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
     }
     int o = (y * width + x) * 4;
     return ((pixels.get(o) & 0xFF) << 24)
-      | ((pixels.get(o + 1) & 0xFF) << 16)
-      | ((pixels.get(o + 2) & 0xFF) << 8)
-      | (pixels.get(o + 3) & 0xFF);
+        | ((pixels.get(o + 1) & 0xFF) << 16)
+        | ((pixels.get(o + 2) & 0xFF) << 8)
+        | (pixels.get(o + 3) & 0xFF);
   }
 
   /**

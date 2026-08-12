@@ -248,7 +248,7 @@ public final class Flixel {
   /**
    * The active {@link FlixelGame} instance driving the game lifecycle.
    *
-   * <p>This reference is set during {@link #start(FlixelGame)} before any other system is
+   * <p>This reference is set during {@link #start(FlixelGame, FlixelGameRunner)} before any other system is
    * brought up. It exposes the main render loop, the camera list, window dimensions, and low-level
    * controls such as fullscreen toggling and framerate caps.
    *
@@ -400,7 +400,7 @@ public final class Flixel {
    * controls for each category plus a master volume knob that scales both.
    *
    * <p>The audio backend is platform-specific and is injected by the launcher before
-   * {@link #start(FlixelGame)}. On all platforms, it's typically powered by miniaudio,
+   * {@link #start(FlixelGame, FlixelGameRunner)}. On all platforms, it's typically powered by miniaudio,
    * and for web (TeaVM) it utilizes the Web Audio API.
    *
    * <p>Example:
@@ -498,7 +498,7 @@ public final class Flixel {
    * typically supply a richer overlay (for example, one built with Dear ImGui), while headless or
    * web builds fall back to {@link FlixelHeadlessDebugOverlay}. Use
    * {@link Flixel#setDebugOverlay(Supplier)} to install a custom factory before
-   * {@link Flixel#start(FlixelGame)}.
+   * {@link #start(FlixelGame, FlixelGameRunner)}.
    *
    * <p>Example:
    * <pre>{@code
@@ -1559,7 +1559,7 @@ public final class Flixel {
    * sprite. When multiple sprites share the same underlying texture (for example, every arrow in a
    * rhythm game's strumline atlas), the last call sets the filter for the texture directly, regardless
    * of which sprite made the call. This can leave sprites with {@code antialiasing = true} rendering with
-   * a {@link Texture.TextureFilter#Nearest} filter if a sprite with {@code antialiasing = false} that
+   * a nearest-neighbor filter if a sprite with {@code antialiasing = false} that
    * uses the same texture was set up last.
    *
    * <p>This method fixes that by always processing members in two passes:
@@ -1568,7 +1568,7 @@ public final class Flixel {
    *   <li>Then, all members whose {@code antialiasing} flag is {@code true} re-apply Linear.</li>
    * </ol>
    * Because the Linear pass runs last, any texture shared between a "smooth" and a "pixelated"
-   * member will end up with a {@link Texture.TextureFilter#Linear}, matching what a developer who requested
+   * member will end up with a linear (bilinear) filter, matching what a developer who requested
    * antialiasing would expect.
    *
    * <p>Call this after finishing the setup of a state (for example, at the end of

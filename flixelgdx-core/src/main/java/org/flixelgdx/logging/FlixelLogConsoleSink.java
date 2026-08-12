@@ -29,7 +29,7 @@ package org.flixelgdx.logging;
  * (for example, browser devtools with styled {@code console.log}).
  *
  * <p>Assign to {@link org.flixelgdx.Flixel#logConsoleSink Flixel.logConsoleSink} before
- * {@link org.flixelgdx.Flixel#initialize Flixel.initialize} from the platform launcher. When set, the logger calls
+ * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)} from the platform launcher. When set, the logger calls
  * this instead of writing ANSI text to standard output; file logging and in-game log listeners are unchanged.
  */
 @FunctionalInterface

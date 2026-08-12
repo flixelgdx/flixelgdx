@@ -48,7 +48,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Call {@link #launch(FlixelGame)} from your {@code main} method and nothing else is required:
  * the launcher installs every desktop backend piece (window, input, graphics, audio, files,
- * logging) and then starts the game. Developers do not need to call {@link Flixel#start(FlixelGame)}
+ * logging) and then starts the game. Developers do not need to call {@link Flixel#start(FlixelGame, FlixelGameRunner)}
  * themselves; it is the internal step this launcher performs once the backend is wired.
  *
  * <pre>{@code

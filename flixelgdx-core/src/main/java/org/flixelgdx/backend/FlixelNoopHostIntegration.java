@@ -27,9 +27,6 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 /**
  * Default {@link FlixelHostIntegration} used on platforms without host shell integration.

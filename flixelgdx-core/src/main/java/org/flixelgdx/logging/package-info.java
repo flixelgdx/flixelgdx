@@ -6,7 +6,7 @@
  *
  * <p>Platform launchers configure the stack trace provider by assigning
  * {@link org.flixelgdx.Flixel#stackTraceProvider Flixel.stackTraceProvider}
- * before calling {@link org.flixelgdx.Flixel#initialize(org.flixelgdx.FlixelGame) Flixel.initialize(FlixelGame)}.
+ * before calling {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}.
  *
  * <p>The default logger is {@link org.flixelgdx.logging.FlixelLogger FlixelLogger}, which is exposed as the
  * public {@code Flixel.log} field and can be replaced by assigning a new instance to that field.

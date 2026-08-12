@@ -36,7 +36,7 @@ import java.util.Objects;
  * especially on HTML backends where manifest paths often match internal keys literally.
  *
  * <p>This helper collapses duplicate separators into one forward slash and maps {@code '\'} to {@code '/'}, matching the
- * common layout used inside {@code assets/}. Call sites include {@link FlixelDefaultAssetManager}.
+ * common layout used inside {@code assets/}. Call sites include {@link FlixelBaseAssetManager}.
  *
  * <p><b>Note:</b> This is aimed at internal resource paths such as {@code "fonts/foo.ttf"}, not arbitrary URLs or UNC paths.
  */

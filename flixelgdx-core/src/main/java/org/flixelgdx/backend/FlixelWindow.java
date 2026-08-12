@@ -39,7 +39,7 @@ import org.flixelgdx.tween.FlixelTween;
  * pixel density) lives on {@link org.flixelgdx.graphics.FlixelGraphicsManager Flixel.graphics}
  * instead.
  *
- * <p>Use {@link Flixel#window} after {@link Flixel#initialize(FlixelGame)}. The implementation only
+ * <p>Use {@link Flixel#window} after {@link Flixel#start(FlixelGame, FlixelGameRunner)}. The implementation only
  * adjusts backdrop drawing and, on desktop with a transparent-capable framebuffer, an end-of-frame
  * alpha fix so normal gameplay is not composited through the desktop unless this mode is on.
  *

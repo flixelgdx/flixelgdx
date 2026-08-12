@@ -25,7 +25,6 @@ package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
-import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
