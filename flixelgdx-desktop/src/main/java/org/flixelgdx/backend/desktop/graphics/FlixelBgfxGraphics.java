@@ -41,6 +41,7 @@ import org.flixelgdx.util.FlixelBlendMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.bgfx.BGFX;
+import org.lwjgl.bgfx.BGFXStats;
 import org.lwjgl.bgfx.BGFXTextureInfo;
 import org.lwjgl.bgfx.BGFXTransientIndexBuffer;
 import org.lwjgl.bgfx.BGFXTransientVertexBuffer;
@@ -69,6 +70,13 @@ import java.nio.FloatBuffer;
 public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   private long lastFrameTime = System.nanoTime();
+
+  /** Wall-clock nanoseconds accumulated since the last stats log line, when stats logging is enabled. */
+  private long statsWindowNanos;
+
+  /** Timestamp of the previous {@code endFrame}, used to measure true end-to-end frame periods. */
+  private long statsLastNanos;
+
   private double averageFps = 0;
   private double smoothingFactor = 0.1;
 
@@ -128,8 +136,17 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   private int clearColor;
 
+  /** Frames counted since the last stats log line, when stats logging is enabled. */
+  private int statsWindowFrames;
+
   private boolean vsync = true;
   private boolean programWarned;
+
+  /** When {@code true}, per-frame bgfx CPU/GPU timing is logged once per second. Set by {@code flixel.render.stats}. */
+  private boolean statsEnabled;
+
+  /** When {@code true}, bgfx's on-screen debug stats overlay is also shown. Set by {@code flixel.render.stats=overlay}. */
+  private boolean statsOverlay;
 
   /**
    * Sets up the vertex layout, sprite program, and texture uniform after bgfx has been
@@ -158,6 +175,35 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
     textureUniform = BGFX.bgfx_create_uniform("s_texture", BGFX.BGFX_UNIFORM_TYPE_SAMPLER, 1);
     spriteProgram = loadSpriteProgram();
+
+    configureStats();
+  }
+
+  /**
+   * Reads the {@code flixel.render.stats} system property and turns on per-frame bgfx timing when
+   * requested. This is a diagnostic aid for telling CPU-bound submission apart from GPU-bound
+   * fillrate: it logs one line per second with frame time, CPU submit time, GPU time, draw calls,
+   * and transient buffer usage.
+   *
+   * <p>Recognized values are {@code true} or {@code log} (log once per second), {@code overlay}
+   * (also show bgfx's built-in on-screen stats), and anything falsy (off, the default). Enable it
+   * from the command line, for example:
+   *
+   * <pre>{@code
+   * java -Dflixel.render.stats=log -jar mygame.jar
+   * }</pre>
+   */
+  private void configureStats() {
+    String value = System.getProperty("flixel.render.stats", "").trim().toLowerCase();
+    statsEnabled = value.equals("true") || value.equals("log") || value.equals("overlay");
+    statsOverlay = value.equals("overlay");
+    if (statsOverlay) {
+      BGFX.bgfx_set_debug(BGFX.BGFX_DEBUG_STATS);
+    }
+    if (statsEnabled) {
+      Flixel.info("Graphics", "bgfx stats logging is on (flixel.render.stats="
+          + value + "). CPU submit vs GPU time is logged once per second.");
+    }
   }
 
   /** Updates cached back buffer size and resets the bgfx swap chain. Called by the runner on resize. */
@@ -225,6 +271,57 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   public void endFrame() {
     // Advance bgfx to the next frame; 0 means "do not capture this frame".
     BGFX.bgfx_frame(0);
+    if (statsEnabled) {
+      logStats();
+    }
+  }
+
+  /**
+   * Accumulates one frame of bgfx timing and logs a summary line roughly once per second.
+   *
+   * <p>The key signal is CPU submit time versus GPU time. When GPU time dominates, the frame is
+   * fillrate or GPU bound and CPU-side batching changes will not help; when CPU submit time
+   * dominates, the render thread is the bottleneck and reducing draw calls or per-flush work pays
+   * off. {@code waitSubmit} and {@code waitRender} reveal stalls where one thread waits on the other.
+   */
+  private void logStats() {
+    long now = System.nanoTime();
+    if (statsLastNanos != 0L) {
+      statsWindowNanos += now - statsLastNanos;
+    }
+    statsLastNanos = now;
+    statsWindowFrames++;
+    if (statsWindowNanos < 1_000_000_000L) {
+      return;
+    }
+
+    BGFXStats stats = BGFX.bgfx_get_stats();
+    double windowFps = statsWindowFrames * 1_000_000_000.0 / statsWindowNanos;
+    statsWindowNanos = 0L;
+    statsWindowFrames = 0;
+    if (stats == null) {
+      return;
+    }
+
+    // bgfx reports CPU and GPU times in separate timer units, so each converts to milliseconds
+    // through its own frequency. A GPU frequency of zero means the backend cannot time the GPU.
+    double cpuToMs = 1000.0 / stats.cpuTimerFreq();
+    double gpuToMs = stats.gpuTimerFreq() > 0 ? 1000.0 / stats.gpuTimerFreq() : 0.0;
+    double frameMs = stats.cpuTimeFrame() * cpuToMs;
+    double cpuMs = (stats.cpuTimeEnd() - stats.cpuTimeBegin()) * cpuToMs;
+    double gpuMs = (stats.gpuTimeEnd() - stats.gpuTimeBegin()) * gpuToMs;
+    double waitSubmitMs = stats.waitSubmit() * cpuToMs;
+    double waitRenderMs = stats.waitRender() * cpuToMs;
+    long gpuMemMb = stats.gpuMemoryUsed() < 0 ? -1 : stats.gpuMemoryUsed() / (1024 * 1024);
+
+    Flixel.info("Graphics", String.format(
+        "stats | fps=%.0f frame=%.2fms | cpuSubmit=%.2fms gpu=%.2fms | "
+            + "waitSubmit=%.2fms waitRender=%.2fms | draws=%d peak=%d views=%d | "
+            + "tvb=%dKB tib=%dKB | gpuMem=%s",
+        windowFps, frameMs, cpuMs, gpuMs, waitSubmitMs, waitRenderMs,
+        stats.numDraw(), stats.numDrawCallsPeak(), stats.numViews(),
+        stats.transientVbUsed() / 1024, stats.transientIbUsed() / 1024,
+        gpuMemMb < 0 ? "n/a" : gpuMemMb + "MB"));
   }
 
   @Override
