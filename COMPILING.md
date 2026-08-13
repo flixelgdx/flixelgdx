@@ -206,10 +206,10 @@ The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/sr
 **Platform run commands:**
 
 | Platform | Generator option | Run command |
-|----------|-----------------|---|
+|----------|-------------|---|
 | **Desktop (LWJGL3)** | Check **Desktop (LWJGL3)** | `./gradlew :lwjgl3:run` |
 | **Web (TeaVM)** | Check **Web (TeaVM)** | `./gradlew :teavm:run` |
-| **Android** | Coming soon | `./gradlew :android:installDebug` |
+| **Android** | Check **Android** | `./gradlew :android:installDebug` |
 | **iOS** | Coming soon | - |
 
 Now that you have the project downloaded, you need to actually test your local changes, rather than from Maven Central. There are two methods of doing this:

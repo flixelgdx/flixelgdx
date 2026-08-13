@@ -55,16 +55,10 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class FlixelDesktopRunner implements FlixelGameRunner {
 
-  /**
-   * When the remaining time to the frame deadline drops below this, the limiter stops sleeping and
-   * busy-spins instead. The OS scheduler wakes a sleeping thread late (roughly a millisecond on
-   * Linux, more on Windows), so the last sliver of the frame is spun to land on the deadline
-   * precisely. Without this, sleeping the whole remainder overshoots every frame and a 60 FPS cap
-   * settles near 57.
-   */
   private static final long SPIN_MARGIN_NANOS = 1_500_000L;
 
   private long windowHandle;
+
   /** Minimum nanoseconds per frame derived from the game's framerate, or {@code 0} for uncapped. */
   private long targetFrameNanos;
 

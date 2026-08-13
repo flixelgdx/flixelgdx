@@ -281,7 +281,7 @@ For full wiring (launchers, composite builds, TeaVM setup), see **[COMPILING.md]
 ## Project navigation
 
 - **[Contributing Guide](CONTRIBUTING.md)**: Coding standards, PR requirements, and how to contribute.
-- **[Project Structure](PROJECT.md)**: The multi-module layout and how Gradle is used.
+- **[Project Structure](ARCHITECTURE.md)**: The multi-module layout and how Gradle is used.
 - **[Compiling & Testing](COMPILING.md)**: How to build the framework and test it as a dependency in your own projects.
 - **[Code of Conduct](CODE_OF_CONDUCT.md)**: Rules set in place for a stable open source community.
 - **[Project Roles](GOVERNANCE.md)**: How each role for the project operates, including project leaders and maintainers.
