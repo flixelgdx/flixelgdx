@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.jvm.runtime;
 
+import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.jetbrains.annotations.NotNull;
@@ -168,6 +169,11 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
       base = base.substring(0, base.length() - "/assets".length());
     }
     return base + "/logs";
+  }
+
+  @Override
+  public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
+    Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> handler.onCrash(thread, throwable));
   }
 
   /**

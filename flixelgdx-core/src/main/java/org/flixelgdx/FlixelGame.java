@@ -1114,12 +1114,19 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Configures the framework's crash handler to safely catch uncaught exceptions and gracefully close the game.
+   * Supplies the framework crash response to the active platform backend via
+   * {@link org.flixelgdx.backend.FlixelRuntimeDevice#setCrashHandler}.
+   *
+   * <p>The callback logs the exception, shows an error alert, tears down game resources, and exits
+   * the process on platforms where that is permitted. Each backend installs the handler using
+   * whatever mechanism its runtime provides, so this method makes no assumptions about Java threads
+   * or any other platform-specific API.
    */
   protected void configureCrashHandler() {
-    Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+    Flixel.runtime.setCrashHandler((thread, throwable) -> {
       String logs = FlixelRuntimeUtil.getFullExceptionMessage(throwable);
-      String msg = "There was an uncaught exception on thread \"" + thread.getName() + "\"!\n" + logs;
+      String threadName = thread != null ? thread.getName() : "unknown";
+      String msg = "There was an uncaught exception on thread \"" + threadName + "\"!\n" + logs;
       Flixel.error(msg);
       Flixel.alert.error("Uncaught Exception", msg);
       destroy();

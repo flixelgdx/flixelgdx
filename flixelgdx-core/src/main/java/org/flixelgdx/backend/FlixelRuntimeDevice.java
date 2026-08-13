@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -120,4 +121,22 @@ public interface FlixelRuntimeDevice {
   default FlixelRunEnvironment getEnvironment() {
     return FlixelRunEnvironment.UNKNOWN;
   }
+
+  /**
+   * Installs the supplied handler as the platform's unhandled-exception sink.
+   *
+   * <p>Each backend wires {@code handler} into whichever crash-detection mechanism its runtime
+   * provides. On JVM desktop targets that is {@link Thread#setDefaultUncaughtExceptionHandler}; on
+   * HTML5 targets via TeaVM a backend would additionally hook into {@code window.onerror} to catch
+   * JavaScript-level exceptions that bypass the Java exception system.
+   *
+   * <p>The default implementation is a no-op, so platforms that cannot intercept crashes degrade
+   * gracefully without errors.
+   *
+   * <p>This is called once by {@link org.flixelgdx.FlixelGame} during {@code create()}, before the
+   * initial state is loaded.
+   *
+   * @param handler The crash handler to install.
+   */
+  default void setCrashHandler(@NotNull FlixelCrashHandler handler) {}
 }
