@@ -40,17 +40,19 @@ import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXStats;
 import org.lwjgl.bgfx.BGFXTextureInfo;
-import org.lwjgl.bgfx.BGFXTransientIndexBuffer;
 import org.lwjgl.bgfx.BGFXTransientVertexBuffer;
 import org.lwjgl.bgfx.BGFXVertexLayout;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.nio.ShortBuffer;
 
 /**
  * The desktop graphics backend, built on bgfx.
@@ -116,7 +118,23 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @NotNull
   private final BGFXVertexLayout vertexLayout = BGFXVertexLayout.create();
 
+  /**
+   * Reused transient vertex buffer descriptor. bgfx only fills this in with a fresh allocation each
+   * flush, so one instance is reused for every submission instead of allocating a new struct.
+   */
+  @NotNull
+  private final BGFXTransientVertexBuffer transientVertices = BGFXTransientVertexBuffer.create();
+
+  /** Scratch matrix for {@code projection * transform}, reused each flush to avoid allocation. */
+  @NotNull
+  private final FlixelMatrix combinedMatrix = new FlixelMatrix();
+
+  /** Reused column-major buffer handed to {@code bgfx_set_view_transform} each flush. */
+  @NotNull
+  private final FloatBuffer viewTransform = BufferUtils.createFloatBuffer(16);
+
   private short vertexLayoutHandle;
+  private short quadIndexBuffer = -1;
   private short spriteProgram = -1;
   private short textureUniform = -1;
 
@@ -172,6 +190,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     BGFX.bgfx_vertex_layout_add(vertexLayout, BGFX.BGFX_ATTRIB_COLOR0, 4, BGFX.BGFX_ATTRIB_TYPE_UINT8, true, false);
     BGFX.bgfx_vertex_layout_end(vertexLayout);
     vertexLayoutHandle = BGFX.bgfx_create_vertex_layout(vertexLayout);
+    quadIndexBuffer = createQuadIndexBuffer();
 
     textureUniform = BGFX.bgfx_create_uniform("s_texture", BGFX.BGFX_UNIFORM_TYPE_SAMPLER, 1);
     spriteProgram = loadSpriteProgram();
@@ -526,39 +545,18 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     int vertexCount = quadCount * FlixelBgfxBatch.verticesPerQuad();
     int indexCount = quadCount * FlixelBgfxBatch.indicesPerQuad();
 
-    BGFXTransientVertexBuffer tvb = BGFXTransientVertexBuffer.create();
-    BGFXTransientIndexBuffer tib = BGFXTransientIndexBuffer.create();
-    BGFX.bgfx_alloc_transient_vertex_buffer(tvb, vertexCount, vertexLayout);
-    BGFX.bgfx_alloc_transient_index_buffer(tib, indexCount, false);
+    BGFX.bgfx_alloc_transient_vertex_buffer(transientVertices, vertexCount, vertexLayout);
+    transientVertices.data().asFloatBuffer().put(verts, 0, quadCount * FlixelBgfxBatch.floatsPerQuad());
 
-    // Fill the vertex buffer.
-    FloatBuffer vbFloats = tvb.data().asFloatBuffer();
-    vbFloats.put(verts, 0, quadCount * FlixelBgfxBatch.floatsPerQuad());
-
-    // Fill the index buffer with two triangles per quad.
-    ByteBuffer ibData = tib.data();
-    for (int q = 0; q < quadCount; q++) {
-      int v = q * 4;
-      ibData.putShort((short) v);
-      ibData.putShort((short) (v + 1));
-      ibData.putShort((short) (v + 2));
-      ibData.putShort((short) (v + 2));
-      ibData.putShort((short) (v + 3));
-      ibData.putShort((short) v);
-    }
-
-    try (MemoryStack stack = MemoryStack.stackPush()) {
-      FloatBuffer proj = stack.mallocFloat(16);
-      combine(projection, transform, proj);
-      BGFX.bgfx_set_view_transform(view, null, proj);
-    }
+    setViewTransform(view, projection, transform);
 
     BGFX.bgfx_set_view_rect(view, viewportX, viewportY, viewportWidth, viewportHeight);
     if (scissorWidth > 0) {
       BGFX.bgfx_set_scissor(scissorX, scissorY, scissorWidth, scissorHeight);
     }
-    BGFX.bgfx_set_transient_vertex_buffer(0, tvb, 0, vertexCount);
-    BGFX.bgfx_set_transient_index_buffer(tib, 0, indexCount);
+    BGFX.bgfx_set_transient_vertex_buffer(0, transientVertices, 0, vertexCount);
+    // The index pattern never changes, so every batch draws through the shared static index buffer.
+    BGFX.bgfx_set_index_buffer(quadIndexBuffer, 0, indexCount);
     BGFX.bgfx_set_texture(0, textureUniform, texture.getBgfxHandle(), (int) texture.getSamplerFlags());
     BGFX.bgfx_set_state(BGFX.BGFX_STATE_WRITE_RGB | BGFX.BGFX_STATE_WRITE_A | blendState(blend), 0);
     BGFX.bgfx_submit(view, program, 0, BGFX.BGFX_DISCARD_ALL);
@@ -580,13 +578,50 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     };
   }
 
-  /** Writes {@code projection * transform} into {@code out} in column-major order. */
-  private static void combine(@NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform,
-      @NotNull FloatBuffer out) {
-    FlixelMatrix combined = new FlixelMatrix(projection);
-    combined.mul(transform);
-    out.put(combined.val);
-    out.flip();
+  /**
+   * Sets the active view's transform to {@code projection * transform}, using the reused scratch
+   * matrix and buffer so no allocation happens on the flush path.
+   *
+   * @param view The bgfx view id to set the transform on.
+   * @param projection The view-projection matrix.
+   * @param transform The model transform applied before projection.
+   */
+  private void setViewTransform(int view, @NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform) {
+    combinedMatrix.set(projection);
+    combinedMatrix.mul(transform);
+    viewTransform.clear();
+    viewTransform.put(combinedMatrix.val);
+    viewTransform.flip();
+    BGFX.bgfx_set_view_transform(view, null, viewTransform);
+  }
+
+  /**
+   * Builds the shared static index buffer every quad batch draws through.
+   *
+   * <p>A quad's two triangles always wind the same way ({@code 0, 1, 2, 2, 3, 0}), so the whole
+   * index buffer is built once here instead of being regenerated on every flush. Each flush binds
+   * only the prefix it needs. The largest index stays within the unsigned 16-bit range because a
+   * batch holds at most {@link FlixelBgfxBatch#maxQuads()} quads.
+   *
+   * @return The bgfx index buffer handle.
+   */
+  private static short createQuadIndexBuffer() {
+    int quads = FlixelBgfxBatch.maxQuads();
+    int indexCount = quads * FlixelBgfxBatch.indicesPerQuad();
+    ByteBuffer data = MemoryUtil.memAlloc(indexCount * 2);
+    ShortBuffer indices = data.asShortBuffer();
+    for (int q = 0; q < quads; q++) {
+      int v = q * FlixelBgfxBatch.verticesPerQuad();
+      indices.put((short) v);
+      indices.put((short) (v + 1));
+      indices.put((short) (v + 2));
+      indices.put((short) (v + 2));
+      indices.put((short) (v + 3));
+      indices.put((short) v);
+    }
+    short handle = BGFX.bgfx_create_index_buffer(BGFX.bgfx_copy(data), BGFX.BGFX_BUFFER_NONE);
+    MemoryUtil.memFree(data);
+    return handle;
   }
 
   private static short createShaderFromBytes(byte[] bytes) {

@@ -356,6 +356,11 @@ public class FlixelBgfxBatch implements FlixelBatch {
     return VERTICES_PER_QUAD;
   }
 
+  /** The maximum quads a single flush can hold, used to size the shared static index buffer. */
+  static int maxQuads() {
+    return MAX_QUADS;
+  }
+
   static int indicesPerQuad() {
     return INDICES_PER_QUAD;
   }
