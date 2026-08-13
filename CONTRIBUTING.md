@@ -3,7 +3,7 @@
 We welcome contributions! Whether you're fixing bugs, adding new features, or improving documentation, your help is appreciated. To ensure a smooth process for everyone, please follow these guidelines.
 
 > [!TIP]
-> You can learn more about the project structure and how to test it locally in the [Project Structure](PROJECT.md) and [Compiling](COMPILING.md) documents.
+> You can learn more about the project structure and how to test it locally in the [Project Structure](ARCHITECTURE.md) and [Compiling](COMPILING.md) documents.
 
 > [!IMPORTANT]
 > ## Our Stance on AI
@@ -146,8 +146,9 @@ for (int i = activeTweens.size - 1; i >= 0; i--) { ... }
 ### Performance and Memory
 
 - **Avoid allocations in hot paths**: Do not create new objects inside `update()` or `draw()` (or other per-frame code) unless necessary. Allocations in hot paths cause GC pressure and can cause hitches.
-- **Reuse and pooling**: Reuse objects (e.g. a `Vector2` or `Rectangle` stored in a field) where possible. For frequently created and destroyed objects (e.g. bullets, particles), implement `Poolable` and use a `Pool` so instances can be recycled instead of discarded.
-- **Libraries**: Prefer libGDX types and idioms (e.g. `Array`, `ObjectMap`, `Pool`) so behavior and performance align with the rest of the ecosystem.
+- **Reuse and pooling**: Reuse objects (e.g. a `FlixelVector` or `FlixelRect` stored in a field) where possible. For frequently created and destroyed objects (e.g. particles), implement `FlixelPoolable` and use a `FlixelPool` so instances can be recycled instead of discarded.
+- **Libraries**: Prefer FlixelGDX types and idioms (e.g. `FlixelArray`, `FlixelMap`, `FlixelPool`).
+- **No standard Java collections**: Standard Java collection types like `HashMap` and `List` are ***completely banned*** and not allowed to be used in the framework's critical backends, especially `flixelgdx-core`. The only exception is inside build-time tools like plugins, since it doesn't impact a game at runtime. 
 
 ### Examples
 
@@ -155,7 +156,7 @@ for (int i = activeTweens.size - 1; i >= 0; i--) { ... }
 
 ```java
 public class MyObject extends FlixelSprite {
-  private final Vector2 tempVector = new Vector2(); // Reusable object
+  private final FlixelVector tempVector = new FlixelVector(); // Reusable object.
 
   @Override
   public void update(float elapsed) {
@@ -174,7 +175,7 @@ public class MyObject extends FlixelSprite {
   @Override
   public void update(float elapsed) {
     super.update(elapsed);
-    Vector2 movement = new Vector2(velocityX, velocityY).scl(elapsed); // Bad: new allocation every frame
+    FlixelVector movement = new FlixelVector(velocityX, velocityY).scl(elapsed); // Bad: new allocation every frame.
     changeX(movement.x);
     changeY(movement.y);
   }
@@ -187,12 +188,12 @@ public class MyObject extends FlixelSprite {
 /**
  * Adds a new animation to the animations list if it doesn't exist already.
  *
- * @param name The name of the animation. This is what you'll use every time you use {@code playAnimation()}.
+ * @param name The name of the animation. This is what you'll use every time you call {@link #play}.
  * @param frameIndices An array of integers used for animation frame indices.
  * @param frameDuration How long each frame lasts for in seconds.
  */
-public void addAnimation(String name, int[] frameIndices, float frameDuration) {
-  Array<TextureRegion> animFrames = new Array<>();
+public void add(String name, int[] frameIndices, float frameDuration) {
+  FlixelArray<FlixelFrame> animFrames = new FlixelArray<>();
 
   // Convert 1D indices (0, 1, 2...) to 2D grid coordinates.
   int cols = frames[0].length;
@@ -202,7 +203,7 @@ public void addAnimation(String name, int[] frameIndices, float frameDuration) {
     animFrames.add(frames[row][col]);
   }
 
-  animations.put(name, new Animation<>(frameDuration, animFrames));
+  animations.put(name, new FlixelAnimation<>(frameDuration, animFrames));
 }
 ```
 
@@ -217,8 +218,8 @@ public void addAnimation(String name, int[] frameIndices, float frameDuration) {
  * @param frameDuration what do you think it is ._.
  */
 public 
-void addAnimation(String name, int[] frameIndices, float frameDuration) {
-  Array<TextureRegion> animFrames = new Array<>(); // create a new array to store the animation frames
+void add(String name, int[] frameIndices, float frameDuration) {
+    FlixelArray<FlixelFrame> animFrames = new FlixelArray<>(); // create a new array to store the animation frames
 
   // convert     indices (0, 1, 2, wtv) to  grid coordinates   .
   int cols = 
@@ -233,7 +234,7 @@ void addAnimation(String name, int[] frameIndices, float frameDuration) {
      );
   }
 
-  animations.put(name, new Animation<>(frameDuration, animFrames)); // add the animation to the animations map
+  animations.put(name, new FlixelAnimation<>(frameDuration, animFrames)); // add the animation to the animations map
 }
 ```
 

@@ -42,6 +42,7 @@ import org.lwjgl.sdl.SDL_Event;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * The desktop main loop: creates the SDL3 window, hands its native handle to bgfx for rendering,
@@ -54,9 +55,15 @@ import java.nio.IntBuffer;
  */
 public class FlixelDesktopRunner implements FlixelGameRunner {
 
+  private static final long SPIN_MARGIN_NANOS = 1_500_000L;
+
   private long windowHandle;
+
   /** Minimum nanoseconds per frame derived from the game's framerate, or {@code 0} for uncapped. */
   private long targetFrameNanos;
+
+  /** Absolute {@link System#nanoTime()} target the current frame should not finish before. */
+  private long frameDeadlineNanos;
 
   @NotNull
   private final FlixelSdlWindow window;
@@ -158,7 +165,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         game.render(deltaSeconds);
         graphics.endFrame();
 
-        limitFrameRate(now);
+        limitFrameRate();
       }
     }
 
@@ -171,22 +178,48 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   /**
-   * Sleeps just enough to keep the current frame from finishing faster than the game's target
-   * framerate. Does nothing when the framerate is uncapped.
+   * Waits until the game's target frame period has elapsed, holding the frame rate at the cap.
+   * Does nothing when the framerate is uncapped.
    *
-   * @param frameStartNanos The {@link System#nanoTime()} timestamp captured at the top of the frame.
+   * <p>The cap is paced against an absolute deadline that advances by exactly one frame period each
+   * call, rather than by measuring elapsed time and sleeping the remainder. That keeps rounding
+   * error from accumulating, so the average rate lands on the target instead of drifting below it.
+   * The wait itself is a hybrid: it sleeps ({@link LockSupport#parkNanos}) for the bulk of the
+   * remaining time, then busy-spins the final {@link #SPIN_MARGIN_NANOS} to absorb the scheduler's
+   * late wakeups. If a frame runs long enough to miss the deadline entirely, the deadline resyncs to
+   * now so the limiter does not then rush a burst of catch-up frames.
    */
-  private void limitFrameRate(long frameStartNanos) {
+  private void limitFrameRate() {
     if (targetFrameNanos <= 0L) {
       return;
     }
-    long remaining = targetFrameNanos - (System.nanoTime() - frameStartNanos);
-    if (remaining > 0L) {
-      try {
-        Thread.sleep(remaining / 1_000_000L, (int) (remaining % 1_000_000L));
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    long now = System.nanoTime();
+    if (frameDeadlineNanos == 0L) {
+      frameDeadlineNanos = now;
+    }
+    frameDeadlineNanos += targetFrameNanos;
+    if (frameDeadlineNanos <= now) {
+      // We are already past the deadline (a slow frame); resync and render the next one immediately.
+      frameDeadlineNanos = now;
+      return;
+    }
+    waitUntil(frameDeadlineNanos);
+  }
+
+  /**
+   * Blocks the calling thread until {@link System#nanoTime()} reaches {@code deadlineNanos}, sleeping
+   * most of the way and spinning the last {@link #SPIN_MARGIN_NANOS} for precision.
+   *
+   * @param deadlineNanos The {@link System#nanoTime()} timestamp to wait for.
+   */
+  private static void waitUntil(long deadlineNanos) {
+    long remaining = deadlineNanos - System.nanoTime();
+    while (remaining > SPIN_MARGIN_NANOS) {
+      LockSupport.parkNanos(remaining - SPIN_MARGIN_NANOS);
+      remaining = deadlineNanos - System.nanoTime();
+    }
+    while (System.nanoTime() < deadlineNanos) {
+      Thread.onSpinWait();
     }
   }
 

@@ -4,17 +4,21 @@
 
 ## Project context (FlixelGDX)
 
-FlixelGDX is a general-purposed Java framework built on libGDX. It aims for strong performance and tooling, so game development stays modernized, approachable, and accessible.
+FlixelGDX is a general-purposed Java game framework, primarily build on **bgfx + SDL3** (with WebGPU/WebGL for HTML5). 
+It aims for strong performance and tooling, so game development stays modernized, approachable, and accessible.
 
-The overarching goal is to bring HaxeFlixel-style features into Java's ecosystem while staying as memory-efficient as humanly possible without giving up features games need.
+The overarching goal is to bring HaxeFlixel-style features into Java's ecosystem while staying as memory-efficient as 
+humanly possible without giving up features games need.
 
-This repository is the **standalone framework**. Runtime verification happens in a **separate test project**, consuming the framework via `publishToMavenLocal`, a composite build, or JitPack from a GitHub branch/commit.
+This repository is the **standalone framework**. Runtime verification happens in a **separate test project**, consuming 
+the framework via `publishToMavenLocal`, a composite build, or JitPack from a GitHub branch/commit.
 
 ---
 
 ## Collaboration before implementation
 
-Treat the interaction as teamwork, not robotic task execution. Prefer brainstorming when the user's direction is ambiguous.
+Treat the interaction as teamwork, not robotic task execution. Prefer brainstorming when the user's direction 
+is ambiguous.
 
 - Before implementing anything (planning or coding):
 
@@ -37,7 +41,7 @@ When explaining code or introducing patterns:
 - Explain **why** before **how** (motivation before mechanics).
 - Use analogies for complex systems; if the user gave no analogy topic, ask for one they like.
 - End **complex** explanations with a short check-in question so you can verify understanding.
-- Stay encouraging and professional. Assume intelligence but not deep familiarity with Java, libGDX, or FlixelGDX quirks.
+- Stay encouraging and professional. Assume intelligence but not deep familiarity with Java or FlixelGDX quirks.
 
 ---
 
@@ -55,7 +59,8 @@ indexed `for` loops, and performance-oriented helpers such as FlixelGDX's `Flixe
   4. `boolean`s and `byte`s
 
 - **Standard Java collections are completely banned**. They take up too much memory and allocate too many objects when they're
-  used. Prefer FlixelGDX collections instead, which are significantly more lean and don't allocate garbage when used.
+  used. Prefer FlixelGDX collections instead, which are significantly more lean and don't allocate garbage when used. The only
+  exception to this rule is build-time tools like plugins, since they do not impact a game's performance at runtime.
 
 ### Coding style
 
@@ -205,7 +210,7 @@ public class PerformanceObject {
 
 Summarize edits in plain language: what changed, why, and how it fits the system.
 
-Before considering a coding task finished, **run unit tests**, **spotless apply (for formatting)**. and **Javadoc lint**; fix failures. **All** unit tests live
+Before considering a coding task finished, **run unit tests**, **spotless apply (for formatting)**, and **Javadoc lint**; fix failures. **All** unit tests live
 in the `flixelgdx-test` module, not scattered around multiple modules.
 
 ---
@@ -219,8 +224,8 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - Use correct grammar and punctuation everywhere (comments, `@param`, `@return`, `@throws`, and so on).
 - Stick to **ASCII** in prose when practical; avoid decorative punctuation like en dash, em dash, fancy arrows, or emojis. This applies
   to both source comments and Javadoc. Use a plain hyphen (-) only for compound adjectives; never use it as a sentence separator or
-  stand-in for an em dash. This rule also applies to inline comments in Groovy/Gradle files. This allows the docs to be read easily 
-- on every device and requires you to use clarity over brevity. The Markdown docs are the only exception to this rule.
+  stand-in for an em dash. This rule also applies to inline comments in build scripts. This allows the docs to be read easily 
+  on every device and requires you to use clarity over brevity. The Markdown docs are the only exception to this rule.
 - Use **consistent capitalization and grammar** in prose and code.
 - Every doc comment should always start with a single sentence, with detailed paragraphs following.
 - Include the right Javadoc tags (`@param`, `@return`, `@throws`, ...) wherever they apply.
@@ -228,19 +233,18 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - Keep `@link` references valid or fix broken links.
 - Follow `.editorconfig` for formatting.
 - Add comments where either complexity would otherwise be hard to follow, or where code requires import context.
-- Skip Javadoc on trivial, self-explanatory methods (plain getters/setters or something like `calculateTotal()` unless there is subtle behavior).
-- `.java` files should carry the project's standard copyright header (exceptions: `package-info.java`, `module-info.java`).
+- Skip Javadoc on trivial, self-explanatory methods (such as plain getters/setters) unless there is subtle behavior.
+- All source files should carry the project's standard copyright header (exceptions: `package-info.java`, `module-info.java` and build scripts).
 - Prefer **American English** in docs. (e.g., "behavior" instead of "behaviour")
 - After code changes that affect public behavior or APIs, **update relevant Markdown docs** in the repo.
 - Don't use section comments (like `// ---`). The code should be easily navigable simply by how it's organized; section comments are just noise.
 - If a class needs to be referenced in a `@link`, don't write out the full package. Import it as a qualifier. This allows framework's Javadoc links to be
-  easy to read and not a blue mess.
+  easy to read and not a blue mess. (Example: **not** `{@link org.flixelgdx.Flixel}`, just `{@link Flixel}` + `import` for qualifier if needed.)
 
 ### Comments versus Javadocs
 
-- **In line comments**, do **not** use Markdown tricks (bold with `**`, backticks around snippets, etc.). Reserve richer formatting for Javadoc.
+- For single-line comments, do **not** use Markdown tricks (bold with `**`, backticks around snippets, etc.). Reserve richer formatting for Javadoc.
 - When naming methods inside comments, include parentheses (`someMethod()`). If parameters exist, but you are not spelling them out, use `anotherMethod(...)`. Example class-qualified form: `SomeClass.someMethod(...)`.
-- **In comments**, prefer `SomeClass.someMethod(...)` instead of Javadoc-style `SomeClass#someMethod(int)`.
 
 ### Heavily used or critical APIs
 
@@ -270,18 +274,4 @@ For widely used classes, fields, methods, or anything central to correctness, in
     - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
     - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
 - All pull requests should target the **`master`** branch.
-
----
-
-## When research is needed
-
-If the task needs external reference beyond this repo:
-
-1. Start from these canonical sources:
-
-   - `https://api.haxeflixel.com/flixel/index.html`
-   - `https://libgdx.com/wiki/`
-   - `https://github.com/HaxeFlixel/flixel`
-   - `https://github.com/libgdx/libgdx`
-
-2. If those are not enough or off-topic for the question, broaden the search thoughtfully.
+- If the user has changes present on the current branch, **do not undo, modify or touch them**. Leave them as-is.

@@ -1,8 +1,7 @@
 # Governance
 
-FlixelGDX is maintained by a small core team under the
-[FlixelGDX Foundation](https://github.com/flixelgdx). This document explains how the project is run, who is responsible for what, and how 
-decisions get made, so contributors always know what to expect.
+FlixelGDX is maintained by one person under the [FlixelGDX Foundation](https://github.com/flixelgdx). This document explains how the project 
+is run, who is responsible for what, and how decisions get made, so contributors always know what to expect.
 
 ---
 
@@ -49,7 +48,7 @@ contributors and users.
 - Reviewing and managing issues and pull requests
 - Direct push access to the main source branches
 - Answering general questions from contributors and the community
-- Escalating anything serious to the Project Leader
+- Escalating anything serious to the Project Leaders
 
 Maintainers do not have access to repository settings, organization administration, or release management.
 If a situation requires any of those, they contact the Project Leader.
