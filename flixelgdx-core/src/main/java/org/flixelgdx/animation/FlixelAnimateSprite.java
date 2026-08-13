@@ -194,7 +194,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
     String animationJsonPath = path + "/" + defaultAnimationFileName + ".json";
     // Resolve a .ktx2 sibling before checking existence, since compressed builds delete the
     // plain PNG once its .ktx2 replacement exists.
-    String resolvedPngPath = Flixel.ensureAssets().resolveTexturePath(pngPath);
+    String resolvedPngPath = Flixel.assets.resolveTexturePath(pngPath);
     if (!Flixel.files.internal(resolvedPngPath).exists()
         || !Flixel.files.internal(spritemapJsonPath).exists()
         || !Flixel.files.internal(animationJsonPath).exists()) {

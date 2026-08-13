@@ -42,9 +42,9 @@ import java.util.Objects;
  *
  * <p>Bind to a uniquely identified save slot, manipulate the structured {@link #data} map, and
  * flush changes to disk. Saves serialize to a JSON file through the
- * {@link org.flixelgdx.file.FlixelFiles Flixel.files} seam's {@code local} root, so the same
- * code works on every platform that can write files (web backends map the root to browser
- * storage).
+ * {@link org.flixelgdx.file.FlixelFiles Flixel.files} seam's {@code pref} root, so the same
+ * code works on every platform that can write files: desktop saves to the computers local app data
+ * folder, web backends map the root to browser storage, etc.
  *
  * <p>Supported value types are {@link String}, {@link Number}, {@link Boolean}, nested
  * {@link FlixelMap}{@code <String, Object>} objects, and {@link FlixelArray}{@code <Object>}
@@ -90,8 +90,8 @@ public class FlixelSave implements FlixelDestroyable {
   /**
    * Binds this save object to a named file (and optional slot), then loads any existing data.
    *
-   * <p>Save files are written to the OS-specific application preferences directory, determined
-   * by the company name and game title set in {@link FlixelGame.Config}:
+   * <p>On desktop, Save files are written to the OS-specific application preferences directory,
+   * determined by the company name and game title set in {@link FlixelGame.Config}:
    * <ul>
    *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
    *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>

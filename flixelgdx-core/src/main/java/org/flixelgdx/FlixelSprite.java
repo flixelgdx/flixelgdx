@@ -330,7 +330,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     if (graphic != null) {
       graphic.release();
     }
-    FlixelAssetManager assets = Flixel.ensureAssets();
+    FlixelAssetManager assets = Flixel.assets;
     String key = assets.allocateSyntheticKey();
     FlixelGraphic g = new FlixelGraphic(assets, key, texture);
     assets.register(g);
@@ -351,7 +351,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(assetKey).retain().get();
     FlixelTexture t = g.getTexture();
     return loadGraphic(g, t.getWidth(), t.getHeight());
   }
@@ -365,7 +365,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(assetKey).retain().get();
     FlixelTexture t = g.getTexture();
     return loadGraphic(g, frameWidth, t.getHeight());
   }
@@ -380,7 +380,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * @return {@code this} sprite for chaining.
    */
   public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(assetKey).retain().get();
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(assetKey).retain().get();
     return loadGraphic(g, frameWidth, frameHeight);
   }
 
@@ -464,7 +464,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * {@link FlixelAnimationController#addSparrowFrames(String)} and
    * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
-   * @param newGraphic Graphic from {@link Flixel#ensureAssets() Flixel.ensureAssets()}{@code .get(...)} with
+   * @param newGraphic Graphic from {@link Flixel#assets}{@code .get(...)} with
    *     {@code retain()} already called.
    * @param parsedFrames Frames built from the XML (which may be empty).
    */

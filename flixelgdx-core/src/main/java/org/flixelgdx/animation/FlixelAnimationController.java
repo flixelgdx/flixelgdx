@@ -225,7 +225,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    */
   @NotNull
   public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FlixelXmlElement xmlRoot) {
-    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(textureKey).retain().get();
     FlixelTexture texture = g.getTexture();
 
     FlixelArray<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);

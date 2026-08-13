@@ -261,7 +261,7 @@ final class FlixelAnimateRigLoader {
     FlixelJsonValue animationRoot = FlixelJson.parse(animationText);
 
     // Obtain the backing texture. If the asset has not been preloaded, fall back to a synchronous load.
-    FlixelGraphic graphic = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    FlixelGraphic graphic = Flixel.assets.<FlixelGraphic>get(textureKey).retain().get();
     FlixelTexture texture = graphic.getTexture();
 
     // Build the atlas region list and the "ATLAS name -> region index" lookup shared by every ASI reference.
@@ -354,7 +354,7 @@ final class FlixelAnimateRigLoader {
     FlixelJsonValue spritemapRoot = FlixelJson.parse(spritemapText);
     FlixelJsonValue animationRoot = FlixelJson.parse(animationText);
 
-    FlixelGraphic graphic = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    FlixelGraphic graphic = Flixel.assets.<FlixelGraphic>get(textureKey).retain().get();
     FlixelTexture texture = graphic.getTexture();
 
     // Parse the new atlas with a fresh local lookup, then offset every entry so the indices point

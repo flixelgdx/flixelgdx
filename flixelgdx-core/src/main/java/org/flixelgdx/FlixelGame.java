@@ -23,10 +23,12 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.functional.FlixelAntialiasable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelDrawable;
@@ -41,7 +43,6 @@ import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelRuntimeUtil;
 import org.flixelgdx.util.FlixelShader;
 import org.flixelgdx.util.FlixelSpriteUtil;
 import org.flixelgdx.util.save.FlixelSave;
@@ -391,8 +392,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * to perform custom initialization when the game is created.
    */
   public void create() {
-    configureCrashHandler(); // This should ALWAYS be called first no matter what!
-
     // Deferred to here (rather than earlier) since compressed-texture support depends on the
     // graphics backend, which is only guaranteed to be running once create() is reached.
     Flixel.assets.setCompressedTexturesEnabled(true);
@@ -1044,17 +1043,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     Flixel.Signals.preGameClose.dispatch();
 
-    if (Flixel.debug != null) {
-      if (Flixel.log != null) {
-        Flixel.log.removeLogListener(Flixel.debug.overlay.getLogListener());
-      }
-      Flixel.debug.overlay.destroy();
-      Flixel.clearDebugOverlay();
-    }
+    Flixel.log.removeLogListener(Flixel.debug.overlay.getLogListener());
+    Flixel.debug.overlay.destroy();
+    Flixel.debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
 
-    if (Flixel.gamepads != null) {
-      Flixel.gamepads.detach();
-    }
+    Flixel.gamepads.detach();
 
     FlixelTween.cancelActiveTweens();
     FlixelTween.clearTweenPools();
@@ -1073,16 +1066,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     // bgPixel is a shared, persistent asset owned by the asset manager; do not destroy it here.
     bgPixel = null;
 
-    if (Flixel.assets != null) {
-      Flixel.assets.destroy();
-      Flixel.assets = null;
-    }
-    if (Flixel.sound != null) {
-      if (Flixel.initialized) {
-        Flixel.sound.destroy();
-      } else {
-        Flixel.sound.resetSession();
-      }
+    Flixel.assets.destroy();
+    Flixel.assets = FlixelNoopAssetManager.INSTANCE;
+    if (Flixel.initialized) {
+      Flixel.sound.destroy();
+    } else {
+      Flixel.sound.resetSession();
     }
 
     for (FlixelCamera camera : cameras) {
@@ -1111,23 +1100,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.log.stopFileLogging();
 
     isClosed = true;
-  }
-
-  /**
-   * Configures the framework's crash handler to safely catch uncaught exceptions and gracefully close the game.
-   */
-  protected void configureCrashHandler() {
-    Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-      String logs = FlixelRuntimeUtil.getFullExceptionMessage(throwable);
-      String msg = "There was an uncaught exception on thread \"" + thread.getName() + "\"!\n" + logs;
-      Flixel.error(msg);
-      Flixel.alert.error("Uncaught Exception", msg);
-      destroy();
-      // Only quit on non-iOS platforms to avoid App Store guideline violations!
-      if (Flixel.host.getPlatform() != FlixelPlatform.iOS) {
-        Flixel.exit();
-      }
-    });
   }
 
   /**

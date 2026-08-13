@@ -197,7 +197,7 @@ public final class FlixelSpritemapJsonLoader {
     String smText = readUtf8Text(resolveAssetPath(spritemapJsonPath));
     FlixelJsonValue spritemapRoot = FlixelJson.parse(smText);
 
-    FlixelGraphic g = Flixel.ensureAssets().<FlixelGraphic>get(textureKey).retain().get();
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(textureKey).retain().get();
     FlixelTexture texture = g.getTexture();
 
     FlixelArray<FlixelFrame> frames = buildSimpleFrames(spritemapRoot, texture);
