@@ -220,7 +220,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
       BGFX.bgfx_set_debug(BGFX.BGFX_DEBUG_STATS);
     }
     if (statsEnabled) {
-      Flixel.info("Graphics", "bgfx stats logging is on (flixel.render.stats="
+      Flixel.debug("Graphics", "bgfx stats logging is on (flixel.render.stats="
           + value + "). CPU submit vs GPU time is logged once per second.");
     }
   }
@@ -333,7 +333,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     double waitRenderMs = stats.waitRender() * cpuToMs;
     long gpuMemMb = stats.gpuMemoryUsed() < 0 ? -1 : stats.gpuMemoryUsed() / (1024 * 1024);
 
-    Flixel.info("Graphics", String.format(
+    Flixel.debug("Graphics", String.format(
         "stats | fps=%.0f frame=%.2fms | cpuSubmit=%.2fms gpu=%.2fms | "
             + "waitSubmit=%.2fms waitRender=%.2fms | draws=%d peak=%d views=%d | "
             + "tvb=%dKB tib=%dKB | gpuMem=%s",
