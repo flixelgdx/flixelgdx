@@ -48,7 +48,7 @@ public class FlixelTimerManager extends FlixelBasic {
 
   protected final FlixelPool<FlixelTimer> pool = new FlixelPool<>(32) {
     @Override
-    protected FlixelTimer newObject() {
+    protected @NotNull FlixelTimer newObject() {
       return new FlixelTimer();
     }
   };

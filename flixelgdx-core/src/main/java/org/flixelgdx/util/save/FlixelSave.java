@@ -112,7 +112,7 @@ public class FlixelSave implements FlixelDestroyable {
       return false;
     }
     FlixelGame game = Flixel.game;
-    if (game == null || game.getCompany().isEmpty()) {
+    if (game.getCompany().isEmpty()) {
       Flixel.error("Save", "bind() requires a company name to resolve the correct save directory. "
           + "Set it via FlixelGame.Config.company(...) in your FlixelGame subclass constructor, "
           + "or use bind(name, slot, directory) to supply a custom save path instead.");
