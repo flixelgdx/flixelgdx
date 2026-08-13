@@ -36,7 +36,7 @@ import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.jvm.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
-import org.flixelgdx.backend.jvm.logging.FlixelDefaultStackTraceProvider;
+import org.flixelgdx.backend.jvm.logging.FlixelJvmStackTraceProvider;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.text.FlixelFontRegistry;
@@ -104,7 +104,7 @@ public final class FlixelDesktopLauncher {
     Flixel.files = new FlixelJvmFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
-    Flixel.stackTraceProvider = new FlixelDefaultStackTraceProvider();
+    Flixel.stackTraceProvider = new FlixelJvmStackTraceProvider();
     Flixel.logFileHandler = new FlixelJvmLogFileHandler();
     Flixel.soundFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads, iconManager, width, height);

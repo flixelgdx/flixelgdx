@@ -903,7 +903,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    *
    * <p>It is advised to <strong>only call this if you know what you are doing</strong>, as
    * this will include the default registered tween types. If you call this, you will need to
-   * register the tween types again.
+   * register the framework's tween types again.
    */
   public static void resetRegistry() {
     globalManager.resetRegistry();

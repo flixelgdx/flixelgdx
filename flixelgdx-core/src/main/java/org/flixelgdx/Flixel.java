@@ -38,6 +38,7 @@ import org.flixelgdx.backend.FlixelNoopHaptics;
 import org.flixelgdx.backend.FlixelNoopHostIntegration;
 import org.flixelgdx.backend.FlixelNoopRuntimeDevice;
 import org.flixelgdx.backend.FlixelNoopWindow;
+import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
@@ -46,7 +47,6 @@ import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
 import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
-import org.flixelgdx.debug.FlixelNoopDebugOverlay;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.file.FlixelNoopFiles;
 import org.flixelgdx.functional.FlixelAntialiasable;
@@ -89,6 +89,7 @@ import org.flixelgdx.tween.type.motion.FlixelLinearMotion;
 import org.flixelgdx.tween.type.motion.FlixelLinearPath;
 import org.flixelgdx.tween.type.motion.FlixelQuadMotion;
 import org.flixelgdx.tween.type.motion.FlixelQuadPath;
+import org.flixelgdx.util.FlixelExceptionUtil;
 import org.flixelgdx.util.save.FlixelSave;
 import org.flixelgdx.util.signal.FlixelSignal;
 import org.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
@@ -993,6 +994,26 @@ public final class Flixel {
       return;
     }
 
+    // Always configure the crash handler before anything else.
+    runtime.setCrashHandler((thread, throwable) -> {
+      String logs = FlixelExceptionUtil.getFullExceptionMessage(throwable);
+      String threadName = thread != null ? thread.getName() : "main";
+      String msg = "There was an uncaught exception on thread \"" + threadName + "\"!\n" + logs;
+      error(msg);
+      alert.error("Uncaught Exception", msg);
+      // It's possible that something in beforeStart can throw an exception, so we add a
+      // guard here before the game object is assigned, because who wants a crash handler
+      // that crashes while trying to say it crashed?
+      if (game != null) {
+        game.destroy();
+      }
+      // Only quit on non-iOS platforms to avoid App Store guideline violations!
+      if (host.getPlatform() != FlixelPlatform.iOS) {
+        window.setAbsorbCloseRequests(false);
+        exit();
+      }
+    });
+
     for (int i = 0; i < beforeStart.getSize(); i++) {
       beforeStart.get(i).run();
     }
@@ -1302,17 +1323,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns {@link #assets}, which is never {@code null} thanks to the no-op default.
-   *
-   * <p>Kept as a method for call sites that want to be explicit about touching the asset
-   * system before startup.
-   */
-  @NotNull
-  public static FlixelAssetManager ensureAssets() {
-    return assets;
-  }
-
-  /**
    * Returns the visible width of the game world in game pixels.
    *
    * <p>When cameras are active, this equals the first camera's viewport world width, which
@@ -1465,17 +1475,6 @@ public final class Flixel {
   static FlixelDebugOverlay createDebugOverlay() {
     debug.overlay = debugOverlayFactory.get();
     return debug.overlay;
-  }
-
-  /**
-   * Resets the debug overlay back to the inert noop after it has been disposed.
-   * {@link FlixelGame#dispose()} calls {@link FlixelDebugOverlay#destroy() FlixelDebugOverlay.destroy()}
-   * first; this method only resets the handle to avoid double-dispose.
-   */
-  static void clearDebugOverlay() {
-    if (debug != null) {
-      debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
-    }
   }
 
   /**
