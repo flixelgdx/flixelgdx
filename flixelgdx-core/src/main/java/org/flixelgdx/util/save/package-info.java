@@ -73,18 +73,7 @@
  * When a custom directory is provided, no company name check is performed.
  *
  * <h2>Checking whether data was loaded</h2>
- * <p>After binding, inspect *
- * @Override
- * public void update(float elapsed) {
- *   super.update(elapsed);
- *   timers.update(elapsed);
- * }
- *
- * @Override
- * public void destroy() {
- *   timers.destroy(); // Cancels and frees all pending timers.
- *   super.destroy();
- * }
+ * <p>After binding, inspect
  * {@link org.flixelgdx.util.save.FlixelSave#getStatus() FlixelSave.getStatus()} to understand
  * what happened:
  *
