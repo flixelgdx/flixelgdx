@@ -30,12 +30,8 @@ import org.jetbrains.annotations.NotNull;
  * Placeholder launcher for the iOS backend.
  *
  * <p>The iOS backend is not implemented on the framework's current rendering and platform stack
- * (bgfx for drawing, SDL3 for windowing and input). The desktop backend is the reference
- * implementation those systems are proven against first; iOS is brought online in a later phase.
- *
- * <p>Every entry point here fails fast with a clear message rather than pretending to start, so a
- * project wired to this backend gets an immediate, understandable error instead of a silent
- * half-initialized game. Use {@code flixelgdx-desktop} to run games today.
+ * (bgfx for drawing, SDL3 for windowing and input). If attempted to be used, it will throw an
+ * exception immediately upon being executed.
  */
 public final class FlixelIOSLauncher {
 

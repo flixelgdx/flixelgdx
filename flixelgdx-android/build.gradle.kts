@@ -1,13 +1,8 @@
-import java.util.*
+import java.util.Locale
 
 plugins {
   id("flixelgdx.android-library")
 }
-
-// The Android backend is a fail-fast placeholder until it is brought onto the framework's bgfx +
-// SDL3 stack (through the NDK) in a later phase. It depends only on the core API, so there is no
-// libGDX, no gdx native platform jars, and no basisu on the classpath. The consumer keep-rules are
-// scoped to the framework's own packages, which is all a reflection-free core needs.
 
 val reflectionProfileRaw = (findProperty("flixelReflectionProfile") ?: "STANDARD")
   .toString().trim().uppercase(Locale.ROOT)
