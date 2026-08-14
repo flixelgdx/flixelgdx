@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.util.Objects;
 
 /**
  * The desktop graphics backend, built on bgfx.
@@ -385,15 +386,8 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
       nextScreenView++;
     }
     viewStack[0] = view;
-    // Redirect this camera into the fixed-resolution scene surface when one is active, otherwise draw
-    // straight to the back buffer. Rebinding every frame clears any stale binding a view kept from a
-    // previous scene-active frame, so a later plain screen pass is not accidentally left redirected.
     BGFX.bgfx_set_view_frame_buffer(view, sceneActive ? sceneFrameBuffer() : (short) -1);
-    // Cameras fill their own background, so clear any stale clear this view id kept from a previous
-    // scene pass or opaque-background camera. An opaque background re-sets it during fill.
     BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_NONE, 0, 1f, 0);
-    // Draw in submission order (painter's algorithm). Without this, bgfx sorts draws within the view
-    // to minimize state changes, which reorders 2D layers - the flash overlay ends up under the scene.
     BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_touch(view);
   }
@@ -433,7 +427,8 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     copy.put(src).flip();
     try (MemoryStack stack = MemoryStack.stackPush()) {
       BGFXTextureInfo info = BGFXTextureInfo.malloc(stack);
-      short handle = BGFX.bgfx_create_texture(BGFX.bgfx_copy(copy), BGFX.BGFX_TEXTURE_NONE, 0, info);
+      short handle = BGFX.bgfx_create_texture(Objects.requireNonNull(BGFX.bgfx_copy(copy)),
+          BGFX.BGFX_TEXTURE_NONE, 0, info);
       if (handle == -1) {
         return null;
       }
