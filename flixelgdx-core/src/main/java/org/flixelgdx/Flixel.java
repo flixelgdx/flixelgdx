@@ -1323,37 +1323,68 @@ public final class Flixel {
   }
 
   /**
-   * Returns the visible width of the game world in game pixels.
+   * Returns the game's fixed design width in game pixels, as set by {@link FlixelGame.Config}.
    *
-   * <p>When cameras are active, this equals the first camera's viewport world width, which
-   * accounts for the active viewport policy. For example, with an extend-style viewport the
-   * value is the full screen-filling width rather than the fixed design width. Before any
-   * camera is created, the initial width from the {@link FlixelGame} constructor is returned
-   * instead.
+   * <p>This is the width your game logic is authored against. It never changes at runtime, no matter
+   * the window size, fullscreen state, render resolution, or viewport policy, so it is the value to
+   * use when laying things out against the game's own coordinate space (for example, centering).
+   *
+   * <p>If you instead want the width of the world that is actually visible on screen - which an
+   * extend-style viewport can grow beyond the design width - use {@link #getVisibleWidth()}.
+   *
+   * @return The fixed design width in game pixels.
    */
-  public static int getWidth() {
-    return cameras.isEmpty() ? game.getInitialWidth() : (int) cameras.first().getWorldWidth();
+  public static int getDesignWidth() {
+    return game != null ? game.getInitialWidth() : getVisibleWidth();
   }
 
   /**
-   * Returns the visible height of the game world in game pixels.
+   * Returns the game's fixed design height in game pixels, as set by {@link FlixelGame.Config}.
    *
-   * <p>When cameras are active, this equals the first camera's viewport world height, which
-   * accounts for the active viewport policy. For example, with an extend-style viewport the
-   * value is the full screen-filling height rather than the fixed design height. Before any
-   * camera is created, the initial height from the {@link FlixelGame} constructor is returned
-   * instead.
+   * @return The fixed design height in game pixels.
+   * @see #getDesignWidth()
    */
-  public static int getHeight() {
-    return cameras.isEmpty() ? game.getInitialHeight() : (int) cameras.first().getWorldHeight();
+  public static int getDesignHeight() {
+    return game != null ? game.getInitialHeight() : getVisibleHeight();
   }
 
   /**
-   * Returns the game's initial size in game pixels, as set in the {@link FlixelGame.Config}.
+   * Returns the width of the world that is currently visible on screen, in game pixels.
    *
-   * <p>Unlike {@link #getWidth()} and {@link #getHeight()}, this always reflects the fixed design
-   * dimensions that were set upon the game's initialization and is not affected by the active
-   * viewport type.
+   * <p>When cameras are active this is the first camera's viewport world width, which reflects the
+   * active viewport policy: it equals {@link #getDesignWidth()} for a letterboxing (FIT) viewport,
+   * but an extend-style viewport grows it to fill the screen. Unlike {@link #getDesignWidth()}, this
+   * can change when the window is resized, so reach for it (not the design width) when you want to
+   * scale or place things relative to the actual visible screen area.
+   *
+   * @return The visible world width in game pixels.
+   */
+  public static int getVisibleWidth() {
+    if (!cameras.isEmpty()) {
+      return (int) cameras.first().getWorldWidth();
+    }
+    return game != null ? game.getInitialWidth() : Math.max(1, graphics.getBackBufferWidth());
+  }
+
+  /**
+   * Returns the height of the world that is currently visible on screen, in game pixels.
+   *
+   * @return The visible world height in game pixels.
+   * @see #getVisibleWidth()
+   */
+  public static int getVisibleHeight() {
+    if (!cameras.isEmpty()) {
+      return (int) cameras.first().getWorldHeight();
+    }
+    return game != null ? game.getInitialHeight() : Math.max(1, graphics.getBackBufferHeight());
+  }
+
+  /**
+   * Returns the game's fixed design size in game pixels, as set in the {@link FlixelGame.Config}.
+   *
+   * <p>This matches {@link #getDesignWidth()} / {@link #getDesignHeight()} and, unlike
+   * {@link #getVisibleWidth()} / {@link #getVisibleHeight()}, always reflects the fixed design
+   * dimensions set at startup, unaffected by the window size or viewport type.
    */
   public static FlixelVector getSize() {
     return new FlixelVector(game.getInitialWidth(), game.getInitialHeight());
