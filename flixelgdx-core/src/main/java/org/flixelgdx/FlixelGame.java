@@ -401,6 +401,16 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     stateLifecyclePauseDispatched = false;
 
     batch = Flixel.graphics.getBatch();
+
+    // Apply the configured render resolution now that the graphics backend is running. It is on by
+    // default at the design size, so the scene draws at a fixed size and upscales to the window; a
+    // game opts out with Config.Builder.disableRenderResolution().
+    if (config.isRenderResolutionEnabled()) {
+      Flixel.graphics.setRenderResolution(config.getRenderWidth(), config.getRenderHeight(), config.isRenderSmooth());
+    } else {
+      Flixel.graphics.clearRenderResolution();
+    }
+
     cameras.clear();
     cameras.add(new FlixelCamera(config.getWidth(), config.getHeight()));
     overlayCamera = new FlixelCamera(config.getWidth(), config.getHeight());
@@ -1526,9 +1536,17 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     private final int framerate;
 
+    private final int renderWidth;
+
+    private final int renderHeight;
+
     private final boolean vsync;
 
     private final boolean fullscreen;
+
+    private final boolean renderResolutionEnabled;
+
+    private final boolean renderSmooth;
 
     private Config(@NotNull Builder builder) {
       this.title = builder.title;
@@ -1537,8 +1555,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       this.width = builder.width;
       this.height = builder.height;
       this.framerate = builder.framerate;
+      this.renderWidth = builder.renderWidth;
+      this.renderHeight = builder.renderHeight;
       this.vsync = builder.vsync;
       this.fullscreen = builder.fullscreen;
+      this.renderResolutionEnabled = builder.renderResolutionEnabled;
+      this.renderSmooth = builder.renderSmooth;
     }
 
     @NotNull
@@ -1566,6 +1588,39 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     public int getFramerate() {
       return framerate;
+    }
+
+    /**
+     * @return {@code true} when the game renders at a fixed resolution and upscales to the window.
+     *     Enabled by default; see {@link Builder#renderResolution(int, int)}.
+     */
+    public boolean isRenderResolutionEnabled() {
+      return renderResolutionEnabled;
+    }
+
+    /**
+     * Returns the fixed render width in pixels, falling back to the design width when none was set.
+     *
+     * @return The render width to draw the scene at.
+     */
+    public int getRenderWidth() {
+      return renderWidth > 0 ? renderWidth : width;
+    }
+
+    /**
+     * Returns the fixed render height in pixels, falling back to the design height when none was set.
+     *
+     * @return The render height to draw the scene at.
+     */
+    public int getRenderHeight() {
+      return renderHeight > 0 ? renderHeight : height;
+    }
+
+    /**
+     * @return {@code true} for smooth (linear) upscaling, {@code false} for nearest-neighbor.
+     */
+    public boolean isRenderSmooth() {
+      return renderSmooth;
     }
 
     public boolean isVsync() {
@@ -1620,9 +1675,17 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
       private int framerate = 60;
 
+      private int renderWidth = 0;
+
+      private int renderHeight = 0;
+
       private boolean vsync = true;
 
       private boolean fullscreen = false;
+
+      private boolean renderResolutionEnabled = true;
+
+      private boolean renderSmooth = true;
 
       /**
        * Creates a builder for a game with the given window title.
@@ -1709,6 +1772,58 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       @NotNull
       public Builder fullscreen(boolean fullscreen) {
         this.fullscreen = fullscreen;
+        return this;
+      }
+
+      /**
+       * Sets a fixed render resolution the whole scene is drawn at before being upscaled to the
+       * window, with smooth (linear) filtering.
+       *
+       * <p>A fixed render resolution is <b>on by default</b> at the design size set by
+       * {@link #size(int, int)}, so most games do not need to call this. Use it to render at a
+       * different size than the design size: below it (for example {@code 960x540} for a
+       * {@code 1280x720} game) as a performance option, or above it to supersample for smoother
+       * edges. Keep the same aspect ratio as the design size to avoid distortion. To turn the
+       * feature off entirely and draw straight to the window, call {@link #disableRenderResolution()}.
+       *
+       * @param width The fixed render width in pixels.
+       * @param height The fixed render height in pixels.
+       * @return This builder, for chaining.
+       */
+      @NotNull
+      public Builder renderResolution(int width, int height) {
+        return renderResolution(width, height, true);
+      }
+
+      /**
+       * Sets a fixed render resolution and chooses how it is filtered when upscaled to the window.
+       *
+       * @param width The fixed render width in pixels.
+       * @param height The fixed render height in pixels.
+       * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor (crisp
+       *     pixel art).
+       * @return This builder, for chaining.
+       * @see #renderResolution(int, int)
+       */
+      @NotNull
+      public Builder renderResolution(int width, int height, boolean smooth) {
+        this.renderWidth = width;
+        this.renderHeight = height;
+        this.renderSmooth = smooth;
+        this.renderResolutionEnabled = true;
+        return this;
+      }
+
+      /**
+       * Turns off the fixed render resolution so the scene draws straight to the window at its real
+       * size. This opts out of the on-by-default behavior described in
+       * {@link #renderResolution(int, int)}.
+       *
+       * @return This builder, for chaining.
+       */
+      @NotNull
+      public Builder disableRenderResolution() {
+        this.renderResolutionEnabled = false;
         return this;
       }
 
