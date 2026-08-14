@@ -49,10 +49,15 @@ import java.util.Locale;
  * binary bundled in this plugin for the current operating system, and finally a {@code shaderc}
  * found on the system {@code PATH}. The bundled binary and the {@code bgfx_shader.sh} include header
  * are extracted from the plugin JAR into a cache directory the first time they are needed.
+ *
+ * <p>On Linux and macOS the bundled {@code d3d4linux} Wine shim is extracted alongside the binary so
+ * the Direct3D (dx11) variant can be compiled there too, provided Wine is installed. When the shim
+ * or Wine is missing, that one variant is skipped and every other variant still compiles.
  */
 public final class Shaderc {
 
   private static final String TOOLS_ROOT = "/org/flixelgdx/gradle/shader/tools/";
+  private static final String SHIM_ROOT = "/org/flixelgdx/gradle/shader/tools/windows-shim/";
   private static final String INCLUDE_HEADER = "/org/flixelgdx/gradle/shader/include/bgfx_shader.sh";
 
   @NotNull
@@ -82,7 +87,7 @@ public final class Shaderc {
     Files.createDirectories(includeDir.toPath());
     extractResource(INCLUDE_HEADER, new File(includeDir, "bgfx_shader.sh"));
 
-    // 1. An explicit path always wins.
+    // An explicit path always wins.
     if (override != null) {
       if (!override.isFile()) {
         throw new IOException("Configured shaderc path does not exist: " + override.getAbsolutePath());
@@ -90,20 +95,25 @@ public final class Shaderc {
       return new Shaderc(override, includeDir);
     }
 
-    // 2. The binary bundled for this operating system.
+    // The binary bundled for this operating system.
     String classifier = hostClassifier();
     String exeName = isWindows() ? "shaderc.exe" : "shaderc";
     String resource = TOOLS_ROOT + classifier + "/" + exeName;
     if (Shaderc.class.getResource(resource) != null) {
-      File dest = new File(workDir, exeName);
+      // shaderc is placed under bin/ so the Direct3D shim can sit at ../windows relative to it, the
+      // exact location shaderc looks for it.
+      File binDir = new File(workDir, "bin");
+      Files.createDirectories(binDir.toPath());
+      File dest = new File(binDir, exeName);
       extractResource(resource, dest);
       if (!isWindows()) {
         dest.setExecutable(true, false);
+        extractDirect3DShim(workDir);
       }
       return new Shaderc(dest, includeDir);
     }
 
-    // 3. A shaderc found on PATH.
+    // A shaderc found on PATH.
     File onPath = findOnPath(exeName);
     if (onPath != null) {
       return new Shaderc(onPath, includeDir);
@@ -169,6 +179,32 @@ public final class Shaderc {
         throw new IOException("Plugin resource missing: " + resource);
       }
       Files.copy(in, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+  }
+
+  /**
+   * Extracts the {@code d3d4linux} Wine shim into {@code <workDir>/windows} so shaderc can compile
+   * the Direct3D (dx11) variant on Linux and macOS.
+   *
+   * <p>The shim is the real Windows FXC compiler ({@code d3dcompiler_47.dll}) run through Wine by
+   * {@code d3d4linux.exe}. shaderc looks for both next to itself under {@code ../windows}, which is
+   * why the binary lives in {@code bin/}. The shim is best-effort: if it is absent, or Wine is not
+   * installed, the Direct3D variant is simply skipped with a warning while every other variant
+   * still compiles.
+   *
+   * @param workDir The plugin's scratch directory.
+   */
+  private static void extractDirect3DShim(@NotNull File workDir) {
+    if (Shaderc.class.getResource(SHIM_ROOT + "d3d4linux.exe") == null) {
+      return;
+    }
+    try {
+      File windowsDir = new File(workDir, "windows");
+      Files.createDirectories(windowsDir.toPath());
+      extractResource(SHIM_ROOT + "d3d4linux.exe", new File(windowsDir, "d3d4linux.exe"));
+      extractResource(SHIM_ROOT + "d3dcompiler_47.dll", new File(windowsDir, "d3dcompiler_47.dll"));
+    } catch (IOException e) {
+      // Optional tooling; the Direct3D variant is skipped gracefully when the shim is unavailable.
     }
   }
 

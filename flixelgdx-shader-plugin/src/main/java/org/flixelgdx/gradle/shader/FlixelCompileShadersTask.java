@@ -151,9 +151,9 @@ public abstract class FlixelCompileShadersTask extends DefaultTask {
         + "' for the " + target.dir() + " backend:\n" + result.log();
     if (target.hostLimited()) {
       getLogger().warn("{}\n[FlixelGDX] Skipping the {} variant on this host, since Microsoft's FXC "
-          + "compiler was not found. Produce it on Windows (for example a CI runner), or install the "
-          + "d3d4linux Wine shim, so the shader works with the Direct3D renderer. Every other variant "
-          + "was still compiled.",
+          + "compiler could not run. The bundled d3d4linux shim needs Wine installed on Linux and "
+          + "macOS; install Wine, or produce this variant on a Windows CI runner, so the shader works "
+          + "with the Direct3D renderer. Every other variant was still compiled.",
           message, target.dir());
       return;
     }

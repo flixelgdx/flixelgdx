@@ -39,7 +39,15 @@ The Windows and macOS binaries are produced by the temporary
 artifacts, and drop them here). The Linux binary is already vendored.
 
 The Direct3D (`dx11`) variants are DXBC, which needs Microsoft's FXC compiler. FXC is native to
-Windows, so the Windows `shaderc` emits those variants directly. On Linux and macOS, `shaderc` can
-still produce them through the `d3d4linux` Wine shim (its `d3d4linux.exe` and `d3dcompiler_47.dll`
-placed next to the binary, with Wine installed); when no FXC compiler is found the plugin skips just
-that variant with a warning, the same way the framework's `scripts/build_shaders.sh` does.
+Windows, so the Windows `shaderc` emits those variants directly. On Linux and macOS, `shaderc`
+produces them through the `d3d4linux` Wine shim, which lives in `windows-shim/` and is extracted
+next to the binary at build time (Wine must be installed on the host). When no FXC compiler can run,
+the plugin skips just that variant with a warning, the same way the framework's
+`scripts/build_shaders.sh` does.
+
+## The `windows-shim/` directory
+
+Holds the bgfx `d3d4linux` shim: `d3d4linux.exe` and `d3dcompiler_47.dll` (the real Windows FXC),
+both taken from bgfx's `tools/bin/windows`. They are Windows binaries run under Wine, so one copy
+serves both Linux and macOS. The plugin extracts them to `<workDir>/windows/`, where `shaderc`
+looks for them relative to its own location.

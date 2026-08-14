@@ -80,6 +80,26 @@ class FlixelShaderPluginFunctionalTest {
       assertTrue(new File(out, variant + "/vs.bin").isFile(), "missing " + variant + " vertex output");
       assertTrue(new File(out, variant + "/fs.bin").isFile(), "missing " + variant + " fragment output");
     }
+
+    // The Direct3D variant only compiles off Windows when the bundled d3d4linux shim can run, which
+    // needs Wine. Assert it when Wine is present; otherwise it is expected to be skipped.
+    if (wineAvailable()) {
+      assertTrue(new File(out, "dx11/vs.bin").isFile(), "missing dx11 vertex output despite Wine");
+      assertTrue(new File(out, "dx11/fs.bin").isFile(), "missing dx11 fragment output despite Wine");
+    }
+  }
+
+  private static boolean wineAvailable() {
+    String path = System.getenv("PATH");
+    if (path == null) {
+      return false;
+    }
+    for (String entry : path.split(File.pathSeparator)) {
+      if (new File(entry, "wine").canExecute()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static void write(File file, String content) throws Exception {
