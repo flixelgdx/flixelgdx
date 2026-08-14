@@ -72,6 +72,8 @@ import java.util.Objects;
  */
 public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
+  public double smoothingFactor = 0.1;
+
   private long lastFrameTime = System.nanoTime();
 
   /** Wall-clock nanoseconds accumulated since the last stats log line, when stats logging is enabled. */
@@ -81,7 +83,6 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   private long statsLastNanos;
 
   private double averageFps = 0;
-  private double smoothingFactor = 0.1;
 
   /** bgfx view id used to clear the whole back buffer at the start of a frame. */
   private static final int SCREEN_CLEAR_VIEW = 0;
@@ -897,5 +898,17 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     } catch (Exception e) {
       return new byte[0];
     }
+  }
+
+  public boolean isRenderSmooth() {
+    return renderSmooth;
+  }
+
+  public boolean isStatsEnabled() {
+    return statsEnabled;
+  }
+
+  public boolean isStatsOverlay() {
+    return statsOverlay;
   }
 }

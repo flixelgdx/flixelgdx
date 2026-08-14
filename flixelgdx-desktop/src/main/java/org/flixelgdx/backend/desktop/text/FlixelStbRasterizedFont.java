@@ -179,4 +179,13 @@ public class FlixelStbRasterizedFont implements FlixelRasterizedFont {
       info.free();
     }
   }
+
+  /** Returns the stb_truetype scale factor, i.e., pixels per font unit at the requested size. */
+  public float getScale() {
+    return scale;
+  }
+
+  public boolean isDestroyed() {
+    return destroyed;
+  }
 }

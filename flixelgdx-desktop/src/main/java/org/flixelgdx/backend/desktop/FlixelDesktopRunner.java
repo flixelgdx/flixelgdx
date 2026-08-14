@@ -249,7 +249,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   /**
    * Resolves the bgfx renderer backend to request at initialization.
    *
-   * <p>By default bgfx auto-picks the best backend for the platform. Some systems have a driver
+   * <p>By default, bgfx auto-picks the best backend for the platform. Some systems have a driver
    * that bgfx would prefer but that crashes or misbehaves (a common example is Mesa's Intel Vulkan
    * driver on Linux). The {@code flixel.render.backend} system property forces a specific backend
    * so those machines can fall back to a working one without a code change, for example:
@@ -365,5 +365,42 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       return 2;
     }
     return Math.max(0, sdlButton - 1);
+  }
+
+  @NotNull
+  public FlixelSdlWindow getWindow() {
+    return window;
+  }
+
+  @NotNull
+  public FlixelDesktopInputDevice getInput() {
+    return input;
+  }
+
+  @NotNull
+  public FlixelBgfxGraphics getGraphics() {
+    return graphics;
+  }
+
+  @NotNull
+  public FlixelSdlGamepadProvider getGamepads() {
+    return gamepads;
+  }
+
+  @NotNull
+  public FlixelSdlMouseIconManager getIconManager() {
+    return iconManager;
+  }
+
+  public int getWidth() {
+    return width;
+  }
+
+  public int getHeight() {
+    return height;
+  }
+
+  public boolean isVsync() {
+    return vsync;
   }
 }

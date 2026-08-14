@@ -23,7 +23,7 @@
  * }
  * }</pre>
  *
- * <p>The three-argument overload accepts a
+ * <p>The two-argument overload accepts a
  * {@link org.flixelgdx.backend.FlixelRuntimeMode FlixelRuntimeMode}, which runs after all default
  * services are installed but before the game starts.
  *

@@ -368,4 +368,8 @@ public class FlixelBgfxBatch implements FlixelBatch {
   static int vertexStrideBytes() {
     return VERTEX_STRIDE_BYTES;
   }
+
+  public boolean isDrawing() {
+    return drawing;
+  }
 }

@@ -188,4 +188,9 @@ public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGa
     mapping.registerAxis(FlixelGamepadAxis.R2, SDLGamepad.SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
     return mapping;
   }
+
+  @NotNull
+  public FlixelGamepadMapping getStandardMapping() {
+    return standardMapping;
+  }
 }

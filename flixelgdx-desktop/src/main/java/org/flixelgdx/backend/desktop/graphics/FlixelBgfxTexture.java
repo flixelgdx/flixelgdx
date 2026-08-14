@@ -212,4 +212,8 @@ public class FlixelBgfxTexture implements FlixelTexture {
   public void setSmooth(boolean smooth) {
     this.smooth = smooth;
   }
+
+  public boolean isDestroyed() {
+    return destroyed;
+  }
 }
