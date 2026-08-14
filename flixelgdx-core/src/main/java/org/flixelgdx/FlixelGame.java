@@ -1522,9 +1522,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   public static final class Config {
 
-    @NotNull private final String title;
-    @NotNull private final String company;
-    @NotNull private final String version;
+    @NotNull
+    private final String title;
+    @NotNull
+    private final String company;
+    @NotNull
+    private final String version;
 
     private final int width;
     private final int height;
@@ -1645,9 +1648,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
      */
     public static final class Builder {
 
-      @NotNull private final String title;
-      @NotNull private String company = "";
-      @NotNull private String version = "";
+      @NotNull
+      private final String title;
+      @NotNull
+      private String company = "";
+      @NotNull
+      private String version = "";
 
       private int width = 640;
       private int height = 360;
