@@ -85,6 +85,11 @@ public class FlixelBgfxRenderTarget implements FlixelRenderTarget {
     return texture;
   }
 
+  /** The bgfx framebuffer handle, so the graphics manager can bind extra views to this surface. */
+  short getFrameBuffer() {
+    return frameBuffer;
+  }
+
   @Override
   public boolean isFlipped() {
     // bgfx render-target textures are stored top-down when the renderer's clip space is top-left

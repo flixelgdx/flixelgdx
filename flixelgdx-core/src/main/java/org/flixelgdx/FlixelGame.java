@@ -542,7 +542,13 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
 
     boolean useGlobalFbo = !globalShaders.isEmpty() && sceneFboA != null;
-    if (useGlobalFbo) {
+    // The global shader chain already routes the whole scene through its own render targets, so a
+    // fixed render resolution only takes over when no global shaders are active. Otherwise the two
+    // composites would fight over the screen.
+    boolean useSceneResolution = !useGlobalFbo && Flixel.graphics.isRenderResolutionEnabled();
+    if (useSceneResolution) {
+      Flixel.graphics.beginScene();
+    } else if (useGlobalFbo) {
       sceneFboA.begin();
       Flixel.graphics.clear(0f, 0f, 0f, 0f);
     }
@@ -635,6 +641,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       } finally {
         Flixel.setDrawCamera(null);
       }
+    }
+
+    // Stretch the fixed-resolution scene (cameras plus overlay) to fill the window in one pass.
+    if (useSceneResolution) {
+      Flixel.graphics.endScene();
     }
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
@@ -961,8 +972,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** Creates (or recreates) the scene render targets used by the global shader chain. */
   private void initSceneFbos(boolean needPingPong) {
     disposeSceneFbos();
-    int w = Flixel.graphics.getBackBufferWidth();
-    int h = Flixel.graphics.getBackBufferHeight();
+    // Size to the scene render resolution, which equals the back buffer unless a fixed render
+    // resolution is active, so the shader chain matches whatever size the cameras draw at.
+    int w = Flixel.graphics.getRenderWidth();
+    int h = Flixel.graphics.getRenderHeight();
     sceneFboA = Flixel.graphics.createRenderTarget(w, h);
     if (needPingPong) {
       sceneFboB = Flixel.graphics.createRenderTarget(w, h);
@@ -987,8 +1000,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * and {@link #sceneFboB} so each shader reads from one texture and writes to the other.
    */
   private void applyGlobalShaderChain() {
-    int w = Flixel.graphics.getBackBufferWidth();
-    int h = Flixel.graphics.getBackBufferHeight();
+    int w = Flixel.graphics.getRenderWidth();
+    int h = Flixel.graphics.getRenderHeight();
     boolean usingA = true;
     FlixelRenderTarget src = sceneFboA;
     int n = globalShaders.getSize();

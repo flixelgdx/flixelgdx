@@ -140,6 +140,103 @@ public interface FlixelGraphicsManager {
   default void beginCameraPass() {}
 
   /**
+   * Pins the resolution the whole scene is rendered at, independent of the window size.
+   *
+   * <p>Normally every sprite is drawn straight to the window, so a larger window (for example
+   * fullscreen) shades proportionally more pixels and costs more GPU time. When a render resolution
+   * is set, the framework instead draws the entire scene into one fixed-size off-screen surface and
+   * then stretches that surface to fill the window in a single pass. The expensive per-pixel work is
+   * now tied to this fixed size rather than the window, so fullscreen stops multiplying the cost.
+   * This is the classic fix for a game that runs fine in a small window but drops frames when
+   * maximized.
+   *
+   * <p>The size does not have to match the game's design size. Render below it (for example
+   * {@code 960x540} for a {@code 1280x720} game) as a performance option on weak hardware, or above
+   * it to supersample for smoother edges. For the picture to stay undistorted, keep the same aspect
+   * ratio as the design size; the framework letterboxes the final stretch to the window just like a
+   * {@link FlixelViewport.Scaling#FIT} camera.
+   *
+   * <p>This is opt-in and off by default. Upscaling uses smooth (linear) filtering, which suits most
+   * games; use {@link #setRenderResolution(int, int, boolean)} to pick nearest-neighbor filtering for
+   * crisp pixel art instead.
+   *
+   * <p>Example (render a 1280x720 game at a fixed 1280x720 no matter the window size):
+   *
+   * <pre>{@code
+   * Flixel.graphics.setRenderResolution(1280, 720);
+   * }</pre>
+   *
+   * @param width The fixed render width in pixels; values below {@code 1} disable the feature.
+   * @param height The fixed render height in pixels; values below {@code 1} disable the feature.
+   */
+  default void setRenderResolution(int width, int height) {
+    setRenderResolution(width, height, true);
+  }
+
+  /**
+   * Pins the render resolution and chooses how the result is filtered when stretched to the window.
+   *
+   * <p>See {@link #setRenderResolution(int, int)} for the full explanation. This overload only adds
+   * control over the upscale filter: smooth (linear) blends neighboring pixels for clean scaling of
+   * high-resolution art, while nearest-neighbor keeps hard pixel edges, which is what pixel-art games
+   * want.
+   *
+   * @param width The fixed render width in pixels; values below {@code 1} disable the feature.
+   * @param height The fixed render height in pixels; values below {@code 1} disable the feature.
+   * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor.
+   */
+  default void setRenderResolution(int width, int height, boolean smooth) {}
+
+  /** Disables a previously set render resolution, so the scene draws straight to the window again. */
+  default void clearRenderResolution() {}
+
+  /**
+   * @return {@code true} when a fixed render resolution is active (see
+   *     {@link #setRenderResolution(int, int)}). Defaults to {@code false}.
+   */
+  default boolean isRenderResolutionEnabled() {
+    return false;
+  }
+
+  /**
+   * Returns the width the scene is rendered at, which is the fixed render width when one is set and
+   * the back buffer width otherwise. Framework rendering that sizes its own surfaces (such as the
+   * global shader chain) uses this so it matches the scene, not the window.
+   *
+   * @return The scene render width in pixels.
+   */
+  default int getRenderWidth() {
+    return getBackBufferWidth();
+  }
+
+  /**
+   * Returns the height the scene is rendered at.
+   *
+   * @return The scene render height in pixels.
+   * @see #getRenderWidth()
+   */
+  default int getRenderHeight() {
+    return getBackBufferHeight();
+  }
+
+  /**
+   * Redirects drawing into the fixed-resolution scene surface, when a render resolution is active.
+   *
+   * <p>The framework calls this once per frame right before it draws the cameras. When no render
+   * resolution is set this does nothing and drawing goes straight to the window as usual. Pair every
+   * call with {@link #endScene()}.
+   */
+  default void beginScene() {}
+
+  /**
+   * Ends scene redirection and stretches the fixed-resolution surface to fill the window.
+   *
+   * <p>The framework calls this once per frame after all cameras have drawn. When no render
+   * resolution is set this does nothing. See {@link #beginScene()}.
+   */
+  default void endScene() {}
+
+  /**
    * Uploads pixel data to a new GPU texture.
    *
    * @param width Texture width in pixels.

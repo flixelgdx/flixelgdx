@@ -133,6 +133,14 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @NotNull
   private final FloatBuffer viewTransform = BufferUtils.createFloatBuffer(16);
 
+  /** Fixed-resolution scene surface the whole frame renders into when a render resolution is set. */
+  @Nullable
+  private FlixelBgfxRenderTarget sceneTarget;
+
+  /** Reused ortho matrix for the final upscale blit, rebuilt each composite to match the window. */
+  @NotNull
+  private final FlixelMatrix compositeOrtho = new FlixelMatrix();
+
   private short vertexLayoutHandle;
   private short quadIndexBuffer = -1;
   private short spriteProgram = -1;
@@ -140,6 +148,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   private int backBufferWidth;
   private int backBufferHeight;
+  private int renderWidth;
+  private int renderHeight;
+  private float compositeScale = 1f;
+  private float compositeOffsetX;
+  private float compositeOffsetY;
   private int viewportX;
   private int viewportY;
   private int viewportWidth;
@@ -159,6 +172,18 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   private boolean vsync = true;
   private boolean programWarned;
+
+  /** Whether a fixed render resolution is active. See {@link #setRenderResolution(int, int, boolean)}. */
+  private boolean renderResolutionEnabled;
+
+  /** Whether the scene surface is stretched with linear filtering ({@code true}) or nearest-neighbor. */
+  private boolean renderSmooth = true;
+
+  /** True between {@link #beginScene()} and {@link #endScene()}, so viewport remapping is active. */
+  private boolean sceneActive;
+
+  /** Set when the render size or filter changed, so the scene surface is rebuilt on the next frame. */
+  private boolean sceneTargetDirty;
 
   /** When {@code true}, per-frame bgfx CPU/GPU timing is logged once per second. Set by {@code flixel.render.stats}. */
   private boolean statsEnabled;
@@ -360,6 +385,10 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
       nextScreenView++;
     }
     viewStack[0] = view;
+    // Redirect this camera into the fixed-resolution scene surface when one is active, otherwise draw
+    // straight to the back buffer. Rebinding every frame clears any stale binding a view kept from a
+    // previous scene-active frame, so a later plain screen pass is not accidentally left redirected.
+    BGFX.bgfx_set_view_frame_buffer(view, sceneActive ? sceneFrameBuffer() : (short) -1);
     // Draw in submission order (painter's algorithm). Without this, bgfx sorts draws within the view
     // to minimize state changes, which reorders 2D layers - the flash overlay ends up under the scene.
     BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
@@ -416,6 +445,130 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   }
 
   @Override
+  public void setRenderResolution(int width, int height, boolean smooth) {
+    if (width < 1 || height < 1) {
+      clearRenderResolution();
+      return;
+    }
+    if (renderResolutionEnabled && width == renderWidth && height == renderHeight) {
+      // Same size: a filter-only change can be applied to the existing surface without rebuilding it.
+      if (smooth != renderSmooth) {
+        renderSmooth = smooth;
+        if (sceneTarget != null) {
+          sceneTarget.getTexture().setSmooth(smooth);
+        }
+      }
+      return;
+    }
+    renderWidth = width;
+    renderHeight = height;
+    renderSmooth = smooth;
+    renderResolutionEnabled = true;
+    // The surface is built lazily on the next frame, so this is safe to call before bgfx is ready
+    // (for example from a game's constructor).
+    sceneTargetDirty = true;
+  }
+
+  @Override
+  public void clearRenderResolution() {
+    renderResolutionEnabled = false;
+    sceneActive = false;
+    disposeSceneTarget();
+  }
+
+  @Override
+  public boolean isRenderResolutionEnabled() {
+    return renderResolutionEnabled;
+  }
+
+  @Override
+  public int getRenderWidth() {
+    return renderResolutionEnabled ? renderWidth : backBufferWidth;
+  }
+
+  @Override
+  public int getRenderHeight() {
+    return renderResolutionEnabled ? renderHeight : backBufferHeight;
+  }
+
+  @Override
+  public void beginScene() {
+    if (!renderResolutionEnabled) {
+      return;
+    }
+    ensureSceneTarget();
+    if (sceneTarget == null) {
+      return;
+    }
+    sceneActive = true;
+    // Work out how the fixed surface is stretched onto the current window (a FIT letterbox). Both the
+    // per-camera viewport remap and the final blit below derive from this.
+    float ww = Math.max(1, backBufferWidth);
+    float wh = Math.max(1, backBufferHeight);
+    compositeScale = Math.min(ww / renderWidth, wh / renderHeight);
+    compositeOffsetX = (ww - renderWidth * compositeScale) / 2f;
+    compositeOffsetY = (wh - renderHeight * compositeScale) / 2f;
+    // Clear the whole surface once before any camera draws into it. A dedicated low-id view bound to
+    // the scene framebuffer runs first because bgfx renders views in ascending id order.
+    int clearView = nextScreenView;
+    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+      nextScreenView++;
+    }
+    BGFX.bgfx_set_view_frame_buffer(clearView, sceneFrameBuffer());
+    BGFX.bgfx_set_view_mode(clearView, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
+    BGFX.bgfx_set_view_rect(clearView, 0, 0, renderWidth, renderHeight);
+    BGFX.bgfx_set_view_clear(clearView, BGFX.BGFX_CLEAR_COLOR, 0, 1f, 0);
+    BGFX.bgfx_touch(clearView);
+  }
+
+  @Override
+  public void endScene() {
+    if (!sceneActive) {
+      return;
+    }
+    sceneActive = false;
+    if (sceneTarget == null || spriteProgram == -1) {
+      return;
+    }
+    // A fresh view above every camera view (so bgfx runs it last) draws the finished surface to the
+    // back buffer, stretched into the letterboxed destination rectangle.
+    int view = nextScreenView;
+    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+      nextScreenView++;
+    }
+    viewStack[0] = view;
+    viewStackDepth = 1;
+    BGFX.bgfx_set_view_frame_buffer(view, (short) -1);
+    BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
+
+    float dstX = compositeOffsetX;
+    float dstY = compositeOffsetY;
+    float dstW = renderWidth * compositeScale;
+    float dstH = renderHeight * compositeScale;
+
+    clearScissor();
+    viewportX = 0;
+    viewportY = 0;
+    viewportWidth = Math.max(1, backBufferWidth);
+    viewportHeight = Math.max(1, backBufferHeight);
+    compositeOrtho.setToOrtho2D(0, 0, backBufferWidth, backBufferHeight, isDepthZeroToOne());
+
+    FlixelTexture texture = sceneTarget.getTexture();
+    batch.setProjection(compositeOrtho);
+    batch.setBlendMode(FlixelBlendMode.NONE);
+    batch.setColor(1f, 1f, 1f, 1f);
+    batch.begin();
+    if (sceneTarget.isFlipped()) {
+      // Some backends store render targets bottom-up, so flip the vertical texture coordinates.
+      batch.draw(texture, dstX, dstY, dstW, dstH, 0f, 1f, 1f, 0f);
+    } else {
+      batch.draw(texture, dstX, dstY, dstW, dstH);
+    }
+    batch.end();
+    batch.setBlendMode(FlixelBlendMode.NORMAL);
+  }
+
+  @Override
   public void clear(float r, float g, float b, float a) {
     clearColor = ((int) (r * 255f) << 24) | ((int) (g * 255f) << 16) | ((int) (b * 255f) << 8) | (int) (a * 255f);
     BGFX.bgfx_set_view_clear(currentView(), BGFX.BGFX_CLEAR_COLOR, clearColor, 1f, 0);
@@ -423,10 +576,21 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setScissor(int x, int y, int width, int height) {
-    scissorX = x;
-    scissorWidth = Math.max(1, width);
-    scissorHeight = Math.max(1, height);
-    scissorY = backBufferHeight - y - scissorHeight;
+    if (sceneActive) {
+      // Clip rects arrive in window pixels; remap them into the render surface the same way viewports
+      // are remapped, then flip to bgfx's top-left origin using the render height, not the window's.
+      int rx = Math.round((x - compositeOffsetX) / compositeScale);
+      int ry = Math.round((y - compositeOffsetY) / compositeScale);
+      scissorX = rx;
+      scissorWidth = Math.max(1, Math.round(width / compositeScale));
+      scissorHeight = Math.max(1, Math.round(height / compositeScale));
+      scissorY = renderHeight - ry - scissorHeight;
+    } else {
+      scissorX = x;
+      scissorWidth = Math.max(1, width);
+      scissorHeight = Math.max(1, height);
+      scissorY = backBufferHeight - y - scissorHeight;
+    }
   }
 
   @Override
@@ -437,11 +601,21 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setViewport(int x, int y, int width, int height) {
-    viewportX = x;
-    viewportY = y;
-    viewportWidth = Math.max(1, width);
-    viewportHeight = Math.max(1, height);
-    BGFX.bgfx_set_view_rect(currentView(), x, y, viewportWidth, viewportHeight);
+    if (sceneActive) {
+      // Cameras lay out their viewport in window pixels, but the scene surface is a different (fixed)
+      // size, so undo the composite stretch to land in render pixels. compositeOffset/Scale describe
+      // how the surface is placed on the window, so their inverse maps window space back to it.
+      viewportX = Math.round((x - compositeOffsetX) / compositeScale);
+      viewportY = Math.round((y - compositeOffsetY) / compositeScale);
+      viewportWidth = Math.max(1, Math.round(width / compositeScale));
+      viewportHeight = Math.max(1, Math.round(height / compositeScale));
+    } else {
+      viewportX = x;
+      viewportY = y;
+      viewportWidth = Math.max(1, width);
+      viewportHeight = Math.max(1, height);
+    }
+    BGFX.bgfx_set_view_rect(currentView(), viewportX, viewportY, viewportWidth, viewportHeight);
   }
 
   @Override
@@ -515,6 +689,29 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   private int currentView() {
     return viewStack[viewStackDepth - 1];
+  }
+
+  /** Rebuilds the scene surface when the render size or filter changed, then leaves it ready to use. */
+  private void ensureSceneTarget() {
+    if (sceneTarget != null && !sceneTargetDirty) {
+      return;
+    }
+    disposeSceneTarget();
+    sceneTarget = new FlixelBgfxRenderTarget(this, Math.max(1, renderWidth), Math.max(1, renderHeight));
+    sceneTarget.getTexture().setSmooth(renderSmooth);
+    sceneTargetDirty = false;
+  }
+
+  private void disposeSceneTarget() {
+    if (sceneTarget != null) {
+      sceneTarget.destroy();
+      sceneTarget = null;
+    }
+  }
+
+  /** The scene framebuffer handle, or the back-buffer sentinel when no surface exists yet. */
+  private short sceneFrameBuffer() {
+    return sceneTarget != null ? sceneTarget.getFrameBuffer() : (short) -1;
   }
 
   /**
