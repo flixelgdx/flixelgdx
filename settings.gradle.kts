@@ -65,6 +65,7 @@ include(
   "flixelgdx-teavm-plugin",
   "flixelgdx-logging-plugin",
   "flixelgdx-basisu-plugin",
+  "flixelgdx-shader-plugin",
   "flixelgdx-json-processor",
   "flixelgdx-test"
 )
