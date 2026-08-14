@@ -446,8 +446,8 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
    * use {@link #justTouchedScreen(float, float, float, float)} instead.
    *
    * <pre>{@code
-   * float half = Flixel.getWidth() / 2f;
-   * if (Flixel.touches.touchingScreen(half, 0, half, Flixel.getHeight())) {
+   * float half = Flixel.graphics.getBackBufferWidth() / 2f;
+   * if (Flixel.touches.touchingScreen(half, 0, half, Flixel.graphics.getBackBufferHeight())) {
    *   moveRight();
    * }
    * }</pre>
@@ -516,8 +516,8 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
    * {@link FlixelTouch#justPressed()}.
    *
    * <pre>{@code
-   * if (Flixel.touches.justTouchedScreen(0, 0, Flixel.getWidth() / 2f,
-   *         Flixel.getHeight())) {
+   * if (Flixel.touches.justTouchedScreen(0, 0, Flixel.graphics.getBackBufferWidth() / 2f,
+   *         Flixel.graphics.getBackBufferHeight())) {
    *   onLeftSideTapped();
    * }
    * }</pre>

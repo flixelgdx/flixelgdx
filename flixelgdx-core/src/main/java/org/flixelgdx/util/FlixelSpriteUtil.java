@@ -239,7 +239,7 @@ public final class FlixelSpriteUtil {
 
   /**
    * Clamps the sprite inside a world rectangle. When {@code maxX} or {@code maxY} are {@code 0} or less, the game
-   * view size from {@link Flixel#getWidth()} / {@link Flixel#getHeight()} is used for that axis.
+   * view size from {@link Flixel#getVisibleWidth()} / {@link Flixel#getVisibleHeight()} is used for that axis.
    *
    * @param sprite The sprite to bound.
    * @param minX The minimum x position.
@@ -255,8 +255,8 @@ public final class FlixelSpriteUtil {
       float minY,
       float maxY) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    float maxXb = maxX > 0f ? maxX : Flixel.getWidth();
-    float maxYb = maxY > 0f ? maxY : Flixel.getHeight();
+    float maxXb = maxX > 0f ? maxX : Flixel.getVisibleWidth();
+    float maxYb = maxY > 0f ? maxY : Flixel.getVisibleHeight();
     float w = sprite.getWidth() * Math.abs(sprite.getScaleX());
     float h = sprite.getHeight() * Math.abs(sprite.getScaleY());
     if (sprite.getX() < minX) {
@@ -291,8 +291,8 @@ public final class FlixelSpriteUtil {
       boolean top,
       boolean bottom) {
     Objects.requireNonNull(sprite, "The sprite provided cannot be null!");
-    float maxXb = Flixel.getWidth();
-    float maxYb = Flixel.getHeight();
+    float maxXb = Flixel.getVisibleWidth();
+    float maxYb = Flixel.getVisibleHeight();
     float w = sprite.getWidth() * Math.abs(sprite.getScaleX());
     float h = sprite.getHeight() * Math.abs(sprite.getScaleY());
     float x = sprite.getX();

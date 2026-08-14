@@ -430,7 +430,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * The camera is positioned at the center of the full visible world so that view-space (0, 0)
    * lands at the screen's top-left corner. For viewports that extend the world beyond the design
    * dimensions, the camera accounts for the extended area so world (0, 0) still maps to the
-   * screen edge and {@link Flixel#getWidth()} correctly reflects the full visible width.
+   * screen edge and {@link Flixel#getVisibleWidth()} correctly reflects the full visible width.
    */
   public void applyCameraTransform() {
     viewport.setRotation(angle);
@@ -775,7 +775,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       }
       batch.setColor(r, g, b, a);
       batch.draw(whitePixel, fx, fy, fw, fh);
-    } else {
+    } else if (!Flixel.graphics.fillViewOpaque(r, g, b, a)) {
+      // The backend could not fill this camera's whole surface with a cheap clear (for example a
+      // split-screen or sub-region camera), so overwrite just this camera's area with a quad.
       FlixelBlendMode wasBlending = batch.getBlendMode();
       batch.setBlendMode(FlixelBlendMode.NONE);
       batch.setColor(r, g, b, a);
@@ -1209,19 +1211,19 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   private static int resolveWindowWidth() {
     if (Flixel.game != null) {
-      return Flixel.getWidth();
+      return Flixel.getVisibleWidth();
     }
     int backBufferWidth = Flixel.graphics.getBackBufferWidth();
     return backBufferWidth > 0 ? backBufferWidth : 1;
   }
 
   /**
-   * Window height for defaults: {@link Flixel#getHeight()} when a game exists, otherwise the
+   * Window height for defaults: {@link Flixel#getVisibleHeight()} when a game exists, otherwise the
    * back buffer height.
    */
   private static int resolveWindowHeight() {
     if (Flixel.game != null) {
-      return Flixel.getHeight();
+      return Flixel.getVisibleHeight();
     }
     int backBufferHeight = Flixel.graphics.getBackBufferHeight();
     return backBufferHeight > 0 ? backBufferHeight : 1;
