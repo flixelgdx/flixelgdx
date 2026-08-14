@@ -426,9 +426,9 @@ public interface FlixelGraphicsManager {
    * {@link #compileShaderProgram(byte[], byte[])}. Game code uses {@code FlixelShader.load(String)}
    * rather than calling this directly.
    *
-   * <p>When the shader resource is missing (for example, a Direct3D variant that was not produced
-   * on a non-Windows build), this returns {@link FlixelUnsupportedShader} instead of throwing, so a
-   * missing effect degrades gracefully to an unshaded draw.
+   * <p>When the shader resource is missing (for example, a Direct3D variant a build could not
+   * produce without an FXC compiler), this returns {@link FlixelUnsupportedShader} instead of
+   * throwing, so a missing effect degrades gracefully to an unshaded draw.
    *
    * @param name The shader name declared in the {@code flixelShaders} build block.
    * @return A compiled {@link FlixelShaderProgram}; never {@code null}.

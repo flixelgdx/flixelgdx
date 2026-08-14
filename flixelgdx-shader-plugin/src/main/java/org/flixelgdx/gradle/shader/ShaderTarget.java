@@ -32,11 +32,12 @@ package org.flixelgdx.gradle.shader;
  * and {@code -p} (profile) arguments. The platforms are pinned rather than taken from the build host
  * so the produced bytecode is deterministic no matter which operating system runs the build.
  *
- * <p>The Direct3D target is marked {@link #hostLimited} because compiling HLSL to DXBC needs a
- * Direct3D compiler (Microsoft's {@code fxc}/{@code dxc}), which is only reliably available on
- * Windows. On other hosts that variant is skipped with a warning, exactly as the framework's own
- * {@code build_shaders.sh} does, and the Windows-only bytecode is produced on a Windows machine
- * instead.
+ * <p>The Direct3D target is marked {@link #hostLimited} because compiling HLSL to DXBC needs
+ * Microsoft's FXC compiler. FXC runs natively on Windows and, on other hosts, through the
+ * {@code d3d4linux} Wine shim; when neither is available the variant is skipped with a warning,
+ * exactly as the framework's own {@code build_shaders.sh} does, and the bytecode can be produced on
+ * a Windows machine (for example a CI runner) instead. Every other variant, including the OpenGL,
+ * Vulkan, and Metal ones, compiles on any host.
  */
 public enum ShaderTarget {
 
@@ -49,7 +50,7 @@ public enum ShaderTarget {
   /** Metal on macOS and iOS, emitted as Metal Shading Language. */
   METAL("metal", "osx", "metal", false),
 
-  /** Direct3D 11 and 12, emitted as DXBC. Requires a Direct3D compiler, so it is Windows-only. */
+  /** Direct3D 11 and 12, emitted as DXBC. Needs Microsoft's FXC compiler (native on Windows, or via the {@code d3d4linux} Wine shim elsewhere). */
   DX11("dx11", "windows", "s_5_0", true);
 
   private final String dir;
@@ -95,8 +96,7 @@ public enum ShaderTarget {
    * Returns whether this variant can only be compiled on a specific host.
    *
    * <p>When {@code true}, a compilation failure is treated as a skippable warning instead of a
-   * build error, because the required toolchain (a Direct3D compiler) is not present on every
-   * platform.
+   * build error, because the required FXC compiler is not present on every host.
    *
    * @return {@code true} if the variant is host-restricted.
    */

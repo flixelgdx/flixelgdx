@@ -98,10 +98,19 @@ shaders/<name>/dx11/{vs,fs}.bin      Direct3D 11 and 12
 
 ## Direct3D and the compiler
 
-Compiling the Direct3D (`dx11`) variant needs a Direct3D compiler, which is only reliably available
-on Windows. On other hosts the plugin skips that variant with a warning, the same way the
-framework's own `scripts/build_shaders.sh` does, so build the Direct3D variant on a Windows machine
-when targeting the Direct3D renderer.
+Every variant except Direct3D compiles on any host: the OpenGL, Vulkan, and Metal bytecode all
+build fine on Linux, macOS, and Windows.
+
+The Direct3D (`dx11`) variant is the one exception, because it is DXBC produced by Microsoft's FXC
+compiler. FXC runs natively on Windows, and on other hosts through the `d3d4linux` Wine shim. When
+no FXC compiler is found, the plugin skips just that one variant with a warning (the same way the
+framework's own `scripts/build_shaders.sh` does) and still produces all the others.
+
+So you do not need a Windows machine to develop shaders. Build the Direct3D variant wherever FXC is
+available: a Windows CI runner (the recommended approach, see below) produces it automatically, or a
+Linux/macOS host with Wine and the `d3d4linux` shim can produce it locally. A game that ships
+without the `dx11` variant does not crash; the effect simply falls back to an unshaded draw on the
+Direct3D renderer, and bgfx can also be pointed at the Vulkan or OpenGL renderer on Windows.
 
 The `shaderc` binary is resolved in priority order: an explicit `shadercPath` in the
 `flixelShaders` block, the binary bundled with the plugin for the current operating system, and

@@ -53,8 +53,10 @@ import java.util.Map;
  * GLSL (see {@link ShaderSources}), then runs {@code shaderc} once per stage per
  * {@link ShaderTarget}. The compiled bytecode lands at
  * {@code shaders/<name>/<variant>/vs.bin} and {@code fs.bin}, matching the layout the runtime
- * reads. Direct3D variants are skipped with a warning on hosts without a Direct3D compiler, exactly
- * as the framework's own shader build does.
+ * reads. The Direct3D variant needs Microsoft's FXC compiler (native on Windows, or via the
+ * {@code d3d4linux} Wine shim elsewhere); when it is unavailable that one variant is skipped with a
+ * warning, exactly as the framework's own shader build does, while every other variant still
+ * compiles.
  */
 public abstract class FlixelCompileShadersTask extends DefaultTask {
 
@@ -148,8 +150,10 @@ public abstract class FlixelCompileShadersTask extends DefaultTask {
     String message = "[FlixelGDX] Failed to compile the " + type + " stage of shader '" + name
         + "' for the " + target.dir() + " backend:\n" + result.log();
     if (target.hostLimited()) {
-      getLogger().warn("{}\n[FlixelGDX] Skipping the {} variant on this host. Produce it on Windows "
-          + "(where a Direct3D compiler is available) so the shader works with the Direct3D renderer.",
+      getLogger().warn("{}\n[FlixelGDX] Skipping the {} variant on this host, since Microsoft's FXC "
+          + "compiler was not found. Produce it on Windows (for example a CI runner), or install the "
+          + "d3d4linux Wine shim, so the shader works with the Direct3D renderer. Every other variant "
+          + "was still compiled.",
           message, target.dir());
       return;
     }

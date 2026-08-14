@@ -223,9 +223,9 @@ public class FlixelShader extends FlixelBasic {
    * compiles it into a backend program, so one shader source runs everywhere with no per-platform
    * authoring.
    *
-   * <p>If the matching variant is missing (for example, a Direct3D build produced on a non-Windows
-   * machine), the returned shader reports {@link #isCompiled()} as {@code false} and the effect
-   * degrades to an unshaded draw rather than crashing.
+   * <p>If the matching variant is missing (for example, a Direct3D variant a build could not
+   * produce without an FXC compiler), the returned shader reports {@link #isCompiled()} as
+   * {@code false} and the effect degrades to an unshaded draw rather than crashing.
    *
    * <p>Example:
    *

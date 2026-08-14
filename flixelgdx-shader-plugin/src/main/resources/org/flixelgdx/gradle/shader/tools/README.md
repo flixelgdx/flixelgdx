@@ -38,6 +38,8 @@ The Windows and macOS binaries are produced by the temporary
 `.github/workflows/build-shaderc.yml` workflow (run it manually from the Actions tab, download the
 artifacts, and drop them here). The Linux binary is already vendored.
 
-Only the Windows build can emit the Direct3D (`dx11`) variants, because compiling HLSL to DXBC
-needs a Direct3D compiler. On other hosts the plugin skips that variant with a warning, the same
-way the framework's `scripts/build_shaders.sh` does.
+The Direct3D (`dx11`) variants are DXBC, which needs Microsoft's FXC compiler. FXC is native to
+Windows, so the Windows `shaderc` emits those variants directly. On Linux and macOS, `shaderc` can
+still produce them through the `d3d4linux` Wine shim (its `d3d4linux.exe` and `d3dcompiler_47.dll`
+placed next to the binary, with Wine installed); when no FXC compiler is found the plugin skips just
+that variant with a warning, the same way the framework's `scripts/build_shaders.sh` does.

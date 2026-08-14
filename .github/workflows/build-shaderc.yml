@@ -14,8 +14,9 @@ on:
 jobs:
 
   # ---------------------------------------------------------------------------
-  # Windows x86_64. This is also the only host that can emit the Direct3D
-  # (dx11) shader variants, because compiling HLSL to DXBC needs a D3D compiler.
+  # Windows x86_64. This host emits the Direct3D (dx11) variants directly, since
+  # Microsoft's FXC compiler is native to Windows. Elsewhere those variants need
+  # the d3d4linux Wine shim; every other variant compiles on any host.
   # ---------------------------------------------------------------------------
   windows:
     name: Build shaderc (windows-x86_64)
