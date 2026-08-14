@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.jetbrains.annotations.NotNull;
@@ -156,9 +157,8 @@ public interface FlixelGraphicsManager {
    * ratio as the design size; the framework letterboxes the final stretch to the window just like a
    * {@link FlixelViewport.Scaling#FIT} camera.
    *
-   * <p>This is opt-in and off by default. Upscaling uses smooth (linear) filtering, which suits most
-   * games; use {@link #setRenderResolution(int, int, boolean)} to pick nearest-neighbor filtering for
-   * crisp pixel art instead.
+   * <p>By default, {@link FlixelGame} will automatically set this, at startup based on the initial
+   * design size set. You can reset it at any time during runtime if you ever need to.
    *
    * <p>Example (render a 1280x720 game at a fixed 1280x720 no matter the window size):
    *

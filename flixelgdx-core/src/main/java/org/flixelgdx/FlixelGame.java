@@ -69,7 +69,7 @@ import java.util.function.Supplier;
  *   <li>{@link #create()} - called once when the rendering surface is ready. Initializes input,
  *       cameras, the batch, the debug overlay, and the initial state.</li>
  *   <li>{@link #render(float)} - called every frame with the raw wall-clock delta. Dispatches
- *       update, then draw. Do not override this; override {@link #update(float)} or
+ *       update, then draw. You can't override this; override {@link #update(float)} or
  *       {@link #draw(FlixelBatch)} instead.</li>
  *   <li>{@link #destroy()} - called when the game closes. Releases all framework resources. Call
  *       {@link Flixel#exit()} to close the window; calling {@code destroy()} alone only releases
@@ -128,7 +128,8 @@ import java.util.function.Supplier;
  * <p>When {@link #autoPause} is {@code true} (the default), audio is paused and the update loop
  * suspends whenever the game window loses focus. Both resume automatically when focus returns. Set
  * {@link #autoPause} to {@code false} to keep the game running in the background. Note that on
- * mobile the audio will keep playing if {@link #autoPause} is {@code false}.
+ * mobile if {@link #autoPause} is {@code false} the audio will keep playing in the background when
+ * the app isn't being focused on.
  *
  * <h2>Example Usage</h2>
  *
@@ -1521,31 +1522,19 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   public static final class Config {
 
-    @NotNull
-    private final String title;
-
-    @NotNull
-    private final String company;
-
-    @NotNull
-    private final String version;
+    @NotNull private final String title;
+    @NotNull private final String company;
+    @NotNull private final String version;
 
     private final int width;
-
     private final int height;
-
     private final int framerate;
-
     private final int renderWidth;
-
     private final int renderHeight;
 
     private final boolean vsync;
-
     private final boolean fullscreen;
-
     private final boolean renderResolutionEnabled;
-
     private final boolean renderSmooth;
 
     private Config(@NotNull Builder builder) {
@@ -1627,10 +1616,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       return vsync;
     }
 
-    public boolean getVsync() {
-      return vsync;
-    }
-
     public boolean isFullscreen() {
       return fullscreen;
     }
@@ -1660,31 +1645,19 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
      */
     public static final class Builder {
 
-      @NotNull
-      private final String title;
-
-      @NotNull
-      private String company = "";
-
-      @NotNull
-      private String version = "";
+      @NotNull private final String title;
+      @NotNull private String company = "";
+      @NotNull private String version = "";
 
       private int width = 640;
-
       private int height = 360;
-
       private int framerate = 60;
-
       private int renderWidth = 0;
-
       private int renderHeight = 0;
 
       private boolean vsync = true;
-
       private boolean fullscreen = false;
-
       private boolean renderResolutionEnabled = true;
-
       private boolean renderSmooth = true;
 
       /**

@@ -1329,8 +1329,8 @@ public final class Flixel {
    * the window size, fullscreen state, render resolution, or viewport policy, so it is the value to
    * use when laying things out against the game's own coordinate space (for example, centering).
    *
-   * <p>If you instead want the width of the world that is actually visible on screen - which an
-   * extend-style viewport can grow beyond the design width - use {@link #getVisibleWidth()}.
+   * <p>If you instead want the width of the world that is actually visible on screen (which an
+   * extend-style viewport can grow beyond the design width) use {@link #getVisibleWidth()}.
    *
    * @return The fixed design width in game pixels.
    */
@@ -1363,7 +1363,7 @@ public final class Flixel {
     if (!cameras.isEmpty()) {
       return (int) cameras.first().getWorldWidth();
     }
-    return game != null ? game.getInitialWidth() : Math.max(1, graphics.getBackBufferWidth());
+    return game.getInitialWidth();
   }
 
   /**
@@ -1376,7 +1376,7 @@ public final class Flixel {
     if (!cameras.isEmpty()) {
       return (int) cameras.first().getWorldHeight();
     }
-    return game != null ? game.getInitialHeight() : Math.max(1, graphics.getBackBufferHeight());
+    return game.getInitialHeight();
   }
 
   /**
