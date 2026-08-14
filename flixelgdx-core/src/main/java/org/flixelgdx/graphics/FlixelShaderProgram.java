@@ -27,36 +27,31 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A ready-to-use, compiled shader program, produced by a graphics backend from a {@link FlixelShaderSource}.
+ * An opaque, backend-owned handle to a compiled GPU shader program.
  *
- * <p>This is an opaque handle. Game code never sees the underlying language or GPU object; it only
- * binds the shader (usually by handing it to the sprite batch) and sets named uniform values on it.
- * Each backend provides its own implementation and translates the uniform names to whatever its GPU
- * library expects.
+ * <p>This interface is the internal seam between the framework and each graphics backend. Game code
+ * never interacts with it directly; instead, it uses {@link FlixelShader}, which wraps one of these
+ * and integrates with the FlixelGDX update and destroy lifecycle.
  *
- * <p>Obtain one by compiling a {@link FlixelShaderSource} through {@link FlixelGraphicsManager}, then
- * hand it to the batch to switch effects. Call {@link #destroy()} when you are finished with it so
- * the backend can release its GPU resources.
+ * <p>Each backend supplies its own implementation: the bgfx backend wraps a bgfx program handle,
+ * the WebGPU backend wraps a {@code GPUShaderModule} pair, and so on. When no backend is present
+ * (headless or pre-startup), {@link FlixelUnsupportedShader} is returned as a safe no-op.
  *
- * <p>Example:
+ * <p>Obtain a program by calling
+ * {@link FlixelGraphicsManager#compileShaderProgram(byte[], byte[])}. Call {@link #destroy()} to
+ * release GPU resources when finished.
  *
- * <pre>{@code
- * FlixelShader tint = Flixel.graphics.compileShader(mySource);
- * tint.setUniform("u_strength", 0.5f);
- * // ... bind through the batch, draw, then later:
- * tint.destroy();
- * }</pre>
- *
- * @see FlixelShaderSource
- * @see FlixelGraphicsManager#compileShader(FlixelShaderSource)
+ * @see FlixelShader
+ * @see FlixelGraphicsManager#compileShaderProgram(byte[], byte[])
  */
-public interface FlixelShader extends FlixelDestroyable {
+public interface FlixelShaderProgram extends FlixelDestroyable {
 
   /**
-   * @return {@code true} if this shader compiled successfully and can be used for drawing.
+   * @return {@code true} if this program compiled successfully and can be used for drawing.
    */
   boolean isValid();
 

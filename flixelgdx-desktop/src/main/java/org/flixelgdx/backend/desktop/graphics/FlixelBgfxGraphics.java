@@ -32,12 +32,12 @@ import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelRenderTarget;
-import org.flixelgdx.graphics.FlixelShader;
-import org.flixelgdx.graphics.FlixelShaderSource;
+import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
@@ -642,14 +642,12 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @NotNull
   @Override
-  public FlixelShader compileShader(@NotNull FlixelShaderSource source) {
-    byte[] vs = source.bgfxVertex();
-    byte[] fs = source.bgfxFragment();
-    if (vs == null || fs == null || vs.length == 0 || fs.length == 0) {
+  public FlixelShaderProgram compileShaderProgram(byte @NotNull [] vertex, byte @NotNull [] fragment) {
+    if (vertex.length == 0 || fragment.length == 0) {
       return FlixelUnsupportedShader.INSTANCE;
     }
-    short vsh = createShaderFromBytes(vs);
-    short fsh = createShaderFromBytes(fs);
+    short vsh = createShaderFromBytes(vertex);
+    short fsh = createShaderFromBytes(fragment);
     if (vsh == -1 || fsh == -1) {
       return FlixelUnsupportedShader.INSTANCE;
     }
@@ -772,8 +770,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   }
 
   private short resolveProgram(@Nullable FlixelShader shader) {
-    if (shader instanceof FlixelBgfxShader bgfxShader && bgfxShader.isValid()) {
-      return bgfxShader.getProgram();
+    if (shader != null) {
+      FlixelShaderProgram prog = shader.getProgram();
+      if (prog instanceof FlixelBgfxShader bgfxShader && bgfxShader.isValid()) {
+        return bgfxShader.getProgram();
+      }
     }
     return spriteProgram;
   }

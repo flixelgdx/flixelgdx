@@ -29,16 +29,16 @@ import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * No-op {@link FlixelShader} returned by {@link FlixelGraphicsManager#compileShader(FlixelShaderSource)}
- * on headless and pre-startup sessions.
+ * No-op {@link FlixelShaderProgram} returned when no backend is present or shader compilation
+ * is not supported.
  *
  * <p>Every operation does nothing. {@link #isValid()} always returns {@code false} so callers can
- * detect that no real GPU shader is present without needing to null-check the result of
- * {@link FlixelGraphicsManager#compileShader(FlixelShaderSource)}.
+ * detect that no real GPU shader is present without null-checking the result of
+ * {@link FlixelGraphicsManager#compileShaderProgram(byte[], byte[])}.
  *
- * @see FlixelGraphicsManager#compileShader(FlixelShaderSource)
+ * @see FlixelGraphicsManager#compileShaderProgram(byte[], byte[])
  */
-public enum FlixelUnsupportedShader implements FlixelShader {
+public enum FlixelUnsupportedShader implements FlixelShaderProgram {
 
   /** Shared no-op instance. */
   INSTANCE;

@@ -828,9 +828,9 @@ public class FlixelAnimateSprite extends FlixelSprite {
 
     FlixelShader activeShader = getShader();
     if (activeShader != null
-        && activeShader.getProgram() != null
-        && batch.getShader() != activeShader.getProgram()) {
-      batch.setShader(activeShader.getProgram());
+        && activeShader.isCompiled()
+        && batch.getShader() != activeShader) {
+      batch.setShader(activeShader);
       activeShader.applyUniforms();
     }
 

@@ -620,7 +620,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
             fboOrtho.setToOrtho2D(0, 0, fboOrthoW, fboOrthoH);
           }
           batch.setProjection(fboOrtho);
-          batch.setShader(cameraShader.getProgram());
+          batch.setShader(cameraShader);
           batch.begin();
           cameraShader.applyUniforms();
           drawFullTarget(batch, camera.getFbo(), camera.width, camera.height);
@@ -1027,7 +1027,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
         fboOrtho.setToOrtho2D(0, 0, w, h);
       }
       batch.setProjection(fboOrtho);
-      batch.setShader(gs.getProgram());
+      batch.setShader(gs);
 
       if (!isLast) {
         FlixelRenderTarget dst = usingA ? sceneFboB : sceneFboA;

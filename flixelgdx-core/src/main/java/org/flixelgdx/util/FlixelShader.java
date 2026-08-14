@@ -23,69 +23,38 @@
  */
 package org.flixelgdx.util;
 
-import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.graphics.FlixelShaderSource;
+import org.flixelgdx.graphics.FlixelShaderProgram;
+import org.flixelgdx.graphics.FlixelUnsupportedShader;
 
 /**
- * A compiled GLSL shader program with a FlixelGDX lifecycle.
+ * A compiled shader program with a FlixelGDX lifecycle.
  *
- * <p>FlixelShader wraps a compiled {@link org.flixelgdx.graphics.FlixelShader backend shader}
- * and integrates with the standard FlixelGDX update/destroy pipeline via {@link FlixelBasic}.
- * This allows time-based or state-driven uniform updates in {@link #update(float)} and
+ * <p>This is the single type game code works with for shader effects. It wraps a backend-owned
+ * {@link FlixelShaderProgram} handle and integrates with the standard update/destroy pipeline via
+ * {@link FlixelBasic}, which enables time-driven uniform updates in {@link #update(float)} and
  * guaranteed GPU resource cleanup on {@link #destroy()}.
  *
  * <p>Camera-level post-processing is the primary use case: assign a shader to a
  * {@link FlixelCamera} via {@link FlixelCamera#setShader(FlixelShader)} and the camera will
- * automatically render its scene into a framebuffer, then composite the result to screen using
- * this shader each frame.
+ * automatically render its scene into a framebuffer and composite the result through this shader
+ * every frame.
  *
- * <p>Two modes are available:
- * <ul>
- *   <li><b>GLSL mode</b> (constructors): write raw GLSL ES 2.0 against the framework's sprite
- *     attribute contract. Fragment shaders receive the camera output as
- *     {@code uniform sampler2D u_texture} via the {@code v_texCoords} varying. Backends whose
- *     GPU library does not consume GLSL directly (for example bgfx) need matching precompiled
- *     variants supplied through {@link FlixelShaderSource}; see {@link #FlixelShader(FlixelShaderSource)}.</li>
- *   <li><b>HaxeFlixel mode ({@link #fromHaxeFlixel(String)})</b>: write or copy a filter
- *     shader from HaxeFlixel using {@code #pragma header}, {@code #pragma body},
- *     {@code bitmap}, {@code openfl_TextureCoordv}, and {@code flixel_texture2D(...)}. The
- *     preprocessor rewrites those to the framework's names before compilation.</li>
- * </ul>
+ * <p><b>HaxeFlixel mode ({@link #fromHaxeFlixel(String)})</b> lets you use or copy a filter
+ * shader from HaxeFlixel written with {@code #pragma header}, {@code #pragma body},
+ * {@code bitmap}, {@code openfl_TextureCoordv}, and {@code flixel_texture2D(...)}. The
+ * preprocessor rewrites those names to the framework's equivalents before compilation.
  *
- * <p>Raw GLSL mode example - a grayscale filter applied to the default camera:
- *
- * <pre>{@code
- * FlixelShader gray = new FlixelShader(
- *     "varying vec2 v_texCoords;\n" +
- *     "uniform sampler2D u_texture;\n" +
- *     "void main() {\n" +
- *     "  vec4 c = texture2D(u_texture, v_texCoords);\n" +
- *     "  float g = dot(c.rgb, vec3(0.299, 0.587, 0.114));\n" +
- *     "  gl_FragColor = vec4(g, g, g, c.a);\n" +
- *     "}"
- * );
- * Flixel.cameras.first().setShader(gray);
- * }</pre>
- *
- * <p>HaxeFlixel mode example using a {@code .frag} file from disk:
- *
- * <pre>{@code
- * String src = Flixel.files.internal("shaders/bloom.frag").readString();
- * FlixelShader bloom = FlixelShader.fromHaxeFlixel(src);
- * Flixel.cameras.first().setShader(bloom);
- * }</pre>
- *
- * <p>To drive per-frame uniforms such as {@code u_time}, subclass {@code FlixelShader} and
- * override {@link #update(float)} to track state and {@link #applyUniforms()} to upload it:
+ * <p>To drive per-frame uniforms such as {@code u_time}, subclass {@code FlixelShader}, override
+ * {@link #update(float)} to track state, and override {@link #applyUniforms()} to upload it:
  *
  * <pre>{@code
  * public class TimedShader extends FlixelShader {
  *   private float time;
  *
- *   public TimedShader(String fragSrc) {
- *     super(fragSrc);
+ *   public TimedShader() {
+ *     super("...");
  *   }
  *
  *   public void update(float elapsed) {
@@ -108,8 +77,7 @@ public class FlixelShader extends FlixelBasic {
    * composite draw in {@link FlixelCamera} works without additional setup.
    *
    * <p>Exposed as {@code public} so subclasses that add custom constructors or factory
-   * methods (for example a {@code TimedShader.fromHaxeFlixel()} companion) can reuse
-   * the same vertex source without duplicating it.
+   * methods can reuse the same vertex source without duplicating it.
    */
   public static final String DEFAULT_VERT = """
       #ifdef GL_ES
@@ -143,8 +111,8 @@ public class FlixelShader extends FlixelBasic {
    *   <li>{@code flixel_texture2D(t, c)} - texture sampling helper (maps to {@code texture2D(t, c)})</li>
    * </ul>
    *
-   * <p>Exposed as {@code protected} so subclasses can compose their own extended preprocessing
-   * pipelines that build on top of the standard HaxeFlixel environment.
+   * <p>Exposed as {@code protected} so subclasses can compose extended preprocessing pipelines
+   * that build on top of the standard HaxeFlixel environment.
    */
   protected static final String HAXEFLIXEL_DEFINES =
       "#define bitmap u_texture\n"
@@ -161,8 +129,8 @@ public class FlixelShader extends FlixelBasic {
    * compositing pipeline feeds into the fragment shader each frame. Using the framework's
    * names here means the {@link #HAXEFLIXEL_DEFINES} aliases resolve correctly.
    *
-   * <p>Exposed as {@code protected} so subclasses can compose their own extended preprocessing
-   * pipelines that build on top of the standard HaxeFlixel environment.
+   * <p>Exposed as {@code protected} so subclasses can compose extended preprocessing pipelines
+   * that build on top of the standard HaxeFlixel environment.
    */
   protected static final String HAXEFLIXEL_HEADER_EXPANSION =
       "#ifdef GL_ES\n"
@@ -173,14 +141,14 @@ public class FlixelShader extends FlixelBasic {
           + "varying vec4 v_color;\n"
           + "varying vec2 v_texCoords;\n";
 
-  private org.flixelgdx.graphics.FlixelShader program;
+  private FlixelShaderProgram program;
 
   /**
-   * Compiles a shader using a built-in pass-through vertex shader and the given fragment source.
+   * Prepares a shader using a built-in pass-through vertex shader and the given fragment source.
    *
-   * <p>The fragment shader receives the camera's framebuffer output as
-   * {@code uniform sampler2D u_texture} and can sample via the {@code v_texCoords} varying.
-   * Compilation errors are logged via {@link Flixel#error(String, Object)}.
+   * <p>GLSL source compilation is handled at runtime by the web backend. On the desktop bgfx
+   * backend, use the FlixelGDX Gradle plugin to generate precompiled shader resources instead,
+   * and load them via the resource-path constructor once the plugin support is available.
    *
    * @param fragSrc GLSL ES 2.0 fragment shader source code.
    */
@@ -189,33 +157,19 @@ public class FlixelShader extends FlixelBasic {
   }
 
   /**
-   * Compiles a shader from explicit vertex and fragment source strings.
+   * Prepares a shader from explicit vertex and fragment GLSL source strings.
    *
-   * <p>Use this constructor when you need a custom vertex shader, for example to apply
-   * mesh deformation or pass additional varyings to the fragment stage.
-   * Compilation errors are logged via {@link Flixel#error(String, Object)}.
+   * <p>GLSL source compilation is handled at runtime by the web backend. On the desktop bgfx
+   * backend, use the FlixelGDX Gradle plugin to generate precompiled shader resources instead,
+   * and load them via the resource-path constructor once the plugin support is available.
    *
    * @param vertSrc GLSL ES 2.0 vertex shader source code.
    * @param fragSrc GLSL ES 2.0 fragment shader source code.
    */
   public FlixelShader(String vertSrc, String fragSrc) {
-    this(FlixelShaderSource.builder().glsl(vertSrc, fragSrc).build());
-  }
-
-  /**
-   * Compiles a shader from a full per-backend source bundle.
-   *
-   * <p>This is the fully portable path: author the effect once for each backend dialect your
-   * game ships on (GLSL for GL-family backends, precompiled bgfx bytecode for desktop, WGSL
-   * for WebGPU) and the active backend picks the variant it understands.
-   *
-   * @param source The per-backend shader variants.
-   */
-  public FlixelShader(FlixelShaderSource source) {
-    this.program = Flixel.graphics.compileShader(source);
-    if (!this.program.isValid()) {
-      Flixel.error("FlixelShader", "Shader compilation failed (no usable variant for the active backend).");
-    }
+    // GLSL runtime compilation is wired up by the web backend. On bgfx, the Gradle plugin
+    // handles cross-compilation at build time; the resource-path constructor will load those.
+    this.program = FlixelUnsupportedShader.INSTANCE;
   }
 
   /**
@@ -231,7 +185,6 @@ public class FlixelShader extends FlixelBasic {
    * </ol>
    *
    * <p>The built-in pass-through vertex shader is used, so no custom vertex source is needed.
-   * Compilation errors are logged via {@link Flixel#error(String, Object)}.
    *
    * <p>Example:
    *
@@ -242,7 +195,7 @@ public class FlixelShader extends FlixelBasic {
    * }</pre>
    *
    * @param fragSrc HaxeFlixel fragment shader source, typically read from a {@code .frag} file.
-   * @return A compiled {@code FlixelShader} ready to assign to a {@link FlixelCamera}.
+   * @return A {@code FlixelShader} ready to assign to a {@link FlixelCamera}.
    */
   public static FlixelShader fromHaxeFlixel(String fragSrc) {
     return new FlixelShader(DEFAULT_VERT, preprocessHaxeFlixel(fragSrc));
@@ -259,7 +212,7 @@ public class FlixelShader extends FlixelBasic {
   @Override
   public void destroy() {
     super.destroy();
-    if (program != null) {
+    if (program != null && program != FlixelUnsupportedShader.INSTANCE) {
       program.destroy();
       program = null;
     }
@@ -269,9 +222,9 @@ public class FlixelShader extends FlixelBasic {
    * Uploads per-frame uniforms to the shader while it is bound for rendering.
    *
    * <p>Called automatically by the framework immediately after the composite batch begins the
-   * post-processing draw pass, at which point the shader is bound. Do <b>not</b> call this
-   * yourself unless the shader is already bound - writing uniforms to an unbound program has
-   * no effect on some backends.
+   * post-processing draw pass, at which point the shader is bound. Do not call this yourself
+   * unless the shader is already bound - writing uniforms to an unbound program has no effect on
+   * some backends.
    *
    * <p>The base implementation is a no-op. Subclasses should override this to upload whatever
    * uniforms they need and call {@code super.applyUniforms()} for future-proofing.
@@ -279,19 +232,20 @@ public class FlixelShader extends FlixelBasic {
   public void applyUniforms() {}
 
   /**
-   * Returns the underlying compiled backend shader, or {@code null} if {@link #destroy()} has
+   * Returns the underlying backend shader program, or {@code null} if {@link #destroy()} has
    * been called.
    *
-   * @return The compiled shader handle.
+   * @return The compiled backend program handle.
    */
-  public org.flixelgdx.graphics.FlixelShader getProgram() {
+  public FlixelShaderProgram getProgram() {
     return program;
   }
 
   /**
-   * Returns {@code true} if the shader compiled without errors and is ready to use.
+   * Returns {@code true} if the underlying shader program compiled successfully and is ready for
+   * use.
    *
-   * @return Whether the underlying backend shader compiled successfully.
+   * @return Whether the backend shader program is valid.
    */
   public boolean isCompiled() {
     return program != null && program.isValid();
@@ -307,7 +261,7 @@ public class FlixelShader extends FlixelBasic {
    *
    * <p>Exposed as {@code public} so subclasses can call it from their own factory methods, for
    * example a {@code TimedShader.fromHaxeFlixel()} that needs to preprocess the source before
-   * handing it to the two-argument constructor.
+   * passing it to a constructor.
    *
    * @param src Raw HaxeFlixel fragment shader source.
    * @return Preprocessed GLSL ES 2.0 fragment source ready for compilation.
