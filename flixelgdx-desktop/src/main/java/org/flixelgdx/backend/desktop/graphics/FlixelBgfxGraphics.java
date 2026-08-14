@@ -389,6 +389,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     // straight to the back buffer. Rebinding every frame clears any stale binding a view kept from a
     // previous scene-active frame, so a later plain screen pass is not accidentally left redirected.
     BGFX.bgfx_set_view_frame_buffer(view, sceneActive ? sceneFrameBuffer() : (short) -1);
+    // Cameras fill their own background, so clear any stale clear this view id kept from a previous
+    // scene pass or opaque-background camera. An opaque background re-sets it during fill.
+    BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_NONE, 0, 1f, 0);
     // Draw in submission order (painter's algorithm). Without this, bgfx sorts draws within the view
     // to minimize state changes, which reorders 2D layers - the flash overlay ends up under the scene.
     BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
@@ -572,6 +575,19 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   public void clear(float r, float g, float b, float a) {
     clearColor = ((int) (r * 255f) << 24) | ((int) (g * 255f) << 16) | ((int) (b * 255f) << 8) | (int) (a * 255f);
     BGFX.bgfx_set_view_clear(currentView(), BGFX.BGFX_CLEAR_COLOR, clearColor, 1f, 0);
+  }
+
+  @Override
+  public boolean fillViewOpaque(float r, float g, float b, float a) {
+    // A bgfx view clear covers the whole view rectangle, so only skip the background quad when this
+    // camera fills the entire surface. Sub-region and split-screen cameras keep drawing a quad.
+    int surfaceWidth = sceneActive ? renderWidth : backBufferWidth;
+    int surfaceHeight = sceneActive ? renderHeight : backBufferHeight;
+    if (viewportX > 0 || viewportY > 0 || viewportWidth < surfaceWidth || viewportHeight < surfaceHeight) {
+      return false;
+    }
+    clear(r, g, b, a);
+    return true;
   }
 
   @Override

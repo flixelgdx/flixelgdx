@@ -323,6 +323,27 @@ public interface FlixelGraphicsManager {
   default void clear(float r, float g, float b, float a) {}
 
   /**
+   * Fills the current view with an opaque color through the backend's fast clear, but only when that
+   * view covers its whole surface.
+   *
+   * <p>This is an optimization for a camera's opaque background. Clearing a surface is much cheaper
+   * than drawing a full-screen quad over it, since it skips shading every background pixel a second
+   * time. A clear cannot always be limited to part of a shared surface, though, so this only succeeds
+   * when the current view fills the entire surface (a full-screen camera). When it cannot be done
+   * safely it returns {@code false} and the caller should draw a quad instead, which keeps
+   * split-screen and other sub-region cameras filling only their own area.
+   *
+   * @param r Red component in {@code [0, 1]}.
+   * @param g Green component in {@code [0, 1]}.
+   * @param b Blue component in {@code [0, 1]}.
+   * @param a Alpha component in {@code [0, 1]}.
+   * @return {@code true} when the fill was handled by a clear, {@code false} to fall back to a quad.
+   */
+  default boolean fillViewOpaque(float r, float g, float b, float a) {
+    return false;
+  }
+
+  /**
    * Restricts drawing to a rectangle of the draw surface, in framebuffer pixels measured from
    * the bottom-left corner. Used for sprite clip rectangles.
    *

@@ -775,7 +775,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
       }
       batch.setColor(r, g, b, a);
       batch.draw(whitePixel, fx, fy, fw, fh);
-    } else {
+    } else if (!Flixel.graphics.fillViewOpaque(r, g, b, a)) {
+      // The backend could not fill this camera's whole surface with a cheap clear (for example a
+      // split-screen or sub-region camera), so overwrite just this camera's area with a quad.
       FlixelBlendMode wasBlending = batch.getBlendMode();
       batch.setBlendMode(FlixelBlendMode.NONE);
       batch.setColor(r, g, b, a);
