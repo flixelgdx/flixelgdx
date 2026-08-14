@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.backend.desktop.graphics;
 
-import org.flixelgdx.graphics.FlixelShader;
+import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
@@ -37,7 +37,7 @@ import org.lwjgl.bgfx.BGFX;
  * cache their values and apply them to bgfx uniforms when the program is bound for a draw. Custom
  * per-camera and global effect shaders wrap one of these.
  */
-public class FlixelBgfxShader implements FlixelShader {
+public class FlixelBgfxShader implements FlixelShaderProgram {
 
   private short program;
 

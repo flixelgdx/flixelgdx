@@ -603,8 +603,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     // Switch the batch to this sprite's custom shader before drawing. batch.setShader() flushes
     // pending geometry internally before switching, so no explicit flush is needed.
     if (spriteShader != null) {
-      if (spriteShader.getProgram() != null && batch.getShader() != spriteShader.getProgram()) {
-        batch.setShader(spriteShader.getProgram());
+      if (spriteShader.isCompiled() && batch.getShader() != spriteShader) {
+        batch.setShader(spriteShader);
         spriteShader.applyUniforms();
       }
     }

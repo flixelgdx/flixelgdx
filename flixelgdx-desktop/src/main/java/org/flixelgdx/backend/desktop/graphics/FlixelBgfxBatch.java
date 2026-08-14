@@ -25,12 +25,12 @@ package org.flixelgdx.backend.desktop.graphics;
 
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
