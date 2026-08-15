@@ -8,14 +8,15 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.{java,scala,groovy,kt,kts,c}]
 # 2-space indentation (Google Style Guide Section 4.2)
 indent_style = space
+indent_size = 2
 
-# Even though Google Style Guide Section 2.3 recommends 100 characters,
+# Even though Google Style Guide Section 2.3 recommends 100 characters, but
 # many modern IDEs default to 120 characters, so we follow that convention.
 max_line_length = 120
 
+[*.java]
 # Standard Java formatting rules.
 ij_java_use_single_class_imports = true
 ij_java_insert_inner_class_imports = false
@@ -42,11 +43,6 @@ ij_java_space_before_try_left_brace = true
 ij_java_space_before_catch_left_brace = true
 ij_java_space_before_switch_left_brace = true
 ij_java_space_before_synchronized_left_brace = true
-
-indent_size = 2
-
-[*.gradle]
-indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
