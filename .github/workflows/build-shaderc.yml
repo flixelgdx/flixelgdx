@@ -108,9 +108,26 @@ jobs:
         # rejects when the deployment target is below 10.15. The call only formats error
         # message paths so dropping it to a plain string is safe.
         run: |
-          find bgfx/3rdparty/glslang -name "InfoSink.h" -print0 | \
-            xargs -0 sed -i '' \
-              's/std::filesystem::absolute(shaderFileName)\.string()/shaderFileName/g'
+          python3 - << 'EOF'
+          import os, sys
+          TARGET = 'std::filesystem::absolute(shaderFileName).string()'
+          found_file = False
+          for root, dirs, files in os.walk('bgfx/3rdparty/glslang'):
+              for name in files:
+                  if name != 'InfoSink.h':
+                      continue
+                  path = os.path.join(root, name)
+                  found_file = True
+                  text = open(path).read()
+                  if TARGET not in text:
+                      print('WARNING: target string not found in', path)
+                      continue
+                  open(path, 'w').write(text.replace(TARGET, 'shaderFileName'))
+                  print('Patched', path)
+          if not found_file:
+              print('ERROR: InfoSink.h not found under bgfx/3rdparty/glslang')
+              sys.exit(1)
+          EOF
 
       - name: Generate gmake project files
         working-directory: bgfx
