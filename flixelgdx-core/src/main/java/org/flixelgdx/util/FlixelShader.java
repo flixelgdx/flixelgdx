@@ -23,10 +23,12 @@
  */
 package org.flixelgdx.util;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A compiled shader program with a FlixelGDX lifecycle.
@@ -144,6 +146,18 @@ public class FlixelShader extends FlixelBasic {
   private FlixelShaderProgram program;
 
   /**
+   * Wraps an already-compiled backend program.
+   *
+   * <p>This is the canonical constructor used by {@link #load(String)} to hold the variant the
+   * active backend compiled from precompiled plugin resources.
+   *
+   * @param program The backend program handle to wrap.
+   */
+  private FlixelShader(FlixelShaderProgram program) {
+    this.program = program;
+  }
+
+  /**
    * Prepares a shader using a built-in pass-through vertex shader and the given fragment source.
    *
    * <p>GLSL source compilation is handled at runtime by the web backend. On the desktop bgfx
@@ -199,6 +213,33 @@ public class FlixelShader extends FlixelBasic {
    */
   public static FlixelShader fromHaxeFlixel(String fragSrc) {
     return new FlixelShader(DEFAULT_VERT, preprocessHaxeFlixel(fragSrc));
+  }
+
+  /**
+   * Loads a shader that the FlixelGDX Gradle plugin cross-compiled at build time.
+   *
+   * <p>Give the same name declared in the {@code flixelShaders} build block. The framework picks
+   * the precompiled variant matching the active renderer (OpenGL, Vulkan, Metal, or Direct3D) and
+   * compiles it into a backend program, so one shader source runs everywhere with no per-platform
+   * authoring.
+   *
+   * <p>If the matching variant is missing (for example, a Direct3D variant a build could not
+   * produce without an FXC compiler), the returned shader reports {@link #isCompiled()} as
+   * {@code false} and the effect degrades to an unshaded draw rather than crashing.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelShader crt = FlixelShader.load("crt");
+   * Flixel.cameras.first().setShader(crt);
+   * }</pre>
+   *
+   * @param name The shader name from the {@code flixelShaders} build block.
+   * @return A {@code FlixelShader} wrapping the compiled variant for the active renderer.
+   */
+  @NotNull
+  public static FlixelShader load(@NotNull String name) {
+    return new FlixelShader(Flixel.graphics.compileShaderProgram(name));
   }
 
   /**

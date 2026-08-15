@@ -878,16 +878,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   /** Returns the shader subfolder that corresponds to a given graphics API. */
   private static String shaderDirFromApi(@NotNull FlixelGraphicsApi api) {
-    if (api == FlixelGraphicsApi.Direct3D11 || api == FlixelGraphicsApi.Direct3D12) {
-      return "dx11";
-    }
-    if (api == FlixelGraphicsApi.Metal) {
-      return "metal";
-    }
-    if (api == FlixelGraphicsApi.Vulkan) {
-      return "spirv";
-    }
-    return "glsl";
+    return FlixelGraphicsManager.shaderVariantDir(api);
   }
 
   private static byte @NotNull [] readShaderResource(@NotNull String path) {

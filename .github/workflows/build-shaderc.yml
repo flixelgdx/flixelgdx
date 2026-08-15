@@ -1,0 +1,126 @@
+name: Build shaderc binaries (temporary)
+
+# Temporary, manually triggered workflow that builds bgfx's shaderc compiler for the platforms the
+# Linux dev machine cannot produce. Run it from the Actions tab, download the artifacts, and commit
+# each binary into the shader plugin's tools directory:
+#
+#   flixelgdx-shader-plugin/src/main/resources/org/flixelgdx/gradle/shader/tools/<classifier>/shaderc[.exe]
+#
+# The Linux binary is already vendored, so this only covers Windows and macOS. Remove this workflow
+# once those binaries are committed and a permanent tooling pipeline exists.
+on:
+  workflow_dispatch:
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Windows x86_64. This host emits the Direct3D (dx11) variants directly, since
+  # Microsoft's FXC compiler is native to Windows. Elsewhere those variants need
+  # the d3d4linux Wine shim; every other variant compiles on any host.
+  # ---------------------------------------------------------------------------
+  windows:
+    name: Build shaderc (windows-x86_64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout bx
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bx
+          path: bx
+
+      - name: Checkout bimg
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bimg
+          path: bimg
+
+      - name: Checkout bgfx
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bgfx
+          path: bgfx
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Generate VS project files
+        working-directory: bgfx
+        shell: cmd
+        run: ..\bx\tools\bin\windows\genie.exe --with-tools vs2022
+
+      - name: Build shaderc
+        working-directory: bgfx
+        shell: cmd
+        run: >
+          msbuild ".build\projects\vs2022\shaderc.vcxproj"
+          /m /v:minimal
+          /p:Configuration=Release
+          /p:Platform=x64
+
+      - name: Stage binary
+        shell: bash
+        run: |
+          mkdir -p out
+          cp "bgfx/.build/win64_vs2022/bin/shadercRelease.exe" out/shaderc.exe
+
+      - name: Upload shaderc (windows-x86_64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaderc-windows-x86_64
+          path: out/shaderc.exe
+
+  # ---------------------------------------------------------------------------
+  # macOS, built natively per architecture: macos-13 is Intel, macos-14 is Apple silicon.
+  # ---------------------------------------------------------------------------
+  macos:
+    name: Build shaderc (${{ matrix.classifier }})
+    strategy:
+      matrix:
+        include:
+          - runner: macos-13
+            arch: x64
+            classifier: macos-x86_64
+          - runner: macos-14
+            arch: arm64
+            classifier: macos-aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout bx
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bx
+          path: bx
+
+      - name: Checkout bimg
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bimg
+          path: bimg
+
+      - name: Checkout bgfx
+        uses: actions/checkout@v4
+        with:
+          repository: bkaradzic/bgfx
+          path: bgfx
+
+      - name: Generate gmake project files
+        working-directory: bgfx
+        run: |
+          chmod +x ../bx/tools/bin/darwin/genie
+          ../bx/tools/bin/darwin/genie --with-tools --gcc=osx-${{ matrix.arch }} gmake
+
+      - name: Build shaderc
+        working-directory: bgfx
+        run: make -C .build/projects/gmake-osx-${{ matrix.arch }} shadercRelease config=release64
+
+      - name: Stage binary
+        run: |
+          mkdir -p out
+          cp "bgfx/.build/osx-${{ matrix.arch }}/bin/shadercRelease" out/shaderc
+          chmod +x out/shaderc
+
+      - name: Upload shaderc (${{ matrix.classifier }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: shaderc-${{ matrix.classifier }}
+          path: out/shaderc

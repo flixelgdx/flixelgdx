@@ -525,7 +525,7 @@ transitional libGDX backend does.*
 - [x] **2a.** Design the seam interfaces: renderer/graphics, window/app lifecycle, input, files,
   assets (see [Section 4](#4-target-architecture-sketch)). *Graphics + platform surface landed: the
   public `FlixelGraphicsManager` (at `Flixel.graphics`) over the internal `FlixelGraphicsBackend`
-  swap point, plus `FlixelBatch`, `FlixelShader`/`FlixelShaderSource`, `FlixelVertexLayout`,
+  swap point, plus `FlixelBatch`, `FlixelShader`/`FlixelShaderProgram`, `FlixelVertexLayout`,
   `FlixelMesh`, and `FlixelDisplayMode`; `FlixelWindow` grew into the full window/tab/activity
   surface with `Flixel.exit()`, and monitors (`FlixelMonitor`) moved onto `FlixelHostIntegration`.
   Backend and platform identity use an extensible id-string system (`FlixelBackendType`,
