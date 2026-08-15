@@ -26,18 +26,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: bkaradzic/bx
+          ref: 01cf049f97e122901aef231dcb9d54a1a3b86e5b
           path: bx
 
       - name: Checkout bimg
         uses: actions/checkout@v4
         with:
           repository: bkaradzic/bimg
+          ref: bf10ffbb3df1f9f12ad7a9105e5e96e11a9c5a0c
           path: bimg
 
       - name: Checkout bgfx
         uses: actions/checkout@v4
         with:
           repository: bkaradzic/bgfx
+          ref: fbff26d5e5943ce20e4e67b2247100bbfb216ad1
           path: bgfx
 
       - name: Generate gmake project files
