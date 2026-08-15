@@ -77,7 +77,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: macos-14
+          - runner: macos-14-x64
             arch: x64
             classifier: macos-x86_64
           - runner: macos-14
