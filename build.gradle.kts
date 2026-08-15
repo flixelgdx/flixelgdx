@@ -44,6 +44,7 @@ tasks.register("javadocAll") {
     ":flixelgdx-teavm-plugin:javadoc",
     ":flixelgdx-logging-plugin:javadoc",
     ":flixelgdx-basisu-plugin:javadoc",
+    ":flixelgdx-shader-plugin:javadoc",
     ":flixelgdx-json-processor:javadoc"
   )
   if (gradle.extra["includeAndroid"] as Boolean) {
