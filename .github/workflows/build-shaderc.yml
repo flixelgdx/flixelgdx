@@ -70,7 +70,11 @@ jobs:
           path: out/shaderc.exe
 
   # ---------------------------------------------------------------------------
-  # macOS, built natively per architecture: macos-13 is Intel, macos-14 is Apple silicon.
+  # macOS, one job per architecture. Both run on macos-14 (Apple Silicon);
+  # cmake cross-compiles the Intel slice via CMAKE_OSX_ARCHITECTURES=x86_64.
+  # CMAKE_OSX_DEPLOYMENT_TARGET is the canonical way to set the deployment
+  # target with cmake - it propagates correctly to all third-party sources,
+  # unlike MACOSX_DEPLOYMENT_TARGET which genie/make can override.
   # ---------------------------------------------------------------------------
   macos:
     name: Build shaderc (${{ matrix.classifier }})
@@ -78,10 +82,10 @@ jobs:
       matrix:
         include:
           - runner: macos-14
-            arch: x64
+            cmake_arch: x86_64
             classifier: macos-x86_64
           - runner: macos-14
-            arch: arm64
+            cmake_arch: arm64
             classifier: macos-aarch64
     runs-on: ${{ matrix.runner }}
     steps:
@@ -103,46 +107,22 @@ jobs:
           repository: bkaradzic/bgfx
           path: bgfx
 
-      - name: Patch glslang for Xcode 15 compatibility
-        # std::filesystem::absolute is guarded by an availability attribute that Clang
-        # rejects when the deployment target is below 10.15. The call only formats error
-        # message paths so dropping it to a plain string is safe.
+      - name: Configure with cmake
         run: |
-          python3 - << 'EOF'
-          import os, sys
-          TARGET = 'std::filesystem::absolute(shaderFileName).string()'
-          found_file = False
-          for root, dirs, files in os.walk('bgfx/3rdparty/glslang'):
-              for name in files:
-                  if name != 'InfoSink.h':
-                      continue
-                  path = os.path.join(root, name)
-                  found_file = True
-                  text = open(path).read()
-                  if TARGET not in text:
-                      print('WARNING: target string not found in', path)
-                      continue
-                  open(path, 'w').write(text.replace(TARGET, 'shaderFileName'))
-                  print('Patched', path)
-          if not found_file:
-              print('ERROR: InfoSink.h not found under bgfx/3rdparty/glslang')
-              sys.exit(1)
-          EOF
-
-      - name: Generate gmake project files
-        working-directory: bgfx
-        run: |
-          chmod +x ../bx/tools/bin/darwin/genie
-          ../bx/tools/bin/darwin/genie --with-tools --gcc=osx-${{ matrix.arch }} gmake
+          cmake -S bgfx -B bgfx-build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBGFX_BUILD_TOOLS=ON \
+            -DBGFX_BUILD_EXAMPLES=OFF \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }}
 
       - name: Build shaderc
-        working-directory: bgfx
-        run: make -C .build/projects/gmake-osx-${{ matrix.arch }} shaderc config=release64
+        run: cmake --build bgfx-build --target shaderc -j$(sysctl -n hw.logicalcpu)
 
       - name: Stage binary
         run: |
           mkdir -p out
-          cp "bgfx/.build/osx-${{ matrix.arch }}/bin/shadercRelease" out/shaderc
+          find bgfx-build -type f -name shaderc | head -1 | xargs -I{} cp {} out/shaderc
           chmod +x out/shaderc
 
       - name: Upload shaderc (${{ matrix.classifier }})
