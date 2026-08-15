@@ -87,18 +87,26 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** bgfx view id used to clear the whole back buffer at the start of a frame. */
   private static final int SCREEN_CLEAR_VIEW = 0;
 
-  /** First view id handed out to on-screen camera passes (view 0 is reserved for the clear). */
-  private static final int FIRST_SCREEN_VIEW = 1;
-
   /**
-   * Number of view ids reserved for on-screen camera passes. bgfx renders views in ascending id
-   * order, so keeping camera views below the render-target range makes each camera draw over the
-   * clear and lets render targets share the frame without id collisions.
+   * First view id handed out to off-screen render targets.
+   *
+   * <p>bgfx renders views in ascending id order, so a render target must use a lower view id than
+   * the on-screen pass that composites its texture. Targets therefore take the low range (just
+   * above the clear view) and on-screen passes take the high range. That keeps every
+   * render-to-target-then-composite path correctly ordered: per-camera shaders, the global shader
+   * chain, and the fixed render-resolution surface all render into their target before the pass
+   * that reads it runs.
    */
-  private static final int MAX_SCREEN_VIEWS = 64;
+  private static final int FIRST_TARGET_VIEW = 1;
 
-  /** First view id handed out to render targets, above the reserved on-screen range. */
-  private static final int FIRST_TARGET_VIEW = MAX_SCREEN_VIEWS;
+  /** Last view id available to off-screen render targets, below the on-screen range. */
+  private static final int LAST_TARGET_VIEW = 127;
+
+  /** First view id handed out to on-screen camera passes, above the render-target range. */
+  private static final int FIRST_SCREEN_VIEW = 128;
+
+  /** Last view id available to on-screen camera passes (bgfx allows view ids up to 255). */
+  private static final int LAST_SCREEN_VIEW = 255;
 
   @NotNull
   private final FlixelBgfxBatch batch = new FlixelBgfxBatch(this);
@@ -383,7 +391,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
       return;
     }
     int view = nextScreenView;
-    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+    if (nextScreenView < LAST_SCREEN_VIEW) {
       nextScreenView++;
     }
     viewStack[0] = view;
@@ -510,7 +518,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     // Clear the whole surface once before any camera draws into it. A dedicated low-id view bound to
     // the scene framebuffer runs first because bgfx renders views in ascending id order.
     int clearView = nextScreenView;
-    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+    if (nextScreenView < LAST_SCREEN_VIEW) {
       nextScreenView++;
     }
     BGFX.bgfx_set_view_frame_buffer(clearView, sceneFrameBuffer());
@@ -532,7 +540,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     // A fresh view above every camera view (so bgfx runs it last) draws the finished surface to the
     // back buffer, stretched into the letterboxed destination rectangle.
     int view = nextScreenView;
-    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+    if (nextScreenView < LAST_SCREEN_VIEW) {
       nextScreenView++;
     }
     viewStack[0] = view;
@@ -680,7 +688,10 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   /** Directs subsequent submissions into a render target's framebuffer via a fresh view. */
   void pushRenderTarget(short frameBuffer, int width, int height) {
-    int view = nextTargetView++;
+    int view = nextTargetView;
+    if (nextTargetView < LAST_TARGET_VIEW) {
+      nextTargetView++;
+    }
     if (viewStackDepth < viewStack.length) {
       viewStack[viewStackDepth++] = view;
     }
