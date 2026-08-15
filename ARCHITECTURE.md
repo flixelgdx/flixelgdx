@@ -15,6 +15,7 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-basisu-plugin`**: Compression plugin that automatically downloads a Basis Universal binary for the current OS and applies `.ktx2` compression for every `.png` asset.
 - **`flixelgdx-teavm-plugin`**: Plugin that automates the workflow for web games. This includes copying assets, creating the HTML index file, extracting native scripts, and more.
 - **`flixelgdx-logging-plugin`**: Plugin that runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
+- **`flixelgdx-shader-plugin`**: Plugin that bundles bgfx's `shaderc` binaries and automatically compiles GLSL shaders for each graphics API. 
 - **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSeralizable`.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
