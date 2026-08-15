@@ -106,13 +106,15 @@ jobs:
       - name: Generate gmake project files
         working-directory: bgfx
         env:
-          MACOSX_DEPLOYMENT_TARGET: "11.0"
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
         run: |
           chmod +x ../bx/tools/bin/darwin/genie
           ../bx/tools/bin/darwin/genie --with-tools --gcc=osx-${{ matrix.arch }} gmake
 
       - name: Build shaderc
         working-directory: bgfx
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
         run: make -C .build/projects/gmake-osx-${{ matrix.arch }} shaderc config=release64
 
       - name: Stage binary
