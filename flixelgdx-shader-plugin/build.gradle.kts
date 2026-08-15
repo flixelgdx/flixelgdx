@@ -16,12 +16,4 @@ gradlePlugin {
 
 dependencies {
   implementation(libs.jetbrains.annotations)
-  testImplementation(platform(libs.junit.bom))
-  testImplementation(libs.junit.jupiter)
-  testImplementation(gradleTestKit())
-  testRuntimeOnly(libs.junit.platform.launcher)
-}
-
-tasks.named<Test>("test") {
-  useJUnitPlatform()
 }
