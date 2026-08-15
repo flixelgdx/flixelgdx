@@ -25,6 +25,7 @@ package org.flixelgdx.gradle.shader;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
@@ -112,11 +113,16 @@ public class FlixelShaderPlugin implements Plugin<Project> {
     }));
 
     // Bundle the compiled variants into the module's resources so they ship inside the game.
+    //
+    // The resource root is registered from a stable layout path rather than the task's output
+    // provider, so IDE sync can resolve the source set without querying (and therefore trying to
+    // run) the task during configuration. The task writes to this same directory, and
+    // processResources depends on the task so the files exist before they are copied.
     project.getPlugins().withId("java", plugin -> {
-      Provider<File> generated =
-          compile.flatMap(FlixelCompileShadersTask::getGeneratedResourcesDir).map(d -> d.getAsFile());
+      Provider<Directory> generatedDir =
+          project.getLayout().getBuildDirectory().dir("generated/flixelShaders/resources");
       SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-      sourceSets.getByName("main").getResources().srcDir(generated);
+      sourceSets.getByName("main").getResources().srcDir(generatedDir);
       project.getTasks().withType(ProcessResources.class).configureEach(task -> task.dependsOn(compile));
     });
   }
