@@ -105,11 +105,13 @@ jobs:
 
       - name: Generate gmake project files
         working-directory: bgfx
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "10.15"
         run: |
           chmod +x ../bx/tools/bin/darwin/genie
           ../bx/tools/bin/darwin/genie --with-tools --gcc=osx-${{ matrix.arch }} gmake
+          # genie hard-codes a low -mmacosx-version-min that makes std::filesystem::absolute
+          # unavailable at compile time; patch every generated Makefile to 10.15 instead.
+          find .build/projects/gmake-osx-${{ matrix.arch }} -name '*.make' \
+            -exec sed -i '' 's/-mmacosx-version-min=[0-9.]*/-mmacosx-version-min=10.15/g' {} +
 
       - name: Build shaderc
         working-directory: bgfx
