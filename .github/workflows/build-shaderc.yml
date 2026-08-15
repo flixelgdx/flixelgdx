@@ -103,20 +103,23 @@ jobs:
           repository: bkaradzic/bgfx
           path: bgfx
 
+      - name: Patch glslang for Xcode 15 compatibility
+        # std::filesystem::absolute is guarded by an availability attribute that Clang
+        # rejects when the deployment target is below 10.15. The call only formats error
+        # message paths so dropping it to a plain string is safe.
+        run: |
+          find bgfx/3rdparty/glslang -name "InfoSink.h" -print0 | \
+            xargs -0 sed -i '' \
+              's/std::filesystem::absolute(shaderFileName)\.string()/shaderFileName/g'
+
       - name: Generate gmake project files
         working-directory: bgfx
         run: |
           chmod +x ../bx/tools/bin/darwin/genie
           ../bx/tools/bin/darwin/genie --with-tools --gcc=osx-${{ matrix.arch }} gmake
-          # genie hard-codes a low -mmacosx-version-min that makes std::filesystem::absolute
-          # unavailable at compile time; patch every generated Makefile to 10.15 instead.
-          find .build/projects/gmake-osx-${{ matrix.arch }} -name '*.make' \
-            -exec sed -i '' 's/-mmacosx-version-min=[0-9.]*/-mmacosx-version-min=10.15/g' {} +
 
       - name: Build shaderc
         working-directory: bgfx
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "10.15"
         run: make -C .build/projects/gmake-osx-${{ matrix.arch }} shaderc config=release64
 
       - name: Stage binary
