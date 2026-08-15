@@ -25,6 +25,7 @@ package org.flixelgdx.gradle.logging;
 
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -160,6 +161,63 @@ class FlixelLoggerBytecodeWeaverTest {
   }
 
   @Test
+  void weaveRewritesFlixelStaticDebugCall() throws Exception {
+    Path tmp = Files.createTempDirectory("flixel-log-weave-facade-debug");
+    Path srcDir = tmp.resolve("flixel/weavetestfacadedebug");
+    Files.createDirectories(srcDir);
+    Path source = srcDir.resolve("FacadeDebugCaller.java");
+    Files.writeString(
+        source,
+        """
+            package flixel.weavetestfacadedebug;
+            import org.flixelgdx.Flixel;
+            public class FacadeDebugCaller {
+              public static void run() {
+                Flixel.debug("verbose");
+              }
+            }
+            """);
+
+    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    assertNotNull(compiler);
+    Path out = tmp.resolve("classes");
+    Files.createDirectories(out);
+    String classpath = System.getProperty("java.class.path");
+    try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
+      Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(source.toFile());
+      boolean ok = compiler
+          .getTask(
+              null,
+              fileManager,
+              null,
+              List.of("-classpath", classpath, "-parameters", "-g", "-d", out.toString()),
+              null,
+              units)
+          .call();
+      assertTrue(ok, "JavaCompiler failed; check test runtime classpath includes flixelgdx-core");
+    }
+
+    Path classFile = out.resolve("flixel/weavetestfacadedebug/FacadeDebugCaller.class");
+    assertTrue(Files.exists(classFile));
+    byte[] bytes = Files.readAllBytes(classFile);
+    ClassReader reader = new ClassReader(bytes);
+    ClassNode classNode = new ClassNode();
+    reader.accept(classNode, ClassReader.SKIP_FRAMES);
+    assertTrue(FlixelLoggerBytecodeWeaver.weave(classNode));
+
+    boolean foundBcDebugHook = false;
+    for (MethodNode method : classNode.methods) {
+      for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+        if (insn instanceof MethodInsnNode min && "bcDebug0".equals(min.name)) {
+          assertTrue(min.owner.contains("FlixelLoggingBytecodeHooks"));
+          foundBcDebugHook = true;
+        }
+      }
+    }
+    assertTrue(foundBcDebugHook);
+  }
+
+  @Test
   void weaveRewritesDebugCall() throws Exception {
     Path tmp = Files.createTempDirectory("flixel-log-weave-debug");
     Path srcDir = tmp.resolve("flixel/weavetestdebug");
@@ -216,7 +274,7 @@ class FlixelLoggerBytecodeWeaverTest {
   }
 
   @Test
-  void weaveSkipsFlixelStaticFacadeClass() throws Exception {
+  void weaveDoesNotRewriteVirtualLoggerCallsInsideFlixelFacadeClass() throws Exception {
     byte[] bytes;
     try (InputStream in =
         FlixelLoggerBytecodeWeaverTest.class.getClassLoader().getResourceAsStream("org/flixelgdx/Flixel.class")) {
@@ -226,17 +284,26 @@ class FlixelLoggerBytecodeWeaverTest {
     ClassReader reader = new ClassReader(bytes);
     ClassNode classNode = new ClassNode();
     reader.accept(classNode, ClassReader.SKIP_FRAMES);
-    assertFalse(FlixelLoggerBytecodeWeaver.weave(classNode));
 
-    boolean foundWithSite = false;
+    // weave() may return true here because INVOKESTATIC Flixel.* calls inside Flixel.java
+    // (e.g. the crash handler's error() call) are now rewritten to bc* hooks.
+    FlixelLoggerBytecodeWeaver.weave(classNode);
+
+    // INVOKEVIRTUAL FlixelLogger.*WithSite must never appear inside Flixel.java. Rewriting
+    // those would embed Flixel.java line numbers in the static delegation helpers, hiding
+    // the actual caller site.
+    boolean foundVirtualWithSite = false;
     for (MethodNode method : classNode.methods) {
       for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
-        if (insn instanceof MethodInsnNode min && min.name != null && min.name.endsWith("WithSite")) {
-          foundWithSite = true;
+        if (insn instanceof MethodInsnNode min
+            && min.name != null
+            && min.name.endsWith("WithSite")
+            && (min.getOpcode() == Opcodes.INVOKEVIRTUAL || min.getOpcode() == Opcodes.INVOKEINTERFACE)) {
+          foundVirtualWithSite = true;
         }
       }
     }
-    assertFalse(foundWithSite);
+    assertFalse(foundVirtualWithSite);
   }
 
   @Test

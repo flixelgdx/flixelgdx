@@ -37,6 +37,21 @@ public final class FlixelLoggingBytecodeHooks {
 
   private FlixelLoggingBytecodeHooks() {}
 
+  public static void bcDebug0(Object message, String sourceFile, int line, String declaringClass,
+      String declaringMethod) {
+    Flixel.log.debugWithSite(message, sourceFile, line, declaringClass, declaringMethod);
+  }
+
+  public static void bcDebug1(
+      String tag,
+      Object message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    Flixel.log.debugWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
+  }
+
   public static void bcInfo0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.infoWithSite(message, sourceFile, line, declaringClass, declaringMethod);

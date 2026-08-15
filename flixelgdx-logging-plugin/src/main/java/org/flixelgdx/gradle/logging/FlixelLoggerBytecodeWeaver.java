@@ -40,20 +40,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Rewrites {@code FlixelLogger} {@code info}, {@code warn}, and {@code error} calls to {@code *WithSite} overloads,
- * and {@code Flixel} static logging helpers to {@code FlixelLoggingBytecodeHooks}, using the enclosing class
- * {@code SourceFile} attribute and {@link LineNumberNode} data so each log records the caller's file and line.
+ * Rewrites {@code FlixelLogger} {@code debug}, {@code info}, {@code warn}, and {@code error} calls to
+ * {@code *WithSite} overloads, and {@code Flixel} static logging helpers to {@code FlixelLoggingBytecodeHooks},
+ * using the enclosing class {@code SourceFile} attribute and {@link LineNumberNode} data so each log records
+ * the caller's file and line.
+ *
+ * <p>{@code Flixel.java} itself is processed for {@code INVOKESTATIC Flixel.*} calls (so internal log sites
+ * like the crash handler record their accurate location), but {@code INVOKEVIRTUAL FlixelLogger.*} calls within
+ * {@code Flixel.java} are skipped. Rewriting those would embed {@code Flixel.java} line numbers inside the static
+ * delegation helpers (e.g. {@code warn(tag, message)} calling {@code log.warn(tag, message)}), which would be
+ * misleading rather than useful.
  */
 public final class FlixelLoggerBytecodeWeaver {
 
   private static final String LOGGER_OWNER = "org/flixelgdx/logging/FlixelLogger";
 
   /**
-   * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Rewriting
-   * {@code Flixel} itself would only capture {@code Flixel.java} line numbers, so {@link #weave(ClassNode)} skips that
-   * class. Call sites in game bytecode use {@code INVOKESTATIC Flixel...}; those are rewritten to
+   * Flixel static {@code debug}, {@code info}, {@code warn}, and {@code error} helpers delegate to
+   * {@code FlixelLogger}. Call sites in game bytecode use {@code INVOKESTATIC Flixel...}; those are rewritten to
    * {@code FlixelLoggingBytecodeHooks} so line metadata comes from the caller class (critical for TeaVM
    * where stack walking is unavailable).
+   *
+   * <p>{@code INVOKESTATIC Flixel.*} calls found inside {@code Flixel.java} itself (such as the crash handler)
+   * are also rewritten, so their correct {@code Flixel.java} site is captured. Only
+   * {@code INVOKEVIRTUAL FlixelLogger.*} calls inside {@code Flixel.java} remain untouched.
    */
   private static final String FLIXEL_STATIC_FACADE_INTERNAL = "org/flixelgdx/Flixel";
 
@@ -64,6 +74,15 @@ public final class FlixelLoggerBytecodeWeaver {
   private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = new HashMap<>();
 
   static {
+    REPLACEMENTS.put(
+        "debug(Ljava/lang/Object;)V",
+        new Replacement("debugWithSite",
+            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    REPLACEMENTS.put(
+        "debug(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement(
+            "debugWithSite",
+            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
     REPLACEMENTS.put(
         "info(Ljava/lang/Object;)V",
         new Replacement("infoWithSite",
@@ -101,16 +120,16 @@ public final class FlixelLoggerBytecodeWeaver {
         new Replacement(
             "errorWithSite",
             "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
+
+    FLIXEL_STATIC_REPLACEMENTS.put(
         "debug(Ljava/lang/Object;)V",
-        new Replacement("debugWithSite",
-            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
+        new Replacement(
+            "bcDebug0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
+    FLIXEL_STATIC_REPLACEMENTS.put(
         "debug(Ljava/lang/String;Ljava/lang/Object;)V",
         new Replacement(
-            "debugWithSite",
+            "bcDebug1",
             "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-
     FLIXEL_STATIC_REPLACEMENTS.put(
         "info(Ljava/lang/Object;)V",
         new Replacement(
@@ -154,11 +173,14 @@ public final class FlixelLoggerBytecodeWeaver {
    * @return {@code true} if at least one invocation was rewritten.
    */
   public static boolean weave(ClassNode classNode) {
-    if (FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name)
-        || HOOKS_OWNER.equals(classNode.name)
-        || LOGGER_OWNER.equals(classNode.name)) {
+    if (HOOKS_OWNER.equals(classNode.name) || LOGGER_OWNER.equals(classNode.name)) {
       return false;
     }
+    // When processing Flixel.java itself, only INVOKESTATIC Flixel.* calls are rewritten (so sites like
+    // the crash handler capture the correct Flixel.java location). INVOKEVIRTUAL FlixelLogger.* calls
+    // inside Flixel.java are skipped to avoid embedding Flixel.java line numbers inside the static
+    // delegation helpers (e.g. warn(tag, message) -> log.warn(tag, message)).
+    boolean isFacadeClass = FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name);
     boolean changed = false;
     String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile";
     String classNameDots = classNode.name.replace('/', '.');
@@ -188,6 +210,11 @@ public final class FlixelLoggerBytecodeWeaver {
             min.itf = false;
             changed = true;
           }
+          continue;
+        }
+
+        // Skip INVOKEVIRTUAL FlixelLogger rewrites inside Flixel.java itself.
+        if (isFacadeClass) {
           continue;
         }
 
