@@ -111,7 +111,7 @@ jobs:
 
       - name: Build shaderc
         working-directory: bgfx
-        run: make -C .build/projects/gmake-osx-${{ matrix.arch }} shadercRelease config=release64
+        run: make -C .build/projects/gmake-osx-${{ matrix.arch }} shaderc config=release64
 
       - name: Stage binary
         run: |
