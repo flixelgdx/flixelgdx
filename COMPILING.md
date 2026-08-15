@@ -1,6 +1,6 @@
 # Compiling & Testing
 
-FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. To test your changes, you use the framework as a local dependency (or composite build) in a separate test project. This guide walks you through every step from a clean machine to running and testing the framework, including prerequisites, IDE setup on all major platforms, and how to avoid common mistakes.
+FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. To test your changes, you use the framework as a local dependency (or composite build) in a separate test project. This guide walks you through every step from a clean machine to running and testing the framework, including prerequisites, IntelliJ IDEA setup on all major platforms, and how to avoid common mistakes.
 
 ---
 
@@ -8,7 +8,7 @@ FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. 
 
 1. [Prerequisites](#prerequisites)
 2. [Getting the source](#getting-the-source)
-3. [IDE setup](#ide-setup)
+3. [IntelliJ IDEA setup](#intellij-idea-setup)
 4. [Testing with a test project](#testing-with-a-test-project)
 5. [How to run unit tests](#how-to-run-unit-tests)
 6. [Web (TeaVM) setup and configuration](#web-teavm-setup-and-configuration)
@@ -37,7 +37,7 @@ Verify: open a new terminal and run `git --version`.
 
 ### 2. Java (JDK 17 with Eclipse Temurin)
 
-FlixelGDX requires **Java 17** (LTS). The build uses the Gradle wrapper (Gradle 9.x), which runs on JDK 17+. Your IDE and command line must both use JDK 17.
+FlixelGDX requires **Java 17** (LTS). The build uses the Gradle wrapper (Gradle 9.x), which runs on JDK 17+. IntelliJ IDEA and your command line must both use JDK 17.
 
 **Use Eclipse Temurin:** install **[Eclipse Temurin 17 (Adoptium)](https://adoptium.net/temurin/releases/?package=jdk&version=17)** - the battle-tested, open-source HotSpot JDK used across the Java game development ecosystem. It gets timely security updates through Adoptium and integrates seamlessly with Gradle toolchains.
 
@@ -118,47 +118,97 @@ sudo pacman -S jdk17-openjdk
 
 ---
 
-## IDE setup
+## IntelliJ IDEA setup
 
-Configure your editor so it uses JDK 17 and the project’s Gradle build. Enabling EditorConfig (see [CONTRIBUTING.md](CONTRIBUTING.md)) keeps indentation and line endings consistent.
+It's highly advised you use **IntelliJ IDEA** as your development environment. Lightweight tools (such as VS Code or Eclipse) will
+struggle trying to index FlixelGDX's massive codebase.
 
-### IntelliJ IDEA
+Additionally, some of the framework's configurations are deeply integrated with IntelliJ IDEA. You will have a much better
+experience contributing to FlixelGDX using IntelliJ. It was designed for a large system just like this.
 
-- **Install**  
-  - [jetbrains.com/idea](https://www.jetbrains.com/idea/)
-  - Windows: run the .exe installer.  
-  - macOS: download .dmg, drag IntelliJ to Applications.  
-  - Linux: unpack the .tar.gz or use Toolbox / Snap.
-- **Open the project**  
-  - **File -> Open** -> select the **flixelgdx** root folder (the one that contains `build.gradle` and `settings.gradle`).  
-  - Choose **Open as Project**.  
-  - When asked “Load Gradle project?”, choose **Load Gradle Project** and use the **Gradle wrapper** (default). Wait for indexing and dependency resolution to finish.
-- **Set project JDK to 17 (Eclipse Temurin)**
-  - **File -> Project Structure -> Project**: set **Project SDK** to **17**. Prefer **Eclipse Temurin** (Adoptium) - add it via **Add SDK -> Download JDK** and pick a **Temurin 17** build, or **Add SDK -> JDK** and point to your Temurin install folder.
-  - Set **Project language level** to **17**.
-- **EditorConfig**  
-  - **Settings -> Editor -> Code Style** -> enable **“Enable EditorConfig support”**.  
-  - Use the **Project** code style scheme so the project’s `.editorconfig` is applied.
-- **Build from IDE**  
-  - **View -> Tool Windows -> Gradle**. Under **flixelgdx -> Tasks -> publishing**, run **publishToMavenLocal**.  
-  - Or use the terminal inside IntelliJ: `./gradlew publishToMavenLocal` (on Windows: `gradlew.bat publishToMavenLocal`).
+### Downloading IntelliJ via the Toolbox
 
-### Eclipse
+We recommended installing IntelliJ through the official **[JetBrains Toolbox](https://www.jetbrains.com/toolbox-app/)**. It's completely
+free, doesn't require Admin privlages to install, and you can update IntelliJ (or any JetBrains IDE) with one click of a button.
 
-- **Install**  
-  - [eclipse.org/downloads](https://www.eclipse.org/downloads/): **Eclipse IDE for Java Developers** or **Eclipse IDE for Java and DSL Developers**.  
-  - Windows: unpack the zip or run the installer.  
-  - macOS/Linux: unpack the tar.gz or use the installer.
-- **Import as Gradle project**  
-  - **File -> Import -> Gradle -> Existing Gradle Project -> Next**.  
-  - **Project root directory**: browse to the **flixelgdx** root folder.  
-  - Click **Finish**. Wait for Gradle to sync and build.
-- **Use JDK 17**  
-  - **Window -> Preferences -> Java -> Installed JREs**: add your JDK 17 (Add -> Standard VM -> Directory -> select JDK home). Set it as default or ensure the project uses it.  
-  - **Project -> Properties -> Java Build Path -> Libraries**: ensure the JRE is JDK 17.
-- **Build**  
-  - Right-click the root project -> **Gradle -> Refresh Gradle Project**.  
-  - To publish locally: right-click project -> **Run As -> Gradle Build**; in **Gradle Tasks** choose **publishToMavenLocal**, or run in a terminal: `./gradlew publishToMavenLocal`.
+#### Windows
+
+1. Go to the [JetBrains Toolbox download page](https://www.jetbrains.com/toolbox-app/) and click **Download**. It should auto-detect Windows.
+2. Run the downloaded `.exe` installer and follow the prompts. No admin privileges are required.
+3. Once installed, Toolbox launches automatically and appears in your system tray.
+4. In the Toolbox window, find **IntelliJ IDEA** under the **Available tools** section and click **Install**.
+5. After installation completes, click **Launch** to open IntelliJ for the first time.
+
+#### macOS
+
+1. Go to the [JetBrains Toolbox download page](https://www.jetbrains.com/toolbox-app/) and click **Download**. It should auto-detect macOS; if not, choose **macOS (Apple Silicon)** for M-series Macs or **macOS (Intel)** for older models.
+2. Open the downloaded `.dmg` file, drag the **JetBrains Toolbox** app into your **Applications** folder, then launch it from there.
+3. Toolbox adds itself to your menu bar. Click the Toolbox icon, find **IntelliJ IDEA** under **Available tools**, and click **Install**.
+4. Once installed, click **Launch** from the same Toolbox menu.
+
+> [!TIP]
+> On macOS, if you see a "developer cannot be verified" warning when opening the `.dmg`, go to **System Settings -> Privacy & Security** and click **Open Anyway**.
+
+#### Linux
+
+Choose whichever method fits your distro. All of them end with Toolbox installed and ready to install IntelliJ from its **Available tools** list.
+
+**Option A - Universal `.tar.gz` (works on any distro)**
+
+1. Go to the [JetBrains Toolbox download page](https://www.jetbrains.com/toolbox-app/) and click **Download**. It should auto-detect Linux and give you a `.tar.gz` archive.
+2. Extract and run the binary:
+   ```bash
+   tar -xzf jetbrains-toolbox-*.tar.gz
+   ./jetbrains-toolbox-*/jetbrains-toolbox
+   ```
+   Toolbox installs itself to `~/.local/share/JetBrains/Toolbox/` and registers a launcher in your application menu automatically.
+
+**Option B - Ubuntu / Debian (snap)**
+
+The snap package is the simplest single-command install on Ubuntu / Debian:
+
+```bash
+sudo snap install jetbrains-toolbox --classic
+jetbrains-toolbox
+```
+
+**Option C - Arch (AUR)**
+
+Install the `jetbrains-toolbox` AUR package with your AUR helper of choice:
+
+```bash
+# Using yay:
+yay -S jetbrains-toolbox
+
+# Using paru:
+paru -S jetbrains-toolbox
+```
+
+Then launch it with `jetbrains-toolbox` or from your application menu.
+
+**Option D - Fedora / RHEL (Flatpak)**
+
+Flatpak is available by default on Fedora. Install Toolbox from Flathub:
+
+```bash
+flatpak install flathub com.jetbrains.Toolbox
+flatpak run com.jetbrains.Toolbox
+```
+
+**Option E - openSUSE (Flatpak)**
+
+openSUSE ships with Flatpak support. Enable Flathub if you have not already, then install:
+
+```bash
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub com.jetbrains.Toolbox
+flatpak run com.jetbrains.Toolbox
+```
+
+Alternatively, the universal `.tar.gz` from Option A works on openSUSE without any extra setup.
+
+> [!TIP]
+> On some Linux desktops, the Toolbox tray icon may not appear right away. Log out and back in, or run `jetbrains-toolbox` (or the Flatpak/snap equivalent) from a terminal to relaunch it.
 
 ---
 
@@ -232,11 +282,11 @@ The generated project targets Maven Central by default, pulling the last stable 
 
 If you launch the desktop module with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
 
-### Method 2: Composite build (IntelliJ or any Gradle-based IDE)
+### Method 2: Composite build
 
 Composite build lets the test project use your local FlixelGDX source so changes are picked up without republishing.
 
-1. **Open your test project** in your IDE.
+1. **Open your test project** in IntelliJ IDEA.
 2. **Add the composite to the test project’s `settings.gradle`**, below the existing `rootProject.name` line:
   ```gradle
    includeBuild ‘/path/to/flixelgdx’
@@ -461,15 +511,15 @@ You can still edit and build the **flixelgdx-android** module without a device o
 
 ### JAVA_HOME not set or wrong
 
-- **Symptom**: Gradle or the IDE reports “JAVA_HOME is not set” or uses the wrong Java version.
-- **Fix**: Set `JAVA_HOME` to the **JDK 17** installation directory (see [Java (JDK 17 with Eclipse Temurin)](#2-java-jdk-17-with-eclipse-temurin) for your OS). Use a **new** terminal/IDE restart after changing environment variables.
+- **Symptom**: Gradle or IntelliJ IDEA reports “JAVA_HOME is not set” or uses the wrong Java version.
+- **Fix**: Set `JAVA_HOME` to the **JDK 17** installation directory (see [Java (JDK 17 with Eclipse Temurin)](#2-java-jdk-17-with-eclipse-temurin) for your OS). Use a **new** terminal/IntelliJ IDEA restart after changing environment variables.
 
 ### Wrong Java version (8, 11, 21, etc.)
 
 - **Symptom**: Build fails with “invalid target release” or “class file version” errors, or `java -version` is not 17.
 - **Fix**:  
   - From the command line: ensure `JAVA_HOME` and `PATH` point to JDK 17; run `java -version` and `javac -version`.  
-  - In the IDE: set the **project SDK / JRE** to JDK 17 (see [IDE setup](#ide-setup)).
+  - In IntelliJ IDEA: set the **project SDK / JRE** to JDK 17 (see [IntelliJ IDEA setup](#intellij-idea-setup)).
 
 ### Gradle wrapper not executable (Linux / macOS)
 
@@ -516,13 +566,10 @@ Then run `./gradlew publishToMavenLocal` again.
 - **Symptom**: `./gradlew` fails with “bad interpreter” or similar (often in Git Bash or WSL).
 - **Fix**: Ensure `gradlew` uses Unix line endings (LF). In Git: `git config core.autocrlf input` and re-checkout, or run `dos2unix gradlew` if available. The repo should keep `gradlew` as LF.
 
-### IDE does not pick up Gradle or JDK after install
+### IntelliJ IDEA does not pick up Gradle or JDK after install
 
-- **Fix**:  
-  - **IntelliJ**: File -> Invalidate Caches / Restart; and re-import the project or “Reload All Gradle Projects”.  
-  - **VS Code/Cursor**: Run “Java: Clean Java Language Server Workspace” from the Command Palette, then reload.  
-  - **Eclipse**: Project -> Clean; and Gradle -> Refresh Gradle Project.  
-  - In all cases, confirm the **project** is using JDK 17 in its settings.
+- **Symptom**: IntelliJ is failing to link and configure the framework's build system or required JDK. 
+- **Fix**: File -> Invalidate Caches / Restart; and re-import the project or “Reload All Gradle Projects”.
 
 ### Gradle daemon or port issues
 

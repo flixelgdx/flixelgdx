@@ -6,7 +6,6 @@ time. Each operating system has its own subfolder, named by classifier:
 ```
 tools/
   linux-x86_64/shaderc
-  macos-x86_64/shaderc
   macos-aarch64/shaderc
   windows-x86_64/shaderc.exe
   windows-shim/d3d4linux.exe
@@ -34,10 +33,6 @@ make tools           # or the platform-specific shaderc target
 ```
 
 Copy the result into the matching classifier folder and, on Unix, keep the executable bit set.
-
-The Windows and macOS binaries are produced by the temporary
-`.github/workflows/build-shaderc.yml` workflow (run it manually from the Actions tab, download the
-artifacts, and drop them here). The Linux binary is already vendored.
 
 The Direct3D (`dx11`) variants are DXBC, which needs Microsoft's FXC compiler. FXC is native to
 Windows, so the Windows `shaderc` emits those variants directly. On Linux and macOS, `shaderc`
