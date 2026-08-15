@@ -2,3 +2,5 @@
 *.bat text=auto eol=crlf
 
 *.kts linguist-language=Kotlin
+# Force all .sc files to use GLSL highlighting
+*.sc linguist-language=GLSL
