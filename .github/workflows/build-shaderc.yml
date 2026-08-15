@@ -14,13 +14,13 @@ on:
 jobs:
 
   # ---------------------------------------------------------------------------
-  # Windows x86_64. This host emits the Direct3D (dx11) variants directly, since
-  # Microsoft's FXC compiler is native to Windows. Elsewhere those variants need
-  # the d3d4linux Wine shim; every other variant compiles on any host.
+  # macOS arm64 (Apple Silicon). macos-14 is the only available macOS runner
+  # now that macos-13 (Intel) has been retired by GitHub. Intel and Windows
+  # binaries are already committed; this only produces the arm64 slice.
   # ---------------------------------------------------------------------------
-  windows:
-    name: Build shaderc (windows-x86_64)
-    runs-on: windows-latest
+  macos-aarch64:
+    name: Build shaderc (macos-aarch64)
+    runs-on: macos-14
     steps:
       - name: Checkout bx
         uses: actions/checkout@v4
@@ -40,93 +40,24 @@ jobs:
           repository: bkaradzic/bgfx
           path: bgfx
 
-      - name: Set up MSBuild
-        uses: microsoft/setup-msbuild@v2
-
-      - name: Generate VS project files
+      - name: Generate gmake project files
         working-directory: bgfx
-        shell: cmd
-        run: ..\bx\tools\bin\windows\genie.exe --with-tools vs2022
+        run: |
+          chmod +x ../bx/tools/bin/darwin/genie
+          ../bx/tools/bin/darwin/genie --with-tools --gcc=osx-arm64 gmake
 
       - name: Build shaderc
         working-directory: bgfx
-        shell: cmd
-        run: >
-          msbuild ".build\projects\vs2022\shaderc.vcxproj"
-          /m /v:minimal
-          /p:Configuration=Release
-          /p:Platform=x64
-
-      - name: Stage binary
-        shell: bash
-        run: |
-          mkdir -p out
-          cp "bgfx/.build/win64_vs2022/bin/shadercRelease.exe" out/shaderc.exe
-
-      - name: Upload shaderc (windows-x86_64)
-        uses: actions/upload-artifact@v4
-        with:
-          name: shaderc-windows-x86_64
-          path: out/shaderc.exe
-
-  # ---------------------------------------------------------------------------
-  # macOS, one job per architecture. Both run on macos-14 (Apple Silicon);
-  # cmake cross-compiles the Intel slice via CMAKE_OSX_ARCHITECTURES=x86_64.
-  # CMAKE_OSX_DEPLOYMENT_TARGET is the canonical way to set the deployment
-  # target with cmake - it propagates correctly to all third-party sources,
-  # unlike MACOSX_DEPLOYMENT_TARGET which genie/make can override.
-  # ---------------------------------------------------------------------------
-  macos:
-    name: Build shaderc (${{ matrix.classifier }})
-    strategy:
-      matrix:
-        include:
-          - runner: macos-14
-            cmake_arch: x86_64
-            classifier: macos-x86_64
-          - runner: macos-14
-            cmake_arch: arm64
-            classifier: macos-aarch64
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Checkout bx
-        uses: actions/checkout@v4
-        with:
-          repository: bkaradzic/bx
-          path: bx
-
-      - name: Checkout bimg
-        uses: actions/checkout@v4
-        with:
-          repository: bkaradzic/bimg
-          path: bimg
-
-      - name: Checkout bgfx
-        uses: actions/checkout@v4
-        with:
-          repository: bkaradzic/bgfx
-          path: bgfx
-
-      - name: Configure with cmake
-        run: |
-          cmake -S bgfx -B bgfx-build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBGFX_BUILD_TOOLS=ON \
-            -DBGFX_BUILD_EXAMPLES=OFF \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }}
-
-      - name: Build shaderc
-        run: cmake --build bgfx-build --target shaderc -j$(sysctl -n hw.logicalcpu)
+        run: make -C .build/projects/gmake-osx-arm64 shaderc config=release64
 
       - name: Stage binary
         run: |
           mkdir -p out
-          find bgfx-build -type f -name shaderc | head -1 | xargs -I{} cp {} out/shaderc
+          cp bgfx/.build/osx-arm64/bin/shadercRelease out/shaderc
           chmod +x out/shaderc
 
-      - name: Upload shaderc (${{ matrix.classifier }})
+      - name: Upload shaderc (macos-aarch64)
         uses: actions/upload-artifact@v4
         with:
-          name: shaderc-${{ matrix.classifier }}
+          name: shaderc-macos-aarch64
           path: out/shaderc
