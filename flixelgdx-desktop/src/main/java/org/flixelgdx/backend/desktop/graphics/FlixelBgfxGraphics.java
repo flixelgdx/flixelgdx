@@ -779,12 +779,54 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     return spriteProgram;
   }
 
-  /** Maps a blend mode to bgfx state blend bits. */
+  /**
+   * Maps a blend mode to bgfx state blend bits.
+   *
+   * <p>The framework uses straight (non-premultiplied) alpha: the sprite fragment shader outputs
+   * {@code texture * vertexColor} without folding alpha into the color channels. Each mode below is
+   * therefore expressed so a sprite's own alpha (and tint alpha) is respected at blend time through
+   * the {@code SRC_ALPHA} factor where the classic premultiplied formulation would use {@code ONE}.
+   *
+   * <p>The alpha channel always accumulates with a standard "over" ({@code srcA = ONE},
+   * {@code dstA = 1 - srcA}) no matter what the color channels do. That keeps the alpha a camera or
+   * global shader later reads out of a render target correct, so blended sprites composite properly
+   * instead of punching holes or squaring their own alpha (which the old shared {@code BLEND_ALPHA}
+   * state did on both channels).
+   */
   private static long blendState(@NotNull FlixelBlendMode mode) {
+    // Standard "over" for the alpha channel, shared by every blended mode.
+    long srcA = BGFX.BGFX_STATE_BLEND_ONE;
+    long dstA = BGFX.BGFX_STATE_BLEND_INV_SRC_ALPHA;
     return switch (mode) {
+      // No blending at all: the source overwrites the destination, alpha included.
       case NONE -> 0L;
-      case ADD -> BGFX.BGFX_STATE_BLEND_ADD;
-      case NORMAL, MULTIPLY, SCREEN, SUBTRACT, LIGHTEN, DARKEN -> BGFX.BGFX_STATE_BLEND_ALPHA;
+      // color = src * srcAlpha + dst * (1 - srcAlpha).
+      case NORMAL -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_SRC_ALPHA, BGFX.BGFX_STATE_BLEND_INV_SRC_ALPHA, srcA, dstA);
+      // color = src * srcAlpha + dst. Brightens; a faded sprite adds less.
+      case ADD -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_SRC_ALPHA, BGFX.BGFX_STATE_BLEND_ONE, srcA, dstA);
+      // color = src * dst + dst * (1 - srcAlpha). A pure multiply where opaque, unchanged where clear.
+      case MULTIPLY -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_DST_COLOR, BGFX.BGFX_STATE_BLEND_INV_SRC_ALPHA, srcA, dstA);
+      // color = src + dst * (1 - src). Lightens without blowing out to white the way ADD can.
+      case SCREEN -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_ONE, BGFX.BGFX_STATE_BLEND_INV_SRC_COLOR, srcA, dstA);
+      // color = dst - src * srcAlpha, via the reverse-subtract equation on the color channels only.
+      case SUBTRACT -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_SRC_ALPHA, BGFX.BGFX_STATE_BLEND_ONE, srcA, dstA)
+          | BGFX.BGFX_STATE_BLEND_EQUATION_SEPARATE(
+              BGFX.BGFX_STATE_BLEND_EQUATION_REVSUB, BGFX.BGFX_STATE_BLEND_EQUATION_ADD);
+      // color = max(src, dst) per channel. The MAX equation ignores the color factors.
+      case LIGHTEN -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_ONE, BGFX.BGFX_STATE_BLEND_ONE, srcA, dstA)
+          | BGFX.BGFX_STATE_BLEND_EQUATION_SEPARATE(
+              BGFX.BGFX_STATE_BLEND_EQUATION_MAX, BGFX.BGFX_STATE_BLEND_EQUATION_ADD);
+      // color = min(src, dst) per channel. The MIN equation ignores the color factors.
+      case DARKEN -> BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+          BGFX.BGFX_STATE_BLEND_ONE, BGFX.BGFX_STATE_BLEND_ONE, srcA, dstA)
+          | BGFX.BGFX_STATE_BLEND_EQUATION_SEPARATE(
+              BGFX.BGFX_STATE_BLEND_EQUATION_MIN, BGFX.BGFX_STATE_BLEND_EQUATION_ADD);
     };
   }
 
