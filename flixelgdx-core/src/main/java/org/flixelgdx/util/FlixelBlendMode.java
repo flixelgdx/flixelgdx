@@ -73,5 +73,5 @@ public enum FlixelBlendMode {
    * Disables blending entirely: the sprite's pixels overwrite whatever is underneath, alpha
    * included. Used internally for opaque backdrop fills; rarely useful for normal sprites.
    */
-  NONE;
+  NONE
 }
