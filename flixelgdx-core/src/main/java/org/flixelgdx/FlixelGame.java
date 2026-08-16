@@ -1709,7 +1709,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       }
 
       /**
-       * Sets the starting window size and the dimensions of the first camera.
+       * Sets the starting window size and the dimensions of the first camera. Also sets
+       * the render resolution by default.
        *
        * @param width The width in pixels.
        * @param height The height in pixels.
