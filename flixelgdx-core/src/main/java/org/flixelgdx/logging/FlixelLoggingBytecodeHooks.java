@@ -26,16 +26,11 @@ package org.flixelgdx.logging;
 import org.flixelgdx.Flixel;
 
 /**
- * Static entry points used only by the {@code flixelgdx-logging-plugin} bytecode weaver. At compile time,
- * {@code INVOKESTATIC Flixel.info(...)} (and similar) calls in game modules are rewritten to call these
- * methods with embedded source file and line metadata so TeaVM and other runtimes that lack JVM-style
- * stack walking still print accurate locations.
+ * Static entry points used only by the {@code flixelgdx-logging-plugin} bytecode weaver.
  *
- * <p>Method names follow the {@code bc<MethodName><Index>} convention (e.g. {@code bcDebug0},
- * {@code bcError2}). The weaver's discovery logic strips {@code bc}, strips the trailing digit(s),
- * and lowercases the remainder to derive the corresponding {@code Flixel} method name. To add a new
- * hook for a new log level, add the method here following that convention and it will be picked up
- * automatically.
+ * <p>At compile time, {@code INVOKESTATIC Flixel.info(...)} (and similar) calls in game modules are
+ * rewritten to call these methods with embedded source file and line metadata so TeaVM and other runtimes
+ * that lack JVM-style stack walking still print accurate locations.
  *
  * <p>Do not call these methods from handwritten game code; keep using {@link Flixel#info(Object)} and related APIs.
  */
