@@ -31,6 +31,12 @@ import org.flixelgdx.Flixel;
  * methods with embedded source file and line metadata so TeaVM and other runtimes that lack JVM-style
  * stack walking still print accurate locations.
  *
+ * <p>Method names follow the {@code bc<MethodName><Index>} convention (e.g. {@code bcDebug0},
+ * {@code bcError2}). The weaver's discovery logic strips {@code bc}, strips the trailing digit(s),
+ * and lowercases the remainder to derive the corresponding {@code Flixel} method name. To add a new
+ * hook for a new log level, add the method here following that convention and it will be picked up
+ * automatically.
+ *
  * <p>Do not call these methods from handwritten game code; keep using {@link Flixel#info(Object)} and related APIs.
  */
 public final class FlixelLoggingBytecodeHooks {
@@ -82,12 +88,12 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.warnWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr0(String message, String sourceFile, int line, String declaringClass,
+  public static void bcError0(String message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.errorWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr1(
+  public static void bcError1(
       String tag,
       Object message,
       String sourceFile,
@@ -97,7 +103,7 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.errorWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr2(
+  public static void bcError2(
       String tag,
       Object message,
       Throwable throwable,

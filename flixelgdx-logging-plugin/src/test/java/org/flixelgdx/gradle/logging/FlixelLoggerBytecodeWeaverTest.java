@@ -44,8 +44,60 @@ import javax.tools.ToolProvider;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class FlixelLoggerBytecodeWeaverTest {
+
+  /**
+   * Validates that the dynamic discovery built non-empty replacement maps. An empty map would silently
+   * make the weaver a no-op if flixelgdx-core were missing from the classpath, so catching that early
+   * is important.
+   */
+  @Test
+  void discoveredReplacementsAreNonEmpty() {
+    // Trigger a real weave on a class that calls FlixelLogger directly; if the maps are empty the
+    // rewrite will not happen and weave() returns false, which is the failure signal.
+    try {
+      Path tmp = Files.createTempDirectory("flixel-log-weave-discovery");
+      Path srcDir = tmp.resolve("flixel/weavetestdiscovery");
+      Files.createDirectories(srcDir);
+      Path source = srcDir.resolve("DiscoveryCaller.java");
+      Files.writeString(
+          source,
+          """
+              package flixel.weavetestdiscovery;
+              import org.flixelgdx.logging.*;
+              public class DiscoveryCaller {
+                public static void run(FlixelLogger log) {
+                  log.info("probe");
+                }
+              }
+              """);
+
+      JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+      assertNotNull(compiler, "need a JDK (not JRE) to run this test");
+      Path out = tmp.resolve("classes");
+      Files.createDirectories(out);
+      String classpath = System.getProperty("java.class.path");
+      try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null)) {
+        Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(source.toFile());
+        boolean ok = compiler
+            .getTask(null, fileManager, null, List.of("-classpath", classpath, "-d", out.toString()), null, units)
+            .call();
+        assertTrue(ok, "compile failed");
+      }
+
+      byte[] bytes = Files.readAllBytes(out.resolve("flixel/weavetestdiscovery/DiscoveryCaller.class"));
+      ClassReader reader = new ClassReader(bytes);
+      ClassNode classNode = new ClassNode();
+      reader.accept(classNode, ClassReader.SKIP_FRAMES);
+      assertTrue(
+          FlixelLoggerBytecodeWeaver.weave(classNode),
+          "weave() returned false - replacement maps may be empty (is flixelgdx-core on the test classpath?)");
+    } catch (Exception e) {
+      fail("unexpected exception: " + e);
+    }
+  }
 
   @Test
   void weaveRewritesInfoCall() throws Exception {
