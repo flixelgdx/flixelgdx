@@ -617,7 +617,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
           if (camera.width != fboOrthoW || camera.height != fboOrthoH) {
             fboOrthoW = camera.width;
             fboOrthoH = camera.height;
-            fboOrtho.setToOrtho2D(0, 0, fboOrthoW, fboOrthoH);
+            // Match the active backend's depth range; the 4-arg overload assumes OpenGL's [-1, 1],
+            // which depth-clips the composite quad to black on Vulkan, Metal, and Direct3D.
+            fboOrtho.setToOrtho2D(0, 0, fboOrthoW, fboOrthoH, Flixel.graphics.isDepthZeroToOne());
           }
           batch.setProjection(fboOrtho);
           batch.setShader(cameraShader);
@@ -1024,7 +1026,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       if (w != fboOrthoW || h != fboOrthoH) {
         fboOrthoW = w;
         fboOrthoH = h;
-        fboOrtho.setToOrtho2D(0, 0, w, h);
+        // Same depth-range caveat as the per-camera composite: without the backend flag this quad
+        // is clipped to black on the [0, 1] depth backends (Vulkan, Metal, Direct3D).
+        fboOrtho.setToOrtho2D(0, 0, w, h, Flixel.graphics.isDepthZeroToOne());
       }
       batch.setProjection(fboOrtho);
       batch.setShader(gs);
