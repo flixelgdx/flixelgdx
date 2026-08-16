@@ -117,6 +117,22 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @NotNull
   private final int[] viewStack = new int[16];
 
+  /**
+   * Framebuffer bound at each {@link #viewStack} level ({@code -1} is the back buffer), plus that
+   * level's pixel size. When a render target (for example a global shader FBO) wraps the whole
+   * camera loop, {@link #beginCameraPass()} reads these so every camera can still get its own view
+   * into the same framebuffer instead of sharing one, which is what keeps per-camera zoom and scroll
+   * from overwriting each other.
+   */
+  @NotNull
+  private final short[] viewStackFrameBuffer = new short[16];
+
+  @NotNull
+  private final int[] viewStackWidth = new int[16];
+
+  @NotNull
+  private final int[] viewStackHeight = new int[16];
+
   @NotNull
   private final BGFXVertexLayout vertexLayout = BGFXVertexLayout.create();
 
@@ -206,6 +222,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     this.viewportWidth = width;
     this.viewportHeight = height;
     this.viewStack[0] = SCREEN_CLEAR_VIEW;
+    this.viewStackFrameBuffer[0] = -1;
     this.viewStackDepth = 1;
 
     this.api = apiFromRenderer(BGFX.bgfx_get_renderer_type());
@@ -376,18 +393,24 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     // bgfx applies the view transform per view for the whole frame, so sharing one view would let
     // the last camera's zoom and scroll overwrite every other camera's.
     //
-    // Only top-level (screen) passes are isolated here. When a render target is already active (for
-    // example a global shader FBO that wraps every camera), we keep drawing into that target's view
-    // rather than popping it off the stack.
-    if (viewStackDepth != 1) {
-      return;
+    // This holds even when a render target already wraps the camera loop (for example a global
+    // shader FBO): each camera still gets a fresh view, bound to that target's framebuffer, so the
+    // per-camera transforms survive instead of collapsing onto the last camera's.
+    int level = viewStackDepth - 1;
+    int view;
+    if (level == 0) {
+      view = nextScreenView;
+      if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+        nextScreenView++;
+      }
+      // On screen, draw into the render-resolution scene surface when one is active, else the back buffer.
+      BGFX.bgfx_set_view_frame_buffer(view, sceneActive ? sceneFrameBuffer() : (short) -1);
+    } else {
+      view = nextTargetView++;
+      BGFX.bgfx_set_view_frame_buffer(view, viewStackFrameBuffer[level]);
+      BGFX.bgfx_set_view_rect(view, 0, 0, viewStackWidth[level], viewStackHeight[level]);
     }
-    int view = nextScreenView;
-    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
-      nextScreenView++;
-    }
-    viewStack[0] = view;
-    BGFX.bgfx_set_view_frame_buffer(view, sceneActive ? sceneFrameBuffer() : (short) -1);
+    viewStack[level] = view;
     BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_NONE, 0, 1f, 0);
     BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_touch(view);
@@ -682,12 +705,19 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   void pushRenderTarget(short frameBuffer, int width, int height) {
     int view = nextTargetView++;
     if (viewStackDepth < viewStack.length) {
-      viewStack[viewStackDepth++] = view;
+      viewStack[viewStackDepth] = view;
+      viewStackFrameBuffer[viewStackDepth] = frameBuffer;
+      viewStackWidth[viewStackDepth] = width;
+      viewStackHeight[viewStackDepth] = height;
+      viewStackDepth++;
     }
     BGFX.bgfx_set_view_frame_buffer(view, frameBuffer);
     BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_set_view_rect(view, 0, 0, width, height);
     BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_COLOR, 0, 1f, 0);
+    // Touch so the target still clears even when the camera loop redirects its draws into fresh
+    // per-camera views bound to this same framebuffer (see beginCameraPass).
+    BGFX.bgfx_touch(view);
   }
 
   /** Returns submissions to the previously active view. */
