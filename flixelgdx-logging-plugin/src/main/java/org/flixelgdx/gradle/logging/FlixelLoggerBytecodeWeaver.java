@@ -177,7 +177,7 @@ public final class FlixelLoggerBytecodeWeaver {
    * not full frames. Our transformations only insert {@code LDC}/{@code SIPUSH} sequences before existing
    * invoke instructions; they do not add branches or jump targets, so compiler-generated frames remain
    * valid and do not need to be recalculated. Using {@link ClassWriter#COMPUTE_FRAMES} would require
-   * resolving the full class hierarchy via {@link ClassWriter#getCommonSuperClass}, which is unavailable
+   * resolving the full class hierarchy via {@code ClassWriter.getCommonSuperClass}, which is unavailable
    * in isolated environments such as Gradle artifact transforms.
    */
   public static ClassWriter newClassWriter(ClassReader reader) {
