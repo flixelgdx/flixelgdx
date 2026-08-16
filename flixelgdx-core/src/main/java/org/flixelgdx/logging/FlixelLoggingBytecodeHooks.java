@@ -26,16 +26,32 @@ package org.flixelgdx.logging;
 import org.flixelgdx.Flixel;
 
 /**
- * Static entry points used only by the {@code flixelgdx-logging-plugin} bytecode weaver. At compile time,
- * {@code INVOKESTATIC Flixel.info(...)} (and similar) calls in game modules are rewritten to call these
- * methods with embedded source file and line metadata so TeaVM and other runtimes that lack JVM-style
- * stack walking still print accurate locations.
+ * Static entry points used only by the {@code flixelgdx-logging-plugin} bytecode weaver.
+ *
+ * <p>At compile time, {@code INVOKESTATIC Flixel.info(...)} (and similar) calls in game modules are
+ * rewritten to call these methods with embedded source file and line metadata so TeaVM and other runtimes
+ * that lack JVM-style stack walking still print accurate locations.
  *
  * <p>Do not call these methods from handwritten game code; keep using {@link Flixel#info(Object)} and related APIs.
  */
 public final class FlixelLoggingBytecodeHooks {
 
   private FlixelLoggingBytecodeHooks() {}
+
+  public static void bcDebug0(Object message, String sourceFile, int line, String declaringClass,
+      String declaringMethod) {
+    Flixel.log.debugWithSite(message, sourceFile, line, declaringClass, declaringMethod);
+  }
+
+  public static void bcDebug1(
+      String tag,
+      Object message,
+      String sourceFile,
+      int line,
+      String declaringClass,
+      String declaringMethod) {
+    Flixel.log.debugWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
+  }
 
   public static void bcInfo0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
@@ -67,12 +83,12 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.warnWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr0(String message, String sourceFile, int line, String declaringClass,
+  public static void bcError0(String message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.errorWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr1(
+  public static void bcError1(
       String tag,
       Object message,
       String sourceFile,
@@ -82,7 +98,7 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.errorWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
-  public static void bcErr2(
+  public static void bcError2(
       String tag,
       Object message,
       Throwable throwable,

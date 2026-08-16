@@ -40,113 +40,61 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Rewrites {@code FlixelLogger} {@code info}, {@code warn}, and {@code error} calls to {@code *WithSite} overloads,
- * and {@code Flixel} static logging helpers to {@code FlixelLoggingBytecodeHooks}, using the enclosing class
- * {@code SourceFile} attribute and {@link LineNumberNode} data so each log records the caller's file and line.
+ * Rewrites {@code FlixelLogger} logging calls to their {@code *WithSite} overloads, and {@code Flixel}
+ * static logging helpers to {@code FlixelLoggingBytecodeHooks}, using the enclosing class {@code SourceFile}
+ * attribute and {@link LineNumberNode} data so each log records the caller's file and line.
+ *
+ * <p>Two replacement tables drive the weaver:
+ * <ul>
+ *   <li>{@code REPLACEMENTS} maps each rewritable {@code INVOKEVIRTUAL FlixelLogger.*} call to its
+ *       {@code *WithSite} counterpart.</li>
+ *   <li>{@code FLIXEL_STATIC_REPLACEMENTS} maps each rewritable {@code INVOKESTATIC Flixel.*} call to
+ *       the corresponding {@code FlixelLoggingBytecodeHooks.bc*} hook.</li>
+ * </ul>
+ *
+ * <p>When adding a new log level, update both tables here and add the matching hook to
+ * {@code FlixelLoggingBytecodeHooks}.
+ *
+ * <p>{@code Flixel.java} itself is processed for {@code INVOKESTATIC Flixel.*} calls (so internal log sites
+ * like the crash handler record their accurate location), but {@code INVOKEVIRTUAL FlixelLogger.*} calls within
+ * {@code Flixel.java} are skipped. Rewriting those would embed {@code Flixel.java} line numbers inside the static
+ * delegation helpers (e.g. {@code warn(tag, message)} calling {@code log.warn(tag, message)}), which would be
+ * misleading rather than useful.
  */
 public final class FlixelLoggerBytecodeWeaver {
 
   private static final String LOGGER_OWNER = "org/flixelgdx/logging/FlixelLogger";
 
   /**
-   * Flixel static {@code info}, {@code warn}, and {@code error} helpers delegate to {@code FlixelLogger}. Rewriting
-   * {@code Flixel} itself would only capture {@code Flixel.java} line numbers, so {@link #weave(ClassNode)} skips that
-   * class. Call sites in game bytecode use {@code INVOKESTATIC Flixel...}; those are rewritten to
-   * {@code FlixelLoggingBytecodeHooks} so line metadata comes from the caller class (critical for TeaVM
-   * where stack walking is unavailable).
+   * Flixel static logging helpers delegate to {@code FlixelLogger}. Call sites in game bytecode use
+   * {@code INVOKESTATIC Flixel...}; those are rewritten to {@code FlixelLoggingBytecodeHooks} so line
+   * metadata comes from the caller class (critical for TeaVM where stack walking is unavailable).
+   *
+   * <p>{@code INVOKESTATIC Flixel.*} calls found inside {@code Flixel.java} itself (such as the crash
+   * handler) are also rewritten so their correct {@code Flixel.java} site is captured. Only
+   * {@code INVOKEVIRTUAL FlixelLogger.*} calls inside {@code Flixel.java} remain untouched.
    */
   private static final String FLIXEL_STATIC_FACADE_INTERNAL = "org/flixelgdx/Flixel";
 
   private static final String HOOKS_OWNER = "org/flixelgdx/logging/FlixelLoggingBytecodeHooks";
 
-  private static final Map<String, Replacement> REPLACEMENTS = new HashMap<>();
+  // Descriptor fragment shared by all site-aware method overloads and hooks.
+  // Represents: String sourceFile, int lineNumber, String declaringClass, String declaringMethod
+  private static final String SITE = "Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V";
 
-  private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = new HashMap<>();
+  /**
+   * Maps {@code methodName + descriptor} for {@code INVOKEVIRTUAL FlixelLogger.*} calls to their
+   * {@code *WithSite} counterparts. When a new log level is added to {@code FlixelLogger}, register
+   * its overloads here.
+   */
+  private static final Map<String, Replacement> REPLACEMENTS = buildVirtualReplacements();
 
-  static {
-    REPLACEMENTS.put(
-        "info(Ljava/lang/Object;)V",
-        new Replacement("infoWithSite",
-            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "info(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "infoWithSite",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "warn(Ljava/lang/Object;)V",
-        new Replacement("warnWithSite",
-            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "warn(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "warnWithSite",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "error(Ljava/lang/Object;)V",
-        new Replacement("errorWithSite",
-            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "error(Ljava/lang/Object;Ljava/lang/Throwable;)V",
-        new Replacement(
-            "errorWithSite",
-            "(Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "error(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "errorWithSite",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
-        new Replacement(
-            "errorWithSite",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "debug(Ljava/lang/Object;)V",
-        new Replacement("debugWithSite",
-            "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    REPLACEMENTS.put(
-        "debug(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "debugWithSite",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "info(Ljava/lang/Object;)V",
-        new Replacement(
-            "bcInfo0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "info(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "bcInfo1",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "warn(Ljava/lang/Object;)V",
-        new Replacement(
-            "bcWarn0", "(Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "warn(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "bcWarn1",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "error(Ljava/lang/String;)V",
-        new Replacement(
-            "bcErr0", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "error(Ljava/lang/String;Ljava/lang/Object;)V",
-        new Replacement(
-            "bcErr1",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-    FLIXEL_STATIC_REPLACEMENTS.put(
-        "error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
-        new Replacement(
-            "bcErr2",
-            "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V"));
-  }
-
-  private record Replacement(String newName, String newDescriptor) {
-  }
+  /**
+   * Maps {@code methodName + descriptor} for {@code INVOKESTATIC Flixel.*} calls to their
+   * {@code FlixelLoggingBytecodeHooks} hook. When a new hook is added to
+   * {@code FlixelLoggingBytecodeHooks}, register the corresponding {@code Flixel.*} overload here.
+   */
+  private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = buildStaticReplacements();
 
   private FlixelLoggerBytecodeWeaver() {}
 
@@ -154,11 +102,14 @@ public final class FlixelLoggerBytecodeWeaver {
    * @return {@code true} if at least one invocation was rewritten.
    */
   public static boolean weave(ClassNode classNode) {
-    if (FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name)
-        || HOOKS_OWNER.equals(classNode.name)
-        || LOGGER_OWNER.equals(classNode.name)) {
+    if (HOOKS_OWNER.equals(classNode.name) || LOGGER_OWNER.equals(classNode.name)) {
       return false;
     }
+    // When processing Flixel.java itself, only INVOKESTATIC Flixel.* calls are rewritten (so sites like
+    // the crash handler capture the correct Flixel.java location). INVOKEVIRTUAL FlixelLogger.* calls
+    // inside Flixel.java are skipped to avoid embedding Flixel.java line numbers inside the static
+    // delegation helpers (e.g. warn(tag, message) -> log.warn(tag, message)).
+    boolean isFacadeClass = FLIXEL_STATIC_FACADE_INTERNAL.equals(classNode.name);
     boolean changed = false;
     String sourceFile = classNode.sourceFile != null ? classNode.sourceFile : "UnknownFile";
     String classNameDots = classNode.name.replace('/', '.');
@@ -191,6 +142,11 @@ public final class FlixelLoggerBytecodeWeaver {
           continue;
         }
 
+        // Skip INVOKEVIRTUAL FlixelLogger rewrites inside Flixel.java itself.
+        if (isFacadeClass) {
+          continue;
+        }
+
         if (op != Opcodes.INVOKEVIRTUAL && op != Opcodes.INVOKEINTERFACE) {
           continue;
         }
@@ -213,21 +169,15 @@ public final class FlixelLoggerBytecodeWeaver {
   }
 
   /**
-   * Inserts {@code sourceFile, line, classNameDots, methodName} immediately before {@code invoke}, after the original args.
-   * Instructions must execute in that order so the operand stack ends as {@code ...; sourceFile; line; class; method} with
-   * {@code method} on top, matching JVM parameter popping for {@code *WithSite} and hook signatures (rightmost parameter first).
+   * Creates a {@link ClassWriter} that recomputes only max stack and locals ({@link ClassWriter#COMPUTE_MAXS}),
+   * not full frames. Our transformations only insert {@code LDC}/{@code SIPUSH} sequences before existing
+   * invoke instructions; they do not add branches or jump targets, so compiler-generated frames remain
+   * valid and do not need to be recalculated. Using {@link ClassWriter#COMPUTE_FRAMES} would require
+   * resolving the full class hierarchy via {@code ClassWriter.getCommonSuperClass}, which is unavailable
+   * in isolated environments such as Gradle artifact transforms.
    */
-  private static void insertSiteArguments(
-      InsnList list,
-      MethodInsnNode invoke,
-      String sourceFile,
-      int line,
-      String classNameDots,
-      String methodName) {
-    list.insertBefore(invoke, new LdcInsnNode(sourceFile));
-    list.insertBefore(invoke, pushInt(line));
-    list.insertBefore(invoke, new LdcInsnNode(classNameDots));
-    list.insertBefore(invoke, new LdcInsnNode(methodName));
+  public static ClassWriter newClassWriter(ClassReader reader) {
+    return new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
   }
 
   static AbstractInsnNode pushInt(int v) {
@@ -251,15 +201,76 @@ public final class FlixelLoggerBytecodeWeaver {
     };
   }
 
+  private static Map<String, Replacement> buildVirtualReplacements() {
+    // Maps FlixelLogger method name+descriptor to its *WithSite counterpart.
+    // Format: put(origName + "(origParams)V", new Replacement("*WithSite", "(origParams + SITE"))
+    Map<String, Replacement> m = new HashMap<>();
+    m.put("debug(Ljava/lang/Object;)V",
+        new Replacement("debugWithSite", "(Ljava/lang/Object;" + SITE));
+    m.put("debug(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("debugWithSite", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("info(Ljava/lang/Object;)V",
+        new Replacement("infoWithSite", "(Ljava/lang/Object;" + SITE));
+    m.put("info(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("infoWithSite", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("warn(Ljava/lang/Object;)V",
+        new Replacement("warnWithSite", "(Ljava/lang/Object;" + SITE));
+    m.put("warn(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("warnWithSite", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("error(Ljava/lang/Object;)V",
+        new Replacement("errorWithSite", "(Ljava/lang/Object;" + SITE));
+    m.put("error(Ljava/lang/Object;Ljava/lang/Throwable;)V",
+        new Replacement("errorWithSite", "(Ljava/lang/Object;Ljava/lang/Throwable;" + SITE));
+    m.put("error(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("errorWithSite", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
+        new Replacement("errorWithSite", "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;" + SITE));
+    return m;
+  }
+
+  private static Map<String, Replacement> buildStaticReplacements() {
+    // Maps Flixel static method name+descriptor to the FlixelLoggingBytecodeHooks hook.
+    Map<String, Replacement> m = new HashMap<>();
+    m.put("debug(Ljava/lang/Object;)V",
+        new Replacement("bcDebug0", "(Ljava/lang/Object;" + SITE));
+    m.put("debug(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("bcDebug1", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("info(Ljava/lang/Object;)V",
+        new Replacement("bcInfo0", "(Ljava/lang/Object;" + SITE));
+    m.put("info(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("bcInfo1", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("warn(Ljava/lang/Object;)V",
+        new Replacement("bcWarn0", "(Ljava/lang/Object;" + SITE));
+    m.put("warn(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("bcWarn1", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("error(Ljava/lang/String;)V",
+        new Replacement("bcError0", "(Ljava/lang/String;" + SITE));
+    m.put("error(Ljava/lang/String;Ljava/lang/Object;)V",
+        new Replacement("bcError1", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
+    m.put("error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
+        new Replacement("bcError2", "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;" + SITE));
+    return m;
+  }
+
   /**
-   * Creates a {@link ClassWriter} that recomputes only max stack and locals ({@link ClassWriter#COMPUTE_MAXS}),
-   * not full frames. Our transformations only insert {@code LDC}/{@code SIPUSH} sequences before existing
-   * invoke instructions; they do not add branches or jump targets, so compiler-generated frames remain
-   * valid and do not need to be recalculated. Using {@link ClassWriter#COMPUTE_FRAMES} would require
-   * resolving the full class hierarchy via {@link ClassWriter#getCommonSuperClass}, which is unavailable
-   * in isolated environments such as Gradle artifact transforms.
+   * Inserts {@code sourceFile, line, classNameDots, methodName} immediately before {@code invoke},
+   * after the original args. Instructions must execute in that order so the operand stack ends as
+   * {@code ...; sourceFile; line; class; method} with {@code method} on top, matching JVM parameter
+   * popping for {@code *WithSite} and hook signatures (rightmost parameter first).
    */
-  public static ClassWriter newClassWriter(ClassReader reader) {
-    return new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+  private static void insertSiteArguments(
+      InsnList list,
+      MethodInsnNode invoke,
+      String sourceFile,
+      int line,
+      String classNameDots,
+      String methodName) {
+    list.insertBefore(invoke, new LdcInsnNode(sourceFile));
+    list.insertBefore(invoke, pushInt(line));
+    list.insertBefore(invoke, new LdcInsnNode(classNameDots));
+    list.insertBefore(invoke, new LdcInsnNode(methodName));
+  }
+
+  private record Replacement(String newName, String newDescriptor) {
   }
 }

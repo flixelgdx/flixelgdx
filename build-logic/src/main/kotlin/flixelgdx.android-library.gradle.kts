@@ -35,7 +35,7 @@ afterEvaluate {
         addStringOption("Werror")
       }
     }
-    setFailOnError(true)
+    isFailOnError = true
   }
 }
 
