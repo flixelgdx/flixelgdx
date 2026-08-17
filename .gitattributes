@@ -1,6 +1,5 @@
 * text=auto eol=lf
 *.bat text=auto eol=crlf
 
-*.kt linguist-language=Kotlin
 *.kts linguist-language=Kotlin
 *.sc linguist-language=GLSL
