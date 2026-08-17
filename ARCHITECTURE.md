@@ -7,12 +7,12 @@ FlixelGDX is organized into multiple Gradle modules to separate the core framewo
 The project is split into several modules, each serving a specific purpose:
 
 - **`flixelgdx-core`**: The heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent. Every platform in the entire framework depends on this.
-- **`flixelgdx-ktx`**: Optional Kotlin extension layer. Adds idiomatic Kotlin syntax (operators, destructuring, and a tween builder DSL) on top of `flixelgdx-core` for Kotlin users. It contains no runtime logic of its own and stays allocation-free so it is safe to use in per-frame code.
 - **`flixelgdx-desktop`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**.
 - **`flixelgdx-html5`**: The backend for the web using [TeaVM](https://teavm.org) to transpile Java bytecode to JavaScript or WebAssembly, allowing games to run seamlessly in a browser.
 - **`flixelgdx-android`**: The backend for Android mobile devices.
 - **`flixelgdx-ios`**: Planned backend for iOS mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
 - **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for the browser or other non-JVM targets (stack traces, optional log files, etc.).
+- **`flixelgdx-ktx`**: Optional Kotlin extension layer. Adds idiomatic Kotlin syntax (operators, destructuring, and a tween builder DSL) on top of `flixelgdx-core` for Kotlin users. It contains no runtime logic of its own and stays allocation-free so it is safe to use in per-frame code.
 - **`flixelgdx-basisu-plugin`**: Compression plugin that automatically downloads a Basis Universal binary for the current OS and applies `.ktx2` compression for every `.png` asset.
 - **`flixelgdx-teavm-plugin`**: Plugin that automates the workflow for web games. This includes copying assets, creating the HTML index file, extracting native scripts, and more.
 - **`flixelgdx-logging-plugin`**: Plugin that runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
