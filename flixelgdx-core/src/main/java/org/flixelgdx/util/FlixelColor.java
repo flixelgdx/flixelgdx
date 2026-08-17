@@ -27,6 +27,8 @@ import org.flixelgdx.math.FlixelMath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+
 /**
  * Mutable RGBA color with float components, used for tinting, backgrounds, and tween endpoints
  * without per-frame allocations.
@@ -74,8 +76,7 @@ public class FlixelColor {
   /** The alpha component in {@code [0, 1]}; {@code 0} is fully transparent. */
   public float a;
 
-  @Nullable
-  private float[] hsv;
+  private float @Nullable [] hsv;
 
   /**
    * Creates a new color with the default white color.
@@ -100,6 +101,9 @@ public class FlixelColor {
    */
   public FlixelColor(@NotNull FlixelColor source) {
     this(source.r, source.g, source.b, source.a);
+    if (source.hsv != null) {
+      hsv = Arrays.copyOf(source.hsv, source.hsv.length);
+    }
   }
 
   /**
