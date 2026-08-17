@@ -30,12 +30,4 @@ public enum FlixelNoopWindow implements FlixelWindow {
 
   /** Shared no-op instance. */
   INSTANCE;
-
-  @Override
-  public void setOpacity(float opacity) {}
-
-  @Override
-  public boolean supportsOpacity() {
-    return false;
-  }
 }

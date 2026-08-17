@@ -212,7 +212,7 @@ import java.util.function.Supplier;
  *
  * <h2>Threading</h2>
  * <p>
- * All Flixel APIs, unless otherwise noted, are intended to be called from the main main rendering thread.
+ * All Flixel APIs, unless otherwise noted, are intended to be called from the main rendering thread.
  * </p>
  *
  * <h2>Lifecycle</h2>

@@ -62,7 +62,7 @@ import java.util.Objects;
  * <p>{@link FlixelAction#callback} runs on the press edge when assigned; prefer a single static
  * {@link Runnable} to avoid allocating lambdas in hot paths.
  */
-public final class FlixelActionDigital extends FlixelAction {
+public class FlixelActionDigital extends FlixelAction {
 
   private final FlixelMap<String, FlixelDigitalBinding> namedBindings = new FlixelMap<>(8);
 

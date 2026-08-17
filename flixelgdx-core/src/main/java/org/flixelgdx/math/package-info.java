@@ -45,7 +45,7 @@
  * <h2>Value types</h2>
  * <p>{@link org.flixelgdx.math.FlixelVector FlixelVector} and
  * {@link org.flixelgdx.math.FlixelRect FlixelRect} are mutable structs. They are poolable, so
- * use them from their dedicated pools when you need a temporary and want to avoid allocation,
+ * use them from their dedicated pools when you need a temporary object and want to avoid allocation,
  * like so:
  *
  * <pre>{@code

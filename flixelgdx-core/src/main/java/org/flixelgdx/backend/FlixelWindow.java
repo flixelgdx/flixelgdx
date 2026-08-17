@@ -143,7 +143,9 @@ public interface FlixelWindow extends FlixelShakeable {
   /**
    * @return {@code true} if {@link #setOpacity(float)} can affect the window on this session.
    */
-  boolean supportsOpacity();
+  default boolean supportsOpacity() {
+    return false;
+  }
 
   /**
    * Sets whether the window uses native title bar and border decorations, when supported.

@@ -87,7 +87,7 @@ import java.util.Objects;
  * the default threshold and fires both methods on that frame. Adjust {@link #flickThreshold} before
  * the game loop if your game needs a different sensitivity.
  */
-public final class FlixelActionAnalog extends FlixelAction {
+public class FlixelActionAnalog extends FlixelAction {
 
   /**
    * Minimum stick magnitude (0 to 1) required for {@link #flicked()} and
