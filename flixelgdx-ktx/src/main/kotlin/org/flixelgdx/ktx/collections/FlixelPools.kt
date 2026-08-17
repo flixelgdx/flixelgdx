@@ -69,7 +69,7 @@ fun <T : Any> flixelPool(
  * ```
  *
  * The object is freed even if [block] throws. This function is inlined, so the lambda adds no
- * allocation and it is safe to call every frame.
+ * allocation, and it is safe to call every frame.
  *
  * @param block Runs against the borrowed object before it is freed.
  */

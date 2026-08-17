@@ -103,21 +103,21 @@ fun Any.tween(
   goals: FlixelTweenGoalScope.() -> Unit,
 ): FlixelTween {
   val settings = FlixelTweenSettings(type)
-  settings.setDuration(duration)
-  settings.setStartDelay(startDelay)
-  settings.setLoopDelay(loopDelay)
-  settings.setFramerate(framerate)
+  settings.duration = duration
+  settings.startDelay = startDelay
+  settings.loopDelay = loopDelay
+  settings.framerate = framerate
   if (ease != null) {
-    settings.setEase(ease)
+    settings.ease = ease
   }
   if (onStart != null) {
-    settings.setOnStart(onStart)
+    settings.onStart = onStart
   }
   if (onUpdate != null) {
-    settings.setOnUpdate(onUpdate)
+    settings.onUpdate = onUpdate
   }
   if (onComplete != null) {
-    settings.setOnComplete(onComplete)
+    settings.onComplete = onComplete
   }
   FlixelTweenGoalScope(settings).goals()
   return FlixelTween.tween(this, settings)
@@ -134,4 +134,4 @@ fun Any.tween(
  * @param next Supplies the tween to start once this one completes.
  * @return This tween, for further chaining.
  */
-inline fun FlixelTween.then(crossinline next: () -> FlixelTween): FlixelTween = then(Supplier { next() })
+inline fun FlixelTween.then(crossinline next: () -> FlixelTween): FlixelTween = then { next() }
