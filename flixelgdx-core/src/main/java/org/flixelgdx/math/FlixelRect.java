@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>This class is not thread safe; the shared pool assumes single-threaded
  * (game-loop) use.
  */
-public final class FlixelRect implements FlixelPoolable {
+public class FlixelRect implements FlixelPoolable {
 
   private static final FlixelPool<FlixelRect> POOL =
       new FlixelPool<>() {

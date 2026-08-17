@@ -47,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
  *     .scale(scaleX, scaleY);
  * }</pre>
  */
-public final class FlixelAffine {
+public class FlixelAffine {
 
   /** Row 0, column 0 (x scale / cosine term). */
   public float m00 = 1f;

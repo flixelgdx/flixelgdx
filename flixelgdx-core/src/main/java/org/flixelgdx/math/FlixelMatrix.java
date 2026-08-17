@@ -38,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
  * {@link #mul}. All builder methods mutate this matrix in place and return
  * {@code this} for chaining.
  */
-public final class FlixelMatrix {
+public class FlixelMatrix {
 
   /** Index of row 0, column 0 in {@link #val}. */
   public static final int M00 = 0;

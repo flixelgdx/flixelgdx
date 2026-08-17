@@ -39,7 +39,7 @@
  * sequential chain, where each step starts after the tween returned by the previous step ends:
  *
  * <pre>{@code
- * // Slide right, drop down, then rotate -- each step starts after the previous finishes.
+ * // Slide right, drop down, then rotate. Each step starts after the previous finishes.
  * FlixelTween.tween(sprite, new FlixelTweenSettings()
  *         .addGoal(sprite::getX, 300f, sprite::setX)
  *         .setDuration(0.5f)

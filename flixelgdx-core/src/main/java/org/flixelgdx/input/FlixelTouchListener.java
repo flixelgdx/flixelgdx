@@ -82,13 +82,13 @@ public interface FlixelTouchListener {
   }
 
   /**
-   * Called when an active touch is cancelled by the system, for example when the OS overlays a
+   * Called when an active touch is canceled by the system, for example when the OS overlays a
    * notification or the app loses focus mid-gesture.
    *
    * <p>Treat this like {@link #touchReleased} but without valid end coordinates. Release any state
    * associated with the given pointer.
    *
-   * @param pointer The finger index whose contact was cancelled.
+   * @param pointer The finger index whose contact was canceled.
    * @param x The last known horizontal position in screen pixels, or a system-provided estimate.
    * @param y The last known vertical position in screen pixels, or a system-provided estimate.
    * @return {@code true} to consume the event, {@code false} to pass it on.
