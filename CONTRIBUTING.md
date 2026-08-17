@@ -19,7 +19,7 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 >
 > 2. We don't require you to mention whether you used AI to help you by default. We believe that the core of software engineering
 > isn't just about writing code, but rather it's about solving problems through innovation; however, if a maintainer at any
-> point asks you about whether or not you used AI to help you, we request you to be honest and transparent about it.
+> point asks you about whether you used AI to help you, we request you to be honest and transparent about it.
 >
 > 3. If your code is broken or rejected, ***it is not the AI's fault, it is yours***. AI is useful, but it can't do the thinking for you.
 > 
@@ -73,14 +73,10 @@ We use [EditorConfig](https://editorconfig.org) to keep indentation, line ending
 
 EditorConfig only controls how your editor behaves when you type or when it applies basic rules (e.g. indent on Tab, trim on save). It does **not** run a full code formatter. For “Format” or format-on-save, your editor uses its own formatter (e.g. IntelliJ’s code style or a VS Code formatter). To avoid clashes, enable EditorConfig in your editor so its behavior matches the project, and use the Project code style where applicable.
 
-#### Editor setup (use EditorConfig in your editor)
+#### IntelliJ setup 
 
-- **IntelliJ IDEA**
-    - Go to **Settings → Editor → Code Style** and enable **“Enable EditorConfig support”** (on some versions it is under **Settings → Editor → General**).
-    - Use the **Project** code style scheme so EditorConfig takes precedence over personal/IDE defaults. The project’s `.editorconfig` also includes IntelliJ-specific options (e.g. `ij_java_*`) for brace style and imports.
-- **VS Code / Cursor**
-    - EditorConfig is not built in. Install the **“EditorConfig for VS Code”** extension (publisher: **EditorConfig**, extension ID: `EditorConfig.EditorConfig`).
-    - After that, the editor will follow `.editorconfig` for indent, line endings, and trim/final newline when you edit. Any “Format” or format-on-save still uses whatever formatter you have selected; configure that formatter to match the project (e.g. 2 spaces, 120 chars) so formatting and EditorConfig stay in sync.
+- Go to **Settings -> Editor -> Code Style** and enable **“Enable EditorConfig support”** (on some versions it is under **Settings -> Editor -> General**).
+- Use the **Project** code style scheme so EditorConfig takes precedence over personal/IDE defaults. The project’s `.editorconfig` also includes IntelliJ-specific options (e.g. `ij_java_*`) for brace style and imports.
 
 Once EditorConfig is enabled, new and edited files will respect the project’s indentation and whitespace rules automatically.
 
