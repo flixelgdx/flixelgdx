@@ -279,9 +279,15 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
   /**
    * When {@code true}, {@link #update(int, int, boolean)} fits this camera into the screen
-   * rectangle {@code (x, y, width, height)} instead of the full window. When {@code false},
-   * placement is inferred when {@link Flixel#game} has multiple cameras
-   * (horizontal/vertical strips, picture-in-picture, etc.).
+   * rectangle defined by {@code (x, y, width, height)} instead of the full window.
+   *
+   * <p>Set this to {@code true} for split-screen, picture-in-picture, or any camera that
+   * occupies only part of the window. A camera positioned at a non-zero {@link #x} or
+   * {@link #y} is also automatically treated as a sub-screen viewport without needing this flag.
+   *
+   * <p>A camera whose design dimensions are smaller than the current window but that sits at
+   * the window origin (x = 0, y = 0) is still treated as a full-window camera; this flag
+   * must be set explicitly if sub-screen behavior is desired for such a camera.
    */
   public boolean useSubScreenViewport = false;
 
@@ -551,8 +557,12 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Called automatically each frame by {@link #update(float)}.
    */
   public void updateScroll() {
-    float vw = getViewWidth();
-    float vh = getViewHeight();
+    // Use the viewport's actual visible world size so that EXTEND viewports (whose worldWidth
+    // grows beyond the design width when the window is wider) clamp scroll bounds correctly.
+    // For FIT and STRETCH, viewport.getWorldWidth() equals the design width, so this is
+    // equivalent to the old getViewWidth() call.
+    float vw = viewport.getWorldWidth() / zoom;
+    float vh = viewport.getWorldHeight() / zoom;
     // Max is applied before min so that when the level is smaller than the view, the min
     // (left/top) edge wins and the camera stays pinned to the start of the level instead
     // of oscillating between minScroll and maxScroll - vw.
@@ -1287,14 +1297,18 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     if (game == null || game.getCameras() == null || game.getCameras().getSize() <= 1) {
       return false;
     }
-    boolean coversFullWindow = x <= 0f && y <= 0f && width >= screenWidth && height >= screenHeight;
-    if (coversFullWindow) {
+    // Only treat a camera as a sub-screen viewport when it is explicitly positioned off the
+    // window origin. A camera whose design dimensions are smaller than the current window
+    // (e.g. because the user widened or maximized the window) is still a full-window camera;
+    // it must not be routed through the sub-screen path just because width < screenWidth or
+    // height < screenHeight happens to be true after a resize.
+    //
+    // Cameras that are genuinely sub-screen (split-screen, picture-in-picture) should set
+    // useSubScreenViewport = true, a custom pixel/normalized region, or a non-zero x/y position.
+    if (x <= 0f && y <= 0f && width >= screenWidth && height >= screenHeight) {
       return false;
     }
-    boolean horizontalStrip = width < screenWidth && Math.abs(height - screenHeight) <= 1;
-    boolean verticalStrip = height < screenHeight && Math.abs(width - screenWidth) <= 1;
-    boolean positioned = x != 0f || y != 0f;
-    return horizontalStrip || verticalStrip || positioned;
+    return x != 0f || y != 0f;
   }
 
   /**
