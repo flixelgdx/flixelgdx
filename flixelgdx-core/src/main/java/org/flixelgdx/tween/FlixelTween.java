@@ -154,6 +154,9 @@ public abstract class FlixelTween implements FlixelPoolable {
   /** How many times {@code this} tween has updated. */
   protected int executions = 0;
 
+  /** The callback to run when this tween completes its final cycle. Set via {@link #then(Runnable)}. */
+  private Runnable nextTween;
+
   /** Is {@code this} tween currently paused? */
   public boolean paused = false;
 
@@ -691,8 +694,13 @@ public abstract class FlixelTween implements FlixelPoolable {
       internalRestart = false;
     } else {
       active = false;
+      // Capture before removeTween may call destroy() and null this field via pool.free().
+      Runnable next = nextTween;
       if (type.removeOnFinish() && manager != null) {
         manager.removeTween(this, true);
+      }
+      if (next != null) {
+        next.run();
       }
     }
   }
@@ -704,6 +712,7 @@ public abstract class FlixelTween implements FlixelPoolable {
     resetBasic();
     tweenSettings = null;
     manager = null;
+    nextTween = null;
   }
 
   /**
@@ -792,6 +801,38 @@ public abstract class FlixelTween implements FlixelPoolable {
     active = true;
     finished = false;
     backward = tweenSettings != null && tweenSettings.getType().isBackward();
+  }
+
+  /**
+   * Schedules a callback to run immediately after this tween completes its final cycle.
+   *
+   * <p>This is the primary mechanism for chaining tweens sequentially. The {@code next} runnable
+   * fires once the tween reaches the end of its animation (after the {@code onComplete} callback),
+   * at which point you can start a new tween or run any other follow-up logic.
+   *
+   * <p>Note that {@code then} does not fire for {@link org.flixelgdx.tween.settings.FlixelTweenType#LOOPING LOOPING}
+   * or {@link org.flixelgdx.tween.settings.FlixelTweenType#PINGPONG PINGPONG} tweens, since those
+   * repeat indefinitely and never reach a true final completion.
+   *
+   * <p>Example - chaining two position tweens so the second begins as soon as the first finishes:
+   *
+   * <pre>{@code
+   * FlixelTween.tween(sprite, new FlixelTweenSettings()
+   *     .addGoal(sprite::getX, 300f, sprite::setX)
+   *     .setDuration(0.5f)
+   *     .setEase(FlixelEase::quadOut))
+   *   .then(() -> FlixelTween.tween(sprite, new FlixelTweenSettings()
+   *       .addGoal(sprite::getY, 200f, sprite::setY)
+   *       .setDuration(0.5f)
+   *       .setEase(FlixelEase::bounceOut)));
+   * }</pre>
+   *
+   * @param next The runnable to execute when this tween finishes.
+   * @return {@code this} tween, for method chaining.
+   */
+  public FlixelTween then(Runnable next) {
+    nextTween = next;
+    return this;
   }
 
   public FlixelTweenSettings getTweenSettings() {

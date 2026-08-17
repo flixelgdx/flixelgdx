@@ -30,7 +30,23 @@
  *     .addGoal(sprite::getX, 300f, sprite::setX)
  *     .setDuration(1.5f)
  *     .setEase(FlixelEase::quadOut)
- *     .onComplete(t -> Flixel.info("Slide done!")));
+ *     .setOnComplete(t -> Flixel.info("Slide done!")));
+ * }</pre>
+ *
+ * <h2>Chaining tweens</h2>
+ * <p>Use {@link org.flixelgdx.tween.FlixelTween#then(Runnable) FlixelTween.then(...)} to start a
+ * follow-up tween as soon as the previous one finishes:
+ *
+ * <pre>{@code
+ * // Slide right, then drop down once the first tween is done.
+ * FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *         .addGoal(sprite::getX, 300f, sprite::setX)
+ *         .setDuration(0.5f)
+ *         .setEase(FlixelEase::quadOut))
+ *     .then(() -> FlixelTween.tween(sprite, new FlixelTweenSettings()
+ *         .addGoal(sprite::getY, 200f, sprite::setY)
+ *         .setDuration(0.5f)
+ *         .setEase(FlixelEase::bounceOut)));
  * }</pre>
  *
  * <h2>Easing curves</h2>
