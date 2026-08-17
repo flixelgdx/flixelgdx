@@ -154,8 +154,8 @@ public abstract class FlixelTween implements FlixelPoolable {
   /** How many times {@code this} tween has updated. */
   protected int executions = 0;
 
-  /** The callback to run when this tween completes its final cycle. Set via {@link #then(Runnable)}. */
-  private Runnable nextTween;
+  /** The step to run when this tween completes its final cycle. Set via {@link #then(Supplier)}. */
+  private Supplier<FlixelTween> nextStep;
 
   /** Is {@code this} tween currently paused? */
   public boolean paused = false;
@@ -695,12 +695,12 @@ public abstract class FlixelTween implements FlixelPoolable {
     } else {
       active = false;
       // Capture before removeTween may call destroy() and null this field via pool.free().
-      Runnable next = nextTween;
+      Supplier<FlixelTween> next = nextStep;
       if (type.removeOnFinish() && manager != null) {
         manager.removeTween(this, true);
       }
       if (next != null) {
-        next.run();
+        next.get();
       }
     }
   }
@@ -712,7 +712,7 @@ public abstract class FlixelTween implements FlixelPoolable {
     resetBasic();
     tweenSettings = null;
     manager = null;
-    nextTween = null;
+    nextStep = null;
   }
 
   /**
@@ -804,34 +804,58 @@ public abstract class FlixelTween implements FlixelPoolable {
   }
 
   /**
-   * Schedules a callback to run immediately after this tween completes its final cycle.
+   * Schedules a step to run immediately after this tween completes its final cycle, and supports
+   * calling {@code then(...)} multiple times to build a sequential chain.
    *
-   * <p>This is the primary mechanism for chaining tweens sequentially. The {@code next} runnable
-   * fires once the tween reaches the end of its animation (after the {@code onComplete} callback),
-   * at which point you can start a new tween or run any other follow-up logic.
+   * <p>This is the primary mechanism for chaining tweens sequentially. When this tween finishes
+   * (after the {@code onComplete} callback), the supplied step is called. The step should return
+   * the next {@link FlixelTween} it creates, so that any further {@code then(...)} calls added
+   * to this tween are automatically forwarded to that next tween's chain. Return {@code null} if
+   * the step does not create a tween (subsequent steps in the chain then fire immediately).
+   *
+   * <p>Calling {@code then(...)} more than once on the same tween builds a sequential chain: the
+   * second call is automatically wired to fire after the tween returned by the first step, the
+   * third after the tween returned by the second, and so on.
    *
    * <p>Note that {@code then} does not fire for {@link org.flixelgdx.tween.settings.FlixelTweenType#LOOPING LOOPING}
    * or {@link org.flixelgdx.tween.settings.FlixelTweenType#PINGPONG PINGPONG} tweens, since those
    * repeat indefinitely and never reach a true final completion.
    *
-   * <p>Example - chaining two position tweens so the second begins as soon as the first finishes:
+   * <p>Example - three tweens that run one after another:
    *
    * <pre>{@code
    * FlixelTween.tween(sprite, new FlixelTweenSettings()
-   *     .addGoal(sprite::getX, 300f, sprite::setX)
-   *     .setDuration(0.5f)
-   *     .setEase(FlixelEase::quadOut))
-   *   .then(() -> FlixelTween.tween(sprite, new FlixelTweenSettings()
-   *       .addGoal(sprite::getY, 200f, sprite::setY)
-   *       .setDuration(0.5f)
-   *       .setEase(FlixelEase::bounceOut)));
+   *         .addGoal(sprite::getX, 300f, sprite::setX)
+   *         .setDuration(0.5f)
+   *         .setEase(FlixelEase::quadOut))
+   *     .then(() -> FlixelTween.tween(sprite, new FlixelTweenSettings()
+   *         .addGoal(sprite::getY, 200f, sprite::setY)
+   *         .setDuration(0.5f)
+   *         .setEase(FlixelEase::bounceOut)))
+   *     .then(() -> FlixelTween.angle(sprite, 180f, new FlixelTweenSettings()
+   *         .setEase(FlixelEase::smoothStepInOut)));
    * }</pre>
    *
-   * @param next The runnable to execute when this tween finishes.
+   * @param next A supplier that starts the next tween and returns it (or {@code null} if no tween
+   *     is started). The return value is used to forward any further chain steps.
    * @return {@code this} tween, for method chaining.
    */
-  public FlixelTween then(Runnable next) {
-    nextTween = next;
+  public FlixelTween then(Supplier<FlixelTween> next) {
+    Supplier<FlixelTween> existing = nextStep;
+    if (existing == null) {
+      nextStep = next;
+    } else {
+      // Wire the new step after whatever tween the existing step produces.
+      nextStep = () -> {
+        FlixelTween created = existing.get();
+        if (created != null) {
+          created.then(next);
+        } else {
+          next.get();
+        }
+        return created;
+      };
+    }
     return this;
   }
 

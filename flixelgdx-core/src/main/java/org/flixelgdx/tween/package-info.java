@@ -34,11 +34,12 @@
  * }</pre>
  *
  * <h2>Chaining tweens</h2>
- * <p>Use {@link org.flixelgdx.tween.FlixelTween#then(Runnable) FlixelTween.then(...)} to start a
- * follow-up tween as soon as the previous one finishes:
+ * <p>Use {@link org.flixelgdx.tween.FlixelTween FlixelTween.then(...)} to start a follow-up tween
+ * as soon as the previous one finishes. Calling {@code then(...)} multiple times builds a
+ * sequential chain, where each step starts after the tween returned by the previous step ends:
  *
  * <pre>{@code
- * // Slide right, then drop down once the first tween is done.
+ * // Slide right, drop down, then rotate -- each step starts after the previous finishes.
  * FlixelTween.tween(sprite, new FlixelTweenSettings()
  *         .addGoal(sprite::getX, 300f, sprite::setX)
  *         .setDuration(0.5f)
@@ -46,7 +47,9 @@
  *     .then(() -> FlixelTween.tween(sprite, new FlixelTweenSettings()
  *         .addGoal(sprite::getY, 200f, sprite::setY)
  *         .setDuration(0.5f)
- *         .setEase(FlixelEase::bounceOut)));
+ *         .setEase(FlixelEase::bounceOut)))
+ *     .then(() -> FlixelTween.angle(sprite, 180f, new FlixelTweenSettings()
+ *         .setEase(FlixelEase::smoothStepInOut)));
  * }</pre>
  *
  * <h2>Easing curves</h2>
