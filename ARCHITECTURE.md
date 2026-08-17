@@ -7,6 +7,7 @@ FlixelGDX is organized into multiple Gradle modules to separate the core framewo
 The project is split into several modules, each serving a specific purpose:
 
 - **`flixelgdx-core`**: The heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent. Every platform in the entire framework depends on this.
+- **`flixelgdx-ktx`**: Optional Kotlin extension layer. Adds idiomatic Kotlin syntax (operators, destructuring, and a tween builder DSL) on top of `flixelgdx-core` for Kotlin users. It contains no runtime logic of its own and stays allocation-free so it is safe to use in per-frame code.
 - **`flixelgdx-desktop`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**.
 - **`flixelgdx-html5`**: The backend for the web using [TeaVM](https://teavm.org) to transpile Java bytecode to JavaScript or WebAssembly, allowing games to run seamlessly in a browser.
 - **`flixelgdx-android`**: The backend for Android mobile devices.
