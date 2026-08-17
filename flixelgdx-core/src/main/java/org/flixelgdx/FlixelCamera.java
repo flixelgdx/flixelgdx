@@ -34,6 +34,7 @@ import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
+import org.flixelgdx.text.FlixelText;
 import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
@@ -53,15 +54,15 @@ import org.jetbrains.annotations.Nullable;
  * <p>Every camera wraps a {@link FlixelViewport} internally. By default, a letterboxing
  * ({@link FlixelViewport.Scaling#FIT}) viewport is used. The viewport type is controlled by
  * the static {@link #viewportFactory}; platform launchers override it to supply a different
- * viewport (for example, the Android launcher installs an
- * an extend-style viewport so the game fills the screen without
- * letterboxing). Custom types can also be provided directly via the constructor overloads.
+ * viewport (for example, the Android launcher installs an extend-style viewport so the game fills
+ * the screen without letterboxing). Custom types can also be provided directly via the constructor
+ * overloads.
  *
- * <p>{@link FlixelViewport.Scaling#FIT} scales the game world to the window, so the world-to-screen factor is often
- * not a whole number when the window is larger than the camera's internal size (e.g. fullscreen).
- * integer-snapped glyph quads can look blocky under that scaling; prefer smooth text filtering
- * you draw through this pipeline (FlixelGDX does this for {@link org.flixelgdx.text.FlixelText FlixelText}
- * and registry fonts automatically).
+ * <p>{@link FlixelViewport.Scaling#FIT} scales the game world to the window, so the world-to-screen
+ * factor is often not a whole number when the window is larger than the camera's internal size
+ * (e.g. fullscreen). Integer-snapped glyph quads can look blocky under that scaling; prefer smooth text
+ * filtering you draw through this pipeline (FlixelGDX does this for {@link FlixelText} and registry
+ * fonts automatically).
  */
 public class FlixelCamera extends FlixelBasic implements FlixelColorable, FlixelShaderable {
 
@@ -559,10 +560,9 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public void updateScroll() {
     // Use the viewport's actual visible world size so that EXTEND viewports (whose worldWidth
     // grows beyond the design width when the window is wider) clamp scroll bounds correctly.
-    // For FIT and STRETCH, viewport.getWorldWidth() equals the design width, so this is
-    // equivalent to the old getViewWidth() call.
     float vw = viewport.getWorldWidth() / zoom;
     float vh = viewport.getWorldHeight() / zoom;
+
     // Max is applied before min so that when the level is smaller than the view, the min
     // (left/top) edge wins and the camera stays pinned to the start of the level instead
     // of oscillating between minScroll and maxScroll - vw.
