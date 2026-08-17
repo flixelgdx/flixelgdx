@@ -15,6 +15,7 @@ plugins {
   alias(libs.plugins.spotless) apply false
   alias(libs.plugins.vanniktech) apply false
   alias(libs.plugins.android.library) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
 }
 
 val groupId: String by project
