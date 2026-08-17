@@ -19,6 +19,17 @@ plugins {
 
 kotlin {
   jvmToolchain(17)
+
+  // Build against an older Kotlin baseline than the compiler so the published artifact stays
+  // consumable by projects on older Kotlin toolchains. The compiler is 2.2.x (required by Gradle 9),
+  // but emitting 2.0 metadata and depending on the 2.0 standard library keeps the module readable by
+  // any consumer on Kotlin 2.0 or newer.
+  coreLibrariesVersion = "2.0.21"
+
+  compilerOptions {
+    apiVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
+    languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
+  }
 }
 
 // JitPack rewrites Gradle module metadata and drops classifier compatibility data, causing
