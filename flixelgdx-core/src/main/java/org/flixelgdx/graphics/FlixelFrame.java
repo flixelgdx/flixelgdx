@@ -161,23 +161,23 @@ public final class FlixelFrame {
   }
 
   /**
-   * Computes where the trimmed region's bottom edge sits inside the source box, in pixels measured
-   * <strong>upward</strong> from the box's bottom edge.
+   * Computes where the trimmed region's top edge sits inside the source box, in pixels measured
+   * <strong>downward</strong> from the box's top edge.
    *
-   * <p>The renderer works in a y-up space (larger y is higher on screen), so a region is positioned
-   * by its bottom-left corner. The unflipped bottom inset is the empty space below the art inside
-   * the source box ({@code sourceHeight - regionHeight - offsetY}); keeping it constant across an
-   * animation's frames is exactly what plants a character's feet. A vertical flip swaps the top and
-   * bottom gaps, leaving {@link #offsetY} as the new bottom inset.
+   * <p>The renderer works in a y-down space (larger y is lower on screen), so a region is positioned
+   * by its top-left corner. The unflipped top inset is simply the empty space above the art inside
+   * the source box ({@link #offsetY}); keeping it constant across an animation's frames is exactly
+   * what keeps a character steady. A vertical flip swaps the top and bottom gaps, leaving
+   * {@code sourceHeight - regionHeight - offsetY} as the new top inset.
    *
    * @param sourceHeight The untrimmed frame height ({@link #originalHeight}).
    * @param regionHeight The trimmed region height ({@link #getRegionHeight()}).
    * @param offsetY The top trim offset ({@link #offsetY}).
    * @param flipY Whether the frame is drawn mirrored vertically.
-   * @return The bottom inset of the region inside the source box, in pixels.
+   * @return The top inset of the region inside the source box, in pixels.
    */
   public static int regionInsetY(int sourceHeight, int regionHeight, int offsetY, boolean flipY) {
-    return flipY ? offsetY : (sourceHeight - regionHeight - offsetY);
+    return flipY ? (sourceHeight - regionHeight - offsetY) : offsetY;
   }
 
   @NotNull

@@ -572,7 +572,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float wy = cam.worldToViewY(getY(), scrollY);
 
     float drawLeft = wx + offsetX;
-    float drawBottom = wy + offsetY;
+    float drawTop = wy + offsetY;
     // Use the actual graphic dimensions for culling rather than the hitbox, since the hitbox may
     // have been shrunk independently (e.g. via setSize()) while the visible sprite remains larger.
     float cullW = f.originalWidth * Math.abs(scaleX);
@@ -584,11 +584,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
       float rotW = cos * cullW + sin * cullH;
       float rotH = sin * cullW + cos * cullH;
       drawLeft -= (rotW - cullW) * 0.5f;
-      drawBottom -= (rotH - cullH) * 0.5f;
+      drawTop -= (rotH - cullH) * 0.5f;
       cullW = rotW;
       cullH = rotH;
     }
-    if (!cam.isInView(drawLeft, drawBottom, cullW, cullH)) {
+    if (!cam.isInView(drawLeft, drawTop, cullW, cullH)) {
       return;
     }
 
@@ -626,7 +626,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     float drawX = wx + offsetX + insetX + srcW * (scaleX - 1) * 0.5f;
     float drawY = wy + offsetY + insetY + srcH * (scaleY - 1) * 0.5f;
 
-    // Rotate/scale around the source box's center, expressed relative to the region's bottom-left
+    // Rotate/scale around the source box's center, expressed relative to the region's top-left
     // corner (the origin that the batch.draw(...) overload below measures from).
     float originXParam = srcW / 2f - insetX;
     float originYParam = srcH / 2f - insetY;
@@ -922,8 +922,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Sets the pivot point used for rotation and scale, measured from the sprite's bottom-left draw
-   * corner in pixels. Default is {@code (0, 0)}, which rotates and scales around the bottom-left
+   * Sets the pivot point used for rotation and scale, measured from the sprite's top-left draw
+   * corner in pixels. Default is {@code (0, 0)}, which rotates and scales around the top-left
    * corner. Call {@link #setOriginCenter()} to rotate around the center instead.
    *
    * @param originX Horizontal pivot offset in pixels.
@@ -1211,7 +1211,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    *
    * <p>Only the region inside the rectangle is drawn; pixels outside are discarded by the GPU
    * scissor. Coordinates are in the same units as {@link #getWidth()}/{@link #getHeight()} - that
-   * is, they already account for scale, so {@code x=0, y=0} anchors to the drawn bottom-left
+   * is, they already account for scale, so {@code x=0, y=0} anchors to the drawn top-left
    * corner and {@code width=getWidth()} covers the full drawn width regardless of scale.
    *
    * <p>For example, to show only the left half of a sprite regardless of its current scale:

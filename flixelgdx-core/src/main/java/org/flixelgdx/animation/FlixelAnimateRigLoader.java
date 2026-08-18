@@ -79,23 +79,14 @@ import java.util.Objects;
  *   m10 = b;   m11 = d;   m12 = ty;
  * </pre>
  *
- * <h2>Coordinate flip</h2>
- * Adobe Animate uses Y-down pixel space (the top-left of a bitmap is {@code (0, 0)}). The
- * renderer draws a frame with its bottom-left
- * at the supplied local origin when a Y-up projection is active (which is the FlixelGDX default). The
- * loader bakes two Y-flips into every part so the draw path can stay a simple
- * {@code translate * scale * part}:
- * <ol>
- *   <li>A <strong>per-bitmap flip</strong> {@code [1, 0, 0; 0, -1, origH]} that turns the
- *   renderer's local-space Y-up rectangle into Adobe's Y-down rectangle, applied on the <em>right</em> so that
- *   the existing {@code MX} chain keeps interpreting its input as Flash-local. Parts packed rotated
- *   90 degrees clockwise use an extended matrix {@code [0, -1, origW; -1, 0, origH]} that
- *   simultaneously un-rotates and Y-flips.</li>
- *   <li>A <strong>rig-wide flip</strong> {@code [1, 0, -anchorMinX; 0, -1, anchorMinY + anchorHeight]}
- *   that turns Flash-world coordinates back into Y-up world coordinates after all Flash matrices have
- *   been composed, and simultaneously shifts the anchor bounding box so its bottom-left corner sits at
- *   the sprite's origin.</li>
- * </ol>
+ * <h2>Coordinate space</h2>
+ * Adobe Animate uses Y-down pixel space (the top-left of a bitmap is {@code (0, 0)}), which is exactly
+ * the space the FlixelGDX renderer draws in. No coordinate flips are needed: a frame is drawn with its
+ * top-left at the supplied local origin, so the loader only slides the composed Flash-world coordinates
+ * so that the anchor bounding box's top-left corner sits at the sprite's origin. The per-part bake is a
+ * simple {@code anchorShift * P_flash}, where {@code anchorShift = translate(-anchorMinX, -anchorMinY)}.
+ * Parts packed rotated 90 degrees clockwise are un-rotated by swapping the affine's two linear columns
+ * (see {@link #bakePartAffine}).
  *
  * <h2>Layer z-order</h2>
  * In Flash (and in Adobe Animate's exported JSON), the <strong>first</strong> layer in {@code TL.L} is
@@ -304,7 +295,7 @@ final class FlixelAnimateRigLoader {
     float anchorHeight = anchorBox[3] - anchorMinY;
 
     FlixelMap<String, FlixelAnimateRig.Clip> clips = new FlixelMap<>();
-    bakeClipsInto(parsed, fps, atlas, nameToIndex, anchorMinX, anchorMinY, anchorHeight, controller, clips);
+    bakeClipsInto(parsed, fps, atlas, nameToIndex, anchorMinX, anchorMinY, controller, clips);
 
     String resolvedAnchorName = parsed.clipDefs.get(anchorClipIndex).name;
     FlixelAnimateRig rig = new FlixelAnimateRig(
@@ -397,7 +388,6 @@ final class FlixelAnimateRigLoader {
         nameToIndex,
         existing.anchorMinX,
         existing.anchorMinY,
-        existing.anchorHeight,
         controller,
         existing.clips);
   }
@@ -419,8 +409,6 @@ final class FlixelAnimateRigLoader {
    * @param nameToIndex Sprite name to atlas index lookup, already offset to point into {@code atlas}.
    * @param anchorMinX Anchor bounding-box minimum X in Flash Y-down world space.
    * @param anchorMinY Anchor bounding-box minimum Y in Flash Y-down world space.
-   * @param anchorHeight Anchor bounding-box height in pixels (used by the Y-flip in
-   *   {@link #bakePartAffine}).
    * @param controller The controller to register clip durations on (one
    *   {@link FlixelAnimation} per clip name).
    * @param clipsOut The map to populate. Existing entries with the same name are overwritten.
@@ -432,7 +420,6 @@ final class FlixelAnimateRigLoader {
       @NotNull FlixelObjectIntMap<String> nameToIndex,
       float anchorMinX,
       float anchorMinY,
-      float anchorHeight,
       @NotNull FlixelAnimationController controller,
       @NotNull FlixelMap<String, FlixelAnimateRig.Clip> clipsOut) {
     FlixelArray<RawPart> scratchRaw = new FlixelArray<>(32);
@@ -457,10 +444,7 @@ final class FlixelAnimateRigLoader {
           RawPart raw = scratchRaw.get(p);
           FlixelFrame frame = atlas.get(raw.atlasIndex);
           FlixelAnimateRig.Part part = new FlixelAnimateRig.Part(raw.atlasIndex);
-          bakePartAffine(
-              part.local, raw.flashMatrix,
-              frame.originalWidth, frame.originalHeight, frame.rotated,
-              anchorMinX, anchorMinY, anchorHeight);
+          bakePartAffine(part.local, raw.flashMatrix, frame.rotated, anchorMinX, anchorMinY);
           parts[p] = part;
         }
         kfs[t] = new FlixelAnimateRig.Keyframe(parts);
@@ -1024,38 +1008,31 @@ final class FlixelAnimateRigLoader {
   /**
    * Bakes the final draw-ready affine for a single part.
    *
-   * <p>For a non-rotated part the result equals {@code anchorShift * flipRig * P_flash * flipBitmap},
-   * where {@code flipBitmap = [1, 0, 0; 0, -1, origH]} converts Y-up local bitmap coordinates
-   * to Flash Y-down, and {@code anchorShift * flipRig} converts the resulting Flash-world point back
-   * to Y-up while sliding the anchor bounding box's bottom-left corner onto the sprite origin.
+   * <p>Adobe Animate authors in Y-down pixel space with each bitmap's origin at its top-left corner,
+   * which is exactly the space the Y-down renderer draws in. The only work left is therefore to slide
+   * the anchor bounding box's top-left corner onto the sprite origin, so the result equals
+   * {@code anchorShift * P_flash}, where {@code anchorShift = translate(-anchorMinX, -anchorMinY)}.
    *
-   * <p>For a part that was packed rotated 90 degrees clockwise in the atlas, Adobe Animate stores
-   * the sprite sideways: the atlas footprint is {@code origH} pixels wide and {@code origW} pixels
-   * tall. The draw call therefore produces a quad in {@code [0, origH] x [0, origW]} local space, so
-   * a different per-bitmap matrix {@code rotFlipBitmap = [0, -1, origW; -1, 0, origH]} is substituted
-   * for {@code flipBitmap}. This matrix un-rotates and Y-flips in one step, mapping each atlas-local
-   * coordinate back to the correct Flash-local position.
+   * <p>For a part that was packed rotated 90 degrees clockwise in the atlas, Adobe stores the sprite
+   * sideways: the atlas footprint is {@code origH} pixels wide and {@code origW} pixels tall, so the
+   * draw call produces a quad in {@code [0, origH] x [0, origW]} local space. Composing the un-rotation
+   * with the identical Y-down bitmap and world spaces reduces to swapping the affine's two linear
+   * columns; no dimension or sign terms survive.
    *
    * <p>Exposed as package-private so the geometry can be unit-tested without a GPU texture.
    *
    * @param out The destination affine; overwritten.
    * @param flashWorld The accumulated Flash-world matrix for this part.
-   * @param origW The logical width of the part in Flash space ({@link FlixelFrame#originalWidth}).
-   * @param origH The logical height of the part in Flash space ({@link FlixelFrame#originalHeight}).
    * @param rotated Whether this part was packed rotated 90 degrees clockwise in the atlas.
    * @param anchorMinX The minimum X of the anchor bounding box in Flash-world space.
    * @param anchorMinY The minimum Y of the anchor bounding box in Flash-world space.
-   * @param anchorHeight The height of the anchor bounding box.
    */
   static void bakePartAffine(
       @NotNull FlixelAffine out,
       @NotNull FlixelAffine flashWorld,
-      float origW,
-      float origH,
       boolean rotated,
       float anchorMinX,
-      float anchorMinY,
-      float anchorHeight) {
+      float anchorMinY) {
     float p00 = flashWorld.m00;
     float p01 = flashWorld.m01;
     float p02 = flashWorld.m02;
@@ -1063,30 +1040,22 @@ final class FlixelAnimateRigLoader {
     float p11 = flashWorld.m11;
     float p12 = flashWorld.m12;
 
-    float shiftY = anchorMinY + anchorHeight;
-
     if (rotated) {
-      // rotFlipBitmap = [0, -1, origW; -1, 0, origH].
-      // P_flash * rotFlipBitmap then anchorShift * flipRig on the left:
-      out.m00 = -p01;
-      out.m01 = -p00;
-      out.m02 = p00 * origW + p01 * origH + p02 - anchorMinX;
+      // Un-rotating the 90-degrees-CW packing in Y-down space swaps the two linear columns.
+      out.m00 = p01;
+      out.m01 = p00;
+      out.m02 = p02 - anchorMinX;
       out.m10 = p11;
       out.m11 = p10;
-      out.m12 = shiftY - p10 * origW - p11 * origH - p12;
+      out.m12 = p12 - anchorMinY;
     } else {
-      // flipBitmap = [1, 0, 0; 0, -1, origH].
-      // P_flash * flipBitmap then anchorShift * flipRig on the left:
-      float fw01 = -p01;
-      float fw02 = p01 * origH + p02;
-      float fw11 = -p11;
-      float fw12 = p11 * origH + p12;
+      // Flash bitmap space is already Y-down with a top-left origin, so only the anchor shift remains.
       out.m00 = p00;
-      out.m01 = fw01;
-      out.m02 = fw02 - anchorMinX;
-      out.m10 = -p10;
-      out.m11 = -fw11;
-      out.m12 = shiftY - fw12;
+      out.m01 = p01;
+      out.m02 = p02 - anchorMinX;
+      out.m10 = p10;
+      out.m11 = p11;
+      out.m12 = p12 - anchorMinY;
     }
   }
 

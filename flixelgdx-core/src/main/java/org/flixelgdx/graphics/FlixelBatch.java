@@ -101,7 +101,7 @@ public interface FlixelBatch extends FlixelDestroyable {
    *
    * @param frame The frame to draw.
    * @param x Left edge in world units.
-   * @param y Bottom edge in world units.
+   * @param y Top edge in world units (world Y increases downward).
    * @param width Drawn width in world units.
    * @param height Drawn height in world units.
    */
@@ -111,18 +111,18 @@ public interface FlixelBatch extends FlixelDestroyable {
    * Draws a frame with scaling, rotation, and mirroring around an origin point.
    *
    * <p>This is the workhorse overload sprites render through. The origin is measured from the
-   * quad's bottom-left corner in unscaled pixels; scaling and rotation happen around it.
+   * quad's top-left corner in unscaled pixels; scaling and rotation happen around it.
    *
    * @param frame The frame to draw.
    * @param x Left edge of the unscaled quad in world units.
-   * @param y Bottom edge of the unscaled quad in world units.
+   * @param y Top edge of the unscaled quad in world units (world Y increases downward).
    * @param originX Origin x, relative to {@code x}.
    * @param originY Origin y, relative to {@code y}.
    * @param width Unscaled quad width.
    * @param height Unscaled quad height.
    * @param scaleX Horizontal scale factor around the origin.
    * @param scaleY Vertical scale factor around the origin.
-   * @param rotation Rotation in degrees, counter-clockwise around the origin.
+   * @param rotation Rotation in degrees, clockwise around the origin on screen.
    * @param flipX {@code true} to mirror horizontally.
    * @param flipY {@code true} to mirror vertically.
    */

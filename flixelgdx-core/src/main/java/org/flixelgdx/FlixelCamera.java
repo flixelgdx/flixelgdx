@@ -198,7 +198,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   public FlixelColor color = new FlixelColor(FlixelColor.WHITE);
 
   /**
-   * The dead zone rectangle, measured from the camera's bottom-left corner in game pixels.
+   * The dead zone rectangle, measured from the camera's top-left corner in game pixels.
    *
    * <p>The camera always keeps the follow target inside this zone, unless bumping against scroll
    * bounds. For rapid prototyping, use the preset styles via
@@ -1519,7 +1519,7 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * extended area are not incorrectly culled.
    *
    * @param viewX Left edge of the rectangle in view space.
-   * @param viewY Bottom edge of the rectangle in view space.
+   * @param viewY Top edge of the rectangle in view space (view Y increases downward).
    * @param width Width of the rectangle.
    * @param height Height of the rectangle.
    * @return {@code true} if the rectangle is at least partially visible.

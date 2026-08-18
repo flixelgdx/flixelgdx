@@ -39,8 +39,8 @@ import org.jetbrains.annotations.NotNull;
  * rendered cheaply.
  *
  * <p>All output coordinates are in game pixels, measured from the text block's top-left
- * corner: {@code x} grows right, and glyph positions are stored as the distance from the top
- * so the draw call can flip them into the renderer's y-up space.
+ * corner: {@code x} grows right and {@code y} grows down, matching the renderer's y-down space,
+ * so the draw call adds the stored top offsets directly to the block's top edge.
  */
 public final class FlixelTextLayout {
 
@@ -50,9 +50,9 @@ public final class FlixelTextLayout {
   @NotNull
   private final FlixelFloatArray xs = new FlixelFloatArray(64);
 
-  /** Distance from the text block's top edge down to each glyph's bottom edge. */
+  /** Distance from the text block's top edge down to each glyph's top edge. */
   @NotNull
-  private final FlixelFloatArray bottoms = new FlixelFloatArray(64);
+  private final FlixelFloatArray tops = new FlixelFloatArray(64);
 
   @NotNull
   private final FlixelFloatArray widths = new FlixelFloatArray(64);
@@ -82,7 +82,7 @@ public final class FlixelTextLayout {
       float fieldWidth, boolean wrap, int align, float letterSpacing) {
     frames.clear();
     xs.clear();
-    bottoms.clear();
+    tops.clear();
     widths.clear();
     heights.clear();
     lineStarts.clear();
@@ -130,7 +130,7 @@ public final class FlixelTextLayout {
           lineTop += lineHeight;
           for (int j = lastSpaceIndex; j < frames.getSize(); j++) {
             xs.set(j, xs.get(j) - shift);
-            bottoms.set(j, bottoms.get(j) + lineHeight);
+            tops.set(j, tops.get(j) + lineHeight);
           }
           penX -= shift;
           lineStart = lastSpaceIndex;
@@ -151,7 +151,7 @@ public final class FlixelTextLayout {
         float gh = glyph.height * scale;
         frames.add(glyph.frame);
         xs.add(penX + glyph.xOffset * scale);
-        bottoms.add(lineTop + glyph.yOffset * scale + gh);
+        tops.add(lineTop + glyph.yOffset * scale);
         widths.add(gw);
         heights.add(gh);
       }
@@ -172,12 +172,12 @@ public final class FlixelTextLayout {
    *
    * @param batch The batch to draw through.
    * @param x The text block's left edge in world units.
-   * @param y The text block's <em>top</em> edge in world units (y-up space).
+   * @param y The text block's <em>top</em> edge in world units (y-down space).
    */
   public void draw(@NotNull FlixelBatch batch, float x, float y) {
     FlixelFrame[] items = frames.getItems();
     for (int i = 0, n = frames.getSize(); i < n; i++) {
-      batch.draw(items[i], x + xs.get(i), y - bottoms.get(i), widths.get(i), heights.get(i));
+      batch.draw(items[i], x + xs.get(i), y + tops.get(i), widths.get(i), heights.get(i));
     }
   }
 

@@ -32,8 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Covers the pure geometry of {@link FlixelAnimateRigLoader#bakePartAffine} for both the standard
  * (non-rotated) and the 90-degree-CW-rotated atlas packing cases.
  *
- * <p>Coordinate space primer: the baked affine maps from <strong>libGDX atlas local space</strong>
- * (Y-up, bottom-left at the origin) to <strong>rig local space</strong> (also Y-up, bottom-left of
+ * <p>Coordinate space primer: the baked affine maps from <strong>atlas local space</strong>
+ * (Y-down, top-left at the origin) to <strong>rig local space</strong> (also Y-down, top-left of
  * the anchor box at the origin). For a non-rotated part the atlas quad is {@code (0..origW) x (0..origH)}.
  * For a 90-degree-CW packed part the atlas region has its width and height swapped, so the quad is
  * {@code (0..origH) x (0..origW)} - that is, atlas width = origH, atlas height = origW.
@@ -60,26 +60,27 @@ class FlixelAnimateRigBakeTest {
     FlixelAffine identity = new FlixelAffine();
     FlixelAffine out = new FlixelAffine();
 
-    FlixelAnimateRigLoader.bakePartAffine(out, identity, origW, origH, false, 0f, 0f, origH);
+    FlixelAnimateRigLoader.bakePartAffine(out, identity, false, 0f, 0f);
 
-    float[] bl = apply(out, 0f, 0f);
-    assertEquals(0f, bl[0], DELTA, "bottom-left x");
-    assertEquals(0f, bl[1], DELTA, "bottom-left y");
+    float[] tl = apply(out, 0f, 0f);
+    assertEquals(0f, tl[0], DELTA, "top-left x");
+    assertEquals(0f, tl[1], DELTA, "top-left y");
 
-    float[] tr = apply(out, origW, origH);
-    assertEquals(origW, tr[0], DELTA, "top-right x");
-    assertEquals(origH, tr[1], DELTA, "top-right y");
+    float[] br = apply(out, origW, origH);
+    assertEquals(origW, br[0], DELTA, "bottom-right x");
+    assertEquals(origH, br[1], DELTA, "bottom-right y");
   }
 
   /**
    * Rotated (90 degrees CW) part at the anchor origin. The atlas quad has width = origH and
-   * height = origW, so local space is {@code (0..origH) x (0..origW)}. The baked affine must
-   * map each atlas corner to the rig corner that holds the same pixel:
+   * height = origW, so local space is {@code (0..origH) x (0..origW)}. Un-rotating the packing in
+   * Y-down space is a reflection across the main diagonal, so the baked affine maps each atlas corner
+   * to the rig corner that holds the same pixel:
    * <ul>
-   *   <li>Atlas bottom-left (0, 0) - holds the original bottom-right pixel - must land at rig (origW, 0).</li>
-   *   <li>Atlas bottom-right (origH, 0) - original top-right pixel - must land at rig (origW, origH).</li>
-   *   <li>Atlas top-right (origH, origW) - original top-left pixel - must land at rig (0, origH).</li>
-   *   <li>Atlas top-left (0, origW) - original bottom-left pixel - must land at rig (0, 0).</li>
+   *   <li>Atlas top-left (0, 0) must land at rig top-left (0, 0).</li>
+   *   <li>Atlas top-right (origH, 0) must land at rig bottom-left (0, origH).</li>
+   *   <li>Atlas bottom-right (origH, origW) must land at rig bottom-right (origW, origH).</li>
+   *   <li>Atlas bottom-left (0, origW) must land at rig top-right (origW, 0).</li>
    * </ul>
    */
   @Test
@@ -89,34 +90,29 @@ class FlixelAnimateRigBakeTest {
     FlixelAffine identity = new FlixelAffine();
     FlixelAffine out = new FlixelAffine();
 
-    FlixelAnimateRigLoader.bakePartAffine(out, identity, origW, origH, true, 0f, 0f, origH);
+    FlixelAnimateRigLoader.bakePartAffine(out, identity, true, 0f, 0f);
 
-    // Atlas bottom-left (0, 0) holds the original bottom-right pixel; should land at rig bottom-right.
-    float[] bl = apply(out, 0f, 0f);
-    assertEquals(origW, bl[0], DELTA, "atlas bottom-left x -> rig bottom-right x");
-    assertEquals(0f, bl[1], DELTA, "atlas bottom-left y -> rig bottom-right y");
+    float[] tl = apply(out, 0f, 0f);
+    assertEquals(0f, tl[0], DELTA, "atlas top-left x -> rig top-left x");
+    assertEquals(0f, tl[1], DELTA, "atlas top-left y -> rig top-left y");
 
-    // Atlas bottom-right (origH, 0) holds the original top-right; should land at rig top-right.
-    float[] br = apply(out, origH, 0f);
-    assertEquals(origW, br[0], DELTA, "atlas bottom-right x -> rig top-right x");
-    assertEquals(origH, br[1], DELTA, "atlas bottom-right y -> rig top-right y");
+    float[] tr = apply(out, origH, 0f);
+    assertEquals(0f, tr[0], DELTA, "atlas top-right x -> rig bottom-left x");
+    assertEquals(origH, tr[1], DELTA, "atlas top-right y -> rig bottom-left y");
 
-    // Atlas top-right (origH, origW) holds the original top-left; should land at rig top-left.
-    float[] tr = apply(out, origH, origW);
-    assertEquals(0f, tr[0], DELTA, "atlas top-right x -> rig top-left x");
-    assertEquals(origH, tr[1], DELTA, "atlas top-right y -> rig top-left y");
+    float[] br = apply(out, origH, origW);
+    assertEquals(origW, br[0], DELTA, "atlas bottom-right x -> rig bottom-right x");
+    assertEquals(origH, br[1], DELTA, "atlas bottom-right y -> rig bottom-right y");
 
-    // Atlas top-left (0, origW) holds the original bottom-left; should land at rig bottom-left.
-    float[] tl = apply(out, 0f, origW);
-    assertEquals(0f, tl[0], DELTA, "atlas top-left x -> rig bottom-left x");
-    assertEquals(0f, tl[1], DELTA, "atlas top-left y -> rig bottom-left y");
+    float[] bl = apply(out, 0f, origW);
+    assertEquals(origW, bl[0], DELTA, "atlas bottom-left x -> rig top-right x");
+    assertEquals(0f, bl[1], DELTA, "atlas bottom-left y -> rig top-right y");
   }
 
   /**
    * Non-zero anchor offsets are applied identically to both rotated and non-rotated parts. With a
-   * Flash translate that positions the sprite at the anchor's top-left corner and {@code anchorHeight
-   * == origH}, both cases must produce a translation-only affine with the same offset, confirming
-   * that the anchor shift cancels the Flash translation symmetrically.
+   * Flash translate that positions the sprite at the anchor's top-left corner, both cases must
+   * produce a translation that cancels the Flash translation symmetrically.
    */
   @Test
   void anchorOffsetAppliedToBothCases() {
@@ -132,33 +128,31 @@ class FlixelAnimateRigBakeTest {
     flashAtAnchor.m12 = anchorMinY;
 
     FlixelAffine outNormal = new FlixelAffine();
-    FlixelAnimateRigLoader.bakePartAffine(
-        outNormal, flashAtAnchor, origW, origH, false, anchorMinX, anchorMinY, origH);
+    FlixelAnimateRigLoader.bakePartAffine(outNormal, flashAtAnchor, false, anchorMinX, anchorMinY);
 
     // With the sprite exactly at the anchor, the non-rotated baked affine must be identity.
-    float[] blNormal = apply(outNormal, 0f, 0f);
-    assertEquals(0f, blNormal[0], DELTA, "non-rotated: bottom-left x at anchor");
-    assertEquals(0f, blNormal[1], DELTA, "non-rotated: bottom-left y at anchor");
+    float[] tlNormal = apply(outNormal, 0f, 0f);
+    assertEquals(0f, tlNormal[0], DELTA, "non-rotated: top-left x at anchor");
+    assertEquals(0f, tlNormal[1], DELTA, "non-rotated: top-left y at anchor");
 
-    float[] trNormal = apply(outNormal, origW, origH);
-    assertEquals(origW, trNormal[0], DELTA, "non-rotated: top-right x at anchor");
-    assertEquals(origH, trNormal[1], DELTA, "non-rotated: top-right y at anchor");
+    float[] brNormal = apply(outNormal, origW, origH);
+    assertEquals(origW, brNormal[0], DELTA, "non-rotated: bottom-right x at anchor");
+    assertEquals(origH, brNormal[1], DELTA, "non-rotated: bottom-right y at anchor");
 
-    // The rotated case with the same Flash translate and anchor should also cancel to a known result.
-    // Atlas quad is (0..origH) x (0..origW); atlas top-left (0, origW) holds the bottom-left pixel.
+    // The rotated case with the same Flash translate and anchor should also cancel the anchor shift.
+    // Atlas quad is (0..origH) x (0..origW).
     FlixelAffine outRotated = new FlixelAffine();
-    FlixelAnimateRigLoader.bakePartAffine(
-        outRotated, flashAtAnchor, origW, origH, true, anchorMinX, anchorMinY, origH);
+    FlixelAnimateRigLoader.bakePartAffine(outRotated, flashAtAnchor, true, anchorMinX, anchorMinY);
 
-    // Atlas top-left (0, origW) -> sprite bottom-left -> should land at rig (0, 0).
-    float[] blRotated = apply(outRotated, 0f, origW);
-    assertEquals(0f, blRotated[0], DELTA, "rotated: bottom-left pixel x at anchor");
-    assertEquals(0f, blRotated[1], DELTA, "rotated: bottom-left pixel y at anchor");
+    // Atlas top-left (0, 0) -> rig top-left (0, 0).
+    float[] tlRotated = apply(outRotated, 0f, 0f);
+    assertEquals(0f, tlRotated[0], DELTA, "rotated: top-left x at anchor");
+    assertEquals(0f, tlRotated[1], DELTA, "rotated: top-left y at anchor");
 
-    // Atlas bottom-right (origH, 0) -> sprite top-right -> should land at rig (origW, origH).
-    float[] trRotated = apply(outRotated, origH, 0f);
-    assertEquals(origW, trRotated[0], DELTA, "rotated: top-right pixel x at anchor");
-    assertEquals(origH, trRotated[1], DELTA, "rotated: top-right pixel y at anchor");
+    // Atlas bottom-right (origH, origW) -> rig bottom-right (origW, origH).
+    float[] brRotated = apply(outRotated, origH, origW);
+    assertEquals(origW, brRotated[0], DELTA, "rotated: bottom-right x at anchor");
+    assertEquals(origH, brRotated[1], DELTA, "rotated: bottom-right y at anchor");
   }
 
   /**
@@ -178,10 +172,10 @@ class FlixelAnimateRigBakeTest {
     flashTranslate.m12 = 15f;
 
     FlixelAffine outNormal = new FlixelAffine();
-    FlixelAnimateRigLoader.bakePartAffine(outNormal, flashTranslate, origW, origH, false, 0f, 0f, origH);
+    FlixelAnimateRigLoader.bakePartAffine(outNormal, flashTranslate, false, 0f, 0f);
 
     FlixelAffine outRotated = new FlixelAffine();
-    FlixelAnimateRigLoader.bakePartAffine(outRotated, flashTranslate, origW, origH, true, 0f, 0f, origH);
+    FlixelAnimateRigLoader.bakePartAffine(outRotated, flashTranslate, true, 0f, 0f);
 
     // 4 corners of the non-rotated quad: (0..origW) x (0..origH)
     float[][] normalCorners = {
