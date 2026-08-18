@@ -617,9 +617,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
           if (camera.width != fboOrthoW || camera.height != fboOrthoH) {
             fboOrthoW = camera.width;
             fboOrthoH = camera.height;
-            // Match the active backend's depth range; the 4-arg overload assumes OpenGL's [-1, 1],
-            // which depth-clips the composite quad to black on Vulkan, Metal, and Direct3D.
-            fboOrtho.setToOrtho2D(0, 0, fboOrthoW, fboOrthoH, Flixel.graphics.isDepthZeroToOne());
+            // Y-down composite ortho so the blit matches the batch's Y-down vertex layout and the
+            // camera FBO draws upright. Match the active backend's depth range too; the [-1, 1]
+            // default depth-clips the composite quad to black on Vulkan, Metal, and Direct3D.
+            fboOrtho.setToOrtho2DYDown(0, 0, fboOrthoW, fboOrthoH, Flixel.graphics.isDepthZeroToOne());
           }
           batch.setProjection(fboOrtho);
           batch.setShader(cameraShader);
@@ -1026,9 +1027,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       if (w != fboOrthoW || h != fboOrthoH) {
         fboOrthoW = w;
         fboOrthoH = h;
-        // Same depth-range caveat as the per-camera composite: without the backend flag this quad
-        // is clipped to black on the [0, 1] depth backends (Vulkan, Metal, Direct3D).
-        fboOrtho.setToOrtho2D(0, 0, w, h, Flixel.graphics.isDepthZeroToOne());
+        // Y-down composite ortho (see the per-camera pass) so each chained shader draws upright.
+        // Same depth-range caveat: without the backend flag this quad is clipped to black on the
+        // [0, 1] depth backends (Vulkan, Metal, Direct3D).
+        fboOrtho.setToOrtho2DYDown(0, 0, w, h, Flixel.graphics.isDepthZeroToOne());
       }
       batch.setProjection(fboOrtho);
       batch.setShader(gs);

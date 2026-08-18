@@ -182,7 +182,9 @@ public class FlixelViewport {
     float visibleW = worldWidth * viewScale;
     float visibleH = worldHeight * viewScale;
     screenCoords.x = cameraX + (relX - 0.5f) * visibleW;
-    screenCoords.y = cameraY + (relY - 0.5f) * visibleH;
+    // Y-down world: window top (smaller Y) maps to the smaller world Y, so the vertical term is
+    // negated relative to a Y-up projection.
+    screenCoords.y = cameraY - (relY - 0.5f) * visibleH;
     return screenCoords;
   }
 
@@ -195,7 +197,7 @@ public class FlixelViewport {
    * Rotation is ignored, which is fine for the axis-aligned clip rectangles game code sets.
    *
    * @param worldX Left edge in world coordinates.
-   * @param worldY Bottom edge in world coordinates.
+   * @param worldY Top edge in world coordinates (world Y increases downward).
    * @param worldW Width in world units.
    * @param worldH Height in world units.
    * @param out Reused output rectangle: {@code (x, y, width, height)} in framebuffer pixels.
@@ -206,9 +208,12 @@ public class FlixelViewport {
     float visibleW = worldWidth * viewScale;
     float visibleH = worldHeight * viewScale;
     float left = cameraX - visibleW / 2f;
-    float bottom = cameraY - visibleH / 2f;
+    // The framebuffer scissor is measured from the window's bottom-left, but the world is Y-down and
+    // worldY is the rectangle's top edge. Its framebuffer-bottom therefore lines up with the clip's
+    // world bottom edge (worldY + worldH), measured down from the view's bottom.
+    float worldBottomOfView = cameraY + visibleH / 2f;
     float sx = screenX + ((worldX - left) / visibleW) * screenWidth;
-    float sy = screenY + ((worldY - bottom) / visibleH) * screenHeight;
+    float sy = screenY + ((worldBottomOfView - (worldY + worldH)) / visibleH) * screenHeight;
     float sw = (worldW / visibleW) * screenWidth;
     float sh = (worldH / visibleH) * screenHeight;
     return out.set(sx, sy, sw, sh);
@@ -225,11 +230,17 @@ public class FlixelViewport {
       matrixDirty = false;
       float visibleW = worldWidth * viewScale;
       float visibleH = worldHeight * viewScale;
-      combined.setToOrtho2D(cameraX - visibleW / 2f, cameraY - visibleH / 2f, visibleW, visibleH,
-          Flixel.graphics.isDepthZeroToOne());
+      float halfW = visibleW / 2f;
+      float halfH = visibleH / 2f;
+      // Y-down projection: the bottom clipping plane sits at the larger world Y and the top plane
+      // at the smaller one, so world Y increases downward on screen. This puts world (0, 0) at the
+      // top-left corner, matching most graphics APIs and the framework's top-left origin convention.
+      combined.setToOrtho(cameraX - halfW, cameraX + halfW, cameraY + halfH, cameraY - halfH,
+          0f, 1f, Flixel.graphics.isDepthZeroToOne());
       if (rotation != 0f) {
+        // Positive rotation turns clockwise on screen (matching sprite angles) under the Y-down axis.
         combined.translate(cameraX, cameraY, 0f);
-        combined.rotateZ(-rotation);
+        combined.rotateZ(rotation);
         combined.translate(-cameraX, -cameraY, 0f);
       }
     }

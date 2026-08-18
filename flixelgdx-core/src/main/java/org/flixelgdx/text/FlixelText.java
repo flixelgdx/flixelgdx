@@ -703,8 +703,8 @@ public class FlixelText extends FlixelSprite {
     float rotation = getAngle();
     boolean needsTransform = rotation != 0 || scaleX != 1 || scaleY != 1;
 
-    float textTop = getHeight();
-
+    // The object's (x, y) is its top-left corner in the Y-down world, so the text block's top edge
+    // is drawn directly at wy with no vertical offset.
     if (needsTransform) {
       savedTransform.set(batch.getTransform());
 
@@ -717,11 +717,11 @@ public class FlixelText extends FlixelSprite {
       textTransform.translate(-ox, -oy, 0);
       batch.setTransform(textTransform);
 
-      drawTextContent(batch, 0, textTop);
+      drawTextContent(batch, 0, 0);
 
       batch.setTransform(savedTransform);
     } else {
-      drawTextContent(batch, wx, wy + textTop);
+      drawTextContent(batch, wx, wy);
     }
   }
 
@@ -955,7 +955,7 @@ public class FlixelText extends FlixelSprite {
     batch.setColor(borderColor);
 
     switch (borderStyle) {
-      case SHADOW -> layout.draw(batch, x + borderSize, y - borderSize);
+      case SHADOW -> layout.draw(batch, x + borderSize, y + borderSize);
 
       case OUTLINE_FAST -> {
         layout.draw(batch, x - borderSize, y);

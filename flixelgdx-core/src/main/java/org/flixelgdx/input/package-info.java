@@ -89,8 +89,8 @@
  *
  * <p>All raw pointer positions (mouse, touch, the getters on {@link org.flixelgdx.input.FlixelInputDevice}) use
  * screen-space pixels with the origin in the top-left corner: X grows right, Y grows down.
- * This matches raw window coordinates and differs from FlixelGDX world coordinates, whose origin
- * is bottom-left. Convert between the two through a
+ * This matches raw window coordinates. FlixelGDX world coordinates share the same top-left origin
+ * and downward Y but are offset and scaled by the camera. Convert between the two through a
  * {@link org.flixelgdx.FlixelCamera FlixelCamera}; the mouse and touch managers do this
  * automatically when you read {@code getWorldX()} or
  * {@link org.flixelgdx.input.touch.FlixelTouch#worldX FlixelTouch.worldX}.

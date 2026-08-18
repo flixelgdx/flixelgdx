@@ -155,7 +155,8 @@ public class FlixelBgfxBatch implements FlixelBatch {
     float sin = (float) Math.sin(Math.toRadians(rotation));
     float px = x + originX;
     float py = y + originY;
-    // Local corner offsets from the origin (bottom-left based, y-up).
+    // Local corner offsets from the origin. The quad spans (x, y) to (x + width, y + height); under
+    // the Y-down projection (x, y) is the top-left corner and +Y runs downward on screen.
     float lx0 = -originX * scaleX;
     float ly0 = -originY * scaleY;
     float lx1 = (width - originX) * scaleX;
@@ -220,11 +221,13 @@ public class FlixelBgfxBatch implements FlixelBatch {
       float u, float v, float u2, float v2) {
     float packed = Float.intBitsToFloat(packAbgr());
     int base = quadCount * VERTICES_PER_QUAD * FLOATS_PER_VERTEX;
-    // Bottom-left, bottom-right, top-right, top-left. UVs: v at bottom, v2 at top.
-    set(base, x0, y0, u, v2, packed);
-    set(base + FLOATS_PER_VERTEX, x1, y1, u2, v2, packed);
-    set(base + 2 * FLOATS_PER_VERTEX, x2, y2, u2, v, packed);
-    set(base + 3 * FLOATS_PER_VERTEX, x3, y3, u, v, packed);
+    // Corners 0-1 have the smaller Y and corners 2-3 the larger Y. Under the Y-down projection the
+    // smaller Y renders at the top of the screen, so the texture's top row (v) maps to corners 0-1
+    // and its bottom row (v2) to corners 2-3, keeping the art upright.
+    set(base, x0, y0, u, v, packed);
+    set(base + FLOATS_PER_VERTEX, x1, y1, u2, v, packed);
+    set(base + 2 * FLOATS_PER_VERTEX, x2, y2, u2, v2, packed);
+    set(base + 3 * FLOATS_PER_VERTEX, x3, y3, u, v2, packed);
     quadCount++;
   }
 

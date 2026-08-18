@@ -45,9 +45,9 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
  * implements what its platform actually supports.
  *
  * <p>Screen coordinates are in pixels with the origin at the top-left corner: X grows to the right
- * and Y grows downward. This matches raw window coordinates and is <i>not</i> the same as FlixelGDX
- * world coordinates, whose origin is bottom-left; convert through a {@code FlixelCamera} when you
- * need world space.
+ * and Y grows downward. This matches raw window coordinates; FlixelGDX world coordinates share the
+ * same top-left origin and downward Y but are offset and scaled by the camera, so convert through a
+ * {@code FlixelCamera} when you need world space.
  *
  * <p>Example:
  *

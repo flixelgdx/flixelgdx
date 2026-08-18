@@ -59,7 +59,7 @@
  * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#getWorldY() getWorldY()}) is the
  * result of unprojecting the screen position through the active
  * {@link org.flixelgdx.FlixelCamera FlixelCamera} and uses the standard FlixelGDX origin at the
- * bottom-left: X increases right, Y increases up. Use this to test whether the cursor is over a
+ * top-left: X increases right, Y increases down. Use this to test whether the cursor is over a
  * game object.
  *
  * <p>By default, the first camera in {@link org.flixelgdx.Flixel#cameras Flixel.cameras} is used

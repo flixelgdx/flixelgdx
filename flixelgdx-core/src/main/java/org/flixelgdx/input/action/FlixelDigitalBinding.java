@@ -161,7 +161,7 @@ public interface FlixelDigitalBinding {
 
   /**
    * World-space region binding. Fires when any active touch pointer's unprojected world position
-   * falls inside the rectangle. Coordinates use the bottom-left origin (Y increases upward),
+   * falls inside the rectangle. Coordinates use the top-left origin (Y increases downward),
    * matching the standard game-world convention used by cameras and game objects.
    *
    * <p>World coordinates are taken from {@link FlixelTouch#worldX} and {@link FlixelTouch#worldY},

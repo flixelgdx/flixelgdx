@@ -100,7 +100,7 @@
  * ({@link org.flixelgdx.input.touch.FlixelTouch#worldX FlixelTouch.worldX},
  * {@link org.flixelgdx.input.touch.FlixelTouch#worldY FlixelTouch.worldY}) are unprojected
  * through the active {@link org.flixelgdx.FlixelCamera FlixelCamera} and use the standard
- * FlixelGDX bottom-left origin: X increases right, Y increases up. These match the positions of
+ * FlixelGDX top-left origin: X increases right, Y increases down. These match the positions of
  * game objects in the scene. By default, the first camera in
  * {@link org.flixelgdx.Flixel#cameras Flixel.cameras} is used; call
  * {@link org.flixelgdx.input.touch.FlixelTouchManager#setWorldCamera(org.flixelgdx.FlixelCamera)
