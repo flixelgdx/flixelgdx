@@ -119,9 +119,21 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       return;
     }
 
+    boolean transparentFramebuffer = game.getConfig().isTransparentFramebuffer();
     long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
-    if (game.getConfig().isTransparentFramebuffer()) {
+    if (transparentFramebuffer) {
       windowFlags |= SDLVideo.SDL_WINDOW_TRANSPARENT;
+      // On X11, SDL3 uses XMatchVisualInfo for the window visual when no OpenGL flag is
+      // present, which may return a visual that is not in the GLX visual list. bgfx then
+      // cannot create a compatible alpha-capable context, so the compositor sees a 24-bit
+      // window and renders transparent areas as black. Adding SDL_WINDOW_OPENGL forces SDL3
+      // to use glXChooseFBConfig (with GLX_ALPHA_SIZE=8) for visual selection, giving bgfx
+      // a 32-bit RGBA-compatible window without SDL3 creating any GL context of its own.
+      String driver = SDLVideo.SDL_GetCurrentVideoDriver();
+      if ("x11".equals(driver)) {
+        SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_ALPHA_SIZE, 8);
+        windowFlags |= SDLVideo.SDL_WINDOW_OPENGL;
+      }
     }
     windowHandle = SDLVideo.SDL_CreateWindow(game.getTitle(), width, height, windowFlags);
     if (windowHandle == 0L) {
@@ -132,7 +144,6 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     SDLVideo.SDL_SetWindowPosition(windowHandle, SDLVideo.SDL_WINDOWPOS_CENTERED, SDLVideo.SDL_WINDOWPOS_CENTERED);
     window.bind(windowHandle);
 
-    boolean transparentFramebuffer = game.getConfig().isTransparentFramebuffer();
     if (!initBgfx(windowHandle, transparentFramebuffer)) {
       SDLVideo.SDL_DestroyWindow(windowHandle);
       SDLInit.SDL_Quit();
