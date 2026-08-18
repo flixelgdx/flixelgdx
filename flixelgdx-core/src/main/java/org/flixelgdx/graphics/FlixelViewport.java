@@ -209,8 +209,8 @@ public class FlixelViewport {
     float visibleH = worldHeight * viewScale;
     float left = cameraX - visibleW / 2f;
     // The framebuffer scissor is measured from the window's bottom-left, but the world is Y-down and
-    // {@code worldY} is the rectangle's top edge. Its framebuffer-bottom therefore lines up with the
-    // clip's world bottom edge ({@code worldY + worldH}), measured down from the view's bottom.
+    // worldY is the rectangle's top edge. Its framebuffer-bottom therefore lines up with the clip's
+    // world bottom edge (worldY + worldH), measured down from the view's bottom.
     float worldBottomOfView = cameraY + visibleH / 2f;
     float sx = screenX + ((worldX - left) / visibleW) * screenWidth;
     float sy = screenY + ((worldBottomOfView - (worldY + worldH)) / visibleH) * screenHeight;
