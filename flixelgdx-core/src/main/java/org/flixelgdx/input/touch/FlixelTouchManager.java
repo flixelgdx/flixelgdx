@@ -67,7 +67,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Each {@link FlixelTouch} carries both screen and world coordinates. Screen coordinates use the
  * top-left origin (Y increases downward). World coordinates are unprojected via the
- * manager's active camera and use the standard bottom-left origin (Y increases upward), matching
+ * manager's active camera and use the standard top-left origin (Y increases downward), matching
  * the rest of the scene. Set a custom camera with {@link #setWorldCamera(FlixelCamera)};
  * otherwise the first camera in {@link Flixel#cameras} is used.
  *
@@ -406,7 +406,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   /**
    * Returns {@code true} while any active pointer is inside the given world-space rectangle.
    *
-   * <p>Coordinates use the bottom-left origin (Y increases upward), matching the game world.
+   * <p>Coordinates use the top-left origin (Y increases downward), matching the game world.
    * Use this to track a finger held inside an area. For detecting the moment a finger lands,
    * use {@link #justTouchedWorld(float, float, float, float)} instead.
    *
@@ -476,7 +476,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   /**
    * Returns {@code true} on the single frame any pointer first touches the given world-space rectangle.
    *
-   * <p>Coordinates use the bottom-left origin (Y increases upward), matching the game world.
+   * <p>Coordinates use the top-left origin (Y increases downward), matching the game world.
    * Clears to {@code false} after the frame ends, matching the timing of
    * {@link FlixelTouch#justPressed()}.
    *

@@ -37,8 +37,8 @@ package org.flixelgdx.input.touch;
  * }</pre>
  *
  * <p>Screen coordinates use a top-left origin (Y increases downward). World coordinates are
- * unprojected via the touch manager's active camera and use the standard bottom-left origin
- * (Y increases upward), matching the rest of the scene.
+ * unprojected via the touch manager's active camera and use the standard top-left origin
+ * (Y increases downward), matching the rest of the scene.
  *
  * <p>State fields ({@link #screenX}, {@link #screenY}, {@link #worldX}, {@link #worldY},
  * {@link #pointer}) are public for zero-overhead reads. The boolean state is exposed through
