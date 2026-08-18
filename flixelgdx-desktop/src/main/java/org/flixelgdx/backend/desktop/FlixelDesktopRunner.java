@@ -132,13 +132,14 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     SDLVideo.SDL_SetWindowPosition(windowHandle, SDLVideo.SDL_WINDOWPOS_CENTERED, SDLVideo.SDL_WINDOWPOS_CENTERED);
     window.bind(windowHandle);
 
-    if (!initBgfx(windowHandle)) {
+    boolean transparentFramebuffer = game.getConfig().isTransparentFramebuffer();
+    if (!initBgfx(windowHandle, transparentFramebuffer)) {
       SDLVideo.SDL_DestroyWindow(windowHandle);
       SDLInit.SDL_Quit();
       return;
     }
 
-    graphics.onInitialized(width, height);
+    graphics.onInitialized(width, height, transparentFramebuffer);
     graphics.setVSync(vsync);
     gamepads.openConnected();
 
@@ -224,7 +225,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   /** Initializes bgfx with the SDL window's native handle. */
-  private boolean initBgfx(long windowHandle) {
+  private boolean initBgfx(long windowHandle, boolean transparentFramebuffer) {
     long nativeWindow = FlixelSdlNativeHandle.windowHandle(windowHandle);
     long nativeDisplay = FlixelSdlNativeHandle.displayHandle(windowHandle);
     if (nativeWindow == 0L) {
@@ -235,8 +236,12 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       BGFX.bgfx_init_ctor(init);
       init.type(resolveRendererType());
       int resetFlags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
+      if (transparentFramebuffer) {
+        resetFlags |= BGFX.BGFX_RESET_TRANSPARENT_BACKBUFFER;
+      }
+      int finalResetFlags = resetFlags;
       init.resolution(
-          res -> res.width(width).height(height).reset(resetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
+          res -> res.width(width).height(height).reset(finalResetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
       init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
       if (!BGFX.bgfx_init(init)) {
         Flixel.error("Desktop", "bgfx could not be initialized.");

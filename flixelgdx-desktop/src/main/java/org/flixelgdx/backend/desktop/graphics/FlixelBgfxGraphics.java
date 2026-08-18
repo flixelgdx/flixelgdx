@@ -196,6 +196,14 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** Frames counted since the last stats log line, when stats logging is enabled. */
   private int statsWindowFrames;
 
+  /**
+   * Whether the window was opened with an alpha-capable framebuffer. When {@code true},
+   * {@link #onResize(int, int)} passes {@code BGFX_RESET_TRANSPARENT_BACKBUFFER} so the OS
+   * compositor receives the back-buffer alpha channel and can composite the window against the
+   * desktop.
+   */
+  private boolean transparentFramebuffer;
+
   private boolean vsync = true;
   private boolean programWarned;
 
@@ -223,8 +231,13 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    *
    * @param width The initial back buffer width in pixels.
    * @param height The initial back buffer height in pixels.
+   * @param transparentFramebuffer Whether the window was opened with an alpha-capable framebuffer.
+   *     When {@code true}, {@link #onResize(int, int)} passes
+   *     {@code BGFX_RESET_TRANSPARENT_BACKBUFFER} on every swap-chain reset so the OS compositor
+   *     receives the back-buffer alpha channel.
    */
-  public void onInitialized(int width, int height) {
+  public void onInitialized(int width, int height, boolean transparentFramebuffer) {
+    this.transparentFramebuffer = transparentFramebuffer;
     this.backBufferWidth = width;
     this.backBufferHeight = height;
     this.viewportWidth = width;
@@ -282,8 +295,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   public void onResize(int width, int height) {
     backBufferWidth = width;
     backBufferHeight = height;
-    BGFX.bgfx_reset(width, height, vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE,
-        BGFX.BGFX_TEXTURE_FORMAT_RGBA8);
+    int flags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
+    if (transparentFramebuffer) {
+      flags |= BGFX.BGFX_RESET_TRANSPARENT_BACKBUFFER;
+    }
+    BGFX.bgfx_reset(width, height, flags, BGFX.BGFX_TEXTURE_FORMAT_RGBA8);
   }
 
   @NotNull
