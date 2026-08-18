@@ -955,7 +955,7 @@ public class FlixelText extends FlixelSprite {
     batch.setColor(borderColor);
 
     switch (borderStyle) {
-      case SHADOW -> layout.draw(batch, x + borderSize, y - borderSize);
+      case SHADOW -> layout.draw(batch, x + borderSize, y + borderSize);
 
       case OUTLINE_FAST -> {
         layout.draw(batch, x - borderSize, y);

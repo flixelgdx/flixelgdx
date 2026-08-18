@@ -165,7 +165,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   private float clipRectX;
 
   /**
-   * Y offset of the clip rectangle's bottom edge, in screen pixels from the sprite's drawn bottom edge.
+   * Y offset of the clip rectangle's top edge, in screen pixels from the sprite's drawn bottom edge.
    * Active only when {@link #clipRectEnabled} is {@code true}; see {@link #setClipRect(float, float, float, float)}.
    */
   private float clipRectY;
@@ -1224,7 +1224,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * }</pre>
    *
    * @param x Left edge of the visible region, in screen pixels from the sprite's drawn left edge.
-   * @param y Bottom edge of the visible region, in screen pixels from the sprite's drawn bottom edge.
+   * @param y Top edge of the visible region, in screen pixels from the sprite's drawn bottom edge.
    * @param width Width of the visible region, in screen pixels.
    * @param height Height of the visible region, in screen pixels.
    */
