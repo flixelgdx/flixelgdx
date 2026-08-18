@@ -196,6 +196,26 @@ public class FlixelMatrix {
   }
 
   /**
+   * Sets this matrix to a 2D orthographic projection with a Y-down (top-left) origin: {@code y} is
+   * the top edge of the projected region and {@code y + height} is the bottom edge.
+   *
+   * <p>This matches the framework's Y-down world convention and the batch's vertex layout, so a
+   * screen-space composite pass (a render-target blit or a post-processing shader chain) draws its
+   * texture upright. Use the plain {@link #setToOrtho2D(float, float, float, float, boolean)} only
+   * where a legacy bottom-left origin is genuinely wanted.
+   *
+   * @param x The left edge of the projected region.
+   * @param y The top edge of the projected region.
+   * @param width The width of the projected region.
+   * @param height The height of the projected region.
+   * @param zeroToOne {@code true} for {@code [0, 1]} depth range, {@code false} for {@code [-1, 1]}.
+   * @return This matrix, for chaining.
+   */
+  public @NotNull FlixelMatrix setToOrtho2DYDown(float x, float y, float width, float height, boolean zeroToOne) {
+    return setToOrtho(x, x + width, y + height, y, 0f, 1f, zeroToOne);
+  }
+
+  /**
    * Sets this matrix to a general orthographic projection using the OpenGL NDC depth convention
    * ({@code [-1, 1]}).
    *

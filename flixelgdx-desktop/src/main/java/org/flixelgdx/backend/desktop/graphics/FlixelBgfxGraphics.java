@@ -573,7 +573,8 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     viewportY = 0;
     viewportWidth = Math.max(1, backBufferWidth);
     viewportHeight = Math.max(1, backBufferHeight);
-    compositeOrtho.setToOrtho2D(0, 0, backBufferWidth, backBufferHeight, isDepthZeroToOne());
+    // Y-down composite ortho so the upscale blit matches the batch's Y-down vertex layout.
+    compositeOrtho.setToOrtho2DYDown(0, 0, backBufferWidth, backBufferHeight, isDepthZeroToOne());
 
     FlixelTexture texture = sceneTarget.getTexture();
     batch.setProjection(compositeOrtho);
