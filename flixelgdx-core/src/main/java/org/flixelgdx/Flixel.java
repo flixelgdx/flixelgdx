@@ -166,7 +166,7 @@ import java.util.function.Supplier;
  *
  * <pre>{@code
  * // Switch states.
- * Flixel.switchState(new MyGameState());
+ * Flixel.switchState(() -> new MyGameState());
  *
  * // Play a sound.
  * Flixel.sound.play("explosion.mp3");
@@ -337,11 +337,11 @@ public final class Flixel {
    * The currently active state.
    *
    * <p>This is the {@link FlixelState} that is updated and drawn every frame. Switch to a
-   * different state using {@link #switchState(FlixelState)}; reading this field directly is useful
+   * different state using {@link #switchState(Supplier)}; reading this field directly is useful
    * when you need to query the current state without holding a separate reference (for example,
    * inside a signal listener or a global utility method).
    *
-   * <p>This field is {@code null} until the first call to {@link #switchState(FlixelState)}.
+   * <p>This field is {@code null} until the first call to {@link #switchState(Supplier)}.
    */
   @Nullable
   public static FlixelState state;
@@ -349,10 +349,9 @@ public final class Flixel {
   /**
    * Factory that produces a fresh instance of the current state for {@link #resetState()}.
    *
-   * <p>Updated automatically whenever {@link #switchState(FlixelState, boolean, boolean, boolean, Supplier)}
-   * is called. The default {@link #switchState(FlixelState)} overload supplies
-   * {@code () -> newState} automatically, so this is pre-populated after any normal state switch
-   * at no extra cost to the caller.
+   * <p>Updated automatically whenever {@link #switchState(Supplier)} (or any of its overloads)
+   * is called. The factory is stored as-is, so calling {@code resetState()} re-invokes it to get
+   * a brand-new state instance.
    *
    * <p>Set this to {@code null} to disable {@link #resetState()} for the current state, making
    * it a no-op.
@@ -1054,58 +1053,65 @@ public final class Flixel {
   }
 
   /**
-   * Sets the current state to the provided state.
+   * Switches to the state produced by the given factory.
    *
-   * @param newState The new {@link FlixelState} to set as the current state.
+   * <p>The factory is called immediately to obtain the new state, then stored so that
+   * {@link #resetState()} can call it again later to get a fresh instance.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.switchState(() -> new GameplayState());
+   * }</pre>
+   *
+   * @param stateFactory A factory that returns the new {@link FlixelState} to enter. Must not be
+   *     {@code null} and must not return {@code null}.
    */
-  public static void switchState(FlixelState newState) {
-    switchState(newState, true);
+  public static void switchState(@NotNull Supplier<FlixelState> stateFactory) {
+    switchState(stateFactory, true);
   }
 
   /**
-   * Sets the current state to the provided state.
+   * Switches to the state produced by the given factory.
    *
-   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param stateFactory A factory that returns the new {@link FlixelState} to enter. Must not be
+   *     {@code null} and must not return {@code null}.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    */
-  public static void switchState(FlixelState newState, boolean clearTweens) {
-    switchState(newState, clearTweens, true);
+  public static void switchState(@NotNull Supplier<FlixelState> stateFactory, boolean clearTweens) {
+    switchState(stateFactory, clearTweens, true);
   }
 
   /**
-   * Sets the current state to the provided state.
+   * Switches to the state produced by the given factory.
    *
-   * @param newState The new {@code FlixelState} to set as the current state.
+   * @param stateFactory A factory that returns the new {@link FlixelState} to enter. Must not be
+   *     {@code null} and must not return {@code null}.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    * @param clearTimers Should all active timers be canceled?
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers) {
-    switchState(newState, clearTweens, clearTimers, true);
+  public static void switchState(@NotNull Supplier<FlixelState> stateFactory, boolean clearTweens,
+      boolean clearTimers) {
+    switchState(stateFactory, clearTweens, clearTimers, true);
   }
 
   /**
-   * Sets the current state to the provided state.
+   * Switches to the state produced by the given factory.
    *
-   * @param newState The new {@code FlixelState} to set as the current state.
+   * <p>This is the primary overload all others delegate to. The factory is invoked once to
+   * obtain the state, then retained as {@link #currentStateFactory} so {@link #resetState()}
+   * can produce a fresh instance without any extra work from the caller.
+   *
+   * @param stateFactory A factory that returns the new {@link FlixelState} to enter. Must not be
+   *     {@code null} and must not return {@code null}.
    * @param clearTweens Should all active tweens be canceled and their pools be cleared?
    * @param clearTimers Should all active timers be canceled?
    * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
    */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers, boolean triggerGC) {
-    switchState(newState, clearTweens, clearTimers, triggerGC, () -> newState);
-  }
+  public static void switchState(@NotNull Supplier<FlixelState> stateFactory, boolean clearTweens, boolean clearTimers,
+      boolean triggerGC) {
+    Objects.requireNonNull(stateFactory, "State factory cannot be null.");
+    FlixelState newState = stateFactory.get();
 
-  /**
-   * Sets the current state to the provided state.
-   *
-   * @param newState The new {@code FlixelState} to set as the current state.
-   * @param clearTweens Should all active tweens be canceled and their pools be cleared?
-   * @param clearTimers Should all active timers be canceled?
-   * @param triggerGC Should Java's garbage collector be triggered for memory cleanup?
-   * @param stateFactory The factory to use to create a new state instance when {@link #resetState()} is called.
-   */
-  public static void switchState(FlixelState newState, boolean clearTweens, boolean clearTimers, boolean triggerGC,
-      Supplier<FlixelState> stateFactory) {
     Signals.preStateSwitch.dispatch(new StateSwitchSignalData(state));
 
     if (!initialized) {
@@ -1132,7 +1138,7 @@ public final class Flixel {
       FlixelTimer.cancelAll();
     }
     game.resetCameras();
-    state = Objects.requireNonNull(newState, "New state cannot be null.");
+    state = Objects.requireNonNull(newState, "State factory must not return null.");
     state.ensureMembers();
     state.create();
     currentStateFactory = stateFactory;
@@ -1461,18 +1467,16 @@ public final class Flixel {
   }
 
   /**
-   * Refreshes the current state by creating a new instance from the factory last set by
-   * {@link #switchState(FlixelState, boolean, boolean, boolean, Supplier)}. Does nothing if
-   * the factory is {@code null}.
+   * Refreshes the current state by invoking the factory last set by {@link #switchState(Supplier)}.
+   * Does nothing if the factory is {@code null}.
    *
-   * <p>This is the equivalent of calling {@code Flixel.switchState(new CurrentState())}.
+   * <p>This is the equivalent of calling {@code Flixel.switchState(() -> new CurrentState())}.
    */
   public static void resetState() {
     Objects.requireNonNull(game, "Game is not initialized. Call start(...) first.");
     Supplier<FlixelState> factory = currentStateFactory;
-    FlixelState next = factory != null ? factory.get() : null;
-    if (next != null) {
-      switchState(next, true, true, true, factory);
+    if (factory != null) {
+      switchState(factory, true, true, true);
     }
   }
 

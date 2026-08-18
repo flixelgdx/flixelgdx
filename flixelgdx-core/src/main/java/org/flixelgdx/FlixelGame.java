@@ -80,7 +80,7 @@ import java.util.function.Supplier;
  *
  * <p>The game class is the permanent container. The active {@link FlixelState} is the changeable
  * scene. Put all gameplay logic, UI, and entity management in your states, and use
- * {@link Flixel#switchState(FlixelState)} to move between them. Override methods here only for
+ * {@link Flixel#switchState(Supplier)} to move between them. Override methods here only for
  * behavior that applies for the entire lifetime of the process: a persistent HUD, a global
  * post-processing shader, custom focus handling, and so on.
  *
@@ -319,50 +319,26 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * Creates a new game instance with a default 640x360 window, 60 fps, and VSync enabled.
    *
    * @param title The title of the game's window.
-   * @param initialState The initial state to load when the game starts.
+   * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
-  public FlixelGame(String title, FlixelState initialState) {
-    this(new Config.Builder(title).build(), initialState);
-  }
-
-  /**
-   * Creates a new game instance configured entirely by the supplied {@link Config}.
-   *
-   * <p>Use this when you need to set company name, version, a custom framerate, or any other
-   * option beyond the simple title-and-state shorthand:
-   *
-   * <pre>{@code
-   * super(
-   *   new Config.Builder("My Game")
-   *     .company("My Studio")
-   *     .version("1.0.0")
-   *     .size(1280, 720)
-   *     .build(),
-   *   () -> new MenuState()
-   * );
-   * }</pre>
-   *
-   * @param config The configuration that supplies all startup settings.
-   * @param initialState The initial state to load when the game starts.
-   */
-  public FlixelGame(@NotNull Config config, FlixelState initialState) {
-    this(config, () -> initialState);
+  public FlixelGame(String title, @NotNull Supplier<FlixelState> initialStateFactory) {
+    this(new Config.Builder(title).build(), initialStateFactory);
   }
 
   /**
    * Creates a new game instance with a 4-parameter shorthand: title, window size, and initial state.
    * All other settings use their defaults (60 fps, VSync on, windowed).
    *
-   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(Config, FlixelState)}
+   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(Config, Supplier)}
    * with a {@link Config} instead.
    *
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
    * @param height The starting height of the game's window and how tall the camera should be.
-   * @param initialState The initial state to load when the game starts.
+   * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
-  public FlixelGame(String title, int width, int height, FlixelState initialState) {
-    this(new Config.Builder(title).size(width, height).build(), initialState);
+  public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory) {
+    this(new Config.Builder(title).size(width, height).build(), initialStateFactory);
   }
 
   /**
@@ -372,7 +348,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * <p>This is the primary constructor that all others delegate to. Use {@code () -> new MyState()} for a
    * fresh instance each session, or {@code () -> sharedState} to reuse one object whose
    * {@link FlixelState#destroy()} and {@link FlixelState#create()} lifecycle still runs on each
-   * {@link Flixel#switchState} call.
+   * {@link Flixel#switchState(Supplier)} call.
    *
    * @param config The configuration that supplies all startup settings.
    * @param initialStateFactory A factory that produces the initial state to load when the game starts.
@@ -439,7 +415,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       }
     }
 
-    Flixel.switchState(initialStateFactory.get(), true, true, true, initialStateFactory);
+    Flixel.switchState(initialStateFactory, true, true, true);
   }
 
   /**

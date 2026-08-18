@@ -182,7 +182,7 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
   }
 
   /**
-   * Called from {@link Flixel#switchState(FlixelState)} before the actual state switch
+   * Called from {@link Flixel#switchState(Supplier)} before the actual state switch
    * happens. Override this to play an exit animation or transition, then call
    * {@code onOutroComplete} when finished.
    *
