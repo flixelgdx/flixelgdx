@@ -264,18 +264,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private int desktopTransparencyRestoreCameraCount;
 
-  /**
-   * When {@code true}, the launcher requests an alpha-capable framebuffer so
-   * {@link FlixelWindow#setTransparencyActive(boolean)} can composite with the desktop.
-   *
-   * <p>Set {@code false} before launch only for drivers or projects that must keep a strictly
-   * opaque default framebuffer.
-   *
-   * <p><b>WARNING</b>: This can cause some minor performance issues on low-end devices, so only
-   * enable this at launch time if you truly need to!
-   */
-  public boolean transparentFramebufferRequested = false;
-
   /** Should the game pause audio when the application goes to the background? */
   public boolean autoPause = true;
 
@@ -645,7 +633,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.debug.overlay.draw();
     }
 
-    if (!desktopTransparencyActive && transparentFramebufferRequested
+    if (!desktopTransparencyActive && config.isTransparentFramebuffer()
         && Flixel.host.getPlatform() == FlixelPlatform.Desktop) {
       Flixel.graphics.forceOpaqueAlpha();
     }
@@ -1214,13 +1202,19 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     this.bgColor.set(bgColor);
   }
 
+  /**
+   * Returns whether an alpha-capable (transparent) framebuffer was requested in the game's
+   * {@link Config}.
+   *
+   * @return {@code true} when {@link Config.Builder#transparentFramebuffer(boolean)} was set.
+   */
   public boolean isTransparentFramebufferRequested() {
-    return transparentFramebufferRequested;
+    return config.isTransparentFramebuffer();
   }
 
-  /** Returns whether an alpha-capable framebuffer was requested at launch. */
+  /** Returns whether an alpha-capable framebuffer was requested in the game's {@link Config}. */
   public boolean getTransparentFramebufferRequested() {
-    return transparentFramebufferRequested;
+    return config.isTransparentFramebuffer();
   }
 
   /**
@@ -1521,6 +1515,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     private final boolean fullscreen;
     private final boolean renderResolutionEnabled;
     private final boolean renderSmooth;
+    private final boolean transparentFramebuffer;
 
     private Config(@NotNull Builder builder) {
       this.title = builder.title;
@@ -1535,6 +1530,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       this.fullscreen = builder.fullscreen;
       this.renderResolutionEnabled = builder.renderResolutionEnabled;
       this.renderSmooth = builder.renderSmooth;
+      this.transparentFramebuffer = builder.transparentFramebuffer;
     }
 
     @NotNull
@@ -1610,6 +1606,21 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     /**
+     * Returns whether an alpha-capable (transparent) default framebuffer was requested at launch.
+     *
+     * <p>When {@code true}, the launcher creates the window with compositing support so
+     * {@link FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop.
+     * When {@code false} (the default), the framebuffer is opaque and transparency has no effect.
+     *
+     * @return {@code true} when an alpha-capable framebuffer was requested.
+     * @see Builder#transparentFramebuffer(boolean)
+     * @see FlixelWindow#setTransparencyActive(boolean)
+     */
+    public boolean isTransparentFramebuffer() {
+      return transparentFramebuffer;
+    }
+
+    /**
      * Fluent builder for {@link Config}.
      *
      * <p>The game title is required and must be supplied to the constructor. Everything else
@@ -1647,6 +1658,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       private boolean fullscreen = false;
       private boolean renderResolutionEnabled = true;
       private boolean renderSmooth = true;
+      private boolean transparentFramebuffer = false;
 
       /**
        * Creates a builder for a game with the given window title.
@@ -1786,6 +1798,27 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       @NotNull
       public Builder disableRenderResolution() {
         this.renderResolutionEnabled = false;
+        return this;
+      }
+
+      /**
+       * Requests an alpha-capable (transparent) default framebuffer at launch.
+       *
+       * <p>When {@code true}, the window is created with compositor support so
+       * {@link FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop
+       * at runtime. Without this, {@code setTransparencyActive(true)} renders transparent areas as
+       * black because the back buffer has no alpha channel.
+       *
+       * <p><b>WARNING:</b> This can cause minor performance overhead on low-end devices, so only
+       * enable it when your game actually uses desktop transparency.
+       *
+       * @param transparentFramebuffer {@code true} to request an alpha-capable framebuffer.
+       * @return This builder, for chaining.
+       * @see FlixelWindow#setTransparencyActive(boolean)
+       */
+      @NotNull
+      public Builder transparentFramebuffer(boolean transparentFramebuffer) {
+        this.transparentFramebuffer = transparentFramebuffer;
         return this;
       }
 

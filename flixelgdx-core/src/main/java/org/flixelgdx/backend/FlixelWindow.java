@@ -93,11 +93,14 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * When {@code true}, the LWJGL3 launcher enables {@code Lwjgl3ApplicationConfiguration#setTransparentFramebuffer(boolean)}.
-   * This is {@code true} by default so runtime transparency can work; set {@code false} before launch only if you need a classic
-   * opaque framebuffer or hit a driver issue (then {@link #setTransparencyActive(boolean)} cannot composite with the desktop).
+   * Returns whether an alpha-capable (transparent) framebuffer was requested at launch via
+   * {@link org.flixelgdx.FlixelGame.Config.Builder#transparentFramebuffer(boolean)}.
    *
-   * @return current launch-time request for an alpha-capable default framebuffer.
+   * <p>When {@code true}, the window was created with compositor support, so
+   * {@link #setTransparencyActive(boolean)} can blend the game with the desktop. When
+   * {@code false}, transparency has no effect because the back buffer has no alpha channel.
+   *
+   * @return {@code true} when an alpha-capable framebuffer was requested in the game config.
    */
   default boolean isTransparentFramebufferRequested() {
     return Flixel.game != null && Flixel.game.isTransparentFramebufferRequested();

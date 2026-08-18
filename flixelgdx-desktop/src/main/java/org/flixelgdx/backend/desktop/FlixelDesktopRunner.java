@@ -120,7 +120,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     }
 
     long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
-    if (game.isTransparentFramebufferRequested()) {
+    if (game.getConfig().isTransparentFramebuffer()) {
       windowFlags |= SDLVideo.SDL_WINDOW_TRANSPARENT;
     }
     windowHandle = SDLVideo.SDL_CreateWindow(game.getTitle(), width, height, windowFlags);
