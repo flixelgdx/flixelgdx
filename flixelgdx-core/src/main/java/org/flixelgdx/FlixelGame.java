@@ -24,7 +24,6 @@
 package org.flixelgdx;
 
 import org.flixelgdx.asset.FlixelNoopAssetManager;
-import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
