@@ -129,6 +129,9 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       // window and renders transparent areas as black. Adding SDL_WINDOW_OPENGL forces SDL3
       // to use glXChooseFBConfig (with GLX_ALPHA_SIZE=8) for visual selection, giving bgfx
       // a 32-bit RGBA-compatible window without SDL3 creating any GL context of its own.
+      //
+      // This is temporary. I need to battle test the framework on different hardware.
+      // Linux is so fucking annoying to deal with bro. :wilted_flower:
       String driver = SDLVideo.SDL_GetCurrentVideoDriver();
       if ("x11".equals(driver)) {
         SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_ALPHA_SIZE, 8);
