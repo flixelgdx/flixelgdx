@@ -46,7 +46,6 @@ import imgui.ImGuiInputTextCallbackData;
 import imgui.ImGuiStyle;
 import imgui.ImGuiViewport;
 import imgui.callback.ImGuiInputTextCallback;
-import imgui.flag.ImGuiBackendFlags;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiConfigFlags;
@@ -516,9 +515,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     // Dear ImGui report WantCaptureKeyboard, which would suppress the F2/F3/F4 toggle keys (they now
     // go through the normal input path). Mouse drives the overlay; the toggles stay reliable.
     io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
-    // The bgfx renderer binds a per-command vertex offset, so let Dear ImGui keep large draw lists in
-    // one buffer instead of forcing 16-bit index limits.
-    io.addBackendFlags(ImGuiBackendFlags.RendererHasVtxOffset);
 
     applyStyle();
 
