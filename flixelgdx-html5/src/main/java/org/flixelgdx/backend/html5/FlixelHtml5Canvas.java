@@ -24,20 +24,29 @@
 package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.backend.FlixelWindow;
-import org.teavm.jso.JSBody;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
+import org.teavm.jso.dom.html.HTMLDocument;
 
 /**
  * The main display of the web game, drawn inside an HTML5 canvas.
+ *
+ * <p>Unlike a regular desktop window or mobile activity, the web backend renders everything
+ * to a canvas, which is created inside {@link FlixelHtml5Runner} under the simplistic ID
+ * {@code "canvas"}.
+ *
+ * <p>Due to the heavily restricted environment of the browser, many features are either
+ * limited or simply not present.
  */
 public class FlixelHtml5Canvas implements FlixelWindow {
 
+  private HTMLCanvasElement canvas;
+
   @Override
   public void setTitle(String title) {
-    jsSetTitle(title);
+    HTMLDocument.current().setTitle(title);
   }
 
-  @JSBody(params = { "title" }, script = """
-    document.title = title;
-    """)
-  static native void jsSetTitle(String title);
+  public void setCanvas(HTMLCanvasElement canvas) {
+    this.canvas = canvas;
+  }
 }

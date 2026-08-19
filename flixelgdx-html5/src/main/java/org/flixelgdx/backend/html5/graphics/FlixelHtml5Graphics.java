@@ -29,6 +29,8 @@ import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.jetbrains.annotations.NotNull;
+import org.teavm.jso.JSBody;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
 
 public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
@@ -38,6 +40,10 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     displayModes = new FlixelArray<>();
   }
 
+  public void initialize(HTMLCanvasElement canvas) {
+    jsInitialize(canvas);
+  }
+
   @Override
   public @NotNull FlixelList<FlixelDisplayMode> getDisplayModes() {
     return displayModes;
@@ -45,6 +51,22 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @Override
   public @NotNull FlixelGraphicsApi getApi() {
-    return FlixelGraphicsApi.WebGPU;
+    return jsWebGpuSupported() ? FlixelGraphicsApi.WebGPU : FlixelGraphicsApi.WebGL;
   }
+
+  @JSBody(params = { "canvas" }, script = """
+    if (!navigator.gpu) {
+      alert("WebGPU isn't supported.");
+      return;
+    }
+    navigator.gpu.requestAdapter().then(adapter => {
+      return adapter.requestDevice();
+    }).then(device => {
+      // TODO: Fill this in when I get the chance.
+    }).catch(err => console.error(err));
+    """)
+  private static native void jsInitialize(HTMLCanvasElement canvas);
+
+  @JSBody(script = "return navigator.gpu;")
+  private static native boolean jsWebGpuSupported();
 }

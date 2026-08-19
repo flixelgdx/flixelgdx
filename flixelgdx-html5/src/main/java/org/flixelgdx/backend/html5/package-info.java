@@ -1,5 +1,5 @@
 /**
- * TeaVM web backend for FlixelGDX.
+ * Web backend for FlixelGDX, powered by TeaVM.
  *
  * <p>This module provides web launch utilities for running a FlixelGDX game compiled with TeaVM.
  * It is responsible for setting up platform services and creating the TeaVM web application.
