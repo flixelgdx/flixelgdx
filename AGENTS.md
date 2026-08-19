@@ -241,7 +241,7 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - Prefer **American English** in docs. (e.g., "behavior" instead of "behaviour")
 - After code changes that affect public behavior or APIs, **update relevant Markdown docs** in the repo.
 - Don't use section comments (like `// ---`). The code should be easily navigable simply by how it's organized; section comments are just noise.
-- If a class needs to be referenced in a `@link`, don't write out the full package. Import it as a qualifier. This allows framework's Javadoc links to be
+- If a class needs to be referenced in a `@link`, don't write out the full package: import it as a qualifier. This allows the framework's Javadoc links to be
   easy to read and not a blue mess. (Example: **not** `{@link org.flixelgdx.Flixel}`, just `{@link Flixel}` + `import` for qualifier if needed.)
 
 ### Comments versus Javadocs
@@ -251,7 +251,7 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 
 ### Heavily used or critical APIs
 
-For widely used classes, fields, methods, or anything central to correctness, include a **small usage example** in Javadoc showing correct typical use.
+For widely used classes, fields, methods, or anything central to correctness, include a **small usage example** with an analogy in Javadoc showing correct typical use.
 
 ---
 
@@ -260,21 +260,20 @@ For widely used classes, fields, methods, or anything central to correctness, in
 - Prefer **small, focused commits** as you finish logical slices of work so history stays readable. For example, if the task
   involves a large refactor, **don't dump everything in one commit**; split each logical change into a separate commit.
 - Use **one branch and one pull request** unless the user explicitly asks for more (for example, stacked features or dependent work).
-- Follow `CONTRIBUTING.md`, `PULL_REQUEST_TEMPLATE.md`, and project PR or commit conventions.
 - If the user renames a pull request, **do not rename it back**; respect their title.
 - Your commit titles should be **short and descriptive**, not exceeding **72 characters**, and should not contain
   **keywords in front (e.g. `fix`, `feat`, `refactor`, etc.)**. They should also be **present** tense. Examples:
-  - "Update README with more descriptive content"
-  - "Fix typos in documentation and refactor FlixelSprite"
-  - "Fix rendering bug in FlixelCamera"
-  - "Add missing Javadoc to FlixelCamera"
+    - "Update README with more descriptive content"
+    - "Fix typos in documentation and refactor FlixelSprite"
+    - "Fix rendering bug in FlixelCamera"
+    - "Add missing Javadoc to FlixelCamera"
 - If the current branch is not up to date with the remote, always pull the latest changes before changing any code.
 - If the current branch is set to `master` or something else, **create a new branch off of the latest changes from `master`**.
 - When you're done with a task (and you haven't yet made one), **create a pull request**. Make sure it follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
   exactly with all of your changes.
 - Pull request titles should be read as **past tense**, in the format as if it was a new update to a game. Examples:
-  - "Added experimental controller/gamepad support for games to be playable on more platforms such as console"
-  - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
-  - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
+    - "Added experimental controller/gamepad support for games to be playable on more platforms such as console"
+    - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
+    - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
 - All pull requests should target the **`master`** branch.
 - If the user has changes present on the current branch, **do not undo, modify or touch them**. Leave them as-is.
