@@ -289,9 +289,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   private boolean focusCommandLine;
 
-  /** Whether the command {@code InputText} had focus at the end of the last {@link #drawUI()} pass. */
-  private boolean commandInputFocusedLastFrame;
-
   /** When true, the next {@link #drawUI()} pass clears the Dear ImGui IO input queues once. */
   private boolean sanitizeImGuiInputBeforeNextDraw;
 
@@ -440,14 +437,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   @Override
-  protected boolean shouldSuppressDebugRawKeybind(int keycode) {
-    if (!commandInputFocusedLastFrame) {
-      return false;
-    }
-    return !isNonTypableSystemDebugKey(keycode);
-  }
-
-  @Override
   protected void onWatchEntriesRefreshed() {
     int n = cachedWatchKeys.getSize();
     if (watchKeyStr.length < n) {
@@ -523,7 +512,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.createContext();
     ImGuiIO io = ImGui.getIO();
     io.setIniFilename(null);
-    io.addConfigFlags(ImGuiConfigFlags.NavEnableKeyboard);
+    // Keyboard navigation is intentionally left off: with it on, focusing any overlay window makes
+    // Dear ImGui report WantCaptureKeyboard, which would suppress the F2/F3/F4 toggle keys (they now
+    // go through the normal input path). Mouse drives the overlay; the toggles stay reliable.
     io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
     // The bgfx renderer binds a per-command vertex offset, so let Dear ImGui keep large draw lists in
     // one buffer instead of forcing 16-bit index limits.
@@ -1271,12 +1262,10 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    */
   private void drawCommandWindow() {
     if (!showCommandWindow.get()) {
-      commandInputFocusedLastFrame = false;
       return;
     }
     applyWindowLayout(layoutCommandX, layoutCommandY, layoutCommandW, layoutCommandH);
     if (!ImGui.begin("Command Line", showCommandWindow)) {
-      commandInputFocusedLastFrame = false;
       ImGui.end();
       return;
     }
@@ -1289,7 +1278,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       focusCommandLine = false;
     }
     boolean submitted = ImGui.inputText("##cmd", commandInputBuffer, inputFlags, commandHistoryCallback);
-    commandInputFocusedLastFrame = ImGui.isItemFocused();
     String commandSnapshot = commandInputBuffer.get();
     ImGui.popItemWidth();
     ImGui.sameLine();
@@ -1460,33 +1448,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     int head = getPerfHead();
     int last = (head - 1 + buffer.length) % buffer.length;
     return buffer[last];
-  }
-
-  /**
-   * @return {@code true} for keys that should keep working as debug shortcuts even while the command
-   *     field is focused (function keys, Escape, modifiers, and lock keys, none of which type text).
-   */
-  private static boolean isNonTypableSystemDebugKey(int keycode) {
-    if (keycode < 0) {
-      return true;
-    }
-    if (keycode >= FlixelKey.F1 && keycode <= FlixelKey.F12) {
-      return true;
-    }
-    return keycode == FlixelKey.ESCAPE
-        || keycode == FlixelKey.CONTROL_LEFT
-        || keycode == FlixelKey.CONTROL_RIGHT
-        || keycode == FlixelKey.ALT_LEFT
-        || keycode == FlixelKey.ALT_RIGHT
-        || keycode == FlixelKey.SHIFT_LEFT
-        || keycode == FlixelKey.SHIFT_RIGHT
-        || keycode == FlixelKey.SYM
-        || keycode == FlixelKey.MENU
-        || keycode == FlixelKey.CAPS_LOCK
-        || keycode == FlixelKey.SCROLL_LOCK
-        || keycode == FlixelKey.NUM_LOCK
-        || keycode == FlixelKey.PAUSE
-        || keycode == FlixelKey.PRINT_SCREEN;
   }
 
   private static float[] colorForLevel(FlixelLogLevel level) {
