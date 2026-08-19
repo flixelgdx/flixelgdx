@@ -145,6 +145,7 @@ for (int i = activeTweens.size - 1; i >= 0; i--) { ... }
 - **Reuse and pooling**: Reuse objects (e.g. a `FlixelVector` or `FlixelRect` stored in a field) where possible. For frequently created and destroyed objects (e.g. particles), implement `FlixelPoolable` and use a `FlixelPool` so instances can be recycled instead of discarded.
 - **Libraries**: Prefer FlixelGDX types and idioms (e.g. `FlixelArray`, `FlixelMap`, `FlixelPool`).
 - **No standard Java collections**: Standard Java collection types like `HashMap` and `List` are ***completely banned*** and not allowed to be used in the framework's critical backends, especially `flixelgdx-core`. The only exception is inside build-time tools like plugins, since it doesn't impact a game at runtime. 
+- **Absolutely no reflection**: Reflection (especially in the `flixelgdx-core` module) is ***not allowed to be used***. It completely breaks AOT compilers and isn't reliable.
 
 ### Examples
 
@@ -152,6 +153,7 @@ for (int i = activeTweens.size - 1; i >= 0; i--) { ... }
 
 ```java
 public class MyObject extends FlixelSprite {
+
   private final FlixelVector tempVector = new FlixelVector(); // Reusable object.
 
   @Override
@@ -168,6 +170,7 @@ public class MyObject extends FlixelSprite {
 
 ```java
 public class MyObject extends FlixelSprite {
+
   @Override
   public void update(float elapsed) {
     super.update(elapsed);
