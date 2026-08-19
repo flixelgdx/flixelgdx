@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.audio.FlixelMiniAudioFactory;
+import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.graphics.FlixelKtx2Loader;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
@@ -65,13 +66,50 @@ public final class FlixelDesktopLauncher {
   private FlixelDesktopLauncher() {}
 
   /**
-   * Launches the game in {@link FlixelRuntimeMode#RELEASE RELEASE} mode. This is the call almost
-   * every game uses.
+   * Launches the game, choosing the runtime mode from the {@code flixel.mode} system property so the
+   * same code path serves development and release without a code change.
+   *
+   * <p>This is the call almost every game uses. The mode is resolved as follows:
+   *
+   * <ul>
+   *   <li>{@code -Dflixel.mode=debug} (or {@code -Dflixel.debug=true}) starts in
+   *       {@link FlixelRuntimeMode#DEBUG DEBUG}, which enables the debug overlay and diagnostics.</li>
+   *   <li>{@code -Dflixel.mode=test} starts in {@link FlixelRuntimeMode#TEST TEST}.</li>
+   *   <li>No property (the default, and how packaged/published builds run) starts in
+   *       {@link FlixelRuntimeMode#RELEASE RELEASE}.</li>
+   * </ul>
+   *
+   * <p>Because the flag lives in the launch command (for example a Gradle {@code debug} run task) and
+   * not in code, there is nothing to remember to remove before publishing: a shipped build simply runs
+   * without the property and lands in release mode. To force a specific mode regardless of the
+   * property, call {@link #launch(FlixelGame, FlixelRuntimeMode)} directly.
    *
    * @param game The game instance to run.
    */
   public static void launch(@NotNull FlixelGame game) {
-    launch(game, FlixelRuntimeMode.RELEASE);
+    launch(game, resolveRuntimeMode());
+  }
+
+  /**
+   * Resolves the runtime mode from the {@code flixel.mode} (or legacy {@code flixel.debug}) system
+   * property, defaulting to {@link FlixelRuntimeMode#RELEASE RELEASE}.
+   *
+   * @return The runtime mode requested on the command line, or {@code RELEASE} when none was.
+   */
+  private static FlixelRuntimeMode resolveRuntimeMode() {
+    String mode = System.getProperty("flixel.mode", "").trim().toLowerCase();
+    if (mode.isEmpty() && "true".equalsIgnoreCase(System.getProperty("flixel.debug", ""))) {
+      return FlixelRuntimeMode.DEBUG;
+    }
+    return switch (mode) {
+      case "debug" -> FlixelRuntimeMode.DEBUG;
+      case "test" -> FlixelRuntimeMode.TEST;
+      case "", "release" -> FlixelRuntimeMode.RELEASE;
+      default -> {
+        Flixel.warn("Desktop", "Unknown flixel.mode '" + mode + "'; defaulting to RELEASE.");
+        yield FlixelRuntimeMode.RELEASE;
+      }
+    };
   }
 
   /**
@@ -123,6 +161,11 @@ public final class FlixelDesktopLauncher {
       Flixel.gamepads.addMappingResolver(gamepads);
       Flixel.mouse.setMouseIconManager(iconManager);
     });
+
+    // Install the Dear ImGui debug overlay factory. It is only instantiated when debug mode is on
+    // (FlixelGame.create gates on it), so this is inert in release builds while still letting a game
+    // flip debug mode on at runtime and get the full overlay.
+    Flixel.setDebugOverlay(FlixelImGuiDebugOverlay::new);
 
     Flixel.setRuntimeMode(runtimeMode);
     Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
