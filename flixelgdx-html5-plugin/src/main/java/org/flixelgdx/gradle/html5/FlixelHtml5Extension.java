@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.gradle.teavm;
+package org.flixelgdx.gradle.html5;
 
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
@@ -33,7 +33,7 @@ import org.gradle.api.provider.Property;
  *
  * <p>All properties have sensible defaults and are optional. The only required configuration is
  * {@code teavm.all.mainClass} in the {@code org.teavm} plugin block (see
- * {@link FlixelTeaVMPlugin} for usage).
+ * {@link FlixelHtml5Plugin} for usage).
  *
  * <h2>Example</h2>
  *
@@ -74,7 +74,7 @@ import org.gradle.api.provider.Property;
  * }
  * }</pre>
  */
-public interface FlixelTeaVMExtension {
+public interface FlixelHtml5Extension {
 
   /** Gradle extension name used to register this extension under. */
   String NAME = "flixelgdx";

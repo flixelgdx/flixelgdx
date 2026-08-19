@@ -4,10 +4,10 @@ plugins {
 
 gradlePlugin {
   plugins {
-    create("flixelTeavm") {
-      id = "org.flixelgdx.teavm"
-      implementationClass = "org.flixelgdx.gradle.teavm.FlixelTeaVMPlugin"
-      displayName = "FlixelGDX TeaVM Plugin"
+    create("flixelHtml5") {
+      id = "org.flixelgdx.html5"
+      implementationClass = "org.flixelgdx.gradle.teavm.FlixelHtml5Plugin"
+      displayName = "FlixelGDX HTML5 Plugin"
       description =
         "Automates web asset copying, index.html generation, and task wiring for FlixelGDX TeaVM web builds."
     }

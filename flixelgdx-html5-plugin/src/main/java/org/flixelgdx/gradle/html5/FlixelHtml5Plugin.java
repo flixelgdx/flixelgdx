@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.gradle.teavm;
+package org.flixelgdx.gradle.html5;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -163,21 +163,21 @@ import java.util.jar.JarFile;
  * }
  * }</pre>
  *
- * @see FlixelTeaVMExtension
+ * @see FlixelHtml5Extension
  */
-public class FlixelTeaVMPlugin implements Plugin<Project> {
+public class FlixelHtml5Plugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
-  private static final String DEFAULT_INDEX_TEMPLATE = "/org/flixelgdx/gradle/teavm/default-index.html";
+  private static final String DEFAULT_INDEX_TEMPLATE = "/org/flixelgdx/gradle/html5/default-index.html";
   private static final String DEFAULT_GENERATED_INDEX_SCRIPT_SRC = "teavm.js";
-  private static final String DEFAULT_STARTUP_LOGO = "/org/flixelgdx/gradle/teavm/default-startup-logo.png";
+  private static final String DEFAULT_STARTUP_LOGO = "/org/flixelgdx/gradle/html5/default-startup-logo.png";
 
   @Override
   public void apply(Project project) {
-    FlixelTeaVMExtension ext = project.getExtensions().create(FlixelTeaVMExtension.NAME, FlixelTeaVMExtension.class);
+    FlixelHtml5Extension ext = project.getExtensions().create(FlixelHtml5Extension.NAME, FlixelHtml5Extension.class);
 
-    ext.getCanvasId().convention(FlixelTeaVMExtension.DEFAULT_CANVAS_ID);
-    ext.getTitle().convention(FlixelTeaVMExtension.DEFAULT_TITLE);
+    ext.getCanvasId().convention(FlixelHtml5Extension.DEFAULT_CANVAS_ID);
+    ext.getTitle().convention(FlixelHtml5Extension.DEFAULT_TITLE);
     // Resolved to teavm.js.outputDir in afterEvaluate; fallback is used only when org.teavm is missing entirely.
     DirectoryProperty teaVmWebRoot = project.getObjects().directoryProperty();
     teaVmWebRoot.convention(project.getLayout().getBuildDirectory().dir("generated/teavm"));
@@ -275,7 +275,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         // Generate from the default built-in template.
         try {
           String template;
-          try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(DEFAULT_INDEX_TEMPLATE)) {
+          try (InputStream in = FlixelHtml5Plugin.class.getResourceAsStream(DEFAULT_INDEX_TEMPLATE)) {
             if (in == null) {
               throw new IOException("default-index.html template not found in plugin JAR at " + DEFAULT_INDEX_TEMPLATE);
             }
@@ -382,7 +382,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         if (!ext.getGenerateDefaultStartupLogo().get()) {
           return;
         }
-        try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(DEFAULT_STARTUP_LOGO)) {
+        try (InputStream in = FlixelHtml5Plugin.class.getResourceAsStream(DEFAULT_STARTUP_LOGO)) {
           if (in == null) {
             throw new IOException("Built-in startup-logo.png not found in plugin JAR at " + DEFAULT_STARTUP_LOGO);
           }
@@ -406,7 +406,7 @@ public class FlixelTeaVMPlugin implements Plugin<Project> {
         String[] names = { "lsans-15.fnt", "lsans-15.png" };
         for (String n : names) {
           String path = "/org/flixelgdx/bitmap/" + n;
-          try (InputStream in = FlixelTeaVMPlugin.class.getResourceAsStream(path)) {
+          try (InputStream in = FlixelHtml5Plugin.class.getResourceAsStream(path)) {
             if (in == null) {
               throw new IOException("FlixelGDX plugin JAR is missing resource at " + path);
             }

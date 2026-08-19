@@ -21,29 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.teavm;
+package org.flixelgdx.backend.html5;
+
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelWindow;
+import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 
 /**
- * Placeholder entry point for the web (TeaVM) backend.
+ * The main entry point for a FlixelGDX game to launch inside a browser.
  *
- * <p>The web backend is not implemented on the framework's current rendering and platform stack. On
- * the web the destination is WebGPU (with a WebGL fallback) driven through the framework's own
- * TeaVM bindings, and that work happens in a later phase. Until then this class exists only so the
- * module compiles and names a TeaVM entry point; running it fails fast with a clear message.
- *
- * <p>Use {@code flixelgdx-desktop} to run games today; it is the reference backend (bgfx + SDL3)
- * every platform is validated against first.
+ * <p>
  */
-public final class FlixelTeaVMLauncher {
+public final class FlixelHtml5Launcher {
 
-  private FlixelTeaVMLauncher() {}
+  public static void launch(FlixelGame game) {
+    Flixel.alert = new FlixelHtml5Alerter();
+    Flixel.graphics = new FlixelHtml5Graphics();
+    Flixel.window = new FlixelHtml5Canvas();
 
-  /**
-   * TeaVM entry point. Fails fast because the web backend is not available yet.
-   *
-   * @param args Ignored.
-   */
-  public static void main(String[] args) {
-    throw new UnsupportedOperationException("The web backend is not available yet.");
+    try {
+      Flixel.start(game, new FlixelHtml5Runner());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
+
+  private FlixelHtml5Launcher() {}
 }
