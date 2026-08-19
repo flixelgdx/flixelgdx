@@ -49,8 +49,8 @@ When explaining code or introducing patterns:
 
 ### Performance, Memory, and allocations
 
-- **Do not allocate objects inside loops or in methods invoked every frame.** That rule is strict. Prefer reuse, pooling (FlixelGDX and libGDX),
-  indexed `for` loops, and performance-oriented helpers such as FlixelGDX's `FlixelString` or libGDX's `ObjectMap`.
+- **Do not allocate objects inside loops or in methods invoked every frame.** That rule is strict. Prefer reuse, pooling,
+  indexed `for` loops, and performance-oriented helpers such as FlixelGDX's `FlixelString` or `FlixelMap`.
 - **Always put fields in the correct order for each class**. Follow the order below:
 
   1. `long`s and `double`s
