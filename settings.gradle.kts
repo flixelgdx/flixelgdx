@@ -62,7 +62,7 @@ include(
   "flixelgdx-jvm",
   "flixelgdx-desktop",
   "flixelgdx-ios",
-  "flixelgdx-teavm",
+  "flixelgdx-html5",
   "flixelgdx-teavm-plugin",
   "flixelgdx-logging-plugin",
   "flixelgdx-basisu-plugin",
