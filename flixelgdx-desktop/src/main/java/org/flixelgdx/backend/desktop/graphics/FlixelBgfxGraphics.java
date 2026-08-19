@@ -155,6 +155,14 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Nullable
   private FlixelBgfxRenderTarget sceneTarget;
 
+  /**
+   * 1x1 white texture used by {@link #forceOpaqueAlpha()} to write alpha=1 to the back buffer
+   * without changing RGB, keeping sprites visible when the transparent framebuffer is enabled but
+   * transparency is currently off.
+   */
+  @Nullable
+  private FlixelBgfxTexture opaqueAlphaTexture;
+
   /** Reused ortho matrix for the final upscale blit, rebuilt each composite to match the window. */
   @NotNull
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
@@ -188,6 +196,14 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** Frames counted since the last stats log line, when stats logging is enabled. */
   private int statsWindowFrames;
 
+  /**
+   * Whether the window was opened with an alpha-capable framebuffer. When {@code true},
+   * {@link #onResize(int, int)} passes {@code BGFX_RESET_TRANSPARENT_BACKBUFFER} so the OS
+   * compositor receives the back-buffer alpha channel and can composite the window against the
+   * desktop.
+   */
+  private boolean transparentFramebuffer;
+
   private boolean vsync = true;
   private boolean programWarned;
 
@@ -215,8 +231,13 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    *
    * @param width The initial back buffer width in pixels.
    * @param height The initial back buffer height in pixels.
+   * @param transparentFramebuffer Whether the window was opened with an alpha-capable framebuffer.
+   *     When {@code true}, {@link #onResize(int, int)} passes
+   *     {@code BGFX_RESET_TRANSPARENT_BACKBUFFER} on every swap-chain reset so the OS compositor
+   *     receives the back-buffer alpha channel.
    */
-  public void onInitialized(int width, int height) {
+  public void onInitialized(int width, int height, boolean transparentFramebuffer) {
+    this.transparentFramebuffer = transparentFramebuffer;
     this.backBufferWidth = width;
     this.backBufferHeight = height;
     this.viewportWidth = width;
@@ -238,6 +259,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
     textureUniform = BGFX.bgfx_create_uniform("s_texture", BGFX.BGFX_UNIFORM_TYPE_SAMPLER, 1);
     spriteProgram = loadSpriteProgram();
+    opaqueAlphaTexture = createOpaqueAlphaTexture();
 
     configureStats();
   }
@@ -273,8 +295,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   public void onResize(int width, int height) {
     backBufferWidth = width;
     backBufferHeight = height;
-    BGFX.bgfx_reset(width, height, vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE,
-        BGFX.BGFX_TEXTURE_FORMAT_RGBA8);
+    int flags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
+    if (transparentFramebuffer) {
+      flags |= BGFX.BGFX_RESET_TRANSPARENT_BACKBUFFER;
+    }
+    BGFX.bgfx_reset(width, height, flags, BGFX.BGFX_TEXTURE_FORMAT_RGBA8);
   }
 
   @NotNull
@@ -963,6 +988,83 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     } catch (Exception e) {
       return new byte[0];
     }
+  }
+
+  /**
+   * Forces the entire back buffer's alpha channel to {@code 1} (fully opaque) without touching
+   * the RGB channels.
+   *
+   * <p>Called every frame when the transparent framebuffer was requested in the game config but
+   * desktop transparency is currently off. Without this pass, any semi-transparent sprite would
+   * leave alpha values below {@code 1} in the back buffer, letting the desktop show through even
+   * though the game is not in transparency mode. A full-screen quad is submitted with a
+   * separate-function blend that preserves destination RGB while writing source alpha ({@code 1})
+   * into the destination alpha channel.
+   */
+  @Override
+  public void forceOpaqueAlpha() {
+    if (spriteProgram == -1 || opaqueAlphaTexture == null) {
+      return;
+    }
+    int view = nextScreenView;
+    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+      nextScreenView++;
+    }
+    viewStack[0] = view;
+    viewStackDepth = 1;
+    BGFX.bgfx_set_view_frame_buffer(view, (short) -1);
+    BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
+
+    float w = Math.max(1, backBufferWidth);
+    float h = Math.max(1, backBufferHeight);
+    // Reuse compositeOrtho and viewTransform to avoid allocation. The full-screen quad sits at
+    // depth 0, which is inside NDC on both [0, 1] and [-1, 1] backends when the ortho is built
+    // for the correct convention.
+    compositeOrtho.setToOrtho2DYDown(0, 0, backBufferWidth, backBufferHeight, isDepthZeroToOne());
+    viewTransform.clear();
+    viewTransform.put(compositeOrtho.val);
+    viewTransform.flip();
+    BGFX.bgfx_set_view_transform(view, null, viewTransform);
+    BGFX.bgfx_set_view_rect(view, 0, 0, (int) w, (int) h);
+
+    // Build one full-screen quad into the transient vertex buffer. The vertex color is white
+    // (0xFFFFFFFF) so the fragment outputs alpha=1 regardless of the texture.
+    int vertexCount = FlixelBgfxBatch.verticesPerQuad();
+    int indexCount = FlixelBgfxBatch.indicesPerQuad();
+    BGFX.bgfx_alloc_transient_vertex_buffer(transientVertices, vertexCount, vertexLayout);
+    float white = Float.intBitsToFloat(0xFFFFFFFF);
+    FloatBuffer buf = transientVertices.data().asFloatBuffer();
+    buf.put(0f).put(0f).put(0f).put(0f).put(white); // top-left
+    buf.put(w).put(0f).put(1f).put(0f).put(white);  // top-right
+    buf.put(w).put(h).put(1f).put(1f).put(white);   // bottom-right
+    buf.put(0f).put(h).put(0f).put(1f).put(white);  // bottom-left
+
+    BGFX.bgfx_set_transient_vertex_buffer(0, transientVertices, 0, vertexCount);
+    BGFX.bgfx_set_index_buffer(quadIndexBuffer, 0, indexCount);
+    BGFX.bgfx_set_texture(0, textureUniform, opaqueAlphaTexture.getBgfxHandle(), BGFX.BGFX_SAMPLER_NONE);
+    // Blend: RGB src=ZERO dst=ONE (destination RGB preserved), alpha src=ONE dst=ZERO (forced to 1).
+    long alphaForceBlend = BGFX.BGFX_STATE_BLEND_FUNC_SEPARATE(
+        BGFX.BGFX_STATE_BLEND_ZERO, BGFX.BGFX_STATE_BLEND_ONE,
+        BGFX.BGFX_STATE_BLEND_ONE, BGFX.BGFX_STATE_BLEND_ZERO);
+    BGFX.bgfx_set_state(BGFX.BGFX_STATE_WRITE_RGB | BGFX.BGFX_STATE_WRITE_A | alphaForceBlend, 0);
+    BGFX.bgfx_submit(view, spriteProgram, 0, BGFX.BGFX_DISCARD_ALL);
+  }
+
+  /** Creates a 1x1 fully opaque white texture used by the alpha-force pass. */
+  @Nullable
+  private static FlixelBgfxTexture createOpaqueAlphaTexture() {
+    ByteBuffer pixel = MemoryUtil.memAlloc(4);
+    pixel.put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).put((byte) 0xFF).flip();
+    short handle = BGFX.bgfx_create_texture_2d(
+        1, 1, false, 1,
+        BGFX.BGFX_TEXTURE_FORMAT_RGBA8,
+        BGFX.BGFX_TEXTURE_NONE,
+        BGFX.bgfx_copy(pixel), 0L);
+    MemoryUtil.memFree(pixel);
+    if (handle == -1) {
+      return null;
+    }
+    return new FlixelBgfxTexture(handle, 1, 1);
   }
 
   public boolean isRenderSmooth() {

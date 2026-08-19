@@ -119,9 +119,24 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       return;
     }
 
+    boolean transparentFramebuffer = game.getConfig().isTransparentFramebuffer();
     long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
-    if (game.isTransparentFramebufferRequested()) {
+    if (transparentFramebuffer) {
       windowFlags |= SDLVideo.SDL_WINDOW_TRANSPARENT;
+      // On X11, SDL3 uses XMatchVisualInfo for the window visual when no OpenGL flag is
+      // present, which may return a visual that is not in the GLX visual list. bgfx then
+      // cannot create a compatible alpha-capable context, so the compositor sees a 24-bit
+      // window and renders transparent areas as black. Adding SDL_WINDOW_OPENGL forces SDL3
+      // to use glXChooseFBConfig (with GLX_ALPHA_SIZE=8) for visual selection, giving bgfx
+      // a 32-bit RGBA-compatible window without SDL3 creating any GL context of its own.
+      //
+      // This is temporary, as I need to battle test the framework on different hardware.
+      // Linux is so fucking annoying to deal with bro. :wilted_flower:
+      String driver = SDLVideo.SDL_GetCurrentVideoDriver();
+      if ("x11".equals(driver)) {
+        SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_ALPHA_SIZE, 8);
+        windowFlags |= SDLVideo.SDL_WINDOW_OPENGL;
+      }
     }
     windowHandle = SDLVideo.SDL_CreateWindow(game.getTitle(), width, height, windowFlags);
     if (windowHandle == 0L) {
@@ -132,13 +147,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     SDLVideo.SDL_SetWindowPosition(windowHandle, SDLVideo.SDL_WINDOWPOS_CENTERED, SDLVideo.SDL_WINDOWPOS_CENTERED);
     window.bind(windowHandle);
 
-    if (!initBgfx(windowHandle)) {
+    if (!initBgfx(windowHandle, transparentFramebuffer)) {
       SDLVideo.SDL_DestroyWindow(windowHandle);
       SDLInit.SDL_Quit();
       return;
     }
 
-    graphics.onInitialized(width, height);
+    graphics.onInitialized(width, height, transparentFramebuffer);
     graphics.setVSync(vsync);
     gamepads.openConnected();
 
@@ -224,7 +239,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   /** Initializes bgfx with the SDL window's native handle. */
-  private boolean initBgfx(long windowHandle) {
+  private boolean initBgfx(long windowHandle, boolean transparentFramebuffer) {
     long nativeWindow = FlixelSdlNativeHandle.windowHandle(windowHandle);
     long nativeDisplay = FlixelSdlNativeHandle.displayHandle(windowHandle);
     if (nativeWindow == 0L) {
@@ -235,8 +250,12 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       BGFX.bgfx_init_ctor(init);
       init.type(resolveRendererType());
       int resetFlags = vsync ? BGFX.BGFX_RESET_VSYNC : BGFX.BGFX_RESET_NONE;
+      if (transparentFramebuffer) {
+        resetFlags |= BGFX.BGFX_RESET_TRANSPARENT_BACKBUFFER;
+      }
+      int finalResetFlags = resetFlags;
       init.resolution(
-          res -> res.width(width).height(height).reset(resetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
+          res -> res.width(width).height(height).reset(finalResetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
       init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
       if (!BGFX.bgfx_init(init)) {
         Flixel.error("Desktop", "bgfx could not be initialized.");
