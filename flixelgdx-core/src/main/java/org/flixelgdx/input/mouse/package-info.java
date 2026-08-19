@@ -108,14 +108,7 @@
  * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#justPressed(int) justPressed()}, and
  * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#justReleased(int) justReleased()}
  * return {@code false} automatically. This prevents clicks inside a debug panel from triggering
- * game behavior at the same time. Use the {@code raw} variants to opt out of this suppression:
- *
- * <pre>{@code
- * // Always responds, even when a debug panel is open.
- * if (Flixel.mouse.rawJustPressed(FlixelMouseButton.LEFT)) {
- *   debugTool.pick(Flixel.mouse.getWorldX(), Flixel.mouse.getWorldY());
- * }
- * }</pre>
+ * game behavior at the same time.
  *
  * <h2>Cursor styling</h2>
  *

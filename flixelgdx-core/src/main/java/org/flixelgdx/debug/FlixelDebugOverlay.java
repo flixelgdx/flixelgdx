@@ -478,10 +478,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * their work, so clicking inside (for example) a Dear ImGui window does not bleed through
    * into the game logic. Defaults to {@code false}.
    *
-   * <p>The debug overlay's own mouse-driven tools (sprite picker, camera pan) read
-   * {@link FlixelMouseInputManager#rawPressed(int) FlixelMouseInputManager.rawPressed(int)} so they
-   * can opt in to "ignore the suppression" while still respecting this hook for the early-exit
-   * gate.
+   * <p>The overlay's own mouse tools (sprite picker, camera pan) use the regular
+   * {@link FlixelMouseInputManager#pressed(int) FlixelMouseInputManager.pressed(int)} helpers, which
+   * already report {@code false} while the cursor is over a debug panel, so a click there never grabs
+   * a sprite or pans the camera.
    *
    * @return {@code true} if a foreground UI element is consuming mouse input this frame.
    */
@@ -544,10 +544,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     cam.applyCameraTransform();
 
-    if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
+    if (!uiCapturedMouse && Flixel.mouse.pressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
-      if (!Flixel.mouse.rawJustPressed(cameraPanButton)) {
+      if (!Flixel.mouse.justPressed(cameraPanButton)) {
         panUnprojectA.set(lastPanScreenX, lastPanScreenY);
         cam.unproject(panUnprojectA);
         panUnprojectB.set(sx, sy);
@@ -605,12 +605,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     float worldX = viewPickX + cam.scrollX + cam.getViewMarginX();
     float worldY = viewPickY + cam.scrollY + cam.getViewMarginY();
 
-    // Use the raw* helpers so the picker keeps reading the actual mouse state (Flixel.mouse.pressed(...)
-    // is suppressed when the cursor is over an imgui window, and we still want the uncovered
-    // viewport area to drive picking). The early-exit gate above already guards the imgui case.
-    boolean justPressed = Flixel.mouse.rawJustPressed(FlixelMouseButton.LEFT);
-    boolean pressed = Flixel.mouse.rawPressed(FlixelMouseButton.LEFT);
-    boolean justReleased = Flixel.mouse.rawJustReleased(FlixelMouseButton.LEFT);
+    // The early-exit gate above already returned when the cursor is over a debug panel, so here the
+    // regular mouse helpers report the real state and drive picking over the uncovered viewport.
+    boolean justPressed = Flixel.mouse.justPressed(FlixelMouseButton.LEFT);
+    boolean pressed = Flixel.mouse.pressed(FlixelMouseButton.LEFT);
+    boolean justReleased = Flixel.mouse.justReleased(FlixelMouseButton.LEFT);
 
     FlixelObject dragged = Flixel.debug.getDraggedSprite();
 

@@ -223,28 +223,12 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * debug overlay reports that another UI layer (typically the imgui debugger) is capturing
    * mouse input, so clicking inside an imgui window cannot leak into game logic.
    *
-   * <p>Use {@link #rawPressed(int)} when you specifically need the raw, unsuppressed state.
-   * The debug overlay's own sprite picker / camera tools use the raw variants so they can opt
-   * in to "ignore the suppression" when needed.
-   *
    * @param button Button index (e.g. {@code 0} for left mouse button).
    * @return {@code true} if the button is pressed and input is enabled and not suppressed by UI.
    */
   public boolean pressed(int button) {
-    if (isCapturedByDebugUI()) {
-      return false;
-    }
-    return rawPressed(button);
-  }
-
-  /**
-   * Same as {@link #pressed(int)} but bypasses the "captured by debug UI" check.
-   *
-   * @param button Button index.
-   * @return {@code true} if the button is pressed and input is enabled, regardless of UI capture.
-   */
-  public boolean rawPressed(int button) {
-    return enabled && button >= 0 && button <= MAX_BUTTON && Flixel.input.isButtonPressed(button);
+    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON
+        && Flixel.input.isButtonPressed(button);
   }
 
   /**
@@ -255,20 +239,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @return {@code true} if the button was just pressed and input is enabled and not suppressed.
    */
   public boolean justPressed(int button) {
-    if (isCapturedByDebugUI()) {
-      return false;
-    }
-    return rawJustPressed(button);
-  }
-
-  /**
-   * Same as {@link #justPressed(int)} but bypasses the "captured by debug UI" check.
-   *
-   * @param button Button index.
-   * @return {@code true} if the button was just pressed and input is enabled, regardless of UI capture.
-   */
-  public boolean rawJustPressed(int button) {
-    return enabled && button >= 0 && button <= MAX_BUTTON && justPressed[button];
+    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON && justPressed[button];
   }
 
   /**
@@ -279,20 +250,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * @return {@code true} if the button was just released and input is enabled and not suppressed.
    */
   public boolean justReleased(int button) {
-    if (isCapturedByDebugUI()) {
-      return false;
-    }
-    return rawJustReleased(button);
-  }
-
-  /**
-   * Same as {@link #justReleased(int)} but bypasses the "captured by debug UI" check.
-   *
-   * @param button Button index.
-   * @return {@code true} if the button was just released and input is enabled, regardless of UI capture.
-   */
-  public boolean rawJustReleased(int button) {
-    return enabled && button >= 0 && button <= MAX_BUTTON && justReleased[button];
+    return enabled && !isCapturedByDebugUI() && button >= 0 && button <= MAX_BUTTON && justReleased[button];
   }
 
   /**
