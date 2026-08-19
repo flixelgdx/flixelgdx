@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.desktop.debug;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.math.FlixelMatrix;
 import org.jetbrains.annotations.NotNull;
@@ -59,13 +60,10 @@ import imgui.ImVec4;
  */
 public final class FlixelImGuiBgfxRenderer {
 
-  /** Bytes per ImGui vertex: position (2 floats) + texture coordinate (2 floats) + color (4 bytes). */
-  private static final int VERTEX_STRIDE = 20;
-
-  /** Bytes per ImGui index. imgui-java uses unsigned 16-bit indices. */
-  private static final int INDEX_STRIDE = 2;
-
-  /** Byte offset of the packed color inside each vertex (after the two position and two UV floats). */
+  /**
+   * Byte offset of the packed color inside each vertex (after the two position and two UV floats).
+   * This is fixed by the ImGui vertex format regardless of the total vertex stride.
+   */
   private static final int COLOR_OFFSET = 16;
 
   /** Point-sampled, clamped filtering so both the bitmap font and inspected pixel-art stay crisp. */
@@ -102,10 +100,13 @@ public final class FlixelImGuiBgfxRenderer {
   @NotNull
   private final ImVec4 clip = new ImVec4();
 
-  /** The font atlas texture handle, or {@code -1} until {@link #init()} uploads it. */
+  /** The font atlas texture handle, or {@code -1} until {@link #init(ByteBuffer, int, int)} uploads it. */
   private short fontTexture = -1;
 
   private boolean initialized;
+
+  /** Guards a single diagnostic log line describing the draw-data layout on the first rendered frame. */
+  private boolean loggedDiagnostics;
 
   /**
    * Creates a renderer bound to the desktop bgfx graphics manager.
@@ -172,6 +173,13 @@ public final class FlixelImGuiBgfxRenderer {
       return;
     }
 
+    // ImGui's vertex and index sizes are decided by the native build (16- or 32-bit indices, and the
+    // vertex stride), so read them at runtime rather than assuming, exactly as imgui-java's own
+    // renderers do. Getting either wrong scrambles the geometry into stray triangles.
+    int vertexStride = ImDrawData.sizeOfImDrawVert();
+    int indexStride = ImDrawData.sizeOfImDrawIdx();
+    boolean index32 = indexStride >= 4;
+
     int view = graphics.beginOverlayView();
     // ImGui works in top-left, y-down pixel space, so a y-down ortho over the display maps its
     // vertices straight to the back buffer. Match the backend's depth range so the geometry is not
@@ -183,26 +191,35 @@ public final class FlixelImGuiBgfxRenderer {
     int fbWidth = Math.round(displayWidth);
     int fbHeight = Math.round(displayHeight);
 
+    if (!loggedDiagnostics) {
+      loggedDiagnostics = true;
+      Flixel.debug("ImGuiRenderer", "vertexStride=" + vertexStride + " indexStride=" + indexStride
+          + " renderer=" + BGFX.bgfx_get_renderer_type() + " view=" + view
+          + " display=" + Math.round(displayWidth) + "x" + Math.round(displayHeight)
+          + " bgra=" + bgra + " program=" + graphics.getSpriteProgram() + " fontTex=" + fontTexture
+          + " cmdLists=" + cmdListCount);
+    }
+
     for (int n = 0; n < cmdListCount; n++) {
       ByteBuffer vertexData = drawData.getCmdListVtxBufferData(n);
       ByteBuffer indexData = drawData.getCmdListIdxBufferData(n);
-      int vertexCount = vertexData.remaining() / VERTEX_STRIDE;
-      int indexCount = indexData.remaining() / INDEX_STRIDE;
+      int vertexCount = vertexData.remaining() / vertexStride;
+      int indexCount = indexData.remaining() / indexStride;
       if (vertexCount == 0 || indexCount == 0) {
         continue;
       }
       // bgfx clamps over-allocation and warns; skipping a list that does not fit avoids a partially
       // uploaded frame if the overlay ever produces more geometry than the transient pool holds.
       if (BGFX.bgfx_get_avail_transient_vertex_buffer(vertexCount, layout) < vertexCount
-          || BGFX.bgfx_get_avail_transient_index_buffer(indexCount, false) < indexCount) {
+          || BGFX.bgfx_get_avail_transient_index_buffer(indexCount, index32) < indexCount) {
         continue;
       }
 
       BGFX.bgfx_alloc_transient_vertex_buffer(tvb, vertexCount, layout);
-      copyVertices(vertexData, tvb.data(), vertexCount, bgra);
-      BGFX.bgfx_alloc_transient_index_buffer(tib, indexCount, false);
+      copyVertices(vertexData, tvb.data(), vertexCount, vertexStride, bgra);
+      BGFX.bgfx_alloc_transient_index_buffer(tib, indexCount, index32);
       MemoryUtil.memCopy(MemoryUtil.memAddress(indexData), MemoryUtil.memAddress(tib.data()),
-          (long) indexCount * INDEX_STRIDE);
+          (long) indexCount * indexStride);
 
       int cmdCount = drawData.getCmdListCmdBufferSize(n);
       for (int cmd = 0; cmd < cmdCount; cmd++) {
@@ -246,15 +263,17 @@ public final class FlixelImGuiBgfxRenderer {
    * @param src The ImGui vertex bytes for one command list.
    * @param dst The transient vertex buffer memory to fill.
    * @param vertexCount The number of vertices to copy.
+   * @param vertexStride The byte size of one ImGui vertex.
    * @param bgra Whether the active backend expects BGRA color byte order.
    */
-  private static void copyVertices(@NotNull ByteBuffer src, @NotNull ByteBuffer dst, int vertexCount, boolean bgra) {
-    MemoryUtil.memCopy(MemoryUtil.memAddress(src), MemoryUtil.memAddress(dst), (long) vertexCount * VERTEX_STRIDE);
+  private static void copyVertices(@NotNull ByteBuffer src, @NotNull ByteBuffer dst, int vertexCount,
+      int vertexStride, boolean bgra) {
+    MemoryUtil.memCopy(MemoryUtil.memAddress(src), MemoryUtil.memAddress(dst), (long) vertexCount * vertexStride);
     if (!bgra) {
       return;
     }
     for (int i = 0; i < vertexCount; i++) {
-      int base = i * VERTEX_STRIDE + COLOR_OFFSET;
+      int base = i * vertexStride + COLOR_OFFSET;
       byte r = dst.get(base);
       dst.put(base, dst.get(base + 2));
       dst.put(base + 2, r);
