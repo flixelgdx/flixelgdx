@@ -633,8 +633,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.debug.overlay.draw();
     }
 
-    if (!desktopTransparencyActive && config.isTransparentFramebuffer()
-        && Flixel.host.getPlatform() == FlixelPlatform.Desktop) {
+    if (!desktopTransparencyActive && config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
     }
 
