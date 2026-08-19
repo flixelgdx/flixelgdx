@@ -55,16 +55,16 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   }
 
   @JSBody(params = { "canvas" }, script = """
-    if (!navigator.gpu) {
-      alert("WebGPU isn't supported.");
-      return;
-    }
-    navigator.gpu.requestAdapter().then(adapter => {
-      return adapter.requestDevice();
-    }).then(device => {
-      // TODO: Fill this in when I get the chance.
-    }).catch(err => console.error(err));
-    """)
+      if (!navigator.gpu) {
+        alert("WebGPU isn't supported.");
+        return;
+      }
+      navigator.gpu.requestAdapter().then(adapter => {
+        return adapter.requestDevice();
+      }).then(device => {
+        // TODO: Fill this in when I get the chance.
+      }).catch(err => console.error(err));
+      """)
   private static native void jsInitialize(HTMLCanvasElement canvas);
 
   @JSBody(script = "return navigator.gpu;")
