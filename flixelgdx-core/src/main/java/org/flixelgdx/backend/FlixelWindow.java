@@ -94,7 +94,7 @@ public interface FlixelWindow extends FlixelShakeable {
 
   /**
    * Returns whether an alpha-capable (transparent) framebuffer was requested at launch via
-   * {@link org.flixelgdx.FlixelGame.Config.Builder#transparentFramebuffer(boolean)}.
+   * {@link FlixelGame.Config.Builder#transparentFramebuffer(boolean)}.
    *
    * <p>When {@code true}, the window was created with compositor support, so
    * {@link #setTransparencyActive(boolean)} can blend the game with the desktop. When
@@ -103,7 +103,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when an alpha-capable framebuffer was requested in the game config.
    */
   default boolean isTransparentFramebufferRequested() {
-    return Flixel.game != null && Flixel.game.isTransparentFramebufferRequested();
+    return Flixel.game.isTransparentFramebufferRequested();
   }
 
   /**
@@ -117,9 +117,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @param active {@code true} to composite with the desktop through alpha; {@code false} for a normal opaque window interior.
    */
   default void setTransparencyActive(boolean active) {
-    if (Flixel.game != null) {
-      Flixel.game.applyBackdropForDesktopTransparency(active);
-    }
+    Flixel.game.applyBackdropForDesktopTransparency(active);
   }
 
   /**
