@@ -42,7 +42,7 @@ import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
  *   <li><b>Bundled platform natives</b> - the miniaudio shared libraries
  *       ({@code libflixel_miniaudio.so}, {@code flixel_miniaudio.dll},
  *       {@code libflixel_miniaudio.dylib}) are embedded as classpath resources and extracted to a
- *       temp file at run time by {@link FlixelMiniAudio#ensureLoaded()}. GraalVM excludes
+ *       temp file at run time by {@code FlixelMiniAudio.ensureLoaded()}. GraalVM excludes
  *       resources unless they are explicitly declared; each platform variant is registered
  *       individually so the correct binary ships inside the native image.</li>
  * </ul>
