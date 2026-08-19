@@ -35,6 +35,15 @@ dependencies {
     runtimeOnly("org.lwjgl:lwjgl-zstd:$lwjglVersion:$classifier")
   }
 
+  // Dear ImGui (via the SpaiR imgui-java binding) powers the debug overlay and is exposed as api so
+  // games can add their own ImGui panels through the overlay's onDrawImGui hook. Only the core
+  // binding is used; the project ships its own bgfx renderer and SDL3 platform layer instead of
+  // imgui-java's bundled GLFW/OpenGL backends.
+  api(libs.imgui.binding)
+  runtimeOnly(libs.imgui.natives.linux)
+  runtimeOnly(libs.imgui.natives.macos)
+  runtimeOnly(libs.imgui.natives.windows)
+
   implementation(libs.jetbrains.annotations)
   implementation(libs.jansi)
 
