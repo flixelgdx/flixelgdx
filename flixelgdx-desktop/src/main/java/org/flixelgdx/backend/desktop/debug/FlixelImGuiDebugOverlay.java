@@ -547,6 +547,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     imguiInitialized = true;
     imguiInput.setActive(isVisible());
     forceRefreshOnNextUpdate();
+    setOverlayUpdateRate(overlayUpdateRate);
   }
 
   /** Applies the red-themed Dear ImGui style, replacing the default blue accents. */
