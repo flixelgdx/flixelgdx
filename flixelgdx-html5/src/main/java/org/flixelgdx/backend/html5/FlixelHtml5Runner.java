@@ -26,42 +26,144 @@ package org.flixelgdx.backend.html5;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
+import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.jetbrains.annotations.NotNull;
+import org.teavm.jso.JSBody;
+import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 
+/**
+ * The web platform's game loop, driven by the browser's {@code requestAnimationFrame} callback.
+ *
+ * <p>A desktop runner owns a tight {@code while} loop it spins until the window closes. A browser
+ * gives up no such loop: the page's single thread belongs to the browser, and code that blocked it
+ * would freeze the tab. Instead the browser hands time back one frame at a time through
+ * {@code requestAnimationFrame}, which calls a supplied function right before the next repaint.
+ * This runner schedules itself that way, so each callback advances the game by exactly one frame
+ * and then asks for the next one. That is why {@link #run(FlixelGame)} returns immediately after
+ * kicking off the first frame, unlike the blocking desktop runner.
+ *
+ * <p>The runner also owns the pieces of browser lifecycle the game needs to react to: it resizes
+ * the canvas when the page changes size and forwards tab visibility changes to the game's focus
+ * hooks so audio and updates can pause when the tab is hidden.
+ */
 public class FlixelHtml5Runner implements FlixelGameRunner {
+
+  private double lastTimestamp = -1.0;
 
   @NotNull
   private final FlixelHtml5Graphics graphics;
 
   @NotNull
-  private final FlixelHtml5Canvas canvas;
+  private final FlixelHtml5Window window;
 
-  private final String title;
+  @NotNull
+  private final FlixelHtml5InputDevice input;
+
+  @NotNull
+  private final String canvasId;
+
   private final int width;
   private final int height;
 
-  public FlixelHtml5Runner(String title, int width, int height, @NotNull FlixelHtml5Graphics graphics,
-      @NotNull FlixelHtml5Canvas canvas) {
-    this.title = title;
+  private HTMLCanvasElement canvas;
+  private FlixelGame game;
+
+  public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelHtml5Graphics graphics,
+      @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5InputDevice input) {
+    this.canvasId = canvasId;
     this.width = width;
     this.height = height;
     this.graphics = graphics;
-    this.canvas = canvas;
+    this.window = window;
+    this.input = input;
   }
 
   @Override
   public void run(@NotNull FlixelGame game) {
+    this.game = game;
+
     HTMLDocument document = HTMLDocument.current();
-    HTMLCanvasElement teavmCanvas = (HTMLCanvasElement) document.createElement("canvas");
-    document.appendChild(teavmCanvas);
-    canvas.setCanvas(teavmCanvas);
+    HTMLCanvasElement element = resolveCanvas(document);
+    element.setWidth(width);
+    element.setHeight(height);
+    this.canvas = element;
 
-    document.setTitle(title);
-    teavmCanvas.setWidth(width);
-    teavmCanvas.setHeight(height);
+    window.bind(element, width, height);
+    input.attach(element);
+    graphics.initialize(element);
 
-    graphics.initialize(teavmCanvas);
+    registerLifecycleListeners(document);
+
+    game.create();
+    Window.requestAnimationFrame(this::onAnimationFrame);
   }
+
+  /**
+   * Advances the game by one frame, then schedules the next one.
+   *
+   * <p>The browser passes a high-resolution timestamp in milliseconds. The first frame has no
+   * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
+   * clamp it; every later frame reports the real time elapsed since the previous callback.
+   *
+   * @param timestamp The browser-supplied frame time in milliseconds.
+   */
+  private void onAnimationFrame(double timestamp) {
+    float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
+    lastTimestamp = timestamp;
+
+    graphics.beginFrame();
+    game.render(deltaSeconds);
+    graphics.endFrame();
+
+    Window.requestAnimationFrame(this::onAnimationFrame);
+  }
+
+  /**
+   * Locates the canvas the game draws into, creating one under {@link #canvasId} if the page did
+   * not already supply it. Reusing a page-provided canvas lets developers style and position the
+   * canvas from their own HTML instead of taking whatever the framework appends.
+   *
+   * @param document The current page document.
+   * @return The canvas element to render into.
+   */
+  private HTMLCanvasElement resolveCanvas(HTMLDocument document) {
+    HTMLCanvasElement existing = (HTMLCanvasElement) document.getElementById(canvasId);
+    if (existing != null) {
+      return existing;
+    }
+    HTMLCanvasElement created = (HTMLCanvasElement) document.createElement("canvas");
+    created.setAttribute("id", canvasId);
+    document.getBody().appendChild(created);
+    return created;
+  }
+
+  /**
+   * Wires the browser resize and visibility events to the framework so the canvas tracks the page
+   * and the game pauses when its tab is hidden.
+   *
+   * @param document The current page document.
+   */
+  private void registerLifecycleListeners(HTMLDocument document) {
+    Window.current().addEventListener("resize", event -> {
+      int newWidth = canvas.getWidth();
+      int newHeight = canvas.getHeight();
+      window.onResized(newWidth, newHeight);
+      graphics.onResized(newWidth, newHeight);
+      game.resize(newWidth, newHeight);
+    });
+    document.addEventListener("visibilitychange", event -> {
+      if (isDocumentHidden()) {
+        game.onFocusLost();
+      } else {
+        // Reset the delta so the first frame back does not report the whole hidden duration.
+        lastTimestamp = -1.0;
+        game.onFocusGained();
+      }
+    });
+  }
+
+  @JSBody(script = "return document.hidden;")
+  private static native boolean isDocumentHidden();
 }
