@@ -92,16 +92,6 @@
  * all return {@code false} automatically. This prevents debug-console typing from leaking into
  * game controls.
  *
- * <p>If you need the raw, unsuppressed state (for example, the debug overlay itself uses this for
- * its toggle shortcut), call the {@code raw} variants instead:
- *
- * <pre>{@code
- * // Always responds, even when a debug text field is focused.
- * if (Flixel.keys.rawJustPressed(FlixelKey.F3)) {
- *   Flixel.debug.overlay.toggle();
- * }
- * }</pre>
- *
  * <h2>FlixelKey reference</h2>
  *
  * <p>{@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey} holds integer constants for every

@@ -117,30 +117,11 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    * capturing keyboard input, so typing in a debug text field cannot leak into game-side input
    * (e.g. an {@code ui_accept} action bound to {@code ENTER}).
    *
-   * <p>Use {@link #rawPressed(int)} when you specifically need the raw, unsuppressed state
-   * (the debug overlay itself uses this for its toggle keys so they keep working even when a
-   * text field is focused).
-   *
    * @param key The key to check if it is pressed (for example {@link FlixelKey#A}).
    * @return {@code true} if the key is pressed and input is enabled and not suppressed by UI.
    */
   public boolean pressed(int key) {
-    if (isCapturedByDebugUI()) {
-      return false;
-    }
-    return rawPressed(key);
-  }
-
-  /**
-   * Same as {@link #pressed(int)} but bypasses the "captured by debug UI" check. Intended for
-   * the debug overlay's own toggle keys and tools, which must keep responding even while a
-   * Dear ImGui text input has focus.
-   *
-   * @param key The key to check if it is pressed.
-   * @return {@code true} if the key is pressed and input is enabled, regardless of UI capture.
-   */
-  public boolean rawPressed(int key) {
-    if (!enabled) {
+    if (!enabled || isCapturedByDebugUI()) {
       return false;
     }
     if (key == FlixelKey.ANY) {
@@ -163,21 +144,7 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    * @return {@code true} if the key was just pressed and input is enabled and not suppressed by UI.
    */
   public boolean justPressed(int key) {
-    if (isCapturedByDebugUI()) {
-      return false;
-    }
-    return rawJustPressed(key);
-  }
-
-  /**
-   * Same as {@link #justPressed(int)} but bypasses the "captured by debug UI" check. Use this
-   * for input that must keep working regardless of UI capture.
-   *
-   * @param key key code
-   * @return {@code true} if the key was just pressed and input is enabled, regardless of UI capture.
-   */
-  public boolean rawJustPressed(int key) {
-    if (!enabled) {
+    if (!enabled || isCapturedByDebugUI()) {
       return false;
     }
     if (key == FlixelKey.ANY) {
@@ -204,20 +171,7 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    *   enabled and not suppressed by UI.
    */
   public boolean justReleased(int key) {
-    if (isCapturedByDebugUI()) {
-      return false;
-    }
-    return rawJustReleased(key);
-  }
-
-  /**
-   * Same as {@link #justReleased(int)} but bypasses the "captured by debug UI" check.
-   *
-   * @param key The key code to check if it was just released.
-   * @return {@code true} if the key was just released and input is enabled, regardless of UI capture.
-   */
-  public boolean rawJustReleased(int key) {
-    if (!enabled) {
+    if (!enabled || isCapturedByDebugUI()) {
       return false;
     }
     if (key == FlixelKey.ANY) {

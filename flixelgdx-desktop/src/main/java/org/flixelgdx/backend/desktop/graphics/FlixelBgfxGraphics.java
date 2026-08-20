@@ -163,6 +163,17 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Nullable
   private FlixelBgfxTexture opaqueAlphaTexture;
 
+  /**
+   * Cached wrapper around bgfx's internal per-frame stats struct.
+   *
+   * <p>{@code bgfx_get_stats()} always returns a pointer to the same struct, which bgfx updates in
+   * place every frame; only the Java wrapper LWJGL builds around that pointer is new each call. The
+   * wrapper is therefore created once (see {@link #getBgfxStats()}) and reused, so reading stats
+   * every frame for the debug overlay never allocates.
+   */
+  @Nullable
+  private BGFXStats bgfxStats;
+
   /** Reused ortho matrix for the final upscale blit, rebuilt each composite to match the window. */
   @NotNull
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
@@ -383,7 +394,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
       return;
     }
 
-    BGFXStats stats = BGFX.bgfx_get_stats();
+    BGFXStats stats = getBgfxStats();
     double windowFps = statsWindowFrames * 1_000_000_000.0 / statsWindowNanos;
     statsWindowNanos = 0L;
     statsWindowFrames = 0;
@@ -725,6 +736,76 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public int getFps() {
     return (int) averageFps;
+  }
+
+  /**
+   * Returns the cached {@link BGFXStats} wrapper, creating it on first use.
+   *
+   * <p>The returned object points directly at bgfx's internal stats struct, so every field reflects
+   * the most recently completed frame without another native call or allocation. Callers must not
+   * hold onto stale copies of individual values across frames if they need live data; re-read the
+   * fields instead. Returns {@code null} only if bgfx has not been initialized yet.
+   *
+   * @return The shared, live-updating bgfx stats wrapper, or {@code null} before bgfx is ready.
+   */
+  @Nullable
+  public BGFXStats getBgfxStats() {
+    if (bgfxStats == null) {
+      bgfxStats = BGFX.bgfx_get_stats();
+    }
+    return bgfxStats;
+  }
+
+  /**
+   * The compiled sprite shader program, or {@code -1} when none is available.
+   *
+   * <p>Exposed so the desktop debug overlay's ImGui renderer can reuse the exact same program the
+   * sprite batch uses. The ImGui vertex format (position, texture coordinate, packed color) is
+   * identical to the sprite layout and the sprite fragment shader already outputs
+   * {@code texture * vertexColor}, which is what ImGui needs, so no separate shader is required.
+   *
+   * @return The bgfx sprite program handle, or {@code -1} if the shaders were not bundled.
+   */
+  public short getSpriteProgram() {
+    return spriteProgram;
+  }
+
+  /**
+   * The sampler uniform ({@code s_texture}) the sprite program reads its texture from.
+   *
+   * <p>Shared with the debug overlay's ImGui renderer so it can bind the font atlas and inspected
+   * textures through the same uniform the sprite pipeline uses.
+   *
+   * @return The bgfx sampler uniform handle, or {@code -1} if it was not created.
+   */
+  public short getTextureUniform() {
+    return textureUniform;
+  }
+
+  /**
+   * Reserves a fresh, top-most on-screen bgfx view bound to the back buffer for the debug overlay to
+   * draw into, and returns its id.
+   *
+   * <p>bgfx submits views in ascending id order, so handing out the next screen view id makes the
+   * overlay draw over everything the game rendered this frame. The caller sets the view transform
+   * and submits its own draws; this only allocates the view, points it at the whole back buffer, and
+   * selects sequential submission mode so the overlay's draw order is preserved.
+   *
+   * @return The bgfx view id the overlay should submit its draws into.
+   */
+  public int beginOverlayView() {
+    int view = nextScreenView;
+    if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+      nextScreenView++;
+    }
+    viewStack[0] = view;
+    viewStackDepth = 1;
+    BGFX.bgfx_set_view_frame_buffer(view, (short) -1);
+    BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
+    BGFX.bgfx_set_view_rect(view, 0, 0, Math.max(1, backBufferWidth), Math.max(1, backBufferHeight));
+    BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_NONE, 0, 1f, 0);
+    BGFX.bgfx_touch(view);
+    return view;
   }
 
   /** Directs subsequent submissions into a render target's framebuffer via a fresh view. */

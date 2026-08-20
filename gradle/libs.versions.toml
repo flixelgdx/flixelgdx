@@ -3,6 +3,7 @@ agp = "8.7.3"
 asm = "9.7.1"
 desugarJdkLibs = "2.1.5"
 graalvm = "24.2.0"
+imgui = "1.90.0"
 jansi = "2.4.2"
 jetbrainsAnnotations = "26.1.0"
 junit = "5.10.0"
@@ -19,6 +20,10 @@ asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 graalvm-nativeimage = { module = "org.graalvm.sdk:nativeimage", version.ref = "graalvm" }
+imgui-binding = { module = "io.github.spair:imgui-java-binding", version.ref = "imgui" }
+imgui-natives-linux = { module = "io.github.spair:imgui-java-natives-linux", version.ref = "imgui" }
+imgui-natives-macos = { module = "io.github.spair:imgui-java-natives-macos", version.ref = "imgui" }
+imgui-natives-windows = { module = "io.github.spair:imgui-java-natives-windows", version.ref = "imgui" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
