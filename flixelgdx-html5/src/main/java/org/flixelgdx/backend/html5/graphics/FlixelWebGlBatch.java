@@ -166,7 +166,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
     gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, currentTexture.getGlTexture());
 
     gl.bindBuffer(WebGLRenderingContext.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(WebGLRenderingContext.ARRAY_BUFFER, Float32Array.fromJavaArray(vertices),
+    gl.bufferData(WebGLRenderingContext.ARRAY_BUFFER, Float32Array.copyFromJavaArray(vertices),
         WebGLRenderingContext.DYNAMIC_DRAW);
 
     int stride = FLOATS_PER_VERTEX * 4;
@@ -490,7 +490,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
       vertex += 4;
     }
     gl.bindBuffer(WebGLRenderingContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(WebGLRenderingContext.ELEMENT_ARRAY_BUFFER, Int16Array.fromJavaArray(indices),
+    gl.bufferData(WebGLRenderingContext.ELEMENT_ARRAY_BUFFER, Int16Array.copyFromJavaArray(indices),
         WebGLRenderingContext.STATIC_DRAW);
   }
 
@@ -544,27 +544,31 @@ public class FlixelWebGlBatch implements FlixelBatch {
   }
 
   private static final String VERTEX_SOURCE =
-      "#version 300 es\n"
-          + "in vec2 a_position;\n"
-          + "in vec2 a_texCoord;\n"
-          + "in vec4 a_color;\n"
-          + "uniform mat4 u_projTrans;\n"
-          + "out vec2 v_texCoord;\n"
-          + "out vec4 v_color;\n"
-          + "void main() {\n"
-          + "  v_texCoord = a_texCoord;\n"
-          + "  v_color = a_color;\n"
-          + "  gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);\n"
-          + "}\n";
+      """
+          #version 300 es
+          in vec2 a_position;
+          in vec2 a_texCoord;
+          in vec4 a_color;
+          uniform mat4 u_projTrans;
+          out vec2 v_texCoord;
+          out vec4 v_color;
+          void main() {
+            v_texCoord = a_texCoord;
+            v_color = a_color;
+            gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);
+          }
+          """;
 
   private static final String FRAGMENT_SOURCE =
-      "#version 300 es\n"
-          + "precision mediump float;\n"
-          + "in vec2 v_texCoord;\n"
-          + "in vec4 v_color;\n"
-          + "uniform sampler2D u_texture;\n"
-          + "out vec4 fragColor;\n"
-          + "void main() {\n"
-          + "  fragColor = v_color * texture(u_texture, v_texCoord);\n"
-          + "}\n";
+      """
+          #version 300 es
+          precision mediump float;
+          in vec2 v_texCoord;
+          in vec4 v_color;
+          uniform sampler2D u_texture;
+          out vec4 fragColor;
+          void main() {
+            fragColor = v_color * texture(u_texture, v_texCoord);
+          }
+          """;
 }

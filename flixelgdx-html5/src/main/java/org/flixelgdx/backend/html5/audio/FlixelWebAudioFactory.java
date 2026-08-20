@@ -68,7 +68,7 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
    */
   @NotNull
   public static FlixelWebAudioFactory create() {
-    AudioContext context = AudioContext.create();
+    AudioContext context = createContext();
     GainNode masterGain = context.createGain();
     connect(masterGain, context.getDestination());
     installResumeOnGesture(context);
@@ -100,6 +100,9 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
 
   @JSBody(params = { "source", "target" }, script = "source.connect(target);")
   static native void connect(AudioNode source, AudioNode target);
+
+  @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
+  private static native AudioContext createContext();
 
   @JSBody(params = "context",
       script = "var resume = function() {"

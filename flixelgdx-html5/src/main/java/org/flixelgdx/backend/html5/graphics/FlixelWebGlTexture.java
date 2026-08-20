@@ -148,6 +148,6 @@ public class FlixelWebGlTexture implements FlixelTexture {
     readable.rewind();
     byte[] bytes = new byte[readable.remaining()];
     readable.get(bytes);
-    return Uint8Array.create(Int8Array.copyFromJavaArray(bytes).getBuffer());
+    return new Uint8Array(Int8Array.copyFromJavaArray(bytes).getBuffer());
   }
 }
