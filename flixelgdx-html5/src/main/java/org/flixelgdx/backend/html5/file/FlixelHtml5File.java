@@ -27,26 +27,23 @@ import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.typedarrays.Int8Array;
 
 /**
- * A single file handle on the web, backed either by a fetched asset or by browser storage.
+ * A single file handle on the web, backed either by a preloaded asset or by browser storage.
  *
  * <p>The browser has no real file system, so a "file" on the web is one of two very different
  * things depending on the root it came from, captured here by {@link Kind}:
  *
  * <ul>
- *   <li>{@link Kind#ASSET} - a read-only resource downloaded from the server, such as a bundled
- *       image or sound. Reads use a synchronous request because the framework's file API is
- *       synchronous; writes are impossible and return {@code false}.</li>
+ *   <li>{@link Kind#ASSET} - a read-only resource bundled with the game. Because the browser cannot
+ *       read files synchronously, every bundled asset is downloaded up front by
+ *       {@link FlixelHtml5AssetPreloader} into an in-memory cache; a read here is then just an
+ *       instant lookup in that cache. Writes are impossible and return {@code false}.</li>
  *   <li>{@link Kind#STORAGE} - a read/write entry in the browser's {@code localStorage}, used for
  *       save data. It persists between sessions on the same origin but is not a real file, so it
  *       has no meaningful directory listing.</li>
  * </ul>
- *
- * <p>Reads for assets use a blocking request. Synchronous requests are discouraged for general web
- * pages because they stall the tab, but a game's asset loader expects a value back immediately and
- * runs during loading screens rather than in the render loop, which is the accepted place to use
- * them.
  */
 public class FlixelHtml5File implements FlixelFile {
 
@@ -74,12 +71,7 @@ public class FlixelHtml5File implements FlixelFile {
 
   @Override
   public boolean exists() {
-    return kind == Kind.ASSET ? assetExists(resolved) : storageGet(resolved) != null;
-  }
-
-  @Override
-  public boolean isDirectory() {
-    return false;
+    return kind == Kind.ASSET ? assetCached(resolved) : storageGet(resolved) != null;
   }
 
   @Override
@@ -101,15 +93,19 @@ public class FlixelHtml5File implements FlixelFile {
 
   @Override
   public byte @NotNull [] readBytes() {
-    String binary = kind == Kind.STORAGE ? storageGet(resolved) : assetBinary(resolved);
-    if (binary == null) {
-      return new byte[0];
+    if (kind == Kind.STORAGE) {
+      String value = storageGet(resolved);
+      if (value == null) {
+        return new byte[0];
+      }
+      byte[] out = new byte[value.length()];
+      for (int i = 0; i < out.length; i++) {
+        out[i] = (byte) (value.charAt(i) & 0xFF);
+      }
+      return out;
     }
-    byte[] out = new byte[binary.length()];
-    for (int i = 0; i < out.length; i++) {
-      out[i] = (byte) (binary.charAt(i) & 0xFF);
-    }
-    return out;
+    Int8Array bytes = assetBytes(resolved);
+    return bytes != null ? bytes.copyToJavaArray() : new byte[0];
   }
 
   @Override
@@ -118,8 +114,7 @@ public class FlixelHtml5File implements FlixelFile {
       String value = storageGet(resolved);
       return value != null ? value.length() : 0L;
     }
-    String binary = assetBinary(resolved);
-    return binary != null ? binary.length() : 0L;
+    return assetLength(resolved);
   }
 
   @Override
@@ -166,24 +161,23 @@ public class FlixelHtml5File implements FlixelFile {
     return slash >= 0 ? path.substring(slash + 1) : path;
   }
 
-  @JSBody(params = "url",
-      script = "var x = new XMLHttpRequest(); x.open('HEAD', url, false);"
-          + "try { x.send(); } catch (e) { return false; }"
-          + "return x.status >= 200 && x.status < 300;")
-  private static native boolean assetExists(String url);
+  @JSBody(params = "key", script = "return !!(window.__flixelAssets && window.__flixelAssets[key]);")
+  private static native boolean assetCached(String key);
 
-  @JSBody(params = "url",
-      script = "var x = new XMLHttpRequest(); x.open('GET', url, false);"
-          + "try { x.send(); } catch (e) { return null; }"
-          + "return (x.status >= 200 && x.status < 300) ? x.responseText : null;")
-  private static native String assetText(String url);
+  @JSBody(params = "key",
+      script = "var a = window.__flixelAssets && window.__flixelAssets[key];"
+          + "return a ? new TextDecoder('utf-8').decode(a) : null;")
+  private static native String assetText(String key);
 
-  @JSBody(params = "url",
-      script = "var x = new XMLHttpRequest(); x.open('GET', url, false);"
-          + "x.overrideMimeType('text/plain; charset=x-user-defined');"
-          + "try { x.send(); } catch (e) { return null; }"
-          + "return (x.status >= 200 && x.status < 300) ? x.responseText : null;")
-  private static native String assetBinary(String url);
+  @JSBody(params = "key",
+      script = "var a = window.__flixelAssets && window.__flixelAssets[key];"
+          + "return a ? new Int8Array(a.buffer, a.byteOffset, a.byteLength) : null;")
+  private static native Int8Array assetBytes(String key);
+
+  @JSBody(params = "key",
+      script = "var a = window.__flixelAssets && window.__flixelAssets[key];"
+          + "return a ? a.byteLength : 0;")
+  private static native int assetLength(String key);
 
   @JSBody(params = "key", script = "return window.localStorage.getItem(key);")
   private static native String storageGet(String key);

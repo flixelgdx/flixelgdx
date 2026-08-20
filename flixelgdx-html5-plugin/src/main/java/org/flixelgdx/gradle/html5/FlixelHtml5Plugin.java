@@ -43,9 +43,14 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 /**
  * Gradle plugin that turns a TeaVM build of a FlixelGDX game into a browser-ready web app.
@@ -107,6 +112,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     AtomicReference<WebBundle> bundle = new AtomicReference<>(WebBundle.DEFAULTS);
 
     registerCopyTasks(project, ext, webRoot);
+    registerManifestTask(project, webRoot);
     registerIndexTask(project, ext, webRoot, bundle);
     registerRunTask(project, ext, webRoot);
 
@@ -130,6 +136,49 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       task.from(ext.getWebappDir());
       task.into(webRoot);
     });
+  }
+
+  /**
+   * Registers the asset manifest generator. It walks the copied assets and writes an
+   * {@code assets/assets.txt} listing every file, which the web backend reads at startup to preload
+   * everything before the game runs.
+   */
+  private void registerManifestTask(Project project, DirectoryProperty webRoot) {
+    project.getTasks().register("generateAssetManifest", task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription("Writes assets/assets.txt listing every bundled asset for the web preloader.");
+      task.dependsOn(project.getTasks().named("copyAssets"));
+      task.doLast(t -> writeAssetManifest(new File(webRoot.get().getAsFile(), "assets")));
+    });
+  }
+
+  /**
+   * Writes {@code assets.txt} into the assets directory, one relative asset path per line. The file
+   * is always written (empty when there are no assets) so the backend can rely on its presence.
+   *
+   * @param assetsDir The output assets directory to scan.
+   */
+  private void writeAssetManifest(File assetsDir) {
+    assetsDir.mkdirs();
+    Path root = assetsDir.toPath();
+    List<String> paths = new ArrayList<>();
+    try (Stream<Path> files = Files.walk(root)) {
+      files.filter(Files::isRegularFile).forEach(file -> {
+        String rel = root.relativize(file).toString().replace('\\', '/');
+        if (!rel.equals("assets.txt")) {
+          paths.add(rel);
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException("FlixelGDX: failed to scan assets for the manifest.", e);
+    }
+    Collections.sort(paths);
+    try {
+      Files.writeString(new File(assetsDir, "assets.txt").toPath(),
+          paths.isEmpty() ? "" : String.join("\n", paths) + "\n", StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new RuntimeException("FlixelGDX: failed to write assets.txt.", e);
+    }
   }
 
   /** Registers the {@code index.html} generator. */
@@ -355,7 +404,8 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     if (build == null) {
       return;
     }
-    build.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyWebApp"));
+    build.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyWebApp"),
+        project.getTasks().named("generateAssetManifest"));
     Task index = project.getTasks().findByName("generateIndexHtml");
     Task copyWebApp = project.getTasks().findByName("copyWebApp");
     if (index != null) {

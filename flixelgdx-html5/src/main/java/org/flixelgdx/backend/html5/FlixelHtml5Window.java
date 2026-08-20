@@ -53,8 +53,6 @@ public class FlixelHtml5Window implements FlixelWindow {
   @Nullable
   private HTMLCanvasElement canvas;
 
-  private String title = "";
-
   private int width;
   private int height;
 
@@ -136,13 +134,12 @@ public class FlixelHtml5Window implements FlixelWindow {
 
   @Override
   public String getTitle() {
-    return title;
+    return HTMLDocument.current().getTitle();
   }
 
   @Override
   public void setTitle(String title) {
-    this.title = title != null ? title : "";
-    HTMLDocument.current().setTitle(this.title);
+    HTMLDocument.current().setTitle(title);
   }
 
   @JSBody(params = "element", script = "if (element.requestFullscreen) { element.requestFullscreen(); }")

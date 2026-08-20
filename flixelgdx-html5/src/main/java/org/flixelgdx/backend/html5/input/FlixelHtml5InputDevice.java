@@ -30,6 +30,7 @@ import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.FlixelTouchListener;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.browser.Window;
+import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.KeyboardEvent;
 import org.teavm.jso.dom.events.MouseEvent;
 import org.teavm.jso.dom.events.Touch;
@@ -116,7 +117,7 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
       onScrolled((float) wheel.getDeltaX(), (float) wheel.getDeltaY());
     });
     // Suppress the right-click menu so games can use the right mouse button.
-    canvas.addEventListener("contextmenu", event -> event.preventDefault());
+    canvas.addEventListener("contextmenu", Event::preventDefault);
 
     canvas.addEventListener("touchstart", event -> dispatchTouch((TouchEvent) event, TouchPhase.START));
     canvas.addEventListener("touchend", event -> dispatchTouch((TouchEvent) event, TouchPhase.END));

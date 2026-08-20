@@ -48,7 +48,10 @@ import org.jetbrains.annotations.NotNull;
 public class FlixelHtml5Files implements FlixelFiles {
 
   /** The URL prefix under which the build plugin publishes bundled assets. */
-  private static final String ASSET_ROOT = "assets/";
+  public static final String ASSET_ROOT = "assets/";
+
+  /** The URL of the asset manifest the preloader reads at startup. */
+  public static final String ASSET_MANIFEST = "assets/assets.txt";
 
   /** The {@code localStorage} key prefix that namespaces all framework-managed storage entries. */
   private static final String STORAGE_PREFIX = "flixel:";
@@ -56,13 +59,13 @@ public class FlixelHtml5Files implements FlixelFiles {
   @Override
   @NotNull
   public FlixelFile internal(@NotNull String path) {
-    return new FlixelHtml5File(path, ASSET_ROOT + strip(path), Kind.ASSET);
+    return new FlixelHtml5File(path, strip(path), Kind.ASSET);
   }
 
   @Override
   @NotNull
   public FlixelFile classpath(@NotNull String path) {
-    return new FlixelHtml5File(path, ASSET_ROOT + strip(path), Kind.ASSET);
+    return new FlixelHtml5File(path, strip(path), Kind.ASSET);
   }
 
   @Override
