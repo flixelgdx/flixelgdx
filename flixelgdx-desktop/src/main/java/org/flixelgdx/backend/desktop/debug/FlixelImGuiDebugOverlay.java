@@ -39,6 +39,7 @@ import org.lwjgl.bgfx.BGFXStats;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Supplier;
 
 import imgui.ImFontAtlas;
 import imgui.ImGui;
@@ -68,8 +69,7 @@ import imgui.type.ImString;
  *
  * <p>{@code FlixelDesktopLauncher} registers this class as the default debug overlay factory when
  * launching in {@link org.flixelgdx.backend.FlixelRuntimeMode#DEBUG DEBUG} mode. You can also
- * register it manually with {@link Flixel#setDebugOverlay(java.util.function.Supplier)} before the
- * game starts.
+ * register it manually with {@link Flixel#setDebugOverlay(Supplier)} before the game starts.
  *
  * <p>Initialization (creating the Dear ImGui context, uploading the font atlas as a bgfx texture, and
  * registering the SDL input listener) happens lazily on the first {@link #draw()} call, so
@@ -88,7 +88,7 @@ import imgui.type.ImString;
  *
  * <h2>Extending the overlay</h2>
  *
- * <p>Because Dear ImGui is exposed as an api dependency, games can add their own panels by
+ * <p>Because Dear ImGui is exposed as an API dependency, games can add their own panels by
  * subclassing this overlay and overriding {@link #onDrawImGui()}; any standard {@code ImGui.*} call is
  * valid there.
  */
@@ -1010,7 +1010,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Draws one labelled bgfx graph with a live value readout.
+   * Draws one labeled bgfx graph with a live value readout.
    *
    * @param index The per-series scale slot (0 to {@link #BGFX_GRAPH_COUNT} - 1).
    * @param label The row label.
