@@ -14,7 +14,7 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for the browser or other non-JVM targets (stack traces, optional log files, etc.).
 - **`flixelgdx-ktx`**: Optional Kotlin extension layer. Adds idiomatic Kotlin syntax (operators, destructuring, and a tween builder DSL) on top of `flixelgdx-core` for Kotlin users. It contains no runtime logic of its own and stays allocation-free so it is safe to use in per-frame code.
 - **`flixelgdx-basisu-plugin`**: Compression plugin that automatically downloads a Basis Universal binary for the current OS and applies `.ktx2` compression for every `.png` asset.
-- **`flixelgdx-teavm-plugin`**: Plugin that automates the workflow for web games. This includes copying assets, creating the HTML index file, extracting native scripts, and more.
+- **`flixelgdx-html5-plugin`**: Plugin that automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-logging-plugin`**: Plugin that runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
 - **`flixelgdx-shader-plugin`**: Plugin that bundles bgfx's `shaderc` binaries for all platforms and automatically compiles GLSL shaders for each graphics API. 
 - **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSeralizable`.
