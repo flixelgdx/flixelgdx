@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.backend.desktop.debug;
 
-import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.math.FlixelMatrix;
 import org.jetbrains.annotations.NotNull;
@@ -31,10 +30,8 @@ import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXTransientIndexBuffer;
 import org.lwjgl.bgfx.BGFXTransientVertexBuffer;
 import org.lwjgl.bgfx.BGFXVertexLayout;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import imgui.ImDrawData;
 import imgui.ImVec4;
@@ -69,7 +66,7 @@ public final class FlixelImGuiBgfxRenderer {
 
   /** Point-sampled, clamped filtering so both the bitmap font and inspected pixel-art stay crisp. */
   private static final int SAMPLER_FLAGS =
-      (int) (BGFX.BGFX_SAMPLER_POINT | BGFX.BGFX_SAMPLER_U_CLAMP | BGFX.BGFX_SAMPLER_V_CLAMP);
+      BGFX.BGFX_SAMPLER_POINT | BGFX.BGFX_SAMPLER_U_CLAMP | BGFX.BGFX_SAMPLER_V_CLAMP;
 
   /**
    * Standard straight-alpha "over" blend, matching {@link org.flixelgdx.util.FlixelBlendMode#NORMAL}.
@@ -105,9 +102,6 @@ public final class FlixelImGuiBgfxRenderer {
   private short fontTexture = -1;
 
   private boolean initialized;
-
-  /** Guards a single diagnostic log line describing the draw-data layout on the first rendered frame. */
-  private boolean loggedDiagnostics;
 
   /**
    * Creates a renderer bound to the desktop bgfx graphics manager.
@@ -186,7 +180,7 @@ public final class FlixelImGuiBgfxRenderer {
     // vertices straight to the back buffer. Match the backend's depth range so the geometry is not
     // clipped on the [0, 1] backends (Vulkan, Metal, Direct3D).
     ortho.setToOrtho2DYDown(0, 0, displayWidth, displayHeight, graphics.isDepthZeroToOne());
-    BGFX.bgfx_set_view_transform(view, (float[]) null, ortho.val);
+    BGFX.bgfx_set_view_transform(view, null, ortho.val);
 
     boolean bgra = graphics.isDepthZeroToOne();
     int fbWidth = Math.round(displayWidth);
@@ -209,14 +203,13 @@ public final class FlixelImGuiBgfxRenderer {
 
       BGFX.bgfx_alloc_transient_vertex_buffer(tvb, vertexCount, layout);
       copyVertices(vertexData, tvb.data(), vertexCount, vertexStride, bgra);
-      BGFX.bgfx_alloc_transient_index_buffer(tib, indexCount, index32);
-      MemoryUtil.memCopy(MemoryUtil.memAddress(indexData), MemoryUtil.memAddress(tib.data()),
-          (long) indexCount * indexStride);
 
-      if (!loggedDiagnostics) {
-        loggedDiagnostics = true;
-        logDrawDataDiagnostics(drawData, n, view, vertexStride, indexStride, bgra, cmdListCount);
-      }
+      BGFX.bgfx_alloc_transient_index_buffer(tib, indexCount, index32);
+      ByteBuffer tibData = tib.data();
+      int origIdxLim = indexData.limit();
+      indexData.limit(indexData.position() + indexCount * indexStride);
+      tibData.put(indexData);
+      indexData.limit(origIdxLim);
 
       int cmdCount = drawData.getCmdListCmdBufferSize(n);
       for (int cmd = 0; cmd < cmdCount; cmd++) {
@@ -251,56 +244,19 @@ public final class FlixelImGuiBgfxRenderer {
   }
 
   /**
-   * Logs a single line describing command list {@code n} so a rendering problem can be diagnosed
-   * without a debugger. It reads the first vertex both from Dear ImGui's source buffer and from the
-   * transient buffer this renderer just filled, so a mismatch points at the upload rather than the
-   * draw, plus the first draw command's element count, offsets, clip rectangle, and texture id.
-   *
-   * @param drawData The current frame's draw data.
-   * @param n The command list index that was just uploaded.
-   * @param view The bgfx view the overlay renders into.
-   * @param vertexStride The byte size of one ImGui vertex.
-   * @param indexStride The byte size of one ImGui index.
-   * @param bgra Whether the active backend uses BGRA color order.
-   * @param cmdListCount The number of command lists this frame.
-   */
-  private void logDrawDataDiagnostics(@NotNull ImDrawData drawData, int n, int view, int vertexStride,
-      int indexStride, boolean bgra, int cmdListCount) {
-    ByteBuffer src = drawData.getCmdListVtxBufferData(n).order(ByteOrder.nativeOrder());
-    int sp = src.position();
-    String srcVertex = src.remaining() >= vertexStride ? formatVertex(src, sp) : "(none)";
-    ByteBuffer dst = tvb.data().order(ByteOrder.nativeOrder());
-    String dstVertex = dst.remaining() >= vertexStride ? formatVertex(dst, 0) : "(none)";
-    String firstCmd = "(none)";
-    if (drawData.getCmdListCmdBufferSize(n) > 0) {
-      drawData.getCmdListCmdBufferClipRect(clip, n, 0);
-      firstCmd = "elem=" + drawData.getCmdListCmdBufferElemCount(n, 0)
-          + " idxOff=" + drawData.getCmdListCmdBufferIdxOffset(n, 0)
-          + " vtxOff=" + drawData.getCmdListCmdBufferVtxOffset(n, 0)
-          + " tex=" + drawData.getCmdListCmdBufferTextureId(n, 0)
-          + " clip=[" + clip.x + "," + clip.y + "," + clip.z + "," + clip.w + "]";
-    }
-    Flixel.debug("ImGuiRenderer", "renderer=" + BGFX.bgfx_get_renderer_type() + " view=" + view
-        + " stride=" + vertexStride + "/" + indexStride + " bgra=" + bgra
-        + " program=" + graphics.getSpriteProgram() + " fontTex=" + fontTexture
-        + " cmdLists=" + cmdListCount + " srcV0=" + srcVertex + " dstV0=" + dstVertex + " cmd0=" + firstCmd);
-  }
-
-  /** Formats one ImGui vertex (position, texture coordinate, packed color) for the diagnostic line. */
-  private static String formatVertex(@NotNull ByteBuffer buffer, int base) {
-    return "(" + buffer.getFloat(base) + "," + buffer.getFloat(base + 4) + " uv=" + buffer.getFloat(base + 8)
-        + "," + buffer.getFloat(base + 12) + " col=0x" + Integer.toHexString(buffer.getInt(base + 16)) + ")";
-  }
-
-  /**
    * Copies one command list's vertices into the transient buffer, swapping each vertex color's red
    * and blue bytes when the active backend stores colors in BGRA order.
    *
    * <p>ImGui always packs vertex color as RGBA bytes ({@code IM_COL32}). On OpenGL that matches the
    * color attribute's memory order, so the whole block copies verbatim. On Vulkan, Metal, and
    * Direct3D the sprite layout uses BGRA order (the same convention the sprite batch follows), so the
-   * red and blue bytes are swapped in place after the bulk copy. The swap touches only the overlay's
-   * own vertices, and only while it is visible, so it never runs on the game's render path.
+   * red and blue bytes are swapped in place after the bulk copy.
+   *
+   * <p>The bulk copy uses {@link ByteBuffer#put(ByteBuffer)} rather than a raw address-based copy
+   * because the TVB's backing memory is not reliably accessible through its native address on all
+   * Vulkan/Linux driver and JVM combinations. The JDK's direct-buffer path (the same one the sprite
+   * batch uses for its TVB uploads) is the only path that is guaranteed to reach the GPU-visible
+   * allocation.
    *
    * @param src The ImGui vertex bytes for one command list.
    * @param dst The transient vertex buffer memory to fill.
@@ -310,7 +266,10 @@ public final class FlixelImGuiBgfxRenderer {
    */
   private static void copyVertices(@NotNull ByteBuffer src, @NotNull ByteBuffer dst, int vertexCount,
       int vertexStride, boolean bgra) {
-    MemoryUtil.memCopy(MemoryUtil.memAddress(src), MemoryUtil.memAddress(dst), (long) vertexCount * vertexStride);
+    int origLim = src.limit();
+    src.limit(src.position() + vertexCount * vertexStride);
+    dst.put(src);
+    src.limit(origLim);
     if (!bgra) {
       return;
     }

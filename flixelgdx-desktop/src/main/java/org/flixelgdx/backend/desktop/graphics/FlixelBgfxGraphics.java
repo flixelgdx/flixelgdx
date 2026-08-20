@@ -804,6 +804,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
     BGFX.bgfx_set_view_rect(view, 0, 0, Math.max(1, backBufferWidth), Math.max(1, backBufferHeight));
     BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_NONE, 0, 1f, 0);
+    BGFX.bgfx_touch(view);
     return view;
   }
 
