@@ -45,6 +45,10 @@ import org.gradle.api.provider.Property;
  *   // Override the canvas element ID (default: "flixelgdx-canvas").
  *   canvasId = 'my-game-canvas'
  *
+ *   // Runtime mode baked into the page as a default (default: none). The ?flixel.mode= URL
+ *   // parameter overrides this at load time.
+ *   mode = 'debug'
+ *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
  *
@@ -57,17 +61,8 @@ import org.gradle.api.provider.Property;
  *   // Set to false to disable index.html auto-generation entirely (default: true).
  *   generateDefaultIndexHtml = true
  *
- *   // Set to false to disable automatic startup logo generation (default: true).
- *   generateDefaultStartupLogo = true
- *
- *   // Provide a custom startup logo instead of the built-in placeholder.
- *   customStartupLogo = file('src/main/webapp/startup-logo.png')
- *
  *   // Provide a custom index.html instead of the generated default.
  *   customIndexHtml = file('src/main/webapp/index.html')
- *
- *   // Provide a custom startup logo instead of the built-in placeholder.
- *   customStartupLogo = file('src/main/webapp/startup-logo.png')
  *
  *   // Provide a favicon that is copied to the output and linked in the generated index.html.
  *   customFavicon = file('src/main/webapp/favicon.ico')
@@ -82,7 +77,7 @@ public interface FlixelHtml5Extension {
   /** Default title for the game's browser tab. */
   String DEFAULT_TITLE = "My FlixelGDX Game";
 
-  /** Default HTML canvas element ID expected by {@code FlixelTeaVMLauncher}. */
+  /** Default HTML canvas element ID expected by the web launcher. */
   String DEFAULT_CANVAS_ID = "flixelgdx-canvas";
 
   /**
@@ -95,59 +90,59 @@ public interface FlixelHtml5Extension {
   /**
    * ID of the HTML {@code <canvas>} element that the game renders into.
    *
-   * <p>Must match the {@code canvasID} field of {@code WebApplicationConfiguration} passed to
-   * {@code FlixelTeaVMLauncher.launch()}. Defaults to {@value #DEFAULT_CANVAS_ID}.
+   * <p>Must match the canvas id the web launcher looks for. Defaults to {@value #DEFAULT_CANVAS_ID}.
    *
    * @return The canvas element ID property.
    */
   Property<String> getCanvasId();
 
   /**
+   * Runtime mode baked into the generated page as a default (for example {@code "debug"} or
+   * {@code "test"}).
+   *
+   * <p>The web backend resolves its runtime mode at load time, preferring the {@code ?flixel.mode=}
+   * URL parameter and falling back to this baked-in default. Leaving it unset means the game runs in
+   * release mode unless the URL parameter selects another mode. This lets a dedicated debug build
+   * default to debug while a shipped build defaults to release, without a code change.
+   *
+   * @return The default runtime mode property.
+   */
+  Property<String> getMode();
+
+  /**
    * Directory that contains user-provided web resources such as a custom {@code index.html},
    * favicon, or additional scripts.
    *
-   * <p>All files found here are copied verbatim into the TeaVM JS output directory ({@code teavm.js.outputDir},
-   * which inherits from {@code teavm.all.outputDir} when you only configure the {@code all} block). If this directory
-   * contains an {@code index.html}, the plugin skips automatic index generation. Defaults to
-   * {@code src/main/webapp} relative to the web module.
+   * <p>All files found here are copied verbatim into the TeaVM web output directory. If this
+   * directory contains an {@code index.html}, the plugin skips automatic index generation. Defaults
+   * to {@code src/main/webapp} relative to the web module.
    *
    * @return The webapp source directory property.
    */
   DirectoryProperty getWebappDir();
 
   /**
-   * Directory whose contents are copied to {@code <teavm.js.outputDir>/assets/} before each build.
+   * Directory whose contents are copied to {@code <outputDir>/assets/} before each build.
    *
    * <p>Defaults to the {@code assets/} directory at the root of the Gradle project (i.e. the
-   * sibling of the core, desktop, and teavm modules).
+   * sibling of the core, desktop, and web modules).
    *
    * @return The assets source directory property.
    */
   DirectoryProperty getAssetsDir();
 
   /**
-   * Whether the plugin should generate a default {@code index.html} when none is found in {@link #getWebappDir()}.
+   * Whether the plugin should generate a default {@code index.html} when none is found in
+   * {@link #getWebappDir()}.
    *
-   * <p>The generated page includes a {@code <canvas>} with the ID from {@link #getCanvasId()} and
-   * a {@code <script src=".../teavm.js">} tag resolved from TeaVM's relative JS output path
-   * (the {@code aliasTeaVmMainScript} task keeps that name valid when TeaVM uses another file name).
-   * Set to {@code false} to suppress generation entirely (you must then provide your own {@code index.html}).
-   * Defaults to {@code true}.
+   * <p>The generated page includes a {@code <canvas>} with the ID from {@link #getCanvasId()} and a
+   * loader that prefers the WebAssembly build when the browser supports it and falls back to the
+   * JavaScript build otherwise. Set to {@code false} to suppress generation entirely (you must then
+   * provide your own {@code index.html}). Defaults to {@code true}.
    *
    * @return The {@code generate-index-html} property.
    */
   Property<Boolean> getGenerateDefaultIndexHtml();
-
-  /**
-   * Whether the plugin should automatically add a default {@code default-startup-logo.png} file when
-   * none is found in {@link #getWebappDir()}.
-   *
-   * <p>It does this by copying the default file (located in the {@code resources} folder) into the user's
-   * {@code <teavm.js.outputDir>/assets/} folder, as gdx-teavm expects a loading logo when the game is being prepared.
-   *
-   * @return The {@code generate-default-startup-logo} property.
-   */
-  Property<Boolean> getGenerateDefaultStartupLogo();
 
   /**
    * TCP port that the {@code run} task's embedded HTTP dev server listens on.
@@ -167,35 +162,24 @@ public interface FlixelHtml5Extension {
   /**
    * Optional path to a custom {@code index.html} file.
    *
-   * <p>When set, this file is copied verbatim into the TeaVM JS output directory ({@code teavm.js.outputDir}) as {@code index.html},
-   * bypassing both the default template generator and any {@code index.html} found in
-   * {@link #getWebappDir()}. The canvas ID substitution ({@code {{CANVAS_ID}}}) is not applied.
-   * The developer is responsible for the full HTML content.
+   * <p>When set, this file is copied verbatim into the TeaVM web output directory as
+   * {@code index.html}, bypassing both the default template generator and any {@code index.html}
+   * found in {@link #getWebappDir()}. No placeholder substitution is applied; the developer is
+   * responsible for the full HTML content, including loading the bundle.
    *
    * @return The custom index.html file property.
    */
   RegularFileProperty getCustomIndexHtml();
 
   /**
-   * Optional path to a custom {@code startup-logo.png} file.
-   *
-   * <p>When set, this file is copied to {@code <teavm.js.outputDir>/assets/startup-logo.png}, replacing
-   * both the built-in placeholder and any auto-generation. The file must be a valid PNG image.
-   *
-   * @return The custom startup logo file property.
-   */
-  RegularFileProperty getCustomStartupLogo();
-
-  /**
    * Optional path to a favicon file (any format supported by browsers, e.g. {@code .ico}, {@code .png}).
    *
-   * <p>When set, the file is copied into the TeaVM JS output directory ({@code teavm.js.outputDir}) and a {@code <link rel="icon">} tag
-   * referencing it is injected into the generated {@code index.html}. Has no effect when a custom
-   * {@code index.html} is provided via {@link #getCustomIndexHtml()} or {@link #getWebappDir()},
-   * since those are copied verbatim.
+   * <p>When set, the file is copied into the TeaVM web output directory and a {@code <link rel="icon">}
+   * tag referencing it is injected into the generated {@code index.html}. Has no effect when a custom
+   * {@code index.html} is provided via {@link #getCustomIndexHtml()} or {@link #getWebappDir()}, since
+   * those are copied verbatim.
    *
    * @return The custom favicon file property.
    */
   RegularFileProperty getCustomFavicon();
-
 }

@@ -25,19 +25,61 @@
 </head>
 <body>
   <canvas id="{{CANVAS_ID}}"></canvas>
-  <script src="{{TEAVM_SCRIPT}}"></script>
   <script>
-  (function () {
+    // Default runtime mode baked in by the build. The ?flixel.mode= URL parameter overrides it.
+    window.flixelMode = window.flixelMode || {{MODE_DEFAULT}};
+
+    (function () {
+      var wasmEnabled = {{WASM_ENABLED}};
+
+      function loadJs() {
+        var script = document.createElement('script');
+        script.src = "{{JS_BUNDLE}}";
+        script.onload = function () {
+          if (typeof main === 'function') {
+            main();
+          }
+        };
+        document.head.appendChild(script);
+      }
+
+      function loadWasm() {
+        var runtime = document.createElement('script');
+        runtime.src = "{{WASM_RUNTIME}}";
+        runtime.onload = function () {
+          if (window.TeaVM && TeaVM.wasmGC) {
+            TeaVM.wasmGC.load("{{WASM_BUNDLE}}")
+              .then(function (teavm) { teavm.exports.main([]); })
+              .catch(loadJs);
+          } else {
+            loadJs();
+          }
+        };
+        // If the WebAssembly bundle cannot be loaded, fall back to the JavaScript build so the game
+        // still runs on browsers that lack WebAssembly GC support.
+        runtime.onerror = loadJs;
+        document.head.appendChild(runtime);
+      }
+
+      if (wasmEnabled && typeof WebAssembly !== 'undefined') {
+        loadWasm();
+      } else {
+        loadJs();
+      }
+    })();
+  </script>
+  <script>
+    (function () {
       var canvas = document.getElementById('{{CANVAS_ID}}');
 
       function scaleCanvas() {
         if (!canvas.width || !canvas.height) return;
-        const scaleX = window.innerWidth / canvas.width;
-        const scaleY = window.innerHeight / canvas.height;
+        var scaleX = window.innerWidth / canvas.width;
+        var scaleY = window.innerHeight / canvas.height;
         canvas.style.transform = 'scale(' + Math.min(scaleX, scaleY) + ')';
       }
 
-      // Poll until TeaVM sets the canvas dimensions, then scale and watch for resizes.
+      // Poll until the framework sets the canvas dimensions, then scale and watch for resizes.
       var poll = setInterval(function () {
         if (canvas.width && canvas.height) {
           clearInterval(poll);
