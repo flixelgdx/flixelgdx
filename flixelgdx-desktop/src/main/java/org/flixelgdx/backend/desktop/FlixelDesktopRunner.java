@@ -36,6 +36,7 @@ import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLInit;
+import org.lwjgl.sdl.SDLKeyboard;
 import org.lwjgl.sdl.SDLMouse;
 import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.sdl.SDL_Event;
@@ -156,6 +157,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     graphics.onInitialized(width, height, transparentFramebuffer);
     graphics.setVSync(vsync);
     gamepads.openConnected();
+
+    // The debug overlay's command line needs SDL text-input events (which carry composed characters,
+    // separate from raw key events). Only debug builds have that overlay, so keep text input off
+    // otherwise to avoid triggering an IME where it is not wanted.
+    if (Flixel.isDebugMode()) {
+      SDLKeyboard.SDL_StartTextInput(windowHandle);
+    }
 
     game.create();
 
@@ -343,6 +351,17 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         }
         case SDLEvents.SDL_EVENT_KEY_UP ->
           input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+        case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
+          // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
+          // physical key events above. Feed each character to listeners so the debug command line and
+          // any future text fields can read typed input.
+          String textInput = event.text().textString();
+          if (textInput != null) {
+            for (int i = 0; i < textInput.length(); i++) {
+              input.onKeyTyped(textInput.charAt(i));
+            }
+          }
+        }
         case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
           input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
         case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->

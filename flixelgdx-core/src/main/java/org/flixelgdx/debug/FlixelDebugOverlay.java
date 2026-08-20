@@ -112,6 +112,24 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    */
   public static final int PERF_HISTORY_SIZE = 120;
 
+  /**
+   * Effective stats refresh interval. Initialized to {@link #STATS_UPDATE_INTERVAL}; subclasses may
+   * change this field to raise or lower the refresh frequency without overriding {@link #update(float)}.
+   */
+  protected float statsUpdateInterval = STATS_UPDATE_INTERVAL;
+
+  /**
+   * Effective watch-entry and tracker-block refresh interval. Initialized to
+   * {@link #WATCH_REFRESH_INTERVAL}; subclasses may change it freely.
+   */
+  protected float watchRefreshInterval = WATCH_REFRESH_INTERVAL;
+
+  /**
+   * Effective performance ring-buffer sample interval. Initialized to {@link #PERF_SAMPLE_INTERVAL};
+   * subclasses may change it freely.
+   */
+  protected float perfSampleInterval = PERF_SAMPLE_INTERVAL;
+
   /** Fallback color used when a {@link FlixelDebugDrawable} returns a {@code null} or undersized array. */
   private static final float[] FALLBACK_BOUNDING_BOX_COLOR = { 1f, 0.2f, 0.2f, 0.6f };
 
@@ -292,9 +310,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     handleToggleKeys();
 
     if (Flixel.isDebugMode()) {
-      // Raw* so the game loop pause toggle keeps working even while an imgui text field is focused,
-      // unless a backend suppresses typable keys while a command field is active (see LWJGL ImGui overlay).
-      if (Flixel.keys.rawJustPressed(pauseKey) && !shouldSuppressDebugRawKeybind(pauseKey)) {
+      // The keyboard manager already reports the pause key as not pressed while an imgui text field
+      // has focus (isKeyboardCapturedByUI), so a plain justPressed does not fire mid-typing.
+      if (Flixel.keys.justPressed(pauseKey)) {
         Flixel.game.setGamePaused(!Flixel.game.isGamePaused());
       }
       if (Flixel.game.isGamePaused()) {
@@ -313,8 +331,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // of an empty graph for the first several seconds.
     if (Flixel.isDebugMode()) {
       perfSampleTimer += elapsed;
-      if (perfSampleTimer >= PERF_SAMPLE_INTERVAL) {
-        perfSampleTimer = 0f;
+      if (perfSampleTimer >= perfSampleInterval) {
+        perfSampleTimer -= perfSampleInterval;
         pushPerfSample(elapsed);
       }
     }
@@ -326,7 +344,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     statsTimer += elapsed;
     watchRefreshTimer += elapsed;
 
-    if (statsTimer >= STATS_UPDATE_INTERVAL) {
+    if (statsTimer >= statsUpdateInterval) {
       statsTimer = 0f;
       cachedFps = Flixel.graphics.getFps();
       cachedHeapMegabytes = Flixel.runtime.getJavaHeap() / (1024f * 1024f);
@@ -335,7 +353,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
 
-    if (watchRefreshTimer >= WATCH_REFRESH_INTERVAL) {
+    if (watchRefreshTimer >= watchRefreshInterval) {
       watchRefreshTimer = 0f;
       refreshWatchEntries();
       rebuildCachedTrackerBlocks();
@@ -424,27 +442,15 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected void onUpdateUI(float elapsed) {}
 
   private void handleToggleKeys() {
-    // Use the raw* variants so the toggle keys still work even while a Dear ImGui text field
-    // (for example, the debug command line) has keyboard focus and the regular justPressed
-    // helpers are intentionally suppressed.
-    if (Flixel.keys.rawJustPressed(toggleKey) && !shouldSuppressDebugRawKeybind(toggleKey)) {
+    // The overlay's own input reaches Dear ImGui through a dedicated platform listener, so the
+    // keyboard manager can suppress these toggles while a debug text field is focused
+    // (isKeyboardCapturedByUI) and they still work any other time.
+    if (Flixel.keys.justPressed(toggleKey)) {
       toggleVisible();
     }
-    if (Flixel.keys.rawJustPressed(drawDebugKey) && !shouldSuppressDebugRawKeybind(drawDebugKey)) {
+    if (Flixel.keys.justPressed(drawDebugKey)) {
       toggleDrawDebug();
     }
-  }
-
-  /**
-   * Backends that render a command-line {@code InputText} can override this to skip debug hotkeys for keys that would
-   * normally type into that field (letters, punctuation, arrows, Enter, and so on). Return {@code false} by default so
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)} shortcuts keep working.
-   *
-   * @param keycode FlixelGDX {@link FlixelKey} key code being handled by a debug binding.
-   * @return {@code true} to skip handling this key for debug shortcuts this frame.
-   */
-  protected boolean shouldSuppressDebugRawKeybind(int keycode) {
-    return false;
   }
 
   private void refreshWatchEntries() {
@@ -490,10 +496,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * their work, so clicking inside (for example) a Dear ImGui window does not bleed through
    * into the game logic. Defaults to {@code false}.
    *
-   * <p>The debug overlay's own mouse-driven tools (sprite picker, camera pan) read
-   * {@link FlixelMouseInputManager#rawPressed(int) FlixelMouseInputManager.rawPressed(int)} so they
-   * can opt in to "ignore the suppression" while still respecting this hook for the early-exit
-   * gate.
+   * <p>The overlay's own mouse tools (sprite picker, camera pan) use the regular
+   * {@link FlixelMouseInputManager#pressed(int) FlixelMouseInputManager.pressed(int)} helpers, which
+   * already report {@code false} while the cursor is over a debug panel, so a click there never grabs
+   * a sprite or pans the camera.
    *
    * @return {@code true} if a foreground UI element is consuming mouse input this frame.
    */
@@ -510,9 +516,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * cannot also capture game input and activate game-level actions like {@code ui_accept}.
    * Defaults to {@code false}.
    *
-   * <p>The debug overlay's own toggle keys (debug overlay toggle, hitbox toggle, pause) read
-   * {@link FlixelKeyInputManager#rawJustPressed(int) FlixelKeyInputManager.rawJustPressed(int)}
-   * so they keep working even when this returns {@code true}.
+   * <p>The debug overlay's own toggle keys use the regular {@code justPressed} helpers, so they are
+   * suppressed while a debug text field is focused and respond normally the rest of the time.
    *
    * @return {@code true} if a foreground UI element is consuming keyboard input this frame.
    */
@@ -531,17 +536,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     if (debugInspectCameraIndex < 0 || debugInspectCameraIndex >= cams.getSize()) {
       debugInspectCameraIndex = 0;
     }
-    // Use the raw* helpers throughout so the inspect camera tools keep responding while the
-    // imgui debugger is focused (otherwise our own debug controls would be filtered out by the
-    // input suppression we set up to protect the game's regular input).
-    boolean alt = Flixel.keys.rawPressed(FlixelKey.ALT_LEFT) || Flixel.keys.rawPressed(FlixelKey.ALT_RIGHT)
-        || Flixel.input.isKeyPressed(FlixelKey.ALT_LEFT) || Flixel.input.isKeyPressed(FlixelKey.ALT_RIGHT);
-    if (alt && Flixel.keys.rawJustPressed(cameraCycleLeftKey)
-        && !shouldSuppressDebugRawKeybind(cameraCycleLeftKey)) {
+    // Alt is read straight off the input device so it still registers while the keyboard manager is
+    // suppressing game input; the camera-cycle keys use the regular justPressed helper, which keeps
+    // the arrow keys editing text (instead of cycling cameras) while the command line is focused.
+    boolean alt = Flixel.input.isKeyPressed(FlixelKey.ALT_LEFT) || Flixel.input.isKeyPressed(FlixelKey.ALT_RIGHT);
+    if (alt && Flixel.keys.justPressed(cameraCycleLeftKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex - 1 + cams.getSize()) % cams.getSize();
     }
-    if (alt && Flixel.keys.rawJustPressed(cameraCycleRightKey)
-        && !shouldSuppressDebugRawKeybind(cameraCycleRightKey)) {
+    if (alt && Flixel.keys.justPressed(cameraCycleRightKey)) {
       debugInspectCameraIndex = (debugInspectCameraIndex + 1) % cams.getSize();
     }
 
@@ -560,10 +562,10 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     }
     cam.applyCameraTransform();
 
-    if (!uiCapturedMouse && Flixel.mouse.rawPressed(cameraPanButton)) {
+    if (!uiCapturedMouse && Flixel.mouse.pressed(cameraPanButton)) {
       int sx = Flixel.mouse.getScreenX();
       int sy = Flixel.mouse.getScreenY();
-      if (!Flixel.mouse.rawJustPressed(cameraPanButton)) {
+      if (!Flixel.mouse.justPressed(cameraPanButton)) {
         panUnprojectA.set(lastPanScreenX, lastPanScreenY);
         cam.unproject(panUnprojectA);
         panUnprojectB.set(sx, sy);
@@ -621,12 +623,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     float worldX = viewPickX + cam.scrollX + cam.getViewMarginX();
     float worldY = viewPickY + cam.scrollY + cam.getViewMarginY();
 
-    // Use the raw* helpers so the picker keeps reading the actual mouse state (Flixel.mouse.pressed(...)
-    // is suppressed when the cursor is over an imgui window, and we still want the uncovered
-    // viewport area to drive picking). The early-exit gate above already guards the imgui case.
-    boolean justPressed = Flixel.mouse.rawJustPressed(FlixelMouseButton.LEFT);
-    boolean pressed = Flixel.mouse.rawPressed(FlixelMouseButton.LEFT);
-    boolean justReleased = Flixel.mouse.rawJustReleased(FlixelMouseButton.LEFT);
+    // The early-exit gate above already returned when the cursor is over a debug panel, so here the
+    // regular mouse helpers report the real state and drive picking over the uncovered viewport.
+    boolean justPressed = Flixel.mouse.justPressed(FlixelMouseButton.LEFT);
+    boolean pressed = Flixel.mouse.pressed(FlixelMouseButton.LEFT);
+    boolean justReleased = Flixel.mouse.justReleased(FlixelMouseButton.LEFT);
 
     FlixelObject dragged = Flixel.debug.getDraggedSprite();
 
