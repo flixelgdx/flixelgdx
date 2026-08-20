@@ -100,7 +100,8 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
 
     canvas.addEventListener("mousedown", event -> {
       MouseEvent mouse = (MouseEvent) event;
-      onMouseDown(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()), canvasY(canvas, mouse.getClientY()));
+      onMouseDown(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()),
+          canvasY(canvas, mouse.getClientY()));
     });
     canvas.addEventListener("mouseup", event -> {
       MouseEvent mouse = (MouseEvent) event;

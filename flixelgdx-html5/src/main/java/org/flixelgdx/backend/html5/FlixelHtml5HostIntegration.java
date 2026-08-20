@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.backend.html5;
 
-import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelHostIntegration;
+import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
@@ -164,7 +164,8 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
       + "}")
   private static native void acquireWakeLock();
 
-  @JSBody(script = "if (window.__flixelWakeLock) { window.__flixelWakeLock.release(); window.__flixelWakeLock = null; }")
+  @JSBody(
+      script = "if (window.__flixelWakeLock) { window.__flixelWakeLock.release(); window.__flixelWakeLock = null; }")
   private static native void releaseWakeLock();
 
   @JSBody(params = "message",

@@ -545,26 +545,26 @@ public class FlixelWebGlBatch implements FlixelBatch {
 
   private static final String VERTEX_SOURCE =
       "#version 300 es\n"
-      + "in vec2 a_position;\n"
-      + "in vec2 a_texCoord;\n"
-      + "in vec4 a_color;\n"
-      + "uniform mat4 u_projTrans;\n"
-      + "out vec2 v_texCoord;\n"
-      + "out vec4 v_color;\n"
-      + "void main() {\n"
-      + "  v_texCoord = a_texCoord;\n"
-      + "  v_color = a_color;\n"
-      + "  gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);\n"
-      + "}\n";
+          + "in vec2 a_position;\n"
+          + "in vec2 a_texCoord;\n"
+          + "in vec4 a_color;\n"
+          + "uniform mat4 u_projTrans;\n"
+          + "out vec2 v_texCoord;\n"
+          + "out vec4 v_color;\n"
+          + "void main() {\n"
+          + "  v_texCoord = a_texCoord;\n"
+          + "  v_color = a_color;\n"
+          + "  gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);\n"
+          + "}\n";
 
   private static final String FRAGMENT_SOURCE =
       "#version 300 es\n"
-      + "precision mediump float;\n"
-      + "in vec2 v_texCoord;\n"
-      + "in vec4 v_color;\n"
-      + "uniform sampler2D u_texture;\n"
-      + "out vec4 fragColor;\n"
-      + "void main() {\n"
-      + "  fragColor = v_color * texture(u_texture, v_texCoord);\n"
-      + "}\n";
+          + "precision mediump float;\n"
+          + "in vec2 v_texCoord;\n"
+          + "in vec4 v_color;\n"
+          + "uniform sampler2D u_texture;\n"
+          + "out vec4 fragColor;\n"
+          + "void main() {\n"
+          + "  fragColor = v_color * texture(u_texture, v_texCoord);\n"
+          + "}\n";
 }
