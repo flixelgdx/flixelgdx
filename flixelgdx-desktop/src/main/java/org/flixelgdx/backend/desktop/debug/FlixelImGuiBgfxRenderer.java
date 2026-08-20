@@ -187,10 +187,11 @@ public final class FlixelImGuiBgfxRenderer {
     int fbHeight = Math.round(displayHeight);
 
     for (int n = 0; n < cmdListCount; n++) {
-      ByteBuffer vertexData = drawData.getCmdListVtxBufferData(n);
-      ByteBuffer indexData = drawData.getCmdListIdxBufferData(n);
-      int vertexCount = vertexData.remaining() / vertexStride;
-      int indexCount = indexData.remaining() / indexStride;
+      // Read the element counts from the draw list rather than a buffer's byte size. imgui-java hands
+      // back the same reused ByteBuffer for a command list's vertex and index data (see below), so the
+      // vertex buffer's remaining() cannot be trusted once the index buffer has been fetched.
+      int vertexCount = drawData.getCmdListVtxBufferSize(n);
+      int indexCount = drawData.getCmdListIdxBufferSize(n);
       if (vertexCount == 0 || indexCount == 0) {
         continue;
       }
@@ -201,10 +202,16 @@ public final class FlixelImGuiBgfxRenderer {
         continue;
       }
 
+      // imgui-java returns a single shared ByteBuffer from both getCmdListVtxBufferData and
+      // getCmdListIdxBufferData, re-pointing it at whichever was requested last. The vertices must
+      // therefore be fetched and fully copied into the transient buffer BEFORE the index buffer is
+      // fetched; otherwise the vertex upload reads the index data instead, producing degenerate,
+      // invisible geometry.
       BGFX.bgfx_alloc_transient_vertex_buffer(tvb, vertexCount, layout);
-      copyVertices(vertexData, tvb.data(), vertexCount, vertexStride, bgra);
+      copyVertices(drawData.getCmdListVtxBufferData(n), tvb.data(), vertexCount, vertexStride, bgra);
 
       BGFX.bgfx_alloc_transient_index_buffer(tib, indexCount, index32);
+      ByteBuffer indexData = drawData.getCmdListIdxBufferData(n);
       ByteBuffer tibData = tib.data();
       int origIdxLim = indexData.limit();
       indexData.limit(indexData.position() + indexCount * indexStride);

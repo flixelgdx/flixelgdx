@@ -134,8 +134,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private static final String TRACKER_EMPTY_HINT =
       "No trackers registered. Use Flixel.debug.addTrackerEntry(...) to show grouped values here.";
 
-  /** Number of bgfx time-series graphs, used to size the per-series Y-axis scale array. */
-  private static final int BGFX_GRAPH_COUNT = 7;
+  /**
+   * Number of unique bgfx time-series graphs, used to size the per-series Y-axis scale array.
+   * Indices: 0 CPU submit, 1 GPU, 2 Wait submit, 3 Wait render, 4 GPU memory.
+   * CPU frame and draw calls are omitted because they duplicate the core perf ring buffers.
+   */
+  private static final int BGFX_GRAPH_COUNT = 5;
 
   private final FlixelImGuiSdlInput imguiInput = new FlixelImGuiSdlInput();
   private final FlixelBgfxStatsSampler statsSampler = new FlixelBgfxStatsSampler();
@@ -149,7 +153,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   // Window visibility flags (toggled from the debug menu).
   private final ImBoolean showStatsWindow = new ImBoolean(true);
   private final ImBoolean showPerformanceWindow = new ImBoolean(true);
-  private final ImBoolean showRenderWindow = new ImBoolean(true);
   private final ImBoolean showControlsWindow = new ImBoolean(true);
   private final ImBoolean showWatchWindow = new ImBoolean(true);
   private final ImBoolean showLogWindow = new ImBoolean(true);
@@ -253,10 +256,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float layoutCommandY;
   private float layoutCommandW;
   private float layoutCommandH;
-  private float layoutRenderX;
-  private float layoutRenderY;
-  private float layoutRenderW;
-  private float layoutRenderH;
   private float textureViewerZoom = 1f;
 
   // Per-series Y-axis scale maxima for the core performance graphs. Each grows immediately when a new
@@ -417,7 +416,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     drawStatsWindow();
     drawPerformanceWindow();
-    drawRenderWindow();
     drawWatchWindow();
     drawControlsWindow();
     drawLogWindow();
@@ -561,6 +559,13 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     setStyleColor(style, ImGuiCol.ResizeGripActive, COLOR_RESIZE_GRIP_ACTIVE);
     setStyleColor(style, ImGuiCol.SliderGrab, COLOR_SLIDER_GRAB);
     setStyleColor(style, ImGuiCol.SliderGrabActive, COLOR_SLIDER_GRAB_ACTIVE);
+    style.setWindowRounding(8f);
+    style.setChildRounding(6f);
+    style.setFrameRounding(4f);
+    style.setPopupRounding(6f);
+    style.setScrollbarRounding(6f);
+    style.setGrabRounding(4f);
+    style.setTabRounding(6f);
   }
 
   private static void setStyleColor(ImGuiStyle style, int target, float[] color) {
@@ -717,13 +722,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     layoutCommandY = yCmd;
     layoutCommandW = workW;
     layoutCommandH = cmdH;
-
-    // The bgfx render panel defaults to a floating window just right of the left column; docking lets
-    // the user move it wherever they like afterward.
-    layoutRenderW = Math.min(430f, Math.max(320f, workW * 0.26f));
-    layoutRenderH = Math.min(620f, Math.max(320f, availH * 0.8f));
-    layoutRenderX = Math.min(ox + colW + gap, ox + workW - layoutRenderW - gap);
-    layoutRenderY = oy;
   }
 
   /** Returns the imgui condition flag to use for the next window's default position / size hint. */
@@ -751,7 +749,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (ImGui.beginMenu("Debug")) {
       ImGui.menuItem("Stats", null, showStatsWindow);
       ImGui.menuItem("Performance", null, showPerformanceWindow);
-      ImGui.menuItem("Render (bgfx)", null, showRenderWindow);
       ImGui.menuItem("Controls", null, showControlsWindow);
       ImGui.menuItem("Tracker", null, showTrackerWindow);
       ImGui.menuItem("Watch", null, showWatchWindow);
@@ -840,9 +837,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Real-time graphs of the platform-agnostic performance ring buffers owned by
-   * {@link FlixelDebugOverlay} (FPS, frame time, Java and native heap, and render calls). Each series
-   * plots directly against the parent's primitive arrays, so no temporary buffer is copied.
+   * Merged Performance panel: real-time graphs of the platform-agnostic ring buffers and bgfx render
+   * statistics, organized into collapsing sections. The Core section (FPS, frame time, draw calls)
+   * starts open; Memory, GPU Timing, Submission, and Resources start collapsed.
    */
   private void drawPerformanceWindow() {
     if (!showPerformanceWindow.get()) {
@@ -850,71 +847,6 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
     applyWindowLayout(layoutPerfX, layoutPerfY, layoutPerfW, layoutPerfH);
     if (!ImGui.begin("Performance", showPerformanceWindow)) {
-      ImGui.end();
-      return;
-    }
-    int count = getPerfCount();
-    int offset = (count < PERF_HISTORY_SIZE) ? 0 : getPerfHead();
-    if (count == 0) {
-      text(COLOR_HINT, "Collecting samples...");
-      ImGui.end();
-      return;
-    }
-
-    perfScaleMaxFps = Math.max(ringMax(getPerfFps(), count) * 1.15f, perfScaleMaxFps * 0.997f);
-    perfScaleMaxFrameMs = Math.max(ringMax(getPerfFrameMs(), count) * 1.15f, perfScaleMaxFrameMs * 0.997f);
-    perfScaleMaxHeapMb = Math.max(ringMax(getPerfHeapMb(), count) * 1.15f, perfScaleMaxHeapMb * 0.997f);
-    perfScaleMaxNativeMb = Math.max(ringMax(getPerfNativeMb(), count) * 1.15f, perfScaleMaxNativeMb * 0.997f);
-    perfScaleMaxRenderCalls = Math.max(ringMax(getPerfRenderCalls(), count) * 1.15f, perfScaleMaxRenderCalls * 0.997f);
-
-    float graphWidth = ImGui.getContentRegionAvailX();
-    float graphHeight = 60f;
-
-    text(COLOR_KEY, "FPS");
-    ImGui.sameLine();
-    text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfFps()))));
-    ImGui.plotLines("##fps", getPerfFps(), count, offset, "", 0f, perfScaleMaxFps, graphWidth, graphHeight);
-
-    text(COLOR_KEY, "Frame (ms)");
-    ImGui.sameLine();
-    text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfFrameMs())));
-    ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", 0f, perfScaleMaxFrameMs, graphWidth, graphHeight);
-
-    text(COLOR_KEY, "Heap (MB)");
-    ImGui.sameLine();
-    text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfHeapMb())));
-    ImGui.plotLines("##heap", getPerfHeapMb(), count, offset, "", 0f, perfScaleMaxHeapMb, graphWidth, graphHeight);
-
-    float nativePeek = latestSample(getPerfNativeMb());
-    if (nativePeek > 0f) {
-      text(COLOR_KEY, "Native (MB)");
-      ImGui.sameLine();
-      text(COLOR_VALUE, formatOneDecimal(nativePeek));
-      ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", 0f, perfScaleMaxNativeMb, graphWidth,
-          graphHeight);
-    }
-
-    text(COLOR_KEY, "Render calls");
-    ImGui.sameLine();
-    text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfRenderCalls()))));
-    ImGui.plotLines("##rendercalls", getPerfRenderCalls(), count, offset, "", 0f, perfScaleMaxRenderCalls, graphWidth,
-        graphHeight);
-
-    ImGui.end();
-  }
-
-  /**
-   * The bgfx render-statistics panel: rolling graphs for every per-frame timing and workload counter
-   * bgfx exposes, plus a table of the one-off counters (peak draw calls, VRAM totals, transient buffer
-   * usage, and live GPU resource counts). Values are read from the graphics manager's cached
-   * {@link BGFXStats}, so the panel never allocates or issues an extra native call to gather them.
-   */
-  private void drawRenderWindow() {
-    if (!showRenderWindow.get()) {
-      return;
-    }
-    applyWindowLayout(layoutRenderX, layoutRenderY, layoutRenderW, layoutRenderH);
-    if (!ImGui.begin("Render (bgfx)", showRenderWindow)) {
       ImGui.end();
       return;
     }
@@ -927,79 +859,127 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     text(COLOR_VALUE, graphics.getBackBufferWidth() + " x " + graphics.getBackBufferHeight());
 
     BGFXStats stats = graphics.getBgfxStats();
-    if (stats == null) {
-      ImGui.separator();
-      text(COLOR_HINT, "bgfx statistics are not available yet.");
-      ImGui.end();
-      return;
-    }
-
-    int count = statsSampler.getCount();
-    int offset = statsSampler.getPlotOffset();
-    float graphWidth = ImGui.getContentRegionAvailX();
-    float graphHeight = 52f;
+    int bgfxCount = statsSampler.getCount();
+    int bgfxOffset = statsSampler.getPlotOffset();
     double cpuToMs = statsSampler.getCpuToMs();
     double gpuToMs = statsSampler.getGpuToMs();
+    float graphWidth = ImGui.getContentRegionAvailX();
+    float graphHeight = 60f;
+    float graphHeightSmall = 48f;
+    int count = getPerfCount();
+    int offset = (count < PERF_HISTORY_SIZE) ? 0 : getPerfHead();
 
-    if (count == 0) {
-      text(COLOR_HINT, "Collecting samples...");
-    } else {
-      drawBgfxGraph(0, "CPU frame (ms)", statsSampler.getCpuFrameMs(), count, offset, graphWidth, graphHeight, true);
-      drawBgfxGraph(1, "CPU submit (ms)", statsSampler.getCpuSubmitMs(), count, offset, graphWidth, graphHeight, true);
-      drawBgfxGraph(2, "GPU (ms)", statsSampler.getGpuMs(), count, offset, graphWidth, graphHeight, true);
-      drawBgfxGraph(3, "Wait submit (ms)", statsSampler.getWaitSubmitMs(), count, offset, graphWidth, graphHeight,
-          true);
-      drawBgfxGraph(4, "Wait render (ms)", statsSampler.getWaitRenderMs(), count, offset, graphWidth, graphHeight,
-          true);
-      drawBgfxGraph(5, "Draw calls", statsSampler.getDrawCalls(), count, offset, graphWidth, graphHeight, false);
-      drawBgfxGraph(6, "GPU memory (MB)", statsSampler.getGpuMemoryMb(), count, offset, graphWidth, graphHeight, false);
-    }
-
-    if (ImGui.collapsingHeader("Submission", ImGuiTreeNodeFlags.DefaultOpen)) {
-      drawStatRow("Draw calls", stats.numDraw());
-      drawStatRow("Peak draw calls", stats.numDrawCallsPeak());
-      drawStatRow("Compute calls", stats.numCompute());
-      drawStatRow("Blit calls", stats.numBlit());
-      drawStatRow("Triangles", stats.numPrims(BGFX.BGFX_TOPOLOGY_TRI_LIST));
-      drawStatRow("Views", stats.numViews());
-      drawStatRow("Encoders", stats.numEncoders());
-      drawStatRow("GPU latency", stats.maxGpuLatency());
-    }
-
-    if (ImGui.collapsingHeader("Timing", ImGuiTreeNodeFlags.DefaultOpen)) {
-      drawStatRow("CPU frame (ms)", (float) (stats.cpuTimeFrame() * cpuToMs));
-      drawStatRow("CPU submit (ms)", (float) ((stats.cpuTimeEnd() - stats.cpuTimeBegin()) * cpuToMs));
-      if (gpuToMs > 0.0) {
-        drawStatRow("GPU (ms)", (float) ((stats.gpuTimeEnd() - stats.gpuTimeBegin()) * gpuToMs));
+    if (ImGui.collapsingHeader("Core", ImGuiTreeNodeFlags.DefaultOpen)) {
+      if (count == 0) {
+        text(COLOR_HINT, "Collecting samples...");
       } else {
-        text(COLOR_KEY, "GPU (ms)");
+        perfScaleMaxFps = Math.max(ringMax(getPerfFps(), count) * 1.15f, perfScaleMaxFps * 0.997f);
+        perfScaleMaxFrameMs = Math.max(ringMax(getPerfFrameMs(), count) * 1.15f, perfScaleMaxFrameMs * 0.997f);
+        perfScaleMaxRenderCalls = Math.max(ringMax(getPerfRenderCalls(), count) * 1.15f, perfScaleMaxRenderCalls * 0.997f);
+
+        text(COLOR_KEY, "FPS");
         ImGui.sameLine();
-        text(COLOR_VALUE, "n/a");
+        text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfFps()))));
+        ImGui.plotLines("##fps", getPerfFps(), count, offset, "", 0f, perfScaleMaxFps, graphWidth, graphHeight);
+
+        text(COLOR_KEY, "Frame (ms)");
+        ImGui.sameLine();
+        text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfFrameMs())));
+        ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", 0f, perfScaleMaxFrameMs, graphWidth, graphHeight);
+
+        text(COLOR_KEY, "Draw calls");
+        ImGui.sameLine();
+        text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfRenderCalls()))));
+        ImGui.plotLines("##rendercalls", getPerfRenderCalls(), count, offset, "", 0f, perfScaleMaxRenderCalls, graphWidth,
+            graphHeight);
       }
-      drawStatRow("Wait submit (ms)", (float) (stats.waitSubmit() * cpuToMs));
-      drawStatRow("Wait render (ms)", (float) (stats.waitRender() * cpuToMs));
     }
 
-    if (ImGui.collapsingHeader("Memory", ImGuiTreeNodeFlags.DefaultOpen)) {
-      drawByteRow("GPU memory used", stats.gpuMemoryUsed());
-      drawByteRow("GPU memory max", stats.gpuMemoryMax());
-      drawByteRow("Texture memory", stats.textureMemoryUsed());
-      drawByteRow("Render target memory", stats.rtMemoryUsed());
-      drawStatRow("Transient VB (KB)", stats.transientVbUsed() / 1024);
-      drawStatRow("Transient IB (KB)", stats.transientIbUsed() / 1024);
+    if (ImGui.collapsingHeader("Memory")) {
+      if (count > 0) {
+        perfScaleMaxHeapMb = Math.max(ringMax(getPerfHeapMb(), count) * 1.15f, perfScaleMaxHeapMb * 0.997f);
+        perfScaleMaxNativeMb = Math.max(ringMax(getPerfNativeMb(), count) * 1.15f, perfScaleMaxNativeMb * 0.997f);
+
+        text(COLOR_KEY, "Heap (MB)");
+        ImGui.sameLine();
+        text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfHeapMb())));
+        ImGui.plotLines("##heap", getPerfHeapMb(), count, offset, "", 0f, perfScaleMaxHeapMb, graphWidth, graphHeight);
+
+        float nativePeek = latestSample(getPerfNativeMb());
+        if (nativePeek > 0f) {
+          text(COLOR_KEY, "Native (MB)");
+          ImGui.sameLine();
+          text(COLOR_VALUE, formatOneDecimal(nativePeek));
+          ImGui.plotLines("##native", getPerfNativeMb(), count, offset, "", 0f, perfScaleMaxNativeMb, graphWidth,
+              graphHeight);
+        }
+      }
+      if (bgfxCount > 0) {
+        drawBgfxGraph(4, "GPU (MB)", statsSampler.getGpuMemoryMb(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall,
+            false);
+      }
+      if (stats != null) {
+        ImGui.separator();
+        drawByteRow("GPU memory used", stats.gpuMemoryUsed());
+        drawByteRow("GPU memory max", stats.gpuMemoryMax());
+        drawByteRow("Texture memory", stats.textureMemoryUsed());
+        drawByteRow("Render target memory", stats.rtMemoryUsed());
+        drawStatRow("Transient VB (KB)", stats.transientVbUsed() / 1024);
+        drawStatRow("Transient IB (KB)", stats.transientIbUsed() / 1024);
+      }
     }
 
-    if (ImGui.collapsingHeader("Resources")) {
-      drawStatRow("Textures", stats.numTextures());
-      drawStatRow("Shaders", stats.numShaders());
-      drawStatRow("Programs", stats.numPrograms());
-      drawStatRow("Uniforms", stats.numUniforms());
-      drawStatRow("Frame buffers", stats.numFrameBuffers());
-      drawStatRow("Vertex buffers", stats.numVertexBuffers());
-      drawStatRow("Index buffers", stats.numIndexBuffers());
-      drawStatRow("Dynamic VB", stats.numDynamicVertexBuffers());
-      drawStatRow("Dynamic IB", stats.numDynamicIndexBuffers());
+    if (ImGui.collapsingHeader("GPU Timing")) {
+      if (bgfxCount == 0) {
+        text(COLOR_HINT, "Collecting samples...");
+      } else {
+        drawBgfxGraph(0, "CPU submit (ms)", statsSampler.getCpuSubmitMs(), bgfxCount, bgfxOffset, graphWidth,
+            graphHeightSmall, true);
+        drawBgfxGraph(1, "GPU (ms)", statsSampler.getGpuMs(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall, true);
+        drawBgfxGraph(2, "Wait submit (ms)", statsSampler.getWaitSubmitMs(), bgfxCount, bgfxOffset, graphWidth,
+            graphHeightSmall, true);
+        drawBgfxGraph(3, "Wait render (ms)", statsSampler.getWaitRenderMs(), bgfxCount, bgfxOffset, graphWidth,
+            graphHeightSmall, true);
+      }
+      if (stats != null) {
+        ImGui.separator();
+        drawStatRow("CPU frame (ms)", (float) (stats.cpuTimeFrame() * cpuToMs));
+        drawStatRow("CPU submit (ms)", (float) ((stats.cpuTimeEnd() - stats.cpuTimeBegin()) * cpuToMs));
+        if (gpuToMs > 0.0) {
+          drawStatRow("GPU (ms)", (float) ((stats.gpuTimeEnd() - stats.gpuTimeBegin()) * gpuToMs));
+        } else {
+          text(COLOR_KEY, "GPU (ms)");
+          ImGui.sameLine();
+          text(COLOR_VALUE, "n/a");
+        }
+        drawStatRow("Wait submit (ms)", (float) (stats.waitSubmit() * cpuToMs));
+        drawStatRow("Wait render (ms)", (float) (stats.waitRender() * cpuToMs));
+      }
     }
+
+    if (stats != null) {
+      if (ImGui.collapsingHeader("Submission")) {
+        drawStatRow("Peak draw calls", stats.numDrawCallsPeak());
+        drawStatRow("Compute calls", stats.numCompute());
+        drawStatRow("Blit calls", stats.numBlit());
+        drawStatRow("Triangles", stats.numPrims(BGFX.BGFX_TOPOLOGY_TRI_LIST));
+        drawStatRow("Views", stats.numViews());
+        drawStatRow("Encoders", stats.numEncoders());
+        drawStatRow("GPU latency", stats.maxGpuLatency());
+      }
+      if (ImGui.collapsingHeader("Resources")) {
+        drawStatRow("Textures", stats.numTextures());
+        drawStatRow("Shaders", stats.numShaders());
+        drawStatRow("Programs", stats.numPrograms());
+        drawStatRow("Uniforms", stats.numUniforms());
+        drawStatRow("Frame buffers", stats.numFrameBuffers());
+        drawStatRow("Vertex buffers", stats.numVertexBuffers());
+        drawStatRow("Index buffers", stats.numIndexBuffers());
+        drawStatRow("Dynamic VB", stats.numDynamicVertexBuffers());
+        drawStatRow("Dynamic IB", stats.numDynamicIndexBuffers());
+      }
+    }
+
     ImGui.end();
   }
 
