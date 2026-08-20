@@ -32,6 +32,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.mouse.FlixelMouseCursor;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXStats;
@@ -52,6 +53,7 @@ import imgui.flag.ImGuiConfigFlags;
 import imgui.flag.ImGuiDockNodeFlags;
 import imgui.flag.ImGuiInputTextFlags;
 import imgui.flag.ImGuiKey;
+import imgui.flag.ImGuiMouseCursor;
 import imgui.flag.ImGuiTableFlags;
 import imgui.flag.ImGuiTreeNodeFlags;
 import imgui.flag.ImGuiWindowFlags;
@@ -439,6 +441,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
     ImGui.render();
     renderer.render(ImGui.getDrawData());
+    updateImGuiCursor();
   }
 
   @Override
@@ -592,6 +595,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     imguiInput.setActive(nowVisible);
     if (nowVisible) {
       sanitizeImGuiInputBeforeNextDraw = true;
+    } else if (Flixel.mouse != null) {
+      Flixel.mouse.icons.resetCursor();
     }
   }
 
@@ -859,7 +864,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return;
     }
 
-    text(COLOR_KEY, "Backend");
+    text(COLOR_KEY, "Graphics API");
     ImGui.sameLine();
     text(COLOR_VALUE, graphics.getApi().toString());
     text(COLOR_KEY, "Back buffer");
@@ -887,7 +892,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       } else {
         perfScaleMaxFps = Math.max(ringMax(getPerfFps(), count) * 1.15f, perfScaleMaxFps * 0.997f);
         perfScaleMaxFrameMs = Math.max(ringMax(getPerfFrameMs(), count) * 1.15f, perfScaleMaxFrameMs * 0.997f);
-        perfScaleMaxRenderCalls = Math.max(ringMax(getPerfRenderCalls(), count) * 1.15f, perfScaleMaxRenderCalls * 0.997f);
+        perfScaleMaxRenderCalls =
+            Math.max(ringMax(getPerfRenderCalls(), count) * 1.15f, perfScaleMaxRenderCalls * 0.997f);
 
         text(COLOR_KEY, "FPS");
         ImGui.sameLine();
@@ -897,12 +903,14 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         text(COLOR_KEY, "Frame (ms)");
         ImGui.sameLine();
         text(COLOR_VALUE, formatOneDecimal(latestSample(getPerfFrameMs())));
-        ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", 0f, perfScaleMaxFrameMs, graphWidth, graphHeight);
+        ImGui.plotLines("##frame", getPerfFrameMs(), count, offset, "", 0f, perfScaleMaxFrameMs, graphWidth,
+            graphHeight);
 
         text(COLOR_KEY, "Draw calls");
         ImGui.sameLine();
         text(COLOR_VALUE, Integer.toString(Math.round(latestSample(getPerfRenderCalls()))));
-        ImGui.plotLines("##rendercalls", getPerfRenderCalls(), count, offset, "", 0f, perfScaleMaxRenderCalls, graphWidth,
+        ImGui.plotLines("##rendercalls", getPerfRenderCalls(), count, offset, "", 0f, perfScaleMaxRenderCalls,
+            graphWidth,
             graphHeight);
       }
     }
@@ -928,10 +936,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       }
       if (bgfxCount > 0) {
         if (statsSampler.latest(statsSampler.getGpuMemoryMb()) > 0f) {
-          drawBgfxGraph(4, "GPU (MB)", statsSampler.getGpuMemoryMb(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall,
+          drawBgfxGraph(4, "GPU (MB)", statsSampler.getGpuMemoryMb(), bgfxCount, bgfxOffset, graphWidth,
+              graphHeightSmall,
               false);
         } else {
-          text(COLOR_HINT, "GPU memory tracking unavailable for this backend.");
+          text(COLOR_HINT, "GPU memory tracking unavailable for this graphics API.");
         }
       }
       if (stats != null) {
@@ -951,7 +960,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       } else {
         drawBgfxGraph(0, "CPU submit (ms)", statsSampler.getCpuSubmitMs(), bgfxCount, bgfxOffset, graphWidth,
             graphHeightSmall, true);
-        drawBgfxGraph(1, "GPU (ms)", statsSampler.getGpuMs(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall, true);
+        drawBgfxGraph(1, "GPU (ms)", statsSampler.getGpuMs(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall,
+            true);
         drawBgfxGraph(2, "Wait submit (ms)", statsSampler.getWaitSubmitMs(), bgfxCount, bgfxOffset, graphWidth,
             graphHeightSmall, true);
         drawBgfxGraph(3, "Wait render (ms)", statsSampler.getWaitRenderMs(), bgfxCount, bgfxOffset, graphWidth,
@@ -1509,6 +1519,37 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.pushStyleColor(ImGuiCol.Text, color[0], color[1], color[2], color[3]);
     ImGui.textUnformatted(message != null ? message : "");
     ImGui.popStyleColor();
+  }
+
+  /**
+   * Applies the cursor that Dear ImGui requested for this frame. Only takes effect when ImGui owns
+   * the mouse or explicitly wants a non-arrow cursor (resize grips, text fields, etc.); otherwise
+   * the call is skipped so the game's own cursor choice is not overwritten while the cursor is over
+   * the game viewport.
+   */
+  private void updateImGuiCursor() {
+    if (Flixel.mouse == null) {
+      return;
+    }
+    int cursor = ImGui.getMouseCursor();
+    if (cursor != ImGuiMouseCursor.Arrow || ImGui.getIO().getWantCaptureMouse()) {
+      Flixel.mouse.icons.setCursor(imguiCursorToFlixel(cursor));
+    }
+  }
+
+  private static FlixelMouseCursor imguiCursorToFlixel(int imguiCursor) {
+    return switch (imguiCursor) {
+      case ImGuiMouseCursor.TextInput -> FlixelMouseCursor.IBEAM;
+      case ImGuiMouseCursor.ResizeAll -> FlixelMouseCursor.ALL_RESIZE;
+      case ImGuiMouseCursor.ResizeNS -> FlixelMouseCursor.VERTICAL_RESIZE;
+      case ImGuiMouseCursor.ResizeEW -> FlixelMouseCursor.HORIZONTAL_RESIZE;
+      case ImGuiMouseCursor.ResizeNESW -> FlixelMouseCursor.NORTH_EAST_SOUTH_WEST_RESIZE;
+      case ImGuiMouseCursor.ResizeNWSE -> FlixelMouseCursor.NORTH_WEST_SOUTH_EAST_RESIZE;
+      case ImGuiMouseCursor.Hand -> FlixelMouseCursor.HAND;
+      case ImGuiMouseCursor.NotAllowed -> FlixelMouseCursor.NOT_ALLOWED;
+      case ImGuiMouseCursor.None -> FlixelMouseCursor.NONE;
+      default -> FlixelMouseCursor.ARROW;
+    };
   }
 
   /**
