@@ -195,6 +195,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   // Reused float buffers fed to ImGui.sliderFloat() so the controls stay allocation-free.
   private final float[] textureViewerZoomBuf = new float[1];
   private final float[] timeScaleSliderBuf = new float[1];
+  private final float[] overlayUpdateRateBuf = new float[1];
 
   // Watch caches mirroring cachedWatchKeys / cachedWatchValues as java String.
   private String[] watchKeyStr = new String[0];
@@ -256,6 +257,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float layoutCommandY;
   private float layoutCommandW;
   private float layoutCommandH;
+  private float bgfxSampleTimer = 0f;
+  private float overlayUpdateRate = 20f;
   private float textureViewerZoom = 1f;
 
   // Per-series Y-axis scale maxima for the core performance graphs. Each grows immediately when a new
@@ -385,7 +388,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return;
     }
     snapshotLogBuffer();
-    statsSampler.sample(graphics.getBgfxStats());
+    bgfxSampleTimer += Flixel.getRawElapsed();
+    float bgfxSampleInterval = 1f / overlayUpdateRate;
+    if (bgfxSampleTimer >= bgfxSampleInterval) {
+      bgfxSampleTimer -= bgfxSampleInterval;
+      statsSampler.sample(graphics.getBgfxStats());
+    }
 
     if (sanitizeImGuiInputBeforeNextDraw) {
       sanitizeImGuiInputBeforeNextDraw = false;
@@ -861,8 +869,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     BGFXStats stats = graphics.getBgfxStats();
     int bgfxCount = statsSampler.getCount();
     int bgfxOffset = statsSampler.getPlotOffset();
-    double cpuToMs = statsSampler.getCpuToMs();
-    double gpuToMs = statsSampler.getGpuToMs();
+    // Read conversion factors directly from the live stats so they stay current even when the
+    // sampler is throttled; fall back to the sampler's last known values when stats is null.
+    long cpuFreq = stats != null ? stats.cpuTimerFreq() : 0;
+    long gpuFreq = stats != null ? stats.gpuTimerFreq() : 0;
+    double cpuToMs = cpuFreq > 0 ? 1000.0 / cpuFreq : statsSampler.getCpuToMs();
+    double gpuToMs = gpuFreq > 0 ? 1000.0 / gpuFreq : statsSampler.getGpuToMs();
     float graphWidth = ImGui.getContentRegionAvailX();
     float graphHeight = 60f;
     float graphHeightSmall = 48f;
@@ -915,8 +927,12 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         }
       }
       if (bgfxCount > 0) {
-        drawBgfxGraph(4, "GPU (MB)", statsSampler.getGpuMemoryMb(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall,
-            false);
+        if (statsSampler.latest(statsSampler.getGpuMemoryMb()) > 0f) {
+          drawBgfxGraph(4, "GPU (MB)", statsSampler.getGpuMemoryMb(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall,
+              false);
+        } else {
+          text(COLOR_HINT, "GPU memory tracking unavailable for this backend.");
+        }
       }
       if (stats != null) {
         ImGui.separator();
@@ -1039,6 +1055,20 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (ImGui.button("Reset##timescale")) {
       Flixel.timeScale = 1f;
     }
+    ImGui.popItemWidth();
+
+    ImGui.separator();
+    text(COLOR_HEADER, "Update rate (Hz)");
+    overlayUpdateRateBuf[0] = overlayUpdateRate;
+    ImGui.pushItemWidth(-100f);
+    if (ImGui.sliderFloat("##updaterate", overlayUpdateRateBuf, 1f, 30f, "%.0f Hz")) {
+      setOverlayUpdateRate(overlayUpdateRateBuf[0]);
+    }
+    ImGui.sameLine();
+    if (ImGui.button("Reset##updaterate")) {
+      setOverlayUpdateRate(20f);
+    }
+    ImGui.popItemWidth();
 
     ImGui.separator();
     text(COLOR_HEADER, "Keybinds");
@@ -1479,5 +1509,36 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.pushStyleColor(ImGuiCol.Text, color[0], color[1], color[2], color[3]);
     ImGui.textUnformatted(message != null ? message : "");
     ImGui.popStyleColor();
+  }
+
+  /**
+   * Returns the current data update rate for this overlay in updates per second.
+   *
+   * <p>This rate governs how often the graphs sample new data, how often the Watch and Tracker
+   * panels refresh their values, and how often the Stats panel updates its counters. The value is
+   * always within the range {@code [1, 30]} Hz.
+   *
+   * @return The update rate in Hertz.
+   */
+  public float getOverlayUpdateRate() {
+    return overlayUpdateRate;
+  }
+
+  /**
+   * Sets the data update rate for this overlay, in updates per second. Affects graphs, the Watch
+   * panel, the Tracker panel, and the Stats panel.
+   *
+   * <p>The value is clamped to {@code [1, 30]} Hz. Lower values reduce CPU overhead from the debug
+   * overlay; higher values give smoother, more reactive graphs and watch readings.
+   *
+   * @param hz The desired rate in Hertz. Values below 1 are raised to 1; values above 30 are
+   *     lowered to 30.
+   */
+  public void setOverlayUpdateRate(float hz) {
+    overlayUpdateRate = Math.max(1f, Math.min(30f, hz));
+    float interval = 1f / overlayUpdateRate;
+    perfSampleInterval = interval;
+    watchRefreshInterval = interval;
+    statsUpdateInterval = interval;
   }
 }

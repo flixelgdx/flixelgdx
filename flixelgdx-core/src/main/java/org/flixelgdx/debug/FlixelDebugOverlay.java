@@ -112,6 +112,24 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    */
   public static final int PERF_HISTORY_SIZE = 120;
 
+  /**
+   * Effective stats refresh interval. Initialized to {@link #STATS_UPDATE_INTERVAL}; subclasses may
+   * change this field to raise or lower the refresh frequency without overriding {@link #update(float)}.
+   */
+  protected float statsUpdateInterval = STATS_UPDATE_INTERVAL;
+
+  /**
+   * Effective watch-entry and tracker-block refresh interval. Initialized to
+   * {@link #WATCH_REFRESH_INTERVAL}; subclasses may change it freely.
+   */
+  protected float watchRefreshInterval = WATCH_REFRESH_INTERVAL;
+
+  /**
+   * Effective performance ring-buffer sample interval. Initialized to {@link #PERF_SAMPLE_INTERVAL};
+   * subclasses may change it freely.
+   */
+  protected float perfSampleInterval = PERF_SAMPLE_INTERVAL;
+
   /** Fallback color used when a {@link FlixelDebugDrawable} returns a {@code null} or undersized array. */
   private static final float[] FALLBACK_BOUNDING_BOX_COLOR = { 1f, 0.2f, 0.2f, 0.6f };
 
@@ -313,8 +331,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     // of an empty graph for the first several seconds.
     if (Flixel.isDebugMode()) {
       perfSampleTimer += elapsed;
-      if (perfSampleTimer >= PERF_SAMPLE_INTERVAL) {
-        perfSampleTimer = 0f;
+      if (perfSampleTimer >= perfSampleInterval) {
+        perfSampleTimer -= perfSampleInterval;
         pushPerfSample(elapsed);
       }
     }
@@ -326,7 +344,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     statsTimer += elapsed;
     watchRefreshTimer += elapsed;
 
-    if (statsTimer >= STATS_UPDATE_INTERVAL) {
+    if (statsTimer >= statsUpdateInterval) {
       statsTimer = 0f;
       cachedFps = Flixel.graphics.getFps();
       cachedHeapMegabytes = Flixel.runtime.getJavaHeap() / (1024f * 1024f);
@@ -335,7 +353,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       cachedAssetCount = Flixel.assets != null ? Flixel.assets.getLoadedAssetCount() : 0;
     }
 
-    if (watchRefreshTimer >= WATCH_REFRESH_INTERVAL) {
+    if (watchRefreshTimer >= watchRefreshInterval) {
       watchRefreshTimer = 0f;
       refreshWatchEntries();
       rebuildCachedTrackerBlocks();
