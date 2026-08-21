@@ -352,7 +352,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       task.setDescription("Packages the web output into a zip archive in the dist/ directory at the project root.");
       task.from(webRoot);
       task.getArchiveBaseName().convention(project.getRootProject().getName());
-      task.getArchiveClassifier().convention("web");
+      task.getArchiveClassifier().convention("html5");
       task.getArchiveVersion().convention(project.provider(() -> {
         Object version = project.getVersion();
         String v = version != null ? version.toString() : "";
