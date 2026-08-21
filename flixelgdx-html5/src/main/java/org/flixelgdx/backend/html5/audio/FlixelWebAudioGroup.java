@@ -38,6 +38,25 @@ public class FlixelWebAudioGroup implements FlixelSoundGroup {
 
   private final FlixelArray<FlixelWebAudioSound> sounds = new FlixelArray<>();
 
+  @Override
+  public void pause() {
+    for (int i = 0; i < sounds.getSize(); i++) {
+      sounds.get(i).suspendForGroup();
+    }
+  }
+
+  @Override
+  public void resume() {
+    for (int i = 0; i < sounds.getSize(); i++) {
+      sounds.get(i).resumeForGroup();
+    }
+  }
+
+  @Override
+  public void destroy() {
+    sounds.clear();
+  }
+
   /**
    * Adds a sound to this group. Called by the sound during construction.
    *
@@ -56,24 +75,5 @@ public class FlixelWebAudioGroup implements FlixelSoundGroup {
    */
   void unregister(FlixelWebAudioSound sound) {
     sounds.removeValue(sound, true);
-  }
-
-  @Override
-  public void pause() {
-    for (int i = 0; i < sounds.getSize(); i++) {
-      sounds.get(i).suspendForGroup();
-    }
-  }
-
-  @Override
-  public void resume() {
-    for (int i = 0; i < sounds.getSize(); i++) {
-      sounds.get(i).resumeForGroup();
-    }
-  }
-
-  @Override
-  public void destroy() {
-    sounds.clear();
   }
 }

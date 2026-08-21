@@ -33,6 +33,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.bundling.Zip;
 import org.teavm.gradle.api.TeaVMExtension;
 
 import java.awt.Desktop;
@@ -75,7 +76,7 @@ import java.util.stream.Stream;
  * <pre>{@code
  * plugins {
  *   id 'org.teavm' version '0.13.0'
- *   id 'org.flixelgdx.html5'
+ *   id 'org.flixelgdx.html5' version '<flixelgdx-version>
  * }
  *
  * teavm {
@@ -127,6 +128,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     registerManifestTask(project, webRoot);
     registerIndexTask(project, ext, webRoot, bundle);
     registerRunTask(project, ext, webRoot);
+    registerPackageTask(project, webRoot);
 
     project.afterEvaluate(p -> wireTeaVm(p, webRoot, bundle));
   }
@@ -223,11 +225,12 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       task.setGroup(TASK_GROUP);
       task.setDescription("Writes index.html into the output directory, booting the WebAssembly or JavaScript bundle.");
       task.onlyIf(t -> {
-        if (!ext.getGenerateDefaultIndexHtml().get()) {
-          return false;
-        }
+        // A configured custom file must always be deployed, even when auto-generation is off.
         if (ext.getCustomIndexHtml().isPresent() && ext.getCustomIndexHtml().getAsFile().get().exists()) {
           return true;
+        }
+        if (!ext.getGenerateDefaultIndexHtml().get()) {
+          return false;
         }
         // Skip when the webapp source directory already contains an index.html (copyWebApp handles it).
         return !new File(ext.getWebappDir().get().getAsFile(), "index.html").exists();
@@ -328,8 +331,36 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
 
   /** Resolves the baked-in runtime mode default as a JavaScript literal ({@code 'debug'} or {@code null}). */
   private static String resolveModeDefault(FlixelHtml5Extension ext) {
-    String mode = ext.getMode().getOrElse("").trim();
-    return mode.isEmpty() ? "null" : "'" + mode.toLowerCase() + "'";
+    if (!ext.getMode().isPresent()) {
+      return "null";
+    }
+    return switch (ext.getMode().get()) {
+      case DEBUG -> "'debug'";
+      case TEST -> "'test'";
+      case RELEASE -> "'release'";
+    };
+  }
+
+  /**
+   * Registers the {@code package} task, which zips the entire web output into a distributable
+   * archive under {@code <rootProject>/dist/}. Running {@code ./gradlew :web:package} after a build
+   * produces {@code dist/<projectName>-web.zip}, ready to upload to a web host.
+   */
+  private void registerPackageTask(Project project, DirectoryProperty webRoot) {
+    project.getTasks().register("package", Zip.class, task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription("Packages the web output into a zip archive in the dist/ directory at the project root.");
+      task.from(webRoot);
+      task.getArchiveBaseName().convention(project.getRootProject().getName());
+      task.getArchiveClassifier().convention("web");
+      task.getArchiveVersion().convention(project.provider(() -> {
+        Object version = project.getVersion();
+        String v = version != null ? version.toString() : "";
+        return v.equals("unspecified") ? "" : v;
+      }));
+      task.getDestinationDirectory().convention(
+          project.getRootProject().getLayout().getProjectDirectory().dir("dist"));
+    });
   }
 
   /** Registers the {@code run} task: build the web app, then serve it locally until interrupted. */
@@ -459,6 +490,8 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     wireBuildTask(project, "generateWasmGC");
     dependOn(project, "run", "generateJavaScript");
     dependOn(project, "run", "generateWasmGC");
+    dependOn(project, "package", "generateJavaScript");
+    dependOn(project, "package", "generateWasmGC");
 
     // TeaVM emits the WebAssembly bundle from generateWasmGC but copies its JavaScript loader runtime
     // (teavm.wasm-runtime.js, the classic TeaVM.wasmGC.load bootstrap the generated page uses) from a
@@ -472,6 +505,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
         generateWasm.finalizedBy(copyRuntime);
       }
       dependOn(project, "run", "copyWasmGCRuntime");
+      dependOn(project, "package", "copyWasmGCRuntime");
     }
   }
 

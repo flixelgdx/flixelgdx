@@ -359,7 +359,7 @@ flixelgdx {
   canvasId = 'my-canvas'
 
   // Runtime mode baked into the page (optional; the ?flixel.mode= URL parameter overrides it).
-  mode = 'debug'
+  mode = FlixelHtml5Mode.DEBUG
 
   // Custom favicon (optional).
   customFavicon = file('src/main/webapp/favicon.ico')

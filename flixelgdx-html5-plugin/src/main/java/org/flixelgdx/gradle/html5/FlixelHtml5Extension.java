@@ -47,7 +47,7 @@ import org.gradle.api.provider.Property;
  *
  *   // Runtime mode baked into the page as a default (default: none). The ?flixel.mode= URL
  *   // parameter overrides this at load time.
- *   mode = 'debug'
+ *   mode = FlixelHtml5Mode.DEBUG
  *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
@@ -97,17 +97,16 @@ public interface FlixelHtml5Extension {
   Property<String> getCanvasId();
 
   /**
-   * Runtime mode baked into the generated page as a default (for example {@code "debug"} or
-   * {@code "test"}).
+   * Runtime mode baked into the generated page as a default.
    *
    * <p>The web backend resolves its runtime mode at load time, preferring the {@code ?flixel.mode=}
-   * URL parameter and falling back to this baked-in default. Leaving it unset means the game runs in
-   * release mode unless the URL parameter selects another mode. This lets a dedicated debug build
+   * URL parameter and falling back to this baked-in default. Leaving it unset means the game starts
+   * in release mode unless the URL parameter selects another mode. This lets a dedicated debug build
    * default to debug while a shipped build defaults to release, without a code change.
    *
    * @return The default runtime mode property.
    */
-  Property<String> getMode();
+  Property<FlixelHtml5Mode> getMode();
 
   /**
    * Directory that contains user-provided web resources such as a custom {@code index.html},

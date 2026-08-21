@@ -451,7 +451,7 @@ public interface FlixelGraphicsManager {
    * <p>The bgfx desktop and mobile backends compile shaders ahead of time through the FlixelGDX
    * shader plugin, so they leave this as the default no-op. The web backend, whose renderer compiles
    * GLSL at runtime, overrides it: this is how {@code new FlixelShader(vertexSource, fragmentSource)}
-   * and {@link org.flixelgdx.util.FlixelShader#fromHaxeFlixel(String)} work in the browser.
+   * works in the browser.
    *
    * <p>When the backend cannot compile source (every backend except web, or a headless session),
    * this returns {@link FlixelUnsupportedShader}, whose {@link FlixelShaderProgram#isValid()} is

@@ -117,14 +117,14 @@ public class FlixelShader extends FlixelBasic {
    * that build on top of the standard HaxeFlixel environment.
    */
   protected static final String HAXEFLIXEL_DEFINES =
-    """
-      #define bitmap u_texture
-      #define openfl_TextureCoordv v_texCoords
-      #define openfl_Alpha 1.0
-      #define openfl_TextureSize u_textureSize
-      #define openfl_HasColorTransform false
-      #define flixel_texture2D(t, c) texture2D(t, c)
-      """;
+      """
+          #define bitmap u_texture
+          #define openfl_TextureCoordv v_texCoords
+          #define openfl_Alpha 1.0
+          #define openfl_TextureSize u_textureSize
+          #define openfl_HasColorTransform false
+          #define flixel_texture2D(t, c) texture2D(t, c)
+          """;
 
   /**
    * The GLSL source block that replaces {@code #pragma header} in HaxeFlixel shaders.
@@ -137,15 +137,15 @@ public class FlixelShader extends FlixelBasic {
    * that build on top of the standard HaxeFlixel environment.
    */
   protected static final String HAXEFLIXEL_HEADER_EXPANSION =
-    """
-      #ifdef GL_ES
-      precision mediump float;
-      #endif
-      uniform sampler2D u_texture;
-      uniform vec2 u_textureSize;
-      varying vec4 v_color;
-      varying vec2 v_texCoords;
-      """;
+      """
+          #ifdef GL_ES
+          precision mediump float;
+          #endif
+          uniform sampler2D u_texture;
+          uniform vec2 u_textureSize;
+          varying vec4 v_color;
+          varying vec2 v_texCoords;
+          """;
 
   private FlixelShaderProgram program;
 

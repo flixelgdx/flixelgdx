@@ -177,8 +177,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    */
   private void registerLifecycleListeners(HTMLDocument document) {
     Window.current().addEventListener("resize", event -> {
-      int newWidth = canvas.getWidth();
-      int newHeight = canvas.getHeight();
+      int newWidth = browserInnerWidth();
+      int newHeight = browserInnerHeight();
       window.onResized(newWidth, newHeight);
       graphics.onResized(newWidth, newHeight);
       game.resize(newWidth, newHeight);
@@ -196,4 +196,10 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
   @JSBody(script = "return document.hidden;")
   private static native boolean isDocumentHidden();
+
+  @JSBody(script = "return window.innerWidth;")
+  private static native int browserInnerWidth();
+
+  @JSBody(script = "return window.innerHeight;")
+  private static native int browserInnerHeight();
 }
