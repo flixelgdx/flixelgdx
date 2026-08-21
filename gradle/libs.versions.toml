@@ -10,7 +10,7 @@ junit = "5.10.0"
 kotlin = "2.2.20"
 lwjgl = "3.4.2"
 multidex = "2.0.1"
-spotless = "8.6.0"
+spotless = "8.10.0"
 teavm = "0.13.0"
 vanniktech = "0.33.0"
 
