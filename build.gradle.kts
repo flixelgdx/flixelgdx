@@ -38,11 +38,11 @@ tasks.register("javadocAll") {
   description = "Runs Javadoc (with doclint) on all published Java library modules."
   val modules = arrayListOf(
     ":flixelgdx-core:javadoc",
-    ":flixelgdx-jvm:javadoc",
     ":flixelgdx-desktop:javadoc",
+    ":flixelgdx-html5:javadoc",
+    ":flixelgdx-html5-plugin:javadoc",
+    ":flixelgdx-jvm:javadoc",
     ":flixelgdx-ios:javadoc",
-    ":flixelgdx-teavm:javadoc",
-    ":flixelgdx-teavm-plugin:javadoc",
     ":flixelgdx-logging-plugin:javadoc",
     ":flixelgdx-basisu-plugin:javadoc",
     ":flixelgdx-shader-plugin:javadoc",

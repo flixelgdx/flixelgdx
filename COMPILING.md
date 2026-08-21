@@ -358,8 +358,8 @@ flixelgdx {
   // Must match WebApplicationConfiguration.canvasID in your launcher.
   canvasId = 'my-canvas'
 
-  // Custom startup logo (optional).
-  customStartupLogo = file('src/main/webapp/startup-logo.png')
+  // Runtime mode baked into the page (optional; the ?flixel.mode= URL parameter overrides it).
+  mode = FlixelHtml5Mode.DEBUG
 
   // Custom favicon (optional).
   customFavicon = file('src/main/webapp/favicon.ico')

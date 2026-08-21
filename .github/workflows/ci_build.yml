@@ -149,5 +149,5 @@ jobs:
 
       - name: Build (Web)
         if: matrix.platform == 'web'
-        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-teavm:assemble --no-daemon
+        run: ./gradlew :flixelgdx-core:assemble :flixelgdx-html5:assemble --no-daemon
         shell: bash

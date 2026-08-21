@@ -1,0 +1,205 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2026 stringdotjar
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package org.flixelgdx.backend.html5;
+
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
+import org.flixelgdx.backend.html5.file.FlixelHtml5AssetPreloader;
+import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
+import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
+import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
+import org.jetbrains.annotations.NotNull;
+import org.teavm.jso.JSBody;
+import org.teavm.jso.browser.Window;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
+import org.teavm.jso.dom.html.HTMLDocument;
+
+/**
+ * The web platform's game loop, driven by the browser's {@code requestAnimationFrame} callback.
+ *
+ * <p>A desktop runner owns a tight {@code while} loop it spins until the window closes. A browser
+ * gives up no such loop: the page's single thread belongs to the browser, and code that blocked it
+ * would freeze the tab. Instead, the browser hands time back one frame at a time through
+ * {@code requestAnimationFrame}, which calls a supplied function right before the next repaint.
+ * This runner schedules itself that way, so each callback advances the game by exactly one frame
+ * and then asks for the next one. That is why {@link #run(FlixelGame)} returns immediately after
+ * kicking off the first frame, unlike the blocking desktop runner.
+ *
+ * <p>The runner also owns the pieces of browser lifecycle the game needs to react to: it resizes
+ * the canvas when the page changes size and forwards tab visibility changes to the game's focus
+ * hooks so audio and updates can pause when the tab is hidden.
+ */
+public class FlixelHtml5Runner implements FlixelGameRunner {
+
+  private double lastTimestamp = -1.0;
+
+  @NotNull
+  private final FlixelHtml5Graphics graphics;
+
+  @NotNull
+  private final FlixelHtml5Window window;
+
+  @NotNull
+  private final FlixelHtml5InputDevice input;
+
+  @NotNull
+  private final String canvasId;
+
+  private final int width;
+  private final int height;
+
+  private HTMLCanvasElement canvas;
+  private FlixelGame game;
+
+  public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelHtml5Graphics graphics,
+      @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5InputDevice input) {
+    this.canvasId = canvasId;
+    this.width = width;
+    this.height = height;
+    this.graphics = graphics;
+    this.window = window;
+    this.input = input;
+  }
+
+  @Override
+  public void run(@NotNull FlixelGame game) {
+    this.game = game;
+
+    HTMLDocument document = HTMLDocument.current();
+    HTMLCanvasElement element = resolveCanvas(document);
+    element.setWidth(width);
+    element.setHeight(height);
+    this.canvas = element;
+
+    window.bind(element, width, height);
+    input.attach(element);
+    graphics.initialize(element);
+
+    registerLifecycleListeners(document);
+
+    // The browser cannot read files synchronously, so every bundled asset is downloaded first and
+    // the game only starts once the cache is warm. See FlixelHtml5AssetPreloader.
+    FlixelHtml5AssetPreloader.preload(FlixelHtml5Files.ASSET_MANIFEST, FlixelHtml5Files.ASSET_ROOT,
+        this::startGame, FlixelHtml5Runner::onPreloadFailed);
+  }
+
+  /** Runs once every asset is cached: dismisses the loading overlay, creates the first state, and starts the loop. */
+  private void startGame() {
+    hideLoadingOverlay();
+    game.create();
+    Window.requestAnimationFrame(this::onAnimationFrame);
+  }
+
+  /**
+   * Runs when the asset manifest could not be loaded. The game is not started, a clear error is
+   * logged, and the loading overlay shows the failure so the cause is obvious rather than a silent
+   * blank page.
+   */
+  private static void onPreloadFailed() {
+    Flixel.error("Html5",
+        "Failed to load 'assets/assets.txt'. This manifest is required and is generated by the "
+            + "org.flixelgdx.html5 build plugin; make sure the plugin is applied. The game will not start.");
+    showLoadingError("Failed to load game assets. See the console for details.");
+  }
+
+  @JSBody(script = "if (window.__flixelLoading) { window.__flixelLoading.done(); }")
+  private static native void hideLoadingOverlay();
+
+  @JSBody(params = "message", script = "if (window.__flixelLoading) { window.__flixelLoading.error(message); }")
+  private static native void showLoadingError(String message);
+
+  /**
+   * Advances the game by one frame, then schedules the next one.
+   *
+   * <p>The browser passes a high-resolution timestamp in milliseconds. The first frame has no
+   * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
+   * clamp it; every later frame reports the real time elapsed since the previous callback.
+   *
+   * @param timestamp The browser-supplied frame time in milliseconds.
+   */
+  private void onAnimationFrame(double timestamp) {
+    float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
+    lastTimestamp = timestamp;
+
+    graphics.beginFrame();
+    game.render(deltaSeconds);
+    graphics.endFrame();
+
+    Window.requestAnimationFrame(this::onAnimationFrame);
+  }
+
+  /**
+   * Locates the canvas the game draws into, creating one under {@link #canvasId} if the page did
+   * not already supply it. Reusing a page-provided canvas lets developers style and position the
+   * canvas from their own HTML instead of taking whatever the framework appends.
+   *
+   * @param document The current page document.
+   * @return The canvas element to render into.
+   */
+  private HTMLCanvasElement resolveCanvas(HTMLDocument document) {
+    HTMLCanvasElement existing = (HTMLCanvasElement) document.getElementById(canvasId);
+    if (existing != null) {
+      return existing;
+    }
+    HTMLCanvasElement created = (HTMLCanvasElement) document.createElement("canvas");
+    created.setAttribute("id", canvasId);
+    document.getBody().appendChild(created);
+    return created;
+  }
+
+  /**
+   * Wires the browser resize and visibility events to the framework so the canvas tracks the page
+   * and the game pauses when its tab is hidden.
+   *
+   * @param document The current page document.
+   */
+  private void registerLifecycleListeners(HTMLDocument document) {
+    Window.current().addEventListener("resize", event -> {
+      int newWidth = browserInnerWidth();
+      int newHeight = browserInnerHeight();
+      window.onResized(newWidth, newHeight);
+      graphics.onResized(newWidth, newHeight);
+      game.resize(newWidth, newHeight);
+    });
+    document.addEventListener("visibilitychange", event -> {
+      if (isDocumentHidden()) {
+        game.onFocusLost();
+      } else {
+        // Reset the delta so the first frame back does not report the whole hidden duration.
+        lastTimestamp = -1.0;
+        game.onFocusGained();
+      }
+    });
+  }
+
+  @JSBody(script = "return document.hidden;")
+  private static native boolean isDocumentHidden();
+
+  @JSBody(script = "return window.innerWidth;")
+  private static native int browserInnerWidth();
+
+  @JSBody(script = "return window.innerHeight;")
+  private static native int browserInnerHeight();
+}

@@ -26,7 +26,7 @@ In the game module's `build.gradle`:
 ```groovy
 plugins {
   id 'java'
-  id 'org.flixelgdx.shaders' version '0.1.0-beta'
+  id 'org.flixelgdx.shaders' version '<flixel-version>'
 }
 
 flixelShaders {
