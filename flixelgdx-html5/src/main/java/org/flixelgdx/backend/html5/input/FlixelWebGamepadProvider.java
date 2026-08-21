@@ -162,9 +162,10 @@ public class FlixelWebGamepadProvider implements FlixelGamepadProvider, FlixelGa
     return mapping;
   }
 
-  @JSBody(params = { "onConnect", "onDisconnect" },
-      script = "window.addEventListener('gamepadconnected', function(e) { onConnect.accept(e.gamepad.index); });"
-          + "window.addEventListener('gamepaddisconnected', function(e) { onDisconnect.accept(e.gamepad.index); });")
+  @JSBody(params = { "onConnect", "onDisconnect" }, script = """
+      window.addEventListener('gamepadconnected', function(e) { onConnect(e.gamepad.index); });
+      window.addEventListener('gamepaddisconnected', function(e) { onDisconnect(e.gamepad.index); });
+      """)
   private static native void installGamepadEvents(IndexCallback onConnect, IndexCallback onDisconnect);
 
   /** Receives a controller slot index from a browser gamepad connect or disconnect event. */

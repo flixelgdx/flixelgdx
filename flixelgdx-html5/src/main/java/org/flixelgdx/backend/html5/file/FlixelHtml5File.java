@@ -164,19 +164,22 @@ public class FlixelHtml5File implements FlixelFile {
   @JSBody(params = "key", script = "return !!(window.__flixelAssets && window.__flixelAssets[key]);")
   private static native boolean assetCached(String key);
 
-  @JSBody(params = "key",
-      script = "var a = window.__flixelAssets && window.__flixelAssets[key];"
-          + "return a ? new TextDecoder('utf-8').decode(a) : null;")
+  @JSBody(params = "key", script = """
+      var a = window.__flixelAssets && window.__flixelAssets[key];
+      return a ? new TextDecoder('utf-8').decode(a) : null;
+      """)
   private static native String assetText(String key);
 
-  @JSBody(params = "key",
-      script = "var a = window.__flixelAssets && window.__flixelAssets[key];"
-          + "return a ? new Int8Array(a.buffer, a.byteOffset, a.byteLength) : null;")
+  @JSBody(params = "key", script = """
+      var a = window.__flixelAssets && window.__flixelAssets[key];
+      return a ? new Int8Array(a.buffer, a.byteOffset, a.byteLength) : null;
+      """)
   private static native Int8Array assetBytes(String key);
 
-  @JSBody(params = "key",
-      script = "var a = window.__flixelAssets && window.__flixelAssets[key];"
-          + "return a ? a.byteLength : 0;")
+  @JSBody(params = "key", script = """
+      var a = window.__flixelAssets && window.__flixelAssets[key];
+      return a ? a.byteLength : 0;
+      """)
   private static native int assetLength(String key);
 
   @JSBody(params = "key", script = "return window.localStorage.getItem(key);")

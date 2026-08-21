@@ -317,14 +317,16 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
     touchListeners.removeValue(listener, true);
   }
 
-  @JSBody(params = { "canvas", "clientX" },
-      script = "var r = canvas.getBoundingClientRect();"
-          + "return Math.round((clientX - r.left) * (canvas.width / r.width));")
+  @JSBody(params = { "canvas", "clientX" }, script = """
+      var r = canvas.getBoundingClientRect();
+      return Math.round((clientX - r.left) * (canvas.width / r.width));
+      """)
   private static native int canvasX(HTMLCanvasElement canvas, int clientX);
 
-  @JSBody(params = { "canvas", "clientY" },
-      script = "var r = canvas.getBoundingClientRect();"
-          + "return Math.round((clientY - r.top) * (canvas.height / r.height));")
+  @JSBody(params = { "canvas", "clientY" }, script = """
+      var r = canvas.getBoundingClientRect();
+      return Math.round((clientY - r.top) * (canvas.height / r.height));
+      """)
   private static native int canvasY(HTMLCanvasElement canvas, int clientY);
 
   /** The lifecycle phase of a browser touch event, used to pick the listener callback to fire. */

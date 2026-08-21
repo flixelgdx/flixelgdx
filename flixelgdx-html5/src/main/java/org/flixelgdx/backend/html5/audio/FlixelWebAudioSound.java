@@ -334,7 +334,7 @@ public class FlixelWebAudioSound extends FlixelSound {
   }
 
   @JSBody(params = { "context", "buffer", "callback" },
-      script = "context.decodeAudioData(buffer, function(decoded) { callback.accept(decoded); }, function() {});")
+      script = "context.decodeAudioData(buffer, function(decoded) { callback(decoded); }, function() {});")
   private static native void decode(AudioContext context, ArrayBuffer buffer, AudioBufferCallback callback);
 
   @JSBody(params = "source", script = "try { source.stop(); } catch (e) {}")

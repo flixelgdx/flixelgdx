@@ -41,6 +41,14 @@ import org.teavm.jso.JSObject;
  * {@code org.flixelgdx.html5} plugin, and the preloader reports the failure through its error
  * callback so the runner can fail loudly with a clear message rather than silently rendering a blank
  * page.
+ *
+ * <p>Image files are a special case. A browser can only decode an image asynchronously, but the
+ * framework's texture upload path is synchronous, so this preloader decodes every image to raw RGBA
+ * pixels while it downloads and stores that instead of the encoded bytes. The decoded entry starts
+ * with a small {@code FLXI} header (the four magic bytes, then the width and height as little-endian
+ * 32-bit integers) followed by the pixels, which the web graphics backend unpacks synchronously in
+ * {@code decodeImage}. As the assets load, progress is reported through the page's loading overlay
+ * ({@code window.__flixelLoading}) so the player sees a bar fill rather than a frozen screen.
  */
 public final class FlixelHtml5AssetPreloader {
 
@@ -62,21 +70,50 @@ public final class FlixelHtml5AssetPreloader {
     preloadJs(manifestUrl, assetRoot, onComplete, onError);
   }
 
-  @JSBody(params = { "manifestUrl", "assetRoot", "onComplete", "onError" },
-      script = "if (!window.__flixelAssets) { window.__flixelAssets = {}; }"
-          + "fetch(manifestUrl).then(function(response) {"
-          + "  if (!response.ok) { onError.run(); return null; }"
-          + "  return response.text();"
-          + "}).then(function(text) {"
-          + "  if (text === null) { return; }"
-          + "  var paths = text.split(/\\r?\\n/).filter(function(line) { return line.trim().length > 0; });"
-          + "  return Promise.all(paths.map(function(path) {"
-          + "    return fetch(assetRoot + path).then(function(res) {"
-          + "      if (!res.ok) { throw new Error(path); }"
-          + "      return res.arrayBuffer();"
-          + "    }).then(function(buffer) { window.__flixelAssets[path] = new Uint8Array(buffer); });"
-          + "  })).then(function() { onComplete.run(); });"
-          + "}).catch(function() { onError.run(); });")
+  @JSBody(params = { "manifestUrl", "assetRoot", "onComplete", "onError" }, script = """
+      if (!window.__flixelAssets) { window.__flixelAssets = {}; }
+      function flixelProgress(done, total) {
+        if (window.__flixelLoading) { window.__flixelLoading.set(total ? done / total : 1); }
+      }
+      function flixelIsImage(path) { return /\\.(png|jpe?g|gif|bmp|webp)$/i.test(path); }
+      function flixelDecode(buffer) {
+        return createImageBitmap(new Blob([buffer])).then(function(bitmap) {
+          var canvas = document.createElement('canvas');
+          canvas.width = bitmap.width; canvas.height = bitmap.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(bitmap, 0, 0);
+          var pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+          var out = new Uint8Array(12 + pixels.length);
+          out[0] = 70; out[1] = 76; out[2] = 88; out[3] = 73;
+          var view = new DataView(out.buffer);
+          view.setUint32(4, bitmap.width, true); view.setUint32(8, bitmap.height, true);
+          out.set(pixels, 12);
+          if (bitmap.close) { bitmap.close(); }
+          return out;
+        });
+      }
+      fetch(manifestUrl).then(function(response) {
+        if (!response.ok) { onError(); return null; }
+        return response.text();
+      }).then(function(text) {
+        if (text === null) { return; }
+        var paths = text.split(/\\r?\\n/).filter(function(line) { return line.trim().length > 0; });
+        var total = paths.length; var done = 0;
+        flixelProgress(0, total);
+        if (total === 0) { onComplete(); return; }
+        return Promise.all(paths.map(function(path) {
+          return fetch(assetRoot + path).then(function(res) {
+            if (!res.ok) { throw new Error(path); }
+            return res.arrayBuffer();
+          }).then(function(buffer) {
+            if (flixelIsImage(path)) {
+              return flixelDecode(buffer).then(function(decoded) { window.__flixelAssets[path] = decoded; });
+            }
+            window.__flixelAssets[path] = new Uint8Array(buffer);
+          }).then(function() { done++; flixelProgress(done, total); });
+        })).then(function() { onComplete(); });
+      }).catch(function() { onError(); });
+      """)
   private static native void preloadJs(String manifestUrl, String assetRoot, PreloadCallback onComplete,
       PreloadCallback onError);
 

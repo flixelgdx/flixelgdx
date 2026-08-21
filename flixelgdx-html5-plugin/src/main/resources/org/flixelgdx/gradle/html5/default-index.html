@@ -6,6 +6,12 @@
   <title>{{TITLE}}</title>
 {{FAVICON}}
   <style>
+    @font-face {
+      font-family: 'FlixelLoadingVCR';
+      src: url('flixelgdx-loading/vcr.ttf') format('truetype');
+      font-display: swap;
+    }
+
     html, body {
       margin: 0;
       width: 100%;
@@ -21,36 +27,206 @@
       display: block;
       transform-origin: center center;
     }
+
+    #flixel-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 26px;
+      color: #fff;
+      font-family: 'FlixelLoadingVCR', monospace;
+      transition: opacity 0.35s ease;
+    }
+
+    #flixel-loading img,
+    #flixel-loading .bar,
+    #flixel-loading .label {
+      transition: opacity 0.35s ease;
+    }
+
+    /* When loading finishes, the logo, bar, and text fade out over the still-opaque black backdrop,
+       so the game is never seen through a translucent overlay; the overlay is removed once black. */
+    #flixel-loading.done img,
+    #flixel-loading.done .bar,
+    #flixel-loading.done .label {
+      opacity: 0;
+    }
+
+    #flixel-loading img {
+      width: min(60vw, 400px);
+      height: auto;
+      user-select: none;
+    }
+
+    #flixel-loading .bar {
+      box-sizing: border-box;
+      width: min(70vw, 420px);
+      height: 22px;
+      padding: 3px;
+      border: 2px solid #fff;
+    }
+
+    #flixel-loading .fill {
+      width: 0%;
+      height: 100%;
+      background: #fff;
+      transition: width 0.1s linear;
+    }
+
+    #flixel-loading.indeterminate .fill {
+      width: 35%;
+      animation: flixel-slide 1s ease-in-out infinite alternate;
+    }
+
+    #flixel-loading .label {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    @keyframes flixel-slide {
+      from { margin-left: 0%; }
+      to { margin-left: 65%; }
+    }
   </style>
 </head>
 <body>
+  <div id="flixel-loading" class="indeterminate">
+    <img src="flixelgdx-loading/flixel-logo.png" alt="FlixelGDX">
+    <div class="bar"><div class="fill" id="flixel-loading-fill"></div></div>
+    <div class="label" id="flixel-loading-label">Loading...</div>
+  </div>
   <canvas id="{{CANVAS_ID}}"></canvas>
+  <script>
+    // The loading overlay's public API. The engine loader below drives it while the game bundle
+    // downloads, and the framework's asset preloader drives it while assets download. Both go
+    // through the same object so the bar and percentage stay in one place.
+    window.__flixelLoading = (function () {
+      var overlay = document.getElementById('flixel-loading');
+      var fill = document.getElementById('flixel-loading-fill');
+      var label = document.getElementById('flixel-loading-label');
+      var gone = false;
+
+      return {
+        set: function (fraction) {
+          if (gone) return;
+          var pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+          overlay.classList.remove('indeterminate');
+          fill.style.marginLeft = '0%';
+          fill.style.width = pct + '%';
+          label.textContent = 'Loading... (' + pct + '%)';
+        },
+        indeterminate: function () {
+          if (gone) return;
+          overlay.classList.add('indeterminate');
+          label.textContent = 'Loading...';
+        },
+        error: function (text) {
+          if (gone) return;
+          overlay.classList.remove('indeterminate');
+          label.style.color = '#ff6b6b';
+          label.textContent = text || 'Failed to load.';
+        },
+        done: function () {
+          if (gone) return;
+          gone = true;
+          // Fade the logo, bar, and text to black, then start the game underneath and remove the
+          // overlay so the reveal is a clean cut rather than a see-through cross-fade.
+          overlay.classList.add('done');
+          setTimeout(function () {
+            if (overlay && overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          }, 400);
+        }
+      };
+    })();
+  </script>
   <script>
     // Default runtime mode baked in by the build. The ?flixel.mode= URL parameter overrides it.
     window.flixelMode = window.flixelMode || {{MODE_DEFAULT}};
 
     (function () {
       var wasmEnabled = {{WASM_ENABLED}};
+      var loading = window.__flixelLoading;
+
+      // Downloads a file while reporting byte progress, so the loading bar reflects the (large) game
+      // bundle download. When the server does not report a length or streaming is unavailable, this
+      // falls back to a single un-tracked download.
+      function fetchWithProgress(url, onProgress) {
+        return fetch(url).then(function (response) {
+          if (!response.ok) {
+            throw new Error('HTTP ' + response.status + ' for ' + url);
+          }
+          var total = parseInt(response.headers.get('Content-Length') || '0', 10);
+          if (!response.body || !total) {
+            return response.arrayBuffer();
+          }
+          var reader = response.body.getReader();
+          var chunks = [];
+          var received = 0;
+          return (function pump() {
+            return reader.read().then(function (result) {
+              if (result.done) {
+                var merged = new Uint8Array(received);
+                var offset = 0;
+                for (var i = 0; i < chunks.length; i++) {
+                  merged.set(chunks[i], offset);
+                  offset += chunks[i].length;
+                }
+                return merged.buffer;
+              }
+              chunks.push(result.value);
+              received += result.value.length;
+              onProgress(received / total);
+              return pump();
+            });
+          })();
+        });
+      }
 
       function loadJs() {
-        var script = document.createElement('script');
-        script.src = "{{JS_BUNDLE}}";
-        script.onload = function () {
-          if (typeof main === 'function') {
-            main();
-          }
-        };
-        document.head.appendChild(script);
+        loading.indeterminate();
+        fetchWithProgress("{{JS_BUNDLE}}", function (f) { loading.set(f); })
+          .then(function (buffer) {
+            var url = URL.createObjectURL(new Blob([buffer], { type: 'application/javascript' }));
+            var script = document.createElement('script');
+            script.src = url;
+            script.onload = function () {
+              URL.revokeObjectURL(url);
+              if (typeof main === 'function') {
+                main();
+              }
+            };
+            script.onerror = function () { loading.error('Failed to start the game engine.'); };
+            document.head.appendChild(script);
+          })
+          .catch(function (e) {
+            console.error(e);
+            loading.error('Failed to load the game engine.');
+          });
       }
 
       function loadWasm() {
+        loading.indeterminate();
         var runtime = document.createElement('script');
         runtime.src = "{{WASM_RUNTIME}}";
         runtime.onload = function () {
           if (window.TeaVM && TeaVM.wasmGC) {
-            TeaVM.wasmGC.load("{{WASM_BUNDLE}}")
-              .then(function (teavm) { teavm.exports.main([]); })
-              .catch(loadJs);
+            fetchWithProgress("{{WASM_BUNDLE}}", function (f) { loading.set(f); })
+              .then(function (buffer) {
+                var url = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
+                return TeaVM.wasmGC.load(url).then(function (teavm) {
+                  URL.revokeObjectURL(url);
+                  teavm.exports.main([]);
+                });
+              })
+              .catch(function (e) { console.error(e); loadJs(); });
           } else {
             loadJs();
           }

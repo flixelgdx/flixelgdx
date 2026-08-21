@@ -23,26 +23,29 @@
  */
 package org.flixelgdx.backend.html5.graphics;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.graphics.FlixelUnsupportedRenderTarget;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.webgl.WebGLProgram;
 import org.teavm.jso.webgl.WebGLRenderingContext;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.nio.ByteOrder;
 
 /**
  * The web graphics backend, rendering through WebGL2.
@@ -62,8 +65,13 @@ import java.nio.charset.StandardCharsets;
  */
 public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
+  private static final int HEADER_SIZE = 12;
+
   @NotNull
   private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
+
+  @NotNull
+  private final FlixelArray<FlixelWebGlRenderTarget> targetStack = new FlixelArray<>();
 
   private WebGLRenderingContext gl;
   private FlixelWebGlBatch batch;
@@ -159,8 +167,84 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @Override
   @NotNull
+  public FlixelRenderTarget createRenderTarget(int width, int height) {
+    if (gl == null) {
+      return FlixelUnsupportedRenderTarget.INSTANCE;
+    }
+    return new FlixelWebGlRenderTarget(this, gl, width, height);
+  }
+
+  @Override
+  @NotNull
   public FlixelList<FlixelDisplayMode> getDisplayModes() {
     return displayModes;
+  }
+
+  /**
+   * Redirects drawing into a render target, remembering the previous surface so it can be restored.
+   *
+   * @param target The target to make active.
+   */
+  void pushRenderTarget(@NotNull FlixelWebGlRenderTarget target) {
+    targetStack.add(target);
+    bindTarget(target);
+  }
+
+  /** Ends the innermost render target, returning drawing to the enclosing target or the screen. */
+  void popRenderTarget() {
+    if (targetStack.getSize() > 0) {
+      targetStack.pop();
+    }
+    restoreActiveFramebuffer();
+  }
+
+  /** Binds whichever surface is currently on top of the render-target stack, or the screen if none. */
+  void restoreActiveFramebuffer() {
+    if (targetStack.getSize() > 0) {
+      bindTarget(targetStack.get(targetStack.getSize() - 1));
+    } else {
+      gl.bindFramebuffer(WebGLRenderingContext.FRAMEBUFFER, null);
+      gl.viewport(0, 0, backBufferWidth, backBufferHeight);
+    }
+  }
+
+  /** Binds a render target's framebuffer and matches the viewport to its size. */
+  private void bindTarget(@NotNull FlixelWebGlRenderTarget target) {
+    gl.bindFramebuffer(WebGLRenderingContext.FRAMEBUFFER, target.getFramebuffer());
+    gl.viewport(0, 0, target.getWidth(), target.getHeight());
+  }
+
+  @Override
+  @Nullable
+  public FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
+    // A browser can only decode an encoded image asynchronously, so it cannot happen here in a
+    // synchronous call. Instead FlixelHtml5AssetPreloader decodes every image while it downloads and
+    // stores the raw RGBA pixels behind a small "FLXI" header (magic, then width and height as
+    // little-endian 32-bit integers). This method just unpacks that, which needs no real decoding.
+    // Bytes without the header are a genuinely encoded image the web backend cannot decode on the
+    // fly, so it returns null.
+    int base = encoded.position();
+    if (encoded.remaining() < HEADER_SIZE
+        || encoded.get(base) != 'F' || encoded.get(base + 1) != 'L'
+        || encoded.get(base + 2) != 'X' || encoded.get(base + 3) != 'I') {
+      return null;
+    }
+    int width = readLittleEndianInt(encoded, base + 4);
+    int height = readLittleEndianInt(encoded, base + 8);
+    if (width <= 0 || height <= 0) {
+      return null;
+    }
+    int pixelBytes = width * height * 4;
+    if (encoded.remaining() < HEADER_SIZE + pixelBytes) {
+      return null;
+    }
+    ByteBuffer pixels = ByteBuffer.allocateDirect(pixelBytes).order(ByteOrder.nativeOrder());
+    ByteBuffer source = encoded.duplicate();
+    source.position(base + HEADER_SIZE);
+    source.limit(base + HEADER_SIZE + pixelBytes);
+    pixels.put(source);
+    pixels.flip();
+    return new FlixelImage(width, height, pixels);
   }
 
   @Override
@@ -176,14 +260,15 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @Override
   @NotNull
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
-    // The web variant is raw GLSL text, not the bgfx bytecode the other backends load, so read the
-    // essl files the shader plugin emits and compile them at runtime.
-    String vertex = readTextResource("shaders/" + name + "/essl/vs.glsl");
-    String fragment = readTextResource("shaders/" + name + "/essl/fs.glsl");
-    if (vertex == null || fragment == null) {
+    // The web variant is raw GLSL text, not the bgfx bytecode the other backends load. A browser
+    // cannot read classpath resources, so the build plugin copies these ESSL files into the web
+    // assets and the preloader caches them; here they are read straight from that warm cache.
+    FlixelFile vertexFile = Flixel.files.internal("shaders/" + name + "/essl/vs.glsl");
+    FlixelFile fragmentFile = Flixel.files.internal("shaders/" + name + "/essl/fs.glsl");
+    if (!vertexFile.exists() || !fragmentFile.exists()) {
       return FlixelUnsupportedShader.INSTANCE;
     }
-    return compileShaderSource(vertex, fragment);
+    return compileShaderSource(vertexFile.readString(), fragmentFile.readString());
   }
 
   /**
@@ -197,20 +282,17 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   }
 
   /**
-   * Reads a UTF-8 text resource from the classpath, or {@code null} when it is absent.
+   * Reads a little-endian 32-bit integer from a byte buffer at an absolute offset.
    *
-   * @param path The classpath resource path.
-   * @return The resource contents, or {@code null} when unavailable.
+   * @param buffer The buffer to read from.
+   * @param offset The absolute byte offset of the value.
+   * @return The decoded integer.
    */
-  private static String readTextResource(String path) {
-    try (InputStream in = FlixelHtml5Graphics.class.getResourceAsStream("/" + path)) {
-      if (in == null) {
-        return null;
-      }
-      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-    } catch (IOException e) {
-      return null;
-    }
+  private static int readLittleEndianInt(ByteBuffer buffer, int offset) {
+    return (buffer.get(offset) & 0xFF)
+        | ((buffer.get(offset + 1) & 0xFF) << 8)
+        | ((buffer.get(offset + 2) & 0xFF) << 16)
+        | ((buffer.get(offset + 3) & 0xFF) << 24);
   }
 
   @JSBody(params = "canvas", script = "return canvas.getContext('webgl2');")

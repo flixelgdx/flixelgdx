@@ -63,8 +63,10 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
     return FlixelRunEnvironment.UNKNOWN;
   }
 
-  @JSBody(script = "return (window.performance && window.performance.memory)"
-      + " ? window.performance.memory.usedJSHeapSize : 0;")
+  @JSBody(script = """
+      return (window.performance && window.performance.memory)
+        ? window.performance.memory.usedJSHeapSize : 0;
+      """)
   private static native double usedHeap();
 
   /**

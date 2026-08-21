@@ -56,6 +56,35 @@ public class FlixelWebGlTexture implements FlixelTexture {
   private boolean smooth;
 
   /**
+   * Creates an empty texture, used as the color attachment of a render target.
+   *
+   * <p>The pixels are left undefined until something draws into the render target this backs, so no
+   * data is uploaded here.
+   *
+   * @param gl The rendering context.
+   * @param width Texture width in pixels.
+   * @param height Texture height in pixels.
+   * @param smooth {@code true} for linear filtering, {@code false} for nearest.
+   */
+  public FlixelWebGlTexture(WebGLRenderingContext gl, int width, int height, boolean smooth) {
+    this.handle = nextHandle++;
+    this.gl = gl;
+    this.width = width;
+    this.height = height;
+    this.smooth = smooth;
+    this.texture = gl.createTexture();
+
+    gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, texture);
+    gl.texImage2D(WebGLRenderingContext.TEXTURE_2D, 0, WebGLRenderingContext.RGBA, width, height, 0,
+        WebGLRenderingContext.RGBA, WebGLRenderingContext.UNSIGNED_BYTE, (Uint8Array) null);
+    applyFilter();
+    gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, WebGLRenderingContext.TEXTURE_WRAP_S,
+        WebGLRenderingContext.CLAMP_TO_EDGE);
+    gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, WebGLRenderingContext.TEXTURE_WRAP_T,
+        WebGLRenderingContext.CLAMP_TO_EDGE);
+  }
+
+  /**
    * Uploads RGBA pixels into a new WebGL texture.
    *
    * @param gl The rendering context.

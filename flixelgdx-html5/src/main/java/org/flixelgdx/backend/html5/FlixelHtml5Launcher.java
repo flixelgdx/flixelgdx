@@ -139,9 +139,11 @@ public final class FlixelHtml5Launcher {
    *
    * @return The requested mode string, or {@code null} when none is present.
    */
-  @JSBody(script = "var params = new URLSearchParams(window.location.search);"
-      + "if (params.has('flixel.mode')) { return params.get('flixel.mode'); }"
-      + "if (params.has('debug')) { return 'debug'; }"
-      + "return window.flixelMode || null;")
+  @JSBody(script = """
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('flixel.mode')) { return params.get('flixel.mode'); }
+      if (params.has('debug')) { return 'debug'; }
+      return window.flixelMode || null;
+      """)
   private static native String urlMode();
 }

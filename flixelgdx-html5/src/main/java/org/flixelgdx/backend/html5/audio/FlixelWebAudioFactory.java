@@ -104,15 +104,16 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
   @JSBody(script = "return new (window.AudioContext || window.webkitAudioContext)();")
   private static native AudioContext createContext();
 
-  @JSBody(params = "context",
-      script = "var resume = function() {"
-          + "  if (context.state === 'suspended') { context.resume(); }"
-          + "  window.removeEventListener('pointerdown', resume);"
-          + "  window.removeEventListener('keydown', resume);"
-          + "  window.removeEventListener('touchstart', resume);"
-          + "};"
-          + "window.addEventListener('pointerdown', resume);"
-          + "window.addEventListener('keydown', resume);"
-          + "window.addEventListener('touchstart', resume);")
+  @JSBody(params = "context", script = """
+      var resume = function() {
+        if (context.state === 'suspended') { context.resume(); }
+        window.removeEventListener('pointerdown', resume);
+        window.removeEventListener('keydown', resume);
+        window.removeEventListener('touchstart', resume);
+      };
+      window.addEventListener('pointerdown', resume);
+      window.addEventListener('keydown', resume);
+      window.addEventListener('touchstart', resume);
+      """)
   private static native void installResumeOnGesture(AudioContext context);
 }

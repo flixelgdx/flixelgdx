@@ -137,16 +137,18 @@ public class FlixelWebGamepad implements FlixelGamepad {
   @JSBody(params = "i", script = "var g = navigator.getGamepads()[i]; return !!(g && g.vibrationActuator);")
   private static native boolean hasVibration(int i);
 
-  @JSBody(params = { "i", "duration", "strength" },
-      script = "var g = navigator.getGamepads()[i];"
-          + "if (g && g.vibrationActuator && g.vibrationActuator.playEffect) {"
-          + "  g.vibrationActuator.playEffect('dual-rumble',"
-          + "    { duration: duration, strongMagnitude: strength, weakMagnitude: strength });"
-          + "}")
+  @JSBody(params = { "i", "duration", "strength" }, script = """
+      var g = navigator.getGamepads()[i];
+      if (g && g.vibrationActuator && g.vibrationActuator.playEffect) {
+        g.vibrationActuator.playEffect('dual-rumble',
+          { duration: duration, strongMagnitude: strength, weakMagnitude: strength });
+      }
+      """)
   private static native void vibrate(int i, int duration, float strength);
 
-  @JSBody(params = "i",
-      script = "var g = navigator.getGamepads()[i];"
-          + "if (g && g.vibrationActuator && g.vibrationActuator.reset) { g.vibrationActuator.reset(); }")
+  @JSBody(params = "i", script = """
+      var g = navigator.getGamepads()[i];
+      if (g && g.vibrationActuator && g.vibrationActuator.reset) { g.vibrationActuator.reset(); }
+      """)
   private static native void resetVibration(int i);
 }

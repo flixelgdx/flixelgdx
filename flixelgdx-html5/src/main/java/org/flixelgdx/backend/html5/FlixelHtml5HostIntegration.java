@@ -150,39 +150,45 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @JSBody(params = "text", script = "if (navigator.clipboard) { navigator.clipboard.writeText(text); }")
   private static native void writeClipboard(String text);
 
-  @JSBody(params = "callback",
-      script = "if (navigator.clipboard && navigator.clipboard.readText) {"
-          + "  navigator.clipboard.readText().then(function(t) { callback.accept(t); }).catch(function() {});"
-          + "}")
+  @JSBody(params = "callback", script = """
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function(t) { callback(t); }).catch(function() {});
+      }
+      """)
   private static native void readClipboard(TextCallback callback);
 
   @JSBody(script = "return !!(navigator.wakeLock);")
   private static native boolean wakeLockSupported();
 
-  @JSBody(script = "if (navigator.wakeLock) {"
-      + "  navigator.wakeLock.request('screen').then(function(s) { window.__flixelWakeLock = s; }).catch(function() {});"
-      + "}")
+  @JSBody(script = """
+      if (navigator.wakeLock) {
+        navigator.wakeLock.request('screen').then(function(s) { window.__flixelWakeLock = s; }).catch(function() {});
+      }
+      """)
   private static native void acquireWakeLock();
 
   @JSBody(
       script = "if (window.__flixelWakeLock) { window.__flixelWakeLock.release(); window.__flixelWakeLock = null; }")
   private static native void releaseWakeLock();
 
-  @JSBody(params = "message",
-      script = "window.__flixelExitMessage = message;"
-          + "if (!window.__flixelBeforeUnload) {"
-          + "  window.__flixelBeforeUnload = function(e) {"
-          + "    if (window.__flixelExitMessage) { e.preventDefault(); e.returnValue = window.__flixelExitMessage; }"
-          + "  };"
-          + "  window.addEventListener('beforeunload', window.__flixelBeforeUnload);"
-          + "}")
+  @JSBody(params = "message", script = """
+      window.__flixelExitMessage = message;
+      if (!window.__flixelBeforeUnload) {
+        window.__flixelBeforeUnload = function(e) {
+          if (window.__flixelExitMessage) { e.preventDefault(); e.returnValue = window.__flixelExitMessage; }
+        };
+        window.addEventListener('beforeunload', window.__flixelBeforeUnload);
+      }
+      """)
   private static native void setBeforeUnload(String message);
 
-  @JSBody(script = "var original = document.title; var count = 0;"
-      + "var id = setInterval(function() {"
-      + "  document.title = (count % 2 === 0) ? '(!) ' + original : original; count++;"
-      + "  if (count > 6 || document.hasFocus()) { clearInterval(id); document.title = original; }"
-      + "}, 500);")
+  @JSBody(script = """
+      var original = document.title; var count = 0;
+      var id = setInterval(function() {
+        document.title = (count % 2 === 0) ? '(!) ' + original : original; count++;
+        if (count > 6 || document.hasFocus()) { clearInterval(id); document.title = original; }
+      }, 500);
+      """)
   private static native void flashTitle();
 
   /** Receives a resolved clipboard string from the browser's asynchronous read. */

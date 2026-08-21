@@ -29,6 +29,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Copy;
@@ -50,6 +51,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -88,9 +90,18 @@ import java.util.stream.Stream;
 public class FlixelHtml5Plugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
-  private static final String DEFAULT_INDEX_TEMPLATE = "/org/flixelgdx/gradle/html5/default-index.html";
+  private static final String RESOURCE_ROOT = "/org/flixelgdx/gradle/html5/";
+  private static final String DEFAULT_INDEX_TEMPLATE = RESOURCE_ROOT + "default-index.html";
+  private static final String FONT_RESOURCE = RESOURCE_ROOT + "vcr.ttf";
+  private static final String LOGO_RESOURCE = RESOURCE_ROOT + "flixel-logo.png";
+  private static final String LOADING_DIR = "flixelgdx-loading";
   private static final String DEFAULT_JS_BUNDLE = "classes.js";
   private static final String DEFAULT_WASM_BUNDLE = "classes.wasm";
+
+  // TeaVM writes each target's bundle into its own subdirectory of the shared output directory, so
+  // the generated page must reference the bundles through these prefixes rather than at the root.
+  private static final String JS_DIR = "js/";
+  private static final String WASM_DIR = "wasm-gc/";
 
   @Override
   public void apply(Project project) {
@@ -112,6 +123,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     AtomicReference<WebBundle> bundle = new AtomicReference<>(WebBundle.DEFAULTS);
 
     registerCopyTasks(project, ext, webRoot);
+    registerShaderTask(project, webRoot);
     registerManifestTask(project, webRoot);
     registerIndexTask(project, ext, webRoot, bundle);
     registerRunTask(project, ext, webRoot);
@@ -139,6 +151,29 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   }
 
   /**
+   * Registers the web shader copy task. The shader plugin compiles each shader to a raw ESSL variant
+   * on the classpath ({@code shaders/<name>/essl/*.glsl}); a browser cannot read classpath resources,
+   * so those files are copied into the web assets tree where they preload like any other asset and
+   * the web backend can read them from its warm cache when a shader is loaded by name.
+   */
+  private void registerShaderTask(Project project, DirectoryProperty webRoot) {
+    project.getTasks().register("copyShaders", Copy.class, task -> {
+      task.setGroup(TASK_GROUP);
+      task.setDescription("Copies compiled web (ESSL) shader variants into the web assets so they preload.");
+      Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
+      if (runtimeClasspath != null) {
+        // The ESSL variants live on the runtime classpath, either as loose resource directories
+        // (project dependencies) or inside dependency jars, so both cases are expanded here.
+        task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
+            .map(file -> file.isDirectory() ? file : project.zipTree(file))
+            .collect(Collectors.toList())));
+      }
+      task.include("shaders/**/essl/**");
+      task.into(webRoot.dir("assets"));
+    });
+  }
+
+  /**
    * Registers the asset manifest generator. It walks the copied assets and writes an
    * {@code assets/assets.txt} listing every file, which the web backend reads at startup to preload
    * everything before the game runs.
@@ -147,7 +182,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     project.getTasks().register("generateAssetManifest", task -> {
       task.setGroup(TASK_GROUP);
       task.setDescription("Writes assets/assets.txt listing every bundled asset for the web preloader.");
-      task.dependsOn(project.getTasks().named("copyAssets"));
+      task.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyShaders"));
       task.doLast(t -> writeAssetManifest(new File(webRoot.get().getAsFile(), "assets")));
     });
   }
@@ -222,6 +257,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
 
     String faviconLink = copyFavicon(project, ext, outputDir);
     String modeDefault = resolveModeDefault(ext);
+    copyLoadingAssets(outputDir);
 
     try {
       String template;
@@ -243,6 +279,32 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
     } catch (IOException e) {
       throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
+    }
+  }
+
+  /**
+   * Copies the loading screen's font and logo into a {@code flixelgdx-loading} directory beside the
+   * generated {@code index.html}, so the overlay shown while the game downloads can display the
+   * FlixelGDX logo and render its progress text in the bundled VCR font before any game code runs.
+   *
+   * @param outputDir The web root the {@code index.html} is written into.
+   */
+  private void copyLoadingAssets(File outputDir) {
+    File dir = new File(outputDir, LOADING_DIR);
+    dir.mkdirs();
+    copyResource(FONT_RESOURCE, new File(dir, "vcr.ttf"));
+    copyResource(LOGO_RESOURCE, new File(dir, "flixel-logo.png"));
+  }
+
+  /** Copies a plugin classpath resource to a target file, replacing any existing one. */
+  private void copyResource(String resource, File target) {
+    try (InputStream in = FlixelHtml5Plugin.class.getResourceAsStream(resource)) {
+      if (in == null) {
+        throw new IOException("bundled plugin resource not found: " + resource);
+      }
+      Files.copy(in, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      throw new RuntimeException("FlixelGDX: failed to copy loading resource " + resource + ".", e);
     }
   }
 
@@ -297,6 +359,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
         "jpeg", "image/jpeg",
         "gif", "image/gif",
         "txt", "text/plain",
+        "ttf", "font/ttf",
         "wasm", "application/wasm");
 
     server.createContext("/", (HttpExchange exchange) -> {
@@ -384,10 +447,13 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     String jsBundle = teavm.getJs().getTargetFileName().getOrElse(DEFAULT_JS_BUNDLE);
     String wasmBundle = teavm.getWasmGC().getTargetFileName().getOrElse(DEFAULT_WASM_BUNDLE);
 
-    // The two targets share one web app, so the JavaScript output directory is used as the web root
-    // when present, otherwise the WebAssembly one.
+    // TeaVM's per-target output directory is the shared parent (build/generated/teavm) and it writes
+    // each bundle into a target subdirectory beneath it (js/, wasm-gc/). The web root is therefore
+    // that shared parent, and the bundle references carry the subdirectory prefix so the page loads
+    // them from the right place.
     webRoot.set(jsEnabled ? teavm.getJs().getOutputDir() : teavm.getWasmGC().getOutputDir());
-    bundle.set(new WebBundle(jsEnabled, wasmEnabled, jsBundle, wasmBundle, deriveWasmRuntime(wasmBundle)));
+    bundle.set(new WebBundle(jsEnabled, wasmEnabled, JS_DIR + jsBundle, WASM_DIR + wasmBundle,
+        WASM_DIR + deriveWasmRuntime(wasmBundle)));
 
     wireBuildTask(project, "generateJavaScript");
     wireBuildTask(project, "generateWasmGC");
@@ -405,7 +471,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       return;
     }
     build.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyWebApp"),
-        project.getTasks().named("generateAssetManifest"));
+        project.getTasks().named("copyShaders"), project.getTasks().named("generateAssetManifest"));
     Task index = project.getTasks().findByName("generateIndexHtml");
     Task copyWebApp = project.getTasks().findByName("copyWebApp");
     if (index != null) {
@@ -452,7 +518,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       String wasmRuntime) {
 
     /** Conservative defaults used before the TeaVM extension has been resolved. */
-    static final WebBundle DEFAULTS =
-        new WebBundle(true, false, DEFAULT_JS_BUNDLE, DEFAULT_WASM_BUNDLE, "classes.wasm-runtime.js");
+    static final WebBundle DEFAULTS = new WebBundle(true, false, JS_DIR + DEFAULT_JS_BUNDLE,
+        WASM_DIR + DEFAULT_WASM_BUNDLE, WASM_DIR + "classes.wasm-runtime.js");
   }
 }
