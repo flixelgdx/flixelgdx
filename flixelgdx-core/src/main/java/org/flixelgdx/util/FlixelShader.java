@@ -117,12 +117,14 @@ public class FlixelShader extends FlixelBasic {
    * that build on top of the standard HaxeFlixel environment.
    */
   protected static final String HAXEFLIXEL_DEFINES =
-      "#define bitmap u_texture\n"
-          + "#define openfl_TextureCoordv v_texCoords\n"
-          + "#define openfl_Alpha 1.0\n"
-          + "#define openfl_TextureSize u_textureSize\n"
-          + "#define openfl_HasColorTransform false\n"
-          + "#define flixel_texture2D(t, c) texture2D(t, c)\n";
+    """
+      #define bitmap u_texture
+      #define openfl_TextureCoordv v_texCoords
+      #define openfl_Alpha 1.0
+      #define openfl_TextureSize u_textureSize
+      #define openfl_HasColorTransform false
+      #define flixel_texture2D(t, c) texture2D(t, c)
+      """;
 
   /**
    * The GLSL source block that replaces {@code #pragma header} in HaxeFlixel shaders.
@@ -135,13 +137,15 @@ public class FlixelShader extends FlixelBasic {
    * that build on top of the standard HaxeFlixel environment.
    */
   protected static final String HAXEFLIXEL_HEADER_EXPANSION =
-      "#ifdef GL_ES\n"
-          + "precision mediump float;\n"
-          + "#endif\n"
-          + "uniform sampler2D u_texture;\n"
-          + "uniform vec2 u_textureSize;\n"
-          + "varying vec4 v_color;\n"
-          + "varying vec2 v_texCoords;\n";
+    """
+      #ifdef GL_ES
+      precision mediump float;
+      #endif
+      uniform sampler2D u_texture;
+      uniform vec2 u_textureSize;
+      varying vec4 v_color;
+      varying vec2 v_texCoords;
+      """;
 
   private FlixelShaderProgram program;
 
@@ -181,9 +185,6 @@ public class FlixelShader extends FlixelBasic {
    * @param fragSrc GLSL ES 2.0 fragment shader source code.
    */
   public FlixelShader(String vertSrc, String fragSrc) {
-    // Runtime GLSL compilation is provided by the web backend; every other backend returns an
-    // unsupported program from this call, so the shader simply has no effect there. Those backends
-    // load precompiled shaders through the Gradle plugin and FlixelShader.load(String) instead.
     this.program = Flixel.graphics.compileShaderSource(vertSrc, fragSrc);
   }
 
