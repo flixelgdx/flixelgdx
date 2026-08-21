@@ -30,13 +30,19 @@ import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.graphics.FlixelUnsupportedShader;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
+import org.teavm.jso.webgl.WebGLProgram;
 import org.teavm.jso.webgl.WebGLRenderingContext;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * The web graphics backend, rendering through WebGL2.
@@ -157,6 +163,29 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     return displayModes;
   }
 
+  @Override
+  @NotNull
+  public FlixelShaderProgram compileShaderSource(@NotNull String vertexSource, @NotNull String fragmentSource) {
+    if (gl == null) {
+      return FlixelUnsupportedShader.INSTANCE;
+    }
+    WebGLProgram program = FlixelWebGlPrograms.build(gl, vertexSource, fragmentSource);
+    return program != null ? new FlixelWebGlShaderProgram(gl, program) : FlixelUnsupportedShader.INSTANCE;
+  }
+
+  @Override
+  @NotNull
+  public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
+    // The web variant is raw GLSL text, not the bgfx bytecode the other backends load, so read the
+    // essl files the shader plugin emits and compile them at runtime.
+    String vertex = readTextResource("shaders/" + name + "/essl/vs.glsl");
+    String fragment = readTextResource("shaders/" + name + "/essl/fs.glsl");
+    if (vertex == null || fragment == null) {
+      return FlixelUnsupportedShader.INSTANCE;
+    }
+    return compileShaderSource(vertex, fragment);
+  }
+
   /**
    * Returns whether the browser advertises WebGPU support. Rendering still uses WebGL2; this is a
    * capability probe for the framework and future work.
@@ -165,6 +194,23 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
    */
   public boolean isWebGpuAvailable() {
     return webGpuAvailable;
+  }
+
+  /**
+   * Reads a UTF-8 text resource from the classpath, or {@code null} when it is absent.
+   *
+   * @param path The classpath resource path.
+   * @return The resource contents, or {@code null} when unavailable.
+   */
+  private static String readTextResource(String path) {
+    try (InputStream in = FlixelHtml5Graphics.class.getResourceAsStream("/" + path)) {
+      if (in == null) {
+        return null;
+      }
+      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      return null;
+    }
   }
 
   @JSBody(params = "canvas", script = "return canvas.getContext('webgl2');")

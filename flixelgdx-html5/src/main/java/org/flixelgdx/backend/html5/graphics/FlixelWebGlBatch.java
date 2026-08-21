@@ -25,6 +25,7 @@ package org.flixelgdx.backend.html5.graphics;
 
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
@@ -38,7 +39,6 @@ import org.teavm.jso.typedarrays.Int16Array;
 import org.teavm.jso.webgl.WebGLBuffer;
 import org.teavm.jso.webgl.WebGLProgram;
 import org.teavm.jso.webgl.WebGLRenderingContext;
-import org.teavm.jso.webgl.WebGLShader;
 import org.teavm.jso.webgl.WebGLUniformLocation;
 
 /**
@@ -51,10 +51,11 @@ import org.teavm.jso.webgl.WebGLUniformLocation;
  * Grouping many quads into one upload and one draw call is what keeps 2D rendering fast, so drawing
  * many sprites from a single atlas costs only one submission.
  *
- * <p>Custom shaders are not yet wired on the web backend, so {@link #setShader(FlixelShader)} is
- * recorded but the built-in sprite shader is always used. The additive, multiply, and screen blend
- * modes map to WebGL blend functions; the modes that need a separate blend equation fall back to
- * normal alpha blending.
+ * <p>{@link #setShader(FlixelShader)} swaps in a custom program compiled by the web backend; when no
+ * shader is set (or one failed to compile) the built-in sprite shader is used. Because every program
+ * shares the same fixed vertex layout (see {@link FlixelWebGlPrograms}), switching shaders needs no
+ * buffer rebinding. The additive, multiply, and screen blend modes map to WebGL blend functions; the
+ * modes that need a separate blend equation fall back to normal alpha blending.
  */
 public class FlixelWebGlBatch implements FlixelBatch {
 
@@ -66,7 +67,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
   private final WebGLRenderingContext gl;
 
   @NotNull
-  private final WebGLProgram program;
+  private final WebGLProgram defaultProgram;
 
   @NotNull
   private final WebGLBuffer vertexBuffer;
@@ -75,14 +76,10 @@ public class FlixelWebGlBatch implements FlixelBatch {
   private final WebGLBuffer indexBuffer;
 
   @Nullable
-  private final WebGLUniformLocation projTransLocation;
+  private final WebGLUniformLocation defaultProjTransLocation;
 
   @Nullable
-  private final WebGLUniformLocation textureLocation;
-
-  private final int positionAttrib;
-  private final int texCoordAttrib;
-  private final int colorAttrib;
+  private final WebGLUniformLocation defaultTextureLocation;
 
   private final float[] vertices = new float[MAX_QUADS * FLOATS_PER_QUAD];
   private final float[] combined = new float[16];
@@ -105,6 +102,18 @@ public class FlixelWebGlBatch implements FlixelBatch {
   @Nullable
   private FlixelWebGlTexture currentTexture;
 
+  @NotNull
+  private WebGLProgram activeProgram;
+
+  @Nullable
+  private WebGLUniformLocation activeProjTransLocation;
+
+  @Nullable
+  private WebGLUniformLocation activeTextureLocation;
+
+  @Nullable
+  private FlixelWebGlShaderProgram activeShaderProgram;
+
   private int quadCount;
   private int renderCalls;
   private int totalRenderCalls;
@@ -118,12 +127,13 @@ public class FlixelWebGlBatch implements FlixelBatch {
    */
   public FlixelWebGlBatch(@NotNull WebGLRenderingContext gl) {
     this.gl = gl;
-    this.program = buildProgram(gl);
-    this.positionAttrib = gl.getAttribLocation(program, "a_position");
-    this.texCoordAttrib = gl.getAttribLocation(program, "a_texCoord");
-    this.colorAttrib = gl.getAttribLocation(program, "a_color");
-    this.projTransLocation = gl.getUniformLocation(program, "u_projTrans");
-    this.textureLocation = gl.getUniformLocation(program, "u_texture");
+    this.defaultProgram = FlixelWebGlPrograms.build(gl, VERTEX_SOURCE, FRAGMENT_SOURCE);
+    this.defaultProjTransLocation = gl.getUniformLocation(defaultProgram, "u_projTrans");
+    this.defaultTextureLocation = gl.getUniformLocation(defaultProgram, "u_texture");
+
+    this.activeProgram = defaultProgram;
+    this.activeProjTransLocation = defaultProjTransLocation;
+    this.activeTextureLocation = defaultTextureLocation;
 
     this.vertexBuffer = gl.createBuffer();
     this.indexBuffer = gl.createBuffer();
@@ -135,10 +145,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
     drawing = true;
     renderCalls = 0;
     quadCount = 0;
-    gl.useProgram(program);
-    if (textureLocation != null) {
-      gl.uniform1i(textureLocation, 0);
-    }
+    useDefaultProgram();
   }
 
   @Override
@@ -157,9 +164,15 @@ public class FlixelWebGlBatch implements FlixelBatch {
     multiply(combined, projection.val, transform.val);
     applyBlendMode();
 
-    gl.useProgram(program);
-    if (projTransLocation != null) {
-      gl.uniformMatrix4fv(projTransLocation, false, combined);
+    gl.useProgram(activeProgram);
+    if (activeProjTransLocation != null) {
+      gl.uniformMatrix4fv(activeProjTransLocation, false, combined);
+    }
+    if (activeTextureLocation != null) {
+      gl.uniform1i(activeTextureLocation, 0);
+    }
+    if (activeShaderProgram != null) {
+      activeShaderProgram.apply(gl);
     }
 
     gl.activeTexture(WebGLRenderingContext.TEXTURE0);
@@ -170,9 +183,9 @@ public class FlixelWebGlBatch implements FlixelBatch {
         WebGLRenderingContext.DYNAMIC_DRAW);
 
     int stride = FLOATS_PER_VERTEX * 4;
-    enable(positionAttrib, 2, stride, 0);
-    enable(texCoordAttrib, 2, stride, 2 * 4);
-    enable(colorAttrib, 4, stride, 4 * 4);
+    enable(FlixelWebGlPrograms.POSITION, 2, stride, 0);
+    enable(FlixelWebGlPrograms.TEXCOORD, 2, stride, 2 * 4);
+    enable(FlixelWebGlPrograms.COLOR, 4, stride, 4 * 4);
 
     gl.bindBuffer(WebGLRenderingContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.drawElements(WebGLRenderingContext.TRIANGLES, quadCount * 6, WebGLRenderingContext.UNSIGNED_SHORT, 0);
@@ -339,9 +352,20 @@ public class FlixelWebGlBatch implements FlixelBatch {
 
   @Override
   public void setShader(@Nullable FlixelShader shader) {
-    if (shader != this.shader) {
-      flush();
-      this.shader = shader;
+    if (shader == this.shader) {
+      return;
+    }
+    flush();
+    this.shader = shader;
+
+    FlixelShaderProgram program = shader != null ? shader.getProgram() : null;
+    if (program instanceof FlixelWebGlShaderProgram webGl && webGl.isValid()) {
+      activeShaderProgram = webGl;
+      activeProgram = webGl.getGlProgram();
+      activeProjTransLocation = webGl.getProjTransLocation();
+      activeTextureLocation = webGl.getTextureLocation();
+    } else {
+      useDefaultProgram();
     }
   }
 
@@ -373,7 +397,15 @@ public class FlixelWebGlBatch implements FlixelBatch {
   public void destroy() {
     gl.deleteBuffer(vertexBuffer);
     gl.deleteBuffer(indexBuffer);
-    gl.deleteProgram(program);
+    gl.deleteProgram(defaultProgram);
+  }
+
+  /** Makes the built-in sprite shader the active program. */
+  private void useDefaultProgram() {
+    activeShaderProgram = null;
+    activeProgram = defaultProgram;
+    activeProjTransLocation = defaultProjTransLocation;
+    activeTextureLocation = defaultTextureLocation;
   }
 
   /**
@@ -512,48 +544,19 @@ public class FlixelWebGlBatch implements FlixelBatch {
     }
   }
 
-  /**
-   * Compiles and links the built-in sprite shader program.
-   *
-   * @param gl The rendering context.
-   * @return The linked program.
-   */
-  private static WebGLProgram buildProgram(WebGLRenderingContext gl) {
-    WebGLShader vertex = compile(gl, WebGLRenderingContext.VERTEX_SHADER, VERTEX_SOURCE);
-    WebGLShader fragment = compile(gl, WebGLRenderingContext.FRAGMENT_SHADER, FRAGMENT_SOURCE);
-    WebGLProgram program = gl.createProgram();
-    gl.attachShader(program, vertex);
-    gl.attachShader(program, fragment);
-    gl.linkProgram(program);
-    return program;
-  }
-
-  /**
-   * Compiles a single shader stage.
-   *
-   * @param gl The rendering context.
-   * @param type The shader stage constant.
-   * @param source The GLSL source.
-   * @return The compiled shader.
-   */
-  private static WebGLShader compile(WebGLRenderingContext gl, int type, String source) {
-    WebGLShader shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    return shader;
-  }
-
+  // The built-in sprite shader is written in ESSL 1.00 against the framework's GLSL contract
+  // (a_position, a_texCoord0, a_color, u_projTrans, u_texture), so it shares one vertex layout with
+  // every custom shader and both can be swapped in without rebinding the vertex buffer.
   private static final String VERTEX_SOURCE =
       """
-          #version 300 es
-          in vec2 a_position;
-          in vec2 a_texCoord;
-          in vec4 a_color;
+          attribute vec2 a_position;
+          attribute vec2 a_texCoord0;
+          attribute vec4 a_color;
           uniform mat4 u_projTrans;
-          out vec2 v_texCoord;
-          out vec4 v_color;
+          varying vec2 v_texCoords;
+          varying vec4 v_color;
           void main() {
-            v_texCoord = a_texCoord;
+            v_texCoords = a_texCoord0;
             v_color = a_color;
             gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);
           }
@@ -561,14 +564,14 @@ public class FlixelWebGlBatch implements FlixelBatch {
 
   private static final String FRAGMENT_SOURCE =
       """
-          #version 300 es
+          #ifdef GL_ES
           precision mediump float;
-          in vec2 v_texCoord;
-          in vec4 v_color;
+          #endif
           uniform sampler2D u_texture;
-          out vec4 fragColor;
+          varying vec2 v_texCoords;
+          varying vec4 v_color;
           void main() {
-            fragColor = v_color * texture(u_texture, v_texCoord);
+            gl_FragColor = v_color * texture2D(u_texture, v_texCoords);
           }
           """;
 }

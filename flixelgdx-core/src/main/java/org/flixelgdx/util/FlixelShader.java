@@ -181,9 +181,10 @@ public class FlixelShader extends FlixelBasic {
    * @param fragSrc GLSL ES 2.0 fragment shader source code.
    */
   public FlixelShader(String vertSrc, String fragSrc) {
-    // GLSL runtime compilation is wired up by the web backend. On bgfx, the Gradle plugin
-    // handles cross-compilation at build time; the resource-path constructor will load those.
-    this.program = FlixelUnsupportedShader.INSTANCE;
+    // Runtime GLSL compilation is provided by the web backend; every other backend returns an
+    // unsupported program from this call, so the shader simply has no effect there. Those backends
+    // load precompiled shaders through the Gradle plugin and FlixelShader.load(String) instead.
+    this.program = Flixel.graphics.compileShaderSource(vertSrc, fragSrc);
   }
 
   /**
