@@ -81,7 +81,9 @@ public class FlixelWebGlBatch implements FlixelBatch {
   @Nullable
   private final WebGLUniformLocation defaultTextureLocation;
 
-  private final float[] vertices = new float[MAX_QUADS * FLOATS_PER_QUAD];
+  @NotNull
+  private final Float32Array vertices = new Float32Array(MAX_QUADS * FLOATS_PER_QUAD);
+
   private final float[] combined = new float[16];
 
   @NotNull
@@ -145,7 +147,10 @@ public class FlixelWebGlBatch implements FlixelBatch {
     drawing = true;
     renderCalls = 0;
     quadCount = 0;
-    useDefaultProgram();
+    currentTexture = null;
+    // The active program is left untouched here on purpose: the global and per-camera shader passes
+    // call setShader(...) right before begin(), so resetting to the default program here would
+    // silently discard the shader they just set and draw the scene unshaded.
   }
 
   @Override
@@ -179,8 +184,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
     gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, currentTexture.getGlTexture());
 
     gl.bindBuffer(WebGLRenderingContext.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(WebGLRenderingContext.ARRAY_BUFFER, Float32Array.copyFromJavaArray(vertices),
-        WebGLRenderingContext.DYNAMIC_DRAW);
+    gl.bufferData(WebGLRenderingContext.ARRAY_BUFFER, vertices, WebGLRenderingContext.DYNAMIC_DRAW);
 
     int stride = FLOATS_PER_VERTEX * 4;
     enable(FlixelWebGlPrograms.POSITION, 2, stride, 0);
@@ -470,14 +474,14 @@ public class FlixelWebGlBatch implements FlixelBatch {
    * @return The float index just past the written vertex.
    */
   private int writeVertex(int out, float x, float y, float u, float v, float r, float g, float b, float a) {
-    vertices[out] = x;
-    vertices[out + 1] = y;
-    vertices[out + 2] = u;
-    vertices[out + 3] = v;
-    vertices[out + 4] = r;
-    vertices[out + 5] = g;
-    vertices[out + 6] = b;
-    vertices[out + 7] = a;
+    vertices.set(out, x);
+    vertices.set(out + 1, y);
+    vertices.set(out + 2, u);
+    vertices.set(out + 3, v);
+    vertices.set(out + 4, r);
+    vertices.set(out + 5, g);
+    vertices.set(out + 6, b);
+    vertices.set(out + 7, a);
     return out + FLOATS_PER_VERTEX;
   }
 

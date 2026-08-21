@@ -459,6 +459,20 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     wireBuildTask(project, "generateWasmGC");
     dependOn(project, "run", "generateJavaScript");
     dependOn(project, "run", "generateWasmGC");
+
+    // TeaVM emits the WebAssembly bundle from generateWasmGC but copies its JavaScript loader runtime
+    // (teavm.wasm-runtime.js, the classic TeaVM.wasmGC.load bootstrap the generated page uses) from a
+    // separate copyWasmGCRuntime task. Without wiring it in, a WebAssembly-enabled build ships the
+    // .wasm but not its loader, so the page falls back to JavaScript. Tie the two together so enabling
+    // the WebAssembly target is all a developer has to do.
+    if (wasmEnabled) {
+      Task generateWasm = project.getTasks().findByName("generateWasmGC");
+      Task copyRuntime = project.getTasks().findByName("copyWasmGCRuntime");
+      if (generateWasm != null && copyRuntime != null) {
+        generateWasm.finalizedBy(copyRuntime);
+      }
+      dependOn(project, "run", "copyWasmGCRuntime");
+    }
   }
 
   /**
