@@ -167,8 +167,6 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
       if (runtimeClasspath != null) {
         // The ESSL variants live on the runtime classpath, either as loose resource directories
         // (project dependencies) or inside dependency jars, so both cases are expanded here.
-        // Declaring dependsOn the configuration tells Gradle to build all project jars that
-        // contribute to it before this task runs, so the implicit-dependency warning is gone.
         task.dependsOn(runtimeClasspath);
         task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
             .map(file -> file.isDirectory() ? file : project.zipTree(file))

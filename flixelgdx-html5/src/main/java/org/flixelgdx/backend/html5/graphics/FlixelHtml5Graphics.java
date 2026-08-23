@@ -239,13 +239,14 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     if (encoded.remaining() < HEADER_SIZE + pixelBytes) {
       return null;
     }
-    ByteBuffer pixels = ByteBuffer.allocateDirect(pixelBytes).order(ByteOrder.nativeOrder());
-    ByteBuffer source = encoded.duplicate();
-    source.position(base + HEADER_SIZE);
-    source.limit(base + HEADER_SIZE + pixelBytes);
-    pixels.put(source);
-    pixels.flip();
-    return new FlixelImage(width, height, pixels);
+    // Slice the existing heap buffer rather than allocating a direct buffer. ByteBuffer.allocateDirect
+    // is not supported under TeaVM's wasmGC target (which uses the browser GC for all memory) and
+    // throws OutOfMemoryError. A heap slice avoids an extra copy too, since toView() in
+    // FlixelWebGlTexture already copies the bytes out to a byte[] for WebGL.
+    ByteBuffer src = encoded.duplicate();
+    src.position(base + HEADER_SIZE);
+    src.limit(base + HEADER_SIZE + pixelBytes);
+    return new FlixelImage(width, height, src.slice().order(ByteOrder.nativeOrder()));
   }
 
   @Override
