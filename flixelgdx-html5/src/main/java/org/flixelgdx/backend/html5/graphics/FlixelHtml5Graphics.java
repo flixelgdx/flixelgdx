@@ -134,6 +134,21 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   }
 
   @Override
+  public void setScissor(int x, int y, int width, int height) {
+    if (gl != null) {
+      gl.enable(WebGLRenderingContext.SCISSOR_TEST);
+      gl.scissor(x, y, Math.max(1, width), Math.max(1, height));
+    }
+  }
+
+  @Override
+  public void clearScissor() {
+    if (gl != null) {
+      gl.disable(WebGLRenderingContext.SCISSOR_TEST);
+    }
+  }
+
+  @Override
   public void setViewport(int x, int y, int width, int height) {
     if (gl != null) {
       gl.viewport(x, y, width, height);
