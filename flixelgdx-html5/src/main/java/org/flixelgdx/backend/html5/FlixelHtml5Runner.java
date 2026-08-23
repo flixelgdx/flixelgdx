@@ -173,19 +173,19 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   }
 
   /**
-   * Wires the browser resize and visibility events to the framework so the canvas tracks the page
-   * and the game pauses when its tab is hidden.
+   * Wires the browser resize, fullscreen-change, and visibility events to the framework so the
+   * canvas drawing buffer tracks the page and the game pauses when its tab is hidden.
+   *
+   * <p>Both the {@code resize} and {@code fullscreenchange} events call {@link #onViewportChanged}
+   * because the browser does not guarantee that {@code resize} fires around every fullscreen
+   * transition. Handling both events ensures the canvas drawing buffer and WebGL viewport are
+   * always kept in sync with the actual rendered size.
    *
    * @param document The current page document.
    */
   private void registerLifecycleListeners(HTMLDocument document) {
-    Window.current().addEventListener("resize", event -> {
-      int newWidth = browserInnerWidth();
-      int newHeight = browserInnerHeight();
-      window.onResized(newWidth, newHeight);
-      graphics.onResized(newWidth, newHeight);
-      game.resize(newWidth, newHeight);
-    });
+    Window.current().addEventListener("resize", event -> onViewportChanged());
+    document.addEventListener("fullscreenchange", event -> onViewportChanged());
     document.addEventListener("visibilitychange", event -> {
       if (isDocumentHidden()) {
         game.onFocusLost();
@@ -195,6 +195,26 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
         game.onFocusGained();
       }
     });
+  }
+
+  /**
+   * Synchronizes the canvas drawing buffer, WebGL viewport, and game cameras to the current
+   * browser viewport size.
+   *
+   * <p>The canvas {@code width} and {@code height} attributes control the WebGL drawing-buffer
+   * resolution. When they do not match the dimensions passed to {@code gl.viewport}, WebGL renders
+   * into a buffer that is a different size than the projection matrix expects, which causes the
+   * view to appear zoomed in or out. Updating the attributes here keeps the drawing buffer in sync
+   * whenever the viewport changes, including during fullscreen transitions.
+   */
+  private void onViewportChanged() {
+    int newWidth = browserInnerWidth();
+    int newHeight = browserInnerHeight();
+    canvas.setWidth(newWidth);
+    canvas.setHeight(newHeight);
+    window.onResized(newWidth, newHeight);
+    graphics.onResized(newWidth, newHeight);
+    game.resize(newWidth, newHeight);
   }
 
   @JSBody(script = "return document.hidden;")
