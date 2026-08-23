@@ -72,7 +72,7 @@
  *       {@code file} sub-package backs asset reads from a warm in-memory cache populated before
  *       the game starts, and backs save-data reads and writes with {@code localStorage}.</li>
  *   <li><b>Asset preloading</b> -
- *       {@link org.flixelgdx.backend.html5.file.FlixelHtml5AssetPreloader FlixelHtml5AssetPreloader}
+ *       {@link org.flixelgdx.backend.html5.FlixelHtml5AssetPreloader FlixelHtml5AssetPreloader}
  *       downloads every bundled asset (listed in an {@code assets/assets.txt} manifest generated
  *       by the build plugin) before the game loop starts, so asset reads inside game code are
  *       always synchronous cache lookups rather than network round-trips.</li>
@@ -90,20 +90,6 @@
  * browser's single thread would freeze the tab if blocked. Each callback advances the game by one
  * frame and schedules the next one. The runner also wires the browser resize and tab-visibility
  * events so the canvas tracks the page and audio and updates pause when the tab is hidden.
- *
- * <h2>Sub-packages</h2>
- * <ul>
- *   <li>{@code audio} - Web Audio API integration ({@code FlixelWebAudioFactory},
- *       {@code FlixelWebAudioSound}, {@code FlixelWebAudioGroup}).</li>
- *   <li>{@code file} - In-memory asset cache and localStorage save-data seam
- *       ({@code FlixelHtml5Files}, {@code FlixelHtml5File}, {@code FlixelHtml5AssetPreloader}).</li>
- *   <li>{@code graphics} - WebGL2 rendering ({@code FlixelHtml5Graphics}, {@code FlixelWebGlBatch},
- *       {@code FlixelWebGlTexture}, {@code FlixelWebGlRenderTarget},
- *       {@code FlixelWebGlShaderProgram}, {@code FlixelWebGlPrograms}).</li>
- *   <li>{@code input} - DOM keyboard, mouse, and gamepad handling ({@code FlixelHtml5InputDevice},
- *       {@code FlixelHtml5KeyMap}, {@code FlixelWebGamepad},
- *       {@code FlixelWebGamepadProvider}).</li>
- * </ul>
  *
  * @see org.flixelgdx.backend.html5.FlixelHtml5Launcher
  * @see org.flixelgdx.backend.html5.FlixelHtml5Runner

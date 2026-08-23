@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.html5.file;
+package org.flixelgdx.backend.html5;
 
+import org.flixelgdx.backend.html5.file.FlixelHtml5File;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -62,14 +63,16 @@ public final class FlixelHtml5AssetPreloader {
   private FlixelHtml5AssetPreloader() {}
 
   /**
-   * Downloads all assets listed in the manifest, then invokes a callback.
+   * Downloads all non-image assets listed in the manifest, then invokes a callback.
    *
-   * <p>Downloads run concurrently; {@code onComplete} fires once every file is cached, and
-   * {@code onError} fires if the manifest cannot be fetched or a download fails.
+   * <p>Downloads run through a pool of at most 6 concurrent connections so the browser is not
+   * overwhelmed when the manifest lists hundreds of files. {@code onComplete} fires once every
+   * non-image file is cached; {@code onError} fires if the manifest cannot be fetched or any
+   * individual download fails.
    *
    * @param manifestUrl The URL of the {@code assets.txt} manifest (for example {@code "assets/assets.txt"}).
    * @param assetRoot The URL prefix each manifest entry is resolved against (for example {@code "assets/"}).
-   * @param onComplete Invoked once all assets are cached.
+   * @param onComplete Invoked once all non-image assets are cached.
    * @param onError Invoked when the manifest is missing or a download fails.
    */
   public static void preload(String manifestUrl, String assetRoot, PreloadCallback onComplete,
@@ -96,22 +99,31 @@ public final class FlixelHtml5AssetPreloader {
         return response.text();
       }).then(function(text) {
         window.__flixelAssets['assets.txt'] = new TextEncoder().encode(text);
-        var allPaths = text.split(/\\r?\\n/).filter(function(line) { return line.trim().length > 0; });
+        var allPaths = text.split('\\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
         allPaths.forEach(function(p) { window.__flixelAssetPaths[p] = true; });
         var paths = allPaths.filter(function(p) { return !flixelIsImage(p); });
         var total = paths.length; var done = 0;
         flixelProgress(0, total);
         if (total === 0) { onComplete(); return; }
-        return Promise.all(paths.map(function(path) {
-          return fetch(assetRoot + path).then(function(res) {
-            if (!res.ok) { throw new Error('Failed to download "' + path + '" (HTTP ' + res.status + ')'); }
-            return res.arrayBuffer();
-          }).then(function(buffer) {
-            window.__flixelAssets[path] = new Uint8Array(buffer);
-            done++; flixelProgress(done, total);
-          });
-        })).then(function() { onComplete(); });
-      }).catch(function(e) {
+        var dlIdx = 0;
+        return new Promise(function(resolve, reject) {
+          function startNext() {
+            if (dlIdx >= paths.length) { return; }
+            var path = paths[dlIdx++];
+            fetch(assetRoot + path).then(function(res) {
+              if (!res.ok) { throw new Error('Failed to download "' + path + '" (HTTP ' + res.status + ')'); }
+              return res.arrayBuffer();
+            }).then(function(buffer) {
+              window.__flixelAssets[path] = new Uint8Array(buffer);
+              done++;
+              flixelProgress(done, total);
+              if (done === total) { resolve(); } else { startNext(); }
+            }).catch(reject);
+          }
+          var slots = Math.min(6, total);
+          for (var i = 0; i < slots; i++) { startNext(); }
+        });
+      }).then(function() { onComplete(); }).catch(function(e) {
         console.error('[FlixelGDX] Asset preload failed:', e && e.message ? e.message : e);
         onError();
       });

@@ -167,6 +167,11 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
           activeDecodeCount--;
           promotedImages++;
           super.load(entry.key, entry.value);
+        } else if (isImageDecodeFailed(entry.key)) {
+          it.remove();
+          activeDecodeCount--;
+          promotedImages++;
+          Flixel.warn("Html5", "Image failed to load and will be skipped: " + entry.key);
         }
       }
     }
@@ -299,6 +304,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
         })
         .catch(function(e) {
           console.error('[FlixelGDX] Failed to fetch or decode image "' + path + '":', e && e.message ? e.message : e);
+          window.__flixelDecodedImages[path] = null;
         });
       """)
   private static native void startImageDecodeJs(String path);
@@ -313,6 +319,22 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
       return !!(window.__flixelDecodedImages && window.__flixelDecodedImages[path]);
       """)
   private static native boolean isImageDecodeReady(String path);
+
+  /**
+   * Returns whether the decode attempt for {@code path} has failed.
+   *
+   * <p>A {@code null} sentinel is written to {@code window.__flixelDecodedImages[path]} by the
+   * {@code startImageDecodeJs} catch block when a fetch or bitmap decode error occurs. This
+   * distinguishes a failed decode (key present, value {@code null}) from a decode still in flight
+   * (key absent).
+   *
+   * @param path Normalized asset path to check.
+   * @return {@code true} if the decode failed and the path should be skipped.
+   */
+  @JSBody(params = "path", script = """
+      return !!(window.__flixelDecodedImages && window.__flixelDecodedImages[path] === null);
+      """)
+  private static native boolean isImageDecodeFailed(String path);
 
   /**
    * Returns the FLXI-encoded pixel bytes for a decoded image.
