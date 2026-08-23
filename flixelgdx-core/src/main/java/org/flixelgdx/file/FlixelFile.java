@@ -165,6 +165,14 @@ public interface FlixelFile {
   /**
    * Reads the whole file as raw bytes.
    *
+   * <p>On most platforms this returns decoded, ready-to-use content. On restricted platforms (such
+   * as web) it returns the raw encoded bytes exactly as they were stored on the server. In
+   * particular, image files on web return raw PNG or JPEG bytes, not decoded RGBA pixels. Code that
+   * expects decoded pixel data should load images through
+   * {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager} instead of calling this
+   * method directly, so the platform's async decode path runs properly. Games targeting web should
+   * preload all images through {@code Flixel.assets.load()} and {@code Flixel.assets.update()}.
+   *
    * @return The file contents, or an empty array when the file does not exist. Never {@code null}.
    */
   @NotNull
