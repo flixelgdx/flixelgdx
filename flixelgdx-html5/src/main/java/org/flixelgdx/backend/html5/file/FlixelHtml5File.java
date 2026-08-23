@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.backend.html5.file;
 
-import org.flixelgdx.backend.html5.FlixelHtml5AssetPreloader;
+import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

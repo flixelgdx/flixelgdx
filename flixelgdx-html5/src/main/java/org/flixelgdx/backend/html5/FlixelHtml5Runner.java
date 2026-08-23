@@ -26,6 +26,7 @@ package org.flixelgdx.backend.html5;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
+import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;

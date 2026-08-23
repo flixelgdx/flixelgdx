@@ -72,7 +72,7 @@
  *       {@code file} sub-package backs asset reads from a warm in-memory cache populated before
  *       the game starts, and backs save-data reads and writes with {@code localStorage}.</li>
  *   <li><b>Asset preloading</b> -
- *       {@link org.flixelgdx.backend.html5.FlixelHtml5AssetPreloader FlixelHtml5AssetPreloader}
+ *       {@link org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader FlixelHtml5AssetPreloader}
  *       downloads every bundled asset (listed in an {@code assets/assets.txt} manifest generated
  *       by the build plugin) before the game loop starts, so asset reads inside game code are
  *       always synchronous cache lookups rather than network round-trips.</li>

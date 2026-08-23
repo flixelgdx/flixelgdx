@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.html5;
+package org.flixelgdx.backend.html5.asset;
 
 import org.flixelgdx.backend.html5.file.FlixelHtml5File;
 import org.teavm.jso.JSBody;
@@ -43,7 +43,7 @@ import org.teavm.jso.JSObject;
  * intentionally excluded from the upfront download. Preloading all images at startup would consume
  * enormous amounts of memory (each uncompressed RGBA image is {@code width * height * 4} bytes in
  * the browser heap, on top of the compressed bytes already downloaded). Instead, images are fetched
- * and decoded on demand by {@link org.flixelgdx.backend.html5.FlixelHtml5AssetManager} when a game
+ * and decoded on demand by {@link FlixelHtml5AssetManager} when a game
  * calls {@code Flixel.assets.load()}, so only images the game actually requests are ever decoded,
  * and each decoded image is freed from CPU memory once it is uploaded to the GPU.
  *
