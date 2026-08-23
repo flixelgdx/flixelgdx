@@ -51,14 +51,15 @@ import java.nio.ByteOrder;
  * different:
  *
  * <ol>
- *   <li>When an image path is queued with {@link #load(String)}, a {@code createImageBitmap}
- *     Promise is started in JavaScript and the path is tracked in a pending-decode set. The path is
- *     not yet forwarded to the parent pipeline.</li>
- *   <li>Each call to {@link #update(int)} polls that set. When the browser signals that an image's
- *     Promise has resolved (by populating {@code window.__flixelDecodedImages}), the path is
- *     promoted into the parent's pipeline with a synchronous {@link FlixelBaseAssetManager#load}
- *     call. Because the parent runs single-threaded and the RGBA pixels are now ready, the load
- *     completes immediately within that same {@link #update} call.</li>
+ *   <li>When an image path is queued with {@link #load(String)}, it either starts a
+ *     {@code fetch + createImageBitmap} Promise immediately (if a decode slot is free) or parks in
+ *     a waiting queue. At most {@value #MAX_CONCURRENT_DECODES} fetch-and-decode operations run at
+ *     the same time, keeping peak memory proportional to the slot count rather than to the total
+ *     number of images queued at once.</li>
+ *   <li>Each call to {@link #update(int)} polls active decodes. When the browser signals that an
+ *     image's Promise has resolved (by populating {@code window.__flixelDecodedImages}), the path
+ *     is promoted into the parent's pipeline, the freed slot is given to the next waiting path, and
+ *     the newly promoted image is processed synchronously in that same {@link #update} call.</li>
  * </ol>
  *
  * <p>Non-image assets (audio, text) are forwarded directly to the parent and use its existing
@@ -79,14 +80,22 @@ import java.nio.ByteOrder;
  */
 public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
 
+  /** Maximum number of fetch-and-decode operations that may run concurrently in the browser. */
+  private static final int MAX_CONCURRENT_DECODES = 6;
+
   private static final String[] IMAGE_EXTENSIONS = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
 
-  /** Paths of images whose browser decode Promise is still pending, mapped to their persist flag. */
+  /** Images currently being fetched and decoded (Promise in flight), mapped to their persist flag. */
   @NotNull
-  private final FlixelMap<String, Boolean> pendingImageDecodes = new FlixelMap<>();
+  private final FlixelMap<String, Boolean> activeDecodes = new FlixelMap<>();
+
+  /** Images waiting for a decode slot to open, in the order they were queued. */
+  @NotNull
+  private final FlixelMap<String, Boolean> queuedDecodes = new FlixelMap<>();
 
   private int totalImages;
   private int promotedImages;
+  private int activeDecodeCount;
 
   /**
    * Creates the manager and replaces the default image loaders with web-aware ones that read
@@ -103,9 +112,10 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   /**
    * Queues an asset for loading.
    *
-   * <p>For image paths, the asset is not immediately forwarded to the parent pipeline: instead a
-   * browser {@code createImageBitmap} Promise is started asynchronously. The path is promoted to
-   * the parent during the next {@link #update(int)} call once the Promise resolves.
+   * <p>For image paths, a fetch-and-decode operation is started immediately if a slot is available
+   * (fewer than {@value #MAX_CONCURRENT_DECODES} images are currently decoding). Otherwise the path
+   * is held in a waiting queue and started by {@link #update(int)} once a slot frees up. The path
+   * is promoted into the parent pipeline only after its decode Promise resolves.
    *
    * <p>For all other paths (audio, text) the call is forwarded to the parent unchanged.
    *
@@ -120,41 +130,58 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
       return;
     }
 
-    if (isLoaded(key) || pendingImageDecodes.containsKey(key)) {
+    if (isLoaded(key) || activeDecodes.containsKey(key) || queuedDecodes.containsKey(key)) {
       return;
     }
 
     totalImages++;
-    pendingImageDecodes.put(key, persist);
-    startImageDecodeJs(key);
+    if (activeDecodeCount < MAX_CONCURRENT_DECODES) {
+      activeDecodes.put(key, persist);
+      activeDecodeCount++;
+      startImageDecodeJs(key);
+    } else {
+      queuedDecodes.put(key, persist);
+    }
   }
 
   /**
    * Advances the loading pipeline.
    *
-   * <p>First polls each pending image decode. When a decode Promise has resolved (detected by the
-   * presence of its pixels in {@code window.__flixelDecodedImages}), the path is promoted to the
-   * parent pipeline and processed synchronously in the same call. Then the parent's own pipeline
-   * is advanced for non-image assets and any newly promoted images.
+   * <p>First polls active decodes. When a decode Promise has resolved (detected by the presence of
+   * its pixels in {@code window.__flixelDecodedImages}), the path is promoted to the parent
+   * pipeline and its slot is given to the next waiting path in the queue. Then the parent's own
+   * pipeline is advanced for non-image assets and any newly promoted images.
    *
    * @param millis Maximum time to spend updating.
-   * @return {@code true} when all queued loading, including pending image decodes, is finished.
+   * @return {@code true} when all queued loading, including active and waiting image decodes, is
+   *     finished.
    */
   @Override
   public boolean update(int millis) {
-    if (!pendingImageDecodes.isEmpty()) {
-      FlixelMap.Entries<String, Boolean> it = pendingImageDecodes.entries();
+    if (!activeDecodes.isEmpty()) {
+      FlixelMap.Entries<String, Boolean> it = activeDecodes.entries();
       while (it.hasNext()) {
         FlixelMap.Entry<String, Boolean> entry = it.next();
         if (isImageDecodeReady(entry.key)) {
           it.remove();
+          activeDecodeCount--;
           promotedImages++;
           super.load(entry.key, entry.value);
         }
       }
     }
+    if (!queuedDecodes.isEmpty()) {
+      FlixelMap.Entries<String, Boolean> it = queuedDecodes.entries();
+      while (it.hasNext() && activeDecodeCount < MAX_CONCURRENT_DECODES) {
+        FlixelMap.Entry<String, Boolean> entry = it.next();
+        it.remove();
+        activeDecodes.put(entry.key, entry.value);
+        activeDecodeCount++;
+        startImageDecodeJs(entry.key);
+      }
+    }
     boolean parentDone = super.update(millis);
-    return parentDone && pendingImageDecodes.isEmpty();
+    return parentDone && activeDecodes.isEmpty() && queuedDecodes.isEmpty();
   }
 
   /**
@@ -183,7 +210,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
    */
   @Override
   public void finishLoading() {
-    if (!pendingImageDecodes.isEmpty()) {
+    if (!activeDecodes.isEmpty() || !queuedDecodes.isEmpty()) {
       throw new UnsupportedOperationException(
           "finishLoading() cannot be used while images are still being decoded on web: blocking "
               + "the JS thread prevents decode Promises from resolving. Use Flixel.assets.update() "
@@ -204,7 +231,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   @Override
   public void finishLoadingAsset(@NotNull String path) {
     String key = FlixelAssetPaths.normalizeAssetPath(path);
-    if (pendingImageDecodes.containsKey(key)) {
+    if (activeDecodes.containsKey(key) || queuedDecodes.containsKey(key)) {
       throw new UnsupportedOperationException(
           "finishLoadingAsset() cannot be used while the image '" + key + "' is still being "
               + "decoded on web: blocking the JS thread prevents the decode Promise from resolving. "
