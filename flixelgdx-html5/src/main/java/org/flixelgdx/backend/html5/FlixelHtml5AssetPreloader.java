@@ -80,54 +80,55 @@ public final class FlixelHtml5AssetPreloader {
     preloadJs(manifestUrl, assetRoot, onComplete, onError);
   }
 
-  @JSBody(params = { "manifestUrl", "assetRoot", "onComplete", "onError" }, script = """
-      if (!window.__flixelAssets) { window.__flixelAssets = {}; }
-      if (!window.__flixelAssetPaths) { window.__flixelAssetPaths = {}; }
-      var flixelImageExts = ['.png', '.jpg', '.jpeg', '.bmp', '.tga'];
-      function flixelIsImage(path) {
-        var lower = path.toLowerCase();
-        for (var i = 0; i < flixelImageExts.length; i++) {
-          if (lower.endsWith(flixelImageExts[i])) { return true; }
-        }
-        return false;
-      }
-      function flixelProgress(done, total) {
-        if (window.__flixelLoading) { window.__flixelLoading.set(total ? done / total : 1); }
-      }
-      fetch(manifestUrl).then(function(response) {
-        if (!response.ok) { throw new Error('Manifest fetch failed (HTTP ' + response.status + ')'); }
-        return response.text();
-      }).then(function(text) {
-        window.__flixelAssets['assets.txt'] = new TextEncoder().encode(text);
-        var allPaths = text.split('\\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
-        allPaths.forEach(function(p) { window.__flixelAssetPaths[p] = true; });
-        var paths = allPaths.filter(function(p) { return !flixelIsImage(p); });
-        var total = paths.length; var done = 0;
-        flixelProgress(0, total);
-        if (total === 0) { onComplete(); return; }
-        var dlIdx = 0;
-        return new Promise(function(resolve, reject) {
-          function startNext() {
-            if (dlIdx >= paths.length) { return; }
-            var path = paths[dlIdx++];
-            fetch(assetRoot + path).then(function(res) {
-              if (!res.ok) { throw new Error('Failed to download "' + path + '" (HTTP ' + res.status + ')'); }
-              return res.arrayBuffer();
-            }).then(function(buffer) {
-              window.__flixelAssets[path] = new Uint8Array(buffer);
-              done++;
-              flixelProgress(done, total);
-              if (done === total) { resolve(); } else { startNext(); }
-            }).catch(reject);
+  @JSBody(params = { "manifestUrl", "assetRoot", "onComplete", "onError" },
+      script = """
+          if (!window.__flixelAssets) { window.__flixelAssets = {}; }
+          if (!window.__flixelAssetPaths) { window.__flixelAssetPaths = {}; }
+          var flixelImageExts = ['.png', '.jpg', '.jpeg', '.bmp', '.tga'];
+          function flixelIsImage(path) {
+            var lower = path.toLowerCase();
+            for (var i = 0; i < flixelImageExts.length; i++) {
+              if (lower.endsWith(flixelImageExts[i])) { return true; }
+            }
+            return false;
           }
-          var slots = Math.min(6, total);
-          for (var i = 0; i < slots; i++) { startNext(); }
-        });
-      }).then(function() { onComplete(); }).catch(function(e) {
-        console.error('[FlixelGDX] Asset preload failed:', e && e.message ? e.message : e);
-        onError();
-      });
-      """)
+          function flixelProgress(done, total) {
+            if (window.__flixelLoading) { window.__flixelLoading.set(total ? done / total : 1); }
+          }
+          fetch(manifestUrl).then(function(response) {
+            if (!response.ok) { throw new Error('Manifest fetch failed (HTTP ' + response.status + ')'); }
+            return response.text();
+          }).then(function(text) {
+            window.__flixelAssets['assets.txt'] = new TextEncoder().encode(text);
+            var allPaths = text.split('\\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+            allPaths.forEach(function(p) { window.__flixelAssetPaths[p] = true; });
+            var paths = allPaths.filter(function(p) { return !flixelIsImage(p); });
+            var total = paths.length; var done = 0;
+            flixelProgress(0, total);
+            if (total === 0) { onComplete(); return; }
+            var dlIdx = 0;
+            return new Promise(function(resolve, reject) {
+              function startNext() {
+                if (dlIdx >= paths.length) { return; }
+                var path = paths[dlIdx++];
+                fetch(assetRoot + path).then(function(res) {
+                  if (!res.ok) { throw new Error('Failed to download "' + path + '" (HTTP ' + res.status + ')'); }
+                  return res.arrayBuffer();
+                }).then(function(buffer) {
+                  window.__flixelAssets[path] = new Uint8Array(buffer);
+                  done++;
+                  flixelProgress(done, total);
+                  if (done === total) { resolve(); } else { startNext(); }
+                }).catch(reject);
+              }
+              var slots = Math.min(6, total);
+              for (var i = 0; i < slots; i++) { startNext(); }
+            });
+          }).then(function() { onComplete(); }).catch(function(e) {
+            console.error('[FlixelGDX] Asset preload failed:', e && e.message ? e.message : e);
+            onError();
+          });
+          """)
   private static native void preloadJs(String manifestUrl, String assetRoot, PreloadCallback onComplete,
       PreloadCallback onError);
 

@@ -74,7 +74,10 @@ public class FlixelHtml5File implements FlixelFile {
 
   @Override
   public boolean exists() {
-    return kind == Kind.ASSET ? assetCached(resolved) : storageGet(resolved) != null;
+    if (kind == Kind.STORAGE) {
+      return storageGet(resolved) != null;
+    }
+    return assetCached(resolved) || assetHasPrefix(resolved);
   }
 
   @Override
@@ -164,6 +167,54 @@ public class FlixelHtml5File implements FlixelFile {
     return slash >= 0 ? path.substring(slash + 1) : path;
   }
 
+  @Override
+  public boolean isDirectory() {
+    return kind == Kind.ASSET && assetHasPrefix(resolved);
+  }
+
+  @Override
+  @NotNull
+  public FlixelFile[] list() {
+    if (kind != Kind.ASSET) {
+      return new FlixelFile[0];
+    }
+    String raw = assetListChildNames(resolved);
+    if (raw.isEmpty()) {
+      return new FlixelFile[0];
+    }
+    String[] names = raw.split("\n");
+    FlixelFile[] children = new FlixelFile[names.length];
+    for (int i = 0; i < names.length; i++) {
+      String childPath = path + "/" + names[i];
+      String childResolved = resolved + "/" + names[i];
+      children[i] = new FlixelHtml5File(childPath, childResolved, Kind.ASSET);
+    }
+    return children;
+  }
+
+  @Override
+  @NotNull
+  public FlixelFile[] list(@NotNull String suffix) {
+    FlixelFile[] all = list();
+    int count = 0;
+    for (int i = 0; i < all.length; i++) {
+      if (all[i].getName().endsWith(suffix)) {
+        count++;
+      }
+    }
+    if (count == all.length) {
+      return all;
+    }
+    FlixelFile[] out = new FlixelFile[count];
+    int idx = 0;
+    for (int i = 0; i < all.length; i++) {
+      if (all[i].getName().endsWith(suffix)) {
+        out[idx++] = all[i];
+      }
+    }
+    return out;
+  }
+
   @JSBody(params = "key", script = """
       return !!(window.__flixelAssetPaths && window.__flixelAssetPaths[key])
           || !!(window.__flixelAssets && window.__flixelAssets[key]);
@@ -187,6 +238,35 @@ public class FlixelHtml5File implements FlixelFile {
       return a ? a.byteLength : 0;
       """)
   private static native int assetLength(String key);
+
+  @JSBody(params = "prefix", script = """
+      if (!window.__flixelAssetPaths) { return false; }
+      var p = prefix + '/';
+      var keys = Object.keys(window.__flixelAssetPaths);
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i].startsWith(p)) { return true; }
+      }
+      return false;
+      """)
+  private static native boolean assetHasPrefix(String prefix);
+
+  @JSBody(params = "prefix", script = """
+      if (!window.__flixelAssetPaths) { return ''; }
+      var p = prefix + '/';
+      var seen = {};
+      var names = [];
+      var keys = Object.keys(window.__flixelAssetPaths);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (!k.startsWith(p)) { continue; }
+        var rest = k.substring(p.length);
+        var slash = rest.indexOf('/');
+        var child = slash >= 0 ? rest.substring(0, slash) : rest;
+        if (child && !seen[child]) { seen[child] = true; names.push(child); }
+      }
+      return names.join('\\n');
+      """)
+  private static native String assetListChildNames(String prefix);
 
   @JSBody(params = "key", script = "return window.localStorage.getItem(key);")
   private static native String storageGet(String key);
