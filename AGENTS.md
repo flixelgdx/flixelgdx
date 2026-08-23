@@ -4,11 +4,11 @@
 
 ## Project context (FlixelGDX)
 
-FlixelGDX is a general-purposed Java game framework, primarily build on **bgfx + SDL3** (with WebGPU/WebGL for HTML5).
+FlixelGDX is a general-purposed Java game framework, primarily build on **bgfx + SDL3** (with WebGL for HTML5).
 It aims for strong performance and tooling, so game development stays modernized, approachable, and accessible.
 
-The overarching goal is to bring HaxeFlixel-style features into Java's ecosystem while staying as memory-efficient as
-humanly possible without giving up features games need.
+The overarching goal is to bring HaxeFlixel-style features into Java's ecosystem while staying as memory-efficient
+and developer friendly as humanly possible without giving up features games need.
 
 This repository is the **standalone framework**. Runtime verification happens in a **separate test project**, consuming
 the framework via `publishToMavenLocal`, a composite build, or JitPack from a GitHub branch/commit.
@@ -200,6 +200,9 @@ public class PerformanceObject {
 
 - `flixelgdx-core` is the main surface most game code uses. Keep backend or platform quirks out of core; abstract with interfaces where behavior differs per platform.
 - Keep changes minimal: avoid unrelated files unless needed for the stated task.
+- When working in the HTML5 / `flixelgdx-html5` platform, do not write JavaScript- or WebAssembly-specific code. The
+  framework's web platform should be able to support JavaScript and WebAssembly out of the box, which allows it to be reachable
+  on older and newer browsers alike.
 
 ### Language and style
 

@@ -79,15 +79,12 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   private int backBufferWidth;
   private int backBufferHeight;
 
-  private boolean webGpuAvailable;
-
   /**
    * Creates the WebGL2 context on the given canvas and builds the sprite batch.
    *
    * @param canvas The canvas to render into.
    */
   public void initialize(HTMLCanvasElement canvas) {
-    webGpuAvailable = webGpuSupported();
     gl = getWebGl2(canvas);
     if (gl == null) {
       throw new IllegalStateException("WebGL2 is not available in this browser.");
@@ -274,16 +271,6 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   }
 
   /**
-   * Returns whether the browser advertises WebGPU support. Rendering still uses WebGL2; this is a
-   * capability probe for the framework and future work.
-   *
-   * @return {@code true} if {@code navigator.gpu} is present.
-   */
-  public boolean isWebGpuAvailable() {
-    return webGpuAvailable;
-  }
-
-  /**
    * Reads a little-endian 32-bit integer from a byte buffer at an absolute offset.
    *
    * @param buffer The buffer to read from.
@@ -299,7 +286,4 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @JSBody(params = "canvas", script = "return canvas.getContext('webgl2');")
   private static native WebGLRenderingContext getWebGl2(HTMLCanvasElement canvas);
-
-  @JSBody(script = "return !!(navigator.gpu);")
-  private static native boolean webGpuSupported();
 }
