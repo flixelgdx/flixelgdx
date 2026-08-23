@@ -363,17 +363,24 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     });
   }
 
-  /** Registers the {@code run} task: build the web app, then serve it locally until interrupted. */
+  /** Registers the {@code run} and {@code debug} tasks. */
   private void registerRunTask(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("run", task -> {
       task.setGroup("application");
       task.setDescription("Builds the web app and starts a local HTTP dev server. Press Ctrl+C to stop.");
-      task.doLast(t -> serve(project, webRoot.get().getAsFile(), ext.getDevServerPort().get()));
+      task.doLast(t -> serve(project, webRoot.get().getAsFile(), ext.getDevServerPort().get(), false));
+    });
+    project.getTasks().register("debug", task -> {
+      task.setGroup("application");
+      task.setDescription(
+          "Builds the web app and starts a local HTTP dev server in debug mode (?flixel.mode=debug). "
+              + "Press Ctrl+C to stop.");
+      task.doLast(t -> serve(project, webRoot.get().getAsFile(), ext.getDevServerPort().get(), true));
     });
   }
 
   /** Starts the embedded HTTP dev server and blocks until the build is interrupted. */
-  private void serve(Project project, File webRoot, int port) {
+  private void serve(Project project, File webRoot, int port, boolean debug) {
     HttpServer server;
     try {
       server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -423,7 +430,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     server.setExecutor(null);
     server.start();
 
-    String url = "http://localhost:" + port;
+    String url = "http://localhost:" + port + (debug ? "?flixel.mode=debug" : "");
     Logger logger = project.getLogger();
     logger.quiet("");
     logger.quiet("[FlixelGDX] Dev server running at " + url);
@@ -490,6 +497,8 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     wireBuildTask(project, "generateWasmGC");
     dependOn(project, "run", "generateJavaScript");
     dependOn(project, "run", "generateWasmGC");
+    dependOn(project, "debug", "generateJavaScript");
+    dependOn(project, "debug", "generateWasmGC");
     dependOn(project, "package", "generateJavaScript");
     dependOn(project, "package", "generateWasmGC");
 
@@ -505,6 +514,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
         generateWasm.finalizedBy(copyRuntime);
       }
       dependOn(project, "run", "copyWasmGCRuntime");
+      dependOn(project, "debug", "copyWasmGCRuntime");
       dependOn(project, "package", "copyWasmGCRuntime");
     }
   }
