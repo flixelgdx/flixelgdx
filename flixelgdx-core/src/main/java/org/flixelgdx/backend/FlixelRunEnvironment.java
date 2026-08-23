@@ -47,6 +47,9 @@ public enum FlixelRunEnvironment {
   /** The game is running from a plain classpath (loose class output, no packaging). */
   CLASSPATH,
 
+  /** The game is running inside a browser tab. */
+  BROWSER,
+
   /** The layout could not be classified, typically because the platform cannot report it. */
   UNKNOWN
 }

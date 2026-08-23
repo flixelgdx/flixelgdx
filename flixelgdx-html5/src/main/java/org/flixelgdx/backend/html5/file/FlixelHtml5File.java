@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.html5.file;
 
+import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -37,9 +38,11 @@ import org.teavm.jso.typedarrays.Int8Array;
  *
  * <ul>
  *   <li>{@link Kind#ASSET} - a read-only resource bundled with the game. Because the browser cannot
- *       read files synchronously, every bundled asset is downloaded up front by
+ *       read files synchronously, non-image assets are downloaded up front by
  *       {@link FlixelHtml5AssetPreloader} into an in-memory cache; a read here is then just an
- *       instant lookup in that cache. Writes are impossible and return {@code false}.</li>
+ *       instant lookup in that cache. Image assets are not preloaded and must be requested through
+ *       the asset manager ({@code Flixel.assets.load()}) instead. Writes are impossible and return
+ *       {@code false}.</li>
  *   <li>{@link Kind#STORAGE} - a read/write entry in the browser's {@code localStorage}, used for
  *       save data. It persists between sessions on the same origin but is not a real file, so it
  *       has no meaningful directory listing.</li>
@@ -71,7 +74,10 @@ public class FlixelHtml5File implements FlixelFile {
 
   @Override
   public boolean exists() {
-    return kind == Kind.ASSET ? assetCached(resolved) : storageGet(resolved) != null;
+    if (kind == Kind.STORAGE) {
+      return storageGet(resolved) != null;
+    }
+    return assetCached(resolved) || assetHasPrefix(resolved);
   }
 
   @Override
@@ -161,7 +167,58 @@ public class FlixelHtml5File implements FlixelFile {
     return slash >= 0 ? path.substring(slash + 1) : path;
   }
 
-  @JSBody(params = "key", script = "return !!(window.__flixelAssets && window.__flixelAssets[key]);")
+  @Override
+  public boolean isDirectory() {
+    return kind == Kind.ASSET && assetHasPrefix(resolved);
+  }
+
+  @Override
+  @NotNull
+  public FlixelFile[] list() {
+    if (kind != Kind.ASSET) {
+      return new FlixelFile[0];
+    }
+    String raw = assetListChildNames(resolved);
+    if (raw.isEmpty()) {
+      return new FlixelFile[0];
+    }
+    String[] names = raw.split("\n");
+    FlixelFile[] children = new FlixelFile[names.length];
+    for (int i = 0; i < names.length; i++) {
+      String childPath = path + "/" + names[i];
+      String childResolved = resolved + "/" + names[i];
+      children[i] = new FlixelHtml5File(childPath, childResolved, Kind.ASSET);
+    }
+    return children;
+  }
+
+  @Override
+  @NotNull
+  public FlixelFile[] list(@NotNull String suffix) {
+    FlixelFile[] all = list();
+    int count = 0;
+    for (int i = 0; i < all.length; i++) {
+      if (all[i].getName().endsWith(suffix)) {
+        count++;
+      }
+    }
+    if (count == all.length) {
+      return all;
+    }
+    FlixelFile[] out = new FlixelFile[count];
+    int idx = 0;
+    for (int i = 0; i < all.length; i++) {
+      if (all[i].getName().endsWith(suffix)) {
+        out[idx++] = all[i];
+      }
+    }
+    return out;
+  }
+
+  @JSBody(params = "key", script = """
+      return !!(window.__flixelAssetPaths && window.__flixelAssetPaths[key])
+          || !!(window.__flixelAssets && window.__flixelAssets[key]);
+      """)
   private static native boolean assetCached(String key);
 
   @JSBody(params = "key", script = """
@@ -181,6 +238,35 @@ public class FlixelHtml5File implements FlixelFile {
       return a ? a.byteLength : 0;
       """)
   private static native int assetLength(String key);
+
+  @JSBody(params = "prefix", script = """
+      if (!window.__flixelAssetPaths) { return false; }
+      var p = prefix + '/';
+      var keys = Object.keys(window.__flixelAssetPaths);
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i].startsWith(p)) { return true; }
+      }
+      return false;
+      """)
+  private static native boolean assetHasPrefix(String prefix);
+
+  @JSBody(params = "prefix", script = """
+      if (!window.__flixelAssetPaths) { return ''; }
+      var p = prefix + '/';
+      var seen = {};
+      var names = [];
+      var keys = Object.keys(window.__flixelAssetPaths);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (!k.startsWith(p)) { continue; }
+        var rest = k.substring(p.length);
+        var slash = rest.indexOf('/');
+        var child = slash >= 0 ? rest.substring(0, slash) : rest;
+        if (child && !seen[child]) { seen[child] = true; names.push(child); }
+      }
+      return names.join('\\n');
+      """)
+  private static native String assetListChildNames(String prefix);
 
   @JSBody(params = "key", script = "return window.localStorage.getItem(key);")
   private static native String storageGet(String key);

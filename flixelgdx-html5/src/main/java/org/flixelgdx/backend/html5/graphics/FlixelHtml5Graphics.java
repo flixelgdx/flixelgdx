@@ -79,15 +79,12 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   private int backBufferWidth;
   private int backBufferHeight;
 
-  private boolean webGpuAvailable;
-
   /**
    * Creates the WebGL2 context on the given canvas and builds the sprite batch.
    *
    * @param canvas The canvas to render into.
    */
   public void initialize(HTMLCanvasElement canvas) {
-    webGpuAvailable = webGpuSupported();
     gl = getWebGl2(canvas);
     if (gl == null) {
       throw new IllegalStateException("WebGL2 is not available in this browser.");
@@ -133,6 +130,21 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     if (gl != null) {
       gl.clearColor(r, g, b, a);
       gl.clear(WebGLRenderingContext.COLOR_BUFFER_BIT);
+    }
+  }
+
+  @Override
+  public void setScissor(int x, int y, int width, int height) {
+    if (gl != null) {
+      gl.enable(WebGLRenderingContext.SCISSOR_TEST);
+      gl.scissor(x, y, Math.max(1, width), Math.max(1, height));
+    }
+  }
+
+  @Override
+  public void clearScissor() {
+    if (gl != null) {
+      gl.disable(WebGLRenderingContext.SCISSOR_TEST);
     }
   }
 
@@ -218,11 +230,12 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @Nullable
   public FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
     // A browser can only decode an encoded image asynchronously, so it cannot happen here in a
-    // synchronous call. Instead FlixelHtml5AssetPreloader decodes every image while it downloads and
-    // stores the raw RGBA pixels behind a small "FLXI" header (magic, then width and height as
-    // little-endian 32-bit integers). This method just unpacks that, which needs no real decoding.
-    // Bytes without the header are a genuinely encoded image the web backend cannot decode on the
-    // fly, so it returns null.
+    // synchronous call. FlixelHtml5AssetManager starts a createImageBitmap Promise for each image
+    // queued through the asset manager, and once the Promise resolves it stores the raw RGBA pixels
+    // behind a small "FLXI" header (magic, then width and height as little-endian 32-bit integers).
+    // This method just unpacks that, which needs no real decoding. Bytes without the header are a
+    // genuinely encoded image (raw PNG, JPEG, etc.) that the web backend cannot decode synchronously,
+    // so it returns null.
     int base = encoded.position();
     if (encoded.remaining() < HEADER_SIZE
         || encoded.get(base) != 'F' || encoded.get(base + 1) != 'L'
@@ -238,13 +251,14 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     if (encoded.remaining() < HEADER_SIZE + pixelBytes) {
       return null;
     }
-    ByteBuffer pixels = ByteBuffer.allocateDirect(pixelBytes).order(ByteOrder.nativeOrder());
-    ByteBuffer source = encoded.duplicate();
-    source.position(base + HEADER_SIZE);
-    source.limit(base + HEADER_SIZE + pixelBytes);
-    pixels.put(source);
-    pixels.flip();
-    return new FlixelImage(width, height, pixels);
+    // Slice the existing heap buffer rather than allocating a direct buffer. ByteBuffer.allocateDirect
+    // is not supported under TeaVM's wasmGC target (which uses the browser GC for all memory) and
+    // throws OutOfMemoryError. A heap slice avoids an extra copy too, since toView() in
+    // FlixelWebGlTexture already copies the bytes out to a byte[] for WebGL.
+    ByteBuffer src = encoded.duplicate();
+    src.position(base + HEADER_SIZE);
+    src.limit(base + HEADER_SIZE + pixelBytes);
+    return new FlixelImage(width, height, src.slice().order(ByteOrder.nativeOrder()));
   }
 
   @Override
@@ -272,16 +286,6 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   }
 
   /**
-   * Returns whether the browser advertises WebGPU support. Rendering still uses WebGL2; this is a
-   * capability probe for the framework and future work.
-   *
-   * @return {@code true} if {@code navigator.gpu} is present.
-   */
-  public boolean isWebGpuAvailable() {
-    return webGpuAvailable;
-  }
-
-  /**
    * Reads a little-endian 32-bit integer from a byte buffer at an absolute offset.
    *
    * @param buffer The buffer to read from.
@@ -297,7 +301,4 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @JSBody(params = "canvas", script = "return canvas.getContext('webgl2');")
   private static native WebGLRenderingContext getWebGl2(HTMLCanvasElement canvas);
-
-  @JSBody(script = "return !!(navigator.gpu);")
-  private static native boolean webGpuSupported();
 }

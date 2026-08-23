@@ -90,7 +90,8 @@ import java.util.stream.Stream;
  */
 public class FlixelHtml5Plugin implements Plugin<Project> {
 
-  private static final String TASK_GROUP = "flixelgdx";
+  private static final String FLIXELGDX_GROUP = "flixelgdx";
+  private static final String APPLICATION_GROUP = "application";
   private static final String RESOURCE_ROOT = "/org/flixelgdx/gradle/html5/";
   private static final String DEFAULT_INDEX_TEMPLATE = RESOURCE_ROOT + "default-index.html";
   private static final String FONT_RESOURCE = RESOURCE_ROOT + "vcr.ttf";
@@ -136,14 +137,14 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   /** Registers the asset and web-resource copy tasks. */
   private void registerCopyTasks(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("copyAssets", Copy.class, task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup(FLIXELGDX_GROUP);
       task.setDescription("Copies game assets from the assets directory into the web output directory.");
       task.from(ext.getAssetsDir());
       task.into(webRoot.dir("assets"));
     });
 
     project.getTasks().register("copyWebApp", Copy.class, task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup(FLIXELGDX_GROUP);
       task.setDescription(
           "Copies user-provided web resources (e.g. a custom index.html) into the web output directory.");
       task.onlyIf(t -> ext.getWebappDir().get().getAsFile().exists());
@@ -160,12 +161,13 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
    */
   private void registerShaderTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("copyShaders", Copy.class, task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup(FLIXELGDX_GROUP);
       task.setDescription("Copies compiled web (ESSL) shader variants into the web assets so they preload.");
       Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
       if (runtimeClasspath != null) {
         // The ESSL variants live on the runtime classpath, either as loose resource directories
         // (project dependencies) or inside dependency jars, so both cases are expanded here.
+        task.dependsOn(runtimeClasspath);
         task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
             .map(file -> file.isDirectory() ? file : project.zipTree(file))
             .collect(Collectors.toList())));
@@ -182,7 +184,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
    */
   private void registerManifestTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("generateAssetManifest", task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup(FLIXELGDX_GROUP);
       task.setDescription("Writes assets/assets.txt listing every bundled asset for the web preloader.");
       task.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyShaders"));
       task.doLast(t -> writeAssetManifest(new File(webRoot.get().getAsFile(), "assets")));
@@ -222,7 +224,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   private void registerIndexTask(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot,
       AtomicReference<WebBundle> bundle) {
     project.getTasks().register("generateIndexHtml", task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup(FLIXELGDX_GROUP);
       task.setDescription("Writes index.html into the output directory, booting the WebAssembly or JavaScript bundle.");
       task.onlyIf(t -> {
         // A configured custom file must always be deployed, even when auto-generation is off.
@@ -348,7 +350,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
    */
   private void registerPackageTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("package", Zip.class, task -> {
-      task.setGroup(TASK_GROUP);
+      task.setGroup(APPLICATION_GROUP);
       task.setDescription("Packages the web output into a zip archive in the dist/ directory at the project root.");
       task.from(webRoot);
       task.getArchiveBaseName().convention(project.getRootProject().getName());
@@ -363,17 +365,24 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     });
   }
 
-  /** Registers the {@code run} task: build the web app, then serve it locally until interrupted. */
+  /** Registers the {@code run} and {@code debug} tasks. */
   private void registerRunTask(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("run", task -> {
-      task.setGroup("application");
+      task.setGroup(APPLICATION_GROUP);
       task.setDescription("Builds the web app and starts a local HTTP dev server. Press Ctrl+C to stop.");
-      task.doLast(t -> serve(project, webRoot.get().getAsFile(), ext.getDevServerPort().get()));
+      task.doLast(t -> serve(project, webRoot.get().getAsFile(), ext.getDevServerPort().get(), false));
+    });
+    project.getTasks().register("debug", task -> {
+      task.setGroup(APPLICATION_GROUP);
+      task.setDescription(
+          "Builds the web app and starts a local HTTP dev server in debug mode (?flixel.mode=debug). "
+              + "Press Ctrl+C to stop.");
+      task.doLast(t -> serve(project, webRoot.get().getAsFile(), ext.getDevServerPort().get(), true));
     });
   }
 
   /** Starts the embedded HTTP dev server and blocks until the build is interrupted. */
-  private void serve(Project project, File webRoot, int port) {
+  private void serve(Project project, File webRoot, int port, boolean debug) {
     HttpServer server;
     try {
       server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -423,7 +432,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     server.setExecutor(null);
     server.start();
 
-    String url = "http://localhost:" + port;
+    String url = "http://localhost:" + port + (debug ? "?flixel.mode=debug" : "");
     Logger logger = project.getLogger();
     logger.quiet("");
     logger.quiet("[FlixelGDX] Dev server running at " + url);
@@ -490,6 +499,8 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     wireBuildTask(project, "generateWasmGC");
     dependOn(project, "run", "generateJavaScript");
     dependOn(project, "run", "generateWasmGC");
+    dependOn(project, "debug", "generateJavaScript");
+    dependOn(project, "debug", "generateWasmGC");
     dependOn(project, "package", "generateJavaScript");
     dependOn(project, "package", "generateWasmGC");
 
@@ -505,6 +516,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
         generateWasm.finalizedBy(copyRuntime);
       }
       dependOn(project, "run", "copyWasmGCRuntime");
+      dependOn(project, "debug", "copyWasmGCRuntime");
       dependOn(project, "package", "copyWasmGCRuntime");
     }
   }

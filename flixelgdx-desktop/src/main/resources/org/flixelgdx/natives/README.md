@@ -4,10 +4,10 @@ This folder holds the compiled miniaudio JNI library that the desktop audio back
 runtime. The libraries are committed so packaged games (JARs, native images) run with no extra
 setup: `FlixelMiniAudio` extracts the matching file to a temp path and loads it.
 
-| Kernel  | File |
-|---------|------|
-| Linux   | `libflixel_miniaudio.so` |
-| Windows | `flixel_miniaudio.dll` |
+| Kernel  | File                        |
+|---------|-----------------------------|
+| Linux   | `libflixel_miniaudio.so`    |
+| Windows | `flixel_miniaudio.dll`      |
 | macOS   | `libflixel_miniaudio.dylib` |
 
 Rebuild with `./scripts/build_miniaudio_natives.sh` from the repository root whenever

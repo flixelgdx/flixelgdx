@@ -148,12 +148,23 @@
     })();
   </script>
   <script>
-    // Default runtime mode baked in by the build. The ?flixel.mode= URL parameter overrides it.
-    window.flixelMode = window.flixelMode || {{MODE_DEFAULT}};
+    // Resolve the runtime mode: prefer the ?flixel.mode= URL parameter, then the ?debug shorthand,
+    // then the build-time default baked in by the plugin, then null (release).
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('flixel.mode')) {
+        window.flixelMode = params.get('flixel.mode');
+      } else if (params.has('debug')) {
+        window.flixelMode = 'debug';
+      } else {
+        window.flixelMode = window.flixelMode || {{MODE_DEFAULT}};
+      }
+    })();
 
     (function () {
       var wasmEnabled = {{WASM_ENABLED}};
       var loading = window.__flixelLoading;
+      var debugMode = window.flixelMode === 'debug';
 
       // Downloads a file while reporting byte progress, so the loading bar reflects the (large) game
       // bundle download. When the server does not report a length or streaming is unavailable, this
@@ -191,6 +202,7 @@
       }
 
       function loadJs() {
+        if (debugMode) { console.log('[FlixelGDX] Runtime: JavaScript'); }
         loading.indeterminate();
         fetchWithProgress("{{JS_BUNDLE}}", function (f) { loading.set(f); })
           .then(function (buffer) {
@@ -213,6 +225,7 @@
       }
 
       function loadWasm() {
+        if (debugMode) { console.log('[FlixelGDX] Runtime: WebAssembly GC'); }
         loading.indeterminate();
         var runtime = document.createElement('script');
         runtime.src = "{{WASM_RUNTIME}}";

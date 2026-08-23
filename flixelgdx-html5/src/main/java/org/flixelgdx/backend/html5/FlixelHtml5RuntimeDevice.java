@@ -44,23 +44,8 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Override
-  public long getNativeHeap() {
-    return 0L;
-  }
-
-  @Override
-  public boolean isRunningFromJar() {
-    return false;
-  }
-
-  @Override
-  public boolean isRunningInIDE() {
-    return false;
-  }
-
-  @Override
   public FlixelRunEnvironment getEnvironment() {
-    return FlixelRunEnvironment.UNKNOWN;
+    return FlixelRunEnvironment.BROWSER;
   }
 
   @JSBody(script = """
