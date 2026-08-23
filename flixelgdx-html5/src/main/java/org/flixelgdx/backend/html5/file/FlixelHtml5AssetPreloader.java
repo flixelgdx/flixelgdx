@@ -95,6 +95,7 @@ public final class FlixelHtml5AssetPreloader {
         if (!response.ok) { throw new Error('Manifest fetch failed (HTTP ' + response.status + ')'); }
         return response.text();
       }).then(function(text) {
+        window.__flixelAssets['assets.txt'] = new TextEncoder().encode(text);
         var allPaths = text.split(/\\r?\\n/).filter(function(line) { return line.trim().length > 0; });
         allPaths.forEach(function(p) { window.__flixelAssetPaths[p] = true; });
         var paths = allPaths.filter(function(p) { return !flixelIsImage(p); });
