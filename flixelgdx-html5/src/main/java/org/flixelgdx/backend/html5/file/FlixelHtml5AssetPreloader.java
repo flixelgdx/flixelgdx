@@ -28,29 +28,33 @@ import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
 
 /**
- * Downloads every bundled asset up front so the rest of the framework can read files synchronously.
+ * Downloads non-image bundled assets up front so the rest of the framework can read them
+ * synchronously, while deferring image loading to save memory.
  *
  * <p>A browser has no file system and every network read is asynchronous, but the framework's file
- * API (and its asset manager) expect to read bytes and get them back immediately. This preloader
- * bridges that gap at the network level: at startup it reads an {@code assets.txt} manifest that the
- * build plugin generated, downloads every file it lists into an in-memory cache
- * ({@code window.__flixelAssets}), and only then lets the game start. From that point on, an asset
- * read is just a lookup in the cache, which is instant and synchronous.
+ * API expects to read text and binary assets and get bytes back immediately. This preloader bridges
+ * that gap for non-image assets (configs, audio, fonts, shaders): at startup it reads an
+ * {@code assets.txt} manifest that the build plugin generated, downloads every non-image file into
+ * an in-memory cache ({@code window.__flixelAssets}), and only then lets the game start. From that
+ * point on, a text or audio read is just a lookup in the cache, which is instant and synchronous.
  *
- * <p>The manifest is required. If it is missing, the game was almost certainly built without the
- * {@code org.flixelgdx.html5} plugin, and the preloader reports the failure through its error
- * callback so the runner can fail loudly with a clear message rather than silently rendering a blank
- * page.
+ * <p>Image files ({@code .png}, {@code .jpg}, {@code .jpeg}, {@code .bmp}, {@code .tga}) are
+ * intentionally excluded from the upfront download. Preloading all images at startup would consume
+ * enormous amounts of memory (each uncompressed RGBA image is {@code width * height * 4} bytes in
+ * the browser heap, on top of the compressed bytes already downloaded). Instead, images are fetched
+ * and decoded on demand by {@link org.flixelgdx.backend.html5.FlixelHtml5AssetManager} when a game
+ * calls {@code Flixel.assets.load()}, so only images the game actually requests are ever decoded,
+ * and each decoded image is freed from CPU memory once it is uploaded to the GPU.
  *
- * <p>All assets, including images, are stored as their raw encoded bytes. Image decoding is
- * intentionally deferred: browsers can only decode images asynchronously (via
- * {@code createImageBitmap}), and doing it here would block the game from starting until every image
- * was decoded. Instead, {@link org.flixelgdx.backend.html5.FlixelHtml5AssetManager} starts
- * individual image decodes when they are queued via {@code Flixel.assets.load()}, so decoding runs
- * lazily, in parallel with the game's own loading state, and only for images the game actually
- * requests.
+ * <p>All paths from the manifest (including image paths) are recorded in
+ * {@code window.__flixelAssetPaths} so that {@link FlixelHtml5File#exists()} can report correctly
+ * for image paths even though their content is not in {@code window.__flixelAssets}.
  *
- * <p>As files download, progress is reported through the page's loading overlay
+ * <p>The manifest is required. If it is missing or any non-image download fails, the preloader
+ * reports the failure through its error callback (and logs detail to the console) so the runner can
+ * fail loudly with a clear message rather than silently rendering a blank page.
+ *
+ * <p>As non-image files download, progress is reported through the page's loading overlay
  * ({@code window.__flixelLoading}) so the player sees a bar fill rather than a frozen screen.
  */
 public final class FlixelHtml5AssetPreloader {
@@ -75,27 +79,41 @@ public final class FlixelHtml5AssetPreloader {
 
   @JSBody(params = { "manifestUrl", "assetRoot", "onComplete", "onError" }, script = """
       if (!window.__flixelAssets) { window.__flixelAssets = {}; }
+      if (!window.__flixelAssetPaths) { window.__flixelAssetPaths = {}; }
+      var flixelImageExts = ['.png', '.jpg', '.jpeg', '.bmp', '.tga'];
+      function flixelIsImage(path) {
+        var lower = path.toLowerCase();
+        for (var i = 0; i < flixelImageExts.length; i++) {
+          if (lower.endsWith(flixelImageExts[i])) { return true; }
+        }
+        return false;
+      }
       function flixelProgress(done, total) {
         if (window.__flixelLoading) { window.__flixelLoading.set(total ? done / total : 1); }
       }
       fetch(manifestUrl).then(function(response) {
-        if (!response.ok) { onError(); return null; }
+        if (!response.ok) { throw new Error('Manifest fetch failed (HTTP ' + response.status + ')'); }
         return response.text();
       }).then(function(text) {
-        if (text === null) { return; }
-        var paths = text.split(/\\r?\\n/).filter(function(line) { return line.trim().length > 0; });
+        var allPaths = text.split(/\\r?\\n/).filter(function(line) { return line.trim().length > 0; });
+        allPaths.forEach(function(p) { window.__flixelAssetPaths[p] = true; });
+        var paths = allPaths.filter(function(p) { return !flixelIsImage(p); });
         var total = paths.length; var done = 0;
         flixelProgress(0, total);
         if (total === 0) { onComplete(); return; }
         return Promise.all(paths.map(function(path) {
           return fetch(assetRoot + path).then(function(res) {
-            if (!res.ok) { throw new Error(path); }
+            if (!res.ok) { throw new Error('Failed to download "' + path + '" (HTTP ' + res.status + ')'); }
             return res.arrayBuffer();
           }).then(function(buffer) {
             window.__flixelAssets[path] = new Uint8Array(buffer);
-          }).then(function() { done++; flixelProgress(done, total); });
+            done++; flixelProgress(done, total);
+          });
         })).then(function() { onComplete(); });
-      }).catch(function() { onError(); });
+      }).catch(function(e) {
+        console.error('[FlixelGDX] Asset preload failed:', e && e.message ? e.message : e);
+        onError();
+      });
       """)
   private static native void preloadJs(String manifestUrl, String assetRoot, PreloadCallback onComplete,
       PreloadCallback onError);

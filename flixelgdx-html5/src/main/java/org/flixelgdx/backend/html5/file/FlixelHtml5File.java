@@ -37,9 +37,11 @@ import org.teavm.jso.typedarrays.Int8Array;
  *
  * <ul>
  *   <li>{@link Kind#ASSET} - a read-only resource bundled with the game. Because the browser cannot
- *       read files synchronously, every bundled asset is downloaded up front by
+ *       read files synchronously, non-image assets are downloaded up front by
  *       {@link FlixelHtml5AssetPreloader} into an in-memory cache; a read here is then just an
- *       instant lookup in that cache. Writes are impossible and return {@code false}.</li>
+ *       instant lookup in that cache. Image assets are not preloaded and must be requested through
+ *       the asset manager ({@code Flixel.assets.load()}) instead. Writes are impossible and return
+ *       {@code false}.</li>
  *   <li>{@link Kind#STORAGE} - a read/write entry in the browser's {@code localStorage}, used for
  *       save data. It persists between sessions on the same origin but is not a real file, so it
  *       has no meaningful directory listing.</li>
@@ -161,7 +163,10 @@ public class FlixelHtml5File implements FlixelFile {
     return slash >= 0 ? path.substring(slash + 1) : path;
   }
 
-  @JSBody(params = "key", script = "return !!(window.__flixelAssets && window.__flixelAssets[key]);")
+  @JSBody(params = "key", script = """
+      return !!(window.__flixelAssetPaths && window.__flixelAssetPaths[key])
+          || !!(window.__flixelAssets && window.__flixelAssets[key]);
+      """)
   private static native boolean assetCached(String key);
 
   @JSBody(params = "key", script = """

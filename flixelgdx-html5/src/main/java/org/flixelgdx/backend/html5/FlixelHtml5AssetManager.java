@@ -33,6 +33,7 @@ import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.typedarrays.Int8Array;
@@ -227,34 +228,51 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   }
 
   /**
-   * Starts an asynchronous browser decode for the image at {@code path}.
+   * Fetches and asynchronously decodes the image at {@code path} directly from the server.
    *
-   * <p>The raw bytes must already be in {@code window.__flixelAssets[path]}. The Promise encodes
-   * the decoded RGBA pixels into the compact FLXI format (four magic bytes, then width and height
-   * as little-endian 32-bit integers, then packed RGBA8888 pixels) and stores the result in
-   * {@code window.__flixelDecodedImages[path]}. {@link #isImageDecodeReady(String)} polls that
-   * map, and {@link WebImageLoader} reads the encoded result from it.
+   * <p>Because image files are not preloaded into {@code window.__flixelAssets} (to avoid enormous
+   * up-front memory consumption), this method fetches the image bytes on demand via
+   * {@code fetch("assets/" + path)}, creates a {@link Blob} with the correct MIME type so that
+   * {@code createImageBitmap} can decode it regardless of the server's {@code Content-Type} header,
+   * and stores the decoded RGBA pixels as a compact FLXI-encoded {@code Uint8Array} in
+   * {@code window.__flixelDecodedImages[path]}.
    *
-   * @param path Normalized asset path of the image to decode.
+   * <p>{@link #isImageDecodeReady(String)} polls that map, and {@link WebImageLoader} reads the
+   * encoded result from it once the Promise has resolved.
+   *
+   * @param path Normalized asset path of the image to fetch and decode.
    */
   @JSBody(params = "path", script = """
-      var bytes = window.__flixelAssets && window.__flixelAssets[path];
-      if (!bytes) { return; }
       if (!window.__flixelDecodedImages) { window.__flixelDecodedImages = {}; }
-      createImageBitmap(new Blob([bytes])).then(function(bitmap) {
-        var canvas = document.createElement('canvas');
-        canvas.width = bitmap.width; canvas.height = bitmap.height;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(bitmap, 0, 0);
-        var pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
-        var out = new Uint8Array(12 + pixels.length);
-        out[0] = 70; out[1] = 76; out[2] = 88; out[3] = 73;
-        var view = new DataView(out.buffer);
-        view.setUint32(4, bitmap.width, true); view.setUint32(8, bitmap.height, true);
-        out.set(pixels, 12);
-        if (bitmap.close) { bitmap.close(); }
-        window.__flixelDecodedImages[path] = out;
-      });
+      var exts = { 'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg',
+                   'bmp': 'image/bmp', 'tga': 'image/x-tga' };
+      var ext = path.split('.').pop().toLowerCase();
+      var mime = exts[ext] || 'image/png';
+      fetch('assets/' + path)
+        .then(function(res) {
+          if (!res.ok) { throw new Error('HTTP ' + res.status); }
+          return res.arrayBuffer();
+        })
+        .then(function(buffer) {
+          return createImageBitmap(new Blob([buffer], { type: mime }));
+        })
+        .then(function(bitmap) {
+          var canvas = document.createElement('canvas');
+          canvas.width = bitmap.width; canvas.height = bitmap.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(bitmap, 0, 0);
+          var pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+          var out = new Uint8Array(12 + pixels.length);
+          out[0] = 70; out[1] = 76; out[2] = 88; out[3] = 73;
+          var view = new DataView(out.buffer);
+          view.setUint32(4, bitmap.width, true); view.setUint32(8, bitmap.height, true);
+          out.set(pixels, 12);
+          if (bitmap.close) { bitmap.close(); }
+          window.__flixelDecodedImages[path] = out;
+        })
+        .catch(function(e) {
+          console.error('[FlixelGDX] Failed to fetch or decode image "' + path + '":', e && e.message ? e.message : e);
+        });
       """)
   private static native void startImageDecodeJs(String path);
 
@@ -280,6 +298,15 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
       return d ? new Int8Array(d.buffer, d.byteOffset, d.byteLength) : null;
       """)
   private static native Int8Array getDecodedImageBytes(String path);
+
+  /**
+   * Removes the FLXI-encoded pixel bytes for the image at {@code path} from the browser's decode
+   * cache, releasing the CPU-side memory. Call this after the pixels have been uploaded to the GPU.
+   *
+   * @param path Normalized asset path of the image to free.
+   */
+  @JSBody(params = "path", script = "if (window.__flixelDecodedImages) { delete window.__flixelDecodedImages[path]; }")
+  private static native void freeDecodedImageJs(String path);
 
   /**
    * Loads images on web by reading pre-decoded FLXI pixels from the browser decode cache.
@@ -318,7 +345,10 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
     public Object finishRaw(@NotNull FlixelAssetManager assets, @NotNull String path,
         @NotNull Object raw) {
       if (raw instanceof FlixelImage image) {
-        return Flixel.graphics.createTexture(image);
+        FlixelTexture texture = Flixel.graphics.createTexture(image);
+        // Pixels are now on the GPU; the CPU-side FLXI bytes are no longer needed.
+        freeDecodedImageJs(path);
+        return texture;
       }
       return raw;
     }
