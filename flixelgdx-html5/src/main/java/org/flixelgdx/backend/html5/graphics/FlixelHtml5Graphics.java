@@ -218,11 +218,12 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @Nullable
   public FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
     // A browser can only decode an encoded image asynchronously, so it cannot happen here in a
-    // synchronous call. Instead FlixelHtml5AssetPreloader decodes every image while it downloads and
-    // stores the raw RGBA pixels behind a small "FLXI" header (magic, then width and height as
-    // little-endian 32-bit integers). This method just unpacks that, which needs no real decoding.
-    // Bytes without the header are a genuinely encoded image the web backend cannot decode on the
-    // fly, so it returns null.
+    // synchronous call. FlixelHtml5AssetManager starts a createImageBitmap Promise for each image
+    // queued through the asset manager, and once the Promise resolves it stores the raw RGBA pixels
+    // behind a small "FLXI" header (magic, then width and height as little-endian 32-bit integers).
+    // This method just unpacks that, which needs no real decoding. Bytes without the header are a
+    // genuinely encoded image (raw PNG, JPEG, etc.) that the web backend cannot decode synchronously,
+    // so it returns null.
     int base = encoded.position();
     if (encoded.remaining() < HEADER_SIZE
         || encoded.get(base) != 'F' || encoded.get(base + 1) != 'L'

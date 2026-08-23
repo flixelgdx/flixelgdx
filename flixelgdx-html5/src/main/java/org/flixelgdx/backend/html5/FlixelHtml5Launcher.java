@@ -25,7 +25,6 @@ package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
-import org.flixelgdx.asset.FlixelBaseAssetManager;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory;
@@ -93,7 +92,7 @@ public final class FlixelHtml5Launcher {
     Flixel.files = new FlixelHtml5Files();
     Flixel.input = input;
     Flixel.graphics = graphics;
-    Flixel.assets = new FlixelBaseAssetManager();
+    Flixel.assets = new FlixelHtml5AssetManager();
     Flixel.soundFactory = FlixelWebAudioFactory.create();
 
     window.setTitle(game.getTitle());
