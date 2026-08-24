@@ -38,20 +38,14 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -61,7 +55,7 @@ import java.util.Set;
  * megabytes of source art can balloon into hundreds of megabytes of video memory. Basis Universal
  * keeps textures compressed on the GPU and transcodes them to the best format each device
  * supports. This plugin automates the encoding step, which normally requires developers to
- * install and run the {@code basisu} command line tool by hand: it fetches a verified {@code
+ * install and run the {@code basisu} command line tool by hand: it extracts a bundled {@code
  * basisu} binary for the host platform, caches it in the Gradle user home directory, and wires a
  * {@code compressBasisuTextures} task into the Android build so every {@code .png} under the
  * configured assets directory is compressed automatically. {@code FlixelGame.create()} enables
@@ -70,9 +64,9 @@ import java.util.Set;
  * {@code FlixelAssetManager.enableCompressedTextures()} in {@code flixelgdx-core} for the loading
  * side of this feature.
  *
- * <p>Compression stays off unless a developer opts in, since it changes build output and needs
- * network access on first use to fetch the encoder. See {@link FlixelBasisuExtension} for the
- * {@code enableBasisuCompression} Gradle property and other configuration.
+ * <p>Compression stays off unless a developer opts in, since it changes build output. See
+ * {@link FlixelBasisuExtension} for the {@code enableBasisuCompression} Gradle property and other
+ * configuration.
  *
  * <p>Apply in the platform module's {@code build.gradle}, alongside {@code com.android.application},
  * {@code com.android.library}, or the desktop module's {@code application} plugin:
@@ -101,24 +95,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
   private static final String ENABLE_PROPERTY = "enableBasisuCompression";
   private static final String COMPRESS_TASK_NAME = "compressBasisuTextures";
   private static final String SETTINGS_MARKER_FILE = ".basisu-settings";
-
-  // Pinned to a specific commit because the repository we rely on doesn't receive updates
-  // anymore, nor does it have any releases we can pull from.
-  private static final String BASISU_COMMIT = "168ecd13d2884aacc674f30a5eddc389e4f07fb0";
-  private static final String BASISU_RAW_BASE =
-      "https://raw.githubusercontent.com/HacksawStudios/basisu/" + BASISU_COMMIT + "/";
-
-  private static final Map<String, BasisuBinary> BASISU_BINARIES = Map.of(
-      "linux-x64", new BasisuBinary(
-          "bin/linux/x64/basisu", "3c6048214557caf20391ff3c52e7eb80d53efa8798fe5d03b378ed07092f5f02", "basisu"),
-      "linux-arm64", new BasisuBinary(
-          "bin/linux/arm64/basisu", "d2c2bbb60268b88e4fd69178a61e8bb61bb8524286dbffb15d290a07f3423b80", "basisu"),
-      "darwin-x64", new BasisuBinary(
-          "bin/darwin/x64/basisu", "d79d27ec9b07025d477edd8aaddf43627d179491157fa29cc86d09e0877665a2", "basisu"),
-      "darwin-arm64", new BasisuBinary(
-          "bin/darwin/arm64/basisu", "11c385f91b503be3270335f748bb269471b343c8e69bf24c32f0c66d4720daff", "basisu"),
-      "windows-x64", new BasisuBinary(
-          "bin/win/x64/basisu.exe", "24b02c886c401168684340e5954aee2cf5ed7838b4be5bdfa7c6301802265bcc", "basisu.exe"));
+  private static final String NATIVES_RESOURCE_BASE = "org/flixelgdx/gradle/basisu/natives/";
 
   @Override
   public void apply(@NonNull Project project) {
@@ -417,114 +394,133 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
   }
 
   /**
-   * Ensures a verified {@code basisu} encoder binary for the host platform is present in the
-   * Gradle user home cache, downloading and checksum-verifying it first if needed.
+   * Ensures the {@code basisu} encoder binary for the host platform is present in the Gradle user
+   * home cache, extracting it from the plugin's bundled resources if needed.
+   *
+   * <p>The cache directory is keyed by a short SHA-256 prefix of the binary's bytes, so updating
+   * the plugin with a new binary causes the cache to be re-populated automatically without any
+   * manual cleanup.
+   *
+   * <p>On Windows, the {@code ucrtbased.dll} companion is extracted into the same cache directory
+   * alongside {@code basisu.exe}, since the encoder requires it at runtime.
    *
    * @param project The Gradle project (used for logging and the Gradle user home path).
-   * @return The cached, executable encoder binary.
+   * @return The extracted, executable encoder binary.
    */
   @NonNull
   private File resolveEncoderBinary(@NonNull Project project) {
-    String platformKey = detectPlatformKey();
-    BasisuBinary binary = BASISU_BINARIES.get(platformKey);
-    if (binary == null) {
-      throw new GradleException(
-          "FlixelGDX: no prebuilt basisu encoder binary is available for platform \"" + platformKey
-              + "\". Supported platforms: " + BASISU_BINARIES.keySet()
-              + ". Disable enableBasisuCompression on this machine, or build basisu from source.");
-    }
+    String os = detectOs();
+    String arch = detectArch();
+    String executableName = os.equals("windows") ? "basisu.exe" : "basisu";
+    String resourceDir = NATIVES_RESOURCE_BASE + os + "/" + arch + "/";
+
+    byte[] binaryBytes = loadResource(resourceDir + executableName);
+    String cacheKey = sha256Prefix(binaryBytes);
 
     File cacheDir = new File(
-        project.getGradle().getGradleUserHomeDir(), "caches/flixelgdx-basisu/" + BASISU_COMMIT + "/" + platformKey);
-    File binaryFile = new File(cacheDir, binary.executableName());
-    if (binaryFile.isFile() && sha256Matches(binaryFile, binary.sha256())) {
-      return binaryFile;
+        project.getGradle().getGradleUserHomeDir(),
+        "caches/flixelgdx-basisu/" + cacheKey + "/" + os + "/" + arch);
+    File binaryFile = new File(cacheDir, executableName);
+
+    if (!binaryFile.isFile()) {
+      tryMakeDir(cacheDir);
+      try {
+        Files.write(binaryFile.toPath(), binaryBytes);
+      } catch (IOException e) {
+        throw new GradleException("FlixelGDX: failed to extract bundled basisu encoder.", e);
+      }
+      if (os.equals("windows")) {
+        byte[] dllBytes = loadResource(resourceDir + "ucrtbased.dll");
+        try {
+          Files.write(new File(cacheDir, "ucrtbased.dll").toPath(), dllBytes);
+        } catch (IOException e) {
+          throw new GradleException("FlixelGDX: failed to extract bundled ucrtbased.dll.", e);
+        }
+      }
+      if (!binaryFile.setExecutable(true, false)) {
+        project.getLogger().warn("[FlixelGDX] Could not mark basisu encoder as executable at {}.", binaryFile);
+      }
     }
 
-    project.getLogger().lifecycle("[FlixelGDX] Fetching basisu encoder for {}...", platformKey);
-    tryMakeDir(cacheDir);
-    downloadTo(BASISU_RAW_BASE + binary.repoPath(), binaryFile);
-
-    if (!sha256Matches(binaryFile, binary.sha256())) {
-      throw new GradleException(
-          "FlixelGDX: downloaded basisu encoder checksum mismatch for platform \"" + platformKey
-              + "\". Expected " + binary.sha256() + ". This may indicate a corrupted download or a compromised "
-              + "upstream file; refusing to execute an unverified binary.");
-    }
-    if (!binaryFile.setExecutable(true, false)) {
-      project.getLogger().warn("[FlixelGDX] Could not mark basisu encoder as executable at {}.", binaryFile);
-    }
     return binaryFile;
   }
 
   /**
-   * Downloads {@code url} to {@code dest}, overwriting any existing file.
+   * Reads all bytes of a classpath resource bundled inside the plugin JAR.
    *
-   * @param url Source URL.
-   * @param dest Destination file.
+   * @param path Resource path relative to the classpath root (no leading slash).
+   * @return The resource's raw bytes.
+   * @throws GradleException If the resource is missing or cannot be read.
    */
-  private void downloadTo(@NonNull String url, @NonNull File dest) {
-    HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
-    HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
-    try {
-      HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(dest.toPath()));
-      if (response.statusCode() != 200) {
+  private byte @NonNull [] loadResource(@NonNull String path) {
+    try (InputStream stream = FlixelBasisuPlugin.class.getClassLoader().getResourceAsStream(path)) {
+      if (stream == null) {
         throw new GradleException(
-            "FlixelGDX: failed to download basisu encoder from " + url + " (HTTP " + response.statusCode() + ").");
+            "FlixelGDX: bundled basisu binary not found at \"" + path + "\". "
+                + "This is a bug in the FlixelGDX plugin; please report it.");
       }
-    } catch (IOException | InterruptedException e) {
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-      throw new GradleException("FlixelGDX: failed to download basisu encoder from " + url + ".", e);
+      return stream.readAllBytes();
+    } catch (IOException e) {
+      throw new GradleException("FlixelGDX: failed to read bundled basisu binary at \"" + path + "\".", e);
     }
   }
 
   /**
-   * Checks whether {@code file}'s SHA-256 digest matches {@code expectedHex}.
+   * Returns the first 16 hex characters of the SHA-256 digest of {@code bytes}, used as a
+   * short, collision-resistant cache directory key.
    *
-   * @param file File to hash.
-   * @param expectedHex Expected digest, as lowercase hex.
-   * @return {@code true} if the file exists and its digest matches.
-   */
-  private boolean sha256Matches(@NonNull File file, @NonNull String expectedHex) {
-    if (!file.isFile()) {
-      return false;
-    }
-    try {
-      MessageDigest digest = MessageDigest.getInstance("SHA-256");
-      byte[] hash = digest.digest(Files.readAllBytes(file.toPath()));
-      StringBuilder hex = new StringBuilder(hash.length * 2);
-      for (byte b : hash) {
-        hex.append(String.format(Locale.ROOT, "%02x", b));
-      }
-      return hex.toString().equalsIgnoreCase(expectedHex);
-    } catch (IOException | NoSuchAlgorithmException e) {
-      return false;
-    }
-  }
-
-  /**
-   * Detects the host platform as an {@code <os>-<arch>} key matching {@link #BASISU_BINARIES}.
-   *
-   * @return The detected platform key (for example {@code "linux-x64"}).
+   * @param bytes Bytes to hash.
+   * @return A 16-character lowercase hex string.
    */
   @NonNull
-  private String detectPlatformKey() {
-    String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-    String archName = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
-
-    String os;
-    if (osName.contains("win")) {
-      os = "windows";
-    } else if (osName.contains("mac") || osName.contains("darwin")) {
-      os = "darwin";
-    } else {
-      os = "linux";
+  private String sha256Prefix(byte @NonNull [] bytes) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(bytes);
+      StringBuilder hex = new StringBuilder(16);
+      for (int i = 0; i < 8; i++) {
+        hex.append(String.format(Locale.ROOT, "%02x", hash[i]));
+      }
+      return hex.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new GradleException("FlixelGDX: SHA-256 is not available on this JVM.", e);
     }
+  }
 
-    String arch = (archName.contains("aarch64") || archName.contains("arm64")) ? "arm64" : "x64";
-    return os + "-" + arch;
+  /**
+   * Detects the host operating system as the subdirectory name used in the plugin's bundled
+   * natives tree ({@code linux}, {@code macos}, or {@code windows}).
+   *
+   * @return The detected OS name.
+   */
+  @NonNull
+  private String detectOs() {
+    String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+    if (osName.contains("win")) {
+      return "windows";
+    } else if (osName.contains("mac") || osName.contains("darwin")) {
+      return "macos";
+    } else {
+      return "linux";
+    }
+  }
+
+  /**
+   * Detects the host CPU architecture as the subdirectory name used in the plugin's bundled
+   * natives tree ({@code arm64} or {@code x64_sse}).
+   *
+   * <p>The JVM itself requires SSE2 on x86-64, so the SSE-optimized variant is always safe to
+   * use on any x64 host.
+   *
+   * @return The detected architecture name.
+   */
+  @NonNull
+  private String detectArch() {
+    String arch = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
+    if (arch.contains("aarch64") || arch.contains("arm64")) {
+      return "arm64";
+    }
+    return "x64_sse";
   }
 
   /**
@@ -563,17 +559,5 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
     if (!(path.exists() || wasMade)) {
       throw new RuntimeException("The provided path '" + path.getAbsolutePath() + "' was failed to be created.");
     }
-  }
-
-  /**
-   * A single platform's {@code basisu} encoder binary: its path within the HacksawStudios/basisu
-   * repository at {@link #BASISU_COMMIT}, its expected SHA-256 digest, and the executable file
-   * name to cache it under.
-   *
-   * @param repoPath Path of the binary within the source repository.
-   * @param sha256 Expected SHA-256 digest, as lowercase hex.
-   * @param executableName File name to cache the binary under locally.
-   */
-  private record BasisuBinary(@NonNull String repoPath, @NonNull String sha256, @NonNull String executableName) {
   }
 }
