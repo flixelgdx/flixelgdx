@@ -26,8 +26,11 @@ package org.flixelgdx.debug;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
+import org.flixelgdx.backend.FlixelRuntimeDevice;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.functional.FlixelDestroyable;
@@ -68,11 +71,12 @@ import java.util.function.Consumer;
  *
  * <p>The default install path is:
  * <ol>
- *   <li>{@link Flixel#setDebugMode(boolean)} flips debug mode on in your launcher.</li>
- *   <li>The launcher (or your code) calls {@link Flixel#setDebugOverlay(java.util.function.Supplier)}
+ *   <li>The launcher calls {@link FlixelRuntimeDevice#setMode(FlixelRuntimeMode)} with
+ *       {@link FlixelRuntimeMode#DEBUG} to enable debug mode.</li>
+ *   <li>The launcher (or your code) calls {@link FlixelDebugManager#setOverlayFactory}
  *       with the backend-specific factory.</li>
- *   <li>{@link org.flixelgdx.FlixelGame FlixelGame} constructs the overlay during {@code create}
- *       and registers it with the logger.</li>
+ *   <li>{@link FlixelGame} constructs the overlay during {@code create} and registers it with
+ *       the logger.</li>
  * </ol>
  *
  * <p>Toggle overlay visibility with {@link #toggleKey} (default {@link Keybinds#DEFAULT_TOGGLE_KEY}).

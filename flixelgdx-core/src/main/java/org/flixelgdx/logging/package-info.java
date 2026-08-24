@@ -24,8 +24,7 @@
  * <p>Error-level messages include a call stack when available. The
  * {@link org.flixelgdx.logging.FlixelStackTraceProvider FlixelStackTraceProvider} abstraction
  * lets the backend supply platform-appropriate stack frames. Platform launchers install their
- * provider into {@link org.flixelgdx.Flixel#stackTraceProvider Flixel.stackTraceProvider}
- * before the game starts.
+ * provider via {@code Flixel.runtime.setStackTraceProvider(...)} before the game starts.
  *
  * <h2>File logging</h2>
  * <p>A {@link org.flixelgdx.logging.FlixelLogFileHandler FlixelLogFileHandler} can be attached

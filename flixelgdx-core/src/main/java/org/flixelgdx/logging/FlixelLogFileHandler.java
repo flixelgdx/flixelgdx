@@ -37,8 +37,10 @@ import org.jetbrains.annotations.Nullable;
  * <p>On platforms where file logging is not feasible (for example, web/TeaVM), no
  * handler needs to be registered and the logger will simply skip file output.
  *
- * <p>Assign an implementation to {@link org.flixelgdx.Flixel#logFileHandler Flixel.logFileHandler}
- * before {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)} in the platform launcher.
+ * <p>Assign an implementation to {@link FlixelLogger#logFileHandler FlixelLogger.logFileHandler}
+ * (via {@code Flixel.log.logFileHandler}) before
+ * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}
+ * in the platform launcher.
  *
  * @see FlixelLogger
  */

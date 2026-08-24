@@ -24,6 +24,7 @@
 package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /**
@@ -87,6 +89,8 @@ public class FlixelDebugManager {
   /** Maximum entries kept in the input history (oldest are dropped first). */
   public static final int MAX_HISTORY_ENTRIES = 64;
 
+  private Supplier<FlixelDebugOverlay> overlayFactory = FlixelHeadlessDebugOverlay::new;
+
   private final FlixelMap<String, RegisteredCommand> commands = new FlixelMap<>();
   private final FlixelArray<String> commandHistory = new FlixelArray<>(MAX_HISTORY_ENTRIES);
 
@@ -129,42 +133,39 @@ public class FlixelDebugManager {
     registerBuiltinCommands();
   }
 
-  /** Returns {@code true} when the overlay is on screen. */
-  public boolean isVisible() {
-    return overlay.isVisible();
+  /**
+   * Sets the factory that produces the {@link FlixelDebugOverlay} when debug mode is enabled.
+   *
+   * <p>Call this before {@link Flixel#start} (for example, in the launcher or in
+   * {@link FlixelGame#create()}) to install a custom overlay. The factory is only invoked once,
+   * when the game actually starts in debug mode; calling this after the overlay is already created
+   * has no effect on the running overlay.
+   *
+   * <p>The default factory builds {@link FlixelHeadlessDebugOverlay}. Desktop launchers typically
+   * replace this with a richer overlay before the game starts.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * Flixel.debug.setOverlayFactory(MyCustomOverlay::new);
+   * }</pre>
+   *
+   * @param factory A supplier that creates a new {@link FlixelDebugOverlay} (or subclass). Must not be null.
+   */
+  public void setOverlayFactory(@NotNull Supplier<FlixelDebugOverlay> factory) {
+    if (factory != null) {
+      overlayFactory = factory;
+    }
   }
 
   /**
-   * Shows or hides the overlay.
+   * Creates the debug overlay using the registered factory and assigns it to {@link #overlay}.
+   * Called internally by {@link org.flixelgdx.FlixelGame} during startup when debug mode is enabled.
    *
-   * @param visible {@code true} to show, {@code false} to hide.
+   * @return The newly created overlay.
    */
-  public void setVisible(boolean visible) {
-    overlay.setVisible(visible);
-  }
-
-  /** Toggles the overlay visibility. */
-  public void toggleVisible() {
-    overlay.toggleVisible();
-  }
-
-  /** Returns {@code true} when bounding-box drawing (hitboxes) is on. */
-  public boolean isDrawDebug() {
-    return overlay.isDrawDebug();
-  }
-
-  /**
-   * Sets whether bounding boxes (hitboxes) should be drawn.
-   *
-   * @param drawDebug {@code true} to draw, {@code false} to hide.
-   */
-  public void setDrawDebug(boolean drawDebug) {
-    overlay.setDrawDebug(drawDebug);
-  }
-
-  /** Toggles bounding-box drawing. */
-  public void toggleDrawDebug() {
-    overlay.toggleDrawDebug();
+  public FlixelDebugOverlay createOverlay() {
+    overlay = overlayFactory.get();
+    return overlay;
   }
 
   /**
@@ -436,12 +437,12 @@ public class FlixelDebugManager {
     });
 
     registerCommand("hitboxes", args -> {
-      boolean target = args.getBoolean(0, !isDrawDebug());
-      setDrawDebug(target);
-      Flixel.info("FlixelDebug", "Hitboxes: " + isDrawDebug());
+      boolean target = args.getBoolean(0, !overlay.isDrawDebug());
+      overlay.setDrawDebug(target);
+      Flixel.info("FlixelDebug", "Hitboxes: " + overlay.isDrawDebug());
     });
 
-    registerCommand("hide", args -> setVisible(false));
+    registerCommand("hide", args -> overlay.setVisible(false));
 
     registerCommand("resetState", args -> {
       Flixel.info("FlixelDebug", "Resetting current state.");

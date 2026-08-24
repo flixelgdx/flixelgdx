@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.FlixelAsciiCodes;
 import org.flixelgdx.util.FlixelString;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -52,6 +53,25 @@ public class FlixelLogger {
    */
   public static final int MAX_LOG_ENTRIES = 200;
 
+  /**
+   * Platform-specific handler for writing log output to a file. May be {@code null} on platforms
+   * that do not support file logging (such as web/TeaVM).
+   *
+   * <p>Set this before calling {@link #startFileLogging()} so the logger knows where to send
+   * output. Desktop launchers install a handler automatically; web and headless builds leave it
+   * {@code null}, which simply skips file output.
+   */
+  @Nullable
+  public FlixelLogFileHandler logFileHandler;
+
+  /**
+   * When non-null, the logger sends each console line here instead of {@code System.out}
+   * (for example, styled output in the browser). Set before
+   * {@link Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start}.
+   */
+  @Nullable
+  public FlixelLogConsoleSink logConsoleSink;
+
   /** Maximum number of log files to keep when file logging is enabled. */
   private int maxLogFiles = 10;
 
@@ -60,9 +80,6 @@ public class FlixelLogger {
 
   /** Log mode for console output. File output always uses {@link FlixelLogMode#DETAILED}. */
   private FlixelLogMode logMode;
-
-  /** Provider for collecting stack trace information for the logger. */
-  private FlixelStackTraceProvider stackTraceProvider;
 
   /** Custom logs folder path, or {@code null} to use the platform default. */
   private String customLogsFolderPath = null;
@@ -90,13 +107,12 @@ public class FlixelLogger {
 
   /**
    * Creates a logger that outputs to the console and optionally to a file
-   * (when {@link Flixel#logFileHandler} is assigned).
+   * (when {@link #logFileHandler} is assigned).
    *
    * @param logMode The mode used for console output formatting.
    */
   public FlixelLogger(FlixelLogMode logMode) {
     this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
-    this.stackTraceProvider = Flixel.stackTraceProvider;
   }
 
   /**
@@ -116,26 +132,6 @@ public class FlixelLogger {
    */
   public void setLogMode(FlixelLogMode logMode) {
     this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
-  }
-
-  /**
-   * Returns the stack trace provider used to determine the caller location
-   * when logging messages.
-   *
-   * @return The current stack trace provider, or {@code null} if none has been set.
-   */
-  public FlixelStackTraceProvider getStackTraceProvider() {
-    return stackTraceProvider;
-  }
-
-  /**
-   * Sets the stack trace provider used to resolve the calling class and
-   * method name for each log message.
-   *
-   * @param stackTraceProvider The provider to use for stack trace resolution.
-   */
-  public void setStackTraceProvider(FlixelStackTraceProvider stackTraceProvider) {
-    this.stackTraceProvider = stackTraceProvider;
   }
 
   /**
@@ -181,11 +177,10 @@ public class FlixelLogger {
    * timestamped log file, and (on JVM) starts a background writer thread.
    */
   public void startFileLogging() {
-    FlixelLogFileHandler handler = Flixel.logFileHandler;
-    if (handler == null || !canStoreLogs) {
+    if (logFileHandler == null || !canStoreLogs) {
       return;
     }
-    handler.start(customLogsFolderPath, maxLogFiles);
+    logFileHandler.start(customLogsFolderPath, maxLogFiles);
   }
 
   /**
@@ -198,9 +193,8 @@ public class FlixelLogger {
    * written during disposal are persisted.
    */
   public void stopFileLogging() {
-    FlixelLogFileHandler handler = Flixel.logFileHandler;
-    if (handler != null) {
-      handler.stop();
+    if (logFileHandler != null) {
+      logFileHandler.stop();
     }
   }
 
@@ -797,7 +791,7 @@ public class FlixelLogger {
 
     String ts = LocalDateTime.now().format(LOG_TIMESTAMP);
 
-    FlixelLogConsoleSink consoleSink = Flixel.logConsoleSink;
+    FlixelLogConsoleSink consoleSink = logConsoleSink;
     String safeTag = tag != null ? tag : defaultTag;
 
     String levelPart = "[" + level + "]";
@@ -835,8 +829,7 @@ public class FlixelLogger {
     }
 
     // File: always detailed (plain, no ANSI).
-    FlixelLogFileHandler fileHandler = Flixel.logFileHandler;
-    if (fileHandler != null && fileHandler.isActive()) {
+    if (logFileHandler != null && logFileHandler.isActive()) {
       fileLine.clear();
       fileLine.concat(ts);
       fileLine.concat(' ');
@@ -849,7 +842,7 @@ public class FlixelLogger {
       fileLine.concat(methodPart);
       fileLine.concat(' ');
       fileLine.concat(rawMessage);
-      fileHandler.write(fileLine.copyContentToNewString());
+      logFileHandler.write(fileLine.copyContentToNewString());
     }
   }
 
@@ -859,7 +852,8 @@ public class FlixelLogger {
    * @return The location of where a log was called from.
    */
   protected FlixelStackFrame getCaller() {
-    return (stackTraceProvider != null) ? stackTraceProvider.getCaller() : null;
+    FlixelStackTraceProvider provider = Flixel.runtime.getStackTraceProvider();
+    return provider.getCaller();
   }
 
   /**

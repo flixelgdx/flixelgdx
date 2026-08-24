@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
+import org.flixelgdx.logging.FlixelStackTraceProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -38,6 +41,35 @@ public enum FlixelNoopRuntimeDevice implements FlixelRuntimeDevice {
 
   /** Shared no-op instance. */
   INSTANCE;
+
+  private FlixelRuntimeMode runtimeMode = FlixelRuntimeMode.RELEASE;
+  private FlixelStackTraceProvider stackTraceProvider = FlixelNoopStackTraceProvider.INSTANCE;
+
+  @Override
+  @NotNull
+  public FlixelRuntimeMode getMode() {
+    return runtimeMode;
+  }
+
+  @Override
+  public void setMode(@NotNull FlixelRuntimeMode mode) {
+    if (mode != null) {
+      this.runtimeMode = mode;
+    }
+  }
+
+  @Override
+  @NotNull
+  public FlixelStackTraceProvider getStackTraceProvider() {
+    return stackTraceProvider;
+  }
+
+  @Override
+  public void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {
+    if (provider != null) {
+      this.stackTraceProvider = provider;
+    }
+  }
 
   @Override
   @Nullable

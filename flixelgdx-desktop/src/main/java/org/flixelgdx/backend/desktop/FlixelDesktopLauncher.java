@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.audio.FlixelMiniAudioFactory;
@@ -142,9 +143,9 @@ public final class FlixelDesktopLauncher {
     Flixel.files = new FlixelJvmFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
-    Flixel.stackTraceProvider = new FlixelJvmStackTraceProvider();
-    Flixel.logFileHandler = new FlixelJvmLogFileHandler();
-    Flixel.soundFactory = FlixelMiniAudioFactory.create();
+    Flixel.runtime.setStackTraceProvider(new FlixelJvmStackTraceProvider());
+    Flixel.log.logFileHandler = new FlixelJvmLogFileHandler();
+    FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads, iconManager, width, height);
 
     FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
@@ -156,19 +157,14 @@ public final class FlixelDesktopLauncher {
 
     // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire their desktop
     // implementations once they exist, just before the runner takes over the loop.
-    Flixel.afterStart.add(() -> {
+    Flixel.boot.afterStart(() -> {
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
       Flixel.mouse.setMouseIconManager(iconManager);
     });
 
-    // Install the Dear ImGui debug overlay factory. It is only instantiated when debug mode is on
-    // (FlixelGame.create gates on it), so this is inert in release builds while still letting a game
-    // flip debug mode on at runtime and get the full overlay.
-    Flixel.setDebugOverlay(FlixelImGuiDebugOverlay::new);
-
-    Flixel.setRuntimeMode(runtimeMode);
-    Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
+    Flixel.runtime.setMode(runtimeMode);
 
     try {
       Flixel.start(game, runner);

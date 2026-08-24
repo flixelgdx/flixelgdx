@@ -45,7 +45,6 @@ class FlixelLoggerTest {
   @BeforeEach
   void setUp() {
     logger = new FlixelLogger(FlixelLogMode.SIMPLE);
-    logger.setStackTraceProvider(null);
     captured = new ArrayList<>();
     captureListener = captured::add;
     logger.addLogListener(captureListener);

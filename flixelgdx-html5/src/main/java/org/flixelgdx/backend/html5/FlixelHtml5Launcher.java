@@ -25,14 +25,15 @@ package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetManager;
 import org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
+import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
-import org.flixelgdx.backend.html5.input.FlixelWebGamepadProvider;
 import org.teavm.jso.JSBody;
 
 /**
@@ -84,7 +85,7 @@ public final class FlixelHtml5Launcher {
     FlixelHtml5Graphics graphics = new FlixelHtml5Graphics();
     FlixelHtml5Window window = new FlixelHtml5Window();
     FlixelHtml5InputDevice input = new FlixelHtml5InputDevice();
-    FlixelWebGamepadProvider gamepads = new FlixelWebGamepadProvider();
+    FlixelHtml5GamepadProvider gamepads = new FlixelHtml5GamepadProvider();
 
     Flixel.alert = new FlixelHtml5Alerter();
     Flixel.window = window;
@@ -94,20 +95,19 @@ public final class FlixelHtml5Launcher {
     Flixel.input = input;
     Flixel.graphics = graphics;
     Flixel.assets = new FlixelHtml5AssetManager();
-    Flixel.soundFactory = FlixelWebAudioFactory.create();
+    FlixelSoundManager.defaultFactory = FlixelWebAudioFactory.create();
 
     window.setTitle(game.getTitle());
     gamepads.attach();
 
     // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire the web gamepad
     // provider once those systems exist, just before the runner takes over the loop.
-    Flixel.afterStart.add(() -> {
+    Flixel.boot.afterStart(() -> {
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
     });
 
-    Flixel.setRuntimeMode(runtimeMode);
-    Flixel.setDebugMode(runtimeMode == FlixelRuntimeMode.DEBUG);
+    Flixel.runtime.setMode(runtimeMode);
 
     FlixelGameRunner runner = new FlixelHtml5Runner(CANVAS_ID, game.getInitialWidth(), game.getInitialHeight(),
         graphics, window, input);

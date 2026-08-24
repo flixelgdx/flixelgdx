@@ -51,7 +51,7 @@ import org.teavm.jso.JSObject;
  * controllers to a fixed button and axis order, so one mapping covers them without per-device
  * lookups.
  */
-public class FlixelWebGamepadProvider implements FlixelGamepadProvider, FlixelGamepadMappingResolver {
+public class FlixelHtml5GamepadProvider implements FlixelGamepadProvider, FlixelGamepadMappingResolver {
 
   @NotNull
   private final FlixelArray<FlixelWebGamepad> gamepads = new FlixelArray<>();

@@ -179,9 +179,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** Shared 1x1 white pixel frame used to draw solid fills (camera bg, FX). */
   protected FlixelFrame bgPixel;
 
-  /** Convenience reference to the global {@link Flixel#cameras} list (the single source of truth). */
-  protected final FlixelArray<FlixelCamera> cameras = Flixel.cameras;
-
   /** The camera used to render the global overlay. Not registered in {@link Flixel#cameras}. */
   @Nullable
   private FlixelCamera overlayCamera;
@@ -375,8 +372,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.graphics.clearRenderResolution();
     }
 
-    cameras.clear();
-    cameras.add(new FlixelCamera(config.getWidth(), config.getHeight()));
+    Flixel.cameras.clear();
+    Flixel.cameras.add(new FlixelCamera(config.getWidth(), config.getHeight()));
     overlayCamera = new FlixelCamera(config.getWidth(), config.getHeight());
     overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
     };
@@ -412,7 +409,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @param height The new surface height in pixels.
    */
   public void resize(int width, int height) {
-    for (FlixelCamera camera : cameras) {
+    for (FlixelCamera camera : Flixel.cameras) {
       camera.update(width, height, camera.centerCameraOnResize);
     }
     if (overlayCamera != null && overlayEnabled) {
@@ -481,7 +478,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       }
 
       // Update all cameras.
-      for (FlixelCamera camera : cameras) {
+      for (FlixelCamera camera : Flixel.cameras) {
         camera.update(elapsed);
       }
 
@@ -528,8 +525,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
-    FlixelCamera[] cameraItems = cameras.getItems();
-    for (int ci = 0, cn = cameras.getSize(); ci < cn; ci++) {
+    FlixelCamera[] cameraItems = Flixel.cameras.getItems();
+    for (int ci = 0, cn = Flixel.cameras.getSize(); ci < cn; ci++) {
       FlixelCamera camera = cameraItems[ci];
       Flixel.graphics.beginCameraPass();
       Flixel.setDrawCamera(camera);
@@ -628,7 +625,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
     if (Flixel.debug != null) {
-      Flixel.debug.overlay.drawBoundingBoxes(cameras.getItems());
+      Flixel.debug.overlay.drawBoundingBoxes(Flixel.cameras.getItems());
       Flixel.debug.overlay.draw();
     }
 
@@ -713,16 +710,16 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   private void snapshotCamerasForDebugPause() {
-    if (cameras.getSize() == 0) {
+    if (Flixel.cameras.getSize() == 0) {
       debugPauseCameraScroll = null;
       debugPauseCameraZoom = null;
       return;
     }
-    int n = cameras.getSize();
+    int n = Flixel.cameras.getSize();
     debugPauseCameraScroll = new float[n][2];
     debugPauseCameraZoom = new float[n];
     for (int i = 0; i < n; i++) {
-      FlixelCamera c = cameras.get(i);
+      FlixelCamera c = Flixel.cameras.get(i);
       debugPauseCameraScroll[i][0] = c.scrollX;
       debugPauseCameraScroll[i][1] = c.scrollY;
       debugPauseCameraZoom[i] = c.getZoom();
@@ -735,9 +732,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       debugPauseCameraZoom = null;
       return;
     }
-    int n = Math.min(debugPauseCameraScroll.length, Math.min(debugPauseCameraZoom.length, cameras.getSize()));
+    int n = Math.min(debugPauseCameraScroll.length, Math.min(debugPauseCameraZoom.length, Flixel.cameras.getSize()));
     for (int i = 0; i < n; i++) {
-      FlixelCamera c = cameras.get(i);
+      FlixelCamera c = Flixel.cameras.get(i);
       float sx = debugPauseCameraScroll[i][0];
       float sy = debugPauseCameraScroll[i][1];
       c.restoreScrollAndZoom(sx, sy, debugPauseCameraZoom[i]);
@@ -1060,16 +1057,16 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     Flixel.assets.destroy();
     Flixel.assets = FlixelNoopAssetManager.INSTANCE;
-    if (Flixel.initialized) {
+    if (Flixel.boot.isInitialized()) {
       Flixel.sound.destroy();
     } else {
       Flixel.sound.resetSession();
     }
 
-    for (FlixelCamera camera : cameras) {
+    for (FlixelCamera camera : Flixel.cameras) {
       camera.destroy();
     }
-    cameras.clear();
+    Flixel.cameras.clear();
     if (overlayGroup != null) {
       overlayGroup.destroy();
       overlayGroup = null;
@@ -1101,8 +1098,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     FlixelCamera camera = new FlixelCamera(config.getWidth(), config.getHeight());
     camera.update(Flixel.graphics.getBackBufferWidth(), Flixel.graphics.getBackBufferHeight(),
         camera.centerCameraOnResize);
-    cameras.clear();
-    cameras.add(camera);
+    Flixel.cameras.clear();
+    Flixel.cameras.add(camera);
     // The debug-pause snapshot refers to cameras that no longer exist after this reset,
     // so discard it. restoreCamerasAfterDebugPause() already handles null gracefully.
     debugPauseCameraScroll = null;
@@ -1169,7 +1166,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   public FlixelArray<FlixelCamera> getCameras() {
-    return cameras;
+    return Flixel.cameras;
   }
 
   @NotNull
@@ -1254,8 +1251,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   private void applyDesktopTransparencyBackdropOnly() {
     bgColor.a = 0f;
-    FlixelCamera[] camItems = cameras.getItems();
-    for (int i = 0, n = cameras.getSize(); i < n; i++) {
+    FlixelCamera[] camItems = Flixel.cameras.getItems();
+    for (int i = 0, n = Flixel.cameras.getSize(); i < n; i++) {
       FlixelCamera cam = camItems[i];
       if (cam == null) {
         continue;
@@ -1274,9 +1271,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     g[1] = bgColor.g;
     g[2] = bgColor.b;
     g[3] = bgColor.a;
-    int n = cameras.getSize();
+    int n = Flixel.cameras.getSize();
     ensureDesktopTransparencyCameraSnapshotCapacity(n);
-    FlixelCamera[] camItems = n == 0 ? null : cameras.getItems();
+    FlixelCamera[] camItems = n == 0 ? null : Flixel.cameras.getItems();
     float[] p = desktopTransparencyRestoreCamerasPacked;
     for (int i = 0; i < n; i++) {
       FlixelCamera cam = camItems[i];
@@ -1318,8 +1315,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     } else {
       bgColor.set(FlixelColor.BLACK);
     }
-    FlixelCamera[] camItems = cameras.getItems();
-    int n = cameras.getSize();
+    FlixelCamera[] camItems = Flixel.cameras.getItems();
+    int n = Flixel.cameras.getSize();
     int saved = desktopTransparencyRestoreCameraCount;
     float[] p = desktopTransparencyRestoreCamerasPacked;
     for (int i = 0; i < n; i++) {

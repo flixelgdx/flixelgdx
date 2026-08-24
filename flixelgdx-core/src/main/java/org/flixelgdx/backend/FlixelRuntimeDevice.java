@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
+import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,6 +124,44 @@ public interface FlixelRuntimeDevice {
   default FlixelRunEnvironment getEnvironment() {
     return FlixelRunEnvironment.UNKNOWN;
   }
+
+  /**
+   * Returns the current runtime mode. Defaults to {@link FlixelRuntimeMode#RELEASE} when the
+   * backend has not set one.
+   *
+   * @return The active runtime mode, never {@code null}.
+   */
+  @NotNull
+  default FlixelRuntimeMode getMode() {
+    return FlixelRuntimeMode.RELEASE;
+  }
+
+  /**
+   * Sets the runtime mode. Called once by the platform launcher before {@link Flixel#start}.
+   *
+   * @param mode The runtime mode to apply.
+   */
+  default void setMode(@NotNull FlixelRuntimeMode mode) {}
+
+  /**
+   * Returns the stack trace provider used by the logger to annotate log messages with their call
+   * site. Defaults to {@link FlixelNoopStackTraceProvider#INSTANCE} when the backend has not
+   * supplied one.
+   *
+   * @return The active stack trace provider, never {@code null}.
+   */
+  @NotNull
+  default FlixelStackTraceProvider getStackTraceProvider() {
+    return FlixelNoopStackTraceProvider.INSTANCE;
+  }
+
+  /**
+   * Sets the platform-specific stack trace provider. Called by the platform launcher before
+   * {@link org.flixelgdx.Flixel#start} so the logger resolves call-site information correctly.
+   *
+   * @param provider The provider to install.
+   */
+  default void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {}
 
   /**
    * Installs the supplied handler as the platform's unhandled-exception sink.

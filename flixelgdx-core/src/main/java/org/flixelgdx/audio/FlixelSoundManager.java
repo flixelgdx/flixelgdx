@@ -53,6 +53,20 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
 
+  /**
+   * The platform-specific sound factory used when constructing the global {@link FlixelSoundManager}.
+   *
+   * <p>Platform launchers replace this with a real backend (for example, miniaudio on desktop or
+   * the Web Audio API on HTML5) before {@link Flixel#start} runs. Leaving it as-is gives a silent
+   * no-op, so audio calls never crash even if no factory is installed.
+   *
+   * <p>Example (in a platform launcher, before {@link Flixel#start}):
+   * <pre>{@code
+   * FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
+   * }</pre>
+   */
+  public static FlixelSoundFactory defaultFactory = FlixelNoopSoundFactory.INSTANCE;
+
   private static final String[] AUDIO_EXTENSIONS = { ".mp3", ".ogg", ".wav", ".flac" };
 
   private final FlixelSoundFactory factory;

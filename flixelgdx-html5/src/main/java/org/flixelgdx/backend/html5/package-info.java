@@ -65,7 +65,7 @@
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice FlixelHtml5InputDevice}
  *       translates DOM keyboard, mouse, wheel, and touch events into the core input API, using
  *       physical {@code KeyboardEvent.code} mapping so layout-independent keys work correctly.
- *       {@link org.flixelgdx.backend.html5.input.FlixelWebGamepadProvider FlixelWebGamepadProvider}
+ *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider FlixelHtml5GamepadProvider}
  *       adds gamepad support through the Web Gamepad API with the standard layout mapping.</li>
  *   <li><b>File system</b> -
  *       {@link org.flixelgdx.backend.html5.file.FlixelHtml5Files FlixelHtml5Files} in the
