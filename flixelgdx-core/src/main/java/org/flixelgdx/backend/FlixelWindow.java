@@ -250,7 +250,7 @@ public interface FlixelWindow extends FlixelShakeable {
 
   /**
    * When {@code true}, the close event is absorbed so the window does not exit until you stop absorbing or call
-   * {@link #close()} (or {@link Flixel#exit()}) yourself.
+   * {@link #close()} (or {@link Flixel#quit()}) yourself.
    *
    * <p><b>CAUTION:</b> Players expect the window close control to quit. If you absorb close requests, you must
    * explain that ahead of time (splash text, settings, store description) and always provide another obvious way to exit.
@@ -452,7 +452,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * absorption is active (see {@link #setAbsorbCloseRequests(boolean)}), it still applies. On web
    * and mobile, where the host owns the lifecycle, this may do nothing.
    *
-   * <p>Prefer {@link Flixel#exit()} from game code, which forwards here.
+   * <p>Prefer {@link Flixel#quit()} from game code, which forwards here.
    */
   default void close() {}
 }

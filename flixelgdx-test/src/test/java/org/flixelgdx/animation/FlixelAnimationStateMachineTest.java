@@ -85,7 +85,7 @@ class FlixelAnimationStateMachineTest {
   }
 
   @Test
-  void enterAndExitHooksRunInOrder() {
+  void enterAndQuitHooksRunInOrder() {
     FlixelAnimationStateMachine fsm = new FlixelAnimationStateMachine(new FlixelSprite());
     FlixelArray<String> log = new FlixelArray<>();
     fsm.addState("idle", "idle").onExit(() -> log.add("exit-idle"));

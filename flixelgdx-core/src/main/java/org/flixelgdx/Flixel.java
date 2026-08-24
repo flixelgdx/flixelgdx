@@ -952,7 +952,7 @@ public final class Flixel {
       // Only quit on non-iOS platforms to avoid App Store guideline violations!
       if (host.getPlatform() != FlixelPlatform.iOS) {
         window.setAbsorbCloseRequests(false);
-        exit();
+        quit();
       }
     });
 
@@ -1348,7 +1348,7 @@ public final class Flixel {
    * the window is absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}),
    * that still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
    */
-  public static void exit() {
+  public static void quit() {
     window.close();
   }
 

@@ -71,7 +71,7 @@ import java.util.function.Supplier;
  *       update, then draw. You can't override this; override {@link #update(float)} or
  *       {@link #draw(FlixelBatch)} instead.</li>
  *   <li>{@link #destroy()} - called when the game closes. Releases all framework resources. Call
- *       {@link Flixel#exit()} to close the window; calling {@code destroy()} alone only releases
+ *       {@link Flixel#quit()} to close the window; calling {@code destroy()} alone only releases
  *       resources without terminating the process.</li>
  * </ol>
  *
@@ -1019,7 +1019,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * Destroys the game and all of its resources.
    *
    * <p>Note that this doesn't close the game entirely, it just disposes
-   * of the game's resources. If you want to close the entire game, use {@link Flixel#exit()}.
+   * of the game's resources. If you want to close the entire game, use {@link Flixel#quit()}.
    */
   @Override
   public void destroy() {
