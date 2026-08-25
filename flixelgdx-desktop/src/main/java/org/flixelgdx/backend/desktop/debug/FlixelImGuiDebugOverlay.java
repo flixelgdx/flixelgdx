@@ -27,8 +27,10 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.input.keyboard.FlixelKey;
@@ -68,8 +70,8 @@ import imgui.type.ImString;
  * <h2>Wiring</h2>
  *
  * <p>{@code FlixelDesktopLauncher} registers this class as the default debug overlay factory when
- * launching in {@link org.flixelgdx.backend.FlixelRuntimeMode#DEBUG DEBUG} mode. You can also
- * register it manually with {@link Flixel#setDebugOverlay(Supplier)} before the game starts.
+ * launching in {@link FlixelRuntimeMode#DEBUG} mode. You can also register it manually with
+ * {@link FlixelDebugManager#setOverlayFactory(Supplier)} before the game starts.
  *
  * <p>Initialization (creating the Dear ImGui context, uploading the font atlas as a bgfx texture, and
  * registering the SDL input listener) happens lazily on the first {@link #draw()} call, so
