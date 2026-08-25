@@ -37,7 +37,7 @@ with developer experience in mind.
 
 ### State Management
 
-The framework provides the iconic simple state-based architecture that every veteran knows and loves:
+The framework provides the iconic and simple state-based architecture that every veteran knows and loves:
 
 ```java
 public class PlayState extends FlixelState {
@@ -93,7 +93,7 @@ var fsm = new FlixelAnimationStateMachine(player);
 fsm.addState("idle", "idle").allowTo("run", "attack");
 fsm.addState("run", "run").allowTo("idle", "attack");
 fsm.addState("attack", "attack")
-   .autoAdvanceTo("idle)
+   .autoAdvanceTo("idle")
    .onEnter(() -> sword.swing());
 fsm.setState("idle");
 
