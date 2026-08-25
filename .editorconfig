@@ -12,8 +12,8 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
-# Even though Google Style Guide Section 2.3 recommends 100 characters, but
-# many modern IDEs default to 120 characters, so we follow that convention.
+# Even though Google Style Guide Section 2.3 recommends 100 characters, many
+# modern IDEs default to 120 characters, so we follow that convention.
 max_line_length = 120
 
 [*.java]

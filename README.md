@@ -13,14 +13,14 @@
   [![Stars](https://img.shields.io/github/stars/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/stargazers)
   [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
   [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
+
+  FlixelGDX is a simplistic, extensible game framework for the Java ecosystem, with heavy inspiration from
+  [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/). It's designed
+  to bring the classic style of it's Haxe-based cousin, with heavy improvements of its architecture, primarily
+  focusing on simplicity, extensibility and performance.
+  
+  If you like Java (or Kotlin), and you want a simpler alternative, read on.
 </div>
-
-FlixelGDX is a simplistic, extensible game framework for the Java ecosystem, with heavy inspiration from 
-[HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/). It's designed
-to bring the classic style of it's Haxe-based cousin, with heavy improvements of its architecture, primarily
-focusing on simplicity, extensibility and performance.
-
-If you like Java (or Kotlin), and you want a simpler alternative, read on.
 
 > [!NOTE]
 > FlixelGDX is an independent project and is not officially affiliated with HaxeFlixel.
