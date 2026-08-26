@@ -40,19 +40,16 @@ import java.util.NoSuchElementException;
  * use and safe mutation during iteration.
  *
  * <h2>Zero-allocation iteration</h2>
- * It is a common and good practice to use index-based for-loops when iterating
- * through an array. Doing this doesn't allocate garbage and keeps framerates
- * stable throughout gameplay.
+ * For-each loops are safe to use, as there are <b>two</b> reused iterator objects.
  *
- * <p>Example:
  * <pre>{@code
- * T[] items = list.getItems();
- * for (int i = 0; i < list.getSize(); i++) {
- *   Enemy e = items[i];
- *   e.update(elapsed);
+ * FlixelArray<String> usernames = new FlixelArray<>();
+ * for (String usr : usernames) {
+ *   Flixel.info(usr);
  * }
  * }</pre>
  *
+ * <h2>Generics Limitation</h2>
  * <p>Because Java cannot create a generic array ({@code new T[n]}), a
  * {@link FlixelArraySupplier} tells the list how to build its typed backing
  * store. Pass an array-constructor reference:
@@ -72,6 +69,18 @@ import java.util.NoSuchElementException;
  * snapshot: any add or remove during the loop transparently swaps in a fresh backing
  * array, so the elements you are looping over never shift under you. This is exactly
  * what update loops need when objects can spawn or destroy their neighbors mid-frame.
+ *
+ * <pre>{@code
+ * Enemy[] snapshot = enemies.begin();
+ * for (int i = 0; i < enemies.getSize(); i++) {
+ *   Enemy enemy = snapshot[i];
+ *   if (enemy.isDead()) {
+ *     // Safely remove the value without crashing.
+ *     enemies.removeValue(enemy, true);
+ *   }
+ * }
+ * enemies.end();
+ * }</pre>
  *
  * <p>This class is not thread safe.
  *

@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A read-only view over an ordered list.
  *
- * <p>The name mirrors Java's {@link java.util.List} on purpose: both represent an ordered,
+ * <p>The name mirrors Java's {@link java.util.List List} on purpose: both represent an ordered,
  * indexed sequence you can query and iterate. The key difference is cost. Java's {@code List}
  * hierarchy was designed for general correctness; unmodifiable wrappers ({@code
  * Collections.unmodifiableList}) allocate a wrapper object and throw at runtime on mutation

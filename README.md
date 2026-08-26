@@ -14,10 +14,14 @@
   [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
   [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
 
-  FlixelGDX is a simplistic, extensible game framework for the Java ecosystem, with heavy inspiration from
-  [HaxeFlixel](https://haxeflixel.com/) and the original ActionScript [Flixel](http://www.flixel.org/). It's designed
+  FlixelGDX is a feature-packed game framework for the Java ecosystem, with heavy inspiration from[HaxeFlixel](https://haxeflixel.com/), 
+  the original ActionScript [Flixel](http://www.flixel.org/) and [libGDX](https://libgdx.com/). It's designed
   to bring the classic style of it's Haxe-based cousin, with heavy improvements of its architecture, primarily
-  focusing on simplicity, extensibility and performance.
+  focusing on simplicity, extensibility and performance. 
+  
+  With its simplistic and very modular API, it's perfect for people of all experience levels — from students wanting to
+  create something amazing while learning programming, to advanced engine developers wanting a simple API while remaining
+  extensible.
   
   If you like Java (or Kotlin), and you want a simpler alternative, read on.
 </div>
@@ -121,17 +125,62 @@ FlixelTween.tween(player, new FlixelTweenSettings()
   .addGoal(player::getY, 300f, player::setY)
   .setDuration(1.5f)
   .setEase(FlixelEase::bounceOut));
+
+// Shake a sprite on both the X and Y axis.
+Flixel.shake(player, FlixelAxes.XY, 0.008f, new FlixelTweenSettings());
 ```
 
-Or in Kotlin with the framework's first party extension:
+### Performant Collection System
 
-```kotlin
-// The tween(...) method is automatically applied to every object.
-player.tween(duration = 1.5f, ease = FlixelEase::bounceOut) {
-  goal(player::getX, 500f, player::setX)
-  goal(player::getY, 300f, player::setY)
+FlixelGDX contains a large, performant-first collection system designed to be simple while being safe to use in hot loops,
+beating Java's standard garbage-filling collection system:
+
+```java
+FlixelArray<String> names = new FlixelArray<>();
+names.add("Foo");
+names.add("Bar");
+
+names.get(1); // Returns "Bar".
+
+// Every iterable collection reuses its iterator, meaning no
+// allocations are ever made inside for-each loops.
+for (String name : names) {
+  Flixel.info(name);
 }
+
+// Access the raw underlying array.
+String[] rawNames = names.getItems();
+
+// Use the built-in snapshot mode to modify the collection mid-loop.
+String[] snapshot = names.begin();
+for (int i = 0; i < names.getSize(); i++) {
+  String name = snapshot[i];
+  if (notValidName(name)) {
+    names.removeValue(name, true);
+  }
+}
+names.end();
+
+// Simple pooling system to reuse objects.
+FlixelPool<Bullet> bullets = new FlixelPool<>() {
+  @Override
+  protected Bullet newObject() {
+    return new Bullet();
+  }
+};
+
+Bullet b = bullet.obtain();
+// Use the bullet...
+bullets.free(b);
 ```
+
+### Extremely Flexible Modularity
+
+While it's API remains very simple on the surface, every single system can be easily replaced directly inside your own
+game — all without requiring you to maintain a fork of the framework.
+
+Want to replace the logger? Swap the audio system for something different? Replace the asset manager? Add a whole new platform?
+Not a problem at all. FlixelGDX is perfect for people of all experience levels.
 
 ### Plugins and Extensions
 
@@ -157,15 +206,16 @@ plugins {
 
 flixelShaders {
   // Where the .glsl sources live (default: src/main/shaders).
-  sourceDir = file('src/main/shaders')
+  sourceDir = rootProject.file('assets/shaders')
 
+  // Link and register a shader with an ID you'll use in your game.
   shader('grayscale') {
     fragment = 'grayscale.frag.glsl'
   }
 
   shader('wave') {
     fragment = 'wave.frag.glsl'
-    vertex = 'wave.vert.glsl'   // optional
+    vertex = 'wave.vert.glsl'  // Optional.
   }
 }
 ```
@@ -178,6 +228,63 @@ FlixelShader wave = FlixelShaders.load("wave");
 
 sprite.setShader(grayscale);
 camera.setShader(wave);
+```
+
+#### Basis Universal Plugin
+
+The framework provides a Basis Universal compression plugin that automates converting images to small `.ktx2` files
+
+```groovy
+flixelgdxBasisu {
+  // Explicitly override when it's enabled.
+  enabled = true
+
+  // Use higher-quality UASTC instead of the default smaller ETC1S mode (default: false).
+  useUastc = false
+
+  // ETC1S quality level, 1 (smallest, worst) to 255 (largest, best). Ignored in UASTC mode.
+  // Default: 128.
+  etc1sQuality = 128
+
+  // UASTC encoding level, 0 (fastest, worst) to 4 (slowest, best). Ignored in ETC1S mode.
+  // Default: 2.
+  uastcLevel = 2
+
+  // Ant-style glob patterns to ignore any assets that don't need compression.
+  // A trailing /** excludes an entire folder.
+  excludes = [
+    'ui/icons/app-icon.png',
+    'fonts/**'
+  ]
+}
+```
+
+#### Kotlin Extension
+
+Kotlin in FlixelGDX is a first-class citizen. The framework provides an out-of-the-box extension to provide
+idiomatic syntax for our Kotlin users:
+
+```kotlin
+// Simple access and modification of collections.
+val inventory = flixelArrayOf(Sword(), Steak())
+inventory[1] // Returns the Steak object.
+inventory += Potion() // Add a new object.
+
+// Simple index-based loop.
+for (i in inventory.indices) { ... }
+
+// Inlined forEach method for primitive collections, providing safe iterating in hot-loops.
+val ids = flixelIntArrayOf(...)
+ids.forEach { ... }
+
+// Straightforward pool creation.
+val bullets = flixelPool() { Bullet() }
+
+// Use goal-based tweening on any object.
+player.tween(duration = 1.5f, ease = FlixelEase::bounceOut) {
+  goal(player::getX, 500f, player::setX)
+  goal(player::getY, 300f, player::setY)
+}
 ```
 
 ---
