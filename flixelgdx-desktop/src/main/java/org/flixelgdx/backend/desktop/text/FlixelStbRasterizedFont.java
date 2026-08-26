@@ -32,7 +32,6 @@ import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
 /**
@@ -57,7 +56,7 @@ public class FlixelStbRasterizedFont implements FlixelRasterizedFont {
 
   private boolean destroyed;
 
-  private FlixelStbRasterizedFont(ByteBuffer fontData, STBTTFontinfo info, float scale,
+  FlixelStbRasterizedFont(ByteBuffer fontData, STBTTFontinfo info, float scale,
       float ascent, float descent, float lineHeight) {
     this.fontData = fontData;
     this.info = info;
@@ -65,37 +64,6 @@ public class FlixelStbRasterizedFont implements FlixelRasterizedFont {
     this.ascent = ascent;
     this.descent = descent;
     this.lineHeight = lineHeight;
-  }
-
-  /**
-   * Opens font data at the given pixel height.
-   *
-   * @param data The raw {@code .ttf}/{@code .otf} bytes.
-   * @param pixelHeight The target line height in pixels.
-   * @return The opened font, or {@code null} when the data is not a supported font.
-   */
-  @Nullable
-  public static FlixelStbRasterizedFont open(byte[] data, float pixelHeight) {
-    ByteBuffer fontData = ByteBuffer.allocateDirect(data.length).order(ByteOrder.nativeOrder());
-    fontData.put(data).flip();
-
-    STBTTFontinfo info = STBTTFontinfo.malloc();
-    if (!STBTruetype.stbtt_InitFont(info, fontData)) {
-      info.free();
-      return null;
-    }
-
-    float scale = STBTruetype.stbtt_ScaleForPixelHeight(info, pixelHeight);
-    try (MemoryStack stack = MemoryStack.stackPush()) {
-      IntBuffer ascentBuf = stack.mallocInt(1);
-      IntBuffer descentBuf = stack.mallocInt(1);
-      IntBuffer lineGapBuf = stack.mallocInt(1);
-      STBTruetype.stbtt_GetFontVMetrics(info, ascentBuf, descentBuf, lineGapBuf);
-      float ascent = ascentBuf.get(0) * scale;
-      float descent = -descentBuf.get(0) * scale;
-      float lineHeight = (ascentBuf.get(0) - descentBuf.get(0) + lineGapBuf.get(0)) * scale;
-      return new FlixelStbRasterizedFont(fontData, info, scale, ascent, descent, lineHeight);
-    }
   }
 
   @Override
