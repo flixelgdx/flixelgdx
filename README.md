@@ -15,15 +15,13 @@
   [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
 
   FlixelGDX is a feature-packed game framework for the Java ecosystem, with heavy inspiration from [HaxeFlixel](https://haxeflixel.com/),
-  the original ActionScript [Flixel](http://www.flixel.org/) and [libGDX](https://libgdx.com/). It's designed
+  the original ActionScript [Flixel](http://www.flixel.org/), and [libGDX](https://libgdx.com/). It's designed
   to bring the classic style of it's Haxe-based cousin, with heavy improvements of its architecture, primarily
   focusing on simplicity, extensibility and performance. 
   
-  With its simplistic and very modular API, it's perfect for people of all experience levels — from students wanting to
+  With its simplistic and very modular API, it's perfect for people of all experience levels — from students wishing to
   create something amazing while learning programming, to advanced engine developers wanting a simple API while remaining
   extensible.
-  
-  If you like Java (or Kotlin), and you want a simpler alternative, read on.
 </div>
 
 > [!NOTE]
