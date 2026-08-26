@@ -10,14 +10,12 @@
   [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Website](https://img.shields.io/badge/website-flixelgdx.org-blue)](https://flixelgdx.org)
-  [![Stars](https://img.shields.io/github/stars/flixelgdx/flixelgdx)](https://github.com/flixelgdx/flixelgdx/stargazers)
   [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
   [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web-brightgreen)](https://flixelgdx.org)
 
   FlixelGDX is a feature-packed game framework for the Java ecosystem, with heavy inspiration from [HaxeFlixel](https://haxeflixel.com/),
-  the original ActionScript [Flixel](http://www.flixel.org/), and [libGDX](https://libgdx.com/). It's designed
-  to bring the classic style of it's Haxe-based cousin, with heavy improvements of its architecture, primarily
-  focusing on simplicity, extensibility and performance. 
+  the original ActionScript [Flixel](http://www.flixel.org/), and [libGDX](https://libgdx.com/). It's designed to bring the classic style of its Haxe-based 
+  cousin, with heavy improvements of its architecture, primarily focusing on simplicity, extensibility and performance. 
   
   With its simplistic and very modular API, it's perfect for people of all experience levels — from students wishing to
   create something amazing while learning programming, to advanced engine developers wanting a simple API while remaining
@@ -174,7 +172,7 @@ bullets.free(b);
 
 ### Extremely Flexible Modularity
 
-While it's API remains very simple on the surface, every single system can be easily replaced directly inside your own
+While its API remains very simple on the surface, every single system can be easily replaced directly inside your own
 game — all without requiring you to maintain a fork of the framework.
 
 Want to replace the logger? Swap the audio system for something different? Replace the asset manager? Add a whole new platform?
@@ -237,15 +235,13 @@ flixelgdxBasisu {
   // Explicitly override when it's enabled.
   enabled = true
 
-  // Use higher-quality UASTC instead of the default smaller ETC1S mode (default: false).
+  // Use higher-quality UASTC instead of the default smaller ETC1S mode.
   useUastc = false
 
-  // ETC1S quality level, 1 (smallest, worst) to 255 (largest, best). Ignored in UASTC mode.
-  // Default: 128.
+  // ETC1S quality level, allowing a range of 1-255.
   etc1sQuality = 128
 
-  // UASTC encoding level, 0 (fastest, worst) to 4 (slowest, best). Ignored in ETC1S mode.
-  // Default: 2.
+  // UASTC encoding level, allowing a range of 1-4.
   uastcLevel = 2
 
   // Ant-style glob patterns to ignore any assets that don't need compression.
@@ -269,11 +265,15 @@ inventory[1] // Returns the Steak object.
 inventory += Potion() // Add a new object.
 
 // Simple index-based loop.
-for (i in inventory.indices) { ... }
+for (i in inventory.indices) { 
+  Flixel.info(inventory[i])
+}
 
 // Inlined forEach method for primitive collections, providing safe iterating in hot-loops.
-val ids = flixelIntArrayOf(...)
-ids.forEach { ... }
+val ids = flixelIntArrayOf(86749, 02844)
+ids.forEach { 
+  Flixel.info(it)
+}
 
 // Straightforward pool creation.
 val bullets = flixelPool() { Bullet() }
