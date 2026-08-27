@@ -4,21 +4,35 @@ import org.flixelgdx.text.FlixelGlyphBitmap;
 import org.flixelgdx.text.FlixelRasterizedFont;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.ByteBuffer;
+
 public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
+
+  private final float scale;
+  private final float ascent;
+  private final float descent;
+  private final float lineHeight;
+
+  FlixelHtml5RasterizedFont(ByteBuffer fontData, float scale, float ascent, float descent, float lineHeight) {
+    this.scale = scale;
+    this.ascent = ascent;
+    this.descent = descent;
+    this.lineHeight = lineHeight;
+  }
 
   @Override
   public float getAscent() {
-    return 0;
+    return ascent;
   }
 
   @Override
   public float getDescent() {
-    return 0;
+    return descent;
   }
 
   @Override
   public float getLineHeight() {
-    return 0;
+    return lineHeight;
   }
 
   @Override
