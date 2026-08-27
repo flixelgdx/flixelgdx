@@ -8,7 +8,7 @@ typedef struct {
 } FontCtx;
 
 FontCtx* stb_init(unsigned char* data, float pixel_height) {
-  FontCtx* ctx (FontCtx*) malloc(sizeof(FontCtx));
+  FontCtx* ctx = (FontCtx*) malloc(sizeof(FontCtx));
   if (!stbtt_InitFont(&ctx->info, data, 0)) {
     free(ctx);
     return 0;
