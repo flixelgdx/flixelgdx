@@ -95,7 +95,7 @@ public final class FlixelHtml5MonitorHelper {
    * monitors list that {@link FlixelHtml5HostIntegration} uses.
    *
    * @param callback The {@link MonitorUpdateCallback} that will be used when JavaScript
-   *     triggers a {@code 'screenschange'} callback.
+   *     triggers a {@code 'screenschange'} event.
    */
   @JSBody(params = { "callback" }, script = """
       if (!window.getScreenDetails) {
