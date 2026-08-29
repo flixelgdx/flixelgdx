@@ -379,9 +379,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
         case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
         case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
-             SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
-             SDLEvents.SDL_EVENT_DISPLAY_MOVED,
-             SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED -> refreshMonitors();
+            SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
+            SDLEvents.SDL_EVENT_DISPLAY_MOVED,
+            SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED ->
+          refreshMonitors();
         default -> {
         }
       }
@@ -442,7 +443,6 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           host.monitors.add(monitor);
         }
 
-        
       }
     }
   }
