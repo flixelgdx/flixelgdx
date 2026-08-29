@@ -21,46 +21,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
+package org.flixelgdx.backend.html5;
 
+import org.flixelgdx.backend.FlixelMonitor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Safe placeholder {@link FlixelMonitor} for platforms that cannot report a real display.
+ * The HTML5 representation of a computer monitor, using provided information from the native
+ * Window Management API.
  *
- * <p>Returning this instead of {@code null} means game code that reads the current monitor never
- * has to null-check and never crashes on web, mobile, or headless targets. Every value is neutral:
- * an empty name, a zero position, a zero size, and not primary.
+ * <p>Do not create objects of this class directly. It's advised you handle monitors through the
+ * {@link FlixelHtml5HostIntegration} class instead, as monitor information is much more accurate
+ * through that API.
+ *
+ * <p>Note that due to an API limitation and security restrictions, there's no way to obtain the
+ * refresh rate of a monitor. Because of this, {@link #getRefreshRate()} returns {@code 0.0f}.
  */
-public enum FlixelNoopMonitor implements FlixelMonitor {
+class FlixelHtml5Monitor implements FlixelMonitor {
 
-  /** Shared no-op instance. */
-  INSTANCE;
+  @NotNull
+  final String name;
+
+  final int virtualX;
+  final int virtualY;
+  final int width;
+  final int height;
+
+  final boolean isPrimary;
+
+  FlixelHtml5Monitor(@NotNull String name, int virtualX, int virtualY, int width, int height, boolean isPrimary) {
+    this.name = name;
+    this.virtualX = virtualX;
+    this.virtualY = virtualY;
+    this.width = width;
+    this.height = height;
+    this.isPrimary = isPrimary;
+  }
 
   @Override
-  @NotNull
-  public String getName() {
-    return "";
+  public @NotNull String getName() {
+    return name;
   }
 
   @Override
   public int getVirtualX() {
-    return 0;
+    return virtualX;
   }
 
   @Override
   public int getVirtualY() {
-    return 0;
+    return virtualY;
   }
 
   @Override
   public int getWidth() {
-    return 0;
+    return width;
   }
 
   @Override
   public int getHeight() {
-    return 0;
+    return height;
   }
 
   @Override
@@ -70,6 +90,6 @@ public enum FlixelNoopMonitor implements FlixelMonitor {
 
   @Override
   public boolean isPrimary() {
-    return false;
+    return isPrimary;
   }
 }

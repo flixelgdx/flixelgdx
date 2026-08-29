@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
@@ -53,10 +54,12 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
    * that convention, assuring no unexpected crashes happen.
    */
   public static final int MAX_NOTIFY_ARG_LEN = 6000;
+
+  final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
+
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
-  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   @Override
   public void sendNotification(@Nullable String title, @NotNull String message) {
@@ -121,6 +124,19 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   @Override
   public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
+  }
+
+  @Override
+  public @NotNull FlixelMonitor getPrimaryMonitor() {
+    for (FlixelMonitor monitor : monitors) {
+      if (monitor.isPrimary()) {
+        return monitor;
+      }
+    }
+    if (!monitors.isEmpty()) {
+      return monitors.get(0);
+    }
+    return FlixelNoopMonitor.INSTANCE;
   }
 
   @NotNull

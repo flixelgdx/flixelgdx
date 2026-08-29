@@ -84,12 +84,13 @@ public final class FlixelHtml5Launcher {
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
     FlixelHtml5Graphics graphics = new FlixelHtml5Graphics();
     FlixelHtml5Window window = new FlixelHtml5Window();
+    FlixelHtml5HostIntegration host = new FlixelHtml5HostIntegration();
     FlixelHtml5InputDevice input = new FlixelHtml5InputDevice();
     FlixelHtml5GamepadProvider gamepads = new FlixelHtml5GamepadProvider();
 
     Flixel.alert = new FlixelHtml5Alerter();
     Flixel.window = window;
-    Flixel.host = new FlixelHtml5HostIntegration();
+    Flixel.host = host;
     Flixel.runtime = new FlixelHtml5RuntimeDevice();
     Flixel.files = new FlixelHtml5Files();
     Flixel.input = input;
@@ -110,7 +111,7 @@ public final class FlixelHtml5Launcher {
     Flixel.runtime.setMode(runtimeMode);
 
     FlixelGameRunner runner = new FlixelHtml5Runner(CANVAS_ID, game.getInitialWidth(), game.getInitialHeight(),
-        graphics, window, input);
+        graphics, window, host, input);
     Flixel.start(game, runner);
   }
 

@@ -84,6 +84,18 @@ public interface FlixelHostIntegration {
   default void requestNotificationPermission() {}
 
   /**
+   * Prompts the user to grant permission for obtaining monitor information for this origin.
+   *
+   * <p>On the web backend this triggers the browser permission dialog. It must be called in
+   * response to a user gesture (button press, key press, etc.) or the browser will silently
+   * ignore it. If granted, {@link #getMonitors()} returns a real list of all the monitors that
+   * are connected to the user's computer; otherwise, it returns empty.
+   *
+   * <p>On desktop, permission is implicit and this method does nothing.
+   */
+  default void requestMonitorPermission() {}
+
+  /**
    * Asks the window manager to highlight this app (taskbar entry flash, dock bounce, and similar).
    *
    * <p>On the web backend, this flashes the browser tab title while the tab is in the background.
@@ -167,6 +179,13 @@ public interface FlixelHostIntegration {
    *     {@link #pasteFromClipboard()}) are supported on this platform.
    */
   default boolean supportsClipboard() {
+    return false;
+  }
+
+  /**
+   * @return {@code true} if monitor information is supported or allowed on this platform.
+   */
+  default boolean supportsMonitors() {
     return false;
   }
 

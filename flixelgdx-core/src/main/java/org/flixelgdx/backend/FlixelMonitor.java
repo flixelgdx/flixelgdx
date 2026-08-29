@@ -73,9 +73,9 @@ public interface FlixelMonitor {
   int getHeight();
 
   /**
-   * @return The monitor's refresh rate in hertz, or {@code 0} when the platform cannot report it.
+   * @return The monitor's refresh rate in hertz, or {@code 0.0f} when the platform cannot report it.
    */
-  int getRefreshRate();
+  float getRefreshRate();
 
   /**
    * @return {@code true} if this is the primary monitor, where the OS typically places new windows
