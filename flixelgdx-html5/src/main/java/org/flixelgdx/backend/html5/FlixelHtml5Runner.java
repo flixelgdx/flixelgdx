@@ -104,6 +104,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
     registerLifecycleListeners(document);
 
+    // Fill in the monitor list at startup if the user granted permission before.
     if (FlixelHtml5MonitorHelper.isWindowManagementSupported()) {
       FlixelHtml5MonitorHelper.requestScreenDetails(host::updateMonitors);
     }
