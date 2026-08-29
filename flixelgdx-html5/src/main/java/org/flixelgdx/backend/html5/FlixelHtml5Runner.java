@@ -32,10 +32,7 @@ import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
-import org.teavm.jso.JSObject;
-import org.teavm.jso.JSProperty;
 import org.teavm.jso.browser.Window;
-import org.teavm.jso.core.JSArray;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 
@@ -80,7 +77,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private FlixelGame game;
 
   public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelHtml5Graphics graphics,
-      @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5HostIntegration host, @NotNull FlixelHtml5InputDevice input) {
+      @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5HostIntegration host,
+      @NotNull FlixelHtml5InputDevice input) {
     this.canvasId = canvasId;
     this.width = width;
     this.height = height;

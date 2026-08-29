@@ -107,7 +107,6 @@ public final class FlixelHtml5MonitorHelper {
         details.addEventListener('screenschange', () => callback(details.screens));
       }).catch(err => {
         callback(null);
-      });"""
-  )
+      });""")
   public static native void requestScreenDetails(MonitorUpdateCallback callback);
 }

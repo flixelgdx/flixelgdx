@@ -431,7 +431,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           float refreshRate = mode != null ? mode.refresh_rate() : 0.0f;
 
           FlixelSdlMonitor monitor = new FlixelSdlMonitor(name != null ? name : "Unknown", bounds.x(), bounds.y(),
-            bounds.w(), bounds.h(), refreshRate, isPrimary);
+              bounds.w(), bounds.h(), refreshRate, isPrimary);
           host.monitors.add(monitor);
         }
       }

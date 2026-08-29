@@ -184,7 +184,7 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
     for (int i = 0; i < screens.getLength(); i++) {
       FlixelHtml5MonitorHelper.JSScreen screen = screens.get(i);
       FlixelHtml5Monitor monitor = new FlixelHtml5Monitor(screen.getLabel(), screen.getLeft(), screen.getTop(),
-        screen.getWidth(), screen.getHeight(), screen.isPrimary());
+          screen.getWidth(), screen.getHeight(), screen.isPrimary());
       monitors.add(monitor);
     }
   }
