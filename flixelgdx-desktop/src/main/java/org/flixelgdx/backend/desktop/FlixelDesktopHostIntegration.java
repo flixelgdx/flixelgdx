@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
@@ -123,6 +124,19 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   @Override
   public FlixelList<FlixelMonitor> getMonitors() {
     return monitors;
+  }
+
+  @Override
+  public @NotNull FlixelMonitor getPrimaryMonitor() {
+    for (FlixelMonitor monitor : monitors) {
+      if (monitor.isPrimary()) {
+        return monitor;
+      }
+    }
+    if (!monitors.isEmpty()) {
+      return monitors.get(0);
+    }
+    return FlixelNoopMonitor.INSTANCE;
   }
 
   @NotNull

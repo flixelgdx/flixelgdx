@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.FlixelGame;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * TeaVM a backend would additionally wire into {@code window.onerror} to catch JavaScript-level
  * exceptions that bypass the Java exception system.
  *
- * <p>The handler itself is supplied by {@link org.flixelgdx.FlixelGame} during {@code create()}.
+ * <p>The handler itself is supplied by {@link FlixelGame} during {@code create()}.
  * It performs the standard framework crash response: logging the exception, showing an error alert,
  * tearing down game resources, and exiting the process on platforms where that is allowed.
  *

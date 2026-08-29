@@ -28,6 +28,10 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A monitor display, instantiated whenever SDL receives a monitor refresh event.
+ *
+ * <p>You shouldn't create a new object of this class manually. This class is only used when
+ * the {@link FlixelDesktopRunner} inside of the events handler receives any {@code DISPLAY_*}
+ * events. You're better off pulling the current monitors held inside of {@link FlixelDesktopHostIntegration}.
  */
 class FlixelSdlMonitor implements FlixelMonitor {
 
