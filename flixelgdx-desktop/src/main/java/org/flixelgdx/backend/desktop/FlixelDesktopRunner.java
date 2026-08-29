@@ -91,20 +91,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
 
   private boolean vsync = true;
 
-  /**
-   * Creates a runner wired to the desktop backend objects the launcher installed.
-   *
-   * @param window The window wrapper to bind to the created SDL window.
-   * @param input The input device to feed SDL events into.
-   * @param graphics The bgfx graphics manager to initialize.
-   * @param gamepads The gamepad provider to open devices on and feed connect events into.
-   * @param iconManager The SDL cursor manager to dispose before SDL shuts down.
-   * @param width The initial window width in pixels.
-   * @param height The initial window height in pixels.
-   */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
       @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
-      @NotNull FlixelSdlMouseIconManager iconManager, FlixelDesktopHostIntegration host, int width, int height) {
+      @NotNull FlixelSdlMouseIconManager iconManager, @NotNull FlixelDesktopHostIntegration host,
+      int width, int height) {
     this.window = window;
     this.input = input;
     this.graphics = graphics;

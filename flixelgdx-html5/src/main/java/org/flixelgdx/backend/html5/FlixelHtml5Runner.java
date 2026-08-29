@@ -32,7 +32,10 @@ import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.JSObject;
+import org.teavm.jso.JSProperty;
 import org.teavm.jso.browser.Window;
+import org.teavm.jso.core.JSArray;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
 
@@ -65,6 +68,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private final FlixelHtml5InputDevice input;
 
   @NotNull
+  private final FlixelHtml5HostIntegration host;
+
+  @NotNull
   private final String canvasId;
 
   private final int width;
@@ -74,12 +80,13 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private FlixelGame game;
 
   public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelHtml5Graphics graphics,
-      @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5InputDevice input) {
+      @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5HostIntegration host, @NotNull FlixelHtml5InputDevice input) {
     this.canvasId = canvasId;
     this.width = width;
     this.height = height;
     this.graphics = graphics;
     this.window = window;
+    this.host = host;
     this.input = input;
   }
 
@@ -98,6 +105,10 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     graphics.initialize(element);
 
     registerLifecycleListeners(document);
+
+    if (FlixelHtml5MonitorHelper.isWindowManagementSupported()) {
+      FlixelHtml5MonitorHelper.requestScreenDetails(host::updateMonitors);
+    }
 
     // The browser cannot read files synchronously, so every bundled asset is downloaded first and
     // the game only starts once the cache is warm. See FlixelHtml5AssetPreloader.
@@ -122,9 +133,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    */
   private static void onPreloadFailed() {
     Flixel.error("Html5",
-        "Asset preloading failed. Check the browser console for details. Common causes: the "
-            + "'assets/assets.txt' manifest is missing (make sure the org.flixelgdx.html5 plugin "
-            + "is applied), or a non-image asset could not be downloaded. The game will not start.");
+        "Asset preloading failed. Common causes: the 'assets/assets.txt' manifest is missing "
+            + "(make sure the org.flixelgdx.html5 plugin is applied), or a non-image asset could not be "
+            + "downloaded. The game will not start.");
     showLoadingError("Failed to load game assets. See the console for details.");
   }
 

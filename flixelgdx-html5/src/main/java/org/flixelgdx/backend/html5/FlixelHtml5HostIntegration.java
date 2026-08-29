@@ -25,6 +25,7 @@ package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
+import org.teavm.jso.core.JSArray;
 
 /**
  * Web host integration: the bridge between the game and the browser environment it runs in.
@@ -52,10 +54,10 @@ import org.teavm.jso.JSObject;
 public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
 
   @NotNull
-  private final FlixelSignal<String> textPasted = new FlixelSignal<>();
+  final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>();
 
   @NotNull
-  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>();
+  private final FlixelSignal<String> textPasted = new FlixelSignal<>();
 
   @Override
   public void requestNotificationPermission() {
@@ -65,6 +67,11 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @Override
   public void requestAttention() {
     flashTitle();
+  }
+
+  @Override
+  public void requestMonitorPermission() {
+    FlixelHtml5MonitorHelper.requestScreenDetails(this::updateMonitors);
   }
 
   @Override
@@ -118,6 +125,11 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   }
 
   @Override
+  public boolean supportsMonitors() {
+    return FlixelHtml5MonitorHelper.isWindowManagementSupported() && !monitors.isEmpty();
+  }
+
+  @Override
   @NotNull
   public FlixelSignal<String> onTextPasted() {
     return textPasted;
@@ -130,9 +142,46 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   }
 
   @Override
+  public @NotNull FlixelMonitor getPrimaryMonitor() {
+    for (FlixelMonitor monitor : monitors) {
+      if (monitor.isPrimary()) {
+        return monitor;
+      }
+    }
+    if (!monitors.isEmpty()) {
+      return monitors.get(0);
+    }
+    return FlixelNoopMonitor.INSTANCE;
+  }
+
+  @Override
   @NotNull
   public FlixelPlatform getPlatform() {
     return FlixelPlatform.HTML5;
+  }
+
+  /**
+   * Updates the current {@link #monitors} array from the provided JavaScript array.
+   *
+   * <p>This is primarily meant to be used for {@link FlixelHtml5MonitorHelper#requestScreenDetails},
+   * although you may find it useful for other purposes.
+   *
+   * @param screens The JavaScript array of the user's connected monitors. May be {@code null} if
+   *     {@link FlixelHostIntegration#supportsMonitors()} returns {@code false}.
+   */
+  public void updateMonitors(@Nullable JSArray<FlixelHtml5MonitorHelper.JSScreenDetailed> screens) {
+    monitors.clear();
+
+    if (screens == null) {
+      return;
+    }
+
+    for (int i = 0; i < screens.getLength(); i++) {
+      FlixelHtml5MonitorHelper.JSScreenDetailed screen = screens.get(i);
+      FlixelHtml5Monitor monitor = new FlixelHtml5Monitor(screen.getLabel(), screen.getLeft(), screen.getTop(),
+        screen.getWidth(), screen.getHeight(), screen.isPrimary());
+      monitors.add(monitor);
+    }
   }
 
   @JSBody(script = "if (typeof Notification !== 'undefined') { Notification.requestPermission(); }")

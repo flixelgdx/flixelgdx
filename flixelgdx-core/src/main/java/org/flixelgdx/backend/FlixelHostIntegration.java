@@ -171,6 +171,13 @@ public interface FlixelHostIntegration {
   }
 
   /**
+   * @return {@code true} if monitor information is supported or allowed on this platform.
+   */
+  default boolean supportsMonitors() {
+    return false;
+  }
+
+  /**
    * Signal dispatched when {@link #pasteFromClipboard()} resolves with text content.
    *
    * <p>The dispatched value is the pasted text. Handlers may be called off the game thread.
@@ -211,6 +218,18 @@ public interface FlixelHostIntegration {
   default FlixelMonitor getPrimaryMonitor() {
     return FlixelNoopMonitor.INSTANCE;
   }
+
+  /**
+   * Prompts the user to grant permission for obtaining monitor information for this origin.
+   *
+   * <p>On the web backend this triggers the browser permission dialog. It must be called in
+   * response to a user gesture (button press, key press, etc.) or the browser will silently
+   * ignore it. If granted, {@link #getMonitors()} returns a real list of all the monitors that
+   * are connected to the user's computer; otherwise, it returns empty.
+   *
+   * <p>On desktop, permission is implicit and this method does nothing.
+   */
+  default void requestMonitorPermission() {}
 
   /**
    * Returns the platform this game is running on.
