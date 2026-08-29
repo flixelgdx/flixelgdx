@@ -27,11 +27,13 @@ import org.flixelgdx.backend.FlixelMonitor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A monitor display, instantiated whenever SDL receives a monitor refresh event.
+ * A data container for a monitor display, instantiated whenever SDL receives a monitor
+ * refresh event.
  *
  * <p>You shouldn't create a new object of this class manually. This class is only used when
- * the {@link FlixelDesktopRunner} inside of the events handler receives any {@code DISPLAY_*}
- * events. You're better off pulling the current monitors held inside of {@link FlixelDesktopHostIntegration}.
+ * the {@link FlixelDesktopRunner} inside of the events handler receives any SDL {@code DISPLAY_*}
+ * events. You're better off pulling the current monitors held inside of {@link FlixelDesktopHostIntegration},
+ * which is much more reliable.
  */
 class FlixelSdlMonitor implements FlixelMonitor {
 
@@ -42,7 +44,6 @@ class FlixelSdlMonitor implements FlixelMonitor {
   final int virtualY;
   final int width;
   final int height;
-
   final float refreshRate;
 
   final boolean isPrimary;
