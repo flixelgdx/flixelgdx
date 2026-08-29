@@ -21,55 +21,71 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
+package org.flixelgdx.backend.desktop;
 
+import org.flixelgdx.backend.FlixelMonitor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Safe placeholder {@link FlixelMonitor} for platforms that cannot report a real display.
- *
- * <p>Returning this instead of {@code null} means game code that reads the current monitor never
- * has to null-check and never crashes on web, mobile, or headless targets. Every value is neutral:
- * an empty name, a zero position, a zero size, and not primary.
+ * A monitor display, instantiated whenever SDL receives a monitor refresh event.
  */
-public enum FlixelNoopMonitor implements FlixelMonitor {
+class FlixelSdlMonitor implements FlixelMonitor {
 
-  /** Shared no-op instance. */
-  INSTANCE;
+  @NotNull
+  final String name;
+
+  final int virtualX;
+  final int virtualY;
+  final int width;
+  final int height;
+
+  final float refreshRate;
+
+  final boolean isPrimary;
+
+  FlixelSdlMonitor(@NotNull String name, int virtualX, int virtualY, int width, int height,
+      float refreshRate, boolean isPrimary) {
+    this.name = name;
+    this.virtualX = virtualX;
+    this.virtualY = virtualY;
+    this.width = width;
+    this.height = height;
+    this.refreshRate = refreshRate;
+    this.isPrimary = isPrimary;
+  }
 
   @Override
-  @NotNull
-  public String getName() {
-    return "";
+  public @NotNull String getName() {
+    return name;
   }
 
   @Override
   public int getVirtualX() {
-    return 0;
+    return virtualX;
   }
 
   @Override
   public int getVirtualY() {
-    return 0;
+    return virtualY;
   }
 
   @Override
   public int getWidth() {
-    return 0;
+    return width;
   }
 
   @Override
   public int getHeight() {
-    return 0;
+    return height;
   }
 
   @Override
   public float getRefreshRate() {
-    return 0.0f;
+    return refreshRate;
   }
 
   @Override
   public boolean isPrimary() {
-    return false;
+    return isPrimary;
   }
 }

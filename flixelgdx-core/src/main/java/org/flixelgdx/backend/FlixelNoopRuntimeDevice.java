@@ -28,6 +28,8 @@ import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * Default {@link FlixelRuntimeDevice} used before a backend is installed and on platforms that do
  * not report memory or classpath layout (such as web targets).
@@ -45,6 +47,8 @@ public enum FlixelNoopRuntimeDevice implements FlixelRuntimeDevice {
   private FlixelRuntimeMode runtimeMode = FlixelRuntimeMode.RELEASE;
   private FlixelStackTraceProvider stackTraceProvider = FlixelNoopStackTraceProvider.INSTANCE;
 
+  private boolean runtimeModeSet = false;
+
   @Override
   @NotNull
   public FlixelRuntimeMode getMode() {
@@ -53,8 +57,12 @@ public enum FlixelNoopRuntimeDevice implements FlixelRuntimeDevice {
 
   @Override
   public void setMode(@NotNull FlixelRuntimeMode mode) {
-    if (mode != null) {
-      this.runtimeMode = mode;
+    Objects.requireNonNull(runtimeMode, "The provided runtime mode cannot be null.");
+    if (!runtimeModeSet) {
+      runtimeMode = mode;
+      runtimeModeSet = true;
+    } else {
+      throw new RuntimeException("The runtime mode has already been set, it cannot be changed.");
     }
   }
 

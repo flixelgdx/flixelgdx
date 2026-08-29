@@ -26,6 +26,7 @@ package org.flixelgdx.backend.jvm.runtime;
 import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
+import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.jar.JarFile;
 
 /**
@@ -42,6 +44,10 @@ import java.util.jar.JarFile;
  * targets.
  */
 public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
+
+  private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
+
+  private boolean runtimeModeSet = false;
 
   @Override
   public long getJavaHeap() {
@@ -172,8 +178,24 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Override
+  public @NotNull FlixelRuntimeMode getMode() {
+    return mode;
+  }
+
+  @Override
+  public void setMode(@NotNull FlixelRuntimeMode mode) {
+    Objects.requireNonNull(mode, "The provided runtime mode cannot be null.");
+    if (!runtimeModeSet) {
+      this.mode = mode;
+      runtimeModeSet = true;
+    } else {
+      throw new RuntimeException("The runtime mode has already been set, it cannot be changed.");
+    }
+  }
+
+  @Override
   public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
-    Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> handler.onCrash(thread, throwable));
+    Thread.setDefaultUncaughtExceptionHandler(handler::onCrash);
   }
 
   /**

@@ -53,10 +53,12 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
    * that convention, assuring no unexpected crashes happen.
    */
   public static final int MAX_NOTIFY_ARG_LEN = 6000;
+
+  final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
+
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
-  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   @Override
   public void sendNotification(@Nullable String title, @NotNull String message) {

@@ -39,7 +39,9 @@ import org.lwjgl.sdl.SDLInit;
 import org.lwjgl.sdl.SDLKeyboard;
 import org.lwjgl.sdl.SDLMouse;
 import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.sdl.SDL_DisplayMode;
 import org.lwjgl.sdl.SDL_Event;
+import org.lwjgl.sdl.SDL_Rect;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
@@ -81,6 +83,9 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   @NotNull
   private final FlixelSdlMouseIconManager iconManager;
 
+  @NotNull
+  private final FlixelDesktopHostIntegration host;
+
   private int width;
   private int height;
 
@@ -99,12 +104,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
       @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
-      @NotNull FlixelSdlMouseIconManager iconManager, int width, int height) {
+      @NotNull FlixelSdlMouseIconManager iconManager, FlixelDesktopHostIntegration host, int width, int height) {
     this.window = window;
     this.input = input;
     this.graphics = graphics;
     this.gamepads = gamepads;
     this.iconManager = iconManager;
+    this.host = host;
     this.width = width;
     this.height = height;
   }
@@ -372,6 +378,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           input.onScrolled(event.wheel().x(), event.wheel().y());
         case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
         case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
+        case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
+             SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
+             SDLEvents.SDL_EVENT_DISPLAY_MOVED,
+             SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED -> refreshMonitors();
         default -> {
         }
       }
@@ -392,7 +402,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   /** Maps an SDL mouse button (1=left, 2=middle, 3=right) to the framework's 0-based index. */
-  private static int mouseButton(int sdlButton) {
+  private int mouseButton(int sdlButton) {
     if (sdlButton == SDLMouse.SDL_BUTTON_LEFT) {
       return 0;
     }
@@ -403,6 +413,38 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       return 2;
     }
     return Math.max(0, sdlButton - 1);
+  }
+
+  private void refreshMonitors() {
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      host.monitors.clear();
+
+      IntBuffer countBuf = stack.mallocInt(1);
+      IntBuffer displaysBuf = SDLVideo.SDL_GetDisplays();
+
+      if (displaysBuf != null) {
+        int count = countBuf.get(0);
+        int primaryId = SDLVideo.SDL_GetPrimaryDisplay();
+
+        for (int i = 0; i < count; i++) {
+          int displayId = displaysBuf.get(i);
+          String name = SDLVideo.SDL_GetDisplayName(displayId);
+          boolean isPrimary = (displayId == primaryId);
+
+          SDL_Rect bounds = SDL_Rect.malloc(stack);
+          SDLVideo.SDL_GetDisplayBounds(displayId, bounds);
+
+          SDL_DisplayMode mode = SDLVideo.SDL_GetCurrentDisplayMode(displayId);
+          float refreshRate = mode != null ? mode.refresh_rate() : 0.0f;
+
+          FlixelSdlMonitor monitor = new FlixelSdlMonitor(name, bounds.x(), bounds.y(), bounds.w(), bounds.h(),
+              refreshRate, isPrimary);
+          host.monitors.add(monitor);
+        }
+
+        
+      }
+    }
   }
 
   @NotNull
@@ -428,6 +470,11 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   @NotNull
   public FlixelSdlMouseIconManager getIconManager() {
     return iconManager;
+  }
+
+  @NotNull
+  public FlixelDesktopHostIntegration getHost() {
+    return host;
   }
 
   public int getWidth() {
