@@ -71,7 +71,12 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
 
   @Override
   public void requestMonitorPermission() {
-    FlixelHtml5MonitorHelper.requestScreenDetails(this::updateMonitors);
+    // Since requestScreenDetails(...) registers a 'screenschange' callback on the
+    // JavaScript side, we have a guard here to ensure the same callback doesn't get
+    // added twice and cause issues.
+    if (!FlixelHtml5MonitorHelper.isWindowManagementSupported()) {
+      FlixelHtml5MonitorHelper.requestScreenDetails(this::updateMonitors);
+    }
   }
 
   @Override
@@ -169,7 +174,7 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
    * @param screens The JavaScript array of the user's connected monitors. May be {@code null} if
    *     {@link FlixelHostIntegration#supportsMonitors()} returns {@code false}.
    */
-  public void updateMonitors(@Nullable JSArray<FlixelHtml5MonitorHelper.JSScreenDetailed> screens) {
+  public void updateMonitors(@Nullable JSArray<FlixelHtml5MonitorHelper.JSScreen> screens) {
     monitors.clear();
 
     if (screens == null) {
@@ -177,7 +182,7 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
     }
 
     for (int i = 0; i < screens.getLength(); i++) {
-      FlixelHtml5MonitorHelper.JSScreenDetailed screen = screens.get(i);
+      FlixelHtml5MonitorHelper.JSScreen screen = screens.get(i);
       FlixelHtml5Monitor monitor = new FlixelHtml5Monitor(screen.getLabel(), screen.getLeft(), screen.getTop(),
         screen.getWidth(), screen.getHeight(), screen.isPrimary());
       monitors.add(monitor);
