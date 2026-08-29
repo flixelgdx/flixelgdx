@@ -95,7 +95,6 @@ public final class FlixelHtml5MonitorHelper {
    *
    * @param callback The {@link MonitorUpdateCallback} that will be used when JavaScript
    *     triggers a {@code 'screenschange'} callback.
-   * @author stringdotjar
    */
   @JSBody(params = { "callback" }, script = """
       if (!window.getScreenDetails) {
