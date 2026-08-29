@@ -46,6 +46,7 @@ class FlixelHtml5Monitor implements FlixelMonitor {
   final int virtualY;
   final int width;
   final int height;
+
   final boolean isPrimary;
 
   FlixelHtml5Monitor(@NotNull String name, int virtualX, int virtualY, int width, int height, boolean isPrimary) {

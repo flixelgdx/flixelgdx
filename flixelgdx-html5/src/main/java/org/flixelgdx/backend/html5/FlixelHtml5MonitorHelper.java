@@ -76,16 +76,17 @@ public final class FlixelHtml5MonitorHelper {
   }
 
   /**
-   * Native function that returns if the Window Management API is allowed to be used on the
-   * JavaScript side.
+   * Native function that returns {@code true} if the Window Management API is allowed to be
+   * used on the JavaScript side.
    *
-   * @return If the browser's native Window Management API is available.
+   * @return {@code true} if the browser's native Window Management API is available or
+   *     allowed to be used.
    */
   @JSBody(script = "return typeof window !== 'undefined' && 'getScreenDetails' in window;")
   public static native boolean isWindowManagementSupported();
 
   /**
-   * Sends a browser request to the user for permission to have access to window management.
+   * Sends a browser request to the user for permission to interact with their monitors.
    *
    * <p>This is primarily used by {@link FlixelHtml5HostIntegration#requestMonitorPermission()}
    * and inside {@link FlixelHtml5Runner} during the boot sequence (aka during startup). It is
