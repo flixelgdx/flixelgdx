@@ -63,7 +63,7 @@ public final class FlixelPlatform {
   public static final FlixelPlatform Desktop = of("Desktop");
 
   /** A web browser. */
-  public static final FlixelPlatform Web = of("Web");
+  public static final FlixelPlatform HTML5 = of("HTML5");
 
   /** An Android mobile device. */
   public static final FlixelPlatform Android = of("Android");

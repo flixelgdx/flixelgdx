@@ -25,7 +25,11 @@ package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
+import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
+
+import java.util.Objects;
 
 /**
  * Reports what a browser can tell a game about the machine it runs on, which is very little.
@@ -38,6 +42,10 @@ import org.teavm.jso.JSBody;
  */
 public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
 
+  private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
+
+  private boolean runtimeModeSet = false;
+
   @Override
   public long getJavaHeap() {
     return usedHeapBytes();
@@ -46,6 +54,22 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   @Override
   public FlixelRunEnvironment getEnvironment() {
     return FlixelRunEnvironment.BROWSER;
+  }
+
+  @Override
+  public @NotNull FlixelRuntimeMode getMode() {
+    return mode;
+  }
+
+  @Override
+  public void setMode(@NotNull FlixelRuntimeMode mode) {
+    Objects.requireNonNull(mode, "The provided runtime mode cannot be null.");
+    if (!runtimeModeSet) {
+      this.mode = mode;
+      runtimeModeSet = true;
+    } else {
+      throw new RuntimeException("The runtime mode has already been set, it cannot be changed.");
+    }
   }
 
   @JSBody(script = """

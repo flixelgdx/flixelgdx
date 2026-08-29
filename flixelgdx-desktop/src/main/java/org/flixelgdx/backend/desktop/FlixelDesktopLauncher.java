@@ -130,6 +130,7 @@ public final class FlixelDesktopLauncher {
     }
 
     FlixelSdlWindow window = new FlixelSdlWindow();
+    FlixelDesktopHostIntegration host = new FlixelDesktopHostIntegration();
     FlixelDesktopInputDevice input = new FlixelDesktopInputDevice();
     FlixelBgfxGraphics graphics = new FlixelBgfxGraphics();
     FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
@@ -139,14 +140,15 @@ public final class FlixelDesktopLauncher {
 
     Flixel.alert = new FlixelDesktopAlerter();
     Flixel.window = window;
-    Flixel.host = new FlixelDesktopHostIntegration();
+    Flixel.host = host;
     Flixel.files = new FlixelJvmFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
     Flixel.runtime.setStackTraceProvider(new FlixelJvmStackTraceProvider());
     Flixel.log.logFileHandler = new FlixelJvmLogFileHandler();
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
-    FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads, iconManager, width, height);
+    FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
+        iconManager, host, width, height);
 
     FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
     assets.registerLoader(".ktx2", new FlixelKtx2Loader());
@@ -158,12 +160,12 @@ public final class FlixelDesktopLauncher {
     // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire their desktop
     // implementations once they exist, just before the runner takes over the loop.
     Flixel.boot.afterStart(() -> {
+      Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
       Flixel.mouse.setMouseIconManager(iconManager);
     });
 
-    Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
     Flixel.runtime.setMode(runtimeMode);
 
     try {
