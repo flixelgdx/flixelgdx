@@ -171,6 +171,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       SDLKeyboard.SDL_StartTextInput(windowHandle);
     }
 
+    refreshMonitors(); // Fill in the monitors at startup.
     game.create();
 
     long lastNanos = System.nanoTime();
@@ -181,6 +182,8 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           break;
         }
 
+        // TODO: Find a workaround for allowing the game to tick the update loop
+        // while stopping rendering as well.
         if (!window.isContinuousRendering() && !window.consumeRenderRequest()) {
           Thread.yield();
           continue;
@@ -420,14 +423,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     try (MemoryStack stack = MemoryStack.stackPush()) {
       host.monitors.clear();
 
-      IntBuffer countBuf = stack.mallocInt(1);
       IntBuffer displaysBuf = SDLVideo.SDL_GetDisplays();
 
       if (displaysBuf != null) {
-        int count = countBuf.get(0);
+        int monitorCount = displaysBuf.limit();
         int primaryId = SDLVideo.SDL_GetPrimaryDisplay();
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < monitorCount; i++) {
           int displayId = displaysBuf.get(i);
           String name = SDLVideo.SDL_GetDisplayName(displayId);
           boolean isPrimary = (displayId == primaryId);

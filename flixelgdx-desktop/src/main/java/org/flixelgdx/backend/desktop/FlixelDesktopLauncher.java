@@ -160,12 +160,12 @@ public final class FlixelDesktopLauncher {
     // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire their desktop
     // implementations once they exist, just before the runner takes over the loop.
     Flixel.boot.afterStart(() -> {
+      Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
       Flixel.mouse.setMouseIconManager(iconManager);
     });
 
-    Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
     Flixel.runtime.setMode(runtimeMode);
 
     try {

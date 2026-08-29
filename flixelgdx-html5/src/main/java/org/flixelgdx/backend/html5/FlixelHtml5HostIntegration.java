@@ -132,7 +132,7 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @Override
   @NotNull
   public FlixelPlatform getPlatform() {
-    return FlixelPlatform.Web;
+    return FlixelPlatform.HTML5;
   }
 
   @JSBody(script = "if (typeof Notification !== 'undefined') { Notification.requestPermission(); }")
