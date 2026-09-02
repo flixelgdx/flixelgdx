@@ -42,13 +42,6 @@ import java.util.function.Supplier
  * collapses those setters into named parameters and moves the property goals into a small builder
  * block, so a tween reads top to bottom:
  *
- * ```
- * sprite.tween(duration = 2f, ease = FlixelEase::quadOut, onComplete = { it.destroy() }) {
- *   goal({ sprite.x }, 100f) { sprite.x = it }
- *   goal({ sprite.y }, 0f) { sprite.y = it }
- * }
- * ```
- *
  * The getter and setter passed to [FlixelTweenGoalScope.goal] map straight to FlixelGDX's primitive
  * `float` goal interfaces, so they run without boxing while the tween updates every frame.
  */
@@ -75,8 +68,16 @@ class FlixelTweenGoalScope(val settings: FlixelTweenSettings) {
 /**
  * Creates and starts a tween on this object using an idiomatic Kotlin builder.
  *
- * Every setting has a sensible default, so only the goals block is required. See
- * [FlixelTweenGoalScope] for the goal syntax and a full example.
+ * Every setting has a sensible default, so only the goals block is required.
+ * 
+ * Example:
+ * 
+ * ```
+ * sprite.tween(duration = 2f, ease = FlixelEase::quadOut, onComplete = { it.destroy() }) {
+ *   goal(sprite::getX, 100f, sprite::setX)
+ *   goal(sprite::getY, 0f, sprite::setY)
+ * }
+ * ```
  *
  * @param duration How long the tween runs, in seconds.
  * @param ease The easing function, or `null` to keep the default linear ease.
@@ -127,8 +128,13 @@ fun Any.tween(
  * Chains [next] to run after this tween finishes, so the callback reads as a trailing lambda.
  *
  * ```
- * sprite.tween(duration = 1f) { goal({ sprite.x }, 100f) { sprite.x = it } }
- *   .then { sprite.tween(duration = 1f) { goal({ sprite.x }, 0f) { sprite.x = it } } }
+ * sprite.tween(duration = 1f) { 
+ *   goal(sprite::getX, 100f, sprite::setX)
+ * }.then { 
+ *   sprite.tween(duration = 1f) { 
+ *     goal(sprite::getY, 0f, sprite::setY) 
+ *   } 
+ * }
  * ```
  *
  * @param next Supplies the tween to start once this one completes.

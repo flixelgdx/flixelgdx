@@ -60,7 +60,10 @@ public class PlayState extends FlixelState {
     if (Flixel.keys.pressed(FlixelKey.RIGHT)) {
       player.changeX(speed);
     }
-    // So on...
+
+    if (Flixel.keys.justPressed(FlixelKey.ESCAPE)) {
+      Flixel.switchState(() -> new MainMenuState());
+    }
   }
 }
 ```
@@ -123,7 +126,7 @@ FlixelTween.tween(player, new FlixelTweenSettings()
   .setEase(FlixelEase::bounceOut));
 
 // Shake a sprite on both the X and Y axis.
-Flixel.shake(player, FlixelAxes.XY, 0.008f, new FlixelTweenSettings());
+FlixelTween.shake(player, FlixelAxes.XY, 0.008f, new FlixelTweenSettings());
 ```
 
 ### Performant Collection System
