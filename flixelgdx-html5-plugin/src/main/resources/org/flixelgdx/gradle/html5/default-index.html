@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{{TITLE}}</title>
+{{NATIVE_SCRIPTS}}
 {{FAVICON}}
   <style>
     @font-face {
@@ -107,10 +108,10 @@
     // downloads, and the framework's asset preloader drives it while assets download. Both go
     // through the same object so the bar and percentage stay in one place.
     window.__flixelLoading = (function () {
-      var overlay = document.getElementById('flixel-loading');
-      var fill = document.getElementById('flixel-loading-fill');
-      var label = document.getElementById('flixel-loading-label');
-      var gone = false;
+      const overlay = document.getElementById('flixel-loading');
+      const fill = document.getElementById('flixel-loading-fill');
+      const label = document.getElementById('flixel-loading-label');
+      let gone = false;
 
       return {
         set: function (fraction) {
@@ -162,9 +163,9 @@
     })();
 
     (function () {
-      var wasmEnabled = {{WASM_ENABLED}};
-      var loading = window.__flixelLoading;
-      var debugMode = window.flixelMode === 'debug';
+      const wasmEnabled = {{WASM_ENABLED}};
+      const loading = window.__flixelLoading;
+      const debugMode = window.flixelMode === 'debug';
 
       // Downloads a file while reporting byte progress, so the loading bar reflects the (large) game
       // bundle download. When the server does not report a length or streaming is unavailable, this
@@ -174,19 +175,19 @@
           if (!response.ok) {
             throw new Error('HTTP ' + response.status + ' for ' + url);
           }
-          var total = parseInt(response.headers.get('Content-Length') || '0', 10);
+          const total = parseInt(response.headers.get('Content-Length') || '0', 10);
           if (!response.body || !total) {
             return response.arrayBuffer();
           }
-          var reader = response.body.getReader();
-          var chunks = [];
-          var received = 0;
+          const reader = response.body.getReader();
+          const chunks = [];
+          let received = 0;
           return (function pump() {
             return reader.read().then(function (result) {
               if (result.done) {
-                var merged = new Uint8Array(received);
-                var offset = 0;
-                for (var i = 0; i < chunks.length; i++) {
+                const merged = new Uint8Array(received);
+                let offset = 0;
+                for (let i = 0; i < chunks.length; i++) {
                   merged.set(chunks[i], offset);
                   offset += chunks[i].length;
                 }
@@ -206,8 +207,8 @@
         loading.indeterminate();
         fetchWithProgress("{{JS_BUNDLE}}", function (f) { loading.set(f); })
           .then(function (buffer) {
-            var url = URL.createObjectURL(new Blob([buffer], { type: 'application/javascript' }));
-            var script = document.createElement('script');
+            const url = URL.createObjectURL(new Blob([buffer], {type: 'application/javascript'}));
+            const script = document.createElement('script');
             script.src = url;
             script.onload = function () {
               URL.revokeObjectURL(url);
@@ -227,7 +228,7 @@
       function loadWasm() {
         if (debugMode) { console.log('[FlixelGDX] Runtime: WebAssembly GC'); }
         loading.indeterminate();
-        var runtime = document.createElement('script');
+        const runtime = document.createElement('script');
         runtime.src = "{{WASM_RUNTIME}}";
         runtime.onload = function () {
           if (window.TeaVM && TeaVM.wasmGC) {
@@ -259,17 +260,17 @@
   </script>
   <script>
     (function () {
-      var canvas = document.getElementById('{{CANVAS_ID}}');
+      const canvas = document.getElementById('{{CANVAS_ID}}');
 
       function scaleCanvas() {
         if (!canvas.width || !canvas.height) return;
-        var scaleX = window.innerWidth / canvas.width;
-        var scaleY = window.innerHeight / canvas.height;
+        const scaleX = window.innerWidth / canvas.width;
+        const scaleY = window.innerHeight / canvas.height;
         canvas.style.transform = 'scale(' + Math.min(scaleX, scaleY) + ')';
       }
 
       // Poll until the framework sets the canvas dimensions, then scale and watch for resizes.
-      var poll = setInterval(function () {
+      const poll = setInterval(function () {
         if (canvas.width && canvas.height) {
           clearInterval(poll);
           scaleCanvas();

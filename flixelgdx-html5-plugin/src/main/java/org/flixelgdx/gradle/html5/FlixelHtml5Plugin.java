@@ -33,6 +33,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.Sync;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Zip;
 import org.teavm.gradle.api.TeaVMExtension;
 
@@ -76,7 +78,7 @@ import java.util.stream.Stream;
  * <pre>{@code
  * plugins {
  *   id 'org.teavm' version '0.13.0'
- *   id 'org.flixelgdx.html5' version '<flixelgdx-version>
+ *   id 'org.flixelgdx.html5' version '<flixelgdx-version>'
  * }
  *
  * teavm {
@@ -125,6 +127,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     AtomicReference<WebBundle> bundle = new AtomicReference<>(WebBundle.DEFAULTS);
 
     registerCopyTasks(project, ext, webRoot);
+    registerWasmExtractionTask(project, webRoot);
     registerShaderTask(project, webRoot);
     registerManifestTask(project, webRoot);
     registerIndexTask(project, ext, webRoot, bundle);
@@ -530,16 +533,44 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     if (build == null) {
       return;
     }
-    build.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyWebApp"),
-        project.getTasks().named("copyShaders"), project.getTasks().named("generateAssetManifest"));
-    Task index = project.getTasks().findByName("generateIndexHtml");
-    Task copyWebApp = project.getTasks().findByName("copyWebApp");
+    TaskContainer tasks = project.getTasks();
+    build.dependsOn(tasks.named("copyAssets"),
+        tasks.named("copyWebApp"),
+        tasks.named("copyShaders"),
+        tasks.named("generateAssetManifest"),
+        tasks.named("extractNativeScripts"));
+    Task index = tasks.findByName("generateIndexHtml");
+    Task copyWebApp = tasks.findByName("copyWebApp");
     if (index != null) {
       build.finalizedBy(index);
       if (copyWebApp != null) {
         index.mustRunAfter(copyWebApp);
       }
     }
+  }
+
+  private void registerWasmExtractionTask(Project project, DirectoryProperty webRoot) {
+    project.getTasks().register("extractNativeScripts", Sync.class, task -> {
+      task.setGroup(FLIXELGDX_GROUP);
+      task.setDescription("Extracts any compiled JavaScript and WebAssembly scripts from the runtime classpath.");
+
+      Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
+      if (runtimeClasspath != null) {
+        task.dependsOn(runtimeClasspath);
+        // Treat all dependency jars as zip trees.
+        task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
+          .filter(file -> !file.isDirectory())
+          .map(project::zipTree)
+          .collect(Collectors.toList())));
+      }
+
+      task.include("META-INF/wasm/**");
+      task.into(webRoot.dir("native"));
+
+      // Strip the META-INF/wasm/ directory structure so they sit at the root.
+      task.eachFile(details -> details.setPath(details.getName()));
+      task.setIncludeEmptyDirs(false);
+    });
   }
 
   /** Adds a dependency from one task to another when both exist. */
