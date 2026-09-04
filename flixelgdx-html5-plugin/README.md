@@ -157,15 +157,77 @@ If the shader plugin is on the classpath, the plugin also runs `copyShaders`, wh
 shader variants out of the JAR resources and into the web assets tree so the browser can fetch them
 as regular files. This happens automatically; no extra configuration is needed.
 
+## Native scripts (JavaScript and WebAssembly)
+
+Some libraries need pre-compiled JavaScript or WebAssembly files loaded into the browser before the
+game bundle runs. A common example is a C library compiled with Emscripten: it produces a JavaScript
+glue file and a `.wasm` binary that must both be present and the glue file must execute before any
+Java code tries to call into it.
+
+The plugin handles this automatically through the `META-INF/wasm/` convention. Any JAR on the
+runtime classpath that contains files under `META-INF/wasm/` will have those files extracted to the
+`native/` directory of the web output. Every `.js` file found there is then injected as a
+`<script src="native/filename.js"></script>` tag into the generated `index.html`, placed in the
+`<head>` before the game bundle loads. The scripts therefore execute and finish setting up before any
+game code runs.
+
+**Important:** the `<script>` tags are only injected into the auto-generated `index.html`. If you
+supply a [custom index.html](#custom-indexhtml), you are responsible for loading the scripts
+yourself using the same `native/` paths.
+
+### How Emscripten companion files are resolved
+
+Emscripten glue scripts locate their companion `.wasm` binary relative to the script's own URL. For 
+example, when the glue file `stb_truetype_wasm.js` is loaded from `native/`, the browser resolves
+`stb_truetype_wasm.wasm` as `native/stb_truetype_wasm.wasm`. Because both files are extracted to
+the same `native/` directory, no extra configuration is needed, as they find each other automatically.
+
+### Shipping native scripts in your own JAR
+
+Place your files under `src/main/resources/META-INF/wasm/` in the module that produces the JAR:
+
+```
+my-library/
+  src/
+    main/
+      resources/
+        META-INF/
+          wasm/
+            my_module.js      <- Emscripten glue (or any JS that must run early)
+            my_module.wasm    <- compiled WebAssembly binary
+```
+
+Gradle picks up everything in `src/main/resources/` as JAR resources automatically. When a game
+project depends on your library, the plugin finds both files inside the JAR, extracts them to
+`native/`, and injects a `<script>` tag for `my_module.js`.
+
+If you use a different resources directory, register it explicitly in your `build.gradle`:
+
+```groovy
+sourceSets.main.resources.srcDir = 'src/main/emcc-output'
+```
+
+### Notes
+
+- File names must be unique across all JARs on the classpath. If two JARs both contain a file with
+  the same name under `META-INF/wasm/`, one will overwrite the other during extraction. Use a
+  descriptive, library-specific prefix (e.g. `mylib_stb.js`) to avoid conflicts.
+- Only `.js` files receive `<script>` tags. Other file types (`.wasm`, data files) are extracted to
+  `native/` but not referenced directly by the page; they are typically loaded by the accompanying
+  JS glue file.
+- The extraction task (`extractNativeScripts`) runs before the TeaVM build so the scripts are in
+  place before `index.html` is generated.
+
 ## Tasks registered
 
-| Task                    | Group       | Description                                               |
-|-------------------------|-------------|-----------------------------------------------------------|
-| `copyAssets`            | flixelgdx   | Copies game assets into the web output.                   |
-| `copyWebApp`            | flixelgdx   | Copies user-provided web resources into the web output.   |
-| `copyShaders`           | flixelgdx   | Copies compiled ESSL shader variants into the web assets. |
-| `generateAssetManifest` | flixelgdx   | Writes `assets/assets.txt` for the web preloader.         |
-| `generateIndexHtml`     | flixelgdx   | Generates `index.html` from the built-in template.        |
-| `run`                   | application | Builds the web app and starts the dev server.             |
-| `debug`                 | application | Same as `run`, but opens in debug mode.                   |
-| `package`               | application | Zips the web output into `dist/<name>-html5.zip`.         |
+| Task                    | Group       | Description                                                             |
+|-------------------------|-------------|-------------------------------------------------------------------------|
+| `copyAssets`            | flixelgdx   | Copies game assets into the web output.                                 |
+| `copyWebApp`            | flixelgdx   | Copies user-provided web resources into the web output.                 |
+| `copyShaders`           | flixelgdx   | Copies compiled ESSL shader variants into the web assets.               |
+| `extractNativeScripts`  | flixelgdx   | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.         |
+| `generateAssetManifest` | flixelgdx   | Writes `assets/assets.txt` for the web preloader.                       |
+| `generateIndexHtml`     | flixelgdx   | Generates `index.html` and injects `<script>` tags for native scripts.  |
+| `run`                   | application | Builds the web app and starts the dev server.                           |
+| `debug`                 | application | Same as `run`, but opens in debug mode.                                 |
+| `package`               | application | Zips the web output into `dist/<name>-html5.zip`.                       |
