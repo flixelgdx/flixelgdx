@@ -155,7 +155,7 @@ public class FlixelString implements CharSequence {
     buffer.trimToSize();
   }
 
-  /** @return {@code true} when the buffer contains no characters. */
+  /** Returns {@code true} when the buffer contains no characters. */
   public boolean isEmpty() {
     return buffer.isEmpty();
   }
@@ -198,7 +198,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with {@code value}. */
+  /** Replaces the buffer content with {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(boolean value) {
     buffer.clear();
@@ -206,7 +206,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with {@code value}. */
+  /** Replaces the buffer content with {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(char value) {
     buffer.clear();
@@ -214,7 +214,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the decimal rendering of {@code value}. */
+  /** Replaces the buffer content with the decimal rendering of {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(byte value) {
     buffer.clear();
@@ -222,7 +222,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the decimal rendering of {@code value}. */
+  /** Replaces the buffer content with the decimal rendering of {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(short value) {
     buffer.clear();
@@ -230,7 +230,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the decimal rendering of {@code value}. */
+  /** Replaces the buffer content with the decimal rendering of {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(int value) {
     buffer.clear();
@@ -238,7 +238,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the decimal rendering of {@code value}. */
+  /** Replaces the buffer content with the decimal rendering of {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(long value) {
     buffer.clear();
@@ -246,7 +246,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the decimal rendering of {@code value}. */
+  /** Replaces the buffer content with the decimal rendering of {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(float value) {
     buffer.clear();
@@ -254,7 +254,7 @@ public class FlixelString implements CharSequence {
     return this;
   }
 
-  /** @return {@code this} after replacing content with the decimal rendering of {@code value}. */
+  /** Replaces the buffer content with the decimal rendering of {@code value} and returns {@code this} for chaining. */
   @NotNull
   public FlixelString set(double value) {
     buffer.clear();

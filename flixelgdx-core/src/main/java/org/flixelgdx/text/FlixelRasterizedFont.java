@@ -40,18 +40,18 @@ import org.jetbrains.annotations.Nullable;
 public interface FlixelRasterizedFont extends FlixelDestroyable {
 
   /**
-   * @return The distance from the baseline up to the top of the tallest glyph, in pixels.
+   * Returns the distance from the baseline up to the top of the tallest glyph, in pixels.
    */
   float getAscent();
 
   /**
-   * @return The distance from the baseline down to the bottom of the lowest glyph, in pixels
-   *     (positive).
+   * Returns the distance from the baseline down to the bottom of the lowest glyph, in pixels
+   * (positive).
    */
   float getDescent();
 
   /**
-   * @return The vertical distance between two consecutive baselines, in pixels.
+   * Returns the vertical distance between two consecutive baselines, in pixels.
    */
   float getLineHeight();
 

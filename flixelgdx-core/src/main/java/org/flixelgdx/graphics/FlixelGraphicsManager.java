@@ -69,7 +69,7 @@ import java.nio.ByteBuffer;
 public interface FlixelGraphicsManager {
 
   /**
-   * @return Which graphics backend is running this session. Defaults to {@link FlixelGraphicsApi#Noop}.
+   * Returns which graphics backend is running this session, defaulting to {@link FlixelGraphicsApi#Noop}.
    */
   @NotNull
   default FlixelGraphicsApi getApi() {
@@ -193,8 +193,8 @@ public interface FlixelGraphicsManager {
   default void clearRenderResolution() {}
 
   /**
-   * @return {@code true} when a fixed render resolution is active (see
-   *     {@link #setRenderResolution(int, int)}). Defaults to {@code false}.
+   * Returns {@code true} when a fixed render resolution is active (see
+   * {@link #setRenderResolution(int, int)}), or {@code false} by default.
    */
   default boolean isRenderResolutionEnabled() {
     return false;
@@ -370,16 +370,12 @@ public interface FlixelGraphicsManager {
    */
   default void setViewport(int x, int y, int width, int height) {}
 
-  /**
-   * @return The drawable surface width in physical pixels, or {@code 0} when unknown.
-   */
+  /** Returns the drawable surface width in physical pixels, or {@code 0} when unknown. */
   default int getBackBufferWidth() {
     return 0;
   }
 
-  /**
-   * @return The drawable surface height in physical pixels, or {@code 0} when unknown.
-   */
+  /** Returns the drawable surface height in physical pixels, or {@code 0} when unknown. */
   default int getBackBufferHeight() {
     return 0;
   }
@@ -531,16 +527,14 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * @return The number of frames rendered during the last second (the measured frame rate), or
-   *     {@code 0} when unknown.
+   * Returns the number of frames rendered during the last second (the measured frame rate), or
+   * {@code 0} when unknown.
    */
   default int getFps() {
     return 0;
   }
 
-  /**
-   * @return The frame-rate cap in frames per second, or {@code 0} when the frame rate is uncapped.
-   */
+  /** Returns the frame-rate cap in frames per second, or {@code 0} when the frame rate is uncapped. */
   default int getTargetFps() {
     return 0;
   }
@@ -552,9 +546,7 @@ public interface FlixelGraphicsManager {
    */
   default void setTargetFps(int fps) {}
 
-  /**
-   * @return {@code true} when the frame is synchronized to the display's refresh (vertical sync).
-   */
+  /** Returns {@code true} when the frame is synchronized to the display's refresh (vertical sync). */
   default boolean isVSyncEnabled() {
     return false;
   }
@@ -567,8 +559,8 @@ public interface FlixelGraphicsManager {
   default void setVSync(boolean enabled) {}
 
   /**
-   * @return The display mode the game is currently presented with, or {@code null} when the backend
-   *     cannot report one (common on web and mobile).
+   * Returns the display mode the game is currently presented with, or {@code null} when the backend
+   * cannot report one (common on web and mobile).
    */
   @Nullable
   default FlixelDisplayMode getDisplayMode() {
@@ -598,8 +590,9 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * @return The display's pixels per inch, or {@code 0} when the backend cannot report it. Prefer
-   *     {@link #getDensity()} for scaling; use this only when you need a physical measurement.
+   * Returns the display's pixels per inch, or {@code 0} when the backend cannot report it.
+   *
+   * <p>Prefer {@link #getDensity()} for scaling; use this only when you need a physical measurement.
    */
   default float getPpi() {
     return 0f;

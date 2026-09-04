@@ -121,6 +121,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
    */
   public boolean visible = true;
 
+  /** Creates a new FlixelBasic with a unique auto-assigned ID and no camera overrides. */
   public FlixelBasic() {
     this.ID = idEnumerator++;
     this.cameras = null;

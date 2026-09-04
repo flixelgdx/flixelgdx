@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 public interface FlixelGamepadProvider {
 
   /**
-   * @return How many gamepads are connected right now. Defaults to {@code 0}.
+   * Returns how many gamepads are connected right now. Defaults to {@code 0}.
    */
   default int getGamepadCount() {
     return 0;

@@ -57,10 +57,10 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
   /** The currently active substate opened on top of {@code this} state. */
   private FlixelSubState subState;
 
-  /** Should {@code this} state update its logic even when a substate is currently opened? */
+  /** Whether this state should update its logic even when a substate is currently opened. */
   public boolean persistentUpdate = false;
 
-  /** Should {@code this} state draw its members even when a substate is currently opened? */
+  /** Whether this state should draw its members even when a substate is currently opened. */
   public boolean persistentDraw = true;
 
   /**

@@ -129,6 +129,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
 
   private boolean listenerAttached;
 
+  /** Creates a new gamepad input manager with empty state for all supported gamepad slots. */
   public FlixelGamepadInputManager() {
     for (int i = 0; i < MAX_GAMEPADS; i++) {
       pressedOrder[i] = new FlixelIntArray();
@@ -1173,10 +1174,12 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     private int gamepadId;
     private FlixelGamepadModel model;
 
+    /** Returns the ID of the connected gamepad. */
     public int gamepadId() {
       return gamepadId;
     }
 
+    /** Returns the model of the connected gamepad. */
     @NotNull
     public FlixelGamepadModel model() {
       return model;
@@ -1192,6 +1195,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   public static final class GamepadDisconnectedEvent {
     private int gamepadId;
 
+    /** Returns the ID of the disconnected gamepad. */
     public int gamepadId() {
       return gamepadId;
     }

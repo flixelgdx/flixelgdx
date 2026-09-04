@@ -38,11 +38,13 @@ public final class FlixelLoggingBytecodeHooks {
 
   private FlixelLoggingBytecodeHooks() {}
 
+  /** Bytecode hook for {@link Flixel#debug(Object)} with no tag; injects call-site metadata. */
   public static void bcDebug0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.debugWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#debug(String, Object)} with an explicit tag; injects call-site metadata. */
   public static void bcDebug1(
       String tag,
       Object message,
@@ -53,11 +55,13 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.debugWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#info(Object)} with no tag; injects call-site metadata. */
   public static void bcInfo0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.infoWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#info(String, Object)} with an explicit tag; injects call-site metadata. */
   public static void bcInfo1(
       String tag,
       Object message,
@@ -68,11 +72,13 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.infoWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#warn(Object)} with no tag; injects call-site metadata. */
   public static void bcWarn0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.warnWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#warn(String, Object)} with an explicit tag; injects call-site metadata. */
   public static void bcWarn1(
       String tag,
       Object message,
@@ -83,11 +89,13 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.warnWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#error(Object)} with no tag; injects call-site metadata. */
   public static void bcError0(String message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.errorWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#error(String, Object)} with an explicit tag; injects call-site metadata. */
   public static void bcError1(
       String tag,
       Object message,
@@ -98,6 +106,7 @@ public final class FlixelLoggingBytecodeHooks {
     Flixel.log.errorWithSite(tag, message, sourceFile, line, declaringClass, declaringMethod);
   }
 
+  /** Bytecode hook for {@link Flixel#error(String, Object, Throwable)} with a tag and throwable; injects call-site metadata. */
   public static void bcError2(
       String tag,
       Object message,

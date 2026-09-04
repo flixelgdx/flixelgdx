@@ -554,14 +554,18 @@ final class FlixelAnimateRigLoader {
   private static void accumulateTransformedCorner(@NotNull FlixelAffine m, float x, float y, @NotNull float[] out) {
     float tx = m.m00 * x + m.m01 * y + m.m02;
     float ty = m.m10 * x + m.m11 * y + m.m12;
-    if (tx < out[0])
+    if (tx < out[0]) {
       out[0] = tx;
-    if (ty < out[1])
+    }
+    if (ty < out[1]) {
       out[1] = ty;
-    if (tx > out[2])
+    }
+    if (tx > out[2]) {
       out[2] = tx;
-    if (ty > out[3])
+    }
+    if (ty > out[3]) {
       out[3] = ty;
+    }
   }
 
   /**

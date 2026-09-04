@@ -39,6 +39,7 @@ public class FlixelAngleTween extends FlixelTween {
   protected float fromAngle;
   protected float toAngle;
 
+  /** Creates a new angle tween with the given tween settings. */
   public FlixelAngleTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

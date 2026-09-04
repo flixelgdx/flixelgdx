@@ -73,6 +73,11 @@ public class FlixelActionDigital extends FlixelAction {
   private boolean pressed;
   private boolean previous;
 
+  /**
+   * Creates a new digital action with the given display name.
+   *
+   * @param name A human-readable name used for debugging and binding lookup, or {@code null}.
+   */
   public FlixelActionDigital(@Nullable String name) {
     super(name);
   }
@@ -218,14 +223,17 @@ public class FlixelActionDigital extends FlixelAction {
     held = false;
   }
 
+  /** Returns {@code true} while the action's input is held down. */
   public boolean pressed() {
     return active && pressed;
   }
 
+  /** Returns {@code true} on the single frame the action is first pressed. */
   public boolean justPressed() {
     return active && pressed && !previous;
   }
 
+  /** Returns {@code true} on the single frame the action is released. */
   public boolean justReleased() {
     return active && !pressed && previous;
   }

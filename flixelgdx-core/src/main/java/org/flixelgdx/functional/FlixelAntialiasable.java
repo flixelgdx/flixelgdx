@@ -31,7 +31,7 @@ package org.flixelgdx.functional;
 public interface FlixelAntialiasable {
 
   /**
-   * @return Whether antialiasing is currently applied on {@code this} object.
+   * Returns whether antialiasing is currently applied on {@code this} object.
    */
   boolean isAntialiasing();
 

@@ -1253,6 +1253,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectX = clipRectX;
   }
 
+  /**
+   * Shifts the clip rect X position by the given delta.
+   *
+   * @param clipRectX The amount to add to the current clip rect X position.
+   */
   public void changeClipRectX(float clipRectX) {
     this.clipRectX += clipRectX;
   }
@@ -1265,6 +1270,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectY = clipRectY;
   }
 
+  /**
+   * Shifts the clip rect Y position by the given delta.
+   *
+   * @param clipRectY The amount to add to the current clip rect Y position.
+   */
   public void changeClipRectY(float clipRectY) {
     this.clipRectY += clipRectY;
   }
@@ -1277,6 +1287,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectWidth = FlixelMath.clamp(clipRectWidth, 0, getWidth());
   }
 
+  /**
+   * Shifts the clip rect width by the given delta, clamping the result to {@code [0, getWidth()]}.
+   *
+   * @param clipRectWidth The amount to add to the current clip rect width.
+   */
   public void changeClipRectWidth(float clipRectWidth) {
     setClipRectWidth(this.clipRectWidth + clipRectWidth);
   }
@@ -1289,6 +1304,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectHeight = FlixelMath.clamp(clipRectHeight, 0, getHeight());
   }
 
+  /**
+   * Shifts the clip rect height by the given delta, clamping the result to {@code [0, getHeight()]}.
+   *
+   * @param clipRectHeight The amount to add to the current clip rect height.
+   */
   public void changeClipRectHeight(float clipRectHeight) {
     setClipRectHeight(this.clipRectHeight + clipRectHeight);
   }

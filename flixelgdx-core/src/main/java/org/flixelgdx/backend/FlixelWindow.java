@@ -121,15 +121,13 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * @return last value applied by {@link #setTransparencyActive(boolean)} for this game session.
+   * Returns the last value applied to {@link #setTransparencyActive(boolean)} for this game session.
    */
   default boolean isTransparencyActive() {
     return Flixel.game != null && Flixel.game.isTransparencyActive();
   }
 
-  /**
-   * @return The current opacity level of the game's window.
-   */
+  /** Returns the current opacity level of the game's window. */
   default float getOpacity() {
     return 1;
   }
@@ -141,9 +139,7 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default void setOpacity(float opacity) {}
 
-  /**
-   * @return {@code true} if {@link #setOpacity(float)} can affect the window on this session.
-   */
+  /** Returns {@code true} if {@link #setOpacity(float)} can affect the window on this session. */
   default boolean supportsOpacity() {
     return false;
   }
@@ -155,9 +151,7 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default void setDecorated(boolean decorated) {}
 
-  /**
-   * @return {@code true} if {@link #setDecorated(boolean)} is supported on this session.
-   */
+  /** Returns {@code true} if {@link #setDecorated(boolean)} is supported on this session. */
   default boolean supportsDecorated() {
     return false;
   }
@@ -224,9 +218,7 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default void bringToForeground() {}
 
-  /**
-   * @return {@code true} if {@link #bringToForeground()} can run on this session.
-   */
+  /** Returns {@code true} if {@link #bringToForeground()} can run on this session. */
   default boolean supportsBringToForeground() {
     return false;
   }
@@ -241,9 +233,7 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default void setFloating(boolean floating) {}
 
-  /**
-   * @return {@code true} if {@link #setFloating(boolean)} may take effect on this session.
-   */
+  /** Returns {@code true} if {@link #setFloating(boolean)} may take effect on this session. */
   default boolean supportsFloating() {
     return false;
   }
@@ -259,32 +249,33 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default void setAbsorbCloseRequests(boolean absorb) {}
 
-  /**
-   * @return {@code true} if {@link #setAbsorbCloseRequests(boolean)} is wired for this session.
-   */
+  /** Returns {@code true} if {@link #setAbsorbCloseRequests(boolean)} is wired for this session. */
   default boolean supportsAbsorbCloseRequests() {
     return false;
   }
 
   /**
-   * @return {@code true} while close absorption is enabled and the listener chain is active.
-   *   When {@link #supportsAbsorbCloseRequests()} is {@code false}, this is always {@code false}.
+   * Returns {@code true} while close absorption is enabled and the listener chain is active.
+   *
+   * <p>When {@link #supportsAbsorbCloseRequests()} is {@code false}, this is always {@code false}.
    */
   default boolean isAbsorbCloseRequests() {
     return false;
   }
 
   /**
-   * @return {@code true} when the window is currently floating (always on top), if the backend can query it.
-   *   When unsupported, returns {@code false}.
+   * Returns {@code true} when the window is currently floating (always on top), if the backend can query it.
+   *
+   * <p>When unsupported, returns {@code false}.
    */
   default boolean isFloating() {
     return false;
   }
 
   /**
-   * @return {@code true} when the window has native decorations (title bar and border), if the backend can query it.
-   *   When unsupported, returns {@code true} so game code treats the common case as decorated.
+   * Returns {@code true} when the window has native decorations (title bar and border), if the backend can query it.
+   *
+   * <p>When unsupported, returns {@code true} so game code treats the common case as decorated.
    */
   default boolean isDecorated() {
     return true;
@@ -372,8 +363,8 @@ public interface FlixelWindow extends FlixelShakeable {
   default void setSize(int width, int height) {}
 
   /**
-   * @return {@code true} while the game is presented fullscreen (or in the browser's fullscreen
-   *     state on web); {@code false} for a normal windowed presentation.
+   * Returns {@code true} while the game is presented fullscreen (or in the browser's fullscreen
+   * state on web), or {@code false} for a normal windowed presentation.
    */
   default boolean isFullscreen() {
     return false;
@@ -399,9 +390,7 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default void setWindowed(int width, int height) {}
 
-  /**
-   * @return {@code true} if {@link #setFullscreen(FlixelDisplayMode)} can take effect on this session.
-   */
+  /** Returns {@code true} if {@link #setFullscreen(FlixelDisplayMode)} can take effect on this session. */
   default boolean supportsFullscreen() {
     return false;
   }
@@ -414,16 +403,14 @@ public interface FlixelWindow extends FlixelShakeable {
   default void setResizable(boolean resizable) {}
 
   /**
-   * @return {@code true} when the window may currently be resized by the user, if the backend can
-   *     report it; {@code false} otherwise.
+   * Returns {@code true} when the window may currently be resized by the user, if the backend can
+   * report it, or {@code false} otherwise.
    */
   default boolean isResizable() {
     return false;
   }
 
-  /**
-   * @return {@code true} when the window (or browser tab) currently has input focus.
-   */
+  /** Returns {@code true} when the window (or browser tab) currently has input focus. */
   default boolean isFocused() {
     return true;
   }

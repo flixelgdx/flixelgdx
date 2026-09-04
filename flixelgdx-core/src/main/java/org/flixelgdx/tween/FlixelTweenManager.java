@@ -170,10 +170,17 @@ public class FlixelTweenManager {
     return tween;
   }
 
+  /**
+   * Returns the pool for the given tween type.
+   *
+   * @param tweenClass The tween class whose pool to retrieve.
+   * @return The pool for the given type.
+   */
   public FlixelPool<FlixelTween> getPool(Class<? extends FlixelTween> tweenClass) {
     return getRegistration(tweenClass).pool();
   }
 
+  /** Clears all object pools for every registered tween type. */
   public void clearPools() {
     for (FlixelIdentityMap.Entry<Class<? extends FlixelTween>, TweenTypeRegistration> e : registry.entries()) {
       e.value.pool().clear();
@@ -293,9 +300,9 @@ public class FlixelTweenManager {
    *
    * @param object The object to check for tweens of.
    * @param fieldPaths The field paths to check for tweens of.
+   * @return {@code true} if the manager contains tweens of the given object and field paths.
    * @throws NullPointerException If the object is null.
    * @throws IllegalArgumentException If the object is null.
-   * @return True if the manager contains tweens of the given object and field paths, false otherwise.
    */
   public boolean containsTweensOf(Object object, String... fieldPaths) {
     if (object == null) {

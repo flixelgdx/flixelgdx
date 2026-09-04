@@ -42,6 +42,7 @@ public class FlixelQuadPath extends FlixelMotion {
   private int numSegs;
   private float totalDistance;
 
+  /** Creates a new quadratic path tween with the given tween settings. */
   public FlixelQuadPath(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }
@@ -53,11 +54,25 @@ public class FlixelQuadPath extends FlixelMotion {
     super.reset();
   }
 
+  /**
+   * Appends a waypoint to the path.
+   *
+   * @param x The X coordinate of the waypoint.
+   * @param y The Y coordinate of the waypoint.
+   * @return {@code this} for chaining.
+   */
   public FlixelQuadPath addPoint(float x, float y) {
     points.add(new FlixelVector(x, y));
     return this;
   }
 
+  /**
+   * Configures the motion duration or speed and updates the internal path.
+   *
+   * @param durationOrSpeed The duration in seconds, or the speed in pixels per second.
+   * @param useDuration When {@code true}, {@code durationOrSpeed} is treated as seconds; otherwise as pixels per second.
+   * @return {@code this} for chaining.
+   */
   public FlixelQuadPath setMotion(float durationOrSpeed, boolean useDuration) {
     updatePath();
     if (tweenSettings != null) {

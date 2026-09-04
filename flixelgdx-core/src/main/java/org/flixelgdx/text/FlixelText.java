@@ -731,50 +731,50 @@ public class FlixelText extends FlixelSprite {
     fontDirty = true;
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelFile file) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelFile file, int frameWidth) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelFile file, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelTexture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot use Sparrow atlases. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot use Sparrow atlases. */
   @Override
   public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic,
       @NotNull FlixelArray<FlixelFrame> parsedFrames) {
     throw new UnsupportedOperationException("FlixelText does not support addSparrowAtlas().");
   }
 
-  /** @return Never returns; text has no atlas regions. */
+  /** Always throws {@link UnsupportedOperationException}; text has no atlas regions. */
   @Override
   public final FlixelArray<FlixelFrame> getAtlasRegions() {
     throw new UnsupportedOperationException("FlixelText does not support atlas regions.");
   }
 
-  /** @return Never returns; text has no animation frames. */
+  /** Always throws {@link UnsupportedOperationException}; text has no animation frames. */
   @Override
   public final FlixelFrame getCurrentFrame() {
     throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
-  /** @return Never returns; text has no image frames. */
+  /** Always throws {@link UnsupportedOperationException}; text has no image frames. */
   @Override
   public final FlixelFrame[][] getFrames() {
     throw new UnsupportedOperationException("FlixelText does not support animations.");
@@ -996,6 +996,13 @@ public class FlixelText extends FlixelSprite {
       this.align = align;
     }
 
+    /**
+     * Returns the alignment constant corresponding to the given integer value.
+     *
+     * @param value {@code 0} for LEFT, {@code 1} for CENTER, {@code 2} for RIGHT.
+     * @return The matching alignment constant.
+     * @throws IllegalArgumentException if {@code value} is not a valid alignment integer.
+     */
     public static Alignment fromInt(int value) {
       return switch (value) {
         case 0 -> LEFT;
@@ -1005,6 +1012,11 @@ public class FlixelText extends FlixelSprite {
       };
     }
 
+    /**
+     * Returns the integer representation of this alignment constant.
+     *
+     * @return {@code 0} for LEFT, {@code 1} for CENTER, {@code 2} for RIGHT.
+     */
     public int toInt() {
       return switch (this) {
         case LEFT -> 0;

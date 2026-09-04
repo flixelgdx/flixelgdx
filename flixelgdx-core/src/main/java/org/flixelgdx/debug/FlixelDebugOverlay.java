@@ -254,6 +254,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     return visible;
   }
 
+  /**
+   * Sets whether the debug overlay is visible.
+   *
+   * @param visible {@code true} to show the overlay, {@code false} to hide it.
+   */
   public void setVisible(boolean visible) {
     if (visible && !this.visible) {
       forceRefreshOnNextUpdate();
@@ -261,6 +266,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     this.visible = visible;
   }
 
+  /** Toggles the debug overlay visibility, forcing a refresh when it becomes visible. */
   public void toggleVisible() {
     visible = !visible;
     if (visible) {
@@ -276,6 +282,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     this.drawDebug = drawDebug;
   }
 
+  /** Toggles the hitbox/debug-draw visualization on and off. */
   public void toggleDrawDebug() {
     drawDebug = !drawDebug;
   }

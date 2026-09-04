@@ -27,9 +27,27 @@ package org.flixelgdx.backend;
  * Interface for displaying alert notifications to the user.
  */
 public interface FlixelAlerter {
+  /**
+   * Displays an informational alert to the user.
+   *
+   * @param title The alert title.
+   * @param message The alert body text.
+   */
   void info(String title, String message);
 
+  /**
+   * Displays a warning alert to the user.
+   *
+   * @param title The alert title.
+   * @param message The alert body text.
+   */
   void warn(String title, String message);
 
+  /**
+   * Displays an error alert to the user.
+   *
+   * @param title The alert title.
+   * @param message The alert body text.
+   */
   void error(String title, String message);
 }

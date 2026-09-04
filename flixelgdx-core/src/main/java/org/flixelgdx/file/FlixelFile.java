@@ -88,15 +88,15 @@ public interface FlixelFile {
   }
 
   /**
-   * @return {@code true} when a readable file exists at this location. Defaults to {@code false}.
+   * Returns {@code true} when a readable file exists at this location. Defaults to {@code false}.
    */
   default boolean exists() {
     return false;
   }
 
   /**
-   * @return {@code true} when this location is a directory rather than a file. Defaults to
-   *     {@code false}.
+   * Returns {@code true} when this location is a directory rather than a file. Defaults to
+   * {@code false}.
    */
   default boolean isDirectory() {
     return false;

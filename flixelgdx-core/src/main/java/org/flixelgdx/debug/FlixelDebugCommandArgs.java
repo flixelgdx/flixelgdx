@@ -55,6 +55,8 @@ public final class FlixelDebugCommandArgs {
   private final String[] args;
 
   /**
+   * Creates a command args wrapper from the given token array.
+   *
    * @param args The positional argument tokens (must not be {@code null}; pass {@code new String[0]} for none).
    */
   public FlixelDebugCommandArgs(@NotNull String[] args) {

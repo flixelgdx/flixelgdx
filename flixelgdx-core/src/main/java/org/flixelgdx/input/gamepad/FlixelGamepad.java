@@ -50,9 +50,10 @@ import org.jetbrains.annotations.Nullable;
 public interface FlixelGamepad {
 
   /**
-   * @return A human-readable device name (for example {@code "Xbox Wireless Controller"}); never
-   *     {@code null}. Useful as a fallback in resolvers when VID/PID are unavailable, but avoid
-   *     matching on names alone - they vary across drivers and OS versions.
+   * Returns a human-readable device name (for example {@code "Xbox Wireless Controller"}); never {@code null}.
+   *
+   * <p>Useful as a fallback in resolvers when VID/PID are unavailable, but avoid matching on names
+   * alone - they vary across drivers and OS versions.
    */
   @NotNull
   String getName();
@@ -79,36 +80,33 @@ public interface FlixelGamepad {
   }
 
   /**
-   * @return The lowest native button index this gamepad can report. Together with
-   *     {@link #getMaxButtonIndex()} it bounds the range to scan when polling buttons.
+   * Returns the lowest native button index this gamepad can report.
+   *
+   * <p>Together with {@link #getMaxButtonIndex()} it bounds the range to scan when polling buttons.
    */
   int getMinButtonIndex();
 
-  /**
-   * @return The highest native button index this gamepad can report.
-   */
+  /** Returns the highest native button index this gamepad can report. */
   int getMaxButtonIndex();
 
   /**
+   * Returns {@code true} while the given button is held down.
+   *
    * @param buttonIndex A native button index.
-   * @return {@code true} while that button is held down.
    */
   boolean getButton(int buttonIndex);
 
-  /**
-   * @return How many analog axes this gamepad exposes.
-   */
+  /** Returns how many analog axes this gamepad exposes. */
   int getAxisCount();
 
   /**
+   * Returns the axis value, normally in the range {@code [-1, 1]}.
+   *
    * @param axisIndex A native axis index.
-   * @return The axis value, normally in the range {@code [-1, 1]}.
    */
   float getAxis(int axisIndex);
 
-  /**
-   * @return {@code true} when this gamepad reports that it can vibrate.
-   */
+  /** Returns {@code true} when this gamepad reports that it can vibrate. */
   boolean canVibrate();
 
   /**

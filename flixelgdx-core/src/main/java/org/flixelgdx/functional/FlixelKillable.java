@@ -33,18 +33,23 @@ package org.flixelgdx.functional;
 public interface FlixelKillable {
 
   /**
-   * @return {@code true} when this instance is killed (disabled) in the Flixel sense.
+   * Returns {@code true} when this instance is killed (disabled) in the Flixel sense.
    */
   boolean isKilled();
 
   /**
+   * Sets the killed state of this object.
+   *
    * @param killed {@code true} to {@link #kill()}, {@code false} to {@link #revive()}.
    */
   void setKilled(boolean killed);
 
+  /** Toggles the killed state: kills if alive, revives if killed. */
   void toggleKilled();
 
+  /** Marks this object as killed so it is skipped by updates and draws. */
   void kill();
 
+  /** Revives a previously killed object so it participates in updates and draws again. */
   void revive();
 }

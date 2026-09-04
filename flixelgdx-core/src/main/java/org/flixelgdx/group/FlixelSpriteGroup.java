@@ -733,14 +733,18 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
       float sw = s.getWidth() * Math.abs(s.getScaleX());
       float sh = s.getHeight() * Math.abs(s.getScaleY());
 
-      if (sx < minX)
+      if (sx < minX) {
         minX = sx;
-      if (sy < minY)
+      }
+      if (sy < minY) {
         minY = sy;
-      if (sx + sw > maxX)
+      }
+      if (sx + sw > maxX) {
         maxX = sx + sw;
-      if (sy + sh > maxY)
+      }
+      if (sy + sh > maxY) {
         maxY = sy + sh;
+      }
     }
 
     out.set(minX, minY, maxX - minX, maxY - minY);

@@ -51,7 +51,7 @@ import org.jetbrains.annotations.NotNull;
 public interface FlixelShaderProgram extends FlixelDestroyable {
 
   /**
-   * @return {@code true} if this program compiled successfully and can be used for drawing.
+   * Returns {@code true} if this program compiled successfully and can be used for drawing.
    */
   boolean isValid();
 

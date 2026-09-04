@@ -99,7 +99,7 @@ public class FlixelTweenSettings {
   }
 
   /**
-   * Constructs a new tween settings object
+   * Constructs a new tween settings object.
    *
    * @param type The type of tween it should be.
    * @param ease The easer function the tween should use (aka how it should be animated).
@@ -190,50 +190,107 @@ public class FlixelTweenSettings {
     return framerate;
   }
 
+  /**
+   * Sets the ease function used for this tween.
+   *
+   * @param ease The ease function to apply, or {@code null} for linear.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setEase(FlixelEaseFunction ease) {
     this.ease = ease;
     return this;
   }
 
+  /** Removes all tween goals added with {@link #addGoal}. */
   public void clearGoals() {
     goals.clear();
   }
 
+  /**
+   * Sets the delay before this tween begins playing for the first time.
+   *
+   * @param startDelay Delay in seconds before the first playback starts.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setStartDelay(float startDelay) {
     this.startDelay = startDelay;
     return this;
   }
 
+  /**
+   * Sets the delay inserted between each loop iteration.
+   *
+   * @param loopDelay Delay in seconds between repeated plays.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setLoopDelay(float loopDelay) {
     this.loopDelay = loopDelay;
     return this;
   }
 
+  /**
+   * Sets the target frame rate at which the tween updates its goals.
+   *
+   * <p>A value of {@code 0} means the tween updates every frame.
+   *
+   * @param framerate Target updates per second, or {@code 0} to update every frame.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setFramerate(float framerate) {
     this.framerate = framerate;
     return this;
   }
 
+  /**
+   * Sets the tween type that controls looping behavior.
+   *
+   * @param type The new tween type.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setType(@NotNull FlixelTweenType type) {
     this.type = type;
     return this;
   }
 
+  /**
+   * Sets a callback that fires once when this tween starts playing.
+   *
+   * @param onStart The callback, or {@code null} to clear it.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setOnStart(FlixelTweenCallback onStart) {
     this.onStart = onStart;
     return this;
   }
 
+  /**
+   * Sets a callback that fires on every frame update while this tween is running.
+   *
+   * @param onUpdate The callback, or {@code null} to clear it.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setOnUpdate(FlixelTweenCallback onUpdate) {
     this.onUpdate = onUpdate;
     return this;
   }
 
+  /**
+   * Sets a callback that fires once when this tween finishes playing.
+   *
+   * @param onComplete The callback, or {@code null} to clear it.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings setOnComplete(FlixelTweenCallback onComplete) {
     this.onComplete = onComplete;
     return this;
   }
 
+  /**
+   * Visits each registered goal with the given visitor.
+   *
+   * @param visitor The visitor to call for each goal.
+   * @return {@code this} tween settings object for chaining.
+   */
   public FlixelTweenSettings forEachGoal(FlixelTweenGoalVisitor visitor) {
     for (FlixelTweenGoal goal : goals) {
       visitor.visit(goal);
@@ -254,6 +311,7 @@ public class FlixelTweenSettings {
     /** Supplies a primitive {@code float} without boxing. */
     @FunctionalInterface
     public interface FlixelTweenGoalGetter extends FloatSupplier {
+      /** Returns the current property value as a primitive float. */
       float get();
 
       @Override
@@ -265,6 +323,7 @@ public class FlixelTweenSettings {
     /** Consumes a primitive {@code float} without boxing. */
     @FunctionalInterface
     public interface FlixelTweenGoalSetter {
+      /** Updates the property with the given interpolated float value. */
       void set(float value);
     }
   }
@@ -274,6 +333,7 @@ public class FlixelTweenSettings {
    */
   @FunctionalInterface
   public interface FlixelTweenGoalVisitor {
+    /** Called once for each goal registered in this tween settings object. */
     void visit(FlixelTweenGoal goal);
   }
 }

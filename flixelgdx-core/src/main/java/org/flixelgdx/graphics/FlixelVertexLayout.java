@@ -75,7 +75,7 @@ public final class FlixelVertexLayout {
   }
 
   /**
-   * @return The number of bytes one whole vertex occupies (the sum of every element's size).
+   * Returns the number of bytes one whole vertex occupies (the sum of every element's size).
    */
   public int getStride() {
     return stride;
@@ -119,7 +119,7 @@ public final class FlixelVertexLayout {
     }
 
     /**
-     * @return A new immutable layout describing the added elements in order.
+     * Returns a new immutable layout describing the added elements in order.
      */
     public FlixelVertexLayout build() {
       FlixelArray<Element> copy = new FlixelArray<>(Element[]::new, elements.getSize());
@@ -187,7 +187,7 @@ public final class FlixelVertexLayout {
     }
 
     /**
-     * @return The size of one component of this type, in bytes.
+     * Returns the size of one component of this type, in bytes.
      */
     public int bytes() {
       return bytes;

@@ -228,7 +228,7 @@ public class FlixelColor {
   }
 
   /**
-   * @return Packed RGBA8888 with red in the highest byte.
+   * Returns the packed RGBA8888 value with red in the highest byte.
    */
   public int getColor() {
     return ((int) (r * 255f) << 24) | ((int) (g * 255f) << 16) | ((int) (b * 255f) << 8) | (int) (a * 255f);

@@ -48,6 +48,8 @@ public interface FlixelExistable {
   boolean isExists();
 
   /**
+   * Sets the exists flag, controlling whether this object is updated and drawn.
+   *
    * @param exists The new {@code exists} flag.
    */
   void setExists(boolean exists);
@@ -61,6 +63,8 @@ public interface FlixelExistable {
   boolean isActive();
 
   /**
+   * Sets the active flag, controlling whether this object's update runs.
+   *
    * @param active The new {@code active} flag.
    */
   void setActive(boolean active);

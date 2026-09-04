@@ -178,7 +178,7 @@ public final class FlixelGamepadButton {
   }
 
   /**
-   * @return The button's ID string (for example {@code "A"}); never {@code null}.
+   * Returns the button's ID string (for example {@code "A"}); never {@code null}.
    */
   @NotNull
   public String getId() {

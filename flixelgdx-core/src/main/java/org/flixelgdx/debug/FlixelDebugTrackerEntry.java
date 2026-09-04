@@ -69,6 +69,8 @@ public abstract class FlixelDebugTrackerEntry {
   private final String name;
 
   /**
+   * Creates a tracker entry with the given display name.
+   *
    * @param name A short display name for this entry (shown as the collapsible header in the Tracker panel).
    */
   protected FlixelDebugTrackerEntry(String name) {

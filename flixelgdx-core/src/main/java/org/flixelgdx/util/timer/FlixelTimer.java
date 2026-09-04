@@ -100,6 +100,7 @@ public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPo
     }
   }
 
+  /** Returns the seconds remaining until the next callback fires, or {@code 0} when inactive. */
   public float getTimeLeft() {
     if (!active || finished) {
       return 0f;
@@ -107,6 +108,7 @@ public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPo
     return fireNextUpdate ? 0f : Math.max(0f, timeLeft);
   }
 
+  /** Returns the number of remaining loop iterations, or {@code 0} when inactive or finished. */
   public int getLoopsLeft() {
     if (!active || finished) {
       return 0;
@@ -120,6 +122,7 @@ public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPo
     return Math.max(0, loops - elapsedLoops);
   }
 
+  /** Returns the completion fraction of the current loop, from {@code 0} (just started) to {@code 1} (finished). */
   public float getProgress() {
     if (zeroDuration || !active || finished) {
       return 1f;

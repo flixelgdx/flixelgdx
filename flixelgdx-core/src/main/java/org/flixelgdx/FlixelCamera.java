@@ -1189,7 +1189,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
 
     float vw = viewport.getWorldWidth() / zoom;
     float vh = viewport.getWorldHeight() / zoom;
-    float w, h;
+    float w;
+    float h;
     switch (style) {
       case LOCKON -> {
         w = 1;

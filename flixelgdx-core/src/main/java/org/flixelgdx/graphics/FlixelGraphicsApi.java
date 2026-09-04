@@ -137,7 +137,7 @@ public final class FlixelGraphicsApi {
   }
 
   /**
-   * @return The backend's ID string (for example, {@code "bgfx"}); never {@code null}.
+   * Returns the backend's ID string (for example, {@code "bgfx"}); never {@code null}.
    */
   @NotNull
   public String getId() {

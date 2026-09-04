@@ -42,6 +42,7 @@ public class FlixelFlickerTween extends FlixelTween {
   protected @Nullable Predicate<FlixelFlickerTween> tweenFunction;
   protected boolean endVisibility = true;
 
+  /** Creates a new flicker tween with the given tween settings. */
   public FlixelFlickerTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

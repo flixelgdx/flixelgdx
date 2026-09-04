@@ -92,14 +92,14 @@ public interface FlixelMouseIconManager {
   default void setCustomCursor(@NotNull FlixelGraphic image, int hotspotX, int hotspotY) {}
 
   /**
-   * @return {@code true} when {@link #setCursor(FlixelMouseCursor)} may change what
-   *     the user sees for this target.
+   * Returns {@code true} when {@link #setCursor(FlixelMouseCursor)} may change what
+   * the user sees for this target.
    */
   boolean supportsCursors();
 
   /**
-   * @return {@code true} when {@link #setCustomCursor(FlixelGraphic, int, int)} can change the
-   *     cursor image on this session.
+   * Returns {@code true} when {@link #setCustomCursor(FlixelGraphic, int, int)} can change the
+   * cursor image on this session.
    */
   default boolean supportsCustomCursors() {
     return false;

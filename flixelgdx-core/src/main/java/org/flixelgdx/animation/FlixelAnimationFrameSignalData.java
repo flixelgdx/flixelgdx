@@ -40,6 +40,13 @@ public class FlixelAnimationFrameSignalData {
   @Nullable
   private FlixelFrame frame;
 
+  /**
+   * Creates a new signal data object.
+   *
+   * @param animationName The name of the animation that triggered the signal.
+   * @param frameIndex The index of the frame that triggered the signal.
+   * @param frame The frame that triggered the signal, or {@code null}.
+   */
   public FlixelAnimationFrameSignalData(@NotNull String animationName, int frameIndex, @Nullable FlixelFrame frame) {
     if (animationName == null) {
       throw new IllegalArgumentException("animationName");
@@ -77,17 +84,21 @@ public class FlixelAnimationFrameSignalData {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
+    if (this == o) {
       return true;
-    if (o == null || getClass() != o.getClass())
+    }
+    if (o == null || getClass() != o.getClass()) {
       return false;
+    }
 
     FlixelAnimationFrameSignalData that = (FlixelAnimationFrameSignalData) o;
 
-    if (frameIndex != that.frameIndex)
+    if (frameIndex != that.frameIndex) {
       return false;
-    if (!animationName.equals(that.animationName))
+    }
+    if (!animationName.equals(that.animationName)) {
       return false;
+    }
     return frame != null ? frame.equals(that.frame) : that.frame == null;
   }
 

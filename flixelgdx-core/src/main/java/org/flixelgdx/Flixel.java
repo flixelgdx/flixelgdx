@@ -900,7 +900,7 @@ public final class Flixel {
   @Nullable
   private static FlixelCamera drawCamera;
 
-  /** Should the game use antialiasing globally? */
+  /** Whether the game should use antialiasing globally. */
   private static boolean antialiasing = false;
 
   /**
@@ -1582,12 +1582,15 @@ public final class Flixel {
       @Nullable FlixelBasic objectOrGroup2,
       @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
       @Nullable BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
-    if (objectOrGroup1 == null)
+    if (objectOrGroup1 == null) {
       objectOrGroup1 = state;
-    if (objectOrGroup2 == null)
+    }
+    if (objectOrGroup2 == null) {
       objectOrGroup2 = state;
-    if (objectOrGroup1 == null || objectOrGroup2 == null)
+    }
+    if (objectOrGroup1 == null || objectOrGroup2 == null) {
       return false;
+    }
     return overlapInternal(objectOrGroup1, objectOrGroup2, notifyCallback, processCallback);
   }
 
@@ -1652,12 +1655,15 @@ public final class Flixel {
       return result;
     }
 
-    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2))
+    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2)) {
       return false;
-    if (obj1 == obj2)
+    }
+    if (obj1 == obj2) {
       return false;
-    if (!fo1.exists || !fo2.exists)
+    }
+    if (!fo1.exists || !fo2.exists) {
       return false;
+    }
 
     boolean overlaps = fo1.getX() < fo2.getX() + fo2.getWidth()
         && fo1.getX() + fo1.getWidth() > fo2.getX()
@@ -1696,8 +1702,9 @@ public final class Flixel {
         Properties p = new Properties();
         p.load(in);
         String v = p.getProperty("version");
-        if (v != null && !v.isEmpty())
+        if (v != null && !v.isEmpty()) {
           return v;
+        }
       }
     } catch (Exception ignored) {
       // Ignored.

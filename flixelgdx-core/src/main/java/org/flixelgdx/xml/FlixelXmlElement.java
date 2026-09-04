@@ -75,7 +75,7 @@ public final class FlixelXmlElement {
   }
 
   /**
-   * @return This element's tag name.
+   * Returns this element's tag name.
    */
   @NotNull
   public String getName() {
@@ -83,7 +83,7 @@ public final class FlixelXmlElement {
   }
 
   /**
-   * @return This element's text content, or {@code null} when it has none.
+   * Returns this element's text content, or {@code null} when it has none.
    */
   @Nullable
   public String getText() {
@@ -91,7 +91,7 @@ public final class FlixelXmlElement {
   }
 
   /**
-   * @return The number of direct child elements.
+   * Returns the number of direct child elements.
    */
   public int getChildCount() {
     return children.getSize();

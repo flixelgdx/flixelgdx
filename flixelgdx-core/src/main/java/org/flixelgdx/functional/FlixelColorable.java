@@ -50,7 +50,7 @@ public interface FlixelColorable {
   void setColor(@NotNull FlixelColor color);
 
   /**
-   * @return Packed RGBA8888 tint.
+   * Returns the packed RGBA8888 tint value.
    */
   default int getPackedColor() {
     return getColor().getColor();

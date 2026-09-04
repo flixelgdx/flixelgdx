@@ -160,7 +160,7 @@ public final class FlixelFontRegistry {
   }
 
   /**
-   * @return The current default font id, or {@code null} when the packaged font is the default.
+   * Returns the current default font id, or {@code null} when the packaged font is the default.
    */
   @Nullable
   public static String getDefault() {

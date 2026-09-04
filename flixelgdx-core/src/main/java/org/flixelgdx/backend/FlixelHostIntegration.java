@@ -159,31 +159,31 @@ public interface FlixelHostIntegration {
   default void pasteFromClipboard() {}
 
   /**
-   * @return {@code true} if {@link #sendNotification(String, String)} is expected to do useful
-   *     work on this platform session. On the web backend, returns {@code true} only after
-   *     {@link #requestNotificationPermission()} has been granted by the user.
+   * Returns {@code true} if {@link #sendNotification(String, String)} is expected to do useful
+   * work on this platform session. On the web backend, returns {@code true} only after
+   * {@link #requestNotificationPermission()} has been granted by the user.
    */
   default boolean supportsNotifications() {
     return false;
   }
 
   /**
-   * @return {@code true} if {@link #keepScreenAwake(boolean)} is supported on this platform.
+   * Returns {@code true} if {@link #keepScreenAwake(boolean)} is supported on this platform.
    */
   default boolean supportsWakeLock() {
     return false;
   }
 
   /**
-   * @return {@code true} if text clipboard operations ({@link #copyToClipboard(String)} and
-   *     {@link #pasteFromClipboard()}) are supported on this platform.
+   * Returns {@code true} if text clipboard operations ({@link #copyToClipboard(String)} and
+   * {@link #pasteFromClipboard()}) are supported on this platform.
    */
   default boolean supportsClipboard() {
     return false;
   }
 
   /**
-   * @return {@code true} if monitor information is supported or allowed on this platform.
+   * Returns {@code true} if monitor information is supported or allowed on this platform.
    */
   default boolean supportsMonitors() {
     return false;

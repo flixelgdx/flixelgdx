@@ -381,6 +381,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
+   * Returns {@code true} if a per-animation offset is registered for the given name.
+   *
    * @param name The animation name to check.
    * @return {@code true} if a per-animation offset is registered for {@code name}.
    */
@@ -437,14 +439,17 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return (sourceSize - hitboxSize) * 0.5f;
   }
 
+  /** Pauses animation playback so the current frame is held until {@link #resume()} is called. */
   public void pause() {
     paused = true;
   }
 
+  /** Resumes animation playback after a previous {@link #pause()} call. */
   public void resume() {
     paused = false;
   }
 
+  /** Returns {@code true} when animation playback is currently paused. */
   public boolean isPaused() {
     return paused;
   }
@@ -459,10 +464,16 @@ public class FlixelAnimationController implements FlixelUpdatable {
     playDirection = -playDirection;
   }
 
+  /** Returns the current play direction: {@code 1} for forward, {@code -1} for reversed. */
   public float getPlayDirection() {
     return playDirection;
   }
 
+  /**
+   * Sets the play direction for animation playback.
+   *
+   * @param playDirection {@code 1} for forward, {@code -1} for reversed; clamped to those values.
+   */
   public void setPlayDirection(int playDirection) {
     playDirection = FlixelMath.clamp(playDirection, -1, 1);
     this.playDirection = playDirection >= 0 ? 1 : -1;
@@ -656,6 +667,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
   }
 
+  /** Returns {@code true} when the current non-looping animation has played through all frames. */
   public boolean isFinished() {
     FlixelAnimation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
@@ -826,7 +838,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * @return The linked {@link FlixelAnimationStateMachine}, or {@code null} if none is set.
+   * Returns the linked {@link FlixelAnimationStateMachine}, or {@code null} if none is set.
    */
   @Nullable
   public FlixelAnimationStateMachine getStateMachine() {

@@ -131,6 +131,8 @@ public class FlixelActionSet implements FlixelUpdatable, FlixelDestroyable {
   }
 
   /**
+   * Creates a new action set, optionally registering it for automatic updates.
+   *
    * @param registerForGlobalLifecycle When {@code true}, registers with {@link FlixelActionSets}. Tests may pass
    *   {@code false} and call {@link #update(float)} / {@link #endFrame()} manually.
    */

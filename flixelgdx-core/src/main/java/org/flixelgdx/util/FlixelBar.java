@@ -810,8 +810,9 @@ public class FlixelBar extends FlixelSprite {
 
   private void drawBorder(FlixelBatch batch, float x, float y, float w, float h, FlixelColor c, float t) {
     t = Math.max(0f, t);
-    if (t <= 0f)
+    if (t <= 0f) {
       return;
+    }
     batch.setColor(c);
     FlixelFrame px = Objects.requireNonNull(whitePixel);
     // Top.
@@ -909,6 +910,8 @@ public class FlixelBar extends FlixelSprite {
   public record ThresholdStop(float percent, FlixelColor color) {
 
     /**
+     * Creates a stop with the given fill fraction and color.
+     *
      * @param percent Fill fraction; clamped to {@code [0,1]}.
      * @param color Stop color; copied internally.
      */

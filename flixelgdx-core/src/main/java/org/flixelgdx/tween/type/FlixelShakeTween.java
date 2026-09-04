@@ -55,6 +55,7 @@ public class FlixelShakeTween extends FlixelTween {
   protected float savedY;
   protected boolean fadeOut = false;
 
+  /** Creates a new shake tween with the given tween settings. */
   public FlixelShakeTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

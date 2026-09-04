@@ -123,7 +123,7 @@ public final class FlixelPlatform {
   }
 
   /**
-   * @return The platform's ID string (for example, {@code "Desktop"}). Never {@code null}.
+   * Returns the platform's ID string (for example, {@code "Desktop"}). Never {@code null}.
    */
   @NotNull
   public String getId() {

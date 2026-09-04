@@ -37,6 +37,7 @@ public class FlixelCircularMotion extends FlixelMotion {
   private float angleStartRad;
   private float angleSweepRad;
 
+  /** Creates a new circular motion tween with the given tween settings. */
   public FlixelCircularMotion(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

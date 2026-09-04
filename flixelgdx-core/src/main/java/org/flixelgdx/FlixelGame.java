@@ -260,13 +260,13 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private int desktopTransparencyRestoreCameraCount;
 
-  /** Should the game pause audio when the application goes to the background? */
+  /** Whether the game should pause audio when the application goes to the background. */
   public boolean autoPause = true;
 
-  /** Is the game currently closing? */
+  /** Whether the game is currently in the process of closing. */
   private boolean isClosing = false;
 
-  /** Has the game successfully shut down? */
+  /** Whether the game has successfully shut down. */
   private boolean isClosed = false;
 
   /** When true, skips gameplay/state/camera follow updates (debug pause). */
@@ -882,7 +882,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return autoPause;
   }
 
-  /** @see #destroy() */
+  /** Delegates to {@link #destroy()}. */
   public final void dispose() {
     destroy();
   }
@@ -1190,6 +1190,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return bgColor;
   }
 
+  /**
+   * Sets the game's background color.
+   *
+   * @param bgColor The new background color; ignored when {@code null}.
+   */
   public void setBgColor(@NotNull FlixelColor bgColor) {
     if (bgColor == null) {
       return;
@@ -1213,7 +1218,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
+   * Returns {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
    */
   public boolean isTransparencyActive() {
     return desktopTransparencyActive;
@@ -1556,8 +1561,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     /**
-     * @return {@code true} when the game renders at a fixed resolution and upscales to the window.
-     *     Enabled by default; see {@link Builder#renderResolution(int, int)}.
+     * Returns {@code true} when the game renders at a fixed resolution and upscales to the window.
+     *
+     * <p>Enabled by default; see {@link Builder#renderResolution(int, int)}.
      */
     public boolean isRenderResolutionEnabled() {
       return renderResolutionEnabled;
@@ -1581,9 +1587,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       return renderHeight > 0 ? renderHeight : height;
     }
 
-    /**
-     * @return {@code true} for smooth (linear) upscaling, {@code false} for nearest-neighbor.
-     */
+    /** Returns {@code true} for smooth (linear) upscaling, or {@code false} for nearest-neighbor. */
     public boolean isRenderSmooth() {
       return renderSmooth;
     }
