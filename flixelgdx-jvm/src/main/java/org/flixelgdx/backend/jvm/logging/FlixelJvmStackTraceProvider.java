@@ -33,7 +33,7 @@ import org.flixelgdx.logging.FlixelStackTraceProvider;
 public class FlixelJvmStackTraceProvider implements FlixelStackTraceProvider {
 
   /**
-   * @return {@code true} if this frame may represent the real logging call site.
+   * Returns {@code true} if this frame may represent the real logging call site.
    */
   private static boolean isUsableCallerFrame(StackWalker.StackFrame f) {
     String className = f.getClassName();
@@ -51,16 +51,21 @@ public class FlixelJvmStackTraceProvider implements FlixelStackTraceProvider {
       }
     }
     String pkg = f.getDeclaringClass().getPackageName();
-    if (pkg.startsWith("org.codehaus.groovy."))
+    if (pkg.startsWith("org.codehaus.groovy.")) {
       return false;
-    if (pkg.startsWith("groovy.lang."))
+    }
+    if (pkg.startsWith("groovy.lang.")) {
       return false;
-    if (className.contains("$_run_closure"))
+    }
+    if (className.contains("$_run_closure")) {
       return false;
-    if (className.contains("$$Lambda$"))
+    }
+    if (className.contains("$$Lambda$")) {
       return false;
-    if (pkg.startsWith("sun.reflect.") || pkg.startsWith("java.lang.reflect."))
+    }
+    if (pkg.startsWith("sun.reflect.") || pkg.startsWith("java.lang.reflect.")) {
       return false;
+    }
     return true;
   }
 
