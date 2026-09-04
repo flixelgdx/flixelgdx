@@ -32,8 +32,6 @@ import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-
 /**
  * The most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
  * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
@@ -226,7 +224,6 @@ public abstract class FlixelBasic implements IFlixelBasic {
     } else {
       revive();
     }
-    new ArrayList<>();
   }
 
   @Override

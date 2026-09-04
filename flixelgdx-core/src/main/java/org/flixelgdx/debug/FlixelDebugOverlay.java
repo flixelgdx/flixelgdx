@@ -54,8 +54,6 @@ import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.function.Consumer;
 
 /**
@@ -210,7 +208,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   private final FlixelArray<CachedTrackerBlock> cachedTrackerBlockPool = new FlixelArray<>();
 
   /** Latest log lines, oldest first; bounded by {@link FlixelLogger#MAX_LOG_ENTRIES}. */
-  protected final Deque<BufferedLogLine> logBuffer = new ArrayDeque<>();
+  protected final FlixelArray<BufferedLogLine> logBuffer = new FlixelArray<>();
 
   /** Pool of {@link BufferedLogLine} instances reused as the buffer rolls over. */
   private final FlixelArray<BufferedLogLine> logLinePool = new FlixelArray<>();
@@ -962,13 +960,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
       return;
     }
     synchronized (logBuffer) {
-      while (logBuffer.size() >= FlixelLogger.MAX_LOG_ENTRIES) {
-        BufferedLogLine old = logBuffer.removeFirst();
+      while (logBuffer.getSize() >= FlixelLogger.MAX_LOG_ENTRIES) {
+        BufferedLogLine old = logBuffer.removeIndex(0);
         logLinePool.add(old);
       }
       BufferedLogLine line = logLinePool.getSize() > 0 ? logLinePool.pop() : new BufferedLogLine();
       line.set(entry);
-      logBuffer.addLast(line);
+      logBuffer.add(line);
       onLogEntryAppended(line);
     }
   }
@@ -982,7 +980,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    */
   protected final int copyLogBuffer(@NotNull FlixelArray<BufferedLogLine> output) {
     synchronized (logBuffer) {
-      int n = logBuffer.size();
+      int n = logBuffer.getSize();
       while (output.getSize() < n) {
         output.add(new BufferedLogLine());
       }

@@ -69,6 +69,15 @@
         java.util.IdentityHashMap"/>
     </module>
 
+    <!-- IllegalType only catches banned collections used as declared types (variable, parameter,
+         return type). A bare instantiation like "new ArrayList<>()" with no LHS variable
+         declaration slips past it because there is no type-reference token in the AST.
+         This regex catches every "new <BannedType>(" pattern to close that gap. -->
+    <module name="RegexpSinglelineJava">
+      <property name="format" value="new\s+(ArrayList|HashMap|HashSet|LinkedList|TreeMap|TreeSet|LinkedHashMap|LinkedHashSet|ArrayDeque|Vector|Stack|Hashtable|EnumMap|EnumSet|WeakHashMap|IdentityHashMap)\s*[&lt;(]"/>
+      <property name="message" value="Do not instantiate standard Java collections; use FlixelGDX collections (FlixelArray, FlixelMap, etc.) instead."/>
+    </module>
+
     <!-- Require a Javadoc comment on every public type (class, interface, enum, annotation). -->
     <module name="MissingJavadocType">
       <property name="scope" value="public"/>
