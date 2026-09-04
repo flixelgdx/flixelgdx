@@ -91,6 +91,18 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
 
   private boolean vsync = true;
 
+  /**
+   * Creates a new desktop runner wired to the given platform components.
+   *
+   * @param window The SDL window implementation.
+   * @param input The desktop input device.
+   * @param graphics The bgfx graphics implementation.
+   * @param gamepads The SDL gamepad provider.
+   * @param iconManager The mouse icon manager.
+   * @param host The desktop host integration.
+   * @param width Initial window width in pixels.
+   * @param height Initial window height in pixels.
+   */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
       @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
       @NotNull FlixelSdlMouseIconManager iconManager, @NotNull FlixelDesktopHostIntegration host,

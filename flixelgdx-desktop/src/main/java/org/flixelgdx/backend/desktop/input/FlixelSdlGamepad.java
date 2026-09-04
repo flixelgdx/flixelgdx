@@ -68,7 +68,7 @@ public class FlixelSdlGamepad implements FlixelGamepad {
     this.productId = SDLGamepad.SDL_GetGamepadProduct(handle) & 0xFFFF;
   }
 
-  /** @return The SDL joystick instance id this wrapper was opened for. */
+  /** Returns the SDL joystick instance id this wrapper was opened for. */
   int getInstanceId() {
     return instanceId;
   }

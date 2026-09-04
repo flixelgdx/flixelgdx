@@ -50,9 +50,7 @@ public class FlixelBgfxShader implements FlixelShaderProgram {
     this.program = program;
   }
 
-  /**
-   * @return The bgfx program handle for submission.
-   */
+  /** Returns the bgfx program handle for submission. */
   short getProgram() {
     return program;
   }

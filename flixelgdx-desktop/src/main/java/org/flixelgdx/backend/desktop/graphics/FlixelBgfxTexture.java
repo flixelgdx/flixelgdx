@@ -118,16 +118,12 @@ public class FlixelBgfxTexture implements FlixelTexture {
     this.height = height;
   }
 
-  /**
-   * @return The bgfx texture handle for binding.
-   */
+  /** Returns the bgfx texture handle for binding. */
   short getBgfxHandle() {
     return handle;
   }
 
-  /**
-   * @return The sampler flags matching the current smooth setting.
-   */
+  /** Returns the sampler flags matching the current smooth setting. */
   long getSamplerFlags() {
     return smooth ? FLAGS_LINEAR : FLAGS_NEAREST;
   }

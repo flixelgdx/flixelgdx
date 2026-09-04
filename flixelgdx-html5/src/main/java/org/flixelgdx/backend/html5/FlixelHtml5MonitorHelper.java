@@ -43,6 +43,7 @@ public final class FlixelHtml5MonitorHelper {
    */
   @JSFunctor
   public interface MonitorUpdateCallback extends JSObject {
+    /** Called when the browser fires a {@code 'screenschange'} event with the updated screen list. */
     void onUpdate(JSArray<JSScreen> screens);
   }
 
@@ -56,21 +57,27 @@ public final class FlixelHtml5MonitorHelper {
    */
   public interface JSScreen extends JSObject {
 
+    /** Returns the human-readable label for this screen. */
     @JSProperty
     String getLabel();
 
+    /** Returns the screen width in CSS pixels. */
     @JSProperty
     int getWidth();
 
+    /** Returns the screen height in CSS pixels. */
     @JSProperty
     int getHeight();
 
+    /** Returns the screen's left offset in the virtual screen arrangement. */
     @JSProperty
     int getLeft();
 
+    /** Returns the screen's top offset in the virtual screen arrangement. */
     @JSProperty
     int getTop();
 
+    /** Returns {@code true} if this is the system's primary screen. */
     @JSProperty(value = "isPrimary")
     boolean isPrimary();
   }

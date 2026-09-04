@@ -76,6 +76,17 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private HTMLCanvasElement canvas;
   private FlixelGame game;
 
+  /**
+   * Creates an HTML5 runner for the given canvas and platform components.
+   *
+   * @param canvasId The HTML canvas element id.
+   * @param width Initial canvas width.
+   * @param height Initial canvas height.
+   * @param graphics The WebGL graphics implementation.
+   * @param window The HTML5 window implementation.
+   * @param host The HTML5 host integration.
+   * @param input The HTML5 input device.
+   */
   public FlixelHtml5Runner(@NotNull String canvasId, int width, int height, @NotNull FlixelHtml5Graphics graphics,
       @NotNull FlixelHtml5Window window, @NotNull FlixelHtml5HostIntegration host,
       @NotNull FlixelHtml5InputDevice input) {

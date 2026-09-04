@@ -45,9 +45,7 @@ public class FlixelMiniAudioGroup implements FlixelSoundGroup {
     this.handle = handle;
   }
 
-  /**
-   * @return The native group handle, used when creating sounds in this group.
-   */
+  /** Returns the native group handle, used when creating sounds in this group. */
   long getHandle() {
     return handle;
   }

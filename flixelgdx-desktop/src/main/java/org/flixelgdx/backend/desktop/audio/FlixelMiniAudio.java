@@ -176,20 +176,23 @@ public class FlixelMiniAudio {
   static native void soundStop(long sound);
 
   /**
+   * Returns {@code true} when the sound is actively playing.
+   *
    * @param sound The sound handle.
-   * @return {@code true} when the sound is actively playing.
    */
   static native boolean soundIsPlaying(long sound);
 
   /**
+   * Returns {@code true} when the cursor reached the end.
+   *
    * @param sound The sound handle.
-   * @return {@code true} when the cursor reached the end.
    */
   static native boolean soundIsAtEnd(long sound);
 
   /**
+   * Returns the current volume in {@code [0, 1]} (or higher).
+   *
    * @param sound The sound handle.
-   * @return The current volume in {@code [0, 1]} (or higher).
    */
   static native float soundGetVolume(long sound);
 
@@ -218,8 +221,9 @@ public class FlixelMiniAudio {
   static native void soundSetPan(long sound, float pan);
 
   /**
+   * Returns the current cursor position in seconds.
+   *
    * @param sound The sound handle.
-   * @return The current cursor position in seconds.
    */
   static native float soundGetCursor(long sound);
 
@@ -232,14 +236,16 @@ public class FlixelMiniAudio {
   static native void soundSeek(long sound, float seconds);
 
   /**
+   * Returns the sound length in seconds, or {@code 0} when unknown.
+   *
    * @param sound The sound handle.
-   * @return The sound length in seconds, or {@code 0} when unknown.
    */
   static native float soundGetLength(long sound);
 
   /**
+   * Returns {@code true} when looping is enabled.
+   *
    * @param sound The sound handle.
-   * @return {@code true} when looping is enabled.
    */
   static native boolean soundIsLooping(long sound);
 
