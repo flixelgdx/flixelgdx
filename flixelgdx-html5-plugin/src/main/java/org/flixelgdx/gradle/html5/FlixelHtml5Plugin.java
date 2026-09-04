@@ -33,6 +33,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.Sync;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Zip;
 import org.teavm.gradle.api.TeaVMExtension;
 
@@ -48,7 +50,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -76,7 +80,7 @@ import java.util.stream.Stream;
  * <pre>{@code
  * plugins {
  *   id 'org.teavm' version '0.13.0'
- *   id 'org.flixelgdx.html5' version '<flixelgdx-version>
+ *   id 'org.flixelgdx.html5' version '<flixelgdx-version>'
  * }
  *
  * teavm {
@@ -125,6 +129,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     AtomicReference<WebBundle> bundle = new AtomicReference<>(WebBundle.DEFAULTS);
 
     registerCopyTasks(project, ext, webRoot);
+    registerWasmExtractionTask(project, webRoot);
     registerShaderTask(project, webRoot);
     registerManifestTask(project, webRoot);
     registerIndexTask(project, ext, webRoot, bundle);
@@ -262,6 +267,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
 
     String faviconLink = copyFavicon(project, ext, outputDir);
     String modeDefault = resolveModeDefault(ext);
+    String nativeScripts = buildNativeScriptTags(outputDir);
     copyLoadingAssets(outputDir);
 
     try {
@@ -276,6 +282,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
           .replace("{{TITLE}}", ext.getTitle().get())
           .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
           .replace("{{FAVICON}}", faviconLink)
+          .replace("{{NATIVE_SCRIPTS}}", nativeScripts)
           .replace("{{MODE_DEFAULT}}", modeDefault)
           .replace("{{WASM_ENABLED}}", Boolean.toString(bundle.wasmEnabled()))
           .replace("{{JS_BUNDLE}}", bundle.jsBundle())
@@ -285,6 +292,39 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     } catch (IOException e) {
       throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
     }
+  }
+
+  /**
+   * Scans the {@code native/} output directory for JavaScript files extracted by
+   * {@code extractNativeScripts} and returns the corresponding {@code <script>} tags ready to
+   * embed in the {@code <head>} of the generated page. Each tag references the file at
+   * {@code native/<filename>}.
+   *
+   * <p>Tags are ordered alphabetically by file name so the output is deterministic across builds.
+   * When no native scripts are present the method returns an empty string so the template
+   * placeholder is replaced cleanly with no whitespace.
+   *
+   * @param outputDir The web root that contains (or will contain) the {@code native/} directory.
+   * @return Zero or more {@code <script>} tags separated by newlines, with no trailing newline.
+   */
+  private static String buildNativeScriptTags(File outputDir) {
+    File nativeDir = new File(outputDir, "native");
+    if (!nativeDir.exists()) {
+      return "";
+    }
+    File[] jsFiles = nativeDir.listFiles((dir, name) -> name.endsWith(".js"));
+    if (jsFiles == null || jsFiles.length == 0) {
+      return "";
+    }
+    Arrays.sort(jsFiles, Comparator.comparing(File::getName));
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < jsFiles.length; i++) {
+      if (i > 0) {
+        sb.append('\n');
+      }
+      sb.append("  <script src=\"native/").append(jsFiles[i].getName()).append("\"></script>");
+    }
+    return sb.toString();
   }
 
   /**
@@ -530,16 +570,61 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
     if (build == null) {
       return;
     }
-    build.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyWebApp"),
-        project.getTasks().named("copyShaders"), project.getTasks().named("generateAssetManifest"));
-    Task index = project.getTasks().findByName("generateIndexHtml");
-    Task copyWebApp = project.getTasks().findByName("copyWebApp");
+    TaskContainer tasks = project.getTasks();
+    build.dependsOn(tasks.named("copyAssets"),
+        tasks.named("copyWebApp"),
+        tasks.named("copyShaders"),
+        tasks.named("generateAssetManifest"),
+        tasks.named("extractNativeScripts"));
+    Task index = tasks.findByName("generateIndexHtml");
+    Task copyWebApp = tasks.findByName("copyWebApp");
     if (index != null) {
       build.finalizedBy(index);
       if (copyWebApp != null) {
         index.mustRunAfter(copyWebApp);
       }
     }
+  }
+
+  /**
+   * Registers the {@code extractNativeScripts} task.
+   *
+   * <p>Any JAR on the runtime classpath that contains files under {@code META-INF/wasm/} is
+   * treated as a source of native web scripts. The framework's own JAR ships the Emscripten
+   * JavaScript glue ({@code stb_truetype_wasm.js}) and the compiled WebAssembly binary
+   * ({@code stb_truetype_wasm.wasm}) there; game code or third-party libraries can contribute
+   * additional scripts by following the same convention, and they will be picked up and injected
+   * into the generated page automatically.
+   *
+   * <p>All matched files are flattened into the {@code native/} directory of the web output, so
+   * the generated page can load them with a simple {@code native/<filename>} path. Emscripten's
+   * {@code locateFile} function derives the {@code .wasm} companion path from
+   * {@code document.currentScript.src}, which resolves relative to {@code native/}, so the
+   * binary is fetched automatically without any additional configuration.
+   */
+  private void registerWasmExtractionTask(Project project, DirectoryProperty webRoot) {
+    project.getTasks().register("extractNativeScripts", Sync.class, task -> {
+      task.setGroup(FLIXELGDX_GROUP);
+      task.setDescription(
+          "Extracts JavaScript and WebAssembly scripts from META-INF/wasm/ in any runtime classpath JAR "
+              + "into the native/ web output directory.");
+
+      Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
+      if (runtimeClasspath != null) {
+        task.dependsOn(runtimeClasspath);
+        task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
+            .filter(file -> !file.isDirectory())
+            .map(project::zipTree)
+            .collect(Collectors.toList())));
+      }
+
+      task.include("META-INF/wasm/**");
+      task.into(webRoot.dir("native"));
+
+      // Flatten the META-INF/wasm/ directory structure so every file sits directly in native/.
+      task.eachFile(details -> details.setPath(details.getName()));
+      task.setIncludeEmptyDirs(false);
+    });
   }
 
   /** Adds a dependency from one task to another when both exist. */

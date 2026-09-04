@@ -27,6 +27,13 @@ import org.flixelgdx.text.FlixelFontRasterizer;
 import org.flixelgdx.text.FlixelRasterizedFont;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.stb.STBTTFontinfo;
+import org.lwjgl.stb.STBTruetype;
+import org.lwjgl.system.MemoryStack;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 
 /**
  * The desktop font rasterizer, built on stb_truetype.
@@ -42,6 +49,25 @@ public class FlixelStbFontRasterizer implements FlixelFontRasterizer {
   @Nullable
   @Override
   public FlixelRasterizedFont open(byte @NotNull [] data, float pixelHeight) {
-    return FlixelStbRasterizedFont.open(data, pixelHeight);
+    ByteBuffer fontData = ByteBuffer.allocateDirect(data.length).order(ByteOrder.nativeOrder());
+    fontData.put(data).flip();
+
+    STBTTFontinfo info = STBTTFontinfo.malloc();
+    if (!STBTruetype.stbtt_InitFont(info, fontData)) {
+      info.free();
+      return null;
+    }
+
+    float scale = STBTruetype.stbtt_ScaleForPixelHeight(info, pixelHeight);
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      IntBuffer ascentBuf = stack.mallocInt(1);
+      IntBuffer descentBuf = stack.mallocInt(1);
+      IntBuffer lineGapBuf = stack.mallocInt(1);
+      STBTruetype.stbtt_GetFontVMetrics(info, ascentBuf, descentBuf, lineGapBuf);
+      float ascent = ascentBuf.get(0) * scale;
+      float descent = -descentBuf.get(0) * scale;
+      float lineHeight = (ascentBuf.get(0) - descentBuf.get(0) + lineGapBuf.get(0)) * scale;
+      return new FlixelStbRasterizedFont(fontData, info, scale, ascent, descent, lineHeight);
+    }
   }
 }

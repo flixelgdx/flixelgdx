@@ -36,11 +36,8 @@ import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
-import java.util.RandomAccess;
 
 /**
  * A UI bar for progress, health, stamina, experience, cooldowns, loading, or any value mapped to a
@@ -428,7 +425,7 @@ public class FlixelBar extends FlixelSprite {
   /**
    * Convenience for two-stop threshold coloring: from {@code lowColor} at {@code lowPercent} up to
    * {@code fullColor} at 100% fill. Replaces any previous threshold stops from
-   * {@link #setThresholdStops(Collection)}.
+   * {@link #setThresholdStops(FlixelArray)}.
    *
    * @param fullColor FlixelColor used when fill percent is at or above the top stop (full bar).
    * @param lowColor FlixelColor blended in below {@code lowPercent}.
@@ -453,29 +450,9 @@ public class FlixelBar extends FlixelSprite {
   }
 
   /**
-   * Replaces threshold stops from a {@link Collection}. Values are copied into an internal
-   * {@link FlixelArray} and sorted by percent. Null entries are skipped.
-   *
-   * <p>For {@link List} implementations that also implement {@link RandomAccess}, copying uses index
-   * loops and avoids iterator allocation on this (typically rare) call. For a {@link FlixelArray}, use
-   * {@link #setThresholdStops(FlixelArray)}.
+   * Replaces threshold stops from a {@link FlixelArray}. Null entries are skipped.
    *
    * @param stops Non-null collection; may be empty to clear thresholds.
-   * @return {@code this} for chaining.
-   */
-  public FlixelBar setThresholdStops(@NotNull Collection<? extends ThresholdStop> stops) {
-    Objects.requireNonNull(stops);
-    thresholdStops.clear();
-    copyThresholdStopsFromCollection(stops);
-    sortThresholdStopsAndUpdateEnabled();
-    return this;
-  }
-
-  /**
-   * Same as {@link #setThresholdStops(Collection)} but reads stops from a {@link FlixelArray} by index
-   * (no iterator on the source).
-   *
-   * @param stops Non-null {@link FlixelArray}; null entries are skipped.
    * @return {@code this} for chaining.
    */
   public FlixelBar setThresholdStops(@NotNull FlixelArray<ThresholdStop> stops) {
@@ -487,7 +464,8 @@ public class FlixelBar extends FlixelSprite {
         thresholdStops.add(s);
       }
     }
-    sortThresholdStopsAndUpdateEnabled();
+    thresholdStops.sort(THRESHOLD_BY_PERCENT);
+    thresholdEnabled = thresholdStops.getSize() > 0;
     return this;
   }
 
@@ -767,29 +745,6 @@ public class FlixelBar extends FlixelSprite {
     return thresholdScratch;
   }
 
-  private void sortThresholdStopsAndUpdateEnabled() {
-    thresholdStops.sort(THRESHOLD_BY_PERCENT);
-    thresholdEnabled = thresholdStops.getSize() > 0;
-  }
-
-  private void copyThresholdStopsFromCollection(Collection<? extends ThresholdStop> stops) {
-    if (stops instanceof List<?> list && stops instanceof RandomAccess) {
-      int n = list.size();
-      for (int i = 0; i < n; i++) {
-        Object o = list.get(i);
-        if (o instanceof ThresholdStop s) {
-          thresholdStops.add(s);
-        }
-      }
-      return;
-    }
-    for (ThresholdStop s : stops) {
-      if (s != null) {
-        thresholdStops.add(s);
-      }
-    }
-  }
-
   private void drawFilledRect(FlixelBatch batch, float x, float y, float w, float h, float percent) {
     float fx = x;
     float fy = y;
@@ -949,7 +904,7 @@ public class FlixelBar extends FlixelSprite {
    * {@link #color}, interpolating between stops for values in between.
    *
    * @param percent Fill fraction in {@code [0,1]} where this stop applies.
-   * @param color FlixelColor at this stop.
+   * @param color {@link FlixelColor} at this stop.
    */
   public record ThresholdStop(float percent, FlixelColor color) {
 
