@@ -1198,7 +1198,7 @@ public final class Flixel {
    *
    * @param message The message to log.
    */
-  public static void error(String message) {
+  public static void error(Object message) {
     log.error(message);
   }
 
