@@ -45,18 +45,19 @@ import java.nio.IntBuffer;
 public class FlixelStbRasterizedFont implements FlixelRasterizedFont {
 
   /** The raw font file bytes, kept alive because stb references them for the font's lifetime. */
-  private final ByteBuffer fontData;
+  protected final ByteBuffer fontData;
 
-  private final STBTTFontinfo info;
+  protected STBTTFontinfo info;
 
-  private final float scale;
-  private final float ascent;
-  private final float descent;
-  private final float lineHeight;
+  protected final float scale;
 
-  private boolean destroyed;
+  protected final float ascent;
+  protected final float descent;
+  protected final float lineHeight;
 
-  FlixelStbRasterizedFont(ByteBuffer fontData, STBTTFontinfo info, float scale,
+  protected boolean destroyed;
+
+  protected FlixelStbRasterizedFont(ByteBuffer fontData, STBTTFontinfo info, float scale,
       float ascent, float descent, float lineHeight) {
     this.fontData = fontData;
     this.info = info;
@@ -148,12 +149,19 @@ public class FlixelStbRasterizedFont implements FlixelRasterizedFont {
     }
   }
 
-  /** Returns the stb_truetype scale factor, i.e., pixels per font unit at the requested size. */
   public float getScale() {
     return scale;
   }
 
   public boolean isDestroyed() {
     return destroyed;
+  }
+
+  public ByteBuffer getFontData() {
+    return fontData;
+  }
+
+  public STBTTFontinfo getInfo() {
+    return info;
   }
 }

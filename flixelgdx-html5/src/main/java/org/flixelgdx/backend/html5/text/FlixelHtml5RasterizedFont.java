@@ -50,18 +50,18 @@ import java.nio.ByteBuffer;
  * blank glyphs such as the space character. A future wrapper update that adds a proper
  * {@code stb_advance} export will remove this approximation.
  */
-class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
+public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
 
-  private final int ctxPtr;
-  private final int fontDataPtr;
-  private final float pixelHeight;
-  private final float ascent;
-  private final float descent;
-  private final float lineHeight;
+  protected final int ctxPtr;
+  protected final int fontDataPtr;
+  protected final float pixelHeight;
+  protected final float ascent;
+  protected final float descent;
+  protected final float lineHeight;
 
-  private boolean destroyed;
+  protected boolean destroyed;
 
-  FlixelHtml5RasterizedFont(int ctxPtr, int fontDataPtr, float pixelHeight,
+  protected FlixelHtml5RasterizedFont(int ctxPtr, int fontDataPtr, float pixelHeight,
       float ascent, float descent, float lineHeight) {
     this.ctxPtr = ctxPtr;
     this.fontDataPtr = fontDataPtr;
@@ -69,21 +69,6 @@ class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
     this.ascent = ascent;
     this.descent = descent;
     this.lineHeight = lineHeight;
-  }
-
-  @Override
-  public float getAscent() {
-    return ascent;
-  }
-
-  @Override
-  public float getDescent() {
-    return descent;
-  }
-
-  @Override
-  public float getLineHeight() {
-    return lineHeight;
   }
 
   @Override
@@ -144,5 +129,36 @@ class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
       StbWasm.stbFreeCtx(ctxPtr);
       StbWasm.free(fontDataPtr);
     }
+  }
+
+  @Override
+  public float getAscent() {
+    return ascent;
+  }
+
+  @Override
+  public float getDescent() {
+    return descent;
+  }
+
+  @Override
+  public float getLineHeight() {
+    return lineHeight;
+  }
+
+  public int getCtxPtr() {
+    return ctxPtr;
+  }
+
+  public int getFontDataPtr() {
+    return fontDataPtr;
+  }
+
+  public float getPixelHeight() {
+    return pixelHeight;
+  }
+
+  public boolean isDestroyed() {
+    return destroyed;
   }
 }
