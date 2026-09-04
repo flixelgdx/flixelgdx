@@ -23,11 +23,16 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.collections.FlixelPool;
 import org.flixelgdx.functional.FlixelExistable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.group.FlixelBasicGroup;
+import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
 
 /**
  * The most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
@@ -54,13 +59,13 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #destroy()} (drops resources you may still want)</td>
  *     </tr>
  *     <tr>
- *       <td>Reuse a "dead" slot in a {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}</td>
- *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
+ *       <td>Reuse a "dead" slot in a {@link FlixelBasicGroup FlixelBasicGroup}</td>
+ *       <td>{@link FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
  *       <td>{@link #destroy()} unless you truly discard the instance</td>
  *     </tr>
  *     <tr>
  *       <td>Remove from group only; you still hold the reference</td>
- *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#remove FlixelBasicGroup.remove} / {@link org.flixelgdx.group.FlixelGroupable#detach FlixelGroupable.detach}</td>
+ *       <td>{@link FlixelBasicGroup#remove} / {@link FlixelGroupable#detach}</td>
  *       <td>Assuming the group calls {@link #destroy()} for you (it does not)</td>
  *     </tr>
  *     <tr>
@@ -69,12 +74,12 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #kill()} alone (resources may leak until something calls {@link #destroy()})</td>
  *     </tr>
  *     <tr>
- *       <td>Container shut down ({@link org.flixelgdx.group.FlixelBasicGroup#destroy() FlixelBasicGroup.destroy()}, {@link FlixelState#destroy()})</td>
+ *       <td>Container shut down ({@link FlixelBasicGroup#destroy()}, {@link FlixelState#destroy()})</td>
  *       <td>Let the group/state call {@link #destroy()} on each member</td>
  *       <td>Relying on {@link #kill()} for GPU/native cleanup</td>
  *     </tr>
  *     <tr>
- *       <td>Returning instance to a {@link org.flixelgdx.collections.FlixelPool FlixelPool}</td>
+ *       <td>Returning instance to a {@link FlixelPool}</td>
  *       <td>{@code pool.free(object)} (invokes {@link #reset()} -> {@link #destroy()})</td>
  *       <td>Expecting {@link #kill()} to run pool reset logic</td>
  *     </tr>
@@ -221,6 +226,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
     } else {
       revive();
     }
+    new ArrayList<>();
   }
 
   @Override

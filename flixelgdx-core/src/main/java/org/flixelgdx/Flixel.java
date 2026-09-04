@@ -1487,7 +1487,7 @@ public final class Flixel {
    * Re-applies texture filter settings for every {@link FlixelAntialiasable} member of the current
    * state in a two-pass order that resolves conflicts on shared textures.
    *
-   * <p>OpenGL texture filtering is a property of the texture object itself, not of each individual
+   * <p>Texture filtering is a property of the texture object itself, not of each individual
    * sprite. When multiple sprites share the same underlying texture (for example, every arrow in a
    * rhythm game's strumline atlas), the last call sets the filter for the texture directly, regardless
    * of which sprite made the call. This can leave sprites with {@code antialiasing = true} rendering with
