@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  FlixelGDX Checkstyle configuration.
+
+  Checks applied here complement Spotless (which owns formatting) and doclint (which owns
+  HTML validity and @link resolution in Javadoc). This file owns:
+    - semantic Javadoc completeness (missing docs on public API, tag quality)
+    - banned standard Java collection implementations in favour of FlixelGDX collections
+    - lightweight code-quality rules that are not covered by the formatter
+
+  Suppressions: gradle/checkstyle/suppressions.xml
+-->
+
+<module name="Checker">
+  <property name="severity" value="error"/>
+  <property name="fileExtensions" value="java"/>
+
+  <module name="SuppressionFilter">
+    <property name="file" value="${config_loc}/suppressions.xml"/>
+    <property name="optional" value="false"/>
+  </module>
+
+  <module name="TreeWalker">
+
+    <!-- Modifier keywords must appear in the order: public protected private abstract default
+         static final transient volatile synchronized native strictfp. -->
+    <module name="ModifierOrder"/>
+
+    <!-- Remove modifiers that are implied by context (public on interface methods,
+         final on static inner-interface fields, etc.). -->
+    <module name="RedundantModifier"/>
+
+    <!-- Every control-flow statement (if, else, for, while, do) must use braces.
+         Brace-less one-liners are easy to silently break during edits. -->
+    <module name="NeedBraces"/>
+
+    <!-- Long literals must use uppercase L (not l, which is indistinguishable from 1
+         in many fonts). -->
+    <module name="UpperEll"/>
+
+    <!-- One variable declaration per statement to keep diffs readable. -->
+    <module name="MultipleVariableDeclarations"/>
+
+    <!-- Standard Java collection implementations allocate garbage and use more memory
+         than FlixelGDX's lean equivalents. Use FlixelArray, FlixelMap, FlixelSet, etc.
+         Note: java.util interfaces (List, Map, Collection) and utility classes (Arrays,
+         Collections, Objects) are not banned. -->
+    <module name="IllegalType">
+      <property name="illegalClassNames" value="
+        java.util.ArrayList,
+        java.util.HashMap,
+        java.util.HashSet,
+        java.util.LinkedList,
+        java.util.TreeMap,
+        java.util.TreeSet,
+        java.util.LinkedHashMap,
+        java.util.LinkedHashSet,
+        java.util.ArrayDeque,
+        java.util.Vector,
+        java.util.Stack,
+        java.util.Hashtable,
+        java.util.EnumMap,
+        java.util.EnumSet,
+        java.util.WeakHashMap,
+        java.util.IdentityHashMap"/>
+    </module>
+
+    <!-- Require a Javadoc comment on every public type (class, interface, enum, annotation). -->
+    <module name="MissingJavadocType">
+      <property name="scope" value="public"/>
+    </module>
+
+    <!-- Require a Javadoc comment on every public method. Simple getters and setters that
+         follow the JavaBeans naming convention are exempt. -->
+    <module name="MissingJavadocMethod">
+      <property name="scope" value="public"/>
+      <property name="allowMissingPropertyJavadoc" value="true"/>
+    </module>
+
+    <!-- Reject empty @param, @return, @throws, or @deprecated tag descriptions.
+         An empty tag conveys no information and is noise in the generated docs. -->
+    <module name="NonEmptyAtclauseDescription"/>
+
+    <!-- Enforce Javadoc tag order: @param, @return, @throws / @exception, @deprecated.
+         Consistent ordering makes it easy to scan docs for the information you need. -->
+    <module name="AtclauseOrder">
+      <property name="tagOrder" value="@param, @return, @throws, @exception, @deprecated"/>
+    </module>
+
+    <!-- The first sentence of every Javadoc comment must end with a period.
+         This matches the AGENTS.md rule: "Every doc comment should always start with
+         a single sentence." -->
+    <module name="SummaryJavadoc"/>
+
+  </module>
+
+</module>
