@@ -277,7 +277,11 @@ public class FlixelDebugWatchManager {
     }
   }
 
-  /** Returns {@code true} when there are no watch entries registered. */
+  /**
+   * Returns {@code true} when there are no watch entries registered.
+   *
+   * @return {@code true} if the watch list is empty, {@code false} otherwise.
+   */
   public boolean isEmpty() {
     return watches.isEmpty();
   }

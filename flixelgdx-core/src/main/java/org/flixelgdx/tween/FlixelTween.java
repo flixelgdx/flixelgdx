@@ -157,16 +157,16 @@ public abstract class FlixelTween implements FlixelPoolable {
   /** The step to run when this tween completes its final cycle. Set via {@link #then(Supplier)}. */
   private Supplier<FlixelTween> nextStep;
 
-  /** Is {@code this} tween currently paused? */
+  /** Whether this tween is currently paused. */
   public boolean paused = false;
 
-  /** Is {@code this} tween active? */
+  /** Whether this tween is currently active. */
   protected boolean active = false;
 
-  /** Is {@code this} tween finished tweening? */
+  /** Whether this tween has finished tweening. */
   public boolean finished = false;
 
-  /** Is {@code this} tween tweening backwards? */
+  /** Whether this tween is tweening backwards. */
   protected boolean backward = false;
 
   /** Set during {@link #finish()} when restarting for LOOPING/PINGPONG so subclasses keep original start values. */
@@ -471,6 +471,8 @@ public abstract class FlixelTween implements FlixelPoolable {
    * @param toY The ending Y position.
    * @param durationOrSpeed The duration or speed of the motion.
    * @param useDuration Whether to use the duration or speed.
+   * @param tweenSettings The settings that configure and determine how the tween should animate.
+   * @return The newly created and started tween.
    */
   public static FlixelTween quadMotion(
       @Nullable FlixelPhysical target,
@@ -600,6 +602,8 @@ public abstract class FlixelTween implements FlixelPoolable {
 
   /**
    * Starts {@code this} tween and resets every value to its initial state.
+   *
+   * @return {@code this} for chaining.
    */
   public FlixelTween start() {
     if (tweenSettings != null && tweenSettings.getDuration() <= 0) {
@@ -775,6 +779,8 @@ public abstract class FlixelTween implements FlixelPoolable {
 
   /**
    * Cancels {@code this} tween, removes it from its manager and automatically defaults its values.
+   *
+   * @return {@code this} for chaining.
    */
   public FlixelTween cancel() {
     resetBasic();
@@ -863,6 +869,12 @@ public abstract class FlixelTween implements FlixelPoolable {
     return tweenSettings;
   }
 
+  /**
+   * Sets the tween settings for this tween.
+   *
+   * @param tweenSettings The new settings to apply.
+   * @return {@code this} for chaining.
+   */
   public FlixelTween setTweenSettings(@NotNull FlixelTweenSettings tweenSettings) {
     this.tweenSettings = tweenSettings;
     return this;
@@ -948,9 +960,8 @@ public abstract class FlixelTween implements FlixelPoolable {
    *
    * @param object The object to check.
    * @param fieldPaths The field paths to check.
+   * @return {@code true} if the global manager contains tweens of the given object and field paths.
    * @throws NullPointerException If the object is null.
-   * @return True if the global manager contains tweens of the given object and field paths, false otherwise.
-   *
    * @see FlixelTweenManager#containsTweensOf(Object, String...)
    */
   public static boolean containsTweensOf(@NotNull Object object, String... fieldPaths) {
@@ -1000,7 +1011,11 @@ public abstract class FlixelTween implements FlixelPoolable {
     return finished;
   }
 
-  /** Returns whether this tween has completed all of its iterations. */
+  /**
+   * Returns whether this tween has completed all of its iterations.
+   *
+   * @return {@code true} if this tween has finished all iterations, {@code false} otherwise.
+   */
   public boolean getFinished() {
     return finished;
   }
@@ -1009,7 +1024,11 @@ public abstract class FlixelTween implements FlixelPoolable {
     return active;
   }
 
-  /** Returns whether this tween is currently active and updating. */
+  /**
+   * Returns whether this tween is currently active and updating.
+   *
+   * @return {@code true} if this tween is active and being updated, {@code false} otherwise.
+   */
   public boolean getActive() {
     return active;
   }
@@ -1018,6 +1037,12 @@ public abstract class FlixelTween implements FlixelPoolable {
     this.active = active;
   }
 
+  /**
+   * Moves this tween to a different manager, removing it from the current one first.
+   *
+   * @param newManager The manager to assign this tween to.
+   * @return {@code this} for chaining.
+   */
   public FlixelTween setManager(@NotNull FlixelTweenManager newManager) {
     if (manager != null) {
       manager.removeTween(this, true);

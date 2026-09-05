@@ -77,6 +77,7 @@ public abstract class FlixelBasicGroup<T extends IFlixelBasic> extends FlixelBas
     return null;
   }
 
+  /** Lazily initializes the underlying member list if it has not been created yet. */
   public void ensureMembers() {
     memberList.ensureMembers();
   }

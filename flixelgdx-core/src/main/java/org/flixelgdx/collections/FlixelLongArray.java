@@ -264,17 +264,29 @@ public class FlixelLongArray {
     return Arrays.copyOf(items, size);
   }
 
-  /** Returns the backing array. Only the first {@link #getSize()} entries are live. */
+  /**
+   * Returns the backing array. Only the first {@link #getSize()} entries are live.
+   *
+   * @return The raw backing array; entries past index {@code getSize() - 1} are undefined.
+   */
   public long[] getItems() {
     return items;
   }
 
-  /** Returns the number of live elements. */
+  /**
+   * Returns the number of live elements.
+   *
+   * @return The count of elements currently stored in this array.
+   */
   public int getSize() {
     return size;
   }
 
-  /** Returns whether removals preserve insertion order. */
+  /**
+   * Returns whether removals preserve insertion order.
+   *
+   * @return {@code true} if removals shift remaining elements to maintain order.
+   */
   public boolean isOrdered() {
     return ordered;
   }

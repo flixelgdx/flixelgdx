@@ -133,7 +133,9 @@ public final class FlixelGamepadAxis {
   }
 
   /**
-   * @return The axis's ID string (for example {@code "LeftX"}); never {@code null}.
+   * Returns the axis's ID string (for example {@code "LeftX"}); never {@code null}.
+   *
+   * @return The axis ID string, never {@code null}.
    */
   @NotNull
   public String getId() {

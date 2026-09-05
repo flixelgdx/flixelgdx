@@ -132,9 +132,17 @@ public interface FlixelList<T> extends Iterable<T> {
   @NotNull
   T[] getItems();
 
-  /** Returns the number of live elements. */
+  /**
+   * Returns the number of live elements.
+   *
+   * @return The number of live elements in this list.
+   */
   int getSize();
 
-  /** Returns whether removals preserve insertion order. */
+  /**
+   * Returns whether removals preserve insertion order.
+   *
+   * @return {@code true} if removals preserve insertion order, {@code false} if they may not.
+   */
   boolean isOrdered();
 }

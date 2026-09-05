@@ -23,9 +23,12 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.collections.FlixelPool;
 import org.flixelgdx.functional.FlixelExistable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.group.FlixelBasicGroup;
+import org.flixelgdx.group.FlixelGroupable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,13 +57,13 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #destroy()} (drops resources you may still want)</td>
  *     </tr>
  *     <tr>
- *       <td>Reuse a "dead" slot in a {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}</td>
- *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
+ *       <td>Reuse a "dead" slot in a {@link FlixelBasicGroup FlixelBasicGroup}</td>
+ *       <td>{@link FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
  *       <td>{@link #destroy()} unless you truly discard the instance</td>
  *     </tr>
  *     <tr>
  *       <td>Remove from group only; you still hold the reference</td>
- *       <td>{@link org.flixelgdx.group.FlixelBasicGroup#remove FlixelBasicGroup.remove} / {@link org.flixelgdx.group.FlixelGroupable#detach FlixelGroupable.detach}</td>
+ *       <td>{@link FlixelBasicGroup#remove} / {@link FlixelGroupable#detach}</td>
  *       <td>Assuming the group calls {@link #destroy()} for you (it does not)</td>
  *     </tr>
  *     <tr>
@@ -69,12 +72,12 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #kill()} alone (resources may leak until something calls {@link #destroy()})</td>
  *     </tr>
  *     <tr>
- *       <td>Container shut down ({@link org.flixelgdx.group.FlixelBasicGroup#destroy() FlixelBasicGroup.destroy()}, {@link FlixelState#destroy()})</td>
+ *       <td>Container shut down ({@link FlixelBasicGroup#destroy()}, {@link FlixelState#destroy()})</td>
  *       <td>Let the group/state call {@link #destroy()} on each member</td>
  *       <td>Relying on {@link #kill()} for GPU/native cleanup</td>
  *     </tr>
  *     <tr>
- *       <td>Returning instance to a {@link org.flixelgdx.collections.FlixelPool FlixelPool}</td>
+ *       <td>Returning instance to a {@link FlixelPool}</td>
  *       <td>{@code pool.free(object)} (invokes {@link #reset()} -> {@link #destroy()})</td>
  *       <td>Expecting {@link #kill()} to run pool reset logic</td>
  *     </tr>
@@ -121,6 +124,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
    */
   public boolean visible = true;
 
+  /** Creates a new FlixelBasic with a unique auto-assigned ID and no camera overrides. */
   public FlixelBasic() {
     this.ID = idEnumerator++;
     this.cameras = null;
@@ -158,7 +162,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
     return exists;
   }
 
-  /** Returns whether this object exists in the world. */
+  /**
+   * Returns whether this object exists in the world.
+   *
+   * @return {@code true} if this object exists in the world.
+   */
   public boolean getExists() {
     return exists;
   }
@@ -173,7 +181,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
     return active;
   }
 
-  /** Returns whether this object is active and will be updated each frame. */
+  /**
+   * Returns whether this object is active and will be updated each frame.
+   *
+   * @return {@code true} if this object is active and receives updates.
+   */
   public boolean getActive() {
     return active;
   }
@@ -188,7 +200,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
     return visible;
   }
 
-  /** Returns whether this object is visible and will be drawn each frame. */
+  /**
+   * Returns whether this object is visible and will be drawn each frame.
+   *
+   * @return {@code true} if this object is visible and will be rendered.
+   */
   public boolean getVisible() {
     return visible;
   }
@@ -208,7 +224,11 @@ public abstract class FlixelBasic implements IFlixelBasic {
     return !exists;
   }
 
-  /** Returns whether this object has been killed (i.e. does not exist). */
+  /**
+   * Returns whether this object has been killed (i.e. does not exist).
+   *
+   * @return {@code true} if this object has been killed and no longer exists.
+   */
   public boolean getKilled() {
     return !exists;
   }

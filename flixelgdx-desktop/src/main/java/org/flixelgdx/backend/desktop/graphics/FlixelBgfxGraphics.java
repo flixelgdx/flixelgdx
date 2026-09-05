@@ -302,7 +302,12 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     }
   }
 
-  /** Updates cached back buffer size and resets the bgfx swap chain. Called by the runner on resize. */
+  /**
+   * Updates cached back buffer size and resets the bgfx swap chain. Called by the runner on resize.
+   *
+   * @param width The new back buffer width in pixels.
+   * @param height The new back buffer height in pixels.
+   */
   public void onResize(int width, int height) {
     backBufferWidth = width;
     backBufferHeight = height;

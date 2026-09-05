@@ -2,14 +2,21 @@
  * Convention for FlixelGDX Java library modules.
  *
  * <p>Applies {@code flixelgdx.java-base} for shared setup, then layers on:
- * Java 17 toolchain, Javadoc settings with doclint, and the Vanniktech Maven publish
- * pipeline targeting Sonatype Central Portal.
+ * Java 17 toolchain, Javadoc settings with doclint, Checkstyle for code quality and
+ * Javadoc completeness enforcement, and the Vanniktech Maven publish pipeline targeting
+ * Sonatype Central Portal.
  */
 
 plugins {
   id("flixelgdx.java-base")
   `java-library`
   id("com.vanniktech.maven.publish")
+  checkstyle
+}
+
+checkstyle {
+  toolVersion = "10.21.0"
+  configDirectory.set(rootProject.layout.projectDirectory.dir("gradle/checkstyle"))
 }
 
 java {

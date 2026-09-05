@@ -69,13 +69,19 @@ public abstract class FlixelDebugTrackerEntry {
   private final String name;
 
   /**
+   * Creates a tracker entry with the given display name.
+   *
    * @param name A short display name for this entry (shown as the collapsible header in the Tracker panel).
    */
   protected FlixelDebugTrackerEntry(String name) {
     this.name = name;
   }
 
-  /** Returns the display name of this tracker entry. */
+  /**
+   * Returns the display name of this tracker entry.
+   *
+   * @return The display name shown in the Tracker panel header.
+   */
   public String getName() {
     return name;
   }

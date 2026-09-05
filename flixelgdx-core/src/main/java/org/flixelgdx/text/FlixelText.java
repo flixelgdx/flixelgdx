@@ -218,7 +218,11 @@ public class FlixelText extends FlixelSprite {
     setTextSize(size);
   }
 
-  /** Returns the text currently being displayed. */
+  /**
+   * Returns the text currently being displayed.
+   *
+   * @return The internal text buffer holding the current text content.
+   */
   public FlixelString getTextBuffer() {
     return textBuffer;
   }
@@ -260,7 +264,11 @@ public class FlixelText extends FlixelSprite {
     layoutDirty = true;
   }
 
-  /** Returns the font size in pixels. */
+  /**
+   * Returns the font size in pixels.
+   *
+   * @return The current font size in pixels.
+   */
   public int getTextSize() {
     return size;
   }
@@ -280,7 +288,11 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns the current text alignment. */
+  /**
+   * Returns the current text alignment.
+   *
+   * @return The current horizontal alignment setting.
+   */
   public Alignment getAlignment() {
     return alignment;
   }
@@ -298,12 +310,20 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns whether word wrapping is enabled. */
+  /**
+   * Returns whether word wrapping is enabled.
+   *
+   * @return {@code true} if word wrapping is active.
+   */
   public boolean isWordWrap() {
     return wordWrap;
   }
 
-  /** Returns whether word wrapping is enabled. */
+  /**
+   * Returns whether word wrapping is enabled.
+   *
+   * @return {@code true} if word wrapping is active.
+   */
   public boolean getWordWrap() {
     return wordWrap;
   }
@@ -320,12 +340,20 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns whether the text field auto-sizes to fit its content. */
+  /**
+   * Returns whether the text field auto-sizes to fit its content.
+   *
+   * @return {@code true} if the field dimensions are derived from the text content.
+   */
   public boolean isAutoSize() {
     return autoSize;
   }
 
-  /** Returns whether the text field auto-sizes to fit its content. */
+  /**
+   * Returns whether the text field auto-sizes to fit its content.
+   *
+   * @return {@code true} if the field dimensions are derived from the text content.
+   */
   public boolean getAutoSize() {
     return autoSize;
   }
@@ -345,7 +373,11 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns the width of the text field, or {@code 0} if auto-sizing. */
+  /**
+   * Returns the width of the text field, or {@code 0} if auto-sizing.
+   *
+   * @return The fixed field width in pixels, or {@code 0} when auto-sizing is active.
+   */
   public float getFieldWidth() {
     return fieldWidth;
   }
@@ -365,7 +397,11 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns the height of the text field, or {@code 0} if auto-sizing. */
+  /**
+   * Returns the height of the text field, or {@code 0} if auto-sizing.
+   *
+   * @return The fixed field height in pixels, or {@code 0} when auto-sizing is active.
+   */
   public float getFieldHeight() {
     return fieldHeight;
   }
@@ -382,12 +418,20 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns whether bold rendering is requested. */
+  /**
+   * Returns whether bold rendering is requested.
+   *
+   * @return {@code true} if bold rendering has been requested.
+   */
   public boolean isBold() {
     return bold;
   }
 
-  /** Returns whether bold rendering is requested. */
+  /**
+   * Returns whether bold rendering is requested.
+   *
+   * @return {@code true} if bold rendering has been requested.
+   */
   public boolean getBold() {
     return bold;
   }
@@ -405,12 +449,20 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns whether italic rendering is requested. */
+  /**
+   * Returns whether italic rendering is requested.
+   *
+   * @return {@code true} if italic rendering has been requested.
+   */
   public boolean isItalic() {
     return italic;
   }
 
-  /** Returns whether italic rendering is requested. */
+  /**
+   * Returns whether italic rendering is requested.
+   *
+   * @return {@code true} if italic rendering has been requested.
+   */
   public boolean getItalic() {
     return italic;
   }
@@ -428,7 +480,11 @@ public class FlixelText extends FlixelSprite {
     }
   }
 
-  /** Returns the extra spacing between characters, in pixels. */
+  /**
+   * Returns the extra spacing between characters, in pixels.
+   *
+   * @return The current letter spacing in pixels.
+   */
   public float getLetterSpacing() {
     return letterSpacing;
   }
@@ -448,17 +504,27 @@ public class FlixelText extends FlixelSprite {
   /**
    * Returns whether a scalable font is active (registry id or direct file), meaning glyphs
    * re-bake crisply when the display scale changes.
+   *
+   * @return {@code true} if a scalable font source is configured or a registry default exists.
    */
   public boolean isEmbedded() {
     return fontRegistryId != null || fontFile != null || FlixelFontRegistry.getDefault() != null;
   }
 
-  /** Returns whether a scalable font is active. */
+  /**
+   * Returns whether a scalable font is active.
+   *
+   * @return {@code true} if a registry id, direct file, or registry default font is active.
+   */
   public boolean getEmbedded() {
     return isEmbedded();
   }
 
-  /** Returns the current {@link FlixelFontRegistry} font id, or {@code null}. */
+  /**
+   * Returns the current {@link FlixelFontRegistry} font id, or {@code null}.
+   *
+   * @return The registry id of the active font, or {@code null} if no registry font is selected.
+   */
   @Nullable
   public String getFont() {
     return fontRegistryId;
@@ -504,22 +570,38 @@ public class FlixelText extends FlixelSprite {
     fontDirty = true;
   }
 
-  /** Returns the current border style. */
+  /**
+   * Returns the current border style.
+   *
+   * @return The active border style.
+   */
   public BorderStyle getBorderStyle() {
     return borderStyle;
   }
 
-  /** Returns the border color. Treat as read-only. */
+  /**
+   * Returns the border color. Treat as read-only.
+   *
+   * @return The shared border color instance.
+   */
   public FlixelColor getBorderColor() {
     return borderColor;
   }
 
-  /** Returns the border thickness in pixels. */
+  /**
+   * Returns the border thickness in pixels.
+   *
+   * @return The current border size in pixels.
+   */
   public float getBorderSize() {
     return borderSize;
   }
 
-  /** Returns the border quality factor. */
+  /**
+   * Returns the border quality factor.
+   *
+   * @return The border quality value between {@code 0} and {@code 1}.
+   */
   public float getBorderQuality() {
     return borderQuality;
   }
@@ -650,27 +732,43 @@ public class FlixelText extends FlixelSprite {
     setFormat((String) null, size, color, null, null, null);
   }
 
-  /** Returns the display width: the field width when fixed, otherwise the measured text width. */
+  /**
+   * Returns the display width: the field width when fixed, otherwise the measured text width.
+   *
+   * @return The effective display width in pixels.
+   */
   @Override
   public float getWidth() {
     rebuildIfDirty();
     return super.getWidth();
   }
 
-  /** Returns the display height: the field height when fixed, otherwise the measured text height. */
+  /**
+   * Returns the display height: the field height when fixed, otherwise the measured text height.
+   *
+   * @return The effective display height in pixels.
+   */
   @Override
   public float getHeight() {
     rebuildIfDirty();
     return super.getHeight();
   }
 
-  /** Returns the measured width of the laid-out text, ignoring any fixed field size. */
+  /**
+   * Returns the measured width of the laid-out text, ignoring any fixed field size.
+   *
+   * @return The natural laid-out text width in pixels.
+   */
   public float getTextWidth() {
     rebuildIfDirty();
     return layout.getWidth();
   }
 
-  /** Returns the measured height of the laid-out text, ignoring any fixed field size. */
+  /**
+   * Returns the measured height of the laid-out text, ignoring any fixed field size.
+   *
+   * @return The natural laid-out text height in pixels.
+   */
   public float getTextHeight() {
     rebuildIfDirty();
     return layout.getHeight();
@@ -731,50 +829,50 @@ public class FlixelText extends FlixelSprite {
     fontDirty = true;
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelFile file) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelFile file, int frameWidth) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelFile file, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot load graphics. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot load graphics. */
   @Override
   public final FlixelSprite loadGraphic(FlixelTexture texture, int frameWidth, int frameHeight) {
     throw new UnsupportedOperationException("FlixelText does not support loadGraphic(). Use setText() instead.");
   }
 
-  /** @throws UnsupportedOperationException always; text objects cannot use Sparrow atlases. */
+  /** Always throws {@link UnsupportedOperationException}; text objects cannot use Sparrow atlases. */
   @Override
   public final void applySparrowAtlas(@NotNull FlixelGraphic newGraphic,
       @NotNull FlixelArray<FlixelFrame> parsedFrames) {
     throw new UnsupportedOperationException("FlixelText does not support addSparrowAtlas().");
   }
 
-  /** @return Never returns; text has no atlas regions. */
+  /** Always throws {@link UnsupportedOperationException}; text has no atlas regions. */
   @Override
   public final FlixelArray<FlixelFrame> getAtlasRegions() {
     throw new UnsupportedOperationException("FlixelText does not support atlas regions.");
   }
 
-  /** @return Never returns; text has no animation frames. */
+  /** Always throws {@link UnsupportedOperationException}; text has no animation frames. */
   @Override
   public final FlixelFrame getCurrentFrame() {
     throw new UnsupportedOperationException("FlixelText does not support animations.");
   }
 
-  /** @return Never returns; text has no image frames. */
+  /** Always throws {@link UnsupportedOperationException}; text has no image frames. */
   @Override
   public final FlixelFrame[][] getFrames() {
     throw new UnsupportedOperationException("FlixelText does not support animations.");
@@ -996,6 +1094,13 @@ public class FlixelText extends FlixelSprite {
       this.align = align;
     }
 
+    /**
+     * Returns the alignment constant corresponding to the given integer value.
+     *
+     * @param value {@code 0} for LEFT, {@code 1} for CENTER, {@code 2} for RIGHT.
+     * @return The matching alignment constant.
+     * @throws IllegalArgumentException if {@code value} is not a valid alignment integer.
+     */
     public static Alignment fromInt(int value) {
       return switch (value) {
         case 0 -> LEFT;
@@ -1005,6 +1110,11 @@ public class FlixelText extends FlixelSprite {
       };
     }
 
+    /**
+     * Returns the integer representation of this alignment constant.
+     *
+     * @return {@code 0} for LEFT, {@code 1} for CENTER, {@code 2} for RIGHT.
+     */
     public int toInt() {
       return switch (this) {
         case LEFT -> 0;

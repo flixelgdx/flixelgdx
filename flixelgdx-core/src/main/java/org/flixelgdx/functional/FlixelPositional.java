@@ -147,15 +147,31 @@ public interface FlixelPositional extends FlixelAngleable {
    */
   void setSize(float width, float height);
 
-  /** Adds {@code dx} to the current X position. */
+  /**
+   * Adds {@code dx} to the current X position.
+   *
+   * @param dx The amount to add to the X position.
+   */
   void changeX(float dx);
 
-  /** Adds {@code dy} to the current Y position. */
+  /**
+   * Adds {@code dy} to the current Y position.
+   *
+   * @param dy The amount to add to the Y position.
+   */
   void changeY(float dy);
 
-  /** Returns the center X coordinate of this object. */
+  /**
+   * Returns the center X coordinate of this object.
+   *
+   * @return The horizontal midpoint of this object in world units.
+   */
   float getMidpointX();
 
-  /** Returns the center Y coordinate of this object. */
+  /**
+   * Returns the center Y coordinate of this object.
+   *
+   * @return The vertical midpoint of this object in world units.
+   */
   float getMidpointY();
 }

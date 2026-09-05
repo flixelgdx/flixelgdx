@@ -113,6 +113,11 @@ public class FlixelActionAnalog extends FlixelAction {
   private boolean flickState;
   private boolean prevFlickState;
 
+  /**
+   * Creates a new analog action with the given display name.
+   *
+   * @param name A human-readable name used for debugging and binding lookup, or {@code null}.
+   */
   public FlixelActionAnalog(@Nullable String name) {
     super(name);
   }
@@ -298,6 +303,11 @@ public class FlixelActionAnalog extends FlixelAction {
     this.flickThreshold = Math.max(0f, Math.min(1f, flickThreshold));
   }
 
+  /**
+   * Returns {@code true} when the stick has moved beyond the dead-zone threshold this frame.
+   *
+   * @return {@code true} if the stick has moved past the dead zone, {@code false} otherwise.
+   */
   public boolean moved() {
     if (!active) {
       return false;

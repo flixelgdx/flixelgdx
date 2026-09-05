@@ -38,33 +38,51 @@ import org.flixelgdx.FlixelObject;
  */
 public interface FlixelDebugDrawable {
 
-  /** X position of the bounding box in world space. */
+  /**
+   * Returns the X position of the bounding box in world space.
+   *
+   * @return The X coordinate of the debug bounding box.
+   */
   float getDebugX();
 
-  /** Y position of the bounding box in world space. */
+  /**
+   * Returns the Y position of the bounding box in world space.
+   *
+   * @return The Y coordinate of the debug bounding box.
+   */
   float getDebugY();
 
-  /** Width of the bounding box in world pixels. */
+  /**
+   * Returns the width of the bounding box in world pixels.
+   *
+   * @return The width of the debug bounding box in pixels.
+   */
   float getDebugWidth();
 
-  /** Height of the bounding box in world pixels. */
+  /**
+   * Returns the height of the bounding box in world pixels.
+   *
+   * @return The height of the debug bounding box in pixels.
+   */
   float getDebugHeight();
 
   /**
-   * X position of the debug box in the same world space as {@link FlixelCamera} projection during
+   * Returns the X position of the debug box in the same world space as {@link FlixelCamera} projection during
    * {@code draw} (includes scroll-factor / parallax). Defaults to {@link #getDebugX()}.
    *
    * @param camera The game camera used for this debug pass.
+   * @return The camera-adjusted X coordinate of the debug bounding box.
    */
   default float getDebugDrawX(FlixelCamera camera) {
     return getDebugX();
   }
 
   /**
-   * Y position of the debug box in the same world space as {@link FlixelCamera} projection during
+   * Returns the Y position of the debug box in the same world space as {@link FlixelCamera} projection during
    * {@code draw}. Defaults to {@link #getDebugY()}.
    *
    * @param camera The game camera used for this debug pass.
+   * @return The camera-adjusted Y coordinate of the debug bounding box.
    */
   default float getDebugDrawY(FlixelCamera camera) {
     return getDebugY();
@@ -74,6 +92,8 @@ public interface FlixelDebugDrawable {
    * Returns the RGBA color for this object's debug bounding box as a 4-element
    * array: {@code [r, g, b, a]}. Implementations should return a cached array
    * rather than allocating every frame.
+   *
+   * @return A 4-element float array containing the red, green, blue, and alpha components.
    */
   float[] getDebugBoundingBoxColor();
 }

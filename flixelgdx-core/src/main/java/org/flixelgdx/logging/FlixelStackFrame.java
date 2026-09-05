@@ -28,15 +28,31 @@ package org.flixelgdx.logging;
  */
 public interface FlixelStackFrame {
 
-  /** @return The name of the file containing the execution point represented by this stack frame. */
+  /**
+   * Returns the name of the file containing the execution point represented by this stack frame.
+   *
+   * @return The source file name, or {@code null} if unavailable.
+   */
   String getFileName();
 
-  /** @return The line number of the execution point represented by this stack frame. */
+  /**
+   * Returns the line number of the execution point represented by this stack frame.
+   *
+   * @return The source line number, or a negative value if unavailable.
+   */
   int getLineNumber();
 
-  /** @return The fully qualified name of the class containing the execution point represented by this stack frame. */
+  /**
+   * Returns the fully qualified name of the class containing the execution point represented by this stack frame.
+   *
+   * @return The fully qualified class name.
+   */
   String getClassName();
 
-  /** @return The name of the method containing the execution point represented by this stack frame. */
+  /**
+   * Returns the name of the method containing the execution point represented by this stack frame.
+   *
+   * @return The method name.
+   */
   String getMethodName();
 }

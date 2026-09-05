@@ -900,7 +900,7 @@ public final class Flixel {
   @Nullable
   private static FlixelCamera drawCamera;
 
-  /** Should the game use antialiasing globally? */
+  /** Whether the game should use antialiasing globally. */
   private static boolean antialiasing = false;
 
   /**
@@ -1198,7 +1198,7 @@ public final class Flixel {
    *
    * @param message The message to log.
    */
-  public static void error(String message) {
+  public static void error(Object message) {
     log.error(message);
   }
 
@@ -1336,6 +1336,8 @@ public final class Flixel {
    * <p>This matches {@link #getDesignWidth()} / {@link #getDesignHeight()} and, unlike
    * {@link #getVisibleWidth()} / {@link #getVisibleHeight()}, always reflects the fixed design
    * dimensions set at startup, unaffected by the window size or viewport type.
+   *
+   * @return A new {@link FlixelVector} containing the fixed design width and height.
    */
   public static FlixelVector getSize() {
     return new FlixelVector(game.getInitialWidth(), game.getInitialHeight());
@@ -1356,6 +1358,8 @@ public final class Flixel {
    * Returns the capped elapsed time (in seconds) for the current frame. This value is clamped
    * between {@link #MIN_ELAPSED} and {@link #MAX_ELAPSED} by
    * {@link FlixelGame} each frame.
+   *
+   * @return The elapsed time in seconds for the current frame, scaled by {@link #timeScale}.
    */
   public static float getElapsed() {
     return elapsed;
@@ -1365,17 +1369,27 @@ public final class Flixel {
    * Returns the raw platform delta (in seconds) for the current frame, clamped to
    * [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] but not multiplied by {@link #timeScale}.
    * Use this when you need actual wall-clock frame time regardless of the active timescale.
+   *
+   * @return The raw elapsed time in seconds for the current frame, unaffected by {@link #timeScale}.
    */
   public static float getRawElapsed() {
     return rawElapsed;
   }
 
-  /** Returns {@code true} when the current runtime mode is {@link FlixelRuntimeMode#DEBUG}. */
+  /**
+   * Returns {@code true} when the current runtime mode is {@link FlixelRuntimeMode#DEBUG}.
+   *
+   * @return {@code true} if the runtime is in debug mode, {@code false} otherwise.
+   */
   public static boolean isDebugMode() {
     return runtime.getMode() == FlixelRuntimeMode.DEBUG;
   }
 
-  /** Returns the current runtime mode. Defaults to {@link FlixelRuntimeMode#RELEASE}. */
+  /**
+   * Returns the current runtime mode. Defaults to {@link FlixelRuntimeMode#RELEASE}.
+   *
+   * @return The active {@link FlixelRuntimeMode} for this session.
+   */
   public static FlixelRuntimeMode getRuntimeMode() {
     return runtime.getMode();
   }
@@ -1406,6 +1420,8 @@ public final class Flixel {
   /**
    * The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)},
    * or {@code null} if not in a camera pass.
+   *
+   * @return The active draw camera, or {@code null} if no camera pass is in progress.
    */
   @Nullable
   public static FlixelCamera getDrawCamera() {
@@ -1420,6 +1436,9 @@ public final class Flixel {
    * Whether something with the given {@code cameras} list should render during the current draw pass.
    * {@code null} or an empty array means all cameras; otherwise, the object is drawn only if {@link #getDrawCamera()}
    * is reference-equal to an entry.
+   *
+   * @param cameras The camera list to check against, or {@code null} to match all cameras.
+   * @return {@code true} if the current draw camera is in the list (or the list is null or empty).
    */
   public static boolean isOnDrawCamera(@Nullable FlixelCamera[] cameras) {
     FlixelCamera active = drawCamera;
@@ -1487,7 +1506,7 @@ public final class Flixel {
    * Re-applies texture filter settings for every {@link FlixelAntialiasable} member of the current
    * state in a two-pass order that resolves conflicts on shared textures.
    *
-   * <p>OpenGL texture filtering is a property of the texture object itself, not of each individual
+   * <p>Texture filtering is a property of the texture object itself, not of each individual
    * sprite. When multiple sprites share the same underlying texture (for example, every arrow in a
    * rhythm game's strumline atlas), the last call sets the filter for the texture directly, regardless
    * of which sprite made the call. This can leave sprites with {@code antialiasing = true} rendering with
@@ -1547,6 +1566,8 @@ public final class Flixel {
   /**
    * Returns the world bounds used for collision broad-phase culling.
    * The returned array is {@code [x, y, width, height]}.
+   *
+   * @return A float array of length 4 containing {@code [x, y, width, height]}.
    */
   public static float[] getWorldBounds() {
     return worldBounds;
@@ -1582,18 +1603,25 @@ public final class Flixel {
       @Nullable FlixelBasic objectOrGroup2,
       @Nullable BiConsumer<FlixelObject, FlixelObject> notifyCallback,
       @Nullable BiFunction<FlixelObject, FlixelObject, Boolean> processCallback) {
-    if (objectOrGroup1 == null)
+    if (objectOrGroup1 == null) {
       objectOrGroup1 = state;
-    if (objectOrGroup2 == null)
+    }
+    if (objectOrGroup2 == null) {
       objectOrGroup2 = state;
-    if (objectOrGroup1 == null || objectOrGroup2 == null)
+    }
+    if (objectOrGroup1 == null || objectOrGroup2 == null) {
       return false;
+    }
     return overlapInternal(objectOrGroup1, objectOrGroup2, notifyCallback, processCallback);
   }
 
   /**
    * Shorthand for {@link #overlap(FlixelBasic, FlixelBasic, BiConsumer, BiFunction)}
    * with no callbacks.
+   *
+   * @param objectOrGroup1 First object or group (may be {@code null} to use the current state).
+   * @param objectOrGroup2 Second object or group (may be {@code null} to use the current state).
+   * @return {@code true} if any overlaps were detected.
    */
   public static boolean overlap(@Nullable FlixelBasic objectOrGroup1, @Nullable FlixelBasic objectOrGroup2) {
     return overlap(objectOrGroup1, objectOrGroup2, null, null);
@@ -1617,6 +1645,10 @@ public final class Flixel {
   /**
    * Shorthand for {@link #collide(FlixelBasic, FlixelBasic, BiConsumer)} with
    * no {@code notifyCallback}.
+   *
+   * @param objectOrGroup1 First object or group.
+   * @param objectOrGroup2 Second object or group.
+   * @return {@code true} if any objects were separated.
    */
   public static boolean collide(@Nullable FlixelBasic objectOrGroup1,
       @Nullable FlixelBasic objectOrGroup2) {
@@ -1652,12 +1684,15 @@ public final class Flixel {
       return result;
     }
 
-    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2))
+    if (!(obj1 instanceof FlixelObject fo1) || !(obj2 instanceof FlixelObject fo2)) {
       return false;
-    if (obj1 == obj2)
+    }
+    if (obj1 == obj2) {
       return false;
-    if (!fo1.exists || !fo2.exists)
+    }
+    if (!fo1.exists || !fo2.exists) {
       return false;
+    }
 
     boolean overlaps = fo1.getX() < fo2.getX() + fo2.getWidth()
         && fo1.getX() + fo1.getWidth() > fo2.getX()
@@ -1696,8 +1731,9 @@ public final class Flixel {
         Properties p = new Properties();
         p.load(in);
         String v = p.getProperty("version");
-        if (v != null && !v.isEmpty())
+        if (v != null && !v.isEmpty()) {
           return v;
+        }
       }
     } catch (Exception ignored) {
       // Ignored.

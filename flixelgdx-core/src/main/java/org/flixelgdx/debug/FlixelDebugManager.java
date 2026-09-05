@@ -198,7 +198,11 @@ public class FlixelDebugManager {
     draggedSprite = obj;
   }
 
-  /** Returns the sprite that is currently being dragged via the LMB picker, or {@code null}. */
+  /**
+   * Returns the sprite that is currently being dragged via the LMB picker, or {@code null}.
+   *
+   * @return The currently dragged sprite, or {@code null} if none is being dragged.
+   */
   @Nullable
   public FlixelObject getDraggedSprite() {
     if (draggedSprite != null && !draggedSprite.exists) {
@@ -400,7 +404,11 @@ public class FlixelDebugManager {
     return commandHistory;
   }
 
-  /** Returns the {@link FlixelArray} of registered command names. The returned array is freshly allocated. */
+  /**
+   * Returns the {@link FlixelArray} of registered command names. The returned array is freshly allocated.
+   *
+   * @return A sorted array of all registered command names.
+   */
   @NotNull
   public FlixelArray<String> getRegisteredCommandNames() {
     FlixelArray<String> out = new FlixelArray<>(commands.getSize());
@@ -411,7 +419,12 @@ public class FlixelDebugManager {
     return out;
   }
 
-  /** Returns {@code true} if a command with the given name is registered. */
+  /**
+   * Returns {@code true} if a command with the given name is registered.
+   *
+   * @param name The command name to look up.
+   * @return {@code true} if a command with that name has been registered.
+   */
   public boolean hasCommand(@NotNull String name) {
     return commands.containsKey(name);
   }

@@ -39,12 +39,18 @@ import java.util.function.Consumer;
  */
 public interface FlixelGroupable<T> {
 
-  /** Adds a member to this group. */
+  /**
+   * Adds a member to this group.
+   *
+   * @param member The member to add.
+   */
   void add(T member);
 
   /**
    * Removes the member from this group only. Does not interpret or tear down the member; see {@link FlixelBasicGroupable}
    * for optional {@code destroy} semantics on {@link org.flixelgdx.FlixelBasic FlixelBasic} members.
+   *
+   * @param member The member to remove.
    */
   void remove(T member);
 
@@ -53,17 +59,23 @@ public interface FlixelGroupable<T> {
 
   /**
    * Returns the backing array, or {@code null} if the implementation has not allocated it yet ({@link FlixelGroup}).
+   *
+   * @return The backing member array, or {@code null} when not yet allocated.
    */
   @Nullable
   FlixelArray<T> getMembers();
 
   /**
    * Returns the maximum number of members allowed. When {@code 0}, the group can grow without limit.
+   *
+   * @return The maximum member count, or {@code 0} for unlimited.
    */
   int getMaxSize();
 
   /**
    * Sets the maximum number of members allowed. Values less than {@code 0} are clamped to {@code 0} (unlimited).
+   *
+   * @param maxSize The new maximum member count; values below {@code 0} are treated as {@code 0}.
    */
   void setMaxSize(int maxSize);
 
@@ -80,7 +92,11 @@ public interface FlixelGroupable<T> {
     members.removeValue(member, true);
   }
 
-  /** Index of the first {@code null} slot in {@link #getMembers()}, or {@code -1} if none. */
+  /**
+   * Returns the index of the first {@code null} slot in {@link #getMembers()}, or {@code -1} if none.
+   *
+   * @return The index of the first null slot, or {@code -1} when no null slot exists.
+   */
   default int getFirstNullIndex() {
     FlixelArray<T> members = getMembers();
     if (members == null) {

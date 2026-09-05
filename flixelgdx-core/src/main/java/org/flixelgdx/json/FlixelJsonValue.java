@@ -106,7 +106,9 @@ public final class FlixelJsonValue implements Iterable<FlixelJsonValue> {
   }
 
   /**
-   * @return What kind of JSON node this is.
+   * Returns what kind of JSON node this is.
+   *
+   * @return The {@link Kind} enum constant identifying this node's type.
    */
   @NotNull
   public Kind getKind() {
@@ -114,8 +116,10 @@ public final class FlixelJsonValue implements Iterable<FlixelJsonValue> {
   }
 
   /**
-   * @return This value's field name inside its parent object, or {@code null} for array
-   *     elements and the root.
+   * Returns this value's field name inside its parent object, or {@code null} for array
+   * elements and the root.
+   *
+   * @return The field name, or {@code null} when this node is an array element or the root.
    */
   @Nullable
   public String getName() {
@@ -123,28 +127,36 @@ public final class FlixelJsonValue implements Iterable<FlixelJsonValue> {
   }
 
   /**
-   * @return {@code true} for object nodes.
+   * Returns {@code true} for object nodes.
+   *
+   * @return {@code true} when this node holds a JSON object.
    */
   public boolean isObject() {
     return kind == Kind.OBJECT;
   }
 
   /**
-   * @return {@code true} for array nodes.
+   * Returns {@code true} for array nodes.
+   *
+   * @return {@code true} when this node holds a JSON array.
    */
   public boolean isArray() {
     return kind == Kind.ARRAY;
   }
 
   /**
-   * @return {@code true} for JSON {@code null} nodes.
+   * Returns {@code true} for JSON {@code null} nodes.
+   *
+   * @return {@code true} when this node represents a JSON {@code null} value.
    */
   public boolean isNull() {
     return kind == Kind.NULL;
   }
 
   /**
-   * @return The number of children for objects and arrays, otherwise {@code 0}.
+   * Returns the number of children for objects and arrays, or {@code 0} otherwise.
+   *
+   * @return The child count, or {@code 0} when this is not a container node.
    */
   public int getSize() {
     return children != null ? children.getSize() : 0;
@@ -195,7 +207,10 @@ public final class FlixelJsonValue implements Iterable<FlixelJsonValue> {
   }
 
   /**
-   * @return This node's string payload, or a stringified number/boolean, or {@code null}.
+   * Returns this node's string payload, or a stringified number/boolean, or {@code null} for
+   * any other node type.
+   *
+   * @return The string representation of this node's value, or {@code null} for object, array, and null nodes.
    */
   @Nullable
   public String asString() {
@@ -208,8 +223,10 @@ public final class FlixelJsonValue implements Iterable<FlixelJsonValue> {
   }
 
   /**
-   * @return This node's numeric payload; strings are parsed, booleans map to 0/1, everything
-   *     else is {@code 0}.
+   * Returns this node's numeric payload; strings are parsed, booleans map to 0/1, and every
+   * other node type returns {@code 0}.
+   *
+   * @return The numeric value of this node, or {@code 0} for non-numeric types.
    */
   public double asDouble() {
     return switch (kind) {
@@ -221,22 +238,28 @@ public final class FlixelJsonValue implements Iterable<FlixelJsonValue> {
   }
 
   /**
-   * @return {@link #asDouble()} narrowed to a float.
+   * Returns {@link #asDouble()} narrowed to a float.
+   *
+   * @return The numeric value of this node cast to {@code float}.
    */
   public float asFloat() {
     return (float) asDouble();
   }
 
   /**
-   * @return {@link #asDouble()} narrowed to an int.
+   * Returns {@link #asDouble()} narrowed to an int.
+   *
+   * @return The numeric value of this node cast to {@code int}.
    */
   public int asInt() {
     return (int) asDouble();
   }
 
   /**
-   * @return This node's boolean payload; strings compare against {@code "true"}, numbers are
-   *     {@code true} when nonzero.
+   * Returns this node's boolean payload; strings compare against {@code "true"} and numbers are
+   * {@code true} when nonzero.
+   *
+   * @return The boolean interpretation of this node's value.
    */
   public boolean asBool() {
     return switch (kind) {

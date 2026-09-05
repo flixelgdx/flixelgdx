@@ -29,8 +29,18 @@ package org.flixelgdx.functional;
  */
 public interface FlixelVisible {
 
+  /**
+   * Returns {@code true} when this object is drawn; {@code false} when hidden.
+   *
+   * @return {@code true} if this object is visible and drawn, {@code false} if hidden.
+   */
   boolean isVisible();
 
+  /**
+   * Sets whether this object is visible and drawn.
+   *
+   * @param visible {@code true} to show, {@code false} to hide.
+   */
   void setVisible(boolean visible);
 
   /** Flips between visible and hidden. */

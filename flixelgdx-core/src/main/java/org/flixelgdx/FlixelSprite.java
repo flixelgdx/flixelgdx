@@ -229,7 +229,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * Constructs a new sprite at the given position with a loaded graphic.
    *
    * @param x The X coordinate to place the new sprite at.
-   * @param y The X coordinate to place the new sprite at.
+   * @param y The Y coordinate to place the new sprite at.
+   * @param graphicAssetKey The asset key of the graphic to load, or {@code null} to leave the sprite blank.
    */
   public FlixelSprite(float x, float y, String graphicAssetKey) {
     super(x, y);
@@ -241,6 +242,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Returns the existing controller or creates and assigns a new {@link FlixelAnimationController}
    * for {@code this} sprite.
+   *
+   * @return The animation controller for this sprite, never {@code null}.
    */
   @NotNull
   public FlixelAnimationController ensureAnimation() {
@@ -707,6 +710,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * and scale separately, so the hitbox is set to the frame's untrimmed source size times
    * {@code |scale|} so the box frames the whole drawn artwork (matching HaxeFlixel's
    * {@code frameWidth}/{@code frameHeight}), not just the trimmed pixels.
+   *
+   * @return {@code this} sprite for chaining.
    */
   public FlixelSprite updateHitbox() {
     if (currentFrame == null) {
@@ -845,6 +850,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Whether {@code this} sprite holds an owned {@link FlixelGraphic} (e.g. from {@link #makeGraphic(int, int, FlixelColor)}),
    * so CPU-side pixmap uploads are allowed without mutating a shared atlas.
+   *
+   * @return {@code true} if this sprite owns its graphic and may safely modify it.
    */
   public boolean hasOwnedGraphic() {
     return graphic != null && graphic.isOwned();
@@ -982,7 +989,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     return antialiasing;
   }
 
-  /** Returns whether linear texture filtering (antialiasing) is enabled for this sprite. */
+  /**
+   * Returns whether linear texture filtering (antialiasing) is enabled for this sprite.
+   *
+   * @return {@code true} if antialiasing is enabled for this sprite.
+   */
   public boolean getAntialiasing() {
     return antialiasing;
   }
@@ -1253,6 +1264,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectX = clipRectX;
   }
 
+  /**
+   * Shifts the clip rect X position by the given delta.
+   *
+   * @param clipRectX The amount to add to the current clip rect X position.
+   */
   public void changeClipRectX(float clipRectX) {
     this.clipRectX += clipRectX;
   }
@@ -1265,6 +1281,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectY = clipRectY;
   }
 
+  /**
+   * Shifts the clip rect Y position by the given delta.
+   *
+   * @param clipRectY The amount to add to the current clip rect Y position.
+   */
   public void changeClipRectY(float clipRectY) {
     this.clipRectY += clipRectY;
   }
@@ -1277,6 +1298,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectWidth = FlixelMath.clamp(clipRectWidth, 0, getWidth());
   }
 
+  /**
+   * Shifts the clip rect width by the given delta, clamping the result to {@code [0, getWidth()]}.
+   *
+   * @param clipRectWidth The amount to add to the current clip rect width.
+   */
   public void changeClipRectWidth(float clipRectWidth) {
     setClipRectWidth(this.clipRectWidth + clipRectWidth);
   }
@@ -1289,6 +1315,11 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     this.clipRectHeight = FlixelMath.clamp(clipRectHeight, 0, getHeight());
   }
 
+  /**
+   * Shifts the clip rect height by the given delta, clamping the result to {@code [0, getHeight()]}.
+   *
+   * @param clipRectHeight The amount to add to the current clip rect height.
+   */
   public void changeClipRectHeight(float clipRectHeight) {
     setClipRectHeight(this.clipRectHeight + clipRectHeight);
   }

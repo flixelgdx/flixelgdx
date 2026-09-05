@@ -161,7 +161,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return path;
   }
 
-  /** Returns {@code this}, since the sound is its own handle. */
   @NotNull
   @Override
   public FlixelSound get() {
@@ -170,11 +169,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
 
   @Override
   public boolean isLoaded() {
-    return true;
-  }
-
-  /** Returns whether this sound's audio data has been loaded. */
-  public boolean getLoaded() {
     return true;
   }
 
@@ -303,7 +297,11 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return backendIsLooping();
   }
 
-  /** Returns whether this sound is set to loop. */
+  /**
+   * Returns whether this sound is set to loop.
+   *
+   * @return {@code true} if looping is enabled.
+   */
   public boolean getLooped() {
     return backendIsLooping();
   }
@@ -328,7 +326,11 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return backendIsPlaying();
   }
 
-  /** Returns whether this sound is currently playing. */
+  /**
+   * Returns whether this sound is currently playing.
+   *
+   * @return {@code true} if the sound is actively playing.
+   */
   public boolean getPlaying() {
     return backendIsPlaying();
   }
@@ -451,10 +453,9 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   public FlixelSound fadeIn(float durationSeconds, float from, float to) {
     cancelFadeTween();
     setVolume(from);
-    FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
+    fadeTween = FlixelTween.tween(this, new FlixelTweenSettings(FlixelTweenType.ONESHOT)
         .setDuration(durationSeconds)
-        .addGoal(this::getVolume, to, this::setVolume);
-    fadeTween = FlixelTween.tween(this, settings);
+        .addGoal(this::getVolume, to, this::setVolume));
     return this;
   }
 
@@ -479,10 +480,9 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   @NotNull
   public FlixelSound fadeOut(float durationSeconds, float to) {
     cancelFadeTween();
-    FlixelTweenSettings settings = new FlixelTweenSettings(FlixelTweenType.ONESHOT)
+    fadeTween = FlixelTween.tween(this, new FlixelTweenSettings(FlixelTweenType.ONESHOT)
         .setDuration(durationSeconds)
-        .addGoal(this::getVolume, to, this::setVolume);
-    fadeTween = FlixelTween.tween(this, settings);
+        .addGoal(this::getVolume, to, this::setVolume));
     return this;
   }
 
@@ -544,11 +544,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return autoDestroy;
   }
 
-  /** Returns whether this sound auto-destroys when playback completes. */
-  public boolean getAutoDestroy() {
-    return autoDestroy;
-  }
-
   /**
    * Sets whether this sound auto-destroys when playback completes.
    *
@@ -565,7 +560,11 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return persist;
   }
 
-  /** Returns whether this sound persists across state transitions. */
+  /**
+   * Returns whether this sound persists across state transitions.
+   *
+   * @return {@code true} if this sound persists when the game state changes.
+   */
   public boolean getPersist() {
     return persist;
   }
@@ -752,17 +751,17 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   protected abstract void backendStop();
 
   /**
-   * @return {@code true} if the backend voice is actively playing.
+   * Returns {@code true} if the backend voice is actively playing.
    */
   protected abstract boolean backendIsPlaying();
 
   /**
-   * @return {@code true} if the cursor is at or past the end of the stream.
+   * Returns {@code true} if the cursor is at or past the end of the stream.
    */
   protected abstract boolean backendIsEnd();
 
   /**
-   * @return The backend volume ({@code 0} = silent, {@code 1} = default).
+   * Returns the backend volume ({@code 0} = silent, {@code 1} = default).
    */
   protected abstract float backendGetVolume();
 
@@ -788,7 +787,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   protected abstract void backendSetPan(float pan);
 
   /**
-   * @return The current cursor position in seconds.
+   * Returns the current cursor position in seconds.
    */
   protected abstract float backendGetCursor();
 
@@ -800,12 +799,12 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   protected abstract void backendSeek(float seconds);
 
   /**
-   * @return The total sound length in seconds, or {@code 0} when unknown.
+   * Returns the total sound length in seconds, or {@code 0} when unknown.
    */
   protected abstract float backendGetLength();
 
   /**
-   * @return {@code true} when the backend voice loops at the end.
+   * Returns {@code true} when the backend voice loops at the end.
    */
   protected abstract boolean backendIsLooping();
 

@@ -38,6 +38,11 @@ public class FlixelLinearPath extends FlixelMotion {
   private int pointCount;
   private float totalDistance;
 
+  /**
+   * Creates a new linear path tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelLinearPath(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }
@@ -49,6 +54,13 @@ public class FlixelLinearPath extends FlixelMotion {
     super.reset();
   }
 
+  /**
+   * Appends a waypoint to the path.
+   *
+   * @param x The X coordinate of the waypoint.
+   * @param y The Y coordinate of the waypoint.
+   * @return {@code this} for chaining.
+   */
   public FlixelLinearPath addPoint(float x, float y) {
     points.add(new FlixelVector(x, y));
     return this;

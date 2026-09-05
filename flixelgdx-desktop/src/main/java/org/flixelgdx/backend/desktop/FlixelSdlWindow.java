@@ -84,16 +84,12 @@ public class FlixelSdlWindow implements FlixelWindow {
     cachedY = y;
   }
 
-  /**
-   * @return {@code true} once {@link #close()} has been called, so the runner can exit the loop.
-   */
+  /** Returns {@code true} once {@link #close()} has been called, so the runner can exit the loop. */
   boolean isCloseRequested() {
     return closeRequested;
   }
 
-  /**
-   * @return Whether continuous rendering is currently on.
-   */
+  /** Returns whether continuous rendering is currently on. */
   boolean isContinuousRendering() {
     return continuousRendering;
   }

@@ -135,6 +135,7 @@ public final class FlixelHtml5AssetPreloader {
   /** A zero-argument callback the preloader invokes when it finishes or fails. */
   @JSFunctor
   public interface PreloadCallback extends JSObject {
+    /** Invoked by the preloader when all assets have finished loading or an error occurred. */
     void run();
   }
 }

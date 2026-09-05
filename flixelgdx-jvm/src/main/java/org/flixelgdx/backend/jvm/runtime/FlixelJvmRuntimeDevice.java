@@ -27,6 +27,7 @@ import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.flixelgdx.collections.FlixelArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +35,6 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.jar.JarFile;
 
@@ -268,7 +268,7 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
 
   @Nullable
   private static String inferIdeProjectRootDirectory() {
-    ArrayList<String> roots = collectNormalizedModuleRootsFromClasspath();
+    FlixelArray<String> roots = collectNormalizedModuleRootsFromClasspath();
     if (roots.isEmpty()) {
       return null;
     }
@@ -296,7 +296,7 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
    * @return The suggested multi-module project directory, or {@code null} if no ancestor matched any root.
    */
   @Nullable
-  private static String deepestUserDirAncestorCoveringMostModuleRoots(String userDir, ArrayList<String> roots) {
+  private static String deepestUserDirAncestorCoveringMostModuleRoots(String userDir, FlixelArray<String> roots) {
     if (userDir == null || userDir.isEmpty()) {
       return null;
     }
@@ -324,9 +324,9 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
     return bestCount > 0 ? best : null;
   }
 
-  private static int countRootsUnderAncestor(String ancestor, ArrayList<String> roots) {
+  private static int countRootsUnderAncestor(String ancestor, FlixelArray<String> roots) {
     int count = 0;
-    for (int i = 0, n = roots.size(); i < n; i++) {
+    for (int i = 0, n = roots.getSize(); i < n; i++) {
       if (pathAncestorMatches(ancestor, roots.get(i))) {
         count++;
       }
@@ -393,8 +393,8 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
     return ':';
   }
 
-  private static ArrayList<String> collectNormalizedModuleRootsFromClasspath() {
-    ArrayList<String> roots = new ArrayList<>(8);
+  private static FlixelArray<String> collectNormalizedModuleRootsFromClasspath() {
+    FlixelArray<String> roots = new FlixelArray<>(8);
     String cp = System.getProperty("java.class.path", "");
     char sep = classpathSeparatorChar();
     int start = 0;
@@ -405,7 +405,7 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
       String moduleRoot = moduleRootFromClasspathEntry(entry);
       if (moduleRoot != null) {
         String normalized = normalizePathForCompare(moduleRoot);
-        if (!normalized.isEmpty() && !roots.contains(normalized)) {
+        if (!normalized.isEmpty() && !roots.contains(normalized, false)) {
           roots.add(normalized);
         }
       }
@@ -421,14 +421,14 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Nullable
-  private static String longestModuleRootMatchingUserDir(ArrayList<String> roots, String userDir) {
+  private static String longestModuleRootMatchingUserDir(FlixelArray<String> roots, String userDir) {
     if (userDir == null || userDir.isEmpty()) {
       return null;
     }
     String ud = normalizePathForCompare(userDir);
     String best = null;
     int bestLen = -1;
-    for (int i = 0, n = roots.size(); i < n; i++) {
+    for (int i = 0, n = roots.getSize(); i < n; i++) {
       String r = roots.get(i);
       if (pathPrefixMatches(ud, r) && r.length() > bestLen) {
         bestLen = r.length();
@@ -446,10 +446,10 @@ public class FlixelJvmRuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Nullable
-  private static String longestCommonDirectoryPrefix(ArrayList<String> paths) {
+  private static String longestCommonDirectoryPrefix(FlixelArray<String> paths) {
     String first = paths.get(0);
     int end = first.length();
-    for (int i = 1, n = paths.size(); i < n; i++) {
+    for (int i = 1, n = paths.getSize(); i < n; i++) {
       end = sharedPrefixLength(first, paths.get(i), end);
       if (end == 0) {
         return null;

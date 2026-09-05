@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<!--
+  Checkstyle suppressions for FlixelGDX.
+
+  Add entries here sparingly and only for cases where the check is structurally
+  inapplicable (e.g. generated code). Source-level @SuppressWarnings is preferred
+  for individual method or field exceptions.
+-->
+
+<suppressions>
+</suppressions>

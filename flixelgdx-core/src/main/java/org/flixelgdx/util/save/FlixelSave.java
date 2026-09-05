@@ -156,7 +156,11 @@ public class FlixelSave implements FlixelDestroyable {
     return bound;
   }
 
-  /** Returns whether this save object is bound to a file. */
+  /**
+   * Returns whether this save object is bound to a file.
+   *
+   * @return {@code true} if this save is bound to a file, {@code false} otherwise.
+   */
   public boolean getBound() {
     return bound;
   }
@@ -236,7 +240,11 @@ public class FlixelSave implements FlixelDestroyable {
     return data.isEmpty();
   }
 
-  /** Returns whether the bound save currently holds no data. */
+  /**
+   * Returns whether the bound save currently holds no data.
+   *
+   * @return {@code true} if the save holds no data, {@code false} otherwise.
+   */
   public boolean getEmpty() {
     return data.isEmpty();
   }

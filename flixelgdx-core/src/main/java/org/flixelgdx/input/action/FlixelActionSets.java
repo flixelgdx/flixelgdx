@@ -90,7 +90,11 @@ public final class FlixelActionSets {
     }
   }
 
-  /** For tests: number of registered sets. */
+  /**
+   * For tests: number of registered sets.
+   *
+   * @return The number of currently registered action sets.
+   */
   public static int registeredCountForTests() {
     return registered.getSize();
   }

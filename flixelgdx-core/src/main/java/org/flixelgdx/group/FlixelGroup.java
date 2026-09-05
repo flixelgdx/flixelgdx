@@ -74,6 +74,7 @@ public class FlixelGroup<T> implements FlixelGroupable<T> {
     members = new FlixelArray<>(arrayFactory);
   }
 
+  /** Lazily initializes the member array if it has not been created yet. */
   public void ensureMembers() {
     if (members == null) {
       members = new FlixelArray<>(memberArrayFactory);

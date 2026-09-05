@@ -46,40 +46,54 @@ import org.jetbrains.annotations.NotNull;
 public interface FlixelMonitor {
 
   /**
-   * @return A human-readable name for the monitor (for example, its model), or a generic label when
-   *     the platform does not provide one; never {@code null}.
+   * Returns a human-readable name for the monitor (for example, its model), or a generic label when
+   * the platform does not provide one; never {@code null}.
+   *
+   * @return The monitor's display name, never {@code null}.
    */
   @NotNull
   String getName();
 
   /**
-   * @return The monitor's left edge, in virtual-desktop coordinates that span all screens.
+   * Returns the monitor's left edge, in virtual-desktop coordinates that span all screens.
+   *
+   * @return The X coordinate of the monitor's left edge in virtual-desktop space.
    */
   int getVirtualX();
 
   /**
-   * @return The monitor's top edge, in virtual-desktop coordinates that span all screens.
+   * Returns the monitor's top edge, in virtual-desktop coordinates that span all screens.
+   *
+   * @return The Y coordinate of the monitor's top edge in virtual-desktop space.
    */
   int getVirtualY();
 
   /**
-   * @return The monitor's width in physical pixels at its current mode.
+   * Returns the monitor's width in physical pixels at its current mode.
+   *
+   * @return The monitor's width in pixels.
    */
   int getWidth();
 
   /**
-   * @return The monitor's height in physical pixels at its current mode.
+   * Returns the monitor's height in physical pixels at its current mode.
+   *
+   * @return The monitor's height in pixels.
    */
   int getHeight();
 
   /**
-   * @return The monitor's refresh rate in hertz, or {@code 0.0f} when the platform cannot report it.
+   * Returns the monitor's refresh rate in hertz, or {@code 0.0f} when the platform cannot report it.
+   *
+   * @return The refresh rate in hertz, or {@code 0.0f} when unavailable.
    */
   float getRefreshRate();
 
   /**
-   * @return {@code true} if this is the primary monitor, where the OS typically places new windows
-   *     and system UI.
+   * Returns {@code true} if this is the primary monitor, where the OS typically places new windows
+   * and system UI.
+   *
+   * @return {@code true} if this is the primary monitor, {@code false} otherwise.
    */
   boolean isPrimary();
 }

@@ -126,6 +126,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
 
   /**
    * The sprite that owns this controller. Package use includes spritemap loading helpers.
+   *
+   * @return The sprite that created and owns this controller; never {@code null}.
    */
   @NotNull
   public FlixelSprite getOwner() {
@@ -381,6 +383,8 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
+   * Returns {@code true} if a per-animation offset is registered for the given name.
+   *
    * @param name The animation name to check.
    * @return {@code true} if a per-animation offset is registered for {@code name}.
    */
@@ -437,20 +441,22 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return (sourceSize - hitboxSize) * 0.5f;
   }
 
+  /** Pauses animation playback so the current frame is held until {@link #resume()} is called. */
   public void pause() {
     paused = true;
   }
 
+  /** Resumes animation playback after a previous {@link #pause()} call. */
   public void resume() {
     paused = false;
   }
 
+  /**
+   * Returns {@code true} when animation playback is currently paused.
+   *
+   * @return {@code true} when playback is paused, {@code false} when it is running.
+   */
   public boolean isPaused() {
-    return paused;
-  }
-
-  /** Returns whether animation playback is currently paused. */
-  public boolean getPaused() {
     return paused;
   }
 
@@ -459,10 +465,20 @@ public class FlixelAnimationController implements FlixelUpdatable {
     playDirection = -playDirection;
   }
 
+  /**
+   * Returns the current play direction: {@code 1} for forward, {@code -1} for reversed.
+   *
+   * @return {@code 1} when playing forward, {@code -1} when playing in reverse.
+   */
   public float getPlayDirection() {
     return playDirection;
   }
 
+  /**
+   * Sets the play direction for animation playback.
+   *
+   * @param playDirection {@code 1} for forward, {@code -1} for reversed; clamped to those values.
+   */
   public void setPlayDirection(int playDirection) {
     playDirection = FlixelMath.clamp(playDirection, -1, 1);
     this.playDirection = playDirection >= 0 ? 1 : -1;
@@ -656,6 +672,11 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
   }
 
+  /**
+   * Returns {@code true} when the current non-looping animation has played through all frames.
+   *
+   * @return {@code true} when the animation has finished, {@code false} when it is still running or looping.
+   */
   public boolean isFinished() {
     FlixelAnimation<FlixelFrame> anim = animations.get(currentAnim);
     if (anim == null) {
@@ -663,11 +684,6 @@ public class FlixelAnimationController implements FlixelUpdatable {
     }
     float duration = anim.getAnimationDuration();
     return !looping && duration > 0f && stateTime >= duration;
-  }
-
-  /** Returns whether the current animation has finished playing (only meaningful for non-looping animations). */
-  public boolean getFinished() {
-    return isFinished();
   }
 
   @Override
@@ -747,7 +763,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * <p>For non-looping playback that has already finished, this returns the <strong>last</strong>
    * keyframe index ({@code keyframeCount - 1}). For looping playback, it returns the wrapped index
-   * inside {@code [0, keyframeCount)}. Useful for multi-part BTA/texture-atlas characters driven
+   * inside {@code [0, keyframeCount)}. Useful for multipart BTA/texture-atlas characters driven
    * outside a single-frame texture (for example {@link FlixelAnimateSprite}).
    *
    * @return The current keyframe index. Always {@code >= 0}.
@@ -816,17 +832,19 @@ public class FlixelAnimationController implements FlixelUpdatable {
     return idx;
   }
 
+  /**
+   * Returns whether the current animation is set to loop.
+   *
+   * @return {@code true} when the current animation repeats, {@code false} when it plays once and stops.
+   */
   public boolean isLooping() {
     return looping;
   }
 
-  /** Returns whether the current animation is set to loop. */
-  public boolean getLooping() {
-    return looping;
-  }
-
   /**
-   * @return The linked {@link FlixelAnimationStateMachine}, or {@code null} if none is set.
+   * Returns the linked {@link FlixelAnimationStateMachine}, or {@code null} if none is set.
+   *
+   * @return The linked state machine, or {@code null} when none has been attached.
    */
   @Nullable
   public FlixelAnimationStateMachine getStateMachine() {
@@ -839,7 +857,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    *
    * <p>This is the recommended way to drive an FSM: link it once and update only the sprite each
    * frame. The machine still works independently if you prefer to call its own
-   * {@link FlixelAnimationStateMachine#update(float)} by hand - just do not link it here.
+   * {@link FlixelAnimationStateMachine#update(float)} by hand, just do not link it here.
    *
    * <pre>{@code
    * var fsm = new FlixelAnimationStateMachine(player);

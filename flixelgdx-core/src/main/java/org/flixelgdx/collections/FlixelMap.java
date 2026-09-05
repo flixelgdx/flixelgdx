@@ -323,7 +323,8 @@ public class FlixelMap<K, V> {
 
   private abstract static class MapIterator<K, V> {
     final FlixelMap<K, V> map;
-    int nextIndex, currentIndex;
+    int nextIndex;
+    int currentIndex;
     boolean hasNext;
 
     MapIterator(FlixelMap<K, V> map) {

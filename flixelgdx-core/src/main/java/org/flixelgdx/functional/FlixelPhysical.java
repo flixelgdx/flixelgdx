@@ -36,16 +36,32 @@ package org.flixelgdx.functional;
  */
 public interface FlixelPhysical extends FlixelPositional {
 
-  /** Horizontal velocity in pixels per second. */
+  /**
+   * Horizontal velocity in pixels per second.
+   *
+   * @return The current horizontal velocity.
+   */
   float getVelocityX();
 
-  /** Sets horizontal velocity in pixels per second. */
+  /**
+   * Sets horizontal velocity in pixels per second.
+   *
+   * @param velocityX The new horizontal velocity.
+   */
   void setVelocityX(float velocityX);
 
-  /** Vertical velocity in pixels per second. */
+  /**
+   * Vertical velocity in pixels per second.
+   *
+   * @return The current vertical velocity.
+   */
   float getVelocityY();
 
-  /** Sets vertical velocity in pixels per second. */
+  /**
+   * Sets vertical velocity in pixels per second.
+   *
+   * @param velocityY The new vertical velocity.
+   */
   void setVelocityY(float velocityY);
 
   /**
@@ -56,16 +72,32 @@ public interface FlixelPhysical extends FlixelPositional {
    */
   void setVelocity(float vx, float vy);
 
-  /** Horizontal acceleration in pixels per second squared. */
+  /**
+   * Horizontal acceleration in pixels per second squared.
+   *
+   * @return The current horizontal acceleration.
+   */
   float getAccelerationX();
 
-  /** Sets horizontal acceleration in pixels per second squared. */
+  /**
+   * Sets horizontal acceleration in pixels per second squared.
+   *
+   * @param ax The new horizontal acceleration.
+   */
   void setAccelerationX(float ax);
 
-  /** Vertical acceleration in pixels per second squared. */
+  /**
+   * Vertical acceleration in pixels per second squared.
+   *
+   * @return The current vertical acceleration.
+   */
   float getAccelerationY();
 
-  /** Sets vertical acceleration in pixels per second squared. */
+  /**
+   * Sets vertical acceleration in pixels per second squared.
+   *
+   * @param ay The new vertical acceleration.
+   */
   void setAccelerationY(float ay);
 
   /**
@@ -83,7 +115,11 @@ public interface FlixelPhysical extends FlixelPositional {
    */
   float getDragX();
 
-  /** Sets horizontal drag. */
+  /**
+   * Sets horizontal drag.
+   *
+   * @param dx The new horizontal drag value.
+   */
   void setDragX(float dx);
 
   /**
@@ -93,7 +129,11 @@ public interface FlixelPhysical extends FlixelPositional {
    */
   float getDragY();
 
-  /** Sets vertical drag. */
+  /**
+   * Sets vertical drag.
+   *
+   * @param dy The new vertical drag value.
+   */
   void setDragY(float dy);
 
   /**
@@ -104,16 +144,32 @@ public interface FlixelPhysical extends FlixelPositional {
    */
   void setDrag(float dx, float dy);
 
-  /** Maximum absolute horizontal velocity. */
+  /**
+   * Maximum absolute horizontal velocity.
+   *
+   * @return The current maximum horizontal velocity.
+   */
   float getMaxVelocityX();
 
-  /** Sets maximum absolute horizontal velocity. */
+  /**
+   * Sets maximum absolute horizontal velocity.
+   *
+   * @param mvx The new maximum horizontal velocity.
+   */
   void setMaxVelocityX(float mvx);
 
-  /** Maximum absolute vertical velocity. */
+  /**
+   * Maximum absolute vertical velocity.
+   *
+   * @return The current maximum vertical velocity.
+   */
   float getMaxVelocityY();
 
-  /** Sets maximum absolute vertical velocity. */
+  /**
+   * Sets maximum absolute vertical velocity.
+   *
+   * @param mvy The new maximum vertical velocity.
+   */
   void setMaxVelocityY(float mvy);
 
   /**
@@ -124,28 +180,60 @@ public interface FlixelPhysical extends FlixelPositional {
    */
   void setMaxVelocity(float mvx, float mvy);
 
-  /** Rotational speed in degrees per second. */
+  /**
+   * Rotational speed in degrees per second.
+   *
+   * @return The current angular velocity.
+   */
   float getAngularVelocity();
 
-  /** Sets rotational speed in degrees per second. */
+  /**
+   * Sets rotational speed in degrees per second.
+   *
+   * @param av The new angular velocity.
+   */
   void setAngularVelocity(float av);
 
-  /** Rotational acceleration in degrees per second squared. */
+  /**
+   * Rotational acceleration in degrees per second squared.
+   *
+   * @return The current angular acceleration.
+   */
   float getAngularAcceleration();
 
-  /** Sets rotational acceleration in degrees per second squared. */
+  /**
+   * Sets rotational acceleration in degrees per second squared.
+   *
+   * @param aa The new angular acceleration.
+   */
   void setAngularAcceleration(float aa);
 
-  /** Rotational drag in degrees per second squared. */
+  /**
+   * Rotational drag in degrees per second squared.
+   *
+   * @return The current angular drag.
+   */
   float getAngularDrag();
 
-  /** Sets rotational drag in degrees per second squared. */
+  /**
+   * Sets rotational drag in degrees per second squared.
+   *
+   * @param ad The new angular drag.
+   */
   void setAngularDrag(float ad);
 
-  /** Maximum angular velocity in degrees per second. */
+  /**
+   * Maximum angular velocity in degrees per second.
+   *
+   * @return The current maximum angular velocity.
+   */
   float getMaxAngularVelocity();
 
-  /** Sets maximum angular velocity in degrees per second. */
+  /**
+   * Sets maximum angular velocity in degrees per second.
+   *
+   * @param mav The new maximum angular velocity.
+   */
   void setMaxAngularVelocity(float mav);
 
   /**

@@ -58,6 +58,7 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
   /** Whether keyboard input is currently enabled. When false, all key checks return false. */
   public boolean enabled = true;
 
+  /** Creates a new key input manager with all keys in the released state. */
   public FlixelKeyInputManager() {}
 
   @Override

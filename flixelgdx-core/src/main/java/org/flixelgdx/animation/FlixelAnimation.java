@@ -137,21 +137,27 @@ public class FlixelAnimation<T> {
   }
 
   /**
-   * @return The total duration of one pass through all frames, in seconds.
+   * Returns the total duration of one pass through all frames, in seconds.
+   *
+   * @return The total animation duration in seconds.
    */
   public float getAnimationDuration() {
     return keyFrames.length * frameDuration;
   }
 
   /**
-   * @return The ordered key frames backing this animation. Treat as read-only.
+   * Returns the ordered key frames backing this animation. Treat as read-only.
+   *
+   * @return The array of key frames in playback order.
    */
   public T @NotNull [] getKeyFrames() {
     return keyFrames;
   }
 
   /**
-   * @return Seconds each frame is shown.
+   * Returns the duration in seconds each frame is shown.
+   *
+   * @return The per-frame duration in seconds.
    */
   public float getFrameDuration() {
     return frameDuration;
@@ -167,7 +173,9 @@ public class FlixelAnimation<T> {
   }
 
   /**
-   * @return The current play mode.
+   * Returns the current play mode.
+   *
+   * @return The current {@link PlayMode}.
    */
   @NotNull
   public PlayMode getPlayMode() {

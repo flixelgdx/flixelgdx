@@ -216,7 +216,9 @@ public interface FlixelBatch extends FlixelDestroyable {
   void setColor(float r, float g, float b, float a);
 
   /**
-   * @return The blend mode applied to subsequent draws. Defaults to {@link FlixelBlendMode#NORMAL}.
+   * Returns the blend mode applied to subsequent draws. Defaults to {@link FlixelBlendMode#NORMAL}.
+   *
+   * @return The current blend mode, never {@code null}.
    */
   @NotNull
   FlixelBlendMode getBlendMode();
@@ -229,7 +231,9 @@ public interface FlixelBatch extends FlixelDestroyable {
   void setBlendMode(@Nullable FlixelBlendMode mode);
 
   /**
-   * @return The custom shader in effect, or {@code null} when the backend's default sprite shader is active.
+   * Returns the custom shader in effect, or {@code null} when the backend's default sprite shader is active.
+   *
+   * @return The current custom shader, or {@code null} if the default shader is active.
    */
   @Nullable
   FlixelShader getShader();

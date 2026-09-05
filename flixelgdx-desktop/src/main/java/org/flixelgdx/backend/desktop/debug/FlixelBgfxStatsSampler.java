@@ -134,12 +134,20 @@ public final class FlixelBgfxStatsSampler {
     return count;
   }
 
-  /** Milliseconds per CPU timer tick from the most recent {@link #sample(BGFXStats)}. */
+  /**
+   * Milliseconds per CPU timer tick from the most recent {@link #sample(BGFXStats)}.
+   *
+   * @return The milliseconds per CPU timer tick.
+   */
   public double getCpuToMs() {
     return cpuToMs;
   }
 
-  /** Milliseconds per GPU timer tick from the most recent {@link #sample(BGFXStats)}, or {@code 0} if untimed. */
+  /**
+   * Milliseconds per GPU timer tick from the most recent {@link #sample(BGFXStats)}, or {@code 0} if untimed.
+   *
+   * @return The milliseconds per GPU timer tick, or {@code 0} if GPU timing is unavailable.
+   */
   public double getGpuToMs() {
     return gpuToMs;
   }

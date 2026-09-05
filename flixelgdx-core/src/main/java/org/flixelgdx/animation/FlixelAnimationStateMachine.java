@@ -343,7 +343,9 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
   }
 
   /**
-   * @return The current logical state, or {@code ""} if {@link #setState} has not run yet.
+   * Returns the current logical state, or {@code ""} if {@link #setState} has not run yet.
+   *
+   * @return The current state name, or an empty string if no state has been set yet.
    */
   @NotNull
   public String getState() {
@@ -351,6 +353,8 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
   }
 
   /**
+   * Returns {@code true} if a state with the given name is registered.
+   *
    * @param name The state name to look up.
    * @return {@code true} if a state with that name is registered.
    */

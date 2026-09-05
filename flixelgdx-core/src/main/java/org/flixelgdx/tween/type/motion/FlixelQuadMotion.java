@@ -38,6 +38,11 @@ public class FlixelQuadMotion extends FlixelMotion {
   private float toX;
   private float toY;
 
+  /**
+   * Creates a new quadratic motion tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelQuadMotion(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

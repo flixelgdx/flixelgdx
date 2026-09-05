@@ -148,18 +148,38 @@ public class FlixelLogger {
         : absolutePathToLogsFolder.replaceAll("/$", "");
   }
 
+  /**
+   * Returns the path to the folder where log files are written.
+   *
+   * @return The absolute path to the logs folder, or {@code null} if using the default location.
+   */
   public String getLogsFolder() {
     return customLogsFolderPath;
   }
 
+  /**
+   * Returns {@code true} when the logger is permitted to write log files to disk.
+   *
+   * @return {@code true} if file logging is enabled, {@code false} otherwise.
+   */
   public boolean canStoreLogs() {
     return canStoreLogs;
   }
 
+  /**
+   * Sets whether the logger may write log files to disk.
+   *
+   * @param canStoreLogs {@code true} to allow file storage, {@code false} to disable it.
+   */
   public void setCanStoreLogs(boolean canStoreLogs) {
     this.canStoreLogs = canStoreLogs;
   }
 
+  /**
+   * Returns the maximum number of log files kept before older ones are deleted.
+   *
+   * @return The maximum number of log files to retain on disk.
+   */
   public int getMaxLogFiles() {
     return maxLogFiles;
   }
@@ -923,26 +943,65 @@ public class FlixelLogger {
     this.defaultTag = defaultTag != null ? defaultTag : "";
   }
 
+  /**
+   * Logs a message at the INFO level under the given tag.
+   *
+   * @param tag The log tag, used to identify the source of the message.
+   * @param message The message to log.
+   */
   public void log(String tag, String message) {
     info(tag, message);
   }
 
+  /**
+   * Logs a message and exception at the ERROR level under the given tag.
+   *
+   * @param tag The log tag, used to identify the source of the message.
+   * @param message The message to log.
+   * @param exception The exception to attach to the log entry.
+   */
   public void log(String tag, String message, Throwable exception) {
     error(tag, message, exception);
   }
 
+  /**
+   * Logs a message at the ERROR level under the given tag.
+   *
+   * @param tag The log tag, used to identify the source of the message.
+   * @param message The message to log.
+   */
   public void error(String tag, String message) {
     error(tag, message, (Throwable) null);
   }
 
+  /**
+   * Logs a message and exception at the ERROR level under the given tag.
+   *
+   * @param tag The log tag, used to identify the source of the message.
+   * @param message The message to log.
+   * @param exception The exception to attach to the log entry, or {@code null} for none.
+   */
   public void error(String tag, String message, Throwable exception) {
     error(tag, (Object) message, exception);
   }
 
+  /**
+   * Logs a message at the DEBUG level under the given tag.
+   *
+   * @param tag The log tag, used to identify the source of the message.
+   * @param message The message to log.
+   */
   public void debug(String tag, String message) {
     debug(tag, (Object) message);
   }
 
+  /**
+   * Logs a message and exception at the DEBUG level under the given tag.
+   *
+   * @param tag The log tag, used to identify the source of the message.
+   * @param message The message to log.
+   * @param exception The exception to attach to the log entry, or {@code null} for none.
+   */
   public void debug(String tag, String message, Throwable exception) {
     String msg = (exception != null) ? (message + " | Exception: " + exception) : message;
     outputLog(tag, msg, FlixelLogLevel.DEBUG, false, null, 0, null, null);

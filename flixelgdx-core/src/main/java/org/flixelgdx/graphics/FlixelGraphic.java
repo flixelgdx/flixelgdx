@@ -130,7 +130,11 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     return owned || assets.getRaw(getResolvedPath()) != null;
   }
 
-  /** Returns whether this graphic's texture has been loaded into memory. */
+  /**
+   * Returns whether this graphic's texture has been loaded into memory.
+   *
+   * @return {@code true} if the texture is currently loaded and ready to use.
+   */
   public boolean getLoaded() {
     return isLoaded();
   }
@@ -140,7 +144,11 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     return persist;
   }
 
-  /** Returns whether this graphic is marked to persist across state transitions. */
+  /**
+   * Returns whether this graphic is marked to persist across state transitions.
+   *
+   * @return {@code true} if this graphic survives a state switch without being evicted.
+   */
   public boolean getPersist() {
     return persist;
   }
@@ -253,7 +261,11 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     return owned;
   }
 
-  /** Returns whether this graphic owns its texture and destroys it on eviction. */
+  /**
+   * Returns whether this graphic owns its texture and destroys it on eviction.
+   *
+   * @return {@code true} if this graphic is responsible for destroying its texture.
+   */
   public boolean getOwned() {
     return owned;
   }

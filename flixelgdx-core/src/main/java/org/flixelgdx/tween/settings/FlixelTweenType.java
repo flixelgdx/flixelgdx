@@ -41,27 +41,47 @@ public enum FlixelTweenType {
   /** Like {@link #LOOPING} but every second run is in reverse. {@code onComplete} is called every cycle. */
   PINGPONG;
 
-  /** True for LOOPING and PINGPONG (tween restarts and may flip direction). */
+  /**
+   * True for LOOPING and PINGPONG (tween restarts and may flip direction).
+   *
+   * @return {@code true} if this tween type loops or ping-pongs.
+   */
   public boolean isLooping() {
     return this == LOOPING || this == PINGPONG;
   }
 
-  /** Returns true for LOOPING and PINGPONG tween types. */
+  /**
+   * Returns true for LOOPING and PINGPONG tween types.
+   *
+   * @return {@code true} if this tween type loops or ping-pongs.
+   */
   public boolean getLooping() {
     return this == LOOPING || this == PINGPONG;
   }
 
-  /** True if this type plays in reverse (initial direction for {@link #BACKWARD}). Toggled each cycle for {@link #PINGPONG}. */
+  /**
+   * True if this type plays in reverse (initial direction for {@link #BACKWARD}). Toggled each cycle for {@link #PINGPONG}.
+   *
+   * @return {@code true} if this tween type starts or runs in reverse.
+   */
   public boolean isBackward() {
     return this == BACKWARD;
   }
 
-  /** Returns true if this tween type plays in reverse. */
+  /**
+   * Returns true if this tween type plays in reverse.
+   *
+   * @return {@code true} if this tween type starts or runs in reverse.
+   */
   public boolean getBackward() {
     return this == BACKWARD;
   }
 
-  /** True only for {@link #ONESHOT}: tween is removed from the manager when it finishes. */
+  /**
+   * True only for {@link #ONESHOT}: tween is removed from the manager when it finishes.
+   *
+   * @return {@code true} if this tween type removes itself from the manager on completion.
+   */
   public boolean removeOnFinish() {
     return this == ONESHOT;
   }

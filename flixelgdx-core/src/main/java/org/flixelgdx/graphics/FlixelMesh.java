@@ -44,7 +44,9 @@ import org.jetbrains.annotations.NotNull;
 public interface FlixelMesh extends FlixelDestroyable {
 
   /**
-   * @return The layout describing how each vertex in this mesh is arranged.
+   * Returns the layout describing how each vertex in this mesh is arranged.
+   *
+   * @return The vertex layout; never {@code null}.
    */
   @NotNull
   FlixelVertexLayout getLayout();
@@ -70,12 +72,16 @@ public interface FlixelMesh extends FlixelDestroyable {
   void setIndices(short @NotNull [] indices, int offset, int count);
 
   /**
-   * @return How many vertices this mesh currently holds.
+   * Returns how many vertices this mesh currently holds.
+   *
+   * @return The number of vertices stored in the vertex buffer.
    */
   int getVertexCount();
 
   /**
-   * @return How many indices this mesh currently holds, or {@code 0} when it has no index buffer.
+   * Returns how many indices this mesh currently holds, or {@code 0} when it has no index buffer.
+   *
+   * @return The number of indices stored in the index buffer, or {@code 0} if none.
    */
   int getIndexCount();
 }

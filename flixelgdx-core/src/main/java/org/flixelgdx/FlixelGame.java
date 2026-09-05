@@ -260,13 +260,13 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private int desktopTransparencyRestoreCameraCount;
 
-  /** Should the game pause audio when the application goes to the background? */
+  /** Whether the game should pause audio when the application goes to the background. */
   public boolean autoPause = true;
 
-  /** Is the game currently closing? */
+  /** Whether the game is currently in the process of closing. */
   private boolean isClosing = false;
 
-  /** Has the game successfully shut down? */
+  /** Whether the game has successfully shut down. */
   private boolean isClosed = false;
 
   /** When true, skips gameplay/state/camera follow updates (debug pause). */
@@ -882,7 +882,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return autoPause;
   }
 
-  /** @see #destroy() */
+  /** Delegates to {@link #destroy()}. */
   public final void dispose() {
     destroy();
   }
@@ -1190,6 +1190,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return bgColor;
   }
 
+  /**
+   * Sets the game's background color.
+   *
+   * @param bgColor The new background color; ignored when {@code null}.
+   */
   public void setBgColor(@NotNull FlixelColor bgColor) {
     if (bgColor == null) {
       return;
@@ -1207,19 +1212,29 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return config.isTransparentFramebuffer();
   }
 
-  /** Returns whether an alpha-capable framebuffer was requested in the game's {@link Config}. */
+  /**
+   * Returns whether an alpha-capable framebuffer was requested in the game's {@link Config}.
+   *
+   * @return {@code true} when the config requested a transparent framebuffer.
+   */
   public boolean getTransparentFramebufferRequested() {
     return config.isTransparentFramebuffer();
   }
 
   /**
-   * @return {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
+   * Returns {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
+   *
+   * @return {@code true} when desktop transparency is currently active.
    */
   public boolean isTransparencyActive() {
     return desktopTransparencyActive;
   }
 
-  /** Returns {@code true} after desktop transparency was applied via {@link #applyBackdropForDesktopTransparency(boolean)}. */
+  /**
+   * Returns {@code true} after desktop transparency was applied via {@link #applyBackdropForDesktopTransparency(boolean)}.
+   *
+   * @return {@code true} when desktop transparency is currently active.
+   */
   public boolean getTransparencyActive() {
     return desktopTransparencyActive;
   }
@@ -1366,7 +1381,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return gamePaused;
   }
 
-  /** Returns whether the game is currently paused. */
+  /**
+   * Returns whether the game is currently paused.
+   *
+   * @return {@code true} when the game loop is paused.
+   */
   public boolean getGamePaused() {
     return gamePaused;
   }
@@ -1375,7 +1394,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return isClosing;
   }
 
-  /** Returns whether the game is in the process of closing. */
+  /**
+   * Returns whether the game is in the process of closing.
+   *
+   * @return {@code true} when a close has been requested but has not yet fully completed.
+   */
   public boolean getClosing() {
     return isClosing;
   }
@@ -1384,7 +1407,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return isClosed;
   }
 
-  /** Returns whether the game window has fully closed. */
+  /**
+   * Returns whether the game window has fully closed.
+   *
+   * @return {@code true} when the game window has shut down completely.
+   */
   public boolean getClosed() {
     return isClosed;
   }
@@ -1421,7 +1448,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return overlayEnabled;
   }
 
-  /** Returns whether the global overlay camera is enabled. */
+  /**
+   * Returns whether the global overlay camera is enabled.
+   *
+   * @return {@code true} when the overlay camera is active and drawing over the game.
+   */
   public boolean getGlobalOverlayEnabled() {
     return overlayEnabled;
   }
@@ -1556,8 +1587,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     /**
-     * @return {@code true} when the game renders at a fixed resolution and upscales to the window.
-     *     Enabled by default; see {@link Builder#renderResolution(int, int)}.
+     * Returns {@code true} when the game renders at a fixed resolution and upscales to the window.
+     *
+     * <p>Enabled by default; see {@link Builder#renderResolution(int, int)}.
+     *
+     * @return {@code true} when a fixed render resolution is configured.
      */
     public boolean isRenderResolutionEnabled() {
       return renderResolutionEnabled;
@@ -1582,7 +1616,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     /**
-     * @return {@code true} for smooth (linear) upscaling, {@code false} for nearest-neighbor.
+     * Returns {@code true} for smooth (linear) upscaling, or {@code false} for nearest-neighbor.
+     *
+     * @return {@code true} when linear filtering is used during upscaling.
      */
     public boolean isRenderSmooth() {
       return renderSmooth;

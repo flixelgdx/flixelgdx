@@ -91,6 +91,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
 
+  /** Creates a new mouse input manager with all buttons in the released state. */
   public FlixelMouseInputManager() {}
 
   /**
@@ -148,7 +149,11 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     }
   }
 
-  /** Sets the camera for world coordinates; {@code null} uses {@link Flixel#cameras}. */
+  /**
+   * Sets the camera for world coordinates; {@code null} uses {@link Flixel#cameras}.
+   *
+   * @param worldCamera The camera to use for world-coordinate unprojection, or {@code null} to use the default.
+   */
   public void setWorldCamera(@Nullable FlixelCamera worldCamera) {
     this.worldCamera = worldCamera;
   }
@@ -188,12 +193,24 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     return worldY;
   }
 
+  /**
+   * Returns the mouse X position in the world coordinates of the given camera.
+   *
+   * @param cam The camera used to unproject screen coordinates.
+   * @return The unprojected world X coordinate.
+   */
   public float getWorldX(@NotNull FlixelCamera cam) {
     tmpUnproject.set(screenX, screenY);
     cam.unproject(tmpUnproject);
     return tmpUnproject.x;
   }
 
+  /**
+   * Returns the mouse Y position in the world coordinates of the given camera.
+   *
+   * @param cam The camera used to unproject screen coordinates.
+   * @return The unprojected world Y coordinate.
+   */
   public float getWorldY(@NotNull FlixelCamera cam) {
     tmpUnproject.set(screenX, screenY);
     cam.unproject(tmpUnproject);
@@ -204,6 +221,8 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Sum of horizontal scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountX} (not cleared until {@link #endFrame()}). Use for sideways scroll; for typical wheel
    * up/down use {@link #getScrollDeltaY()}.
+   *
+   * @return The accumulated horizontal scroll delta for the current frame.
    */
   public float getScrollDeltaX() {
     return scrollDeltaX;
@@ -213,6 +232,8 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Sum of vertical scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountY} (not cleared until {@link #endFrame()}). Sign and magnitude are device-dependent; see
    * class Javadoc.
+   *
+   * @return The accumulated vertical scroll delta for the current frame.
    */
   public float getScrollDeltaY() {
     return scrollDeltaY;
@@ -263,6 +284,12 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     return Flixel.debug != null && Flixel.debug.overlay.isMouseCapturedByUI();
   }
 
+  /**
+   * Returns {@code true} when the current mouse world position falls within the bounds of the given object.
+   *
+   * @param obj The object whose bounding box is tested against.
+   * @return {@code true} if the mouse is inside {@code obj}'s axis-aligned bounding box.
+   */
   public boolean overlap(@NotNull FlixelPositional obj) {
     float x = getWorldX();
     float y = getWorldY();

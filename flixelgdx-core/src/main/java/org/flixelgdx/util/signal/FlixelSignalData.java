@@ -45,15 +45,26 @@ public final class FlixelSignalData {
   public static final class UpdateSignalData {
     private float elapsed;
 
+    /**
+     * Returns the elapsed time in seconds for this update frame.
+     *
+     * @return The elapsed time in seconds since the last frame.
+     */
     public float elapsed() {
       return elapsed;
     }
 
+    /**
+     * Populates this carrier with update data for the current frame.
+     *
+     * @param elapsed Seconds elapsed since the last frame.
+     */
     public void set(float elapsed) {
       this.elapsed = elapsed;
     }
   }
 
+  /** Carries the new state when a state switch signal fires. */
   public record StateSwitchSignalData(FlixelState state) {
   }
 
