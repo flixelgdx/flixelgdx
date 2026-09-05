@@ -124,7 +124,7 @@ public class PerformanceObject {
   public int instanceId;
   protected float velocity;
   private String displayName;
-  private List<String> metadata;
+  private FlixelList<String> metadata;
 
   public short localFlags;
   private char categoryCode;
@@ -217,8 +217,9 @@ public class PerformanceObject {
 
 Summarize edits in plain language: what changed, why, and how it fits the system.
 
-Before considering a coding task finished, **run unit tests**, **spotless apply (for formatting)**, and **Javadoc lint**; fix failures. **All** unit tests live
-in the `flixelgdx-test` module, not scattered around multiple modules.
+Before considering a coding task finished, **run unit tests**, **spotless apply (for formatting)**, **checkstyle 
+(for code quality)**, and **Javadoc lint**; fix failures. **All** unit tests live in the `flixelgdx-test` module, not 
+scattered around multiple modules.
 
 ---
 
