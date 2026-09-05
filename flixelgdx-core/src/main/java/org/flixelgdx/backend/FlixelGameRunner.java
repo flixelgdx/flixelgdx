@@ -23,7 +23,9 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.graphics.FlixelBatch;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -31,14 +33,15 @@ import org.jetbrains.annotations.NotNull;
  * update/draw cycle until the application exits.
  *
  * <p>Each backend builds its runner and passes it to
- * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, FlixelGameRunner) Flixel.start};
- * {@code start} wires the core systems, then hands the game to the runner, which owns the loop
- * from there. Desktop pumps SDL events and renders through bgfx; web schedules browser animation
- * frames; a headless session passes the {@link #NOOP} runner so {@code start} returns immediately.
+ * {@link Flixel#start(FlixelGame, FlixelGameRunner)}; {@code start} wires the core systems, then
+ * hands the game to the runner, which owns the loop from there. Desktop pumps SDL events and renders
+ * through bgfx; web schedules browser animation frames; a headless session passes the {@link #NOOP}
+ * runner so {@code start} returns immediately.
  *
  * <p>The runner is expected to call {@link FlixelGame#create()} once the platform surface is
- * ready, then {@link FlixelGame#render(float)} every frame, {@link FlixelGame#resize(int, int)} on
- * size changes, and the focus/lifecycle hooks as its platform reports them.
+ * ready, then {@link FlixelGame#update(float)} and {@link FlixelGame#draw(FlixelBatch)} every frame,
+ * {@link FlixelGame#resize(int, int)} on size changes, and the focus/lifecycle hooks as its platform
+ * reports them.
  */
 @FunctionalInterface
 public interface FlixelGameRunner {

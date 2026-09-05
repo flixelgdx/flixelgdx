@@ -35,8 +35,6 @@ import java.nio.IntBuffer;
  *
  * <p>Exposes the window controls game code reaches through {@link org.flixelgdx.Flixel#window
  * Flixel.window}: title, size, position, fullscreen, decoration, focus, opacity, and closing.
- * The continuous-rendering hooks let the framework idle the loop while the window is unfocused;
- * the runner reads that flag via {@link #isContinuousRendering()} and {@link #consumeRenderRequest()}.
  *
  * <p>Window position is cached locally rather than queried from SDL on each read. The cache is
  * initialized when the window is bound and updated both from set calls and from
@@ -51,10 +49,8 @@ public class FlixelSdlWindow implements FlixelWindow {
   private int cachedX;
   private int cachedY;
 
-  private boolean continuousRendering = true;
   private boolean closeRequested;
   private boolean absorbCloseRequests;
-  private boolean renderRequested;
 
   /**
    * Binds this wrapper to the SDL window created by the runner and seeds the position cache.
@@ -87,36 +83,6 @@ public class FlixelSdlWindow implements FlixelWindow {
   /** Returns {@code true} once {@link #close()} has been called, so the runner can exit the loop. */
   boolean isCloseRequested() {
     return closeRequested;
-  }
-
-  /** Returns whether continuous rendering is currently on. */
-  boolean isContinuousRendering() {
-    return continuousRendering;
-  }
-
-  /**
-   * Returns {@code true} and clears the one-shot render flag when {@link #requestRendering()} was
-   * called while continuous rendering was off. The runner calls this once per iteration so that
-   * exactly one extra frame is drawn in response to each request.
-   *
-   * @return {@code true} if a render was requested and the flag has now been consumed.
-   */
-  boolean consumeRenderRequest() {
-    if (renderRequested) {
-      renderRequested = false;
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public void setContinuousRendering(boolean continuous) {
-    this.continuousRendering = continuous;
-  }
-
-  @Override
-  public void requestRendering() {
-    renderRequested = true;
   }
 
   @Override

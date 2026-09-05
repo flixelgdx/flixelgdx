@@ -156,22 +156,23 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private static native void showLoadingError(String message);
 
   /**
-   * Advances the game by one frame, then schedules the next one.
+   * Advances the game by one frame, then schedules the next callback.
    *
    * <p>The browser passes a high-resolution timestamp in milliseconds. The first frame has no
    * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
-   * clamp it; every later frame reports the real time elapsed since the previous callback.
+   * clamp it; every later frame reports the real time elapsed since the previous drawn frame.
    *
    * @param timestamp The browser-supplied frame time in milliseconds.
    */
   private void onAnimationFrame(double timestamp) {
     float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
     lastTimestamp = timestamp;
-
+    float elapsed = game.advanceTime(deltaSeconds);
+    game.update(elapsed);
     graphics.beginFrame();
-    game.render(deltaSeconds);
+    game.draw(game.getBatch());
+    game.endFrame();
     graphics.endFrame();
-
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
 

@@ -31,6 +31,7 @@ import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlKeyMap;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
@@ -53,17 +54,13 @@ import java.util.concurrent.locks.LockSupport;
  *
  * <p>This is the {@link FlixelGameRunner} the desktop launcher installs. It owns everything that
  * only makes sense once a window exists: SDL initialization, bgfx device setup, the per-frame
- * event pump (translated into the input device), and the frame timing passed to
- * {@link FlixelGame#render(float)}.
+ * event pump (translated into the input device), and the frame timing passed to the game loop.
  */
 public class FlixelDesktopRunner implements FlixelGameRunner {
 
   private static final long SPIN_MARGIN_NANOS = 1_500_000L;
 
   private long windowHandle;
-
-  /** Minimum nanoseconds per frame derived from the game's framerate, or {@code 0} for uncapped. */
-  private long targetFrameNanos;
 
   /** Absolute {@link System#nanoTime()} target the current frame should not finish before. */
   private long frameDeadlineNanos;
@@ -120,8 +117,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   @Override
   public void run(@NotNull FlixelGame game) {
     vsync = game.isVsync();
-    int framerate = game.getFramerate();
-    targetFrameNanos = framerate > 0 ? 1_000_000_000L / framerate : 0L;
+    graphics.setTargetFps(game.getFramerate());
 
     if (!SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS | SDLInit.SDL_INIT_GAMEPAD)) {
       Flixel.error("Desktop", "SDL_Init failed; cannot open a window.");
@@ -179,16 +175,8 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     long lastNanos = System.nanoTime();
     try (SDL_Event event = SDL_Event.malloc()) {
       while (!window.isCloseRequested()) {
-        boolean quit = pumpEvents(event, game);
-        if (quit) {
+        if (pumpEvents(event, game)) {
           break;
-        }
-
-        // TODO: Find a workaround for allowing the game to tick the update loop
-        // while stopping rendering as well.
-        if (!window.isContinuousRendering() && !window.consumeRenderRequest()) {
-          Thread.yield();
-          continue;
         }
 
         long now = System.nanoTime();
@@ -196,7 +184,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         lastNanos = now;
 
         graphics.beginFrame();
-        game.render(deltaSeconds);
+        float elapsed = game.advanceTime(deltaSeconds);
+        game.update(elapsed);
+        game.draw(game.getBatch());
+        game.endFrame();
         graphics.endFrame();
 
         limitFrameRate();
@@ -224,14 +215,17 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    * now so the limiter does not then rush a burst of catch-up frames.
    */
   private void limitFrameRate() {
-    if (targetFrameNanos <= 0L) {
+    int fps = graphics.getTargetFps();
+    if (fps <= 0) {
+      frameDeadlineNanos = 0L;
       return;
     }
+    long targetNanos = 1_000_000_000L / fps;
     long now = System.nanoTime();
     if (frameDeadlineNanos == 0L) {
       frameDeadlineNanos = now;
     }
-    frameDeadlineNanos += targetFrameNanos;
+    frameDeadlineNanos += targetNanos;
     if (frameDeadlineNanos <= now) {
       // We are already past the deadline (a slow frame); resync and render the next one immediately.
       frameDeadlineNanos = now;
@@ -304,92 +298,100 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    */
   private static int resolveRendererType() {
     String backend = System.getProperty("flixel.render.backend", "auto").trim().toLowerCase();
-    switch (backend) {
-      case "auto", "" -> {
-        return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
-      }
-      case "opengl", "gl" -> {
-        return BGFX.BGFX_RENDERER_TYPE_OPENGL;
-      }
-      case "vulkan", "vk" -> {
-        return BGFX.BGFX_RENDERER_TYPE_VULKAN;
-      }
-      case "metal" -> {
-        return BGFX.BGFX_RENDERER_TYPE_METAL;
-      }
-      case "direct3d11", "d3d11" -> {
-        return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
-      }
-      case "direct3d12", "d3d12" -> {
-        return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
-      }
-      case "noop" -> {
-        return BGFX.BGFX_RENDERER_TYPE_NOOP;
-      }
-      default -> {
-        Flixel.warn("Desktop", "Unknown flixel.render.backend '" + backend
-            + "'; letting bgfx auto-pick the renderer.");
-        return BGFX.BGFX_RENDERER_TYPE_COUNT;
-      }
+    if (backend.isEmpty() || backend.equals("auto")) {
+      return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
     }
+    if (backend.equals(FlixelGraphicsApi.OpenGL.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_OPENGL;
+    }
+    if (backend.equals(FlixelGraphicsApi.Vulkan.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_VULKAN;
+    }
+    if (backend.equals(FlixelGraphicsApi.Metal.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_METAL;
+    }
+    if (backend.equals(FlixelGraphicsApi.Direct3D11.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
+    }
+    if (backend.equals(FlixelGraphicsApi.Direct3D12.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
+    }
+    if (backend.equals(FlixelGraphicsApi.Noop.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_NOOP;
+    }
+    Flixel.warn("Desktop", "Unknown flixel.render.backend '" + backend
+        + "'; letting bgfx auto-pick the renderer.");
+    return BGFX.BGFX_RENDERER_TYPE_COUNT;
   }
 
   /**
-   * Drains all pending SDL events, translating them into input-device calls and lifecycle hooks.
+   * Drains all pending SDL events by polling, translating each one into input-device calls and
+   * lifecycle hooks. Used in continuous-rendering mode; for the blocking non-continuous path see
+   * the main loop which calls {@link #dispatchEvent} after {@code SDL_WaitEvent}.
    *
    * @return {@code true} when a quit was requested.
    */
   private boolean pumpEvents(@NotNull SDL_Event event, @NotNull FlixelGame game) {
     while (SDLEvents.SDL_PollEvent(event)) {
-      switch (event.type()) {
-        case SDLEvents.SDL_EVENT_QUIT -> {
-          if (!window.isAbsorbCloseRequests()) {
-            return true;
+      if (dispatchEvent(event, game)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Translates a single SDL event into the appropriate input-device call or lifecycle hook.
+   *
+   * @return {@code true} when the event signals a quit.
+   */
+  private boolean dispatchEvent(@NotNull SDL_Event event, @NotNull FlixelGame game) {
+    switch (event.type()) {
+      case SDLEvents.SDL_EVENT_QUIT -> {
+        if (!window.isAbsorbCloseRequests()) {
+          return true;
+        }
+      }
+      case SDLEvents.SDL_EVENT_WINDOW_MOVED ->
+        window.onMoved(event.window().data1(), event.window().data2());
+      case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+          SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
+        handleResize(game);
+      case SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST -> game.onFocusLost();
+      case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
+      case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
+      case SDLEvents.SDL_EVENT_KEY_DOWN -> {
+        if (!event.key().repeat()) {
+          input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+        }
+      }
+      case SDLEvents.SDL_EVENT_KEY_UP -> input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+      case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
+        // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
+        // physical key events above. Feed each character to listeners so the debug command line and
+        // any future text fields can read typed input.
+        String textInput = event.text().textString();
+        if (textInput != null) {
+          for (int i = 0; i < textInput.length(); i++) {
+            input.onKeyTyped(textInput.charAt(i));
           }
         }
-        case SDLEvents.SDL_EVENT_WINDOW_MOVED ->
-          window.onMoved(event.window().data1(), event.window().data2());
-        case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
-            SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
-          handleResize(game);
-        case SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST -> game.onFocusLost();
-        case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
-        case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
-        case SDLEvents.SDL_EVENT_KEY_DOWN -> {
-          if (!event.key().repeat()) {
-            input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
-          }
-        }
-        case SDLEvents.SDL_EVENT_KEY_UP ->
-          input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
-        case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
-          // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
-          // physical key events above. Feed each character to listeners so the debug command line and
-          // any future text fields can read typed input.
-          String textInput = event.text().textString();
-          if (textInput != null) {
-            for (int i = 0; i < textInput.length(); i++) {
-              input.onKeyTyped(textInput.charAt(i));
-            }
-          }
-        }
-        case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
-          input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-        case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
-          input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-        case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
-          input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
-        case SDLEvents.SDL_EVENT_MOUSE_WHEEL ->
-          input.onScrolled(event.wheel().x(), event.wheel().y());
-        case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
-        case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
-        case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
-            SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
-            SDLEvents.SDL_EVENT_DISPLAY_MOVED,
-            SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED ->
-          refreshMonitors();
-        default -> {
-        }
+      }
+      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
+        input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
+        input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+      case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
+        input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
+      case SDLEvents.SDL_EVENT_MOUSE_WHEEL -> input.onScrolled(event.wheel().x(), event.wheel().y());
+      case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
+      case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
+      case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
+          SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
+          SDLEvents.SDL_EVENT_DISPLAY_MOVED,
+          SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED ->
+        refreshMonitors();
+      default -> {
       }
     }
     return false;

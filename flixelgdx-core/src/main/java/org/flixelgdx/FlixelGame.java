@@ -59,17 +59,16 @@ import java.util.function.Supplier;
  *
  * <p>Extend this class and hand an instance to the platform launcher. The launcher installs the
  * appropriate backend, wires up the runner, and calls {@link #create()} once the rendering surface
- * is ready. After that, it calls {@link #render(float)} every frame, which dispatches
- * {@link #update(float)} and then {@link #draw(FlixelBatch)} in that order.
+ * is ready. After that, it calls every frame, which dispatches {@link #update(float)} and
+ * {@link #draw(FlixelBatch)} in that order.
  *
  * <h2>Lifecycle</h2>
  *
  * <ol>
  *   <li>{@link #create()} - called once when the rendering surface is ready. Initializes input,
  *       cameras, the batch, the debug overlay, and the initial state.</li>
- *   <li>{@link #render(float)} - called every frame with the raw wall-clock delta. Dispatches
- *       update, then draw. You can't override this; override {@link #update(float)} or
- *       {@link #draw(FlixelBatch)} instead.</li>
+ *   <li>{@link #update(float)} - called every frame to update and tick game logic.
+ *   <li>{@link #draw(FlixelBatch)} - called every frame to render graphics.
  *   <li>{@link #destroy()} - called when the game closes. Releases all framework resources. Call
  *       {@link Flixel#quit()} to close the window; calling {@code destroy()} alone only releases
  *       resources without terminating the process.</li>
@@ -125,10 +124,11 @@ import java.util.function.Supplier;
  * <h2>Auto-pause</h2>
  *
  * <p>When {@link #autoPause} is {@code true} (the default), audio is paused and the update loop
- * suspends whenever the game window loses focus. Both resume automatically when focus returns. Set
- * {@link #autoPause} to {@code false} to keep the game running in the background. Note that on
- * mobile if {@link #autoPause} is {@code false} the audio will keep playing in the background when
- * the app isn't being focused on.
+ * suspends whenever the game window loses focus. The render loop continues at a low background
+ * frame rate so the window stays responsive, then both audio and updates resume automatically
+ * when focus returns. Set {@link #autoPause} to {@code false} to keep the game running at full
+ * speed in the background. Note that on mobile if {@link #autoPause} is {@code false} the audio
+ * will keep playing in the background when the app is not focused.
  *
  * <h2>Example Usage</h2>
  *
@@ -157,6 +157,9 @@ import java.util.function.Supplier;
 public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
   private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
+
+  /** Frame-rate cap applied to the render loop while the window is unfocused and {@link #autoPause} is on. */
+  private static final int BACKGROUND_FPS = 10;
 
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs. Use
@@ -194,6 +197,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * do not erase earlier cameras' counts.
    */
   private int frameRenderCalls;
+
+  /** Scaled elapsed time (seconds) for the current frame, written by {@link #advanceTime(float)}. */
+  private float elapsed;
+
+  /** Raw clamped delta before {@link Flixel#timeScale} is applied, written by {@link #advanceTime(float)}. */
+  private float rawElapsed;
 
   /** 2D array of saved camera scroll values when the game is paused for debugging. */
   @Nullable
@@ -260,7 +269,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private int desktopTransparencyRestoreCameraCount;
 
-  /** Whether the game should pause audio when the application goes to the background. */
+  /** FPS cap saved just before throttling on focus loss; restored when focus returns. */
+  private int savedTargetFps;
+
+  /** Whether the game should pause audio and throttle the frame rate when the window loses focus. */
   public boolean autoPause = true;
 
   /** Whether the game is currently in the process of closing. */
@@ -649,43 +661,45 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Runs one frame: {@link #update(float)} then {@link #draw(FlixelBatch)}, with the elapsed time
-   * clamped to the min and max values to prevent major lag spikes.
+   * Clamps the raw platform delta, applies {@link Flixel#timeScale}, and stores the results so
+   * {@link Flixel#getElapsed()} and {@link Flixel#getRawElapsed()} return up-to-date values.
    *
-   * <p>This method is called automatically by the platform runner every frame with the raw
-   * wall-clock time since the previous frame.
+   * <p>Platform runners call this once per frame before {@link #update(float)} and
+   * {@link #draw(FlixelBatch)}, passing the raw wall-clock delta from their own timing source.
+   * The returned value is the scaled elapsed time ready to pass directly to {@link #update(float)}.
    *
-   * <p>You should not (and cannot) override this method. You are encouraged to override either
-   * {@link #update(float)} or {@link #draw(FlixelBatch)} instead, as they separate logic
-   * and drawing correctly.
+   * <pre>{@code
+   * float elapsed = game.advanceTime(rawDelta);
+   * game.update(elapsed);
+   * game.draw(game.getBatch());
+   * game.endFrame();
+   * }</pre>
    *
-   * @param rawDeltaSeconds The raw time since the last frame, in seconds.
-   * @see #update(float)
-   * @see #draw(FlixelBatch)
+   * @param rawDelta The raw wall-clock seconds since the last frame.
+   * @return The clamped and scaled elapsed time in seconds.
+   * @see #endFrame()
    */
-  public final void render(float rawDeltaSeconds) {
-    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDeltaSeconds, Flixel.MAX_ELAPSED));
-    float elapsed = rawClamped * Flixel.timeScale;
-    Flixel.rawElapsed = rawClamped;
-    Flixel.elapsed = elapsed;
+  public float advanceTime(float rawDelta) {
+    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+    rawElapsed = rawClamped;
+    elapsed = rawClamped * Flixel.timeScale;
+    return elapsed;
+  }
 
-    update(elapsed);
-    draw(batch);
-
-    // Finalize input frame AFTER user update hooks run, so justPressed()/justReleased() checks
-    // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
-    if (Flixel.keys != null) {
-      Flixel.keys.endFrame();
-    }
-    if (Flixel.mouse != null) {
-      Flixel.mouse.endFrame();
-    }
-    if (Flixel.touches != null) {
-      Flixel.touches.endFrame();
-    }
-    if (Flixel.gamepads != null) {
-      Flixel.gamepads.endFrame();
-    }
+  /**
+   * Finalizes the input state for the current frame.
+   *
+   * <p>Platform runners call this once per frame after {@link #draw(FlixelBatch)} completes.
+   * Finalizing after user code runs keeps {@code justPressed()} and {@code justReleased()}
+   * valid for the entire frame, including any overrides of {@link #update(float)}.
+   *
+   * @see #advanceTime(float)
+   */
+  public void endFrame() {
+    Flixel.keys.endFrame();
+    Flixel.mouse.endFrame();
+    Flixel.touches.endFrame();
+    Flixel.gamepads.endFrame();
     FlixelActionSets.endFrameAll();
   }
 
@@ -744,29 +758,16 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Do not override this method. Override {@link #onFocusLost()} instead.
-   */
-  public final void pause() {
-    onFocusLost();
-  }
-
-  /**
-   * Do not override this method. Override {@link #onFocusGained()} instead.
-   */
-  public final void resume() {
-    onFocusGained();
-  }
-
-  /**
    * Called when the game window loses focus or the application goes to the background.
    *
    * <p>On mobile and web this fires when the OS sends the application to the background.
    * On desktop it fires when the game window loses focus or is minimized (focus loss always
    * arrives before minimize, so this is called once for both events).
    *
-   * <p>The default implementation pauses audio and stops continuous rendering when
-   * {@link #autoPause} is {@code true}, then notifies the active state. Duplicate calls
-   * without an intervening {@link #onFocusGained()} are silently ignored.
+   * <p>The default implementation pauses audio and throttles the frame rate to
+   * {@value #BACKGROUND_FPS} fps when {@link #autoPause} is {@code true}, then notifies the
+   * active state. Duplicate calls without an intervening {@link #onFocusGained()} are silently
+   * ignored.
    *
    * @see #onFocusGained()
    * @see #onMinimized()
@@ -783,7 +784,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
     if (autoPause) {
       Flixel.sound.pause();
-      Flixel.window.setContinuousRendering(false);
+      savedTargetFps = Flixel.graphics.getTargetFps();
+      Flixel.graphics.setTargetFps(BACKGROUND_FPS);
       shouldUpdate = false;
     }
     Flixel.Signals.windowUnfocused.dispatch();
@@ -796,7 +798,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * On desktop it fires when the game window gains focus, including when the window is
    * restored from being minimized.
    *
-   * <p>The default implementation resumes audio and re-enables continuous rendering when
+   * <p>The default implementation restores the full frame rate and resumes audio when
    * {@link #autoPause} is {@code true}, then notifies the active state. Calls that arrive
    * without a prior {@link #onFocusLost()} are silently ignored.
    *
@@ -814,10 +816,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
     if (autoPause) {
       shouldUpdate = true;
+      Flixel.graphics.setTargetFps(savedTargetFps);
       if (!gamePaused) {
         Flixel.sound.resume();
-        Flixel.window.setContinuousRendering(true);
-        Flixel.window.requestRendering();
       }
     }
     Flixel.Signals.windowFocused.dispatch();
@@ -880,11 +881,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   public boolean toggleAutoPause() {
     autoPause = !autoPause;
     return autoPause;
-  }
-
-  /** Delegates to {@link #destroy()}. */
-  public final void dispose() {
-    destroy();
   }
 
   /**
@@ -1488,6 +1484,26 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   @Nullable
   public FlixelBasicGroup<IFlixelBasic> getOverlayGroup() {
     return overlayGroup;
+  }
+
+  /**
+   * Returns the scaled elapsed time (in seconds) for the current frame, as set by the most recent
+   * {@link #advanceTime(float)} call.
+   *
+   * @return The current frame's elapsed time in seconds.
+   */
+  public float getElapsed() {
+    return elapsed;
+  }
+
+  /**
+   * Returns the raw clamped platform delta (in seconds) for the current frame, before
+   * {@link Flixel#timeScale} was applied.
+   *
+   * @return The raw elapsed time in seconds for the current frame.
+   */
+  public float getRawElapsed() {
+    return rawElapsed;
   }
 
   /**

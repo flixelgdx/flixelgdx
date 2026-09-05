@@ -137,7 +137,7 @@ public final class FlixelGraphicsApi {
   }
 
   /**
-   * Returns the backend's ID string (for example, {@code "bgfx"}); never {@code null}.
+   * Returns the backend's ID string (for example, {@code "OpenGL"}); never {@code null}.
    *
    * @return The graphics API ID string, never {@code null}.
    */

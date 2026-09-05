@@ -207,6 +207,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** Frames counted since the last stats log line, when stats logging is enabled. */
   private int statsWindowFrames;
 
+  /** Frame-rate cap in fps, or {@code 0} when uncapped. Read by the runner each frame. */
+  private volatile int targetFps;
+
   /**
    * Whether the window was opened with an alpha-capable framebuffer. When {@code true},
    * {@link #onResize(int, int)} passes {@code BGFX_RESET_TRANSPARENT_BACKBUFFER} so the OS
@@ -741,6 +744,16 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public int getFps() {
     return (int) averageFps;
+  }
+
+  @Override
+  public int getTargetFps() {
+    return targetFps;
+  }
+
+  @Override
+  public void setTargetFps(int fps) {
+    targetFps = Math.max(0, fps);
   }
 
   /**

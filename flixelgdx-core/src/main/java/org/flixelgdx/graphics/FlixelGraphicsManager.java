@@ -521,24 +521,6 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * Allocates a reusable mesh backed by GPU buffers.
-   *
-   * <p>When no backend is present (headless or pre-startup) this returns {@link FlixelUnsupportedMesh},
-   * a no-op implementation whose vertex and index counts are always {@code 0}. Check {@link #getApi()}
-   * if you need to know whether a real GPU is available.
-   *
-   * @param layout Describes how each vertex is arranged.
-   * @param maxVertices Maximum number of vertices the buffer must hold.
-   * @param maxIndices Maximum number of indices the buffer must hold, or {@code 0} for no index buffer.
-   * @param isStatic {@code true} to hint the data changes rarely, {@code false} for frequently updated data.
-   * @return A new mesh; never {@code null}.
-   */
-  @NotNull
-  default FlixelMesh createMesh(@NotNull FlixelVertexLayout layout, int maxVertices, int maxIndices, boolean isStatic) {
-    return FlixelUnsupportedMesh.INSTANCE;
-  }
-
-  /**
    * Returns the number of frames rendered during the last second (the measured frame rate), or
    * {@code 0} when unknown.
    *
