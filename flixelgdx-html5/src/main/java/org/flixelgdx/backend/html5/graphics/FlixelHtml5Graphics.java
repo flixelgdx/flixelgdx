@@ -79,6 +79,9 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   private int backBufferWidth;
   private int backBufferHeight;
 
+  private boolean continuousRendering = true;
+  private boolean renderRequested;
+
   /**
    * Creates the WebGL2 context on the given canvas and builds the sprite batch.
    *
@@ -190,6 +193,30 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @NotNull
   public FlixelList<FlixelDisplayMode> getDisplayModes() {
     return displayModes;
+  }
+
+  @Override
+  public void setContinuousRendering(boolean continuous) {
+    continuousRendering = continuous;
+  }
+
+  @Override
+  public boolean isContinuousRendering() {
+    return continuousRendering;
+  }
+
+  @Override
+  public void requestRendering() {
+    renderRequested = true;
+  }
+
+  @Override
+  public boolean consumeRenderRequest() {
+    if (renderRequested) {
+      renderRequested = false;
+      return true;
+    }
+    return false;
   }
 
   /**

@@ -578,6 +578,21 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Returns {@code true} when at least one frame was explicitly requested since the last call, and
+   * clears the pending request. The runner calls this after each event-processing cycle in
+   * non-continuous mode to decide whether to draw that iteration; it is never consulted when
+   * continuous rendering is on.
+   *
+   * <p>The default always returns {@code false} and is appropriate for backends that do not
+   * distinguish between requested and automatic frames.
+   *
+   * @return {@code true} when a frame was explicitly requested; always {@code false} in this default.
+   */
+  default boolean consumeRenderRequest() {
+    return false;
+  }
+
+  /**
    * Requests a frame-rate cap, where the backend supports one.
    *
    * @param fps Target frames per second, or {@code 0} to run uncapped.

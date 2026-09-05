@@ -226,6 +226,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** Whether the runner should produce a frame every iteration or only on demand. */
   private boolean continuousRendering = true;
 
+  /** Set by {@link #requestRendering()}; cleared by {@link #consumeRenderRequest()}. */
+  private volatile boolean renderRequested;
+
   private boolean vsync = true;
   private boolean programWarned;
 
@@ -295,7 +298,10 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @Override
   public void requestRendering() {
-    if (wakeEventType < 0) {
+    renderRequested = true;
+    // Only push the wake event when the runner is actually parked on SDL_WaitEvent.
+    // In continuous mode the loop never blocks, so a wake event would just be wasted noise.
+    if (continuousRendering || wakeEventType < 0) {
       return;
     }
     try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -308,6 +314,15 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public boolean isContinuousRendering() {
     return continuousRendering;
+  }
+
+  @Override
+  public boolean consumeRenderRequest() {
+    if (renderRequested) {
+      renderRequested = false;
+      return true;
+    }
+    return false;
   }
 
   /**

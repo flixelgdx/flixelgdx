@@ -26,12 +26,12 @@ package org.flixelgdx.backend.desktop;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
-import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlKeyMap;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
@@ -177,6 +177,9 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
 
     refreshMonitors(); // Fill in the monitors at startup.
     game.create();
+    // Ensure at least one frame is drawn immediately after create, even when the game switches to
+    // non-continuous rendering inside its create() call.
+    graphics.requestRendering();
 
     long lastNanos = System.nanoTime();
     try (SDL_Event event = SDL_Event.malloc()) {
@@ -195,6 +198,14 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           // lastNanos is intentionally NOT reset here. MAX_ELAPSED clamps the first-frame delta
           // spike from a long park, and subsequent frames need the real elapsed time so that
           // animations and movement advance at the correct rate.
+          //
+          // Only draw when a frame was explicitly requested. Any SDL event wakes SDL_WaitEvent,
+          // but most (mouse motion, window moves, display notifications) should not cause a
+          // render. Input events and explicit requestRendering() calls set the flag via
+          // dispatchEvent or game code; everything else just loops back to sleep.
+          if (!quit && !graphics.consumeRenderRequest()) {
+            continue;
+          }
         }
 
         if (quit) {
@@ -374,18 +385,23 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       case SDLEvents.SDL_EVENT_WINDOW_MOVED ->
         window.onMoved(event.window().data1(), event.window().data2());
       case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
-          SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
+          SDLEvents.SDL_EVENT_WINDOW_RESIZED -> {
         handleResize(game);
+        graphics.requestRendering();
+      }
       case SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST -> game.onFocusLost();
       case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
       case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
       case SDLEvents.SDL_EVENT_KEY_DOWN -> {
         if (!event.key().repeat()) {
           input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+          graphics.requestRendering();
         }
       }
-      case SDLEvents.SDL_EVENT_KEY_UP ->
+      case SDLEvents.SDL_EVENT_KEY_UP -> {
         input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+        graphics.requestRendering();
+      }
       case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
         // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
         // physical key events above. Feed each character to listeners so the debug command line and
@@ -396,17 +412,30 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
             input.onKeyTyped(textInput.charAt(i));
           }
         }
+        graphics.requestRendering();
       }
-      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
+      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN -> {
         input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
+        graphics.requestRendering();
+      }
+      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP -> {
         input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+        graphics.requestRendering();
+      }
       case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
         input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
-      case SDLEvents.SDL_EVENT_MOUSE_WHEEL ->
+      case SDLEvents.SDL_EVENT_MOUSE_WHEEL -> {
         input.onScrolled(event.wheel().x(), event.wheel().y());
-      case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
-      case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
+        graphics.requestRendering();
+      }
+      case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> {
+        gamepads.onDeviceAdded(event.gdevice().which());
+        graphics.requestRendering();
+      }
+      case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> {
+        gamepads.onDeviceRemoved(event.gdevice().which());
+        graphics.requestRendering();
+      }
       case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
           SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
           SDLEvents.SDL_EVENT_DISPLAY_MOVED,

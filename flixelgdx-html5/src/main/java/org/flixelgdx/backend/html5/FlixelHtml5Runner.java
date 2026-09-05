@@ -130,6 +130,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private void startGame() {
     hideLoadingOverlay();
     game.create();
+    // Ensure at least one frame draws even if the game switched to non-continuous inside create().
+    graphics.requestRendering();
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
 
@@ -156,24 +158,34 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private static native void showLoadingError(String message);
 
   /**
-   * Advances the game by one frame, then schedules the next one.
+   * Advances the game by one frame (when a frame is due), then schedules the next callback.
    *
    * <p>The browser passes a high-resolution timestamp in milliseconds. The first frame has no
    * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
-   * clamp it; every later frame reports the real time elapsed since the previous callback.
+   * clamp it; every later frame reports the real time elapsed since the previous drawn frame.
+   *
+   * <p>In non-continuous mode the browser callback still fires at the display refresh rate but the
+   * draw is skipped unless {@link FlixelHtml5Graphics#requestRendering()} was called. When skipped
+   * the timestamp is reset so the next drawn frame starts with a zero delta instead of accumulating
+   * the idle time as a spike.
    *
    * @param timestamp The browser-supplied frame time in milliseconds.
    */
   private void onAnimationFrame(double timestamp) {
-    float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
-    lastTimestamp = timestamp;
+    if (graphics.isContinuousRendering() || graphics.consumeRenderRequest()) {
+      float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
+      lastTimestamp = timestamp;
 
-    graphics.beginFrame();
-    float elapsed = game.advanceTime(deltaSeconds);
-    game.update(elapsed);
-    game.draw(game.getBatch());
-    game.endFrame();
-    graphics.endFrame();
+      graphics.beginFrame();
+      float elapsed = game.advanceTime(deltaSeconds);
+      game.update(elapsed);
+      game.draw(game.getBatch());
+      game.endFrame();
+      graphics.endFrame();
+    } else {
+      // Reset the clock so the next drawn frame does not see the idle duration as a huge delta.
+      lastTimestamp = -1.0;
+    }
 
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
