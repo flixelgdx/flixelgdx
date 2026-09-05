@@ -2,7 +2,6 @@
 *.bat text=auto eol=crlf
 
 *.js linguist-language=JavaScript
-*.wasm linguist-language=WebAssembly
 *.kts linguist-language=Kotlin
 *.sc linguist-language=GLSL
 
