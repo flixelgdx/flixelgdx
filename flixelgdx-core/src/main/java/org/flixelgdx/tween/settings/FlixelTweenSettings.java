@@ -311,7 +311,11 @@ public class FlixelTweenSettings {
     /** Supplies a primitive {@code float} without boxing. */
     @FunctionalInterface
     public interface FlixelTweenGoalGetter extends FloatSupplier {
-      /** Returns the current property value as a primitive float. */
+      /**
+       * Returns the current property value as a primitive float.
+       *
+       * @return The current value of the tweened property.
+       */
       float get();
 
       @Override
@@ -323,7 +327,11 @@ public class FlixelTweenSettings {
     /** Consumes a primitive {@code float} without boxing. */
     @FunctionalInterface
     public interface FlixelTweenGoalSetter {
-      /** Updates the property with the given interpolated float value. */
+      /**
+       * Updates the property with the given interpolated float value.
+       *
+       * @param value The interpolated value to apply to the tweened property.
+       */
       void set(float value);
     }
   }
@@ -333,7 +341,11 @@ public class FlixelTweenSettings {
    */
   @FunctionalInterface
   public interface FlixelTweenGoalVisitor {
-    /** Called once for each goal registered in this tween settings object. */
+    /**
+     * Called once for each goal registered in this tween settings object.
+     *
+     * @param goal The tween goal being visited.
+     */
     void visit(FlixelTweenGoal goal);
   }
 }

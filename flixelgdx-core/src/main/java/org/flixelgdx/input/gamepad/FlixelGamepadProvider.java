@@ -50,6 +50,8 @@ public interface FlixelGamepadProvider {
 
   /**
    * Returns how many gamepads are connected right now. Defaults to {@code 0}.
+   *
+   * @return The number of currently connected gamepads.
    */
   default int getGamepadCount() {
     return 0;

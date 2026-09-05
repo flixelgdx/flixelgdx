@@ -46,7 +46,8 @@
     <module name="MultipleVariableDeclarations"/>
 
     <!-- Standard Java collection implementations allocate garbage and use more memory
-         than FlixelGDX's lean equivalents. Use FlixelArray, FlixelMap, FlixelSet, etc.
+         than FlixelGDX's lean equivalents.
+
          Note: java.util interfaces (List, Map, Collection) and utility classes (Arrays,
          Collections, Objects) are not banned. -->
     <module name="IllegalType">
@@ -104,6 +105,13 @@
          This matches the AGENTS.md rule: "Every doc comment should always start with
          a single sentence." -->
     <module name="SummaryJavadoc"/>
+
+    <!-- Every public method that has a Javadoc comment must include @param tags for each
+         parameter and a @return tag for non-void return types. This ensures API consumers
+         always know what to pass in and what to expect back. -->
+    <module name="JavadocMethod">
+      <property name="accessModifiers" value="public"/>
+    </module>
 
   </module>
 

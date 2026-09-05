@@ -77,7 +77,11 @@ public abstract class FlixelDebugTrackerEntry {
     this.name = name;
   }
 
-  /** Returns the display name of this tracker entry. */
+  /**
+   * Returns the display name of this tracker entry.
+   *
+   * @return The display name shown in the Tracker panel header.
+   */
   public String getName() {
     return name;
   }

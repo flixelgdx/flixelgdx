@@ -39,7 +39,11 @@ public class FlixelAngleTween extends FlixelTween {
   protected float fromAngle;
   protected float toAngle;
 
-  /** Creates a new angle tween with the given tween settings. */
+  /**
+   * Creates a new angle tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelAngleTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }
@@ -50,6 +54,7 @@ public class FlixelAngleTween extends FlixelTween {
    * @param angleTarget The object whose angle is driven.
    * @param fromAngle Use {@link Float#NaN} to take the target's current angle at {@link #start()}.
    * @param toAngle The ending angle in degrees.
+   * @return This tween, for method chaining.
    */
   public FlixelAngleTween setAngles(@Nullable FlixelAngleable angleTarget, float fromAngle, float toAngle) {
     this.angleTarget = angleTarget;

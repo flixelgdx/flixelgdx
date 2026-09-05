@@ -52,6 +52,8 @@ public interface FlixelShaderProgram extends FlixelDestroyable {
 
   /**
    * Returns {@code true} if this program compiled successfully and can be used for drawing.
+   *
+   * @return {@code true} if the shader program compiled successfully, {@code false} otherwise.
    */
   boolean isValid();
 

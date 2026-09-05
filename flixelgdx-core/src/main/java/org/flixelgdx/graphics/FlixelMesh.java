@@ -45,6 +45,8 @@ public interface FlixelMesh extends FlixelDestroyable {
 
   /**
    * Returns the layout describing how each vertex in this mesh is arranged.
+   *
+   * @return The vertex layout; never {@code null}.
    */
   @NotNull
   FlixelVertexLayout getLayout();
@@ -71,11 +73,15 @@ public interface FlixelMesh extends FlixelDestroyable {
 
   /**
    * Returns how many vertices this mesh currently holds.
+   *
+   * @return The number of vertices stored in the vertex buffer.
    */
   int getVertexCount();
 
   /**
    * Returns how many indices this mesh currently holds, or {@code 0} when it has no index buffer.
+   *
+   * @return The number of indices stored in the index buffer, or {@code 0} if none.
    */
   int getIndexCount();
 }

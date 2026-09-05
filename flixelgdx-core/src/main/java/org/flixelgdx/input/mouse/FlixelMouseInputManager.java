@@ -149,7 +149,11 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     }
   }
 
-  /** Sets the camera for world coordinates; {@code null} uses {@link Flixel#cameras}. */
+  /**
+   * Sets the camera for world coordinates; {@code null} uses {@link Flixel#cameras}.
+   *
+   * @param worldCamera The camera to use for world-coordinate unprojection, or {@code null} to use the default.
+   */
   public void setWorldCamera(@Nullable FlixelCamera worldCamera) {
     this.worldCamera = worldCamera;
   }
@@ -217,6 +221,8 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Sum of horizontal scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountX} (not cleared until {@link #endFrame()}). Use for sideways scroll; for typical wheel
    * up/down use {@link #getScrollDeltaY()}.
+   *
+   * @return The accumulated horizontal scroll delta for the current frame.
    */
   public float getScrollDeltaX() {
     return scrollDeltaX;
@@ -226,6 +232,8 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    * Sum of vertical scroll amounts received this frame via {@link FlixelMouseListener#scrolled(float, float)}
    * {@code amountY} (not cleared until {@link #endFrame()}). Sign and magnitude are device-dependent; see
    * class Javadoc.
+   *
+   * @return The accumulated vertical scroll delta for the current frame.
    */
   public float getScrollDeltaY() {
     return scrollDeltaY;

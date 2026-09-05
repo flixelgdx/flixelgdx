@@ -36,7 +36,11 @@ public class FlixelLinearMotion extends FlixelMotion {
   private float moveX;
   private float moveY;
 
-  /** Creates a new linear motion tween with the given tween settings. */
+  /**
+   * Creates a new linear motion tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelLinearMotion(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

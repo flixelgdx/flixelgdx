@@ -50,7 +50,11 @@ public class FlixelColorTween extends FlixelTween {
   protected Runnable onColor;
   protected boolean useRawColor;
 
-  /** Creates a new color tween with the given tween settings. */
+  /**
+   * Creates a new color tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelColorTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

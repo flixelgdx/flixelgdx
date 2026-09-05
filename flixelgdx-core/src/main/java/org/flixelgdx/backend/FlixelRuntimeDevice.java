@@ -80,6 +80,8 @@ public interface FlixelRuntimeDevice {
   /**
    * Returns {@code true} when the game is running from a packaged distribution JAR. Defaults to
    * {@code false}.
+   *
+   * @return {@code true} if the game is running from a packaged JAR, {@code false} otherwise.
    */
   default boolean isRunningFromJar() {
     return false;
@@ -88,6 +90,8 @@ public interface FlixelRuntimeDevice {
   /**
    * Returns {@code true} when the game is running inside an IDE (IntelliJ, Eclipse, and similar).
    * Defaults to {@code false}.
+   *
+   * @return {@code true} if the game is running inside an IDE, {@code false} otherwise.
    */
   default boolean isRunningInIDE() {
     return false;

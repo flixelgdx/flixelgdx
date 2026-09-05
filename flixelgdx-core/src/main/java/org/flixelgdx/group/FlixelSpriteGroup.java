@@ -347,7 +347,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     return antialiasing;
   }
 
-  /** Returns whether antialiasing is enabled for sprites in this group. */
+  /**
+   * Returns whether antialiasing is enabled for sprites in this group.
+   *
+   * @return {@code true} if antialiasing is enabled for all sprites in this group.
+   */
   public boolean getAntialiasing() {
     return antialiasing;
   }
@@ -469,6 +473,8 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
   /**
    * Revives the first dead member, or creates a new sprite, applies {@link #preAdd}, and adds it when under
    * {@link #maxSize}. When at capacity and no dead slot exists, returns {@code null}.
+   *
+   * @return The recycled or newly created sprite, or {@code null} if the group is at capacity with no dead members.
    */
   @Nullable
   public FlixelSprite recycle() {
@@ -545,11 +551,20 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     return members.get(index);
   }
 
+  /**
+   * Returns the total number of member slots, including {@code null} entries.
+   *
+   * @return The total number of member slots in this group.
+   */
   public int getLength() {
     return members.getSize();
   }
 
-  /** Returns the number of non-null members, which may differ from {@link #getLength()}. */
+  /**
+   * Returns the number of non-null members, which may differ from {@link #getLength()}.
+   *
+   * @return The number of non-null members in this group.
+   */
   public int countMembers() {
     int count = 0;
     for (int i = 0, n = members.getSize(); i < n; i++) {
@@ -560,11 +575,20 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     return count;
   }
 
+  /**
+   * Returns whether this group contains no member slots.
+   *
+   * @return {@code true} if this group has no members.
+   */
   public boolean isEmpty() {
     return members.getSize() == 0;
   }
 
-  /** Returns whether this group contains no members. */
+  /**
+   * Returns whether this group contains no members.
+   *
+   * @return {@code true} if this group has no members.
+   */
   public boolean getEmpty() {
     return members.getSize() == 0;
   }
@@ -585,7 +609,11 @@ public class FlixelSpriteGroup extends FlixelSprite implements FlixelBasicGroupa
     return members;
   }
 
-  /** Returns a random member, or {@code null} if the group is empty. */
+  /**
+   * Returns a random member, or {@code null} if the group is empty.
+   *
+   * @return A random member from the group, or {@code null} if the group is empty.
+   */
   public FlixelSprite getRandom() {
     return getRandom(0, members.getSize());
   }

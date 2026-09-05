@@ -63,6 +63,8 @@ public interface FlixelBasicGroupable<T extends IFlixelBasic> extends FlixelGrou
 
   /**
    * Returns the first non-null member with {@code exists == false}, or {@code null}.
+   *
+   * @return The first dead (non-existing) member, or {@code null} if none is found.
    */
   @Nullable
   default T getFirstDead() {

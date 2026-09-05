@@ -63,11 +63,15 @@ public interface FlixelRenderTarget extends FlixelDestroyable {
 
   /**
    * Returns the width of this target in pixels.
+   *
+   * @return The width in pixels.
    */
   int getWidth();
 
   /**
    * Returns the height of this target in pixels.
+   *
+   * @return The height in pixels.
    */
   int getHeight();
 
@@ -86,6 +90,8 @@ public interface FlixelRenderTarget extends FlixelDestroyable {
   /**
    * Returns {@code true} when {@link #getTexture()} is stored bottom-up and must be drawn
    * flipped vertically to appear correct.
+   *
+   * @return {@code true} if the render target texture is stored with the Y axis inverted.
    */
   boolean isFlipped();
 }

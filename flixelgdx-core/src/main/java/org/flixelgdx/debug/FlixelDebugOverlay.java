@@ -285,7 +285,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     drawDebug = !drawDebug;
   }
 
-  /** Returns the camera currently selected by Alt+arrow cycling, clamped to a valid index. */
+  /**
+   * Returns the camera currently selected by Alt+arrow cycling, clamped to a valid index.
+   *
+   * @return The index of the currently inspected camera, or {@code -1} if no cameras exist.
+   */
   public final int getInspectCameraIndex() {
     FlixelArray<FlixelCamera> cams = Flixel.cameras;
     int n = (cams != null) ? cams.getSize() : 0;
@@ -417,12 +421,20 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     return total;
   }
 
-  /** Returns the index immediately after the latest sample (where the next write will go). */
+  /**
+   * Returns the index immediately after the latest sample (where the next write will go).
+   *
+   * @return The write-head index into the circular performance history buffer.
+   */
   public final int getPerfHead() {
     return perfHead;
   }
 
-  /** Returns the number of valid samples in each perf series. Caps at {@link #PERF_HISTORY_SIZE}. */
+  /**
+   * Returns the number of valid samples in each perf series. Caps at {@link #PERF_HISTORY_SIZE}.
+   *
+   * @return The number of recorded performance samples available for display.
+   */
   public final int getPerfCount() {
     return perfCount;
   }

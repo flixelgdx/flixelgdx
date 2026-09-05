@@ -471,6 +471,8 @@ public abstract class FlixelTween implements FlixelPoolable {
    * @param toY The ending Y position.
    * @param durationOrSpeed The duration or speed of the motion.
    * @param useDuration Whether to use the duration or speed.
+   * @param tweenSettings The settings that configure and determine how the tween should animate.
+   * @return The newly created and started tween.
    */
   public static FlixelTween quadMotion(
       @Nullable FlixelPhysical target,
@@ -600,6 +602,8 @@ public abstract class FlixelTween implements FlixelPoolable {
 
   /**
    * Starts {@code this} tween and resets every value to its initial state.
+   *
+   * @return {@code this} for chaining.
    */
   public FlixelTween start() {
     if (tweenSettings != null && tweenSettings.getDuration() <= 0) {
@@ -775,6 +779,8 @@ public abstract class FlixelTween implements FlixelPoolable {
 
   /**
    * Cancels {@code this} tween, removes it from its manager and automatically defaults its values.
+   *
+   * @return {@code this} for chaining.
    */
   public FlixelTween cancel() {
     resetBasic();
@@ -1005,7 +1011,11 @@ public abstract class FlixelTween implements FlixelPoolable {
     return finished;
   }
 
-  /** Returns whether this tween has completed all of its iterations. */
+  /**
+   * Returns whether this tween has completed all of its iterations.
+   *
+   * @return {@code true} if this tween has finished all iterations, {@code false} otherwise.
+   */
   public boolean getFinished() {
     return finished;
   }
@@ -1014,7 +1024,11 @@ public abstract class FlixelTween implements FlixelPoolable {
     return active;
   }
 
-  /** Returns whether this tween is currently active and updating. */
+  /**
+   * Returns whether this tween is currently active and updating.
+   *
+   * @return {@code true} if this tween is active and being updated, {@code false} otherwise.
+   */
   public boolean getActive() {
     return active;
   }

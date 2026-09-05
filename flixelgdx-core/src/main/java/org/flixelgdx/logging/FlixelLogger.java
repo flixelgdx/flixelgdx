@@ -148,12 +148,20 @@ public class FlixelLogger {
         : absolutePathToLogsFolder.replaceAll("/$", "");
   }
 
-  /** Returns the path to the folder where log files are written. */
+  /**
+   * Returns the path to the folder where log files are written.
+   *
+   * @return The absolute path to the logs folder, or {@code null} if using the default location.
+   */
   public String getLogsFolder() {
     return customLogsFolderPath;
   }
 
-  /** Returns {@code true} when the logger is permitted to write log files to disk. */
+  /**
+   * Returns {@code true} when the logger is permitted to write log files to disk.
+   *
+   * @return {@code true} if file logging is enabled, {@code false} otherwise.
+   */
   public boolean canStoreLogs() {
     return canStoreLogs;
   }
@@ -167,7 +175,11 @@ public class FlixelLogger {
     this.canStoreLogs = canStoreLogs;
   }
 
-  /** Returns the maximum number of log files kept before older ones are deleted. */
+  /**
+   * Returns the maximum number of log files kept before older ones are deleted.
+   *
+   * @return The maximum number of log files to retain on disk.
+   */
   public int getMaxLogFiles() {
     return maxLogFiles;
   }

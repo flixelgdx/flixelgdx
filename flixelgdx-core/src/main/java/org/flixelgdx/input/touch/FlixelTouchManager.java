@@ -210,7 +210,11 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
     maxPointers = n;
   }
 
-  /** Returns the current maximum number of tracked pointers. */
+  /**
+   * Returns the current maximum number of tracked pointers.
+   *
+   * @return The maximum number of simultaneous touch pointers tracked.
+   */
   public int getMaxPointers() {
     return maxPointers;
   }
@@ -286,7 +290,11 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
     this.worldCamera = camera;
   }
 
-  /** Returns the camera used for world coordinate unprojection, or {@code null} if using default. */
+  /**
+   * Returns the camera used for world coordinate unprojection, or {@code null} if using default.
+   *
+   * @return The camera used for world coordinate unprojection, or {@code null} for the default.
+   */
   @Nullable
   public FlixelCamera getWorldCamera() {
     return worldCamera;

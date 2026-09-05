@@ -124,6 +124,8 @@ public final class FlixelPlatform {
 
   /**
    * Returns the platform's ID string (for example, {@code "Desktop"}). Never {@code null}.
+   *
+   * @return The platform ID string, never {@code null}.
    */
   @NotNull
   public String getId() {

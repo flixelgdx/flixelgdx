@@ -305,6 +305,8 @@ public class FlixelActionAnalog extends FlixelAction {
 
   /**
    * Returns {@code true} when the stick has moved beyond the dead-zone threshold this frame.
+   *
+   * @return {@code true} if the stick has moved past the dead zone, {@code false} otherwise.
    */
   public boolean moved() {
     if (!active) {

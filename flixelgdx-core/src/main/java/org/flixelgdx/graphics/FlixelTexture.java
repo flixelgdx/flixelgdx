@@ -56,11 +56,15 @@ public interface FlixelTexture extends FlixelDestroyable {
 
   /**
    * Returns the texture width in pixels.
+   *
+   * @return The texture width in pixels.
    */
   int getWidth();
 
   /**
    * Returns the texture height in pixels.
+   *
+   * @return The texture height in pixels.
    */
   int getHeight();
 

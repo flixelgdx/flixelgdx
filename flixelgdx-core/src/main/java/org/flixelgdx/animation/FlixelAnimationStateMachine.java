@@ -344,6 +344,8 @@ public class FlixelAnimationStateMachine implements FlixelDestroyable, FlixelUpd
 
   /**
    * Returns the current logical state, or {@code ""} if {@link #setState} has not run yet.
+   *
+   * @return The current state name, or an empty string if no state has been set yet.
    */
   @NotNull
   public String getState() {

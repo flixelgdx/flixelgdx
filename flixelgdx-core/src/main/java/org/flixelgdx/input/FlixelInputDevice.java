@@ -69,6 +69,7 @@ public interface FlixelInputDevice {
    * Returns {@code true} when the given key is held down this instant, or {@code false} by default.
    *
    * @param key The {@link FlixelKey} code to test.
+   * @return {@code true} if the key is currently held down.
    */
   default boolean isKeyPressed(int key) {
     return false;
@@ -78,6 +79,7 @@ public interface FlixelInputDevice {
    * Returns {@code true} when the given mouse button is held down this instant, or {@code false} by default.
    *
    * @param button The {@link FlixelMouseButton} code to test.
+   * @return {@code true} if the button is currently held down.
    */
   default boolean isButtonPressed(int button) {
     return false;
@@ -87,6 +89,8 @@ public interface FlixelInputDevice {
    * Returns the pointer's horizontal position in screen pixels from the left edge, or {@code 0} when unknown.
    *
    * <p>Equivalent to {@link #getX(int)} with pointer {@code 0}.
+   *
+   * @return The horizontal position in screen pixels from the left edge, or {@code 0} when unknown.
    */
   default int getX() {
     return 0;
@@ -96,6 +100,8 @@ public interface FlixelInputDevice {
    * Returns the pointer's vertical position in screen pixels from the top edge, or {@code 0} when unknown.
    *
    * <p>Equivalent to {@link #getY(int)} with pointer {@code 0}.
+   *
+   * @return The vertical position in screen pixels from the top edge, or {@code 0} when unknown.
    */
   default int getY() {
     return 0;

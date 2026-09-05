@@ -201,22 +201,38 @@ public final class FlixelFrame {
     return regionHeight;
   }
 
-  /** Returns the left texture coordinate of this region in {@code [0, 1]}. */
+  /**
+   * Returns the left texture coordinate of this region in {@code [0, 1]}.
+   *
+   * @return The normalized left UV coordinate.
+   */
   public float getU() {
     return u;
   }
 
-  /** Returns the top texture coordinate of this region in {@code [0, 1]}. */
+  /**
+   * Returns the top texture coordinate of this region in {@code [0, 1]}.
+   *
+   * @return The normalized top UV coordinate.
+   */
   public float getV() {
     return v;
   }
 
-  /** Returns the right texture coordinate of this region in {@code [0, 1]}. */
+  /**
+   * Returns the right texture coordinate of this region in {@code [0, 1]}.
+   *
+   * @return The normalized right UV coordinate.
+   */
   public float getU2() {
     return u2;
   }
 
-  /** Returns the bottom texture coordinate of this region in {@code [0, 1]}. */
+  /**
+   * Returns the bottom texture coordinate of this region in {@code [0, 1]}.
+   *
+   * @return The normalized bottom UV coordinate.
+   */
   public float getV2() {
     return v2;
   }

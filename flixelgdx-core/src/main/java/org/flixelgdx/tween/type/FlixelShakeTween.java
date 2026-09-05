@@ -55,7 +55,11 @@ public class FlixelShakeTween extends FlixelTween {
   protected float savedY;
   protected boolean fadeOut = false;
 
-  /** Creates a new shake tween with the given tween settings. */
+  /**
+   * Creates a new shake tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelShakeTween(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }
@@ -83,6 +87,7 @@ public class FlixelShakeTween extends FlixelTween {
   /**
    * Sets how {@link #intensity} is interpreted. Default is {@link FlixelShakeUnit#FRACTION}.
    *
+   * @param shakeUnit The unit mode that determines how intensity values are scaled.
    * @return this tween for chaining.
    */
   public FlixelShakeTween setShakeUnit(FlixelShakeUnit shakeUnit) {
@@ -94,6 +99,7 @@ public class FlixelShakeTween extends FlixelTween {
    * When true, shake strength tapers to zero as the tween progresses ({@code scale} toward 1).
    * When false, each frame uses the full random range until the tween ends.
    *
+   * @param fadeOut {@code true} to taper the shake to zero over the tween duration.
    * @return this tween for chaining.
    */
   public FlixelShakeTween setFadeOut(boolean fadeOut) {
@@ -109,7 +115,11 @@ public class FlixelShakeTween extends FlixelTween {
     return fadeOut;
   }
 
-  /** Returns whether this shake tween fades out over time. */
+  /**
+   * Returns whether this shake tween fades out over time.
+   *
+   * @return {@code true} if the shake strength tapers to zero over the tween duration.
+   */
   public boolean getFadeOut() {
     return fadeOut;
   }

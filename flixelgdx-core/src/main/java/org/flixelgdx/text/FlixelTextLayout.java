@@ -183,6 +183,8 @@ public final class FlixelTextLayout {
 
   /**
    * Returns the laid-out text width in game pixels.
+   *
+   * @return The total width of the laid-out text block in game pixels.
    */
   public float getWidth() {
     return width;
@@ -190,6 +192,8 @@ public final class FlixelTextLayout {
 
   /**
    * Returns the laid-out text height in game pixels.
+   *
+   * @return The total height of the laid-out text block in game pixels.
    */
   public float getHeight() {
     return height;

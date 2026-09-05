@@ -57,7 +57,11 @@ public final class FlixelJsonWriter {
   /** Whether the next {@link #name(String)} must be preceded by a comma. */
   private boolean needComma;
 
-  /** Opens a JSON object. */
+  /**
+   * Opens a JSON object.
+   *
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter beginObject() {
     separateValue();
@@ -66,7 +70,11 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Closes the current JSON object. */
+  /**
+   * Closes the current JSON object.
+   *
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter endObject() {
     out.append('}');
@@ -74,7 +82,11 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Opens a JSON array. */
+  /**
+   * Opens a JSON array.
+   *
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter beginArray() {
     separateValue();
@@ -83,7 +95,11 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Closes the current JSON array. */
+  /**
+   * Closes the current JSON array.
+   *
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter endArray() {
     out.append(']');
@@ -110,7 +126,12 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Writes a string value, or {@code null} when {@code value} is {@code null}. */
+  /**
+   * Writes a string value, or {@code null} when {@code value} is {@code null}.
+   *
+   * @param value The string to write, or {@code null} to emit a JSON {@code null}.
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter value(@Nullable String value) {
     separateValue();
@@ -125,7 +146,12 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Writes an integer value. */
+  /**
+   * Writes an integer value.
+   *
+   * @param value The long integer to write.
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter value(long value) {
     separateValue();
@@ -134,7 +160,12 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Writes a floating-point value. */
+  /**
+   * Writes a floating-point value.
+   *
+   * @param value The double to write.
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter value(double value) {
     separateValue();
@@ -143,7 +174,12 @@ public final class FlixelJsonWriter {
     return this;
   }
 
-  /** Writes a boolean value. */
+  /**
+   * Writes a boolean value.
+   *
+   * @param value The boolean to write.
+   * @return This writer, for method chaining.
+   */
   @NotNull
   public FlixelJsonWriter value(boolean value) {
     separateValue();

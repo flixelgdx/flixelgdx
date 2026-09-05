@@ -41,17 +41,23 @@ public interface FlixelRasterizedFont extends FlixelDestroyable {
 
   /**
    * Returns the distance from the baseline up to the top of the tallest glyph, in pixels.
+   *
+   * @return The ascent in pixels.
    */
   float getAscent();
 
   /**
    * Returns the distance from the baseline down to the bottom of the lowest glyph, in pixels
    * (positive).
+   *
+   * @return The descent in pixels, expressed as a positive value.
    */
   float getDescent();
 
   /**
    * Returns the vertical distance between two consecutive baselines, in pixels.
+   *
+   * @return The line height in pixels.
    */
   float getLineHeight();
 

@@ -84,13 +84,21 @@ public class FlixelBootManager {
     afterStart.add(runnable);
   }
 
-  /** Returns the registered before-start callbacks. Called internally by {@link Flixel#start}. */
+  /**
+   * Returns the registered before-start callbacks. Called internally by {@link Flixel#start}.
+   *
+   * @return The list of runnables scheduled to execute before the game starts.
+   */
   @NotNull
   public FlixelArray<Runnable> getBeforeStart() {
     return beforeStart;
   }
 
-  /** Returns the registered after-start callbacks. Called internally by {@link Flixel#start}. */
+  /**
+   * Returns the registered after-start callbacks. Called internally by {@link Flixel#start}.
+   *
+   * @return The list of runnables scheduled to execute after the game starts.
+   */
   @NotNull
   public FlixelArray<Runnable> getAfterStart() {
     return afterStart;
@@ -101,7 +109,11 @@ public class FlixelBootManager {
     initialized = true;
   }
 
-  /** Returns whether the boot sequence has finished. */
+  /**
+   * Returns whether the boot sequence has finished.
+   *
+   * @return {@code true} if the boot sequence has completed, {@code false} otherwise.
+   */
   public boolean isInitialized() {
     return initialized;
   }

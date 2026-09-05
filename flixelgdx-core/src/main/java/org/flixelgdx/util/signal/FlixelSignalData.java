@@ -45,7 +45,11 @@ public final class FlixelSignalData {
   public static final class UpdateSignalData {
     private float elapsed;
 
-    /** Returns the elapsed time in seconds for this update frame. */
+    /**
+     * Returns the elapsed time in seconds for this update frame.
+     *
+     * @return The elapsed time in seconds since the last frame.
+     */
     public float elapsed() {
       return elapsed;
     }

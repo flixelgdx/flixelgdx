@@ -63,12 +63,20 @@ public final class FlixelDebugCommandArgs {
     this.args = args != null ? args : EMPTY;
   }
 
-  /** Returns the number of positional arguments. */
-  public int size() {
+  /**
+   * Returns the number of positional arguments.
+   *
+   * @return The number of positional argument tokens.
+   */
+  public int getArgumentCount() {
     return args.length;
   }
 
-  /** Returns {@code true} if there are no positional arguments. */
+  /**
+   * Returns {@code true} if there are no positional arguments.
+   *
+   * @return {@code true} if no positional argument tokens are present, {@code false} otherwise.
+   */
   public boolean isEmpty() {
     return args.length == 0;
   }
@@ -79,7 +87,7 @@ public final class FlixelDebugCommandArgs {
    * @param index The zero-based argument index.
    * @return The raw token, or {@code ""} if the index is invalid.
    */
-  @NotNull
+  @Nullable
   public String getString(int index) {
     return getString(index, "");
   }

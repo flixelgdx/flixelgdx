@@ -64,6 +64,7 @@ When explaining code or introducing patterns:
 - **Reflection is banned**. It breaks many platforms that require ahead-of-time compilation and is unstable for situations 
   like version bumps. If reflection must be used, don't touch the main area requiring it, and bring it up at the end of 
   your task, explaining why it's needed.
+- **Do not use deprecated APIs**. If one *is* used, replace it with the modernized, recommended version instead.
 
 ### Coding style
 

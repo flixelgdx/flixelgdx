@@ -242,6 +242,8 @@ public final class FlixelFont implements FlixelDestroyable {
 
   /**
    * Returns the vertical distance between two consecutive line tops, in baked pixels.
+   *
+   * @return The line height in baked pixels.
    */
   public float getLineHeight() {
     return lineHeight;
@@ -249,6 +251,8 @@ public final class FlixelFont implements FlixelDestroyable {
 
   /**
    * Returns the distance from a line's top to its baseline, in baked pixels.
+   *
+   * @return The baseline offset from the top of a line, in baked pixels.
    */
   public float getBase() {
     return base;

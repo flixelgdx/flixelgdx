@@ -32,6 +32,8 @@ public interface FlixelAntialiasable {
 
   /**
    * Returns whether antialiasing is currently applied on {@code this} object.
+   *
+   * @return {@code true} if antialiasing is active, {@code false} otherwise.
    */
   boolean isAntialiasing();
 

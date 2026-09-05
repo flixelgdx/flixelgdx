@@ -42,7 +42,11 @@ public class FlixelQuadPath extends FlixelMotion {
   private int numSegs;
   private float totalDistance;
 
-  /** Creates a new quadratic path tween with the given tween settings. */
+  /**
+   * Creates a new quadratic path tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelQuadPath(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

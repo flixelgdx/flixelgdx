@@ -85,17 +85,16 @@ public final class FlixelSoundSource implements FlixelAsset<FlixelSoundSource> {
     return assets.getRaw(path) != null;
   }
 
-  /** Returns whether this source's audio bytes have been loaded into memory. */
-  public boolean getLoaded() {
-    return isLoaded();
-  }
-
   @Override
   public boolean isPersist() {
     return persist;
   }
 
-  /** Returns whether this source persists across state transitions. */
+  /**
+   * Returns whether this source persists across state transitions.
+   *
+   * @return {@code true} if this source persists across state transitions, {@code false} otherwise.
+   */
   public boolean getPersist() {
     return persist;
   }

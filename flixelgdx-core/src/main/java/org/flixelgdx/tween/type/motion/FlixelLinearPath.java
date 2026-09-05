@@ -38,7 +38,11 @@ public class FlixelLinearPath extends FlixelMotion {
   private int pointCount;
   private float totalDistance;
 
-  /** Creates a new linear path tween with the given tween settings. */
+  /**
+   * Creates a new linear path tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelLinearPath(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

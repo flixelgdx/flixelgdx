@@ -94,12 +94,16 @@ public interface FlixelMouseIconManager {
   /**
    * Returns {@code true} when {@link #setCursor(FlixelMouseCursor)} may change what
    * the user sees for this target.
+   *
+   * @return {@code true} if standard cursor changes are supported, {@code false} otherwise.
    */
   boolean supportsCursors();
 
   /**
    * Returns {@code true} when {@link #setCustomCursor(FlixelGraphic, int, int)} can change the
    * cursor image on this session.
+   *
+   * @return {@code true} if custom cursor images are supported, {@code false} otherwise.
    */
   default boolean supportsCustomCursors() {
     return false;

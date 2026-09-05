@@ -138,6 +138,7 @@ public class FlixelTweenManager {
    * before {@link #addTween(FlixelTween)}. The {@code factory} is only used when the type is not
    * registered; registered types ignore the supplier and use the pool's {@code newObject()} method.
    *
+   * @param <T> The tween subtype to obtain.
    * @param type The tween class (e.g. {@link FlixelGoalTween}.class).
    * @param factory Fallback factory when the type is not registered or the pool is empty.
    * @return A reset tween of type {@code T}, either from the pool or from {@code factory}.

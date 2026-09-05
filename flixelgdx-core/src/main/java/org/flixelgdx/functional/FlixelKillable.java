@@ -34,6 +34,8 @@ public interface FlixelKillable {
 
   /**
    * Returns {@code true} when this instance is killed (disabled) in the Flixel sense.
+   *
+   * @return {@code true} if this object is killed, {@code false} if it is alive.
    */
   boolean isKilled();
 

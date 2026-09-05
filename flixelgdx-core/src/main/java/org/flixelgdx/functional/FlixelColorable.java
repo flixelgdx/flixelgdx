@@ -51,6 +51,8 @@ public interface FlixelColorable {
 
   /**
    * Returns the packed RGBA8888 tint value.
+   *
+   * @return The packed RGBA8888 integer representing the current tint color.
    */
   default int getPackedColor() {
     return getColor().getColor();

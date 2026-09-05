@@ -1174,12 +1174,20 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     private int gamepadId;
     private FlixelGamepadModel model;
 
-    /** Returns the ID of the connected gamepad. */
+    /**
+     * Returns the ID of the connected gamepad.
+     *
+     * @return The platform-assigned ID of the gamepad that connected.
+     */
     public int gamepadId() {
       return gamepadId;
     }
 
-    /** Returns the model of the connected gamepad. */
+    /**
+     * Returns the model of the connected gamepad.
+     *
+     * @return The detected model of the gamepad that connected; never {@code null}.
+     */
     @NotNull
     public FlixelGamepadModel model() {
       return model;
@@ -1195,7 +1203,11 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   public static final class GamepadDisconnectedEvent {
     private int gamepadId;
 
-    /** Returns the ID of the disconnected gamepad. */
+    /**
+     * Returns the ID of the disconnected gamepad.
+     *
+     * @return The platform-assigned ID of the gamepad that disconnected.
+     */
     public int gamepadId() {
       return gamepadId;
     }

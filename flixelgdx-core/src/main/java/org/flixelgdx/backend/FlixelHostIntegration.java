@@ -162,6 +162,8 @@ public interface FlixelHostIntegration {
    * Returns {@code true} if {@link #sendNotification(String, String)} is expected to do useful
    * work on this platform session. On the web backend, returns {@code true} only after
    * {@link #requestNotificationPermission()} has been granted by the user.
+   *
+   * @return {@code true} if notifications are supported and permitted on this platform.
    */
   default boolean supportsNotifications() {
     return false;
@@ -169,6 +171,8 @@ public interface FlixelHostIntegration {
 
   /**
    * Returns {@code true} if {@link #keepScreenAwake(boolean)} is supported on this platform.
+   *
+   * @return {@code true} if the wake lock feature is available on this platform.
    */
   default boolean supportsWakeLock() {
     return false;
@@ -177,6 +181,8 @@ public interface FlixelHostIntegration {
   /**
    * Returns {@code true} if text clipboard operations ({@link #copyToClipboard(String)} and
    * {@link #pasteFromClipboard()}) are supported on this platform.
+   *
+   * @return {@code true} if clipboard read and write operations are available on this platform.
    */
   default boolean supportsClipboard() {
     return false;
@@ -184,6 +190,8 @@ public interface FlixelHostIntegration {
 
   /**
    * Returns {@code true} if monitor information is supported or allowed on this platform.
+   *
+   * @return {@code true} if monitor enumeration is available on this platform.
    */
   default boolean supportsMonitors() {
     return false;

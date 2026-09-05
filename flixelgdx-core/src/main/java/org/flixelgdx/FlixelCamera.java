@@ -1432,7 +1432,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     return viewport.unproject(screenCoords);
   }
 
-  /** Returns the underlying {@link FlixelViewport} used for screen scaling. */
+  /**
+   * Returns the underlying {@link FlixelViewport} used for screen scaling.
+   *
+   * @return The viewport that manages this camera's screen scaling and world projection.
+   */
   public FlixelViewport getViewport() {
     return viewport;
   }
@@ -1440,6 +1444,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the world width as reported by the viewport. May differ from {@link #width} after
    * zoom or when a {@link FlixelViewport.Scaling#FIT} viewport adds letterbox bars.
+   *
+   * @return The world width in world units, as reported by the current viewport.
    */
   public float getWorldWidth() {
     return viewport.getWorldWidth();
@@ -1448,6 +1454,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the world height as reported by the viewport. May differ from {@link #height} after
    * zoom or when a {@link FlixelViewport.Scaling#FIT} viewport adds letterbox bars.
+   *
+   * @return The world height in world units, as reported by the current viewport.
    */
   public float getWorldHeight() {
     return viewport.getWorldHeight();
@@ -1456,6 +1464,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the visible width of the camera's view in world units, accounting for the current
    * zoom level ({@code width / zoom}).
+   *
+   * @return The visible width of the camera's view in world units.
    */
   public float getViewWidth() {
     return width / zoom;
@@ -1464,6 +1474,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the visible height of the camera's view in world units, accounting for the current
    * zoom level ({@code height / zoom}).
+   *
+   * @return The visible height of the camera's view in world units.
    */
   public float getViewHeight() {
     return height / zoom;
@@ -1472,6 +1484,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the left edge of the visible world region in world coordinates.
    * Equivalent to {@link #scrollX} plus the zoom margin.
+   *
+   * @return The left edge of the visible world region in world coordinates.
    */
   public float getViewX() {
     return scrollX + getViewMarginX();
@@ -1480,27 +1494,45 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the top edge of the visible world region in world coordinates.
    * Equivalent to {@link #scrollY} plus the zoom margin.
+   *
+   * @return The top edge of the visible world region in world coordinates.
    */
   public float getViewY() {
     return scrollY + getViewMarginY();
   }
 
-  /** Returns the left world coordinate of the visible region. Alias for {@link #getViewX()}. */
+  /**
+   * Returns the left world coordinate of the visible region. Alias for {@link #getViewX()}.
+   *
+   * @return The left world coordinate of the visible region.
+   */
   public float getViewLeft() {
     return getViewX();
   }
 
-  /** Returns the top world coordinate of the visible region. Alias for {@link #getViewY()}. */
+  /**
+   * Returns the top world coordinate of the visible region. Alias for {@link #getViewY()}.
+   *
+   * @return The top world coordinate of the visible region.
+   */
   public float getViewTop() {
     return getViewY();
   }
 
-  /** Returns the right world coordinate of the visible region. */
+  /**
+   * Returns the right world coordinate of the visible region.
+   *
+   * @return The right world coordinate of the visible region.
+   */
   public float getViewRight() {
     return getViewX() + getViewWidth();
   }
 
-  /** Returns the bottom world coordinate of the visible region. */
+  /**
+   * Returns the bottom world coordinate of the visible region.
+   *
+   * @return The bottom world coordinate of the visible region.
+   */
   public float getViewBottom() {
     return getViewY() + getViewHeight();
   }
@@ -1536,6 +1568,8 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the horizontal margin between the camera buffer edge and the visible view area,
    * in world units. This margin grows as zoom increases above {@code 1}.
+   *
+   * @return The horizontal margin in world units between the buffer edge and the visible area.
    */
   public float getViewMarginX() {
     return (width - getViewWidth()) / 2f;
@@ -1544,27 +1578,45 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   /**
    * Returns the vertical margin between the camera buffer edge and the visible view area,
    * in world units.
+   *
+   * @return The vertical margin in world units between the buffer edge and the visible area.
    */
   public float getViewMarginY() {
     return (height - getViewHeight()) / 2f;
   }
 
-  /** Returns the left view margin in world units. Alias for {@link #getViewMarginX()}. */
+  /**
+   * Returns the left view margin in world units. Alias for {@link #getViewMarginX()}.
+   *
+   * @return The left view margin in world units.
+   */
   public float getViewMarginLeft() {
     return getViewMarginX();
   }
 
-  /** Returns the right view margin in world units. Alias for {@link #getViewMarginX()}. */
+  /**
+   * Returns the right view margin in world units. Alias for {@link #getViewMarginX()}.
+   *
+   * @return The right view margin in world units.
+   */
   public float getViewMarginRight() {
     return getViewMarginX();
   }
 
-  /** Returns the top view margin in world units. Alias for {@link #getViewMarginY()}. */
+  /**
+   * Returns the top view margin in world units. Alias for {@link #getViewMarginY()}.
+   *
+   * @return The top view margin in world units.
+   */
   public float getViewMarginTop() {
     return getViewMarginY();
   }
 
-  /** Returns the bottom view margin in world units. Alias for {@link #getViewMarginY()}. */
+  /**
+   * Returns the bottom view margin in world units. Alias for {@link #getViewMarginY()}.
+   *
+   * @return The bottom view margin in world units.
+   */
   public float getViewMarginBottom() {
     return getViewMarginY();
   }
@@ -1573,32 +1625,54 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    * Returns a rectangle representing the view area within the camera buffer, using view-space
    * coordinates. The returned {@link FlixelRect} is an internal temporary instance shared by this
    * camera - copy the result if you need to hold onto it past the current frame.
+   *
+   * @return A temporary {@link FlixelRect} describing the visible area within the camera buffer.
    */
   public FlixelRect getViewMarginRect() {
     return tmpRect.set(getViewMarginLeft(), getViewMarginTop(), getViewWidth(), getViewHeight());
   }
 
-  /** Returns the current zoom level. {@code 1} = 1:1, {@code 2} = 2x magnification. */
+  /**
+   * Returns the current zoom level. {@code 1} = 1:1, {@code 2} = 2x magnification.
+   *
+   * @return The current zoom level, where {@code 1} is no zoom.
+   */
   public float getZoom() {
     return zoom;
   }
 
-  /** Returns the horizontal scale, which is equal to the zoom level. */
+  /**
+   * Returns the horizontal scale, which is equal to the zoom level.
+   *
+   * @return The horizontal scale factor, equal to the current zoom level.
+   */
   public float getScaleX() {
     return zoom;
   }
 
-  /** Returns the vertical scale, which is equal to the zoom level. */
+  /**
+   * Returns the vertical scale, which is equal to the zoom level.
+   *
+   * @return The vertical scale factor, equal to the current zoom level.
+   */
   public float getScaleY() {
     return zoom;
   }
 
-  /** Returns the total horizontal scale. Equivalent to {@link #getScaleX()}. */
+  /**
+   * Returns the total horizontal scale. Equivalent to {@link #getScaleX()}.
+   *
+   * @return The total horizontal scale factor.
+   */
   public float getTotalScaleX() {
     return getScaleX();
   }
 
-  /** Returns the total vertical scale. Equivalent to {@link #getScaleY()}. */
+  /**
+   * Returns the total vertical scale. Equivalent to {@link #getScaleY()}.
+   *
+   * @return The total vertical scale factor.
+   */
   public float getTotalScaleY() {
     return getScaleY();
   }
@@ -1642,7 +1716,11 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     this.regionMode = regionMode;
   }
 
-  /** Returns the current {@link RegionMode} used for screen-space viewport placement. */
+  /**
+   * Returns the current {@link RegionMode} used for screen-space viewport placement.
+   *
+   * @return The current region mode controlling how the camera's screen rectangle is interpreted.
+   */
   public RegionMode getRegionMode() {
     return regionMode;
   }
@@ -1691,52 +1769,92 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
     hasCustomPixelRegion = false;
   }
 
-  /** Returns {@code true} if a flash effect is currently active on this camera. */
+  /**
+   * Returns {@code true} if a flash effect is currently active on this camera.
+   *
+   * @return {@code true} if a flash effect is currently active, {@code false} otherwise.
+   */
   public boolean isFlashActive() {
     return flashActive;
   }
 
-  /** Returns {@code true} if a flash effect is currently active on this camera. */
+  /**
+   * Returns {@code true} if a flash effect is currently active on this camera.
+   *
+   * @return {@code true} if a flash effect is currently active, {@code false} otherwise.
+   */
   public boolean getFlashActive() {
     return flashActive;
   }
 
-  /** Returns {@code true} if a fade effect is currently active on this camera. */
+  /**
+   * Returns {@code true} if a fade effect is currently active on this camera.
+   *
+   * @return {@code true} if a fade effect is currently active, {@code false} otherwise.
+   */
   public boolean isFadeActive() {
     return fadeActive;
   }
 
-  /** Returns {@code true} if a fade effect is currently active on this camera. */
+  /**
+   * Returns {@code true} if a fade effect is currently active on this camera.
+   *
+   * @return {@code true} if a fade effect is currently active, {@code false} otherwise.
+   */
   public boolean getFadeActive() {
     return fadeActive;
   }
 
-  /** Returns {@code true} if a shake effect is currently active on this camera. */
+  /**
+   * Returns {@code true} if a shake effect is currently active on this camera.
+   *
+   * @return {@code true} if a shake effect is currently active, {@code false} otherwise.
+   */
   public boolean isShakeActive() {
     return shakeActive;
   }
 
-  /** Returns {@code true} if a shake effect is currently active on this camera. */
+  /**
+   * Returns {@code true} if a shake effect is currently active on this camera.
+   *
+   * @return {@code true} if a shake effect is currently active, {@code false} otherwise.
+   */
   public boolean getShakeActive() {
     return shakeActive;
   }
 
-  /** Returns the current flash overlay color. */
+  /**
+   * Returns the current flash overlay color.
+   *
+   * @return The color used for the flash overlay effect.
+   */
   public FlixelColor getFlashColor() {
     return flashColor;
   }
 
-  /** Returns the current flash overlay alpha, from {@code 0.0} to {@code 1.0}. */
+  /**
+   * Returns the current flash overlay alpha, from {@code 0.0} to {@code 1.0}.
+   *
+   * @return The flash overlay alpha, where {@code 0.0} is fully transparent and {@code 1.0} is fully opaque.
+   */
   public float getFlashAlpha() {
     return flashAlpha;
   }
 
-  /** Returns the current fade overlay color. */
+  /**
+   * Returns the current fade overlay color.
+   *
+   * @return The color used for the fade overlay effect.
+   */
   public FlixelColor getFadeColor() {
     return fadeColor;
   }
 
-  /** Returns the current fade overlay alpha, from {@code 0.0} to {@code 1.0}. */
+  /**
+   * Returns the current fade overlay alpha, from {@code 0.0} to {@code 1.0}.
+   *
+   * @return The fade overlay alpha, where {@code 0.0} is fully transparent and {@code 1.0} is fully opaque.
+   */
   public float getFadeAlpha() {
     return fadeAlpha;
   }

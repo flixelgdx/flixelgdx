@@ -40,7 +40,11 @@ public class FlixelCubicMotion extends FlixelMotion {
   private float p3x;
   private float p3y;
 
-  /** Creates a new cubic motion tween with the given tween settings. */
+  /**
+   * Creates a new cubic motion tween with the given tween settings.
+   *
+   * @param settings The tween settings to apply, or {@code null} for defaults.
+   */
   public FlixelCubicMotion(@Nullable FlixelTweenSettings settings) {
     super(settings);
   }

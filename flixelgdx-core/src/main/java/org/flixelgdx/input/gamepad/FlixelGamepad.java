@@ -54,6 +54,8 @@ public interface FlixelGamepad {
    *
    * <p>Useful as a fallback in resolvers when VID/PID are unavailable, but avoid matching on names
    * alone - they vary across drivers and OS versions.
+   *
+   * @return The gamepad's display name, never {@code null}.
    */
   @NotNull
   String getName();
@@ -83,30 +85,46 @@ public interface FlixelGamepad {
    * Returns the lowest native button index this gamepad can report.
    *
    * <p>Together with {@link #getMaxButtonIndex()} it bounds the range to scan when polling buttons.
+   *
+   * @return The minimum native button index supported by this gamepad.
    */
   int getMinButtonIndex();
 
-  /** Returns the highest native button index this gamepad can report. */
+  /**
+   * Returns the highest native button index this gamepad can report.
+   *
+   * @return The maximum native button index supported by this gamepad.
+   */
   int getMaxButtonIndex();
 
   /**
    * Returns {@code true} while the given button is held down.
    *
    * @param buttonIndex A native button index.
+   * @return {@code true} if the button is currently pressed, {@code false} otherwise.
    */
   boolean getButton(int buttonIndex);
 
-  /** Returns how many analog axes this gamepad exposes. */
+  /**
+   * Returns how many analog axes this gamepad exposes.
+   *
+   * @return The number of analog axes available on this gamepad.
+   */
   int getAxisCount();
 
   /**
    * Returns the axis value, normally in the range {@code [-1, 1]}.
    *
    * @param axisIndex A native axis index.
+   * @return The current value of the axis, typically in the range {@code [-1, 1]}.
    */
   float getAxis(int axisIndex);
 
-  /** Returns {@code true} when this gamepad reports that it can vibrate. */
+  /**
+   * Returns {@code true} when this gamepad reports that it can vibrate.
+   *
+   * @return {@code true} if vibration is supported, {@code false} otherwise.
+   */
   boolean canVibrate();
 
   /**
