@@ -187,16 +187,14 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         } else {
           // Block the thread until SDL delivers any event. This eliminates the busy-spin
           // that would otherwise burn CPU while the game is unfocused and not updating.
-          // SDL_WaitEvent returns false only on error; keep going in that case rather than
-          // crashing, since the game is still in a valid state.
           SDLEvents.SDL_WaitEvent(event);
           quit = dispatchEvent(event, game);
           if (!quit) {
             quit = pumpEvents(event, game);
           }
-          // Reset the frame clock so the first frame back does not carry a huge delta
-          // accumulated while the thread was parked.
-          lastNanos = System.nanoTime();
+          // lastNanos is intentionally NOT reset here. MAX_ELAPSED clamps the first-frame delta
+          // spike from a long park, and subsequent frames need the real elapsed time so that
+          // animations and movement advance at the correct rate.
         }
 
         if (quit) {

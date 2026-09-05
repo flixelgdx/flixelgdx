@@ -35,8 +35,6 @@ import java.nio.IntBuffer;
  *
  * <p>Exposes the window controls game code reaches through {@link org.flixelgdx.Flixel#window
  * Flixel.window}: title, size, position, fullscreen, decoration, focus, opacity, and closing.
- * The continuous-rendering hooks let the framework idle the loop while the window is unfocused;
- * the runner reads that flag via {@link #isContinuousRendering()} and {@link #consumeRenderRequest()}.
  *
  * <p>Window position is cached locally rather than queried from SDL on each read. The cache is
  * initialized when the window is bound and updated both from set calls and from
