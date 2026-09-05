@@ -120,39 +120,37 @@ public class FlixelWebAudioSound extends FlixelSound {
     });
   }
 
+  @NotNull
   @Override
-  protected void backendPlay() {
+  public FlixelSound resume() {
     if (decodedBuffer == null) {
       pendingPlay = true;
-      return;
+      return this;
     }
     startSource(cursorOffsetSeconds);
+    return this;
   }
 
+  @NotNull
   @Override
-  protected void backendPause() {
+  public FlixelSound pause() {
     if (playing) {
       cursorOffsetSeconds = currentCursor();
       stopSource();
       playing = false;
     }
+    return this;
   }
 
+  @NotNull
   @Override
-  protected void backendStop() {
-    stopSource();
-    cursorOffsetSeconds = 0.0;
-    playing = false;
+  public FlixelSound stop() {
     pendingPlay = false;
+    return super.stop();
   }
 
   @Override
-  protected boolean backendIsPlaying() {
-    return playing && !backendIsEnd();
-  }
-
-  @Override
-  protected boolean backendIsEnd() {
+  protected boolean isEnd() {
     if (decodedBuffer == null || looping || !playing) {
       return false;
     }
@@ -160,18 +158,24 @@ public class FlixelWebAudioSound extends FlixelSound {
   }
 
   @Override
-  protected float backendGetVolume() {
+  public float getVolume() {
     return volume;
   }
 
   @Override
-  protected void backendSetVolume(float volume) {
+  public FlixelSound setVolume(float volume) {
     this.volume = volume;
     gainNode.getGain().setValue(volume);
+    return this;
   }
 
   @Override
-  protected void backendSetPitch(float pitch) {
+  public float getPitch() {
+    return pitch;
+  }
+
+  @Override
+  public FlixelSound setPitch(float pitch) {
     // Re-anchor the cursor bookkeeping so the position stays continuous across a rate change.
     if (playing) {
       cursorOffsetSeconds = currentCursor();
@@ -181,53 +185,67 @@ public class FlixelWebAudioSound extends FlixelSound {
     if (source != null) {
       source.getPlaybackRate().setValue(pitch);
     }
+    return this;
   }
 
   @Override
-  protected void backendSetPan(float pan) {
+  public float getPan() {
+    return pan;
+  }
+
+  @Override
+  public FlixelSound setPan(float pan) {
     this.pan = pan;
     panNode.getPan().setValue(pan);
+    return this;
   }
 
   @Override
-  protected float backendGetCursor() {
-    return (float) currentCursor();
+  public float getTime() {
+    return (float) (currentCursor() * 1000.0);
   }
 
   @Override
-  protected void backendSeek(float seconds) {
-    cursorOffsetSeconds = seconds;
+  public FlixelSound setTime(float timeMs) {
+    cursorOffsetSeconds = timeMs / 1000.0;
     if (playing) {
-      startSource(seconds);
+      startSource(cursorOffsetSeconds);
     }
+    return this;
   }
 
   @Override
-  protected float backendGetLength() {
-    return decodedBuffer != null ? (float) decodedBuffer.getDuration() : 0f;
+  public float getLength() {
+    return decodedBuffer != null ? (float) (decodedBuffer.getDuration() * 1000.0) : 0f;
   }
 
   @Override
-  protected boolean backendIsLooping() {
+  public boolean isLooped() {
     return looping;
   }
 
   @Override
-  protected void backendSetLooping(boolean looping) {
-    this.looping = looping;
+  public FlixelSound setLooped(boolean looped) {
+    this.looping = looped;
     if (source != null) {
-      source.setLoop(looping);
+      source.setLoop(looped);
     }
+    return this;
   }
 
   @Override
-  protected void backendSetPosition(float x, float y, float z) {
+  public boolean isPlaying() {
+    return playing && !isEnd();
+  }
+
+  @Override
+  protected void applyPosition(float x, float y, float z) {
     // The web backend uses a stereo panner rather than a 3D spatializer, so positional audio is
     // not supported here.
   }
 
   @Override
-  protected void backendDispose() {
+  protected void disposeAudio() {
     stopSource();
     if (group != null) {
       group.unregister(this);
@@ -236,32 +254,32 @@ public class FlixelWebAudioSound extends FlixelSound {
 
   @Override
   @NotNull
-  protected FlixelReverbEffect backendCreateReverb(float wet) {
+  protected FlixelReverbEffect createReverbEffect(float wet) {
     return FlixelReverbEffect.NOOP;
   }
 
   @Override
   @NotNull
-  protected FlixelEchoEffect backendCreateEcho(float delaySeconds, float decay) {
+  protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
     return FlixelEchoEffect.NOOP;
   }
 
   @Override
   @NotNull
-  protected FlixelLowPassEffect backendCreateLowPass(double cutoffHz, int order) {
+  protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
     return FlixelLowPassEffect.NOOP;
   }
 
   @Override
-  protected void backendRouteTailToOutput(@NotNull FlixelSoundEffect tail) {}
+  protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
 
   @Override
-  protected void backendRestoreDirectRouting() {}
+  protected void restoreDirectRouting() {}
 
   /** Suspends this sound because its group was paused, remembering that the group did it. */
   void suspendForGroup() {
     if (playing) {
-      backendPause();
+      pause();
       suspendedByGroup = true;
     }
   }
@@ -270,7 +288,7 @@ public class FlixelWebAudioSound extends FlixelSound {
   void resumeForGroup() {
     if (suspendedByGroup) {
       suspendedByGroup = false;
-      backendPlay();
+      resume();
     }
   }
 

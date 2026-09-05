@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
  * and an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
  *
  * <p>Backends (miniaudio on native platforms, the Web Audio API on web) extend this class and
- * fill in the small set of {@code backend*} primitives; all the gameplay-facing behavior
+ * implement the abstract methods directly; all the gameplay-facing behavior
  * (fades, completion signals, effect-chain bookkeeping, persistence rules) lives here so it
  * works identically on every platform. Obtain instances from
  * {@link FlixelSoundManager#play Flixel.sound.play(...)},
@@ -59,9 +59,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<FlixelSound> {
 
-  private static final float SEC_TO_MS = 1000f;
-  private static final float MS_TO_SEC = 1f / SEC_TO_MS;
-
   @NotNull
   private final String path;
 
@@ -72,12 +69,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   private FlixelAsset<FlixelSoundSource> sourceAsset;
 
   private int refCount;
-
-  /** Cached pitch (some backends have no pitch getter). */
-  private float pitch = 1f;
-
-  /** Cached pan (some backends have no pan getter). */
-  private float pan = 0f;
 
   /** World x position for proximity/panning. */
   private float x;
@@ -116,43 +107,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     super();
     this.path = "__flixel_sound__/" + ID;
     retain();
-  }
-
-  /**
-   * Returns the manager that {@code this} sound is a member of.
-   *
-   * @return The manager, or {@code null} if not assigned to one.
-   */
-  @Nullable
-  public FlixelSoundManager getManager() {
-    return manager;
-  }
-
-  /**
-   * Sets the manager that {@code this} sound is a member of.
-   *
-   * @param manager The manager to set.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelSound setManager(@Nullable FlixelSoundManager manager) {
-    this.manager = manager;
-    return this;
-  }
-
-  /**
-   * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
-   * retained when this sound was created through {@link FlixelSoundManager}. The handle is
-   * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
-   * active {@link org.flixelgdx.asset.FlixelAssetMode FlixelAssetMode}.
-   *
-   * @param sourceAsset The retained source handle, or {@code null} to clear it.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelSound setSourceAsset(@Nullable FlixelAsset<FlixelSoundSource> sourceAsset) {
-    this.sourceAsset = sourceAsset;
-    return this;
   }
 
   @NotNull
@@ -200,9 +154,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    *
    * @return Volume level (0 = silent, 1 = default, values above 1 are allowed).
    */
-  public float getVolume() {
-    return backendGetVolume();
-  }
+  public abstract float getVolume();
 
   /**
    * Sets the volume.
@@ -210,19 +162,14 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @param volume Volume level (0 = silent, 1 = default, values above 1 amplify).
    * @return {@code this} for chaining.
    */
-  public FlixelSound setVolume(float volume) {
-    backendSetVolume(volume);
-    return this;
-  }
+  public abstract FlixelSound setVolume(float volume);
 
   /**
-   * Returns the cached pitch multiplier.
+   * Returns the pitch multiplier.
    *
    * @return Pitch multiplier; 1 = default, values above 1 raise pitch.
    */
-  public float getPitch() {
-    return pitch;
-  }
+  public abstract float getPitch();
 
   /**
    * Sets the pitch multiplier.
@@ -230,20 +177,14 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @param pitch Pitch value; must be greater than 0.
    * @return {@code this} for chaining.
    */
-  public FlixelSound setPitch(float pitch) {
-    this.pitch = pitch;
-    backendSetPitch(pitch);
-    return this;
-  }
+  public abstract FlixelSound setPitch(float pitch);
 
   /**
-   * Returns the cached pan value.
+   * Returns the stereo pan.
    *
    * @return Pan in [-1, 1]; -1 = left, 0 = center, 1 = right.
    */
-  public float getPan() {
-    return pan;
-  }
+  public abstract float getPan();
 
   /**
    * Sets the stereo pan.
@@ -251,11 +192,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @param pan Pan value in [-1, 1].
    * @return {@code this} for chaining.
    */
-  public FlixelSound setPan(float pan) {
-    this.pan = pan;
-    backendSetPan(pan);
-    return this;
-  }
+  public abstract FlixelSound setPan(float pan);
 
   /**
    * Returns the current playback position in milliseconds.
@@ -264,9 +201,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    *
    * @return Playback position in milliseconds.
    */
-  public float getTime() {
-    return backendGetCursor() * SEC_TO_MS;
-  }
+  public abstract float getTime();
 
   /**
    * Sets the playback position in milliseconds.
@@ -274,28 +209,21 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @param timeMs The time to set the playback position to in milliseconds.
    * @return {@code this} for chaining.
    */
-  public FlixelSound setTime(float timeMs) {
-    backendSeek(timeMs * MS_TO_SEC);
-    return this;
-  }
+  public abstract FlixelSound setTime(float timeMs);
 
   /**
    * Returns the total length of the sound in milliseconds.
    *
    * @return Duration in milliseconds, or 0 if unknown.
    */
-  public float getLength() {
-    return backendGetLength() * SEC_TO_MS;
-  }
+  public abstract float getLength();
 
   /**
    * Returns whether this sound is set to loop.
    *
    * @return {@code true} if looping is enabled.
    */
-  public boolean isLooped() {
-    return backendIsLooping();
-  }
+  public abstract boolean isLooped();
 
   /**
    * Returns whether this sound is set to loop.
@@ -303,7 +231,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return {@code true} if looping is enabled.
    */
   public boolean getLooped() {
-    return backendIsLooping();
+    return isLooped();
   }
 
   /**
@@ -312,19 +240,14 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @param looped {@code true} to loop, {@code false} to play once.
    * @return {@code this} for chaining.
    */
-  public FlixelSound setLooped(boolean looped) {
-    backendSetLooping(looped);
-    return this;
-  }
+  public abstract FlixelSound setLooped(boolean looped);
 
   /**
    * Returns whether this sound is currently playing.
    *
    * @return {@code true} if the sound is actively playing.
    */
-  public boolean isPlaying() {
-    return backendIsPlaying();
-  }
+  public abstract boolean isPlaying();
 
   /**
    * Returns whether this sound is currently playing.
@@ -332,7 +255,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return {@code true} if the sound is actively playing.
    */
   public boolean getPlaying() {
-    return backendIsPlaying();
+    return isPlaying();
   }
 
   /**
@@ -370,7 +293,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     if (forceRestart) {
       setTime(startTimeMs);
     }
-    backendPlay();
+    resume();
     return this;
   }
 
@@ -380,10 +303,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelSound pause() {
-    backendPause();
-    return this;
-  }
+  public abstract FlixelSound pause();
 
   /**
    * Stops the sound and resets position to 0.
@@ -393,7 +313,8 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   @NotNull
   public FlixelSound stop() {
     cancelFadeTween();
-    backendStop();
+    pause();
+    setTime(0f);
     return this;
   }
 
@@ -403,10 +324,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return {@code this} for chaining.
    */
   @NotNull
-  public FlixelSound resume() {
-    backendPlay();
-    return this;
-  }
+  public abstract FlixelSound resume();
 
   /**
    * Returns the position (in milliseconds) at which playback will stop, or
@@ -496,13 +414,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return fadeTween;
   }
 
-  private void cancelFadeTween() {
-    if (fadeTween != null) {
-      fadeTween.cancel();
-      fadeTween = null;
-    }
-  }
-
   /**
    * Returns the X position in world coordinates (for proximity/panning).
    *
@@ -531,7 +442,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   public FlixelSound setPosition(float x, float y) {
     this.x = x;
     this.y = y;
-    backendSetPosition(x, y, 0f);
+    applyPosition(x, y, 0f);
     return this;
   }
 
@@ -576,13 +487,50 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return this;
   }
 
+  /**
+   * Returns the manager that {@code this} sound is a member of.
+   *
+   * @return The manager, or {@code null} if not assigned to one.
+   */
+  @Nullable
+  public FlixelSoundManager getManager() {
+    return manager;
+  }
+
+  /**
+   * Sets the manager that {@code this} sound is a member of.
+   *
+   * @param manager The manager to set.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelSound setManager(@Nullable FlixelSoundManager manager) {
+    this.manager = manager;
+    return this;
+  }
+
+  /**
+   * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
+   * retained when this sound was created through {@link FlixelSoundManager}. The handle is
+   * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
+   * active {@link org.flixelgdx.asset.FlixelAssetMode FlixelAssetMode}.
+   *
+   * @param sourceAsset The retained source handle, or {@code null} to clear it.
+   * @return {@code this} for chaining.
+   */
+  @NotNull
+  public FlixelSound setSourceAsset(@Nullable FlixelAsset<FlixelSoundSource> sourceAsset) {
+    this.sourceAsset = sourceAsset;
+    return this;
+  }
+
   @Override
   public void update(float elapsed) {
     if (!active || !exists) {
       return;
     }
 
-    if (backendIsEnd() && !backendIsLooping() && !completeFired) {
+    if (isEnd() && !isLooped() && !completeFired) {
       completeFired = true;
       onComplete.dispatch();
       if (autoDestroy) {
@@ -626,7 +574,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
       n.destroy();
     }
     audioEffectNodes.clear();
-    backendRestoreDirectRouting();
+    restoreDirectRouting();
   }
 
   /**
@@ -648,7 +596,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    */
   @NotNull
   public FlixelReverbEffect addReverb(float wetAmount) {
-    FlixelReverbEffect node = backendCreateReverb(wetAmount);
+    FlixelReverbEffect node = createReverbEffect(wetAmount);
     attachEffectNode(node);
     return node;
   }
@@ -665,7 +613,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    */
   @NotNull
   public FlixelEchoEffect addEcho(float delaySeconds, float decay) {
-    FlixelEchoEffect node = backendCreateEcho(delaySeconds, decay);
+    FlixelEchoEffect node = createEchoEffect(delaySeconds, decay);
     attachEffectNode(node);
     return node;
   }
@@ -686,7 +634,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    */
   @NotNull
   public FlixelLowPassEffect addLowPassMuffle(double cutoffHz) {
-    FlixelLowPassEffect node = backendCreateLowPass(cutoffHz, 2);
+    FlixelLowPassEffect node = createLowPassEffect(cutoffHz, 2);
     attachEffectNode(node);
     return node;
   }
@@ -705,127 +653,44 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return this;
   }
 
-  private void attachEffectNode(@NotNull FlixelSoundEffect node) {
-    if (audioEffectNodes.getSize() == 0) {
-      node.attachToUpstreamSound(this, 0);
-    } else {
-      node.attachToUpstreamNode(audioEffectNodes.peek(), 0);
-    }
-    audioEffectNodes.add(node);
-    backendRouteTailToOutput(node);
-  }
-
   @Override
   public void destroy() {
+    super.destroy();
     release();
     if (sourceAsset != null) {
       sourceAsset.release();
       sourceAsset = null;
     }
-    super.destroy();
     clearAudioEffectChain();
     cancelFadeTween();
     onComplete.clear();
-    backendStop();
-    pitch = 1f;
-    pan = 0f;
-    backendSetPitch(1f);
-    backendSetPan(0f);
-    x = 0f;
-    y = 0f;
-    backendSetPosition(0f, 0f, 0f);
+    pause();
+    setTime(0f);
+    setPitch(1f);
+    setPan(0f);
+    setPosition(0f, 0f);
     endTimeMs = null;
     autoDestroy = false;
     persist = false;
     completeFired = false;
-    backendDispose();
+    disposeAudio();
   }
 
-  /** Starts or resumes playback on the backend. */
-  protected abstract void backendPlay();
-
-  /** Pauses playback at the current cursor position. */
-  protected abstract void backendPause();
-
-  /** Stops playback and resets the cursor to the beginning. */
-  protected abstract void backendStop();
-
   /**
-   * Returns {@code true} if the backend voice is actively playing.
+   * Returns {@code true} when the cursor is at or past the end of the stream.
+   * Used internally by {@link #update(float)} to fire {@link #onComplete}.
    */
-  protected abstract boolean backendIsPlaying();
-
-  /**
-   * Returns {@code true} if the cursor is at or past the end of the stream.
-   */
-  protected abstract boolean backendIsEnd();
-
-  /**
-   * Returns the backend volume ({@code 0} = silent, {@code 1} = default).
-   */
-  protected abstract float backendGetVolume();
-
-  /**
-   * Applies a volume to the backend voice.
-   *
-   * @param volume Volume level ({@code 0} = silent, {@code 1} = default).
-   */
-  protected abstract void backendSetVolume(float volume);
-
-  /**
-   * Applies a pitch multiplier to the backend voice.
-   *
-   * @param pitch Pitch multiplier; must be greater than {@code 0}.
-   */
-  protected abstract void backendSetPitch(float pitch);
-
-  /**
-   * Applies a stereo pan to the backend voice.
-   *
-   * @param pan Pan value in {@code [-1, 1]}.
-   */
-  protected abstract void backendSetPan(float pan);
-
-  /**
-   * Returns the current cursor position in seconds.
-   */
-  protected abstract float backendGetCursor();
-
-  /**
-   * Seeks the backend voice.
-   *
-   * @param seconds Target position in seconds.
-   */
-  protected abstract void backendSeek(float seconds);
-
-  /**
-   * Returns the total sound length in seconds, or {@code 0} when unknown.
-   */
-  protected abstract float backendGetLength();
-
-  /**
-   * Returns {@code true} when the backend voice loops at the end.
-   */
-  protected abstract boolean backendIsLooping();
-
-  /**
-   * Enables or disables backend looping.
-   *
-   * @param looping {@code true} to loop.
-   */
-  protected abstract void backendSetLooping(boolean looping);
+  protected abstract boolean isEnd();
 
   /**
    * Applies a 3-D position for spatial audio. Backends without spatial audio ignore this.
+   * Called by {@link #setPosition(float, float)} and {@link #destroy()}.
    *
    * @param x X position.
    * @param y Y position.
    * @param z Z position.
    */
-  protected abstract void backendSetPosition(float x, float y, float z);
-
-  /** Releases the backend voice's native resources. Called at the end of {@link #destroy()}. */
-  protected abstract void backendDispose();
+  protected abstract void applyPosition(float x, float y, float z);
 
   /**
    * Creates a reverb node on this sound's engine.
@@ -834,7 +699,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return A new reverb node, or {@link FlixelReverbEffect#NOOP} when unsupported.
    */
   @NotNull
-  protected abstract FlixelReverbEffect backendCreateReverb(float wet);
+  protected abstract FlixelReverbEffect createReverbEffect(float wet);
 
   /**
    * Creates a delay / echo node on this sound's engine.
@@ -844,7 +709,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return A new echo node, or {@link FlixelEchoEffect#NOOP} when unsupported.
    */
   @NotNull
-  protected abstract FlixelEchoEffect backendCreateEcho(float delaySeconds, float decay);
+  protected abstract FlixelEchoEffect createEchoEffect(float delaySeconds, float decay);
 
   /**
    * Creates a low-pass filter node on this sound's engine.
@@ -854,7 +719,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * @return A new low-pass node, or {@link FlixelLowPassEffect#NOOP} when unsupported.
    */
   @NotNull
-  protected abstract FlixelLowPassEffect backendCreateLowPass(double cutoffHz, int order);
+  protected abstract FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order);
 
   /**
    * Routes the chain's tail node to the engine output so processed audio is audible. Called
@@ -862,11 +727,31 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    *
    * @param tail The current tail of the effect chain.
    */
-  protected abstract void backendRouteTailToOutput(@NotNull FlixelSoundEffect tail);
+  protected abstract void routeEffectToOutput(@NotNull FlixelSoundEffect tail);
 
   /**
    * Restores direct sound-to-output routing after the effect chain is cleared. Backends
    * without an audio graph no-op.
    */
-  protected abstract void backendRestoreDirectRouting();
+  protected abstract void restoreDirectRouting();
+
+  /** Releases the backend voice's native resources. Called at the end of {@link #destroy()}. */
+  protected abstract void disposeAudio();
+
+  private void cancelFadeTween() {
+    if (fadeTween != null) {
+      fadeTween.cancel();
+      fadeTween = null;
+    }
+  }
+
+  private void attachEffectNode(@NotNull FlixelSoundEffect node) {
+    if (audioEffectNodes.getSize() == 0) {
+      node.attachToUpstreamSound(this, 0);
+    } else {
+      node.attachToUpstreamNode(audioEffectNodes.peek(), 0);
+    }
+    audioEffectNodes.add(node);
+    routeEffectToOutput(node);
+  }
 }

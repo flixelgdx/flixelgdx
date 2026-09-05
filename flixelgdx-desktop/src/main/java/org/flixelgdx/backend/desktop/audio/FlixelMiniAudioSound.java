@@ -34,8 +34,8 @@ import org.jetbrains.annotations.NotNull;
  * A {@link FlixelSound} backed by one miniaudio voice.
  *
  * <p>Every gameplay-facing behavior (fades, completion signals, effect bookkeeping) lives in the
- * shared {@link FlixelSound} base; this subclass only forwards the small set of backend
- * primitives to the {@link FlixelMiniAudio} native bridge.
+ * shared {@link FlixelSound} base; this subclass only forwards audio operations to the
+ * {@link FlixelMiniAudio} native bridge.
  *
  * <p>The effect-node factory methods return the no-op sentinels for now: miniaudio's node graph
  * is a follow-up slice, so reverb/echo/low-pass are accepted but do nothing rather than failing.
@@ -44,6 +44,12 @@ public class FlixelMiniAudioSound extends FlixelSound {
 
   /** Native miniaudio sound handle, or {@code 0} once disposed. */
   private long handle;
+
+  /** Cached pitch; miniaudio has no pitch getter. */
+  private float pitch = 1f;
+
+  /** Cached pan; miniaudio has no pan getter. */
+  private float pan = 0f;
 
   /**
    * Wraps a native sound handle.
@@ -54,102 +60,115 @@ public class FlixelMiniAudioSound extends FlixelSound {
     this.handle = handle;
   }
 
+  @NotNull
   @Override
-  protected void backendPlay() {
+  public FlixelSound resume() {
     if (handle != 0L) {
       FlixelMiniAudio.soundStart(handle);
     }
+    return this;
   }
 
+  @NotNull
   @Override
-  protected void backendPause() {
+  public FlixelSound pause() {
     if (handle != 0L) {
       FlixelMiniAudio.soundStop(handle);
     }
+    return this;
   }
 
   @Override
-  protected void backendStop() {
-    if (handle != 0L) {
-      FlixelMiniAudio.soundStop(handle);
-      FlixelMiniAudio.soundSeek(handle, 0f);
-    }
-  }
-
-  @Override
-  protected boolean backendIsPlaying() {
-    return handle != 0L && FlixelMiniAudio.soundIsPlaying(handle);
-  }
-
-  @Override
-  protected boolean backendIsEnd() {
+  protected boolean isEnd() {
     return handle == 0L || FlixelMiniAudio.soundIsAtEnd(handle);
   }
 
   @Override
-  protected float backendGetVolume() {
+  public float getVolume() {
     return handle == 0L ? 0f : FlixelMiniAudio.soundGetVolume(handle);
   }
 
   @Override
-  protected void backendSetVolume(float volume) {
+  public FlixelSound setVolume(float volume) {
     if (handle != 0L) {
       FlixelMiniAudio.soundSetVolume(handle, volume);
     }
+    return this;
   }
 
   @Override
-  protected void backendSetPitch(float pitch) {
+  public float getPitch() {
+    return pitch;
+  }
+
+  @Override
+  public FlixelSound setPitch(float pitch) {
+    this.pitch = pitch;
     if (handle != 0L) {
       FlixelMiniAudio.soundSetPitch(handle, pitch);
     }
+    return this;
   }
 
   @Override
-  protected void backendSetPan(float pan) {
+  public float getPan() {
+    return pan;
+  }
+
+  @Override
+  public FlixelSound setPan(float pan) {
+    this.pan = pan;
     if (handle != 0L) {
       FlixelMiniAudio.soundSetPan(handle, pan);
     }
+    return this;
   }
 
   @Override
-  protected float backendGetCursor() {
-    return handle == 0L ? 0f : FlixelMiniAudio.soundGetCursor(handle);
+  public float getTime() {
+    return handle == 0L ? 0f : FlixelMiniAudio.soundGetCursor(handle) * 1000f;
   }
 
   @Override
-  protected void backendSeek(float seconds) {
+  public FlixelSound setTime(float timeMs) {
     if (handle != 0L) {
-      FlixelMiniAudio.soundSeek(handle, seconds);
+      FlixelMiniAudio.soundSeek(handle, timeMs / 1000f);
     }
+    return this;
   }
 
   @Override
-  protected float backendGetLength() {
-    return handle == 0L ? 0f : FlixelMiniAudio.soundGetLength(handle);
+  public float getLength() {
+    return handle == 0L ? 0f : FlixelMiniAudio.soundGetLength(handle) * 1000f;
   }
 
   @Override
-  protected boolean backendIsLooping() {
+  public boolean isLooped() {
     return handle != 0L && FlixelMiniAudio.soundIsLooping(handle);
   }
 
   @Override
-  protected void backendSetLooping(boolean looping) {
+  public FlixelSound setLooped(boolean looped) {
     if (handle != 0L) {
-      FlixelMiniAudio.soundSetLooping(handle, looping);
+      FlixelMiniAudio.soundSetLooping(handle, looped);
     }
+    return this;
   }
 
   @Override
-  protected void backendSetPosition(float x, float y, float z) {
+  public boolean isPlaying() {
+    return handle != 0L && FlixelMiniAudio.soundIsPlaying(handle);
+  }
+
+  @Override
+  protected void applyPosition(float x, float y, float z) {
     if (handle != 0L) {
       FlixelMiniAudio.soundSetPosition(handle, x, y, z);
     }
   }
 
   @Override
-  protected void backendDispose() {
+  protected void disposeAudio() {
     if (handle != 0L) {
       FlixelMiniAudio.soundUninit(handle);
       handle = 0L;
@@ -158,25 +177,25 @@ public class FlixelMiniAudioSound extends FlixelSound {
 
   @NotNull
   @Override
-  protected FlixelReverbEffect backendCreateReverb(float wet) {
+  protected FlixelReverbEffect createReverbEffect(float wet) {
     return FlixelReverbEffect.NOOP;
   }
 
   @NotNull
   @Override
-  protected FlixelEchoEffect backendCreateEcho(float delaySeconds, float decay) {
+  protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
     return FlixelEchoEffect.NOOP;
   }
 
   @NotNull
   @Override
-  protected FlixelLowPassEffect backendCreateLowPass(double cutoffHz, int order) {
+  protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
     return FlixelLowPassEffect.NOOP;
   }
 
   @Override
-  protected void backendRouteTailToOutput(@NotNull FlixelSoundEffect tail) {}
+  protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
 
   @Override
-  protected void backendRestoreDirectRouting() {}
+  protected void restoreDirectRouting() {}
 }

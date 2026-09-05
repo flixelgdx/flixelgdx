@@ -23,17 +23,20 @@
  */
 package org.flixelgdx.group;
 
+import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.collections.FlixelArray;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
 /**
- * Group-like containers with a typed member list. This interface is intentionally generic so any project can use
- * {@link FlixelGroup} with any member type without adopting {@link org.flixelgdx.FlixelBasic FlixelBasic}.
+ * Group-like containers with a typed member list. This interface is intentionally generic
+ * so any project can use {@link FlixelGroup} with any member type without adopting
+ * {@link FlixelBasic}.
  *
- * <p>FlixelGDX gameplay code that uses lifecycle flags and {@link org.flixelgdx.FlixelBasic#destroy() FlixelBasic.destroy()} should
- * implement {@link FlixelBasicGroupable} instead (or use {@link FlixelBasicGroup} / {@link FlixelSpriteGroup}).
+ * <p>FlixelGDX gameplay code that uses lifecycle flags and {@link FlixelBasic#destroy()}
+ * should implement {@link FlixelBasicGroupable} instead (or use {@link FlixelBasicGroup} /
+ * {@link FlixelSpriteGroup}).
  *
  * @param <T> Member type.
  */
@@ -47,8 +50,9 @@ public interface FlixelGroupable<T> {
   void add(T member);
 
   /**
-   * Removes the member from this group only. Does not interpret or tear down the member; see {@link FlixelBasicGroupable}
-   * for optional {@code destroy} semantics on {@link org.flixelgdx.FlixelBasic FlixelBasic} members.
+   * Removes the member from this group only. Does not interpret or tear down the member; see
+   * {@link FlixelBasicGroupable} for optional {@code destroy} semantics on
+   * {@link FlixelBasic} members.
    *
    * @param member The member to remove.
    */
@@ -58,7 +62,8 @@ public interface FlixelGroupable<T> {
   void clear();
 
   /**
-   * Returns the backing array, or {@code null} if the implementation has not allocated it yet ({@link FlixelGroup}).
+   * Returns the backing array, or {@code null} if the implementation has not allocated it yet
+   * ({@link FlixelGroup}).
    *
    * @return The backing member array, or {@code null} when not yet allocated.
    */
@@ -66,14 +71,16 @@ public interface FlixelGroupable<T> {
   FlixelArray<T> getMembers();
 
   /**
-   * Returns the maximum number of members allowed. When {@code 0}, the group can grow without limit.
+   * Returns the maximum number of members allowed. When {@code 0}, the group can grow without
+   * limit.
    *
    * @return The maximum member count, or {@code 0} for unlimited.
    */
   int getMaxSize();
 
   /**
-   * Sets the maximum number of members allowed. Values less than {@code 0} are clamped to {@code 0} (unlimited).
+   * Sets the maximum number of members allowed. Values less than {@code 0} are clamped to
+   * {@code 0} (unlimited).
    *
    * @param maxSize The new maximum member count; values below {@code 0} are treated as {@code 0}.
    */
@@ -93,7 +100,8 @@ public interface FlixelGroupable<T> {
   }
 
   /**
-   * Returns the index of the first {@code null} slot in {@link #getMembers()}, or {@code -1} if none.
+   * Returns the index of the first {@code null} slot in {@link #getMembers()}, or {@code -1}
+   * if none.
    *
    * @return The index of the first null slot, or {@code -1} when no null slot exists.
    */

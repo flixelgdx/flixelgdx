@@ -60,107 +60,126 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
   private static final class NoopSound extends FlixelSound {
 
     private float volume = 1f;
-    private float cursorSeconds;
+    private float cursorMs;
+    private float pitch = 1f;
+    private float pan;
 
     private boolean looping;
     private boolean playing;
 
+    @NotNull
     @Override
-    protected void backendPlay() {
+    public FlixelSound resume() {
       playing = true;
+      return this;
     }
 
+    @NotNull
     @Override
-    protected void backendPause() {
+    public FlixelSound pause() {
       playing = false;
+      return this;
     }
 
     @Override
-    protected void backendStop() {
-      playing = false;
-      cursorSeconds = 0f;
-    }
-
-    @Override
-    protected boolean backendIsPlaying() {
-      return playing;
-    }
-
-    @Override
-    protected boolean backendIsEnd() {
+    protected boolean isEnd() {
       return !playing;
     }
 
     @Override
-    protected float backendGetVolume() {
+    public float getVolume() {
       return volume;
     }
 
     @Override
-    protected void backendSetVolume(float volume) {
+    public FlixelSound setVolume(float volume) {
       this.volume = volume;
+      return this;
     }
 
     @Override
-    protected void backendSetPitch(float pitch) {}
-
-    @Override
-    protected void backendSetPan(float pan) {}
-
-    @Override
-    protected float backendGetCursor() {
-      return cursorSeconds;
+    public float getPitch() {
+      return pitch;
     }
 
     @Override
-    protected void backendSeek(float seconds) {
-      cursorSeconds = seconds;
+    public FlixelSound setPitch(float pitch) {
+      this.pitch = pitch;
+      return this;
     }
 
     @Override
-    protected float backendGetLength() {
+    public float getPan() {
+      return pan;
+    }
+
+    @Override
+    public FlixelSound setPan(float pan) {
+      this.pan = pan;
+      return this;
+    }
+
+    @Override
+    public float getTime() {
+      return cursorMs;
+    }
+
+    @Override
+    public FlixelSound setTime(float timeMs) {
+      cursorMs = timeMs;
+      return this;
+    }
+
+    @Override
+    public float getLength() {
       return 0f;
     }
 
     @Override
-    protected boolean backendIsLooping() {
+    public boolean isLooped() {
       return looping;
     }
 
     @Override
-    protected void backendSetLooping(boolean looping) {
-      this.looping = looping;
+    public FlixelSound setLooped(boolean looped) {
+      this.looping = looped;
+      return this;
     }
 
     @Override
-    protected void backendSetPosition(float x, float y, float z) {}
+    public boolean isPlaying() {
+      return playing;
+    }
 
     @Override
-    protected void backendDispose() {}
+    protected void applyPosition(float x, float y, float z) {}
+
+    @Override
+    protected void disposeAudio() {}
 
     @NotNull
     @Override
-    protected FlixelReverbEffect backendCreateReverb(float wet) {
+    protected FlixelReverbEffect createReverbEffect(float wet) {
       return FlixelReverbEffect.NOOP;
     }
 
     @NotNull
     @Override
-    protected FlixelEchoEffect backendCreateEcho(float delaySeconds, float decay) {
+    protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
       return FlixelEchoEffect.NOOP;
     }
 
     @NotNull
     @Override
-    protected FlixelLowPassEffect backendCreateLowPass(double cutoffHz, int order) {
+    protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
       return FlixelLowPassEffect.NOOP;
     }
 
     @Override
-    protected void backendRouteTailToOutput(@NotNull FlixelSoundEffect tail) {}
+    protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
 
     @Override
-    protected void backendRestoreDirectRouting() {}
+    protected void restoreDirectRouting() {}
   }
 
   /** A group that tracks nothing. */

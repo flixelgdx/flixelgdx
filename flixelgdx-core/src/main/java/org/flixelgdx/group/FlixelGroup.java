@@ -27,6 +27,7 @@ import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelArraySupplier;
+import org.flixelgdx.functional.IFlixelBasic;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,9 +39,9 @@ import java.util.Objects;
  * {@code FlixelGroup<YourEntity>}, etc.): call {@link #add}, {@link #remove}, and {@link #forEachMember}
  * yourself; there is no automatic {@code update}/{@code draw}.
  *
- * <p>For gameplay objects that implement {@link org.flixelgdx.functional.IFlixelBasic IFlixelBasic}
- * (including {@link FlixelBasic} subclasses), use {@link FlixelBasicGroup} or {@link FlixelState}
- * instead so members receive the usual update/draw/recycle lifecycle.
+ * <p>For gameplay objects that implement {@link IFlixelBasic} (including {@link FlixelBasic} subclasses),
+ * use {@link FlixelBasicGroup} or {@link FlixelState} instead so members receive the usual
+ * update/draw/recycle lifecycle.
  *
  * @param <T> Member type (unconstrained).
  * @see FlixelBasicGroup
