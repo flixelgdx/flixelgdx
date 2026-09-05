@@ -24,6 +24,7 @@
 package org.flixelgdx.logging;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.util.FlixelAsciiCodes;
 import org.flixelgdx.util.FlixelString;
@@ -190,7 +191,7 @@ public class FlixelLogger {
 
   /**
    * Starts file logging by delegating to the registered
-   * {@link FlixelLogFileHandler}. If no handler has been registered (for example, on web/TeaVM) or if
+   * {@link FlixelLogFileHandler}. If no handler has been registered (for example, on HTML5) or if
    * {@link #canStoreLogs()} returns {@code false}, this method is a no-op.
    *
    * <p>The handler creates the log folder, prunes old files, opens a new
@@ -208,9 +209,8 @@ public class FlixelLogger {
    * {@link FlixelLogFileHandler}. The handler flushes any buffered log
    * lines and releases its resources.
    *
-   * <p>Call this during game shutdown (for example from
-   * {@link org.flixelgdx.FlixelGame#dispose() FlixelGame.dispose()}) so that logs
-   * written during disposal are persisted.
+   * <p>Call this during game shutdown (for example from {@link FlixelGame#destroy()})
+   * so that logs written during disposal are persisted.
    */
   public void stopFileLogging() {
     if (logFileHandler != null) {
