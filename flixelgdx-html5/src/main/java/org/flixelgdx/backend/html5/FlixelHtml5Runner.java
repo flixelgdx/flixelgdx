@@ -172,13 +172,13 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * @param timestamp The browser-supplied frame time in milliseconds.
    */
   private void onAnimationFrame(double timestamp) {
-    if (graphics.isContinuousRendering() || graphics.consumeRenderRequest()) {
-      float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
-      lastTimestamp = timestamp;
+    float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
+    float elapsed = game.advanceTime(deltaSeconds);
+    game.update(elapsed);
 
+    if (graphics.isContinuousRendering() || graphics.consumeRenderRequest()) {
+      lastTimestamp = timestamp;
       graphics.beginFrame();
-      float elapsed = game.advanceTime(deltaSeconds);
-      game.update(elapsed);
       game.draw(game.getBatch());
       game.endFrame();
       graphics.endFrame();
