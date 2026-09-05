@@ -758,20 +758,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Do not override this method. Override {@link #onFocusLost()} instead.
-   */
-  public final void pause() {
-    onFocusLost();
-  }
-
-  /**
-   * Do not override this method. Override {@link #onFocusGained()} instead.
-   */
-  public final void resume() {
-    onFocusGained();
-  }
-
-  /**
    * Called when the game window loses focus or the application goes to the background.
    *
    * <p>On mobile and web this fires when the OS sends the application to the background.
@@ -895,11 +881,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   public boolean toggleAutoPause() {
     autoPause = !autoPause;
     return autoPause;
-  }
-
-  /** Delegates to {@link #destroy()}. */
-  public final void dispose() {
-    destroy();
   }
 
   /**
