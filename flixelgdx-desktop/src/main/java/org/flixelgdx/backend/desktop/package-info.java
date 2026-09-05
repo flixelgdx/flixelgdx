@@ -64,10 +64,13 @@
  * <h2>The game loop</h2>
  * <p>{@link org.flixelgdx.backend.desktop.FlixelDesktopRunner FlixelDesktopRunner} owns the
  * native main loop. It initializes SDL3, creates the window, hands the window's native handle to
- * bgfx, then pumps SDL3 events every frame and drives
- * {@link org.flixelgdx.FlixelGame#render(float) FlixelGame.render(...)} with accurate elapsed
- * time. It also handles the continuous-rendering flag: when the window loses focus and the game
- * requests non-continuous rendering, the loop idles instead of spinning, saving CPU and battery.
+ * bgfx, then pumps SDL3 events every frame and drives the game via
+ * {@link org.flixelgdx.FlixelGame#advanceTime(float) advanceTime},
+ * {@link org.flixelgdx.FlixelGame#update(float) update}, and
+ * {@link org.flixelgdx.FlixelGame#draw(org.flixelgdx.graphics.FlixelBatch) draw}
+ * with accurate elapsed time. It also handles the continuous-rendering flag: when the window
+ * loses focus and the game requests non-continuous rendering, the loop idles instead of spinning,
+ * saving CPU and battery.
  *
  * <h2>Sub-packages</h2>
  * <ul>

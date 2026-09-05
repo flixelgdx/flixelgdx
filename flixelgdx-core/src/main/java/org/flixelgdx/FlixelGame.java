@@ -195,6 +195,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   private int frameRenderCalls;
 
+  /** Scaled elapsed time (seconds) for the current frame, written by {@link #advanceTime(float)}. */
+  private float elapsed;
+
+  /** Raw clamped delta before {@link Flixel#timeScale} is applied, written by {@link #advanceTime(float)}. */
+  private float rawElapsed;
+
   /** 2D array of saved camera scroll values when the game is paused for debugging. */
   @Nullable
   private float[][] debugPauseCameraScroll;
@@ -649,30 +655,42 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Runs one frame: {@link #update(float)} then {@link #draw(FlixelBatch)}, with the elapsed time
-   * clamped to the min and max values to prevent major lag spikes.
+   * Clamps the raw platform delta, applies {@link Flixel#timeScale}, and stores the results so
+   * {@link Flixel#getElapsed()} and {@link Flixel#getRawElapsed()} return up-to-date values.
    *
-   * <p>This method is called automatically by the platform runner every frame with the raw
-   * wall-clock time since the previous frame.
+   * <p>Platform runners call this once per frame before {@link #update(float)} and
+   * {@link #draw(FlixelBatch)}, passing the raw wall-clock delta from their own timing source.
+   * The returned value is the scaled elapsed time ready to pass directly to {@link #update(float)}.
    *
-   * <p>You should not (and cannot) override this method. You are encouraged to override either
-   * {@link #update(float)} or {@link #draw(FlixelBatch)} instead, as they separate logic
-   * and drawing correctly.
+   * <pre>{@code
+   * float elapsed = game.advanceTime(rawDelta);
+   * game.update(elapsed);
+   * game.draw(game.getBatch());
+   * game.endFrame();
+   * }</pre>
    *
-   * @param rawDeltaSeconds The raw time since the last frame, in seconds.
-   * @see #update(float)
-   * @see #draw(FlixelBatch)
+   * @param rawDelta The raw wall-clock seconds since the last frame.
+   * @return The clamped and scaled elapsed time in seconds.
+   * @see #endFrame()
    */
-  public final void render(float rawDeltaSeconds) {
-    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDeltaSeconds, Flixel.MAX_ELAPSED));
-    float elapsed = rawClamped * Flixel.timeScale;
-    Flixel.rawElapsed = rawClamped;
-    Flixel.elapsed = elapsed;
+  public float advanceTime(float rawDelta) {
+    float rawClamped = Math.max(Flixel.MIN_ELAPSED, Math.min(rawDelta, Flixel.MAX_ELAPSED));
+    rawElapsed = rawClamped;
+    elapsed = rawClamped * Flixel.timeScale;
+    return elapsed;
+  }
 
-    update(elapsed);
-    draw(batch);
-
-    // Finalize input frame AFTER user update hooks run, so justPressed()/justReleased() checks
+  /**
+   * Finalizes the input state for the current frame.
+   *
+   * <p>Platform runners call this once per frame after {@link #draw(FlixelBatch)} completes.
+   * Finalizing after user code runs keeps {@code justPressed()} and {@code justReleased()}
+   * valid for the entire frame, including any overrides of {@link #update(float)}.
+   *
+   * @see #advanceTime(float)
+   */
+  public void endFrame() {
+    // Finalize input AFTER user update hooks run so justPressed()/justReleased() checks
     // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
     if (Flixel.keys != null) {
       Flixel.keys.endFrame();
@@ -1488,6 +1506,26 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   @Nullable
   public FlixelBasicGroup<IFlixelBasic> getOverlayGroup() {
     return overlayGroup;
+  }
+
+  /**
+   * Returns the scaled elapsed time (in seconds) for the current frame, as set by the most recent
+   * {@link #advanceTime(float)} call.
+   *
+   * @return The current frame's elapsed time in seconds.
+   */
+  public float getElapsed() {
+    return elapsed;
+  }
+
+  /**
+   * Returns the raw clamped platform delta (in seconds) for the current frame, before
+   * {@link Flixel#timeScale} was applied.
+   *
+   * @return The raw elapsed time in seconds for the current frame.
+   */
+  public float getRawElapsed() {
+    return rawElapsed;
   }
 
   /**

@@ -251,7 +251,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   /**
    * Clears per-frame edge flags ({@link FlixelTouch#justPressed()},
    * {@link FlixelTouch#justReleased()}, {@link FlixelTouch#justCancelled()}) for all pointers.
-   * Called once per frame by {@code FlixelGame.render()} after game logic and drawing finish.
+   * Called once per frame by {@link org.flixelgdx.FlixelGame#endFrame() FlixelGame.endFrame()} after game logic and drawing finish.
    */
   @Override
   public void endFrame() {

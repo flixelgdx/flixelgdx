@@ -26,6 +26,7 @@ package org.flixelgdx.backend.desktop;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
+import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
@@ -196,7 +197,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         lastNanos = now;
 
         graphics.beginFrame();
-        game.render(deltaSeconds);
+        float elapsed = game.advanceTime(deltaSeconds);
+        game.update(elapsed);
+        game.draw(game.getBatch());
+        game.endFrame();
         graphics.endFrame();
 
         limitFrameRate();
@@ -304,34 +308,30 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    */
   private static int resolveRendererType() {
     String backend = System.getProperty("flixel.render.backend", "auto").trim().toLowerCase();
-    switch (backend) {
-      case "auto", "" -> {
-        return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
-      }
-      case "opengl", "gl" -> {
-        return BGFX.BGFX_RENDERER_TYPE_OPENGL;
-      }
-      case "vulkan", "vk" -> {
-        return BGFX.BGFX_RENDERER_TYPE_VULKAN;
-      }
-      case "metal" -> {
-        return BGFX.BGFX_RENDERER_TYPE_METAL;
-      }
-      case "direct3d11", "d3d11" -> {
-        return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
-      }
-      case "direct3d12", "d3d12" -> {
-        return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
-      }
-      case "noop" -> {
-        return BGFX.BGFX_RENDERER_TYPE_NOOP;
-      }
-      default -> {
-        Flixel.warn("Desktop", "Unknown flixel.render.backend '" + backend
-            + "'; letting bgfx auto-pick the renderer.");
-        return BGFX.BGFX_RENDERER_TYPE_COUNT;
-      }
+    if (backend.isEmpty() || backend.equals("auto")) {
+      return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
     }
+    if (backend.equals(FlixelGraphicsApi.OpenGL.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_OPENGL;
+    }
+    if (backend.equals(FlixelGraphicsApi.Vulkan.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_VULKAN;
+    }
+    if (backend.equals(FlixelGraphicsApi.Metal.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_METAL;
+    }
+    if (backend.equals(FlixelGraphicsApi.Direct3D11.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
+    }
+    if (backend.equals(FlixelGraphicsApi.Direct3D12.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
+    }
+    if (backend.equals(FlixelGraphicsApi.Noop.getId().toLowerCase())) {
+      return BGFX.BGFX_RENDERER_TYPE_NOOP;
+    }
+    Flixel.warn("Desktop", "Unknown flixel.render.backend '" + backend
+        + "'; letting bgfx auto-pick the renderer.");
+    return BGFX.BGFX_RENDERER_TYPE_COUNT;
   }
 
   /**

@@ -54,7 +54,7 @@ import java.util.Objects;
  * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via
  * {@link FlixelActionSets#update(float)}). {@link FlixelActionSet#endFrame()} (via
  * {@link FlixelActionSets#endFrameAll()}) runs after
- * {@link org.flixelgdx.FlixelGame#render(float) FlixelGame.render()} finalizes keys and mouse, matching
+ * {@link org.flixelgdx.FlixelGame#endFrame() FlixelGame.endFrame()} finalizes keys and mouse, matching
  * their {@code justPressed} timing.
  *
  * <h2>Optional callback</h2>

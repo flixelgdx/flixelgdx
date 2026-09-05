@@ -81,8 +81,8 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link org.flixelgdx.FlixelGame#render(float) FlixelGame.render()} after keys, mouse, and gamepads
-   * {@code endFrame()}.
+   * Invoked from {@link org.flixelgdx.FlixelGame#endFrame() FlixelGame.endFrame()} after keys, mouse, and gamepads
+   * have finalized their own per-frame state.
    */
   public static void endFrameAll() {
     for (int i = 0, n = registered.getSize(); i < n; i++) {

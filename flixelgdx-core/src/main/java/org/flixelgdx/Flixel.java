@@ -877,18 +877,12 @@ public final class Flixel {
    *
    * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
    * The raw platform delta is clamped to [{@link #MIN_ELAPSED}, {@link #MAX_ELAPSED}] first, then multiplied by
-   * this value before being stored in {@link #elapsed} and passed to {@code update()}. All systems that read
+   * this value before being stored in the active game and passed to {@code update()}. All systems that read
    * {@link #getElapsed()} (such as physics, animations, tweens, timers, and camera follow) are affected uniformly.
    *
    * <p>The debug overlay's Controls panel exposes a slider for this value at runtime (range 0.1x to 4.0x).
    */
   public static float timeScale = 1f;
-
-  /** The capped elapsed time for the current frame. Set by {@link FlixelGame} after clamping the raw frame delta. */
-  static float elapsed = 0f;
-
-  /** The raw clamped platform delta before {@link #timeScale} is applied. Set by {@link FlixelGame} each frame. */
-  static float rawElapsed = 0f;
 
   /**
    * World bounds used by {@link #overlap} and {@link #collide} for broad-phase culling.
@@ -1356,13 +1350,12 @@ public final class Flixel {
 
   /**
    * Returns the capped elapsed time (in seconds) for the current frame. This value is clamped
-   * between {@link #MIN_ELAPSED} and {@link #MAX_ELAPSED} by
-   * {@link FlixelGame} each frame.
+   * between {@link #MIN_ELAPSED} and {@link #MAX_ELAPSED} and scaled by {@link #timeScale}.
    *
    * @return The elapsed time in seconds for the current frame, scaled by {@link #timeScale}.
    */
   public static float getElapsed() {
-    return elapsed;
+    return game != null ? game.getElapsed() : 0f;
   }
 
   /**
@@ -1373,7 +1366,7 @@ public final class Flixel {
    * @return The raw elapsed time in seconds for the current frame, unaffected by {@link #timeScale}.
    */
   public static float getRawElapsed() {
-    return rawElapsed;
+    return game != null ? game.getRawElapsed() : 0f;
   }
 
   /**
