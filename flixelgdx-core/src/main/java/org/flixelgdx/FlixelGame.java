@@ -59,17 +59,16 @@ import java.util.function.Supplier;
  *
  * <p>Extend this class and hand an instance to the platform launcher. The launcher installs the
  * appropriate backend, wires up the runner, and calls {@link #create()} once the rendering surface
- * is ready. After that, it calls {@link #render(float)} every frame, which dispatches
- * {@link #update(float)} and then {@link #draw(FlixelBatch)} in that order.
+ * is ready. After that, it calls every frame, which dispatches {@link #update(float)} and
+ * {@link #draw(FlixelBatch)} in that order.
  *
  * <h2>Lifecycle</h2>
  *
  * <ol>
  *   <li>{@link #create()} - called once when the rendering surface is ready. Initializes input,
  *       cameras, the batch, the debug overlay, and the initial state.</li>
- *   <li>{@link #render(float)} - called every frame with the raw wall-clock delta. Dispatches
- *       update, then draw. You can't override this; override {@link #update(float)} or
- *       {@link #draw(FlixelBatch)} instead.</li>
+ *   <li>{@link #update(float)} - called every frame to update and tick game logic.
+ *   <li>{@link #draw(FlixelBatch)} - called every frame to render graphics.
  *   <li>{@link #destroy()} - called when the game closes. Releases all framework resources. Call
  *       {@link Flixel#quit()} to close the window; calling {@code destroy()} alone only releases
  *       resources without terminating the process.</li>
@@ -125,10 +124,11 @@ import java.util.function.Supplier;
  * <h2>Auto-pause</h2>
  *
  * <p>When {@link #autoPause} is {@code true} (the default), audio is paused and the update loop
- * suspends whenever the game window loses focus. Both resume automatically when focus returns. Set
- * {@link #autoPause} to {@code false} to keep the game running in the background. Note that on
- * mobile if {@link #autoPause} is {@code false} the audio will keep playing in the background when
- * the app isn't being focused on.
+ * suspends whenever the game window loses focus. The render loop continues at a low background
+ * frame rate so the window stays responsive, then both audio and updates resume automatically
+ * when focus returns. Set {@link #autoPause} to {@code false} to keep the game running at full
+ * speed in the background. Note that on mobile if {@link #autoPause} is {@code false} the audio
+ * will keep playing in the background when the app is not focused.
  *
  * <h2>Example Usage</h2>
  *
@@ -157,6 +157,9 @@ import java.util.function.Supplier;
 public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
   private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
+
+  /** Frame-rate cap applied to the render loop while the window is unfocused and {@link #autoPause} is on. */
+  private static final int BACKGROUND_FPS = 10;
 
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs. Use
@@ -266,7 +269,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private int desktopTransparencyRestoreCameraCount;
 
-  /** Whether the game should pause audio when the application goes to the background. */
+  /** FPS cap saved just before throttling on focus loss; restored when focus returns. */
+  private int savedTargetFps;
+
+  /** Whether the game should pause audio and throttle the frame rate when the window loses focus. */
   public boolean autoPause = true;
 
   /** Whether the game is currently in the process of closing. */
@@ -772,9 +778,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * On desktop it fires when the game window loses focus or is minimized (focus loss always
    * arrives before minimize, so this is called once for both events).
    *
-   * <p>The default implementation pauses audio and stops continuous rendering when
-   * {@link #autoPause} is {@code true}, then notifies the active state. Duplicate calls
-   * without an intervening {@link #onFocusGained()} are silently ignored.
+   * <p>The default implementation pauses audio and throttles the frame rate to
+   * {@value #BACKGROUND_FPS} fps when {@link #autoPause} is {@code true}, then notifies the
+   * active state. Duplicate calls without an intervening {@link #onFocusGained()} are silently
+   * ignored.
    *
    * @see #onFocusGained()
    * @see #onMinimized()
@@ -791,7 +798,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
     if (autoPause) {
       Flixel.sound.pause();
-      Flixel.graphics.setContinuousRendering(false);
+      savedTargetFps = Flixel.graphics.getTargetFps();
+      Flixel.graphics.setTargetFps(BACKGROUND_FPS);
       shouldUpdate = false;
     }
     Flixel.Signals.windowUnfocused.dispatch();
@@ -804,7 +812,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * On desktop it fires when the game window gains focus, including when the window is
    * restored from being minimized.
    *
-   * <p>The default implementation resumes audio and re-enables continuous rendering when
+   * <p>The default implementation restores the full frame rate and resumes audio when
    * {@link #autoPause} is {@code true}, then notifies the active state. Calls that arrive
    * without a prior {@link #onFocusLost()} are silently ignored.
    *
@@ -822,10 +830,9 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
     if (autoPause) {
       shouldUpdate = true;
+      Flixel.graphics.setTargetFps(savedTargetFps);
       if (!gamePaused) {
         Flixel.sound.resume();
-        Flixel.graphics.setContinuousRendering(true);
-        Flixel.graphics.requestRendering();
       }
     }
     Flixel.Signals.windowFocused.dispatch();
