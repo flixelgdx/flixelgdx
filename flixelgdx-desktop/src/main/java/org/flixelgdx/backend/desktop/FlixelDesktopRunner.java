@@ -54,8 +54,9 @@ import java.util.concurrent.locks.LockSupport;
  *
  * <p>This is the {@link FlixelGameRunner} the desktop launcher installs. It owns everything that
  * only makes sense once a window exists: SDL initialization, bgfx device setup, the per-frame
- * event pump (translated into the input device), and the frame timing passed to
- * {@link FlixelGame#render(float)}.
+ * event pump (translated into the input device), and the frame timing passed to the game loop.
+ * In continuous mode the loop polls SDL events every frame; in non-continuous mode it blocks on
+ * {@code SDL_WaitEvent} so the thread is parked rather than spinning while the game is idle.
  */
 public class FlixelDesktopRunner implements FlixelGameRunner {
 
@@ -180,7 +181,24 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     long lastNanos = System.nanoTime();
     try (SDL_Event event = SDL_Event.malloc()) {
       while (!window.isCloseRequested()) {
-        boolean quit = pumpEvents(event, game);
+        boolean quit;
+        if (graphics.isContinuousRendering()) {
+          quit = pumpEvents(event, game);
+        } else {
+          // Block the thread until SDL delivers any event. This eliminates the busy-spin
+          // that would otherwise burn CPU while the game is unfocused and not updating.
+          // SDL_WaitEvent returns false only on error; keep going in that case rather than
+          // crashing, since the game is still in a valid state.
+          SDLEvents.SDL_WaitEvent(event);
+          quit = dispatchEvent(event, game);
+          if (!quit) {
+            quit = pumpEvents(event, game);
+          }
+          // Reset the frame clock so the first frame back does not carry a huge delta
+          // accumulated while the thread was parked.
+          lastNanos = System.nanoTime();
+        }
+
         if (quit) {
           break;
         }
@@ -192,9 +210,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         graphics.beginFrame();
         float elapsed = game.advanceTime(deltaSeconds);
         game.update(elapsed);
-        if (window.isContinuousRendering() && window.consumeRenderRequest()) {
-          game.draw(game.getBatch());
-        }
+        game.draw(game.getBatch());
         game.endFrame();
         graphics.endFrame();
 
@@ -330,61 +346,75 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   /**
-   * Drains all pending SDL events, translating them into input-device calls and lifecycle hooks.
+   * Drains all pending SDL events by polling, translating each one into input-device calls and
+   * lifecycle hooks. Used in continuous-rendering mode; for the blocking non-continuous path see
+   * the main loop which calls {@link #dispatchEvent} after {@code SDL_WaitEvent}.
    *
    * @return {@code true} when a quit was requested.
    */
   private boolean pumpEvents(@NotNull SDL_Event event, @NotNull FlixelGame game) {
     while (SDLEvents.SDL_PollEvent(event)) {
-      switch (event.type()) {
-        case SDLEvents.SDL_EVENT_QUIT -> {
-          if (!window.isAbsorbCloseRequests()) {
-            return true;
+      if (dispatchEvent(event, game)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Translates a single SDL event into the appropriate input-device call or lifecycle hook.
+   *
+   * @return {@code true} when the event signals a quit.
+   */
+  private boolean dispatchEvent(@NotNull SDL_Event event, @NotNull FlixelGame game) {
+    switch (event.type()) {
+      case SDLEvents.SDL_EVENT_QUIT -> {
+        if (!window.isAbsorbCloseRequests()) {
+          return true;
+        }
+      }
+      case SDLEvents.SDL_EVENT_WINDOW_MOVED ->
+        window.onMoved(event.window().data1(), event.window().data2());
+      case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
+          SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
+        handleResize(game);
+      case SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST -> game.onFocusLost();
+      case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
+      case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
+      case SDLEvents.SDL_EVENT_KEY_DOWN -> {
+        if (!event.key().repeat()) {
+          input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+        }
+      }
+      case SDLEvents.SDL_EVENT_KEY_UP ->
+        input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+      case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
+        // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
+        // physical key events above. Feed each character to listeners so the debug command line and
+        // any future text fields can read typed input.
+        String textInput = event.text().textString();
+        if (textInput != null) {
+          for (int i = 0; i < textInput.length(); i++) {
+            input.onKeyTyped(textInput.charAt(i));
           }
         }
-        case SDLEvents.SDL_EVENT_WINDOW_MOVED ->
-          window.onMoved(event.window().data1(), event.window().data2());
-        case SDLEvents.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED,
-            SDLEvents.SDL_EVENT_WINDOW_RESIZED ->
-          handleResize(game);
-        case SDLEvents.SDL_EVENT_WINDOW_FOCUS_LOST -> game.onFocusLost();
-        case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
-        case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
-        case SDLEvents.SDL_EVENT_KEY_DOWN -> {
-          if (!event.key().repeat()) {
-            input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
-          }
-        }
-        case SDLEvents.SDL_EVENT_KEY_UP ->
-          input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
-        case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
-          // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
-          // physical key events above. Feed each character to listeners so the debug command line and
-          // any future text fields can read typed input.
-          String textInput = event.text().textString();
-          if (textInput != null) {
-            for (int i = 0; i < textInput.length(); i++) {
-              input.onKeyTyped(textInput.charAt(i));
-            }
-          }
-        }
-        case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
-          input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-        case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
-          input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
-        case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
-          input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
-        case SDLEvents.SDL_EVENT_MOUSE_WHEEL ->
-          input.onScrolled(event.wheel().x(), event.wheel().y());
-        case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
-        case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
-        case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
-            SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
-            SDLEvents.SDL_EVENT_DISPLAY_MOVED,
-            SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED ->
-          refreshMonitors();
-        default -> {
-        }
+      }
+      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
+        input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+      case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
+        input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+      case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
+        input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
+      case SDLEvents.SDL_EVENT_MOUSE_WHEEL ->
+        input.onScrolled(event.wheel().x(), event.wheel().y());
+      case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
+      case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
+      case SDLEvents.SDL_EVENT_DISPLAY_ADDED,
+          SDLEvents.SDL_EVENT_DISPLAY_REMOVED,
+          SDLEvents.SDL_EVENT_DISPLAY_MOVED,
+          SDLEvents.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED ->
+        refreshMonitors();
+      default -> {
       }
     }
     return false;

@@ -540,6 +540,44 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Turns continuous rendering on or off.
+   *
+   * <p>When continuous rendering is on (the default), the platform runner produces a new frame on
+   * every loop iteration. When off, the runner idles until {@link #requestRendering()} is called,
+   * then produces exactly one frame before idling again. The framework uses this to stop burning
+   * CPU and GPU when the game window loses focus and {@link FlixelGame#autoPause} is enabled.
+   *
+   * <p>This method is a rendering policy, not a window property. It lives here rather than on
+   * {@link org.flixelgdx.backend.FlixelWindow} because each backend controls its own frame loop.
+   *
+   * @param continuous {@code true} to render every frame, {@code false} to render on request only.
+   * @see #requestRendering()
+   * @see #isContinuousRendering()
+   */
+  default void setContinuousRendering(boolean continuous) {}
+
+  /**
+   * Requests that the runner produce at least one more frame while continuous rendering is off.
+   *
+   * <p>When called with continuous rendering enabled, this is a no-op. When called while the runner
+   * is blocked waiting for events (continuous rendering off), the implementation wakes the event
+   * wait so the next frame is drawn before idling again.
+   *
+   * @see #setContinuousRendering(boolean)
+   */
+  default void requestRendering() {}
+
+  /**
+   * Returns whether continuous rendering is currently on.
+   *
+   * @return {@code true} when a frame is produced every iteration; {@code false} when the runner
+   *     idles between explicit {@link #requestRendering()} calls.
+   */
+  default boolean isContinuousRendering() {
+    return true;
+  }
+
+  /**
    * Requests a frame-rate cap, where the backend supports one.
    *
    * @param fps Target frames per second, or {@code 0} to run uncapped.

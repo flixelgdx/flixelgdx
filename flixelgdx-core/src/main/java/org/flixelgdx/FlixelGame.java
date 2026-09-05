@@ -791,7 +791,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
     if (autoPause) {
       Flixel.sound.pause();
-      Flixel.window.setContinuousRendering(false);
+      Flixel.graphics.setContinuousRendering(false);
       shouldUpdate = false;
     }
     Flixel.Signals.windowUnfocused.dispatch();
@@ -824,8 +824,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       shouldUpdate = true;
       if (!gamePaused) {
         Flixel.sound.resume();
-        Flixel.window.setContinuousRendering(true);
-        Flixel.window.requestRendering();
+        Flixel.graphics.setContinuousRendering(true);
+        Flixel.graphics.requestRendering();
       }
     }
     Flixel.Signals.windowFocused.dispatch();

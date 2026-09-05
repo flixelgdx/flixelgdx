@@ -51,10 +51,8 @@ public class FlixelSdlWindow implements FlixelWindow {
   private int cachedX;
   private int cachedY;
 
-  private boolean continuousRendering = true;
   private boolean closeRequested;
   private boolean absorbCloseRequests;
-  private boolean renderRequested;
 
   /**
    * Binds this wrapper to the SDL window created by the runner and seeds the position cache.
@@ -87,36 +85,6 @@ public class FlixelSdlWindow implements FlixelWindow {
   /** Returns {@code true} once {@link #close()} has been called, so the runner can exit the loop. */
   boolean isCloseRequested() {
     return closeRequested;
-  }
-
-  /** Returns whether continuous rendering is currently on. */
-  boolean isContinuousRendering() {
-    return continuousRendering;
-  }
-
-  /**
-   * Returns {@code true} and clears the one-shot render flag when {@link #requestRendering()} was
-   * called while continuous rendering was off. The runner calls this once per iteration so that
-   * exactly one extra frame is drawn in response to each request.
-   *
-   * @return {@code true} if a render was requested and the flag has now been consumed.
-   */
-  boolean consumeRenderRequest() {
-    if (renderRequested) {
-      renderRequested = false;
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public void setContinuousRendering(boolean continuous) {
-    this.continuousRendering = continuous;
-  }
-
-  @Override
-  public void requestRendering() {
-    renderRequested = true;
   }
 
   @Override

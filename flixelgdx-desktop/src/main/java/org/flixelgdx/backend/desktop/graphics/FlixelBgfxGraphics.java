@@ -46,6 +46,8 @@ import org.lwjgl.bgfx.BGFXStats;
 import org.lwjgl.bgfx.BGFXTextureInfo;
 import org.lwjgl.bgfx.BGFXTransientVertexBuffer;
 import org.lwjgl.bgfx.BGFXVertexLayout;
+import org.lwjgl.sdl.SDLEvents;
+import org.lwjgl.sdl.SDL_Event;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -178,6 +180,12 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @NotNull
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
 
+  /**
+   * Custom SDL event type registered at startup. Pushed by {@link #requestRendering()} to wake
+   * {@code SDL_WaitEvent} when continuous rendering is off. {@code -1} before initialization.
+   */
+  private int wakeEventType = -1;
+
   private short vertexLayoutHandle;
   private short quadIndexBuffer = -1;
   private short spriteProgram = -1;
@@ -214,6 +222,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    * desktop.
    */
   private boolean transparentFramebuffer;
+
+  /** Whether the runner should produce a frame every iteration or only on demand. */
+  private boolean continuousRendering = true;
 
   private boolean vsync = true;
   private boolean programWarned;
@@ -272,7 +283,31 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     spriteProgram = loadSpriteProgram();
     opaqueAlphaTexture = createOpaqueAlphaTexture();
 
+    wakeEventType = SDLEvents.SDL_RegisterEvents(1);
+
     configureStats();
+  }
+
+  @Override
+  public void setContinuousRendering(boolean continuous) {
+    continuousRendering = continuous;
+  }
+
+  @Override
+  public void requestRendering() {
+    if (wakeEventType < 0) {
+      return;
+    }
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      SDL_Event wake = SDL_Event.calloc(stack);
+      wake.type(wakeEventType);
+      SDLEvents.SDL_PushEvent(wake);
+    }
+  }
+
+  @Override
+  public boolean isContinuousRendering() {
+    return continuousRendering;
   }
 
   /**
