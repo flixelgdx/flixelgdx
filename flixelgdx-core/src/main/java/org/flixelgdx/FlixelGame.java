@@ -690,20 +690,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @see #advanceTime(float)
    */
   public void endFrame() {
-    // Finalize input AFTER user update hooks run so justPressed()/justReleased() checks
-    // in subclasses (typically placed after super.update(elapsed)) stay valid this frame.
-    if (Flixel.keys != null) {
-      Flixel.keys.endFrame();
-    }
-    if (Flixel.mouse != null) {
-      Flixel.mouse.endFrame();
-    }
-    if (Flixel.touches != null) {
-      Flixel.touches.endFrame();
-    }
-    if (Flixel.gamepads != null) {
-      Flixel.gamepads.endFrame();
-    }
+    Flixel.keys.endFrame();
+    Flixel.mouse.endFrame();
+    Flixel.touches.endFrame();
+    Flixel.gamepads.endFrame();
     FlixelActionSets.endFrameAll();
   }
 

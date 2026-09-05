@@ -185,13 +185,6 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           break;
         }
 
-        // TODO: Find a workaround for allowing the game to tick the update loop
-        // while stopping rendering as well.
-        if (!window.isContinuousRendering() && !window.consumeRenderRequest()) {
-          Thread.yield();
-          continue;
-        }
-
         long now = System.nanoTime();
         float deltaSeconds = (now - lastNanos) / 1_000_000_000f;
         lastNanos = now;
@@ -199,7 +192,9 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         graphics.beginFrame();
         float elapsed = game.advanceTime(deltaSeconds);
         game.update(elapsed);
-        game.draw(game.getBatch());
+        if (window.isContinuousRendering() && window.consumeRenderRequest()) {
+          game.draw(game.getBatch());
+        }
         game.endFrame();
         graphics.endFrame();
 
