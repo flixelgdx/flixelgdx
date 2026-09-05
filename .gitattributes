@@ -3,3 +3,5 @@
 
 *.kts linguist-language=Kotlin
 *.sc linguist-language=GLSL
+
+*.html -linguist-detectable
