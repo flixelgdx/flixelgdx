@@ -25,9 +25,9 @@ package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.graphics.FlixelDisplayMode;
-import org.flixelgdx.graphics.FlixelWindowTransparency;
 import org.flixelgdx.tween.FlixelTween;
 
 /**
@@ -94,21 +94,6 @@ public interface FlixelWindow extends FlixelShakeable {
   }
 
   /**
-   * Returns the backend-owned transparency state manager, or {@code null} when the platform does
-   * not support desktop-composited transparency (web, mobile, and headless targets return
-   * {@code null} by default). Desktop backends that support a transparent framebuffer override
-   * this to return their own {@link FlixelWindowTransparency} instance.
-   *
-   * <p>Game code should use {@link #setTransparencyActive(boolean)} and
-   * {@link #isTransparencyActive()} rather than calling this directly.
-   *
-   * @return The transparency state manager, or {@code null}.
-   */
-  default FlixelWindowTransparency getTransparency() {
-    return FlixelWindowTransparency.NOOP;
-  }
-
-  /**
    * Returns whether an alpha-capable (transparent) framebuffer was requested at launch via
    * {@link FlixelConfig.Builder#transparentFramebuffer(boolean)}.
    *
@@ -119,7 +104,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when an alpha-capable framebuffer was requested in the game config.
    */
   default boolean isTransparentFramebufferRequested() {
-    return Flixel.config != null && Flixel.config.isTransparentFramebuffer();
+    return Flixel.config.isTransparentFramebuffer();
   }
 
   /**
@@ -132,9 +117,7 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * @param active {@code true} to composite with the desktop through alpha; {@code false} for a normal opaque window interior.
    */
-  default void setTransparencyActive(boolean active) {
-    getTransparency().apply(active);
-  }
+  default void setTransparencyActive(boolean active) {}
 
   /**
    * Returns the last value applied to {@link #setTransparencyActive(boolean)} for this game session.
@@ -142,21 +125,17 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when desktop-composited transparency is currently on.
    */
   default boolean isTransparencyActive() {
-    return getTransparency().isActive();
+    return false;
   }
 
   /**
    * Applies transparent fills to all cameras without touching the restore snapshot.
    * Called after {@link org.flixelgdx.FlixelGame#resetCameras()} when transparency stays enabled.
    */
-  default void applyTransparencyBackdropOnly() {
-    getTransparency().applyBackdropOnly();
-  }
+  default void applyTransparencyBackdropOnly() {}
 
   /** Resets all transparency state. Called when the game shuts down. */
-  default void resetTransparency() {
-    getTransparency().reset();
-  }
+  default void resetTransparency() {}
 
   /**
    * Returns the current opacity level of the game's window.

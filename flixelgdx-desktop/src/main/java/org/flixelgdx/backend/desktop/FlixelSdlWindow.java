@@ -23,13 +23,16 @@
  */
 package org.flixelgdx.backend.desktop;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.graphics.FlixelDisplayMode;
-import org.flixelgdx.graphics.FlixelWindowTransparency;
+import org.flixelgdx.util.FlixelColor;
 import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.system.MemoryStack;
 
 import java.nio.IntBuffer;
+import java.util.Arrays;
 
 /**
  * The desktop window, wrapping the SDL3 window the {@link FlixelDesktopRunner} created.
@@ -44,15 +47,23 @@ import java.nio.IntBuffer;
  */
 public class FlixelSdlWindow implements FlixelWindow {
 
+  /** Number of floats stored per camera: r, g, b, a, useBgAlphaBlending (1 = true, 0 = false). */
+  private static final int FLOATS_PER_CAMERA = 5;
+
   /** The SDL window handle, or {@code 0} before the runner creates one. */
   private long handle;
 
   private int cachedX;
   private int cachedY;
-  private final FlixelWindowTransparency transparency = new FlixelWindowTransparency();
+  private int savedCameraCount;
+
+  private float[] gameRgba = new float[4];
+  private float[] camerasPacked = new float[20];
 
   private boolean closeRequested;
   private boolean absorbCloseRequests;
+  private boolean transparencyActive;
+  private boolean transparencySnapshotValid;
 
   /**
    * Binds this wrapper to the SDL window created by the runner and seeds the position cache.
@@ -93,8 +104,119 @@ public class FlixelSdlWindow implements FlixelWindow {
   }
 
   @Override
-  public FlixelWindowTransparency getTransparency() {
-    return transparency;
+  public void setTransparencyActive(boolean active) {
+    transparencyActive = active;
+    if (active) {
+      captureSnapshot();
+      applyTransparencyBackdropOnly();
+    } else {
+      restoreBackdrop();
+      clearSnapshot();
+    }
+  }
+
+  @Override
+  public boolean isTransparencyActive() {
+    return transparencyActive;
+  }
+
+  @Override
+  public void applyTransparencyBackdropOnly() {
+    Flixel.game.getBgColor().a = 0f;
+    FlixelCamera[] camItems = Flixel.cameras.getItems();
+    for (int i = 0, n = Flixel.cameras.getSize(); i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      if (cam == null) {
+        continue;
+      }
+      cam.useBgAlphaBlending = true;
+      cam.bgColor.a = 0f;
+    }
+  }
+
+  @Override
+  public void resetTransparency() {
+    transparencyActive = false;
+    transparencySnapshotValid = false;
+    savedCameraCount = 0;
+    Arrays.fill(gameRgba, 0f);
+    Arrays.fill(camerasPacked, 0f);
+  }
+
+  private void captureSnapshot() {
+    if (transparencySnapshotValid) {
+      return;
+    }
+    gameRgba[0] = Flixel.game.getBgColor().r;
+    gameRgba[1] = Flixel.game.getBgColor().g;
+    gameRgba[2] = Flixel.game.getBgColor().b;
+    gameRgba[3] = Flixel.game.getBgColor().a;
+    int n = Flixel.cameras.getSize();
+    ensureCapacity(n);
+    FlixelCamera[] camItems = n == 0 ? null : Flixel.cameras.getItems();
+    for (int i = 0; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      int o = i * FLOATS_PER_CAMERA;
+      if (cam == null) {
+        camerasPacked[o] = 0f;
+        camerasPacked[o + 1] = 0f;
+        camerasPacked[o + 2] = 0f;
+        camerasPacked[o + 3] = 1f;
+        camerasPacked[o + 4] = 0f;
+        continue;
+      }
+      camerasPacked[o] = cam.bgColor.r;
+      camerasPacked[o + 1] = cam.bgColor.g;
+      camerasPacked[o + 2] = cam.bgColor.b;
+      camerasPacked[o + 3] = cam.bgColor.a;
+      camerasPacked[o + 4] = cam.useBgAlphaBlending ? 1f : 0f;
+    }
+    savedCameraCount = n;
+    transparencySnapshotValid = true;
+  }
+
+  private void restoreBackdrop() {
+    if (transparencySnapshotValid) {
+      Flixel.game.getBgColor().r = gameRgba[0];
+      Flixel.game.getBgColor().g = gameRgba[1];
+      Flixel.game.getBgColor().b = gameRgba[2];
+      Flixel.game.getBgColor().a = gameRgba[3];
+    } else {
+      Flixel.game.getBgColor().set(FlixelColor.BLACK);
+    }
+    FlixelCamera[] camItems = Flixel.cameras.getItems();
+    int n = Flixel.cameras.getSize();
+    for (int i = 0; i < n; i++) {
+      FlixelCamera cam = camItems[i];
+      if (cam == null) {
+        continue;
+      }
+      if (transparencySnapshotValid && i < savedCameraCount) {
+        int o = i * FLOATS_PER_CAMERA;
+        cam.bgColor.r = camerasPacked[o];
+        cam.bgColor.g = camerasPacked[o + 1];
+        cam.bgColor.b = camerasPacked[o + 2];
+        cam.bgColor.a = camerasPacked[o + 3];
+        cam.useBgAlphaBlending = camerasPacked[o + 4] != 0f;
+      } else {
+        cam.useBgAlphaBlending = false;
+        cam.bgColor.set(FlixelColor.BLACK);
+      }
+    }
+  }
+
+  private void clearSnapshot() {
+    transparencySnapshotValid = false;
+    savedCameraCount = 0;
+    Arrays.fill(gameRgba, 0f);
+    Arrays.fill(camerasPacked, 0f);
+  }
+
+  private void ensureCapacity(int cameraCount) {
+    int need = cameraCount * FLOATS_PER_CAMERA;
+    if (camerasPacked.length < need) {
+      camerasPacked = new float[Math.max(need, camerasPacked.length * 2)];
+    }
   }
 
   @Override
