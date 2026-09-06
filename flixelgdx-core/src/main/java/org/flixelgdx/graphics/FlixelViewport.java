@@ -24,7 +24,7 @@
 package org.flixelgdx.graphics;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
@@ -347,7 +347,7 @@ public class FlixelViewport {
      * Scale uniformly and grow the visible world to fill the screen (no bars, more world shown).
      *
      * <p>This policy works as described when the game renders directly to the window (render
-     * resolution disabled via {@link FlixelGame.Config.Builder#disableRenderResolution()}).
+     * resolution disabled via {@link FlixelConfig.Builder#disableRenderResolution()}).
      * When a fixed render resolution is active (the default), the scene surface is a fixed size and
      * cannot extend, so this policy behaves the same as {@link #FIT} within that surface.
      */
