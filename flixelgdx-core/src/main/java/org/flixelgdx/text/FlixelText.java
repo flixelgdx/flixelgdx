@@ -617,7 +617,7 @@ public class FlixelText extends FlixelSprite {
   public void setBorderStyle(BorderStyle style, @Nullable FlixelColor color, float size, float quality) {
     this.borderStyle = (style != null) ? style : BorderStyle.NONE;
     if (color != null) {
-      this.borderColor.setColor(color);
+      this.borderColor.set(color);
     }
     this.borderSize = size;
     this.borderQuality = Math.max(0, Math.min(1, quality));
@@ -667,7 +667,7 @@ public class FlixelText extends FlixelSprite {
     if (borderStyle != null) {
       setBorderStyle(borderStyle, (borderColor != null) ? borderColor : this.borderColor);
     } else if (borderColor != null) {
-      this.borderColor.setColor(borderColor);
+      this.borderColor.set(borderColor);
     }
   }
 
@@ -707,7 +707,7 @@ public class FlixelText extends FlixelSprite {
     if (borderStyle != null) {
       setBorderStyle(borderStyle, (borderColor != null) ? borderColor : this.borderColor);
     } else if (borderColor != null) {
-      this.borderColor.setColor(borderColor);
+      this.borderColor.set(borderColor);
     }
   }
 
@@ -895,7 +895,7 @@ public class FlixelText extends FlixelSprite {
     italic = false;
     letterSpacing = 0;
     borderStyle = BorderStyle.NONE;
-    borderColor.setColor(FlixelColor.CLEAR);
+    borderColor.set(FlixelColor.CLEAR);
     borderSize = 1;
     borderQuality = 1;
     lastBakeScreenScale = 0f;

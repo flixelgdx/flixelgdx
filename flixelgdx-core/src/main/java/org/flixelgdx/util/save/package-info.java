@@ -57,7 +57,7 @@
  *
  * <h2>Save file locations</h2>
  * <p>FlixelGDX writes save files through the platform file seam using the OS-specific preferences
- * directory. The company name set in {@link org.flixelgdx.FlixelGame.Config FlixelGame.Config}
+ * directory. The company name set in {@link org.flixelgdx.FlixelConfig FlixelConfig}
  * is required so the framework can find the correct folder. The bind method will log an error and return
  * {@code false} if the company name has not been set.
  *

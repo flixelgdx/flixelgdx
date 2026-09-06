@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
@@ -119,15 +120,17 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
 
   @Override
   public void run(@NotNull FlixelGame game) {
-    vsync = game.isVsync();
-    graphics.setTargetFps(game.getFramerate());
+    FlixelConfig config = Flixel.config;
+
+    vsync = config.isVsync();
+    graphics.setTargetFps(config.getFramerate());
 
     if (!SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS | SDLInit.SDL_INIT_GAMEPAD)) {
       Flixel.error("Desktop", "SDL_Init failed; cannot open a window.");
       return;
     }
 
-    boolean transparentFramebuffer = game.getConfig().isTransparentFramebuffer();
+    boolean transparentFramebuffer = config.isTransparentFramebuffer();
     long windowFlags = SDLVideo.SDL_WINDOW_RESIZABLE;
     if (transparentFramebuffer) {
       windowFlags |= SDLVideo.SDL_WINDOW_TRANSPARENT;
@@ -146,7 +149,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         windowFlags |= SDLVideo.SDL_WINDOW_OPENGL;
       }
     }
-    windowHandle = SDLVideo.SDL_CreateWindow(game.getTitle(), width, height, windowFlags);
+    windowHandle = SDLVideo.SDL_CreateWindow(config.getTitle(), width, height, windowFlags);
     if (windowHandle == 0L) {
       Flixel.error("Desktop", "The SDL window could not be created.");
       SDLInit.SDL_Quit();
@@ -189,7 +192,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         graphics.beginFrame();
         float elapsed = game.advanceTime(deltaSeconds);
         game.update(elapsed);
-        game.draw(game.getBatch());
+        game.draw(graphics.getBatch());
         game.endFrame();
         graphics.endFrame();
 

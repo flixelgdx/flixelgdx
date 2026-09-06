@@ -24,7 +24,7 @@
 package org.flixelgdx.util.save;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
@@ -91,14 +91,14 @@ public class FlixelSave implements FlixelDestroyable {
    * Binds this save object to a named file (and optional slot), then loads any existing data.
    *
    * <p>On desktop, Save files are written to the OS-specific application preferences directory,
-   * determined by the company name and game title set in {@link FlixelGame.Config}:
+   * determined by the company name and game title set in {@link FlixelConfig}:
    * <ul>
    *   <li><b>Windows</b>: {@code %APPDATA%\Company\Title\saves\}</li>
    *   <li><b>macOS</b>: {@code ~/Library/Application Support/Company/Title/saves/}</li>
    *   <li><b>Linux</b>: {@code $XDG_DATA_HOME/Company/Title/saves/}</li>
    * </ul>
    *
-   * <p>A company name <b>must</b> be set via {@link FlixelGame.Config.Builder#company(String)}
+   * <p>A company name <b>must</b> be set via {@link FlixelConfig.Builder#company(String)}
    * before calling this method. If it is missing, this method logs an error and returns
    * {@code false}. Use {@link #bind(String, String, FlixelFile)} to supply a custom directory as
    * an alternative.
@@ -111,10 +111,10 @@ public class FlixelSave implements FlixelDestroyable {
     if (name.isEmpty()) {
       return false;
     }
-    FlixelGame game = Flixel.game;
-    if (game.getCompany().isEmpty()) {
+    FlixelConfig config = Flixel.config;
+    if (config.getCompany().isEmpty()) {
       Flixel.error("Save", "bind() requires a company name to resolve the correct save directory. "
-          + "Set it via FlixelGame.Config.company(...) in your FlixelGame subclass constructor, "
+          + "Set it via FlixelConfig.Builder.company(...) in your FlixelGame subclass constructor, "
           + "or use bind(name, slot, directory) to supply a custom save path instead.");
       return false;
     }
@@ -332,8 +332,8 @@ public class FlixelSave implements FlixelDestroyable {
     if (customDirectory != null) {
       return Flixel.files.absolute(customDirectory.getAbsolutePath() + "/" + fileName + ".json");
     }
-    FlixelGame game = Flixel.game;
-    return Flixel.files.pref(game.getCompany(), game.getTitle(), "saves/" + fileName + ".json");
+    FlixelConfig config = Flixel.config;
+    return Flixel.files.pref(config.getCompany(), config.getTitle(), "saves/" + fileName + ".json");
   }
 
   /** Converts a parsed JSON object node into plain map entries. */

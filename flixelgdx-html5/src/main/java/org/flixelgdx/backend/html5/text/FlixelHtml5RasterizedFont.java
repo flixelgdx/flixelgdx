@@ -109,7 +109,7 @@ public class FlixelHtml5RasterizedFont implements FlixelRasterizedFont {
     // Expand 8-bit coverage to RGBA8888: white pixels with alpha equal to the coverage value,
     // matching the desktop format so the font baker can tint glyphs uniformly.
     FlixelImage image = new FlixelImage(w, h);
-    ByteBuffer pixels = image.pixels();
+    ByteBuffer pixels = image.getPixels();
     for (int i = 0, n = w * h; i < n; i++) {
       int o = i * 4;
       pixels.put(o, (byte) 0xFF);

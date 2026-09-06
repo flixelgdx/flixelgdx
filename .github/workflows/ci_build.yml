@@ -10,6 +10,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ktx-extension:
+    name: Kotlin extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Compile Kotlin extension
+        run: ./gradlew :flixelgdx-ktx:assemble --no-daemon --warning-mode all
+        shell: bash
+
   format:
     name: Formatting check (Spotless)
     runs-on: ubuntu-latest
@@ -18,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -41,7 +64,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -64,7 +87,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -85,7 +108,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -131,7 +154,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17 (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17

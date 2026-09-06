@@ -96,10 +96,10 @@ public class FlixelColorTween extends FlixelTween {
     this.toFlixel = null;
     this.onColor = onColor;
     if (from != null) {
-      workFrom.setColor(from);
+      workFrom.set(from);
     }
     if (to != null) {
-      workTo.setColor(to);
+      workTo.set(to);
     }
     return this;
   }
@@ -107,13 +107,13 @@ public class FlixelColorTween extends FlixelTween {
   @Override
   protected void updateTweenValues() {
     if (useRawColor) {
-      workOut.setColor(workFrom);
+      workOut.set(workFrom);
       workOut.lerp(workTo, scale);
     } else {
       if (fromFlixel == null || toFlixel == null) {
         return;
       }
-      workOut.setColor(fromFlixel);
+      workOut.set(fromFlixel);
       workOut.lerp(toFlixel, scale);
     }
 

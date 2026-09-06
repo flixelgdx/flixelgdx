@@ -70,7 +70,6 @@ import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.flixelgdx.math.FlixelRandom;
-import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.type.FlixelAngleTween;
 import org.flixelgdx.tween.type.FlixelColorTween;
@@ -256,6 +255,18 @@ public final class Flixel {
    */
   @NotNull
   public static FlixelGame game;
+
+  /**
+   * The configuration supplied to the active {@link FlixelGame} at construction time.
+   *
+   * <p>Set once when the game is constructed and never changes at runtime. Contains the title,
+   * studio name, design resolution, frame rate, VSync preference, and other startup settings.
+   * Read it from anywhere after the game object has been constructed.
+   *
+   * @see FlixelConfig
+   */
+  @NotNull
+  public static FlixelConfig config;
 
   /**
    * The global list of active {@link FlixelCamera cameras}, ordered back-to-front.
@@ -873,6 +884,18 @@ public final class Flixel {
   public static FlixelRuntimeDevice runtime = FlixelNoopRuntimeDevice.INSTANCE;
 
   /**
+   * Whether the game should pause audio and throttle the frame rate when the window loses focus.
+   *
+   * <p>When {@code true} (the default), audio is paused and the update loop suspends whenever the
+   * game window loses focus. The render loop continues at a low background frame rate so the window
+   * stays responsive, then both audio and updates resume automatically when focus returns.
+   *
+   * <p>Set this to {@code false} to keep the game running at full speed in the background. Note
+   * that on mobile if this is {@code false}, audio will keep playing when the app is not focused.
+   */
+  public static boolean autoPause = true;
+
+  /**
    * Global timescale applied to the game's update loop each frame.
    *
    * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
@@ -1268,7 +1291,7 @@ public final class Flixel {
   }
 
   /**
-   * Returns the game's fixed design width in game pixels, as set by {@link FlixelGame.Config}.
+   * Returns the game's fixed design width in game pixels, as set by {@link FlixelConfig}.
    *
    * <p>This is the width your game logic is authored against. It never changes at runtime, no matter
    * the window size, fullscreen state, render resolution, or viewport policy, so it is the value to
@@ -1280,17 +1303,17 @@ public final class Flixel {
    * @return The fixed design width in game pixels.
    */
   public static int getDesignWidth() {
-    return game != null ? game.getInitialWidth() : getVisibleWidth();
+    return config.getWidth();
   }
 
   /**
-   * Returns the game's fixed design height in game pixels, as set by {@link FlixelGame.Config}.
+   * Returns the game's fixed design height in game pixels, as set by {@link FlixelConfig}.
    *
    * @return The fixed design height in game pixels.
    * @see #getDesignWidth()
    */
   public static int getDesignHeight() {
-    return game != null ? game.getInitialHeight() : getVisibleHeight();
+    return config.getHeight();
   }
 
   /**
@@ -1308,7 +1331,7 @@ public final class Flixel {
     if (!cameras.isEmpty()) {
       return (int) cameras.first().getWorldWidth();
     }
-    return game.getInitialWidth();
+    return config.getWidth();
   }
 
   /**
@@ -1321,28 +1344,15 @@ public final class Flixel {
     if (!cameras.isEmpty()) {
       return (int) cameras.first().getWorldHeight();
     }
-    return game.getInitialHeight();
-  }
-
-  /**
-   * Returns the game's fixed design size in game pixels, as set in the {@link FlixelGame.Config}.
-   *
-   * <p>This matches {@link #getDesignWidth()} / {@link #getDesignHeight()} and, unlike
-   * {@link #getVisibleWidth()} / {@link #getVisibleHeight()}, always reflects the fixed design
-   * dimensions set at startup, unaffected by the window size or viewport type.
-   *
-   * @return A new {@link FlixelVector} containing the fixed design width and height.
-   */
-  public static FlixelVector getSize() {
-    return new FlixelVector(game.getInitialWidth(), game.getInitialHeight());
+    return config.getHeight();
   }
 
   /**
    * Requests that the game quits.
    *
-   * <p>This is a convenience that forwards to {@link FlixelWindow#close() Flixel.window.close()}. If
-   * the window is absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}),
-   * that still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
+   * <p>This is a convenience that forwards to {@link FlixelWindow#close()}. If the window is
+   * absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}), that
+   * still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
    */
   public static void quit() {
     window.close();
@@ -1355,7 +1365,7 @@ public final class Flixel {
    * @return The elapsed time in seconds for the current frame, scaled by {@link #timeScale}.
    */
   public static float getElapsed() {
-    return game != null ? game.getElapsed() : 0f;
+    return game.getElapsed();
   }
 
   /**
@@ -1366,7 +1376,7 @@ public final class Flixel {
    * @return The raw elapsed time in seconds for the current frame, unaffected by {@link #timeScale}.
    */
   public static float getRawElapsed() {
-    return game != null ? game.getRawElapsed() : 0f;
+    return game.getRawElapsed();
   }
 
   /**
@@ -1379,15 +1389,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns the current runtime mode. Defaults to {@link FlixelRuntimeMode#RELEASE}.
-   *
-   * @return The active {@link FlixelRuntimeMode} for this session.
-   */
-  public static FlixelRuntimeMode getRuntimeMode() {
-    return runtime.getMode();
-  }
-
-  /**
    * Refreshes the current state by invoking the factory last set by {@link #switchState(Supplier)}.
    * Does nothing if the factory is {@code null}.
    *
@@ -1395,19 +1396,10 @@ public final class Flixel {
    */
   public static void resetState() {
     Objects.requireNonNull(game, "Game is not initialized. Call start(...) first.");
-    Supplier<FlixelState> factory = currentStateFactory;
+    var factory = currentStateFactory;
     if (factory != null) {
       switchState(factory, true, true, true);
     }
-  }
-
-  /**
-   * Creates the debug overlay using the factory registered via
-   * {@link FlixelDebugManager#setOverlayFactory}. Called internally by
-   * {@link FlixelGame} during startup when debug mode is enabled.
-   */
-  static FlixelDebugOverlay createDebugOverlay() {
-    return debug.createOverlay();
   }
 
   /**

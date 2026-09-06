@@ -39,9 +39,9 @@ import java.util.Arrays;
  *
  * <p>Shared presets such as {@link #WHITE} and {@link #RED} are single shared instances. Mutating
  * a preset affects every place that uses that reference. For a private copy, use
- * {@code new FlixelColor(FlixelColor.RED)} or {@link #setColor(FlixelColor)} on your own instance.
+ * {@code new FlixelColor(FlixelColor.RED)} or {@link #set(FlixelColor)} on your own instance.
  *
- * <p>Use {@link #getColor()} when you need a compact packed RGBA8888 value.
+ * <p>Use {@link #getRgba8888()} when you need a compact packed RGBA8888 value.
  */
 public class FlixelColor {
 
@@ -91,7 +91,7 @@ public class FlixelColor {
    * @param rgba8888 The packed RGBA8888 value.
    */
   public FlixelColor(int rgba8888) {
-    setPackedColor(rgba8888);
+    setRgba8888(rgba8888);
   }
 
   /**
@@ -138,32 +138,22 @@ public class FlixelColor {
   }
 
   /**
-   * Copies RGBA from {@code other} into this color.
-   *
-   * @param other The color to copy. Must not be {@code null}.
-   */
-  public void setColor(@NotNull FlixelColor other) {
-    r = other.r;
-    g = other.g;
-    b = other.b;
-    a = other.a;
-  }
-
-  /**
    * Sets this color from a hex string such as {@code "#FF00FF"}, {@code "FF00FF"}, or an
    * eight-digit form with alpha such as {@code "#FF00FF80"}.
    *
    * @param hexFormat The hex string to parse. Must not be {@code null}.
+   * @return This color, for chaining.
    * @throws NumberFormatException If the string is not valid hexadecimal.
    */
-  public void setColor(@NotNull String hexFormat) {
+  public FlixelColor set(@NotNull String hexFormat) {
     String hex = hexFormat.startsWith("#") ? hexFormat.substring(1) : hexFormat;
     long value = Long.parseLong(hex, 16);
     if (hex.length() <= 6) {
-      setPackedColor((int) ((value << 8) | 0xFF));
+      setRgba8888((int) ((value << 8) | 0xFF));
     } else {
-      setPackedColor((int) value);
+      setRgba8888((int) value);
     }
+    return this;
   }
 
   /**
@@ -182,7 +172,7 @@ public class FlixelColor {
   }
 
   /**
-   * Sets all four components at once.
+   * Sets all four components at once with {@code [0, 1]} ranges.
    *
    * @param r The red component in {@code [0, 1]}.
    * @param g The green component in {@code [0, 1]}.
@@ -204,7 +194,7 @@ public class FlixelColor {
    *
    * @param rgba8888 The packed value, red in the highest byte.
    */
-  public void setPackedColor(int rgba8888) {
+  public void setRgba8888(int rgba8888) {
     r = ((rgba8888 >>> 24) & 0xFF) / 255f;
     g = ((rgba8888 >>> 16) & 0xFF) / 255f;
     b = ((rgba8888 >>> 8) & 0xFF) / 255f;
@@ -232,7 +222,7 @@ public class FlixelColor {
    *
    * @return The packed RGBA8888 integer representing this color.
    */
-  public int getColor() {
+  public int getRgba8888() {
     return ((int) (r * 255f) << 24) | ((int) (g * 255f) << 16) | ((int) (b * 255f) << 8) | (int) (a * 255f);
   }
 

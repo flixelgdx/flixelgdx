@@ -199,11 +199,13 @@ public class PerformanceObject {
 
 ### Architecture and scope
 
-- `flixelgdx-core` is the main surface most game code uses. Keep backend or platform quirks out of core; abstract with interfaces where behavior differs per platform.
+- `flixelgdx-core` is the main surface typical game code uses. Keep backend or platform quirks out of core; abstract with 
+  interfaces where behavior differs per platform.
 - Keep changes minimal: avoid unrelated files unless needed for the stated task.
 - When working in the HTML5 / `flixelgdx-html5` platform, do not write JavaScript- or WebAssembly-specific code. The
-  framework's web platform should be able to support JavaScript and WebAssembly out of the box, which allows it to be reachable
+  framework's web platform should be able to support both out of the box, which allows it to be reachable
   on older and newer browsers alike.
+- If an API (such as a method) is moved to a different location, do **not** keep the original location. Remove it entirely.
 
 ### Language and style
 

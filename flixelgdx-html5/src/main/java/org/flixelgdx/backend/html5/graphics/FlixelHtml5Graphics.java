@@ -174,7 +174,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @Override
   @NotNull
   public FlixelTexture createTexture(@NotNull FlixelImage image) {
-    return new FlixelWebGlTexture(gl, image.width(), image.height(), image.pixels(), false);
+    return new FlixelWebGlTexture(gl, image.getWidth(), image.getHeight(), image.getPixels(), false);
   }
 
   @Override

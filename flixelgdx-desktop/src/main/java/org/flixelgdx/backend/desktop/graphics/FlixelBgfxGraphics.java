@@ -28,6 +28,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelDisplayMode;
+import org.flixelgdx.graphics.FlixelGlobalShaderPipeline;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
@@ -63,24 +64,12 @@ import java.util.Objects;
  * shader program. Drawing goes through bgfx's numbered views: view {@code 0} targets the screen,
  * and render targets take higher-numbered views bound to their framebuffers, tracked on a small
  * stack so per-camera and whole-scene targets nest correctly.
- *
- * <p>bgfx cannot draw without a compiled shader program. The sprite shaders are precompiled per
- * renderer backend and bundled under {@code org/flixelgdx/shaders}; build them with
- * {@code scripts/build_shaders.sh}. If the program is missing at startup, drawing degrades to a
- * no-op with a one-time warning so the game still runs (useful headless), while everything else
- * (textures, render targets, clears) works normally.
  */
 public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   public double smoothingFactor = 0.1;
 
   private long lastFrameTime = System.nanoTime();
-
-  /** Wall-clock nanoseconds accumulated since the last stats log line, when stats logging is enabled. */
-  private long statsWindowNanos;
-
-  /** Timestamp of the previous {@code endFrame}, used to measure true end-to-end frame periods. */
-  private long statsLastNanos;
 
   private double averageFps = 0;
 
@@ -114,8 +103,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   private FlixelGraphicsApi api = FlixelGraphicsApi.OpenGL;
 
   /** Stack of active view ids; the top is where the batch currently submits. */
-  @NotNull
-  private final int[] viewStack = new int[16];
+  private final int @NotNull [] viewStack = new int[16];
 
   /**
    * Framebuffer bound at each {@link #viewStack} level ({@code -1} is the back buffer), plus that
@@ -124,14 +112,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    * into the same framebuffer instead of sharing one, which is what keeps per-camera zoom and scroll
    * from overwriting each other.
    */
-  @NotNull
-  private final short[] viewStackFrameBuffer = new short[16];
+  private final short @NotNull [] viewStackFrameBuffer = new short[16];
 
-  @NotNull
-  private final int[] viewStackWidth = new int[16];
+  private final int @NotNull [] viewStackWidth = new int[16];
 
-  @NotNull
-  private final int[] viewStackHeight = new int[16];
+  private final int @NotNull [] viewStackHeight = new int[16];
 
   @NotNull
   private final BGFXVertexLayout vertexLayout = BGFXVertexLayout.create();
@@ -178,7 +163,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @NotNull
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
 
-  private short vertexLayoutHandle;
+  @NotNull
+  private final FlixelGlobalShaderPipeline pipeline = new FlixelGlobalShaderPipeline();
+
   private short quadIndexBuffer = -1;
   private short spriteProgram = -1;
   private short textureUniform = -1;
@@ -203,9 +190,6 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   private int viewStackDepth;
 
   private int clearColor;
-
-  /** Frames counted since the last stats log line, when stats logging is enabled. */
-  private int statsWindowFrames;
 
   /** Frame-rate cap in fps, or {@code 0} when uncapped. Read by the runner each frame. */
   private volatile int targetFps;
@@ -268,7 +252,6 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     BGFX.bgfx_vertex_layout_add(vertexLayout, BGFX.BGFX_ATTRIB_TEXCOORD0, 2, BGFX.BGFX_ATTRIB_TYPE_FLOAT, false, false);
     BGFX.bgfx_vertex_layout_add(vertexLayout, BGFX.BGFX_ATTRIB_COLOR0, 4, BGFX.BGFX_ATTRIB_TYPE_UINT8, true, false);
     BGFX.bgfx_vertex_layout_end(vertexLayout);
-    vertexLayoutHandle = BGFX.bgfx_create_vertex_layout(vertexLayout);
     quadIndexBuffer = createQuadIndexBuffer();
 
     textureUniform = BGFX.bgfx_create_uniform("s_texture", BGFX.BGFX_UNIFORM_TYPE_SAMPLER, 1);
@@ -339,11 +322,14 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     return batch;
   }
 
+  @NotNull
   @Override
-  public void queueMainThread(@Nullable Runnable action) {
-    if (action == null) {
-      return;
-    }
+  public FlixelGlobalShaderPipeline getGlobalShaderPipeline() {
+    return pipeline;
+  }
+
+  @Override
+  public void queueMainThread(@NotNull Runnable action) {
     synchronized (mainThreadQueue) {
       mainThreadQueue.add(action);
     }
@@ -376,59 +362,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @Override
   public void endFrame() {
-    // Advance bgfx to the next frame; 0 means "do not capture this frame".
-    BGFX.bgfx_frame(0);
-    if (statsEnabled) {
-      logStats();
-    }
-  }
-
-  /**
-   * Accumulates one frame of bgfx timing and logs a summary line roughly once per second.
-   *
-   * <p>The key signal is CPU submit time versus GPU time. When GPU time dominates, the frame is
-   * fillrate or GPU bound and CPU-side batching changes will not help; when CPU submit time
-   * dominates, the render thread is the bottleneck and reducing draw calls or per-flush work pays
-   * off. {@code waitSubmit} and {@code waitRender} reveal stalls where one thread waits on the other.
-   */
-  private void logStats() {
-    long now = System.nanoTime();
-    if (statsLastNanos != 0L) {
-      statsWindowNanos += now - statsLastNanos;
-    }
-    statsLastNanos = now;
-    statsWindowFrames++;
-    if (statsWindowNanos < 1_000_000_000L) {
-      return;
-    }
-
-    BGFXStats stats = getBgfxStats();
-    double windowFps = statsWindowFrames * 1_000_000_000.0 / statsWindowNanos;
-    statsWindowNanos = 0L;
-    statsWindowFrames = 0;
-    if (stats == null) {
-      return;
-    }
-
-    // bgfx reports CPU and GPU times in separate timer units, so each converts to milliseconds
-    // through its own frequency. A GPU frequency of zero means the backend cannot time the GPU.
-    double cpuToMs = 1000.0 / stats.cpuTimerFreq();
-    double gpuToMs = stats.gpuTimerFreq() > 0 ? 1000.0 / stats.gpuTimerFreq() : 0.0;
-    double frameMs = stats.cpuTimeFrame() * cpuToMs;
-    double cpuMs = (stats.cpuTimeEnd() - stats.cpuTimeBegin()) * cpuToMs;
-    double gpuMs = (stats.gpuTimeEnd() - stats.gpuTimeBegin()) * gpuToMs;
-    double waitSubmitMs = stats.waitSubmit() * cpuToMs;
-    double waitRenderMs = stats.waitRender() * cpuToMs;
-    long gpuMemMb = stats.gpuMemoryUsed() < 0 ? -1 : stats.gpuMemoryUsed() / (1024 * 1024);
-
-    Flixel.debug("Graphics", String.format(
-        "stats | fps=%.0f frame=%.2fms | cpuSubmit=%.2fms gpu=%.2fms | "
-            + "waitSubmit=%.2fms waitRender=%.2fms | draws=%d peak=%d views=%d | "
-            + "tvb=%dKB tib=%dKB | gpuMem=%s",
-        windowFps, frameMs, cpuMs, gpuMs, waitSubmitMs, waitRenderMs,
-        stats.numDraw(), stats.numDrawCallsPeak(), stats.numViews(),
-        stats.transientVbUsed() / 1024, stats.transientIbUsed() / 1024,
-        gpuMemMb < 0 ? "n/a" : gpuMemMb + "MB"));
+    BGFX.bgfx_frame(0); // 0 means "do not capture this frame".
   }
 
   @Override
@@ -890,9 +824,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    * @param projection The view-projection matrix.
    * @param transform The model transform applied before projection.
    */
-  void submitQuads(@NotNull float[] verts, int quadCount, @Nullable FlixelBgfxTexture texture,
-      @NotNull FlixelBlendMode blend, @Nullable FlixelShader shader,
-      @NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform) {
+  void submitQuads(float @NotNull [] verts, int quadCount, @Nullable FlixelBgfxTexture texture,
+      @NotNull FlixelBlendMode blend, @Nullable FlixelShader shader, @NotNull FlixelMatrix projection,
+      @NotNull FlixelMatrix transform) {
     short program = resolveProgram(shader);
     if (program == -1 || texture == null) {
       if (!programWarned && program == -1) {
