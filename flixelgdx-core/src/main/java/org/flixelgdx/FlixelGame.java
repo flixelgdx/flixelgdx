@@ -220,12 +220,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** FPS cap saved just before throttling on focus loss; restored when focus returns. */
   private int savedTargetFps;
 
-  /** Whether the game is currently in the process of closing. */
-  private boolean isClosing = false;
-
-  /** Whether the game has successfully shut down. */
-  private boolean isClosed = false;
-
   /** When true, skips gameplay/state/camera follow updates (debug pause). */
   private boolean gamePaused = false;
 
@@ -303,8 +297,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     // graphics backend, which is only guaranteed to be running once create() is reached.
     Flixel.assets.setCompressedTexturesEnabled(true);
 
-    isClosed = false;
-    isClosing = false;
     stateLifecyclePauseDispatched = false;
 
     // Apply the configured render resolution now that the graphics backend is running. It is on by
@@ -752,11 +744,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   @Override
   public void destroy() {
-    if (isClosing) {
-      return;
-    }
-    isClosing = true;
-
     Flixel.setDrawCamera(null);
 
     Flixel.Signals.preGameClose.dispatch();
@@ -812,10 +799,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     Flixel.Signals.postGameClose.dispatch();
 
-    // Stop file logging after the whole game closes so that way any logs made can be stored!
+    // Stop file logging after the whole game closes so that way any logs made can be stored.
     Flixel.log.stopFileLogging();
-
-    isClosed = true;
   }
 
   /**
@@ -923,32 +908,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   public boolean getGamePaused() {
     return gamePaused;
-  }
-
-  public boolean isClosing() {
-    return isClosing;
-  }
-
-  /**
-   * Returns whether the game is in the process of closing.
-   *
-   * @return {@code true} when a close has been requested but has not yet fully completed.
-   */
-  public boolean getClosing() {
-    return isClosing;
-  }
-
-  public boolean isClosed() {
-    return isClosed;
-  }
-
-  /**
-   * Returns whether the game window has fully closed.
-   *
-   * @return {@code true} when the game window has shut down completely.
-   */
-  public boolean getClosed() {
-    return isClosed;
   }
 
   public boolean isGlobalOverlayEnabled() {

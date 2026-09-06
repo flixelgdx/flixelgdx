@@ -264,12 +264,6 @@ public final class Flixel {
    * studio name, design resolution, frame rate, VSync preference, and other startup settings.
    * Read it from anywhere after the game object has been constructed.
    *
-   * <p>Example:
-   * <pre>{@code
-   * String title = Flixel.config.getTitle();
-   * int designWidth = Flixel.config.getWidth();
-   * }</pre>
-   *
    * @see FlixelConfig
    */
   @NotNull
@@ -1352,19 +1346,6 @@ public final class Flixel {
       return (int) cameras.first().getWorldHeight();
     }
     return config.getHeight();
-  }
-
-  /**
-   * Returns the game's fixed design size in game pixels, as set in the {@link FlixelConfig}.
-   *
-   * <p>This matches {@link #getDesignWidth()} / {@link #getDesignHeight()} and, unlike
-   * {@link #getVisibleWidth()} / {@link #getVisibleHeight()}, always reflects the fixed design
-   * dimensions set at startup, unaffected by the window size or viewport type.
-   *
-   * @return A new {@link FlixelVector} containing the fixed design width and height.
-   */
-  public static FlixelVector getSize() {
-    return new FlixelVector(config.getWidth(), config.getHeight());
   }
 
   /**
