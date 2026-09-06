@@ -149,7 +149,7 @@ public final class FlixelLoggingBytecodeHooks {
    * @param declaringClass the fully qualified name of the class containing the original call.
    * @param declaringMethod the name of the method containing the original call.
    */
-  public static void bcError0(String message, String sourceFile, int line, String declaringClass,
+  public static void bcError0(Object message, String sourceFile, int line, String declaringClass,
       String declaringMethod) {
     Flixel.log.errorWithSite(message, sourceFile, line, declaringClass, declaringMethod);
   }

@@ -243,8 +243,8 @@ public final class LoggerBytecodeWeaver {
         new Replacement("bcWarn0", "(Ljava/lang/Object;" + SITE));
     m.put("warn(Ljava/lang/String;Ljava/lang/Object;)V",
         new Replacement("bcWarn1", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
-    m.put("error(Ljava/lang/String;)V",
-        new Replacement("bcError0", "(Ljava/lang/String;" + SITE));
+    m.put("error(Ljava/lang/Object;)V",
+        new Replacement("bcError0", "(Ljava/lang/Object;" + SITE));
     m.put("error(Ljava/lang/String;Ljava/lang/Object;)V",
         new Replacement("bcError1", "(Ljava/lang/String;Ljava/lang/Object;" + SITE));
     m.put("error(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Throwable;)V",
