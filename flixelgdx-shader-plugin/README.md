@@ -52,12 +52,12 @@ produces and bundles the compiled shaders.
 Write a plain GLSL fragment shader. The plugin injects the framework preamble, so you do not declare
 the sampler or varyings yourself; you just use the names it provides:
 
-| Name | Type | Meaning |
-| --- | --- | --- |
-| `u_texture` | `sampler2D` | The sprite or camera scene texture (bound at stage 0). |
-| `v_texCoords` | `vec2` | The interpolated texture coordinate. |
-| `v_color` | `vec4` | The interpolated vertex tint. |
-| `flixel_texture(uv)` | function | Shorthand for `texture2D(u_texture, uv)`. |
+| Name                 | Type          | Meaning                                                |
+|----------------------|---------------|--------------------------------------------------------|
+| `u_texture`          | `sampler2D`   | The sprite or camera scene texture (bound at stage 0). |
+| `v_texCoords`        | `vec2`        | The interpolated texture coordinate.                   |
+| `v_color`            | `vec4`        | The interpolated vertex tint.                          |
+| `flixel_texture(uv)` | function      | Shorthand for `texture2D(u_texture, uv)`.              |
 
 Write the result to `gl_FragColor`. A minimal pass-through fragment shader:
 
@@ -94,6 +94,7 @@ shaders/<name>/glsl/{vs,fs}.bin      OpenGL (and the runtime fallback)
 shaders/<name>/spirv/{vs,fs}.bin     Vulkan
 shaders/<name>/metal/{vs,fs}.bin     Metal
 shaders/<name>/dx11/{vs,fs}.bin      Direct3D 11 and 12
+shaders/<name>/essl/{vs,fs}.glsl     ESSL (for HTML5)
 ```
 
 ## Direct3D and the compiler

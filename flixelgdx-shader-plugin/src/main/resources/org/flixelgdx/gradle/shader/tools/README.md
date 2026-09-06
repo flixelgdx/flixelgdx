@@ -24,15 +24,7 @@ safer than trying to synthesize that format by hand.
 
 ## Adding or updating a binary
 
-The binaries are built from a checkout of [bgfx](https://github.com/bkaradzic/bgfx):
-
-```
-# From a bgfx checkout, after fetching bx and bimg alongside it:
-make tools           # or the platform-specific shaderc target
-# The result is under .build/<config>/bin/shaderc[Release]
-```
-
-Copy the result into the matching classifier folder and, on Unix, keep the executable bit set.
+The binaries are built from a checkout of [bgfx](https://github.com/bkaradzic/bgfx).
 
 The Direct3D (`dx11`) variants are DXBC, which needs Microsoft's FXC compiler. FXC is native to
 Windows, so the Windows `shaderc` emits those variants directly. On Linux and macOS, `shaderc`

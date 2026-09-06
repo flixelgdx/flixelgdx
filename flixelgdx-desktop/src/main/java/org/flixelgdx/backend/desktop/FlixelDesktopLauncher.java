@@ -99,9 +99,6 @@ public final class FlixelDesktopLauncher {
    */
   private static FlixelRuntimeMode resolveRuntimeMode() {
     String mode = System.getProperty("flixel.mode", "").trim().toLowerCase();
-    if (mode.isEmpty() && "true".equalsIgnoreCase(System.getProperty("flixel.debug", ""))) {
-      return FlixelRuntimeMode.DEBUG;
-    }
     return switch (mode) {
       case "debug" -> FlixelRuntimeMode.DEBUG;
       case "test" -> FlixelRuntimeMode.TEST;

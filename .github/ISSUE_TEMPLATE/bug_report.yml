@@ -54,6 +54,5 @@ body:
       options:
         - Core (Every Platform)
         - Desktop (LWJGL3)
-        - Android
-        - Web (TeaVM)
+        - HTML5 (TeaVM)
         - Other (please specify in description)
