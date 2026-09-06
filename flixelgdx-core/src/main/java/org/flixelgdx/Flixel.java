@@ -70,7 +70,6 @@ import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.flixelgdx.math.FlixelRandom;
-import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.type.FlixelAngleTween;
 import org.flixelgdx.tween.type.FlixelColorTween;
