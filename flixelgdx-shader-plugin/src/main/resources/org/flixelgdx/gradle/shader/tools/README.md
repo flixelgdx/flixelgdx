@@ -7,8 +7,8 @@ time. Each operating system has its own subfolder, named by classifier:
 tools/
   linux-x86_64/shaderc
   macos-aarch64/shaderc
-  windows-x86_64/shaderc.exe
   windows-shim/d3d4linux.exe
+  windows-x86_64/shaderc.exe
 ```
 
 The plugin extracts the binary for the current host, then invokes it to cross-compile each GLSL

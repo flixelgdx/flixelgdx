@@ -62,10 +62,10 @@ import org.gradle.api.provider.Property;
  *   generateDefaultIndexHtml = true
  *
  *   // Provide a custom index.html instead of the generated default.
- *   customIndexHtml = file('src/main/webapp/index.html')
+ *   indexHtml = file('src/main/webapp/index.html')
  *
  *   // Provide a favicon that is copied to the output and linked in the generated index.html.
- *   customFavicon = file('src/main/webapp/favicon.ico')
+ *   favicon = file('src/main/webapp/favicon.ico')
  * }
  * }</pre>
  */
@@ -168,17 +168,17 @@ public interface Html5Extension {
    *
    * @return The custom index.html file property.
    */
-  RegularFileProperty getCustomIndexHtml();
+  RegularFileProperty getIndexHtml();
 
   /**
    * Optional path to a favicon file (any format supported by browsers, e.g. {@code .ico}, {@code .png}).
    *
    * <p>When set, the file is copied into the TeaVM web output directory and a {@code <link rel="icon">}
    * tag referencing it is injected into the generated {@code index.html}. Has no effect when a custom
-   * {@code index.html} is provided via {@link #getCustomIndexHtml()} or {@link #getWebappDir()}, since
+   * {@code index.html} is provided via {@link #getIndexHtml()} or {@link #getWebappDir()}, since
    * those are copied verbatim.
    *
    * @return The custom favicon file property.
    */
-  RegularFileProperty getCustomFavicon();
+  RegularFileProperty getFavicon();
 }

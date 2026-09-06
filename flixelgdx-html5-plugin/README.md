@@ -222,12 +222,12 @@ sourceSets.main.resources.srcDir = 'src/main/emcc-output'
 
 | Task                    | Group       | Description                                                             |
 |-------------------------|-------------|-------------------------------------------------------------------------|
-| `copyAssets`            | flixelgdx   | Copies game assets into the web output.                                 |
-| `copyWebApp`            | flixelgdx   | Copies user-provided web resources into the web output.                 |
-| `copyShaders`           | flixelgdx   | Copies compiled ESSL shader variants into the web assets.               |
-| `extractNativeScripts`  | flixelgdx   | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.         |
-| `generateAssetManifest` | flixelgdx   | Writes `assets/assets.txt` for the web preloader.                       |
-| `generateIndexHtml`     | flixelgdx   | Generates `index.html` and injects `<script>` tags for native scripts.  |
+| `copyAssets`            | build       | Copies game assets into the web output.                                 |
+| `copyWebApp`            | build       | Copies user-provided web resources into the web output.                 |
+| `copyShaders`           | build       | Copies compiled ESSL shader variants into the web assets.               |
+| `extractNativeScripts`  | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.         |
+| `generateAssetManifest` | build       | Writes `assets/assets.txt` for the web preloader.                       |
+| `generateIndexHtml`     | build       | Generates `index.html` and injects `<script>` tags for native scripts.  |
 | `run`                   | application | Builds the web app and starts the dev server.                           |
 | `debug`                 | application | Same as `run`, but opens in debug mode.                                 |
 | `package`               | application | Zips the web output into `dist/<name>-html5.zip`.                       |

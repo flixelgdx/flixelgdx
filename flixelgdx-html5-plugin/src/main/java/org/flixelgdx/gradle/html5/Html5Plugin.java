@@ -94,7 +94,7 @@ import java.util.stream.Stream;
  */
 public class Html5Plugin implements Plugin<Project> {
 
-  private static final String FLIXELGDX_GROUP = "flixelgdx";
+  private static final String BUILD_GROUP = "build";
   private static final String APPLICATION_GROUP = "application";
   private static final String RESOURCE_ROOT = "/org/flixelgdx/gradle/html5/";
   private static final String DEFAULT_INDEX_TEMPLATE = RESOURCE_ROOT + "default-index.html";
@@ -142,14 +142,14 @@ public class Html5Plugin implements Plugin<Project> {
   /** Registers the asset and web-resource copy tasks. */
   private void registerCopyTasks(Project project, Html5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("copyAssets", Copy.class, task -> {
-      task.setGroup(FLIXELGDX_GROUP);
+      task.setGroup(BUILD_GROUP);
       task.setDescription("Copies game assets from the assets directory into the web output directory.");
       task.from(ext.getAssetsDir());
       task.into(webRoot.dir("assets"));
     });
 
     project.getTasks().register("copyWebApp", Copy.class, task -> {
-      task.setGroup(FLIXELGDX_GROUP);
+      task.setGroup(BUILD_GROUP);
       task.setDescription(
           "Copies user-provided web resources (e.g. a custom index.html) into the web output directory.");
       task.onlyIf(t -> ext.getWebappDir().get().getAsFile().exists());
@@ -166,7 +166,7 @@ public class Html5Plugin implements Plugin<Project> {
    */
   private void registerShaderTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("copyShaders", Copy.class, task -> {
-      task.setGroup(FLIXELGDX_GROUP);
+      task.setGroup(BUILD_GROUP);
       task.setDescription("Copies compiled web (ESSL) shader variants into the web assets so they preload.");
       Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
       if (runtimeClasspath != null) {
@@ -189,7 +189,7 @@ public class Html5Plugin implements Plugin<Project> {
    */
   private void registerManifestTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("generateAssetManifest", task -> {
-      task.setGroup(FLIXELGDX_GROUP);
+      task.setGroup(BUILD_GROUP);
       task.setDescription("Writes assets/assets.txt listing every bundled asset for the web preloader.");
       task.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyShaders"));
       task.doLast(t -> writeAssetManifest(new File(webRoot.get().getAsFile(), "assets")));
@@ -229,11 +229,11 @@ public class Html5Plugin implements Plugin<Project> {
   private void registerIndexTask(Project project, Html5Extension ext, DirectoryProperty webRoot,
       AtomicReference<WebBundle> bundle) {
     project.getTasks().register("generateIndexHtml", task -> {
-      task.setGroup(FLIXELGDX_GROUP);
+      task.setGroup(BUILD_GROUP);
       task.setDescription("Writes index.html into the output directory, booting the WebAssembly or JavaScript bundle.");
       task.onlyIf(t -> {
         // A configured custom file must always be deployed, even when auto-generation is off.
-        if (ext.getCustomIndexHtml().isPresent() && ext.getCustomIndexHtml().getAsFile().get().exists()) {
+        if (ext.getIndexHtml().isPresent() && ext.getIndexHtml().getAsFile().get().exists()) {
           return true;
         }
         if (!ext.getGenerateDefaultIndexHtml().get()) {
@@ -253,8 +253,8 @@ public class Html5Plugin implements Plugin<Project> {
   private void writeIndexHtml(Project project, Html5Extension ext, File outputDir, WebBundle bundle) {
     outputDir.mkdirs();
 
-    if (ext.getCustomIndexHtml().isPresent()) {
-      File custom = ext.getCustomIndexHtml().getAsFile().get();
+    if (ext.getIndexHtml().isPresent()) {
+      File custom = ext.getIndexHtml().getAsFile().get();
       if (custom.exists()) {
         try {
           Files.copy(custom.toPath(), new File(outputDir, "index.html").toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -355,10 +355,10 @@ public class Html5Plugin implements Plugin<Project> {
 
   /** Copies a configured favicon into the output and returns the {@code <link>} tag, or an empty string. */
   private String copyFavicon(Project project, Html5Extension ext, File outputDir) {
-    if (!ext.getCustomFavicon().isPresent()) {
+    if (!ext.getFavicon().isPresent()) {
       return "";
     }
-    File favicon = ext.getCustomFavicon().getAsFile().get();
+    File favicon = ext.getFavicon().getAsFile().get();
     if (!favicon.exists()) {
       return "";
     }
@@ -604,7 +604,7 @@ public class Html5Plugin implements Plugin<Project> {
    */
   private void registerWasmExtractionTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("extractNativeScripts", Sync.class, task -> {
-      task.setGroup(FLIXELGDX_GROUP);
+      task.setGroup(BUILD_GROUP);
       task.setDescription(
           "Extracts JavaScript and WebAssembly scripts from META-INF/wasm/ in any runtime classpath JAR "
               + "into the native/ web output directory.");
