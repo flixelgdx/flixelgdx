@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelWindow;
+import org.flixelgdx.backend.FlixelWindowTransparency;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.system.MemoryStack;
@@ -48,6 +49,7 @@ public class FlixelSdlWindow implements FlixelWindow {
 
   private int cachedX;
   private int cachedY;
+  private final FlixelWindowTransparency transparency = new FlixelWindowTransparency();
 
   private boolean closeRequested;
   private boolean absorbCloseRequests;
@@ -88,6 +90,11 @@ public class FlixelSdlWindow implements FlixelWindow {
   @Override
   public void close() {
     closeRequested = true;
+  }
+
+  @Override
+  public FlixelWindowTransparency getTransparency() {
+    return transparency;
   }
 
   @Override

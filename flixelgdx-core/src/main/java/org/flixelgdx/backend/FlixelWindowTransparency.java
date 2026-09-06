@@ -36,18 +36,37 @@ import java.util.Arrays;
  * forced to fully transparent so the desktop shows through. When deactivated, the colors captured
  * just before activation are restored, or opaque black is used if transparency was never on.
  *
- * <p>This object is a singleton accessed from {@link FlixelWindow#TRANSPARENCY}; game code uses
+ * <p>Each backend that supports desktop compositing owns one instance, returned by
+ * {@link FlixelWindow#getTransparency()}. Game code uses
  * {@link FlixelWindow#setTransparencyActive(boolean)} rather than calling this directly.
  *
  * @see FlixelWindow#setTransparencyActive(boolean)
  */
-public final class FlixelWindowTransparency {
+public class FlixelWindowTransparency {
+
+  /**
+   * No-op implementation returned by {@link org.flixelgdx.backend.FlixelWindow#getTransparency()}
+   * on platforms that do not support desktop compositing. All methods do nothing and
+   * {@link #isActive()} always returns {@code false}.
+   */
+  public static final FlixelWindowTransparency NOOP = new FlixelWindowTransparency() {
+    @Override
+    public void apply(boolean active) {}
+
+    @Override
+    public void applyBackdropOnly() {}
+
+    @Override
+    public boolean isActive() {
+      return false;
+    }
+
+    @Override
+    public void reset() {}
+  };
 
   /** Number of floats stored per camera: r, g, b, a, useBgAlphaBlending (1 = true, 0 = false). */
   private static final int FLOATS_PER_CAMERA = 5;
-
-  /** Singleton instance. */
-  static final FlixelWindowTransparency INSTANCE = new FlixelWindowTransparency();
 
   private final float[] gameRgba = new float[4];
   private float[] camerasPacked = new float[20];
@@ -56,7 +75,8 @@ public final class FlixelWindowTransparency {
   private boolean active;
   private boolean snapshotValid;
 
-  private FlixelWindowTransparency() {}
+  /** Creates a new, initially inactive transparency state manager. */
+  public FlixelWindowTransparency() {}
 
   /**
    * Enables or disables desktop compositing transparency.

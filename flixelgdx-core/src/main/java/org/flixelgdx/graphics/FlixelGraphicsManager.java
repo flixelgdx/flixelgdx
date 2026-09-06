@@ -264,7 +264,7 @@ public interface FlixelGraphicsManager {
    */
   @NotNull
   default FlixelTexture createTexture(@NotNull FlixelImage image) {
-    return createTexture(image.width(), image.height(), image.pixels());
+    return createTexture(image.getWidth(), image.getHeight(), image.getPixels());
   }
 
   /**

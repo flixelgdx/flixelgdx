@@ -258,6 +258,24 @@ public final class Flixel {
   public static FlixelGame game;
 
   /**
+   * The configuration supplied to the active {@link FlixelGame} at construction time.
+   *
+   * <p>Set once when the game is constructed and never changes at runtime. Contains the title,
+   * studio name, design resolution, frame rate, VSync preference, and other startup settings.
+   * Read it from anywhere after the game object has been constructed.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * String title = Flixel.config.getTitle();
+   * int designWidth = Flixel.config.getWidth();
+   * }</pre>
+   *
+   * @see FlixelConfig
+   */
+  @NotNull
+  public static FlixelConfig config;
+
+  /**
    * The global list of active {@link FlixelCamera cameras}, ordered back-to-front.
    *
    * <p>The first entry, {@code Flixel.cameras.first()}, is the main camera that the framework follows

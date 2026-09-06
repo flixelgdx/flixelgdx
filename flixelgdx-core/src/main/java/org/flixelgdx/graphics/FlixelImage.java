@@ -70,6 +70,19 @@ public class FlixelImage {
   }
 
   /**
+   * Wraps an existing pixel buffer without copying it.
+   *
+   * @param width Width in pixels; must be positive.
+   * @param height Height in pixels; must be positive.
+   * @param pixels RGBA8888 pixel data in row-major order, top-left first.
+   */
+  public FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
+    this.width = width;
+    this.height = height;
+    this.pixels = pixels;
+  }
+
+  /**
    * Fills the whole image with one color.
    *
    * @param color The fill color.

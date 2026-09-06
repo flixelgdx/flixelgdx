@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
  * @see FlixelGraphicsManager#addGlobalShader(FlixelShader)
  * @see FlixelGraphicsManager#removeGlobalShader(FlixelShader)
  */
-public final class FlixelGlobalShaderPipeline {
+public class FlixelGlobalShaderPipeline {
 
   /** Singleton instance shared across the session. */
   static final FlixelGlobalShaderPipeline INSTANCE = new FlixelGlobalShaderPipeline();
@@ -149,6 +149,9 @@ public final class FlixelGlobalShaderPipeline {
    * @param graphics The active graphics manager.
    */
   public void apply(@NotNull FlixelBatch batch, @NotNull FlixelGraphicsManager graphics) {
+    if (fboA == null) {
+      return;
+    }
     int w = graphics.getRenderWidth();
     int h = graphics.getRenderHeight();
     boolean usingA = true;
@@ -178,7 +181,9 @@ public final class FlixelGlobalShaderPipeline {
         graphics.clear(0f, 0f, 0f, 0f);
         batch.begin();
         gs.applyUniforms();
-        drawFullTarget(batch, src, w, h);
+        if (src != null) {
+          drawFullTarget(batch, src, w, h);
+        }
         batch.end();
         if (dst != null) {
           dst.end();
@@ -188,7 +193,9 @@ public final class FlixelGlobalShaderPipeline {
       } else {
         batch.begin();
         gs.applyUniforms();
-        drawFullTarget(batch, src, w, h);
+        if (src != null) {
+          drawFullTarget(batch, src, w, h);
+        }
         batch.end();
       }
     }

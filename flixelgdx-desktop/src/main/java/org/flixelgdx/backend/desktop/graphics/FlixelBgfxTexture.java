@@ -88,9 +88,9 @@ public class FlixelBgfxTexture implements FlixelTexture {
    * @param image The RGBA pixels to upload.
    */
   FlixelBgfxTexture(FlixelImage image) {
-    this.width = image.width();
-    this.height = image.height();
-    ByteBuffer pixels = image.pixels();
+    this.width = image.getWidth();
+    this.height = image.getHeight();
+    ByteBuffer pixels = image.getPixels();
     pixels.position(0).limit(width * height * 4);
     if (swapRB) {
       ByteBuffer swapped = swapRedBlue(pixels, width * height);
@@ -133,18 +133,18 @@ public class FlixelBgfxTexture implements FlixelTexture {
     if (destroyed || handle == -1) {
       return;
     }
-    int count = image.width() * image.height();
-    ByteBuffer pixels = image.pixels();
+    int count = image.getWidth() * image.getHeight();
+    ByteBuffer pixels = image.getPixels();
     pixels.position(0).limit(count * 4);
     if (swapRB) {
       ByteBuffer swapped = swapRedBlue(pixels, count);
       BGFX.bgfx_update_texture_2d(handle, 0, 0,
-          (short) x, (short) y, (short) image.width(), (short) image.height(),
+          (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
           BGFX.bgfx_copy(swapped), 0xFFFF);
       MemoryUtil.memFree(swapped);
     } else {
       BGFX.bgfx_update_texture_2d(handle, 0, 0,
-          (short) x, (short) y, (short) image.width(), (short) image.height(),
+          (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
           BGFX.bgfx_copy(pixels), 0xFFFF);
     }
   }

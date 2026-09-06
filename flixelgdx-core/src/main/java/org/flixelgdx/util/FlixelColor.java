@@ -142,6 +142,7 @@ public class FlixelColor {
    * eight-digit form with alpha such as {@code "#FF00FF80"}.
    *
    * @param hexFormat The hex string to parse. Must not be {@code null}.
+   * @return This color, for chaining.
    * @throws NumberFormatException If the string is not valid hexadecimal.
    */
   public FlixelColor set(@NotNull String hexFormat) {
@@ -171,7 +172,7 @@ public class FlixelColor {
   }
 
   /**
-   * Sets all four components at once.
+   * Sets all four components at once with {@code [0, 1]} ranges.
    *
    * @param r The red component in {@code [0, 1]}.
    * @param g The green component in {@code [0, 1]}.

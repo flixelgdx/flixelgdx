@@ -24,7 +24,6 @@
 package org.flixelgdx;
 
 import org.flixelgdx.asset.FlixelNoopAssetManager;
-import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelNoopDebugOverlay;
@@ -160,9 +159,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
   public FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
 
-  @NotNull
-  private final FlixelConfig config;
-
   /**
    * Produces the root {@link FlixelState} each time {@link #create()} runs.
    *
@@ -288,7 +284,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
   public FlixelGame(@NotNull FlixelConfig config, @NotNull Supplier<FlixelState> initialStateFactory) {
-    this.config = Objects.requireNonNull(config, "config cannot be null");
+    Flixel.config = Objects.requireNonNull(config, "config cannot be null");
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "initialStateFactory cannot be null");
   }
 
@@ -313,15 +309,16 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     // Apply the configured render resolution now that the graphics backend is running. It is on by
     // default at the design size, so the scene draws at a fixed size and upscales to the window.
-    if (config.isRenderResolutionEnabled()) {
-      Flixel.graphics.setRenderResolution(config.getRenderWidth(), config.getRenderHeight(), config.isRenderSmooth());
+    if (Flixel.config.isRenderResolutionEnabled()) {
+      Flixel.graphics.setRenderResolution(Flixel.config.getRenderWidth(), Flixel.config.getRenderHeight(),
+          Flixel.config.isRenderSmooth());
     } else {
       Flixel.graphics.clearRenderResolution();
     }
 
     Flixel.cameras.clear();
-    Flixel.cameras.add(new FlixelCamera(config.getWidth(), config.getHeight()));
-    overlayCamera = new FlixelCamera(config.getWidth(), config.getHeight());
+    Flixel.cameras.add(new FlixelCamera(Flixel.config.getWidth(), Flixel.config.getHeight()));
+    overlayCamera = new FlixelCamera(Flixel.config.getWidth(), Flixel.config.getHeight());
     overlayGroup = new FlixelBasicGroup<>(IFlixelBasic[]::new) {
     };
 
@@ -554,7 +551,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.debug.overlay.drawBoundingBoxes(Flixel.cameras.getItems());
     Flixel.debug.overlay.draw();
 
-    if (!Flixel.window.isTransparencyActive() && config.isTransparentFramebuffer()) {
+    if (!Flixel.window.isTransparencyActive() && Flixel.config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
     }
 
@@ -779,7 +776,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.state.destroy();
     }
     Flixel.graphics.disposeGlobalShaders();
-    FlixelWindow.TRANSPARENCY.reset();
+    Flixel.window.resetTransparency();
     fboOrthoW = -1;
     fboOrthoH = -1;
     // bgPixel is a shared, persistent asset owned by the asset manager; do not destroy it here.
@@ -825,7 +822,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * Resets the camera list to contain a single default camera with the current window size as its viewport.
    */
   public void resetCameras() {
-    FlixelCamera camera = new FlixelCamera(config.getWidth(), config.getHeight());
+    FlixelCamera camera = new FlixelCamera(Flixel.config.getWidth(), Flixel.config.getHeight());
     camera.update(Flixel.graphics.getBackBufferWidth(), Flixel.graphics.getBackBufferHeight(),
         camera.centerCameraOnResize);
     Flixel.cameras.clear();
@@ -835,7 +832,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
     if (Flixel.window.isTransparencyActive()) {
-      FlixelWindow.TRANSPARENCY.applyBackdropOnly();
+      Flixel.window.applyTransparencyBackdropOnly();
     }
   }
 
@@ -916,20 +913,20 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   public String getTitle() {
-    return config.getTitle();
+    return Flixel.config.getTitle();
   }
 
   public String getCompany() {
-    return config.getCompany();
+    return Flixel.config.getCompany();
   }
 
   public String getVersion() {
-    return config.getVersion();
+    return Flixel.config.getVersion();
   }
 
   @NotNull
   public FlixelConfig getConfig() {
-    return config;
+    return Flixel.config;
   }
 
   public boolean isGamePaused() {
@@ -972,31 +969,31 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   public int getFramerate() {
-    return config.getFramerate();
+    return Flixel.config.getFramerate();
   }
 
   public boolean isVsync() {
-    return config.isVsync();
+    return Flixel.config.isVsync();
   }
 
   public boolean getVsync() {
-    return config.isVsync();
+    return Flixel.config.isVsync();
   }
 
   public boolean isFullscreen() {
-    return config.isFullscreen();
+    return Flixel.config.isFullscreen();
   }
 
   public boolean getFullscreen() {
-    return config.isFullscreen();
+    return Flixel.config.isFullscreen();
   }
 
   public int getInitialWidth() {
-    return config.getWidth();
+    return Flixel.config.getWidth();
   }
 
   public int getInitialHeight() {
-    return config.getHeight();
+    return Flixel.config.getHeight();
   }
 
   public boolean isGlobalOverlayEnabled() {
