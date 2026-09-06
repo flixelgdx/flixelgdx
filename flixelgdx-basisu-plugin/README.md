@@ -50,7 +50,7 @@ enableBasisuCompression=true
 ## Configuring the extension
 
 ```groovy
-flixelgdxBasisu {
+basisu {
   // Explicit override. When absent, reads the enableBasisuCompression property (default: false).
   enabled = true
 
@@ -112,7 +112,7 @@ Some PNGs must stay uncompressed, for example bitmap font pages where the runtim
 values to compute glyph metrics. Use the `excludes` list for those:
 
 ```groovy
-flixelgdxBasisu {
+basisu {
   excludes = [
     'fonts/**',          // all bitmap font textures
     'ui/cursor.png'      // a single file

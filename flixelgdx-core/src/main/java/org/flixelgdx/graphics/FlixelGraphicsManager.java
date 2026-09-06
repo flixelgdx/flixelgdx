@@ -438,7 +438,7 @@ public interface FlixelGraphicsManager {
    * produce without an FXC compiler), this returns {@link FlixelUnsupportedShader} instead of
    * throwing, so a missing effect degrades gracefully to an unshaded draw.
    *
-   * @param name The shader name declared in the {@code flixelShaders} build block.
+   * @param name The shader name declared in the {@code shaders} build block.
    * @return A compiled {@link FlixelShaderProgram}; never {@code null}.
    */
   @NotNull

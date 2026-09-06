@@ -24,24 +24,24 @@
 package org.flixelgdx.gradle.html5;
 
 /**
- * The runtime mode baked into the generated web page by the {@link FlixelHtml5Plugin}.
+ * The runtime mode baked into the generated web page by the {@link Html5Plugin}.
  *
- * <p>Setting this in the {@code flixelgdx} block bakes the chosen mode into {@code index.html} as
+ * <p>Setting this in the {@code html5} block bakes the chosen mode into {@code index.html} as
  * a default that the game picks up at load time. The {@code ?flixel.mode=} URL parameter overrides
  * it at runtime, so the same build can be launched in a different mode without a rebuild.
  *
  * <p>Example usage in a build file:
  *
  * <pre>{@code
- * flixelgdx {
- *   mode = FlixelHtml5Mode.DEBUG
+ * html5 {
+ *   mode = Html5Mode.DEBUG
  * }
  * }</pre>
  *
  * <p>Leaving {@code mode} unset (the default) means the game starts in release mode unless the URL
  * parameter selects another mode.
  */
-public enum FlixelHtml5Mode {
+public enum Html5Mode {
 
   /** Enables debug overlays, verbose logging, and developer tooling. */
   DEBUG,

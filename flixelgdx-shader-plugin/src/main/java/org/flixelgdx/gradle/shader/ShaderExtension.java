@@ -29,8 +29,7 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 
 /**
- * Configuration exposed as the {@code flixelShaders} DSL block in a game module's
- * {@code build.gradle}.
+ * Configuration exposed as the {@code shaders} DSL block in a game module's {@code build.gradle}.
  *
  * <p>Declare one entry per shader effect. Each entry names a fragment source (and optionally a
  * vertex source) written in plain GLSL; the plugin cross-compiles them into every backend variant
@@ -40,7 +39,7 @@ import org.gradle.api.file.RegularFileProperty;
  * <h2>Example</h2>
  *
  * <pre>{@code
- * flixelShaders {
+ * shaders {
  *   // Where the .glsl sources live (default: src/main/shaders).
  *   sourceDir = file('src/main/shaders')
  *
@@ -50,12 +49,12 @@ import org.gradle.api.file.RegularFileProperty;
  * }
  * }</pre>
  *
- * @see FlixelShaderSpec
+ * @see ShaderSpec
  */
-public interface FlixelShaderExtension {
+public interface ShaderExtension {
 
   /** Gradle extension name the DSL block is registered under. */
-  String NAME = "flixelShaders";
+  String NAME = "shaders";
 
   /** Default directory, relative to the module, that shader sources are read from. */
   String DEFAULT_SOURCE_DIR = "src/main/shaders";
@@ -64,7 +63,7 @@ public interface FlixelShaderExtension {
    * The directory shader source paths are resolved against.
    *
    * <p>Defaults to {@value #DEFAULT_SOURCE_DIR} relative to the module. Absolute source paths on a
-   * {@link FlixelShaderSpec} bypass this directory.
+   * {@link ShaderSpec} bypass this directory.
    *
    * @return The source directory property.
    */
@@ -86,7 +85,7 @@ public interface FlixelShaderExtension {
    *
    * @return The container of shader specs.
    */
-  NamedDomainObjectContainer<FlixelShaderSpec> getShaders();
+  NamedDomainObjectContainer<ShaderSpec> getShaders();
 
   /**
    * Declares a shader to compile.
@@ -97,7 +96,7 @@ public interface FlixelShaderExtension {
    * @param name The shader's identifier, used to load it at runtime.
    * @param action Configures the shader's sources.
    */
-  default void shader(String name, Action<? super FlixelShaderSpec> action) {
+  default void shader(String name, Action<? super ShaderSpec> action) {
     getShaders().create(name, action);
   }
 }

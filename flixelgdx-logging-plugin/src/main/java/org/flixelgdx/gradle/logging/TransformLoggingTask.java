@@ -50,7 +50,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * Post-processes compiled classes in a directory, rewriting {@code FlixelLogger} calls.
  */
-public abstract class FlixelTransformLoggingTask extends DefaultTask {
+public abstract class TransformLoggingTask extends DefaultTask {
 
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
@@ -60,7 +60,7 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
   public abstract Property<Boolean> getVerbose();
 
   /**
-   * Rewrites {@code FlixelLogger} call sites under {@code root}. Used by {@link #run()} and by {@link FlixelLoggingPlugin}
+   * Rewrites {@code FlixelLogger} call sites under {@code root}. Used by {@link #run()} and by {@link LoggingPlugin}
    * via {@code compileJava.doLast(...)} so task registration does not run inside {@code JavaCompile} configuration callbacks.
    *
    * @param root Output directory tree containing {@code .class} files.
@@ -83,10 +83,10 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
         ClassReader reader = new ClassReader(original);
         ClassNode classNode = new ClassNode();
         reader.accept(classNode, ClassReader.EXPAND_FRAMES);
-        if (!FlixelLoggerBytecodeWeaver.weave(classNode)) {
+        if (!LoggerBytecodeWeaver.weave(classNode)) {
           return FileVisitResult.CONTINUE;
         }
-        ClassWriter writer = FlixelLoggerBytecodeWeaver.newClassWriter(reader);
+        ClassWriter writer = LoggerBytecodeWeaver.newClassWriter(reader);
         classNode.accept(writer);
         Files.write(file, writer.toByteArray());
         if (verbose) {
@@ -129,10 +129,10 @@ public abstract class FlixelTransformLoggingTask extends DefaultTask {
       ClassReader reader = new ClassReader(bytes);
       ClassNode classNode = new ClassNode();
       reader.accept(classNode, ClassReader.EXPAND_FRAMES);
-      if (!FlixelLoggerBytecodeWeaver.weave(classNode)) {
+      if (!LoggerBytecodeWeaver.weave(classNode)) {
         return bytes;
       }
-      ClassWriter writer = FlixelLoggerBytecodeWeaver.newClassWriter(reader);
+      ClassWriter writer = LoggerBytecodeWeaver.newClassWriter(reader);
       classNode.accept(writer);
       return writer.toByteArray();
     } catch (Exception e) {

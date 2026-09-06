@@ -39,8 +39,8 @@ import java.io.UncheckedIOException;
 
 /**
  * Gradle artifact transform that runs the FlixelGDX bytecode weaver over a single JAR from
- * {@code runtimeClasspath}. Registered by {@link FlixelLoggingPlugin} when
- * {@link FlixelLoggingExtension#getWeaveDependencies()} is {@code true}.
+ * {@code runtimeClasspath}. Registered by {@link LoggingPlugin} when
+ * {@link LoggingExtension#getWeaveDependencies()} is {@code true}.
  *
  * <p>Gradle caches the output keyed on the input JAR content, so the transform only re-runs
  * when a dependency actually changes. Non-class entries (resources, manifests) are copied verbatim.
@@ -48,7 +48,7 @@ import java.io.UncheckedIOException;
  * always a valid copy of the input.
  */
 @CacheableTransform
-public abstract class FlixelJarWeaverTransform implements TransformAction<TransformParameters.None> {
+public abstract class JarWeaverTransform implements TransformAction<TransformParameters.None> {
 
   @InputArtifact
   @PathSensitive(PathSensitivity.NAME_ONLY)
@@ -59,7 +59,7 @@ public abstract class FlixelJarWeaverTransform implements TransformAction<Transf
     File input = getInputArtifact().get().getAsFile();
     File output = outputs.file(input.getName());
     try {
-      FlixelTransformLoggingTask.weaveJar(input.toPath(), output.toPath());
+      TransformLoggingTask.weaveJar(input.toPath(), output.toPath());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

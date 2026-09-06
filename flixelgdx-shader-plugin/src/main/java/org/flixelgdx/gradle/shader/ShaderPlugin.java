@@ -52,7 +52,7 @@ import java.io.File;
  *   id 'org.flixelgdx.shaders' version '0.1.0-beta'
  * }
  *
- * flixelShaders {
+ * shaders {
  *   shader('crt') {
  *     fragment = 'crt.frag.glsl'   // under src/main/shaders by default
  *   }
@@ -66,30 +66,30 @@ import java.io.File;
  * Flixel.cameras.first().setShader(crt);
  * }</pre>
  *
- * @see FlixelShaderExtension
- * @see FlixelCompileShadersTask
+ * @see ShaderExtension
+ * @see CompileShadersTask
  */
-public class FlixelShaderPlugin implements Plugin<Project> {
+public class ShaderPlugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
-  private static final String TASK_NAME = "compileFlixelShaders";
+  private static final String TASK_NAME = "compileShaders";
 
   @Override
   public void apply(Project project) {
-    FlixelShaderExtension ext =
-        project.getExtensions().create(FlixelShaderExtension.NAME, FlixelShaderExtension.class);
+    ShaderExtension ext =
+        project.getExtensions().create(ShaderExtension.NAME, ShaderExtension.class);
     ext.getSourceDir()
-        .convention(project.getLayout().getProjectDirectory().dir(FlixelShaderExtension.DEFAULT_SOURCE_DIR));
+        .convention(project.getLayout().getProjectDirectory().dir(ShaderExtension.DEFAULT_SOURCE_DIR));
 
-    TaskProvider<FlixelCompileShadersTask> compile =
-        project.getTasks().register(TASK_NAME, FlixelCompileShadersTask.class, task -> {
+    TaskProvider<CompileShadersTask> compile =
+        project.getTasks().register(TASK_NAME, CompileShadersTask.class, task -> {
           task.setGroup(TASK_GROUP);
           task.setDescription("Cross-compiles the game's GLSL shaders into every FlixelGDX backend variant.");
           task.getSourceDir().convention(ext.getSourceDir());
           task.getShadercPath().convention(ext.getShadercPath());
           task.getGeneratedResourcesDir()
-              .convention(project.getLayout().getBuildDirectory().dir("generated/flixelShaders/resources"));
-          task.getWorkDir().convention(project.getLayout().getBuildDirectory().dir("tmp/flixelShaders"));
+              .convention(project.getLayout().getBuildDirectory().dir("generated/shaders/resources"));
+          task.getWorkDir().convention(project.getLayout().getBuildDirectory().dir("tmp/shaders"));
         });
 
     // Populate the task's inputs from the DSL once the build script has been evaluated, since the
@@ -120,7 +120,7 @@ public class FlixelShaderPlugin implements Plugin<Project> {
     // processResources depends on the task so the files exist before they are copied.
     project.getPlugins().withId("java", plugin -> {
       Provider<Directory> generatedDir =
-          project.getLayout().getBuildDirectory().dir("generated/flixelShaders/resources");
+          project.getLayout().getBuildDirectory().dir("generated/shaders/resources");
       SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
       sourceSets.getByName("main").getResources().srcDir(generatedDir);
       project.getTasks().withType(ProcessResources.class).configureEach(task -> task.dependsOn(compile));

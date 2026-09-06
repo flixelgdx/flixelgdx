@@ -58,7 +58,7 @@ import java.util.Map;
  * warning, exactly as the framework's own shader build does, while every other variant still
  * compiles.
  */
-public abstract class FlixelCompileShadersTask extends DefaultTask {
+public abstract class CompileShadersTask extends DefaultTask {
 
   /** The directory relative shader source paths are resolved against. */
   @Internal
@@ -100,7 +100,7 @@ public abstract class FlixelCompileShadersTask extends DefaultTask {
   public void compile() throws IOException {
     Map<String, String> fragments = getFragmentSources().get();
     if (fragments.isEmpty()) {
-      getLogger().info("[FlixelGDX] No shaders declared in the flixelShaders block; nothing to compile.");
+      getLogger().info("[FlixelGDX] No shaders declared in the shaders block; nothing to compile.");
       return;
     }
 

@@ -26,19 +26,19 @@ package org.flixelgdx.gradle.logging;
 import org.gradle.api.provider.Property;
 
 /**
- * Gradle DSL extension for {@code flixelLogging} when using {@link FlixelLoggingPlugin}.
+ * Gradle DSL extension for the {@code logging} block when using {@link LoggingPlugin}.
  *
  * <p>Example usage in a game module's {@code build.gradle.kts}:
  *
  * <pre>{@code
- * flixelgdxLogging {
+ * logging {
  *   enabled = true
  *   verbose = false
  *   weaveDependencies = true
  * }
  * }</pre>
  */
-public interface FlixelLoggingExtension {
+public interface LoggingExtension {
 
   /**
    * Whether the bytecode weaver is active. When set to {@code false} the plugin skips all

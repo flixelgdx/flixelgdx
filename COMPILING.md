@@ -347,10 +347,10 @@ Thanks to the framework's [TeaVM plugin](./flixelgdx-teavm-plugin), running this
 
 ### Optional plugin customization
 
-Use the `flixelgdx {}` block to override defaults:
+Use the `html5 {}` block to override defaults:
 
 ```gradle
-flixelgdx {
+html5 {
   // Title of the game (default: "My FlixelGDX Game").
   title = 'My Game Title'
 
@@ -359,7 +359,7 @@ flixelgdx {
   canvasId = 'my-canvas'
 
   // Runtime mode baked into the page (optional; the ?flixel.mode= URL parameter overrides it).
-  mode = FlixelHtml5Mode.DEBUG
+  mode = Html5Mode.DEBUG
 
   // Custom favicon (optional).
   customFavicon = file('src/main/webapp/favicon.ico')

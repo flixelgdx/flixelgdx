@@ -46,22 +46,22 @@ import java.nio.file.Path;
  * compile tasks stopped extending {@link AbstractCompile} in KGP 2.x, so they are detected
  * by walking the class hierarchy and matched by name to avoid a compile-time KGP dependency.
  *
- * <p>When {@link FlixelLoggingExtension#getWeaveDependencies()} is {@code true} (the default),
+ * <p>When {@link LoggingExtension#getWeaveDependencies()} is {@code true} (the default),
  * a Gradle artifact transform is also registered so every JAR on {@code runtimeClasspath} is
  * weaved before {@link JavaExec} tasks run. This gives accurate call site metadata for log calls
  * originating inside third-party libraries, primarly libGDX backends.
  */
-public class FlixelLoggingPlugin implements Plugin<Project> {
+public class LoggingPlugin implements Plugin<Project> {
 
   private static final Attribute<String> ARTIFACT_TYPE =
       Attribute.of("artifactType", String.class);
 
-  private static final String WOVEN_JAR_TYPE = "flixel-woven-jar";
+  private static final String WOVEN_JAR_TYPE = "flixelgdx-woven-jar";
 
   @Override
   public void apply(Project project) {
-    FlixelLoggingExtension ext =
-        project.getExtensions().create("flixelgdxLogging", FlixelLoggingExtension.class);
+    LoggingExtension ext =
+        project.getExtensions().create("logging", LoggingExtension.class);
     ext.getEnabled().convention(true);
     ext.getVerbose().convention(false);
     ext.getWeaveDependencies().convention(true);
@@ -74,7 +74,7 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
       pr.getTasks().withType(AbstractCompile.class).configureEach(compile -> compile.doLast(task -> {
         Path root = compile.getDestinationDirectory().get().getAsFile().toPath();
         try {
-          FlixelTransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), task.getLogger());
+          TransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), task.getLogger());
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
@@ -92,7 +92,7 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
                 .getMethod("getDestinationDirectory")
                 .invoke(task);
             Path root = destDir.get().getAsFile().toPath();
-            FlixelTransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), t.getLogger());
+            TransformLoggingTask.weaveDirectory(root, ext.getVerbose().get(), t.getLogger());
           } catch (ReflectiveOperationException e) {
             task.getLogger().warn("Flixel logging: could not get destination directory for '{}'", task.getName(), e);
           } catch (IOException e) {
@@ -105,7 +105,7 @@ public class FlixelLoggingPlugin implements Plugin<Project> {
         return;
       }
 
-      pr.getDependencies().registerTransform(FlixelJarWeaverTransform.class, spec -> {
+      pr.getDependencies().registerTransform(JarWeaverTransform.class, spec -> {
         spec.getFrom().attribute(ARTIFACT_TYPE, ArtifactTypeDefinition.JAR_TYPE);
         spec.getTo().attribute(ARTIFACT_TYPE, WOVEN_JAR_TYPE);
       });

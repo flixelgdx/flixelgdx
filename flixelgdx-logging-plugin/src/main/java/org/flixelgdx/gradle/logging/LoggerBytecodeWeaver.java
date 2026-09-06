@@ -61,7 +61,7 @@ import java.util.Map;
  * delegation helpers (e.g. {@code warn(tag, message)} calling {@code log.warn(tag, message)}), which would be
  * misleading rather than useful.
  */
-public final class FlixelLoggerBytecodeWeaver {
+public final class LoggerBytecodeWeaver {
 
   private static final String LOGGER_OWNER = "org/flixelgdx/logging/FlixelLogger";
 
@@ -96,7 +96,7 @@ public final class FlixelLoggerBytecodeWeaver {
    */
   private static final Map<String, Replacement> FLIXEL_STATIC_REPLACEMENTS = buildStaticReplacements();
 
-  private FlixelLoggerBytecodeWeaver() {}
+  private LoggerBytecodeWeaver() {}
 
   /**
    * @return {@code true} if at least one invocation was rewritten.

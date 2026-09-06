@@ -75,7 +75,7 @@ resulting directory.
 ## Configuring the extension
 
 ```groovy
-flixelgdx {
+html5 {
   // Title shown in the browser tab (default: "My FlixelGDX Game").
   title = 'My Game'
 
@@ -84,7 +84,7 @@ flixelgdx {
 
   // Runtime mode baked into the page as the default (default: none, which means release mode).
   // The ?flixel.mode= URL parameter overrides this at load time.
-  mode = FlixelHtml5Mode.DEBUG
+  mode = Html5Mode.DEBUG
 
   // Port the run/debug dev server listens on (default: 8080).
   devServerPort = 9000

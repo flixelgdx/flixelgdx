@@ -203,7 +203,7 @@ plugins {
   id 'org.flixelgdx.shaders' version '<flixel-version>'
 }
 
-flixelShaders {
+shaders {
   // Where the .glsl sources live (default: src/main/shaders).
   sourceDir = rootProject.file('assets/shaders')
 
@@ -234,7 +234,7 @@ camera.setShader(wave);
 The framework provides a Basis Universal compression plugin that automates converting images to small `.ktx2` files
 
 ```groovy
-flixelgdxBasisu {
+basisu {
   // Explicitly override when it's enabled.
   enabled = true
 

@@ -65,7 +65,7 @@ import java.util.Set;
  * side of this feature.
  *
  * <p>Compression stays off unless a developer opts in, since it changes build output. See
- * {@link FlixelBasisuExtension} for the {@code enableBasisuCompression} Gradle property and other
+ * {@link BasisuExtension} for the {@code enableBasisuCompression} Gradle property and other
  * configuration.
  *
  * <p>Apply in the platform module's {@code build.gradle}, alongside {@code com.android.application},
@@ -87,9 +87,9 @@ import java.util.Set;
  * loaders nor Basis Universal's transcoder ship a TeaVM binding, so web builds keep loading plain
  * PNGs regardless of this plugin.
  *
- * @see FlixelBasisuExtension
+ * @see BasisuExtension
  */
-public class FlixelBasisuPlugin implements Plugin<Project> {
+public class BasisuPlugin implements Plugin<Project> {
 
   private static final String TASK_GROUP = "flixelgdx";
   private static final String ENABLE_PROPERTY = "enableBasisuCompression";
@@ -99,7 +99,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
   @Override
   public void apply(@NonNull Project project) {
-    FlixelBasisuExtension ext = project.getExtensions().create(FlixelBasisuExtension.NAME, FlixelBasisuExtension.class);
+    BasisuExtension ext = project.getExtensions().create(BasisuExtension.NAME, BasisuExtension.class);
 
     boolean enabledByProperty = "true".equalsIgnoreCase(String.valueOf(project.findProperty(ENABLE_PROPERTY)));
     ext.getEnabled().convention(enabledByProperty);
@@ -206,12 +206,12 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
    * completes, wherever a compressed {@code .ktx2} sibling exists in the merged output.
    *
    * @param project The Gradle project the plugin was applied to.
-   * @param ext The resolved {@link FlixelBasisuExtension} for this project.
+   * @param ext The resolved {@link BasisuExtension} for this project.
    * @param compressTask The registered {@code compressBasisuTextures} task.
    */
   private void wireAndroid(
       @NonNull Project project,
-      @NonNull FlixelBasisuExtension ext,
+      @NonNull BasisuExtension ext,
       @NonNull TaskProvider<Task> compressTask) {
     project.afterEvaluate(p -> {
       if (!ext.getEnabled().get()) {
@@ -225,7 +225,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
 
       p.getTasks().matching(t -> t.getName().matches("merge.*Assets")).configureEach(t -> {
         t.dependsOn(compressTask);
-        t.getInputs().files(ext.getOutputDir()).withPropertyName("flixelBasisuCompressedOutput");
+        t.getInputs().files(ext.getOutputDir()).withPropertyName("basisuCompressedOutput");
         t.doLast(unused -> {
           for (File outputDir : t.getOutputs().getFiles()) {
             deleteUncompressedSiblings(outputDir);
@@ -238,7 +238,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
   /**
    * Recursively deletes {@code .ktx2} files under {@code dir} that no longer correspond to a
    * currently compressed source PNG, so a source file freshly added to {@code excludes} (or
-   * deleted from {@link FlixelBasisuExtension#getAssetsDir()}) does not leave behind a stale
+   * deleted from {@link BasisuExtension#getAssetsDir()}) does not leave behind a stale
    * compressed texture that a subsequent Android asset merge would mistake for the current
    * output and ship instead of the plain PNG.
    *
@@ -274,11 +274,11 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
    * compressed output, so a change to any of them can be detected without comparing each
    * setting individually.
    *
-   * @param ext The resolved {@link FlixelBasisuExtension} for this project.
+   * @param ext The resolved {@link BasisuExtension} for this project.
    * @return A signature that changes if and only if an encoder setting has changed.
    */
   @NonNull
-  private String currentSettingsSignature(@NonNull FlixelBasisuExtension ext) {
+  private String currentSettingsSignature(@NonNull BasisuExtension ext) {
     return ext.getUseUastc().get() + ":" + ext.getGenerateMipmaps().get() + ":"
         + ext.getEtc1sQuality().get() + ":" + ext.getUastcLevel().get();
   }
@@ -355,12 +355,12 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
    * filtered out of the packaged jar directly instead of being cleaned up afterward.
    *
    * @param project The Gradle project the plugin was applied to.
-   * @param ext The resolved {@link FlixelBasisuExtension} for this project.
+   * @param ext The resolved {@link BasisuExtension} for this project.
    * @param compressTask The registered {@code compressBasisuTextures} task.
    */
   private void wireJvmJar(
       @NonNull Project project,
-      @NonNull FlixelBasisuExtension ext,
+      @NonNull BasisuExtension ext,
       @NonNull TaskProvider<Task> compressTask) {
     project.afterEvaluate(p -> {
       if (!ext.getEnabled().get() || !p.getTasks().getNames().contains("jar")) {
@@ -380,11 +380,11 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
    * sibling in the compression task's output directory, so {@link #wireJvmJar} can exclude it
    * from the packaged JAR in favor of the compressed variant.
    *
-   * @param ext The resolved {@link FlixelBasisuExtension} for this project.
+   * @param ext The resolved {@link BasisuExtension} for this project.
    * @param details The file being considered for inclusion in the JAR.
    * @return {@code true} if the plain PNG should be excluded.
    */
-  private boolean hasCompressedSibling(@NonNull FlixelBasisuExtension ext, @NonNull FileTreeElement details) {
+  private boolean hasCompressedSibling(@NonNull BasisuExtension ext, @NonNull FileTreeElement details) {
     String path = details.getPath();
     if (!path.toLowerCase(Locale.ROOT).endsWith(".png")) {
       return false;
@@ -453,7 +453,7 @@ public class FlixelBasisuPlugin implements Plugin<Project> {
    * @throws GradleException If the resource is missing or cannot be read.
    */
   private byte @NonNull [] loadResource(@NonNull String path) {
-    try (InputStream stream = FlixelBasisuPlugin.class.getClassLoader().getResourceAsStream(path)) {
+    try (InputStream stream = BasisuPlugin.class.getClassLoader().getResourceAsStream(path)) {
       if (stream == null) {
         throw new GradleException(
             "FlixelGDX: bundled basisu binary not found at \"" + path + "\". "

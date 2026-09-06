@@ -90,9 +90,9 @@ import java.util.stream.Stream;
  * }
  * }</pre>
  *
- * @see FlixelHtml5Extension
+ * @see Html5Extension
  */
-public class FlixelHtml5Plugin implements Plugin<Project> {
+public class Html5Plugin implements Plugin<Project> {
 
   private static final String FLIXELGDX_GROUP = "flixelgdx";
   private static final String APPLICATION_GROUP = "application";
@@ -111,10 +111,10 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
 
   @Override
   public void apply(Project project) {
-    FlixelHtml5Extension ext = project.getExtensions().create(FlixelHtml5Extension.NAME, FlixelHtml5Extension.class);
+    Html5Extension ext = project.getExtensions().create(Html5Extension.NAME, Html5Extension.class);
 
-    ext.getCanvasId().convention(FlixelHtml5Extension.DEFAULT_CANVAS_ID);
-    ext.getTitle().convention(FlixelHtml5Extension.DEFAULT_TITLE);
+    ext.getCanvasId().convention(Html5Extension.DEFAULT_CANVAS_ID);
+    ext.getTitle().convention(Html5Extension.DEFAULT_TITLE);
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
     ext.getGenerateDefaultIndexHtml().convention(true);
@@ -140,7 +140,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   }
 
   /** Registers the asset and web-resource copy tasks. */
-  private void registerCopyTasks(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot) {
+  private void registerCopyTasks(Project project, Html5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("copyAssets", Copy.class, task -> {
       task.setGroup(FLIXELGDX_GROUP);
       task.setDescription("Copies game assets from the assets directory into the web output directory.");
@@ -226,7 +226,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   }
 
   /** Registers the {@code index.html} generator. */
-  private void registerIndexTask(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot,
+  private void registerIndexTask(Project project, Html5Extension ext, DirectoryProperty webRoot,
       AtomicReference<WebBundle> bundle) {
     project.getTasks().register("generateIndexHtml", task -> {
       task.setGroup(FLIXELGDX_GROUP);
@@ -250,7 +250,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
    * Writes {@code index.html}, either copying a developer-supplied file or filling in the built-in
    * template with the resolved bundle names.
    */
-  private void writeIndexHtml(Project project, FlixelHtml5Extension ext, File outputDir, WebBundle bundle) {
+  private void writeIndexHtml(Project project, Html5Extension ext, File outputDir, WebBundle bundle) {
     outputDir.mkdirs();
 
     if (ext.getCustomIndexHtml().isPresent()) {
@@ -272,7 +272,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
 
     try {
       String template;
-      try (InputStream in = FlixelHtml5Plugin.class.getResourceAsStream(DEFAULT_INDEX_TEMPLATE)) {
+      try (InputStream in = Html5Plugin.class.getResourceAsStream(DEFAULT_INDEX_TEMPLATE)) {
         if (in == null) {
           throw new IOException("default-index.html template not found in plugin JAR at " + DEFAULT_INDEX_TEMPLATE);
         }
@@ -343,7 +343,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
 
   /** Copies a plugin classpath resource to a target file, replacing any existing one. */
   private void copyResource(String resource, File target) {
-    try (InputStream in = FlixelHtml5Plugin.class.getResourceAsStream(resource)) {
+    try (InputStream in = Html5Plugin.class.getResourceAsStream(resource)) {
       if (in == null) {
         throw new IOException("bundled plugin resource not found: " + resource);
       }
@@ -354,7 +354,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   }
 
   /** Copies a configured favicon into the output and returns the {@code <link>} tag, or an empty string. */
-  private String copyFavicon(Project project, FlixelHtml5Extension ext, File outputDir) {
+  private String copyFavicon(Project project, Html5Extension ext, File outputDir) {
     if (!ext.getCustomFavicon().isPresent()) {
       return "";
     }
@@ -372,7 +372,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   }
 
   /** Resolves the baked-in runtime mode default as a JavaScript literal ({@code 'debug'} or {@code null}). */
-  private static String resolveModeDefault(FlixelHtml5Extension ext) {
+  private static String resolveModeDefault(Html5Extension ext) {
     if (!ext.getMode().isPresent()) {
       return "null";
     }
@@ -406,7 +406,7 @@ public class FlixelHtml5Plugin implements Plugin<Project> {
   }
 
   /** Registers the {@code run} and {@code debug} tasks. */
-  private void registerRunTask(Project project, FlixelHtml5Extension ext, DirectoryProperty webRoot) {
+  private void registerRunTask(Project project, Html5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("run", task -> {
       task.setGroup(APPLICATION_GROUP);
       task.setDescription("Builds the web app and starts a local HTTP dev server. Press Ctrl+C to stop.");

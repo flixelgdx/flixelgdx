@@ -27,7 +27,7 @@ import org.gradle.api.Named;
 import org.gradle.api.provider.Property;
 
 /**
- * One named shader to cross-compile, configured inside the {@code flixelShaders} block.
+ * One named shader to cross-compile, configured inside the {@code shaders} block.
  *
  * <p>The name is the identifier a game loads the compiled shader by at runtime (for example
  * {@code FlixelShader.load("crt")}). Only a fragment source is required; the vertex stage falls
@@ -37,7 +37,7 @@ import org.gradle.api.provider.Property;
  * <h2>Example</h2>
  *
  * <pre>{@code
- * flixelShaders {
+ * shaders {
  *   shader('crt') {
  *     fragment = 'crt.frag.glsl'
  *   }
@@ -48,7 +48,7 @@ import org.gradle.api.provider.Property;
  * }
  * }</pre>
  */
-public interface FlixelShaderSpec extends Named {
+public interface ShaderSpec extends Named {
 
   /**
    * The fragment shader source file, given as a path relative to the configured source directory

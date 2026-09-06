@@ -4,9 +4,9 @@ plugins {
 
 gradlePlugin {
   plugins {
-    create("flixelHtml5") {
+    create("html5") {
       id = "org.flixelgdx.html5"
-      implementationClass = "org.flixelgdx.gradle.html5.FlixelHtml5Plugin"
+      implementationClass = "org.flixelgdx.gradle.html5.Html5Plugin"
       displayName = "FlixelGDX HTML5 Plugin"
       description =
         "Automates web asset copying, index.html generation, and task wiring for FlixelGDX TeaVM web builds."

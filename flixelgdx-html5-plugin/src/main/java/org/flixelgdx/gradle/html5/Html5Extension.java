@@ -28,17 +28,17 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 
 /**
- * Configuration extension exposed as the {@code flixelgdx} DSL block in a web module's
+ * Configuration extension exposed as the {@code html5} DSL block in a web module's
  * {@code build.gradle}.
  *
  * <p>All properties have sensible defaults and are optional. The only required configuration is
  * {@code teavm.all.mainClass} in the {@code org.teavm} plugin block (see
- * {@link FlixelHtml5Plugin} for usage).
+ * {@link Html5Plugin} for usage).
  *
  * <h2>Example</h2>
  *
  * <pre>{@code
- * flixelgdx {
+ * html5 {
  *   // Title of the game (default: "My FlixelGDX Game").
  *   title = 'My Game Title'
  *
@@ -47,7 +47,7 @@ import org.gradle.api.provider.Property;
  *
  *   // Runtime mode baked into the page as a default (default: none). The ?flixel.mode= URL
  *   // parameter overrides this at load time.
- *   mode = FlixelHtml5Mode.DEBUG
+ *   mode = Html5Mode.DEBUG
  *
  *   // Port for the `run` dev server task (default: 8080).
  *   devServerPort = 8080
@@ -69,10 +69,10 @@ import org.gradle.api.provider.Property;
  * }
  * }</pre>
  */
-public interface FlixelHtml5Extension {
+public interface Html5Extension {
 
   /** Gradle extension name used to register this extension under. */
-  String NAME = "flixelgdx";
+  String NAME = "html5";
 
   /** Default title for the game's browser tab. */
   String DEFAULT_TITLE = "My FlixelGDX Game";
@@ -106,7 +106,7 @@ public interface FlixelHtml5Extension {
    *
    * @return The default runtime mode property.
    */
-  Property<FlixelHtml5Mode> getMode();
+  Property<Html5Mode> getMode();
 
   /**
    * Directory that contains user-provided web resources such as a custom {@code index.html},
@@ -149,7 +149,7 @@ public interface FlixelHtml5Extension {
    * <p>Defaults to {@code 8080}. Change this if port 8080 is already in use on your machine:
    *
    * <pre>{@code
-   * flixelgdx {
+   * html5 {
    *   devServerPort = 9000
    * }
    * }</pre>

@@ -121,7 +121,7 @@ public final class Shaderc {
 
     throw new IOException(
         "No shaderc compiler is bundled for this platform (" + classifier + ") and none was found on "
-            + "PATH. Set the compiler path with the 'shadercPath' option in the flixelShaders block, or "
+            + "PATH. Set the compiler path with the 'shadercPath' option in the shaders block, or "
             + "add a bundled binary for this platform to the plugin.");
   }
 

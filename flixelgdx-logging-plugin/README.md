@@ -37,7 +37,7 @@ every `compileJava` and `compileKotlin` task.
 ## Configuring the extension
 
 ```groovy
-flixelgdxLogging {
+logging {
   // Whether the weaver runs at all (default: true).
   enabled = true
 
@@ -86,7 +86,7 @@ transformed JAR carries the library's own source location instead of a generic f
 To disable dependency weaving while keeping source weaving active:
 
 ```groovy
-flixelgdxLogging {
+logging {
   weaveDependencies = false
 }
 ```

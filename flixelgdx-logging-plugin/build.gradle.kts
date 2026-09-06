@@ -4,9 +4,9 @@ plugins {
 
 gradlePlugin {
   plugins {
-    create("flixelLogging") {
+    create("logging") {
       id = "org.flixelgdx.logging"
-      implementationClass = "org.flixelgdx.gradle.logging.FlixelLoggingPlugin"
+      implementationClass = "org.flixelgdx.gradle.logging.LoggingPlugin"
       displayName = "FlixelGDX Logging Plugin"
       description = "Weaves explicit source file and line into FlixelLogger calls after compilation for accurate traces on all platforms."
     }

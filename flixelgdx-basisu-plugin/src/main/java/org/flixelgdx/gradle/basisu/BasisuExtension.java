@@ -28,7 +28,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
 /**
- * Configuration extension exposed as the {@code flixelBasisu} DSL block by {@link FlixelBasisuPlugin}.
+ * Configuration extension exposed as the {@code basisu} DSL block by {@link BasisuPlugin}.
  *
  * <p>All properties have sensible defaults and are optional. Compression itself stays off by
  * default; enable it by passing {@code -PenableBasisuCompression=true} or setting {@code enabled}
@@ -37,7 +37,7 @@ import org.gradle.api.provider.Property;
  * <h2>Example</h2>
  *
  * <pre>{@code
- * flixelBasisu {
+ * basisu {
  *   // Explicit override; otherwise reads the enableBasisuCompression Gradle property (default false).
  *   enabled = true
  *
@@ -70,12 +70,12 @@ import org.gradle.api.provider.Property;
  * }
  * }</pre>
  *
- * @see FlixelBasisuPlugin
+ * @see BasisuPlugin
  */
-public interface FlixelBasisuExtension {
+public interface BasisuExtension {
 
   /** Gradle extension name used to register this extension under. */
-  String NAME = "flixelgdxBasisu";
+  String NAME = "basisu";
 
   /**
    * Whether texture compression runs at all.
@@ -101,7 +101,7 @@ public interface FlixelBasisuExtension {
    * Directory that compressed {@code .ktx2} files are written into, mirroring the relative path
    * of each source image under {@link #getAssetsDir()}.
    *
-   * <p>Defaults to {@code build/generated/basisuAssets}. {@link FlixelBasisuPlugin} adds this
+   * <p>Defaults to {@code build/generated/basisuAssets}. {@link BasisuPlugin} adds this
    * directory as an extra Android assets source set directory when applied to an Android module.
    *
    * @return The compressed output directory property.

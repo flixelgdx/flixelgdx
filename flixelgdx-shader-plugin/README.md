@@ -29,7 +29,7 @@ plugins {
   id 'org.flixelgdx.shaders' version '<flixel-version>'
 }
 
-flixelShaders {
+shaders {
   // Where the .glsl sources live (default: src/main/shaders).
   sourceDir = file('src/main/shaders')
 
@@ -44,7 +44,7 @@ flixelShaders {
 }
 ```
 
-The `compileFlixelShaders` task runs automatically before `processResources`, so a normal build
+The `compileShaders` task runs automatically before `processResources`, so a normal build
 produces and bundles the compiled shaders.
 
 ## Authoring a shader
@@ -119,7 +119,7 @@ unshaded draw on the Direct3D renderer, and bgfx can also be pointed at the Vulk
 renderer on Windows.
 
 The `shaderc` binary is resolved in priority order: an explicit `shadercPath` in the
-`flixelShaders` block, the binary bundled with the plugin for the current operating system, and
+`shaders` block, the binary bundled with the plugin for the current operating system, and
 finally a `shaderc` found on the system `PATH`. See
 [`tools/README.md`](src/main/resources/org/flixelgdx/gradle/shader/tools/README.md) for how the
 bundled binaries are produced.

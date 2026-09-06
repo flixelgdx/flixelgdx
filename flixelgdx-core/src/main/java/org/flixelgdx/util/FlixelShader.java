@@ -220,7 +220,7 @@ public class FlixelShader extends FlixelBasic {
   /**
    * Loads a shader that the FlixelGDX Gradle plugin cross-compiled at build time.
    *
-   * <p>Give the same name declared in the {@code flixelShaders} build block. The framework picks
+   * <p>Give the same name declared in the {@code shaders} build block. The framework picks
    * the precompiled variant matching the active renderer (OpenGL, Vulkan, Metal, or Direct3D) and
    * compiles it into a backend program, so one shader source runs everywhere with no per-platform
    * authoring.
@@ -236,7 +236,7 @@ public class FlixelShader extends FlixelBasic {
    * Flixel.cameras.first().setShader(crt);
    * }</pre>
    *
-   * @param name The shader name from the {@code flixelShaders} build block.
+   * @param name The shader name from the {@code shaders} build block.
    * @return A {@code FlixelShader} wrapping the compiled variant for the active renderer.
    */
   @NotNull
