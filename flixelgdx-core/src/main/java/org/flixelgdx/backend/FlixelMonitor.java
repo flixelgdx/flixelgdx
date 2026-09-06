@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -96,4 +98,30 @@ public interface FlixelMonitor {
    * @return {@code true} if this is the primary monitor, {@code false} otherwise.
    */
   boolean isPrimary();
+
+  /**
+   * Returns every video mode this monitor can switch to when going fullscreen, for building a
+   * resolution picker in a settings menu.
+   *
+   * <p>Unlike {@link org.flixelgdx.graphics.FlixelGraphicsManager#getDisplayModes()
+   * Flixel.graphics.getDisplayModes()}, which returns a global flat list, this method returns only
+   * the modes that belong to this specific monitor. On platforms that do not expose per-monitor
+   * mode lists (web, mobile, or any non-desktop target), the list is always empty.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * for (FlixelMonitor monitor : Flixel.host.getMonitors()) {
+   *   for (FlixelDisplayMode mode : monitor.getDisplayModes()) {
+   *     Flixel.info(monitor);
+   *   }
+   * }
+   * }</pre>
+   *
+   * @return An unmodifiable list of display modes for this monitor; never {@code null}, possibly
+   *     empty.
+   * @see FlixelDisplayMode
+   */
+  @NotNull
+  FlixelList<FlixelDisplayMode> getDisplayModes();
 }

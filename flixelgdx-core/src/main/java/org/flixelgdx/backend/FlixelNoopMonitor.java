@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.backend;
 
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -36,6 +39,8 @@ public enum FlixelNoopMonitor implements FlixelMonitor {
 
   /** Shared no-op instance. */
   INSTANCE;
+
+  private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
 
   @Override
   @NotNull
@@ -71,5 +76,11 @@ public enum FlixelNoopMonitor implements FlixelMonitor {
   @Override
   public boolean isPrimary() {
     return false;
+  }
+
+  @Override
+  @NotNull
+  public FlixelList<FlixelDisplayMode> getDisplayModes() {
+    return displayModes;
   }
 }

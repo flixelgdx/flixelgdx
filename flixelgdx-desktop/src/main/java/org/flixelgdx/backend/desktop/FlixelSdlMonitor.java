@@ -24,6 +24,9 @@
 package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,6 +42,8 @@ class FlixelSdlMonitor implements FlixelMonitor {
 
   @NotNull
   final String name;
+  @NotNull
+  final FlixelArray<FlixelDisplayMode> displayModes;
 
   final int virtualX;
   final int virtualY;
@@ -48,9 +53,10 @@ class FlixelSdlMonitor implements FlixelMonitor {
 
   final boolean isPrimary;
 
-  FlixelSdlMonitor(@NotNull String name, int virtualX, int virtualY, int width, int height,
-      float refreshRate, boolean isPrimary) {
+  FlixelSdlMonitor(@NotNull String name, @NotNull FlixelArray<FlixelDisplayMode> displayModes,
+      int virtualX, int virtualY, int width, int height, float refreshRate, boolean isPrimary) {
     this.name = name;
+    this.displayModes = displayModes;
     this.virtualX = virtualX;
     this.virtualY = virtualY;
     this.width = width;
@@ -92,5 +98,11 @@ class FlixelSdlMonitor implements FlixelMonitor {
   @Override
   public boolean isPrimary() {
     return isPrimary;
+  }
+
+  @Override
+  @NotNull
+  public FlixelList<FlixelDisplayMode> getDisplayModes() {
+    return displayModes;
   }
 }

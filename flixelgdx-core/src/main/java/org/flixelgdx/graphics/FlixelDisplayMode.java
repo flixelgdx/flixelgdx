@@ -24,6 +24,7 @@
 package org.flixelgdx.graphics;
 
 import org.flixelgdx.backend.FlixelWindow;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A single video mode a monitor can present: a resolution, refresh rate, and color depth.
@@ -50,4 +51,9 @@ import org.flixelgdx.backend.FlixelWindow;
  * @see FlixelGraphicsManager#getDisplayModes()
  */
 public record FlixelDisplayMode(int width, int height, int refreshRate, int bitsPerPixel) {
+
+  @Override
+  public @NotNull String toString() {
+    return "width=" + width + " height=" + height + " refreshRate=" + refreshRate + " bitsPerPixel=" + bitsPerPixel;
+  }
 }

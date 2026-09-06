@@ -277,8 +277,8 @@ For widely used classes, fields, methods, or anything central to correctness, in
 - When you're done with a task (and you haven't yet made one), **create a pull request**. Make sure it follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
   exactly with all of your changes.
 - Pull request titles should be read as **past tense**, in the format as if it was a new update to a game. Examples:
-    - "Added experimental controller/gamepad support for games to be playable on more platforms such as console"
-    - "Massively buffed the desktop/LWJGL3 backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
+    - "Added experimental gamepad support for games to be playable on more platforms such as console"
+    - "Enhanced the desktop backend with multiple new features, such as transparent window backgrounds, custom mouse icons, and more"
     - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
 - All pull requests should target the **`master`** branch.
 - If the user has changes present on the current branch, **do not undo, modify or touch them**. Leave them as-is.

@@ -24,6 +24,9 @@
 package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.backend.FlixelMonitor;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -41,6 +44,8 @@ class FlixelHtml5Monitor implements FlixelMonitor {
 
   @NotNull
   final String name;
+  @NotNull
+  final FlixelArray<FlixelDisplayMode> displayModes;
 
   final int virtualX;
   final int virtualY;
@@ -51,6 +56,7 @@ class FlixelHtml5Monitor implements FlixelMonitor {
 
   FlixelHtml5Monitor(@NotNull String name, int virtualX, int virtualY, int width, int height, boolean isPrimary) {
     this.name = name;
+    this.displayModes = new FlixelArray<>();
     this.virtualX = virtualX;
     this.virtualY = virtualY;
     this.width = width;
@@ -91,5 +97,11 @@ class FlixelHtml5Monitor implements FlixelMonitor {
   @Override
   public boolean isPrimary() {
     return isPrimary;
+  }
+
+  @Override
+  @NotNull
+  public FlixelList<FlixelDisplayMode> getDisplayModes() {
+    return displayModes;
   }
 }

@@ -31,8 +31,11 @@ import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlKeyMap;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
+import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
 import org.lwjgl.sdl.SDLEvents;
@@ -444,8 +447,19 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           SDL_DisplayMode mode = SDLVideo.SDL_GetCurrentDisplayMode(displayId);
           float refreshRate = mode != null ? mode.refresh_rate() : 0.0f;
 
-          FlixelSdlMonitor monitor = new FlixelSdlMonitor(name != null ? name : "Unknown", bounds.x(), bounds.y(),
-              bounds.w(), bounds.h(), refreshRate, isPrimary);
+          // Obtain the display modes of each monitor.
+          FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
+          PointerBuffer modesBuf = SDLVideo.SDL_GetFullscreenDisplayModes(displayId);
+          if (modesBuf != null) {
+            for (int j = 0; j < modesBuf.limit(); j++) {
+              SDL_DisplayMode sdlMode = SDL_DisplayMode.create(modesBuf.get(j));
+              int bpp = (sdlMode.format() >> 8) & 0xFF;
+              displayModes.add(new FlixelDisplayMode(sdlMode.w(), sdlMode.h(), (int) sdlMode.refresh_rate(), bpp));
+            }
+          }
+
+          FlixelSdlMonitor monitor = new FlixelSdlMonitor(name != null ? name : "Unknown", displayModes,
+              bounds.x(), bounds.y(), bounds.w(), bounds.h(), refreshRate, isPrimary);
           host.monitors.add(monitor);
         }
       }
