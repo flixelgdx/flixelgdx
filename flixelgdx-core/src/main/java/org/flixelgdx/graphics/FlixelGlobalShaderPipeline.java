@@ -125,12 +125,18 @@ public final class FlixelGlobalShaderPipeline {
    * @param graphics The active graphics manager, used to clear the target.
    */
   public void beginCapture(@NotNull FlixelGraphicsManager graphics) {
+    if (fboA == null) {
+      return;
+    }
     fboA.begin();
     graphics.clear(0f, 0f, 0f, 0f);
   }
 
   /** Ends scene capture, returning drawing to the window (or the enclosing render target). */
   public void endCapture() {
+    if (fboA == null) {
+      return;
+    }
     fboA.end();
   }
 
@@ -166,13 +172,17 @@ public final class FlixelGlobalShaderPipeline {
 
       if (!isLast) {
         FlixelRenderTarget dst = usingA ? fboB : fboA;
-        dst.begin();
+        if (dst != null) {
+          dst.begin();
+        }
         graphics.clear(0f, 0f, 0f, 0f);
         batch.begin();
         gs.applyUniforms();
         drawFullTarget(batch, src, w, h);
         batch.end();
-        dst.end();
+        if (dst != null) {
+          dst.end();
+        }
         src = dst;
         usingA = !usingA;
       } else {

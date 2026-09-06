@@ -157,23 +157,21 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** Frame-rate cap applied to the render loop while the window is unfocused and {@link Flixel#autoPause} is on. */
   private static final int BACKGROUND_FPS = 10;
 
+  /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
+  public FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
+
+  @NotNull
+  private final FlixelConfig config;
+
   /**
-   * Produces the root {@link FlixelState} each time {@link #create()} runs. Use
-   * {@code () -> new MyState()} for a fresh instance per session, or {@code () -> sharedState} to
+   * Produces the root {@link FlixelState} each time {@link #create()} runs.
+   *
+   * <p>Use {@code () -> new MyState()} for a fresh instance per session, or {@code () -> sharedState} to
    * reuse one object (its {@link FlixelState#destroy()} and {@link FlixelState#create()} lifecycle
    * still runs via {@link Flixel#switchState}).
    */
   @NotNull
   protected Supplier<FlixelState> initialStateFactory;
-
-  @NotNull
-  private final FlixelConfig config;
-
-  /** The main batch used for rendering all sprites on screen. */
-  protected FlixelBatch batch;
-
-  /** The background color of the entire game's window (full-framebuffer clear before camera passes). */
-  protected FlixelColor bgColor = new FlixelColor(FlixelColor.BLACK);
 
   /** Shared 1x1 white pixel frame used to draw solid fills (camera bg, FX). */
   protected FlixelFrame bgPixel;
@@ -201,12 +199,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   private float rawElapsed;
 
   /** 2D array of saved camera scroll values when the game is paused for debugging. */
-  @Nullable
-  private float[][] debugPauseCameraScroll;
+  private float @Nullable [][] debugPauseCameraScroll;
 
   /** FlixelArray of saved camera zoom values when the game is paused for debugging. */
-  @Nullable
-  private float[] debugPauseCameraZoom;
+  private float @Nullable [] debugPauseCameraZoom;
 
   /** Reusable signal data for preUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData preUpdateData = new UpdateSignalData();
@@ -315,11 +311,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     isClosing = false;
     stateLifecyclePauseDispatched = false;
 
-    batch = Flixel.graphics.getBatch();
-
     // Apply the configured render resolution now that the graphics backend is running. It is on by
-    // default at the design size, so the scene draws at a fixed size and upscales to the window; a
-    // game opts out with Config.Builder.disableRenderResolution().
+    // default at the design size, so the scene draws at a fixed size and upscales to the window.
     if (config.isRenderResolutionEnabled()) {
       Flixel.graphics.setRenderResolution(config.getRenderWidth(), config.getRenderHeight(), config.isRenderSmooth());
     } else {
@@ -334,23 +327,13 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     bgPixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
 
-    // Register keyboard, mouse, and touch listeners with the input device.
-    if (Flixel.keys != null) {
-      Flixel.input.addKeyboardListener(Flixel.keys);
-    }
-    if (Flixel.mouse != null) {
-      Flixel.input.addMouseListener(Flixel.mouse);
-    }
-    if (Flixel.touches != null) {
-      Flixel.input.addTouchListener(Flixel.touches);
-    }
+    Flixel.input.addKeyboardListener(Flixel.keys);
+    Flixel.input.addMouseListener(Flixel.mouse);
+    Flixel.input.addTouchListener(Flixel.touches);
 
-    // Create the debug overlay when debug mode is enabled.
     if (Flixel.isDebugMode()) {
       FlixelDebugOverlay overlay = Flixel.createDebugOverlay();
-      if (Flixel.log != null) {
-        Flixel.log.addLogListener(overlay.getLogListener());
-      }
+      Flixel.log.addLogListener(overlay.getLogListener());
     }
 
     Flixel.switchState(initialStateFactory, true, true, true);
@@ -370,9 +353,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       overlayCamera.update(width, height, overlayCamera.centerCameraOnResize);
     }
 
-    if (Flixel.debug != null) {
-      Flixel.debug.overlay.resize(width, height);
-    }
+    Flixel.debug.overlay.resize(width, height);
 
     FlixelState state = Flixel.state;
     if (state != null) {
@@ -393,18 +374,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.Signals.preUpdate.dispatch(preUpdateData);
 
     // Always update input first!
-    if (Flixel.keys != null) {
-      Flixel.keys.update();
-    }
-    if (Flixel.mouse != null) {
-      Flixel.mouse.update();
-    }
-    if (Flixel.touches != null) {
-      Flixel.touches.update();
-    }
-    if (Flixel.gamepads != null) {
-      Flixel.gamepads.update();
-    }
+    Flixel.keys.update();
+    Flixel.mouse.update();
+    Flixel.touches.update();
+    Flixel.gamepads.update();
     FlixelActionSets.update(elapsed);
 
     if (!gamePaused && shouldUpdate) {
@@ -425,9 +398,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
         current = sub;
       }
 
-      if (Flixel.sound != null) {
-        Flixel.sound.update(elapsed);
-      }
+      Flixel.sound.update(elapsed);
 
       // Update all cameras.
       for (FlixelCamera camera : Flixel.cameras) {
@@ -442,7 +413,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       }
     }
 
-    if (Flixel.debug != null && Flixel.isDebugMode()) {
+    if (Flixel.isDebugMode()) {
       Flixel.debug.overlay.update(elapsed);
     }
 
@@ -580,10 +551,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 
-    if (Flixel.debug != null) {
-      Flixel.debug.overlay.drawBoundingBoxes(Flixel.cameras.getItems());
-      Flixel.debug.overlay.draw();
-    }
+    Flixel.debug.overlay.drawBoundingBoxes(Flixel.cameras.getItems());
+    Flixel.debug.overlay.draw();
 
     if (!Flixel.window.isTransparencyActive() && config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
@@ -809,8 +778,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (Flixel.state != null) {
       Flixel.state.destroy();
     }
-    // The batch is owned by the graphics backend, not the game, so it is not destroyed here.
-    batch = null;
     Flixel.graphics.disposeGlobalShaders();
     FlixelWindow.TRANSPARENCY.reset();
     fboOrthoW = -1;
@@ -932,11 +899,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return Flixel.cameras;
   }
 
-  @NotNull
-  public FlixelBatch getBatch() {
-    return batch;
-  }
-
   /**
    * Returns the total number of {@link FlixelBatch} render calls issued during the most recently
    * completed frame, summed across all camera passes. This value is not reset by intermediate
@@ -951,18 +913,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   public FlixelColor getBgColor() {
     return bgColor;
-  }
-
-  /**
-   * Sets the game's background color.
-   *
-   * @param bgColor The new background color; ignored when {@code null}.
-   */
-  public void setBgColor(@NotNull FlixelColor bgColor) {
-    if (bgColor == null) {
-      return;
-    }
-    this.bgColor.set(bgColor);
   }
 
   public String getTitle() {
