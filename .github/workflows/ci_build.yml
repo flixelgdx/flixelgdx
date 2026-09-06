@@ -29,8 +29,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Check formatting
-        run: ./gradlew :flixelgdx-ktx:compileKotlin --no-daemon --warning-mode all
+      - name: Compile Kotlin extension
+        run: ./gradlew :flixelgdx-ktx:assemble --no-daemon --warning-mode all
         shell: bash
 
   format:
