@@ -112,8 +112,8 @@ public class FlixelSave implements FlixelDestroyable {
     if (name.isEmpty()) {
       return false;
     }
-    FlixelGame game = Flixel.game;
-    if (game.getCompany().isEmpty()) {
+    FlixelConfig config = Flixel.config;
+    if (config.getCompany().isEmpty()) {
       Flixel.error("Save", "bind() requires a company name to resolve the correct save directory. "
           + "Set it via FlixelConfig.Builder.company(...) in your FlixelGame subclass constructor, "
           + "or use bind(name, slot, directory) to supply a custom save path instead.");
@@ -333,8 +333,8 @@ public class FlixelSave implements FlixelDestroyable {
     if (customDirectory != null) {
       return Flixel.files.absolute(customDirectory.getAbsolutePath() + "/" + fileName + ".json");
     }
-    FlixelGame game = Flixel.game;
-    return Flixel.files.pref(game.getCompany(), game.getTitle(), "saves/" + fileName + ".json");
+    FlixelConfig config = Flixel.config;
+    return Flixel.files.pref(config.getCompany(), config.getTitle(), "saves/" + fileName + ".json");
   }
 
   /** Converts a parsed JSON object node into plain map entries. */

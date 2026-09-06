@@ -284,7 +284,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
   public FlixelGame(@NotNull FlixelConfig config, @NotNull Supplier<FlixelState> initialStateFactory) {
-    Flixel.config = Objects.requireNonNull(config, "config cannot be null");
+    Flixel.config = Objects.requireNonNull(config, "The game's config object cannot be null.");
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "initialStateFactory cannot be null");
   }
 
@@ -329,7 +329,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.input.addTouchListener(Flixel.touches);
 
     if (Flixel.isDebugMode()) {
-      FlixelDebugOverlay overlay = Flixel.createDebugOverlay();
+      FlixelDebugOverlay overlay = Flixel.debug.createOverlay();
       Flixel.log.addLogListener(overlay.getLogListener());
     }
 
@@ -912,23 +912,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return bgColor;
   }
 
-  public String getTitle() {
-    return Flixel.config.getTitle();
-  }
-
-  public String getCompany() {
-    return Flixel.config.getCompany();
-  }
-
-  public String getVersion() {
-    return Flixel.config.getVersion();
-  }
-
-  @NotNull
-  public FlixelConfig getConfig() {
-    return Flixel.config;
-  }
-
   public boolean isGamePaused() {
     return gamePaused;
   }
@@ -966,34 +949,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   public boolean getClosed() {
     return isClosed;
-  }
-
-  public int getFramerate() {
-    return Flixel.config.getFramerate();
-  }
-
-  public boolean isVsync() {
-    return Flixel.config.isVsync();
-  }
-
-  public boolean getVsync() {
-    return Flixel.config.isVsync();
-  }
-
-  public boolean isFullscreen() {
-    return Flixel.config.isFullscreen();
-  }
-
-  public boolean getFullscreen() {
-    return Flixel.config.isFullscreen();
-  }
-
-  public int getInitialWidth() {
-    return Flixel.config.getWidth();
-  }
-
-  public int getInitialHeight() {
-    return Flixel.config.getHeight();
   }
 
   public boolean isGlobalOverlayEnabled() {

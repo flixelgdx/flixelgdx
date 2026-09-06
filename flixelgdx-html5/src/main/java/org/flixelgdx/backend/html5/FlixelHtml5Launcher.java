@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelGameRunner;
@@ -84,6 +85,7 @@ public final class FlixelHtml5Launcher {
    * @param runtimeMode The runtime mode for this session.
    */
   public static void launch(FlixelGame game, FlixelRuntimeMode runtimeMode) {
+    FlixelConfig config = Flixel.config;
     FlixelHtml5Graphics graphics = new FlixelHtml5Graphics();
     FlixelHtml5Window window = new FlixelHtml5Window();
     FlixelHtml5HostIntegration host = new FlixelHtml5HostIntegration();
@@ -101,7 +103,7 @@ public final class FlixelHtml5Launcher {
     FlixelSoundManager.defaultFactory = FlixelWebAudioFactory.create();
     FlixelFontRegistry.setRasterizer(new FlixelHtml5FontRasterizer());
 
-    window.setTitle(game.getTitle());
+    window.setTitle(config.getTitle());
     gamepads.attach();
 
     // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire the web gamepad
@@ -113,7 +115,7 @@ public final class FlixelHtml5Launcher {
 
     Flixel.runtime.setMode(runtimeMode);
 
-    FlixelGameRunner runner = new FlixelHtml5Runner(CANVAS_ID, game.getInitialWidth(), game.getInitialHeight(),
+    FlixelGameRunner runner = new FlixelHtml5Runner(CANVAS_ID, config.getWidth(), config.getHeight(),
         graphics, window, host, input);
     Flixel.start(game, runner);
   }

@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelGameRunner;
@@ -121,6 +122,7 @@ public final class FlixelDesktopLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
+    FlixelConfig config = Flixel.config;
     Flixel.runtime = new FlixelJvmRuntimeDevice();
     if (Flixel.runtime.isRunningFromJar() && !AnsiConsole.isInstalled()) {
       AnsiConsole.systemInstall();
@@ -132,8 +134,8 @@ public final class FlixelDesktopLauncher {
     FlixelBgfxGraphics graphics = new FlixelBgfxGraphics();
     FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
     FlixelSdlMouseIconManager iconManager = new FlixelSdlMouseIconManager();
-    int width = game.getInitialWidth();
-    int height = game.getInitialHeight();
+    int width = config.getWidth();
+    int height = config.getHeight();
 
     Flixel.alert = new FlixelDesktopAlerter();
     Flixel.window = window;
@@ -165,12 +167,9 @@ public final class FlixelDesktopLauncher {
 
     Flixel.runtime.setMode(runtimeMode);
 
-    try {
-      Flixel.start(game, runner);
-    } finally {
-      if (AnsiConsole.isInstalled()) {
-        AnsiConsole.systemUninstall();
-      }
+    Flixel.start(game, runner);
+    if (AnsiConsole.isInstalled()) {
+      AnsiConsole.systemUninstall();
     }
   }
 }

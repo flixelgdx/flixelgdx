@@ -1310,7 +1310,7 @@ public final class Flixel {
    * @return The fixed design width in game pixels.
    */
   public static int getDesignWidth() {
-    return game != null ? game.getInitialWidth() : getVisibleWidth();
+    return config.getWidth();
   }
 
   /**
@@ -1320,7 +1320,7 @@ public final class Flixel {
    * @see #getDesignWidth()
    */
   public static int getDesignHeight() {
-    return game != null ? game.getInitialHeight() : getVisibleHeight();
+    return config.getHeight();
   }
 
   /**
@@ -1338,7 +1338,7 @@ public final class Flixel {
     if (!cameras.isEmpty()) {
       return (int) cameras.first().getWorldWidth();
     }
-    return game.getInitialWidth();
+    return config.getWidth();
   }
 
   /**
@@ -1351,7 +1351,7 @@ public final class Flixel {
     if (!cameras.isEmpty()) {
       return (int) cameras.first().getWorldHeight();
     }
-    return game.getInitialHeight();
+    return config.getHeight();
   }
 
   /**
@@ -1364,15 +1364,15 @@ public final class Flixel {
    * @return A new {@link FlixelVector} containing the fixed design width and height.
    */
   public static FlixelVector getSize() {
-    return new FlixelVector(game.getInitialWidth(), game.getInitialHeight());
+    return new FlixelVector(config.getWidth(), config.getHeight());
   }
 
   /**
    * Requests that the game quits.
    *
-   * <p>This is a convenience that forwards to {@link FlixelWindow#close() Flixel.window.close()}. If
-   * the window is absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}),
-   * that still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
+   * <p>This is a convenience that forwards to {@link FlixelWindow#close()}. If the window is
+   * absorbing close requests (see {@link FlixelWindow#setAbsorbCloseRequests(boolean)}), that
+   * still applies. On web and mobile, where the host owns the lifecycle, this may do nothing.
    */
   public static void quit() {
     window.close();
@@ -1385,7 +1385,7 @@ public final class Flixel {
    * @return The elapsed time in seconds for the current frame, scaled by {@link #timeScale}.
    */
   public static float getElapsed() {
-    return game != null ? game.getElapsed() : 0f;
+    return game.getElapsed();
   }
 
   /**
@@ -1396,7 +1396,7 @@ public final class Flixel {
    * @return The raw elapsed time in seconds for the current frame, unaffected by {@link #timeScale}.
    */
   public static float getRawElapsed() {
-    return game != null ? game.getRawElapsed() : 0f;
+    return game.getRawElapsed();
   }
 
   /**
@@ -1409,15 +1409,6 @@ public final class Flixel {
   }
 
   /**
-   * Returns the current runtime mode. Defaults to {@link FlixelRuntimeMode#RELEASE}.
-   *
-   * @return The active {@link FlixelRuntimeMode} for this session.
-   */
-  public static FlixelRuntimeMode getRuntimeMode() {
-    return runtime.getMode();
-  }
-
-  /**
    * Refreshes the current state by invoking the factory last set by {@link #switchState(Supplier)}.
    * Does nothing if the factory is {@code null}.
    *
@@ -1425,19 +1416,10 @@ public final class Flixel {
    */
   public static void resetState() {
     Objects.requireNonNull(game, "Game is not initialized. Call start(...) first.");
-    Supplier<FlixelState> factory = currentStateFactory;
+    var factory = currentStateFactory;
     if (factory != null) {
       switchState(factory, true, true, true);
     }
-  }
-
-  /**
-   * Creates the debug overlay using the factory registered via
-   * {@link FlixelDebugManager#setOverlayFactory}. Called internally by
-   * {@link FlixelGame} during startup when debug mode is enabled.
-   */
-  static FlixelDebugOverlay createDebugOverlay() {
-    return debug.createOverlay();
   }
 
   /**
