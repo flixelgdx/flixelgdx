@@ -24,7 +24,7 @@
 package org.flixelgdx.backend.desktop;
 
 import org.flixelgdx.backend.FlixelWindow;
-import org.flixelgdx.backend.FlixelWindowTransparency;
+import org.flixelgdx.graphics.FlixelWindowTransparency;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.system.MemoryStack;

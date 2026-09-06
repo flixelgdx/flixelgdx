@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.graphics.FlixelDisplayMode;
+import org.flixelgdx.graphics.FlixelWindowTransparency;
 import org.flixelgdx.tween.FlixelTween;
 
 /**

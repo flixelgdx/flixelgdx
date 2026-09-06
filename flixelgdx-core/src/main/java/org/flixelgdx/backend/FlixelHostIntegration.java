@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>Paste operations are asynchronous. Register a handler on {@link #onTextPasted()} before
  * calling {@link #pasteFromClipboard()}. The signal fires once the platform has retrieved the
  * data. Handlers may not be called on the GL thread; because of this, wrap any calls
- * with {@link FlixelGraphicsManager#queueMainThread(Runnable) Flixel.graphics.queueMainThread()}.
+ * with {@link FlixelGraphicsManager#queueMainThread(Runnable)}.
  *
  * <p>Example:
  *

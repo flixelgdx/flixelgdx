@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
+package org.flixelgdx.graphics;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.util.FlixelColor;
 
 import java.util.Arrays;
@@ -45,7 +46,7 @@ import java.util.Arrays;
 public class FlixelWindowTransparency {
 
   /**
-   * No-op implementation returned by {@link org.flixelgdx.backend.FlixelWindow#getTransparency()}
+   * No-op implementation returned by {@link FlixelWindow#getTransparency()}
    * on platforms that do not support desktop compositing. All methods do nothing and
    * {@link #isActive()} always returns {@code false}.
    */

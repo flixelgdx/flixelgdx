@@ -120,7 +120,7 @@ public interface FlixelGraphicsManager {
    *
    * @param action The task to run on the render thread; ignored when {@code null}.
    */
-  default void queueMainThread(@Nullable Runnable action) {}
+  default void queueMainThread(@NotNull Runnable action) {}
 
   /**
    * Begins a new frame of rendering. Called once per frame by the framework before any draw work.
