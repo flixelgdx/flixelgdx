@@ -189,7 +189,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         graphics.beginFrame();
         float elapsed = game.advanceTime(deltaSeconds);
         game.update(elapsed);
-        game.draw(game.getBatch());
+        game.draw(graphics.getBatch());
         game.endFrame();
         graphics.endFrame();
 

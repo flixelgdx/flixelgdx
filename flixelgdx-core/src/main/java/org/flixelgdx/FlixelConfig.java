@@ -23,6 +23,7 @@
  */
 package org.flixelgdx;
 
+import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.util.save.FlixelSave;
 import org.jetbrains.annotations.NotNull;
 
@@ -372,7 +373,7 @@ public final class FlixelConfig {
      * Requests an alpha-capable (transparent) default framebuffer at launch.
      *
      * <p>When {@code true}, the window is created with compositor support so
-     * {@link org.flixelgdx.backend.FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop
+     * {@link FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop
      * at runtime. Without this, {@code setTransparencyActive(true)} renders transparent areas as
      * black because the back buffer has no alpha channel.
      *
@@ -381,7 +382,7 @@ public final class FlixelConfig {
      *
      * @param transparentFramebuffer {@code true} to request an alpha-capable framebuffer.
      * @return This builder, for chaining.
-     * @see org.flixelgdx.backend.FlixelWindow#setTransparencyActive(boolean)
+     * @see FlixelWindow#setTransparencyActive(boolean)
      */
     @NotNull
     public Builder transparentFramebuffer(boolean transparentFramebuffer) {

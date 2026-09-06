@@ -50,7 +50,12 @@ import java.nio.ByteOrder;
  * FlixelTexture texture = Flixel.graphics.createTexture(image);
  * }</pre>
  */
-public record FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
+public class FlixelImage {
+
+  @NotNull
+  protected ByteBuffer pixels;
+  protected int width;
+  protected int height;
 
   /**
    * Creates a blank, fully transparent image.
@@ -59,20 +64,9 @@ public record FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
    * @param height Height in pixels; must be positive.
    */
   public FlixelImage(int width, int height) {
-    this(width, height, ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder()));
-  }
-
-  /**
-   * Wraps existing RGBA8888 pixel data without copying it.
-   *
-   * @param width Width in pixels; must be positive.
-   * @param height Height in pixels; must be positive.
-   * @param pixels Tightly packed RGBA pixels; must hold at least {@code width * height * 4} bytes.
-   */
-  public FlixelImage {
-    if (width <= 0 || height <= 0) {
-      throw new IllegalArgumentException("Image size must be positive, got " + width + "x" + height + ".");
-    }
+    this.width = width;
+    this.height = height;
+    this.pixels = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder());
   }
 
   /**
@@ -81,7 +75,7 @@ public record FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
    * @param color The fill color.
    */
   public void fill(@NotNull FlixelColor color) {
-    fill(color.getColor());
+    fill(color.getRgba8888());
   }
 
   /**
@@ -179,9 +173,26 @@ public record FlixelImage(int width, int height, @NotNull ByteBuffer pixels) {
    *
    * @return The RGBA8888 pixel buffer; never {@code null}.
    */
-  @Override
   @NotNull
-  public ByteBuffer pixels() {
+  public ByteBuffer getPixels() {
     return pixels;
+  }
+
+  /**
+   * Returns the width of this CPU-side image.
+   *
+   * @return The width of this image.
+   */
+  public int getWidth() {
+    return width;
+  }
+
+  /**
+   * Returns the height of this CPU-side image.
+   *
+   * @return The height of this image.
+   */
+  public int getHeight() {
+    return height;
   }
 }

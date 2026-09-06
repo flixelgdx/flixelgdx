@@ -45,7 +45,7 @@ class FlixelColorTest {
   @Test
   void packRoundTrip() {
     FlixelColor c = new FlixelColor(1f, 0.5f, 0.25f, 1f);
-    int packed = c.getColor();
+    int packed = c.getRgba8888();
     FlixelColor fromPacked = new FlixelColor(packed);
     assertEquals(c.r, fromPacked.r, 2e-2f);
     assertEquals(c.g, fromPacked.g, 2e-2f);

@@ -282,7 +282,7 @@ public class FlixelBgfxBatch implements FlixelBatch {
 
   @Override
   public void setColor(@NotNull FlixelColor color) {
-    this.color.setColor(color);
+    this.color.set(color);
   }
 
   @Override
