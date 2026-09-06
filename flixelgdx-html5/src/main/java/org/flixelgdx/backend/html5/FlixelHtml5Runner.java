@@ -170,7 +170,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     float elapsed = game.advanceTime(deltaSeconds);
     game.update(elapsed);
     graphics.beginFrame();
-    game.draw(game.getBatch());
+    game.draw(graphics.getBatch());
     game.endFrame();
     graphics.endFrame();
     Window.requestAnimationFrame(this::onAnimationFrame);

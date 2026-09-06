@@ -59,4 +59,4 @@ fun Int.toFlixelColor(): FlixelColor = FlixelColor(this)
  *
  * This allocates a new [FlixelColor].
  */
-fun String.toFlixelColor(): FlixelColor = FlixelColor().apply { getRgba8888(this@toFlixelColor) }
+fun String.toFlixelColor(): FlixelColor = FlixelColor().apply { set(this@toFlixelColor) }

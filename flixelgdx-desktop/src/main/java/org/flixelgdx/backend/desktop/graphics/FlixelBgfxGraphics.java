@@ -28,6 +28,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelDisplayMode;
+import org.flixelgdx.graphics.FlixelGlobalShaderPipeline;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
@@ -161,6 +162,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** Reused ortho matrix for the final upscale blit, rebuilt each composite to match the window. */
   @NotNull
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
+
+  @NotNull
+  private final FlixelGlobalShaderPipeline pipeline = new FlixelGlobalShaderPipeline();
 
   private short quadIndexBuffer = -1;
   private short spriteProgram = -1;
@@ -316,6 +320,12 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public FlixelBatch getBatch() {
     return batch;
+  }
+
+  @NotNull
+  @Override
+  public FlixelGlobalShaderPipeline getGlobalShaderPipeline() {
+    return pipeline;
   }
 
   @Override

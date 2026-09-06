@@ -575,6 +575,20 @@ public interface FlixelGraphicsManager {
   }
 
   /**
+   * Returns the global post-processing shader pipeline for this backend.
+   *
+   * <p>Backends that support post-processing override this to return their own pipeline instance.
+   * Backends that do not support it return {@link FlixelGlobalShaderPipeline#NOOP}, which silently
+   * ignores all calls.
+   *
+   * @return The active pipeline; never {@code null}.
+   */
+  @NotNull
+  default FlixelGlobalShaderPipeline getGlobalShaderPipeline() {
+    return FlixelGlobalShaderPipeline.NOOP;
+  }
+
+  /**
    * Adds a shader to the global post-processing chain applied to all game cameras together.
    *
    * <p>Unlike per-camera shaders (see {@link org.flixelgdx.FlixelCamera#setShader(FlixelShader)}),
@@ -591,7 +605,7 @@ public interface FlixelGraphicsManager {
    * @param shader The shader to append to the global chain.
    */
   default void addGlobalShader(@NotNull FlixelShader shader) {
-    FlixelGlobalShaderPipeline.INSTANCE.add(this, shader);
+    getGlobalShaderPipeline().add(this, shader);
   }
 
   /**
@@ -604,7 +618,7 @@ public interface FlixelGraphicsManager {
    * @return {@code true} if the shader was found and removed, {@code false} otherwise.
    */
   default boolean removeGlobalShader(@NotNull FlixelShader shader) {
-    return FlixelGlobalShaderPipeline.INSTANCE.remove(this, shader);
+    return getGlobalShaderPipeline().remove(this, shader);
   }
 
   /**
@@ -613,7 +627,7 @@ public interface FlixelGraphicsManager {
    * @return {@code true} when the global shader chain is active.
    */
   default boolean hasGlobalShaders() {
-    return FlixelGlobalShaderPipeline.INSTANCE.hasShaders();
+    return getGlobalShaderPipeline().hasShaders();
   }
 
   /**
@@ -621,7 +635,7 @@ public interface FlixelGraphicsManager {
    * automatically; game code should not need to call it directly.
    */
   default void resizeGlobalShaders() {
-    FlixelGlobalShaderPipeline.INSTANCE.resize(this);
+    getGlobalShaderPipeline().resize(this);
   }
 
   /**
@@ -629,7 +643,7 @@ public interface FlixelGraphicsManager {
    * from the draw loop before the camera pass when global shaders are active.
    */
   default void beginGlobalShaderCapture() {
-    FlixelGlobalShaderPipeline.INSTANCE.beginCapture(this);
+    getGlobalShaderPipeline().beginCapture(this);
   }
 
   /**
@@ -637,7 +651,7 @@ public interface FlixelGraphicsManager {
    * loop when global shaders are active.
    */
   default void endGlobalShaderCapture() {
-    FlixelGlobalShaderPipeline.INSTANCE.endCapture();
+    getGlobalShaderPipeline().endCapture();
   }
 
   /**
@@ -647,14 +661,14 @@ public interface FlixelGraphicsManager {
    * @param batch The batch to use for full-screen quad draws.
    */
   default void applyGlobalShaderChain(@NotNull FlixelBatch batch) {
-    FlixelGlobalShaderPipeline.INSTANCE.apply(batch, this);
+    getGlobalShaderPipeline().apply(batch, this);
   }
 
   /**
    * Releases all global shader render targets and clears the chain. Called during game shutdown.
    */
   default void disposeGlobalShaders() {
-    FlixelGlobalShaderPipeline.INSTANCE.dispose();
+    getGlobalShaderPipeline().dispose();
   }
 
   /**

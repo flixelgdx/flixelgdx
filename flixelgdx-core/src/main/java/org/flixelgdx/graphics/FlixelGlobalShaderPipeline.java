@@ -45,8 +45,40 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelGlobalShaderPipeline {
 
-  /** Singleton instance shared across the session. */
-  static final FlixelGlobalShaderPipeline INSTANCE = new FlixelGlobalShaderPipeline();
+  /**
+   * No-op implementation returned by {@link FlixelGraphicsManager#getGlobalShaderPipeline()} on
+   * backends that do not support post-processing. All methods do nothing and
+   * {@link #hasShaders()} always returns {@code false}.
+   */
+  public static final FlixelGlobalShaderPipeline NOOP = new FlixelGlobalShaderPipeline() {
+    @Override
+    public void add(@NotNull FlixelGraphicsManager graphics, @NotNull FlixelShader shader) {}
+
+    @Override
+    public boolean remove(@NotNull FlixelGraphicsManager graphics, @NotNull FlixelShader shader) {
+      return false;
+    }
+
+    @Override
+    public boolean hasShaders() {
+      return false;
+    }
+
+    @Override
+    public void resize(@NotNull FlixelGraphicsManager graphics) {}
+
+    @Override
+    public void beginCapture(@NotNull FlixelGraphicsManager graphics) {}
+
+    @Override
+    public void endCapture() {}
+
+    @Override
+    public void apply(@NotNull FlixelBatch batch, @NotNull FlixelGraphicsManager graphics) {}
+
+    @Override
+    public void dispose() {}
+  };
 
   private final FlixelArray<FlixelShader> shaders = new FlixelArray<>();
   private final FlixelMatrix ortho = new FlixelMatrix();
@@ -59,7 +91,8 @@ public class FlixelGlobalShaderPipeline {
   private int orthoW = -1;
   private int orthoH = -1;
 
-  private FlixelGlobalShaderPipeline() {}
+  /** Creates a new, initially empty shader pipeline with no render targets allocated. */
+  public FlixelGlobalShaderPipeline() {}
 
   /**
    * Appends a shader to the chain, initializing render targets if this is the first addition.
