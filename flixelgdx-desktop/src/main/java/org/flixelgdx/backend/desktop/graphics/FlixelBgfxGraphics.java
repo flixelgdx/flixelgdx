@@ -63,12 +63,6 @@ import java.util.Objects;
  * shader program. Drawing goes through bgfx's numbered views: view {@code 0} targets the screen,
  * and render targets take higher-numbered views bound to their framebuffers, tracked on a small
  * stack so per-camera and whole-scene targets nest correctly.
- *
- * <p>bgfx cannot draw without a compiled shader program. The sprite shaders are precompiled per
- * renderer backend and bundled under {@code org/flixelgdx/shaders}; build them with
- * {@code scripts/build_shaders.sh}. If the program is missing at startup, drawing degrades to a
- * no-op with a one-time warning so the game still runs (useful headless), while everything else
- * (textures, render targets, clears) works normally.
  */
 public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
@@ -378,9 +372,6 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   public void endFrame() {
     // Advance bgfx to the next frame; 0 means "do not capture this frame".
     BGFX.bgfx_frame(0);
-    if (statsEnabled) {
-      logStats();
-    }
   }
 
   /**
@@ -890,9 +881,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    * @param projection The view-projection matrix.
    * @param transform The model transform applied before projection.
    */
-  void submitQuads(@NotNull float[] verts, int quadCount, @Nullable FlixelBgfxTexture texture,
-      @NotNull FlixelBlendMode blend, @Nullable FlixelShader shader,
-      @NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform) {
+  void submitQuads(float @NotNull [] verts, int quadCount, @Nullable FlixelBgfxTexture texture,
+                   @NotNull FlixelBlendMode blend, @Nullable FlixelShader shader,
+                   @NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform) {
     short program = resolveProgram(shader);
     if (program == -1 || texture == null) {
       if (!programWarned && program == -1) {
