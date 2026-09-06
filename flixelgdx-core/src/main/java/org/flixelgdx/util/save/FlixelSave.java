@@ -25,7 +25,6 @@ package org.flixelgdx.util.save;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
-import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
