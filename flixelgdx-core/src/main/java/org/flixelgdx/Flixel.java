@@ -873,6 +873,18 @@ public final class Flixel {
   public static FlixelRuntimeDevice runtime = FlixelNoopRuntimeDevice.INSTANCE;
 
   /**
+   * Whether the game should pause audio and throttle the frame rate when the window loses focus.
+   *
+   * <p>When {@code true} (the default), audio is paused and the update loop suspends whenever the
+   * game window loses focus. The render loop continues at a low background frame rate so the window
+   * stays responsive, then both audio and updates resume automatically when focus returns.
+   *
+   * <p>Set this to {@code false} to keep the game running at full speed in the background. Note
+   * that on mobile if this is {@code false}, audio will keep playing when the app is not focused.
+   */
+  public static boolean autoPause = true;
+
+  /**
    * Global timescale applied to the game's update loop each frame.
    *
    * <p>{@code 1f} is normal speed; values below {@code 1f} slow the game down, values above {@code 1f} speed it up.
@@ -1268,7 +1280,7 @@ public final class Flixel {
   }
 
   /**
-   * Returns the game's fixed design width in game pixels, as set by {@link FlixelGame.Config}.
+   * Returns the game's fixed design width in game pixels, as set by {@link FlixelConfig}.
    *
    * <p>This is the width your game logic is authored against. It never changes at runtime, no matter
    * the window size, fullscreen state, render resolution, or viewport policy, so it is the value to
@@ -1284,7 +1296,7 @@ public final class Flixel {
   }
 
   /**
-   * Returns the game's fixed design height in game pixels, as set by {@link FlixelGame.Config}.
+   * Returns the game's fixed design height in game pixels, as set by {@link FlixelConfig}.
    *
    * @return The fixed design height in game pixels.
    * @see #getDesignWidth()
@@ -1325,7 +1337,7 @@ public final class Flixel {
   }
 
   /**
-   * Returns the game's fixed design size in game pixels, as set in the {@link FlixelGame.Config}.
+   * Returns the game's fixed design size in game pixels, as set in the {@link FlixelConfig}.
    *
    * <p>This matches {@link #getDesignWidth()} / {@link #getDesignHeight()} and, unlike
    * {@link #getVisibleWidth()} / {@link #getVisibleHeight()}, always reflects the fixed design

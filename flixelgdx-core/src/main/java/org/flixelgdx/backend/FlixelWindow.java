@@ -24,6 +24,7 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.graphics.FlixelDisplayMode;
@@ -62,6 +63,13 @@ import org.flixelgdx.tween.FlixelTween;
  */
 public interface FlixelWindow extends FlixelShakeable {
 
+  /**
+   * Singleton transparency state shared across the session.
+   *
+   * <p>Game code uses {@link #setTransparencyActive(boolean)} rather than accessing this directly.
+   */
+  FlixelWindowTransparency TRANSPARENCY = FlixelWindowTransparency.INSTANCE;
+
   /** {@inheritDoc} */
   @Override
   default float getShakeX() {
@@ -94,7 +102,7 @@ public interface FlixelWindow extends FlixelShakeable {
 
   /**
    * Returns whether an alpha-capable (transparent) framebuffer was requested at launch via
-   * {@link FlixelGame.Config.Builder#transparentFramebuffer(boolean)}.
+   * {@link FlixelConfig.Builder#transparentFramebuffer(boolean)}.
    *
    * <p>When {@code true}, the window was created with compositor support, so
    * {@link #setTransparencyActive(boolean)} can blend the game with the desktop. When
@@ -103,21 +111,21 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when an alpha-capable framebuffer was requested in the game config.
    */
   default boolean isTransparentFramebufferRequested() {
-    return Flixel.game.isTransparentFramebufferRequested();
+    return Flixel.game != null && Flixel.game.getConfig().isTransparentFramebuffer();
   }
 
   /**
    * Turns desktop-composited transparency on or off.
    *
    * <p>When {@code true}, clears and camera backdrop fills use alpha zero so unchanged
-   * pixels show whatever is behind the window (when the framebuffer was created with transparency support).
-   * When {@code false}, restores backdrop colors cached the first time transparency was enabled this session,
-   * or falls back to opaque black if transparency was never enabled.
+   * pixels show whatever is behind the window (when the framebuffer was created with transparency
+   * support). When {@code false}, restores backdrop colors cached the first time transparency was
+   * enabled this session, or falls back to opaque black if transparency was never enabled.
    *
    * @param active {@code true} to composite with the desktop through alpha; {@code false} for a normal opaque window interior.
    */
   default void setTransparencyActive(boolean active) {
-    Flixel.game.applyBackdropForDesktopTransparency(active);
+    TRANSPARENCY.apply(active);
   }
 
   /**
@@ -126,7 +134,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * @return {@code true} when desktop-composited transparency is currently on.
    */
   default boolean isTransparencyActive() {
-    return Flixel.game != null && Flixel.game.isTransparencyActive();
+    return TRANSPARENCY.isActive();
   }
 
   /**
@@ -431,6 +439,30 @@ public interface FlixelWindow extends FlixelShakeable {
    */
   default boolean supportsFullscreen() {
     return false;
+  }
+
+  /**
+   * Switches fullscreen mode on or off.
+   *
+   * <p>When enabling, uses the current display mode from
+   * {@link org.flixelgdx.graphics.FlixelGraphicsManager#getDisplayMode() Flixel.graphics.getDisplayMode()}.
+   * When disabling, restores the window to the design size set in {@link FlixelConfig}.
+   *
+   * @param enabled {@code true} to enter fullscreen, {@code false} to return to windowed mode.
+   */
+  default void setFullscreen(boolean enabled) {
+    if (enabled) {
+      setFullscreen(Flixel.graphics.getDisplayMode());
+    } else {
+      int w = Flixel.game != null ? Flixel.game.getInitialWidth() : getWidth();
+      int h = Flixel.game != null ? Flixel.game.getInitialHeight() : getHeight();
+      setWindowed(w, h);
+    }
+  }
+
+  /** Toggles fullscreen mode on if it is currently off, and off if it is currently on. */
+  default void toggleFullscreen() {
+    setFullscreen(!isFullscreen());
   }
 
   /**

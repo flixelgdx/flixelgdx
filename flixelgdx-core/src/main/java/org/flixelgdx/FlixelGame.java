@@ -44,13 +44,11 @@ import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelShader;
 import org.flixelgdx.util.FlixelSpriteUtil;
-import org.flixelgdx.util.save.FlixelSave;
 import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.util.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -85,7 +83,7 @@ import java.util.function.Supplier;
  * <h2>Cameras</h2>
  *
  * <p>The active camera list lives in {@link Flixel#cameras}. On startup, {@link #create()} adds
- * one camera sized to match the initial window dimensions from {@link Config}. Every
+ * one camera sized to match the initial window dimensions from {@link FlixelConfig}. Every
  * camera in the list is drawn in order each frame. Use {@link #resetCameras()} to restore the
  * single-camera default, or manipulate {@link Flixel#cameras} directly for split-screen or
  * minimap setups.
@@ -116,19 +114,19 @@ import java.util.function.Supplier;
  *
  * <h2>Global shaders</h2>
  *
- * <p>Use {@link #addGlobalShader(FlixelShader)} to apply a post-processing shader to the combined
- * output of every game camera in a single full-screen pass. Multiple shaders chain automatically
- * via ping-pong render targets so each pass feeds the next without re-rendering the scene. The
- * global overlay is always drawn after the shader chain and is never affected by it.
+ * <p>Use {@link Flixel#graphics Flixel.graphics.addGlobalShader(shader)} to apply a post-processing
+ * shader to the combined output of every game camera in a single full-screen pass. Multiple shaders
+ * chain automatically via ping-pong render targets so each pass feeds the next without re-rendering
+ * the scene. The global overlay is always drawn after the shader chain and is never affected by it.
  *
  * <h2>Auto-pause</h2>
  *
- * <p>When {@link #autoPause} is {@code true} (the default), audio is paused and the update loop
- * suspends whenever the game window loses focus. The render loop continues at a low background
- * frame rate so the window stays responsive, then both audio and updates resume automatically
- * when focus returns. Set {@link #autoPause} to {@code false} to keep the game running at full
- * speed in the background. Note that on mobile if {@link #autoPause} is {@code false} the audio
- * will keep playing in the background when the app is not focused.
+ * <p>When {@link Flixel#autoPause} is {@code true} (the default), audio is paused and the update
+ * loop suspends whenever the game window loses focus. The render loop continues at a low background
+ * frame rate so the window stays responsive, then both audio and updates resume automatically when
+ * focus returns. Set {@link Flixel#autoPause} to {@code false} to keep the game running at full
+ * speed in the background. Note that on mobile if {@link Flixel#autoPause} is {@code false} the
+ * audio will keep playing in the background when the app is not focused.
  *
  * <h2>Example Usage</h2>
  *
@@ -137,7 +135,7 @@ import java.util.function.Supplier;
  *
  *   public MyGame() {
  *     super(
- *       new Config.Builder("My Game")
+ *       new FlixelConfig.Builder("My Game")
  *           .company("My Studio")
  *           .size(1280, 720)
  *           .build(),
@@ -150,15 +148,13 @@ import java.util.function.Supplier;
  * FlixelDesktopLauncher.launch(new MyGame());
  * }</pre>
  *
- * @see Config
+ * @see FlixelConfig
  * @see FlixelState
  * @see Flixel
  */
 public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, FlixelDestroyable {
 
-  private static final int FLOATS_PER_CAMERA_BACKDROP = 5;
-
-  /** Frame-rate cap applied to the render loop while the window is unfocused and {@link #autoPause} is on. */
+  /** Frame-rate cap applied to the render loop while the window is unfocused and {@link Flixel#autoPause} is on. */
   private static final int BACKGROUND_FPS = 10;
 
   /**
@@ -171,7 +167,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   protected Supplier<FlixelState> initialStateFactory;
 
   @NotNull
-  private final Config config;
+  private final FlixelConfig config;
 
   /** The main batch used for rendering all sprites on screen. */
   protected FlixelBatch batch;
@@ -218,7 +214,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /** Reusable signal data for postUpdate dispatch (avoids per-frame allocation). */
   private final UpdateSignalData postUpdateData = new UpdateSignalData();
 
-  /** Orthographic projection matrix reused each frame for the render-target composite pass. */
+  /** Orthographic projection matrix reused each frame for the per-camera shader composite pass. */
   private final FlixelMatrix fboOrtho = new FlixelMatrix();
 
   /**
@@ -229,51 +225,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   private int fboOrthoH = -1;
 
-  /**
-   * Ordered list of shaders applied to all game cameras as a group before the global overlay is
-   * drawn. Shaders are run in insertion order; two or more shaders chain via ping-pong render
-   * targets so each pass feeds the next without re-rendering the scene.
-   *
-   * <p>Managed via {@link #addGlobalShader(FlixelShader)} and
-   * {@link #removeGlobalShader(FlixelShader)}.
-   */
-  private final FlixelArray<FlixelShader> globalShaders = new FlixelArray<>();
-
-  /**
-   * Primary scene render target for the global shader pass.
-   * Created on the first {@link #addGlobalShader} call and recreated on window resize.
-   * Null when {@link #globalShaders} is empty.
-   */
-  @Nullable
-  private FlixelRenderTarget sceneFboA;
-
-  /**
-   * Secondary scene render target used only when two or more global shaders are active.
-   * Acts as the ping-pong target so each shader reads from one target and writes to the other.
-   * Null when fewer than two shaders are present.
-   */
-  @Nullable
-  private FlixelRenderTarget sceneFboB;
-
-  /**
-   * {@code r, g, b, a} of {@link #bgColor} captured the first time desktop transparency is enabled
-   * this session. Cleared when transparency is turned off.
-   */
-  private final float[] desktopTransparencyRestoreGameRgba = new float[4];
-
-  /**
-   * Packed per-camera backdrop data: {@code r, g, b, a, useBgAlphaBlending ? 1f : 0f} for each camera index.
-   * Reused across toggles to avoid allocations.
-   */
-  private float[] desktopTransparencyRestoreCamerasPacked = new float[20];
-
-  private int desktopTransparencyRestoreCameraCount;
-
   /** FPS cap saved just before throttling on focus loss; restored when focus returns. */
   private int savedTargetFps;
-
-  /** Whether the game should pause audio and throttle the frame rate when the window loses focus. */
-  public boolean autoPause = true;
 
   /** Whether the game is currently in the process of closing. */
   private boolean isClosing = false;
@@ -286,9 +239,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
   /** When true, the global overlay group is updated and drawn on top of all game cameras each frame. */
   private boolean overlayEnabled;
-
-  /** Prevents re-entrant fullscreen transitions from resize callbacks on desktop backends. */
-  private boolean fullscreenChangeInProgress = false;
 
   /**
    * When {@code true}, {@link Flixel#state} was sent {@link FlixelState#onFocusLost()} for a paired
@@ -304,29 +254,21 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   private boolean shouldUpdate = true;
 
   /**
-   * Last value passed to {@link #applyBackdropForDesktopTransparency(boolean)}; used by
-   * {@link FlixelWindow#isTransparencyActive() FlixelWindow.isTransparencyActive()}.
-   */
-  private boolean desktopTransparencyActive;
-
-  private boolean desktopTransparencyRestoreSnapshotValid;
-
-  /**
    * Creates a new game instance with a default 640x360 window, 60 fps, and VSync enabled.
    *
    * @param title The title of the game's window.
    * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
   public FlixelGame(String title, @NotNull Supplier<FlixelState> initialStateFactory) {
-    this(new Config.Builder(title).build(), initialStateFactory);
+    this(new FlixelConfig.Builder(title).build(), initialStateFactory);
   }
 
   /**
    * Creates a new game instance with a 4-parameter shorthand: title, window size, and initial state.
    * All other settings use their defaults (60 fps, VSync on, windowed).
    *
-   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(Config, Supplier)}
-   * with a {@link Config} instead.
+   * <p>For anything beyond these four parameters, prefer {@link #FlixelGame(FlixelConfig, Supplier)}
+   * with a {@link FlixelConfig} instead.
    *
    * @param title The title of the game's window.
    * @param width The starting width of the game's window and how wide the camera should be.
@@ -334,11 +276,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
   public FlixelGame(String title, int width, int height, @NotNull Supplier<FlixelState> initialStateFactory) {
-    this(new Config.Builder(title).size(width, height).build(), initialStateFactory);
+    this(new FlixelConfig.Builder(title).size(width, height).build(), initialStateFactory);
   }
 
   /**
-   * Creates a new game instance configured entirely by the supplied {@link Config}, using a
+   * Creates a new game instance configured entirely by the supplied {@link FlixelConfig}, using a
    * factory that produces the initial state.
    *
    * <p>This is the primary constructor that all others delegate to. Use {@code () -> new MyState()} for a
@@ -349,7 +291,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * @param config The configuration that supplies all startup settings.
    * @param initialStateFactory A factory that produces the initial state to load when the game starts.
    */
-  public FlixelGame(@NotNull Config config, @NotNull Supplier<FlixelState> initialStateFactory) {
+  public FlixelGame(@NotNull FlixelConfig config, @NotNull Supplier<FlixelState> initialStateFactory) {
     this.config = Objects.requireNonNull(config, "config cannot be null");
     this.initialStateFactory = Objects.requireNonNull(initialStateFactory, "initialStateFactory cannot be null");
   }
@@ -437,9 +379,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       state.resize(width, height);
     }
 
-    if (!globalShaders.isEmpty()) {
-      initSceneFbos(globalShaders.getSize() > 1);
-    }
+    Flixel.graphics.resizeGlobalShaders();
   }
 
   /**
@@ -524,7 +464,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
 
-    boolean useGlobalFbo = !globalShaders.isEmpty() && sceneFboA != null;
+    boolean useGlobalFbo = Flixel.graphics.hasGlobalShaders();
     // The global shader chain already routes the whole scene through its own render targets, so a
     // fixed render resolution only takes over when no global shaders are active. Otherwise the two
     // composites would fight over the screen.
@@ -532,8 +472,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (useSceneResolution) {
       Flixel.graphics.beginScene();
     } else if (useGlobalFbo) {
-      sceneFboA.begin();
-      Flixel.graphics.clear(0f, 0f, 0f, 0f);
+      Flixel.graphics.beginGlobalShaderCapture();
     }
 
     // Loop through all cameras and draw the state/substate chain onto each camera.
@@ -598,7 +537,12 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
           batch.setShader(cameraShader);
           batch.begin();
           cameraShader.applyUniforms();
-          drawFullTarget(batch, camera.getFbo(), camera.width, camera.height);
+          FlixelRenderTarget fbo = camera.getFbo();
+          if (fbo.isFlipped()) {
+            batch.draw(fbo.getTexture(), 0, 0, camera.width, camera.height, 0f, 1f, 1f, 0f);
+          } else {
+            batch.draw(fbo.getTexture(), 0, 0, camera.width, camera.height);
+          }
           batch.end();
           batch.setShader(null);
         }
@@ -608,8 +552,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
 
     if (useGlobalFbo) {
-      sceneFboA.end();
-      applyGlobalShaderChain();
+      Flixel.graphics.endGlobalShaderCapture();
+      Flixel.graphics.applyGlobalShaderChain(batch);
     }
 
     if (overlayCamera != null && overlayGroup != null && overlayEnabled) {
@@ -641,23 +585,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       Flixel.debug.overlay.draw();
     }
 
-    if (!desktopTransparencyActive && config.isTransparentFramebuffer()) {
+    if (!Flixel.window.isTransparencyActive() && config.isTransparentFramebuffer()) {
       Flixel.graphics.forceOpaqueAlpha();
     }
 
     Flixel.Signals.postDraw.dispatch();
-  }
-
-  /**
-   * Draws a render target's whole texture into the given rectangle, flipping it vertically when
-   * the backend stores the target upside down.
-   */
-  private static void drawFullTarget(FlixelBatch batch, FlixelRenderTarget target, float width, float height) {
-    if (target.isFlipped()) {
-      batch.draw(target.getTexture(), 0, 0, width, height, 0f, 1f, 1f, 0f);
-    } else {
-      batch.draw(target.getTexture(), 0, 0, width, height);
-    }
   }
 
   /**
@@ -765,7 +697,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * arrives before minimize, so this is called once for both events).
    *
    * <p>The default implementation pauses audio and throttles the frame rate to
-   * {@value #BACKGROUND_FPS} fps when {@link #autoPause} is {@code true}, then notifies the
+   * {@value #BACKGROUND_FPS} fps when {@link Flixel#autoPause} is {@code true}, then notifies the
    * active state. Duplicate calls without an intervening {@link #onFocusGained()} are silently
    * ignored.
    *
@@ -782,7 +714,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (state != null) {
       state.onFocusLost();
     }
-    if (autoPause) {
+    if (Flixel.autoPause) {
       Flixel.sound.pause();
       savedTargetFps = Flixel.graphics.getTargetFps();
       Flixel.graphics.setTargetFps(BACKGROUND_FPS);
@@ -799,7 +731,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    * restored from being minimized.
    *
    * <p>The default implementation restores the full frame rate and resumes audio when
-   * {@link #autoPause} is {@code true}, then notifies the active state. Calls that arrive
+   * {@link Flixel#autoPause} is {@code true}, then notifies the active state. Calls that arrive
    * without a prior {@link #onFocusLost()} are silently ignored.
    *
    * @see #onFocusLost()
@@ -814,7 +746,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     if (state != null) {
       state.onFocusGained();
     }
-    if (autoPause) {
+    if (Flixel.autoPause) {
       shouldUpdate = true;
       Flixel.graphics.setTargetFps(savedTargetFps);
       if (!gamePaused) {
@@ -844,171 +776,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       state.onMinimized();
     }
     Flixel.Signals.windowMinimized.dispatch();
-  }
-
-  /**
-   * Sets fullscreen mode for the game's window.
-   *
-   * @param enabled If the game's window should be in fullscreen mode.
-   */
-  public void setFullscreen(boolean enabled) {
-    boolean currentFullscreen = Flixel.window.isFullscreen();
-    if (enabled == currentFullscreen || fullscreenChangeInProgress) {
-      return;
-    }
-    fullscreenChangeInProgress = true;
-    try {
-      if (enabled) {
-        Flixel.window.setFullscreen(Flixel.graphics.getDisplayMode());
-      } else {
-        Flixel.window.setWindowed(config.getWidth(), config.getHeight());
-      }
-    } finally {
-      fullscreenChangeInProgress = false;
-    }
-  }
-
-  /** Toggles fullscreen mode on or off, depending on the current state. */
-  public void toggleFullscreen() {
-    setFullscreen(!Flixel.window.isFullscreen());
-  }
-
-  /**
-   * Toggles auto-pause on or off.
-   *
-   * @return The new value of auto-pause after toggling.
-   */
-  public boolean toggleAutoPause() {
-    autoPause = !autoPause;
-    return autoPause;
-  }
-
-  /**
-   * Adds a shader to the global post-processing chain applied to all game cameras together.
-   *
-   * <p>Unlike per-camera shaders (see {@link FlixelCamera#setShader(FlixelShader)}), a global
-   * shader captures the combined output of every game camera into a single full-screen
-   * framebuffer and applies the effect in one pass. This means barrel distortion, scanlines,
-   * and similar effects align correctly across camera boundaries. The global overlay (debug
-   * FPS display, etc.) is drawn after the global composite and is always excluded.
-   *
-   * <p>Shaders added with this method run in insertion order. When more than one shader is
-   * present they chain via ping-pong framebuffers so each pass feeds the next without
-   * re-rendering the scene.
-   *
-   * <p><b>Performance note:</b> Every global shader adds a full-screen framebuffer pass per
-   * frame. On weaker or integrated-graphics hardware this can have a meaningful impact on
-   * frame budget. It is strongly recommended to expose a graphics settings option in your
-   * game so players can disable shader effects. A common pattern is to call
-   * {@link #removeGlobalShader(FlixelShader)} and {@link FlixelCamera#setShader(FlixelShader)
-   * camera.setShader(null)} when the player turns shaders off, and re-add them when turned
-   * back on.
-   *
-   * <p>Adding the same shader instance more than once is a no-op.
-   *
-   * @param shader The shader to append to the global chain.
-   */
-  public void addGlobalShader(FlixelShader shader) {
-    if (globalShaders.contains(shader, true)) {
-      return;
-    }
-    boolean needsPingPong = !globalShaders.isEmpty();
-    globalShaders.add(shader);
-    initSceneFbos(needsPingPong || globalShaders.getSize() > 1);
-  }
-
-  /**
-   * Removes a shader from the global post-processing chain.
-   *
-   * <p>If the chain becomes empty as a result, the scene framebuffers are released immediately.
-   * Removing a shader that was never added is a no-op.
-   *
-   * @param shader The shader to remove.
-   * @return {@code true} if the shader was found and removed, {@code false} otherwise.
-   */
-  public boolean removeGlobalShader(FlixelShader shader) {
-    boolean removed = globalShaders.removeValue(shader, true);
-    if (removed) {
-      if (globalShaders.isEmpty()) {
-        disposeSceneFbos();
-      } else {
-        initSceneFbos(globalShaders.getSize() > 1);
-      }
-    }
-    return removed;
-  }
-
-  /** Creates (or recreates) the scene render targets used by the global shader chain. */
-  private void initSceneFbos(boolean needPingPong) {
-    disposeSceneFbos();
-    // Size to the scene render resolution, which equals the back buffer unless a fixed render
-    // resolution is active, so the shader chain matches whatever size the cameras draw at.
-    int w = Flixel.graphics.getRenderWidth();
-    int h = Flixel.graphics.getRenderHeight();
-    sceneFboA = Flixel.graphics.createRenderTarget(w, h);
-    if (needPingPong) {
-      sceneFboB = Flixel.graphics.createRenderTarget(w, h);
-    }
-  }
-
-  /** Releases the scene render targets. */
-  private void disposeSceneFbos() {
-    if (sceneFboA != null) {
-      sceneFboA.destroy();
-      sceneFboA = null;
-    }
-    if (sceneFboB != null) {
-      sceneFboB.destroy();
-      sceneFboB = null;
-    }
-  }
-
-  /**
-   * Composites the scene render target to the screen by running it through the global shader
-   * chain. When more than one shader is present the passes ping-pong between {@link #sceneFboA}
-   * and {@link #sceneFboB} so each shader reads from one texture and writes to the other.
-   */
-  private void applyGlobalShaderChain() {
-    int w = Flixel.graphics.getRenderWidth();
-    int h = Flixel.graphics.getRenderHeight();
-    boolean usingA = true;
-    FlixelRenderTarget src = sceneFboA;
-    int n = globalShaders.getSize();
-
-    for (int i = 0; i < n; i++) {
-      FlixelShader gs = globalShaders.get(i);
-      boolean isLast = (i == n - 1);
-
-      if (w != fboOrthoW || h != fboOrthoH) {
-        fboOrthoW = w;
-        fboOrthoH = h;
-        // Y-down composite ortho (see the per-camera pass) so each chained shader draws upright.
-        // Same depth-range caveat: without the backend flag this quad is clipped to black on the
-        // [0, 1] depth backends (Vulkan, Metal, Direct3D).
-        fboOrtho.setToOrtho2DYDown(0, 0, w, h, Flixel.graphics.isDepthZeroToOne());
-      }
-      batch.setProjection(fboOrtho);
-      batch.setShader(gs);
-
-      if (!isLast) {
-        FlixelRenderTarget dst = usingA ? sceneFboB : sceneFboA;
-        dst.begin();
-        Flixel.graphics.clear(0f, 0f, 0f, 0f);
-        batch.begin();
-        gs.applyUniforms();
-        drawFullTarget(batch, src, w, h);
-        batch.end();
-        dst.end();
-        src = dst;
-        usingA = !usingA;
-      } else {
-        batch.begin();
-        gs.applyUniforms();
-        drawFullTarget(batch, src, w, h);
-        batch.end();
-      }
-    }
-    batch.setShader(null);
   }
 
   /**
@@ -1044,8 +811,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     }
     // The batch is owned by the graphics backend, not the game, so it is not destroyed here.
     batch = null;
-    disposeSceneFbos();
-    globalShaders.clear();
+    Flixel.graphics.disposeGlobalShaders();
+    FlixelWindow.TRANSPARENCY.reset();
     fboOrthoW = -1;
     fboOrthoH = -1;
     // bgPixel is a shared, persistent asset owned by the asset manager; do not destroy it here.
@@ -1100,8 +867,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     // so discard it. restoreCamerasAfterDebugPause() already handles null gracefully.
     debugPauseCameraScroll = null;
     debugPauseCameraZoom = null;
-    if (desktopTransparencyActive) {
-      applyDesktopTransparencyBackdropOnly();
+    if (Flixel.window.isTransparencyActive()) {
+      FlixelWindow.TRANSPARENCY.applyBackdropOnly();
     }
   }
 
@@ -1198,164 +965,6 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     this.bgColor.set(bgColor);
   }
 
-  /**
-   * Returns whether an alpha-capable (transparent) framebuffer was requested in the game's
-   * {@link Config}.
-   *
-   * @return {@code true} when {@link Config.Builder#transparentFramebuffer(boolean)} was set.
-   */
-  public boolean isTransparentFramebufferRequested() {
-    return config.isTransparentFramebuffer();
-  }
-
-  /**
-   * Returns whether an alpha-capable framebuffer was requested in the game's {@link Config}.
-   *
-   * @return {@code true} when the config requested a transparent framebuffer.
-   */
-  public boolean getTransparentFramebufferRequested() {
-    return config.isTransparentFramebuffer();
-  }
-
-  /**
-   * Returns {@code true} after {@link #applyBackdropForDesktopTransparency(boolean)} was called with {@code true}.
-   *
-   * @return {@code true} when desktop transparency is currently active.
-   */
-  public boolean isTransparencyActive() {
-    return desktopTransparencyActive;
-  }
-
-  /**
-   * Returns {@code true} after desktop transparency was applied via {@link #applyBackdropForDesktopTransparency(boolean)}.
-   *
-   * @return {@code true} when desktop transparency is currently active.
-   */
-  public boolean getTransparencyActive() {
-    return desktopTransparencyActive;
-  }
-
-  /**
-   * Updates global and per-camera backdrop drawing for desktop compositing. Called from
-   * {@link FlixelWindow FlixelWindow}. When desktop see-through is off but the window
-   * was created with a transparent-capable framebuffer, {@link FlixelDrawable#draw} also forces
-   * framebuffer alpha to {@code 1} after rendering so tinted sprites do not composite through the real desktop.
-   *
-   * @param active {@code true} for transparent clears and camera fills. {@code false} restores colors
-   *     captured the first time transparency was enabled this session (then clears that cache), or opaque black
-   *     if transparency was never enabled.
-   */
-  public void applyBackdropForDesktopTransparency(boolean active) {
-    desktopTransparencyActive = active;
-    if (active) {
-      captureDesktopTransparency();
-      applyDesktopTransparencyBackdropOnly();
-      return;
-    }
-    restoreDesktopTransparencyBackdrop();
-    clearDesktopTransparencyRestoreSnapshot();
-  }
-
-  /**
-   * Applies transparent full-window clear and per-camera backdrop without touching the restore snapshot.
-   * Used after {@link #resetCameras()} while transparency stays enabled.
-   */
-  private void applyDesktopTransparencyBackdropOnly() {
-    bgColor.a = 0f;
-    FlixelCamera[] camItems = Flixel.cameras.getItems();
-    for (int i = 0, n = Flixel.cameras.getSize(); i < n; i++) {
-      FlixelCamera cam = camItems[i];
-      if (cam == null) {
-        continue;
-      }
-      cam.useBgAlphaBlending = true;
-      cam.bgColor.a = 0f;
-    }
-  }
-
-  private void captureDesktopTransparency() {
-    if (desktopTransparencyRestoreSnapshotValid) {
-      return;
-    }
-    float[] g = desktopTransparencyRestoreGameRgba;
-    g[0] = bgColor.r;
-    g[1] = bgColor.g;
-    g[2] = bgColor.b;
-    g[3] = bgColor.a;
-    int n = Flixel.cameras.getSize();
-    ensureDesktopTransparencyCameraSnapshotCapacity(n);
-    FlixelCamera[] camItems = n == 0 ? null : Flixel.cameras.getItems();
-    float[] p = desktopTransparencyRestoreCamerasPacked;
-    for (int i = 0; i < n; i++) {
-      FlixelCamera cam = camItems[i];
-      int o = i * FLOATS_PER_CAMERA_BACKDROP;
-      if (cam == null) {
-        p[o] = 0f;
-        p[o + 1] = 0f;
-        p[o + 2] = 0f;
-        p[o + 3] = 1f;
-        p[o + 4] = 0f;
-        continue;
-      }
-      p[o] = cam.bgColor.r;
-      p[o + 1] = cam.bgColor.g;
-      p[o + 2] = cam.bgColor.b;
-      p[o + 3] = cam.bgColor.a;
-      p[o + 4] = cam.useBgAlphaBlending ? 1f : 0f;
-    }
-    desktopTransparencyRestoreCameraCount = n;
-    desktopTransparencyRestoreSnapshotValid = true;
-  }
-
-  private void ensureDesktopTransparencyCameraSnapshotCapacity(int cameraCount) {
-    int need = cameraCount * FLOATS_PER_CAMERA_BACKDROP;
-    if (desktopTransparencyRestoreCamerasPacked.length >= need) {
-      return;
-    }
-    desktopTransparencyRestoreCamerasPacked =
-        new float[Math.max(need, desktopTransparencyRestoreCamerasPacked.length * 2)];
-  }
-
-  private void restoreDesktopTransparencyBackdrop() {
-    float[] g = desktopTransparencyRestoreGameRgba;
-    if (desktopTransparencyRestoreSnapshotValid) {
-      bgColor.r = g[0];
-      bgColor.g = g[1];
-      bgColor.b = g[2];
-      bgColor.a = g[3];
-    } else {
-      bgColor.set(FlixelColor.BLACK);
-    }
-    FlixelCamera[] camItems = Flixel.cameras.getItems();
-    int n = Flixel.cameras.getSize();
-    int saved = desktopTransparencyRestoreCameraCount;
-    float[] p = desktopTransparencyRestoreCamerasPacked;
-    for (int i = 0; i < n; i++) {
-      FlixelCamera cam = camItems[i];
-      if (cam == null) {
-        continue;
-      }
-      if (desktopTransparencyRestoreSnapshotValid && i < saved) {
-        int o = i * FLOATS_PER_CAMERA_BACKDROP;
-        cam.bgColor.r = p[o];
-        cam.bgColor.g = p[o + 1];
-        cam.bgColor.b = p[o + 2];
-        cam.bgColor.a = p[o + 3];
-        cam.useBgAlphaBlending = p[o + 4] != 0f;
-      } else {
-        cam.useBgAlphaBlending = false;
-        cam.bgColor.set(FlixelColor.BLACK);
-      }
-    }
-  }
-
-  private void clearDesktopTransparencyRestoreSnapshot() {
-    desktopTransparencyRestoreSnapshotValid = false;
-    desktopTransparencyRestoreCameraCount = 0;
-    Arrays.fill(desktopTransparencyRestoreGameRgba, 0f);
-    Arrays.fill(desktopTransparencyRestoreCamerasPacked, 0f);
-  }
-
   public String getTitle() {
     return config.getTitle();
   }
@@ -1369,7 +978,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   @NotNull
-  public Config getConfig() {
+  public FlixelConfig getConfig() {
     return config;
   }
 
@@ -1504,380 +1113,5 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
    */
   public float getRawElapsed() {
     return rawElapsed;
-  }
-
-  /**
-   * Immutable startup configuration for a {@link FlixelGame}.
-   *
-   * <p>Build one via {@link Builder}, pass it to your {@link FlixelGame} constructor, and the
-   * framework reads it once at startup. No property can change after {@link Builder#build()} returns,
-   * so there is never any ambiguity between what was configured and what the game is running with.
-   *
-   * <p>Most properties have sensible defaults (640x360, 60 fps, VSync on, windowed), so you only
-   * need to set what differs. Two properties deserve special attention:
-   *
-   * <ul>
-   *   <li>{@code title} - the text shown in the game window's title bar. Required; pass it to the
-   *       {@link Builder} constructor.</li>
-   *   <li>{@code company} - the studio or organization name. Strongly recommended whenever the game
-   *       uses {@link FlixelSave}. The save system combines it with the title to build the
-   *       OS-specific data directory ({@code %APPDATA%\Company\Title\saves\} on Windows,
-   *       {@code ~/Library/Application Support/Company/Title/saves/} on macOS,
-   *       {@code $XDG_DATA_HOME/Company/Title/saves/} on Linux). Calling
-   *       {@link FlixelSave#bind(String, String)} without a company name is an error.</li>
-   * </ul>
-   *
-   * <pre>{@code
-   * new FlixelGame.Config.Builder("My Game")
-   *     .company("My Studio")
-   *     .version("1.0.0")
-   *     .size(1280, 720)
-   *     .build()
-   * }</pre>
-   *
-   * @see FlixelGame
-   * @see Builder
-   */
-  public static final class Config {
-
-    @NotNull
-    private final String title;
-    @NotNull
-    private final String company;
-    @NotNull
-    private final String version;
-
-    private final int width;
-    private final int height;
-    private final int framerate;
-    private final int renderWidth;
-    private final int renderHeight;
-
-    private final boolean vsync;
-    private final boolean fullscreen;
-    private final boolean renderResolutionEnabled;
-    private final boolean renderSmooth;
-    private final boolean transparentFramebuffer;
-
-    private Config(@NotNull Builder builder) {
-      this.title = builder.title;
-      this.company = builder.company;
-      this.version = builder.version;
-      this.width = builder.width;
-      this.height = builder.height;
-      this.framerate = builder.framerate;
-      this.renderWidth = builder.renderWidth;
-      this.renderHeight = builder.renderHeight;
-      this.vsync = builder.vsync;
-      this.fullscreen = builder.fullscreen;
-      this.renderResolutionEnabled = builder.renderResolutionEnabled;
-      this.renderSmooth = builder.renderSmooth;
-      this.transparentFramebuffer = builder.transparentFramebuffer;
-    }
-
-    @NotNull
-    public String getTitle() {
-      return title;
-    }
-
-    @NotNull
-    public String getCompany() {
-      return company;
-    }
-
-    @NotNull
-    public String getVersion() {
-      return version;
-    }
-
-    public int getWidth() {
-      return width;
-    }
-
-    public int getHeight() {
-      return height;
-    }
-
-    public int getFramerate() {
-      return framerate;
-    }
-
-    /**
-     * Returns {@code true} when the game renders at a fixed resolution and upscales to the window.
-     *
-     * <p>Enabled by default; see {@link Builder#renderResolution(int, int)}.
-     *
-     * @return {@code true} when a fixed render resolution is configured.
-     */
-    public boolean isRenderResolutionEnabled() {
-      return renderResolutionEnabled;
-    }
-
-    /**
-     * Returns the fixed render width in pixels, falling back to the design width when none was set.
-     *
-     * @return The render width to draw the scene at.
-     */
-    public int getRenderWidth() {
-      return renderWidth > 0 ? renderWidth : width;
-    }
-
-    /**
-     * Returns the fixed render height in pixels, falling back to the design height when none was set.
-     *
-     * @return The render height to draw the scene at.
-     */
-    public int getRenderHeight() {
-      return renderHeight > 0 ? renderHeight : height;
-    }
-
-    /**
-     * Returns {@code true} for smooth (linear) upscaling, or {@code false} for nearest-neighbor.
-     *
-     * @return {@code true} when linear filtering is used during upscaling.
-     */
-    public boolean isRenderSmooth() {
-      return renderSmooth;
-    }
-
-    public boolean isVsync() {
-      return vsync;
-    }
-
-    public boolean isFullscreen() {
-      return fullscreen;
-    }
-
-    public boolean getFullscreen() {
-      return fullscreen;
-    }
-
-    /**
-     * Returns whether an alpha-capable (transparent) default framebuffer was requested at launch.
-     *
-     * <p>When {@code true}, the launcher creates the window with compositing support so
-     * {@link FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop.
-     * When {@code false} (the default), the framebuffer is opaque and transparency has no effect.
-     *
-     * @return {@code true} when an alpha-capable framebuffer was requested.
-     * @see Builder#transparentFramebuffer(boolean)
-     * @see FlixelWindow#setTransparencyActive(boolean)
-     */
-    public boolean isTransparentFramebuffer() {
-      return transparentFramebuffer;
-    }
-
-    /**
-     * Fluent builder for {@link Config}.
-     *
-     * <p>The game title is required and must be supplied to the constructor. Everything else
-     * defaults to a safe value and can be set in any order before calling {@link #build()}.
-     *
-     * <p>The same builder instance must not be reused after {@link #build()} is called; create a
-     * new one instead.
-     *
-     * <pre>{@code
-     * FlixelGame.Config config = new FlixelGame.Config.Builder("My Game")
-     *     .company("My Studio")
-     *     .version("1.0.0")
-     *     .size(1280, 720)
-     *     .framerate(144)
-     *     .vsync(false)
-     *     .build();
-     * }</pre>
-     */
-    public static final class Builder {
-
-      @NotNull
-      private final String title;
-      @NotNull
-      private String company = "";
-      @NotNull
-      private String version = "";
-
-      private int width = 640;
-      private int height = 360;
-      private int framerate = 60;
-      private int renderWidth = 0;
-      private int renderHeight = 0;
-
-      private boolean vsync = true;
-      private boolean fullscreen = false;
-      private boolean renderResolutionEnabled = true;
-      private boolean renderSmooth = true;
-      private boolean transparentFramebuffer = false;
-
-      /**
-       * Creates a builder for a game with the given window title.
-       *
-       * @param title The title to display in the game window's title bar. Must not be null or empty.
-       * @throws IllegalArgumentException if {@code title} is null or empty.
-       */
-      public Builder(@NotNull String title) {
-        if (title == null || title.isEmpty()) {
-          throw new IllegalArgumentException("Game title cannot be null or empty.");
-        }
-        this.title = title;
-      }
-
-      /**
-       * Sets the company or studio name. Used by {@link FlixelSave} to build the OS-specific save
-       * directory.
-       *
-       * @param company The company or studio name.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder company(@NotNull String company) {
-        this.company = company != null ? company : "";
-        return this;
-      }
-
-      /**
-       * Sets the game version string (for example {@code "1.0.0"} or {@code "2.3.1-beta"}).
-       *
-       * @param version The version string.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder version(@NotNull String version) {
-        this.version = version != null ? version : "";
-        return this;
-      }
-
-      /**
-       * Sets the starting window size and the dimensions of the first camera. Also sets
-       * the render resolution by default.
-       *
-       * @param width The width in pixels.
-       * @param height The height in pixels.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder size(int width, int height) {
-        this.width = width;
-        this.height = height;
-        return this;
-      }
-
-      /**
-       * Sets the target update and render framerate.
-       *
-       * @param framerate Frames per second.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder framerate(int framerate) {
-        this.framerate = framerate;
-        return this;
-      }
-
-      /**
-       * Controls whether VSync is requested at startup.
-       *
-       * @param vsync {@code true} to cap rendering to the monitor's refresh rate.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder vsync(boolean vsync) {
-        this.vsync = vsync;
-        return this;
-      }
-
-      /**
-       * Controls whether the game starts in fullscreen mode.
-       *
-       * @param fullscreen {@code true} to start fullscreen.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder fullscreen(boolean fullscreen) {
-        this.fullscreen = fullscreen;
-        return this;
-      }
-
-      /**
-       * Sets a fixed render resolution the whole scene is drawn at before being upscaled to the
-       * window, with smooth (linear) filtering.
-       *
-       * <p>A fixed render resolution is <b>on by default</b> at the design size set by
-       * {@link #size(int, int)}, so most games do not need to call this. Use it to render at a
-       * different size than the design size: below it (for example {@code 960x540} for a
-       * {@code 1280x720} game) as a performance option, or above it to supersample for smoother
-       * edges. Keep the same aspect ratio as the design size to avoid distortion. To turn the
-       * feature off entirely and draw straight to the window, call {@link #disableRenderResolution()}.
-       *
-       * @param width The fixed render width in pixels.
-       * @param height The fixed render height in pixels.
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder renderResolution(int width, int height) {
-        return renderResolution(width, height, true);
-      }
-
-      /**
-       * Sets a fixed render resolution and chooses how it is filtered when upscaled to the window.
-       *
-       * @param width The fixed render width in pixels.
-       * @param height The fixed render height in pixels.
-       * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor (crisp
-       *     pixel art).
-       * @return This builder, for chaining.
-       * @see #renderResolution(int, int)
-       */
-      @NotNull
-      public Builder renderResolution(int width, int height, boolean smooth) {
-        this.renderWidth = width;
-        this.renderHeight = height;
-        this.renderSmooth = smooth;
-        this.renderResolutionEnabled = true;
-        return this;
-      }
-
-      /**
-       * Turns off the fixed render resolution so the scene draws straight to the window at its real
-       * size. This opts out of the on-by-default behavior described in
-       * {@link #renderResolution(int, int)}.
-       *
-       * @return This builder, for chaining.
-       */
-      @NotNull
-      public Builder disableRenderResolution() {
-        this.renderResolutionEnabled = false;
-        return this;
-      }
-
-      /**
-       * Requests an alpha-capable (transparent) default framebuffer at launch.
-       *
-       * <p>When {@code true}, the window is created with compositor support so
-       * {@link FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop
-       * at runtime. Without this, {@code setTransparencyActive(true)} renders transparent areas as
-       * black because the back buffer has no alpha channel.
-       *
-       * <p><b>WARNING:</b> This can cause minor performance overhead on low-end devices, so only
-       * enable it when your game actually uses desktop transparency.
-       *
-       * @param transparentFramebuffer {@code true} to request an alpha-capable framebuffer.
-       * @return This builder, for chaining.
-       * @see FlixelWindow#setTransparencyActive(boolean)
-       */
-      @NotNull
-      public Builder transparentFramebuffer(boolean transparentFramebuffer) {
-        this.transparentFramebuffer = transparentFramebuffer;
-        return this;
-      }
-
-      /**
-       * Builds the immutable {@link Config} from the values set on this builder.
-       *
-       * @return A new, immutable config instance.
-       */
-      @NotNull
-      public Config build() {
-        return new Config(this);
-      }
-    }
   }
 }
