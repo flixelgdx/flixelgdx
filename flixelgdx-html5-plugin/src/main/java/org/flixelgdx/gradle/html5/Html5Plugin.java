@@ -36,7 +36,9 @@ import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Zip;
+import org.teavm.gradle.api.SourceFilePolicy;
 import org.teavm.gradle.api.TeaVMExtension;
+import org.teavm.gradle.api.WasmDebugInfoLevel;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -430,17 +432,18 @@ public class Html5Plugin implements Plugin<Project> {
       throw new RuntimeException("[FlixelGDX] Could not start dev server on port " + port + ": " + e.getMessage(), e);
     }
 
-    Map<String, String> mimeTypes = Map.of(
-        "html", "text/html; charset=utf-8",
-        "js", "application/javascript",
-        "css", "text/css",
-        "png", "image/png",
-        "jpg", "image/jpeg",
-        "jpeg", "image/jpeg",
-        "gif", "image/gif",
-        "txt", "text/plain",
-        "ttf", "font/ttf",
-        "wasm", "application/wasm");
+    Map<String, String> mimeTypes = Map.ofEntries(
+        Map.entry("html", "text/html; charset=utf-8"),
+        Map.entry("js", "application/javascript"),
+        Map.entry("map", "application/json"),
+        Map.entry("css", "text/css"),
+        Map.entry("png", "image/png"),
+        Map.entry("jpg", "image/jpeg"),
+        Map.entry("jpeg", "image/jpeg"),
+        Map.entry("gif", "image/gif"),
+        Map.entry("txt", "text/plain"),
+        Map.entry("ttf", "font/ttf"),
+        Map.entry("wasm", "application/wasm"));
 
     server.createContext("/", (HttpExchange exchange) -> {
       String urlPath = exchange.getRequestURI().getPath();
@@ -522,8 +525,25 @@ public class Html5Plugin implements Plugin<Project> {
       return;
     }
 
+    Html5Extension ext = project.getExtensions().getByType(Html5Extension.class);
     boolean jsEnabled = teavm.getJs().getAddedToWebApp().getOrElse(false);
     boolean wasmEnabled = teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
+
+    // When the build is configured as a debug build, automatically enable source maps and full
+    // debug info so browser DevTools can show Java class names, method names, and line numbers in
+    // stack traces instead of mangled WASM addresses or generated JS function names.
+    // convention() is used so a developer can still override any of these explicitly.
+    if (ext.getMode().isPresent() && ext.getMode().get() == Html5Mode.DEBUG) {
+      if (jsEnabled) {
+        teavm.getJs().getSourceMap().convention(true);
+        teavm.getJs().getSourceFilePolicy().convention(SourceFilePolicy.COPY);
+      }
+      if (wasmEnabled) {
+        teavm.getWasmGC().getSourceMap().convention(true);
+        teavm.getWasmGC().getSourceFilePolicy().convention(SourceFilePolicy.COPY);
+        teavm.getWasmGC().getDebugInfoLevel().convention(WasmDebugInfoLevel.FULL);
+      }
+    }
     String jsBundle = teavm.getJs().getTargetFileName().getOrElse(DEFAULT_JS_BUNDLE);
     String wasmBundle = teavm.getWasmGC().getTargetFileName().getOrElse(DEFAULT_WASM_BUNDLE);
 
