@@ -644,6 +644,18 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @NotNull
   @Override
+  public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
+    String dir = shaderVariantDir(api);
+    byte[] vertex = readShaderResource("shaders/" + name + "/" + dir + "/vs.bin");
+    byte[] fragment = readShaderResource("shaders/" + name + "/" + dir + "/fs.bin");
+    if (vertex.length == 0 || fragment.length == 0) {
+      return FlixelUnsupportedShader.INSTANCE;
+    }
+    return compileShaderProgram(vertex, fragment);
+  }
+
+  @NotNull
+  @Override
   public FlixelShaderProgram compileShaderProgram(byte @NotNull [] vertex, byte @NotNull [] fragment) {
     if (vertex.length == 0 || fragment.length == 0) {
       return FlixelUnsupportedShader.INSTANCE;
@@ -973,7 +985,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   /** Loads the precompiled sprite shader program for the active renderer, or {@code -1} when absent. */
   private short loadSpriteProgram() {
-    String dir = shaderDirFromApi(api);
+    String dir = shaderVariantDir(api);
     byte[] vs = readShaderResource("org/flixelgdx/shaders/" + dir + "/vs_sprite.bin");
     byte[] fs = readShaderResource("org/flixelgdx/shaders/" + dir + "/fs_sprite.bin");
     if (vs.length == 0 || fs.length == 0) {
@@ -1008,8 +1020,17 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   }
 
   /** Returns the shader subfolder that corresponds to a given graphics API. */
-  private static String shaderDirFromApi(@NotNull FlixelGraphicsApi api) {
-    return FlixelGraphicsManager.shaderVariantDir(api);
+  private static String shaderVariantDir(@NotNull FlixelGraphicsApi api) {
+    if (api == FlixelGraphicsApi.Direct3D11 || api == FlixelGraphicsApi.Direct3D12) {
+      return "dx11";
+    }
+    if (api == FlixelGraphicsApi.Metal) {
+      return "metal";
+    }
+    if (api == FlixelGraphicsApi.Vulkan) {
+      return "spirv";
+    }
+    return "glsl";
   }
 
   private static byte @NotNull [] readShaderResource(@NotNull String path) {

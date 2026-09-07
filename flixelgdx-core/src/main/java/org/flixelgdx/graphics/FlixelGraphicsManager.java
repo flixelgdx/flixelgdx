@@ -30,8 +30,6 @@ import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
@@ -425,32 +423,21 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * Loads a shader the FlixelGDX Gradle plugin cross-compiled at build time and compiles the
-   * variant matching the active renderer.
+   * Loads a shader compiled at build time and compiles the variant matching the active renderer.
    *
-   * <p>The plugin writes each shader's per-renderer bytecode to
-   * {@code shaders/<name>/<variant>/vs.bin} and {@code fs.bin} on the classpath, where the variant
-   * folder is chosen from {@link #getApi()} by {@link #shaderVariantDir(FlixelGraphicsApi)}. This
-   * method reads the right pair and hands the bytes to
-   * {@link #compileShaderProgram(byte[], byte[])}. Game code uses {@code FlixelShader.load(String)}
+   * <p>Each backend that supports precompiled shaders overrides this method to locate and load the
+   * right variant for its rendering API. Game code uses {@link org.flixelgdx.util.FlixelShader#load}
    * rather than calling this directly.
    *
-   * <p>When the shader resource is missing (for example, a Direct3D variant a build could not
-   * produce without an FXC compiler), this returns {@link FlixelUnsupportedShader} instead of
-   * throwing, so a missing effect degrades gracefully to an unshaded draw.
+   * <p>The default returns {@link FlixelUnsupportedShader} so headless and pre-startup sessions
+   * degrade gracefully rather than crashing.
    *
    * @param name The shader name declared in the {@code shaders} build block.
    * @return A compiled {@link FlixelShaderProgram}; never {@code null}.
    */
   @NotNull
   default FlixelShaderProgram compileShaderProgram(@NotNull String name) {
-    String dir = shaderVariantDir(getApi());
-    byte[] vertex = readShaderResource("shaders/" + name + "/" + dir + "/vs.bin");
-    byte[] fragment = readShaderResource("shaders/" + name + "/" + dir + "/fs.bin");
-    if (vertex.length == 0 || fragment.length == 0) {
-      return FlixelUnsupportedShader.INSTANCE;
-    }
-    return compileShaderProgram(vertex, fragment);
+    return FlixelUnsupportedShader.INSTANCE;
   }
 
   /**
@@ -473,52 +460,6 @@ public interface FlixelGraphicsManager {
   @NotNull
   default FlixelShaderProgram compileShaderSource(@NotNull String vertexSource, @NotNull String fragmentSource) {
     return FlixelUnsupportedShader.INSTANCE;
-  }
-
-  /**
-   * Maps a graphics API to the resource sub-directory holding its compiled shader variant.
-   *
-   * <p>The folder names match what the FlixelGDX shader plugin emits: {@code dx11} for Direct3D,
-   * {@code metal} for Metal, {@code spirv} for Vulkan, and {@code glsl} for OpenGL and every other
-   * renderer.
-   *
-   * @param api The active graphics API.
-   * @return The variant directory name.
-   */
-  @NotNull
-  static String shaderVariantDir(@NotNull FlixelGraphicsApi api) {
-    if (api == FlixelGraphicsApi.Direct3D11 || api == FlixelGraphicsApi.Direct3D12) {
-      return "dx11";
-    }
-    if (api == FlixelGraphicsApi.Metal) {
-      return "metal";
-    }
-    if (api == FlixelGraphicsApi.Vulkan) {
-      return "spirv";
-    }
-    return "glsl";
-  }
-
-  /**
-   * Reads a classpath resource fully into a byte array, returning an empty array when it is
-   * absent or cannot be read.
-   *
-   * @param path The classpath resource path.
-   * @return The resource bytes, or an empty array when unavailable.
-   */
-  private static byte @NotNull [] readShaderResource(@NotNull String path) {
-    ClassLoader loader = Thread.currentThread().getContextClassLoader();
-    if (loader == null) {
-      loader = FlixelGraphicsManager.class.getClassLoader();
-    }
-    try (InputStream in = loader.getResourceAsStream(path)) {
-      if (in == null) {
-        return new byte[0];
-      }
-      return in.readAllBytes();
-    } catch (IOException e) {
-      return new byte[0];
-    }
   }
 
   /**
