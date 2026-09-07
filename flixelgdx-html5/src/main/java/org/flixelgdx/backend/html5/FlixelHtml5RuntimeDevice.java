@@ -90,14 +90,15 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    *
    * <p>{@code window.onerror} handles uncaught JavaScript exceptions and WebAssembly traps.
    * {@code window.unhandledrejection} handles bare Promise rejections. Both are installed as
-   * self-contained JavaScript functions with no callback into Java; they log to
-   * {@code console.error}, show the DOM crash overlay, and persist the report to
-   * {@code localStorage}.
+   * self-contained JavaScript functions with no callback into Java via
+   * {@code window.__flixelShowCrash}, which also handles crash persistence and the Copy report
+   * overlay.
    *
-   * <p>The handler is wrapped so that Java-side crashes also persist the report to
-   * {@code localStorage} under {@code flixelgdx_last_crash}. This keeps crash persistence out of
-   * {@link FlixelHtml5Alerter}, which would otherwise persist every {@code alert.error()} call
-   * regardless of whether it was caused by an actual crash.
+   * <p>The handler is wrapped so that Java-side crashes also go through
+   * {@code window.__flixelShowCrash} before the platform-agnostic handler runs. Calling it first
+   * ensures the crash overlay (with its Copy report button) is in place before
+   * {@code alert.error()} is called inside the handler; the duplicate-overlay guard in
+   * {@link FlixelHtml5Alerter} then skips creating a second one.
    *
    * <p>A {@code @JSFunctor} callback is intentionally not used here. TeaVM 0.13.0's WasmGC code
    * generator produces a nameless function statement ({@code function() {}}) instead of an
@@ -112,11 +113,13 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
     Objects.requireNonNull(handler, "handler cannot be null");
     this.crashHandler = (thread, throwable) -> {
-      handler.onCrash(thread, throwable);
       String threadName = thread != null ? thread.getName() : "main";
       String msg = "There was an uncaught exception on thread \"" + threadName + "\"!\n"
           + FlixelExceptionUtil.getFullExceptionMessage(throwable);
-      persistCrash("Uncaught Exception", msg);
+      // Show the crash overlay (Copy report) and persist before delegating. alert.error() inside
+      // the handler skips creating a second overlay because the id is already present.
+      showJavaCrashOverlay("Uncaught Exception", msg);
+      handler.onCrash(thread, throwable);
     };
     installJsErrorHandlers();
   }
@@ -128,11 +131,13 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
 
   /**
    * Installs {@code window.onerror} and {@code window.unhandledrejection} as self-contained
-   * JavaScript handlers. Both handlers log to {@code console.error}, persist the report to
-   * {@code localStorage}, and show the DOM crash overlay without calling back into Java.
+   * JavaScript handlers and defines {@code window.__flixelShowCrash} as the shared crash overlay
+   * function. Both browser error events call through it, and Java-side crashes call it via
+   * {@link #showJavaCrashOverlay}. It logs to {@code console.error}, persists the report to
+   * {@code localStorage}, and shows the crash overlay with a Copy report button.
    */
   @JSBody(script = """
-      function flixelShowJsCrash(title, message) {
+      window.__flixelShowCrash = function(title, message) {
         console.error('[FlixelGDX] ' + title + ': ' + message);
         try {
           localStorage.setItem('flixelgdx_last_crash', JSON.stringify({
@@ -179,33 +184,27 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
         box.appendChild(btn);
         overlay.appendChild(box);
         document.body.appendChild(overlay);
-      }
+      };
       window.onerror = function(msg, src, line, col, err) {
         var detail = err ? (err.stack || err.message || msg) : (msg || 'Unknown JavaScript error');
         detail += '\\n[' + (src || '?') + ':' + (line || '?') + ']';
-        flixelShowJsCrash('JavaScript Error', detail);
+        window.__flixelShowCrash('JavaScript Error', detail);
         return true;
       };
       window.addEventListener('unhandledrejection', function(event) {
         var r = event.reason;
         var reason = r ? (r.stack || r.message || String(r)) : 'Unknown rejection reason';
-        flixelShowJsCrash('Promise Rejection', reason);
+        window.__flixelShowCrash('Promise Rejection', reason);
       });
       """)
   private static native void installJsErrorHandlers();
 
   @JSBody(params = { "title", "message" }, script = """
-      try {
-        localStorage.setItem('flixelgdx_last_crash', JSON.stringify({
-          time: new Date().toISOString(),
-          title: title,
-          message: message,
-          ua: navigator.userAgent,
-          url: window.location.href
-        }));
-      } catch (e) {}
+      if (typeof window.__flixelShowCrash === 'function') {
+        window.__flixelShowCrash(title, message);
+      }
       """)
-  private static native void persistCrash(String title, String message);
+  private static native void showJavaCrashOverlay(String title, String message);
 
   @JSBody(script = """
       return (window.performance && window.performance.memory)

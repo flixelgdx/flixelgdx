@@ -169,6 +169,11 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
    * clamp it; every later frame reports the real time elapsed since the previous drawn frame.
    *
+   * <p>When a DOM alert overlay is visible (info or warn), {@code window.__flixelAlertPaused} is
+   * {@code true}. While that flag is set, the game is not updated or drawn and the timestamp is
+   * reset so the first frame after the overlay is dismissed does not report the paused duration as
+   * elapsed time. This mirrors the blocking behavior of SDL modal dialogs on desktop.
+   *
    * <p>The frame body is wrapped in a try-catch so any unhandled Java exception thrown during an
    * update or draw call is routed through the installed {@link FlixelCrashHandler} rather than
    * propagating silently into the browser as an opaque JavaScript or WebAssembly error. The next
@@ -177,6 +182,11 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * @param timestamp The browser-supplied frame time in milliseconds.
    */
   private void onAnimationFrame(double timestamp) {
+    if (isAlertPaused()) {
+      lastTimestamp = -1.0;
+      Window.requestAnimationFrame(this::onAnimationFrame);
+      return;
+    }
     try {
       float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
       lastTimestamp = timestamp;
@@ -194,6 +204,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     }
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
+
+  @JSBody(script = "return !!window.__flixelAlertPaused;")
+  private static native boolean isAlertPaused();
 
   /**
    * Locates the canvas the game draws into, creating one under {@link #canvasId} if the page did

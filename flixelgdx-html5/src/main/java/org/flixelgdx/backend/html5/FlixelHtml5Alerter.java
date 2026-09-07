@@ -31,12 +31,12 @@ import org.teavm.jso.JSBody;
  *
  * <p>All three severity levels emit to the browser console and show a full-screen DOM overlay on
  * top of the canvas. The title color distinguishes severity: white for info, yellow for warn, and
- * red for error. Every overlay includes a button that copies a structured report (game name,
- * timestamp, browser, URL, and full message) to the clipboard.
+ * red for error. Every overlay pauses the game loop (via {@code window.__flixelAlertPaused}) and
+ * shows an OK button that dismisses it and resumes the loop.
  *
- * <p>Crash persistence to {@code localStorage} is intentionally not part of this class. It is
- * handled by the crash handler wrapper in {@link FlixelHtml5RuntimeDevice} so that only actual
- * crashes are stored, not every {@code alert.error()} call.
+ * <p>The Copy report button and crash persistence to {@code localStorage} are handled exclusively
+ * by the crash overlay path in {@link FlixelHtml5RuntimeDevice}, not by this alerter, so that
+ * only actual crashes carry those behaviors.
  */
 public class FlixelHtml5Alerter implements FlixelAlerter {
 
@@ -45,7 +45,7 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
     String safeTitle = title != null ? title : "Info";
     String safeMessage = message != null ? message : "";
     consoleLog("[FlixelGDX] " + label(safeTitle, safeMessage));
-    showDomAlert(safeTitle, safeMessage, "#ffffff", "Info Report");
+    showDomAlert(safeTitle, safeMessage, "#ffffff");
   }
 
   @Override
@@ -53,22 +53,24 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
     String safeTitle = title != null ? title : "Warning";
     String safeMessage = message != null ? message : "";
     consoleWarn("[FlixelGDX] " + label(safeTitle, safeMessage));
-    showDomAlert(safeTitle, safeMessage, "#f5c518", "Warning Report");
+    showDomAlert(safeTitle, safeMessage, "#f5c518");
   }
 
   /**
-   * Shows the DOM error overlay and logs to {@code console.error}. The overlay renders on top of
-   * the canvas with the title, full message, and a button to copy the report to the clipboard.
+   * Shows the DOM error overlay, logs to {@code console.error}, and pauses the game loop. The
+   * overlay shows an OK button that dismisses it and resumes the loop.
    *
-   * <p>Crash persistence to {@code localStorage} is the crash handler's responsibility, not the
-   * alerter's. This method only displays the overlay so it can be used for non-crash errors too.
+   * <p>Crash overlays (with a Copy report button) are shown separately by
+   * {@link FlixelHtml5RuntimeDevice} before the crash handler runs, so the crash-specific overlay
+   * is already in place when {@code alert.error()} is called from the crash path. The duplicate
+   * check at the top of {@code showDomAlert} prevents a second overlay from appearing.
    */
   @Override
   public void error(String title, String message) {
     String safeTitle = title != null ? title : "Error";
     String safeMessage = message != null ? message : "";
     consoleError("[FlixelGDX] " + label(safeTitle, safeMessage));
-    showDomAlert(safeTitle, safeMessage, "#e94560", "Crash Report");
+    showDomAlert(safeTitle, safeMessage, "#e94560");
   }
 
   private static String label(String title, String message) {
@@ -84,8 +86,20 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
     return title + ": " + message;
   }
 
-  @JSBody(params = { "title", "message", "titleColor", "reportLabel" }, script = """
+  /**
+   * Shows a full-screen DOM alert overlay with an OK button that dismisses it.
+   *
+   * <p>Sets {@code window.__flixelAlertPaused = true} before adding the overlay so the game
+   * loop's {@code requestAnimationFrame} callback stops updating while the alert is visible.
+   * Clicking OK clears the flag and removes the overlay, resuming the loop.
+   *
+   * <p>If an overlay with id {@code flixel-crash-overlay} is already present (placed by the crash
+   * handler before calling {@code alert.error()}), this method returns immediately so the crash
+   * overlay is not replaced by a generic error box.
+   */
+  @JSBody(params = { "title", "message", "titleColor" }, script = """
       if (!document.body || document.getElementById('flixel-crash-overlay')) { return; }
+      window.__flixelAlertPaused = true;
       var overlay = document.createElement('div');
       overlay.id = 'flixel-crash-overlay';
       overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);'
@@ -105,18 +119,10 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
       var btn = document.createElement('button');
       btn.style.cssText = 'background:#222;color:#ccc;border:1px solid #444;'
         + 'padding:5px 12px;cursor:pointer;font-family:monospace;font-size:0.8em;';
-      btn.textContent = 'Copy report';
-      var report = (document.title || 'Game') + ' ' + reportLabel + '\\n'
-        + new Date().toISOString() + '\\n'
-        + 'Browser: ' + navigator.userAgent + '\\n'
-        + 'URL: ' + window.location.href + '\\n\\n'
-        + title + '\\n' + message;
+      btn.textContent = 'OK';
       btn.onclick = function () {
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(report).catch(function () {});
-        }
-        btn.textContent = 'Copied';
-        setTimeout(function () { btn.textContent = 'Copy report'; }, 2000);
+        window.__flixelAlertPaused = false;
+        if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
       };
       box.appendChild(titleEl);
       box.appendChild(msgEl);
@@ -124,7 +130,7 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
       overlay.appendChild(box);
       document.body.appendChild(overlay);
       """)
-  private static native void showDomAlert(String title, String message, String titleColor, String reportLabel);
+  private static native void showDomAlert(String title, String message, String titleColor);
 
   @JSBody(params = "text", script = "console.log(text);")
   private static native void consoleLog(String text);
