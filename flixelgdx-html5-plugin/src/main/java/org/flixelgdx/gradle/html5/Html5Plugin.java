@@ -38,7 +38,6 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Zip;
 import org.teavm.gradle.api.SourceFilePolicy;
 import org.teavm.gradle.api.TeaVMExtension;
-import org.teavm.gradle.api.WasmDebugInfoLevel;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -544,12 +543,17 @@ public class Html5Plugin implements Plugin<Project> {
       }
     }
 
-    // Always generate full WasmGC debug info so the external .teadbg deobfuscation file is
-    // available. It is only fetched when the page is opened in debug mode at runtime, so it never
-    // reaches a release user. Gating generation on a build-time flag would break runtime debug mode
-    // (?flixel.mode=debug) for anyone who did not also set html5 { mode = 'debug' } in their build.
+    // Always enable WasmGC debug information so the stack deobfuscator works in debug mode.
+    // debugInformation = true has two effects:
+    //   1. The generateWasmGC task emits a companion .teadbg file (external debug symbols)
+    //      that the browser's TeaVM deobfuscator reads to resolve Java class names and line numbers.
+    //   2. The copyWasmGCRuntime task copies the deobfuscator WASM module alongside the bundle
+    //      (e.g., teavm-deobfuscator.wasm), which the page loads in debug mode.
+    // Neither file is fetched at runtime unless the page is opened in debug mode, so release
+    // users never download them. Gating this on a build-time flag would break ?flixel.mode=debug
+    // for anyone who did not also set html5 { mode = 'debug' } in their build.
     if (wasmEnabled) {
-      teavm.getWasmGC().getDebugInfoLevel().convention(WasmDebugInfoLevel.FULL);
+      teavm.getWasmGC().getDebugInformation().convention(true);
     }
     String jsBundle = teavm.getJs().getTargetFileName().getOrElse(DEFAULT_JS_BUNDLE);
     String wasmBundle = teavm.getWasmGC().getTargetFileName().getOrElse(DEFAULT_WASM_BUNDLE);
