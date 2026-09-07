@@ -31,6 +31,7 @@ import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.functional.FlixelPositional;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelMouseListener;
+import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -165,7 +166,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   /**
    * Call at end of frame after game logic (with
-   * {@link org.flixelgdx.input.keyboard.FlixelKeyInputManager#endFrame() FlixelKeyInputManager.endFrame()}). Resets
+   * {@link FlixelKeyInputManager#endFrame() FlixelKeyInputManager.endFrame()}). Resets
    * {@link #getScrollDeltaX()} and {@link #getScrollDeltaY()} to zero for the next frame.
    */
   @Override

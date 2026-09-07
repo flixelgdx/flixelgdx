@@ -24,9 +24,12 @@
 package org.flixelgdx.audio;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
 import org.jetbrains.annotations.NotNull;
@@ -36,19 +39,19 @@ import org.jetbrains.annotations.Nullable;
  * Central manager for all audio. {@link FlixelSound} instances, master volume,
  * sound groups (SFX and music), and focus-based pause/resume.
  *
- * <p>Access via {@link org.flixelgdx.Flixel#sound Flixel.sound}. Supports
+ * <p>Access via {@link Flixel#sound Flixel.sound}. Supports
  * separate groups for sound effects and music, global master volume, and
  * automatic pause when the game loses focus (and resume when it regains focus).
  *
  * <p>The platform's {@link FlixelSoundFactory} powers everything: install one before
- * {@link org.flixelgdx.Flixel#start Flixel.start} (the desktop launcher does this for you) and
+ * {@link Flixel#start Flixel.start} (the desktop launcher does this for you) and
  * the manager builds its groups and sounds through it. Most games only need
  * {@link #play}, {@link #playMusic}, and the volume controls; use {@link #create} when you want
  * a {@link FlixelSound} configured up front without hearing it yet.
  *
  * <p>For internal paths, sounds resolve through the asset pipeline: a loaded
  * {@link FlixelSoundSource} is used when present, otherwise the source is block-loaded first.
- * All file access goes through the {@link org.flixelgdx.file.FlixelFiles Flixel.files} seam, so
+ * All file access goes through the {@link FlixelFiles Flixel.files} seam, so
  * audio works identically from a folder, a packaged JAR, or any custom file root.
  */
 public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
@@ -128,9 +131,9 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * Destroys all non-persistent {@link FlixelSound} instances tracked by this manager, including
    * the current music track if it is not persistent.
    *
-   * <p>Called automatically by {@link org.flixelgdx.Flixel#switchState Flixel.switchState} on every state switch
-   * when the asset mode is {@link org.flixelgdx.asset.FlixelAssetMode#STANDARD FlixelAssetMode.STANDARD} or
-   * {@link org.flixelgdx.asset.FlixelAssetMode#AGGRESSIVE FlixelAssetMode.AGGRESSIVE}. Sounds whose {@link FlixelSound#isPersist()}
+   * <p>Called automatically by {@link Flixel#switchState Flixel.switchState} on every state switch
+   * when the asset mode is {@link FlixelAssetMode#STANDARD FlixelAssetMode.STANDARD} or
+   * {@link FlixelAssetMode#AGGRESSIVE FlixelAssetMode.AGGRESSIVE}. Sounds whose {@link FlixelSound#isPersist()}
    * flag is set survive the switch unchanged.
    *
    * <p>Sounds that were already destroyed (for example, via {@link FlixelSound#setAutoDestroy}) are
@@ -397,7 +400,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * <p>When {@code external} is {@code false}, reads or synchronously loads a
    * {@link FlixelSoundSource} through the asset manager and retains its handle for the sound's
    * lifetime. External paths read the file bytes from
-   * {@link org.flixelgdx.file.FlixelFiles#absolute Flixel.files.absolute} directly.
+   * {@link FlixelFiles#absolute Flixel.files.absolute} directly.
    *
    * @param path The path to the sound file.
    * @param external If {@code true}, the path is read from the absolute file root.
@@ -451,7 +454,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * Ticks all active sounds so that {@link FlixelSound#onComplete} fires and
    * {@link FlixelSound#setAutoDestroy auto-destroy} is honored.
    *
-   * <p>Called automatically by {@link org.flixelgdx.FlixelGame FlixelGame} every frame
+   * <p>Called automatically by {@link FlixelGame FlixelGame} every frame
    * inside the game-update block; do not call this manually.
    *
    * <p>Sounds whose {@link FlixelSound#isExists() exists} flag is {@code false} (e.g.

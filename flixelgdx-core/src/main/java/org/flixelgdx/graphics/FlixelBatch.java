@@ -24,6 +24,7 @@
 package org.flixelgdx.graphics;
 
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * The 2D sprite batch: collects textured quads and submits them to the GPU in as few draw calls
  * as possible.
  *
- * <p>Every {@link org.flixelgdx.functional.FlixelDrawable FlixelDrawable} in the framework renders
+ * <p>Every {@link FlixelDrawable FlixelDrawable} in the framework renders
  * through the shared batch returned by {@link FlixelGraphicsManager#getBatch()}. The batch is
  * implemented by the active graphics backend, so game code drawing through this interface runs
  * unchanged on every platform.
@@ -146,7 +147,7 @@ public interface FlixelBatch extends FlixelDestroyable {
    *
    * <p>Each vertex is five floats in this exact order: {@code x}, {@code y} (world position),
    * {@code u}, {@code v} (texture coordinates in {@code [0, 1]}), and a packed color float from
-   * {@link org.flixelgdx.util.FlixelColor#toFloatBits()}. Four consecutive vertices form one quad,
+   * {@link FlixelColor#toFloatBits()}. Four consecutive vertices form one quad,
    * wound bottom-left, bottom-right, top-right, top-left. The batch's tint, blend mode, shader, and
    * transforms still apply, exactly as they do for the other overloads.
    *

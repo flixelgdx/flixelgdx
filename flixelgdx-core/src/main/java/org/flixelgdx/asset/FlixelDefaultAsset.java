@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.asset;
 
+import org.flixelgdx.audio.FlixelSoundSource;
+import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -33,8 +35,8 @@ import java.util.Objects;
  *
  * <p>The handle looks its content up in the owning manager's raw cache on each
  * {@link #get()}, block-loading it when it was never queued. Types with richer behavior
- * ({@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} for textures,
- * {@link org.flixelgdx.audio.FlixelSoundSource FlixelSoundSource} for audio) implement
+ * ({@link FlixelGraphic FlixelGraphic} for textures,
+ * {@link FlixelSoundSource FlixelSoundSource} for audio) implement
  * {@link FlixelAsset} themselves instead.
  *
  * @param <T> The content type game code receives from {@link #get()} (e.g. {@link String}).

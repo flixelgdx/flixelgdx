@@ -24,6 +24,7 @@
 package org.flixelgdx.util;
 
 import org.flixelgdx.collections.FlixelCharArray;
+import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -149,7 +150,7 @@ public class FlixelString implements CharSequence {
 
   /**
    * Trims the internal storage to the current length. Suitable for teardown paths (for example
-   * {@link org.flixelgdx.text.FlixelText#destroy() FlixelText.destroy()}) but not for per-frame use.
+   * {@link FlixelText#destroy() FlixelText.destroy()}) but not for per-frame use.
    */
   public void trimToSize() {
     buffer.trimToSize();

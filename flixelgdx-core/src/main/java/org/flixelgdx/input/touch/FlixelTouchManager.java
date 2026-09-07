@@ -25,6 +25,7 @@ package org.flixelgdx.input.touch;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.math.FlixelVector;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Multitouch input manager whose state is driven by {@link FlixelTouchListener} callbacks.
  *
- * <p>Access via {@link org.flixelgdx.Flixel#touches Flixel.touches} after the framework is
+ * <p>Access via {@link Flixel#touches Flixel.touches} after the framework is
  * initialized. The manager tracks up to {@link #getMaxPointers()} simultaneous fingers in the
  * {@link #list} array. Each slot is a reused {@link FlixelTouch} instance; slot {@code 0} always
  * corresponds to pointer index {@code 0} (the first finger), slot {@code 1} to index {@code 1},
@@ -251,7 +252,7 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   /**
    * Clears per-frame edge flags ({@link FlixelTouch#justPressed()},
    * {@link FlixelTouch#justReleased()}, {@link FlixelTouch#justCancelled()}) for all pointers.
-   * Called once per frame by {@link org.flixelgdx.FlixelGame#endFrame() FlixelGame.endFrame()} after game logic and drawing finish.
+   * Called once per frame by {@link FlixelGame#endFrame() FlixelGame.endFrame()} after game logic and drawing finish.
    */
   @Override
   public void endFrame() {

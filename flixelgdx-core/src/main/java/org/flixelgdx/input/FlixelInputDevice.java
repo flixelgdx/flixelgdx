@@ -23,13 +23,14 @@
  */
 package org.flixelgdx.input;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 
 /**
  * The low-level input backend: the one interface each platform implements so the framework can read
  * the keyboard and pointer without naming a specific windowing library. Reached through
- * {@link org.flixelgdx.Flixel#input Flixel.input}.
+ * {@link Flixel#input Flixel.input}.
  *
  * <p>Input arrives two complementary ways. Framework managers (keyboard, mouse, touch) <b>listen</b>:
  * they register a {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, or

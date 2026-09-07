@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Helper class related to {@link org.flixelgdx.FlixelSprite FlixelSprite}.
+ * Helper class related to {@link FlixelSprite FlixelSprite}.
  *
  * <p>These utilities are designed to work with FlixelGDX's normal Batch-based draw flow.
  * Everything draws through the shared batch; no separate shape renderer is involved.
@@ -71,7 +71,7 @@ public final class FlixelSpriteUtil {
    * {@link FlixelGraphic}, and registers it with the asset manager; callers must not destroy
    * the texture, since its lifecycle follows the asset manager.
    *
-   * @param assets Non-null manager, typically {@link org.flixelgdx.Flixel#assets Flixel.assets}.
+   * @param assets Non-null manager, typically {@link Flixel#assets Flixel.assets}.
    * @return The shared white pixel frame; never {@code null}.
    */
   @NotNull

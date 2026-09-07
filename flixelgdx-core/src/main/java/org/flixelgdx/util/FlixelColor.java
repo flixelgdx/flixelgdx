@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.util;
 
+import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -231,7 +233,7 @@ public class FlixelColor {
    *
    * <p>The bits are laid out as ABGR8888 (alpha in the highest byte), the order the sprite batch's
    * per-vertex color expects. This is meant for building custom vertex arrays passed to
-   * {@link org.flixelgdx.graphics.FlixelBatch#draw(org.flixelgdx.graphics.FlixelTexture, float[], int, int)};
+   * {@link FlixelBatch#draw(FlixelTexture, float[], int, int)};
    * for normal drawing, tint through the batch or sprite instead.
    *
    * @return This color packed as ABGR8888, reinterpreted as a float.

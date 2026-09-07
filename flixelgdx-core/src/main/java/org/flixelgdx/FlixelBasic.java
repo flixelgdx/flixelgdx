@@ -24,6 +24,8 @@
 package org.flixelgdx;
 
 import org.flixelgdx.collections.FlixelPool;
+import org.flixelgdx.collections.FlixelPoolable;
+import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelExistable;
 import org.flixelgdx.functional.IFlixelBasic;
 import org.flixelgdx.graphics.FlixelBatch;
@@ -36,14 +38,14 @@ import org.jetbrains.annotations.Nullable;
  * The most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
  * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
  * It implements {@link IFlixelBasic}, the full contract used by {@link FlixelState} and
- * {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}. The existence and active flags
+ * {@link FlixelBasicGroup FlixelBasicGroup}. The existence and active flags
  * ({@link #exists}, {@link #active}) are defined by {@link FlixelExistable}.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
  * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
  * it clears lifecycle state and, in subclasses such as {@link FlixelSprite}, releases graphics and
- * other resources. {@link #reset()} (the {@link org.flixelgdx.collections.FlixelPoolable} hook) delegates to
- * {@link #destroy()}, so returning an instance to a {@link org.flixelgdx.collections.FlixelPool} cleans it up.
+ * other resources. {@link #reset()} (the {@link FlixelPoolable} hook) delegates to
+ * {@link #destroy()}, so returning an instance to a {@link FlixelPool} cleans it up.
  *
  * <table border="1">
  *   <caption><strong>Lifecycle cheat sheet</strong></caption>
@@ -111,7 +113,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
   public boolean alive = true;
 
   /**
-   * Controls whether {@link #update(float)} and {@link org.flixelgdx.functional.FlixelDrawable#draw(FlixelBatch)} are automatically called.
+   * Controls whether {@link #update(float)} and {@link FlixelDrawable#draw(FlixelBatch)} are automatically called.
    *
    * @see FlixelExistable#isExists()
    */

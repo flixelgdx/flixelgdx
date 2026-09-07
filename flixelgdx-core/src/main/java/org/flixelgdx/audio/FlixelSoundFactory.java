@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.audio;
 
+import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>One implementation is installed on {@link FlixelSoundManager} per platform (miniaudio via
  * JNI on desktop and Android, the Web Audio API on web) before
- * {@link org.flixelgdx.Flixel#start Flixel.start} runs. Game code rarely touches the factory
+ * {@link Flixel#start Flixel.start} runs. Game code rarely touches the factory
  * directly; it plays audio through {@code Flixel.sound.play(...)} and
  * {@code Flixel.sound.playMusic(...)}, or creates silent-until-played instances with
  * {@code Flixel.sound.create(...)}.

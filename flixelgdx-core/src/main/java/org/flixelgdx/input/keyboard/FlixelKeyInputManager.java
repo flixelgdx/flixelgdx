@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.collections.FlixelIntSet;
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelInputManager;
 import org.flixelgdx.input.FlixelKeyboardListener;
 
@@ -36,12 +37,12 @@ import org.flixelgdx.input.FlixelKeyboardListener;
  * <p>Tracks pressed keys by implementing {@link FlixelKeyboardListener} directly. This is the
  * authoritative source of "is key X currently pressed", which keeps state correct across every
  * platform backend. Some backends (notably the web one) do not reliably report every key through
- * polling, so the framework cannot rebuild its set from {@link org.flixelgdx.Flixel#input Flixel.input}
+ * polling, so the framework cannot rebuild its set from {@link Flixel#input Flixel.input}
  * each frame; doing so would erase any state the listener callbacks just wrote and break
  * {@link #justPressed(int)} / {@link #justReleased(int)} there. Instead, {@link #update()} simply
  * records this frame's snapshot for "just" detection without ever touching {@link #currentPressedKeys}.
  *
- * <p>This manager is registered with the active {@link org.flixelgdx.input.FlixelInputDevice FlixelInputDevice}
+ * <p>This manager is registered with the active {@link FlixelInputDevice FlixelInputDevice}
  * automatically in {@code FlixelGame.create()}.
  */
 public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboardListener {
@@ -88,7 +89,7 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
    * real time, so this method intentionally does nothing.
    *
    * <p>Earlier versions rebuilt {@link #currentPressedKeys} from
-   * {@link org.flixelgdx.Flixel#input Flixel.input.isKeyPressed} every frame, which clobbered any
+   * {@link Flixel#input Flixel.input.isKeyPressed} every frame, which clobbered any
    * state the listener callbacks had just written and silently broke {@link #justPressed(int)},
    * {@link #justReleased(int)}, and the "first" helpers on the web backend (where not every key is
    * exposed through polling). The listener is now the only writer.

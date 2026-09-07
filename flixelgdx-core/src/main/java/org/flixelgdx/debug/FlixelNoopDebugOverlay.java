@@ -25,7 +25,7 @@ package org.flixelgdx.debug;
 
 /**
  * A fully inert debug overlay used as the default value of
- * {@link org.flixelgdx.debug.FlixelDebugManager#overlay FlixelDebugManager.overlay} so callers
+ * {@link FlixelDebugManager#overlay FlixelDebugManager.overlay} so callers
  * never need to null-check the field.
  *
  * <p>All lifecycle methods ({@link #update(float)}, {@link #resize(int, int)}, {@link #drawUI()})

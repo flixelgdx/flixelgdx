@@ -25,6 +25,7 @@ package org.flixelgdx;
 
 import org.flixelgdx.animation.FlixelAnimationController;
 import org.flixelgdx.animation.FlixelSpritemapJsonLoader;
+import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
@@ -53,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Loading graphics</h2>
  * <p>Use {@link #loadGraphic(String)} for asset-managed textures (the texture is cached and
- * reference-counted by {@link org.flixelgdx.asset.FlixelAssetManager FlixelAssetManager}).
+ * reference-counted by {@link FlixelAssetManager FlixelAssetManager}).
  * {@link #makeGraphic(int, int, FlixelColor)} generates a solid-color rectangle on the fly and
  * owns the resulting texture. For Sparrow XML atlases, call
  * {@link #ensureAnimation()}{@code .addSparrowAtlas(...)} instead of loading the texture directly.
@@ -187,7 +188,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    *
    * <p>Set via {@link #setShader(FlixelShader)}. Prefer keeping this {@code null} unless you
    * specifically need a per-sprite effect; each unique shader in draw order costs a GPU batch
-   * flush. See {@link org.flixelgdx.functional.FlixelShaderable FlixelShaderable} for the
+   * flush. See {@link FlixelShaderable FlixelShaderable} for the
    * full performance breakdown.
    */
   @Nullable
@@ -524,8 +525,8 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * texture so an appended atlas matches the visual filter of the original.
    *
    * <p>The graphic is assumed to have already been retained by the caller (typically via
-   * {@link org.flixelgdx.asset.FlixelAssetManager#get(String) FlixelAssetManager.get(...)} followed
-   * by {@link org.flixelgdx.asset.FlixelAsset#retain() retain()}), so this method only stores the
+   * {@link FlixelAssetManager#get(String) FlixelAssetManager.get(...)} followed
+   * by {@link FlixelAsset#retain() retain()}), so this method only stores the
    * reference and does not call {@link FlixelGraphic#retain()} again. This is an advanced hook used
    * by atlas-merging code such as {@link FlixelAnimationController#addSparrowFrames(String)} and
    * the Animate rig loader; most game code never calls it directly.
@@ -825,7 +826,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * the shader is no longer needed. Pass {@code null} to remove the current shader.
    *
    * <p>If you need a full-scene effect (post-processing applied to everything a camera sees),
-   * prefer {@link org.flixelgdx.FlixelCamera#setShader(FlixelShader) FlixelCamera.setShader()}
+   * prefer {@link FlixelCamera#setShader(FlixelShader) FlixelCamera.setShader()}
    * instead, as it captures the entire scene into a single FBO and applies the shader once, with
    * no per-sprite flush cost.
    *

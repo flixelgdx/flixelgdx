@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.input.action;
 
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,7 +55,7 @@ import java.util.Objects;
  * <p>State is refreshed in {@link FlixelActionSet#update(float)} (via
  * {@link FlixelActionSets#update(float)}). {@link FlixelActionSet#endFrame()} (via
  * {@link FlixelActionSets#endFrameAll()}) runs after
- * {@link org.flixelgdx.FlixelGame#endFrame() FlixelGame.endFrame()} finalizes keys and mouse, matching
+ * {@link FlixelGame#endFrame() FlixelGame.endFrame()} finalizes keys and mouse, matching
  * their {@code justPressed} timing.
  *
  * <h2>Optional callback</h2>

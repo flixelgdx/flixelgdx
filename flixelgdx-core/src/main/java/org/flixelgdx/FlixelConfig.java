@@ -177,7 +177,7 @@ public final class FlixelConfig {
    * Returns whether an alpha-capable (transparent) default framebuffer was requested at launch.
    *
    * <p>When {@code true}, the launcher creates the window with compositing support so
-   * {@link org.flixelgdx.backend.FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop.
+   * {@link FlixelWindow#setTransparencyActive(boolean)} can blend the game with the desktop.
    * When {@code false} (the default), the framebuffer is opaque and transparency has no effect.
    *
    * @return {@code true} when an alpha-capable framebuffer was requested.

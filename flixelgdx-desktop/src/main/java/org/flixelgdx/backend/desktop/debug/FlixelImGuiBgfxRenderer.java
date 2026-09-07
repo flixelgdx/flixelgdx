@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop.debug;
 
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.math.FlixelMatrix;
+import org.flixelgdx.util.FlixelBlendMode;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXTransientIndexBuffer;
@@ -69,7 +70,7 @@ public final class FlixelImGuiBgfxRenderer {
       BGFX.BGFX_SAMPLER_POINT | BGFX.BGFX_SAMPLER_U_CLAMP | BGFX.BGFX_SAMPLER_V_CLAMP;
 
   /**
-   * Standard straight-alpha "over" blend, matching {@link org.flixelgdx.util.FlixelBlendMode#NORMAL}.
+   * Standard straight-alpha "over" blend, matching {@link FlixelBlendMode#NORMAL}.
    * Color blends with source alpha; the destination alpha accumulates so the overlay composites
    * correctly onto an alpha-capable back buffer.
    */

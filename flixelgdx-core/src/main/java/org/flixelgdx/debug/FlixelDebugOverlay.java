@@ -908,7 +908,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   protected abstract void drawUI();
 
   /**
-   * Called from {@link org.flixelgdx.FlixelGame#resize(int, int)} so backends can keep
+   * Called from {@link FlixelGame#resize(int, int)} so backends can keep
    * their renderer state in sync with the window. The base class does not need to do anything.
    *
    * @param width New window width in pixels.

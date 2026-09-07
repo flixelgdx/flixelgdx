@@ -32,6 +32,7 @@ import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
+import org.flixelgdx.debug.FlixelDebugTrackerEntry;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseCursor;
@@ -1226,7 +1227,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   /**
    * Renders the Tracker panel: a collapsible header per registered
-   * {@link org.flixelgdx.debug.FlixelDebugTrackerEntry FlixelDebugTrackerEntry}, each with a
+   * {@link FlixelDebugTrackerEntry FlixelDebugTrackerEntry}, each with a
    * {@code name -> value} table like the Watch panel. When no trackers are registered it stays visible
    * with a hint, mirroring the Watch panel's empty state.
    */

@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.json.FlixelJson;
 import org.flixelgdx.json.FlixelJsonValue;
@@ -42,7 +43,7 @@ import java.util.Objects;
  *
  * <p>Bind to a uniquely identified save slot, manipulate the structured {@link #data} map, and
  * flush changes to disk. Saves serialize to a JSON file through the
- * {@link org.flixelgdx.file.FlixelFiles Flixel.files} seam's {@code pref} root, so the same
+ * {@link FlixelFiles Flixel.files} seam's {@code pref} root, so the same
  * code works on every platform that can write files: desktop saves to the computers local app data
  * folder, web backends map the root to browser storage, etc.
  *

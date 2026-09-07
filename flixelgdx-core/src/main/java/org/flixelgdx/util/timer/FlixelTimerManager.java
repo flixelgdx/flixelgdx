@@ -24,6 +24,8 @@
 package org.flixelgdx.util.timer;
 
 import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelPool;
 import org.flixelgdx.graphics.FlixelBatch;
@@ -35,8 +37,8 @@ import org.jetbrains.annotations.Nullable;
  * HaxeFlixel plugin-style managers so {@link #active}, {@link #exists}, {@link #kill}, and {@link #destroy} gate
  * {@link #update(float)} the same way as other Flixel objects.
  *
- * <p>Use {@link FlixelTimer#getGlobalManager()} with {@link org.flixelgdx.FlixelGame FlixelGame} (already wired) or
- * construct a dedicated manager for isolated groups (for example add it to a {@link org.flixelgdx.FlixelState FlixelState}).
+ * <p>Use {@link FlixelTimer#getGlobalManager()} with {@link FlixelGame FlixelGame} (already wired) or
+ * construct a dedicated manager for isolated groups (for example add it to a {@link FlixelState FlixelState}).
  *
  * <p>Timers are backed by a {@link FlixelPool} to avoid per-delay allocations. {@link #start(float, FlixelTimerListener, int)}
  * obtains from the pool; {@link FlixelTimer#cancel()} and completed runs return instances to the pool.

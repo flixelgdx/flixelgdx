@@ -29,7 +29,10 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugDrawable;
 import org.flixelgdx.functional.FlixelVisible;
 import org.flixelgdx.functional.IFlixelBasic;
+import org.flixelgdx.group.FlixelBasicGroup;
+import org.flixelgdx.group.FlixelGroup;
 import org.flixelgdx.group.FlixelGroupable;
+import org.flixelgdx.group.FlixelSpriteGroup;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -40,8 +43,8 @@ import java.util.function.Consumer;
  * tree (counting active members, iterating {@link FlixelDebugDrawable} instances for bounding-box drawing, etc.).
  *
  * <p>Recursion descends into any member that implements {@link FlixelGroupable}, which
- * covers {@link org.flixelgdx.group.FlixelBasicGroup FlixelBasicGroup}, {@link org.flixelgdx.group.FlixelSpriteGroup FlixelSpriteGroup},
- * and nested {@link org.flixelgdx.group.FlixelGroup FlixelGroup} instances whose elements are {@link IFlixelBasic}.
+ * covers {@link FlixelBasicGroup FlixelBasicGroup}, {@link FlixelSpriteGroup FlixelSpriteGroup},
+ * and nested {@link FlixelGroup FlixelGroup} instances whose elements are {@link IFlixelBasic}.
  */
 public final class FlixelDebugUtil {
 

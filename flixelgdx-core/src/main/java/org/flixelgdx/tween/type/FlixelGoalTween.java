@@ -26,6 +26,7 @@ package org.flixelgdx.tween.type;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelFloatArray;
 import org.flixelgdx.tween.FlixelTween;
+import org.flixelgdx.tween.FlixelTweenManager;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,7 +65,7 @@ public class FlixelGoalTween extends FlixelTween {
 
   /**
    * Logical subject for {@link #isTweenOf(Object, String)}; must be set before {@link #start()} /
-   * {@link org.flixelgdx.tween.FlixelTweenManager#addTween(FlixelTween) FlixelTweenManager.addTween(FlixelTween)}.
+   * {@link FlixelTweenManager#addTween(FlixelTween) FlixelTweenManager.addTween(FlixelTween)}.
    */
   protected @Nullable Object tweenObject;
 
@@ -97,7 +98,7 @@ public class FlixelGoalTween extends FlixelTween {
    * Sets the object {@code this} tween logically animates (required before {@link #start()}).
    *
    * <p>This has to be set because {@link #isTweenOf(Object, String)} needs to know the object to tween.
-   * This method is purely for logic purposes used by {@link org.flixelgdx.tween.FlixelTweenManager FlixelTweenManager}, not
+   * This method is purely for logic purposes used by {@link FlixelTweenManager FlixelTweenManager}, not
    * for tweening purposes.
    *
    * @param tweenObject The object to tween.

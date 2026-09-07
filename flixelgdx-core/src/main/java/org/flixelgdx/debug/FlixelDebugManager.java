@@ -110,7 +110,7 @@ public class FlixelDebugManager {
   /**
    * The active debug overlay. Defaults to {@link FlixelNoopDebugOverlay#INSTANCE} so this field
    * is never {@code null}, meaning callers do not need a null check. When debug mode starts,
-   * {@link org.flixelgdx.Flixel Flixel} replaces this with a real overlay instance.
+   * {@link Flixel Flixel} replaces this with a real overlay instance.
    *
    * <p>Access keybinds and visibility via this field:
    * <pre>{@code
@@ -159,7 +159,7 @@ public class FlixelDebugManager {
 
   /**
    * Creates the debug overlay using the registered factory and assigns it to {@link #overlay}.
-   * Called internally by {@link org.flixelgdx.FlixelGame} during startup when debug mode is enabled.
+   * Called internally by {@link FlixelGame} during startup when debug mode is enabled.
    *
    * @return The newly created overlay.
    */

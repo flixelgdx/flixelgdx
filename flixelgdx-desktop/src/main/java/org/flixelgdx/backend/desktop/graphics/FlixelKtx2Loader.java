@@ -29,6 +29,7 @@ import org.flixelgdx.asset.FlixelAssetLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,7 +45,7 @@ import java.nio.ByteOrder;
  * time versus an uncompressed texture.
  *
  * <p>The read happens off the main thread ({@link #loadRaw}); the GPU upload happens on the main
- * thread ({@link #finishRaw}) through {@link org.flixelgdx.graphics.FlixelGraphicsManager#createCompressedTexture
+ * thread ({@link #finishRaw}) through {@link FlixelGraphicsManager#createCompressedTexture
  * createCompressedTexture}, which the bgfx backend implements with its own container parser. Once a
  * {@code .ktx2} loader is registered, the asset manager transparently prefers a {@code .ktx2}
  * sibling over the plain image when one exists and compressed textures are enabled.

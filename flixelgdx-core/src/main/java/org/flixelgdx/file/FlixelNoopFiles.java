@@ -23,10 +23,12 @@
  */
 package org.flixelgdx.file;
 
+import org.flixelgdx.Flixel;
+
 /**
  * A {@link FlixelFiles} that hands back empty {@link FlixelNoopFile} handles for every root.
  *
- * <p>This is the safe default installed on {@link org.flixelgdx.Flixel#files Flixel.files} before a
+ * <p>This is the safe default installed on {@link Flixel#files Flixel.files} before a
  * backend provides a real file system, and on headless sessions. Every root returns a handle that
  * reports "nothing here", so file lookups and reads are always safe to call. It inherits every
  * method from {@link FlixelFiles}, whose defaults already return the no-op handle.

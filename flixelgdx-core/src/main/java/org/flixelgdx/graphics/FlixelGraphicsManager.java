@@ -23,7 +23,10 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.util.FlixelShader;
@@ -34,7 +37,7 @@ import java.nio.ByteBuffer;
 
 /**
  * The graphics device: the one interface a graphics backend implements and the surface game code
- * draws through, reached from {@link org.flixelgdx.Flixel#graphics Flixel.graphics}.
+ * draws through, reached from {@link Flixel#graphics Flixel.graphics}.
  *
  * <p>Each backend (for example, bgfx on native, WebGPU or WebGL in the browser) implements this
  * interface, so the same game code runs unchanged no matter which one is active. The underlying GPU
@@ -288,7 +291,7 @@ public interface FlixelGraphicsManager {
    * mip levels, and a compressed pixel format), not a plain image to unpack into RGBA. The backend
    * hands the whole container to the GPU driver, which keeps the compressed data resident and saves
    * both memory and upload bandwidth. This is how {@code .ktx2} siblings load when a backend
-   * supports them; see {@link org.flixelgdx.asset.FlixelAssetManager#setCompressedTexturesEnabled(boolean)}.
+   * supports them; see {@link FlixelAssetManager#setCompressedTexturesEnabled(boolean)}.
    *
    * <p>Returns {@code null} when the running backend cannot consume compressed containers, so the
    * asset system can fall back to the plain image. The default is {@code null} (unsupported).
@@ -426,7 +429,7 @@ public interface FlixelGraphicsManager {
    * Loads a shader compiled at build time and compiles the variant matching the active renderer.
    *
    * <p>Each backend that supports precompiled shaders overrides this method to locate and load the
-   * right variant for its rendering API. Game code uses {@link org.flixelgdx.util.FlixelShader#load}
+   * right variant for its rendering API. Game code uses {@link FlixelShader#load}
    * rather than calling this directly.
    *
    * <p>The default returns {@link FlixelUnsupportedShader} so headless and pre-startup sessions
@@ -532,7 +535,7 @@ public interface FlixelGraphicsManager {
   /**
    * Adds a shader to the global post-processing chain applied to all game cameras together.
    *
-   * <p>Unlike per-camera shaders (see {@link org.flixelgdx.FlixelCamera#setShader(FlixelShader)}),
+   * <p>Unlike per-camera shaders (see {@link FlixelCamera#setShader(FlixelShader)}),
    * a global shader captures the combined output of every game camera into a single full-screen
    * framebuffer and applies the effect in one pass. This means barrel distortion, scanlines, and
    * similar effects align correctly across camera boundaries. The global overlay is drawn after the

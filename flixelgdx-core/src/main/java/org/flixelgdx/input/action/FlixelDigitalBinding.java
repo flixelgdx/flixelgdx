@@ -25,6 +25,7 @@ package org.flixelgdx.input.action;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
+import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.touch.FlixelTouch;
 import org.flixelgdx.input.touch.FlixelTouchManager;
@@ -62,9 +63,9 @@ public interface FlixelDigitalBinding {
   boolean evaluate();
 
   /**
-   * Keyboard key binding using {@link org.flixelgdx.Flixel#keys Flixel.keys}.
+   * Keyboard key binding using {@link Flixel#keys Flixel.keys}.
    *
-   * @param keycode Key constant (for example {@link org.flixelgdx.input.keyboard.FlixelKey#SPACE FlixelKey.SPACE}).
+   * @param keycode Key constant (for example {@link FlixelKey#SPACE FlixelKey.SPACE}).
    * @return Binding that fires while the key is held.
    */
   static FlixelDigitalBinding key(int keycode) {
@@ -72,7 +73,7 @@ public interface FlixelDigitalBinding {
   }
 
   /**
-   * Mouse button binding using {@link org.flixelgdx.Flixel#mouse Flixel.mouse}.
+   * Mouse button binding using {@link Flixel#mouse Flixel.mouse}.
    *
    * @param button Mouse button index (for example {@link FlixelMouseButton#LEFT}).
    * @return Binding that fires while the button is held.
@@ -82,7 +83,7 @@ public interface FlixelDigitalBinding {
   }
 
   /**
-   * Gamepad button binding using {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}.
+   * Gamepad button binding using {@link Flixel#gamepads Flixel.gamepads}.
    *
    * @param slot Gamepad slot (0 and up), or {@link #GAMEPAD_SLOT_ANY} to match any connected slot.
    * @param button Logical button token from {@link FlixelGamepadButton}.
@@ -101,7 +102,7 @@ public interface FlixelDigitalBinding {
   }
 
   /**
-   * Touch pointer binding using {@link org.flixelgdx.Flixel#touches Flixel.touches}.
+   * Touch pointer binding using {@link Flixel#touches Flixel.touches}.
    *
    * <pre>{@code
    * // Fire while the first finger is down.

@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.util.timer;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -34,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Advance time by calling {@link FlixelTimerManager#update(float)} once per frame (done automatically for
  * {@link #getGlobalManager()}). The elapsed argument should already include
- * {@link org.flixelgdx.Flixel#timeScale Flixel.timeScale}.
+ * {@link Flixel#timeScale Flixel.timeScale}.
  *
  * <p>Prefer {@link FlixelTimerManager#start(float, FlixelTimerListener, int)}, {@link FlixelTimer#wait(float, FlixelTimerListener)},
  * or {@link FlixelTimer#loop(float, FlixelTimerListener, int)} so pooled instances are reused.
@@ -45,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPoolable {
 
-  /** Global timer manager, updated from {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)}. */
+  /** Global timer manager, updated from {@link FlixelGame#update(float) FlixelGame.update(float)}. */
   @NotNull
   private static final FlixelTimerManager GLOBAL_MANAGER = new FlixelTimerManager();
 

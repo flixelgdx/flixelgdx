@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.text;
 
+import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * so text never crashes.
  *
  * <p>Install via {@link FlixelFontRegistry#setRasterizer(FlixelFontRasterizer)} before
- * {@link org.flixelgdx.Flixel#start Flixel.start}; backends do this for you.
+ * {@link Flixel#start Flixel.start}; backends do this for you.
  */
 public interface FlixelFontRasterizer {
 

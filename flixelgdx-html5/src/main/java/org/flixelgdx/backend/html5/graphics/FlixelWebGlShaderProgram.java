@@ -29,6 +29,7 @@ import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.webgl.WebGLProgram;
 import org.teavm.jso.webgl.WebGLRenderingContext;
@@ -38,7 +39,7 @@ import org.teavm.jso.webgl.WebGLUniformLocation;
  * A compiled WebGL shader program the web backend draws custom-shaded sprites with.
  *
  * <p>The tricky part on the web is <em>when</em> a uniform can be uploaded. Game code sets uniforms
- * (for example in {@link org.flixelgdx.util.FlixelShader#applyUniforms()}) at a point where this
+ * (for example in {@link FlixelShader#applyUniforms()}) at a point where this
  * program is not the one currently bound, and WebGL only accepts a uniform for the program that is
  * active. So rather than upload immediately, this class remembers each uniform's latest value and
  * uploads them all in {@link #apply(WebGLRenderingContext)}, which the batch calls right after it

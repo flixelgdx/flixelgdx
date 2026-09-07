@@ -28,6 +28,7 @@ import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.FlixelTouchListener;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.events.Event;
@@ -219,7 +220,7 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
   }
 
   /**
-   * Remaps a browser mouse button index to its {@link org.flixelgdx.input.mouse.FlixelMouseButton}
+   * Remaps a browser mouse button index to its {@link FlixelMouseButton}
    * equivalent. The browser orders middle and right buttons as {@code 1} and {@code 2}; the
    * framework uses {@code 1} for right and {@code 2} for middle, so those two are swapped.
    *

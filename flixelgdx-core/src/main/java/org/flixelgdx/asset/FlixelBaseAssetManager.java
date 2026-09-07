@@ -29,6 +29,7 @@ import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.util.FlixelString;
@@ -55,7 +56,7 @@ import java.nio.ByteOrder;
  * <p>Default loaders registered by the constructor:
  * <ul>
  *   <li>Images ({@code .png}, {@code .jpg}, {@code .jpeg}, {@code .bmp}, {@code .tga}) decode on
- *     the worker via {@link org.flixelgdx.graphics.FlixelGraphicsManager#decodeImage decodeImage}
+ *     the worker via {@link FlixelGraphicsManager#decodeImage decodeImage}
  *     and upload on the main thread, producing {@link FlixelGraphic} handles.</li>
  *   <li>Text ({@code .txt}, {@code .xml}, {@code .json}) loads as {@link String} inside
  *     {@link FlixelDefaultAsset} handles.</li>

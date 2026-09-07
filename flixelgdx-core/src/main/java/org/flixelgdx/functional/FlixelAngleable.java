@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.functional;
 
+import org.flixelgdx.FlixelObject;
+
 /**
  * Something with a rotation angle in degrees that angle tweens and motion integration can drive.
  *
@@ -32,7 +34,7 @@ public interface FlixelAngleable {
 
   /**
    * The angle in degrees of this object. Does not affect axis-aligned collision on
-   * {@link org.flixelgdx.FlixelObject FlixelObject}.
+   * {@link FlixelObject FlixelObject}.
    *
    * @return The current angle in degrees.
    */
