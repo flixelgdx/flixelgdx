@@ -110,6 +110,7 @@ public abstract class CompileShadersTask extends DefaultTask {
     File workDir = getWorkDir().get().getAsFile();
     File shadersOut = new File(outputRoot, "shaders");
     deleteRecursively(shadersOut);
+    writeNativeImageResourceConfig(outputRoot);
 
     File override = getShadercPath().isPresent() ? getShadercPath().getAsFile().get() : null;
     Shaderc shaderc = Shaderc.prepare(workDir, override);
@@ -148,6 +149,32 @@ public abstract class CompileShadersTask extends DefaultTask {
 
       getLogger().lifecycle("[FlixelGDX] Compiled shader '{}'.", name);
     }
+  }
+
+  /**
+   * Writes a GraalVM {@code resource-config.json} into the generated resources directory so that
+   * all compiled shader binaries are included in a native-image build automatically.
+   *
+   * <p>The single pattern {@code shaders/.*\\.bin} covers every variant the task emits
+   * ({@code shaders/<name>/<variant>/vs.bin} and {@code fs.bin}), so this file does not need to
+   * be regenerated per shader - one write per task execution is enough.
+   *
+   * @param outputRoot The generated resources directory the shader binaries are written into.
+   * @throws IOException When the config file cannot be written.
+   */
+  private static void writeNativeImageResourceConfig(File outputRoot) throws IOException {
+    File configDir = new File(outputRoot, "META-INF/native-image/org.flixelgdx/shaders");
+    Files.createDirectories(configDir.toPath());
+    String config = """
+        {
+          "resources": {
+            "includes": [
+              {"pattern": "shaders/.*\\\\.bin"}
+            ]
+          }
+        }
+        """;
+    Files.writeString(new File(configDir, "resource-config.json").toPath(), config, StandardCharsets.UTF_8);
   }
 
   private void compileStage(Shaderc shaderc, File sc, File varying, File out, String type,
