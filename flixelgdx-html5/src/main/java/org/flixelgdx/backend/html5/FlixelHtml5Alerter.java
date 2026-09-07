@@ -44,7 +44,6 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
   public void info(String title, String message) {
     String safeTitle = title != null ? title : "Info";
     String safeMessage = message != null ? message : "";
-    consoleLog("[FlixelGDX] " + label(safeTitle, safeMessage));
     showDomAlert(safeTitle, safeMessage, "#ffffff");
   }
 
@@ -52,38 +51,14 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
   public void warn(String title, String message) {
     String safeTitle = title != null ? title : "Warning";
     String safeMessage = message != null ? message : "";
-    consoleWarn("[FlixelGDX] " + label(safeTitle, safeMessage));
     showDomAlert(safeTitle, safeMessage, "#f5c518");
   }
 
-  /**
-   * Shows the DOM error overlay, logs to {@code console.error}, and pauses the game loop. The
-   * overlay shows an OK button that dismisses it and resumes the loop.
-   *
-   * <p>Crash overlays (with a Copy report button) are shown separately by
-   * {@link FlixelHtml5RuntimeDevice} before the crash handler runs, so the crash-specific overlay
-   * is already in place when {@code alert.error()} is called from the crash path. The duplicate
-   * check at the top of {@code showDomAlert} prevents a second overlay from appearing.
-   */
   @Override
   public void error(String title, String message) {
     String safeTitle = title != null ? title : "Error";
     String safeMessage = message != null ? message : "";
-    consoleError("[FlixelGDX] " + label(safeTitle, safeMessage));
     showDomAlert(safeTitle, safeMessage, "#e94560");
-  }
-
-  private static String label(String title, String message) {
-    if (title == null && message == null) {
-      return "";
-    }
-    if (title == null) {
-      return message;
-    }
-    if (message == null || message.isEmpty()) {
-      return title;
-    }
-    return title + ": " + message;
   }
 
   /**
@@ -131,13 +106,4 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
       document.body.appendChild(overlay);
       """)
   private static native void showDomAlert(String title, String message, String titleColor);
-
-  @JSBody(params = "text", script = "console.log(text);")
-  private static native void consoleLog(String text);
-
-  @JSBody(params = "text", script = "console.warn(text);")
-  private static native void consoleWarn(String text);
-
-  @JSBody(params = "text", script = "console.error(text);")
-  private static native void consoleError(String text);
 }

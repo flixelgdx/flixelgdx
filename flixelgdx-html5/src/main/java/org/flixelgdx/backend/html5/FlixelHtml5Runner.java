@@ -172,7 +172,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * <p>When a DOM alert overlay is visible (info or warn), {@code window.__flixelAlertPaused} is
    * {@code true}. While that flag is set, the game is not updated or drawn and the timestamp is
    * reset so the first frame after the overlay is dismissed does not report the paused duration as
-   * elapsed time. This mirrors the blocking behavior of SDL modal dialogs on desktop.
+   * elapsed time.
    *
    * <p>The frame body is wrapped in a try-catch so any unhandled Java exception thrown during an
    * update or draw call is routed through the installed {@link FlixelCrashHandler} rather than
