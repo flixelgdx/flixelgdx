@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
  * Unified handle for one asset, with reference counting and lifecycle policy.
  *
  * <p>All assets retrieved from {@link FlixelAssetManager} implement this interface.
- * {@link FlixelGraphic FlixelGraphic} implements
+ * {@link FlixelGraphic} implements
  * {@code FlixelAsset<FlixelGraphic>} directly so the graphic object is the handle.
  * Other asset types use {@link FlixelDefaultAsset}.
  *
@@ -54,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
  * }</pre>
  *
  * @param <T> The wrapper type that game code interacts with (e.g.
- *   {@link FlixelGraphic FlixelGraphic}).
+ *   {@link FlixelGraphic}).
  */
 public interface FlixelAsset<T> {
 

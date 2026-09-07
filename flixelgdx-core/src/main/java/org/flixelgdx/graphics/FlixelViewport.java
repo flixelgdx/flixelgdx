@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
  * Maps a rectangular world view onto a rectangle of the screen: the combination of an
  * orthographic 2D camera and a scaling policy.
  *
- * <p>Every {@link FlixelCamera FlixelCamera} owns one of these. The
+ * <p>Every {@link FlixelCamera} owns one of these. The
  * {@link Scaling} policy decides what happens when the window's shape does not match the
  * game's design resolution: {@link Scaling#FIT} letterboxes, {@link Scaling#EXTEND} grows the
  * visible world to fill the screen, and {@link Scaling#STRETCH} distorts. The viewport also

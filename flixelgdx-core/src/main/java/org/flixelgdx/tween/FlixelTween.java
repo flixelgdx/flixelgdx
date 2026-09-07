@@ -271,7 +271,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link FlixelSprite FlixelSprite}.
+   * @param colorable The tint target; often a {@link FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -292,7 +292,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link FlixelSprite FlixelSprite}.
+   * @param colorable The tint target; often a {@link FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.

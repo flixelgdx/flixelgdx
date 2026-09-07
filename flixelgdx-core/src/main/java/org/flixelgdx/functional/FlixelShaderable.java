@@ -31,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Marks an object that can have a {@link FlixelShader} applied to it.
  *
- * <p>Implemented by both {@link FlixelSprite FlixelSprite} (per-sprite batch
- * interruption) and {@link FlixelCamera FlixelCamera} (full-scene FBO
+ * <p>Implemented by both {@link FlixelSprite} (per-sprite batch
+ * interruption) and {@link FlixelCamera} (full-scene FBO
  * post-processing). Both follow the same ownership contract: the shader is NOT owned by the
  * implementing object. The caller is responsible for calling {@link FlixelShader#destroy()} when
  * the shader is no longer needed.

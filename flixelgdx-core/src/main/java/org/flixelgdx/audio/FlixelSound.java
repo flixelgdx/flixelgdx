@@ -514,7 +514,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
    * retained when this sound was created through {@link FlixelSoundManager}. The handle is
    * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
-   * active {@link FlixelAssetMode FlixelAssetMode}.
+   * active {@link FlixelAssetMode}.
    *
    * @param sourceAsset The retained source handle, or {@code null} to clear it.
    * @return {@code this} for chaining.

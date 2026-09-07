@@ -386,7 +386,7 @@ public final class Flixel {
    * between keys that are held down, freshly pressed on the current frame, and freshly released
    * on the current frame, so your game logic can respond precisely to each event type.
    *
-   * <p>Key constants are defined in {@link FlixelKey FlixelKey}. Pass any of
+   * <p>Key constants are defined in {@link FlixelKey}. Pass any of
    * those constants to the methods below:
    * <ul>
    *   <li>{@link FlixelKeyInputManager#pressed(int)} - {@code true} while the key is held down.</li>

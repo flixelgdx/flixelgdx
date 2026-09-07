@@ -58,7 +58,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
   /**
    * Feeds a key-down event from the runner.
    *
-   * @param flixelKey The mapped {@link FlixelKey FlixelKey} code.
+   * @param flixelKey The mapped {@link FlixelKey} code.
    */
   public void onKeyDown(int flixelKey) {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {
@@ -72,7 +72,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
   /**
    * Feeds a key-up event from the runner.
    *
-   * @param flixelKey The mapped {@link FlixelKey FlixelKey} code.
+   * @param flixelKey The mapped {@link FlixelKey} code.
    */
   public void onKeyUp(int flixelKey) {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {

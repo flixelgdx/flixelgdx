@@ -34,7 +34,7 @@ import java.util.Arrays;
  * frame to show.
  *
  * <p>This is the timing core under sprite animations. It knows nothing about textures; the
- * key-frame type is generic (usually {@link FlixelFrame FlixelFrame}),
+ * key-frame type is generic (usually {@link FlixelFrame}),
  * so rigs and other systems can animate any payload.
  *
  * <p>Example:

@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * The most generic Flixel object. Both {@link FlixelObject} and {@link FlixelCamera}
  * extend this class. It has no size, position, or graphical data, only lifecycle flags and a unique ID.
  * It implements {@link IFlixelBasic}, the full contract used by {@link FlixelState} and
- * {@link FlixelBasicGroup FlixelBasicGroup}. The existence and active flags
+ * {@link FlixelBasicGroup}. The existence and active flags
  * ({@link #exists}, {@link #active}) are defined by {@link FlixelExistable}.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
@@ -59,7 +59,7 @@ import org.jetbrains.annotations.Nullable;
  *       <td>{@link #destroy()} (drops resources you may still want)</td>
  *     </tr>
  *     <tr>
- *       <td>Reuse a "dead" slot in a {@link FlixelBasicGroup FlixelBasicGroup}</td>
+ *       <td>Reuse a "dead" slot in a {@link FlixelBasicGroup}</td>
  *       <td>{@link FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
  *       <td>{@link #destroy()} unless you truly discard the instance</td>
  *     </tr>

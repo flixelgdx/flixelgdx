@@ -77,7 +77,7 @@ public final class FlixelAnimateRig {
 
   /**
    * The shared atlas regions indexed by {@link Part#atlasIndex}. This is the same list installed on the
-   * owning {@link FlixelSprite FlixelSprite} through
+   * owning {@link FlixelSprite} through
    * {@link FlixelSprite#applySparrowAtlas FlixelSprite.applySparrowAtlas}, so callers may look up a region
    * either way.
    */

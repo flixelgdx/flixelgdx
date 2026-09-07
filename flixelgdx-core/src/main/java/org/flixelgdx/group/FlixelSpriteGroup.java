@@ -46,7 +46,7 @@ import java.util.function.Predicate;
  * made up of several member sprites. It implements {@link FlixelBasicGroupable}
  * for managing members while inheriting all sprite properties from {@link FlixelSprite}.
  * <p>
- * Because FlixelSpriteGroup extends {@link FlixelSprite FlixelSprite}, groups can be nested
+ * Because FlixelSpriteGroup extends {@link FlixelSprite}, groups can be nested
  * inside other groups, enabling complex hierarchical sprite compositions. Any property
  * change on the group (position, alpha, color, scale, rotation, flip) automatically
  * propagates to all members.

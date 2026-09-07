@@ -36,7 +36,7 @@ import org.lwjgl.sdl.SDLGamepad;
  * and axis numbering for an Xbox pad, a DualShock, a Switch Pro controller, and so on), so the
  * native indices this reports are SDL's standard {@code SDL_GAMEPAD_BUTTON_*} and
  * {@code SDL_GAMEPAD_AXIS_*} values. {@link FlixelSdlGamepadProvider} pairs that with one fixed
- * {@link FlixelGamepadMapping FlixelGamepadMapping}, which is why every
+ * {@link FlixelGamepadMapping}, which is why every
  * SDL pad shares a single mapping rather than needing a per-device database lookup.
  *
  * <p>Axis values come back from SDL as signed 16-bit integers; sticks span the full range and

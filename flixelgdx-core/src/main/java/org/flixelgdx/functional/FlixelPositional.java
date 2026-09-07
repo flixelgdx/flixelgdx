@@ -26,7 +26,7 @@ package org.flixelgdx.functional;
 import org.flixelgdx.FlixelObject;
 
 /**
- * Spatial surface shared by {@link FlixelObject FlixelObject}: world position, hitbox size, and
+ * Spatial surface shared by {@link FlixelObject}: world position, hitbox size, and
  * scroll factors. Code that only needs to read or set where something sits in the world (camera follow,
  * mouse overlap, motion tweens that only care about placement) should accept this type.
  *

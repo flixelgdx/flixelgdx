@@ -122,7 +122,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * a {@link ClassCastException} at runtime if the inferred type does not match.
    *
    * @param path Asset path.
-   * @param <T> Expected wrapper type (e.g. {@link FlixelGraphic FlixelGraphic}).
+   * @param <T> Expected wrapper type (e.g. {@link FlixelGraphic}).
    * @return The cached or newly created handle; never {@code null}.
    * @throws IllegalArgumentException if no loader is registered for the path's extension.
    */
@@ -166,7 +166,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   /**
    * Registers a caller-constructed asset handle directly with the manager cache. Use this for
    * assets created outside the normal loading pipeline (e.g. a texture built from a
-   * {@link FlixelImage FlixelImage}).
+   * {@link FlixelImage}).
    *
    * <p>The handle is keyed by {@link FlixelAsset#getPath()}. If a handle is already registered
    * under that key, it is replaced.
@@ -321,7 +321,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * been loaded yet.
    *
    * <p>This is the storage half of the loader pipeline: wrapper handles such as
-   * {@link FlixelGraphic FlixelGraphic} call it to look up their content
+   * {@link FlixelGraphic} call it to look up their content
    * (a texture, a string, decoded audio) without knowing how it was produced.
    *
    * @param path Normalized asset path.

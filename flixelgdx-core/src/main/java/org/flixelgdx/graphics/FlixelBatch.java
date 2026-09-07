@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * The 2D sprite batch: collects textured quads and submits them to the GPU in as few draw calls
  * as possible.
  *
- * <p>Every {@link FlixelDrawable FlixelDrawable} in the framework renders
+ * <p>Every {@link FlixelDrawable} in the framework renders
  * through the shared batch returned by {@link FlixelGraphicsManager#getBatch()}. The batch is
  * implemented by the active graphics backend, so game code drawing through this interface runs
  * unchanged on every platform.

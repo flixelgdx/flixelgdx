@@ -46,7 +46,7 @@ import org.jetbrains.annotations.NotNull;
  * </ol>
  *
  * <p>Separately, {@link #createHandle(FlixelAssetManager, String)} builds the <b>wrapper</b>
- * handle game code holds (a {@link FlixelGraphic FlixelGraphic}, a
+ * handle game code holds (a {@link FlixelGraphic}, a
  * {@link FlixelDefaultAsset}, and so on). The handle reads the finished raw content back from
  * the manager's cache when first used, which keeps raw loading and wrapping one system instead
  * of two.

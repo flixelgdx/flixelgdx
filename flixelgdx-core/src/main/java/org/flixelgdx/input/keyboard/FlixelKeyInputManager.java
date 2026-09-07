@@ -42,7 +42,7 @@ import org.flixelgdx.input.FlixelKeyboardListener;
  * {@link #justPressed(int)} / {@link #justReleased(int)} there. Instead, {@link #update()} simply
  * records this frame's snapshot for "just" detection without ever touching {@link #currentPressedKeys}.
  *
- * <p>This manager is registered with the active {@link FlixelInputDevice FlixelInputDevice}
+ * <p>This manager is registered with the active {@link FlixelInputDevice}
  * automatically in {@code FlixelGame.create()}.
  */
 public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboardListener {

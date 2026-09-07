@@ -54,7 +54,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Loading graphics</h2>
  * <p>Use {@link #loadGraphic(String)} for asset-managed textures (the texture is cached and
- * reference-counted by {@link FlixelAssetManager FlixelAssetManager}).
+ * reference-counted by {@link FlixelAssetManager}).
  * {@link #makeGraphic(int, int, FlixelColor)} generates a solid-color rectangle on the fly and
  * owns the resulting texture. For Sparrow XML atlases, call
  * {@link #ensureAnimation()}{@code .addSparrowAtlas(...)} instead of loading the texture directly.
@@ -188,7 +188,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    *
    * <p>Set via {@link #setShader(FlixelShader)}. Prefer keeping this {@code null} unless you
    * specifically need a per-sprite effect; each unique shader in draw order costs a GPU batch
-   * flush. See {@link FlixelShaderable FlixelShaderable} for the
+   * flush. See {@link FlixelShaderable} for the
    * full performance breakdown.
    */
   @Nullable

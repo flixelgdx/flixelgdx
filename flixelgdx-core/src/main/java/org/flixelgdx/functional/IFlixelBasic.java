@@ -29,13 +29,13 @@ import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.group.FlixelBasicGroup;
 
 /**
- * Full {@link FlixelBasic FlixelBasic}-style contract: per-frame update and draw hooks,
+ * Full {@link FlixelBasic}-style contract: per-frame update and draw hooks,
  * existence and active flags (see {@link FlixelExistable}), visibility, kill and revive, teardown
  * ({@link FlixelDestroyable}), and the {@link FlixelPoolable} reset hook. Extend
- * {@link FlixelBasic FlixelBasic} when you want the default field-based implementation,
+ * {@link FlixelBasic} when you want the default field-based implementation,
  * or implement this interface on your own type when you need a custom base class but still want to add
- * instances to a {@link FlixelState FlixelState} or
- * {@link FlixelBasicGroup FlixelBasicGroup}.
+ * instances to a {@link FlixelState} or
+ * {@link FlixelBasicGroup}.
  *
  * @see org.flixelgdx.FlixelBasic
  * @see org.flixelgdx.group.FlixelBasicGroup

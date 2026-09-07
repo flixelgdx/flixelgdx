@@ -28,7 +28,7 @@ import org.flixelgdx.FlixelObject;
 /**
  * Kinematic physics contract that extends {@link FlixelPositional} with velocity, acceleration, drag,
  * max velocity, angular motion, and collision-immovable control. This is the full motion surface shared
- * by {@link FlixelObject FlixelObject}.
+ * by {@link FlixelObject}.
  *
  * <p>Motion tweens and physics code that need both position and kinematics should accept this type
  * rather than {@link FlixelPositional}, which covers only spatial layout.
@@ -240,14 +240,14 @@ public interface FlixelPhysical extends FlixelPositional {
 
   /**
    * When {@code true}, {@link FlixelObject#updateMotion(float) FlixelObject.updateMotion(float)} runs each frame on
-   * {@link FlixelObject FlixelObject}.
+   * {@link FlixelObject}.
    *
    * @return Whether integrated motion is enabled.
    */
   boolean getMoves();
 
   /**
-   * Enables or disables automatic motion integration on {@link FlixelObject FlixelObject}.
+   * Enables or disables automatic motion integration on {@link FlixelObject}.
    *
    * @param moves {@code true} to integrate velocity each frame.
    */

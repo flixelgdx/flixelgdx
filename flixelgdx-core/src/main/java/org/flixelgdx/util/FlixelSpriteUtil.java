@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * Helper class related to {@link FlixelSprite FlixelSprite}.
+ * Helper class related to {@link FlixelSprite}.
  *
  * <p>These utilities are designed to work with FlixelGDX's normal Batch-based draw flow.
  * Everything draws through the shared batch; no separate shape renderer is involved.

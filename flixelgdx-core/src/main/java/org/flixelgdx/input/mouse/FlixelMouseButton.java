@@ -27,7 +27,7 @@ import org.flixelgdx.input.FlixelMouseListener;
 
 /**
  * Mouse button codes for {@link FlixelMouseInputManager} and the pointer events on
- * {@link FlixelMouseListener FlixelMouseListener}.
+ * {@link FlixelMouseListener}.
  *
  * <p>These are plain integer constants so they cost nothing and read clearly at the call site, for
  * example {@code Flixel.mouse.pressed(FlixelMouseButton.LEFT)}.

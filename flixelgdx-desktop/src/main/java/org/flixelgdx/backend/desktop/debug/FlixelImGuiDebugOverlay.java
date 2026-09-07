@@ -1227,7 +1227,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   /**
    * Renders the Tracker panel: a collapsible header per registered
-   * {@link FlixelDebugTrackerEntry FlixelDebugTrackerEntry}, each with a
+   * {@link FlixelDebugTrackerEntry}, each with a
    * {@code name -> value} table like the Watch panel. When no trackers are registered it stays visible
    * with a hint, mirroring the Watch panel's empty state.
    */
