@@ -27,6 +27,7 @@ import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
+import org.flixelgdx.util.FlixelExceptionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 
@@ -93,6 +94,11 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    * {@code console.error}, show the DOM crash overlay, and persist the report to
    * {@code localStorage}.
    *
+   * <p>The handler is wrapped so that Java-side crashes also persist the report to
+   * {@code localStorage} under {@code flixelgdx_last_crash}. This keeps crash persistence out of
+   * {@link FlixelHtml5Alerter}, which would otherwise persist every {@code alert.error()} call
+   * regardless of whether it was caused by an actual crash.
+   *
    * <p>A {@code @JSFunctor} callback is intentionally not used here. TeaVM 0.13.0's WasmGC code
    * generator produces a nameless function statement ({@code function() {}}) instead of an
    * expression when wrapping any {@code @JSFunctor} method that takes parameters, causing a
@@ -105,7 +111,13 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   @Override
   public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
     Objects.requireNonNull(handler, "handler cannot be null");
-    this.crashHandler = handler;
+    this.crashHandler = (thread, throwable) -> {
+      handler.onCrash(thread, throwable);
+      String threadName = thread != null ? thread.getName() : "main";
+      String msg = "There was an uncaught exception on thread \"" + threadName + "\"!\n"
+          + FlixelExceptionUtil.getFullExceptionMessage(throwable);
+      persistCrash("Uncaught Exception", msg);
+    };
     installJsErrorHandlers();
   }
 
@@ -139,7 +151,7 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
           + 'font-family:monospace;padding:16px;box-sizing:border-box;';
         var box = document.createElement('div');
         box.style.cssText = 'background:#111;border:1px solid #333;'
-          + 'padding:20px 24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;'
+          + 'padding:20px 24px;width:max-content;max-width:80vw;max-height:80vh;overflow-y:auto;'
           + 'color:#ccc;box-sizing:border-box;';
         var titleEl = document.createElement('p');
         titleEl.style.cssText = 'margin:0 0 12px 0;color:#e94560;font-size:0.9em;';
@@ -152,7 +164,7 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
         btn.style.cssText = 'background:#222;color:#ccc;border:1px solid #444;'
           + 'padding:5px 12px;cursor:pointer;font-family:monospace;font-size:0.8em;';
         btn.textContent = 'Copy report';
-        var report = 'FlixelGDX Crash Report\\n'
+        var report = (document.title || 'Game') + ' Crash Report\\n'
           + new Date().toISOString() + '\\n'
           + 'Browser: ' + navigator.userAgent + '\\n'
           + 'URL: ' + window.location.href + '\\n\\n'
@@ -181,6 +193,19 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
       });
       """)
   private static native void installJsErrorHandlers();
+
+  @JSBody(params = { "title", "message" }, script = """
+      try {
+        localStorage.setItem('flixelgdx_last_crash', JSON.stringify({
+          time: new Date().toISOString(),
+          title: title,
+          message: message,
+          ua: navigator.userAgent,
+          url: window.location.href
+        }));
+      } catch (e) {}
+      """)
+  private static native void persistCrash(String title, String message);
 
   @JSBody(script = """
       return (window.performance && window.performance.memory)

@@ -29,38 +29,46 @@ import org.teavm.jso.JSBody;
 /**
  * Alert implementation for the HTML5 platform.
  *
- * <p>Info and warn alerts emit to the browser console, which is always visible to developers
- * without interrupting the running page. Error alerts show a full-screen DOM crash overlay on top
- * of the canvas, log to {@code console.error}, and save the report to {@code localStorage} under
- * the key {@code flixelgdx_last_crash} so it persists across a page reload.
+ * <p>All three severity levels emit to the browser console and show a full-screen DOM overlay on
+ * top of the canvas. The title color distinguishes severity: white for info, yellow for warn, and
+ * red for error. Every overlay includes a button that copies a structured report (game name,
+ * timestamp, browser, URL, and full message) to the clipboard.
  *
- * <p>The overlay replaces the old {@code window.alert()} call, which was synchronous, blocking,
- * and provided no structured crash information.
+ * <p>Crash persistence to {@code localStorage} is intentionally not part of this class. It is
+ * handled by the crash handler wrapper in {@link FlixelHtml5RuntimeDevice} so that only actual
+ * crashes are stored, not every {@code alert.error()} call.
  */
 public class FlixelHtml5Alerter implements FlixelAlerter {
 
   @Override
   public void info(String title, String message) {
-    consoleLog("[FlixelGDX] " + label(title, message));
+    String safeTitle = title != null ? title : "Info";
+    String safeMessage = message != null ? message : "";
+    consoleLog("[FlixelGDX] " + label(safeTitle, safeMessage));
+    showDomAlert(safeTitle, safeMessage, "#ffffff", "Info Report");
   }
 
   @Override
   public void warn(String title, String message) {
-    consoleWarn("[FlixelGDX] " + label(title, message));
+    String safeTitle = title != null ? title : "Warning";
+    String safeMessage = message != null ? message : "";
+    consoleWarn("[FlixelGDX] " + label(safeTitle, safeMessage));
+    showDomAlert(safeTitle, safeMessage, "#f5c518", "Warning Report");
   }
 
   /**
-   * Shows the DOM crash overlay, logs to {@code console.error}, and persists the report to
-   * {@code localStorage}. The overlay renders on top of the canvas with the title, full message,
-   * and a button to copy the crash report to the clipboard.
+   * Shows the DOM error overlay and logs to {@code console.error}. The overlay renders on top of
+   * the canvas with the title, full message, and a button to copy the report to the clipboard.
+   *
+   * <p>Crash persistence to {@code localStorage} is the crash handler's responsibility, not the
+   * alerter's. This method only displays the overlay so it can be used for non-crash errors too.
    */
   @Override
   public void error(String title, String message) {
     String safeTitle = title != null ? title : "Error";
     String safeMessage = message != null ? message : "";
     consoleError("[FlixelGDX] " + label(safeTitle, safeMessage));
-    persistCrash(safeTitle, safeMessage);
-    showCrashOverlay(safeTitle, safeMessage);
+    showDomAlert(safeTitle, safeMessage, "#e94560", "Crash Report");
   }
 
   private static String label(String title, String message) {
@@ -76,34 +84,29 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
     return title + ": " + message;
   }
 
-  @JSBody(params = { "title", "message" }, script = """
+  @JSBody(params = { "title", "message", "titleColor", "reportLabel" }, script = """
       if (!document.body || document.getElementById('flixel-crash-overlay')) { return; }
-
       var overlay = document.createElement('div');
       overlay.id = 'flixel-crash-overlay';
       overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);'
         + 'display:flex;align-items:center;justify-content:center;'
         + 'font-family:monospace;padding:16px;box-sizing:border-box;';
-
       var box = document.createElement('div');
       box.style.cssText = 'background:#111;border:1px solid #333;'
-        + 'padding:20px 24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;'
+        + 'padding:20px 24px;width:max-content;max-width:80vw;max-height:80vh;overflow-y:auto;'
         + 'color:#ccc;box-sizing:border-box;';
-
       var titleEl = document.createElement('p');
-      titleEl.style.cssText = 'margin:0 0 12px 0;color:#e94560;font-size:0.9em;';
+      titleEl.style.cssText = 'margin:0 0 12px 0;font-size:0.9em;color:' + titleColor + ';';
       titleEl.textContent = title;
-
       var msgEl = document.createElement('p');
       msgEl.style.cssText = 'margin:0 0 16px 0;font-size:0.82em;line-height:1.5;'
         + 'white-space:pre-wrap;word-break:break-word;';
       msgEl.textContent = message;
-
       var btn = document.createElement('button');
       btn.style.cssText = 'background:#222;color:#ccc;border:1px solid #444;'
         + 'padding:5px 12px;cursor:pointer;font-family:monospace;font-size:0.8em;';
       btn.textContent = 'Copy report';
-      var report = 'FlixelGDX Crash Report\\n'
+      var report = (document.title || 'Game') + ' ' + reportLabel + '\\n'
         + new Date().toISOString() + '\\n'
         + 'Browser: ' + navigator.userAgent + '\\n'
         + 'URL: ' + window.location.href + '\\n\\n'
@@ -115,27 +118,13 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
         btn.textContent = 'Copied';
         setTimeout(function () { btn.textContent = 'Copy report'; }, 2000);
       };
-
       box.appendChild(titleEl);
       box.appendChild(msgEl);
       box.appendChild(btn);
       overlay.appendChild(box);
       document.body.appendChild(overlay);
       """)
-  private static native void showCrashOverlay(String title, String message);
-
-  @JSBody(params = { "title", "message" }, script = """
-      try {
-        localStorage.setItem('flixelgdx_last_crash', JSON.stringify({
-          time: new Date().toISOString(),
-          title: title,
-          message: message,
-          ua: navigator.userAgent,
-          url: window.location.href
-        }));
-      } catch (e) {}
-      """)
-  private static native void persistCrash(String title, String message);
+  private static native void showDomAlert(String title, String message, String titleColor, String reportLabel);
 
   @JSBody(params = "text", script = "console.log(text);")
   private static native void consoleLog(String text);
