@@ -529,9 +529,9 @@ public class Html5Plugin implements Plugin<Project> {
     boolean jsEnabled = teavm.getJs().getAddedToWebApp().getOrElse(false);
     boolean wasmEnabled = teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
 
-    // When the build is configured as a debug build, automatically enable source maps and full
-    // debug info so browser DevTools can show Java class names, method names, and line numbers in
-    // stack traces instead of mangled WASM addresses or generated JS function names.
+    // When the build is configured as a debug build, automatically enable source maps so browser
+    // DevTools can show Java class names, method names, and line numbers in stack traces instead of
+    // mangled WASM addresses or generated JS function names.
     // convention() is used so a developer can still override any of these explicitly.
     if (ext.getMode().isPresent() && ext.getMode().get() == Html5Mode.DEBUG) {
       if (jsEnabled) {
@@ -541,8 +541,15 @@ public class Html5Plugin implements Plugin<Project> {
       if (wasmEnabled) {
         teavm.getWasmGC().getSourceMap().convention(true);
         teavm.getWasmGC().getSourceFilePolicy().convention(SourceFilePolicy.COPY);
-        teavm.getWasmGC().getDebugInfoLevel().convention(WasmDebugInfoLevel.FULL);
       }
+    }
+
+    // Always generate full WasmGC debug info so the external .teadbg deobfuscation file is
+    // available. It is only fetched when the page is opened in debug mode at runtime, so it never
+    // reaches a release user. Gating generation on a build-time flag would break runtime debug mode
+    // (?flixel.mode=debug) for anyone who did not also set html5 { mode = 'debug' } in their build.
+    if (wasmEnabled) {
+      teavm.getWasmGC().getDebugInfoLevel().convention(WasmDebugInfoLevel.FULL);
     }
     String jsBundle = teavm.getJs().getTargetFileName().getOrElse(DEFAULT_JS_BUNDLE);
     String wasmBundle = teavm.getWasmGC().getTargetFileName().getOrElse(DEFAULT_WASM_BUNDLE);

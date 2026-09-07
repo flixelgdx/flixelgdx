@@ -232,15 +232,27 @@
         runtime.src = "{{WASM_RUNTIME}}";
         runtime.onload = function () {
           if (window.TeaVM && TeaVM.wasmGC) {
-            fetchWithProgress("{{WASM_BUNDLE}}", function (f) { loading.set(f); })
-              .then(function (buffer) {
-                var url = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
-                return TeaVM.wasmGC.load(url).then(function (teavm) {
-                  URL.revokeObjectURL(url);
-                  teavm.exports.main([]);
-                });
-              })
-              .catch(function (e) { console.error(e); loadJs(); });
+            if (debugMode) {
+              // In debug mode, load the WASM by URL string so TeaVM can derive the deobfuscator
+              // module path (<bundle>-deobfuscator.wasm) and the debug-info file path
+              // (<bundle>.teadbg) automatically. A blob URL breaks that path derivation.
+              // Progress tracking is skipped because debug builds always run on localhost.
+              TeaVM.wasmGC.load("{{WASM_BUNDLE}}", {
+                stackDeobfuscator: { enabled: true }
+              }).then(function (teavm) {
+                teavm.exports.main([]);
+              }).catch(function (e) { console.error(e); loadJs(); });
+            } else {
+              fetchWithProgress("{{WASM_BUNDLE}}", function (f) { loading.set(f); })
+                .then(function (buffer) {
+                  var url = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
+                  return TeaVM.wasmGC.load(url).then(function (teavm) {
+                    URL.revokeObjectURL(url);
+                    teavm.exports.main([]);
+                  });
+                })
+                .catch(function (e) { console.error(e); loadJs(); });
+            }
           } else {
             loadJs();
           }
