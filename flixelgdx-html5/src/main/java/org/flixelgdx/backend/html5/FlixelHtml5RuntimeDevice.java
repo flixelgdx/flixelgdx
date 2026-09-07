@@ -23,11 +23,14 @@
  */
 package org.flixelgdx.backend.html5;
 
+import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.JSFunctor;
+import org.teavm.jso.JSObject;
 
 import java.util.Objects;
 
@@ -39,10 +42,17 @@ import java.util.Objects;
  * browsers offer is a rough JavaScript heap size through {@code performance.memory}, which this
  * class surfaces for the debug overlay; everything else returns the safe default the interface
  * already provides.
+ *
+ * <p>On web, {@link #setCrashHandler} wires the supplied handler into two browser-level error
+ * signals: {@code window.onerror}, which fires for uncaught JavaScript exceptions and WebAssembly
+ * traps that escape the Java exception system, and {@code window.unhandledrejection}, which fires
+ * for unhandled Promise rejections. Together these complement the try-catch already wrapped around
+ * the game loop in {@link FlixelHtml5Runner}, catching anything that happens outside that boundary.
  */
 public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
 
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
+  private FlixelCrashHandler crashHandler;
 
   private boolean runtimeModeSet = false;
 
@@ -72,6 +82,60 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
     }
   }
 
+  /**
+   * Installs the crash handler and wires it into two browser error signals.
+   *
+   * <p>{@code window.onerror} catches uncaught JavaScript exceptions and WebAssembly traps that
+   * escape the Java exception system entirely. {@code window.unhandledrejection} catches unhandled
+   * Promise rejections. Both complement the try-catch in the game loop, which handles Java
+   * exceptions thrown during a frame.
+   *
+   * @param handler The crash handler to install.
+   */
+  @Override
+  public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
+    Objects.requireNonNull(handler, "handler cannot be null");
+    this.crashHandler = handler;
+
+    // window.onerror: catches uncaught JS exceptions and WASM traps that escape the Java layer.
+    // Returning true suppresses the browser's own built-in error UI so the framework overlay takes over.
+    installWindowOnerror((msg, src, line, col, jsErr) -> {
+      String detail = extractJsError(jsErr, msg);
+      handler.onCrash(null, new RuntimeException(detail));
+      return true;
+    });
+
+    // window.unhandledrejection: catches Promises that rejected without a .catch() handler.
+    installRejectionListener(event -> {
+      String reason = extractRejectionReason(event);
+      handler.onCrash(null, new RuntimeException("Unhandled Promise rejection: " + reason));
+    });
+  }
+
+  /** Returns the crash handler installed by {@link #setCrashHandler}, or {@code null} if not set. */
+  FlixelCrashHandler getCrashHandler() {
+    return crashHandler;
+  }
+
+  @JSBody(params = { "err", "fallback" }, script = """
+      if (!err) { return fallback || 'Unknown JavaScript error'; }
+      return err.stack || err.message || String(err);
+      """)
+  private static native String extractJsError(JSObject err, String fallback);
+
+  @JSBody(params = "event", script = """
+      var r = event.reason;
+      if (!r) { return 'Unknown rejection reason'; }
+      return r.stack || r.message || String(r);
+      """)
+  private static native String extractRejectionReason(JSObject event);
+
+  @JSBody(params = "handler", script = "window.onerror = handler;")
+  private static native void installWindowOnerror(JsErrorHandler handler);
+
+  @JSBody(params = "handler", script = "window.addEventListener('unhandledrejection', handler);")
+  private static native void installRejectionListener(JsRejectionHandler handler);
+
   @JSBody(script = """
       return (window.performance && window.performance.memory)
         ? window.performance.memory.usedJSHeapSize : 0;
@@ -88,5 +152,19 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    */
   private static long usedHeapBytes() {
     return (long) usedHeap();
+  }
+
+  /** Callback type for {@code window.onerror}. Returns {@code true} to suppress the browser's default error UI. */
+  @JSFunctor
+  @FunctionalInterface
+  interface JsErrorHandler extends JSObject {
+    boolean onError(String message, String source, int line, int col, JSObject error);
+  }
+
+  /** Callback type for {@code window.unhandledrejection}. */
+  @JSFunctor
+  @FunctionalInterface
+  interface JsRejectionHandler extends JSObject {
+    void onRejection(JSObject event);
   }
 }
