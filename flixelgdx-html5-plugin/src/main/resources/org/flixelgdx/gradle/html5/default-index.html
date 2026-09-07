@@ -232,15 +232,16 @@
         runtime.src = "{{WASM_RUNTIME}}";
         runtime.onload = function () {
           if (window.TeaVM && TeaVM.wasmGC) {
-            fetchWithProgress("{{WASM_BUNDLE}}", function (f) { loading.set(f); })
-              .then(function (buffer) {
-                var url = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
-                return TeaVM.wasmGC.load(url).then(function (teavm) {
-                  URL.revokeObjectURL(url);
-                  teavm.exports.main([]);
-                });
-              })
-              .catch(function (e) { console.error(e); loadJs(); });
+            // Always load by URL so TeaVM can derive the deobfuscator module path
+            // (<bundle>-deobfuscator.wasm) and the debug-info file (<bundle>.teadbg) automatically.
+            // Stack deobfuscation is always enabled so crash reports include real Java class names
+            // and line numbers regardless of runtime mode. A blob URL would break that path
+            // derivation, so progress tracking is skipped in favor of the indeterminate bar above.
+            TeaVM.wasmGC.load("{{WASM_BUNDLE}}", {
+              stackDeobfuscator: { enabled: true }
+            }).then(function (teavm) {
+              teavm.exports.main([]);
+            }).catch(function (e) { console.error(e); loadJs(); });
           } else {
             loadJs();
           }

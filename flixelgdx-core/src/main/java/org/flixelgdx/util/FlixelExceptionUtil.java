@@ -45,7 +45,19 @@ public final class FlixelExceptionUtil {
     if (stackTrace.length == 0) {
       return "Unknown Location";
     }
-    StackTraceElement element = stackTrace[0];
+    // Skip JRE-internal frames added by exception construction to reach the first frame that reflects
+    // where the exception was actually thrown from.
+    StackTraceElement element = null;
+    for (StackTraceElement stackTraceElement : stackTrace) {
+      String className = stackTraceElement.getClassName();
+      if (!className.startsWith("java.") && !className.startsWith("javax.") && !className.startsWith("sun.")) {
+        element = stackTraceElement;
+        break;
+      }
+    }
+    if (element == null) {
+      element = stackTrace[0];
+    }
     return "FILE="
         + element.getFileName()
         + ", CLASS="
