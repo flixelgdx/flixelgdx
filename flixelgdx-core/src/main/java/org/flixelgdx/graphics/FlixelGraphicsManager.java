@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
 
 /**
  * The graphics device: the one interface a graphics backend implements and the surface game code
- * draws through, reached from {@link Flixel#graphics Flixel.graphics}.
+ * draws through, reached from {@link Flixel#graphics}.
  *
  * <p>Each backend (for example, bgfx on native, WebGPU or WebGL in the browser) implements this
  * interface, so the same game code runs unchanged no matter which one is active. The underlying GPU

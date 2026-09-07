@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <h2>When {@code updateAll} runs</h2>
  *
- * <p>Order inside {@link FlixelGame#update(float) FlixelGame.update(float)}: {@code Flixel.keys.update()},
+ * <p>Order inside {@link FlixelGame#update(float)}: {@code Flixel.keys.update()},
  * {@code Flixel.mouse.update()}, {@code Flixel.gamepads.update()}, then {@link #update(float)}. Gameplay code in
  * {@link FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
  *
@@ -72,7 +72,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link FlixelGame#update(float) FlixelGame.update(float)} after gamepad polling.
+   * Invoked from {@link FlixelGame#update(float)} after gamepad polling.
    *
    * @param elapsed Seconds since last frame (same as game update).
    */
@@ -83,7 +83,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link FlixelGame#endFrame() FlixelGame.endFrame()} after keys, mouse, and gamepads
+   * Invoked from {@link FlixelGame#endFrame()} after keys, mouse, and gamepads
    * have finalized their own per-frame state.
    */
   public static void endFrameAll() {

@@ -71,7 +71,7 @@ public final class FlixelSpriteUtil {
    * {@link FlixelGraphic}, and registers it with the asset manager; callers must not destroy
    * the texture, since its lifecycle follows the asset manager.
    *
-   * @param assets Non-null manager, typically {@link Flixel#assets Flixel.assets}.
+   * @param assets Non-null manager, typically {@link Flixel#assets}.
    * @return The shared white pixel frame; never {@code null}.
    */
   @NotNull

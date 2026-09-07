@@ -65,7 +65,7 @@ public class FlixelGoalTween extends FlixelTween {
 
   /**
    * Logical subject for {@link #isTweenOf(Object, String)}; must be set before {@link #start()} /
-   * {@link FlixelTweenManager#addTween(FlixelTween) FlixelTweenManager.addTween(FlixelTween)}.
+   * {@link FlixelTweenManager#addTween(FlixelTween)}.
    */
   protected @Nullable Object tweenObject;
 

@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>All of this is inherently platform-specific. A desktop JVM can inspect its heap and classpath;
  * a web browser cannot. So, like the other backend seams ({@link FlixelWindow},
  * {@link FlixelHostIntegration}), this is an interface the active backend fills in. Read it through
- * {@link Flixel#runtime Flixel.runtime}.
+ * {@link Flixel#runtime}.
  *
  * <p>Every method has a safe default, so a backend only overrides what it can actually report, and
  * the no-op device ({@link FlixelNoopRuntimeDevice}) keeps calls safe before a backend is installed

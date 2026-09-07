@@ -826,7 +826,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * the shader is no longer needed. Pass {@code null} to remove the current shader.
    *
    * <p>If you need a full-scene effect (post-processing applied to everything a camera sees),
-   * prefer {@link FlixelCamera#setShader(FlixelShader) FlixelCamera.setShader()}
+   * prefer {@link FlixelCamera#setShader(FlixelShader)}
    * instead, as it captures the entire scene into a single FBO and applies the shader once, with
    * no per-sprite flush cost.
    *

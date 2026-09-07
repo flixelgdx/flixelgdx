@@ -37,7 +37,7 @@ import org.flixelgdx.input.FlixelKeyboardListener;
  * <p>Tracks pressed keys by implementing {@link FlixelKeyboardListener} directly. This is the
  * authoritative source of "is key X currently pressed", which keeps state correct across every
  * platform backend. Some backends (notably the web one) do not reliably report every key through
- * polling, so the framework cannot rebuild its set from {@link Flixel#input Flixel.input}
+ * polling, so the framework cannot rebuild its set from {@link Flixel#input}
  * each frame; doing so would erase any state the listener callbacks just wrote and break
  * {@link #justPressed(int)} / {@link #justReleased(int)} there. Instead, {@link #update()} simply
  * records this frame's snapshot for "just" detection without ever touching {@link #currentPressedKeys}.

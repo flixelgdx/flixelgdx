@@ -36,8 +36,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
- * contract as {@link FlixelInputManager}. Actions read {@link Flixel#keys Flixel.keys},
- * {@link Flixel#mouse Flixel.mouse}, {@link Flixel#gamepads Flixel.gamepads}, and {@code Gdx.input}
+ * contract as {@link FlixelInputManager}. Actions read {@link Flixel#keys},
+ * {@link Flixel#mouse}, {@link Flixel#gamepads}, and {@code Gdx.input}
  * during {@link #update(float)}. This class does not hook platform input events directly. Framework keyboard and mouse managers stay the single entry
  * points for those devices.
  *
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
  *   <li>By default the set registers with {@link FlixelActionSets}; {@link FlixelGame} calls
  *       {@link FlixelActionSets#update(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
  *       after keys, mouse, and gamepads {@code endFrame()} in {@code render()}.</li>
- *   <li>From {@link FlixelState#update(float) FlixelState.update(float)} (or similar), read {@code jump.justPressed()},
+ *   <li>From {@link FlixelState#update(float)} (or similar), read {@code jump.justPressed()},
  *       {@code move.getX()}, etc.</li>
  *   <li>When the screen or mode ends, call {@link #destroy()} so the set unregisters and clears members.</li>
  * </ol>

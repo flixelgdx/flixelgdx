@@ -568,7 +568,7 @@ public class FlixelAnimateSprite extends FlixelSprite {
   /**
    * Resolves a {@link FlixelFile} into the path string the rest of {@code addSpritemapAndAnimation}
    * overloads operate on. Asset-manager lookups (the spritemap PNG) and direct JSON reads both resolve
-   * a plain path through {@link Flixel#files Flixel.files}, so converting up front lets
+   * a plain path through {@link Flixel#files}, so converting up front lets
    * every {@link FlixelFile} overload delegate straight into the existing {@code String} pipeline
    * without duplicating loading logic.
    *

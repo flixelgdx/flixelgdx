@@ -47,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
  *   <li>{@link #absolute(String)} - a file named by its full path on the underlying file system.</li>
  * </ul>
  *
- * <p>Access it through {@link Flixel#files Flixel.files}. The active backend is
+ * <p>Access it through {@link Flixel#files}. The active backend is
  * installed there before {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)}. Until then, and
  * on headless sessions, a safe default ({@link FlixelNoopFiles}) hands back empty handles so reads
  * never crash.

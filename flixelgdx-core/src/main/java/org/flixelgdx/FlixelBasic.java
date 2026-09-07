@@ -60,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
  *     </tr>
  *     <tr>
  *       <td>Reuse a "dead" slot in a {@link FlixelBasicGroup}</td>
- *       <td>{@link FlixelBasicGroup#recycle() FlixelBasicGroup.recycle()} or {@link #revive()} after {@link #kill()}</td>
+ *       <td>{@link FlixelBasicGroup#recycle()} or {@link #revive()} after {@link #kill()}</td>
  *       <td>{@link #destroy()} unless you truly discard the instance</td>
  *     </tr>
  *     <tr>

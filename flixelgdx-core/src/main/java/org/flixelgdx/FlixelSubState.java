@@ -68,7 +68,7 @@ public abstract class FlixelSubState extends FlixelState {
     setBgColor(subStateBackground);
   }
 
-  /** Re-applies this substate's background to all cameras (needed if the constructor ran before {@link FlixelGame#create FlixelGame.create}). */
+  /** Re-applies this substate's background to all cameras (needed if the constructor ran before {@link FlixelGame#create}). */
   protected void syncBackgroundToCameras() {
     setBgColor(subStateBackground);
   }

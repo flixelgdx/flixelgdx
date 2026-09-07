@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
  * targets.
  *
  * <p>Every operation is a no-op and every query returns the neutral default defined by the
- * interface, so {@link Flixel#graphics Flixel.graphics} is always safe to call even
+ * interface, so {@link Flixel#graphics} is always safe to call even
  * with no GPU present. {@link #getApi()} reports {@link FlixelGraphicsApi#Noop}.
  */
 public enum FlixelNoopGraphicsManager implements FlixelGraphicsManager {

@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>This is the public seam used by sprites and other runtime systems. It is a pure interface:
  * each platform installs its own implementation (the shared JVM one for desktop and Android, a
  * browser-based one for web), and a safe no-op ({@link FlixelNoopAssetManager}) is in place
- * before any backend starts. Access via {@link Flixel#assets Flixel.assets}.
+ * before any backend starts. Access via {@link Flixel#assets}.
  *
  * <p><b>Basic workflow:</b>
  *
@@ -260,7 +260,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
 
   /**
    * Unloads non-persistent asset handles whose reference count is zero. Called automatically
-   * by {@link Flixel#switchState Flixel.switchState} in
+   * by {@link Flixel#switchState} in
    * {@link FlixelAssetMode#STANDARD} and {@link FlixelAssetMode#AGGRESSIVE} modes.
    */
   void clearNonPersist();
@@ -299,7 +299,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   /**
    * Sets the active asset management mode. Takes effect on the next
    * {@link FlixelAsset#release()} call or the next
-   * {@link Flixel#switchState Flixel.switchState}, whichever comes first.
+   * {@link Flixel#switchState}, whichever comes first.
    *
    * @param mode The new mode; must not be {@code null}.
    */

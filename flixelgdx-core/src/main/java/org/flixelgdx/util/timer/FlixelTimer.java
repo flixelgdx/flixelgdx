@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Advance time by calling {@link FlixelTimerManager#update(float)} once per frame (done automatically for
  * {@link #getGlobalManager()}). The elapsed argument should already include
- * {@link Flixel#timeScale Flixel.timeScale}.
+ * {@link Flixel#timeScale}.
  *
  * <p>Prefer {@link FlixelTimerManager#start(float, FlixelTimerListener, int)}, {@link FlixelTimer#wait(float, FlixelTimerListener)},
  * or {@link FlixelTimer#loop(float, FlixelTimerListener, int)} so pooled instances are reused.
@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelTimer implements FlixelUpdatable, FlixelDestroyable, FlixelPoolable {
 
-  /** Global timer manager, updated from {@link FlixelGame#update(float) FlixelGame.update(float)}. */
+  /** Global timer manager, updated from {@link FlixelGame#update(float)}. */
   @NotNull
   private static final FlixelTimerManager GLOBAL_MANAGER = new FlixelTimerManager();
 

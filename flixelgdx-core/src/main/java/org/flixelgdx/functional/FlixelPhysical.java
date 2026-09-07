@@ -239,7 +239,7 @@ public interface FlixelPhysical extends FlixelPositional {
   void setMaxAngularVelocity(float mav);
 
   /**
-   * When {@code true}, {@link FlixelObject#updateMotion(float) FlixelObject.updateMotion(float)} runs each frame on
+   * When {@code true}, {@link FlixelObject#updateMotion(float)} runs each frame on
    * {@link FlixelObject}.
    *
    * @return Whether integrated motion is enabled.

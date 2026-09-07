@@ -511,14 +511,14 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer (typically the imgui
    * debug overlay) is currently capturing the mouse. When this returns {@code true},
-   * {@link FlixelMouseInputManager#pressed(int) FlixelMouseInputManager.pressed(int)} and
+   * {@link FlixelMouseInputManager#pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, and the debug camera tools / sprite picker also skip
    * their work, so clicking inside (for example) a Dear ImGui window does not bleed through
    * into the game logic. Defaults to {@code false}.
    *
    * <p>The overlay's own mouse tools (sprite picker, camera pan) use the regular
-   * {@link FlixelMouseInputManager#pressed(int) FlixelMouseInputManager.pressed(int)} helpers, which
+   * {@link FlixelMouseInputManager#pressed(int)} helpers, which
    * already report {@code false} while the cursor is over a debug panel, so a click there never grabs
    * a sprite or pans the camera.
    *
@@ -531,7 +531,7 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /**
    * Override to tell the framework's input layer that another UI layer is currently consuming
    * keyboard input. When this returns {@code true},
-   * {@link FlixelKeyInputManager#pressed(int) FlixelKeyInputManager.pressed(int)} and
+   * {@link FlixelKeyInputManager#pressed(int)} and
    * the matching {@code justPressed} / {@code justReleased} helpers will report {@code false}
    * for the game's regular input checks, so typing in (for example) a Dear ImGui text field
    * cannot also capture game input and activate game-level actions like {@code ui_accept}.

@@ -31,7 +31,7 @@ import org.lwjgl.sdl.SDLMessageBox;
  * The desktop alert dialog provider, backed by SDL's simple message boxes.
  *
  * <p>These are blocking modal dialogs; reserve them for critical events. Non-blocking OS toasts go
- * through {@link Flixel#host Flixel.host} instead.
+ * through {@link Flixel#host} instead.
  */
 public class FlixelDesktopAlerter implements FlixelAlerter {
 

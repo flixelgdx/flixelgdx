@@ -63,9 +63,9 @@ public interface FlixelDigitalBinding {
   boolean evaluate();
 
   /**
-   * Keyboard key binding using {@link Flixel#keys Flixel.keys}.
+   * Keyboard key binding using {@link Flixel#keys}.
    *
-   * @param keycode Key constant (for example {@link FlixelKey#SPACE FlixelKey.SPACE}).
+   * @param keycode Key constant (for example {@link FlixelKey#SPACE}).
    * @return Binding that fires while the key is held.
    */
   static FlixelDigitalBinding key(int keycode) {
@@ -73,7 +73,7 @@ public interface FlixelDigitalBinding {
   }
 
   /**
-   * Mouse button binding using {@link Flixel#mouse Flixel.mouse}.
+   * Mouse button binding using {@link Flixel#mouse}.
    *
    * @param button Mouse button index (for example {@link FlixelMouseButton#LEFT}).
    * @return Binding that fires while the button is held.
@@ -83,7 +83,7 @@ public interface FlixelDigitalBinding {
   }
 
   /**
-   * Gamepad button binding using {@link Flixel#gamepads Flixel.gamepads}.
+   * Gamepad button binding using {@link Flixel#gamepads}.
    *
    * @param slot Gamepad slot (0 and up), or {@link #GAMEPAD_SLOT_ANY} to match any connected slot.
    * @param button Logical button token from {@link FlixelGamepadButton}.
@@ -102,7 +102,7 @@ public interface FlixelDigitalBinding {
   }
 
   /**
-   * Touch pointer binding using {@link Flixel#touches Flixel.touches}.
+   * Touch pointer binding using {@link Flixel#touches}.
    *
    * <pre>{@code
    * // Fire while the first finger is down.

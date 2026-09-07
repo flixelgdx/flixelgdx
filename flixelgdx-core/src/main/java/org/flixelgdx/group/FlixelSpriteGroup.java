@@ -66,7 +66,7 @@ import java.util.function.Predicate;
  * </ul>
  *
  * <p>{@link #remove} and {@link #detach} restore local coordinates and unlink the sprite; they do not call
- * {@link FlixelSprite#destroy()}. Use {@link FlixelBasic#kill() FlixelBasic.kill()} / {@link FlixelBasic#revive() FlixelBasic.revive()} or
+ * {@link FlixelSprite#destroy()}. Use {@link FlixelBasic#kill()} / {@link FlixelBasic#revive()} or
  * {@link #recycle()} for reuse. {@link #clear()} unlinks all members without destroying them.
  * {@link #destroy()} on this group destroys every member (releases graphics) and resets group state.
  */

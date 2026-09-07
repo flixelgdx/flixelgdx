@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * so text never crashes.
  *
  * <p>Install via {@link FlixelFontRegistry#setRasterizer(FlixelFontRasterizer)} before
- * {@link Flixel#start Flixel.start}; backends do this for you.
+ * {@link Flixel#start}; backends do this for you.
  */
 public interface FlixelFontRasterizer {
 

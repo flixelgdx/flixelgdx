@@ -166,7 +166,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
 
   /**
    * Call at end of frame after game logic (with
-   * {@link FlixelKeyInputManager#endFrame() FlixelKeyInputManager.endFrame()}). Resets
+   * {@link FlixelKeyInputManager#endFrame()}). Resets
    * {@link #getScrollDeltaX()} and {@link #getScrollDeltaY()} to zero for the next frame.
    */
   @Override

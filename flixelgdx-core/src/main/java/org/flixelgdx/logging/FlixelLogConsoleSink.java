@@ -32,7 +32,7 @@ import org.flixelgdx.backend.FlixelGameRunner;
  * {@code System.out} is not appropriate or where ANSI colors from the default path do not render
  * (for example, browser devtools with styled {@code console.log}).
  *
- * <p>Assign to {@link FlixelLogger#logConsoleSink FlixelLogger.logConsoleSink}
+ * <p>Assign to {@link FlixelLogger#logConsoleSink}
  * (via {@code Flixel.log.logConsoleSink}) before
  * {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)}
  * from the platform launcher. When set, the logger calls this instead of writing ANSI text to
