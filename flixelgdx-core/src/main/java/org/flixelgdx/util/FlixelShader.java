@@ -148,25 +148,28 @@ public class FlixelShader extends FlixelBasic {
           """;
 
   private FlixelShaderProgram program;
+  private String loadedName;
+  private String vertSrc;
+  private String fragSrc;
 
   /**
-   * Wraps an already-compiled backend program.
-   *
-   * <p>This is the canonical constructor used by {@link #load(String)} to hold the variant the
-   * active backend compiled from precompiled plugin resources.
+   * Wraps a backend program compiled by {@link #load(String)} and records the shader name so
+   * {@link #reload()} can recompile it later.
    *
    * @param program The backend program handle to wrap.
+   * @param loadedName The name passed to {@link #load(String)}.
    */
-  private FlixelShader(FlixelShaderProgram program) {
+  private FlixelShader(FlixelShaderProgram program, String loadedName) {
     this.program = program;
+    this.loadedName = loadedName;
   }
 
   /**
    * Prepares a shader using a built-in pass-through vertex shader and the given fragment source.
    *
    * <p>GLSL source compilation is handled at runtime by the web backend. On the desktop bgfx
-   * backend, use the FlixelGDX Gradle plugin to generate precompiled shader resources instead,
-   * and load them via the resource-path constructor once the plugin support is available.
+   * backend, use the FlixelGDX Gradle plugin to generate precompiled shader resources at build
+   * time and load them via {@link #load(String)} instead.
    *
    * @param fragSrc GLSL ES 2.0 fragment shader source code.
    */
@@ -178,13 +181,15 @@ public class FlixelShader extends FlixelBasic {
    * Prepares a shader from explicit vertex and fragment GLSL source strings.
    *
    * <p>GLSL source compilation is handled at runtime by the web backend. On the desktop bgfx
-   * backend, use the FlixelGDX Gradle plugin to generate precompiled shader resources instead,
-   * and load them via the resource-path constructor once the plugin support is available.
+   * backend, use the FlixelGDX Gradle plugin to generate precompiled shader resources at build
+   * time and load them via {@link #load(String)} instead.
    *
    * @param vertSrc GLSL ES 2.0 vertex shader source code.
    * @param fragSrc GLSL ES 2.0 fragment shader source code.
    */
   public FlixelShader(String vertSrc, String fragSrc) {
+    this.vertSrc = vertSrc;
+    this.fragSrc = fragSrc;
     this.program = Flixel.graphics.compileShaderSource(vertSrc, fragSrc);
   }
 
@@ -241,7 +246,7 @@ public class FlixelShader extends FlixelBasic {
    */
   @NotNull
   public static FlixelShader load(@NotNull String name) {
-    return new FlixelShader(Flixel.graphics.compileShaderProgram(name));
+    return new FlixelShader(Flixel.graphics.compileShaderProgram(name), name);
   }
 
   /**
@@ -258,6 +263,29 @@ public class FlixelShader extends FlixelBasic {
     if (program != null && program != FlixelUnsupportedShader.INSTANCE) {
       program.destroy();
       program = null;
+    }
+  }
+
+  /**
+   * Recompiles this shader from the same source it was originally built from.
+   *
+   * <p>Releases the current GPU program and builds a fresh one through the active backend. Any
+   * {@link FlixelCamera} or global shader chain holding a reference to this instance picks up the
+   * new program automatically on the next frame, because the camera stores the
+   * {@code FlixelShader} object rather than the underlying handle.
+   *
+   * <p>For shaders loaded via {@link #load(String)}, the backend re-reads the precompiled resource
+   * for the active renderer. For shaders constructed from GLSL source strings (including those
+   * created with {@link #fromHaxeFlixel(String)}), the backend recompiles the stored source.
+   */
+  public void reload() {
+    if (program != null && program != FlixelUnsupportedShader.INSTANCE) {
+      program.destroy();
+    }
+    if (loadedName != null) {
+      program = Flixel.graphics.compileShaderProgram(loadedName);
+    } else if (vertSrc != null) {
+      program = Flixel.graphics.compileShaderSource(vertSrc, fragSrc);
     }
   }
 
