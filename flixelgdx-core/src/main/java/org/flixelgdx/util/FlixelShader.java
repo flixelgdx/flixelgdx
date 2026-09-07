@@ -43,11 +43,6 @@ import org.jetbrains.annotations.NotNull;
  * automatically render its scene into a framebuffer and composite the result through this shader
  * every frame.
  *
- * <p><b>HaxeFlixel mode ({@link #fromHaxeFlixel(String)})</b> lets you use or copy a filter
- * shader from HaxeFlixel written with {@code #pragma header}, {@code #pragma body},
- * {@code bitmap}, {@code openfl_TextureCoordv}, and {@code flixel_texture2D(...)}. The
- * preprocessor rewrites those names to the framework's equivalents before compilation.
- *
  * <p>To drive per-frame uniforms such as {@code u_time}, subclass {@code FlixelShader}, override
  * {@link #update(float)} to track state, and override {@link #applyUniforms()} to upload it:
  *
@@ -99,54 +94,6 @@ public class FlixelShader extends FlixelBasic {
       }
       """;
 
-  /**
-   * GLSL {@code #define} macros prepended to every HaxeFlixel fragment shader.
-   *
-   * <p>These alias HaxeFlixel / OpenFL variable and function names to the framework's
-   * equivalents so the shader source compiles without modification:
-   * <ul>
-   *   <li>{@code bitmap} - the main texture sampler (maps to {@code u_texture})</li>
-   *   <li>{@code openfl_TextureCoordv} - the UV coordinate varying (maps to {@code v_texCoords})</li>
-   *   <li>{@code openfl_Alpha} - global alpha value (constant {@code 1.0})</li>
-   *   <li>{@code openfl_TextureSize} - texture dimensions uniform (maps to {@code u_textureSize})</li>
-   *   <li>{@code openfl_HasColorTransform} - color transform flag (constant {@code false})</li>
-   *   <li>{@code flixel_texture2D(t, c)} - texture sampling helper (maps to {@code texture2D(t, c)})</li>
-   * </ul>
-   *
-   * <p>Exposed as {@code protected} so subclasses can compose extended preprocessing pipelines
-   * that build on top of the standard HaxeFlixel environment.
-   */
-  protected static final String HAXEFLIXEL_DEFINES =
-      """
-          #define bitmap u_texture
-          #define openfl_TextureCoordv v_texCoords
-          #define openfl_Alpha 1.0
-          #define openfl_TextureSize u_textureSize
-          #define openfl_HasColorTransform false
-          #define flixel_texture2D(t, c) texture2D(t, c)
-          """;
-
-  /**
-   * The GLSL source block that replaces {@code #pragma header} in HaxeFlixel shaders.
-   *
-   * <p>Declares the uniform sampler, UV coordinate varying, and color varying that the
-   * compositing pipeline feeds into the fragment shader each frame. Using the framework's
-   * names here means the {@link #HAXEFLIXEL_DEFINES} aliases resolve correctly.
-   *
-   * <p>Exposed as {@code protected} so subclasses can compose extended preprocessing pipelines
-   * that build on top of the standard HaxeFlixel environment.
-   */
-  protected static final String HAXEFLIXEL_HEADER_EXPANSION =
-      """
-          #ifdef GL_ES
-          precision mediump float;
-          #endif
-          uniform sampler2D u_texture;
-          uniform vec2 u_textureSize;
-          varying vec4 v_color;
-          varying vec2 v_texCoords;
-          """;
-
   private FlixelShaderProgram program;
   private String loadedName;
   private String vertSrc;
@@ -191,35 +138,6 @@ public class FlixelShader extends FlixelBasic {
     this.vertSrc = vertSrc;
     this.fragSrc = fragSrc;
     this.program = Flixel.graphics.compileShaderSource(vertSrc, fragSrc);
-  }
-
-  /**
-   * Creates a {@code FlixelShader} from a HaxeFlixel-style fragment shader source string.
-   *
-   * <p>The preprocessor performs three transformations before compilation:
-   * <ol>
-   *   <li>Prepends {@link #HAXEFLIXEL_DEFINES} so HaxeFlixel names alias to FlixelGDX's GLSL uniform names.</li>
-   *   <li>Replaces {@code #pragma header} with {@link #HAXEFLIXEL_HEADER_EXPANSION},
-   *       which declares the texture sampler, size uniform, and UV varyings.</li>
-   *   <li>Removes any {@code #pragma body} lines, which have no meaning outside
-   *       HaxeFlixel's own template system.</li>
-   * </ol>
-   *
-   * <p>The built-in pass-through vertex shader is used, so no custom vertex source is needed.
-   *
-   * <p>Example:
-   *
-   * <pre>{@code
-   * String src = Flixel.files.internal("shaders/crt.frag").readString();
-   * FlixelShader crt = FlixelShader.fromHaxeFlixel(src);
-   * Flixel.cameras.first().setShader(crt);
-   * }</pre>
-   *
-   * @param fragSrc HaxeFlixel fragment shader source, typically read from a {@code .frag} file.
-   * @return A {@code FlixelShader} ready to assign to a {@link FlixelCamera}.
-   */
-  public static FlixelShader fromHaxeFlixel(String fragSrc) {
-    return new FlixelShader(DEFAULT_VERT, preprocessHaxeFlixel(fragSrc));
   }
 
   /**
@@ -275,8 +193,8 @@ public class FlixelShader extends FlixelBasic {
    * {@code FlixelShader} object rather than the underlying handle.
    *
    * <p>For shaders loaded via {@link #load(String)}, the backend re-reads the precompiled resource
-   * for the active renderer. For shaders constructed from GLSL source strings (including those
-   * created with {@link #fromHaxeFlixel(String)}), the backend recompiles the stored source.
+   * for the active renderer. For shaders constructed from GLSL source strings, the backend recompiles
+   * the stored source.
    */
   public void reload() {
     if (program != null && program != FlixelUnsupportedShader.INSTANCE) {
@@ -329,21 +247,5 @@ public class FlixelShader extends FlixelBasic {
    */
   public boolean getCompiled() {
     return isCompiled();
-  }
-
-  /**
-   * Runs the HaxeFlixel preprocessing pipeline on a raw fragment shader source string.
-   *
-   * <p>Exposed as {@code public} so subclasses can call it from their own factory methods, for
-   * example a {@code TimedShader.fromHaxeFlixel()} that needs to preprocess the source before
-   * passing it to a constructor.
-   *
-   * @param src Raw HaxeFlixel fragment shader source.
-   * @return Preprocessed GLSL ES 2.0 fragment source ready for compilation.
-   */
-  public static String preprocessHaxeFlixel(String src) {
-    src = src.replace("#pragma header", HAXEFLIXEL_HEADER_EXPANSION);
-    src = src.replace("#pragma body", "");
-    return HAXEFLIXEL_DEFINES + src;
   }
 }
