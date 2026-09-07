@@ -25,6 +25,7 @@ package org.flixelgdx.backend.html5;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
@@ -75,6 +76,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
   private HTMLCanvasElement canvas;
   private FlixelGame game;
+  private FlixelCrashHandler crashHandler;
 
   /**
    * Creates an HTML5 runner for the given canvas and platform components.
@@ -130,6 +132,11 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private void startGame() {
     hideLoadingOverlay();
     game.create();
+    // game.create() installs the crash handler into Flixel.runtime. Cache it here so the game loop
+    // can route frame exceptions through the handler without re-casting on every frame.
+    if (Flixel.runtime instanceof FlixelHtml5RuntimeDevice device) {
+      crashHandler = device.getCrashHandler();
+    }
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
 
@@ -162,17 +169,29 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
    * clamp it; every later frame reports the real time elapsed since the previous drawn frame.
    *
+   * <p>The frame body is wrapped in a try-catch so any unhandled Java exception thrown during an
+   * update or draw call is routed through the installed {@link FlixelCrashHandler} rather than
+   * propagating silently into the browser as an opaque JavaScript or WebAssembly error. The next
+   * frame is only scheduled after a clean frame; a caught exception stops the loop.
+   *
    * @param timestamp The browser-supplied frame time in milliseconds.
    */
   private void onAnimationFrame(double timestamp) {
-    float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
-    lastTimestamp = timestamp;
-    float elapsed = game.advanceTime(deltaSeconds);
-    game.update(elapsed);
-    graphics.beginFrame();
-    game.draw(graphics.getBatch());
-    game.endFrame();
-    graphics.endFrame();
+    try {
+      float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
+      lastTimestamp = timestamp;
+      float elapsed = game.advanceTime(deltaSeconds);
+      game.update(elapsed);
+      graphics.beginFrame();
+      game.draw(graphics.getBatch());
+      game.endFrame();
+      graphics.endFrame();
+    } catch (Throwable t) {
+      if (crashHandler != null) {
+        crashHandler.onCrash(null, t);
+      }
+      return;
+    }
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
 
