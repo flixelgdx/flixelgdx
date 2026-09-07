@@ -90,6 +90,11 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    * Promise rejections. Both complement the try-catch in the game loop, which handles Java
    * exceptions thrown during a frame.
    *
+   * <p>All JavaScript-side error extraction (reading {@code .stack}, {@code .message}, source
+   * location) is performed inside the JavaScript wrappers so the {@link JsCrashCallback} interface
+   * only ever receives a plain {@link String}. This avoids passing {@code JSObject} references
+   * through a {@link JSFunctor} callback, which is not supported in TeaVM's WasmGC code generator.
+   *
    * @param handler The crash handler to install.
    */
   @Override
@@ -97,19 +102,14 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
     Objects.requireNonNull(handler, "handler cannot be null");
     this.crashHandler = handler;
 
-    // window.onerror: catches uncaught JS exceptions and WASM traps that escape the Java layer.
-    // Returning true suppresses the browser's own built-in error UI so the framework overlay takes over.
-    installWindowOnerror((msg, src, line, col, jsErr) -> {
-      String detail = extractJsError(jsErr, msg);
-      handler.onCrash(null, new RuntimeException(detail));
-      return true;
-    });
+    // window.onerror: the JS wrapper extracts the best available description from the error object
+    // and calls back with a plain string so no JSObject crosses the @JSFunctor boundary.
+    // Returning true from window.onerror suppresses the browser's own error UI.
+    installWindowOnerror(detail -> handler.onCrash(null, new RuntimeException(detail)));
 
-    // window.unhandledrejection: catches Promises that rejected without a .catch() handler.
-    installRejectionListener(event -> {
-      String reason = extractRejectionReason(event);
-      handler.onCrash(null, new RuntimeException("Unhandled Promise rejection: " + reason));
-    });
+    // window.unhandledrejection: same pattern, reason extracted in JS before the callback.
+    installRejectionListener(
+        reason -> handler.onCrash(null, new RuntimeException("Unhandled Promise rejection: " + reason)));
   }
 
   /** Returns the crash handler installed by {@link #setCrashHandler}, or {@code null} if not set. */
@@ -117,24 +117,33 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
     return crashHandler;
   }
 
-  @JSBody(params = { "err", "fallback" }, script = """
-      if (!err) { return fallback || 'Unknown JavaScript error'; }
-      return err.stack || err.message || String(err);
+  /**
+   * Installs a {@code window.onerror} handler that extracts the best available description from
+   * the error and passes it as a plain string to {@code callback}. Always returns {@code true} to
+   * suppress the browser's own error UI.
+   */
+  @JSBody(params = "callback", script = """
+      window.onerror = function(msg, src, line, col, err) {
+        var detail = err ? (err.stack || err.message || msg) : (msg || 'Unknown JavaScript error');
+        detail += '\\n[' + (src || '?') + ':' + (line || '?') + ']';
+        callback(detail);
+        return true;
+      };
       """)
-  private static native String extractJsError(JSObject err, String fallback);
+  private static native void installWindowOnerror(JsCrashCallback callback);
 
-  @JSBody(params = "event", script = """
-      var r = event.reason;
-      if (!r) { return 'Unknown rejection reason'; }
-      return r.stack || r.message || String(r);
+  /**
+   * Adds a {@code window.unhandledrejection} listener that extracts the rejection reason and
+   * passes it as a plain string to {@code callback}.
+   */
+  @JSBody(params = "callback", script = """
+      window.addEventListener('unhandledrejection', function(event) {
+        var r = event.reason;
+        var reason = r ? (r.stack || r.message || String(r)) : 'Unknown rejection reason';
+        callback(reason);
+      });
       """)
-  private static native String extractRejectionReason(JSObject event);
-
-  @JSBody(params = "handler", script = "window.onerror = handler;")
-  private static native void installWindowOnerror(JsErrorHandler handler);
-
-  @JSBody(params = "handler", script = "window.addEventListener('unhandledrejection', handler);")
-  private static native void installRejectionListener(JsRejectionHandler handler);
+  private static native void installRejectionListener(JsCrashCallback callback);
 
   @JSBody(script = """
       return (window.performance && window.performance.memory)
@@ -154,17 +163,14 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
     return (long) usedHeap();
   }
 
-  /** Callback type for {@code window.onerror}. Returns {@code true} to suppress the browser's default error UI. */
+  /**
+   * Callback type shared by both browser error signals. Receives an already-formatted string
+   * describing the error so no {@code JSObject} references need to cross the JS-to-Java boundary,
+   * which is not supported in TeaVM's WasmGC {@link JSFunctor} code generator.
+   */
   @JSFunctor
   @FunctionalInterface
-  interface JsErrorHandler extends JSObject {
-    boolean onError(String message, String source, int line, int col, JSObject error);
-  }
-
-  /** Callback type for {@code window.unhandledrejection}. */
-  @JSFunctor
-  @FunctionalInterface
-  interface JsRejectionHandler extends JSObject {
-    void onRejection(JSObject event);
+  interface JsCrashCallback extends JSObject {
+    void onCrash(String detail);
   }
 }
