@@ -23,11 +23,13 @@
  */
 package org.flixelgdx.input;
 
+import org.flixelgdx.Flixel;
+
 /**
  * Safe default {@link FlixelInputDevice} for headless and not-yet-initialized sessions.
  *
  * <p>Every poll reports "nothing pressed" and it drops any processor handed to it, so framework code
- * can read {@link org.flixelgdx.Flixel#input Flixel.input} unconditionally before a real backend is
+ * can read {@link Flixel#input} unconditionally before a real backend is
  * installed. It relies entirely on the interface's neutral defaults.
  */
 public enum FlixelNoopInputDevice implements FlixelInputDevice {

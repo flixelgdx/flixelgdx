@@ -24,18 +24,20 @@
 package org.flixelgdx.functional;
 
 import org.flixelgdx.Flixel;
-
+import org.flixelgdx.FlixelObject;
+import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.tween.settings.FlixelShakeUnit;
+import org.flixelgdx.tween.type.FlixelShakeTween;
 
 /**
- * Something {@link org.flixelgdx.tween.type.FlixelShakeTween FlixelShakeTween} can jitter and restore without caring whether
+ * Something {@link FlixelShakeTween} can jitter and restore without caring whether
  * the underlying channel is a sprite graphic offset, a world position, or a desktop window position.
  *
- * <p>Implementations choose what X and Y mean: {@link org.flixelgdx.FlixelSprite FlixelSprite} uses graphic
- * {@linkplain org.flixelgdx.FlixelSprite#getOffsetX() offset}; {@link org.flixelgdx.FlixelObject FlixelObject}
+ * <p>Implementations choose what X and Y mean: {@link FlixelSprite} uses graphic
+ * {@linkplain org.flixelgdx.FlixelSprite#getOffsetX() offset}; {@link FlixelObject}
  * uses world {@linkplain org.flixelgdx.functional.FlixelPositional position};
- * {@link FlixelWindow FlixelWindow} uses window placement in screen coordinates.
+ * {@link FlixelWindow} uses window placement in screen coordinates.
  *
  * @see org.flixelgdx.tween.type.FlixelShakeTween
  */

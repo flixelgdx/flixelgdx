@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.file;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -44,8 +47,8 @@ import org.jetbrains.annotations.NotNull;
  *   <li>{@link #absolute(String)} - a file named by its full path on the underlying file system.</li>
  * </ul>
  *
- * <p>Access it through {@link org.flixelgdx.Flixel#files Flixel.files}. The active backend is
- * installed there before {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}. Until then, and
+ * <p>Access it through {@link Flixel#files}. The active backend is
+ * installed there before {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)}. Until then, and
  * on headless sessions, a safe default ({@link FlixelNoopFiles}) hands back empty handles so reads
  * never crash.
  *

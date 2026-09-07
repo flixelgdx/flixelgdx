@@ -28,7 +28,7 @@ package org.flixelgdx.debug;
  * log buffers, pause/camera tools, sprite picking) runs, but {@link #drawUI()} is a no-op.
  *
  * <p>Use this as the default overlay factory via
- * {@link FlixelDebugManager#setOverlayFactory FlixelDebugManager.setOverlayFactory(Supplier)}
+ * {@link FlixelDebugManager#setOverlayFactory}
  * when a platform does not ship a richer debugger yet (for example headless tests or backends
  * without Dear ImGui). Desktop launchers typically replace it with a platform-specific subclass.
  */

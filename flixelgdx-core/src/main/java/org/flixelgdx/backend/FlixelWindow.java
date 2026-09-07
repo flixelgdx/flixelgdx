@@ -28,6 +28,7 @@ import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.functional.FlixelShakeable;
 import org.flixelgdx.graphics.FlixelDisplayMode;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.tween.FlixelTween;
 
 /**
@@ -37,7 +38,7 @@ import org.flixelgdx.tween.FlixelTween;
  * the window size, fullscreen, and closing all live here. Where a control has no meaning on a
  * platform (for example, moving a browser tab), it simply does nothing, so the same code is safe
  * everywhere. Anything about the drawing surface itself (frame rate, vertical sync, display modes,
- * pixel density) lives on {@link org.flixelgdx.graphics.FlixelGraphicsManager Flixel.graphics}
+ * pixel density) lives on {@link FlixelGraphicsManager Flixel.graphics}
  * instead.
  *
  * <p>Use {@link Flixel#window} after {@link Flixel#start(FlixelGame, FlixelGameRunner)}. The implementation only
@@ -130,7 +131,7 @@ public interface FlixelWindow extends FlixelShakeable {
 
   /**
    * Applies transparent fills to all cameras without touching the restore snapshot.
-   * Called after {@link org.flixelgdx.FlixelGame#resetCameras()} when transparency stays enabled.
+   * Called after {@link FlixelGame#resetCameras()} when transparency stays enabled.
    */
   default void applyTransparencyBackdropOnly() {}
 
@@ -416,7 +417,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * Switches to fullscreen at the given display mode, when supported.
    *
    * <p>Obtain a mode from
-   * {@link org.flixelgdx.graphics.FlixelGraphicsManager#getDisplayModes() Flixel.graphics.getDisplayModes()}.
+   * {@link FlixelGraphicsManager#getDisplayModes() Flixel.graphics.getDisplayModes()}.
    * On web this requests the browser's fullscreen state; on mobile it toggles immersive mode. Return
    * to a window with {@link #setWindowed(int, int)}.
    *
@@ -445,7 +446,7 @@ public interface FlixelWindow extends FlixelShakeable {
    * Switches fullscreen mode on or off.
    *
    * <p>When enabling, uses the current display mode from
-   * {@link org.flixelgdx.graphics.FlixelGraphicsManager#getDisplayMode() Flixel.graphics.getDisplayMode()}.
+   * {@link FlixelGraphicsManager#getDisplayMode() Flixel.graphics.getDisplayMode()}.
    * When disabling, restores the window to the design size set in {@link FlixelConfig}.
    *
    * @param enabled {@code true} to enter fullscreen, {@code false} to return to windowed mode.

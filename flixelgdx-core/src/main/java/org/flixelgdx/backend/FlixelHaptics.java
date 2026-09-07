@@ -24,18 +24,19 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 
 /**
  * Platform-specific haptic (vibration) feedback for mobile devices.
  *
- * <p>Access the active implementation via {@link org.flixelgdx.Flixel#haptics Flixel.haptics}.
+ * <p>Access the active implementation via {@link Flixel#haptics}.
  * On platforms without a vibration motor (desktop, web), the default no-op implementation is used
  * and all calls are safely ignored. Check {@link #isSupported()} first if your game logic depends
  * on knowing whether feedback will actually fire.
  *
  * <p>Launchers on supported platforms (for example, Android) install a real implementation before
- * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)} runs.
- * You should not need to assign {@link org.flixelgdx.Flixel#haptics Flixel.haptics}
+ * {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)} runs.
+ * You should not need to assign {@link Flixel#haptics}
  * from game code unless you are providing a custom backend.
  *
  * <p>Example:

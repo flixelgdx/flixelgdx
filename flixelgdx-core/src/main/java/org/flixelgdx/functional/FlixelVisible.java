@@ -23,9 +23,11 @@
  */
 package org.flixelgdx.functional;
 
+import org.flixelgdx.FlixelBasic;
+
 /**
  * Something that can be shown or hidden for drawing. Matches the usual {@code visible} flag on
- * {@link org.flixelgdx.FlixelBasic FlixelBasic}.
+ * {@link FlixelBasic}.
  */
 public interface FlixelVisible {
 

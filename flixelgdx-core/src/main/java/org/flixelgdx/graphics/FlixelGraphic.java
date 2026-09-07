@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.graphics;
 
+import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
@@ -52,7 +53,7 @@ import java.util.Objects;
  *     to zero and {@link FlixelAssetManager#clearNonPersist()} runs, depending on the
  *     {@link FlixelAssetMode configured asset mode}.</li>
  *   <li><b>Owned</b> - Created with a dedicated {@link FlixelTexture} (e.g. from
- *     {@link org.flixelgdx.FlixelSprite#makeGraphic FlixelSprite.makeGraphic}). The texture is
+ *     {@link FlixelSprite#makeGraphic}). The texture is
  *     destroyed directly when the graphic is evicted. {@link #isOwned()} is {@code true}.</li>
  * </ul>
  *
@@ -252,7 +253,7 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
   /**
    * Returns {@code true} if this graphic wraps a dedicated texture (e.g. from
-   * {@link org.flixelgdx.FlixelSprite#makeGraphic FlixelSprite.makeGraphic}) that is destroyed
+   * {@link FlixelSprite#makeGraphic}) that is destroyed
    * directly when the graphic is evicted.
    *
    * @return {@code true} if owned.

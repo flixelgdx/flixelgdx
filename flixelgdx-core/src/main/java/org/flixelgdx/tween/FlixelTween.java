@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.tween;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelAngleable;
@@ -269,7 +271,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
+   * @param colorable The tint target; often a {@link FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -290,7 +292,7 @@ public abstract class FlixelTween implements FlixelPoolable {
    * {@link FlixelColorTween} will handle the color interpolation and apply it to the sprite smoothly, rather
    * than causing a flash or jump in color.
    *
-   * @param colorable The tint target; often a {@link org.flixelgdx.FlixelSprite FlixelSprite}.
+   * @param colorable The tint target; often a {@link FlixelSprite}.
    * @param from The starting color.
    * @param to The ending color.
    * @param tweenSettings The settings that configure and determine how the tween should animate.
@@ -823,8 +825,8 @@ public abstract class FlixelTween implements FlixelPoolable {
    * second call is automatically wired to fire after the tween returned by the first step, the
    * third after the tween returned by the second, and so on.
    *
-   * <p>Note that {@code then} does not fire for {@link org.flixelgdx.tween.settings.FlixelTweenType#LOOPING LOOPING}
-   * or {@link org.flixelgdx.tween.settings.FlixelTweenType#PINGPONG PINGPONG} tweens, since those
+   * <p>Note that {@code then} does not fire for {@link FlixelTweenType#LOOPING LOOPING}
+   * or {@link FlixelTweenType#PINGPONG PINGPONG} tweens, since those
    * repeat indefinitely and never reach a true final completion.
    *
    * <p>Example - three tweens that run one after another:
@@ -987,7 +989,7 @@ public abstract class FlixelTween implements FlixelPoolable {
 
   /**
    * Cancels every active tween on the global manager. Does not clear pools; pair with {@link #clearTweenPools()} if you
-   * want a full reset (as {@link org.flixelgdx.Flixel#switchState Flixel.switchState} does when {@code clearTweens} is true).
+   * want a full reset (as {@link Flixel#switchState} does when {@code clearTweens} is true).
    */
   public static void cancelActiveTweens() {
     FlixelArray<FlixelTween> list = globalManager.getActiveTweens();

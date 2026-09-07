@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.jvm.file;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,7 +41,7 @@ import java.nio.file.Files;
  * classpath files are read through the class loader (and are read-only).
  *
  * <p>Instances are created by {@link FlixelJvmFiles}; game code obtains them through
- * {@link org.flixelgdx.Flixel#files Flixel.files} and never constructs them directly.
+ * {@link Flixel#files} and never constructs them directly.
  */
 public class FlixelJvmFile implements FlixelFile {
 

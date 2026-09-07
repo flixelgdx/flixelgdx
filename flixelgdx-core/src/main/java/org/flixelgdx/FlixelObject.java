@@ -38,8 +38,8 @@ import org.flixelgdx.util.FlixelDirectionFlags;
  * capabilities on top of this spatial foundation.
  *
  * <h2>Collision</h2>
- * Use {@link org.flixelgdx.Flixel#overlap Flixel.overlap()} and
- * {@link org.flixelgdx.Flixel#collide Flixel.collide()} for overlap/separation
+ * Use {@link Flixel#overlap} and
+ * {@link Flixel#collide} for overlap/separation
  * checks. The static {@link #separate(FlixelObject, FlixelObject)} method resolves overlaps
  * by adjusting positions and velocities.
  *

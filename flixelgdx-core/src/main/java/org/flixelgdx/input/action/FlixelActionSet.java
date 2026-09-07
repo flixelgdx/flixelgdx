@@ -23,30 +23,34 @@
  */
 package org.flixelgdx.input.action;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelState;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.collections.FlixelArray;
-
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
+import org.flixelgdx.input.FlixelInputManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Groups logical {@link FlixelAction} instances (digital and analog) and advances them on the same frame
- * contract as {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager}. Actions read {@link org.flixelgdx.Flixel#keys Flixel.keys},
- * {@link org.flixelgdx.Flixel#mouse Flixel.mouse}, {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads}, and {@code Gdx.input}
+ * contract as {@link FlixelInputManager}. Actions read {@link Flixel#keys},
+ * {@link Flixel#mouse}, {@link Flixel#gamepads}, and {@code Gdx.input}
  * during {@link #update(float)}. This class does not hook platform input events directly. Framework keyboard and mouse managers stay the single entry
  * points for those devices.
  *
  * <h2>Lifecycle (normal games)</h2>
  *
  * <ol>
- *   <li>Construct a subclass (or this type) after {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}.</li>
+ *   <li>Construct a subclass (or this type) after {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)}.</li>
  *   <li>In the subclass constructor, create {@link FlixelActionDigital} / {@link FlixelActionAnalog} instances,
  *       call {@link #add(FlixelAction)} for each, and add {@link FlixelDigitalBinding} / {@link FlixelAnalogBinding} instances.</li>
- *   <li>By default the set registers with {@link FlixelActionSets}; {@link org.flixelgdx.FlixelGame FlixelGame} calls
+ *   <li>By default the set registers with {@link FlixelActionSets}; {@link FlixelGame} calls
  *       {@link FlixelActionSets#update(float)} after {@code Flixel.gamepads.update()} and {@link FlixelActionSets#endFrameAll()}
  *       after keys, mouse, and gamepads {@code endFrame()} in {@code render()}.</li>
- *   <li>From {@link org.flixelgdx.FlixelState#update(float) FlixelState.update(float)} (or similar), read {@code jump.justPressed()},
+ *   <li>From {@link FlixelState#update(float)} (or similar), read {@code jump.justPressed()},
  *       {@code move.getX()}, etc.</li>
  *   <li>When the screen or mode ends, call {@link #destroy()} so the set unregisters and clears members.</li>
  * </ol>

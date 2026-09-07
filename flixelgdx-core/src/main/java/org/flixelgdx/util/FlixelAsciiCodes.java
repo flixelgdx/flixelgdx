@@ -23,8 +23,10 @@
  */
 package org.flixelgdx.util;
 
+import org.flixelgdx.logging.FlixelLogger;
+
 /**
- * ANSI escape sequences for console text styling used by {@link org.flixelgdx.logging.FlixelLogger FlixelLogger},
+ * ANSI escape sequences for console text styling used by {@link FlixelLogger},
  * although you may find this class useful for other purposes.
  */
 public final class FlixelAsciiCodes {

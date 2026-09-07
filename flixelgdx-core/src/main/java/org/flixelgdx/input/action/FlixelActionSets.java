@@ -23,21 +23,23 @@
  */
 package org.flixelgdx.input.action;
 
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.FlixelState;
 import org.flixelgdx.collections.FlixelArray;
-
 import org.flixelgdx.functional.FlixelDrawable;
+import org.flixelgdx.input.FlixelInputManager;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Global registry of {@link FlixelActionSet} instances. {@link org.flixelgdx.FlixelGame FlixelGame} invokes
+ * Global registry of {@link FlixelActionSet} instances. {@link FlixelGame} invokes
  * {@link #update(float)} and {@link #endFrameAll()} so every registered set stays on the same contract as
- * {@link org.flixelgdx.input.FlixelInputManager FlixelInputManager} (keys, mouse, gamepads).
+ * {@link FlixelInputManager} (keys, mouse, gamepads).
  *
  * <h2>When {@code updateAll} runs</h2>
  *
- * <p>Order inside {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)}: {@code Flixel.keys.update()},
+ * <p>Order inside {@link FlixelGame#update(float)}: {@code Flixel.keys.update()},
  * {@code Flixel.mouse.update()}, {@code Flixel.gamepads.update()}, then {@link #update(float)}. Gameplay code in
- * {@link org.flixelgdx.FlixelState FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
+ * {@link FlixelState} runs after that, so {@code jump.justPressed()} reflects this frame's input.
  *
  * <h2>When {@code endFrameAll} runs</h2>
  *
@@ -70,7 +72,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link org.flixelgdx.FlixelGame#update(float) FlixelGame.update(float)} after gamepad polling.
+   * Invoked from {@link FlixelGame#update(float)} after gamepad polling.
    *
    * @param elapsed Seconds since last frame (same as game update).
    */
@@ -81,7 +83,7 @@ public final class FlixelActionSets {
   }
 
   /**
-   * Invoked from {@link org.flixelgdx.FlixelGame#endFrame() FlixelGame.endFrame()} after keys, mouse, and gamepads
+   * Invoked from {@link FlixelGame#endFrame()} after keys, mouse, and gamepads
    * have finalized their own per-frame state.
    */
   public static void endFrameAll() {

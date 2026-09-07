@@ -24,6 +24,7 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
 import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>All of this is inherently platform-specific. A desktop JVM can inspect its heap and classpath;
  * a web browser cannot. So, like the other backend seams ({@link FlixelWindow},
  * {@link FlixelHostIntegration}), this is an interface the active backend fills in. Read it through
- * {@link org.flixelgdx.Flixel#runtime Flixel.runtime}.
+ * {@link Flixel#runtime}.
  *
  * <p>Every method has a safe default, so a backend only overrides what it can actually report, and
  * the no-op device ({@link FlixelNoopRuntimeDevice}) keeps calls safe before a backend is installed
@@ -161,7 +162,7 @@ public interface FlixelRuntimeDevice {
 
   /**
    * Sets the platform-specific stack trace provider. Called by the platform launcher before
-   * {@link org.flixelgdx.Flixel#start} so the logger resolves call-site information correctly.
+   * {@link Flixel#start} so the logger resolves call-site information correctly.
    *
    * @param provider The provider to install.
    */
@@ -178,7 +179,7 @@ public interface FlixelRuntimeDevice {
    * <p>The default implementation is a no-op, so platforms that cannot intercept crashes degrade
    * gracefully without errors.
    *
-   * <p>This is called once by {@link org.flixelgdx.FlixelGame} during {@code create()}, before the
+   * <p>This is called once by {@link FlixelGame} during {@code create()}, before the
    * initial state is loaded.
    *
    * @param handler The crash handler to install.

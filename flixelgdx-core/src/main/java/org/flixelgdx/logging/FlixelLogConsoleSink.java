@@ -23,14 +23,18 @@
  */
 package org.flixelgdx.logging;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
+
 /**
  * Optional sink for a single structured log line to the host console. Used on platforms where
  * {@code System.out} is not appropriate or where ANSI colors from the default path do not render
  * (for example, browser devtools with styled {@code console.log}).
  *
- * <p>Assign to {@link FlixelLogger#logConsoleSink FlixelLogger.logConsoleSink}
+ * <p>Assign to {@link FlixelLogger#logConsoleSink}
  * (via {@code Flixel.log.logConsoleSink}) before
- * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}
+ * {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)}
  * from the platform launcher. When set, the logger calls this instead of writing ANSI text to
  * standard output; file logging and in-game log listeners are unchanged.
  */

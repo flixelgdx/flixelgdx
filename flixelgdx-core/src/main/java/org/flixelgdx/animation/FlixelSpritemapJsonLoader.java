@@ -24,6 +24,7 @@
 package org.flixelgdx.animation;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.asset.FlixelAssetPaths;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelObjectIntMap;
@@ -54,7 +55,7 @@ import java.util.Objects;
  *
  * <p>Game code does not usually call this helper directly. A {@link FlixelAnimateSprite} accepts an
  * Animate atlas triple through {@link FlixelAnimateSprite#addSpritemapAndAnimation}, and a plain
- * {@link org.flixelgdx.FlixelSprite FlixelSprite} accepts a simple-format pair through
+ * {@link FlixelSprite} accepts a simple-format pair through
  * {@link FlixelAnimationController#loadSpritemapFromJson}.
  */
 public final class FlixelSpritemapJsonLoader {

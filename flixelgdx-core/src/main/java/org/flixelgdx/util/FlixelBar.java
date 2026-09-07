@@ -31,6 +31,7 @@ import org.flixelgdx.functional.supplier.FloatSupplier;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.group.FlixelSpriteGroup;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +43,7 @@ import java.util.Objects;
 /**
  * A UI bar for progress, health, stamina, experience, cooldowns, loading, or any value mapped to a
  * numeric range. It extends {@link FlixelSprite} so you can add instances to a
- * {@link org.flixelgdx.group.FlixelSpriteGroup FlixelSpriteGroup}, use sprite transforms (position, scale,
+ * {@link FlixelSpriteGroup}, use sprite transforms (position, scale,
  * rotation, tint, alpha) with the rest of your HUD, and rely on the same camera and lifecycle rules
  * as other sprites.
  *
@@ -60,7 +61,7 @@ import java.util.Objects;
  *
  * <p><b>Smoothing</b>: {@link #setLerp(float)} applies frame-rate independent smoothing to the displayed
  * value so the bar can lag slightly behind the target, similar to camera follow smoothing in
- * {@link org.flixelgdx.FlixelCamera FlixelCamera}.
+ * {@link FlixelCamera}.
  *
  * <p><b>Appearance</b>: Solid colors, custom empty and filled regions, optional two-color gradients,
  * optional border, and threshold-based fill colors with optional color smoothing when the fill percent

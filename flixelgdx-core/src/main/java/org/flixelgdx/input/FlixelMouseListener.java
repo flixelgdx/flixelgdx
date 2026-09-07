@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.input;
 
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 
 /**
@@ -37,7 +38,7 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
  * listeners in the chain should see it. Returning {@code false} lets it propagate.
  *
  * <p>Screen coordinates use the top-left origin: X grows right, Y grows down. Convert to world
- * space through a {@link org.flixelgdx.FlixelCamera FlixelCamera} when needed.
+ * space through a {@link FlixelCamera} when needed.
  *
  * @see FlixelInputDevice#addMouseListener(FlixelMouseListener)
  * @see FlixelKeyboardListener

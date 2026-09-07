@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.logging;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.FlixelGame;
+import org.flixelgdx.backend.FlixelGameRunner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,9 +40,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>On platforms where file logging is not feasible (for example, web/TeaVM), no
  * handler needs to be registered and the logger will simply skip file output.
  *
- * <p>Assign an implementation to {@link FlixelLogger#logFileHandler FlixelLogger.logFileHandler}
+ * <p>Assign an implementation to {@link FlixelLogger#logFileHandler}
  * (via {@code Flixel.log.logFileHandler}) before
- * {@link org.flixelgdx.Flixel#start(org.flixelgdx.FlixelGame, org.flixelgdx.backend.FlixelGameRunner) Flixel.start(...)}
+ * {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)}
  * in the platform launcher.
  *
  * @see FlixelLogger

@@ -94,7 +94,7 @@ import java.util.function.Supplier;
  * so members placed at {@code (x, y)} always appear at those design-resolution coordinates
  * regardless of what the active game camera is doing. Enable and disable the overlay with
  * {@link #enableGlobalOverlay(boolean)}. The overlay is completely separate from
- * {@link org.flixelgdx.debug.FlixelDebugOverlay} and does not appear in debug mode unless you
+ * {@link FlixelDebugOverlay} and does not appear in debug mode unless you
  * explicitly enable it.
  *
  * <h2>Signals</h2>

@@ -32,6 +32,7 @@ import org.flixelgdx.asset.FlixelBaseAssetManager;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +75,7 @@ import java.nio.ByteOrder;
  *
  * <p>The decoded pixels are stored behind a {@code FLXI} header in
  * {@code window.__flixelDecodedImages}, the same compact format the web graphics backend unpacks
- * via {@link org.flixelgdx.graphics.FlixelGraphicsManager#decodeImage decodeImage}. This keeps the
+ * via {@link FlixelGraphicsManager#decodeImage decodeImage}. This keeps the
  * pixel extraction path in one place and means the only web-specific code is the Promise-polling
  * loop in {@link #update}.
  */
@@ -100,7 +101,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   /**
    * Creates the manager and replaces the default image loaders with web-aware ones that read
    * pre-decoded pixels from the browser's decode cache rather than calling
-   * {@link org.flixelgdx.graphics.FlixelGraphicsManager#decodeImage decodeImage} inline.
+   * {@link FlixelGraphicsManager#decodeImage decodeImage} inline.
    */
   public FlixelHtml5AssetManager() {
     WebImageLoader loader = new WebImageLoader();

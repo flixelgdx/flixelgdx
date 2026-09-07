@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.input.action;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.math.FlixelVector;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +38,7 @@ import java.util.Objects;
  * <h2>How values combine</h2>
  *
  * <p>Each frame, key halves add {@code -1}, {@code 0}, or {@code +1} per axis;
- * {@link org.flixelgdx.Flixel#gamepads Flixel.gamepads} axis bindings add smooth stick values.
+ * {@link Flixel#gamepads} axis bindings add smooth stick values.
  * Steam {@link FlixelSteamActionReader#getAnalogX} / {@code getAnalogY} are added on top. The
  * result is clamped to a maximum length of {@code 1} so diagonals do not exceed unit speed when
  * mixing keys and sticks.
@@ -66,7 +67,7 @@ import java.util.Objects;
  * {@link #flickThreshold}. It resets to {@code false} as long as the stick stays past the
  * threshold, and fires again only after the stick returns below the threshold and crosses it again.
  * This mirrors the single-frame contract of
- * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()} and is useful for
+ * {@link FlixelActionDigital#justPressed()} and is useful for
  * menu navigation where each stick deflection should trigger exactly one action.
  *
  * <p>{@link #flickedRepeating()} extends that with hold-repeat: it fires on the initial flick,
@@ -320,7 +321,7 @@ public class FlixelActionAnalog extends FlixelAction {
    *
    * <p>Stays {@code false} while the stick remains past the threshold, and fires again only after
    * the stick drops below it and crosses it once more. This mirrors the single-frame contract of
-   * {@link FlixelActionDigital#justPressed() FlixelActionDigital.justPressed()}, making it safe to
+   * {@link FlixelActionDigital#justPressed()}, making it safe to
    * use for menu navigation where one deflection should trigger exactly one action.
    *
    * <p>Key and button bindings contribute {@code +-1.0} per axis, so any bound key press that

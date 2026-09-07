@@ -23,16 +23,18 @@
  */
 package org.flixelgdx.backend.desktop.input;
 
+import org.flixelgdx.backend.desktop.FlixelDesktopRunner;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.input.FlixelInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.FlixelTouchListener;
+import org.flixelgdx.input.keyboard.FlixelKey;
 
 /**
  * The desktop input device, driven by SDL3 events pumped from the game loop.
  *
- * <p>The {@link org.flixelgdx.backend.desktop.FlixelDesktopRunner runner} translates SDL keyboard
+ * <p>The {@link FlixelDesktopRunner runner} translates SDL keyboard
  * and mouse events into the {@code on*} calls here, which update the cached state (for
  * {@link #isKeyPressed(int)} / pointer getters) and forward to the registered
  * {@link FlixelKeyboardListener} and {@link FlixelMouseListener} instances that the framework's
@@ -56,7 +58,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
   /**
    * Feeds a key-down event from the runner.
    *
-   * @param flixelKey The mapped {@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey} code.
+   * @param flixelKey The mapped {@link FlixelKey} code.
    */
   public void onKeyDown(int flixelKey) {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {
@@ -70,7 +72,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
   /**
    * Feeds a key-up event from the runner.
    *
-   * @param flixelKey The mapped {@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey} code.
+   * @param flixelKey The mapped {@link FlixelKey} code.
    */
   public void onKeyUp(int flixelKey) {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {

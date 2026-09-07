@@ -45,6 +45,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
+import org.flixelgdx.debug.FlixelHeadlessDebugOverlay;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.file.FlixelNoopFiles;
 import org.flixelgdx.functional.FlixelAntialiasable;
@@ -61,6 +62,7 @@ import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
+import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.keyboard.FlixelKeyInputManager;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
@@ -384,7 +386,7 @@ public final class Flixel {
    * between keys that are held down, freshly pressed on the current frame, and freshly released
    * on the current frame, so your game logic can respond precisely to each event type.
    *
-   * <p>Key constants are defined in {@link org.flixelgdx.input.keyboard.FlixelKey FlixelKey}. Pass any of
+   * <p>Key constants are defined in {@link FlixelKey}. Pass any of
    * those constants to the methods below:
    * <ul>
    *   <li>{@link FlixelKeyInputManager#pressed(int)} - {@code true} while the key is held down.</li>
@@ -514,7 +516,7 @@ public final class Flixel {
    *
    * <p>The overlay itself is created by a factory set before the game starts. Desktop launchers
    * typically supply a richer overlay (for example, one built with Dear ImGui), while headless or
-   * web builds fall back to {@link org.flixelgdx.debug.FlixelHeadlessDebugOverlay}. Use
+   * web builds fall back to {@link FlixelHeadlessDebugOverlay}. Use
    * {@link FlixelDebugManager#setOverlayFactory} to install a custom factory before
    * {@link #start(FlixelGame, FlixelGameRunner)}.
    *
@@ -669,7 +671,7 @@ public final class Flixel {
    * These all delegate to this field.
    *
    * <p>Each message is automatically annotated with the calling class name and line number by the
-   * active {@link org.flixelgdx.logging.FlixelStackTraceProvider}, making it easy to trace output back to its source
+   * active {@link FlixelStackTraceProvider}, making it easy to trace output back to its source
    * without a full stack dump.
    *
    * <p>To write logs to a file, call {@link FlixelLogger#startFileLogging()} after configuring

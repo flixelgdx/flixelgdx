@@ -23,9 +23,12 @@
  */
 package org.flixelgdx.asset;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelImage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>This is the public seam used by sprites and other runtime systems. It is a pure interface:
  * each platform installs its own implementation (the shared JVM one for desktop and Android, a
  * browser-based one for web), and a safe no-op ({@link FlixelNoopAssetManager}) is in place
- * before any backend starts. Access via {@link org.flixelgdx.Flixel#assets Flixel.assets}.
+ * before any backend starts. Access via {@link Flixel#assets}.
  *
  * <p><b>Basic workflow:</b>
  *
@@ -119,7 +122,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * a {@link ClassCastException} at runtime if the inferred type does not match.
    *
    * @param path Asset path.
-   * @param <T> Expected wrapper type (e.g. {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic}).
+   * @param <T> Expected wrapper type (e.g. {@link FlixelGraphic}).
    * @return The cached or newly created handle; never {@code null}.
    * @throws IllegalArgumentException if no loader is registered for the path's extension.
    */
@@ -163,7 +166,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   /**
    * Registers a caller-constructed asset handle directly with the manager cache. Use this for
    * assets created outside the normal loading pipeline (e.g. a texture built from a
-   * {@link org.flixelgdx.graphics.FlixelImage FlixelImage}).
+   * {@link FlixelImage}).
    *
    * <p>The handle is keyed by {@link FlixelAsset#getPath()}. If a handle is already registered
    * under that key, it is replaced.
@@ -257,7 +260,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
 
   /**
    * Unloads non-persistent asset handles whose reference count is zero. Called automatically
-   * by {@link org.flixelgdx.Flixel#switchState Flixel.switchState} in
+   * by {@link Flixel#switchState} in
    * {@link FlixelAssetMode#STANDARD} and {@link FlixelAssetMode#AGGRESSIVE} modes.
    */
   void clearNonPersist();
@@ -271,7 +274,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * Returns the default {@link FlixelAsset#isPersist()} value assigned to newly created handles.
    *
    * <p>When {@code true}, new handles survive {@link #clearNonPersist()} when unreferenced.
-   * Owned assets (e.g. textures created from a {@link org.flixelgdx.graphics.FlixelImage
+   * Owned assets (e.g. textures created from a {@link FlixelImage
    * FlixelImage}) always use {@code persist = false} regardless of this setting.
    *
    * @return The global persist default.
@@ -296,7 +299,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   /**
    * Sets the active asset management mode. Takes effect on the next
    * {@link FlixelAsset#release()} call or the next
-   * {@link org.flixelgdx.Flixel#switchState Flixel.switchState}, whichever comes first.
+   * {@link Flixel#switchState}, whichever comes first.
    *
    * @param mode The new mode; must not be {@code null}.
    */
@@ -318,7 +321,7 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * been loaded yet.
    *
    * <p>This is the storage half of the loader pipeline: wrapper handles such as
-   * {@link org.flixelgdx.graphics.FlixelGraphic FlixelGraphic} call it to look up their content
+   * {@link FlixelGraphic} call it to look up their content
    * (a texture, a string, decoded audio) without knowing how it was produced.
    *
    * @param path Normalized asset path.

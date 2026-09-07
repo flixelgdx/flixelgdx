@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.animation;
 
+import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelFrame;
@@ -76,8 +77,8 @@ public final class FlixelAnimateRig {
 
   /**
    * The shared atlas regions indexed by {@link Part#atlasIndex}. This is the same list installed on the
-   * owning {@link org.flixelgdx.FlixelSprite FlixelSprite} through
-   * {@link org.flixelgdx.FlixelSprite#applySparrowAtlas FlixelSprite.applySparrowAtlas}, so callers may look up a region
+   * owning {@link FlixelSprite} through
+   * {@link FlixelSprite#applySparrowAtlas}, so callers may look up a region
    * either way.
    */
   @NotNull

@@ -37,7 +37,7 @@ import java.util.Arrays;
 /**
  * The desktop window, wrapping the SDL3 window the {@link FlixelDesktopRunner} created.
  *
- * <p>Exposes the window controls game code reaches through {@link org.flixelgdx.Flixel#window
+ * <p>Exposes the window controls game code reaches through {@link Flixel#window
  * Flixel.window}: title, size, position, fullscreen, decoration, focus, opacity, and closing.
  *
  * <p>Window position is cached locally rather than queried from SDL on each read. The cache is
