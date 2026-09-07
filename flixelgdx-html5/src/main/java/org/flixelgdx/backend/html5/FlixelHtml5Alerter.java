@@ -77,74 +77,72 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
   }
 
   @JSBody(params = { "title", "message" }, script = """
-      (function () {
-        if (!document.body || document.getElementById('flixel-crash-overlay')) { return; }
+      if (!document.body || document.getElementById('flixel-crash-overlay')) { return; }
 
-        var overlay = document.createElement('div');
-        overlay.id = 'flixel-crash-overlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.90);'
-          + 'display:flex;align-items:center;justify-content:center;'
-          + 'font-family:monospace;box-sizing:border-box;padding:16px;';
+      var overlay = document.createElement('div');
+      overlay.id = 'flixel-crash-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.90);'
+        + 'display:flex;align-items:center;justify-content:center;'
+        + 'font-family:monospace;box-sizing:border-box;padding:16px;';
 
-        var box = document.createElement('div');
-        box.style.cssText = 'background:#161622;border:2px solid #e94560;border-radius:6px;'
-          + 'padding:28px 32px;max-width:680px;width:100%;max-height:85vh;overflow-y:auto;'
-          + 'color:#eee;box-sizing:border-box;';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#161622;border:2px solid #e94560;border-radius:6px;'
+        + 'padding:28px 32px;max-width:680px;width:100%;max-height:85vh;overflow-y:auto;'
+        + 'color:#eee;box-sizing:border-box;';
 
-        var heading = document.createElement('h2');
-        heading.style.cssText = 'margin:0 0 12px 0;color:#e94560;font-size:1.1em;'
-          + 'letter-spacing:2px;text-transform:uppercase;';
-        heading.textContent = 'GAME CRASHED';
+      var heading = document.createElement('h2');
+      heading.style.cssText = 'margin:0 0 12px 0;color:#e94560;font-size:1.1em;'
+        + 'letter-spacing:2px;text-transform:uppercase;';
+      heading.textContent = 'GAME CRASHED';
 
-        var titleEl = document.createElement('p');
-        titleEl.style.cssText = 'margin:0 0 4px 0;font-weight:bold;color:#f4a261;font-size:0.95em;';
-        titleEl.textContent = title;
+      var titleEl = document.createElement('p');
+      titleEl.style.cssText = 'margin:0 0 4px 0;font-weight:bold;color:#f4a261;font-size:0.95em;';
+      titleEl.textContent = title;
 
-        var msgEl = document.createElement('p');
-        msgEl.style.cssText = 'margin:0 0 14px 0;font-size:0.88em;line-height:1.6;'
-          + 'white-space:pre-wrap;word-break:break-word;color:#ddd;';
-        msgEl.textContent = message;
+      var msgEl = document.createElement('p');
+      msgEl.style.cssText = 'margin:0 0 14px 0;font-size:0.88em;line-height:1.6;'
+        + 'white-space:pre-wrap;word-break:break-word;color:#ddd;';
+      msgEl.textContent = message;
 
-        var hint = document.createElement('p');
-        hint.style.cssText = 'margin:0 0 16px 0;font-size:0.8em;color:#888;';
-        hint.textContent = 'Open the browser console (F12) for the full stack trace and log output.';
+      var hint = document.createElement('p');
+      hint.style.cssText = 'margin:0 0 16px 0;font-size:0.8em;color:#888;';
+      hint.textContent = 'Open the browser console (F12) for the full stack trace and log output.';
 
-        var footer = document.createElement('div');
-        footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;'
-          + 'flex-wrap:wrap;gap:10px;border-top:1px solid #333;padding-top:14px;';
+      var footer = document.createElement('div');
+      footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;'
+        + 'flex-wrap:wrap;gap:10px;border-top:1px solid #333;padding-top:14px;';
 
-        var btn = document.createElement('button');
-        btn.style.cssText = 'background:#e94560;color:#fff;border:none;border-radius:4px;'
-          + 'padding:7px 18px;cursor:pointer;font-family:monospace;font-size:0.85em;letter-spacing:1px;';
-        btn.textContent = 'Copy Report';
-        var report = 'FlixelGDX Crash Report\\n'
-          + new Date().toISOString() + '\\n'
-          + 'Browser: ' + navigator.userAgent + '\\n'
-          + 'URL: ' + window.location.href + '\\n\\n'
-          + title + '\\n' + message;
-        btn.onclick = function () {
-          if (navigator.clipboard) {
-            navigator.clipboard.writeText(report).catch(function () {});
-          }
-          btn.textContent = 'Copied!';
-          setTimeout(function () { btn.textContent = 'Copy Report'; }, 2000);
-        };
+      var btn = document.createElement('button');
+      btn.style.cssText = 'background:#e94560;color:#fff;border:none;border-radius:4px;'
+        + 'padding:7px 18px;cursor:pointer;font-family:monospace;font-size:0.85em;letter-spacing:1px;';
+      btn.textContent = 'Copy Report';
+      var report = 'FlixelGDX Crash Report\\n'
+        + new Date().toISOString() + '\\n'
+        + 'Browser: ' + navigator.userAgent + '\\n'
+        + 'URL: ' + window.location.href + '\\n\\n'
+        + title + '\\n' + message;
+      btn.onclick = function () {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(report).catch(function () {});
+        }
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = 'Copy Report'; }, 2000);
+      };
 
-        var ua = document.createElement('small');
-        ua.style.cssText = 'color:#666;font-size:0.72em;max-width:400px;overflow:hidden;'
-          + 'text-overflow:ellipsis;white-space:nowrap;';
-        ua.textContent = navigator.userAgent;
+      var ua = document.createElement('small');
+      ua.style.cssText = 'color:#666;font-size:0.72em;max-width:400px;overflow:hidden;'
+        + 'text-overflow:ellipsis;white-space:nowrap;';
+      ua.textContent = navigator.userAgent;
 
-        footer.appendChild(btn);
-        footer.appendChild(ua);
-        box.appendChild(heading);
-        box.appendChild(titleEl);
-        box.appendChild(msgEl);
-        box.appendChild(hint);
-        box.appendChild(footer);
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-      })();
+      footer.appendChild(btn);
+      footer.appendChild(ua);
+      box.appendChild(heading);
+      box.appendChild(titleEl);
+      box.appendChild(msgEl);
+      box.appendChild(hint);
+      box.appendChild(footer);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
       """)
   private static native void showCrashOverlay(String title, String message);
 
