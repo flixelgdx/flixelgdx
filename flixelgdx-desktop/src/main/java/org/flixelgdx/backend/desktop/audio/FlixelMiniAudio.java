@@ -266,4 +266,104 @@ public class FlixelMiniAudio {
    * @param z Z position.
    */
   static native void soundSetPosition(long sound, float x, float y, float z);
+
+  /**
+   * Reattaches a sound's output directly to its group (or the engine endpoint when {@code group}
+   * is {@code 0}), undoing any prior effect-chain wiring.
+   *
+   * @param engine The engine handle.
+   * @param sound The sound handle.
+   * @param group The group handle, or {@code 0} if the sound belongs to no group.
+   */
+  static native void soundRestoreRouting(long engine, long sound, long group);
+
+  /**
+   * Returns the current volume multiplier for a sound group.
+   *
+   * @param group The group handle.
+   * @return Volume multiplier in {@code [0, 1]} (or higher).
+   */
+  static native float groupGetVolume(long group);
+
+  /**
+   * Sets the volume multiplier for a sound group.
+   *
+   * @param group The group handle.
+   * @param volume Volume multiplier in {@code [0, 1]} (or higher).
+   */
+  static native void groupSetVolume(long group, float volume);
+
+  /**
+   * Creates an effect node of the given type and returns its native handle.
+   *
+   * <p>The {@code typeId} must be one of the constants in {@link org.flixelgdx.audio.FlixelAudioNodeRegistry}.
+   * The {@code params} array interpretation is type-specific:
+   * <ul>
+   *   <li>LOW_PASS: {@code [cutoffHz, order]}</li>
+   *   <li>HIGH_PASS: {@code [cutoffHz, order]}</li>
+   *   <li>BAND_PASS: {@code [cutoffHz, q, order]}</li>
+   *   <li>DELAY: {@code [delaySeconds, decay]}</li>
+   * </ul>
+   *
+   * @param engine The engine handle.
+   * @param sound The sound handle (used to read sample rate and channel count).
+   * @param typeId The registered node type ID.
+   * @param params Construction-time parameters.
+   * @return A native effect node handle, or {@code 0} on failure.
+   */
+  static native long nodeCreate(long engine, long sound, int typeId, float[] params);
+
+  /**
+   * Updates a live-adjustable parameter on an effect node.
+   *
+   * @param node The effect node handle.
+   * @param paramId Parameter index; interpretation is type-specific.
+   * @param value The new value.
+   */
+  static native void nodeSetParam(long node, int paramId, float value);
+
+  /**
+   * Reads a parameter from an effect node.
+   *
+   * @param node The effect node handle.
+   * @param paramId Parameter index.
+   * @return The current parameter value, or {@code 0} if the index is out of range.
+   */
+  static native float nodeGetParam(long node, int paramId);
+
+  /**
+   * Wires a sound's output into an effect node's input.
+   *
+   * <p>The sound is disconnected from its previous destination (group or endpoint) and
+   * redirected into the effect's input bus.
+   *
+   * @param node The effect node handle.
+   * @param sound The sound handle.
+   */
+  static native void nodeConnectToSound(long node, long sound);
+
+  /**
+   * Chains two effect nodes: upstream's output bus 0 is redirected into downstream's input bus 0.
+   *
+   * @param downstream The next effect node in the chain.
+   * @param upstream The previous effect node whose output is being redirected.
+   */
+  static native void nodeConnect(long downstream, long upstream);
+
+  /**
+   * Routes an effect node's output to the group node (or the engine endpoint when {@code group}
+   * is {@code 0}).
+   *
+   * @param engine The engine handle.
+   * @param node The effect node handle.
+   * @param group The group handle, or {@code 0} to route directly to the endpoint.
+   */
+  static native void nodeRouteToOutput(long engine, long node, long group);
+
+  /**
+   * Detaches and frees an effect node.
+   *
+   * @param node The effect node handle.
+   */
+  static native void nodeDestroy(long node);
 }
