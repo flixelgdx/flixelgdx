@@ -65,7 +65,19 @@ import java.nio.ByteOrder;
  */
 public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
+  /**
+   * Weight applied to each new frame-time sample when smoothing the frame rate. A small value keeps
+   * the reported FPS steady instead of jittering with every frame.
+   */
+  private static final double FPS_SMOOTHING = 0.1;
+
   private static final int HEADER_SIZE = 12;
+
+  /** Timestamp of the previous frame in milliseconds, or a negative value before the first frame. */
+  private double lastFrameTime = -1.0;
+
+  /** Exponentially smoothed frame rate, updated once per frame in {@link #beginFrame()}. */
+  private double averageFps;
 
   @NotNull
   private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
@@ -113,10 +125,33 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     }
   }
 
+  /**
+   * Samples the frame rate at the start of each frame. The runner calls this once per
+   * {@code requestAnimationFrame} tick, so the delta between calls is one displayed frame; the
+   * result is smoothed so the readout in the debug overlay stays steady.
+   */
+  @Override
+  public void beginFrame() {
+    double now = nowMillis();
+    if (lastFrameTime >= 0.0) {
+      double delta = now - lastFrameTime;
+      if (delta > 0.0) {
+        double instantFps = 1000.0 / delta;
+        averageFps = (averageFps * (1.0 - FPS_SMOOTHING)) + (instantFps * FPS_SMOOTHING);
+      }
+    }
+    lastFrameTime = now;
+  }
+
   @Override
   @NotNull
   public FlixelGraphicsApi getApi() {
     return FlixelGraphicsApi.WebGL;
+  }
+
+  @Override
+  public int getFps() {
+    return (int) averageFps;
   }
 
   @Override
@@ -301,4 +336,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @JSBody(params = "canvas", script = "return canvas.getContext('webgl2');")
   private static native WebGLRenderingContext getWebGl2(HTMLCanvasElement canvas);
+
+  @JSBody(script = "return (window.performance && window.performance.now) ? window.performance.now() : Date.now();")
+  private static native double nowMillis();
 }

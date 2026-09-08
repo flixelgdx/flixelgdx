@@ -31,6 +31,7 @@ import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetManager;
 import org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory;
+import org.flixelgdx.backend.html5.debug.FlixelHtml5DebugOverlay;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
@@ -107,8 +108,11 @@ public final class FlixelHtml5Launcher {
     gamepads.attach();
 
     // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire the web gamepad
-    // provider once those systems exist, just before the runner takes over the loop.
+    // provider once those systems exist, just before the runner takes over the loop. The debug
+    // overlay factory is registered here too; the game only builds the overlay when it starts in
+    // debug mode, so setting the factory outside of debug mode is harmless.
     Flixel.boot.afterStart(() -> {
+      Flixel.debug.setOverlayFactory(FlixelHtml5DebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
       Flixel.gamepads.addMappingResolver(gamepads);
     });

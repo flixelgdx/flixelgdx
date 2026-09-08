@@ -100,12 +100,9 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    * {@code alert.error()} is called inside the handler; the duplicate-overlay guard in
    * {@link FlixelHtml5Alerter} then skips creating a second one.
    *
-   * <p>A {@code @JSFunctor} callback is intentionally not used here. TeaVM 0.13.0's WasmGC code
-   * generator produces a nameless function statement ({@code function() {}}) instead of an
-   * expression when wrapping any {@code @JSFunctor} method that takes parameters, causing a
-   * {@code SyntaxError} at module load time. The only safe {@code @JSFunctor} shape is
-   * {@code void} return with zero parameters (see
-   * {@link org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader.PreloadCallback}).
+   * <p>A {@code @JSFunctor} callback is intentionally not used here. Pure JavaScript handlers keep
+   * the crash path self-contained and free of any Java callback, which is the most robust option for
+   * code that must run even when the Java side is already unwinding from a fatal error.
    *
    * @param handler The crash handler to install.
    */
@@ -144,8 +141,8 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    * {@link #showJavaCrashOverlay}.
    *
    * <p>{@code window.onerror} and {@code window.unhandledrejection} are installed here as
-   * self-contained JavaScript handlers with no callback into Java (see the class-level note on
-   * the {@code @JSFunctor} limitation).
+   * self-contained JavaScript handlers with no callback into Java, so they keep working even while
+   * the Java side is unwinding from a fatal error.
    */
   @JSBody(script = """
       window.__flixelOverlay = function(title, message, titleColor, isCrash) {
