@@ -130,24 +130,25 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   }
 
   /**
-   * Installs {@code window.onerror} and {@code window.unhandledrejection} as self-contained
-   * JavaScript handlers and defines {@code window.__flixelShowCrash} as the shared crash overlay
-   * function. Both browser error events call through it, and Java-side crashes call it via
-   * {@link #showJavaCrashOverlay}. It logs to {@code console.error}, persists the report to
-   * {@code localStorage}, and shows the crash overlay with a Copy report button.
+   * Defines the two shared overlay globals and installs the browser error listeners.
+   *
+   * <p>{@code window.__flixelOverlay(title, message, titleColor, isCrash)} is the single
+   * overlay-building function used by both alert dialogs and crash reports. When {@code isCrash}
+   * is {@code false} it sets {@code window.__flixelAlertPaused} and shows an OK button that
+   * resumes the game loop. When {@code isCrash} is {@code true} it shows a Copy report button
+   * that writes a structured crash report to the clipboard.
+   *
+   * <p>{@code window.__flixelShowCrash(title, message)} wraps {@code __flixelOverlay} with the
+   * extra steps specific to crashes: logging to {@code console.error} and persisting the report
+   * to {@code localStorage}. It is called by both browser error listeners and
+   * {@link #showJavaCrashOverlay}.
+   *
+   * <p>{@code window.onerror} and {@code window.unhandledrejection} are installed here as
+   * self-contained JavaScript handlers with no callback into Java (see the class-level note on
+   * the {@code @JSFunctor} limitation).
    */
   @JSBody(script = """
-      window.__flixelShowCrash = function(title, message) {
-        console.error('[FlixelGDX] ' + title + ': ' + message);
-        try {
-          localStorage.setItem('flixelgdx_last_crash', JSON.stringify({
-            time: new Date().toISOString(),
-            title: title,
-            message: message,
-            ua: navigator.userAgent,
-            url: window.location.href
-          }));
-        } catch (e) {}
+      window.__flixelOverlay = function(title, message, titleColor, isCrash) {
         if (!document.body || document.getElementById('flixel-crash-overlay')) { return; }
         var overlay = document.createElement('div');
         overlay.id = 'flixel-crash-overlay';
@@ -159,7 +160,7 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
           + 'padding:20px 24px;width:max-content;max-width:80vw;max-height:80vh;overflow-y:auto;'
           + 'color:#ccc;box-sizing:border-box;';
         var titleEl = document.createElement('p');
-        titleEl.style.cssText = 'margin:0 0 12px 0;color:#e94560;font-size:0.9em;';
+        titleEl.style.cssText = 'margin:0 0 12px 0;font-size:0.9em;color:' + titleColor + ';';
         titleEl.textContent = title;
         var msgEl = document.createElement('p');
         msgEl.style.cssText = 'margin:0 0 16px 0;font-size:0.82em;line-height:1.5;'
@@ -168,22 +169,44 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
         var btn = document.createElement('button');
         btn.style.cssText = 'background:#222;color:#ccc;border:1px solid #444;'
           + 'padding:5px 12px;cursor:pointer;font-family:monospace;font-size:0.8em;';
-        btn.textContent = 'Copy report';
-        var report = (document.title || 'Game') + ' Crash Report\\n'
-          + new Date().toISOString() + '\\n'
-          + 'Browser: ' + navigator.userAgent + '\\n'
-          + 'URL: ' + window.location.href + '\\n\\n'
-          + title + '\\n' + message;
-        btn.onclick = function () {
-          if (navigator.clipboard) { navigator.clipboard.writeText(report).catch(function () {}); }
-          btn.textContent = 'Copied';
-          setTimeout(function () { btn.textContent = 'Copy report'; }, 2000);
-        };
+        if (isCrash) {
+          btn.textContent = 'Copy report';
+          var report = (document.title || 'Game') + ' Crash Report\\n'
+            + new Date().toISOString() + '\\n'
+            + 'Browser: ' + navigator.userAgent + '\\n'
+            + 'URL: ' + window.location.href + '\\n\\n'
+            + title + '\\n' + message;
+          btn.onclick = function () {
+            if (navigator.clipboard) { navigator.clipboard.writeText(report).catch(function () {}); }
+            btn.textContent = 'Copied';
+            setTimeout(function () { btn.textContent = 'Copy report'; }, 2000);
+          };
+        } else {
+          window.__flixelAlertPaused = true;
+          btn.textContent = 'OK';
+          btn.onclick = function () {
+            window.__flixelAlertPaused = false;
+            if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
+          };
+        }
         box.appendChild(titleEl);
         box.appendChild(msgEl);
         box.appendChild(btn);
         overlay.appendChild(box);
         document.body.appendChild(overlay);
+      };
+      window.__flixelShowCrash = function(title, message) {
+        console.error('[FlixelGDX] ' + title + ': ' + message);
+        try {
+          localStorage.setItem('flixelgdx_last_crash', JSON.stringify({
+            time: new Date().toISOString(),
+            title: title,
+            message: message,
+            ua: navigator.userAgent,
+            url: window.location.href
+          }));
+        } catch (e) {}
+        window.__flixelOverlay(title, message, '#e94560', true);
       };
       window.onerror = function(msg, src, line, col, err) {
         var detail = err ? (err.stack || err.message || msg) : (msg || 'Unknown JavaScript error');

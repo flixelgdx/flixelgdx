@@ -64,46 +64,14 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
   /**
    * Shows a full-screen DOM alert overlay with an OK button that dismisses it.
    *
-   * <p>Sets {@code window.__flixelAlertPaused = true} before adding the overlay so the game
-   * loop's {@code requestAnimationFrame} callback stops updating while the alert is visible.
-   * Clicking OK clears the flag and removes the overlay, resuming the loop.
-   *
-   * <p>If an overlay with id {@code flixel-crash-overlay} is already present (placed by the crash
-   * handler before calling {@code alert.error()}), this method returns immediately so the crash
-   * overlay is not replaced by a generic error box.
+   * <p>Delegates to {@code window.__flixelOverlay}, which is defined by
+   * {@link FlixelHtml5RuntimeDevice#installJsErrorHandlers} and holds the single shared
+   * overlay-building implementation for both alert dialogs and crash reports.
    */
   @JSBody(params = { "title", "message", "titleColor" }, script = """
-      if (!document.body || document.getElementById('flixel-crash-overlay')) { return; }
-      window.__flixelAlertPaused = true;
-      var overlay = document.createElement('div');
-      overlay.id = 'flixel-crash-overlay';
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);'
-        + 'display:flex;align-items:center;justify-content:center;'
-        + 'font-family:monospace;padding:16px;box-sizing:border-box;';
-      var box = document.createElement('div');
-      box.style.cssText = 'background:#111;border:1px solid #333;'
-        + 'padding:20px 24px;width:max-content;max-width:80vw;max-height:80vh;overflow-y:auto;'
-        + 'color:#ccc;box-sizing:border-box;';
-      var titleEl = document.createElement('p');
-      titleEl.style.cssText = 'margin:0 0 12px 0;font-size:0.9em;color:' + titleColor + ';';
-      titleEl.textContent = title;
-      var msgEl = document.createElement('p');
-      msgEl.style.cssText = 'margin:0 0 16px 0;font-size:0.82em;line-height:1.5;'
-        + 'white-space:pre-wrap;word-break:break-word;';
-      msgEl.textContent = message;
-      var btn = document.createElement('button');
-      btn.style.cssText = 'background:#222;color:#ccc;border:1px solid #444;'
-        + 'padding:5px 12px;cursor:pointer;font-family:monospace;font-size:0.8em;';
-      btn.textContent = 'OK';
-      btn.onclick = function () {
-        window.__flixelAlertPaused = false;
-        if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); }
-      };
-      box.appendChild(titleEl);
-      box.appendChild(msgEl);
-      box.appendChild(btn);
-      overlay.appendChild(box);
-      document.body.appendChild(overlay);
+      if (typeof window.__flixelOverlay === 'function') {
+        window.__flixelOverlay(title, message, titleColor, false);
+      }
       """)
   private static native void showDomAlert(String title, String message, String titleColor);
 }
