@@ -107,10 +107,6 @@ public final class FlixelHtml5Launcher {
     window.setTitle(config.getTitle());
     gamepads.attach();
 
-    // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire the web gamepad
-    // provider once those systems exist, just before the runner takes over the loop. The debug
-    // overlay factory is registered here too; the game only builds the overlay when it starts in
-    // debug mode, so setting the factory outside of debug mode is harmless.
     Flixel.boot.afterStart(() -> {
       Flixel.debug.setOverlayFactory(FlixelHtml5DebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);

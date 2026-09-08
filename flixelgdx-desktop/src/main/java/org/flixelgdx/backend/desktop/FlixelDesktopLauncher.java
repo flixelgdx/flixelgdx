@@ -156,8 +156,6 @@ public final class FlixelDesktopLauncher {
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
 
-    // Flixel.gamepads and Flixel.mouse are created inside Flixel.start, so wire their desktop
-    // implementations once they exist, just before the runner takes over the loop.
     Flixel.boot.afterStart(() -> {
       Flixel.debug.setOverlayFactory(FlixelImGuiDebugOverlay::new);
       Flixel.gamepads.setGamepadProvider(gamepads);
