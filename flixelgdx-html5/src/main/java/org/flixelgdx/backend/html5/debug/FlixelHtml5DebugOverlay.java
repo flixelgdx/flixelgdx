@@ -683,6 +683,37 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
             D.reveal.style.display = visible ? 'none' : 'block';
           };
 
+          var resizer = mk('div', 'position:absolute;top:0;left:0;bottom:0;width:6px;cursor:ew-resize;'
+            + 'background:transparent;transition:background 0.15s;z-index:10;');
+          resizer.title = 'Drag to resize';
+          resizer.addEventListener('mouseenter', function () { resizer.style.background = 'rgba(255,255,255,0.08)'; });
+          resizer.addEventListener('mouseleave', function () { if (!D.resizerDragging) { resizer.style.background = 'transparent'; } });
+          resizer.addEventListener('pointerdown', function (e) {
+            D.resizerDragging = true;
+            D.hover = true;
+            resizer.style.background = 'rgba(255,255,255,0.12)';
+            var startX = e.clientX;
+            var startWidth = panel.offsetWidth;
+            function onMove(ev) {
+              var newWidth = startWidth + (startX - ev.clientX);
+              newWidth = Math.max(200, Math.min(Math.round(window.innerWidth * 0.9), newWidth));
+              panel.style.width = newWidth + 'px';
+              panel.style.maxWidth = 'none';
+            }
+            function onUp() {
+              D.resizerDragging = false;
+              resizer.style.background = 'transparent';
+              document.removeEventListener('pointermove', onMove);
+              document.removeEventListener('pointerup', onUp);
+            }
+            document.addEventListener('pointermove', onMove);
+            document.addEventListener('pointerup', onUp);
+            e.preventDefault();
+          });
+          resizer.addEventListener('pointerenter', function () { D.hover = true; });
+          resizer.addEventListener('pointerleave', function () { if (!D.resizerDragging) { D.hover = false; } });
+          panel.appendChild(resizer);
+
           document.body.appendChild(panel);
           document.body.appendChild(reveal);
           selectTab(0);
