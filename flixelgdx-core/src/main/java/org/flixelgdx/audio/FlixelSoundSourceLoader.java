@@ -47,9 +47,7 @@ public final class FlixelSoundSourceLoader implements FlixelAssetLoader<FlixelSo
   @Override
   public Object loadRaw(@NotNull FlixelAssetManager assets, @NotNull String path, @NotNull FlixelFile file) {
     FlixelSoundBuffer buffer = FlixelSoundBuffer.read(path, file);
-    if (Flixel.sound != null) {
-      Flixel.sound.getFactory().prewarm(buffer);
-    }
+    Flixel.sound.getFactory().prewarm(buffer);
     return buffer;
   }
 

@@ -77,8 +77,8 @@ public interface FlixelAssetLoader<T> {
    * Stage one: reads and parses the file into a raw object.
    *
    * <p>On platforms with threads this may run on a worker thread; do not touch the GPU or any
-   * main-thread-only system here. Decode into CPU-side data ({@link FlixelImage
-   * FlixelImage}, byte arrays, strings) and let {@link #finishRaw} do main-thread work.
+   * main-thread-only system here. Decode into CPU-side data ({@link FlixelImage}, byte arrays,
+   * strings) and let {@link #finishRaw} do main-thread work.
    *
    * @param assets The owning asset manager.
    * @param path Normalized asset path (e.g. {@code "images/player.png"}).
