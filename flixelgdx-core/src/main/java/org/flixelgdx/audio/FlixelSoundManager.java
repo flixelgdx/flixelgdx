@@ -79,7 +79,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   private float masterVolume = 1f;
 
   /**
-   * The current music that's playing, automatically set by {@link #playMusic}
+   * The current music that's playing, automatically set by {@link #playMusic}.
    */
   @Nullable
   public FlixelSound music;
