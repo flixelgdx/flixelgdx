@@ -23,13 +23,16 @@
  */
 package org.flixelgdx.backend.html5.audio;
 
+import org.flixelgdx.audio.FlixelBandPassEffect;
 import org.flixelgdx.audio.FlixelEchoEffect;
+import org.flixelgdx.audio.FlixelHighPassEffect;
 import org.flixelgdx.audio.FlixelLowPassEffect;
 import org.flixelgdx.audio.FlixelReverbEffect;
 import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundBuffer;
 import org.flixelgdx.audio.FlixelSoundEffect;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -38,6 +41,7 @@ import org.teavm.jso.typedarrays.Int8Array;
 import org.teavm.jso.webaudio.AudioBuffer;
 import org.teavm.jso.webaudio.AudioBufferSourceNode;
 import org.teavm.jso.webaudio.AudioContext;
+import org.teavm.jso.webaudio.AudioNode;
 import org.teavm.jso.webaudio.GainNode;
 import org.teavm.jso.webaudio.StereoPannerNode;
 
@@ -53,11 +57,13 @@ import org.teavm.jso.webaudio.StereoPannerNode;
  * saved position.
  *
  * <p>Volume and pan are steady controls, so they live on persistent gain and stereo-pan nodes that
- * every source connects through: {@code source -> pan -> gain -> master}. Pitch maps to the
- * source's {@code playbackRate}.
+ * every source connects through: {@code source -> pan -> gain -> outputNode}. The output node is
+ * either the group's gain node (when a group is assigned at creation) or the master gain directly.
+ * Pitch maps to the source's {@code playbackRate}.
  *
- * <p>The reverb, echo, and low-pass effects are not implemented on the web backend and return the
- * framework's shared no-op effects, so effect calls are silently ignored rather than failing.
+ * <p>Audio-graph effects (reverb, echo, filters) are deferred for the web backend; all
+ * {@code createXEffect} factories return the framework's shared no-op sentinel so calls are
+ * silently ignored rather than failing.
  */
 public class FlixelWebAudioSound extends FlixelSound {
 
@@ -72,8 +78,6 @@ public class FlixelWebAudioSound extends FlixelSound {
 
   @NotNull
   private final StereoPannerNode panNode;
-
-  private final FlixelWebAudioGroup group;
 
   private AudioBuffer decodedBuffer;
   private AudioBufferSourceNode source;
@@ -91,23 +95,17 @@ public class FlixelWebAudioSound extends FlixelSound {
    * Creates a sound and begins decoding its bytes in the background.
    *
    * @param context The shared audio context.
-   * @param master The master gain node all sounds route into.
+   * @param outputNode The node this sound's gain connects to (group gain or master gain).
    * @param buffer The encoded audio bytes and their source path.
-   * @param group The group this sound belongs to, or {@code null} for none.
    */
-  public FlixelWebAudioSound(@NotNull AudioContext context, @NotNull GainNode master,
-      @NotNull FlixelSoundBuffer buffer, FlixelWebAudioGroup group) {
+  public FlixelWebAudioSound(@NotNull AudioContext context, @NotNull AudioNode outputNode,
+      @NotNull FlixelSoundBuffer buffer) {
     this.context = context;
-    this.group = group;
     this.gainNode = context.createGain();
     this.panNode = context.createStereoPanner();
 
     FlixelWebAudioFactory.connect(panNode, gainNode);
-    FlixelWebAudioFactory.connect(gainNode, master);
-
-    if (group != null) {
-      group.register(this);
-    }
+    FlixelWebAudioFactory.connect(gainNode, outputNode);
 
     decode(context, toArrayBuffer(buffer.data()), decoded -> {
       decodedBuffer = decoded;
@@ -247,10 +245,13 @@ public class FlixelWebAudioSound extends FlixelSound {
   @Override
   protected void disposeAudio() {
     stopSource();
-    if (group != null) {
-      group.unregister(this);
-    }
   }
+
+  @Override
+  protected void wireEffectNode(@NotNull FlixelSoundEffect node, @Nullable FlixelSoundEffect upstream) {}
+
+  @Override
+  protected void restoreDirectRouting() {}
 
   @Override
   @NotNull
@@ -271,10 +272,22 @@ public class FlixelWebAudioSound extends FlixelSound {
   }
 
   @Override
-  protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
+  @NotNull
+  protected FlixelHighPassEffect createHighPassEffect(double cutoffHz, int order) {
+    return FlixelHighPassEffect.NOOP;
+  }
 
   @Override
-  protected void restoreDirectRouting() {}
+  @NotNull
+  protected FlixelBandPassEffect createBandPassEffect(double cutoffHz, double q, int order) {
+    return FlixelBandPassEffect.NOOP;
+  }
+
+  @Override
+  @NotNull
+  protected FlixelSoundEffect createNode(int typeId, float[] params) {
+    return FlixelSoundEffect.NOOP;
+  }
 
   /** Suspends this sound because its group was paused, remembering that the group did it. */
   void suspendForGroup() {
