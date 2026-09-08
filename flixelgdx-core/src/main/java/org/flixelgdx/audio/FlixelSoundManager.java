@@ -187,16 +187,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   }
 
   /**
-   * Returns the default group used when no group is specified (SFX group).
-   *
-   * @return The SFX group.
-   */
-  @NotNull
-  public FlixelSoundGroup getSoundsGroup() {
-    return sfxGroup;
-  }
-
-  /**
    * Returns the current master volume.
    *
    * @return Master volume in [0, 1].
@@ -267,7 +257,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   public FlixelSound create(@NotNull String path, @Nullable FlixelSoundGroup group, boolean external) {
     FlixelSoundGroup targetGroup = (group != null) ? group : sfxGroup;
     FlixelSound sound = buildSound(path, external, targetGroup);
-    sound.setManager(this);
     activeSounds.add(sound);
     return sound;
   }
@@ -442,7 +431,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       boolean looping,
       @NotNull FlixelSoundGroup targetGroup) {
     FlixelSound sound = buildSound(path, external, targetGroup);
-    sound.setManager(this);
     sound.setVolume(volume);
     sound.setLooped(looping);
     sound.play();

@@ -24,24 +24,27 @@
 package org.flixelgdx.audio;
 
 /**
- * A live-controllable low-pass filter effect node.
+ * A live-controllable band-pass filter effect node.
  *
- * <p>Frequencies above the cutoff are progressively attenuated, producing a muffled or distant
- * quality. The cutoff can be read back via {@link #getCutoff()} and adjusted by a delta via
- * {@link #changeCutoff(double)} without needing to combine a getter and setter manually.
+ * <p>Frequencies outside a narrow band around the cutoff are attenuated, keeping only the
+ * frequencies near the center. Common uses include phone-call effects, megaphone sounds, and
+ * vintage radio simulations.
+ *
+ * <p>The bandwidth of the band is controlled by the Q (quality) factor: a high Q value produces
+ * a narrow, resonant band; a low Q value produces a wider, gentler band.
  *
  * <p>Example usage:
  *
  * <pre>{@code
- * FlixelLowPassEffect muffle = sound.addLowPassMuffle(8000.0);
- * // Smoothly tighten the filter as the player goes deeper underground:
- * muffle.changeCutoff(-500.0);  // now 7500 Hz
+ * FlixelBandPassEffect phone = sound.addBandPass(1200.0, 1.5);
+ * // Sharpen the telephone effect:
+ * phone.changeQ(1.0);  // Q is now 2.5
  * }</pre>
  */
-public interface FlixelLowPassEffect extends FlixelSoundEffect {
+public interface FlixelBandPassEffect extends FlixelSoundEffect {
 
-  /** No-op sentinel returned when the low-pass filter is unsupported on the current backend. */
-  FlixelLowPassEffect NOOP = new FlixelLowPassEffect() {
+  /** No-op sentinel returned when the band-pass filter is unsupported on the current backend. */
+  FlixelBandPassEffect NOOP = new FlixelBandPassEffect() {
     public void setParam(int id, float v) {}
 
     public float getParam(int id) {
@@ -54,15 +57,30 @@ public interface FlixelLowPassEffect extends FlixelSoundEffect {
       return 0.0;
     }
 
+    public double getQ() {
+      return 0.0;
+    }
+
     public void setCutoff(double v) {}
+
+    public void setQ(double v) {}
   };
 
   /**
-   * Returns the current filter cutoff frequency.
+   * Returns the current center frequency of the band.
    *
    * @return Cutoff frequency in hertz.
    */
   double getCutoff();
+
+  /**
+   * Returns the current Q (quality) factor.
+   *
+   * <p>Higher values produce a narrower, more resonant band; lower values widen the pass band.
+   *
+   * @return Q factor; must be positive.
+   */
+  double getQ();
 
   /**
    * Adds {@code amount} to the current cutoff frequency.
@@ -74,11 +92,25 @@ public interface FlixelLowPassEffect extends FlixelSoundEffect {
   }
 
   /**
-   * Sets the filter cutoff frequency.
+   * Adds {@code amount} to the current Q factor.
    *
-   * <p>Frequencies above the cutoff are progressively attenuated.
+   * @param amount Delta to apply.
+   */
+  default void changeQ(double amount) {
+    setQ(getQ() + amount);
+  }
+
+  /**
+   * Sets the center frequency of the band.
    *
    * @param hz Cutoff frequency in hertz; must be positive and below the Nyquist frequency.
    */
   void setCutoff(double hz);
+
+  /**
+   * Sets the Q (quality) factor.
+   *
+   * @param q Q factor; must be positive. Typical values are in the range [0.5, 10].
+   */
+  void setQ(double q);
 }

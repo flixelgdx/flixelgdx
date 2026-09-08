@@ -24,43 +24,55 @@
 package org.flixelgdx.audio;
 
 import org.flixelgdx.functional.FlixelDestroyable;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An opaque handle to an audio-graph effect node (reverb, echo, low-pass, and so on).
  *
  * <p>Effects chain: a sound feeds the first node, each node feeds the next, and the last node
  * feeds the output. Build chains through {@link FlixelSound#addReverb},
- * {@link FlixelSound#addEcho}, and {@link FlixelSound#addLowPassMuffle}; the typed subtypes
- * ({@link FlixelReverbEffect}, {@link FlixelEchoEffect}, {@link FlixelLowPassEffect}) expose
- * live parameter setters.
+ * {@link FlixelSound#addEcho}, {@link FlixelSound#addLowPassMuffle}, and similar; the typed
+ * subtypes ({@link FlixelReverbEffect}, {@link FlixelEchoEffect}, {@link FlixelLowPassEffect},
+ * {@link FlixelHighPassEffect}, {@link FlixelBandPassEffect}) expose live parameter setters.
  *
- * <p>On platforms without an audio graph the returned instances are no-op stubs, so effect
- * code is always safe to run.
+ * <p>For custom or registered node types added via {@link FlixelSound#addNode}, the generic
+ * {@link #setParam(int, float)} and {@link #getParam(int)} methods address parameters by integer
+ * ID without requiring a typed interface.
+ *
+ * <p>On platforms that do not support a requested node type the returned instance is {@link #NOOP},
+ * so effect code is always safe to run regardless of backend.
  */
 public interface FlixelSoundEffect extends FlixelDestroyable {
 
-  /**
-   * Wires a sound's output into this node's input.
-   *
-   * @param upstream The sound whose output feeds this node.
-   * @param bus Input bus index (typically 0).
-   */
-  void attachToUpstreamSound(@NotNull FlixelSound upstream, int bus);
+  /** Silent no-op returned when a node type is unsupported on the current backend. */
+  FlixelSoundEffect NOOP = new FlixelSoundEffect() {
+    public void setParam(int id, float v) {}
+
+    public float getParam(int id) {
+      return 0f;
+    }
+
+    public void destroy() {}
+  };
 
   /**
-   * Wires another effect node into this node's input, allowing effects to be chained together
-   * (for example, reverb feeding into a low-pass filter).
+   * Sets a node parameter by integer ID.
    *
-   * @param upstream The upstream effect node.
-   * @param bus Input bus index (typically 0).
+   * <p>For built-in node types, prefer the named setters on the typed subinterface
+   * ({@link FlixelReverbEffect#setWet}, {@link FlixelLowPassEffect#setCutoff}, and so on).
+   * This method is the generic path for custom or registered node types.
+   *
+   * @param paramId Backend-specific parameter index.
+   * @param value The new value.
    */
-  void attachToUpstreamNode(@NotNull FlixelSoundEffect upstream, int bus);
+  void setParam(int paramId, float value);
 
   /**
-   * Detaches this node from its input bus.
+   * Returns a node parameter by integer ID.
    *
-   * @param bus The bus index to detach.
+   * <p>Returns {@code 0} when the parameter does not exist or the node is a no-op.
+   *
+   * @param paramId Backend-specific parameter index.
+   * @return The current parameter value.
    */
-  void detach(int bus);
+  float getParam(int paramId);
 }

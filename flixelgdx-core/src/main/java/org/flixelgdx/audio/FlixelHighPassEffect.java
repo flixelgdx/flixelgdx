@@ -24,24 +24,24 @@
 package org.flixelgdx.audio;
 
 /**
- * A live-controllable low-pass filter effect node.
+ * A live-controllable high-pass filter effect node.
  *
- * <p>Frequencies above the cutoff are progressively attenuated, producing a muffled or distant
- * quality. The cutoff can be read back via {@link #getCutoff()} and adjusted by a delta via
- * {@link #changeCutoff(double)} without needing to combine a getter and setter manually.
+ * <p>Frequencies below the cutoff are progressively attenuated, producing a thin or airy quality.
+ * Common uses include simulating wind at height, radio transmissions, or footsteps heard through
+ * a wall.
  *
  * <p>Example usage:
  *
  * <pre>{@code
- * FlixelLowPassEffect muffle = sound.addLowPassMuffle(8000.0);
- * // Smoothly tighten the filter as the player goes deeper underground:
- * muffle.changeCutoff(-500.0);  // now 7500 Hz
+ * FlixelHighPassEffect thin = sound.addHighPass(500.0);
+ * // Raise the cutoff for a tinnier, more distant quality:
+ * thin.changeCutoff(300.0);  // now 800 Hz
  * }</pre>
  */
-public interface FlixelLowPassEffect extends FlixelSoundEffect {
+public interface FlixelHighPassEffect extends FlixelSoundEffect {
 
-  /** No-op sentinel returned when the low-pass filter is unsupported on the current backend. */
-  FlixelLowPassEffect NOOP = new FlixelLowPassEffect() {
+  /** No-op sentinel returned when the high-pass filter is unsupported on the current backend. */
+  FlixelHighPassEffect NOOP = new FlixelHighPassEffect() {
     public void setParam(int id, float v) {}
 
     public float getParam(int id) {
@@ -76,7 +76,7 @@ public interface FlixelLowPassEffect extends FlixelSoundEffect {
   /**
    * Sets the filter cutoff frequency.
    *
-   * <p>Frequencies above the cutoff are progressively attenuated.
+   * <p>Frequencies below the cutoff are progressively attenuated.
    *
    * @param hz Cutoff frequency in hertz; must be positive and below the Nyquist frequency.
    */

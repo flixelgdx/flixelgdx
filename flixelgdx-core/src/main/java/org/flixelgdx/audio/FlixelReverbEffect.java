@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.audio;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * A live-controllable reverb effect node.
  *
@@ -43,13 +41,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface FlixelReverbEffect extends FlixelSoundEffect {
 
-  /** No-op sentinel returned when no audio backend is available. */
+  /** No-op sentinel returned when reverb is unsupported on the current backend. */
   FlixelReverbEffect NOOP = new FlixelReverbEffect() {
-    public void attachToUpstreamSound(@NotNull FlixelSound u, int b) {}
+    public void setParam(int id, float v) {}
 
-    public void attachToUpstreamNode(@NotNull FlixelSoundEffect u, int b) {}
-
-    public void detach(int b) {}
+    public float getParam(int id) {
+      return 0f;
+    }
 
     public void destroy() {}
 
@@ -133,7 +131,7 @@ public interface FlixelReverbEffect extends FlixelSoundEffect {
   boolean isFrozen();
 
   /**
-   * Adds {@code amount} to the current wet level, clamped to [0, 1].
+   * Adds {@code amount} to the current wet level.
    *
    * @param amount Delta to apply.
    */
@@ -142,7 +140,7 @@ public interface FlixelReverbEffect extends FlixelSoundEffect {
   }
 
   /**
-   * Adds {@code amount} to the current dry level, clamped to [0, 1].
+   * Adds {@code amount} to the current dry level.
    *
    * @param amount Delta to apply.
    */
@@ -151,7 +149,7 @@ public interface FlixelReverbEffect extends FlixelSoundEffect {
   }
 
   /**
-   * Adds {@code amount} to the current room size, clamped to [0, 1].
+   * Adds {@code amount} to the current room size.
    *
    * @param amount Delta to apply.
    */
@@ -160,7 +158,7 @@ public interface FlixelReverbEffect extends FlixelSoundEffect {
   }
 
   /**
-   * Adds {@code amount} to the current damping, clamped to [0, 1].
+   * Adds {@code amount} to the current damping.
    *
    * @param amount Delta to apply.
    */
@@ -169,7 +167,7 @@ public interface FlixelReverbEffect extends FlixelSoundEffect {
   }
 
   /**
-   * Adds {@code amount} to the current width, clamped to [0, 1].
+   * Adds {@code amount} to the current width.
    *
    * @param amount Delta to apply.
    */

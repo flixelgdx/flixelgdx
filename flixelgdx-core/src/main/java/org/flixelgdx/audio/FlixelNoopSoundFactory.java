@@ -41,7 +41,11 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
   @NotNull
   @Override
   public FlixelSound createSound(@NotNull FlixelSoundBuffer buffer, @Nullable FlixelSoundGroup group) {
-    return new NoopSound();
+    NoopSound sound = new NoopSound();
+    if (group != null) {
+      sound.setGroup(group);
+    }
+    return sound;
   }
 
   @NotNull
@@ -157,6 +161,12 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
     @Override
     protected void disposeAudio() {}
 
+    @Override
+    protected void wireEffectNode(@NotNull FlixelSoundEffect node, @Nullable FlixelSoundEffect upstream) {}
+
+    @Override
+    protected void restoreDirectRouting() {}
+
     @NotNull
     @Override
     protected FlixelReverbEffect createReverbEffect(float wet) {
@@ -175,21 +185,54 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
       return FlixelLowPassEffect.NOOP;
     }
 
+    @NotNull
     @Override
-    protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
+    protected FlixelHighPassEffect createHighPassEffect(double cutoffHz, int order) {
+      return FlixelHighPassEffect.NOOP;
+    }
 
+    @NotNull
     @Override
-    protected void restoreDirectRouting() {}
+    protected FlixelBandPassEffect createBandPassEffect(double cutoffHz, double q, int order) {
+      return FlixelBandPassEffect.NOOP;
+    }
+
+    @NotNull
+    @Override
+    protected FlixelSoundEffect createNode(int typeId, float[] params) {
+      return FlixelSoundEffect.NOOP;
+    }
   }
 
   /** A group that tracks nothing. */
   private static final class NoopGroup implements FlixelSoundGroup {
+
+    private float volume = 1f;
 
     @Override
     public void pause() {}
 
     @Override
     public void resume() {}
+
+    @Override
+    public void stop() {}
+
+    @Override
+    public float getVolume() {
+      return volume;
+    }
+
+    @Override
+    public void setVolume(float volume) {
+      this.volume = volume;
+    }
+
+    @Override
+    public void add(@NotNull FlixelSound sound) {}
+
+    @Override
+    public void remove(@NotNull FlixelSound sound) {}
 
     @Override
     public void destroy() {}
