@@ -23,7 +23,7 @@ Apply it alongside `org.teavm` in the web module:
 
 ```groovy
 plugins {
-  id 'org.teavm' version '0.13.0'
+  id 'org.teavm' version '0.15.0'
   id 'org.flixelgdx.html5' version '<flixel-version>'
 }
 
