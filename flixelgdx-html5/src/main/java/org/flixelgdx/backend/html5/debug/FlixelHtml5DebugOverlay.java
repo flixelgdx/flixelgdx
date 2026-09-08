@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.html5.FlixelHtml5Launcher;
+import org.flixelgdx.backend.html5.FlixelHtml5RuntimeDevice;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
@@ -34,16 +35,15 @@ import org.flixelgdx.debug.FlixelDebugTrackerEntry;
 import org.teavm.jso.JSBody;
 
 /**
- * In-game debug overlay for the HTML5 (TeaVM + WebGL2) backend.
+ * In-game debug overlay for the HTML5 backend.
  *
  * <h2>Why the DOM instead of a GUI toolkit</h2>
  *
  * <p>Pulling a heavy GUI toolkit into every web build would bloat it for little benefit, because the
  * browser already ships a capable, hardware-accelerated UI layer: the DOM. This overlay therefore
  * builds a single docked panel out of ordinary HTML elements layered on top of the game canvas,
- * exactly the way {@code FlixelHtml5Alerter} and the crash overlay in
- * {@link org.flixelgdx.backend.html5.FlixelHtml5RuntimeDevice FlixelHtml5RuntimeDevice} build their
- * dialogs. Nothing here touches WebGL.
+ * exactly the way {@code FlixelHtml5Alerter} and the crash overlay in {@link FlixelHtml5RuntimeDevice}
+ * build their dialogs. Nothing here touches WebGL.
  *
  * <h2>What the panel shows</h2>
  *
@@ -63,9 +63,6 @@ import org.teavm.jso.JSBody;
  *       output flowing to the Log tab.</li>
  * </ul>
  *
- * <p>The texture inspector is intentionally left out of this first version; displaying a WebGL
- * texture needs a second canvas and readback path that is better handled on its own.
- *
  * <h2>The JavaScript bridge</h2>
  *
  * <p>All UI lives under a single {@code window.__flixelDebug} object created once by
@@ -79,8 +76,8 @@ import org.teavm.jso.JSBody;
  * <h2>Wiring</h2>
  *
  * <p>{@link FlixelHtml5Launcher} registers this class as the overlay factory when the game starts in
- * {@link FlixelRuntimeMode#DEBUG DEBUG} mode. Games may register it manually with
- * {@link FlixelDebugManager#setOverlayFactory} as well.
+ * {@link FlixelRuntimeMode#DEBUG} mode. Games may register it manually with
+{@link FlixelDebugManager#setOverlayFactory} as well.
  */
 public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
 
