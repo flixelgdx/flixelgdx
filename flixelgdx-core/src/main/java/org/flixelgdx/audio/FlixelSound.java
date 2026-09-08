@@ -643,7 +643,7 @@ public abstract class FlixelSound extends FlixelBasic {
   }
 
   /**
-   * Appends a node by registered type ID — the escape hatch for custom or third-party node types.
+   * Appends a node by registered type ID.
    *
    * <p>Use {@link FlixelAudioNodeRegistry#register(String)} to obtain a type ID. If the backend
    * does not support the requested type, {@link FlixelSoundEffect#NOOP} is returned and silently

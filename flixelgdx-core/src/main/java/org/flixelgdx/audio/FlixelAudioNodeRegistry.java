@@ -23,14 +23,15 @@
  */
 package org.flixelgdx.audio;
 
-import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelIntMap;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Global registry that maps audio effect node type names to stable integer IDs.
  *
  * <p>The framework's built-in effect types are pre-registered at class load time, so
  * {@link #REVERB}, {@link #LOW_PASS}, and the rest are simply constants that were registered
- * first. Third-party code (plugins, game-specific effects) can extend the registry by calling
+ * first. Third-party code (libraries, game-specific effects) can extend the registry by calling
  * {@link #register(String)} once at startup:
  *
  * <pre>{@code
@@ -66,7 +67,8 @@ public final class FlixelAudioNodeRegistry {
   /** Built-in ID for a delay/echo effect. */
   public static final int DELAY;
 
-  private static final FlixelArray<String> names = new FlixelArray<>(8);
+  private static final FlixelIntMap<String> names = new FlixelIntMap<>(8);
+  private static int nextId;
 
   static {
     LOW_PASS = register("low_pass");
@@ -88,14 +90,15 @@ public final class FlixelAudioNodeRegistry {
    * @param name A unique, lowercase identifier for the node type (e.g. {@code "my_chorus"}).
    * @return The stable integer ID for this node type.
    */
-  public static int register(String name) {
-    for (int i = 0; i < names.getSize(); i++) {
-      if (names.get(i).equals(name)) {
-        return i;
+  public static int register(@NotNull String name) {
+    for (FlixelIntMap.Entry<String> e : names.entries()) {
+      if (name.equals(e.value)) {
+        return e.key;
       }
     }
-    names.add(name);
-    return names.getSize() - 1;
+    int id = nextId++;
+    names.put(id, name);
+    return id;
   }
 
   /**
@@ -105,9 +108,6 @@ public final class FlixelAudioNodeRegistry {
    * @return The registered name, or {@code null}.
    */
   public static String getName(int typeId) {
-    if (typeId < 0 || typeId >= names.getSize()) {
-      return null;
-    }
     return names.get(typeId);
   }
 
@@ -118,6 +118,6 @@ public final class FlixelAudioNodeRegistry {
    * @return {@code true} if the ID is known.
    */
   public static boolean isRegistered(int typeId) {
-    return typeId >= 0 && typeId < names.getSize();
+    return names.containsKey(typeId);
   }
 }

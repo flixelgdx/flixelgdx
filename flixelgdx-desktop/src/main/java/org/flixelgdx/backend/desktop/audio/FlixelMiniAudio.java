@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.desktop.audio;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.audio.FlixelAudioNodeRegistry;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -296,7 +297,7 @@ public class FlixelMiniAudio {
   /**
    * Creates an effect node of the given type and returns its native handle.
    *
-   * <p>The {@code typeId} must be one of the constants in {@link org.flixelgdx.audio.FlixelAudioNodeRegistry}.
+   * <p>The {@code typeId} must be one of the constants in {@link FlixelAudioNodeRegistry}.
    * The {@code params} array interpretation is type-specific:
    * <ul>
    *   <li>LOW_PASS: {@code [cutoffHz, order]}</li>

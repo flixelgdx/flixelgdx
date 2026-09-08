@@ -26,8 +26,6 @@ package org.flixelgdx.audio;
 /**
  * A live-controllable stereo delay/echo effect node.
  *
- * <p>Delay time and decay can be adjusted at runtime without rebuilding the audio graph.
- *
  * <p>Example usage:
  *
  * <pre>{@code
