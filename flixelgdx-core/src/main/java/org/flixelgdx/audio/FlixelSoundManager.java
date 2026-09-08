@@ -78,6 +78,9 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
 
   private float masterVolume = 1f;
 
+  /**
+   * The current music that's playing, automatically set by {@link #playMusic}
+   */
   @Nullable
   public FlixelSound music;
 
@@ -363,7 +366,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       music.destroy();
       music = null;
     }
-    music = createAndPlaySoundFromPath(path, external, volume, looping, null);
+    music = createAndPlaySoundFromPath(path, external, volume, looping, sfxGroup);
     return music;
   }
 

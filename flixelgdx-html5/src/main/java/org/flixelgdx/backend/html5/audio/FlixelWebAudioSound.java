@@ -61,9 +61,11 @@ import org.teavm.jso.webaudio.StereoPannerNode;
  * either the group's gain node (when a group is assigned at creation) or the master gain directly.
  * Pitch maps to the source's {@code playbackRate}.
  *
- * <p>Audio-graph effects (reverb, echo, filters) are deferred for the web backend; all
- * {@code createXEffect} factories return the framework's shared no-op sentinel so calls are
- * silently ignored rather than failing.
+ * <p>Audio effects (low-pass, high-pass, band-pass filters and echo) are implemented via the Web
+ * Audio API's built-in nodes. Reverb is not yet supported on the web backend and returns the
+ * framework's shared no-op sentinel. Custom node types registered through
+ * {@link org.flixelgdx.audio.FlixelAudioNodeRegistry} also return the no-op sentinel if they have
+ * no web implementation.
  */
 public class FlixelWebAudioSound extends FlixelSound {
 
@@ -78,6 +80,9 @@ public class FlixelWebAudioSound extends FlixelSound {
 
   @NotNull
   private final StereoPannerNode panNode;
+
+  @NotNull
+  private final AudioNode outputNode;
 
   private AudioBuffer decodedBuffer;
   private AudioBufferSourceNode source;
@@ -103,6 +108,7 @@ public class FlixelWebAudioSound extends FlixelSound {
     this.context = context;
     this.gainNode = context.createGain();
     this.panNode = context.createStereoPanner();
+    this.outputNode = outputNode;
 
     FlixelWebAudioFactory.connect(panNode, gainNode);
     FlixelWebAudioFactory.connect(gainNode, outputNode);
@@ -248,10 +254,21 @@ public class FlixelWebAudioSound extends FlixelSound {
   }
 
   @Override
-  protected void wireEffectNode(@NotNull FlixelSoundEffect node, @Nullable FlixelSoundEffect upstream) {}
+  protected void wireEffectNode(@NotNull FlixelSoundEffect node, @Nullable FlixelSoundEffect upstream) {
+    if (!(node instanceof FlixelWebAudioEffect webEffect)) {
+      return;
+    }
+    AudioNode upstreamNode = (upstream instanceof FlixelWebAudioEffect webUpstream)
+        ? webUpstream.audioNode() : gainNode;
+    upstreamNode.disconnect(outputNode);
+    FlixelWebAudioFactory.connect(upstreamNode, webEffect.audioNode());
+    FlixelWebAudioFactory.connect(webEffect.audioNode(), outputNode);
+  }
 
   @Override
-  protected void restoreDirectRouting() {}
+  protected void restoreDirectRouting() {
+    FlixelWebAudioFactory.connect(gainNode, outputNode);
+  }
 
   @Override
   @NotNull
@@ -262,25 +279,25 @@ public class FlixelWebAudioSound extends FlixelSound {
   @Override
   @NotNull
   protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
-    return FlixelEchoEffect.NOOP;
+    return FlixelWebAudioEchoEffect.create(context, delaySeconds, decay);
   }
 
   @Override
   @NotNull
   protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
-    return FlixelLowPassEffect.NOOP;
+    return new FlixelWebAudioLowPassEffect(context.createBiquadFilter(), cutoffHz);
   }
 
   @Override
   @NotNull
   protected FlixelHighPassEffect createHighPassEffect(double cutoffHz, int order) {
-    return FlixelHighPassEffect.NOOP;
+    return new FlixelWebAudioHighPassEffect(context.createBiquadFilter(), cutoffHz);
   }
 
   @Override
   @NotNull
   protected FlixelBandPassEffect createBandPassEffect(double cutoffHz, double q, int order) {
-    return FlixelBandPassEffect.NOOP;
+    return new FlixelWebAudioBandPassEffect(context.createBiquadFilter(), cutoffHz, q);
   }
 
   @Override
