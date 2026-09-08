@@ -1,0 +1,124 @@
+# Temporary workflow: rebuilds the bundled miniaudio natives after the C wrapper changed
+# to add effect node support. Remove this file once the new binaries are committed.
+name: Build miniaudio natives
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-linux-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull updated C wrapper from audio branch
+        run: |
+          git fetch origin feat/audio-node-overhaul
+          git checkout origin/feat/audio-node-overhaul -- flixelgdx-desktop/src/main/native/flixel_miniaudio.c
+
+      - name: Download miniaudio.h and stb_vorbis.c
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install mingw-w64
+        run: sudo apt-get install -y gcc mingw-w64
+
+      - name: Build Linux .so
+        run: |
+          gcc -O2 -fPIC -shared \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+            -I flixelgdx-desktop/src/main/native \
+            -o flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/libflixel_miniaudio.so \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c \
+            -lm -lpthread -ldl
+
+      - name: Build Windows .dll
+        run: |
+          WIN_JNI=$(mktemp -d)
+          cat > "${WIN_JNI}/jni_md.h" <<'EOF'
+          #ifndef _JAVASOFT_JNI_MD_H_
+          #define _JAVASOFT_JNI_MD_H_
+          #define JNIEXPORT __declspec(dllexport)
+          #define JNIIMPORT __declspec(dllimport)
+          #define JNICALL __stdcall
+          typedef long jint;
+          typedef long long jlong;
+          typedef signed char jbyte;
+          #endif
+          EOF
+          x86_64-w64-mingw32-gcc -O2 -shared \
+            -I"$JAVA_HOME/include" -I"${WIN_JNI}" \
+            -I flixelgdx-desktop/src/main/native \
+            -o flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/flixel_miniaudio.dll \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c \
+            -lole32 -lwinmm -static-libgcc
+          rm -rf "${WIN_JNI}"
+
+      - name: Upload Linux and Windows natives
+        uses: actions/upload-artifact@v4
+        with:
+          name: natives-linux-windows
+          path: |
+            flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/libflixel_miniaudio.so
+            flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/flixel_miniaudio.dll
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull updated C wrapper from audio branch
+        run: |
+          git fetch origin feat/audio-node-overhaul
+          git checkout origin/feat/audio-node-overhaul -- flixelgdx-desktop/src/main/native/flixel_miniaudio.c
+
+      - name: Download miniaudio.h and stb_vorbis.c
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build macOS arm64 slice
+        run: |
+          clang -O2 -dynamiclib -arch arm64 \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/darwin" \
+            -I flixelgdx-desktop/src/main/native \
+            -o /tmp/libflixel_miniaudio_arm64.dylib \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c
+
+      - name: Build macOS x86_64 slice
+        run: |
+          clang -O2 -dynamiclib -arch x86_64 \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/darwin" \
+            -I flixelgdx-desktop/src/main/native \
+            -o /tmp/libflixel_miniaudio_x86_64.dylib \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c
+
+      - name: Combine into universal binary
+        run: |
+          lipo -create \
+            /tmp/libflixel_miniaudio_arm64.dylib \
+            /tmp/libflixel_miniaudio_x86_64.dylib \
+            -output flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/libflixel_miniaudio.dylib
+
+      - name: Upload macOS native
+        uses: actions/upload-artifact@v4
+        with:
+          name: natives-macos
+          path: flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/libflixel_miniaudio.dylib
