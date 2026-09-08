@@ -34,23 +34,21 @@ import org.flixelgdx.debug.FlixelDebugTrackerEntry;
 import org.teavm.jso.JSBody;
 
 /**
- * DOM based debug overlay for the HTML5 (TeaVM + WebGL2) backend, built to mirror the desktop
- * Dear ImGui overlay ({@code FlixelImGuiDebugOverlay}) as closely as the browser allows.
+ * In-game debug overlay for the HTML5 (TeaVM + WebGL2) backend.
  *
  * <h2>Why the DOM instead of a GUI toolkit</h2>
  *
- * <p>The desktop backend renders its debugger with Dear ImGui submitted through bgfx. A browser has
- * no such toolkit, and pulling one in would bloat every web build. The browser already ships a
- * perfectly good, hardware-accelerated UI layer though: the DOM. This overlay therefore builds a
- * single docked panel out of ordinary HTML elements layered on top of the game canvas, exactly the
- * way {@code FlixelHtml5Alerter} and the crash overlay in
+ * <p>Pulling a heavy GUI toolkit into every web build would bloat it for little benefit, because the
+ * browser already ships a capable, hardware-accelerated UI layer: the DOM. This overlay therefore
+ * builds a single docked panel out of ordinary HTML elements layered on top of the game canvas,
+ * exactly the way {@code FlixelHtml5Alerter} and the crash overlay in
  * {@link org.flixelgdx.backend.html5.FlixelHtml5RuntimeDevice FlixelHtml5RuntimeDevice} build their
  * dialogs. Nothing here touches WebGL.
  *
- * <h2>Parity with the desktop overlay</h2>
+ * <h2>What the panel shows</h2>
  *
- * <p>The panel exposes the same information the desktop overlay does, split across tabs rather than
- * floating windows (a single docked panel reads far better in a browser than draggable windows):
+ * <p>The overlay splits its tools across tabs, which reads more clearly in a browser than draggable
+ * windows would:
  * <ul>
  *   <li><b>Stats</b> - FPS, heap, active members, assets, render calls, and the inspected camera.</li>
  *   <li><b>Performance</b> - live line graphs of FPS, frame time, draw calls, and heap, drawn on a
@@ -62,7 +60,7 @@ import org.teavm.jso.JSBody;
  *   <li><b>Controls</b> - hitbox and pause toggles, a time-scale slider, an overlay update-rate
  *       slider, and the keybind reference.</li>
  *   <li><b>Command</b> - a text field routed through {@code Flixel.debug.executeCommand(...)}, with
- *       output flowing to the Log tab exactly as it does on desktop.</li>
+ *       output flowing to the Log tab.</li>
  * </ul>
  *
  * <p>The texture inspector is intentionally left out of this first version; displaying a WebGL
@@ -86,7 +84,7 @@ import org.teavm.jso.JSBody;
  */
 public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
 
-  /** Default overlay data update rate in Hertz, matching the desktop overlay's default. */
+  /** Default overlay data update rate in Hertz. */
   private static final float DEFAULT_UPDATE_RATE = 20f;
 
   /** Lowest overlay update rate the slider allows, in Hertz. */
@@ -100,6 +98,9 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
 
   /** Reused buffer for the comma-separated graph samples, so the redraw path allocates only the final string. */
   private final StringBuilder graphBuffer = new StringBuilder(768);
+
+  /** Scratch buffer used once, when the DOM is first built, to replay log lines recorded before then. */
+  private final FlixelArray<BufferedLogLine> logReplayBuffer = new FlixelArray<>();
 
   private float overlayUpdateRate = DEFAULT_UPDATE_RATE;
   private float graphSampleTimer;
@@ -219,8 +220,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
    * Sets the overlay data update rate in updates per second, clamped to {@code [1, 30]} Hz.
    *
    * <p>Lower values reduce the overlay's overhead; higher values give smoother, more reactive
-   * graphs and readouts. Mirrors {@code FlixelImGuiDebugOverlay.setOverlayUpdateRate(float)} so the
-   * two backends behave the same way.
+   * graphs and readouts.
    *
    * @param hz The desired rate in Hertz. Values below 1 are raised to 1; values above 30 are lowered
    *     to 30.
@@ -242,6 +242,22 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
     setUpdateRateValue(overlayUpdateRate);
     setTimeScaleValue(Flixel.timeScale);
     showDom(isVisible());
+    replayBufferedLog();
+  }
+
+  /**
+   * Pushes any log lines the base class recorded before the DOM existed into the Log panel. Lines
+   * are logged from the moment the overlay's listener is registered, which happens during
+   * {@code FlixelGame.create()} before the first frame; without this replay, everything logged in the
+   * initial state's {@code create()} would be missing from the panel even though it sits in the
+   * buffer. Live lines after this point arrive through {@link #onLogEntryAppended(BufferedLogLine)}.
+   */
+  private void replayBufferedLog() {
+    int n = copyLogBuffer(logReplayBuffer);
+    for (int i = 0; i < n; i++) {
+      BufferedLogLine line = logReplayBuffer.get(i);
+      appendLog(line.level.name(), line.tagStr, line.messageStr);
+    }
   }
 
   /**
@@ -383,7 +399,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
 
           var header = mk('div', 'display:flex;align-items:center;justify-content:space-between;'
             + 'padding:8px 12px;border-bottom:1px solid #333;flex:0 0 auto;');
-          header.appendChild(mk('span', 'color:' + KEY_COLOR + ';font-weight:bold;', 'FlixelGDX Debug'));
+          header.appendChild(mk('span', 'color:' + KEY_COLOR + ';', 'FlixelGDX Debug'));
           var hideBtn = mk('button', 'background:#222;color:#ccc;border:1px solid #444;cursor:pointer;'
             + 'font-family:monospace;font-size:11px;padding:2px 8px;', 'Hide');
           hideBtn.onclick = function () { D.toggle = true; };
@@ -514,7 +530,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
           tsSlider.oninput = function () { D.timeScale = parseFloat(tsSlider.value); tsVal.textContent = parseFloat(tsSlider.value).toFixed(2) + 'x'; };
           var tsReset = mk('button', 'background:#222;color:#ccc;border:1px solid #444;cursor:pointer;'
             + 'font-family:monospace;font-size:11px;padding:2px 8px;', 'Reset');
-          tsReset.onclick = function () { D.timeScale = 1; };
+          tsReset.onclick = function () { D.timeScale = 1; tsSlider.value = 1; tsVal.textContent = '1.00x'; };
           tsWrap.appendChild(tsSlider);
           tsWrap.appendChild(tsVal);
           tsWrap.appendChild(tsReset);
@@ -657,7 +673,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
           D.clearTracker = function () { D.trackerBody.textContent = ''; };
           D.addTrackerHeader = function (name) {
             D.trackerEmpty.style.display = 'none';
-            D.trackerBody.appendChild(mk('div', 'color:' + KEY_COLOR + ';font-weight:bold;margin-top:6px;', name));
+            D.trackerBody.appendChild(mk('div', 'color:' + KEY_COLOR + ';margin-top:6px;', name));
           };
           D.addTrackerRow = function (k, v) {
             var r = mk('div', 'display:flex;justify-content:space-between;gap:12px;padding:1px 0 1px 8px;');
