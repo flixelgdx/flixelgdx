@@ -31,7 +31,7 @@ jobs:
             output: flixel_miniaudio.dll
             artifact: windows-x64
 
-          - os: macos-13
+          - os: macos-latest
             label: macOS (universal)
             output: libflixel_miniaudio.dylib
             artifact: macos-universal
@@ -61,6 +61,11 @@ jobs:
           curl -fsSL \
             https://raw.githubusercontent.com/mackron/miniaudio/master/extras/nodes/ma_reverb_node/ma_reverb_node.h \
             -o flixelgdx-desktop/src/main/native/ma_reverb_node.h
+          # The file ships with a path relative to its location in the extras tree. Rewrite it to
+          # a flat include so it finds miniaudio.h in the same directory during compilation.
+          sed -i.bak 's|../../../miniaudio.h|miniaudio.h|g' \
+            flixelgdx-desktop/src/main/native/ma_reverb_node.h
+          rm -f flixelgdx-desktop/src/main/native/ma_reverb_node.h.bak
 
       - name: Download stb_vorbis.c
         shell: bash
