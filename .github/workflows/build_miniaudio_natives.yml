@@ -67,6 +67,13 @@ jobs:
             flixelgdx-desktop/src/main/native/ma_reverb_node.h
           rm -f flixelgdx-desktop/src/main/native/ma_reverb_node.h.bak
 
+      - name: Download verblib.h
+        shell: bash
+        run: |
+          curl -fsSL \
+            https://raw.githubusercontent.com/mackron/miniaudio/master/extras/nodes/ma_reverb_node/verblib.h \
+            -o flixelgdx-desktop/src/main/native/verblib.h
+
       - name: Download stb_vorbis.c
         shell: bash
         run: |
