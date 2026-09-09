@@ -263,6 +263,7 @@ public class FlixelWebAudioSound extends FlixelSound {
     upstreamNode.disconnect(outputNode);
     FlixelWebAudioFactory.connect(upstreamNode, webEffect.audioNode());
     FlixelWebAudioFactory.connect(webEffect.audioNode(), outputNode);
+    webEffect.onWired(outputNode);
   }
 
   @Override
@@ -273,7 +274,7 @@ public class FlixelWebAudioSound extends FlixelSound {
   @Override
   @NotNull
   protected FlixelReverbEffect createReverbEffect(float wet) {
-    return FlixelReverbEffect.NOOP;
+    return FlixelWebAudioReverbEffect.create(context, wet, 1f - wet, 0.5f, 0.5f, 1.0f);
   }
 
   @Override

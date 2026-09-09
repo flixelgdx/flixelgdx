@@ -43,8 +43,8 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelMiniAudio} native bridge.
  *
  * <p>Effect nodes are implemented via miniaudio's node graph: low-pass, high-pass, band-pass,
- * and delay/echo all map to native miniaudio node types. Reverb has no native miniaudio
- * counterpart and returns {@link FlixelReverbEffect#NOOP}.
+ * delay/echo, and reverb all map to native miniaudio node types. Reverb is provided by the
+ * Freeverb-based {@code ma_reverb_node} from the miniaudio extras.
  */
 public class FlixelMiniAudioSound extends FlixelSound {
 
@@ -210,7 +210,8 @@ public class FlixelMiniAudioSound extends FlixelSound {
   @NotNull
   @Override
   protected FlixelReverbEffect createReverbEffect(float wet) {
-    return FlixelReverbEffect.NOOP;
+    return (FlixelReverbEffect) createNode(
+        FlixelAudioNodeRegistry.REVERB, new float[] { wet, 1f - wet, 0.5f, 0.5f, 1.0f, 0f });
   }
 
   @NotNull
@@ -263,6 +264,9 @@ public class FlixelMiniAudioSound extends FlixelSound {
     if (typeId == FlixelAudioNodeRegistry.DELAY) {
       return new FlixelMiniAudioEchoEffect(nodeHandle, params);
     }
+    if (typeId == FlixelAudioNodeRegistry.REVERB) {
+      return new FlixelMiniAudioReverbEffect(nodeHandle);
+    }
     return new FlixelMiniAudioEffect(nodeHandle);
   }
 
@@ -279,6 +283,9 @@ public class FlixelMiniAudioSound extends FlixelSound {
     }
     if (typeId == FlixelAudioNodeRegistry.DELAY) {
       return FlixelEchoEffect.NOOP;
+    }
+    if (typeId == FlixelAudioNodeRegistry.REVERB) {
+      return FlixelReverbEffect.NOOP;
     }
     return FlixelSoundEffect.NOOP;
   }

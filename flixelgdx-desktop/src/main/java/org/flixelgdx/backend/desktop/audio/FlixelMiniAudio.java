@@ -304,6 +304,7 @@ public class FlixelMiniAudio {
    *   <li>HIGH_PASS: {@code [cutoffHz, order]}</li>
    *   <li>BAND_PASS: {@code [cutoffHz, q, order]}</li>
    *   <li>DELAY: {@code [delaySeconds, decay]}</li>
+   *   <li>REVERB: {@code [wet, dry, roomSize, damping, width, frozen(0/1)]}</li>
    * </ul>
    *
    * @param engine The engine handle.

@@ -42,6 +42,11 @@
 #define STB_VORBIS_NO_STDIO
 #include "stb_vorbis.c"
 
+// Freeverb reverb node from miniaudio extras. Must be included after miniaudio.h since it extends
+// ma_node_base. The implementation guard mirrors the miniaudio single-header convention.
+#define MA_REVERB_NODE_IMPLEMENTATION
+#include "ma_reverb_node.h"
+
 // A loaded sound owns whichever data source is live for the voice's lifetime. WAV, MP3, and FLAC
 // play from a miniaudio decoder over a private copy of the encoded bytes (the memory decoder
 // references that buffer rather than copying it). Ogg Vorbis plays from an audio buffer over the
@@ -414,7 +419,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupSetVolume(JNIEnv* 
 }
 
 // Effect node types mirror FlixelAudioNodeRegistry built-in IDs:
-//   0 = LOW_PASS, 1 = HIGH_PASS, 2 = BAND_PASS, 3 = REVERB (unsupported), 4 = DELAY
+//   0 = LOW_PASS, 1 = HIGH_PASS, 2 = BAND_PASS, 3 = REVERB, 4 = DELAY
 typedef enum {
   EFFECT_TYPE_LOW_PASS  = 0,
   EFFECT_TYPE_HIGH_PASS = 1,
@@ -426,6 +431,7 @@ typedef enum {
 // Owns one miniaudio effect node. The engine pointer is stored for live-param reinit (filters
 // need the engine's sample rate and channel count when reconfiguring the filter coefficients).
 // Cached doubles keep the most recent param values so getParam can return them without a native query.
+// Reverb params are not cached here since ma_reverb_node exposes dedicated getters for all of them.
 typedef struct {
   flixel_effect_type type;
   ma_engine*         engine;
@@ -435,10 +441,11 @@ typedef struct {
   float              delay;
   float              decay;
   union {
-    ma_lpf_node   lpf;
-    ma_hpf_node   hpf;
-    ma_bpf_node   bpf;
-    ma_delay_node delay_node;
+    ma_lpf_node    lpf;
+    ma_hpf_node    hpf;
+    ma_bpf_node    bpf;
+    ma_delay_node  delay_node;
+    ma_reverb_node reverb_node;
   } node;
 } flixel_effect_node;
 
@@ -449,6 +456,7 @@ static ma_node* effect_to_node(flixel_effect_node* fn) {
     case EFFECT_TYPE_HIGH_PASS: return (ma_node*) &fn->node.hpf;
     case EFFECT_TYPE_BAND_PASS: return (ma_node*) &fn->node.bpf;
     case EFFECT_TYPE_DELAY:     return (ma_node*) &fn->node.delay_node;
+    case EFFECT_TYPE_REVERB:    return (ma_node*) &fn->node.reverb_node;
     default:                    return NULL;
   }
 }
@@ -510,6 +518,18 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeCreate(JNIEnv* env,
       result = ma_delay_node_init(graph, &cfg, NULL, &fn->node.delay_node);
       break;
     }
+    case EFFECT_TYPE_REVERB: {
+      // params: [wet, dry, roomSize, damping, width, frozen(0/1)]
+      ma_reverb_node_config cfg = ma_reverb_node_config_init(channels, sampleRate);
+      if (paramLen > 0) cfg.wet      = params[0];
+      if (paramLen > 1) cfg.dry      = params[1];
+      if (paramLen > 2) cfg.roomSize = params[2];
+      if (paramLen > 3) cfg.damping  = params[3];
+      if (paramLen > 4) cfg.width    = params[4];
+      if (paramLen > 5) cfg.mode     = (params[5] != 0.0f) ? 1 : 0;
+      result = ma_reverb_node_init(graph, &cfg, NULL, &fn->node.reverb_node);
+      break;
+    }
     default:
       break;
   }
@@ -563,6 +583,15 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeSetParam(JNIEnv* en
         ma_delay_node_set_decay(&fn->node.delay_node, value);
       }
       break;
+    case EFFECT_TYPE_REVERB:
+      // paramId: 0=wet, 1=dry, 2=roomSize, 3=damping, 4=width, 5=frozen(0/1)
+      if (paramId == 0) ma_reverb_node_set_wet(&fn->node.reverb_node, value);
+      else if (paramId == 1) ma_reverb_node_set_dry(&fn->node.reverb_node, value);
+      else if (paramId == 2) ma_reverb_node_set_room_size(&fn->node.reverb_node, value);
+      else if (paramId == 3) ma_reverb_node_set_damping(&fn->node.reverb_node, value);
+      else if (paramId == 4) ma_reverb_node_set_width(&fn->node.reverb_node, value);
+      else if (paramId == 5) ma_reverb_node_set_mode(&fn->node.reverb_node, (value != 0.0f) ? 1 : 0);
+      break;
     default:
       break;
   }
@@ -585,6 +614,15 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeGetParam(JNIEnv* en
       break;
     case EFFECT_TYPE_DELAY:
       if (paramId == 0) return fn->decay;
+      break;
+    case EFFECT_TYPE_REVERB:
+      // paramId: 0=wet, 1=dry, 2=roomSize, 3=damping, 4=width, 5=frozen(0/1)
+      if (paramId == 0) return ma_reverb_node_get_wet(&fn->node.reverb_node);
+      if (paramId == 1) return ma_reverb_node_get_dry(&fn->node.reverb_node);
+      if (paramId == 2) return ma_reverb_node_get_room_size(&fn->node.reverb_node);
+      if (paramId == 3) return ma_reverb_node_get_damping(&fn->node.reverb_node);
+      if (paramId == 4) return ma_reverb_node_get_width(&fn->node.reverb_node);
+      if (paramId == 5) return (jfloat) ma_reverb_node_get_mode(&fn->node.reverb_node);
       break;
     default:
       break;
@@ -656,10 +694,11 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeDestroy(JNIEnv* env
   }
   ma_node_detach_all_output_buses(effect_to_node(fn));
   switch (fn->type) {
-    case EFFECT_TYPE_LOW_PASS:  ma_lpf_node_uninit(&fn->node.lpf,        NULL); break;
-    case EFFECT_TYPE_HIGH_PASS: ma_hpf_node_uninit(&fn->node.hpf,        NULL); break;
-    case EFFECT_TYPE_BAND_PASS: ma_bpf_node_uninit(&fn->node.bpf,        NULL); break;
-    case EFFECT_TYPE_DELAY:     ma_delay_node_uninit(&fn->node.delay_node, NULL); break;
+    case EFFECT_TYPE_LOW_PASS:  ma_lpf_node_uninit(&fn->node.lpf,           NULL); break;
+    case EFFECT_TYPE_HIGH_PASS: ma_hpf_node_uninit(&fn->node.hpf,           NULL); break;
+    case EFFECT_TYPE_BAND_PASS: ma_bpf_node_uninit(&fn->node.bpf,           NULL); break;
+    case EFFECT_TYPE_DELAY:     ma_delay_node_uninit(&fn->node.delay_node,   NULL); break;
+    case EFFECT_TYPE_REVERB:    ma_reverb_node_uninit(&fn->node.reverb_node, NULL); break;
     default: break;
   }
   free(fn);

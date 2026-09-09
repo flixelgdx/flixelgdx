@@ -35,6 +35,10 @@ import org.teavm.jso.webaudio.AudioNode;
  * and the output exit point (sends signal to the downstream effect or final destination). That
  * single node reference is what {@link FlixelWebAudioSound#wireEffectNode} connects into the
  * audio graph.
+ *
+ * <p>Effects that need to connect additional paths to the output (such as a separate wet/dry gain
+ * nodes in reverb) override {@link #onWired} to complete that wiring once the output destination
+ * is known.
  */
 abstract class FlixelWebAudioEffect implements FlixelSoundEffect {
 
@@ -55,6 +59,18 @@ abstract class FlixelWebAudioEffect implements FlixelSoundEffect {
   final AudioNode audioNode() {
     return node;
   }
+
+  /**
+   * Called by {@link FlixelWebAudioSound#wireEffectNode} immediately after this effect is inserted
+   * into the audio graph.
+   *
+   * <p>The default implementation does nothing. Subclasses that route secondary paths to the same
+   * output (such as wet/dry mixing in reverb) override this to complete their internal wiring once
+   * the output destination is known.
+   *
+   * @param output The downstream {@code AudioNode} that this effect's output feeds into.
+   */
+  void onWired(@NotNull AudioNode output) {}
 
   @Override
   public void setParam(int paramId, float value) {}
