@@ -521,13 +521,16 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeCreate(JNIEnv* env,
     case EFFECT_TYPE_REVERB: {
       // params: [wet, dry, roomSize, damping, width, frozen(0/1)]
       ma_reverb_node_config cfg = ma_reverb_node_config_init(channels, sampleRate);
-      if (paramLen > 0) cfg.wet      = params[0];
-      if (paramLen > 1) cfg.dry      = params[1];
       if (paramLen > 2) cfg.roomSize = params[2];
       if (paramLen > 3) cfg.damping  = params[3];
       if (paramLen > 4) cfg.width    = params[4];
       if (paramLen > 5) cfg.mode     = (params[5] != 0.0f) ? 1 : 0;
       result = ma_reverb_node_init(graph, &cfg, NULL, &fn->node.reverb_node);
+      // wet and dry are not config fields; set them via verblib after init
+      if (result == MA_SUCCESS) {
+        if (paramLen > 0) verblib_set_wet(&fn->node.reverb_node.reverb, params[0]);
+        if (paramLen > 1) verblib_set_dry(&fn->node.reverb_node.reverb, params[1]);
+      }
       break;
     }
     default:
@@ -585,12 +588,12 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeSetParam(JNIEnv* en
       break;
     case EFFECT_TYPE_REVERB:
       // paramId: 0=wet, 1=dry, 2=roomSize, 3=damping, 4=width, 5=frozen(0/1)
-      if (paramId == 0) ma_reverb_node_set_wet(&fn->node.reverb_node, value);
-      else if (paramId == 1) ma_reverb_node_set_dry(&fn->node.reverb_node, value);
-      else if (paramId == 2) ma_reverb_node_set_room_size(&fn->node.reverb_node, value);
-      else if (paramId == 3) ma_reverb_node_set_damping(&fn->node.reverb_node, value);
-      else if (paramId == 4) ma_reverb_node_set_width(&fn->node.reverb_node, value);
-      else if (paramId == 5) ma_reverb_node_set_mode(&fn->node.reverb_node, (value != 0.0f) ? 1 : 0);
+      if (paramId == 0)      verblib_set_wet(&fn->node.reverb_node.reverb, value);
+      else if (paramId == 1) verblib_set_dry(&fn->node.reverb_node.reverb, value);
+      else if (paramId == 2) verblib_set_room_size(&fn->node.reverb_node.reverb, value);
+      else if (paramId == 3) verblib_set_damping(&fn->node.reverb_node.reverb, value);
+      else if (paramId == 4) verblib_set_width(&fn->node.reverb_node.reverb, value);
+      else if (paramId == 5) verblib_set_mode(&fn->node.reverb_node.reverb, (value != 0.0f) ? 1.0f : 0.0f);
       break;
     default:
       break;
@@ -617,12 +620,12 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_nodeGetParam(JNIEnv* en
       break;
     case EFFECT_TYPE_REVERB:
       // paramId: 0=wet, 1=dry, 2=roomSize, 3=damping, 4=width, 5=frozen(0/1)
-      if (paramId == 0) return ma_reverb_node_get_wet(&fn->node.reverb_node);
-      if (paramId == 1) return ma_reverb_node_get_dry(&fn->node.reverb_node);
-      if (paramId == 2) return ma_reverb_node_get_room_size(&fn->node.reverb_node);
-      if (paramId == 3) return ma_reverb_node_get_damping(&fn->node.reverb_node);
-      if (paramId == 4) return ma_reverb_node_get_width(&fn->node.reverb_node);
-      if (paramId == 5) return (jfloat) ma_reverb_node_get_mode(&fn->node.reverb_node);
+      if (paramId == 0) return verblib_get_wet(&fn->node.reverb_node.reverb);
+      if (paramId == 1) return verblib_get_dry(&fn->node.reverb_node.reverb);
+      if (paramId == 2) return verblib_get_room_size(&fn->node.reverb_node.reverb);
+      if (paramId == 3) return verblib_get_damping(&fn->node.reverb_node.reverb);
+      if (paramId == 4) return verblib_get_width(&fn->node.reverb_node.reverb);
+      if (paramId == 5) return verblib_get_mode(&fn->node.reverb_node.reverb);
       break;
     default:
       break;
