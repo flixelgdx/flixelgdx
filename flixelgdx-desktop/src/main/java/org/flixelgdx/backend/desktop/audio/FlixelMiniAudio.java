@@ -38,8 +38,8 @@ import java.nio.file.StandardCopyOption;
  * header. This class holds the {@code native} methods our C wrapper implements, and loads the
  * matching platform library from the desktop module's {@code org/flixelgdx/natives} resources.
  * Libraries live in per-platform subdirectories ({@code linux-x86_64}, {@code linux-arm64},
- * {@code windows-x86_64}, {@code macos}), letting the framework carry binaries for every
- * supported target at once. The native is extracted to a temp file once and loaded, so packaged
+ * {@code windows-x86_64}, {@code windows-arm64}, {@code macos}), letting the framework carry
+ * binaries for every supported target at once. The native is extracted to a temp file once and loaded, so packaged
  * games need no extra setup.
  *
  * <p>The bridge is deliberately low-level and stateless: every handle is a {@code long} pointer
@@ -69,7 +69,8 @@ public class FlixelMiniAudio {
     String subdir;
     String libName;
     if (os.contains("win")) {
-      subdir = "windows-x86_64";
+      boolean arm64 = arch.equals("aarch64") || arch.equals("arm64");
+      subdir = arm64 ? "windows-arm64" : "windows-x86_64";
       libName = "flixel_miniaudio.dll";
     } else if (os.contains("mac") || os.contains("darwin")) {
       subdir = "macos";

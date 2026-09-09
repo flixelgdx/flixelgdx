@@ -10,6 +10,7 @@ to a temp path, and loads it - packaged games need no extra setup.
 | `linux-x86_64/`    | `libflixel_miniaudio.so`    | Linux (x86-64)        |
 | `linux-arm64/`     | `libflixel_miniaudio.so`    | Linux (AArch64)       |
 | `windows-x86_64/`  | `flixel_miniaudio.dll`      | Windows (x86-64)      |
+| `windows-arm64/`   | `flixel_miniaudio.dll`      | Windows (AArch64)     |
 | `macos/`           | `libflixel_miniaudio.dylib` | macOS (universal)     |
 
 Rebuild with the `Build miniaudio natives` GitHub Actions workflow (`.github/workflows/build_miniaudio_natives.yml`),

@@ -111,6 +111,46 @@ jobs:
           name: windows-x86_64
           path: flixel_miniaudio.dll
 
+  windows-arm64:
+    name: Windows (arm64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up MSVC (cross-compile amd64 -> arm64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
+
+      - name: Download miniaudio sources
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Build
+        shell: cmd
+        run: |
+          cl.exe /O2 /LD ^
+            /I"%JAVA_HOME%\include" /I"%JAVA_HOME%\include\win32" ^
+            flixelgdx-desktop\src\main\native\flixel_miniaudio.c ^
+            /link /OUT:flixel_miniaudio.dll ole32.lib winmm.lib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64
+          path: flixel_miniaudio.dll
+
   macos-universal:
     name: macOS (universal)
     runs-on: macos-latest
