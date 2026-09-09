@@ -1,0 +1,134 @@
+name: Build shaderc arm64 binaries
+
+# Run manually whenever the bundled shaderc binaries need to be refreshed for arm64 platforms.
+# The workflow builds shaderc from bgfx source on native arm64 runners and commits the resulting
+# binaries back to master, so they are picked up the next time the shader plugin JAR is assembled.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+
+  linux-arm64:
+    name: Linux (arm64)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build
+
+      - name: Clone bgfx.cmake
+        run: |
+          git clone --depth 1 https://github.com/bkaradzic/bgfx.cmake bgfx-cmake
+          cd bgfx-cmake && git submodule update --init --depth 1
+
+      - name: Configure
+        run: |
+          cmake -S bgfx-cmake -B bgfx-cmake/build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBGFX_BUILD_TOOLS=ON \
+            -DBGFX_BUILD_EXAMPLES=OFF \
+            -DBGFX_BUILD_UNIT_TESTS=OFF
+
+      - name: Build shaderc
+        run: cmake --build bgfx-cmake/build --target shaderc -j$(nproc)
+
+      - name: Locate and strip binary
+        run: |
+          shaderc_bin=$(find bgfx-cmake/build -maxdepth 4 -name shaderc -type f | head -1)
+          echo "shaderc binary: $shaderc_bin"
+          cp "$shaderc_bin" shaderc
+          strip shaderc
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: shaderc
+
+  windows-arm64:
+    name: Windows (arm64)
+    runs-on: windows-11-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone bgfx.cmake
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/bkaradzic/bgfx.cmake bgfx-cmake
+          cd bgfx-cmake && git submodule update --init --depth 1
+
+      - name: Configure (ARM64)
+        run: |
+          cmake -S bgfx-cmake -B bgfx-cmake\build `
+            -G "Visual Studio 17 2022" -A ARM64 `
+            -DBGFX_BUILD_TOOLS=ON `
+            -DBGFX_BUILD_EXAMPLES=OFF `
+            -DBGFX_BUILD_UNIT_TESTS=OFF
+
+      - name: Build shaderc
+        run: cmake --build bgfx-cmake\build --target shaderc --config Release
+
+      - name: Locate binary
+        shell: powershell
+        run: |
+          $f = Get-ChildItem -Recurse -Filter shaderc.exe bgfx-cmake\build | Select-Object -First 1
+          if (-not $f) { throw "shaderc.exe not found in build output" }
+          Write-Host "Found: $($f.FullName)"
+          Copy-Item $f.FullName shaderc.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64
+          path: shaderc.exe
+
+  commit:
+    name: Commit arm64 binaries to master
+    needs: [linux-arm64, windows-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Download linux-arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-arm64
+          path: downloaded/linux-arm64
+
+      - name: Download windows-arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-arm64
+          path: downloaded/windows-arm64
+
+      - name: Place binaries
+        run: |
+          tools=flixelgdx-shader-plugin/src/main/resources/org/flixelgdx/gradle/shader/tools
+          mkdir -p "$tools/linux-aarch64" "$tools/windows-aarch64"
+          cp downloaded/linux-arm64/shaderc  "$tools/linux-aarch64/shaderc"
+          chmod +x                           "$tools/linux-aarch64/shaderc"
+          cp downloaded/windows-arm64/shaderc.exe "$tools/windows-aarch64/shaderc.exe"
+
+      - name: Commit and push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flixelgdx-shader-plugin/src/main/resources/org/flixelgdx/gradle/shader/tools/
+          if git diff --cached --quiet; then
+            echo "No changes to commit - binaries are already up to date."
+            exit 0
+          fi
+          git commit -m "Add arm64 shaderc binaries for Linux and Windows"
+          git push

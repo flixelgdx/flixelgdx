@@ -16,6 +16,5 @@ to a temp path, and loads it - packaged games need no extra setup.
 Rebuild with the `Build miniaudio natives` GitHub Actions workflow (`.github/workflows/build_miniaudio_natives.yml`),
 or locally with `./scripts/build_miniaudio_natives.sh` from the repository root, whenever
 `flixelgdx-desktop/src/main/native/flixel_miniaudio.c` changes. If you need `miniaudio.h` or
-`stb_vorbis.c`, download them from the
-[official miniaudio repository](https://github.com/mackron/miniaudio). They are kept out of the
-framework due to their size.
+`stb_vorbis.c`, download them from the [official miniaudio repository](https://github.com/mackron/miniaudio). 
+They are kept out of the framework due to their sheer size.

@@ -225,12 +225,12 @@ public final class Shaderc {
 
   @NotNull
   private static String hostClassifier() {
-    if (isWindows()) {
-      return "windows-x86_64";
-    }
     String os = osName();
     String arch = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
     boolean arm = arch.contains("aarch64") || arch.contains("arm64");
+    if (os.contains("win")) {
+      return arm ? "windows-aarch64" : "windows-x86_64";
+    }
     if (os.contains("mac") || os.contains("darwin")) {
       return arm ? "macos-aarch64" : "macos-x86_64";
     }
