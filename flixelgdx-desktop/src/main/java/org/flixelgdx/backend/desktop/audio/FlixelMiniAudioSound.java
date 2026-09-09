@@ -23,11 +23,7 @@
  */
 package org.flixelgdx.backend.desktop.audio;
 
-import org.flixelgdx.audio.FlixelEchoEffect;
-import org.flixelgdx.audio.FlixelLowPassEffect;
-import org.flixelgdx.audio.FlixelReverbEffect;
 import org.flixelgdx.audio.FlixelSound;
-import org.flixelgdx.audio.FlixelSoundEffect;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -45,6 +41,8 @@ public class FlixelMiniAudioSound extends FlixelSound {
   /** Native miniaudio sound handle, or {@code 0} once disposed. */
   private long handle;
 
+  private final FlixelMiniAudioGroup group;
+
   /** Cached pitch; miniaudio has no pitch getter. */
   private float pitch = 1f;
 
@@ -52,12 +50,17 @@ public class FlixelMiniAudioSound extends FlixelSound {
   private float pan = 0f;
 
   /**
-   * Wraps a native sound handle.
+   * Wraps a native sound handle and registers with its group.
    *
    * @param handle The native handle from {@link FlixelMiniAudio#soundLoad}.
+   * @param group The group this sound belongs to, or {@code null} for none.
    */
-  FlixelMiniAudioSound(long handle) {
+  FlixelMiniAudioSound(long handle, FlixelMiniAudioGroup group) {
     this.handle = handle;
+    this.group = group;
+    if (group != null) {
+      group.add(this);
+    }
   }
 
   @NotNull
@@ -169,33 +172,13 @@ public class FlixelMiniAudioSound extends FlixelSound {
 
   @Override
   protected void disposeAudio() {
+    if (group != null) {
+      group.remove(this);
+    }
     if (handle != 0L) {
       FlixelMiniAudio.soundUninit(handle);
       handle = 0L;
     }
   }
 
-  @NotNull
-  @Override
-  protected FlixelReverbEffect createReverbEffect(float wet) {
-    return FlixelReverbEffect.NOOP;
-  }
-
-  @NotNull
-  @Override
-  protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
-    return FlixelEchoEffect.NOOP;
-  }
-
-  @NotNull
-  @Override
-  protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
-    return FlixelLowPassEffect.NOOP;
-  }
-
-  @Override
-  protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
-
-  @Override
-  protected void restoreDirectRouting() {}
 }

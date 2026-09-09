@@ -23,20 +23,45 @@
  */
 package org.flixelgdx.backend.html5.audio;
 
+import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundGroup;
 import org.flixelgdx.collections.FlixelArray;
+import org.jetbrains.annotations.NotNull;
+import org.teavm.jso.webaudio.AudioContext;
+import org.teavm.jso.webaudio.GainNode;
 
 /**
- * A web audio group: a set of sounds that pause and resume together.
+ * A web audio group: a set of sounds that can be paused, resumed, stopped, and volume-controlled
+ * together.
  *
- * <p>Web Audio has no native concept of a group, so this class keeps the membership itself. Each
- * sound created for this group registers on construction; {@link #pause()} and {@link #resume()}
- * then walk the members and suspend or wake each one. That is how a game can, for example, silence
- * every gameplay sound at once when a menu opens while leaving the menu music untouched.
+ * <p>Web Audio has no native concept of a group, so this class manages membership itself. Each
+ * sound created for this group registers on construction and deregisters on disposal. Group-wide
+ * volume is applied through a shared {@code GainNode} that every member routes through before
+ * reaching the master output, so one {@link #setVolume(float)} call scales all members at once.
+ * Pause and stop walk the member list and suspend or reset each one individually, because Web Audio
+ * has no group-level transport control.
  */
 public class FlixelWebAudioGroup implements FlixelSoundGroup {
 
   private final FlixelArray<FlixelWebAudioSound> sounds = new FlixelArray<>();
+
+  private final GainNode gainNode;
+
+  /**
+   * Creates a group and connects its volume node to the master output.
+   *
+   * @param context The shared audio context.
+   * @param master The master gain node all groups route into.
+   */
+  FlixelWebAudioGroup(AudioContext context, GainNode master) {
+    this.gainNode = context.createGain();
+    FlixelWebAudioFactory.connect(gainNode, master);
+  }
+
+  /** Returns the group's gain node, used by member sounds for their audio routing. */
+  GainNode getGainNode() {
+    return gainNode;
+  }
 
   @Override
   public void pause() {
@@ -49,6 +74,37 @@ public class FlixelWebAudioGroup implements FlixelSoundGroup {
   public void resume() {
     for (int i = 0; i < sounds.getSize(); i++) {
       sounds.get(i).resumeForGroup();
+    }
+  }
+
+  @Override
+  public void stop() {
+    for (int i = 0; i < sounds.getSize(); i++) {
+      sounds.get(i).stop();
+    }
+  }
+
+  @Override
+  public float getVolume() {
+    return (float) gainNode.getGain().getValue();
+  }
+
+  @Override
+  public void setVolume(float volume) {
+    gainNode.getGain().setValue(volume);
+  }
+
+  @Override
+  public void add(@NotNull FlixelSound sound) {
+    if (sound instanceof FlixelWebAudioSound s) {
+      register(s);
+    }
+  }
+
+  @Override
+  public void remove(@NotNull FlixelSound sound) {
+    if (sound instanceof FlixelWebAudioSound s) {
+      unregister(s);
     }
   }
 

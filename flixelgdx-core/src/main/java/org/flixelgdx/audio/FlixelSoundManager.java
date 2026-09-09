@@ -75,10 +75,12 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   private final FlixelSoundFactory factory;
   private final FlixelArray<FlixelSound> activeSounds = new FlixelArray<>(false, 8);
   private FlixelSoundGroup sfxGroup;
-  private FlixelSoundGroup musicGroup;
 
   private float masterVolume = 1f;
 
+  /**
+   * The current music that's playing, automatically set by {@link #playMusic}.
+   */
   @Nullable
   public FlixelSound music;
 
@@ -90,7 +92,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   public FlixelSoundManager(@NotNull FlixelSoundFactory factory) {
     this.factory = factory;
     sfxGroup = factory.createGroup();
-    musicGroup = factory.createGroup();
     FlixelSoundSourceLoader loader = new FlixelSoundSourceLoader();
     for (String ext : AUDIO_EXTENSIONS) {
       Flixel.assets.registerLoader(ext, loader);
@@ -119,11 +120,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
     if (sfxGroup != null) {
       sfxGroup.destroy();
     }
-    if (musicGroup != null) {
-      musicGroup.destroy();
-    }
     sfxGroup = factory.createGroup();
-    musicGroup = factory.createGroup();
     factory.setMasterVolume(masterVolume);
   }
 
@@ -173,26 +170,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    */
   @NotNull
   public FlixelSoundGroup getSfxGroup() {
-    return sfxGroup;
-  }
-
-  /**
-   * Returns the music group. Used by {@link #playMusic}.
-   *
-   * @return The music group.
-   */
-  @NotNull
-  public FlixelSoundGroup getMusicGroup() {
-    return musicGroup;
-  }
-
-  /**
-   * Returns the default group used when no group is specified (SFX group).
-   *
-   * @return The SFX group.
-   */
-  @NotNull
-  public FlixelSoundGroup getSoundsGroup() {
     return sfxGroup;
   }
 
@@ -390,7 +367,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       music.destroy();
       music = null;
     }
-    music = createAndPlaySoundFromPath(path, external, volume, looping, musicGroup);
+    music = createAndPlaySoundFromPath(path, external, volume, looping, sfxGroup);
     return music;
   }
 
@@ -442,7 +419,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
       boolean looping,
       @NotNull FlixelSoundGroup targetGroup) {
     FlixelSound sound = buildSound(path, external, targetGroup);
-    sound.setManager(this);
     sound.setVolume(volume);
     sound.setLooped(looping);
     sound.play();
@@ -483,7 +459,9 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    */
   public void pause() {
     sfxGroup.pause();
-    musicGroup.pause();
+    if (music != null) {
+      music.pause();
+    }
   }
 
   /**
@@ -492,7 +470,9 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    */
   public void resume() {
     sfxGroup.resume();
-    musicGroup.resume();
+    if (music != null) {
+      music.resume();
+    }
   }
 
   @Override
@@ -509,7 +489,6 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
     }
     activeSounds.clear();
     sfxGroup.destroy();
-    musicGroup.destroy();
     factory.destroyEngine();
   }
 }

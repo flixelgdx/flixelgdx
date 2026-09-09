@@ -156,30 +156,6 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
 
     @Override
     protected void disposeAudio() {}
-
-    @NotNull
-    @Override
-    protected FlixelReverbEffect createReverbEffect(float wet) {
-      return FlixelReverbEffect.NOOP;
-    }
-
-    @NotNull
-    @Override
-    protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
-      return FlixelEchoEffect.NOOP;
-    }
-
-    @NotNull
-    @Override
-    protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
-      return FlixelLowPassEffect.NOOP;
-    }
-
-    @Override
-    protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
-
-    @Override
-    protected void restoreDirectRouting() {}
   }
 
   /** A group that tracks nothing. */
@@ -190,6 +166,23 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
 
     @Override
     public void resume() {}
+
+    @Override
+    public void stop() {}
+
+    @Override
+    public float getVolume() {
+      return 1f;
+    }
+
+    @Override
+    public void setVolume(float volume) {}
+
+    @Override
+    public void add(@NotNull FlixelSound sound) {}
+
+    @Override
+    public void remove(@NotNull FlixelSound sound) {}
 
     @Override
     public void destroy() {}

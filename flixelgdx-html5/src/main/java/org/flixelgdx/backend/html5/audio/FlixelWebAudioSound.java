@@ -23,12 +23,8 @@
  */
 package org.flixelgdx.backend.html5.audio;
 
-import org.flixelgdx.audio.FlixelEchoEffect;
-import org.flixelgdx.audio.FlixelLowPassEffect;
-import org.flixelgdx.audio.FlixelReverbEffect;
 import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundBuffer;
-import org.flixelgdx.audio.FlixelSoundEffect;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
@@ -103,10 +99,10 @@ public class FlixelWebAudioSound extends FlixelSound {
     this.panNode = context.createStereoPanner();
 
     FlixelWebAudioFactory.connect(panNode, gainNode);
-    FlixelWebAudioFactory.connect(gainNode, master);
+    FlixelWebAudioFactory.connect(gainNode, group != null ? group.getGainNode() : master);
 
     if (group != null) {
-      group.register(this);
+      group.add(this);
     }
 
     decode(context, toArrayBuffer(buffer.data()), decoded -> {
@@ -248,33 +244,9 @@ public class FlixelWebAudioSound extends FlixelSound {
   protected void disposeAudio() {
     stopSource();
     if (group != null) {
-      group.unregister(this);
+      group.remove(this);
     }
   }
-
-  @Override
-  @NotNull
-  protected FlixelReverbEffect createReverbEffect(float wet) {
-    return FlixelReverbEffect.NOOP;
-  }
-
-  @Override
-  @NotNull
-  protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
-    return FlixelEchoEffect.NOOP;
-  }
-
-  @Override
-  @NotNull
-  protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
-    return FlixelLowPassEffect.NOOP;
-  }
-
-  @Override
-  protected void routeEffectToOutput(@NotNull FlixelSoundEffect tail) {}
-
-  @Override
-  protected void restoreDirectRouting() {}
 
   /** Suspends this sound because its group was paused, remembering that the group did it. */
   void suspendForGroup() {

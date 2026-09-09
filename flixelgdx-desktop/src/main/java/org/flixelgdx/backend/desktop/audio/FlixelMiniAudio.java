@@ -144,6 +144,22 @@ public class FlixelMiniAudio {
   static native void groupStart(long group);
 
   /**
+   * Returns the current volume multiplier for a sound group.
+   *
+   * @param group The group handle.
+   * @return The current volume, where 1 is normal and 0 is silent.
+   */
+  static native float groupGetVolume(long group);
+
+  /**
+   * Sets the volume multiplier for a sound group.
+   *
+   * @param group The group handle.
+   * @param volume Volume multiplier (0 = silent, 1 = normal; values above 1 amplify).
+   */
+  static native void groupSetVolume(long group, float volume);
+
+  /**
    * Decodes and loads a sound from an in-memory encoded buffer.
    *
    * @param engine The engine handle.
