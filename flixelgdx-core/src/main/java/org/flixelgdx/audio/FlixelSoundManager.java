@@ -244,6 +244,7 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   public FlixelSound create(@NotNull String path, @Nullable FlixelSoundGroup group, boolean external) {
     FlixelSoundGroup targetGroup = (group != null) ? group : sfxGroup;
     FlixelSound sound = buildSound(path, external, targetGroup);
+    sound.setManager(this);
     activeSounds.add(sound);
     return sound;
   }

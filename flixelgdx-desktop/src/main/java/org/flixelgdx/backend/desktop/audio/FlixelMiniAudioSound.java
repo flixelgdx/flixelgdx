@@ -23,17 +23,8 @@
  */
 package org.flixelgdx.backend.desktop.audio;
 
-import org.flixelgdx.audio.FlixelAudioNodeRegistry;
-import org.flixelgdx.audio.FlixelBandPassEffect;
-import org.flixelgdx.audio.FlixelEchoEffect;
-import org.flixelgdx.audio.FlixelHighPassEffect;
-import org.flixelgdx.audio.FlixelLowPassEffect;
-import org.flixelgdx.audio.FlixelReverbEffect;
 import org.flixelgdx.audio.FlixelSound;
-import org.flixelgdx.audio.FlixelSoundEffect;
-import org.flixelgdx.audio.FlixelSoundGroup;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@link FlixelSound} backed by one miniaudio voice.
@@ -42,14 +33,10 @@ import org.jetbrains.annotations.Nullable;
  * shared {@link FlixelSound} base; this subclass only forwards audio operations to the
  * {@link FlixelMiniAudio} native bridge.
  *
- * <p>Effect nodes are implemented via miniaudio's node graph: low-pass, high-pass, band-pass,
- * delay/echo, and reverb all map to native miniaudio node types. Reverb is provided by the
- * Freeverb-based {@code ma_reverb_node} from the miniaudio extras.
+ * <p>The effect-node factory methods return the no-op sentinels for now: miniaudio's node graph
+ * is a follow-up slice, so reverb/echo/low-pass are accepted but do nothing rather than failing.
  */
 public class FlixelMiniAudioSound extends FlixelSound {
-
-  /** Native miniaudio engine handle (needed for node creation and routing). */
-  private final long engine;
 
   /** Native miniaudio sound handle, or {@code 0} once disposed. */
   private long handle;
@@ -58,16 +45,14 @@ public class FlixelMiniAudioSound extends FlixelSound {
   private float pitch = 1f;
 
   /** Cached pan; miniaudio has no pan getter. */
-  private float pan;
+  private float pan = 0f;
 
   /**
-   * Wraps a native sound and engine handle.
+   * Wraps a native sound handle.
    *
-   * @param engine The engine handle from {@link FlixelMiniAudio#engineInit}.
-   * @param handle The sound handle from {@link FlixelMiniAudio#soundLoad}.
+   * @param handle The native handle from {@link FlixelMiniAudio#soundLoad}.
    */
-  FlixelMiniAudioSound(long engine, long handle) {
-    this.engine = engine;
+  FlixelMiniAudioSound(long handle) {
     this.handle = handle;
   }
 
@@ -186,112 +171,4 @@ public class FlixelMiniAudioSound extends FlixelSound {
     }
   }
 
-  @Override
-  protected void wireEffectNode(@NotNull FlixelSoundEffect node, @Nullable FlixelSoundEffect upstream) {
-    if (handle == 0L || !(node instanceof FlixelMiniAudioEffect effect) || effect.getNodeHandle() == 0L) {
-      return;
-    }
-    long effectHandle = effect.getNodeHandle();
-    if (upstream instanceof FlixelMiniAudioEffect upstreamEffect && upstreamEffect.getNodeHandle() != 0L) {
-      FlixelMiniAudio.nodeConnect(effectHandle, upstreamEffect.getNodeHandle());
-    } else {
-      FlixelMiniAudio.nodeConnectToSound(effectHandle, handle);
-    }
-    FlixelMiniAudio.nodeRouteToOutput(engine, effectHandle, groupHandle());
-  }
-
-  @Override
-  protected void restoreDirectRouting() {
-    if (handle != 0L) {
-      FlixelMiniAudio.soundRestoreRouting(engine, handle, groupHandle());
-    }
-  }
-
-  @NotNull
-  @Override
-  protected FlixelReverbEffect createReverbEffect(float wet) {
-    return (FlixelReverbEffect) createNode(
-        FlixelAudioNodeRegistry.REVERB, new float[] { wet, 1f - wet, 0.5f, 0.5f, 1.0f, 0f });
-  }
-
-  @NotNull
-  @Override
-  protected FlixelEchoEffect createEchoEffect(float delaySeconds, float decay) {
-    return (FlixelEchoEffect) createNode(
-        FlixelAudioNodeRegistry.DELAY, new float[] { delaySeconds, decay });
-  }
-
-  @NotNull
-  @Override
-  protected FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order) {
-    return (FlixelLowPassEffect) createNode(
-        FlixelAudioNodeRegistry.LOW_PASS, new float[] { (float) cutoffHz, order });
-  }
-
-  @NotNull
-  @Override
-  protected FlixelHighPassEffect createHighPassEffect(double cutoffHz, int order) {
-    return (FlixelHighPassEffect) createNode(
-        FlixelAudioNodeRegistry.HIGH_PASS, new float[] { (float) cutoffHz, order });
-  }
-
-  @NotNull
-  @Override
-  protected FlixelBandPassEffect createBandPassEffect(double cutoffHz, double q, int order) {
-    return (FlixelBandPassEffect) createNode(
-        FlixelAudioNodeRegistry.BAND_PASS, new float[] { (float) cutoffHz, (float) q, order });
-  }
-
-  @NotNull
-  @Override
-  protected FlixelSoundEffect createNode(int typeId, float[] params) {
-    if (handle == 0L || engine == 0L) {
-      return resolveNoop(typeId);
-    }
-    long nodeHandle = FlixelMiniAudio.nodeCreate(engine, handle, typeId, params);
-    if (nodeHandle == 0L) {
-      return resolveNoop(typeId);
-    }
-    if (typeId == FlixelAudioNodeRegistry.LOW_PASS) {
-      return new FlixelMiniAudioLowPassEffect(nodeHandle, params);
-    }
-    if (typeId == FlixelAudioNodeRegistry.HIGH_PASS) {
-      return new FlixelMiniAudioHighPassEffect(nodeHandle, params);
-    }
-    if (typeId == FlixelAudioNodeRegistry.BAND_PASS) {
-      return new FlixelMiniAudioBandPassEffect(nodeHandle, params);
-    }
-    if (typeId == FlixelAudioNodeRegistry.DELAY) {
-      return new FlixelMiniAudioEchoEffect(nodeHandle, params);
-    }
-    if (typeId == FlixelAudioNodeRegistry.REVERB) {
-      return new FlixelMiniAudioReverbEffect(nodeHandle);
-    }
-    return new FlixelMiniAudioEffect(nodeHandle);
-  }
-
-  /** Returns the typed NOOP sentinel for a given registered type ID. */
-  private static FlixelSoundEffect resolveNoop(int typeId) {
-    if (typeId == FlixelAudioNodeRegistry.LOW_PASS) {
-      return FlixelLowPassEffect.NOOP;
-    }
-    if (typeId == FlixelAudioNodeRegistry.HIGH_PASS) {
-      return FlixelHighPassEffect.NOOP;
-    }
-    if (typeId == FlixelAudioNodeRegistry.BAND_PASS) {
-      return FlixelBandPassEffect.NOOP;
-    }
-    if (typeId == FlixelAudioNodeRegistry.DELAY) {
-      return FlixelEchoEffect.NOOP;
-    }
-    if (typeId == FlixelAudioNodeRegistry.REVERB) {
-      return FlixelReverbEffect.NOOP;
-    }
-    return FlixelSoundEffect.NOOP;
-  }
-
-  private long groupHandle() {
-    FlixelSoundGroup g = getGroup();
-    return (g instanceof FlixelMiniAudioGroup mg) ? mg.getHandle() : 0L;
-  }
 }

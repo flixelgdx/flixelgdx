@@ -79,18 +79,13 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
   @NotNull
   public FlixelSound createSound(@NotNull FlixelSoundBuffer buffer, @Nullable FlixelSoundGroup group) {
     FlixelWebAudioGroup webGroup = group instanceof FlixelWebAudioGroup g ? g : null;
-    AudioNode outputNode = (webGroup != null) ? webGroup.getGroupGain() : masterGain;
-    FlixelWebAudioSound sound = new FlixelWebAudioSound(context, outputNode, buffer);
-    if (group != null) {
-      sound.setGroup(group);
-    }
-    return sound;
+    return new FlixelWebAudioSound(context, masterGain, buffer, webGroup);
   }
 
   @Override
   @NotNull
   public FlixelSoundGroup createGroup() {
-    return new FlixelWebAudioGroup(context, masterGain);
+    return new FlixelWebAudioGroup();
   }
 
   @Override

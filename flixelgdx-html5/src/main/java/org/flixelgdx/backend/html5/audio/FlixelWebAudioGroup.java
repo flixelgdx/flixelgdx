@@ -23,50 +23,20 @@
  */
 package org.flixelgdx.backend.html5.audio;
 
-import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundGroup;
 import org.flixelgdx.collections.FlixelArray;
-import org.jetbrains.annotations.NotNull;
-import org.teavm.jso.webaudio.AudioContext;
-import org.teavm.jso.webaudio.GainNode;
 
 /**
- * A web audio group: a set of sounds that share volume, pause, resume, and stop controls.
+ * A web audio group: a set of sounds that pause and resume together.
  *
- * <p>Web Audio has no native group concept, so this class owns a {@code GainNode} that every
- * member sound connects its output through. The gain node connects directly to the master gain,
- * so setting group volume ({@link #setVolume(float)}) scales all member sounds at once without
- * touching their individual volumes.
- *
- * <p>Pause and resume walk the Java-side membership list and call per-sound suspend/wake hooks.
- * The group is constructed by {@link FlixelWebAudioFactory} with the shared context and master
- * gain; it is not designed to be created directly.
+ * <p>Web Audio has no native concept of a group, so this class keeps the membership itself. Each
+ * sound created for this group registers on construction; {@link #pause()} and {@link #resume()}
+ * then walk the members and suspend or wake each one. That is how a game can, for example, silence
+ * every gameplay sound at once when a menu opens while leaving the menu music untouched.
  */
 public class FlixelWebAudioGroup implements FlixelSoundGroup {
 
-  @NotNull
-  private final GainNode groupGain;
-
   private final FlixelArray<FlixelWebAudioSound> sounds = new FlixelArray<>();
-
-  private float volume = 1f;
-
-  /**
-   * Creates a group routed through a fresh gain node into the master gain.
-   *
-   * @param context The shared audio context.
-   * @param masterGain The master gain node this group feeds into.
-   */
-  FlixelWebAudioGroup(@NotNull AudioContext context, @NotNull GainNode masterGain) {
-    this.groupGain = context.createGain();
-    FlixelWebAudioFactory.connect(groupGain, masterGain);
-  }
-
-  /** Returns the group gain node so sounds created for this group can connect through it. */
-  @NotNull
-  GainNode getGroupGain() {
-    return groupGain;
-  }
 
   @Override
   public void pause() {
@@ -83,39 +53,27 @@ public class FlixelWebAudioGroup implements FlixelSoundGroup {
   }
 
   @Override
-  public void stop() {
-    for (int i = 0; i < sounds.getSize(); i++) {
-      sounds.get(i).stop();
-    }
-  }
-
-  @Override
-  public float getVolume() {
-    return volume;
-  }
-
-  @Override
-  public void setVolume(float volume) {
-    this.volume = volume;
-    groupGain.getGain().setValue(volume);
-  }
-
-  @Override
-  public void add(@NotNull FlixelSound sound) {
-    if (sound instanceof FlixelWebAudioSound webSound && !sounds.contains(webSound, true)) {
-      sounds.add(webSound);
-    }
-  }
-
-  @Override
-  public void remove(@NotNull FlixelSound sound) {
-    if (sound instanceof FlixelWebAudioSound webSound) {
-      sounds.removeValue(webSound, true);
-    }
-  }
-
-  @Override
   public void destroy() {
     sounds.clear();
+  }
+
+  /**
+   * Adds a sound to this group. Called by the sound during construction.
+   *
+   * @param sound The sound to track.
+   */
+  void register(FlixelWebAudioSound sound) {
+    if (!sounds.contains(sound, true)) {
+      sounds.add(sound);
+    }
+  }
+
+  /**
+   * Removes a sound from this group. Called when a sound is disposed.
+   *
+   * @param sound The sound to stop tracking.
+   */
+  void unregister(FlixelWebAudioSound sound) {
+    sounds.removeValue(sound, true);
   }
 }

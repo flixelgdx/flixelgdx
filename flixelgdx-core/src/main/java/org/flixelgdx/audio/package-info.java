@@ -31,21 +31,13 @@
  * }</pre>
  *
  * <h2>Sound groups</h2>
- * <p>{@link org.flixelgdx.audio.FlixelSoundGroup FlixelSoundGroup} lets you control volume and
- * pause for a category of sounds (music or SFX) independently from the global volume. The
- * manager exposes a pre-built SFX group and music group; pass one during creation to assign a
- * sound to it:
+ * <p>{@link org.flixelgdx.audio.FlixelSoundGroup FlixelSoundGroup} lets you pause and resume a
+ * category of sounds (such as SFX) independently from the global volume. The manager exposes a
+ * pre-built SFX group; pass one during creation to assign a sound to it:
  *
  * <pre>{@code
- * FlixelSound bgm = Flixel.sound.play(bgmSource, 0.6f, true, Flixel.sound.getMusicGroup());
+ * FlixelSound sfx = Flixel.sound.play(boomSource, 0.8f, false, Flixel.sound.getSfxGroup());
  * }</pre>
- *
- * <h2>Audio effects</h2>
- * <p>Platform backends that support it expose DSP effects:
- * {@link org.flixelgdx.audio.FlixelReverbEffect FlixelReverbEffect},
- * {@link org.flixelgdx.audio.FlixelEchoEffect FlixelEchoEffect}, and
- * {@link org.flixelgdx.audio.FlixelLowPassEffect FlixelLowPassEffect}. Check the backend
- * documentation before depending on these in cross-platform builds.
  *
  * @see org.flixelgdx.audio.FlixelSoundManager
  * @see org.flixelgdx.audio.FlixelSound

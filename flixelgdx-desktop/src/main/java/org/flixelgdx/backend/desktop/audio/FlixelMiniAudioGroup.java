@@ -23,26 +23,18 @@
  */
 package org.flixelgdx.backend.desktop.audio;
 
-import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundGroup;
-import org.flixelgdx.collections.FlixelArray;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link FlixelSoundGroup} backed by one miniaudio sound group.
  *
- * <p>Groups let the framework pause, resume, stop, and volume-scale whole categories of audio
- * (sound effects, music) at once, which is how focus-based auto-pause and per-category
- * volume controls work. Member sounds are tracked on the Java side so that {@link #stop()}
- * can reset playback positions, which the native group API does not do on its own.
+ * <p>Groups let the framework pause and resume whole categories of audio (sound effects, music)
+ * at once, which is how focus-based auto-pause works.
  */
 public class FlixelMiniAudioGroup implements FlixelSoundGroup {
 
   /** Native miniaudio group handle, or {@code 0} once destroyed. */
   private long handle;
-
-  /** Java-side member list for stop() iteration. */
-  private final FlixelArray<FlixelSound> members = new FlixelArray<>();
 
   /**
    * Wraps a native group handle.
@@ -73,42 +65,10 @@ public class FlixelMiniAudioGroup implements FlixelSoundGroup {
   }
 
   @Override
-  public void stop() {
-    for (int i = 0; i < members.getSize(); i++) {
-      members.get(i).stop();
-    }
-  }
-
-  @Override
-  public float getVolume() {
-    return (handle != 0L) ? FlixelMiniAudio.groupGetVolume(handle) : 1f;
-  }
-
-  @Override
-  public void setVolume(float volume) {
-    if (handle != 0L) {
-      FlixelMiniAudio.groupSetVolume(handle, volume);
-    }
-  }
-
-  @Override
-  public void add(@NotNull FlixelSound sound) {
-    if (!members.contains(sound, true)) {
-      members.add(sound);
-    }
-  }
-
-  @Override
-  public void remove(@NotNull FlixelSound sound) {
-    members.removeValue(sound, true);
-  }
-
-  @Override
   public void destroy() {
     if (handle != 0L) {
       FlixelMiniAudio.groupUninit(handle);
       handle = 0L;
     }
-    members.clear();
   }
 }
