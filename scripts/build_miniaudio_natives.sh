@@ -16,10 +16,11 @@
 set -euo pipefail
 
 NATIVE_DIR="flixelgdx-desktop/src/main/native"
-OUT_DIR="flixelgdx-desktop/src/main/resources/org/flixelgdx/natives"
+OUT_BASE="flixelgdx-desktop/src/main/resources/org/flixelgdx/natives"
 SRC="${NATIVE_DIR}/flixel_miniaudio.c"
 
-mkdir -p "${OUT_DIR}"
+mkdir -p "${OUT_BASE}/linux-x86_64" "${OUT_BASE}/linux-arm64" \
+         "${OUT_BASE}/windows-x86_64" "${OUT_BASE}/macos"
 
 # Locate JNI headers.
 if [ -z "${JAVA_HOME:-}" ]; then
@@ -37,20 +38,31 @@ fi
 JNI_INC="${JAVA_HOME}/include"
 echo "Using JNI headers from: ${JNI_INC}"
 
-# --- Linux ---
+# --- Linux (x86_64, native) ---
 if command -v gcc >/dev/null 2>&1; then
-  echo "Building Linux (libflixel_miniaudio.so) ..."
-  gcc -O2 -fPIC -shared \
-    -I"${JNI_INC}" -I"${JNI_INC}/linux" \
-    -o "${OUT_DIR}/libflixel_miniaudio.so" "${SRC}" \
-    -lm -lpthread -ldl
+  ARCH="$(uname -m)"
+  if [ "${ARCH}" = "x86_64" ]; then
+    echo "Building Linux x86_64 (libflixel_miniaudio.so) ..."
+    gcc -O2 -fPIC -shared \
+      -I"${JNI_INC}" -I"${JNI_INC}/linux" \
+      -o "${OUT_BASE}/linux-x86_64/libflixel_miniaudio.so" "${SRC}" \
+      -lm -lpthread -ldl
+  elif [ "${ARCH}" = "aarch64" ]; then
+    echo "Building Linux arm64 (libflixel_miniaudio.so) ..."
+    gcc -O2 -fPIC -shared \
+      -I"${JNI_INC}" -I"${JNI_INC}/linux" \
+      -o "${OUT_BASE}/linux-arm64/libflixel_miniaudio.so" "${SRC}" \
+      -lm -lpthread -ldl
+  else
+    echo "Unsupported Linux arch '${ARCH}'; skipping Linux native." >&2
+  fi
 else
   echo "Skipping Linux: gcc not found." >&2
 fi
 
 # --- Windows ---
 if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
-  echo "Building Windows (flixel_miniaudio.dll) ..."
+  echo "Building Windows x86_64 (flixel_miniaudio.dll) ..."
   # mingw does not ship the Windows jni_md.h; supply the standard minimal one.
   WIN_JNI="$(mktemp -d)"
   cat > "${WIN_JNI}/jni_md.h" <<'HEADER'
@@ -66,7 +78,7 @@ typedef signed char jbyte;
 HEADER
   x86_64-w64-mingw32-gcc -O2 -shared \
     -I"${JNI_INC}" -I"${WIN_JNI}" \
-    -o "${OUT_DIR}/flixel_miniaudio.dll" "${SRC}" \
+    -o "${OUT_BASE}/windows-x86_64/flixel_miniaudio.dll" "${SRC}" \
     -lole32 -lwinmm -static-libgcc
   rm -rf "${WIN_JNI}"
 else
@@ -96,23 +108,27 @@ if build_macos_slice "o64-clang" "x86_64" "${MAC_X64}"; then BUILT_X64=1; fi
 if build_macos_slice "oa64-clang" "arm64" "${MAC_ARM}"; then BUILT_ARM=1; fi
 # Native macOS fallback (running this script on a Mac).
 if [ "${BUILT_X64}${BUILT_ARM}" = "00" ] && command -v clang >/dev/null 2>&1 && [ -d "${JNI_INC}/darwin" ]; then
-  echo "Building macOS (native clang) ..."
-  clang -O2 -dynamiclib \
+  echo "Building macOS universal (native clang) ..."
+  clang -O2 -dynamiclib -arch arm64 \
     -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
-    -o "${OUT_DIR}/libflixel_miniaudio.dylib" "${SRC}"
-elif [ "${BUILT_X64}" = "1" ] || [ "${BUILT_ARM}" = "1" ]; then
+    -o "${MAC_ARM}" "${SRC}" && BUILT_ARM=1
+  clang -O2 -dynamiclib -arch x86_64 \
+    -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
+    -o "${MAC_X64}" "${SRC}" && BUILT_X64=1
+fi
+if [ "${BUILT_X64}" = "1" ] || [ "${BUILT_ARM}" = "1" ]; then
   SLICES=()
   [ "${BUILT_X64}" = "1" ] && SLICES+=("${MAC_X64}")
   [ "${BUILT_ARM}" = "1" ] && SLICES+=("${MAC_ARM}")
   if command -v lipo >/dev/null 2>&1 && [ "${#SLICES[@]}" -gt 1 ]; then
-    lipo -create "${SLICES[@]}" -output "${OUT_DIR}/libflixel_miniaudio.dylib"
+    lipo -create "${SLICES[@]}" -output "${OUT_BASE}/macos/libflixel_miniaudio.dylib"
   else
-    cp "${SLICES[0]}" "${OUT_DIR}/libflixel_miniaudio.dylib"
+    cp "${SLICES[0]}" "${OUT_BASE}/macos/libflixel_miniaudio.dylib"
   fi
   rm -f "${MAC_X64}" "${MAC_ARM}"
 else
   echo "Skipping macOS: no clang / osxcross toolchain found." >&2
 fi
 
-echo "Done. Built natives in ${OUT_DIR}:"
-ls -la "${OUT_DIR}"
+echo "Done. Built natives:"
+ls -laR "${OUT_BASE}"

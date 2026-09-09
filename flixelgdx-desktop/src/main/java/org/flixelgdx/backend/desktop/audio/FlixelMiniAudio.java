@@ -36,10 +36,11 @@ import java.nio.file.StandardCopyOption;
  *
  * <p>miniaudio is a full audio engine (decoding, mixing, effects, spatialization) in a single C
  * header. This class holds the {@code native} methods our C wrapper implements, and loads the
- * matching platform library ({@code libflixel_miniaudio.so} on Linux,
- * {@code flixel_miniaudio.dll} on Windows, {@code libflixel_miniaudio.dylib} on macOS) from the
- * desktop module's {@code org/flixelgdx/natives} resources. The native is extracted to a temp
- * file once and loaded, so packaged games need no extra setup.
+ * matching platform library from the desktop module's {@code org/flixelgdx/natives} resources.
+ * Libraries live in per-platform subdirectories ({@code linux-x86_64}, {@code linux-arm64},
+ * {@code windows-x86_64}, {@code macos}), letting the framework carry binaries for every
+ * supported target at once. The native is extracted to a temp file once and loaded, so packaged
+ * games need no extra setup.
  *
  * <p>The bridge is deliberately low-level and stateless: every handle is a {@code long} pointer
  * into native memory. {@link FlixelMiniAudioFactory}, {@link FlixelMiniAudioSound}, and
@@ -64,18 +65,24 @@ public class FlixelMiniAudio {
       return true;
     }
     String os = System.getProperty("os.name", "").toLowerCase();
+    String arch = System.getProperty("os.arch", "").toLowerCase();
+    String subdir;
     String libName;
     if (os.contains("win")) {
+      subdir = "windows-x86_64";
       libName = "flixel_miniaudio.dll";
     } else if (os.contains("mac") || os.contains("darwin")) {
+      subdir = "macos";
       libName = "libflixel_miniaudio.dylib";
     } else {
+      boolean arm64 = arch.equals("aarch64") || arch.equals("arm64");
+      subdir = arm64 ? "linux-arm64" : "linux-x86_64";
       libName = "libflixel_miniaudio.so";
     }
-    String resource = "/org/flixelgdx/natives/" + libName;
+    String resource = "/org/flixelgdx/natives/" + subdir + "/" + libName;
     try (InputStream in = FlixelMiniAudio.class.getResourceAsStream(resource)) {
       if (in == null) {
-        Flixel.warn("Audio", "Bundled miniaudio native '" + libName + "' was not found; audio is disabled.");
+        Flixel.warn("Audio", "Bundled miniaudio native not found at '" + resource + "'; audio is disabled.");
         return false;
       }
       Path temp = Files.createTempFile("flixel_miniaudio", libName.substring(libName.lastIndexOf('.')));
