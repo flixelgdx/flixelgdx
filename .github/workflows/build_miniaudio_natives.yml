@@ -21,11 +21,6 @@ jobs:
             output: libflixel_miniaudio.so
             artifact: linux-x64
 
-          - os: ubuntu-24.04-arm
-            label: Linux arm64
-            output: libflixel_miniaudio.so
-            artifact: linux-arm64
-
           - os: windows-latest
             label: Windows x64
             output: flixel_miniaudio.dll
@@ -37,11 +32,6 @@ jobs:
             artifact: macos-universal
 
     steps:
-      - name: Check out audio branch
-        uses: actions/checkout@v4
-        with:
-          ref: feat/audio-node-overhaul
-
       - name: Set up Java 17 (for JNI headers)
         uses: actions/setup-java@v4
         with:
