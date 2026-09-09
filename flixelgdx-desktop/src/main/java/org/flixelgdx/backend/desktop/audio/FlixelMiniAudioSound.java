@@ -41,6 +41,8 @@ public class FlixelMiniAudioSound extends FlixelSound {
   /** Native miniaudio sound handle, or {@code 0} once disposed. */
   private long handle;
 
+  private final FlixelMiniAudioGroup group;
+
   /** Cached pitch; miniaudio has no pitch getter. */
   private float pitch = 1f;
 
@@ -48,12 +50,17 @@ public class FlixelMiniAudioSound extends FlixelSound {
   private float pan = 0f;
 
   /**
-   * Wraps a native sound handle.
+   * Wraps a native sound handle and registers with its group.
    *
    * @param handle The native handle from {@link FlixelMiniAudio#soundLoad}.
+   * @param group The group this sound belongs to, or {@code null} for none.
    */
-  FlixelMiniAudioSound(long handle) {
+  FlixelMiniAudioSound(long handle, FlixelMiniAudioGroup group) {
     this.handle = handle;
+    this.group = group;
+    if (group != null) {
+      group.add(this);
+    }
   }
 
   @NotNull
@@ -165,6 +172,9 @@ public class FlixelMiniAudioSound extends FlixelSound {
 
   @Override
   protected void disposeAudio() {
+    if (group != null) {
+      group.remove(this);
+    }
     if (handle != 0L) {
       FlixelMiniAudio.soundUninit(handle);
       handle = 0L;

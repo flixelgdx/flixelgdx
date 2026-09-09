@@ -24,6 +24,7 @@
 package org.flixelgdx.audio;
 
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A bucket of sounds that pause, resume, and are categorized together.
@@ -43,4 +44,35 @@ public interface FlixelSoundGroup extends FlixelDestroyable {
 
   /** Resumes every sound in this group that was playing when the group was paused. */
   void resume();
+
+  /** Stops every sound in this group and resets their positions to 0. */
+  void stop();
+
+  /**
+   * Returns the volume multiplier applied to every sound in this group.
+   *
+   * @return The group volume, where 1 is normal and 0 is silent.
+   */
+  float getVolume();
+
+  /**
+   * Sets the volume multiplier for every sound in this group.
+   *
+   * @param volume The volume to set (0 = silent, 1 = maximum).
+   */
+  void setVolume(float volume);
+
+  /**
+   * Adds a sound to this group so it is included in group-wide operations.
+   *
+   * @param sound The sound to add.
+   */
+  void add(@NotNull FlixelSound sound);
+
+  /**
+   * Removes a sound from this group.
+   *
+   * @param sound The sound to remove.
+   */
+  void remove(@NotNull FlixelSound sound);
 }

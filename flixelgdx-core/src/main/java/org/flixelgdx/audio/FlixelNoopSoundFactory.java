@@ -168,6 +168,23 @@ public enum FlixelNoopSoundFactory implements FlixelSoundFactory {
     public void resume() {}
 
     @Override
+    public void stop() {}
+
+    @Override
+    public float getVolume() {
+      return 1f;
+    }
+
+    @Override
+    public void setVolume(float volume) {}
+
+    @Override
+    public void add(@NotNull FlixelSound sound) {}
+
+    @Override
+    public void remove(@NotNull FlixelSound sound) {}
+
+    @Override
     public void destroy() {}
   }
 }

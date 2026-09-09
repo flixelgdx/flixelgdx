@@ -27,11 +27,13 @@ import org.flixelgdx.math.FlixelRandom;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * A read-only view over an ordered list.
  *
- * <p>The name mirrors Java's {@link java.util.List List} on purpose: both represent an ordered,
- * indexed sequence you can query and iterate. The key difference is cost. Java's {@code List}
+ * <p>The name mirrors Java's {@link List} on purpose: both represent an ordered, indexed
+ * sequence you can query and iterate. The key difference is cost. Java's {@link List}
  * hierarchy was designed for general correctness; unmodifiable wrappers ({@code
  * Collections.unmodifiableList}) allocate a wrapper object and throw at runtime on mutation
  * attempts. {@code FlixelList} enforces read-only access at compile time through the type system,

@@ -99,10 +99,10 @@ public class FlixelWebAudioSound extends FlixelSound {
     this.panNode = context.createStereoPanner();
 
     FlixelWebAudioFactory.connect(panNode, gainNode);
-    FlixelWebAudioFactory.connect(gainNode, master);
+    FlixelWebAudioFactory.connect(gainNode, group != null ? group.getGainNode() : master);
 
     if (group != null) {
-      group.register(this);
+      group.add(this);
     }
 
     decode(context, toArrayBuffer(buffer.data()), decoded -> {
@@ -244,7 +244,7 @@ public class FlixelWebAudioSound extends FlixelSound {
   protected void disposeAudio() {
     stopSource();
     if (group != null) {
-      group.unregister(this);
+      group.remove(this);
     }
   }
 
