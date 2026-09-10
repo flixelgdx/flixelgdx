@@ -18,7 +18,7 @@
  * releases it.
  *
  * <p>The typical path is through {@link org.flixelgdx.FlixelSprite FlixelSprite}: call
- * {@link org.flixelgdx.FlixelSprite#loadGraphic(String) FlixelSprite.loadGraphic(String)} to load a
+ * {@link org.flixelgdx.FlixelSprite#loadGraphic(org.flixelgdx.file.FlixelFile) FlixelSprite.loadGraphic(FlixelFile)} to load a
  * path, or
  * {@link org.flixelgdx.FlixelSprite#makeGraphic(int, int, org.flixelgdx.util.FlixelColor) FlixelSprite.makeGraphic(...)}
  * to generate a solid-color rectangle on the fly. Both handle the graphic lifecycle automatically.
