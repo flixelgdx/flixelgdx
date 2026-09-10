@@ -52,7 +52,7 @@ import java.util.Comparator;
  *
  * <h2>Mixing in a Sparrow atlas</h2>
  * A character can also carry Sparrow XML clips on the same body via
- * {@link FlixelAnimationController#addSparrowFrames(String)}, allowing a single sprite to contain
+ * {@link FlixelAnimationController#addSparrowFrames(FlixelFile)}, allowing a single sprite to contain
  * multiple Sparrow sheets with unique animations.
  */
 public class FlixelAnimationController implements FlixelUpdatable {
@@ -137,25 +137,26 @@ public class FlixelAnimationController implements FlixelUpdatable {
   /**
    * Adobe/CreateJS spritemap plus animation index JSON. See {@link FlixelSpritemapJsonLoader#load} for file shapes.
    *
-   * @param textureKey Asset key of the already-enqueued {@link FlixelGraphic}.
-   * @param spritemapJsonPath Path resolved like other assets (internal or classpath).
-   * @param animationJsonPath JSON with an {@code animations} object.
+   * @param textureFile Handle to the already-enqueued spritemap PNG.
+   * @param spritemapJsonFile Handle to the spritemap JSON.
+   * @param animationJsonFile Handle to the JSON with an {@code animations} object.
    * @return The owning sprite for chaining.
    */
   @NotNull
   public FlixelSprite loadSpritemapFromJson(
-      @NotNull String textureKey,
-      @NotNull String spritemapJsonPath,
-      @NotNull String animationJsonPath) {
-    FlixelSpritemapJsonLoader.load(this, textureKey, spritemapJsonPath, animationJsonPath);
+      @NotNull FlixelFile textureFile,
+      @NotNull FlixelFile spritemapJsonFile,
+      @NotNull FlixelFile animationJsonFile) {
+    FlixelSpritemapJsonLoader.load(
+        this, textureFile.getPath(), spritemapJsonFile.getPath(), animationJsonFile.getPath());
     return owner;
   }
 
   /**
-   * Loads or merges a Sparrow atlas onto the owning sprite from a single base path, inferring the
+   * Loads or merges a Sparrow atlas onto the owning sprite from a base path handle, inferring the
    * conventional {@code .png} and {@code .xml} file names shared by a Sparrow export. For example,
-   * passing {@code "shared/images/foo"} loads the texture from {@code "shared/images/foo.png"} and
-   * the atlas data from {@code "shared/images/foo.xml"}.
+   * passing a handle to {@code "shared/images/foo"} loads the texture from
+   * {@code "shared/images/foo.png"} and the atlas data from {@code "shared/images/foo.xml"}.
    *
    * <p>When the sprite has no atlas yet, this installs the sheet as the primary atlas, sizes the
    * sprite to the first frame, and clears any previously registered clips. When the sprite already
@@ -164,70 +165,49 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * multiple sheets.
    *
    * <pre>{@code
-   * sprite.ensureAnimation().addSparrowAtlas("shared/images/foo");
-   * sprite.animation.addAnimationByPrefix("idle", "idle", 24, true);
-   * sprite.animation.playAnimation("idle");
+   * FlixelFile base = Flixel.files.internal("shared/images/foo");
+   * sprite.ensureAnimation().addSparrowFrames(base);
+   * sprite.animation.addByPrefix("idle", "idle", 24, true);
+   * sprite.animation.play("idle");
    * }</pre>
    *
-   * @param path The base path, without a file extension, shared by the PNG and XML pair.
+   * @param path Handle to the base path, without a file extension, shared by the PNG and XML pair.
    * @return The owning sprite for chaining.
-   * @see #addSparrowFrames(String, String)
-   */
-  @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull String path) {
-    return addSparrowFrames(path + ".png", path + ".xml");
-  }
-
-  /**
-   * Overload of {@link #addSparrowFrames(String)} that accepts the base path as a {@link FlixelFile}.
-   *
-   * @param path The base path handle, without a file extension, shared by the PNG and XML pair.
-   * @return The owning sprite for chaining.
+   * @see #addSparrowFrames(FlixelFile, FlixelFile)
    */
   @NotNull
   public FlixelSprite addSparrowFrames(@NotNull FlixelFile path) {
-    return addSparrowFrames(path.getPath());
+    String basePath = path.getPath();
+    return addSparrowFrames(
+        Flixel.files.internal(basePath + ".png"),
+        FlixelSpritemapJsonLoader.resolveAssetPath(basePath + ".xml"));
   }
 
   /**
-   * Loads or merges a Sparrow atlas onto the owning sprite from an explicit texture key and XML path.
-   * See {@link #addSparrowFrames(String)} for the full load/merge contract.
+   * Loads or merges a Sparrow atlas onto the owning sprite from an explicit texture file and XML file.
+   * See {@link #addSparrowFrames(FlixelFile)} for the full load/merge contract.
    *
-   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
-   * @param xmlPath The path to the Sparrow XML. Must not be {@code null}.
+   * @param textureFile Handle to the Sparrow PNG. Must not be {@code null}.
+   * @param xmlFile Handle to the Sparrow XML file. Must not be {@code null}.
    * @return The owning sprite for chaining.
    * @throws IllegalArgumentException If either file is missing or malformed.
    */
   @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull String xmlPath) {
-    FlixelFile xml = FlixelSpritemapJsonLoader.resolveAssetPath(xmlPath);
-    String text = FlixelSpritemapJsonLoader.readUtf8Text(xml);
-    return addSparrowFrames(textureKey, FlixelXml.parse(text));
-  }
-
-  /**
-   * Overload of {@link #addSparrowFrames(String, String)} that accepts the XML as a {@link FlixelFile}.
-   *
-   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
-   * @param xmlFile The Sparrow XML file, read as UTF-8. Must not be {@code null}.
-   * @return The owning sprite for chaining.
-   */
-  @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FlixelFile xmlFile) {
+  public FlixelSprite addSparrowFrames(@NotNull FlixelFile textureFile, @NotNull FlixelFile xmlFile) {
     String text = FlixelSpritemapJsonLoader.readUtf8Text(xmlFile);
-    return addSparrowFrames(textureKey, FlixelXml.parse(text));
+    return addSparrowFrames(textureFile, FlixelXml.parse(text));
   }
 
   /**
-   * Overload of {@link #addSparrowFrames(String, String)} that accepts a pre-parsed XML root.
+   * Overload of {@link #addSparrowFrames(FlixelFile, FlixelFile)} that accepts a pre-parsed XML root.
    *
-   * @param textureKey The asset key of the Sparrow PNG. Must not be {@code null}.
+   * @param textureFile Handle to the Sparrow PNG. Must not be {@code null}.
    * @param xmlRoot The root {@code TextureAtlas} element of a Sparrow XML. Must not be {@code null}.
    * @return The owning sprite for chaining.
    */
   @NotNull
-  public FlixelSprite addSparrowFrames(@NotNull String textureKey, @NotNull FlixelXmlElement xmlRoot) {
-    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(textureKey).retain().get();
+  public FlixelSprite addSparrowFrames(@NotNull FlixelFile textureFile, @NotNull FlixelXmlElement xmlRoot) {
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(textureFile.getPath()).retain().get();
     FlixelTexture texture = g.getTexture();
 
     FlixelArray<FlixelFrame> parsed = parseSparrowFrames(texture, xmlRoot);
@@ -244,7 +224,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
    * Parses Sparrow {@code SubTexture} entries into a fresh frame list without installing them on any
    * sprite.
    *
-   * <p>This is the shared parsing core used by {@link #addSparrowFrames(String, FlixelXmlElement)}.
+   * <p>This is the shared parsing core used by {@link #addSparrowFrames(FlixelFile, FlixelXmlElement)}.
    * Keeping it separate lets callers inspect or transform the frame list before passing it to
    * {@link FlixelSprite#applySparrowAtlas} or {@link FlixelSprite#mergeSparrowAtlas}.
    *

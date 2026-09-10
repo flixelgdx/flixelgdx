@@ -29,6 +29,7 @@ import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
@@ -210,184 +211,157 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * (volume, effects, looping) before its first {@link FlixelSound#play()}.
    *
    * <p>The sound joins the SFX group and is tracked by this manager like any played sound, so
-   * state-switch cleanup and focus pausing still apply.
+   * state-switch cleanup and focus pausing still apply. Obtain a file handle from
+   * {@link FlixelFiles Flixel.files}:
    *
-   * @param path Internal asset key / path.
+   * <pre>{@code
+   * FlixelSound sfx = Flixel.sound.create(Flixel.files.internal("sfx/jump.ogg"));
+   * sfx.setVolume(0.8f);
+   * sfx.play();
+   * }</pre>
+   *
+   * @param file Handle to the audio file. Must not be {@code null}.
    * @return The new, idle {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound create(@NotNull String path) {
-    return create(path, null, false);
+  public FlixelSound create(@NotNull FlixelFile file) {
+    return create(file, null);
   }
 
   /**
    * Creates a sound without playing it, in the given group.
    *
-   * @param path Internal asset key / path.
+   * @param file Handle to the audio file. Must not be {@code null}.
    * @param group Sound group, or {@code null} to use the default SFX group.
    * @return The new, idle {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound create(@NotNull String path, @Nullable FlixelSoundGroup group) {
-    return create(path, group, false);
-  }
-
-  /**
-   * Creates a sound without playing it.
-   *
-   * @param path Internal asset key / path, or an absolute path when {@code external} is {@code true}.
-   * @param group Sound group, or {@code null} to use the default SFX group.
-   * @param external If {@code true}, the path is read from the absolute file root.
-   * @return The new, idle {@link FlixelSound} instance.
-   */
-  @NotNull
-  public FlixelSound create(@NotNull String path, @Nullable FlixelSoundGroup group, boolean external) {
+  public FlixelSound create(@NotNull FlixelFile file, @Nullable FlixelSoundGroup group) {
     FlixelSoundGroup targetGroup = (group != null) ? group : sfxGroup;
-    FlixelSound sound = buildSound(path, external, targetGroup);
+    FlixelSound sound = buildSound(file, targetGroup);
     sound.setManager(this);
     activeSounds.add(sound);
     return sound;
   }
 
   /**
-   * Plays a new sound effect (SFX group).
+   * Plays a new sound effect (SFX group) at full volume, without looping.
    *
-   * @param path Internal asset key / path, or external path when {@code external} is {@code true}.
+   * <pre>{@code
+   * Flixel.sound.play(Flixel.files.internal("sfx/coin.ogg"));
+   * }</pre>
+   *
+   * @param file Handle to the audio file. Must not be {@code null}.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound play(@NotNull String path) {
-    return play(path, 1f, false, null, false);
+  public FlixelSound play(@NotNull FlixelFile file) {
+    return play(file, 1f, false, null);
   }
 
   /**
-   * Plays a new sound effect.
+   * Plays a new sound effect at the given volume.
    *
-   * @param path Path to the sound.
+   * @param file Handle to the audio file. Must not be {@code null}.
    * @param volume Volume to play with.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound play(@NotNull String path, float volume) {
-    return play(path, volume, false, null, false);
+  public FlixelSound play(@NotNull FlixelFile file, float volume) {
+    return play(file, volume, false, null);
   }
 
   /**
    * Plays a new sound effect.
    *
-   * @param path Path to the sound.
-   * @param volume Volume to play with.
-   * @param looping Whether to loop.
-   * @return The new {@link FlixelSound} instance.
-   */
-  @NotNull
-  public FlixelSound play(@NotNull String path, float volume, boolean looping) {
-    return play(path, volume, looping, null, false);
-  }
-
-  /**
-   * Plays a new sound effect.
-   *
-   * @param path Path to the sound.
+   * @param file Handle to the audio file. Must not be {@code null}.
    * @param volume Volume to play with.
    * @param looping Whether to loop.
-   * @param group Sound group, or {@code null} to use the default SFX group.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound play(@NotNull String path, float volume, boolean looping, @Nullable FlixelSoundGroup group) {
-    return play(path, volume, looping, group, false);
+  public FlixelSound play(@NotNull FlixelFile file, float volume, boolean looping) {
+    return play(file, volume, looping, null);
   }
 
   /**
    * Plays a new sound effect.
    *
-   * @param path Path to the sound.
+   * @param file Handle to the audio file. Must not be {@code null}.
    * @param volume Volume to play with.
    * @param looping Whether to loop.
    * @param group Sound group, or {@code null} to use the default SFX group.
-   * @param external If {@code true}, the path is read from the absolute file root.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound play(@NotNull String path, float volume, boolean looping,
-      @Nullable FlixelSoundGroup group, boolean external) {
+  public FlixelSound play(@NotNull FlixelFile file, float volume, boolean looping, @Nullable FlixelSoundGroup group) {
     FlixelSoundGroup targetGroup = (group != null) ? group : sfxGroup;
-    return createAndPlaySoundFromPath(path, external, volume, looping, targetGroup);
+    return createAndPlay(file, volume, looping, targetGroup);
   }
 
   /**
-   * Sets and plays the current music (music group). Stops any previous music.
+   * Sets and plays the current music (SFX group), looping. Stops any previous music.
    *
-   * @param path Path to the music file.
+   * <pre>{@code
+   * Flixel.sound.playMusic(Flixel.files.internal("music/theme.ogg"));
+   * }</pre>
+   *
+   * @param file Handle to the music file. Must not be {@code null}.
    * @return The new music {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound playMusic(@NotNull String path) {
-    return playMusic(path, 1f, true, false);
+  public FlixelSound playMusic(@NotNull FlixelFile file) {
+    return playMusic(file, 1f, true);
   }
 
   /**
    * Sets and plays the current music. Stops any previous music.
    *
-   * @param path Path to the music file.
+   * @param file Handle to the music file. Must not be {@code null}.
    * @param volume Volume.
    * @return The new music {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound playMusic(@NotNull String path, float volume) {
-    return playMusic(path, volume, true, false);
+  public FlixelSound playMusic(@NotNull FlixelFile file, float volume) {
+    return playMusic(file, volume, true);
   }
 
   /**
    * Sets and plays the current music. Stops any previous music.
    *
-   * @param path Path to the music file.
-   * @param volume Volume.
-   * @param looping Whether to loop.
-   * @return The new music {@link FlixelSound} instance.
-   */
-  @NotNull
-  public FlixelSound playMusic(@NotNull String path, float volume, boolean looping) {
-    return playMusic(path, volume, looping, false);
-  }
-
-  /**
-   * Sets and plays the current music. Stops any previous music.
-   *
-   * @param path Path to the music file.
+   * @param file Handle to the music file. Must not be {@code null}.
    * @param volume Volume.
    * @param looping Whether to loop.
-   * @param external If {@code true}, the path is read from the absolute file root.
    * @return The new music {@link FlixelSound} instance.
    */
   @NotNull
-  public FlixelSound playMusic(@NotNull String path, float volume, boolean looping, boolean external) {
+  public FlixelSound playMusic(@NotNull FlixelFile file, float volume, boolean looping) {
     if (music != null) {
       music.destroy();
       music = null;
     }
-    music = createAndPlaySoundFromPath(path, external, volume, looping, sfxGroup);
+    music = createAndPlay(file, volume, looping, sfxGroup);
     return music;
   }
 
   /**
-   * Builds a new {@link FlixelSound} for {@code path} without starting playback.
+   * Builds a new {@link FlixelSound} from {@code file} without starting playback.
    *
-   * <p>When {@code external} is {@code false}, reads or synchronously loads a
-   * {@link FlixelSoundSource} through the asset manager and retains its handle for the sound's
-   * lifetime. External paths read the file bytes from
-   * {@link FlixelFiles#absolute Flixel.files.absolute} directly.
+   * <p>Internal/classpath files go through the asset manager cache using the file's path as the
+   * key. Files from {@link FlixelFiles#absolute Flixel.files.absolute} or
+   * {@link FlixelFiles#external Flixel.files.external} (whose {@link FlixelFile#getAbsolutePath()}
+   * differs from {@link FlixelFile#getPath()}) bypass the cache and are decoded directly.
    *
-   * @param path The path to the sound file.
-   * @param external If {@code true}, the path is read from the absolute file root.
+   * @param file Handle to the audio file.
    * @param targetGroup The group to create the sound in.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  private FlixelSound buildSound(@NotNull String path, boolean external, @NotNull FlixelSoundGroup targetGroup) {
-    if (external) {
-      FlixelSoundBuffer buffer = FlixelSoundBuffer.read(path, Flixel.files.absolute(path));
+  private FlixelSound buildSound(@NotNull FlixelFile file, @NotNull FlixelSoundGroup targetGroup) {
+    String path = file.getPath();
+    String absolutePath = file.getAbsolutePath();
+    if (!absolutePath.equals(path)) {
+      FlixelSoundBuffer buffer = FlixelSoundBuffer.read(absolutePath, file);
       return factory.createSound(buffer, targetGroup);
     }
     FlixelAssetManager assets = Flixel.assets;
@@ -402,23 +376,21 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   }
 
   /**
-   * Builds a new {@link FlixelSound} for {@code path}, starts playback, and returns it.
+   * Builds a new {@link FlixelSound} from {@code file}, starts playback, and returns it.
    *
-   * @param path The path to the sound file.
-   * @param external If {@code true}, the path is read from the absolute file root.
+   * @param file Handle to the audio file.
    * @param volume The volume to play the sound at.
    * @param looping If {@code true}, the sound will loop.
    * @param targetGroup The group to play the sound in.
    * @return The new {@link FlixelSound} instance.
    */
   @NotNull
-  private FlixelSound createAndPlaySoundFromPath(
-      @NotNull String path,
-      boolean external,
+  private FlixelSound createAndPlay(
+      @NotNull FlixelFile file,
       float volume,
       boolean looping,
       @NotNull FlixelSoundGroup targetGroup) {
-    FlixelSound sound = buildSound(path, external, targetGroup);
+    FlixelSound sound = buildSound(file, targetGroup);
     sound.setVolume(volume);
     sound.setLooped(looping);
     sound.play();
