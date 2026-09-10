@@ -25,6 +25,7 @@ package org.flixelgdx.backend.html5.graphics;
 
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.typedarrays.Int8Array;
 import org.teavm.jso.typedarrays.Uint8Array;
 import org.teavm.jso.webgl.WebGLRenderingContext;
@@ -139,7 +140,7 @@ public class FlixelWebGlTexture implements FlixelTexture {
   }
 
   @Override
-  public void update(int x, int y, FlixelImage image) {
+  public void update(int x, int y, @NotNull FlixelImage image) {
     gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, texture);
     gl.texSubImage2D(WebGLRenderingContext.TEXTURE_2D, 0, x, y, image.getWidth(), image.getHeight(),
         WebGLRenderingContext.RGBA, WebGLRenderingContext.UNSIGNED_BYTE, toView(image.getPixels()));

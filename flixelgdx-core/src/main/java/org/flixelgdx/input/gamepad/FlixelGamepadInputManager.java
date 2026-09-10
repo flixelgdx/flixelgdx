@@ -301,7 +301,7 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
    * @param reuseOut Caller buffer; length should be at least {@link #MAX_GAMEPADS}.
    * @return Number of ids written.
    */
-  public int getActiveGamepadIds(@Nullable int[] reuseOut) {
+  public int getActiveGamepadIds(int @Nullable [] reuseOut) {
     if (reuseOut == null) {
       return 0;
     }

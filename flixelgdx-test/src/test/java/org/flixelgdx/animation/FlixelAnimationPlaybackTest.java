@@ -28,6 +28,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -131,7 +132,7 @@ class FlixelAnimationPlaybackTest {
     }
 
     @Override
-    public void update(int x, int y, FlixelImage image) {}
+    public void update(int x, int y, @NotNull FlixelImage image) {}
 
     @Override
     public void destroy() {}

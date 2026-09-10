@@ -59,7 +59,7 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
  * int mouseX = Flixel.input.getX();
  * }</pre>
  *
- * @see org.flixelgdx.Flixel#input
+ * @see Flixel#input
  * @see FlixelKeyboardListener
  * @see FlixelMouseListener
  * @see FlixelTouchListener
