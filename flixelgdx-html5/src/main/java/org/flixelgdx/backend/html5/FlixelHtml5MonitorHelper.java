@@ -43,6 +43,7 @@ public final class FlixelHtml5MonitorHelper {
    */
   @JSFunctor
   public interface MonitorUpdateCallback extends JSObject {
+
     /**
      * Called when the browser fires a {@code 'screenschange'} event with the updated screen list.
      *
