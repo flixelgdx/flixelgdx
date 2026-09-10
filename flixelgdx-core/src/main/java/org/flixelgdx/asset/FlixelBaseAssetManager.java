@@ -198,6 +198,14 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
   }
 
   @Override
+  public void getAssets(@NotNull FlixelArray<FlixelAsset<?>> out) {
+    out.clear();
+    for (FlixelMap.Entry<String, FlixelAsset<?>> entry : handles.entries()) {
+      out.add(entry.value);
+    }
+  }
+
+  @Override
   public boolean isLoaded(@NotNull String path) {
     String key = normalizeForLoad(path);
     return rawCache.containsKey(key);

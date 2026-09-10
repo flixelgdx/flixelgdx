@@ -29,10 +29,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Turns an asset path into the {@link FlixelFile} it should be read from.
  *
- * <p>The default resolver used by asset managers is {@code Flixel.files.internal(path)}, which
- * reads from the game's asset folder on disk. Install a custom resolver with
- * {@link FlixelAssetManager#setFileResolver(FlixelAssetFileResolver)} when your game also needs
- * to run packaged inside a JAR, where assets live on the classpath instead:
+ * <p>Example:
  *
  * <pre>{@code
  * Flixel.assets.setFileResolver(path -> {

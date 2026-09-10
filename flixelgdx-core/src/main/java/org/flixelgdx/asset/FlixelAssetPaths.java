@@ -23,22 +23,24 @@
  */
 package org.flixelgdx.asset;
 
-import org.flixelgdx.Flixel;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Canonical path helpers for internal asset keys used with {@link FlixelAssetManager} and the file system.
+ * Canonical path helpers for internal asset keys used with {@link FlixelAssetManager} and the
+ * file system.
  *
- * <p>Accidentally duplicated slashes (for example {@code "ui//mainmenu/bg.png"}) or backslashes can confuse loaders,
- * especially on HTML backends where manifest paths often match internal keys literally.
+ * <p>Accidentally duplicated slashes (for example {@code "ui//mainmenu/bg.png"}) or backslashe
+ * can confuse loaders, especially on HTML backends where manifest paths often match internal keys
+ * literally.
  *
- * <p>This helper collapses duplicate separators into one forward slash and maps {@code '\'} to {@code '/'}, matching the
- * common layout used inside {@code assets/}. Call sites include {@link FlixelBaseAssetManager}.
+ * <p>This helper collapses duplicate separators into one forward slash and maps {@code '\'} to
+ * {@code '/'}, matching the common layout used inside {@code assets/}. Call sites include
+ * {@link FlixelBaseAssetManager}.
  *
- * <p><b>Note:</b> This is aimed at internal resource paths such as {@code "fonts/foo.ttf"}, not arbitrary URLs or UNC paths.
+ * <p><b>Note:</b> This is aimed at internal resource paths such as {@code "fonts/foo.ttf"}, not
+ * arbitrary URLs or UNC paths.
  */
 public final class FlixelAssetPaths {
 
@@ -81,41 +83,6 @@ public final class FlixelAssetPaths {
       sb.append(c);
     }
     return sb.toString();
-  }
-
-  /**
-   * Returns the best available path for loading a texture when compressed textures are enabled.
-   *
-   * <p>For {@code .png} paths the method checks whether a {@code .ktx2} sibling exists and
-   * prefers it; if not, the original PNG path is returned as-is so the caller can fall back to
-   * the uncompressed version. For {@code .ktx2} paths the file is verified to exist and, if it
-   * does not, the method tries the matching {@code .png} sibling instead. Every other extension
-   * is returned unchanged.
-   *
-   * <p>Callers are expected to only invoke this when
-   * {@link FlixelAssetManager#isCompressedTexturesEnabled()} is {@code true}, since the
-   * existence check touches the file system. Returns {@code path} unchanged when no compressed
-   * sibling is found or the file system is not yet available.
-   *
-   * @param path Internal asset path. Must not be {@code null}.
-   * @return The best available path for this texture, never {@code null}.
-   */
-  @NotNull
-  public static String resolveCompressedTexturePath(@NotNull String path) {
-    Objects.requireNonNull(path, "path cannot be null.");
-    String lc = path.toLowerCase(Locale.ROOT);
-    if (lc.endsWith(".png")) {
-      String ktxPath = path.substring(0, path.length() - ".png".length()) + ".ktx2";
-      return Flixel.files.internal(ktxPath).exists() ? ktxPath : path;
-    }
-    if (lc.endsWith(".ktx2")) {
-      if (Flixel.files.internal(path).exists()) {
-        return path;
-      }
-      String pngPath = path.substring(0, path.length() - ".ktx2".length()) + ".png";
-      return Flixel.files.internal(pngPath).exists() ? pngPath : path;
-    }
-    return path;
   }
 
   private static boolean needsNormalization(@NotNull String path) {

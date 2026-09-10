@@ -24,6 +24,7 @@
 package org.flixelgdx.asset;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
@@ -217,6 +218,32 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    */
   default int getLoadedAssetCount() {
     return 0;
+  }
+
+  /**
+   * Fills {@code out} with every {@link FlixelAsset} handle currently tracked in the manager
+   * cache, clearing any previous contents first. The order of handles is unspecified.
+   *
+   * <p>Typical use: iterating loaded assets to selectively unload them, or building a diagnostic
+   * view. Pass the same {@link FlixelArray} instance across calls to avoid allocating a new one
+   * each time.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * FlixelArray<FlixelAsset<?>> assets = new FlixelArray<>();
+   * Flixel.assets.getAssets(assets);
+   * for (int i = 0; i < assets.getSize(); i++) {
+   *   FlixelAsset<?> asset = assets.get(i);
+   *   if (asset.getRefCount() == 0) {
+   *     Flixel.assets.unload(asset.getPath());
+   *   }
+   * }
+   * }</pre>
+   *
+   * @param out The array to fill; cleared before populating.
+   */
+  default void getAssets(@NotNull FlixelArray<FlixelAsset<?>> out) {
+    out.clear();
   }
 
   /**
