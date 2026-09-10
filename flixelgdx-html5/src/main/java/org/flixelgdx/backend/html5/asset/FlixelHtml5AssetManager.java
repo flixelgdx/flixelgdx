@@ -37,6 +37,7 @@ import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
+import org.teavm.jso.file.Blob;
 import org.teavm.jso.typedarrays.Int8Array;
 
 import java.nio.ByteBuffer;
