@@ -214,7 +214,7 @@ public final class FlixelSpritemapJsonLoader {
   /**
    * Registers clips from a simple {@code "animations"} JSON onto {@code controller}. Each entry must
    * have a {@code "frames"} array of integer indices into the atlas; optional per-clip {@code framerate}
-   * and {@code loop} fields are honoured.
+   * and {@code loop} fields are honored.
    */
   private static void loadSimpleAnimationsJson(
       @NotNull FlixelAnimationController controller, @NotNull FlixelJsonValue animRoot) {

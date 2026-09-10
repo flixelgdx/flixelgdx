@@ -111,11 +111,11 @@ public final class FlixelTouch {
   }
 
   /**
-   * Returns {@code true} on the single frame this pointer was cancelled by the system (for
+   * Returns {@code true} on the single frame this pointer was canceled by the system (for
    * example, an incoming phone call interrupting the touch session). Clears to {@code false} after
    * {@link FlixelTouchManager#endFrame()} is called.
    *
-   * @return {@code true} on the frame this pointer was cancelled by the system.
+   * @return {@code true} on the frame this pointer was canceled by the system.
    */
   public boolean justCancelled() {
     return justCancelled;

@@ -780,7 +780,7 @@ public class FlixelAnimationController implements FlixelUpdatable {
   }
 
   /**
-   * Returns the keyframe index for {@code anim} at the current {@link #stateTime}, honouring the
+   * Returns the keyframe index for {@code anim} at the current {@link #stateTime}, honoring the
    * controller's runtime {@link #looping} flag. This deliberately bypasses
    * {@link FlixelAnimation#getKeyFrameIndex(float)} (which uses the {@link FlixelAnimation#getPlayMode()
    * registered PlayMode}) so that:

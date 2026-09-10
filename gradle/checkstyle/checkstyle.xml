@@ -121,6 +121,15 @@
       <property name="message" value="Use a short @link with an import qualifier instead of a fully-qualified name."/>
     </module>
 
+    <!-- Comments and Javadoc must use American English spelling. This check catches the most common British
+         variants in Javadoc block-comment lines (starting with * or /**) and in single-line
+         // comments. Identifiers in code are not checked here; only documentation prose. -->
+    <module name="RegexpSinglelineJava">
+      <property name="id" value="AmericanEnglishInComments"/>
+      <property name="format" value="(^\s*(\*|\/\*\*?)|//).*(?i)\b(colour|behaviour|favour|neighbour|honour|labour|flavour|humour|centre|metre|fibre|theatre|litre|calibre|analyse|organise|recognise|realise|serialise|initialise|synchronise|minimise|maximise|optimise|specialise|customise|prioritise|generalise|normalise|utilise|characterise|parametrise|licence|defence|offence|pretence|travelled|labelled|cancelled|modelled|signalled|levelled|fuelled|jewellery|whilst|mould|grey\b)"/>
+      <property name="message" value="Use American English spelling in comments and Javadoc (e.g. 'color' not 'colour', 'behavior' not 'behaviour', 'initialize' not 'initialise')."/>
+    </module>
+
   </module>
 
 </module>

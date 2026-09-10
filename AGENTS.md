@@ -59,8 +59,9 @@ When explaining code or introducing patterns:
   4. `boolean`s and `byte`s
 
 - **Standard Java collections are completely banned**. They take up too much memory and allocate too many objects when they're
-  used. Prefer FlixelGDX collections instead, which are significantly more lean and don't allocate garbage when used. The only
-  exception to this rule is build-time tools like plugins, since they do not impact a game's performance at runtime.
+  used. Prefer FlixelGDX `collections` package instead, which are significantly more lean and don't allocate garbage when used. 
+  The only exception to this rule is build-time tools like plugins, since they do not impact a game's performance at runtime
+  and the framework's code can't be accessed at that phase anyway.
 - **Reflection is banned**. It breaks many platforms that require ahead-of-time compilation and is unstable for situations 
   like version bumps. If reflection must be used, don't touch the main area requiring it, and bring it up at the end of 
   your task, explaining why it's needed.
