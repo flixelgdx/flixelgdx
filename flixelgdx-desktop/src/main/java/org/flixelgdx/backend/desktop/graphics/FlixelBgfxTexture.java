@@ -72,7 +72,7 @@ public class FlixelBgfxTexture implements FlixelTexture {
   private final int width;
   private final int height;
 
-  private short handle;
+  private final short handle;
 
   private boolean smooth;
   private boolean destroyed;
@@ -138,16 +138,11 @@ public class FlixelBgfxTexture implements FlixelTexture {
     ByteBuffer pixels = image.getPixels();
     pixels.position(0).limit(count * 4);
     if (swapRB) {
-      // Swap R and B bytes in-place so the channel layout matches bgfx's expectation for this
-      // backend. The caller owns the buffer and must tolerate this side effect; streaming sources
-      // (e.g., video frames) overwrite the buffer before the next update, so the in-place swap
-      // does not escape to the caller between updates.
+      // Swap R and B bytes in-place so the channel layout matches bgfx's expectation for this backend.
       swapRedBlueInPlace(pixels, count);
     }
     // bgfx_make_ref stores a pointer to the caller-owned buffer rather than copying it. The buffer
     // must remain valid until bgfx_frame() processes this submission (end of the current frame).
-    // FlixelImage backs its pixels with a direct ByteBuffer whose lifetime is tied to the image
-    // object, so the memory is guaranteed to outlive the submission.
     BGFX.bgfx_update_texture_2d(handle, 0, 0,
         (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
         BGFX.bgfx_make_ref(pixels), 0xFFFF);
