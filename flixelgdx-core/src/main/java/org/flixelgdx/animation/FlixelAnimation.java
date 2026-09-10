@@ -30,12 +30,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * A time-indexed sequence of key frames: give it a running state time and it hands back the
+ * A time-indexed sequence of key frames: give it a running state time, and it hands back the
  * frame to show.
  *
  * <p>This is the timing core under sprite animations. It knows nothing about textures; the
- * key-frame type is generic (usually {@link FlixelFrame}),
- * so rigs and other systems can animate any payload.
+ * key-frame type is generic (usually {@link FlixelFrame}), so rigs and other systems can animate
+ * any payload.
  *
  * <p>Example:
  *
@@ -194,14 +194,19 @@ public class FlixelAnimation<T> {
 
   /** The ways an animation can walk its frame sequence over time. */
   public enum PlayMode {
+
     /** Play forward once and hold the last frame. */
     NORMAL,
+
     /** Play backward once and hold the first frame. */
     REVERSED,
+
     /** Play forward and restart at the beginning forever. */
     LOOP,
+
     /** Play backward and restart at the end forever. */
     LOOP_REVERSED,
+
     /** Bounce back and forth between the first and last frames forever. */
     LOOP_PINGPONG
   }

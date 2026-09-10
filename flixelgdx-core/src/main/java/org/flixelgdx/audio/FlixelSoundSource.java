@@ -53,8 +53,6 @@ public final class FlixelSoundSource implements FlixelAsset<FlixelSoundSource> {
 
   private int refCount;
 
-  private boolean persist;
-
   /**
    * Creates a sound source for the given asset path.
    *
@@ -64,7 +62,6 @@ public final class FlixelSoundSource implements FlixelAsset<FlixelSoundSource> {
   public FlixelSoundSource(@NotNull FlixelAssetManager assets, @NotNull String path) {
     this.assets = Objects.requireNonNull(assets, "assets cannot be null.");
     this.path = Objects.requireNonNull(path, "path cannot be null.");
-    this.persist = assets.getGlobalPersist();
   }
 
   @NotNull
@@ -83,27 +80,6 @@ public final class FlixelSoundSource implements FlixelAsset<FlixelSoundSource> {
   @Override
   public boolean isLoaded() {
     return assets.getRaw(path) != null;
-  }
-
-  @Override
-  public boolean isPersist() {
-    return persist;
-  }
-
-  /**
-   * Returns whether this source persists across state transitions.
-   *
-   * @return {@code true} if this source persists across state transitions, {@code false} otherwise.
-   */
-  public boolean getPersist() {
-    return persist;
-  }
-
-  @NotNull
-  @Override
-  public FlixelSoundSource setPersist(boolean persist) {
-    this.persist = persist;
-    return this;
   }
 
   @Override
@@ -126,9 +102,6 @@ public final class FlixelSoundSource implements FlixelAsset<FlixelSoundSource> {
       return this;
     }
     refCount--;
-    if (refCount == 0) {
-      assets.onAssetReleased(this);
-    }
     return this;
   }
 

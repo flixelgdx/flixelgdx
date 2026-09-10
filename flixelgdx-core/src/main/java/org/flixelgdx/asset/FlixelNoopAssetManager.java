@@ -47,9 +47,6 @@ public enum FlixelNoopAssetManager implements FlixelAssetManager {
   @Override
   public void load(@NotNull String path) {}
 
-  @Override
-  public void load(@NotNull String path, boolean persist) {}
-
   @NotNull
   @Override
   @SuppressWarnings("unchecked")
@@ -118,30 +115,10 @@ public enum FlixelNoopAssetManager implements FlixelAssetManager {
   }
 
   @Override
-  public void clearNonPersist() {}
-
-  @Override
   public void clear() {}
 
   @Override
   public void destroy() {}
-
-  @Override
-  public boolean getGlobalPersist() {
-    return false;
-  }
-
-  @Override
-  public void setGlobalPersist(boolean globalPersist) {}
-
-  @NotNull
-  @Override
-  public FlixelAssetMode getAssetMode() {
-    return FlixelAssetMode.STANDARD;
-  }
-
-  @Override
-  public void setAssetMode(@NotNull FlixelAssetMode mode) {}
 
   @Nullable
   @Override

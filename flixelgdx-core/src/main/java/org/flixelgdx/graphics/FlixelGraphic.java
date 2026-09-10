@@ -26,7 +26,6 @@ package org.flixelgdx.graphics;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
-import org.flixelgdx.asset.FlixelAssetMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,28 +37,23 @@ import java.util.Objects;
  * texture: it wraps an opaque {@link FlixelTexture} owned by the active graphics backend.
  *
  * <p>Graphics are shared: multiple sprites loading the same path get the same
- * {@code FlixelGraphic} instance from {@link FlixelAssetManager#get(String)}. Each user must
+ * {@code FlixelGraphic} instance from {@link FlixelAssetManager#get(String)}. Each user should
  * call {@link #retain()} on the handle and {@link #release()} when done so the manager can
- * track which textures are still in use and unload idle ones at state-switch time.
+ * warn if the asset is unloaded while still in use.
  *
- * <p>Use {@link #getTexture()} to access the underlying {@link FlixelTexture}. If the
- * texture is not yet loaded it is fetched synchronously; queue the asset with
+ * <p>Use {@link #getTexture()} to access the underlying {@link FlixelTexture}. If the texture
+ * is not yet loaded it is fetched synchronously; queue the asset with
  * {@link FlixelAssetManager#load(String)} in a loading state to avoid mid-frame stalls.
  *
  * <h2>Owned vs path-keyed graphics</h2>
  * <ul>
  *   <li><b>Path-keyed</b> - Created from a file path (e.g. {@code "images/player.png"}).
- *     The texture is managed by the asset manager and unloaded when the reference count drops
- *     to zero and {@link FlixelAssetManager#clearNonPersist()} runs, depending on the
- *     {@link FlixelAssetMode configured asset mode}.</li>
+ *     The texture lives in the asset manager cache until {@link FlixelAssetManager#unload(String)}
+ *     is called explicitly.</li>
  *   <li><b>Owned</b> - Created with a dedicated {@link FlixelTexture} (e.g. from
- *     {@link FlixelSprite#makeGraphic}). The texture is
- *     destroyed directly when the graphic is evicted. {@link #isOwned()} is {@code true}.</li>
+ *     {@link FlixelSprite#makeGraphic}). The texture is destroyed directly when the graphic is
+ *     evicted. {@link #isOwned()} is {@code true}.</li>
  * </ul>
- *
- * <p><b>Persist</b> controls whether an unreferenced path-keyed graphic survives
- * {@link FlixelAssetManager#clearNonPersist()}. Owned graphics always use
- * {@code persist = false} and are evicted at refcount zero regardless.
  */
 public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
 
@@ -79,8 +73,6 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   private int refCount;
 
   private final boolean owned;
-
-  private boolean persist;
 
   /**
    * Creates a path-keyed graphic. The texture is loaded lazily through the asset manager on the
@@ -110,7 +102,6 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
     this.path = Objects.requireNonNull(path, "path cannot be null.");
     this.ownedTexture = ownedTexture;
     this.owned = (ownedTexture != null);
-    this.persist = !owned && assets.getGlobalPersist();
   }
 
   @NotNull
@@ -141,29 +132,6 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
   }
 
   @Override
-  public boolean isPersist() {
-    return persist;
-  }
-
-  /**
-   * Returns whether this graphic is marked to persist across state transitions.
-   *
-   * @return {@code true} if this graphic survives a state switch without being evicted.
-   */
-  public boolean getPersist() {
-    return persist;
-  }
-
-  @NotNull
-  @Override
-  public FlixelGraphic setPersist(boolean persist) {
-    if (!owned) {
-      this.persist = persist;
-    }
-    return this;
-  }
-
-  @Override
   public int getRefCount() {
     return refCount;
   }
@@ -183,9 +151,6 @@ public class FlixelGraphic implements FlixelAsset<FlixelGraphic> {
       return this;
     }
     refCount--;
-    if (refCount == 0) {
-      assets.onAssetReleased(this);
-    }
     return this;
   }
 

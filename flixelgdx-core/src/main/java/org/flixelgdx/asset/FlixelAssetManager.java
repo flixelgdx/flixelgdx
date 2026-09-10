@@ -24,6 +24,7 @@
 package org.flixelgdx.asset;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
@@ -39,6 +40,10 @@ import org.jetbrains.annotations.Nullable;
  * each platform installs its own implementation (the shared JVM one for desktop and Android, a
  * browser-based one for web), and a safe no-op ({@link FlixelNoopAssetManager}) is in place
  * before any backend starts. Access via {@link Flixel#assets}.
+ *
+ * <p>Assets are <b>lazy by design</b>: once loaded, an asset stays in memory until
+ * {@link #unload(String)} is called explicitly. There is no automatic eviction on state
+ * switches. This keeps the lifecycle simple and predictable - you decide when memory is freed.
  *
  * <p><b>Basic workflow:</b>
  *
@@ -59,6 +64,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * // Release when done (e.g. in destroy())
  * graphic.release();
+ *
+ * // Explicitly free the asset when no one needs it anymore
+ * Flixel.assets.unload("player.png");
  * }</pre>
  *
  * <p>{@link #load(String)} infers the asset type from the file extension using the
@@ -96,15 +104,6 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * @throws IllegalArgumentException if the path has no extension or no loader is registered.
    */
   void load(@NotNull String path);
-
-  /**
-   * Like {@link #load(String)}, but marks the first handle created for this key as persistent.
-   * Persistent handles survive {@link #clearNonPersist()} when their reference count is zero.
-   *
-   * @param path Asset path.
-   * @param persist When {@code true}, the first handle created for this path is persistent.
-   */
-  void load(@NotNull String path, boolean persist);
 
   /**
    * Returns the {@link FlixelAsset} handle for {@code path}, creating it if it does not exist.
@@ -213,12 +212,38 @@ public interface FlixelAssetManager extends FlixelDestroyable {
    * Returns the number of assets currently tracked in the manager cache.
    *
    * <p>A steadily climbing count across state switches often means assets are being loaded
-   * without a matching {@link FlixelAsset#release()} or {@link #clearNonPersist()} call.
+   * without a matching {@link FlixelAsset#release()} or {@link #unload(String)} call.
    *
    * @return Number of cached handles.
    */
   default int getLoadedAssetCount() {
     return 0;
+  }
+
+  /**
+   * Fills {@code out} with every {@link FlixelAsset} handle currently tracked in the manager
+   * cache, clearing any previous contents first. The order of handles is unspecified.
+   *
+   * <p>Typical use: iterating loaded assets to selectively unload them, or building a diagnostic
+   * view. Pass the same {@link FlixelArray} instance across calls to avoid allocating a new one
+   * each time.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * FlixelArray<FlixelAsset<?>> assets = new FlixelArray<>();
+   * Flixel.assets.getAssets(assets);
+   * for (int i = 0; i < assets.getSize(); i++) {
+   *   FlixelAsset<?> asset = assets.get(i);
+   *   if (asset.getRefCount() == 0) {
+   *     Flixel.assets.unload(asset.getPath());
+   *   }
+   * }
+   * }</pre>
+   *
+   * @param out The array to fill; cleared before populating.
+   */
+  default void getAssets(@NotNull FlixelArray<FlixelAsset<?>> out) {
+    out.clear();
   }
 
   /**
@@ -242,8 +267,13 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   void finishLoadingAsset(@NotNull String path);
 
   /**
-   * Unloads the raw content cached for {@code path}, destroying GPU or native resources it
-   * holds. The wrapper handle, if any, stays registered and will reload on next use.
+   * Unloads the asset at {@code path}, removing its handle from the cache and destroying GPU
+   * or native resources it holds. On platforms with a WebGL context (web), this calls
+   * {@code gl.deleteTexture()} so GPU memory is actually freed in the browser.
+   *
+   * <p>If the asset's reference count is still above zero when this is called, a warning is
+   * logged and the unload still proceeds. Any code still holding the underlying resource after
+   * an unload will observe a disposed object.
    *
    * @param path Asset key to unload.
    */
@@ -259,62 +289,9 @@ public interface FlixelAssetManager extends FlixelDestroyable {
   String getDiagnostics();
 
   /**
-   * Unloads non-persistent asset handles whose reference count is zero. Called automatically
-   * by {@link Flixel#switchState} in
-   * {@link FlixelAssetMode#STANDARD} and {@link FlixelAssetMode#AGGRESSIVE} modes.
-   */
-  void clearNonPersist();
-
-  /**
    * Unloads and removes all cached asset handles, regardless of persist or reference count.
    */
   void clear();
-
-  /**
-   * Returns the default {@link FlixelAsset#isPersist()} value assigned to newly created handles.
-   *
-   * <p>When {@code true}, new handles survive {@link #clearNonPersist()} when unreferenced.
-   * Owned assets (e.g. textures created from a {@link FlixelImage
-   * FlixelImage}) always use {@code persist = false} regardless of this setting.
-   *
-   * @return The global persist default.
-   */
-  boolean getGlobalPersist();
-
-  /**
-   * Sets the global persist default. Does not affect handles already in the cache.
-   *
-   * @param globalPersist New default value.
-   */
-  void setGlobalPersist(boolean globalPersist);
-
-  /**
-   * Returns the active {@link FlixelAssetMode} controlling when non-persistent assets are reclaimed.
-   *
-   * @return The current mode; never {@code null}.
-   */
-  @NotNull
-  FlixelAssetMode getAssetMode();
-
-  /**
-   * Sets the active asset management mode. Takes effect on the next
-   * {@link FlixelAsset#release()} call or the next
-   * {@link Flixel#switchState}, whichever comes first.
-   *
-   * @param mode The new mode; must not be {@code null}.
-   */
-  void setAssetMode(@NotNull FlixelAssetMode mode);
-
-  /**
-   * Called by {@link FlixelAsset#release()} when a handle's reference count reaches zero.
-   *
-   * <p>In {@link FlixelAssetMode#AGGRESSIVE} mode the default implementation triggers an
-   * immediate eviction. In other modes this is a no-op; cleanup happens at state-switch time
-   * via {@link #clearNonPersist()}.
-   *
-   * @param handle The handle whose reference count just reached zero.
-   */
-  default void onAssetReleased(@NotNull FlixelAsset<?> handle) {}
 
   /**
    * Returns the finished raw content cached for {@code path}, or {@code null} when it has not

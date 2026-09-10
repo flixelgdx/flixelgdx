@@ -35,8 +35,7 @@ import java.util.Objects;
  *
  * <p>The handle looks its content up in the owning manager's raw cache on each
  * {@link #get()}, block-loading it when it was never queued. Types with richer behavior
- * ({@link FlixelGraphic} for textures,
- * {@link FlixelSoundSource} for audio) implement
+ * ({@link FlixelGraphic} for textures, {@link FlixelSoundSource} for audio) implement
  * {@link FlixelAsset} themselves instead.
  *
  * @param <T> The content type game code receives from {@link #get()} (e.g. {@link String}).
@@ -51,8 +50,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
 
   private int refCount;
 
-  private boolean persist;
-
   /**
    * Creates a handle for {@code path}.
    *
@@ -62,7 +59,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
   public FlixelDefaultAsset(@NotNull FlixelAssetManager assets, @NotNull String path) {
     this.assets = Objects.requireNonNull(assets, "assets cannot be null.");
     this.path = Objects.requireNonNull(path, "path cannot be null.");
-    this.persist = assets.getGlobalPersist();
   }
 
   @NotNull
@@ -88,18 +84,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
   }
 
   @Override
-  public boolean isPersist() {
-    return persist;
-  }
-
-  @NotNull
-  @Override
-  public FlixelDefaultAsset<T> setPersist(boolean persist) {
-    this.persist = persist;
-    return this;
-  }
-
-  @Override
   public int getRefCount() {
     return refCount;
   }
@@ -119,9 +103,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
       return this;
     }
     refCount--;
-    if (refCount == 0) {
-      assets.onAssetReleased(this);
-    }
     return this;
   }
 }
