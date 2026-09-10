@@ -65,7 +65,7 @@ public class FlixelHtml5Alerter implements FlixelAlerter {
    * Shows a full-screen DOM alert overlay with an OK button that dismisses it.
    *
    * <p>Delegates to {@code window.__flixelOverlay}, which is defined by
-   * {@link FlixelHtml5RuntimeDevice#installJsErrorHandlers} and holds the single shared
+   * {@code FlixelHtml5RuntimeDevice.installJsErrorHandlers} and holds the single shared
    * overlay-building implementation for both alert dialogs and crash reports.
    */
   @JSBody(params = { "title", "message", "titleColor" }, script = """
