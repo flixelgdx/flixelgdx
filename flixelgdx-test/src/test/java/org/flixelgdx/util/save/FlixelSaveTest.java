@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -51,6 +52,7 @@ class FlixelSaveTest {
     FlixelSave b = new FlixelSave();
     assertTrue(b.bind(name, null, dir));
     Object v = b.data.get("score");
+    Assertions.assertNotNull(v);
     assertEquals(42.0, ((Number) v).doubleValue(), 1e-6);
   }
 
