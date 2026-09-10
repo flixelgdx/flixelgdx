@@ -138,28 +138,27 @@ public class FlixelBgfxTexture implements FlixelTexture {
     ByteBuffer pixels = image.getPixels();
     pixels.position(0).limit(count * 4);
     if (swapRB) {
-      ByteBuffer swapped = swapRedBlue(pixels, count);
-      BGFX.bgfx_update_texture_2d(handle, 0, 0,
-          (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
-          BGFX.bgfx_copy(swapped), 0xFFFF);
-      MemoryUtil.memFree(swapped);
-    } else {
-      BGFX.bgfx_update_texture_2d(handle, 0, 0,
-          (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
-          BGFX.bgfx_copy(pixels), 0xFFFF);
+      // Swap R and B bytes in-place so the channel layout matches bgfx's expectation for this
+      // backend. The caller owns the buffer and must tolerate this side effect; streaming sources
+      // (e.g., video frames) overwrite the buffer before the next update, so the in-place swap
+      // does not escape to the caller between updates.
+      swapRedBlueInPlace(pixels, count);
     }
+    // bgfx_make_ref stores a pointer to the caller-owned buffer rather than copying it. The buffer
+    // must remain valid until bgfx_frame() processes this submission (end of the current frame).
+    // FlixelImage backs its pixels with a direct ByteBuffer whose lifetime is tied to the image
+    // object, so the memory is guaranteed to outlive the submission.
+    BGFX.bgfx_update_texture_2d(handle, 0, 0,
+        (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
+        BGFX.bgfx_make_ref(pixels), 0xFFFF);
   }
 
   /**
    * Returns a malloc-backed {@link ByteBuffer} whose R and B bytes are swapped relative to
    * {@code src}.
    *
-   * <p>stb_image always delivers pixels as RGBA, but certain bgfx backends invert the red and blue
-   * channels during sampling. This method compensates on the CPU at load time so the GPU sees the
-   * correct channel layout. The original {@code src} buffer is left unmodified.
-   *
-   * <p>The returned buffer is allocated via {@link MemoryUtil#memAlloc} and must be freed by the
-   * caller with {@link MemoryUtil#memFree} once bgfx has consumed the data.
+   * <p>Used at texture-creation time when a full copy is needed anyway (bgfx_copy). For the
+   * per-frame streaming path, use {@link #swapRedBlueInPlace} to avoid a separate allocation.
    *
    * @param src The source RGBA pixel buffer (position 0, at least {@code pixelCount * 4} bytes).
    * @param pixelCount The number of pixels to process.
@@ -169,12 +168,21 @@ public class FlixelBgfxTexture implements FlixelTexture {
     ByteBuffer dst = MemoryUtil.memAlloc(pixelCount * 4);
     for (int i = 0; i < pixelCount; i++) {
       int base = i * 4;
-      dst.put(base, src.get(base + 2)); // R slot <- B value
-      dst.put(base + 1, src.get(base + 1)); // G unchanged
-      dst.put(base + 2, src.get(base));     // B slot <- R value
-      dst.put(base + 3, src.get(base + 3)); // A unchanged
+      dst.put(base, src.get(base + 2));
+      dst.put(base + 1, src.get(base + 1));
+      dst.put(base + 2, src.get(base));
+      dst.put(base + 3, src.get(base + 3));
     }
     return dst;
+  }
+
+  private static void swapRedBlueInPlace(ByteBuffer buf, int pixelCount) {
+    for (int i = 0; i < pixelCount; i++) {
+      int base = i * 4;
+      byte r = buf.get(base);
+      buf.put(base, buf.get(base + 2));
+      buf.put(base + 2, r);
+    }
   }
 
   @Override

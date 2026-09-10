@@ -202,8 +202,28 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @Override
   @NotNull
+  public FlixelTexture createTexture(int width, int height) {
+    return new FlixelWebGlTexture(gl, width, height, false);
+  }
+
+  @Override
+  @NotNull
   public FlixelTexture createTexture(int width, int height, @NotNull ByteBuffer rgba) {
     return new FlixelWebGlTexture(gl, width, height, rgba, false);
+  }
+
+  /**
+   * Returns the WebGL rendering context used by this backend.
+   *
+   * <p>Extensions that need to call WebGL directly (for example, a video backend that uploads
+   * frames through {@code texSubImage2D} without a Java-side copy) can retrieve the context here
+   * by casting {@link Flixel#graphics} to {@code FlixelHtml5Graphics}.
+   *
+   * @return The WebGL2 rendering context, or {@code null} before {@link #initialize} is called.
+   */
+  @Nullable
+  public WebGLRenderingContext getGl() {
+    return gl;
   }
 
   @Override

@@ -396,6 +396,20 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   @NotNull
   @Override
+  public FlixelTexture createTexture(int width, int height) {
+    // Passing null for the initial memory creates a dynamic (updateable) bgfx texture. Static
+    // textures (created with bgfx_copy) silently ignore bgfx_update_texture_2d, which is why
+    // streaming sources like video frames must always go through this path.
+    short handle = BGFX.bgfx_create_texture_2d(
+        width, height, false, 1,
+        BGFX.BGFX_TEXTURE_FORMAT_RGBA8,
+        BGFX.BGFX_TEXTURE_NONE,
+        null, 0L);
+    return new FlixelBgfxTexture(handle, width, height);
+  }
+
+  @NotNull
+  @Override
   public FlixelTexture createTexture(int width, int height, @NotNull ByteBuffer rgba) {
     ByteBuffer copy = ByteBuffer.allocateDirect(width * height * 4);
     rgba.position(0).limit(width * height * 4);
