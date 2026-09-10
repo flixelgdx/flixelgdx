@@ -81,7 +81,8 @@ public class FlixelMiniAudioFactory implements FlixelSoundFactory {
     if (handle == 0L) {
       Flixel.warn("Audio", "Could not decode audio '" + buffer.path() + "'.");
     }
-    return new FlixelMiniAudioSound(handle);
+    FlixelMiniAudioGroup miniGroup = group instanceof FlixelMiniAudioGroup g ? g : null;
+    return new FlixelMiniAudioSound(handle, miniGroup);
   }
 
   @NotNull

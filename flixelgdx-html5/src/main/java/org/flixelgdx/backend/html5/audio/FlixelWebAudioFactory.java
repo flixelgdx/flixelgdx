@@ -85,7 +85,7 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
   @Override
   @NotNull
   public FlixelSoundGroup createGroup() {
-    return new FlixelWebAudioGroup();
+    return new FlixelWebAudioGroup(context, masterGain);
   }
 
   @Override

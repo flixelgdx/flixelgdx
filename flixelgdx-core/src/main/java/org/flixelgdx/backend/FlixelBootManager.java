@@ -41,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>Example:
  * <pre>{@code
  * Flixel.boot.beforeStart(() -> {
- *   Flixel.log.info("Setting up custom asset loader...");
+ *   Flixel.info("Setting up custom asset loader...");
  * });
  * Flixel.boot.afterStart(() -> {
  *   Flixel.debug.registerCommand("reload", args -> reloadLevel());

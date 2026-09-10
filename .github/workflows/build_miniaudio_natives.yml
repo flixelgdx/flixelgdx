@@ -1,0 +1,193 @@
+name: Build miniaudio natives
+
+# Run manually whenever flixel_miniaudio.c or its headers change, then commit the produced
+# binaries back into flixelgdx-desktop/src/main/resources/org/flixelgdx/natives/.
+on:
+  workflow_dispatch:
+
+jobs:
+
+  linux-x86_64:
+    name: Linux (x86_64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Download miniaudio sources
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Build
+        run: |
+          gcc -O2 -fPIC -shared \
+            -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/linux" \
+            -o libflixel_miniaudio.so \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c \
+            -lm -lpthread -ldl
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: libflixel_miniaudio.so
+
+  linux-arm64:
+    name: Linux (arm64)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Download miniaudio sources
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Build
+        run: |
+          gcc -O2 -fPIC -shared \
+            -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/linux" \
+            -o libflixel_miniaudio.so \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c \
+            -lm -lpthread -ldl
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: libflixel_miniaudio.so
+
+  windows-x86_64:
+    name: Windows (x86_64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Download miniaudio sources
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Build
+        shell: bash
+        run: |
+          gcc -O2 -shared \
+            -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/win32" \
+            -o flixel_miniaudio.dll \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c \
+            -lole32 -lwinmm -static-libgcc
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: flixel_miniaudio.dll
+
+  windows-arm64:
+    name: Windows (arm64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up MSVC (cross-compile amd64 -> arm64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
+
+      - name: Download miniaudio sources
+        shell: bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Build
+        shell: cmd
+        run: |
+          cl.exe /O2 /LD ^
+            /I"%JAVA_HOME%\include" /I"%JAVA_HOME%\include\win32" ^
+            flixelgdx-desktop\src\main\native\flixel_miniaudio.c ^
+            /link /OUT:flixel_miniaudio.dll ole32.lib winmm.lib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64
+          path: flixel_miniaudio.dll
+
+  macos-universal:
+    name: macOS (universal)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Download miniaudio sources
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/miniaudio.h \
+            -o flixelgdx-desktop/src/main/native/miniaudio.h
+          curl -fsSL https://raw.githubusercontent.com/mackron/miniaudio/master/extras/stb_vorbis.c \
+            -o flixelgdx-desktop/src/main/native/stb_vorbis.c
+
+      - name: Build universal binary
+        run: |
+          clang -O2 -dynamiclib -arch arm64 \
+            -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/darwin" \
+            -o libflixel_miniaudio-arm64.dylib \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c
+          clang -O2 -dynamiclib -arch x86_64 \
+            -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/darwin" \
+            -o libflixel_miniaudio-x86_64.dylib \
+            flixelgdx-desktop/src/main/native/flixel_miniaudio.c
+          lipo -create \
+            libflixel_miniaudio-arm64.dylib \
+            libflixel_miniaudio-x86_64.dylib \
+            -output libflixel_miniaudio.dylib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: libflixel_miniaudio.dylib

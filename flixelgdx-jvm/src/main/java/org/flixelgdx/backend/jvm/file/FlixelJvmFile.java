@@ -114,15 +114,14 @@ public class FlixelJvmFile implements FlixelFile {
       return new FlixelFile[0];
     }
     int matches = 0;
-    for (int i = 0; i < children.length; i++) {
-      if (children[i].getName().endsWith(suffix)) {
+    for (File value : children) {
+      if (value.getName().endsWith(suffix)) {
         matches++;
       }
     }
     FlixelFile[] out = new FlixelFile[matches];
     int idx = 0;
-    for (int i = 0; i < children.length; i++) {
-      File child = children[i];
+    for (File child : children) {
       if (child.getName().endsWith(suffix)) {
         out[idx++] = new FlixelJvmFile(childPath(child.getName()), child, false);
       }
@@ -143,9 +142,8 @@ public class FlixelJvmFile implements FlixelFile {
     return new String(readBytes(), cs);
   }
 
-  @NotNull
   @Override
-  public byte[] readBytes() {
+  public byte @NotNull [] readBytes() {
     try {
       if (classpath) {
         try (InputStream in = openClasspath()) {

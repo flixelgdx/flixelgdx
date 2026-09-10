@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.graphics;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * A texture stand-in used when no graphics backend is present (headless sessions, unit tests,
  * and pre-startup code paths).
@@ -31,7 +33,7 @@ package org.flixelgdx.graphics;
  * no GPU memory and ignores pixel updates. {@link FlixelNoopGraphicsManager} returns these from
  * every texture-creating call so nothing crashes without a GPU.
  */
-public class FlixelNoopTexture implements FlixelTexture {
+public final class FlixelNoopTexture implements FlixelTexture {
 
   private final int width;
   private final int height;
@@ -50,7 +52,7 @@ public class FlixelNoopTexture implements FlixelTexture {
   }
 
   @Override
-  public void update(int x, int y, FlixelImage image) {}
+  public void update(int x, int y, @NotNull FlixelImage image) {}
 
   @Override
   public void destroy() {}

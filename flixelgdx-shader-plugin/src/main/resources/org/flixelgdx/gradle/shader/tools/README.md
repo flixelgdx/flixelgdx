@@ -5,8 +5,10 @@ time. Each operating system has its own subfolder, named by classifier:
 
 ```
 tools/
+  linux-aarch64/shaderc
   linux-x86_64/shaderc
   macos-aarch64/shaderc
+  windows-aarch64/shaderc.exe
   windows-shim/d3d4linux.exe
   windows-x86_64/shaderc.exe
 ```

@@ -24,6 +24,7 @@
 package org.flixelgdx.graphics;
 
 import org.flixelgdx.functional.FlixelDestroyable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * An opaque handle to a texture that lives on the GPU.
@@ -95,5 +96,5 @@ public interface FlixelTexture extends FlixelDestroyable {
    * @param y Top edge of the destination rectangle in pixels.
    * @param image Source pixels; the full image is copied.
    */
-  void update(int x, int y, FlixelImage image);
+  void update(int x, int y, @NotNull FlixelImage image);
 }

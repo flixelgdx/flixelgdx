@@ -25,6 +25,8 @@ package org.flixelgdx.math;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Random;
+
 /**
  * A seedable pseudo-random number generator with game-friendly helpers.
  *
@@ -36,7 +38,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>The generator is an {@code xorshift64*}, a small, fast, and well-distributed
  * algorithm. Because the math is fully specified here rather than delegated to a
- * platform's {@link java.util.Random}, the same seed yields the same numbers on
+ * platform's {@link Random}, the same seed yields the same numbers on
  * desktop, web, and mobile alike.
  *
  * <p>Example:

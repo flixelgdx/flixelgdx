@@ -199,7 +199,7 @@ public class BasisuPlugin implements Plugin<Project> {
    * built from.
    *
    * <p>AGP's asset-merge tasks (for example {@code mergeDebugAssets}) do not honor
-   * {@link com.android.build.gradle.api.AndroidSourceDirectorySet#exclude} for asset packaging:
+   * {@code AndroidSourceDirectorySet#exclude} for asset packaging:
    * every source directory is copied into the merge output as-is, regardless of any exclude
    * patterns configured on the source set. Excluding the plain PNGs there is a no-op, so instead
    * each merge task gets a {@code doLast} action that deletes the plain PNG once the merge

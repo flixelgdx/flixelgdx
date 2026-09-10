@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop.graphics;
 
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.system.MemoryUtil;
 
@@ -129,7 +130,7 @@ public class FlixelBgfxTexture implements FlixelTexture {
   }
 
   @Override
-  public void update(int x, int y, FlixelImage image) {
+  public void update(int x, int y, @NotNull FlixelImage image) {
     if (destroyed || handle == -1) {
       return;
     }

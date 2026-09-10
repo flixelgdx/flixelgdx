@@ -23,18 +23,24 @@
  */
 package org.flixelgdx.backend.desktop.audio;
 
+import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundGroup;
+import org.flixelgdx.collections.FlixelArray;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link FlixelSoundGroup} backed by one miniaudio sound group.
  *
- * <p>Groups let the framework pause and resume whole categories of audio (sound effects, music)
- * at once, which is how focus-based auto-pause works.
+ * <p>Groups let the framework pause, resume, stop, and volume-control whole categories of audio
+ * (such as sound effects or music) at once. Member sounds register themselves on construction and
+ * deregister on disposal, so the group always reflects the live set.
  */
 public class FlixelMiniAudioGroup implements FlixelSoundGroup {
 
   /** Native miniaudio group handle, or {@code 0} once destroyed. */
   private long handle;
+
+  private final FlixelArray<FlixelSound> sounds = new FlixelArray<>();
 
   /**
    * Wraps a native group handle.
@@ -65,10 +71,45 @@ public class FlixelMiniAudioGroup implements FlixelSoundGroup {
   }
 
   @Override
+  public void stop() {
+    if (handle != 0L) {
+      FlixelMiniAudio.groupStop(handle);
+    }
+    for (int i = 0; i < sounds.getSize(); i++) {
+      sounds.get(i).setTime(0f);
+    }
+  }
+
+  @Override
+  public float getVolume() {
+    return handle != 0L ? FlixelMiniAudio.groupGetVolume(handle) : 1f;
+  }
+
+  @Override
+  public void setVolume(float volume) {
+    if (handle != 0L) {
+      FlixelMiniAudio.groupSetVolume(handle, volume);
+    }
+  }
+
+  @Override
+  public void add(@NotNull FlixelSound sound) {
+    if (!sounds.contains(sound, true)) {
+      sounds.add(sound);
+    }
+  }
+
+  @Override
+  public void remove(@NotNull FlixelSound sound) {
+    sounds.removeValue(sound, true);
+  }
+
+  @Override
   public void destroy() {
     if (handle != 0L) {
       FlixelMiniAudio.groupUninit(handle);
       handle = 0L;
     }
+    sounds.clear();
   }
 }

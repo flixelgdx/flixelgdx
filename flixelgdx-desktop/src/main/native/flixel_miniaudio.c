@@ -142,6 +142,27 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupStart(JNIEnv* env,
   }
 }
 
+JNIEXPORT jfloat JNICALL
+Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupGetVolume(JNIEnv* env, jclass clazz, jlong groupPtr) {
+  (void) env;
+  (void) clazz;
+  ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
+  if (group == NULL) {
+    return 0.0f;
+  }
+  return (jfloat) ma_sound_group_get_volume(group);
+}
+
+JNIEXPORT void JNICALL
+Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupSetVolume(JNIEnv* env, jclass clazz, jlong groupPtr, jfloat volume) {
+  (void) env;
+  (void) clazz;
+  ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
+  if (group != NULL) {
+    ma_sound_group_set_volume(group, (float) volume);
+  }
+}
+
 JNIEXPORT jlong JNICALL
 Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundLoad(JNIEnv* env, jclass clazz, jlong enginePtr, jbyteArray data, jint length, jlong groupPtr) {
   (void) clazz;

@@ -29,10 +29,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A typed event emitter that notifies registered listeners when something happens in the game.
  *
- * <p>A signal works like a bulletin board: other parts of your game "subscribe" to the signal by
- * calling {@link #add(SignalHandler)} or {@link #addOnce(SignalHandler)}. When the event occurs,
- * you call {@link #dispatch(Object)} (or {@link #dispatch()} if no data needs to be passed), and
- * every registered listener is called automatically in the order they were added.
+ * <p>Think of this like a school PA system. The signal itself is the central microphone.
+ * Distinct subsystems (like a UI layer, audio system, or achievement tracker) tune their
+ * speakers into this channel using {@link #add(SignalHandler)}. When an event occurs, the
+ * broadcaster calls {@link #dispatch(Object)} to speak into the microphone. Every active
+ * listener instantly hears the broadcast and executes its own unique reaction simultaneously.
  *
  * <p>This decouples the source of an event from the code that reacts to it. A {@code FlixelSignal}
  * on your player object does not need to know which UI elements, audio systems, or achievement
@@ -71,6 +72,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param <T> the type of data carried by this signal when dispatched.
  */
+
 public class FlixelSignal<T> {
 
   private final FlixelArray<SignalHandler<T>> callbacks;

@@ -53,7 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * flipping, blend modes, per-sprite shaders, and scissor clip rects.
  *
  * <h2>Loading graphics</h2>
- * <p>Use {@link #loadGraphic(String)} for asset-managed textures (the texture is cached and
+ * <p>Use {@link #loadGraphic(FlixelFile)} for asset-managed textures (the texture is cached and
  * reference-counted by {@link FlixelAssetManager}).
  * {@link #makeGraphic(int, int, FlixelColor)} generates a solid-color rectangle on the fly and
  * owns the resulting texture. For Sparrow XML atlases, call
@@ -76,7 +76,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>The {@link FlixelAnimationController} is {@code null} by default to save memory for large
  * sprite counts. Call {@link #ensureAnimation()} to create it lazily, then register clips:
  * <pre>{@code
- * FlixelSprite sprite = new FlixelSprite(0, 0, "player.png");
+ * FlixelSprite sprite = new FlixelSprite(0, 0, Flixel.files.internal("player.png"));
  * sprite.ensureAnimation().add("walk", new int[]{0, 1, 2, 3}, 12, true);
  * sprite.ensureAnimation().playAnimation("walk");
  * }</pre>
@@ -231,12 +231,12 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    *
    * @param x The X coordinate to place the new sprite at.
    * @param y The Y coordinate to place the new sprite at.
-   * @param graphicAssetKey The asset key of the graphic to load, or {@code null} to leave the sprite blank.
+   * @param graphicFile A handle to the graphic to load, or {@code null} to leave the sprite blank.
    */
-  public FlixelSprite(float x, float y, String graphicAssetKey) {
+  public FlixelSprite(float x, float y, @Nullable FlixelFile graphicFile) {
     super(x, y);
-    if (graphicAssetKey != null && !graphicAssetKey.isEmpty()) {
-      loadGraphic(graphicAssetKey);
+    if (graphicFile != null) {
+      loadGraphic(graphicFile);
     }
   }
 
@@ -285,36 +285,49 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   }
 
   /**
-   * Load's a texture and automatically resizes the size of {@code this} sprite.
+   * Loads a texture from a file handle and automatically resizes {@code this} sprite.
    *
-   * @param file A handle to the {@code .png} to load onto {@code this} sprite.
+   * <p>Obtain a handle from {@code Flixel.files.internal("player.png")} and queue the asset with
+   * {@link FlixelAssetManager#load(String)} before the first frame to avoid a synchronous stall.
+   *
+   * <pre>{@code
+   * FlixelFile file = Flixel.files.internal("player.png");
+   * sprite.loadGraphic(file);
+   * }</pre>
+   *
+   * @param file A handle to the {@code .png} to load onto {@code this} sprite. Must not be {@code null}.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(FlixelFile file) {
-    return loadGraphic(file.getPath());
+  public FlixelSprite loadGraphic(@NotNull FlixelFile file) {
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(file.getPath()).retain().get();
+    FlixelTexture t = g.getTexture();
+    return loadGraphic(g, t.getWidth(), t.getHeight());
   }
 
   /**
-   * Load's a texture and automatically resizes the size of {@code this} sprite.
+   * Loads a texture from a file handle and automatically resizes {@code this} sprite.
    *
-   * @param file A handle to the {@code .png} to load onto {@code this} sprite.
-   * @param frameWidth How wide the sprite should be.
+   * @param file A handle to the {@code .png} to load onto {@code this} sprite. Must not be {@code null}.
+   * @param frameWidth How wide each frame should be.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(FlixelFile file, int frameWidth) {
-    return loadGraphic(file.getPath(), frameWidth);
+  public FlixelSprite loadGraphic(@NotNull FlixelFile file, int frameWidth) {
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(file.getPath()).retain().get();
+    FlixelTexture t = g.getTexture();
+    return loadGraphic(g, frameWidth, t.getHeight());
   }
 
   /**
-   * Load's a texture and automatically resizes the size of {@code this} sprite.
+   * Loads a texture from a file handle and automatically resizes {@code this} sprite.
    *
-   * @param file A handle to the {@code .png} to load onto {@code this} sprite.
-   * @param frameWidth How wide the sprite should be.
-   * @param frameHeight How tall the sprite should be.
+   * @param file A handle to the {@code .png} to load onto {@code this} sprite. Must not be {@code null}.
+   * @param frameWidth How wide each frame should be.
+   * @param frameHeight How tall each frame should be.
    * @return {@code this} sprite for chaining.
    */
-  public FlixelSprite loadGraphic(FlixelFile file, int frameWidth, int frameHeight) {
-    return loadGraphic(file.getPath(), frameWidth, frameHeight);
+  public FlixelSprite loadGraphic(@NotNull FlixelFile file, int frameWidth, int frameHeight) {
+    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(file.getPath()).retain().get();
+    return loadGraphic(g, frameWidth, frameHeight);
   }
 
   /**
@@ -345,47 +358,6 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
     updateHitbox(frameWidth, frameHeight);
     setAntialiasing(antialiasing);
     return this;
-  }
-
-  /**
-   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
-   * a loading state to avoid synchronous stalls on the first frame.
-   *
-   * @param assetKey The key of the graphic to load.
-   * @return {@code this} sprite for chaining.
-   */
-  public FlixelSprite loadGraphic(String assetKey) {
-    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(assetKey).retain().get();
-    FlixelTexture t = g.getTexture();
-    return loadGraphic(g, t.getWidth(), t.getHeight());
-  }
-
-  /**
-   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
-   * a loading state to avoid synchronous stalls on the first frame.
-   *
-   * @param assetKey The key of the graphic to load.
-   * @param frameWidth The width of the graphic.
-   * @return {@code this} sprite for chaining.
-   */
-  public FlixelSprite loadGraphic(String assetKey, int frameWidth) {
-    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(assetKey).retain().get();
-    FlixelTexture t = g.getTexture();
-    return loadGraphic(g, frameWidth, t.getHeight());
-  }
-
-  /**
-   * Loads a cached graphic by key. Queue the asset with {@link FlixelAssetManager#load(String)} in
-   * a loading state to avoid synchronous stalls on the first frame.
-   *
-   * @param assetKey The key of the graphic to load.
-   * @param frameWidth The width of the graphic.
-   * @param frameHeight The height of the graphic.
-   * @return {@code this} sprite for chaining.
-   */
-  public FlixelSprite loadGraphic(String assetKey, int frameWidth, int frameHeight) {
-    FlixelGraphic g = Flixel.assets.<FlixelGraphic>get(assetKey).retain().get();
-    return loadGraphic(g, frameWidth, frameHeight);
   }
 
   /**
@@ -465,7 +437,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
 
   /**
    * Installs a retained {@link FlixelGraphic} and parsed Sparrow atlas frames. Called by
-   * {@link FlixelAnimationController#addSparrowFrames(String)} and
+   * {@link FlixelAnimationController#addSparrowFrames(FlixelFile)} and
    * {@link FlixelSpritemapJsonLoader#load}, not a general API for game code.
    *
    * @param newGraphic Graphic from {@link Flixel#assets}{@code .get(...)} with
@@ -501,7 +473,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * <em>appends</em> {@code parsedFrames} to whatever atlas the sprite already has (creating one when
    * it had none) and retains {@code newGraphic} as a {@link #retainSecondaryGraphic secondary graphic}
    * so its texture stays loaded. That lets a single sprite carry frames from more than one sheet,
-   * which is what {@link FlixelAnimationController#addSparrowFrames(String)} builds on. The currently
+   * which is what {@link FlixelAnimationController#addSparrowFrames(FlixelFile)} builds on. The currently
    * displayed frame and the registered clips are left untouched, so a sprite already showing a rig
    * clip or another atlas keeps rendering exactly as before; play one of the newly registered clips to
    * show the merged art.
@@ -528,7 +500,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
    * {@link FlixelAssetManager#get(String) FlixelAssetManager.get(...)} followed
    * by {@link FlixelAsset#retain() retain()}), so this method only stores the
    * reference and does not call {@link FlixelGraphic#retain()} again. This is an advanced hook used
-   * by atlas-merging code such as {@link FlixelAnimationController#addSparrowFrames(String)} and
+   * by atlas-merging code such as {@link FlixelAnimationController#addSparrowFrames(FlixelFile)} and
    * the Animate rig loader; most game code never calls it directly.
    *
    * @param graphic The graphic to retain for the sprite's lifetime. Must not be {@code null}.
@@ -1177,7 +1149,7 @@ public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, F
   /**
    * Replaces the currently displayed frame directly, bypassing the frame grid and animation
    * system. Useful for one-off sprites that source a frame from an existing atlas without going
-   * through {@link #loadGraphic(String)} or {@link #applySparrowAtlas(FlixelGraphic, FlixelArray)}.
+   * through {@link #loadGraphic(FlixelFile)} or {@link #applySparrowAtlas(FlixelGraphic, FlixelArray)}.
    * Pass {@code null} to clear the displayed frame.
    *
    * @param region The frame to display, or {@code null} to stop rendering.

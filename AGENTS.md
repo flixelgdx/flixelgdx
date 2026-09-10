@@ -59,8 +59,9 @@ When explaining code or introducing patterns:
   4. `boolean`s and `byte`s
 
 - **Standard Java collections are completely banned**. They take up too much memory and allocate too many objects when they're
-  used. Prefer FlixelGDX collections instead, which are significantly more lean and don't allocate garbage when used. The only
-  exception to this rule is build-time tools like plugins, since they do not impact a game's performance at runtime.
+  used. Prefer FlixelGDX `collections` package instead, which are significantly more lean and don't allocate garbage when used. 
+  The only exception to this rule is build-time tools like plugins, since they do not impact a game's performance at runtime
+  and the framework's code can't be accessed at that phase anyway.
 - **Reflection is banned**. It breaks many platforms that require ahead-of-time compilation and is unstable for situations 
   like version bumps. If reflection must be used, don't touch the main area requiring it, and bring it up at the end of 
   your task, explaining why it's needed.
@@ -274,7 +275,7 @@ For widely used classes, fields, methods, or anything central to correctness, in
     - "Fix typos in documentation and refactor FlixelSprite"
     - "Fix rendering bug in FlixelCamera"
     - "Add missing Javadoc to FlixelCamera"
-- If the current branch is not up to date with the remote, always pull the latest changes before changing any code.
+- Always pull the latest changes before changing any code if on a branch outside of the `master` branch.
 - If the current branch is set to `master` or something else, **create a new branch off of the latest changes from `master`**.
 - When you're done with a task (and you haven't yet made one), **create a pull request**. Make sure it follows the [PR template](.github/PULL_REQUEST_TEMPLATE.md)
   exactly with all of your changes.
@@ -284,3 +285,4 @@ For widely used classes, fields, methods, or anything central to correctness, in
     - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
 - All pull requests should target the **`master`** branch.
 - If the user has changes present on the current branch, **do not undo, modify or touch them**. Leave them as-is.
+- If you are currently on a branch for a pull request, always update the description of the PR to ensure accuracy.

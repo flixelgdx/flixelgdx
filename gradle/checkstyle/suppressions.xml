@@ -12,4 +12,8 @@
 -->
 
 <suppressions>
+  <!-- package-info.java files intentionally use fully-qualified @link tags because they cannot
+       import types without also declaring a package-level annotation or constant to anchor the
+       import, which would change the file's semantics. -->
+  <suppress id="QualifiedJavadocLink" files="package-info\.java"/>
 </suppressions>

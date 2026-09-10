@@ -132,8 +132,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private void startGame() {
     hideLoadingOverlay();
     game.create();
-    // game.create() installs the crash handler into Flixel.runtime. Cache it here so the game loop
-    // can route frame exceptions through the handler without re-casting on every frame.
+    // Cache the crash handler here so the game loop can route frame exceptions
+    // through the handler without re-casting on every frame.
     if (Flixel.runtime instanceof FlixelHtml5RuntimeDevice device) {
       crashHandler = device.getCrashHandler();
     }

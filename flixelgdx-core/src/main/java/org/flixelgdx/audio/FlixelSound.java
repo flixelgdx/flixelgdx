@@ -26,7 +26,6 @@ package org.flixelgdx.audio;
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetMode;
-import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
@@ -38,9 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * One playable sound instance, implemented by the platform's audio backend.
  *
  * <p>Provides volume, pitch, pan, play/pause/stop/resume, fade-in/fade-out,
- * position (time), optional audio-graph effects ({@link #addReverb},
- * {@link #addEcho}, {@link #addLowPassMuffle}, {@link #attachCustomNode}),
- * and an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
+ * position (time), and an {@link #onComplete} signal when the sound finishes (for non-looping sounds).
  *
  * <p>Backends (miniaudio on native platforms, the Web Audio API on web) extend this class and
  * implement the abstract methods directly; all the gameplay-facing behavior
@@ -49,9 +46,6 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelSoundManager#play Flixel.sound.play(...)},
  * {@link FlixelSoundManager#playMusic Flixel.sound.playMusic(...)}, or the non-playing
  * {@link FlixelSoundManager#create Flixel.sound.create(...)} escape hatch.
- *
- * <p>The effect methods return typed node handles rather than {@code this}, so holding
- * the returned reference lets you modify parameters live without rebuilding the effect chain.
  *
  * <p>This class implements {@link FlixelAsset}{@code <FlixelSound>} for a refcount contract:
  * each instance {@link #retain()}s once on construction, and {@link #destroy()}
@@ -84,9 +78,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   /** Current fade tween, so it can be canceled when starting a new fade. */
   @Nullable
   private FlixelTween fadeTween;
-
-  /** Tail-ordered effect nodes attached to the audio graph. */
-  private final FlixelArray<FlixelSoundEffect> audioEffectNodes = new FlixelArray<>(4);
 
   /** Signal dispatched when the sound reaches its end (non-looping). */
   @NotNull
@@ -549,111 +540,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     }
   }
 
-  /**
-   * Returns the list of effect nodes currently attached to this sound's audio graph, in
-   * chain order (index 0 is closest to the sound source, last index is closest to the output).
-   *
-   * <p>Typed nodes ({@link FlixelReverbEffect}, {@link FlixelEchoEffect},
-   * {@link FlixelLowPassEffect}) can be cast from elements in this list if needed,
-   * though it is simpler to keep references returned by {@link #addReverb},
-   * {@link #addEcho}, and {@link #addLowPassMuffle} directly.
-   *
-   * @return A read-only view of the effect chain.
-   */
-  public FlixelArray<FlixelSoundEffect> getEffectNodes() {
-    return audioEffectNodes;
-  }
-
-  /**
-   * Detaches and destroys every node in the effect chain (reverse order).
-   * Called from {@link #destroy()}.
-   */
-  public void clearAudioEffectChain() {
-    for (int i = audioEffectNodes.getSize() - 1; i >= 0; i--) {
-      FlixelSoundEffect n = audioEffectNodes.get(i);
-      n.detach(0);
-      n.destroy();
-    }
-    audioEffectNodes.clear();
-    restoreDirectRouting();
-  }
-
-  /**
-   * Appends a reverb node with the given wet amount in {@code [0, 1]}
-   * (dry is set to {@code 1 - wet}). Build effect chains in load/setup code, not every frame.
-   *
-   * <p>Hold the returned node to adjust reverb parameters at runtime without rebuilding
-   * the chain:
-   *
-   * <pre>{@code
-   * FlixelReverbEffect reverb = sound.addReverb(0.4f);
-   * // Later, on entering a cave:
-   * reverb.setRoomSize(0.9f);
-   * reverb.setWet(0.7f);
-   * }</pre>
-   *
-   * @param wetAmount Wet signal level in [0, 1].
-   * @return The attached reverb node. Hold this reference to modify parameters later.
-   */
-  @NotNull
-  public FlixelReverbEffect addReverb(float wetAmount) {
-    FlixelReverbEffect node = createReverbEffect(wetAmount);
-    attachEffectNode(node);
-    return node;
-  }
-
-  /**
-   * Appends a stereo delay/echo node.
-   *
-   * <p>Delay time and decay are fixed at construction. To change them, call
-   * {@link #clearAudioEffectChain()} and rebuild, or destroy the specific node and add a new one.
-   *
-   * @param delaySeconds Delay time in seconds.
-   * @param decay Decay factor for the delayed signal.
-   * @return The attached echo node.
-   */
-  @NotNull
-  public FlixelEchoEffect addEcho(float delaySeconds, float decay) {
-    FlixelEchoEffect node = createEchoEffect(delaySeconds, decay);
-    attachEffectNode(node);
-    return node;
-  }
-
-  /**
-   * Appends a 2nd-order low-pass filter (muffled / distant sound).
-   *
-   * <p>Hold the returned node to adjust the cutoff frequency at runtime:
-   *
-   * <pre>{@code
-   * FlixelLowPassEffect muffle = sound.addLowPassMuffle(8000.0);
-   * // Tighten the filter as the player moves deeper:
-   * muffle.setCutoff(2000.0);
-   * }</pre>
-   *
-   * @param cutoffHz Cutoff frequency in Hz.
-   * @return The attached low-pass node. Hold this reference to adjust cutoff later.
-   */
-  @NotNull
-  public FlixelLowPassEffect addLowPassMuffle(double cutoffHz) {
-    FlixelLowPassEffect node = createLowPassEffect(cutoffHz, 2);
-    attachEffectNode(node);
-    return node;
-  }
-
-  /**
-   * Expert escape hatch: append any effect node to the chain. {@code this}
-   * sound destroys the node when {@link #clearAudioEffectChain()} runs unless
-   * you remove it yourself first.
-   *
-   * @param node The effect node to attach.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  public FlixelSound attachCustomNode(@NotNull FlixelSoundEffect node) {
-    attachEffectNode(node);
-    return this;
-  }
-
   @Override
   public void destroy() {
     super.destroy();
@@ -662,7 +548,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
       sourceAsset.release();
       sourceAsset = null;
     }
-    clearAudioEffectChain();
     cancelFadeTween();
     onComplete.clear();
     pause();
@@ -693,49 +578,6 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    */
   protected abstract void applyPosition(float x, float y, float z);
 
-  /**
-   * Creates a reverb node on this sound's engine.
-   *
-   * @param wet Wet amount in [0, 1].
-   * @return A new reverb node, or {@link FlixelReverbEffect#NOOP} when unsupported.
-   */
-  @NotNull
-  protected abstract FlixelReverbEffect createReverbEffect(float wet);
-
-  /**
-   * Creates a delay / echo node on this sound's engine.
-   *
-   * @param delaySeconds Delay time in seconds.
-   * @param decay Decay factor for the delayed signal.
-   * @return A new echo node, or {@link FlixelEchoEffect#NOOP} when unsupported.
-   */
-  @NotNull
-  protected abstract FlixelEchoEffect createEchoEffect(float delaySeconds, float decay);
-
-  /**
-   * Creates a low-pass filter node on this sound's engine.
-   *
-   * @param cutoffHz Cutoff frequency in hertz.
-   * @param order Filter order (e.g. 2 for a second-order filter).
-   * @return A new low-pass node, or {@link FlixelLowPassEffect#NOOP} when unsupported.
-   */
-  @NotNull
-  protected abstract FlixelLowPassEffect createLowPassEffect(double cutoffHz, int order);
-
-  /**
-   * Routes the chain's tail node to the engine output so processed audio is audible. Called
-   * each time a node is appended. Backends without an audio graph no-op.
-   *
-   * @param tail The current tail of the effect chain.
-   */
-  protected abstract void routeEffectToOutput(@NotNull FlixelSoundEffect tail);
-
-  /**
-   * Restores direct sound-to-output routing after the effect chain is cleared. Backends
-   * without an audio graph no-op.
-   */
-  protected abstract void restoreDirectRouting();
-
   /** Releases the backend voice's native resources. Called at the end of {@link #destroy()}. */
   protected abstract void disposeAudio();
 
@@ -744,15 +586,5 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
       fadeTween.cancel();
       fadeTween = null;
     }
-  }
-
-  private void attachEffectNode(@NotNull FlixelSoundEffect node) {
-    if (audioEffectNodes.getSize() == 0) {
-      node.attachToUpstreamSound(this, 0);
-    } else {
-      node.attachToUpstreamNode(audioEffectNodes.peek(), 0);
-    }
-    audioEffectNodes.add(node);
-    routeEffectToOutput(node);
   }
 }
