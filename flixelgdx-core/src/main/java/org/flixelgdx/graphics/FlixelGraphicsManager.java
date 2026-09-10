@@ -245,6 +245,24 @@ public interface FlixelGraphicsManager {
   default void endScene() {}
 
   /**
+   * Creates a blank, updateable GPU texture of the given dimensions.
+   *
+   * <p>Unlike {@link #createTexture(FlixelImage)}, which uploads pixels immediately and produces a
+   * static texture on some backends, this method produces a texture whose pixels can be replaced at
+   * any time via {@link FlixelTexture#update(int, int, FlixelImage)} after creation. Use it for
+   * streaming pixel sources such as video frames, where every frame overwrites the previous one.
+   * Backends that do not support dynamic textures return a size-only stand-in.
+   *
+   * @param width Texture width in pixels.
+   * @param height Texture height in pixels.
+   * @return An updateable texture; a size-only stand-in when no backend is present.
+   */
+  @NotNull
+  default FlixelTexture createTexture(int width, int height) {
+    return new FlixelNoopTexture(width, height);
+  }
+
+  /**
    * Uploads pixel data to a new GPU texture.
    *
    * @param width Texture width in pixels.
