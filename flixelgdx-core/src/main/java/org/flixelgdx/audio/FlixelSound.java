@@ -25,7 +25,6 @@ package org.flixelgdx.audio;
 
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.asset.FlixelAsset;
-import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
@@ -458,7 +457,11 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
     return this;
   }
 
-  @Override
+  /**
+   * Returns whether this sound persists across state transitions.
+   *
+   * @return {@code true} if this sound keeps playing when the game state changes.
+   */
   public boolean isPersist() {
     return persist;
   }
@@ -466,14 +469,19 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   /**
    * Returns whether this sound persists across state transitions.
    *
-   * @return {@code true} if this sound persists when the game state changes.
+   * @return {@code true} if this sound keeps playing when the game state changes.
    */
   public boolean getPersist() {
     return persist;
   }
 
+  /**
+   * Sets whether this sound persists across state transitions.
+   *
+   * @param persist {@code true} to keep this sound playing when the game state changes.
+   * @return {@code this} for chaining.
+   */
   @NotNull
-  @Override
   public FlixelSound setPersist(boolean persist) {
     this.persist = persist;
     return this;
@@ -504,8 +512,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
   /**
    * Attaches the backing {@link FlixelAsset} handle for the {@link FlixelSoundSource} that was
    * retained when this sound was created through {@link FlixelSoundManager}. The handle is
-   * released in {@link #destroy()} so the source asset is eligible for cleanup according to the
-   * active {@link FlixelAssetMode}.
+   * released in {@link #destroy()} so the source asset's reference count is decremented.
    *
    * @param sourceAsset The retained source handle, or {@code null} to clear it.
    * @return {@code this} for chaining.

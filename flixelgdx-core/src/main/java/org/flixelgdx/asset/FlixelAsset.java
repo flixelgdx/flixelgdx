@@ -27,16 +27,17 @@ import org.flixelgdx.graphics.FlixelGraphic;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Unified handle for one asset, with reference counting and lifecycle policy.
+ * Unified handle for one asset, with reference counting.
  *
  * <p>All assets retrieved from {@link FlixelAssetManager} implement this interface.
  * {@link FlixelGraphic} implements
  * {@code FlixelAsset<FlixelGraphic>} directly so the graphic object is the handle.
  * Other asset types use {@link FlixelDefaultAsset}.
  *
- * <p>Call {@link #retain()} when you take ownership of an asset handle and {@link #release()}
- * when you are done. The asset manager uses the reference count to decide when it is safe to
- * unload the underlying data during state switches.
+ * <p>Assets stay in memory until {@link FlixelAssetManager#unload(String)} is called explicitly.
+ * Call {@link #retain()} when you take ownership of a handle and {@link #release()} when done.
+ * The manager logs a warning if you call {@link FlixelAssetManager#unload(String)} while the
+ * reference count is still above zero, which helps catch use-after-free bugs.
  *
  * <p>Typical usage in a sprite class:
  *
@@ -51,6 +52,9 @@ import org.jetbrains.annotations.NotNull;
  *
  * // In destroy().
  * asset.release();
+ *
+ * // When the asset is no longer needed by anyone.
+ * Flixel.assets.unload("player.png");
  * }</pre>
  *
  * @param <T> The wrapper type that game code interacts with (e.g.
@@ -87,24 +91,6 @@ public interface FlixelAsset<T> {
   boolean isLoaded();
 
   /**
-   * Returns whether this asset survives {@link FlixelAssetManager#clearNonPersist()} when its
-   * reference count is zero.
-   *
-   * @return {@code true} if persistent.
-   */
-  boolean isPersist();
-
-  /**
-   * Sets the persist flag for this asset. When {@code true}, the asset is kept in the manager
-   * cache across state switches even when its reference count is zero.
-   *
-   * @param persist {@code true} to keep this asset across state switches when unreferenced.
-   * @return {@code this} for chaining.
-   */
-  @NotNull
-  FlixelAsset<T> setPersist(boolean persist);
-
-  /**
    * Returns the current reference count. Zero means no owner holds this asset.
    *
    * @return The reference count.
@@ -120,9 +106,7 @@ public interface FlixelAsset<T> {
   FlixelAsset<T> retain();
 
   /**
-   * Decrements the reference count. Call this when you are done with the asset. When the count
-   * reaches zero, {@link FlixelAssetManager#onAssetReleased(FlixelAsset)} is called so the
-   * manager can apply the active {@link FlixelAssetMode}.
+   * Decrements the reference count. Call this when you are done with the asset.
    *
    * @return {@code this} for chaining.
    */

@@ -24,7 +24,6 @@
 package org.flixelgdx;
 
 import org.flixelgdx.asset.FlixelAssetManager;
-import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.asset.FlixelNoopAssetManager;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelAlerter;
@@ -443,12 +442,8 @@ public final class Flixel {
    *
    * <p>Use this manager to load, cache, and retrieve any external resource your game needs:
    * textures, audio clips, fonts, JSON data files, and more. The manager tracks which assets have
-   * been loaded so the same file is never loaded twice and automatically unloads non-persistent
-   * assets when states switch, freeing GPU and heap memory between scenes.
-   *
-   * <p>Assets marked persistent (see {@link FlixelAssetManager#load(String, boolean)}) survive
-   * state switches and are ideal for shared resources such as a global UI atlas or a music track
-   * that spans multiple states.
+   * been loaded so the same file is never loaded twice. Assets stay in memory until explicitly
+   * freed with {@link FlixelAssetManager#unload(String)}.
    *
    * <p>Example:
    * <pre>{@code
@@ -456,8 +451,8 @@ public final class Flixel {
    * Flixel.assets.load("player.png");
    * FlixelGraphic tex = Flixel.assets.get<FlixelGraphic>("player.png").get();
    *
-   * // Mark an asset persistent so it survives state switches.
-   * Flixel.assets.setPersist("shared_ui_atlas.png", true);
+   * // Free the asset when it is no longer needed.
+   * Flixel.assets.unload("player.png");
    * }</pre>
    */
   @NotNull
@@ -1085,14 +1080,8 @@ public final class Flixel {
       state.destroy();
     }
 
-    FlixelAssetMode mode = assets.getAssetMode();
-    if (mode == FlixelAssetMode.STANDARD || mode == FlixelAssetMode.AGGRESSIVE) {
-      if (sound != null) {
-        sound.clearNonPersist();
-      }
-      if (assets != null) {
-        assets.clearNonPersist();
-      }
+    if (sound != null) {
+      sound.clearNonPersist();
     }
     if (clearTweens) {
       FlixelTween.cancelActiveTweens();

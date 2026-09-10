@@ -27,7 +27,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetManager;
-import org.flixelgdx.asset.FlixelAssetMode;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
@@ -129,10 +128,8 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
    * Destroys all non-persistent {@link FlixelSound} instances tracked by this manager, including
    * the current music track if it is not persistent.
    *
-   * <p>Called automatically by {@link Flixel#switchState} on every state switch
-   * when the asset mode is {@link FlixelAssetMode#STANDARD} or
-   * {@link FlixelAssetMode#AGGRESSIVE}. Sounds whose {@link FlixelSound#isPersist()}
-   * flag is set survive the switch unchanged.
+   * <p>Called automatically by {@link Flixel#switchState} on every state switch. Sounds whose
+   * {@link FlixelSound#isPersist()} flag is set survive the switch unchanged.
    *
    * <p>Sounds that were already destroyed (for example, via {@link FlixelSound#setAutoDestroy}) are
    * pruned from the tracking list without being double-destroyed.

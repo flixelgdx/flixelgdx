@@ -51,8 +51,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
 
   private int refCount;
 
-  private boolean persist;
-
   /**
    * Creates a handle for {@code path}.
    *
@@ -62,7 +60,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
   public FlixelDefaultAsset(@NotNull FlixelAssetManager assets, @NotNull String path) {
     this.assets = Objects.requireNonNull(assets, "assets cannot be null.");
     this.path = Objects.requireNonNull(path, "path cannot be null.");
-    this.persist = assets.getGlobalPersist();
   }
 
   @NotNull
@@ -88,18 +85,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
   }
 
   @Override
-  public boolean isPersist() {
-    return persist;
-  }
-
-  @NotNull
-  @Override
-  public FlixelDefaultAsset<T> setPersist(boolean persist) {
-    this.persist = persist;
-    return this;
-  }
-
-  @Override
   public int getRefCount() {
     return refCount;
   }
@@ -119,9 +104,6 @@ public final class FlixelDefaultAsset<T> implements FlixelAsset<T> {
       return this;
     }
     refCount--;
-    if (refCount == 0) {
-      assets.onAssetReleased(this);
-    }
     return this;
   }
 }

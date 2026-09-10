@@ -87,13 +87,13 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
 
   private static final String[] IMAGE_EXTENSIONS = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
 
-  /** Images currently being fetched and decoded (Promise in flight), mapped to their persist flag. */
+  /** Images currently being fetched and decoded (a Promise is in flight for each key). */
   @NotNull
-  private final FlixelMap<String, Boolean> activeDecodes = new FlixelMap<>();
+  private final FlixelMap<String, String> activeDecodes = new FlixelMap<>();
 
   /** Images waiting for a decode slot to open, in the order they were queued. */
   @NotNull
-  private final FlixelMap<String, Boolean> queuedDecodes = new FlixelMap<>();
+  private final FlixelMap<String, String> queuedDecodes = new FlixelMap<>();
 
   private int totalImages;
   private int promotedImages;
@@ -122,13 +122,12 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
    * <p>For all other paths (audio, text) the call is forwarded to the parent unchanged.
    *
    * @param path Asset path (e.g. {@code "images/player.png"}).
-   * @param persist When {@code true}, the first handle created for this path is persistent.
    */
   @Override
-  public void load(@NotNull String path, boolean persist) {
+  public void load(@NotNull String path) {
     String key = FlixelAssetPaths.normalizeAssetPath(path);
     if (!isImageExtension(key)) {
-      super.load(key, persist);
+      super.load(key);
       return;
     }
 
@@ -138,11 +137,11 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
 
     totalImages++;
     if (activeDecodeCount < MAX_CONCURRENT_DECODES) {
-      activeDecodes.put(key, persist);
+      activeDecodes.put(key, key);
       activeDecodeCount++;
       startImageDecodeJs(key);
     } else {
-      queuedDecodes.put(key, persist);
+      queuedDecodes.put(key, key);
     }
   }
 
@@ -161,14 +160,14 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   @Override
   public boolean update(int millis) {
     if (!activeDecodes.isEmpty()) {
-      FlixelMap.Entries<String, Boolean> it = activeDecodes.entries();
+      FlixelMap.Entries<String, String> it = activeDecodes.entries();
       while (it.hasNext()) {
-        FlixelMap.Entry<String, Boolean> entry = it.next();
+        FlixelMap.Entry<String, String> entry = it.next();
         if (isImageDecodeReady(entry.key)) {
           it.remove();
           activeDecodeCount--;
           promotedImages++;
-          super.load(entry.key, entry.value);
+          super.load(entry.key);
         } else if (isImageDecodeFailed(entry.key)) {
           it.remove();
           activeDecodeCount--;
@@ -178,11 +177,11 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
       }
     }
     if (!queuedDecodes.isEmpty()) {
-      FlixelMap.Entries<String, Boolean> it = queuedDecodes.entries();
+      FlixelMap.Entries<String, String> it = queuedDecodes.entries();
       while (it.hasNext() && activeDecodeCount < MAX_CONCURRENT_DECODES) {
-        FlixelMap.Entry<String, Boolean> entry = it.next();
+        FlixelMap.Entry<String, String> entry = it.next();
         it.remove();
-        activeDecodes.put(entry.key, entry.value);
+        activeDecodes.put(entry.key, entry.key);
         activeDecodeCount++;
         startImageDecodeJs(entry.key);
       }
@@ -245,6 +244,59 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
               + "Use Flixel.assets.update() in a loading-state game loop instead.");
     }
     super.finishLoadingAsset(path);
+  }
+
+  /**
+   * Unloads the asset at {@code path}, removing it from the manager cache and destroying its GPU
+   * resources. For images, this also cleans up any in-progress decode and any leftover pixels in
+   * the browser's JS decode cache.
+   *
+   * @param path Asset key to unload.
+   */
+  @Override
+  public void unload(@NotNull String path) {
+    String key = FlixelAssetPaths.normalizeAssetPath(path);
+    if (activeDecodes.remove(key) != null) {
+      activeDecodeCount--;
+      promotedImages++;
+      promoteNextQueued();
+    }
+    queuedDecodes.remove(key);
+    freeDecodedImageJs(key);
+    super.unload(key);
+  }
+
+  /**
+   * Unloads all cached assets and cancels any in-progress or queued image decodes.
+   */
+  @Override
+  public void clear() {
+    for (FlixelMap.Entry<String, String> entry : activeDecodes.entries()) {
+      freeDecodedImageJs(entry.key);
+    }
+    activeDecodes.clear();
+    for (FlixelMap.Entry<String, String> entry : queuedDecodes.entries()) {
+      freeDecodedImageJs(entry.key);
+    }
+    queuedDecodes.clear();
+    activeDecodeCount = 0;
+    totalImages = 0;
+    promotedImages = 0;
+    super.clear();
+  }
+
+  /** Promotes the next waiting image into an active decode slot. */
+  private void promoteNextQueued() {
+    if (!queuedDecodes.isEmpty() && activeDecodeCount < MAX_CONCURRENT_DECODES) {
+      FlixelMap.Entries<String, String> it = queuedDecodes.entries();
+      if (it.hasNext()) {
+        FlixelMap.Entry<String, String> next = it.next();
+        it.remove();
+        activeDecodes.put(next.key, next.key);
+        activeDecodeCount++;
+        startImageDecodeJs(next.key);
+      }
+    }
   }
 
   private static boolean isImageExtension(@NotNull String path) {

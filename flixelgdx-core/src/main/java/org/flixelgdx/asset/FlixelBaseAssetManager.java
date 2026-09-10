@@ -44,7 +44,7 @@ import java.nio.ByteOrder;
  *
  * <p>This class implements the whole {@link FlixelAssetManager} contract with a synchronous,
  * single-threaded pipeline: loaders, the raw-content cache, wrapper handles, reference counting,
- * persist rules, and compressed-texture path resolution. Platforms with threads (see
+ * and compressed-texture path resolution. Platforms with threads (see
  * {@code FlixelJvmAssetManager} in the JVM module) subclass it and override
  * {@link #submitLoad(PendingLoad)} to run stage one of each load on a worker; everything else is
  * inherited unchanged. That keeps the pipeline identical everywhere while letting each platform
@@ -85,14 +85,10 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
   @Nullable
   private FlixelAssetFileResolver fileResolver;
 
-  @NotNull
-  private FlixelAssetMode assetMode = FlixelAssetMode.STANDARD;
-
   private int syntheticCounter;
   private int queuedThisBatch;
   private int finishedThisBatch;
 
-  private boolean globalPersist;
   private boolean compressedTextures;
 
   /**
@@ -111,20 +107,11 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
 
   @Override
   public void load(@NotNull String path) {
-    load(path, globalPersist);
-  }
-
-  @Override
-  public void load(@NotNull String path, boolean persist) {
     String key = normalizeForLoad(path);
     if (rawCache.containsKey(key) || isQueued(key)) {
-      FlixelAsset<?> existing = handles.get(key);
-      if (existing != null && persist) {
-        existing.setPersist(true);
-      }
       return;
     }
-    PendingLoad task = new PendingLoad(this, key, loaderFor(key), resolveFile(key), persist);
+    PendingLoad task = new PendingLoad(this, key, loaderFor(key), resolveFile(key));
     pending.add(task);
     queuedThisBatch++;
     submitLoad(task);
@@ -138,7 +125,6 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
     FlixelAsset<?> handle = handles.get(key);
     if (handle == null) {
       handle = loaderFor(key).createHandle(this, key);
-      handle.setPersist(globalPersist);
       handles.put(key, handle);
     }
     return (FlixelAsset<T>) handle;
@@ -242,8 +228,17 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
 
   @Override
   public void unload(@NotNull String path) {
-    Object raw = rawCache.remove(FlixelAssetPaths.normalizeAssetPath(path));
-    destroyRaw(raw);
+    String key = FlixelAssetPaths.normalizeAssetPath(path);
+    FlixelAsset<?> handle = handles.remove(key);
+    if (handle != null) {
+      int refs = handle.getRefCount();
+      if (refs > 0) {
+        Flixel.warn("Assets", "Unloading '" + key + "' while it still has " + refs + " active reference(s).");
+      }
+      evict(handle);
+    } else {
+      destroyRaw(rawCache.remove(key));
+    }
   }
 
   @NotNull
@@ -255,23 +250,10 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
       FlixelAsset<?> handle = entry.value;
       out.concat("  ").concat(entry.key)
           .concat(" refs=").concat(handle.getRefCount())
-          .concat(" persist=").concat(handle.isPersist())
           .concat(" loaded=").concat(handle.isLoaded())
           .concat('\n');
     }
     return out.toString();
-  }
-
-  @Override
-  public void clearNonPersist() {
-    FlixelMap.Entries<String, FlixelAsset<?>> it = handles.entries();
-    while (it.hasNext()) {
-      FlixelAsset<?> handle = it.next().value;
-      if (handle.getRefCount() <= 0 && !handle.isPersist()) {
-        evict(handle);
-        it.remove();
-      }
-    }
   }
 
   @Override
@@ -293,36 +275,6 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
   public void destroy() {
     clear();
     texturePathCache.clear();
-  }
-
-  @Override
-  public boolean getGlobalPersist() {
-    return globalPersist;
-  }
-
-  @Override
-  public void setGlobalPersist(boolean globalPersist) {
-    this.globalPersist = globalPersist;
-  }
-
-  @NotNull
-  @Override
-  public FlixelAssetMode getAssetMode() {
-    return assetMode;
-  }
-
-  @Override
-  public void setAssetMode(@NotNull FlixelAssetMode mode) {
-    this.assetMode = mode;
-  }
-
-  @Override
-  public void onAssetReleased(@NotNull FlixelAsset<?> handle) {
-    if (assetMode != FlixelAssetMode.AGGRESSIVE || handle.isPersist()) {
-      return;
-    }
-    evict(handle);
-    handles.remove(handle.getPath());
   }
 
   @Nullable
@@ -445,7 +397,6 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
       handle = task.loader.createHandle(this, task.path);
       handles.put(task.path, handle);
     }
-    handle.setPersist(task.persist);
   }
 
   /** Frees whatever the handle owns and its cached raw content. */
@@ -541,17 +492,14 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
     @Nullable
     volatile Throwable error;
 
-    final boolean persist;
-
     volatile boolean done;
 
     PendingLoad(@NotNull FlixelAssetManager owner, @NotNull String path, @NotNull FlixelAssetLoader<?> loader,
-        @NotNull FlixelFile file, boolean persist) {
+        @NotNull FlixelFile file) {
       this.owner = owner;
       this.path = path;
       this.loader = loader;
       this.file = file;
-      this.persist = persist;
     }
 
     /** Executes stage one of the load, capturing the result or the failure. */
