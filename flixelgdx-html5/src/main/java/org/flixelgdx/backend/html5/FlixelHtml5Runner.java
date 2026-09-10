@@ -128,14 +128,28 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
         this::startGame, FlixelHtml5Runner::onPreloadFailed);
   }
 
-  /** Runs once every asset is cached: dismisses the loading overlay, creates the first state, and starts the loop. */
+  /**
+   * Runs once every asset is cached: dismisses the loading overlay, creates the first state, and
+   * starts the loop.
+   *
+   * <p>The crash handler is fetched before {@link FlixelGame#create()} so that any exception
+   * thrown during the initial state's create phase is routed through the same overlay as runtime
+   * exceptions. Without this ordering the handler field is still {@code null} when {@code create}
+   * runs, and the exception escapes to the browser with only a console log from
+   * {@code window.onerror}.
+   */
   private void startGame() {
     hideLoadingOverlay();
-    game.create();
-    // Cache the crash handler here so the game loop can route frame exceptions
-    // through the handler without re-casting on every frame.
     if (Flixel.runtime instanceof FlixelHtml5RuntimeDevice device) {
       crashHandler = device.getCrashHandler();
+    }
+    try {
+      game.create();
+    } catch (Throwable t) {
+      if (crashHandler != null) {
+        crashHandler.onCrash(null, t);
+      }
+      return;
     }
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
