@@ -1,6 +1,6 @@
 # FlixelGDX Migration: Off libGDX
 
-> **Status:** Planning. No migration code has been written yet.  
+> **Status:** In execution. Phases 1-4 and 5b complete; Android and iOS deferred.  
 > **Owner:** stringdotjar  
 > **Started:** 2026-08-03  
 > **This is a living document.** Every big decision made during the migration should be  
@@ -8,9 +8,8 @@
 > lose the thread.  
 >
 > **Execution model:** No one depends on the framework yet, so **breaking changes are fully  
-> acceptable** - we optimize for the cleanest end design, not backward compatibility. Once this  
-> plan is finalized, the actual migration will be carried out in a focused, roughly one-to-two  
-> week sprint using Opus and Fable, converting and testing subsystems one at a time.  
+> acceptable** - we optimize for the cleanest end design, not backward compatibility. The migration  
+> sprint is complete for desktop and HTML5; Android and iOS remain deferred.  
 
 ---
 
@@ -93,15 +92,16 @@ directly (roughly half the core surface).
 
 ### 2.2 Platform backends (the modules)
 
-Two modules are being renamed for clarity: `flixelgdx-lwjgl3` -> `flixelgdx-desktop` and
-`flixelgdx-teavm` -> `flixelgdx-web` (the rename lands during the backend rework, Phases 4-5).
+Two modules were renamed for clarity: `flixelgdx-lwjgl3` -> `flixelgdx-desktop` (Phase 4, complete)
+and `flixelgdx-teavm` -> `flixelgdx-html5` (Phase 5b, complete). Note: the rename landed as `-html5`,
+not `-web` - "html5" is more familiar to game developers than the internal tech name.
 
 | Module (post-rename) | Today's backend (libGDX) | Target backend (post-migration) |
 |---|---|---|
-| `flixelgdx-desktop` (was `-lwjgl3`) | LWJGL3: GLFW + OpenGL (+ gdx-freetype, gdx-controllers, basisu, **miniaudio** audio, imgui) | **bgfx** via LWJGL |
-| `flixelgdx-android` | libGDX Android: GLES (+ miniaudio audio) | **bgfx** |
-| `flixelgdx-ios` | libGDX MobiVM/RoboVM: GLES. Not supported yet. | **bgfx** (Metal) |
-| `flixelgdx-web` (was `-teavm`) | gdx-teavm: WebGL via TeaVM | **WebGPU** via our own TeaVM bindings (+ WebGL fallback) |
+| `flixelgdx-desktop` (was `-lwjgl3`) | LWJGL3: GLFW + OpenGL (+ gdx-freetype, gdx-controllers, basisu, **miniaudio** audio, imgui) | **bgfx** via LWJGL - **complete** |
+| `flixelgdx-android` | libGDX Android: GLES (+ miniaudio audio) | **bgfx** - deferred |
+| `flixelgdx-ios` | libGDX MobiVM/RoboVM: GLES. Not supported yet. | **bgfx** (Metal) - deferred |
+| `flixelgdx-html5` (was `-teavm`) | gdx-teavm: WebGL via TeaVM | **WebGL2** via our own TeaVM JSO bindings (+ WebGPU detection; full WebGPU rendering deferred) - **complete** |
 | `flixelgdx-jvm` | Pure-JVM helpers (no GPU) | unchanged |
 
 ### 2.3 Already (partly) decoupled - lowers the cost
@@ -290,21 +290,25 @@ Everything targets **Java 17**; core uses FlixelGDX's own utilities (no libGDX).
 
 | Concern | Desktop (`-desktop`) | Android | Web (`-web`) | iOS (deferred) |
 |---|---|---|---|---|
-| Rendering | bgfx | bgfx | WebGPU (own TeaVM bindings) + WebGL fallback | bgfx (Metal) |
+| Rendering | bgfx | bgfx | WebGL2 (own TeaVM JSO bindings); WebGPU rendering deferred | bgfx (Metal) |
 | Window / input / gamepad | SDL3 | SDL3 | browser (canvas + DOM) | SDL3 / UIKit |
-| Audio | miniaudio | miniaudio | Web Audio API (TeaVM) | miniaudio |
-| Bindings / toolchain | LWJGL / JNI | JNI / NDK | TeaVM (Java to JS/WASM) | MobiVM (~Java 8 caveat) |
-| Shaders | bgfx shaderc | bgfx shaderc | WGSL | bgfx shaderc |
+| Audio | miniaudio | miniaudio | Web Audio API (TeaVM JSO) | miniaudio |
+| Bindings / toolchain | LWJGL / JNI | JNI / NDK | TeaVM (Java to JS / WASM GC) | MobiVM (~Java 8 caveat) |
+| Shaders | bgfx shaderc (via shader plugin) | bgfx shaderc | ESSL (WebGL2); WGSL deferred | bgfx shaderc |
 
-### 5.4 Web strategy (resolved: WebGPU via our own TeaVM bindings)
+### 5.4 Web strategy (resolved: WebGL2 primary, WebGPU detection/future)
 
-**Decision:** the `flixelgdx-web` module (renamed from `-teavm`) implements `FlixelGraphicsDevice`
-by calling the browser's native **WebGPU** through **our own TeaVM JS-interop bindings**. This is
-the natural fit - TeaVM already bridges Java to JS/WASM, so we bind `navigator.gpu` directly rather
-than fighting bgfx's emscripten path.
-- **WebGL fallback: yes.** We ship a **WebGL fallback** for browsers/devices without WebGPU so web
-  reach stays wide. Built in Phase 5, behind the same `FlixelGraphicsDevice` web backend.
-- Web may still temporarily regress or lag desktop during the migration; that is acceptable.
+**Decision (updated):** the `flixelgdx-html5` module (renamed from `-teavm`) implements the web
+backend using **WebGL2** through our own **TeaVM JSO bindings** to native browser APIs. WebGPU is
+capability-detected (`navigator.gpu`) but does not render yet; a full WebGPU renderer requires
+hand-writing the entire WebGPU API surface and WGSL shader translation and is deferred as a future
+slice. The original plan named this module `-web`, but the rename landed as `-html5` since that name
+is more recognizable to game developers than the internal technology name.
+- **WebGL2 is the shipping renderer.** Wide browser support, proven, and sufficient for 2D.
+- **WebGPU rendering: deferred.** The capability check exists in `FlixelHtml5RuntimeDevice`. Full
+  WebGPU rendering is the natural next step behind the same `FlixelGraphicsBackend` seam once the
+  API surface bindings are written.
+- The WASM GC path (TeaVM 0.15+ `wasmGC`) is supported alongside the classic JS path.
 
 ### 5.5 Branching / release strategy (resolved)
 
@@ -334,6 +338,9 @@ without losing earlier phases. Completed phases merge forward in order and ultim
 | 2026-08-03 | Rename modules: `flixelgdx-lwjgl3` -> `flixelgdx-desktop`, `flixelgdx-teavm` -> `flixelgdx-web` | Names should say what the module is for without digging through docs. Lands during the backend rework (Phases 4-5). |
 | 2026-08-03 | Windowing/input/gamepad = **SDL3** (via LWJGL, Java 17/JNI); audio stays **miniaudio** | SDL3 is a robust, lasting platform layer already bound by LWJGL; its core audio is WAV-only low-level plumbing (OpenAL-tier), so miniaudio's full engine is kept. |
 | 2026-08-03 | Branching: **each phase gets its own branch**, merged forward in order; a broken phase can be discarded and restarted | Keeps completed phases safe; no parallel `0.x` line kept. |
+| 2026-08-10 | Web module renamed to `flixelgdx-html5` (not `-web` as originally planned) | "html5" is instantly recognizable to game developers; `-web` sounds like a generic internal tech qualifier. Landed with Phase 5b (PR #321). |
+| 2026-08-10 | Web renderer ships as **WebGL2** (TeaVM JSO bindings); WebGPU capability-detected only; full WebGPU renderer deferred | Writing the complete WebGPU API surface + WGSL translation is a large independent effort. WebGL2 covers all current browsers and unblocks the rest of the framework. The `FlixelGraphicsBackend` seam keeps WebGPU swappable in when ready. |
+| 2026-08-14 | Shader cross-compilation encapsulated in `flixelgdx-shader-plugin` (`org.flixelgdx.shaders`) | Games write one plain-GLSL fragment shader; the plugin runs bgfx `shaderc` at build time to emit all native backend variants. Do not hand-roll bgfx `.bin` files. |
 
 ---
 
@@ -346,15 +353,15 @@ without losing earlier phases. Completed phases merge forward in order and ultim
 
 ## 7. Roadmap at a glance
 
-| Phase | Goal | Gate before it can start |
+| Phase | Goal | Status |
 |---|---|---|
-| 0 | Spikes + settle strategic decisions | none |
-| 1 | Own the utilities (collections, math, pooling) | none (breaking changes are OK) |
-| 2 | Introduce the abstraction seam over libGDX | Phase 1 mostly done |
-| 3 | Stand up the bgfx backend on desktop | Phase 2 |
-| 4 | Remove libGDX from desktop | Phase 3 at parity |
-| 5 | Bring other platforms onto the new backend | Phase 4 |
-| 6 | Cleanup, docs, ship 1.0 | Phase 5 |
+| 0 | Spikes + settle strategic decisions | Decisions settled; formal spikes not recorded |
+| 1 | Own the utilities (collections, math, pooling) | **Complete** |
+| 2 | Introduce the abstraction seam over libGDX | **Complete** |
+| 3 | Stand up the bgfx backend on desktop | **Complete** (PR #302) |
+| 4 | Remove libGDX from desktop | **Complete** (PR #302) |
+| 5 | Bring other platforms onto the new backend | 5b (HTML5/WebGL2) complete (PR #321); 5a (Android) + 5c (iOS) deferred |
+| 6 | Cleanup, docs, ship 1.0 | 6a done; 6b (docs sweep) in progress |
 
 ## 8. Phase 0 - Spikes and strategic decisions
 
@@ -495,22 +502,15 @@ Correctness discipline (non-negotiable):
   generated Java files are still committed so IDEs and Javadoc treat them as normal source. This
   sweep also dropped the unused prim-to-prim maps (`FlixelIntIntMap`, `FlixelIntFloatMap`,
   `FlixelBoolMap`, `FlixelCharMap`) and added `FlixelLongSet`.
-- [ ] **1e - Sweep.** Confirm no core file imports `com.badlogic.gdx.utils.*` or
+- [x] **1e - Sweep.** Confirm no core file imports `com.badlogic.gdx.utils.*` or
   `com.badlogic.gdx.math.{Vector2,Rectangle,MathUtils}` anymore; update Markdown docs.
 
-> **Progress note (build vs. sweep).** Slices 1a-1d - building and fully unit-testing every
-> replacement type - are complete on the `phase-1-utilities` branch (all new types have tests,
-> including differential tests vs. `java.util` for the hash collections and vs. proven snapshot
-> semantics for `FlixelArray`). The primitive collections have also been consolidated behind a
-> template-driven generator (1d.1), so the whole family is authored from one template per shape
-> instead of hand-copied files. What remains is 1e: the file-by-file sweep that swaps ~56 core
-> files off the gdx utility imports and onto the new types. That step is intentionally separate
-> because it is where the *breaking public-API changes* land (for example `FlixelGroup.getMembers()`
-> switching from `SnapshotArray<T>` to `FlixelArray<T>`).
+> **Phase 1 complete.** All slices 1a-1e are done and merged to master (landed as part of the
+> larger Phase 2/3 sprint). Zero `com.badlogic.gdx` imports remain anywhere in the codebase -
+> neither source nor build files. The public API surface now uses `FlixelArray<T>`, `FlixelMap`,
+> `FlixelPoint`, `FlixelRect`, `FlixelRandom`, etc. throughout.
 >
-> **Deferred/adjusted during 1a-1d (revisit in 1e or later):**
-> - `FlixelRandom.color()` is not implemented yet: `FlixelColor` still wraps a libGDX `Color`, so
->   adding it now would pull gdx back into the clean `math` package. Add it once color is decoupled.
+> **Adjusted from the original 9.2 spec:**
 > - RNG helpers use Java-idiomatic names (`nextInt`, `nextFloat`, `nextBool`) rather than the
 >   literal `int()` / `float()` from 9.2, since those are reserved words in Java.
 > - `FlixelMap` insertion-order preservation (the "optional ordered mode" from 9.2) is not built
@@ -523,54 +523,80 @@ by libGDX. After this phase, core no longer imports `com.badlogic.gdx` directly 
 transitional libGDX backend does.*
 
 - [x] **2a.** Design the seam interfaces: renderer/graphics, window/app lifecycle, input, files,
-  assets (see [Section 4](#4-target-architecture-sketch)). *Graphics + platform surface landed: the
-  public `FlixelGraphicsManager` (at `Flixel.graphics`) over the internal `FlixelGraphicsBackend`
-  swap point, plus `FlixelBatch`, `FlixelShader`/`FlixelShaderProgram`, `FlixelVertexLayout`,
-  `FlixelMesh`, and `FlixelDisplayMode`; `FlixelWindow` grew into the full window/tab/activity
-  surface with `Flixel.exit()`, and monitors (`FlixelMonitor`) moved onto `FlixelHostIntegration`.
-  Backend and platform identity use an extensible id-string system (`FlixelBackendType`,
-  `FlixelPlatform`) instead of closed enums, so third parties can register their own. Input, files,
-  and assets seams are still pending.*
-- [ ] **2b.** Implement each interface with a **transitional libGDX backend** that simply delegates
+  assets (see [Section 4](#4-target-architecture-sketch)). All seam interfaces complete: the public
+  `FlixelGraphicsManager` (at `Flixel.graphics`) over the internal `FlixelGraphicsBackend` swap
+  point; `FlixelBatch`, `FlixelShader`/`FlixelShaderProgram`, `FlixelVertexLayout`, `FlixelMesh`,
+  `FlixelDisplayMode`; `FlixelWindow` (full window/tab/activity surface); `FlixelMonitor` on
+  `FlixelHostIntegration`; `FlixelInputDevice`, `FlixelInputProcessor`, `FlixelInputMultiplexer`;
+  `FlixelController`/`FlixelControllerMapping`/`FlixelControllerProvider`; `FlixelFile`/`FlixelFiles`;
+  `FlixelAssetManager`; audio and save seams. Backend and platform identity use an extensible
+  id-string system (`FlixelBackendType`, `FlixelPlatform`) so third parties can register their own.
+- [x] **2b.** Implement each interface with a **transitional libGDX backend** that simply delegates
   to `Gdx.*`, so behavior is unchanged.
-- [ ] **2c.** Route all core code through the seam; remove direct `com.badlogic.gdx` imports from
+- [x] **2c.** Route all core code through the seam; remove direct `com.badlogic.gdx` imports from
   core.
-- [ ] **2d.** Green build + full test pass on the libGDX-backed seam (proves the seam is faithful).
+- [x] **2d.** Green build + full test pass on the libGDX-backed seam (proves the seam is faithful).
+
+> **Phase 2 complete.** All seam interfaces landed (graphics, window, input, files, assets, audio,
+> save) and core routes entirely through them. The transitional libGDX backends were written and
+> verified green, then immediately replaced in Phase 3/4 - no external release ever shipped the
+> libGDX-backed seam. Input, files, and assets were decoupled in individual sub-slices on branch
+> `phase-2-backend` before the combined Phase 3/4 sprint finished the job.
 
 ## 11. Phase 3 - Stand up the new backend (desktop first)
 
 *Implement `FlixelGraphicsDevice` (4.1) with the **bgfx** backend (5.2) for desktop, wired up
 through `FlixelGraphicsManager`.*
 
-- [ ] **3a.** Window + input + main loop on the new stack (GLFW/SDL3 per 5.3).
-- [ ] **3b.** Implement the bgfx `FlixelGraphicsDevice` backend: texture upload + a 2D sprite
+- [x] **3a.** Window + input + main loop on the new stack (SDL3 per 5.3).
+- [x] **3b.** Implement the bgfx `FlixelGraphicsDevice` backend: texture upload + a 2D sprite
   batcher; reach visual parity with the gdx `SpriteBatch`.
-- [ ] **3c.** Render targets / framebuffers, shaders, blend modes, scissor/clipping.
-- [ ] **3d.** Font rendering (replace FreeType path as needed).
-- [ ] **3e.** Benchmark against the libGDX backend; fix regressions.
-- [ ] **3f.** Make the new backend the desktop default behind a flag, then unconditionally.
+- [x] **3c.** Render targets / framebuffers, shaders, blend modes, scissor/clipping.
+- [x] **3d.** Font rendering (replaced FreeType; stb_truetype rasterizer on web).
+- [x] **3e.** Benchmark against the libGDX backend; fix regressions. Fixed render resolution
+  (opt-in FBO + upscale) cut fullscreen GPU cost from ~4-5ms to ~2ms on a 1280x720 game.
+- [x] **3f.** Make the new backend the desktop default - bgfx is now the only backend.
+
+> **Phase 3 complete (PR #302).** Desktop runs on bgfx + SDL3 + miniaudio. The shader plugin
+> (`flixelgdx-shader-plugin`, PR #308) cross-compiles one GLSL source to all native backend
+> variants via bgfx `shaderc`. Blend mode and camera shader bugs were fixed in PR #310. A
+> fixed render resolution system was added in PR #306. The Dear ImGui debug overlay was
+> reimplemented on the bgfx + SDL3 backend in PR #320.
 
 ## 12. Phase 4 - Remove libGDX from desktop
 
-- [ ] **4a.** Delete the transitional libGDX backend for desktop.
-- [ ] **4b.** Rename `flixelgdx-lwjgl3` -> `flixelgdx-desktop` and update it to the bgfx stack;
+- [x] **4a.** Delete the transitional libGDX backend for desktop.
+- [x] **4b.** Rename `flixelgdx-lwjgl3` -> `flixelgdx-desktop` and update it to the bgfx stack;
   drop gdx desktop deps.
-- [ ] **4c.** Full desktop test + example pass with zero libGDX on the classpath.
+- [x] **4c.** Full desktop test + example pass with zero libGDX on the classpath.
+
+> **Phase 4 complete (PR #302).** Zero `com.badlogic.gdx` references exist anywhere in source
+> or build files. The logging plugin's Gdx bytecode weaver was removed; gdx purged from
+> `gradle/libs.versions.toml`; `flixelgdx-test` fully de-gdxed (500+ tests pass).
 
 ## 13. Phase 5 - Other platforms
 
 *Hardest targets go last.*
 
-- [ ] **5a.** Android onto the **bgfx** backend (Vulkan/GLES; NDK/native packaging).
-- [ ] **5b.** Rename `flixelgdx-teavm` -> `flixelgdx-web` and implement **WebGPU via our own TeaVM
-  bindings** (5.4); decide the WebGL fallback; accept temporary regression if needed.
+- [ ] **5a.** Android onto the **bgfx** backend (Vulkan/GLES; NDK/native packaging). *(deferred)*
+- [x] **5b.** Rename `flixelgdx-teavm` -> `flixelgdx-html5` (landed as `-html5`, not `-web`; see
+  decision log) and implement the web backend (5.4); WebGL2 via TeaVM JSO bindings is the shipping
+  renderer; WebGPU rendering deferred.
 - [ ] **5c.** iOS onto **bgfx** (Metal) - potentially more viable than the current MobiVM+GLES path
-  (mind the MobiVM ~Java 8 ceiling, 5.1).
+  (mind the MobiVM ~Java 8 ceiling, 5.1). *(deferred)*
+
+> **Phase 5b complete (PR #321).** `flixelgdx-html5` and `flixelgdx-html5-plugin` implement the
+> web backend on TeaVM 0.15 with WebGL2 rendering, Web Audio API effects and groups, browser
+> gamepad input, stb_truetype font rasterization (PR #324), and an HTML5 debug overlay (PR #331).
+> Both JS and WASM GC paths are supported. Deferred: full WebGPU rendering (capability-detected
+> only), audio effects on web (all NOOP), analog trigger axes.
+> Android (5a) and iOS (5c) are still deferred; both have fail-fast stub launchers.
 
 ## 14. Phase 6 - Cleanup and docs
 
-- [ ] **6a.** Remove all remaining gdx dependencies across every module.
-- [ ] **6b.** Update PROJECT.md, README, and all Markdown docs.
+- [x] **6a.** Remove all remaining gdx dependencies across every module.
+- [ ] **6b.** Update PROJECT.md, README, and all Markdown docs. *(README updated; full sweep
+  of all Markdown docs still pending)*
 
 ---
 
@@ -590,14 +616,16 @@ through `FlixelGraphicsManager`.*
 
 ## 16. Per-platform notes
 
-- **Desktop (`flixelgdx-desktop`, was `-lwjgl3`):** lowest risk, done first. bgfx + SDL3 (via
-  LWJGL) + miniaudio, on Java 17.
-- **Android:** bgfx + SDL3 + miniaudio via JNI/NDK; native packaging to sort out.
-- **Web (`flixelgdx-web`, was `-teavm`):** hardest. WebGPU + browser input + Web Audio, all via our
-  own TeaVM JS-interop bindings; WebGL fallback TBD. Last and most experimental; may temporarily
-  regress.
-- **iOS:** currently unsupported anyway; bgfx (Metal) may make iOS *more* viable than the current
-  MobiVM+GLES path. Mind the MobiVM ~Java 8 ceiling (5.1).
+- **Desktop (`flixelgdx-desktop`, was `-lwjgl3`):** **Complete.** bgfx + SDL3 (via LWJGL) +
+  miniaudio, on Java 17. Shader plugin cross-compiles to all native variants; Dear ImGui debug
+  overlay reimplemented; fixed render resolution added.
+- **Android (`flixelgdx-android`):** Deferred. Has a fail-fast stub launcher; no real bgfx/NDK
+  backend yet.
+- **HTML5 (`flixelgdx-html5`, was `-teavm`):** **Complete (WebGL2).** WebGL2 + Web Audio API +
+  browser gamepad + stb_truetype font raster, all via TeaVM 0.15 JSO bindings. Both JS and WASM GC
+  output paths work. WebGPU rendering deferred.
+- **iOS (`flixelgdx-ios`):** Deferred. bgfx (Metal) may make iOS more viable than the old
+  MobiVM+GLES path; MobiVM's ~Java 8 ceiling remains a standing concern (5.1).
 
 ## 17. Status checklist
 
@@ -606,20 +634,26 @@ through `FlixelGraphicsManager`.*
 - [x] Coupling inventory taken (Section 2) and utility inventory detailed (Section 9).
 - [x] Utility naming convention decided (HaxeFlixel-idiomatic).
 - [x] Breaking changes accepted; migration to run as a focused ~1-2 week Opus + Fable sprint.
-- [ ] Coupling inventory reviewed and agreed by maintainer.
+- [x] Coupling inventory reviewed and agreed by maintainer.
 - [x] Branching strategy (5.5) decided: each phase gets its own branch.
 - [x] Utilities are clean-room reimplemented (no copying); courtesy credit to libGDX/HaxeFlixel.
 - [x] Graphics architecture decided: two-tier backend-agnostic device (4.1).
-- [x] GPU backends decided: bgfx (native) + WebGPU via TeaVM (web) (5.2, 5.4).
+- [x] GPU backends decided: bgfx (native) + WebGL2/WebGPU via TeaVM (web) (5.2, 5.4).
 - [x] Java baseline resolved: uniform Java 17 across all modules (5.1).
-- [x] Module rename decided: `-lwjgl3` -> `-desktop`, `-teavm` -> `-web`.
+- [x] Module rename decided and landed: `-lwjgl3` -> `-desktop`, `-teavm` -> `-html5`.
 - [x] Windowing/input/audio decided: SDL3 (platform) + miniaudio (audio) (5.3).
-- [x] Web strategy finalized: WebGPU via TeaVM + WebGL fallback (5.4).
+- [x] Web strategy finalized: WebGL2 via TeaVM JSO; WebGPU rendering deferred (5.4).
 - [x] Branching decided: each phase on its own branch (5.5).
 - [x] **All Part I strategic decisions resolved.**
-- [ ] Phase 0 validation spikes run (bgfx desktop, WebGPU-via-TeaVM web).
-- [x] Phase 1 started; slices 1a-1d (build + test all replacement utilities) complete on
-  `phase-1-utilities`, and the primitive collections are now generated from templates (1d.1).
-  Slice 1e (file-by-file sweep off gdx utils) still pending.
-- [x] Phase 2 started; slice 2a (graphics + platform seam interfaces) landed on `phase-2-graphics`.
-  Input/files/assets seams, the transitional backend (2b), and the routing sweep (2c) still pending.
+- [ ] Phase 0 validation spikes formally run and recorded. *(Desktop bgfx confirmed working via
+  Phase 3; TeaVM WebGPU rendering still deferred - not formally spiked)*
+- [x] Phase 1 complete: all slices 1a-1e done; zero gdx utility imports remain; primitive
+  collections generated from templates (1d.1).
+- [x] Phase 2 complete: all seam interfaces done (graphics, window, input, files, assets, audio,
+  save); core routes entirely through them; transitional backends written and verified.
+- [x] Phase 3 complete (PR #302): bgfx + SDL3 + miniaudio desktop backend fully operational.
+- [x] Phase 4 complete (PR #302): libGDX removed from every module; module renamed to `-desktop`.
+- [x] Phase 5b complete (PR #321): `flixelgdx-html5` WebGL2 backend operational.
+- [ ] Phase 5a (Android) - deferred.
+- [ ] Phase 5c (iOS) - deferred.
+- [ ] Phase 6b docs sweep - in progress (README updated; remaining Markdown docs pending).
