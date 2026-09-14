@@ -78,7 +78,7 @@ class FlixelGamepadProviderTest {
     }
 
     @Override
-    public void startVibration(int durationMs, float strength) {}
+    public void startVibration(int durationMs, float leftIntensity, float rightIntensity) {}
 
     @Override
     public void cancelVibration() {}
@@ -97,12 +97,6 @@ class FlixelGamepadProviderTest {
     public FlixelGamepad getGamepadAt(int index) {
       return index == 0 ? gamepad : null;
     }
-
-    @Override
-    public void addListener(@NotNull FlixelGamepadListener listener) {}
-
-    @Override
-    public void removeListener(@NotNull FlixelGamepadListener listener) {}
   }
 
   private static FlixelGamepadMapping buildTestMapping() {

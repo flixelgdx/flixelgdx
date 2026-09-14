@@ -225,15 +225,6 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
     super.finishLoading();
   }
 
-  /**
-   * Blocks until the specific asset at {@code path} finishes loading.
-   *
-   * <p>Like {@link #finishLoading()}, this cannot be used for an image that is still being decoded
-   * asynchronously. Use {@link #update()} in a loading loop instead.
-   *
-   * @param path Asset path.
-   * @throws UnsupportedOperationException if the asset is an image pending async decode.
-   */
   @Override
   public void finishLoadingAsset(@NotNull String path) {
     String key = FlixelAssetPaths.normalizeAssetPath(path);

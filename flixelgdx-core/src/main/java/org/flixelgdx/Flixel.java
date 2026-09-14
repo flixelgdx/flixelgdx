@@ -814,7 +814,7 @@ public final class Flixel {
    * // Register a custom keyboard listener.
    * Flixel.input.addKeyboardListener(new FlixelKeyboardListener() {
    *   @Override
-   *   public boolean keyDown(int keycode) {
+   *   public void keyDown(int keycode) {
    *     if (keycode == FlixelKey.F7) {
    *       triggerDebugFunction();
    *     }

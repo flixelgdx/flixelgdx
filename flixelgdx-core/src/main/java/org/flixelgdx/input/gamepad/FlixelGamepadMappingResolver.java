@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>A resolver can inspect anything it needs through the {@link FlixelGamepad} it receives:
  * {@link FlixelGamepad#getVendorId()} and {@link FlixelGamepad#getProductId()} are the most
  * reliable identifiers (stable across drivers and OS versions), while {@link FlixelGamepad#getName()}
- * is a readable fallback and {@link FlixelGamepad#getNativeHandle()} provides a full escape hatch.
+ * is a readable fallback.
  *
  * <p>This interface is the extension point for both the framework and user code. The framework
  * registers its own resolvers (for example a resolver backed by the SDL3 community controller

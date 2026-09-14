@@ -26,7 +26,6 @@ package org.flixelgdx.backend.desktop.input;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadMapping;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.lwjgl.sdl.SDLGamepad;
 
 /**
@@ -130,20 +129,15 @@ public class FlixelSdlGamepad implements FlixelGamepad {
   }
 
   @Override
-  public void startVibration(int durationMs, float strength) {
-    int magnitude = (int) (clamp01(strength) * 0xFFFF);
-    SDLGamepad.SDL_RumbleGamepad(handle, (short) magnitude, (short) magnitude, durationMs);
+  public void startVibration(int durationMs, float leftIntensity, float rightIntensity) {
+    int low = (int) (clamp01(leftIntensity) * 0xFFFF);
+    int high = (int) (clamp01(rightIntensity) * 0xFFFF);
+    SDLGamepad.SDL_RumbleGamepad(handle, (short) low, (short) high, durationMs);
   }
 
   @Override
   public void cancelVibration() {
     SDLGamepad.SDL_RumbleGamepad(handle, (short) 0, (short) 0, 0);
-  }
-
-  @Nullable
-  @Override
-  public Object getNativeHandle() {
-    return handle;
   }
 
   private static float clamp01(float v) {

@@ -41,7 +41,7 @@ import org.teavm.jso.JSBody;
  * Analog trigger pressure is exposed through the trigger buttons rather than as separate axes,
  * because the standard web layout places the triggers in the button list, not the axis list.
  */
-public class FlixelWebGamepad implements FlixelGamepad {
+public class FlixelHtml5Gamepad implements FlixelGamepad {
 
   private final int index;
   private final int buttonCount;
@@ -55,7 +55,7 @@ public class FlixelWebGamepad implements FlixelGamepad {
    *
    * @param index The {@code navigator.getGamepads()} slot index.
    */
-  public FlixelWebGamepad(int index) {
+  public FlixelHtml5Gamepad(int index) {
     this.index = index;
     this.id = gamepadId(index);
     this.buttonCount = gamepadButtonCount(index);
@@ -99,8 +99,8 @@ public class FlixelWebGamepad implements FlixelGamepad {
   }
 
   @Override
-  public void startVibration(int durationMs, float strength) {
-    vibrate(index, durationMs, strength);
+  public void startVibration(int durationMs, float leftIntensity, float rightIntensity) {
+    vibrate(index, durationMs, leftIntensity, rightIntensity);
   }
 
   @Override
@@ -137,14 +137,14 @@ public class FlixelWebGamepad implements FlixelGamepad {
   @JSBody(params = "i", script = "var g = navigator.getGamepads()[i]; return !!(g && g.vibrationActuator);")
   private static native boolean hasVibration(int i);
 
-  @JSBody(params = { "i", "duration", "strength" }, script = """
+  @JSBody(params = { "i", "duration", "strong", "weak" }, script = """
       var g = navigator.getGamepads()[i];
       if (g && g.vibrationActuator && g.vibrationActuator.playEffect) {
         g.vibrationActuator.playEffect('dual-rumble',
-          { duration: duration, strongMagnitude: strength, weakMagnitude: strength });
+          { duration: duration, strongMagnitude: strong, weakMagnitude: weak });
       }
       """)
-  private static native void vibrate(int i, int duration, float strength);
+  private static native void vibrate(int i, int duration, float strong, float weak);
 
   @JSBody(params = "i", script = """
       var g = navigator.getGamepads()[i];

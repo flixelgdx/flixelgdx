@@ -27,7 +27,6 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
-import org.flixelgdx.input.gamepad.FlixelGamepadListener;
 import org.flixelgdx.input.gamepad.FlixelGamepadMapping;
 import org.flixelgdx.input.gamepad.FlixelGamepadMappingResolver;
 import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
@@ -42,7 +41,7 @@ import org.teavm.jso.JSObject;
  *
  * <p>This is the web counterpart of the desktop SDL gamepad provider. The browser fires
  * {@code gamepadconnected} and {@code gamepaddisconnected} events as controllers come and go, so
- * this provider listens for those and keeps a live list of {@link FlixelWebGamepad} wrappers. Per
+ * this provider listens for those and keeps a live list of {@link FlixelHtml5Gamepad} wrappers. Per
  * frame, the framework's gamepad manager polls those wrappers for button and axis state, exactly as
  * it does on desktop.
  *
@@ -54,10 +53,7 @@ import org.teavm.jso.JSObject;
 public class FlixelHtml5GamepadProvider implements FlixelGamepadProvider, FlixelGamepadMappingResolver {
 
   @NotNull
-  private final FlixelArray<FlixelWebGamepad> gamepads = new FlixelArray<>();
-
-  @NotNull
-  private final FlixelArray<FlixelGamepadListener> listeners = new FlixelArray<>();
+  private final FlixelArray<FlixelHtml5Gamepad> gamepads = new FlixelArray<>();
 
   @NotNull
   private final FlixelGamepadMapping standardMapping = buildStandardMapping();
@@ -82,49 +78,31 @@ public class FlixelHtml5GamepadProvider implements FlixelGamepadProvider, Flixel
   }
 
   @Override
-  public void addListener(@NotNull FlixelGamepadListener listener) {
-    if (!listeners.contains(listener, true)) {
-      listeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeListener(@NotNull FlixelGamepadListener listener) {
-    listeners.removeValue(listener, true);
-  }
-
-  @Override
   @Nullable
   public FlixelGamepadMapping resolve(@NotNull FlixelGamepad gamepad) {
-    return gamepad instanceof FlixelWebGamepad ? standardMapping : null;
+    return gamepad instanceof FlixelHtml5Gamepad ? standardMapping : null;
   }
 
   /**
-   * Handles a browser connect event by wrapping the new controller and notifying listeners.
+   * Handles a browser connect event by wrapping the new controller and adding it to the feed.
    *
    * @param index The browser slot index of the connected controller.
    */
   private void onConnected(int index) {
-    FlixelWebGamepad gamepad = new FlixelWebGamepad(index);
+    FlixelHtml5Gamepad gamepad = new FlixelHtml5Gamepad(index);
     gamepads.add(gamepad);
-    for (int i = 0; i < listeners.getSize(); i++) {
-      listeners.get(i).connected(gamepad);
-    }
   }
 
   /**
-   * Handles a browser disconnect event by removing the matching controller and notifying listeners.
+   * Handles a browser disconnect event by removing the matching controller from the feed.
    *
    * @param index The browser slot index of the disconnected controller.
    */
   private void onDisconnected(int index) {
     for (int i = 0; i < gamepads.getSize(); i++) {
-      FlixelWebGamepad gamepad = gamepads.get(i);
+      FlixelHtml5Gamepad gamepad = gamepads.get(i);
       if (gamepad.getIndex() == index) {
         gamepads.removeIndex(i);
-        for (int j = 0; j < listeners.getSize(); j++) {
-          listeners.get(j).disconnected(gamepad);
-        }
         return;
       }
     }

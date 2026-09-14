@@ -28,11 +28,9 @@ package org.flixelgdx.input;
  *
  * <p>Register an implementation with {@link FlixelInputDevice#addTouchListener} and the active
  * backend will deliver finger contacts, releases, drags, and cancellations to it as events arrive.
- * Every method has a do-nothing default that returns
- * {@code false}, so an implementation only overrides the events it cares about.
- *
- * <p>Returning {@code true} from a method signals that the event was consumed and no further
- * listeners in the chain should see it. Returning {@code false} lets it propagate.
+ * Every method has a do-nothing default, so an implementation only overrides the events it cares
+ * about. Listeners observe input; they do not block one another, so every registered listener
+ * sees every event.
  *
  * <p>Each simultaneous finger contact carries its own {@code pointer} index starting at {@code 0}
  * for the first finger down. Indices are reused once a finger lifts, so always track state per
@@ -51,11 +49,8 @@ public interface FlixelTouchListener {
    * @param pointer The finger index for this contact (0 = first finger down).
    * @param x The horizontal contact position in screen pixels from the left edge.
    * @param y The vertical contact position in screen pixels from the top edge.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean touched(int pointer, int x, int y) {
-    return false;
-  }
+  default void touched(int pointer, int x, int y) {}
 
   /**
    * Called when a finger lifts off the screen.
@@ -63,11 +58,8 @@ public interface FlixelTouchListener {
    * @param pointer The finger index that was released.
    * @param x The horizontal position in screen pixels where the finger lifted.
    * @param y The vertical position in screen pixels where the finger lifted.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean touchReleased(int pointer, int x, int y) {
-    return false;
-  }
+  default void touchReleased(int pointer, int x, int y) {}
 
   /**
    * Called when a finger moves while in contact with the screen.
@@ -75,11 +67,8 @@ public interface FlixelTouchListener {
    * @param pointer The finger index that moved.
    * @param x The new horizontal position in screen pixels from the left edge.
    * @param y The new vertical position in screen pixels from the top edge.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean touchDragged(int pointer, int x, int y) {
-    return false;
-  }
+  default void touchDragged(int pointer, int x, int y) {}
 
   /**
    * Called when an active touch is canceled by the system, for example when the OS overlays a
@@ -91,9 +80,6 @@ public interface FlixelTouchListener {
    * @param pointer The finger index whose contact was canceled.
    * @param x The last known horizontal position in screen pixels, or a system-provided estimate.
    * @param y The last known vertical position in screen pixels, or a system-provided estimate.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean touchCancelled(int pointer, int x, int y) {
-    return false;
-  }
+  default void touchCancelled(int pointer, int x, int y) {}
 }

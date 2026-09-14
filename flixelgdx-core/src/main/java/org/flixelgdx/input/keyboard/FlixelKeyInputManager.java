@@ -63,24 +63,22 @@ public class FlixelKeyInputManager implements FlixelInputManager, FlixelKeyboard
   public FlixelKeyInputManager() {}
 
   @Override
-  public boolean keyDown(int keycode) {
+  public void keyDown(int keycode) {
     if (keycode < 0) {
-      return false;
+      return;
     }
     if (currentPressedKeys.add(keycode) && pressedOrder.indexOf(keycode) < 0) {
       pressedOrder.add(keycode);
     }
-    return false;
   }
 
   @Override
-  public boolean keyUp(int keycode) {
+  public void keyUp(int keycode) {
     if (keycode < 0) {
-      return false;
+      return;
     }
     currentPressedKeys.remove(keycode);
     pressedOrder.removeValue(keycode);
-    return false;
   }
 
   /**

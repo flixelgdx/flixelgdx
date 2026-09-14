@@ -61,7 +61,7 @@ import java.util.Objects;
  * framework needing to know it exists. User-added resolvers are checked first and take priority
  * over the framework's built-in resolver.
  */
-public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGamepadListener {
+public class FlixelGamepadInputManager implements FlixelInputManager {
 
   /** Maximum supported simultaneous gamepads. */
   public static final int MAX_GAMEPADS = 8;
@@ -110,12 +110,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
 
   @NotNull
-  private FlixelGamepadHapticsProvider hapticsProvider = new FlixelDefaultGamepadHapticsProvider(this);
-
-  @Nullable
-  private FlixelGamepadAnalogButtonReader analogButtonReader;
-
-  @NotNull
   private FlixelGamepadProvider gamepadProvider = FlixelNoopGamepadProvider.INSTANCE;
 
   private final FlixelArray<FlixelGamepadMappingResolver> mappingResolvers = new FlixelArray<>();
@@ -127,8 +121,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
    */
   public boolean enabled = true;
 
-  private boolean listenerAttached;
-
   /** Creates a new gamepad input manager with empty state for all supported gamepad slots. */
   public FlixelGamepadInputManager() {
     for (int i = 0; i < MAX_GAMEPADS; i++) {
@@ -137,42 +129,17 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   }
 
   /**
-   * Registers this manager as a listener on the active {@link FlixelGamepadProvider}. Safe to
-   * call more than once.
-   */
-  public void attach() {
-    if (listenerAttached) {
-      return;
-    }
-    gamepadProvider.addListener(this);
-    listenerAttached = true;
-  }
-
-  /** Unregisters listeners and clears internal slot state. */
-  public void detach() {
-    if (listenerAttached) {
-      gamepadProvider.removeListener(this);
-      listenerAttached = false;
-    }
-    reset();
-  }
-
-  /**
    * Installs the platform's gamepad source. Each backend launcher installs one automatically at
    * startup. Until then the manager sees no gamepads and reports zero active slots.
+   *
+   * <p>The manager enumerates the source every frame, so a newly installed provider is picked up
+   * on the next {@link #update()} without any extra wiring.
    *
    * @param provider Non-null gamepad source.
    * @throws NullPointerException If {@code provider} is {@code null}.
    */
   public void setGamepadProvider(@NotNull FlixelGamepadProvider provider) {
-    boolean wasAttached = listenerAttached;
-    if (wasAttached) {
-      detach();
-    }
     gamepadProvider = Objects.requireNonNull(provider, "provider cannot be null.");
-    if (wasAttached) {
-      attach();
-    }
   }
 
   /**
@@ -219,7 +186,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled) {
       return;
     }
-    attach();
     syncGamepads();
     pollHardware();
   }
@@ -724,37 +690,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   }
 
   /**
-   * Replaces the haptics backend used by all vibration calls on this manager.
-   *
-   * <p>Each platform launcher installs a provider automatically: {@code FlixelLwjgl3Launcher}
-   * installs {@code FlixelLwjgl3HapticsProvider} (Jamepad/SDL, true dual-motor), and
-   * {@code FlixelTeaVMLauncher} installs {@code FlixelTeaVMHapticsProvider} (W3C Gamepad Haptics
-   * API, true dual-motor). Only override this when you need platform-specific features that the
-   * built-in providers do not cover.
-   *
-   * @param provider Non-null replacement provider.
-   * @throws NullPointerException If {@code provider} is {@code null}.
-   */
-  public void setHapticsProvider(@NotNull FlixelGamepadHapticsProvider provider) {
-    hapticsProvider = Objects.requireNonNull(provider, "provider cannot be null.");
-  }
-
-  /**
-   * Installs a platform-specific reader for analog button values, used to populate trigger
-   * pressure on backends where L2 and R2 are exposed as buttons rather than axes (for example,
-   * the web W3C Gamepad API).
-   *
-   * <p>{@code FlixelTeaVMAnalogButtonReader} (installed automatically by
-   * {@code FlixelTeaVMLauncher}) is the only built-in implementation. Pass {@code null} to disable
-   * analog button reading and fall back to the axis-only trigger behavior.
-   *
-   * @param reader Reader to install, or {@code null} to clear any existing reader.
-   */
-  public void setAnalogButtonReader(@Nullable FlixelGamepadAnalogButtonReader reader) {
-    analogButtonReader = reader;
-  }
-
-  /**
    * Returns whether the gamepad in the given slot reports vibration support.
    *
    * @param slot Slot index.
@@ -765,7 +700,8 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled || slot < 0 || slot >= numActiveGamepads) {
       return false;
     }
-    return hapticsProvider.canVibrate(slot);
+    FlixelGamepad g = slotGamepads[slot];
+    return g != null && g.canVibrate();
   }
 
   /**
@@ -812,16 +748,23 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled || slot < 0 || slot >= numActiveGamepads) {
       return;
     }
-    hapticsProvider.vibrate(slot, leftIntensity, rightIntensity, durationSecs);
+    FlixelGamepad g = slotGamepads[slot];
+    if (g == null || !g.canVibrate()) {
+      return;
+    }
+    float left = Math.max(0f, Math.min(1f, leftIntensity));
+    float right = Math.max(0f, Math.min(1f, rightIntensity));
+    g.startVibration((int) (durationSecs * 1000f), left, right);
   }
 
   /**
    * Returns the current analog pressure of the left trigger (L2) on the given slot, in the
    * range {@code [0, 1]}, after applying the global dead zone.
    *
-   * <p>On the Jamepad/SDL desktop backend, triggers are reported as axes, so this reads the
-   * raw trigger axis directly. On web (TeaVM/W3C Gamepad API), triggers are digital buttons;
-   * pressure is read through the analog button reader installed at startup.
+   * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
+   * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
+   * {@code 0f} or {@code 1f} depending on the button state, meaning intermediate values are
+   * possible because the hardware has no analog resolution.
    *
    * <pre>{@code
    * float howHardL2 = Flixel.gamepads.getTriggerL(0);
@@ -837,6 +780,11 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   /**
    * Returns the current analog pressure of the right trigger (R2) on the given slot, in the
    * range {@code [0, 1]}, after applying the global dead zone.
+   *
+   * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
+   * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
+   * {@code 0f} or {@code 1f} depending on the button state -- no intermediate values are possible
+   * because the hardware has no analog resolution.
    *
    * <pre>{@code
    * float howHardR2 = Flixel.gamepads.getTriggerR(0);
@@ -858,7 +806,10 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled || slot < 0 || slot >= numActiveGamepads) {
       return;
     }
-    hapticsProvider.stopVibration(slot);
+    FlixelGamepad g = slotGamepads[slot];
+    if (g != null) {
+      g.cancelVibration();
+    }
   }
 
   boolean isSlotConnected(int id) {
@@ -868,9 +819,8 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   /**
    * Returns the {@link FlixelGamepad} bound to the given slot, or {@code null} when none.
    *
-   * <p>This is the escape hatch for advanced or platform-specific gamepad work (haptics providers
-   * use it, and {@link FlixelGamepad#getNativeHandle()} reaches the raw backend controller from
-   * here). Ordinary games use the higher-level query methods on this manager instead.
+   * <p>This is the low-level accessor for advanced or platform-specific gamepad work. Ordinary
+   * games use the higher-level query methods on this manager instead.
    *
    * @param slot Slot index.
    * @return The gamepad at the given slot, or {@code null} if there is none.
@@ -896,31 +846,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
       return null;
     }
     return slotMappings[slot];
-  }
-
-  @Override
-  public void connected(@NotNull FlixelGamepad gamepad) {
-    syncGamepads();
-  }
-
-  @Override
-  public void disconnected(@NotNull FlixelGamepad gamepad) {
-    syncGamepads();
-  }
-
-  @Override
-  public boolean buttonDown(@NotNull FlixelGamepad gamepad, int buttonIndex) {
-    return false;
-  }
-
-  @Override
-  public boolean buttonUp(@NotNull FlixelGamepad gamepad, int buttonIndex) {
-    return false;
-  }
-
-  @Override
-  public boolean axisMoved(@NotNull FlixelGamepad gamepad, int axisIndex, float value) {
-    return false;
   }
 
   private float deadZoneValue() {
@@ -1058,18 +983,18 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
       int l2Axis = m.getAxisIndex(FlixelGamepadAxis.L2);
       int r2Axis = m.getAxisIndex(FlixelGamepadAxis.R2);
 
-      if (l2Button != FlixelGamepadMapping.UNDEFINED && analogButtonReader != null) {
-        triggerL[s] = analogButtonReader.read(g, l2Button);
-      } else if (l2Axis != FlixelGamepadMapping.UNDEFINED && l2Axis < ac) {
+      if (l2Axis != FlixelGamepadMapping.UNDEFINED && l2Axis < ac) {
         triggerL[s] = axisValues[s][l2Axis];
+      } else if (l2Button != FlixelGamepadMapping.UNDEFINED && l2Button >= 0 && l2Button < MAX_BUTTONS) {
+        triggerL[s] = currentButtons[s][l2Button] ? 1f : 0f;
       } else {
         triggerL[s] = 0f;
       }
 
-      if (r2Button != FlixelGamepadMapping.UNDEFINED && analogButtonReader != null) {
-        triggerR[s] = analogButtonReader.read(g, r2Button);
-      } else if (r2Axis != FlixelGamepadMapping.UNDEFINED && r2Axis < ac) {
+      if (r2Axis != FlixelGamepadMapping.UNDEFINED && r2Axis < ac) {
         triggerR[s] = axisValues[s][r2Axis];
+      } else if (r2Button != FlixelGamepadMapping.UNDEFINED && r2Button >= 0 && r2Button < MAX_BUTTONS) {
+        triggerR[s] = currentButtons[s][r2Button] ? 1f : 0f;
       } else {
         triggerR[s] = 0f;
       }

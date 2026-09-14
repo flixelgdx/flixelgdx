@@ -55,15 +55,13 @@
  * {@link org.flixelgdx.input.FlixelTouchListener} with the active {@link org.flixelgdx.input.FlixelInputDevice}
  * and the backend fires the relevant method for each raw event. This is useful for systems (such as text-entry fields)
  * that need every keystroke in order, or for low-latency touch processing that cannot wait until the next {@code update()}
- * call. Returning {@code true} from any callback method consumes the event and stops it from reaching
- * further listeners.
+ * call. Every registered listener observes each event; listeners do not block one another.
  *
  * <pre>{@code
  * Flixel.input.addKeyboardListener(new FlixelKeyboardListener() {
  *   @Override
- *   public boolean keyTyped(char character) {
+ *   public void keyTyped(char character) {
  *     textField.append(character);
- *     return true; // Consume so game-level shortcuts don't also fire.
  *   }
  * });
  * }</pre>

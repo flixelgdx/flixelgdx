@@ -24,7 +24,6 @@
 package org.flixelgdx.input.gamepad;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A single connected gamepad, as seen by the framework without naming any specific controller
@@ -128,29 +127,17 @@ public interface FlixelGamepad {
   boolean canVibrate();
 
   /**
-   * Starts a rumble at the given unified strength for the given time. Backends with independent
-   * motors are driven through {@link FlixelGamepadHapticsProvider} instead; this is the simple fallback.
+   * Starts a rumble on the low- and high-frequency motors for the given time.
+   *
+   * <p>The caller passes values already clamped to {@code [0, 1]}. Single-motor hardware may
+   * collapse the two channels to one value, typically the larger of the two.
    *
    * @param durationMs How long to vibrate, in milliseconds.
-   * @param strength Motor strength in the range {@code [0, 1]}.
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
    */
-  void startVibration(int durationMs, float strength);
+  void startVibration(int durationMs, float leftIntensity, float rightIntensity);
 
   /** Stops any active vibration on this gamepad immediately. */
   void cancelVibration();
-
-  /**
-   * Returns the backend's underlying native controller object, or {@code null} when there is none.
-   *
-   * <p>This is a deliberate, explicitly-unsafe escape hatch for advanced platform-specific features
-   * (for example reaching a backend's raw rumble API or resolving VID/PID when the backend does not
-   * expose them directly). The returned type depends entirely on the active backend and is not part
-   * of the stable API, so casting it ties your code to that backend. Ordinary games never need this.
-   *
-   * @return The native controller handle, or {@code null} when unavailable.
-   */
-  @Nullable
-  default Object getNativeHandle() {
-    return null;
-  }
 }

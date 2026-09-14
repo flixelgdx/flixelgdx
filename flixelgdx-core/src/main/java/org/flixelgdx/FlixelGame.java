@@ -753,7 +753,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     Flixel.debug.overlay.destroy();
     Flixel.debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
 
-    Flixel.gamepads.detach();
+    Flixel.gamepads.reset();
 
     FlixelTween.cancelActiveTweens();
     FlixelTween.clearTweenPools();

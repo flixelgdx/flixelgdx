@@ -106,10 +106,9 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   }
 
   @Override
-  public boolean scrolled(float amountX, float amountY) {
+  public void scrolled(float amountX, float amountY) {
     scrollDeltaX += amountX;
     scrollDeltaY += amountY;
-    return false;
   }
 
   /** Call once per frame at the start of the game update (with {@link Flixel#keys}). */

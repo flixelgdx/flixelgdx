@@ -64,9 +64,7 @@ public class FlixelImage {
    * @param height Height in pixels; must be positive.
    */
   public FlixelImage(int width, int height) {
-    this.width = width;
-    this.height = height;
-    this.pixels = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder());
+    this(width, height, ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder()));
   }
 
   /**

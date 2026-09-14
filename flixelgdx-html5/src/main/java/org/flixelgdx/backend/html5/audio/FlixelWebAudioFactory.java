@@ -106,7 +106,9 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
 
   @JSBody(params = "context", script = """
       var resume = function() {
-        if (context.state === 'suspended') { context.resume(); }
+        if (context.state === 'suspended') {
+          context.resume();
+        }
         window.removeEventListener('pointerdown', resume);
         window.removeEventListener('keydown', resume);
         window.removeEventListener('touchstart', resume);

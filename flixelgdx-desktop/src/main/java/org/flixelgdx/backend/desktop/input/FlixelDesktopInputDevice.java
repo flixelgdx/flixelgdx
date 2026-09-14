@@ -24,11 +24,9 @@
 package org.flixelgdx.backend.desktop.input;
 
 import org.flixelgdx.backend.desktop.FlixelDesktopRunner;
-import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.input.FlixelInputDevice;
+import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
-import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.input.keyboard.FlixelKey;
 
 /**
@@ -40,17 +38,13 @@ import org.flixelgdx.input.keyboard.FlixelKey;
  * {@link FlixelKeyboardListener} and {@link FlixelMouseListener} instances that the framework's
  * input managers install.
  */
-public class FlixelDesktopInputDevice implements FlixelInputDevice {
+public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
 
   /** Down state per FlixelKey code; sized to cover the whole key-code range. */
   private final boolean[] keyDown = new boolean[512];
 
   /** Down state per mouse button. */
   private final boolean[] buttonDown = new boolean[8];
-
-  private final FlixelArray<FlixelKeyboardListener> keyboardListeners = new FlixelArray<>();
-  private final FlixelArray<FlixelMouseListener> mouseListeners = new FlixelArray<>();
-  private final FlixelArray<FlixelTouchListener> touchListeners = new FlixelArray<>();
 
   private int mouseX;
   private int mouseY;
@@ -64,9 +58,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {
       keyDown[flixelKey] = true;
     }
-    for (int i = 0; i < keyboardListeners.getSize(); i++) {
-      keyboardListeners.get(i).keyDown(flixelKey);
-    }
+    dispatchKeyDown(flixelKey);
   }
 
   /**
@@ -78,9 +70,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {
       keyDown[flixelKey] = false;
     }
-    for (int i = 0; i < keyboardListeners.getSize(); i++) {
-      keyboardListeners.get(i).keyUp(flixelKey);
-    }
+    dispatchKeyUp(flixelKey);
   }
 
   /**
@@ -89,9 +79,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
    * @param character The typed character.
    */
   public void onKeyTyped(char character) {
-    for (int i = 0; i < keyboardListeners.getSize(); i++) {
-      keyboardListeners.get(i).keyTyped(character);
-    }
+    dispatchKeyTyped(character);
   }
 
   /**
@@ -107,9 +95,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
     }
     mouseX = x;
     mouseY = y;
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      mouseListeners.get(i).mouseDown(button, x, y);
-    }
+    dispatchMouseDown(button, x, y);
   }
 
   /**
@@ -125,9 +111,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
     }
     mouseX = x;
     mouseY = y;
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      mouseListeners.get(i).mouseUp(button, x, y);
-    }
+    dispatchMouseUp(button, x, y);
   }
 
   /**
@@ -139,13 +123,10 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
   public void onMouseMoved(int x, int y) {
     mouseX = x;
     mouseY = y;
-    boolean dragging = buttonDown[0] || buttonDown[1] || buttonDown[2];
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      if (dragging) {
-        mouseListeners.get(i).mouseDragged(x, y);
-      } else {
-        mouseListeners.get(i).mouseMoved(x, y);
-      }
+    if (buttonDown[0] || buttonDown[1] || buttonDown[2]) {
+      dispatchMouseDragged(x, y);
+    } else {
+      dispatchMouseMoved(x, y);
     }
   }
 
@@ -156,9 +137,7 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
    * @param amountY Vertical scroll amount.
    */
   public void onScrolled(float amountX, float amountY) {
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      mouseListeners.get(i).scrolled(amountX, amountY);
-    }
+    dispatchScrolled(amountX, amountY);
   }
 
   @Override
@@ -189,41 +168,5 @@ public class FlixelDesktopInputDevice implements FlixelInputDevice {
   @Override
   public int getY(int pointer) {
     return pointer == 0 ? mouseY : 0;
-  }
-
-  @Override
-  public void addKeyboardListener(FlixelKeyboardListener listener) {
-    if (listener != null && !keyboardListeners.contains(listener, true)) {
-      keyboardListeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeKeyboardListener(FlixelKeyboardListener listener) {
-    keyboardListeners.removeValue(listener, true);
-  }
-
-  @Override
-  public void addMouseListener(FlixelMouseListener listener) {
-    if (listener != null && !mouseListeners.contains(listener, true)) {
-      mouseListeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeMouseListener(FlixelMouseListener listener) {
-    mouseListeners.removeValue(listener, true);
-  }
-
-  @Override
-  public void addTouchListener(FlixelTouchListener listener) {
-    if (listener != null && !touchListeners.contains(listener, true)) {
-      touchListeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeTouchListener(FlixelTouchListener listener) {
-    touchListeners.removeValue(listener, true);
   }
 }

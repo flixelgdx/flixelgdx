@@ -23,23 +23,22 @@
  */
 package org.flixelgdx.input.gamepad;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * The platform's supply of connected gamepads: how {@link FlixelGamepadInputManager} discovers
- * pads and hears about them connecting or disconnecting, without naming a controller library.
+ * pads, without naming a controller library.
  *
  * <p>This is only the raw feed. It deliberately holds <b>no</b> gamepad logic: slot assignment,
- * button and axis polling, dead zones, press-order tracking, and event dispatch all live in the
- * manager. Each backend implements this to expose its own controllers, and the manager stays the
- * single owner of behavior. It works exactly like {@link FlixelGamepadHapticsProvider}: a thin, swappable
- * platform binding the manager drives.
+ * button and axis polling, dead zones, and press-order tracking all live in the manager. Each
+ * backend implements this to expose its own controllers, and the manager stays the single owner
+ * of behavior: this is just a thin, swappable platform binding the manager drives.
  *
  * <p>The manager enumerates gamepads every frame through {@link #getGamepadCount()} and
  * {@link #getGamepadAt(int)}, so implementations must return the <b>same</b>
  * {@link FlixelGamepad} instance for the same physical device across calls (the manager tracks
- * slots by identity), and must not allocate on these calls.
+ * slots by identity and detects connects and disconnects by diffing this feed), and must not
+ * allocate on these calls.
  *
  * <p>A safe default ({@link FlixelNoopGamepadProvider}) reports no gamepads, so the manager
  * runs cleanly on headless sessions and platforms without a gamepad backend yet.
@@ -68,18 +67,4 @@ public interface FlixelGamepadProvider {
   default FlixelGamepad getGamepadAt(int index) {
     return null;
   }
-
-  /**
-   * Starts delivering connect/disconnect (and button/axis) events to the given listener.
-   *
-   * @param listener The listener to notify; ignored when {@code null}.
-   */
-  default void addListener(@NotNull FlixelGamepadListener listener) {}
-
-  /**
-   * Stops delivering events to the given listener.
-   *
-   * @param listener The listener to remove; ignored when {@code null}.
-   */
-  default void removeListener(@NotNull FlixelGamepadListener listener) {}
 }

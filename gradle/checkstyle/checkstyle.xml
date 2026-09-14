@@ -9,7 +9,7 @@
   Checks applied here complement Spotless (which owns formatting) and doclint (which owns
   HTML validity and @link resolution in Javadoc). This file owns:
     - semantic Javadoc completeness (missing docs on public API, tag quality)
-    - banned standard Java collection implementations in favour of FlixelGDX collections
+    - banned standard Java collection implementations in favor of FlixelGDX collections
     - lightweight code-quality rules that are not covered by the formatter
 
   Suppressions: gradle/checkstyle/suppressions.xml
@@ -127,7 +127,7 @@
     <module name="RegexpSinglelineJava">
       <property name="id" value="AmericanEnglishInComments"/>
       <property name="format" value="(^\s*(\*|\/\*\*?)|//).*(?i)\b(colour|behaviour|favour|neighbour|honour|labour|flavour|humour|centre|metre|fibre|theatre|litre|calibre|analyse|organise|recognise|realise|serialise|initialise|synchronise|minimise|maximise|optimise|specialise|customise|prioritise|generalise|normalise|utilise|characterise|parametrise|licence|defence|offence|pretence|travelled|labelled|cancelled|modelled|signalled|levelled|fuelled|jewellery|whilst|mould|grey\b)"/>
-      <property name="message" value="Use American English spelling in comments and Javadoc (e.g. 'color' not 'colour', 'behavior' not 'behaviour', 'initialize' not 'initialise')."/>
+      <property name="message" value="Use American English spelling in comments and Javadoc (e.g. 'color' not 'colour', 'initialize' not 'initialise')."/>
     </module>
 
   </module>

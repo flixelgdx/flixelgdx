@@ -31,11 +31,9 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
  *
  * <p>Register an implementation with {@link FlixelInputDevice#addMouseListener} and the active
  * backend will deliver button presses, releases, movement, dragging, and scroll wheel events to it
- * as events arrive. Every method has a do-nothing default
- * that returns {@code false}, so an implementation only overrides the events it cares about.
- *
- * <p>Returning {@code true} from a method signals that the event was consumed and no further
- * listeners in the chain should see it. Returning {@code false} lets it propagate.
+ * as events arrive. Every method has a do-nothing default, so an implementation only overrides the
+ * events it cares about. Listeners observe input; they do not block one another, so every
+ * registered listener sees every event.
  *
  * <p>Screen coordinates use the top-left origin: X grows right, Y grows down. Convert to world
  * space through a {@link FlixelCamera} when needed.
@@ -52,11 +50,8 @@ public interface FlixelMouseListener {
    * @param button The button that went down, as a {@link FlixelMouseButton} code.
    * @param x The horizontal cursor position in screen pixels from the left edge.
    * @param y The vertical cursor position in screen pixels from the top edge.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean mouseDown(int button, int x, int y) {
-    return false;
-  }
+  default void mouseDown(int button, int x, int y) {}
 
   /**
    * Called when a mouse button is released.
@@ -64,11 +59,8 @@ public interface FlixelMouseListener {
    * @param button The button that came up, as a {@link FlixelMouseButton} code.
    * @param x The horizontal cursor position in screen pixels from the left edge.
    * @param y The vertical cursor position in screen pixels from the top edge.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean mouseUp(int button, int x, int y) {
-    return false;
-  }
+  default void mouseUp(int button, int x, int y) {}
 
   /**
    * Called when the mouse moves without any button held down. Only fires on platforms with a
@@ -76,22 +68,16 @@ public interface FlixelMouseListener {
    *
    * @param x The horizontal cursor position in screen pixels from the left edge.
    * @param y The vertical cursor position in screen pixels from the top edge.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean mouseMoved(int x, int y) {
-    return false;
-  }
+  default void mouseMoved(int x, int y) {}
 
   /**
    * Called when the mouse moves while a button is held down.
    *
    * @param x The horizontal cursor position in screen pixels from the left edge.
    * @param y The vertical cursor position in screen pixels from the top edge.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean mouseDragged(int x, int y) {
-    return false;
-  }
+  default void mouseDragged(int x, int y) {}
 
   /**
    * Called when the mouse wheel or a trackpad gesture scrolls.
@@ -102,9 +88,6 @@ public interface FlixelMouseListener {
    *
    * @param amountX Horizontal scroll delta; positive scrolls right.
    * @param amountY Vertical scroll delta; positive scrolls down.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean scrolled(float amountX, float amountY) {
-    return false;
-  }
+  default void scrolled(float amountX, float amountY) {}
 }

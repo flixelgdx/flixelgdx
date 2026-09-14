@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.backend.html5.input;
 
-import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.input.FlixelInputDevice;
+import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.FlixelTouchListener;
@@ -54,14 +53,10 @@ import org.teavm.jso.dom.html.HTMLCanvasElement;
  * receive keyboard focus by default; pointer and touch events are bound to the canvas so their
  * coordinates can be translated into canvas space.
  */
-public class FlixelHtml5InputDevice implements FlixelInputDevice {
+public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
   private final boolean[] keyDown = new boolean[512];
   private final boolean[] buttonDown = new boolean[8];
-
-  private final FlixelArray<FlixelKeyboardListener> keyboardListeners = new FlixelArray<>();
-  private final FlixelArray<FlixelMouseListener> mouseListeners = new FlixelArray<>();
-  private final FlixelArray<FlixelTouchListener> touchListeners = new FlixelArray<>();
 
   private HTMLCanvasElement canvas;
 
@@ -130,24 +125,18 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {
       keyDown[flixelKey] = true;
     }
-    for (int i = 0; i < keyboardListeners.getSize(); i++) {
-      keyboardListeners.get(i).keyDown(flixelKey);
-    }
+    dispatchKeyDown(flixelKey);
   }
 
   private void onKeyUp(int flixelKey) {
     if (flixelKey >= 0 && flixelKey < keyDown.length) {
       keyDown[flixelKey] = false;
     }
-    for (int i = 0; i < keyboardListeners.getSize(); i++) {
-      keyboardListeners.get(i).keyUp(flixelKey);
-    }
+    dispatchKeyUp(flixelKey);
   }
 
   private void onKeyTyped(char character) {
-    for (int i = 0; i < keyboardListeners.getSize(); i++) {
-      keyboardListeners.get(i).keyTyped(character);
-    }
+    dispatchKeyTyped(character);
   }
 
   private void onMouseDown(int button, int x, int y) {
@@ -156,9 +145,7 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
     }
     mouseX = x;
     mouseY = y;
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      mouseListeners.get(i).mouseDown(button, x, y);
-    }
+    dispatchMouseDown(button, x, y);
   }
 
   private void onMouseUp(int button, int x, int y) {
@@ -167,28 +154,21 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
     }
     mouseX = x;
     mouseY = y;
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      mouseListeners.get(i).mouseUp(button, x, y);
-    }
+    dispatchMouseUp(button, x, y);
   }
 
   private void onMouseMoved(int x, int y) {
     mouseX = x;
     mouseY = y;
-    boolean dragging = buttonDown[0] || buttonDown[1] || buttonDown[2];
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      if (dragging) {
-        mouseListeners.get(i).mouseDragged(x, y);
-      } else {
-        mouseListeners.get(i).mouseMoved(x, y);
-      }
+    if (buttonDown[0] || buttonDown[1] || buttonDown[2]) {
+      dispatchMouseDragged(x, y);
+    } else {
+      dispatchMouseMoved(x, y);
     }
   }
 
   private void onScrolled(float amountX, float amountY) {
-    for (int i = 0; i < mouseListeners.getSize(); i++) {
-      mouseListeners.get(i).scrolled(amountX, amountY);
-    }
+    dispatchScrolled(amountX, amountY);
   }
 
   /**
@@ -207,14 +187,11 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
       Touch touch = event.getChangedTouches().get(i);
       int x = canvasX(canvas, (int) touch.getClientX());
       int y = canvasY(canvas, (int) touch.getClientY());
-      for (int j = 0; j < touchListeners.getSize(); j++) {
-        FlixelTouchListener listener = touchListeners.get(j);
-        switch (phase) {
-          case START -> listener.touched(i, x, y);
-          case MOVE -> listener.touchDragged(i, x, y);
-          case END -> listener.touchReleased(i, x, y);
-          case CANCEL -> listener.touchCancelled(i, x, y);
-        }
+      switch (phase) {
+        case START -> dispatchTouched(i, x, y);
+        case MOVE -> dispatchTouchDragged(i, x, y);
+        case END -> dispatchTouchReleased(i, x, y);
+        case CANCEL -> dispatchTouchCancelled(i, x, y);
       }
     }
   }
@@ -280,42 +257,6 @@ public class FlixelHtml5InputDevice implements FlixelInputDevice {
   @Override
   public int getY(int pointer) {
     return pointer == 0 ? mouseY : 0;
-  }
-
-  @Override
-  public void addKeyboardListener(FlixelKeyboardListener listener) {
-    if (listener != null && !keyboardListeners.contains(listener, true)) {
-      keyboardListeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeKeyboardListener(FlixelKeyboardListener listener) {
-    keyboardListeners.removeValue(listener, true);
-  }
-
-  @Override
-  public void addMouseListener(FlixelMouseListener listener) {
-    if (listener != null && !mouseListeners.contains(listener, true)) {
-      mouseListeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeMouseListener(FlixelMouseListener listener) {
-    mouseListeners.removeValue(listener, true);
-  }
-
-  @Override
-  public void addTouchListener(FlixelTouchListener listener) {
-    if (listener != null && !touchListeners.contains(listener, true)) {
-      touchListeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeTouchListener(FlixelTouchListener listener) {
-    touchListeners.removeValue(listener, true);
   }
 
   @JSBody(params = { "canvas", "clientX" }, script = """
