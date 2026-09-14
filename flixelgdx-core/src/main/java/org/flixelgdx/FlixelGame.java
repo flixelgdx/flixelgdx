@@ -120,11 +120,11 @@ import java.util.function.Supplier;
  *
  * <h2>Auto-pause</h2>
  *
- * <p>When {@link Flixel#autoPause} is {@code true} (the default), audio is paused and the update
+ * <p>When {@link Flixel#autoPause} is {@code true} (the default), audio is paused, and the update
  * loop suspends whenever the game window loses focus. The render loop continues at a low background
  * frame rate so the window stays responsive, then both audio and updates resume automatically when
  * focus returns. Set {@link Flixel#autoPause} to {@code false} to keep the game running at full
- * speed in the background. Note that on mobile if {@link Flixel#autoPause} is {@code false} the
+ * speed in the background. Note that on mobile, if {@link Flixel#autoPause} is {@code false}, the
  * audio will keep playing in the background when the app is not focused.
  *
  * <h2>Example Usage</h2>
@@ -229,7 +229,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /**
    * When {@code true}, {@link Flixel#state} was sent {@link FlixelState#onFocusLost()} for a paired
    * app or window pause and {@link FlixelState#onFocusGained()} has not yet been dispatched. Used so
-   * duplicate callbacks (such as minimize plus focus lost) only run state hooks once.
+   * duplicate callbacks (such as minimize plus focus lost) only state hooks once.
    */
   private boolean stateLifecyclePauseDispatched;
 
@@ -283,10 +283,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Called when the game is created. This is where you should initialize your game's resources.
+   * Called when the game is created. Initialize your game's resources here.
    *
-   * <p>This method configures the crash handler, sets up input processing, initializes the debug overlay, configures
-   * the ANSI system for color output in terminals, and then switches to the initial state.
+   * <p>This method configures specific settings based on the {@link FlixelConfig} object
+   * set at startup. This includes but is not limited to render resolution, the default
+   * camera, input managers, and more.
    *
    * <p>This method is called automatically by the platform runner once the backend surface is
    * ready, so it is not necessary to call it manually in most cases. However, it can be overridden
@@ -490,7 +491,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
             fboOrthoH = camera.height;
             // Y-down composite ortho so the blit matches the batch's Y-down vertex layout and the
             // camera FBO draws upright. Match the active backend's depth range too; the [-1, 1]
-            // default depth-clips the composite quad to black on Vulkan, Metal, and Direct3D.
+            // default depth clips the composite quad to black on Vulkan, Metal, and Direct3D.
             fboOrtho.setToOrtho2DYDown(0, 0, fboOrthoW, fboOrthoH, Flixel.graphics.isDepthZeroToOne());
           }
           batch.setProjection(fboOrtho);
@@ -648,10 +649,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Called when the game window loses focus or the application goes to the background.
+   * Called when the game window loses focus, or the application goes to the background.
    *
-   * <p>On mobile and web this fires when the OS sends the application to the background.
-   * On desktop it fires when the game window loses focus or is minimized (focus loss always
+   * <p>On mobile and web, this fires when the OS sends the application to the background.
+   * On desktop, it fires when the game window loses focus or is minimized (focus loss always
    * arrives before minimize, so this is called once for both events).
    *
    * <p>The default implementation pauses audio and throttles the frame rate to
@@ -682,10 +683,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   }
 
   /**
-   * Called when the game window regains focus or the application returns to the foreground.
+   * Called when the game window regains focus, or the application returns to the foreground.
    *
-   * <p>On mobile and web this fires when the OS brings the application back to the foreground.
-   * On desktop it fires when the game window gains focus, including when the window is
+   * <p>On mobile and web, this fires when the OS brings the application back to the foreground.
+   * On desktop, it fires when the game window gains focus, including when the window is
    * restored from being minimized.
    *
    * <p>The default implementation restores the full frame rate and resumes audio when
@@ -739,8 +740,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
   /**
    * Destroys the game and all of its resources.
    *
-   * <p>Note that this doesn't close the game entirely, it just disposes
-   * of the game's resources. If you want to close the entire game, use {@link Flixel#quit()}.
+   * <p>Note that this doesn't close the game entirely; it just disposes
+   * of the game's resources. To close the entire game, use {@link Flixel#quit()}.
    */
   @Override
   public void destroy() {
@@ -901,30 +902,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     return gamePaused;
   }
 
-  /**
-   * Returns whether the game is currently paused.
-   *
-   * @return {@code true} when the game loop is paused.
-   */
-  public boolean getGamePaused() {
-    return gamePaused;
-  }
-
   public boolean isGlobalOverlayEnabled() {
     return overlayEnabled;
-  }
-
-  /**
-   * Returns whether the global overlay camera is enabled.
-   *
-   * @return {@code true} when the overlay camera is active and drawing over the game.
-   */
-  public boolean getGlobalOverlayEnabled() {
-    return overlayEnabled;
-  }
-
-  public boolean getShouldUpdate() {
-    return isShouldUpdate();
   }
 
   public boolean isShouldUpdate() {
