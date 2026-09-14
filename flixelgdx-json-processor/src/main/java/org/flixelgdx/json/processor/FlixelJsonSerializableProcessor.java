@@ -123,7 +123,7 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
       TypeMirror t = field.asType();
       src.append("    w.name(\"").append(name).append("\");\n");
       if (isArray(t)) {
-        appendArrayWrite(src, "value." + name, componentType(t));
+        appendArrayWrite(src, "value." + name, t, 0);
       } else {
         src.append("    ").append(writeSingle("value." + name, t)).append(";\n");
       }
@@ -133,17 +133,30 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
     src.append("  }\n");
   }
 
-  /** Emits the statements that write one array field as a JSON array. */
-  private void appendArrayWrite(StringBuilder src, String accessor, TypeMirror element) {
-    src.append("    if (").append(accessor).append(" == null) {\n");
-    src.append("      w.value((String) null);\n");
-    src.append("    } else {\n");
-    src.append("      w.beginArray();\n");
-    src.append("      for (int i = 0; i < ").append(accessor).append(".length; i++) {\n");
-    src.append("        ").append(writeSingle(accessor + "[i]", element)).append(";\n");
-    src.append("      }\n");
-    src.append("      w.endArray();\n");
-    src.append("    }\n");
+  /**
+   * Emits the statements that write one (possibly multi-dimensional) array field as a JSON array.
+   * Recursion tracks the current nesting {@code depth} so that each loop level uses a unique index
+   * variable ({@code i0}, {@code i1}, ...) and avoids shadowing.
+   */
+  private void appendArrayWrite(StringBuilder src, String accessor, TypeMirror arrayType, int depth) {
+    TypeMirror componentType = componentType(arrayType);
+    String indexVar = "i" + depth;
+    String indent = "    " + "  ".repeat(depth);
+    src.append(indent).append("if (").append(accessor).append(" == null) {\n");
+    src.append(indent).append("  w.value((String) null);\n");
+    src.append(indent).append("} else {\n");
+    src.append(indent).append("  w.beginArray();\n");
+    src.append(indent).append("  for (int ").append(indexVar).append(" = 0; ")
+        .append(indexVar).append(" < ").append(accessor).append(".length; ").append(indexVar).append("++) {\n");
+    String innerAccessor = accessor + "[" + indexVar + "]";
+    if (isArray(componentType)) {
+      appendArrayWrite(src, innerAccessor, componentType, depth + 1);
+    } else {
+      src.append(indent).append("    ").append(writeSingle(innerAccessor, componentType)).append(";\n");
+    }
+    src.append(indent).append("  }\n");
+    src.append(indent).append("  w.endArray();\n");
+    src.append(indent).append("}\n");
   }
 
   /** Returns the writer call (without a trailing semicolon) that writes one non-array value. */
@@ -165,7 +178,7 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
       String name = field.getSimpleName().toString();
       TypeMirror t = field.asType();
       if (isArray(t)) {
-        appendArrayRead(src, name, componentType(t));
+        appendArrayRead(src, name, t);
       } else if (isEnum(t)) {
         appendEnumRead(src, name, t);
       } else {
@@ -188,29 +201,72 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
     src.append("    }\n");
   }
 
-  /** Emits a block that reads one array field, defaulting to an empty array when absent. */
-  private void appendArrayRead(StringBuilder src, String name, TypeMirror element) {
+  /**
+   * Emits a block that reads one (possibly multi-dimensional) array field from the JSON object.
+   * The outer JSON node is fetched once under the field's key; the recursive helper handles all
+   * nesting levels from there.
+   */
+  private void appendArrayRead(StringBuilder src, String name, TypeMirror arrayType) {
     String key = "\"" + name + "\"";
-    String elementType = typeName(element);
     src.append("    {\n");
-    src.append("      FlixelJsonValue a = json.has(").append(key).append(") ? json.get(").append(key)
+    src.append("      FlixelJsonValue a0 = json.has(").append(key).append(") ? json.get(").append(key)
         .append(") : null;\n");
-    src.append("      if (a != null && a.isArray()) {\n");
-    src.append("        int count = a.getSize();\n");
-    src.append("        ").append(elementType).append("[] out = new ").append(elementType).append("[count];\n");
-    src.append("        for (int i = 0; i < count; i++) {\n");
-    if (isEnum(element)) {
-      src.append("          String s = a.get(i) == null ? null : a.get(i).asString();\n");
-      src.append("          out[i] = s == null ? null : ").append(elementType).append(".valueOf(s);\n");
-    } else {
-      src.append("          out[i] = ").append(readFromNode(element)).append(";\n");
-    }
-    src.append("        }\n");
-    src.append("        value.").append(name).append(" = out;\n");
-    src.append("      } else {\n");
-    src.append("        value.").append(name).append(" = new ").append(elementType).append("[0];\n");
-    src.append("      }\n");
+    appendArrayReadLevel(src, "a0", arrayType, "value." + name, 0);
     src.append("    }\n");
+  }
+
+  /**
+   * Recursively emits the if/else block that reads one array dimension from {@code nodeVar} and
+   * assigns the result to {@code assignTarget}. Each recursive call increments {@code depth} so that
+   * every level uses unique local variable names ({@code a0}/{@code a1}/..., {@code count0}/{@code
+   * count1}/..., {@code out0}/{@code out1}/..., {@code i0}/{@code i1}/...) and avoids shadowing.
+   */
+  private void appendArrayReadLevel(
+      StringBuilder src, String nodeVar, TypeMirror arrayType, String assignTarget, int depth) {
+    TypeMirror componentType = componentType(arrayType);
+    boolean componentIsArray = isArray(componentType);
+    String outVar = "out" + depth;
+    String countVar = "count" + depth;
+    String indexVar = "i" + depth;
+    String indent = "      " + "  ".repeat(depth);
+
+    // "new int[count0][]" for int[][], "new int[count0]" for int[] (dims-1 trailing brackets)
+    String rootName = typeName(rootComponentType(arrayType));
+    int dims = arrayDimensions(arrayType);
+    String newExpr = "new " + rootName + "[" + countVar + "]" + "[]".repeat(dims - 1);
+    String emptyExpr = "new " + rootName + "[0]" + "[]".repeat(dims - 1);
+
+    src.append(indent).append("if (").append(nodeVar).append(" != null && ").append(nodeVar).append(".isArray()) {\n");
+    src.append(indent).append("  int ").append(countVar).append(" = ").append(nodeVar).append(".getSize();\n");
+    src.append(indent).append("  ").append(typeName(arrayType)).append(" ").append(outVar)
+        .append(" = ").append(newExpr).append(";\n");
+    src.append(indent).append("  for (int ").append(indexVar).append(" = 0; ")
+        .append(indexVar).append(" < ").append(countVar).append("; ").append(indexVar).append("++) {\n");
+
+    if (componentIsArray) {
+      String innerNodeVar = "a" + (depth + 1);
+      src.append(indent).append("    FlixelJsonValue ").append(innerNodeVar)
+          .append(" = ").append(nodeVar).append(".get(").append(indexVar).append(");\n");
+      appendArrayReadLevel(src, innerNodeVar, componentType, outVar + "[" + indexVar + "]", depth + 1);
+    } else if (isEnum(componentType)) {
+      String enumTypeName = typeName(componentType);
+      String sVar = "s" + depth;
+      src.append(indent).append("    String ").append(sVar).append(" = ")
+          .append(nodeVar).append(".get(").append(indexVar).append(") == null ? null : ")
+          .append(nodeVar).append(".get(").append(indexVar).append(").asString();\n");
+      src.append(indent).append("    ").append(outVar).append("[").append(indexVar).append("] = ")
+          .append(sVar).append(" == null ? null : ").append(enumTypeName).append(".valueOf(").append(sVar)
+          .append(");\n");
+    } else {
+      src.append(indent).append("    ").append(outVar).append("[").append(indexVar).append("] = ")
+          .append(readFromNode(componentType, nodeVar, indexVar)).append(";\n");
+    }
+
+    src.append(indent).append("  }\n");
+    src.append(indent).append("  ").append(assignTarget).append(" = ").append(outVar).append(";\n");
+    src.append(indent).append("} else {\n");
+    src.append(indent).append("  ").append(assignTarget).append(" = ").append(emptyExpr).append(";\n");
+    src.append(indent).append("}\n");
   }
 
   /** Builds the expression that reads one non-array, non-enum field by name from {@code json}. */
@@ -235,22 +291,26 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
     };
   }
 
-  /** Builds the expression that reads one value (primitive, String, or nested type) from a node. */
-  private String readFromNode(TypeMirror t) {
+  /**
+   * Builds the expression that reads one scalar value (primitive, String, or nested type) from the
+   * element at {@code indexVar} of {@code nodeVar}.
+   */
+  private String readFromNode(TypeMirror t, String nodeVar, String indexVar) {
+    String access = nodeVar + ".get(" + indexVar + ")";
     return switch (t.getKind()) {
-      case INT -> "a.get(i)" + ".asInt()";
-      case SHORT -> "(short) " + "a.get(i)" + ".asInt()";
-      case BYTE -> "(byte) " + "a.get(i)" + ".asInt()";
-      case CHAR -> "(char) " + "a.get(i)" + ".asInt()";
-      case LONG -> "(long) " + "a.get(i)" + ".asDouble()";
-      case FLOAT -> "a.get(i)" + ".asFloat()";
-      case DOUBLE -> "a.get(i)" + ".asDouble()";
-      case BOOLEAN -> "a.get(i)" + ".asBool()";
+      case INT -> access + ".asInt()";
+      case SHORT -> "(short) " + access + ".asInt()";
+      case BYTE -> "(byte) " + access + ".asInt()";
+      case CHAR -> "(char) " + access + ".asInt()";
+      case LONG -> "(long) " + access + ".asDouble()";
+      case FLOAT -> access + ".asFloat()";
+      case DOUBLE -> access + ".asDouble()";
+      case BOOLEAN -> access + ".asBool()";
       default -> {
         if (isString(t)) {
-          yield "a.get(i)" + ".asString()";
+          yield access + ".asString()";
         }
-        yield serializerFqn(t) + ".fromJson(" + "a.get(i)" + ")";
+        yield serializerFqn(t) + ".fromJson(" + access + ")";
       }
     };
   }
@@ -275,7 +335,7 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
       if (!isSupported(field.asType())) {
         error(field, "@JsonSerializable does not support the type of field '" + field.getSimpleName()
             + "'. Supported types are primitives, String, enums, other @JsonSerializable types, "
-            + "and one-dimensional arrays of those.");
+            + "and arrays (including multi-dimensional) of those.");
         continue;
       }
       result.add(field);
@@ -284,10 +344,10 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
   }
 
   private boolean isSupported(TypeMirror t) {
-    return isElementSupported(t) || (isArray(t) && isElementSupported(componentType(t)));
+    return isElementSupported(t) || (isArray(t) && isSupported(componentType(t)));
   }
 
-  /** Whether a type is supported as a field value or as an array element (arrays are not nested). */
+  /** Whether a type is valid as a scalar field value or as the leaf element of an array chain. */
   private boolean isElementSupported(TypeMirror t) {
     return t.getKind().isPrimitive() || isString(t) || isEnum(t) || isSerializable(t);
   }
@@ -314,17 +374,38 @@ public final class FlixelJsonSerializableProcessor extends AbstractProcessor {
     return ((ArrayType) t).getComponentType();
   }
 
+  /** Returns the innermost non-array element type of an array chain (for example, {@code int} from {@code int[][]}). */
+  private TypeMirror rootComponentType(TypeMirror t) {
+    while (isArray(t)) {
+      t = componentType(t);
+    }
+    return t;
+  }
+
+  /** Returns the number of array dimensions (for example, 2 for {@code int[][]}). */
+  private int arrayDimensions(TypeMirror t) {
+    int dims = 0;
+    while (isArray(t)) {
+      dims++;
+      t = componentType(t);
+    }
+    return dims;
+  }
+
   private boolean isString(TypeMirror t) {
     return t.getKind() == TypeKind.DECLARED
         && ((DeclaredType) t).asElement().toString().equals("java.lang.String");
   }
 
   /**
-   * Returns a name usable to declare a variable or array of the given element type in generated
-   * source: the keyword for a primitive (for example {@code int}), or the fully-qualified name for a
-   * String, enum, or {@code @JsonSerializable} type.
+   * Returns a name usable to declare a variable or array of the given type in generated source:
+   * the keyword for a primitive, the simple bracket suffix for arrays, or the fully-qualified name
+   * for a String, enum, or {@code @JsonSerializable} type.
    */
   private String typeName(TypeMirror t) {
+    if (isArray(t)) {
+      return typeName(componentType(t)) + "[]";
+    }
     if (t.getKind().isPrimitive()) {
       return t.toString();
     }
