@@ -50,8 +50,19 @@ import java.lang.annotation.Target;
  *       fields are skipped.</li>
  *   <li>Supported field types: the primitives, {@link String}, enums (mapped by
  *       {@link Enum#name()}), other {@code @JsonSerializable} types (which map through their own
- *       generated serializer), and one-dimensional arrays of any of those.</li>
+ *       generated serializer), and arrays (including multi-dimensional) of any of those.</li>
  * </ul>
+ *
+ * <p><b>Multi-dimensional arrays are jagged, not rectangular.</b> In Java, {@code int[][]} is an
+ * array of {@code int[]} references - each row is a separate heap object and can have a different
+ * length. JSON has the same model: every element of an array can itself be an array of any size.
+ * The generated serializer round-trips this faithfully, so a grid where every row has the same
+ * width will still deserialize correctly. However, nothing in the type or the serializer enforces
+ * that constraint. If the JSON is edited by hand so that rows have different lengths, the game
+ * will not detect the inconsistency at load time. For structured grids where uniform row width is
+ * a correctness requirement (for example, tilemaps), prefer a flat {@code int[]} plus explicit
+ * {@code width} and {@code height} fields; you can then validate {@code tiles.length == width *
+ * height} right after deserialization and fail early with a clear error.</p>
  *
  * <p>Example:
  * <pre>{@code

@@ -102,6 +102,27 @@ class FlixelJsonSerializableTest {
   }
 
   @Test
+  void nestedArraysRoundTrip() {
+    NestedArrayData data = new NestedArrayData();
+    // Intentionally jagged: rows have different lengths to prove the serializer does not assume
+    // uniform row width.
+    data.grid = new int[][] { { 1, 2, 3 }, { 4, 5 }, { 6 } };
+    data.labels = new String[][] { { "a", "b" }, { "c", "d", "e" } };
+
+    String json = NestedArrayDataJsonSerializer.toJson(data);
+    NestedArrayData back = NestedArrayDataJsonSerializer.fromJson(FlixelJson.parse(json));
+
+    assertEquals(3, back.grid.length);
+    assertArrayEquals(new int[] { 1, 2, 3 }, back.grid[0]);
+    assertArrayEquals(new int[] { 4, 5 }, back.grid[1]);
+    assertArrayEquals(new int[] { 6 }, back.grid[2]);
+
+    assertEquals(2, back.labels.length);
+    assertArrayEquals(new String[] { "a", "b" }, back.labels[0]);
+    assertArrayEquals(new String[] { "c", "d", "e" }, back.labels[1]);
+  }
+
+  @Test
   void stringEscapingSurvivesRoundTrip() {
     SaveData save = new SaveData();
     save.playerName = "line1\n\"quoted\"\tend";
