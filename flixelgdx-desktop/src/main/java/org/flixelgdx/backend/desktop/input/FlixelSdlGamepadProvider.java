@@ -28,7 +28,6 @@ import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
 import org.flixelgdx.input.gamepad.FlixelGamepadInputManager;
-import org.flixelgdx.input.gamepad.FlixelGamepadListener;
 import org.flixelgdx.input.gamepad.FlixelGamepadMapping;
 import org.flixelgdx.input.gamepad.FlixelGamepadMappingResolver;
 import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
@@ -59,8 +58,6 @@ public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGa
   /** Connected pads in a stable order; the manager tracks slots by instance identity. */
   private final FlixelArray<FlixelSdlGamepad> gamepads = new FlixelArray<>();
 
-  private final FlixelArray<FlixelGamepadListener> listeners = new FlixelArray<>();
-
   /** The single standard mapping shared by every SDL gamepad. */
   private final FlixelGamepadMapping standardMapping = buildStandardMapping();
 
@@ -90,9 +87,6 @@ public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGa
     }
     FlixelSdlGamepad gamepad = new FlixelSdlGamepad(handle, instanceId);
     gamepads.add(gamepad);
-    for (int i = 0; i < listeners.getSize(); i++) {
-      listeners.get(i).connected(gamepad);
-    }
   }
 
   /**
@@ -107,9 +101,6 @@ public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGa
     }
     FlixelSdlGamepad gamepad = gamepads.get(index);
     gamepads.removeIndex(index);
-    for (int i = 0; i < listeners.getSize(); i++) {
-      listeners.get(i).disconnected(gamepad);
-    }
     gamepad.close();
   }
 
@@ -119,7 +110,6 @@ public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGa
       gamepads.get(i).close();
     }
     gamepads.clear();
-    listeners.clear();
   }
 
   @Override
@@ -131,18 +121,6 @@ public class FlixelSdlGamepadProvider implements FlixelGamepadProvider, FlixelGa
   @Override
   public FlixelGamepad getGamepadAt(int index) {
     return index >= 0 && index < gamepads.getSize() ? gamepads.get(index) : null;
-  }
-
-  @Override
-  public void addListener(@NotNull FlixelGamepadListener listener) {
-    if (!listeners.contains(listener, true)) {
-      listeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeListener(@NotNull FlixelGamepadListener listener) {
-    listeners.removeValue(listener, true);
   }
 
   @Nullable

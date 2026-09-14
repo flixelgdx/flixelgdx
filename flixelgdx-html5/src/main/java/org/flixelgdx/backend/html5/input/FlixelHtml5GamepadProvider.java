@@ -27,7 +27,6 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
-import org.flixelgdx.input.gamepad.FlixelGamepadListener;
 import org.flixelgdx.input.gamepad.FlixelGamepadMapping;
 import org.flixelgdx.input.gamepad.FlixelGamepadMappingResolver;
 import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
@@ -57,9 +56,6 @@ public class FlixelHtml5GamepadProvider implements FlixelGamepadProvider, Flixel
   private final FlixelArray<FlixelWebGamepad> gamepads = new FlixelArray<>();
 
   @NotNull
-  private final FlixelArray<FlixelGamepadListener> listeners = new FlixelArray<>();
-
-  @NotNull
   private final FlixelGamepadMapping standardMapping = buildStandardMapping();
 
   /**
@@ -82,38 +78,23 @@ public class FlixelHtml5GamepadProvider implements FlixelGamepadProvider, Flixel
   }
 
   @Override
-  public void addListener(@NotNull FlixelGamepadListener listener) {
-    if (!listeners.contains(listener, true)) {
-      listeners.add(listener);
-    }
-  }
-
-  @Override
-  public void removeListener(@NotNull FlixelGamepadListener listener) {
-    listeners.removeValue(listener, true);
-  }
-
-  @Override
   @Nullable
   public FlixelGamepadMapping resolve(@NotNull FlixelGamepad gamepad) {
     return gamepad instanceof FlixelWebGamepad ? standardMapping : null;
   }
 
   /**
-   * Handles a browser connect event by wrapping the new controller and notifying listeners.
+   * Handles a browser connect event by wrapping the new controller and adding it to the feed.
    *
    * @param index The browser slot index of the connected controller.
    */
   private void onConnected(int index) {
     FlixelWebGamepad gamepad = new FlixelWebGamepad(index);
     gamepads.add(gamepad);
-    for (int i = 0; i < listeners.getSize(); i++) {
-      listeners.get(i).connected(gamepad);
-    }
   }
 
   /**
-   * Handles a browser disconnect event by removing the matching controller and notifying listeners.
+   * Handles a browser disconnect event by removing the matching controller from the feed.
    *
    * @param index The browser slot index of the disconnected controller.
    */
@@ -122,9 +103,6 @@ public class FlixelHtml5GamepadProvider implements FlixelGamepadProvider, Flixel
       FlixelWebGamepad gamepad = gamepads.get(i);
       if (gamepad.getIndex() == index) {
         gamepads.removeIndex(i);
-        for (int j = 0; j < listeners.getSize(); j++) {
-          listeners.get(j).disconnected(gamepad);
-        }
         return;
       }
     }

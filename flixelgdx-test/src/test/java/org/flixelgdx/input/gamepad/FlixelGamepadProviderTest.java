@@ -97,12 +97,6 @@ class FlixelGamepadProviderTest {
     public FlixelGamepad getGamepadAt(int index) {
       return index == 0 ? gamepad : null;
     }
-
-    @Override
-    public void addListener(@NotNull FlixelGamepadListener listener) {}
-
-    @Override
-    public void removeListener(@NotNull FlixelGamepadListener listener) {}
   }
 
   private static FlixelGamepadMapping buildTestMapping() {

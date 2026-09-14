@@ -61,7 +61,7 @@ import java.util.Objects;
  * framework needing to know it exists. User-added resolvers are checked first and take priority
  * over the framework's built-in resolver.
  */
-public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGamepadListener {
+public class FlixelGamepadInputManager implements FlixelInputManager {
 
   /** Maximum supported simultaneous gamepads. */
   public static final int MAX_GAMEPADS = 8;
@@ -121,8 +121,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
    */
   public boolean enabled = true;
 
-  private boolean listenerAttached;
-
   /** Creates a new gamepad input manager with empty state for all supported gamepad slots. */
   public FlixelGamepadInputManager() {
     for (int i = 0; i < MAX_GAMEPADS; i++) {
@@ -131,42 +129,17 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   }
 
   /**
-   * Registers this manager as a listener on the active {@link FlixelGamepadProvider}. Safe to
-   * call more than once.
-   */
-  public void attach() {
-    if (listenerAttached) {
-      return;
-    }
-    gamepadProvider.addListener(this);
-    listenerAttached = true;
-  }
-
-  /** Unregisters listeners and clears internal slot state. */
-  public void detach() {
-    if (listenerAttached) {
-      gamepadProvider.removeListener(this);
-      listenerAttached = false;
-    }
-    reset();
-  }
-
-  /**
    * Installs the platform's gamepad source. Each backend launcher installs one automatically at
    * startup. Until then the manager sees no gamepads and reports zero active slots.
+   *
+   * <p>The manager enumerates the source every frame, so a newly installed provider is picked up
+   * on the next {@link #update()} without any extra wiring.
    *
    * @param provider Non-null gamepad source.
    * @throws NullPointerException If {@code provider} is {@code null}.
    */
   public void setGamepadProvider(@NotNull FlixelGamepadProvider provider) {
-    boolean wasAttached = listenerAttached;
-    if (wasAttached) {
-      detach();
-    }
     gamepadProvider = Objects.requireNonNull(provider, "provider cannot be null.");
-    if (wasAttached) {
-      attach();
-    }
   }
 
   /**
@@ -213,7 +186,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled) {
       return;
     }
-    attach();
     syncGamepads();
     pollHardware();
   }
@@ -869,31 +841,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
       return null;
     }
     return slotMappings[slot];
-  }
-
-  @Override
-  public void connected(@NotNull FlixelGamepad gamepad) {
-    syncGamepads();
-  }
-
-  @Override
-  public void disconnected(@NotNull FlixelGamepad gamepad) {
-    syncGamepads();
-  }
-
-  @Override
-  public boolean buttonDown(@NotNull FlixelGamepad gamepad, int buttonIndex) {
-    return false;
-  }
-
-  @Override
-  public boolean buttonUp(@NotNull FlixelGamepad gamepad, int buttonIndex) {
-    return false;
-  }
-
-  @Override
-  public boolean axisMoved(@NotNull FlixelGamepad gamepad, int axisIndex, float value) {
-    return false;
   }
 
   private float deadZoneValue() {
