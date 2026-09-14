@@ -90,10 +90,19 @@
  * <p>{@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} identifies the
  * gamepad family so the game can display the right button prompts (PlayStation circles, Xbox
  * letters, Nintendo labels, etc.). The model is detected automatically from USB vendor and product
- * IDs via {@link org.flixelgdx.input.gamepad.FlixelGamepadDetector FlixelGamepadDetector}:
+ * IDs via {@link org.flixelgdx.input.gamepad.FlixelGamepadDetector FlixelGamepadDetector} or the
+ * gamepad input manager directly:
  *
  * <pre>{@code
+ * // Obtain the first gamepad's model through the manager.
+ * Flixel.gamepads.getModel(0);
  *
+ * // Obtain a device and check it.
+ * FlixelGamepadDevice device = Flixel.gamepads.ensureDevice(0);
+ * device.getModel();
+ *
+ * // Use FlixelGamepadDetector directly.
+ * FlixelGamepadDetector.detect(Flixel.gamepads.gamepadAt(0));
  * }</pre>
  *
  * <h2>Connection and disconnection events</h2>
