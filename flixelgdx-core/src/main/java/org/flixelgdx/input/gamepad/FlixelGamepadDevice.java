@@ -46,7 +46,7 @@ import org.jetbrains.annotations.NotNull;
  * called). {@link FlixelGamepadInputManager#getById(int)} returns {@code null} until
  * {@link FlixelGamepadInputManager#ensureDevice(int)} has been called for that slot at least once.
  *
- * <p>A device object is just a convenience wrapper -- it always delegates to the
+ * <p>A device object is just a convenience wrapper; it always delegates to the
  * {@link FlixelGamepadInputManager}, so every query reflects the current frame's state.
  *
  * @see FlixelGamepadInputManager
@@ -86,7 +86,7 @@ public final class FlixelGamepadDevice {
    *
    * <pre>{@code
    * if (pad.isConnected()) {
-   *   // safe to read buttons, axes, triggers
+   *   // Safe to read buttons, axes, triggers.
    * }
    * }</pre>
    *
@@ -207,7 +207,7 @@ public final class FlixelGamepadDevice {
    * Vibrates this controller at full intensity on both motors for the given duration.
    *
    * <p>Good for big impacts where you want maximum feedback without worrying about tuning
-   * individual motor strengths -- for example, a heavy explosion or a knockback hit:
+   * individual motor strengths. For example, a heavy explosion or a knockback hit:
    *
    * <pre>{@code
    * pad.vibrate(0.3f); // Full-strength rumble for 0.3 seconds.
@@ -338,7 +338,7 @@ public final class FlixelGamepadDevice {
    * dead-zone processing.
    *
    * <p>Use this to read how hard the player is squeezing the trigger rather than just whether it
-   * is pressed. A common use is to scale an in-game action by the trigger depth -- for example,
+   * is pressed. A common use is to scale an in-game action by the trigger depth. For example,
    * easing into a brake or gradually aiming down sights:
    *
    * <pre>{@code
@@ -367,7 +367,7 @@ public final class FlixelGamepadDevice {
    * dead-zone processing.
    *
    * <p>Use this to read how hard the player is squeezing the trigger rather than just whether it
-   * is pressed. A common use is to scale an in-game action by the trigger depth -- for example,
+   * is pressed. A common use is to scale an in-game action by the trigger depth. For example,
    * controlling acceleration or how hard a character is pushing something:
    *
    * <pre>{@code

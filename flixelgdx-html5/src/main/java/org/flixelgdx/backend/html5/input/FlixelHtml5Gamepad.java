@@ -41,7 +41,7 @@ import org.teavm.jso.JSBody;
  * Analog trigger pressure is exposed through the trigger buttons rather than as separate axes,
  * because the standard web layout places the triggers in the button list, not the axis list.
  */
-public class FlixelWebGamepad implements FlixelGamepad {
+public class FlixelHtml5Gamepad implements FlixelGamepad {
 
   private final int index;
   private final int buttonCount;
@@ -55,7 +55,7 @@ public class FlixelWebGamepad implements FlixelGamepad {
    *
    * @param index The {@code navigator.getGamepads()} slot index.
    */
-  public FlixelWebGamepad(int index) {
+  public FlixelHtml5Gamepad(int index) {
     this.index = index;
     this.id = gamepadId(index);
     this.buttonCount = gamepadButtonCount(index);

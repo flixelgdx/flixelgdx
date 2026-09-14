@@ -93,11 +93,7 @@
  * IDs via {@link org.flixelgdx.input.gamepad.FlixelGamepadDetector FlixelGamepadDetector}:
  *
  * <pre>{@code
- * Flixel.gamepads.deviceConnected.add(event -> {
- *   int slot = event.gamepadId();
- *   FlixelGamepadModel model = event.model();
- *   promptRenderer.setController(slot, model);
- * });
+ *
  * }</pre>
  *
  * <h2>Connection and disconnection events</h2>
