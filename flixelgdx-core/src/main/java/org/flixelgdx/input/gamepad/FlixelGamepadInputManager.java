@@ -842,9 +842,8 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   /**
    * Returns the {@link FlixelGamepad} bound to the given slot, or {@code null} when none.
    *
-   * <p>This is the escape hatch for advanced or platform-specific gamepad work (haptics providers
-   * use it, and {@link FlixelGamepad#getNativeHandle()} reaches the raw backend controller from
-   * here). Ordinary games use the higher-level query methods on this manager instead.
+   * <p>This is the low-level accessor for advanced or platform-specific gamepad work. Ordinary
+   * games use the higher-level query methods on this manager instead.
    *
    * @param slot Slot index.
    * @return The gamepad at the given slot, or {@code null} if there is none.

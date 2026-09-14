@@ -24,7 +24,6 @@
 package org.flixelgdx.input.gamepad;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A single connected gamepad, as seen by the framework without naming any specific controller
@@ -141,19 +140,4 @@ public interface FlixelGamepad {
 
   /** Stops any active vibration on this gamepad immediately. */
   void cancelVibration();
-
-  /**
-   * Returns the backend's underlying native controller object, or {@code null} when there is none.
-   *
-   * <p>This is a deliberate, explicitly-unsafe escape hatch for advanced platform-specific features
-   * (for example reaching a backend's raw rumble API or resolving VID/PID when the backend does not
-   * expose them directly). The returned type depends entirely on the active backend and is not part
-   * of the stable API, so casting it ties your code to that backend. Ordinary games never need this.
-   *
-   * @return The native controller handle, or {@code null} when unavailable.
-   */
-  @Nullable
-  default Object getNativeHandle() {
-    return null;
-  }
 }
