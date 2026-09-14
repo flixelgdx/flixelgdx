@@ -763,8 +763,8 @@ public class FlixelGamepadInputManager implements FlixelInputManager {
    *
    * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
    * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
-   * {@code 0f} or {@code 1f} depending on the button state -- no intermediate values are possible
-   * because the hardware has no analog resolution.
+   * {@code 0f} or {@code 1f} depending on the button state, meaning intermediate values are
+   * possible because the hardware has no analog resolution.
    *
    * <pre>{@code
    * float howHardL2 = Flixel.gamepads.getTriggerL(0);
