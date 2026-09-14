@@ -69,18 +69,18 @@ public final class FlixelGamepadAxis {
   /**
    * Left trigger as an analog axis (L2 / LT).
    *
-   * <p>On backends where the trigger is a digital button, this axis is not registered in the
-   * mapping and returns {@code 0} when queried. Use {@link FlixelGamepadButton#L2} for the
-   * boolean pressed state.
+   * <p>On backends where the trigger is an analog axis (desktop), this reflects the actual hardware
+   * pressure as a float in {@code [0, 1]}. On backends where the trigger is a digital button (web),
+   * this returns exactly {@code 0f} or {@code 1f} depending on the button state.
    */
   public static final FlixelGamepadAxis L2 = of("L2");
 
   /**
    * Right trigger as an analog axis (R2 / RT).
    *
-   * <p>On backends where the trigger is a digital button, this axis is not registered in the
-   * mapping and returns {@code 0} when queried. Use {@link FlixelGamepadButton#R2} for the
-   * boolean pressed state.
+   * <p>On backends where the trigger is an analog axis (desktop), this reflects the actual hardware
+   * pressure as a float in {@code [0, 1]}. On backends where the trigger is a digital button (web),
+   * this returns exactly {@code 0f} or {@code 1f} depending on the button state.
    */
   public static final FlixelGamepadAxis R2 = of("R2");
 

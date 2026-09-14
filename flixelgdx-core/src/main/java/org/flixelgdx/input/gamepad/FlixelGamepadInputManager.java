@@ -761,10 +761,10 @@ public class FlixelGamepadInputManager implements FlixelInputManager {
    * Returns the current analog pressure of the left trigger (L2) on the given slot, in the
    * range {@code [0, 1]}, after applying the global dead zone.
    *
-   * <p>On backends that report triggers as axes (desktop), this reads the raw trigger axis. On
-   * backends that report them as digital buttons (web), no analog pressure is available and this
-   * returns {@code 0}; use {@link #pressed(int, FlixelGamepadButton)} with
-   * {@link FlixelGamepadButton#L2} there instead.
+   * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
+   * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
+   * {@code 0f} or {@code 1f} depending on the button state -- no intermediate values are possible
+   * because the hardware has no analog resolution.
    *
    * <pre>{@code
    * float howHardL2 = Flixel.gamepads.getTriggerL(0);
@@ -780,6 +780,11 @@ public class FlixelGamepadInputManager implements FlixelInputManager {
   /**
    * Returns the current analog pressure of the right trigger (R2) on the given slot, in the
    * range {@code [0, 1]}, after applying the global dead zone.
+   *
+   * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
+   * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
+   * {@code 0f} or {@code 1f} depending on the button state -- no intermediate values are possible
+   * because the hardware has no analog resolution.
    *
    * <pre>{@code
    * float howHardR2 = Flixel.gamepads.getTriggerR(0);
@@ -980,12 +985,16 @@ public class FlixelGamepadInputManager implements FlixelInputManager {
 
       if (l2Axis != FlixelGamepadMapping.UNDEFINED && l2Axis < ac) {
         triggerL[s] = axisValues[s][l2Axis];
+      } else if (l2Button != FlixelGamepadMapping.UNDEFINED && l2Button >= 0 && l2Button < MAX_BUTTONS) {
+        triggerL[s] = currentButtons[s][l2Button] ? 1f : 0f;
       } else {
         triggerL[s] = 0f;
       }
 
       if (r2Axis != FlixelGamepadMapping.UNDEFINED && r2Axis < ac) {
         triggerR[s] = axisValues[s][r2Axis];
+      } else if (r2Button != FlixelGamepadMapping.UNDEFINED && r2Button >= 0 && r2Button < MAX_BUTTONS) {
+        triggerR[s] = currentButtons[s][r2Button] ? 1f : 0f;
       } else {
         triggerR[s] = 0f;
       }

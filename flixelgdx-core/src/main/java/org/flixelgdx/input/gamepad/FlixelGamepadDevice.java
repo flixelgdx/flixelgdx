@@ -178,9 +178,10 @@ public final class FlixelGamepadDevice {
    * Analog pressure of the left trigger (L2), in the range {@code [0, 1]}, after dead-zone
    * processing.
    *
-   * <p>On backends that report triggers as axes (desktop), this reads the trigger axis directly.
-   * On backends that report them as digital buttons (web), this always returns {@code 0}; use
-   * {@link #pressed(FlixelGamepadButton)} with {@link FlixelGamepadButton#L2} there instead.
+   * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
+   * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
+   * {@code 0f} or {@code 1f} depending on the button state -- no intermediate values are possible
+   * because the hardware has no analog resolution.
    *
    * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
    */
@@ -192,9 +193,10 @@ public final class FlixelGamepadDevice {
    * Analog pressure of the right trigger (R2), in the range {@code [0, 1]}, after dead-zone
    * processing.
    *
-   * <p>On backends that report triggers as axes (desktop), this reads the trigger axis directly.
-   * On backends that report them as digital buttons (web), this always returns {@code 0}; use
-   * {@link #pressed(FlixelGamepadButton)} with {@link FlixelGamepadButton#R2} there instead.
+   * <p>On backends that report triggers as analog axes (desktop), this reflects the actual hardware
+   * pressure as a float. On backends that report them as digital buttons (web), this returns exactly
+   * {@code 0f} or {@code 1f} depending on the button state -- no intermediate values are possible
+   * because the hardware has no analog resolution.
    *
    * @return Trigger pressure in {@code [0, 1]}, or {@code 0f} within the dead zone.
    */
