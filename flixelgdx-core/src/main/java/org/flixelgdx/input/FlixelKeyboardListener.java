@@ -30,24 +30,19 @@ import org.flixelgdx.input.keyboard.FlixelKey;
  *
  * <p>Register an implementation with {@link FlixelInputDevice#addKeyboardListener} and the active
  * backend will deliver key presses, releases, and typed characters to it as events arrive. Every
- * method has a do-nothing default that returns {@code false}, so an implementation only overrides
- * the events it actually cares about.
- *
- * <p>Returning {@code true} from a method signals that the event was consumed and no further
- * listeners in the chain should see it. Returning {@code false} lets it propagate. Most observers
- * return {@code false} because they only watch input without blocking other listeners.
+ * method has a do-nothing default, so an implementation only overrides the events it actually
+ * cares about. Listeners observe input; they do not block one another, so every registered
+ * listener sees every event.
  *
  * <p>Example - a listener that reacts to the Escape key:
  *
  * <pre>{@code
  * Flixel.input.addKeyboardListener(new FlixelKeyboardListener() {
  *   @Override
- *   public boolean keyDown(int keycode) {
+ *   public void keyDown(int keycode) {
  *     if (keycode == FlixelKey.ESCAPE) {
  *       openPauseMenu();
- *       return true;
  *     }
- *     return false;
  *   }
  * });
  * }</pre>
@@ -62,30 +57,21 @@ public interface FlixelKeyboardListener {
    * Called once when a key is first pressed down.
    *
    * @param keycode The key that went down, as a {@link FlixelKey} code.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean keyDown(int keycode) {
-    return false;
-  }
+  default void keyDown(int keycode) {}
 
   /**
    * Called once when a key is released.
    *
    * @param keycode The key that came up, as a {@link FlixelKey} code.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean keyUp(int keycode) {
-    return false;
-  }
+  default void keyUp(int keycode) {}
 
   /**
    * Called when a key press produces a typed character, respecting modifiers such as Shift and
    * Caps Lock. Use this for text input rather than {@link #keyDown(int)}.
    *
    * @param character The Unicode character that was typed.
-   * @return {@code true} to consume the event, {@code false} to pass it on.
    */
-  default boolean keyTyped(char character) {
-    return false;
-  }
+  default void keyTyped(char character) {}
 }

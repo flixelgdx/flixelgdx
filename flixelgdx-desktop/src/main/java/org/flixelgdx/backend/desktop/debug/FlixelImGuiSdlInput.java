@@ -90,7 +90,7 @@ public final class FlixelImGuiSdlInput implements FlixelKeyboardListener, Flixel
   }
 
   @Override
-  public boolean keyDown(int keycode) {
+  public void keyDown(int keycode) {
     if (active) {
       int imKey = FlixelImGuiKeyMap.toImGuiKey(keycode);
       if (imKey != ImGuiKey.None) {
@@ -100,11 +100,10 @@ public final class FlixelImGuiSdlInput implements FlixelKeyboardListener, Flixel
         syncModifiers();
       }
     }
-    return false;
   }
 
   @Override
-  public boolean keyUp(int keycode) {
+  public void keyUp(int keycode) {
     if (active) {
       int imKey = FlixelImGuiKeyMap.toImGuiKey(keycode);
       if (imKey != ImGuiKey.None) {
@@ -114,21 +113,19 @@ public final class FlixelImGuiSdlInput implements FlixelKeyboardListener, Flixel
         syncModifiers();
       }
     }
-    return false;
   }
 
   @Override
-  public boolean keyTyped(char character) {
+  public void keyTyped(char character) {
     // SDL text-input events only deliver actual text, never control keys, so every character here is
     // safe to hand straight to the focused Dear ImGui widget.
     if (active && character != 0) {
       ImGui.getIO().addInputCharacter(character);
     }
-    return false;
   }
 
   @Override
-  public boolean mouseDown(int button, int x, int y) {
+  public void mouseDown(int button, int x, int y) {
     if (active) {
       ImGuiIO io = ImGui.getIO();
       io.addMousePosEvent(x, y);
@@ -136,11 +133,10 @@ public final class FlixelImGuiSdlInput implements FlixelKeyboardListener, Flixel
         io.addMouseButtonEvent(button, true);
       }
     }
-    return false;
   }
 
   @Override
-  public boolean mouseUp(int button, int x, int y) {
+  public void mouseUp(int button, int x, int y) {
     if (active) {
       ImGuiIO io = ImGui.getIO();
       io.addMousePosEvent(x, y);
@@ -148,33 +144,29 @@ public final class FlixelImGuiSdlInput implements FlixelKeyboardListener, Flixel
         io.addMouseButtonEvent(button, false);
       }
     }
-    return false;
   }
 
   @Override
-  public boolean mouseMoved(int x, int y) {
+  public void mouseMoved(int x, int y) {
     if (active) {
       ImGui.getIO().addMousePosEvent(x, y);
     }
-    return false;
   }
 
   @Override
-  public boolean mouseDragged(int x, int y) {
+  public void mouseDragged(int x, int y) {
     if (active) {
       ImGui.getIO().addMousePosEvent(x, y);
     }
-    return false;
   }
 
   @Override
-  public boolean scrolled(float amountX, float amountY) {
+  public void scrolled(float amountX, float amountY) {
     // SDL and Dear ImGui agree on wheel signs (positive y scrolls up, positive x scrolls right), so
     // the amounts pass through unchanged.
     if (active) {
       ImGui.getIO().addMouseWheelEvent(amountX, amountY);
     }
-    return false;
   }
 
   /**

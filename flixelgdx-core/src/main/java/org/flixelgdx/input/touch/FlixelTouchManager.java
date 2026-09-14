@@ -135,22 +135,21 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
   }
 
   @Override
-  public boolean touched(int pointer, int x, int y) {
+  public void touched(int pointer, int x, int y) {
     if (pointer >= list.length) {
-      return false;
+      return;
     }
     FlixelTouch t = list[pointer];
     t.screenX = x;
     t.screenY = y;
     t.pressed = true;
     t.justPressed = true;
-    return false;
   }
 
   @Override
-  public boolean touchReleased(int pointer, int x, int y) {
+  public void touchReleased(int pointer, int x, int y) {
     if (pointer >= list.length) {
-      return false;
+      return;
     }
     FlixelTouch t = list[pointer];
     t.screenX = x;
@@ -158,31 +157,28 @@ public class FlixelTouchManager implements FlixelInputManager, FlixelTouchListen
     t.pressed = false;
     t.justReleased = true;
     t.dragging = false;
-    return false;
   }
 
   @Override
-  public boolean touchDragged(int pointer, int x, int y) {
+  public void touchDragged(int pointer, int x, int y) {
     if (pointer >= list.length) {
-      return false;
+      return;
     }
     FlixelTouch t = list[pointer];
     t.screenX = x;
     t.screenY = y;
     t.dragging = true;
-    return false;
   }
 
   @Override
-  public boolean touchCancelled(int pointer, int x, int y) {
+  public void touchCancelled(int pointer, int x, int y) {
     if (pointer >= list.length) {
-      return false;
+      return;
     }
     FlixelTouch t = list[pointer];
     t.pressed = false;
     t.justCancelled = true;
     t.dragging = false;
-    return false;
   }
 
   /**
