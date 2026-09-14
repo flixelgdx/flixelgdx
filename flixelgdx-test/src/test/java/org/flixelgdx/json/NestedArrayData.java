@@ -24,7 +24,7 @@
 package org.flixelgdx.json;
 
 /**
- * A sample data class exercising multi-dimensional array support in the {@code @JsonSerializable}
+ * A sample data class exercising multidimensional array support in the {@code @JsonSerializable}
  * annotation processor: a 2D primitive array and a 2D String array, both jagged.
  */
 @JsonSerializable

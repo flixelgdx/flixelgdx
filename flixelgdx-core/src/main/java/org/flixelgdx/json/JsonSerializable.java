@@ -50,11 +50,11 @@ import java.lang.annotation.Target;
  *       fields are skipped.</li>
  *   <li>Supported field types: the primitives, {@link String}, enums (mapped by
  *       {@link Enum#name()}), other {@code @JsonSerializable} types (which map through their own
- *       generated serializer), and arrays (including multi-dimensional) of any of those.</li>
+ *       generated serializer), and arrays (including multidimensional) of those.</li>
  * </ul>
  *
- * <p><b>Multi-dimensional arrays are jagged, not rectangular.</b> In Java, {@code int[][]} is an
- * array of {@code int[]} references - each row is a separate heap object and can have a different
+ * <p><b>Multidimensional arrays are jagged, not rectangular.</b> In Java, {@code int[][]} is an
+ * array of {@code int[]} references. Each row is a separate heap object and can have a different
  * length. JSON has the same model: every element of an array can itself be an array of any size.
  * The generated serializer round-trips this faithfully, so a grid where every row has the same
  * width will still deserialize correctly. However, nothing in the type or the serializer enforces
