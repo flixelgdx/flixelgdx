@@ -112,9 +112,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   @NotNull
   private FlixelGamepadHapticsProvider hapticsProvider = new FlixelDefaultGamepadHapticsProvider(this);
 
-  @Nullable
-  private FlixelGamepadAnalogButtonReader analogButtonReader;
-
   @NotNull
   private FlixelGamepadProvider gamepadProvider = FlixelNoopGamepadProvider.INSTANCE;
 
@@ -740,21 +737,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   }
 
   /**
-   * Installs a platform-specific reader for analog button values, used to populate trigger
-   * pressure on backends where L2 and R2 are exposed as buttons rather than axes (for example,
-   * the web W3C Gamepad API).
-   *
-   * <p>{@code FlixelTeaVMAnalogButtonReader} (installed automatically by
-   * {@code FlixelTeaVMLauncher}) is the only built-in implementation. Pass {@code null} to disable
-   * analog button reading and fall back to the axis-only trigger behavior.
-   *
-   * @param reader Reader to install, or {@code null} to clear any existing reader.
-   */
-  public void setAnalogButtonReader(@Nullable FlixelGamepadAnalogButtonReader reader) {
-    analogButtonReader = reader;
-  }
-
-  /**
    * Returns whether the gamepad in the given slot reports vibration support.
    *
    * @param slot Slot index.
@@ -1058,17 +1040,13 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
       int l2Axis = m.getAxisIndex(FlixelGamepadAxis.L2);
       int r2Axis = m.getAxisIndex(FlixelGamepadAxis.R2);
 
-      if (l2Button != FlixelGamepadMapping.UNDEFINED && analogButtonReader != null) {
-        triggerL[s] = analogButtonReader.read(g, l2Button);
-      } else if (l2Axis != FlixelGamepadMapping.UNDEFINED && l2Axis < ac) {
+      if (l2Axis != FlixelGamepadMapping.UNDEFINED && l2Axis < ac) {
         triggerL[s] = axisValues[s][l2Axis];
       } else {
         triggerL[s] = 0f;
       }
 
-      if (r2Button != FlixelGamepadMapping.UNDEFINED && analogButtonReader != null) {
-        triggerR[s] = analogButtonReader.read(g, r2Button);
-      } else if (r2Axis != FlixelGamepadMapping.UNDEFINED && r2Axis < ac) {
+      if (r2Axis != FlixelGamepadMapping.UNDEFINED && r2Axis < ac) {
         triggerR[s] = axisValues[s][r2Axis];
       } else {
         triggerR[s] = 0f;
