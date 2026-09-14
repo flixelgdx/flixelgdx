@@ -204,9 +204,7 @@ public class PerformanceObject {
   interfaces where behavior differs per platform.
 - Keep changes minimal: avoid unrelated files unless needed for the stated task.
 - When working in the HTML5 / `flixelgdx-html5` platform, do not write JavaScript- or WebAssembly-specific code. The
-  framework's web platform should be able to support both out of the box, which allows it to be reachable
-  on older and newer browsers alike.
-- If an API (such as a method) is moved to a different location, do **not** keep the original location. Remove it entirely.
+  framework's web platform should be able to support both out of the box.
 
 ### Language and style
 
@@ -220,9 +218,12 @@ public class PerformanceObject {
 
 Summarize edits in plain language: what changed, why, and how it fits the system.
 
-Before considering a coding task finished, **run unit tests**, **spotless apply (for formatting)**, **checkstyle 
+Before considering a coding task finished, run **unit tests**, **spotless apply (for formatting)**, **checkstyle 
 (for code quality)**, and **Javadoc lint**; fix failures. **All** unit tests live in the `flixelgdx-test` module, not 
 scattered around multiple modules.
+
+Additionally, if you are currently on a branch for a pull request, always update the description of the PR to ensure accuracy
+after completing a task.
 
 ---
 
@@ -246,7 +247,7 @@ Documentation should read like a **beginner-friendly handbook**, not an expert-o
 - Add comments where either complexity would otherwise be hard to follow, or where code requires import context.
 - Skip Javadoc on trivial, self-explanatory methods (such as plain getters/setters) unless there is subtle behavior.
 - All source files should carry the project's standard copyright header (exceptions: `package-info.java`, `module-info.java` and build scripts).
-- Prefer **American English** in docs. (e.g., "behavior" instead of "behaviour")
+- Use **American English** in docs. (e.g., "behavior" instead of "behaviour")
 - After code changes that affect public behavior or APIs, **update relevant Markdown docs** in the repo.
 - Don't use section comments (like `// ---`). The code should be easily navigable simply by how it's organized; section comments are just noise.
 - If a class needs to be referenced in a `@link`, don't write out the full package: import it as a qualifier. This allows the framework's Javadoc links to be
@@ -285,4 +286,3 @@ For widely used classes, fields, methods, or anything central to correctness, in
     - "Reworked the logging API and its stack trace system to be much more accurate using a custom logging plugin"
 - All pull requests should target the **`master`** branch.
 - If the user has changes present on the current branch, **do not undo, modify or touch them**. Leave them as-is.
-- If you are currently on a branch for a pull request, always update the description of the PR to ensure accuracy.
