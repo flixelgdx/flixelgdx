@@ -128,13 +128,16 @@ public interface FlixelGamepad {
   boolean canVibrate();
 
   /**
-   * Starts a rumble at the given unified strength for the given time. Backends with independent
-   * motors are driven through {@link FlixelGamepadHapticsProvider} instead; this is the simple fallback.
+   * Starts a rumble on the low- and high-frequency motors for the given time.
+   *
+   * <p>The caller passes values already clamped to {@code [0, 1]}. Single-motor hardware may
+   * collapse the two channels to one value, typically the larger of the two.
    *
    * @param durationMs How long to vibrate, in milliseconds.
-   * @param strength Motor strength in the range {@code [0, 1]}.
+   * @param leftIntensity Strength for the left (low-frequency) motor, in the range {@code [0, 1]}.
+   * @param rightIntensity Strength for the right (high-frequency) motor, in the range {@code [0, 1]}.
    */
-  void startVibration(int durationMs, float strength);
+  void startVibration(int durationMs, float leftIntensity, float rightIntensity);
 
   /** Stops any active vibration on this gamepad immediately. */
   void cancelVibration();

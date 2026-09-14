@@ -99,8 +99,8 @@ public class FlixelWebGamepad implements FlixelGamepad {
   }
 
   @Override
-  public void startVibration(int durationMs, float strength) {
-    vibrate(index, durationMs, strength);
+  public void startVibration(int durationMs, float leftIntensity, float rightIntensity) {
+    vibrate(index, durationMs, leftIntensity, rightIntensity);
   }
 
   @Override
@@ -137,14 +137,14 @@ public class FlixelWebGamepad implements FlixelGamepad {
   @JSBody(params = "i", script = "var g = navigator.getGamepads()[i]; return !!(g && g.vibrationActuator);")
   private static native boolean hasVibration(int i);
 
-  @JSBody(params = { "i", "duration", "strength" }, script = """
+  @JSBody(params = { "i", "duration", "strong", "weak" }, script = """
       var g = navigator.getGamepads()[i];
       if (g && g.vibrationActuator && g.vibrationActuator.playEffect) {
         g.vibrationActuator.playEffect('dual-rumble',
-          { duration: duration, strongMagnitude: strength, weakMagnitude: strength });
+          { duration: duration, strongMagnitude: strong, weakMagnitude: weak });
       }
       """)
-  private static native void vibrate(int i, int duration, float strength);
+  private static native void vibrate(int i, int duration, float strong, float weak);
 
   @JSBody(params = "i", script = """
       var g = navigator.getGamepads()[i];

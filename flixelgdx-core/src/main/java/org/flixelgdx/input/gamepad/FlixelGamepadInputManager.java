@@ -110,9 +110,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   private final FlixelGamepadDevice[] ensuredDevices = new FlixelGamepadDevice[MAX_GAMEPADS];
 
   @NotNull
-  private FlixelGamepadHapticsProvider hapticsProvider = new FlixelDefaultGamepadHapticsProvider(this);
-
-  @NotNull
   private FlixelGamepadProvider gamepadProvider = FlixelNoopGamepadProvider.INSTANCE;
 
   private final FlixelArray<FlixelGamepadMappingResolver> mappingResolvers = new FlixelArray<>();
@@ -721,22 +718,6 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
   }
 
   /**
-   * Replaces the haptics backend used by all vibration calls on this manager.
-   *
-   * <p>Each platform launcher installs a provider automatically: {@code FlixelLwjgl3Launcher}
-   * installs {@code FlixelLwjgl3HapticsProvider} (Jamepad/SDL, true dual-motor), and
-   * {@code FlixelTeaVMLauncher} installs {@code FlixelTeaVMHapticsProvider} (W3C Gamepad Haptics
-   * API, true dual-motor). Only override this when you need platform-specific features that the
-   * built-in providers do not cover.
-   *
-   * @param provider Non-null replacement provider.
-   * @throws NullPointerException If {@code provider} is {@code null}.
-   */
-  public void setHapticsProvider(@NotNull FlixelGamepadHapticsProvider provider) {
-    hapticsProvider = Objects.requireNonNull(provider, "provider cannot be null.");
-  }
-
-  /**
    * Returns whether the gamepad in the given slot reports vibration support.
    *
    * @param slot Slot index.
@@ -747,7 +728,8 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled || slot < 0 || slot >= numActiveGamepads) {
       return false;
     }
-    return hapticsProvider.canVibrate(slot);
+    FlixelGamepad g = slotGamepads[slot];
+    return g != null && g.canVibrate();
   }
 
   /**
@@ -794,16 +776,23 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled || slot < 0 || slot >= numActiveGamepads) {
       return;
     }
-    hapticsProvider.vibrate(slot, leftIntensity, rightIntensity, durationSecs);
+    FlixelGamepad g = slotGamepads[slot];
+    if (g == null || !g.canVibrate()) {
+      return;
+    }
+    float left = Math.max(0f, Math.min(1f, leftIntensity));
+    float right = Math.max(0f, Math.min(1f, rightIntensity));
+    g.startVibration((int) (durationSecs * 1000f), left, right);
   }
 
   /**
    * Returns the current analog pressure of the left trigger (L2) on the given slot, in the
    * range {@code [0, 1]}, after applying the global dead zone.
    *
-   * <p>On the Jamepad/SDL desktop backend, triggers are reported as axes, so this reads the
-   * raw trigger axis directly. On web (TeaVM/W3C Gamepad API), triggers are digital buttons;
-   * pressure is read through the analog button reader installed at startup.
+   * <p>On backends that report triggers as axes (desktop), this reads the raw trigger axis. On
+   * backends that report them as digital buttons (web), no analog pressure is available and this
+   * returns {@code 0}; use {@link #pressed(int, FlixelGamepadButton)} with
+   * {@link FlixelGamepadButton#L2} there instead.
    *
    * <pre>{@code
    * float howHardL2 = Flixel.gamepads.getTriggerL(0);
@@ -840,7 +829,10 @@ public class FlixelGamepadInputManager implements FlixelInputManager, FlixelGame
     if (!enabled || slot < 0 || slot >= numActiveGamepads) {
       return;
     }
-    hapticsProvider.stopVibration(slot);
+    FlixelGamepad g = slotGamepads[slot];
+    if (g != null) {
+      g.cancelVibration();
+    }
   }
 
   boolean isSlotConnected(int id) {

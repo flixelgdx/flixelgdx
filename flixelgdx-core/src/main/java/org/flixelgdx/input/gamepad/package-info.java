@@ -26,10 +26,6 @@
  *   <li>{@link org.flixelgdx.input.gamepad.FlixelGamepadDetector FlixelGamepadDetector} - detects
  *       the {@link org.flixelgdx.input.gamepad.FlixelGamepadModel FlixelGamepadModel} from VID/PID
  *       or name.</li>
- *   <li>{@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider FlixelGamepadHapticsProvider} -
- *       pluggable vibration backend.</li>
- *   <li>{@link org.flixelgdx.input.gamepad.FlixelGamepadListener FlixelGamepadListener} - event
- *       callbacks for connection, disconnection, and raw input.</li>
  * </ul>
  *
  * <h2>Quick start</h2>
@@ -139,16 +135,10 @@
  *
  * <h2>Haptics and vibration</h2>
  *
- * <p>Vibration is routed through a
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider FlixelGamepadHapticsProvider}.
- * Each backend launcher installs the correct implementation automatically:
- *
- * <ul>
- *   <li>Desktop: Jamepad/SDL dual-rumble, with independent left (low-frequency) and right (high-frequency)
- *   motor channels.</li>
- *   <li>Web: W3C Gamepad Haptics API ({@code vibrationActuator.playEffect("dual-rumble", ...)}).
- *   Requires a Chromium-based browser; Firefox does not support {@code vibrationActuator}.</li>
- * </ul>
+ * <p>Vibration drives two independent motor channels: a left (low-frequency) motor and a right
+ * (high-frequency) motor. Desktop routes them through SDL dual-rumble; web uses the W3C Gamepad
+ * Haptics API ({@code vibrationActuator.playEffect("dual-rumble", ...)}), which requires a
+ * Chromium-based browser (Firefox does not support {@code vibrationActuator}).
  *
  * <pre>{@code
  * // Full-strength rumble on both motors for 0.3 seconds.
@@ -160,12 +150,6 @@
  * // Stop vibration immediately.
  * Flixel.gamepads.stopVibration(0);
  * }</pre>
- *
- * <p>For advanced platform-specific haptics (such as DualSense adaptive triggers), supply a custom
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider FlixelGamepadHapticsProvider}
- * via
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadInputManager#setHapticsProvider(org.flixelgdx.input.gamepad.FlixelGamepadHapticsProvider)
- * setHapticsProvider(...)}.
  *
  * <h2>Dead zones</h2>
  *

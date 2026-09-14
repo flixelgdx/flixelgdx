@@ -78,7 +78,7 @@ class FlixelGamepadProviderTest {
     }
 
     @Override
-    public void startVibration(int durationMs, float strength) {}
+    public void startVibration(int durationMs, float leftIntensity, float rightIntensity) {}
 
     @Override
     public void cancelVibration() {}
