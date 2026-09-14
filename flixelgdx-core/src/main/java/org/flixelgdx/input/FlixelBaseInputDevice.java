@@ -41,9 +41,9 @@ import org.flixelgdx.input.keyboard.FlixelKey;
  */
 public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
 
-  private final FlixelArray<FlixelKeyboardListener> keyboardListeners = new FlixelArray<>();
-  private final FlixelArray<FlixelMouseListener> mouseListeners = new FlixelArray<>();
-  private final FlixelArray<FlixelTouchListener> touchListeners = new FlixelArray<>();
+  protected FlixelArray<FlixelKeyboardListener> keyboardListeners = new FlixelArray<>();
+  protected FlixelArray<FlixelMouseListener> mouseListeners = new FlixelArray<>();
+  protected FlixelArray<FlixelTouchListener> touchListeners = new FlixelArray<>();
 
   @Override
   public void addKeyboardListener(FlixelKeyboardListener listener) {
