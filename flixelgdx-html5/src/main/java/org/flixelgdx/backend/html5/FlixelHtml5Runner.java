@@ -89,6 +89,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private FlixelGame game;
   private FlixelCrashHandler crashHandler;
 
+  private boolean stopped;
+
   /**
    * Creates an HTML5 runner for the given canvas and platform components.
    *
@@ -110,6 +112,17 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     this.window = window;
     this.host = host;
     this.input = input;
+  }
+
+  /**
+   * Stops the game loop at the end of the current frame, preventing any further
+   * {@code requestAnimationFrame} callbacks from being scheduled.
+   *
+   * <p>Called by {@link FlixelHtml5Window#close()} so the loop halts cleanly before
+   * the browser is asked to close the tab.
+   */
+  void stop() {
+    stopped = true;
   }
 
   @Override
@@ -207,6 +220,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * @param timestamp The browser-supplied frame time in milliseconds.
    */
   private void onAnimationFrame(double timestamp) {
+    if (stopped) {
+      return;
+    }
     if (isAlertPaused()) {
       lastTimestamp = -1.0;
       Window.requestAnimationFrame(this::onAnimationFrame);
