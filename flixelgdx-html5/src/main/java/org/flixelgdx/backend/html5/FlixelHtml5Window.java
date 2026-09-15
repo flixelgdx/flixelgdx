@@ -122,10 +122,6 @@ public class FlixelHtml5Window implements FlixelWindow {
   public void setFullscreen(FlixelDisplayMode mode) {
     // Request fullscreen on the document element rather than the canvas. The browser's Fullscreen
     // API promotes the target element into a top layer that sits above all normal page content.
-    // When the canvas alone was the target, DOM overlays such as the debug panel (which live in
-    // document.body) were hidden behind the fullscreen canvas regardless of z-index. Using
-    // document.documentElement ensures every element on the page -- canvas, debug panel, loading
-    // overlay, and any other DOM overlays -- stays inside the fullscreen subtree and remains visible.
     requestFullscreen();
     fullscreen = true;
   }
