@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * per-frame path, so it uses a {@link StringBuilder} internally for clarity. Build one object, read
  * {@link #toString()}, and discard it.
  *
- * <p>Example:
+ * <p>Compact example (the default):
  * <pre>{@code
  * String json = new FlixelJsonWriter()
  *     .beginObject()
@@ -48,14 +48,56 @@ import org.jetbrains.annotations.Nullable;
  *     .toString();
  * // -> {"score":1200,"name":"Ada"}
  * }</pre>
+ *
+ * <p>Pretty-print example (indent = 2 spaces):
+ * <pre>{@code
+ * String json = new FlixelJsonWriter()
+ *     .setIndent(2)
+ *     .beginObject()
+ *     .name("score").value(1200)
+ *     .name("name").value("Ada")
+ *     .endObject()
+ *     .toString();
+ * // -> {
+ * //      "score": 1200,
+ * //      "name": "Ada"
+ * //    }
+ * }</pre>
  */
 public final class FlixelJsonWriter {
 
   @NotNull
   private final StringBuilder out = new StringBuilder(64);
 
+  private int indent;
+  private int depth;
+
   /** Whether the next {@link #name(String)} must be preceded by a comma. */
   private boolean needComma;
+
+  /**
+   * Enables pretty-print indentation.
+   *
+   * <p>By default the writer produces compact JSON with no whitespace. Setting a positive indent
+   * turns on pretty-printing: each nesting level is indented by {@code spaces} more spaces, keys
+   * get a space after the colon, and opening/closing brackets are placed on their own lines. Set
+   * to 0 (the default) to return to compact output.
+   *
+   * <p>This method must be called before writing any output, because whitespace emitted earlier
+   * cannot be retroactively adjusted.
+   *
+   * @param spaces The number of spaces per indentation level. Must be 0 or greater.
+   * @return This writer, for method chaining.
+   * @throws IllegalArgumentException If {@code spaces} is negative.
+   */
+  @NotNull
+  public FlixelJsonWriter setIndent(int spaces) {
+    if (spaces < 0) {
+      throw new IllegalArgumentException("Indent must be >= 0, got " + spaces);
+    }
+    indent = spaces;
+    return this;
+  }
 
   /**
    * Opens a JSON object.
@@ -66,6 +108,7 @@ public final class FlixelJsonWriter {
   public FlixelJsonWriter beginObject() {
     separateValue();
     out.append('{');
+    depth++;
     needComma = false;
     return this;
   }
@@ -77,6 +120,11 @@ public final class FlixelJsonWriter {
    */
   @NotNull
   public FlixelJsonWriter endObject() {
+    depth--;
+    if (indent > 0) {
+      out.append('\n');
+      appendIndent(depth);
+    }
     out.append('}');
     needComma = true;
     return this;
@@ -91,6 +139,7 @@ public final class FlixelJsonWriter {
   public FlixelJsonWriter beginArray() {
     separateValue();
     out.append('[');
+    depth++;
     needComma = false;
     return this;
   }
@@ -102,6 +151,11 @@ public final class FlixelJsonWriter {
    */
   @NotNull
   public FlixelJsonWriter endArray() {
+    depth--;
+    if (indent > 0) {
+      out.append('\n');
+      appendIndent(depth);
+    }
     out.append(']');
     needComma = true;
     return this;
@@ -119,9 +173,17 @@ public final class FlixelJsonWriter {
     if (needComma) {
       out.append(',');
     }
+    if (indent > 0) {
+      out.append('\n');
+      appendIndent(depth);
+    }
     out.append('"');
     escape(name);
-    out.append("\":");
+    out.append('"');
+    out.append(':');
+    if (indent > 0) {
+      out.append(' ');
+    }
     needComma = false;
     return this;
   }
@@ -209,12 +271,31 @@ public final class FlixelJsonWriter {
     return out.toString();
   }
 
-  /** Inserts a separating comma before an array element (a value written while inside an array). */
+  /**
+   * Inserts a separating comma (and, in pretty mode, a newline + indent) before an array element.
+   * When pretty-printing, also emits the leading newline + indent for the very first element inside
+   * an array (where no comma precedes it, but whitespace is still required for readable output).
+   */
   private void separateValue() {
     int len = out.length();
     if (needComma && len > 0 && out.charAt(len - 1) != ':') {
       out.append(',');
+      if (indent > 0) {
+        out.append('\n');
+        appendIndent(depth);
+      }
       needComma = false;
+    } else if (indent > 0 && len > 0 && out.charAt(len - 1) == '[') {
+      out.append('\n');
+      appendIndent(depth);
+    }
+  }
+
+  /** Appends {@code depth * indent} spaces to give the current nesting its proper visual offset. */
+  private void appendIndent(int d) {
+    int spaces = d * indent;
+    for (int i = 0; i < spaces; i++) {
+      out.append(' ');
     }
   }
 
