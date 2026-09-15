@@ -46,12 +46,15 @@ import org.teavm.jso.dom.html.HTMLDocument;
  *   <li>{@link #getWidth()} and {@link #getHeight()} report the canvas size in CSS pixels.</li>
  *   <li>{@link #setFullscreen} and {@link #setWindowed} use the browser Fullscreen API.</li>
  *   <li>{@link #isFocused()} reports whether the page currently has focus.</li>
+ *   <li>{@link #close()} stops the game loop and asks the browser to close the tab.</li>
  * </ul>
  */
 public class FlixelHtml5Window implements FlixelWindow {
 
   @Nullable
   private HTMLCanvasElement canvas;
+  @Nullable
+  private FlixelHtml5Runner runner;
 
   private int width;
   private int height;
@@ -70,6 +73,16 @@ public class FlixelHtml5Window implements FlixelWindow {
     this.canvas = canvas;
     this.width = width;
     this.height = height;
+  }
+
+  /**
+   * Registers the runner so {@link #close()} can stop the game loop before asking the browser to
+   * close the tab.
+   *
+   * @param runner The runner driving this session's game loop.
+   */
+  void setRunner(FlixelHtml5Runner runner) {
+    this.runner = runner;
   }
 
   /**
@@ -142,6 +155,14 @@ public class FlixelHtml5Window implements FlixelWindow {
     HTMLDocument.current().setTitle(title);
   }
 
+  @Override
+  public void close() {
+    if (runner != null) {
+      runner.stop();
+    }
+    closeWindow();
+  }
+
   @JSBody(script = "if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }")
   private static native void requestFullscreen();
 
@@ -150,4 +171,7 @@ public class FlixelHtml5Window implements FlixelWindow {
 
   @JSBody(script = "return document.hasFocus();")
   private static native boolean hasFocus();
+
+  @JSBody(script = "if (window.close) { window.close(); }")
+  private static native void closeWindow();
 }

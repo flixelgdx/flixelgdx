@@ -27,7 +27,6 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
-import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetManager;
 import org.flixelgdx.backend.html5.audio.FlixelWebAudioFactory;
@@ -115,8 +114,9 @@ public final class FlixelHtml5Launcher {
 
     Flixel.runtime.setMode(runtimeMode);
 
-    FlixelGameRunner runner = new FlixelHtml5Runner(CANVAS_ID, config.getWidth(), config.getHeight(),
+    FlixelHtml5Runner runner = new FlixelHtml5Runner(CANVAS_ID, config.getWidth(), config.getHeight(),
         graphics, window, host, input);
+    window.setRunner(runner);
     Flixel.start(game, runner);
   }
 
