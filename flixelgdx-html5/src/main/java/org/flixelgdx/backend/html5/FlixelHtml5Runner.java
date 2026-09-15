@@ -32,10 +32,12 @@ import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
+import org.teavm.jso.dom.html.HTMLElement;
 
 /**
  * The web platform's game loop, driven by the browser's {@code requestAnimationFrame} callback.
@@ -53,6 +55,13 @@ import org.teavm.jso.dom.html.HTMLDocument;
  * hooks so audio and updates can pause when the tab is hidden.
  */
 public class FlixelHtml5Runner implements FlixelGameRunner {
+
+  /**
+   * ID used for the wrapper div that the runner creates around the canvas when no existing canvas
+   * was found on the page. Debug overlays and other overlay elements are appended inside this
+   * container so they remain inside the fullscreen element's subtree during fullscreen transitions.
+   */
+  static final String CONTAINER_ID = "flixel-game-container";
 
   private double lastTimestamp = -1.0;
 
@@ -74,6 +83,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private final int width;
   private final int height;
 
+  @Nullable
+  private HTMLElement container;
   private HTMLCanvasElement canvas;
   private FlixelGame game;
   private FlixelCrashHandler crashHandler;
@@ -111,7 +122,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     element.setHeight(height);
     this.canvas = element;
 
-    window.bind(element, width, height);
+    window.bind(element, container, width, height);
     input.attach(element);
     graphics.initialize(element);
 
@@ -227,6 +238,15 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * not already supply it. Reusing a page-provided canvas lets developers style and position the
    * canvas from their own HTML instead of taking whatever the framework appends.
    *
+   * <p>When the canvas is auto-created, it is wrapped in a container div (id
+   * {@value #CONTAINER_ID}). The container is the element passed to the browser Fullscreen API
+   * when the game requests fullscreen, so any overlay elements appended inside it (such as the
+   * debug panel) remain visible during fullscreen transitions instead of being hidden behind the
+   * canvas top layer.
+   *
+   * <p>When an existing page canvas is reused (developer-provided HTML), no container is created;
+   * the caller is responsible for ensuring its own layout works with the Fullscreen API if needed.
+   *
    * @param document The current page document.
    * @return The canvas element to render into.
    */
@@ -237,7 +257,11 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     }
     HTMLCanvasElement created = (HTMLCanvasElement) document.createElement("canvas");
     created.setAttribute("id", canvasId);
-    document.getBody().appendChild(created);
+    HTMLElement wrapper = (HTMLElement) document.createElement("div");
+    wrapper.setAttribute("id", CONTAINER_ID);
+    wrapper.appendChild(created);
+    document.getBody().appendChild(wrapper);
+    container = wrapper;
     return created;
   }
 
