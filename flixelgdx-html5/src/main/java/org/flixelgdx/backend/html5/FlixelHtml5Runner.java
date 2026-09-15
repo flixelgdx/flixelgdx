@@ -122,7 +122,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     element.setHeight(height);
     this.canvas = element;
 
-    window.bind(element, container, width, height);
+    window.bind(element, width, height);
     input.attach(element);
     graphics.initialize(element);
 

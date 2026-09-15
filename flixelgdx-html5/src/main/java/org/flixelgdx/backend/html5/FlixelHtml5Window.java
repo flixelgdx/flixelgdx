@@ -29,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 import org.teavm.jso.dom.html.HTMLDocument;
-import org.teavm.jso.dom.html.HTMLElement;
 
 /**
  * The web platform's {@link FlixelWindow}, backed by an HTML canvas inside the browser page.
@@ -52,9 +51,6 @@ import org.teavm.jso.dom.html.HTMLElement;
 public class FlixelHtml5Window implements FlixelWindow {
 
   @Nullable
-  private HTMLElement container;
-
-  @Nullable
   private HTMLCanvasElement canvas;
 
   private int width;
@@ -66,19 +62,12 @@ public class FlixelHtml5Window implements FlixelWindow {
    * Binds this window to the canvas element the runner created. Called once during startup before
    * the game loop begins.
    *
-   * <p>When the runner wrapped the canvas in a container div, {@code container} is that div. The
-   * window uses the container as the fullscreen target so overlay elements appended inside it
-   * remain visible during fullscreen transitions. Pass {@code null} when the canvas already
-   * existed on the page and no container was created.
-   *
    * @param canvas The canvas the game renders into.
-   * @param container The wrapper div around the canvas, or {@code null} if none was created.
    * @param width The initial canvas width in CSS pixels.
    * @param height The initial canvas height in CSS pixels.
    */
-  public void bind(HTMLCanvasElement canvas, @Nullable HTMLElement container, int width, int height) {
+  public void bind(HTMLCanvasElement canvas, int width, int height) {
     this.canvas = canvas;
-    this.container = container;
     this.width = width;
     this.height = height;
   }
@@ -131,13 +120,14 @@ public class FlixelHtml5Window implements FlixelWindow {
 
   @Override
   public void setFullscreen(FlixelDisplayMode mode) {
-    // Prefer the container div so overlay elements inside it (such as the debug panel)
-    // stay in the fullscreen top-layer subtree and remain visible during fullscreen.
-    HTMLElement target = container != null ? container : canvas;
-    if (target != null) {
-      requestFullscreen(target);
-      fullscreen = true;
-    }
+    // Request fullscreen on the document element rather than the canvas. The browser's Fullscreen
+    // API promotes the target element into a top layer that sits above all normal page content.
+    // When the canvas alone was the target, DOM overlays such as the debug panel (which live in
+    // document.body) were hidden behind the fullscreen canvas regardless of z-index. Using
+    // document.documentElement ensures every element on the page -- canvas, debug panel, loading
+    // overlay, and any other DOM overlays -- stays inside the fullscreen subtree and remains visible.
+    requestFullscreen();
+    fullscreen = true;
   }
 
   @Override
@@ -156,8 +146,8 @@ public class FlixelHtml5Window implements FlixelWindow {
     HTMLDocument.current().setTitle(title);
   }
 
-  @JSBody(params = "element", script = "if (element.requestFullscreen) { element.requestFullscreen(); }")
-  private static native void requestFullscreen(HTMLElement element);
+  @JSBody(script = "if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }")
+  private static native void requestFullscreen();
 
   @JSBody(script = "if (document.exitFullscreen && document.fullscreenElement) { document.exitFullscreen(); }")
   private static native void exitFullscreen();
