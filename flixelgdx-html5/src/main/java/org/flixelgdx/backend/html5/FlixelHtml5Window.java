@@ -120,10 +120,10 @@ public class FlixelHtml5Window implements FlixelWindow {
 
   @Override
   public void setFullscreen(FlixelDisplayMode mode) {
-    if (canvas != null) {
-      requestFullscreen(canvas);
-      fullscreen = true;
-    }
+    // Request fullscreen on the document element rather than the canvas. The browser's Fullscreen
+    // API promotes the target element into a top layer that sits above all normal page content.
+    requestFullscreen();
+    fullscreen = true;
   }
 
   @Override
@@ -142,8 +142,8 @@ public class FlixelHtml5Window implements FlixelWindow {
     HTMLDocument.current().setTitle(title);
   }
 
-  @JSBody(params = "element", script = "if (element.requestFullscreen) { element.requestFullscreen(); }")
-  private static native void requestFullscreen(HTMLCanvasElement element);
+  @JSBody(script = "if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }")
+  private static native void requestFullscreen();
 
   @JSBody(script = "if (document.exitFullscreen && document.fullscreenElement) { document.exitFullscreen(); }")
   private static native void exitFullscreen();

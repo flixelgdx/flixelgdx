@@ -35,7 +35,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * <pre>{@code
  * FlixelGamepadDevice pad = Flixel.gamepads.ensureDevice(0);
- *
  * if (pad.isConnected() && pad.justPressed(FlixelGamepadButton.A)) {
  *   jump();
  * }

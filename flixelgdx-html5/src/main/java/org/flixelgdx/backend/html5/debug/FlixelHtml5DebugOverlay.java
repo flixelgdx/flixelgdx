@@ -714,8 +714,14 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
           resizer.addEventListener('pointerleave', function () { if (!D.resizerDragging) { D.hover = false; } });
           panel.appendChild(resizer);
 
-          document.body.appendChild(panel);
-          document.body.appendChild(reveal);
+          var host = document.getElementById('flixel-game-container') || document.body;
+          host.appendChild(panel);
+          host.appendChild(reveal);
+
+          document.addEventListener('fullscreenchange', function () {
+            D.show(D.panel.style.display !== 'none');
+          });
+
           selectTab(0);
           """)
   private static native void buildDom();
