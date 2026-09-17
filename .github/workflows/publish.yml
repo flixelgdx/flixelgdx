@@ -1,7 +1,7 @@
 name: Publish to Maven Central
 
 # Triggers on any tag of the form v1.2.3 (pushed to master).
-# The git tag drives the artifact version: v1.2.3 -> publishes as 1.2.3.
+# The build derives the artifact version from the tag via git describe: v1.2.3 -> 1.2.3.
 on:
   push:
     tags:
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
@@ -39,6 +41,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17 (Temurin)
         uses: actions/setup-java@v4
@@ -61,9 +65,7 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_PASSWORD }}
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
           ./gradlew publishAllPublicationsToMavenCentralRepository \
-            -PprojectVersion=$VERSION \
             -PincludeAndroid=true \
             --no-daemon \
             --warning-mode all

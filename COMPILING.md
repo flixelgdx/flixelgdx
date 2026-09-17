@@ -277,6 +277,9 @@ The generated project targets Maven Central by default, pulling the last stable 
    ```
 2. In the test project’s root `build.gradle`, add `mavenLocal()` to the `repositories` block before `mavenCentral()`.
 
+> [!WARNING]
+> The published artifact version is derived from your most recent git tag using `git describe`. If git is not installed or your clone has no tags, the version will be `unspecified`, and the test project will fail to resolve the dependency. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid version concerns entirely.
+
 > [!NOTE]
 > You must re-run `publishToMavenLocal` each time you change the framework and want the test project to pick up those changes. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid this.
 
@@ -523,17 +526,17 @@ You can still edit and build the **flixelgdx-android** module without a device o
 
 ### Gradle wrapper not executable (Linux / macOS)
 
-- **Symptom**: `./gradlew publishToMavenLocal` fails with “Permission denied”.
+- **Symptom**: `./gradlew` fails with “Permission denied”.
 - **Fix**:  
 `chmod +x gradlew`  
-Then run `./gradlew publishToMavenLocal` again.
+Then run your Gradle command again.
 
 ### Path with spaces or special characters
 
 - **Symptom**: Gradle or scripts fail when the project path contains spaces (e.g. `C:\Users\My Name\flixelgdx`).
 - **Fix**: Prefer a path without spaces (e.g. `C:\dev\flixelgdx`). If you must use spaces, quote the path in scripts and in composite build: `includeBuild('C:/Users/My Name/flixelgdx') { ... }`.
 
-### Dependency not found: `org.flixelgdx:flixelgdx-core`
+### Dependency not found
 
 - **Symptom**: The test project fails to resolve the FlixelGDX dependency.
 - **Fix**:  
@@ -547,8 +550,8 @@ Then run `./gradlew publishToMavenLocal` again.
 
 ### Version mismatch (test project vs published artifact)
 
-- **Symptom**: Test project depends on `flixelgdx-core:1.0.0` but you have not published that version, or you changed the version locally.
-- **Fix**: Either run `publishToMavenLocal` so the version in `gradle.properties` is installed, or use a **composite build** so the test project ignores the version and uses the local project.
+- **Symptom**: Test project depends on `flixelgdx-core:<flixel-version>` but the locally published version does not match.
+- **Fix**: The artifact version is derived from your most recent git tag. Make sure your clone has tags fetched (`git fetch --tags`), then re-run `publishToMavenLocal`. Alternatively, use a **composite build** so the test project ignores the version and compiles against your local source directly.
 
 ### Android: SDK not found or licenses not accepted
 
