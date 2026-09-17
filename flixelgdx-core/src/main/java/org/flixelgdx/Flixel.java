@@ -94,9 +94,7 @@ import org.flixelgdx.util.timer.FlixelTimerListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.InputStream;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -1690,31 +1688,6 @@ public final class Flixel {
     }
 
     return true;
-  }
-
-  /**
-   * Returns the version of the FlixelGDX library.
-   *
-   * <p>The version is read from a {@code version.properties} file in the module {@code .jar} file,
-   * where it is defined as {@code version=<version>}. If the file is not found, or the version is not
-   * defined, the method returns {@code "Unknown"}, although this should never happen in theory.
-   *
-   * @return The version of the FlixelGDX library.
-   */
-  public static String getVersion() {
-    try (InputStream in = Flixel.class.getResourceAsStream("version.properties")) {
-      if (in != null) {
-        Properties p = new Properties();
-        p.load(in);
-        String v = p.getProperty("version");
-        if (v != null && !v.isEmpty()) {
-          return v;
-        }
-      }
-    } catch (Exception ignored) {
-      // Ignored.
-    }
-    return "Unknown";
   }
 
   /**
