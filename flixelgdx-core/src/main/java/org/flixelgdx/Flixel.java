@@ -1726,22 +1726,34 @@ public final class Flixel {
    * <p><b>NOTE:</b> Anything with the {@code pre} and {@code post} prefixes always mean the
    * same thing. If a signal has {@code pre}, then the signal gets ran BEFORE any functionality is
    * executed, and {@code post} means AFTER all functionality was executed.
+   *
+   * <p><b>WARNING:</b> Calling {@link FlixelSignal#clear()} on any signal in this class is a
+   * no-op and will not remove any listeners. These signals are shared across the entire framework,
+   * and clearing them would silently break any extension, library, or game system that subscribed
+   * to them. Use {@link FlixelSignal#remove(FlixelSignal.SignalHandler)} to unsubscribe a specific
+   * listener instead.
    */
   public static final class Signals {
 
-    public static final FlixelSignal<UpdateSignalData> preUpdate = new FlixelSignal<>();
-    public static final FlixelSignal<UpdateSignalData> postUpdate = new FlixelSignal<>();
-    public static final FlixelSignal<Void> preDraw = new FlixelSignal<>();
-    public static final FlixelSignal<Void> postDraw = new FlixelSignal<>();
-    public static final FlixelSignal<StateSwitchSignalData> preStateSwitch = new FlixelSignal<>();
-    public static final FlixelSignal<StateSwitchSignalData> postStateSwitch = new FlixelSignal<>();
-    public static final FlixelSignal<Void> preGameClose = new FlixelSignal<>();
-    public static final FlixelSignal<Void> postGameClose = new FlixelSignal<>();
-    public static final FlixelSignal<Void> windowFocused = new FlixelSignal<>();
-    public static final FlixelSignal<Void> windowUnfocused = new FlixelSignal<>();
-    public static final FlixelSignal<Void> windowMinimized = new FlixelSignal<>();
+    public static final FlixelSignal<UpdateSignalData> preUpdate = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<UpdateSignalData> postUpdate = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> preDraw = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> postDraw = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<StateSwitchSignalData> preStateSwitch = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<StateSwitchSignalData> postStateSwitch = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> preGameClose = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> windowUnfocused = new FlixelLifecycleSignal<>();
+    public static final FlixelSignal<Void> windowMinimized = new FlixelLifecycleSignal<>();
 
     private Signals() {}
+
+    private static final class FlixelLifecycleSignal<T> extends FlixelSignal<T> {
+
+      @Override
+      public void clear() {}
+    }
   }
 
   private Flixel() {}
