@@ -19,10 +19,19 @@ plugins {
 }
 
 val groupId: String by project
-val projectVersion: String by project
 
 group = groupId
-version = projectVersion
+version = gitVersion()
+
+fun gitVersion(): String = try {
+  val proc = ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
+    .directory(rootDir)
+    .start()
+  proc.waitFor()
+  proc.inputStream.bufferedReader().readText().trim().removePrefix("v").ifEmpty { "unspecified" }
+} catch (_: Exception) {
+  "unspecified"
+}
 
 eclipse.project.name = "flixelgdx-parent"
 

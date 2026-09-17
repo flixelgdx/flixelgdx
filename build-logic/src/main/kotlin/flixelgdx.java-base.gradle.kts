@@ -14,10 +14,9 @@ plugins {
 }
 
 val groupId: String by project
-val projectVersion: String by project
 
 group = groupId
-version = projectVersion
+version = rootProject.version
 
 eclipse.project.name = project.name
 
