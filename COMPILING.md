@@ -536,7 +536,7 @@ Then run your Gradle command again.
 - **Symptom**: Gradle or scripts fail when the project path contains spaces (e.g. `C:\Users\My Name\flixelgdx`).
 - **Fix**: Prefer a path without spaces (e.g. `C:\dev\flixelgdx`). If you must use spaces, quote the path in scripts and in composite build: `includeBuild('C:/Users/My Name/flixelgdx') { ... }`.
 
-### Dependency not found: `org.flixelgdx:flixelgdx-core`
+### Dependency not found
 
 - **Symptom**: The test project fails to resolve the FlixelGDX dependency.
 - **Fix**:  
@@ -550,7 +550,7 @@ Then run your Gradle command again.
 
 ### Version mismatch (test project vs published artifact)
 
-- **Symptom**: Test project depends on `flixelgdx-core:1.0.0` but the locally published version does not match.
+- **Symptom**: Test project depends on `flixelgdx-core:<flixel-version>` but the locally published version does not match.
 - **Fix**: The artifact version is derived from your most recent git tag. Make sure your clone has tags fetched (`git fetch --tags`), then re-run `publishToMavenLocal`. Alternatively, use a **composite build** so the test project ignores the version and compiles against your local source directly.
 
 ### Android: SDK not found or licenses not accepted
