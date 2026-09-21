@@ -316,11 +316,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    * @param wnd The SDL window handle to apply icons to.
    */
   private void applyWindowIcons(long wnd) {
-    if (iconPaths == null || iconPaths.length == 0) {
+    if (iconPaths == null) {
       return;
     }
-    for (int i = 0; i < iconPaths.length; i++) {
-      String path = iconPaths[i];
+    for (String path : iconPaths) {
       SDL_Surface surface = null;
       try {
         FlixelImage image = loadIconImage(path);
