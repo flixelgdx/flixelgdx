@@ -1,0 +1,106 @@
+# Builds the packagr native launcher for every supported platform and uploads each binary as an
+# artifact. macOS x86_64 is intentionally excluded, since Apple has deprecated Intel Macs. The
+# committed binaries under the stub resource folder are produced by this workflow, so they all come
+# from one documented pipeline. Only launcher.c and this file trigger it, so stubs are rebuilt only
+# when their source changes.
+name: Build launcher stubs
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - flixelgdx-plugins/flixelgdx-packagr-plugin/src/main/resources/org/flixelgdx/gradle/packagr/stub/src/launcher.c
+      - .github/workflows/build-launcher-stubs.yml
+
+env:
+  STUB: flixelgdx-plugins/flixelgdx-packagr-plugin/src/main/resources/org/flixelgdx/gradle/packagr/stub
+
+jobs:
+  linux:
+    name: Linux (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            cc: gcc
+            apt: ""
+          - arch: aarch64
+            cc: aarch64-linux-gnu-gcc
+            apt: gcc-aarch64-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install cross toolchain
+        if: matrix.apt != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.apt }}
+      - name: Build
+        run: |
+          mkdir -p "$STUB/linux-${{ matrix.arch }}"
+          ${{ matrix.cc }} -O2 -s -static-libgcc \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+            "$STUB/src/launcher.c" -o "$STUB/linux-${{ matrix.arch }}/launcher" -ldl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-linux-${{ matrix.arch }}
+          path: ${{ env.STUB }}/linux-${{ matrix.arch }}/launcher
+          if-no-files-found: error
+
+  windows:
+    name: Windows (${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            msvc: x64
+          - arch: aarch64
+            msvc: amd64_arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc }}
+      - name: Build
+        shell: cmd
+        run: |
+          set OUT=%STUB%\windows-${{ matrix.arch }}
+          if not exist "%OUT%" mkdir "%OUT%"
+          cl /nologo /O2 /MT /std:c11 ^
+            /I "%JAVA_HOME%\include" /I "%JAVA_HOME%\include\win32" ^
+            "%STUB%\src\launcher.c" /Fe:"%OUT%\launcher.exe" ^
+            /link /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup user32.lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-windows-${{ matrix.arch }}
+          path: ${{ env.STUB }}/windows-${{ matrix.arch }}/launcher.exe
+          if-no-files-found: error
+
+  macos:
+    name: macOS (aarch64)
+    runs-on: macos-latest # Apple Silicon; Intel (x86_64) is deliberately not built.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Build
+        run: |
+          mkdir -p "$STUB/macos-aarch64"
+          clang -O2 \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/darwin" \
+            "$STUB/src/launcher.c" -o "$STUB/macos-aarch64/launcher"
+          strip "$STUB/macos-aarch64/launcher"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-macos-aarch64
+          path: ${{ env.STUB }}/macos-aarch64/launcher
+          if-no-files-found: error

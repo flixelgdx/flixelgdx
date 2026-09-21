@@ -78,10 +78,18 @@ clang -O2 \
   src/launcher.c -o macos-aarch64/launcher
 ```
 
-Note for macOS: windowing libraries such as SDL and GLFW must run on the process's first thread.
-This launcher already creates the JVM and calls the game's main on that first thread, so it does not
-spawn a helper thread the way the stock `java` command does. Test a windowed game on macOS after
-building the stub to confirm the window opens; no `-XstartOnFirstThread` argument should be needed.
+Note for macOS: windowing libraries such as SDL and GLFW must run on the process's first thread. The
+stock `java` command runs your `main` on a *new* thread by default and reserves the first thread for
+the Cocoa event loop; the `-XstartOnFirstThread` option flips that so `main` runs on the first
+thread. That option is handled by the `java` launcher, not the JVM, so it is not a valid argument to
+`JNI_CreateJavaVM`.
+
+This launcher sidesteps the whole issue: it creates the JVM and calls the game's `main` directly on
+the process's first thread, so `main` (and therefore `glfwInit`) already runs where macOS requires
+it. LWJGL's first-thread check (`Configuration.GLFW_CHECK_THREAD0`) passes for the same reason, and
+`-XstartOnFirstThread` is neither needed nor accepted here. If a game's config happens to carry that
+argument, the launcher drops it rather than failing to start. Still, test a windowed game on macOS
+after building the stub to confirm the window opens.
 
 ### Linux aarch64
 

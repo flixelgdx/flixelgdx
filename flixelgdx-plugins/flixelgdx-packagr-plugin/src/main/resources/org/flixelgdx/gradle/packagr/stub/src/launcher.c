@@ -302,13 +302,21 @@ int main(int argc, char **argv) {
   char cpOption[16384];
   snprintf(cpOption, sizeof(cpOption), "-Djava.class.path=%s", classpath);
   options[0].optionString = cpOption;
+  int optionUsed = 1;
   for (int i = 0; i < cfg.vmArgCount; i++) {
-    options[i + 1].optionString = cfg.vmArgs[i];
+    // -XstartOnFirstThread is understood by the macOS "java" launcher, not by the JVM, so passing it
+    // to JNI_CreateJavaVM would be rejected as unrecognized. This launcher already runs the game's
+    // main on the process's first thread, which is exactly what that option asks for, so it is
+    // dropped here rather than forwarded.
+    if (strcmp(cfg.vmArgs[i], "-XstartOnFirstThread") == 0) {
+      continue;
+    }
+    options[optionUsed++].optionString = cfg.vmArgs[i];
   }
 
   JavaVMInitArgs vmArgs;
   vmArgs.version = JNI_VERSION_1_8;
-  vmArgs.nOptions = optionCount;
+  vmArgs.nOptions = optionUsed;
   vmArgs.options = options;
   vmArgs.ignoreUnrecognized = JNI_FALSE;
 
