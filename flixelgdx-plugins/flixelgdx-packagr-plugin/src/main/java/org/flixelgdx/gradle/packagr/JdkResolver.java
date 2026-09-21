@@ -35,6 +35,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -63,9 +64,7 @@ public final class JdkResolver {
 
   private static final String BINARY_ENDPOINT =
       "https://api.adoptium.net/v3/binary/latest/%d/ga/%s/%s/jdk/hotspot/normal/eclipse";
-  private static final String ASSETS_ENDPOINT =
-      "https://api.adoptium.net/v3/assets/latest/%d/hotspot?architecture=%s&image_type=jdk&os=%s&vendor=eclipse";
-  private static final Pattern CHECKSUM_PATTERN = Pattern.compile("\"checksum\"\\s*:\\s*\"([0-9a-fA-F]{64})\"");
+  private static final Pattern CHECKSUM_PATTERN = Pattern.compile("[0-9a-fA-F]{64}");
   private static final String MARKER_NAME = ".packagr-complete";
 
   private JdkResolver() {}
@@ -114,9 +113,9 @@ public final class JdkResolver {
     // try-with-resources here; it needs no explicit cleanup on this toolchain.
     HttpClient client = newClient();
     try {
-      download(client, downloadUrl, archive);
+      URI archiveUri = download(client, downloadUrl, archive);
       String actual = sha256(archive);
-      String expected = fetchExpectedChecksum(client, version, osUrl, archUrl, logger);
+      String expected = fetchExpectedChecksum(client, archiveUri, logger);
       if (expected != null && !expected.equalsIgnoreCase(actual)) {
         throw new GradleException("Downloaded JDK failed its checksum check for " + slug
             + " (expected " + expected + ", got " + actual + "). The download may be corrupt; "
@@ -164,7 +163,7 @@ public final class JdkResolver {
         .build();
   }
 
-  private static void download(HttpClient client, String url, Path dest)
+  private static URI download(HttpClient client, String url, Path dest)
       throws IOException, InterruptedException {
     HttpRequest request = HttpRequest.newBuilder(URI.create(url))
         .timeout(Duration.ofMinutes(10))
@@ -175,15 +174,31 @@ public final class JdkResolver {
       throw new IOException("JDK download failed with HTTP " + response.statusCode() + " from " + url);
     }
     try (InputStream in = response.body()) {
-      Files.copy(in, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
     }
+    // The final URI after redirects points at the actual archive asset; its checksum lives next to
+    // it, so it is returned for verification.
+    return response.uri();
   }
 
-  private static String fetchExpectedChecksum(HttpClient client, int version, String os, String arch,
-      Logger logger) {
-    String url = String.format(Locale.ROOT, ASSETS_ENDPOINT, version, arch, os);
+  /**
+   * Fetches the expected SHA-256 for the exact archive that was downloaded.
+   *
+   * <p>Every Temurin release asset has a companion {@code .sha256.txt} file next to it, so the
+   * checksum is read from {@code <archive-url>.sha256.txt}. Tying the check to the precise file that
+   * was downloaded avoids confusing it with the macOS {@code .pkg} or Windows {@code .msi} installer,
+   * which are separate assets with their own, different checksums.
+   *
+   * @param client The HTTP client to use.
+   * @param archiveUri The final URL the archive was downloaded from.
+   * @param logger The Gradle logger used to report a skipped verification.
+   * @return The expected checksum, or {@code null} when it cannot be fetched (verification is then
+   *     skipped rather than failing the build).
+   */
+  private static String fetchExpectedChecksum(HttpClient client, URI archiveUri, Logger logger) {
+    URI checksumUri = URI.create(archiveUri.toString() + ".sha256.txt");
     try {
-      HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+      HttpRequest request = HttpRequest.newBuilder(checksumUri)
           .timeout(Duration.ofSeconds(60))
           .GET()
           .build();
@@ -192,7 +207,7 @@ public final class JdkResolver {
         return null;
       }
       Matcher matcher = CHECKSUM_PATTERN.matcher(response.body());
-      return matcher.find() ? matcher.group(1) : null;
+      return matcher.find() ? matcher.group() : null;
     } catch (IOException e) {
       logger.info("[packagr] Could not fetch the JDK checksum; skipping verification.", e);
       return null;
