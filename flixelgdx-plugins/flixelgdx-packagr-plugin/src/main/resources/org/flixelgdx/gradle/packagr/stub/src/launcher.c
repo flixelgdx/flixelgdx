@@ -165,11 +165,11 @@ static int readConfig(const char *dir, Config *cfg) {
 static char *buildClasspath(const char *libsAbs) {
   size_t cap = 8192;
   size_t used = 0;
-  char *cp = (char *) malloc(cap);
-  if (cp == NULL) {
+  char* classPath = (char *) malloc(cap);
+  if (classPath == NULL) {
     return NULL;
   }
-  cp[0] = '\0';
+  classPath[0] = '\0';
 
 #ifdef _WIN32
   char pattern[MAX_PATH_LEN];
@@ -186,15 +186,15 @@ static char *buildClasspath(const char *libsAbs) {
       }
       if (used + (size_t) n + 1 > cap) {
         cap = (used + (size_t) n + 1) * 2;
-        char *grown = (char *) realloc(cp, cap);
+        char *grown = (char *) realloc(classPath, cap);
         if (grown == NULL) {
           FindClose(handle);
-          free(cp);
+          free(classPath);
           return NULL;
         }
-        cp = grown;
+        classPath = grown;
       }
-      strcpy(cp + used, entry);
+      strcpy(classPath + used, entry);
       used += (size_t) n;
     } while (FindNextFileA(handle, &find) != 0);
     FindClose(handle);
@@ -216,21 +216,21 @@ static char *buildClasspath(const char *libsAbs) {
       }
       if (used + (size_t) n + 1 > cap) {
         cap = (used + (size_t) n + 1) * 2;
-        char *grown = (char *) realloc(cp, cap);
+        char *grown = (char *) realloc(classPath, cap);
         if (grown == NULL) {
           closedir(dir);
-          free(cp);
+          free(classPath);
           return NULL;
         }
-        cp = grown;
+        classPath = grown;
       }
-      strcpy(cp + used, entry);
+      strcpy(classPath + used, entry);
       used += (size_t) n;
     }
     closedir(dir);
   }
 #endif
-  return cp;
+  return classPath;
 }
 
 /* Resolves "JNI_CreateJavaVM" from the bundled runtime's shared library. */

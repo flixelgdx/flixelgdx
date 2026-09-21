@@ -1,11 +1,9 @@
 # FlixelGDX packagr Plugin
 
-Turn a game into a double-clickable app for every platform, from one machine.
+Turn a game into a double-clickable app for every desktop platform, from one machine.
 
 This Gradle plugin packages a FlixelGDX game into a self-contained folder a player can run without
 installing Java: a native launcher, a trimmed Java runtime, and only the code that platform needs.
-It is the FlixelGDX-native replacement for libGDX-specific packaging tools, built to know how the
-framework ships its per-platform native libraries and to keep packaging fast.
 
 ## Why it exists
 
@@ -21,8 +19,8 @@ plugin does three things that make that practical:
   audio) as one jar per platform. The plugin bundles only the ones matching the target being built,
   so a Windows package never carries Linux or macOS native code.
 
-Two long-standing packaging annoyances are fixed by design: a downloaded JDK is cached and reused,
-so it is never re-downloaded on later builds, and each platform is a separate, incremental task.
+A downloaded JDK is cached and reused, so it is never re-downloaded on later builds, and each 
+platform is a separate, incremental task.
 
 ## Applying the plugin
 
@@ -45,12 +43,12 @@ packagr {
 ```
 
 Run `./gradlew packageAll` to build every target, or a single target's task such as
-`./gradlew packageLinuxX64`. Every package lands under `build/packagr/<target>/`. All of the
+`./gradlew packageLinuxX64`. Every package lands under `build/packagr/<target>/`. All the
 plugin's tasks live in the `packagr` group.
 
 ## Choosing targets
 
-The `targets` block offers a one-liner for each common platform, plus a way to describe any other:
+The `targets` block offers a one-liner for each common platform:
 
 ```groovy
 packagr {
@@ -62,12 +60,6 @@ packagr {
     windowsX64()
     windowsArm64()
     macosArm64()
-
-    // Anything the convenience methods do not cover, described directly.
-    register('steamDeck') {
-      os = OperatingSystem.LINUX
-      arch = Architecture.AARCH64
-    }
   }
 }
 ```

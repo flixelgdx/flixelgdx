@@ -17,9 +17,8 @@ windows-aarch64/launcher.exe
 macos-aarch64/launcher
 ```
 
-All of these are committed and produced by the `build-launcher-stubs` GitHub workflow. There is no
-`macos-x86_64` (Intel) launcher on purpose, since Apple has deprecated Intel Macs; packaging a macOS
-x86_64 target fails on purpose with a clear message.
+There is no `macos-x86_64` (Intel) launcher on purpose, since Apple has deprecated Intel Macs;
+packaging a macOS x86_64 target fails on purpose with a clear message.
 
 When a game is packaged for a platform that has no committed launcher, packaging stops with a clear
 message instead of producing something that cannot start. To support a new platform, build its

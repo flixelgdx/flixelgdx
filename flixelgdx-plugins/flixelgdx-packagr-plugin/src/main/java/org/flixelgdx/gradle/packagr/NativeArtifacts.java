@@ -66,16 +66,11 @@ public final class NativeArtifacts {
   }
 
   private static boolean matchesOs(String name, OperatingSystem os) {
-    switch (os) {
-      case LINUX:
-        return name.contains("natives-linux");
-      case WINDOWS:
-        return name.contains("natives-windows");
-      case MACOS:
-        return name.contains("natives-macos") || name.contains("natives-osx");
-      default :
-        return false;
-    }
+    return switch (os) {
+      case LINUX -> name.contains("natives-linux");
+      case WINDOWS -> name.contains("natives-windows");
+      case MACOS -> name.contains("natives-macos") || name.contains("natives-osx");
+    };
   }
 
   private static boolean matchesArch(String name, Architecture arch) {
