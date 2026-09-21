@@ -273,7 +273,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     }
     HTMLCanvasElement created = (HTMLCanvasElement) document.createElement("canvas");
     created.setAttribute("id", canvasId);
-    HTMLElement wrapper = (HTMLElement) document.createElement("div");
+    HTMLElement wrapper = document.createElement("div");
     wrapper.setAttribute("id", CONTAINER_ID);
     wrapper.appendChild(created);
     document.getBody().appendChild(wrapper);
