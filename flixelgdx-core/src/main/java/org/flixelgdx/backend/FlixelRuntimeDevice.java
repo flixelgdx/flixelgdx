@@ -179,8 +179,7 @@ public interface FlixelRuntimeDevice {
    * <p>The default implementation is a no-op, so platforms that cannot intercept crashes degrade
    * gracefully without errors.
    *
-   * <p>This is called once by {@link FlixelGame} during {@code create()}, before the
-   * initial state is loaded.
+   * <p>This is called once by {@link Flixel#start}, before the runner is executed.
    *
    * @param handler The crash handler to install.
    */

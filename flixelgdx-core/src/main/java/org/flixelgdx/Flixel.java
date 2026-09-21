@@ -961,8 +961,9 @@ public final class Flixel {
       if (game != null) {
         game.destroy();
       }
-      // Only quit on non-iOS platforms to avoid App Store guideline violations!
-      if (host.getPlatform() != FlixelPlatform.iOS) {
+      // Close the game only on desktop to avoid issues on web and compliance with iOS guidelines.
+      FlixelPlatform platform = host.getPlatform();
+      if (platform == FlixelPlatform.Desktop) {
         window.setAbsorbCloseRequests(false);
         quit();
       }
