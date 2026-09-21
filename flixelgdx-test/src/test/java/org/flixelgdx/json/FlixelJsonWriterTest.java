@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests for {@link FlixelJsonWriter}, covering both compact and pretty-print output. */
 class FlixelJsonWriterTest {
@@ -125,7 +126,7 @@ class FlixelJsonWriterTest {
         .toString();
 
     FlixelJsonValue root = FlixelJson.parse(json);
-    assertEquals(true, root.getBool("alive", false));
+    assertTrue(root.getBool("alive", false));
     assertEquals(7, root.getInt("count", 0));
   }
 }

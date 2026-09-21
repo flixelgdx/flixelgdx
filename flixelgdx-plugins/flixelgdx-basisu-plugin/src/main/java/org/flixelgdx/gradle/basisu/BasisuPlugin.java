@@ -51,7 +51,7 @@ import java.util.Set;
 /**
  * Gradle plugin that adds opt-in KTX2/Basis Universal texture compression.
  *
- * <p>libGDX decodes every PNG into an uncompressed {@code RGBA8888} texture on the GPU, so a few
+ * <p>FlixelGDX decodes every PNG into an uncompressed {@code RGBA8888} texture on the GPU, so a few
  * megabytes of source art can balloon into hundreds of megabytes of video memory. Basis Universal
  * keeps textures compressed on the GPU and transcodes them to the best format each device
  * supports. This plugin automates the encoding step, which normally requires developers to
@@ -91,7 +91,7 @@ import java.util.Set;
  */
 public class BasisuPlugin implements Plugin<Project> {
 
-  private static final String TASK_GROUP = "flixelgdx";
+  private static final String TASK_GROUP = "basisu";
   private static final String ENABLE_PROPERTY = "enableBasisuCompression";
   private static final String COMPRESS_TASK_NAME = "compressBasisuTextures";
   private static final String SETTINGS_MARKER_FILE = ".basisu-settings";
