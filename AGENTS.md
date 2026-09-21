@@ -216,11 +216,13 @@ public class PerformanceObject {
 
 ### Finishing work
 
-Summarize edits in plain language: what changed, why, and how it fits the system.
+Before finishing a coding task finished, run:
 
-Before considering a coding task finished, run **unit tests**, **spotless apply (for formatting)**, **checkstyle 
-(for code quality)**, and **Javadoc lint**; fix failures. **All** unit tests live in the `flixelgdx-test` module, not 
-scattered around multiple modules.
+1. Compiling: `./gradlew :flixelgdx-*:compileJava`
+2. Spotless: `./gradlew spotlessApply`
+3. Checkstyle: `./gradlew checkstyleMain`
+4. Javadocs: `./gradlew javadocAll`
+5. Unit tests: `./gradlew :flixelgdx-test:test`
 
 Additionally, if you are currently on a branch for a pull request, always update the description of the PR to ensure accuracy
 after completing a task.
