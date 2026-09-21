@@ -149,6 +149,9 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         windowFlags |= SDLVideo.SDL_WINDOW_OPENGL;
       }
     }
+    if (config.isFullscreen()) {
+      windowFlags |= SDLVideo.SDL_WINDOW_FULLSCREEN;
+    }
     windowHandle = SDLVideo.SDL_CreateWindow(config.getTitle(), width, height, windowFlags);
     if (windowHandle == 0L) {
       Flixel.error("Desktop", "The SDL window could not be created.");
