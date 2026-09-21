@@ -543,15 +543,27 @@ public class Html5Plugin implements Plugin<Project> {
       }
     }
 
-    // Always enable WasmGC debug information so the stack deobfuscator works in debug mode.
-    // debugInformation = true has two effects:
+    // Always enable debug information for both JS and WasmGC targets so that
+    // Throwable.getStackTrace() returns real Java frames at runtime. Without this flag TeaVM strips
+    // per-method line-number tables from the output and getStackTrace() returns an empty array,
+    // which is exactly why the crash overlay showed an empty "Stack Trace:" section.
+    //
+    // For the JS target, debugInformation = true embeds the line-number table that TeaVM's JS
+    // runtime reads when getStackTrace() is called. The data is inlined into the bundle, so no
+    // extra network request is made.
+    //
+    // For the WasmGC target, debugInformation = true has two additional effects:
     //   1. The generateWasmGC task emits a companion .teadbg file (external debug symbols)
     //      that the browser's TeaVM deobfuscator reads to resolve Java class names and line numbers.
     //   2. The copyWasmGCRuntime task copies the deobfuscator WASM module alongside the bundle
     //      (e.g., teavm-deobfuscator.wasm), which the page loads in debug mode.
-    // Neither file is fetched at runtime unless the page is opened in debug mode, so release
-    // users never download them. Gating this on a build-time flag would break ?flixel.mode=debug
-    // for anyone who did not also set html5 { mode = 'debug' } in their build.
+    // Neither the .teadbg file nor the deobfuscator are fetched at runtime unless the page is
+    // opened in debug mode, so release users never download them.
+    // Gating either flag on a build-time switch would break ?flixel.mode=debug for anyone who
+    // did not also set html5 { mode = 'debug' } in their build.
+    if (jsEnabled) {
+      teavm.getJs().getDebugInformation().convention(true);
+    }
     if (wasmEnabled) {
       teavm.getWasmGC().getDebugInformation().convention(true);
     }

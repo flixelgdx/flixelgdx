@@ -167,62 +167,22 @@
       const loading = window.__flixelLoading;
       const debugMode = window.flixelMode === 'debug';
 
-      // Downloads a file while reporting byte progress, so the loading bar reflects the (large) game
-      // bundle download. When the server does not report a length or streaming is unavailable, this
-      // falls back to a single un-tracked download.
-      function fetchWithProgress(url, onProgress) {
-        return fetch(url).then(function (response) {
-          if (!response.ok) {
-            throw new Error('HTTP ' + response.status + ' for ' + url);
-          }
-          const total = parseInt(response.headers.get('Content-Length') || '0', 10);
-          if (!response.body || !total) {
-            return response.arrayBuffer();
-          }
-          const reader = response.body.getReader();
-          const chunks = [];
-          let received = 0;
-          return (function pump() {
-            return reader.read().then(function (result) {
-              if (result.done) {
-                const merged = new Uint8Array(received);
-                let offset = 0;
-                for (let i = 0; i < chunks.length; i++) {
-                  merged.set(chunks[i], offset);
-                  offset += chunks[i].length;
-                }
-                return merged.buffer;
-              }
-              chunks.push(result.value);
-              received += result.value.length;
-              onProgress(received / total);
-              return pump();
-            });
-          })();
-        });
-      }
-
       function loadJs() {
         if (debugMode) { console.log('[FlixelGDX] Runtime: JavaScript'); }
+        // Always load by URL (not a Blob) so the browser can derive the companion .teavmdbg path
+        // alongside the bundle and decode Java class names and line numbers in stack traces.
+        // A Blob URL has no filename relationship to the source file, so the .teavmdbg fetch
+        // would silently fail and getStackTrace() would return empty frames.
         loading.indeterminate();
-        fetchWithProgress("{{JS_BUNDLE}}", function (f) { loading.set(f); })
-          .then(function (buffer) {
-            const url = URL.createObjectURL(new Blob([buffer], {type: 'application/javascript'}));
-            const script = document.createElement('script');
-            script.src = url;
-            script.onload = function () {
-              URL.revokeObjectURL(url);
-              if (typeof main === 'function') {
-                main();
-              }
-            };
-            script.onerror = function () { loading.error('Failed to start the game engine.'); };
-            document.head.appendChild(script);
-          })
-          .catch(function (e) {
-            console.error(e);
-            loading.error('Failed to load the game engine.');
-          });
+        const script = document.createElement('script');
+        script.src = "{{JS_BUNDLE}}";
+        script.onload = function () {
+          if (typeof main === 'function') {
+            main();
+          }
+        };
+        script.onerror = function () { loading.error('Failed to start the game engine.'); };
+        document.head.appendChild(script);
       }
 
       function loadWasm() {
