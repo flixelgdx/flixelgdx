@@ -50,12 +50,12 @@ tasks.register("javadocAll") {
     ":flixelgdx-desktop:javadoc",
     ":flixelgdx-html5:javadoc",
     ":flixelgdx-html5-plugin:javadoc",
-    ":flixelgdx-jvm:javadoc",
     ":flixelgdx-ios:javadoc",
-    ":flixelgdx-logging-plugin:javadoc",
-    ":flixelgdx-basisu-plugin:javadoc",
-    ":flixelgdx-shader-plugin:javadoc",
-    ":flixelgdx-json-processor:javadoc"
+    ":flixelgdx-jvm:javadoc",
+    ":flixelgdx-plugins:flixelgdx-logging-plugin:javadoc",
+    ":flixelgdx-plugins:flixelgdx-basisu-plugin:javadoc",
+    ":flixelgdx-plugins:flixelgdx-shader-plugin:javadoc",
+    ":flixelgdx-plugins:flixelgdx-json-processor:javadoc"
   )
   if (gradle.extra["includeAndroid"] as Boolean) {
     modules.add(":flixelgdx-android:javadoc")
