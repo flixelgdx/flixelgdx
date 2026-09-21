@@ -150,17 +150,22 @@ public abstract class PackageTask extends DefaultTask {
     deleteRecursively(out);
     Files.createDirectories(out);
 
-    Path jdkHome = JdkResolver.resolve(getJdkCacheDir().get().getAsFile().toPath(),
-        getJdkVendor().get(), getJdkVersion().get(), os, arch, getLogger());
+    Path cache = getJdkCacheDir().get().getAsFile().toPath();
+    String vendor = getJdkVendor().get();
+    int version = getJdkVersion().get();
 
-    File jlinkExe = Jlink.locateHostJlink();
-    if (jlinkExe == null) {
-      throw new GradleException("Could not find jlink in the JDK running this build. Run the build "
-          + "with a full JDK (not a JRE) so packagr can build the trimmed runtime.");
+    // The target JDK supplies both the modules to trim (its jmods) and, when it is for this same
+    // machine, the jlink that assembles them. jlink is version-strict: its version must match the
+    // modules', so a target-version jlink is always used rather than the build's own JDK.
+    Path targetJdk = JdkResolver.resolve(cache, vendor, version, os, arch, getLogger());
+    Path linkerJdk = resolveLinkerJdk(cache, vendor, version, os, arch, targetJdk);
+    File jlinkExe = new File(linkerJdk.toFile(), "bin/jlink" + HostPlatform.os().exeSuffix());
+    if (!jlinkExe.isFile()) {
+      throw new GradleException("The resolved JDK has no jlink at " + jlinkExe + "; it may be a JRE "
+          + "rather than a full JDK.");
     }
     Path jre = out.resolve("jre");
-    Jlink.run(jlinkExe, getJdkVersion().get(), jdkHome.resolve("jmods"), getModules().get(), jre,
-        getLogger());
+    Jlink.run(jlinkExe, version, targetJdk.resolve("jmods"), getModules().get(), jre, getLogger());
 
     Path lib = out.resolve("lib");
     Files.createDirectories(lib);
@@ -174,6 +179,29 @@ public abstract class PackageTask extends DefaultTask {
 
     getLogger().lifecycle("[packagr] Packaged '{}' for {}-{} at {}.", getAppName().get(), os.token(),
         arch.token(), out);
+  }
+
+  /**
+   * Returns the JDK whose {@code jlink} both runs on this machine and matches the target version.
+   *
+   * <p>When the target platform is the one the build runs on, the already-downloaded target JDK
+   * serves both roles. Otherwise a host-platform JDK of the same version is downloaded (and cached)
+   * purely to provide a {@code jlink} that runs here, while the target JDK's modules are still what
+   * gets linked.
+   */
+  private Path resolveLinkerJdk(Path cache, String vendor, int version, OperatingSystem targetOs,
+      Architecture targetArch, Path targetJdk) throws IOException {
+    OperatingSystem hostOs = HostPlatform.os();
+    Architecture hostArch = HostPlatform.arch();
+    if (targetOs == hostOs && targetArch == hostArch) {
+      return targetJdk;
+    }
+    if (hostArch == null) {
+      throw new GradleException("Cannot build a runtime for " + targetOs.token() + "-"
+          + targetArch.token() + " because this machine's architecture was not recognized (os.arch="
+          + System.getProperty("os.arch") + "). Package on a 64-bit x86 or ARM machine.");
+    }
+    return JdkResolver.resolve(cache, vendor, version, hostOs, hostArch, getLogger());
   }
 
   private void copyDependencies(Path lib, OperatingSystem os, Architecture arch) throws IOException {
