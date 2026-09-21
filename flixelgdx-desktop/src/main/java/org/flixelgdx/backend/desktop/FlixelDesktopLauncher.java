@@ -157,8 +157,7 @@ public final class FlixelDesktopLauncher {
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode,
       @Nullable String... icons) {
     if (icons != null) {
-      for (int i = 0; i < icons.length; i++) {
-        String path = icons[i];
+      for (String path : icons) {
         if (FlixelDesktopLauncher.class.getResource("/" + path) == null) {
           throw new RuntimeException("Icon not found in resources: " + path);
         }
