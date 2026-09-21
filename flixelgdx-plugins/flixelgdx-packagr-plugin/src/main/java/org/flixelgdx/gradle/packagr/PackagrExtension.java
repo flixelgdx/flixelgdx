@@ -36,10 +36,9 @@ import javax.inject.Inject;
  * Configuration exposed as the {@code packagr} DSL block in a game module's {@code build.gradle}.
  *
  * <p>The block describes what to package (the {@link #getMainClass() main class} and app metadata),
- * which runtime to bundle (the {@link #getJdkVendor() JDK vendor}, {@link #getJdkVersion() version},
- * and {@link #getJlinkModules() modules}), and which platforms to build for (the
- * {@link #getTargets() targets}). Each declared target becomes a {@code package<Name>} task, and
- * {@code packageAll} builds them all.
+ * which runtime to bundle (the {@link #getJdkVersion() version} and {@link #getJlinkModules()
+ * modules}), and which platforms to build for (the {@link #getTargets() targets}). Each declared
+ * target becomes a {@code package<Name>} task, and {@code packageAll} builds them all.
  *
  * <h2>Example</h2>
  *
@@ -118,34 +117,22 @@ public abstract class PackagrExtension {
   public abstract ListProperty<String> getJvmArgs();
 
   /**
-   * The JDK vendor to download and bundle a trimmed runtime from.
+   * The feature version of the Java runtime to bundle, for example {@code 17} or {@code 21}.
    *
-   * <p>Defaults to {@code temurin} (Eclipse Temurin), the runtime the framework recommends.
-   * Temurin is the vendor served by the built-in Adoptium download source; other vendors need a
-   * custom download source.
+   * <p>Defaults to {@code 17}, the version the framework targets. The runtime is always built from
+   * Eclipse Temurin, the JDK the framework recommends.
    *
-   * @return The JDK-vendor property.
-   */
-  public abstract Property<String> getJdkVendor();
-
-  /**
-   * The feature version of the JDK to bundle, for example {@code 17} or {@code 21}.
-   *
-   * <p>Defaults to {@code 17}, the version the framework targets. The host running the build must
-   * have a {@code jlink} at least this new, since {@code jlink} cannot assemble a runtime from a
-   * newer JDK's modules than its own.
-   *
-   * @return The JDK-version property.
+   * @return The runtime-version property.
    */
   public abstract Property<Integer> getJdkVersion();
 
   /**
-   * The directory downloaded JDKs are cached in, shared across all builds on the machine.
+   * The directory the downloaded runtimes are cached in, shared across all builds on the machine.
    *
-   * <p>Defaults to {@code ~/.flixelgdx/jdks}. A JDK already present here is reused, so a given
-   * vendor, version, and platform is only ever downloaded once.
+   * <p>Defaults to {@code ~/.flixelgdx/jdks}. A runtime already present here is reused, so a given
+   * version and platform is only ever downloaded once.
    *
-   * @return The JDK-cache-directory property.
+   * @return The runtime-cache-directory property.
    */
   public abstract DirectoryProperty getJdkCacheDir();
 
@@ -160,17 +147,6 @@ public abstract class PackagrExtension {
    * @return The jlink-modules property.
    */
   public abstract ListProperty<String> getJlinkModules();
-
-  /**
-   * An optional directory of game assets copied into every package.
-   *
-   * <p>When set, its contents are copied next to the launcher so the game can read them by relative
-   * path at runtime. When unset, no asset directory is added (assets bundled inside the jar still
-   * ship as normal).
-   *
-   * @return The assets-directory property.
-   */
-  public abstract DirectoryProperty getAssetsDir();
 
   /**
    * The platforms to package for.

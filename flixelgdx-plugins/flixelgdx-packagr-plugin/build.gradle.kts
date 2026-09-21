@@ -15,7 +15,5 @@ gradlePlugin {
 }
 
 dependencies {
-  // Commons Compress unpacks the downloaded JDK archives (.tar.gz and .zip) in pure Java, so
-  // packaging one platform from another works without any external tar or unzip tool installed.
   implementation(libs.commons.compress)
 }

@@ -97,11 +97,6 @@ public final class PackagrTargets {
     add("windows-arm64", OperatingSystem.WINDOWS, Architecture.AARCH64);
   }
 
-  /** Adds a target for 64-bit x86 macOS (Intel Macs). */
-  public void macosX64() {
-    add("macos-x64", OperatingSystem.MACOS, Architecture.X64);
-  }
-
   /** Adds a target for 64-bit ARM macOS (Apple Silicon). */
   public void macosArm64() {
     add("macos-arm64", OperatingSystem.MACOS, Architecture.AARCH64);

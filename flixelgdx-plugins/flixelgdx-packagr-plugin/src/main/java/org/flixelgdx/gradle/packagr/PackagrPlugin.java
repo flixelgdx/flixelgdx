@@ -26,6 +26,7 @@ package org.flixelgdx.gradle.packagr;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.Directory;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Jar;
 
@@ -100,7 +101,6 @@ public class PackagrPlugin implements Plugin<Project> {
   private static void applyConventions(Project project, PackagrExtension ext) {
     ext.getAppName().convention(project.getName());
     ext.getAppVersion().convention(project.provider(() -> String.valueOf(project.getVersion())));
-    ext.getJdkVendor().convention("temurin");
     ext.getJdkVersion().convention(17);
     ext.getJlinkModules().convention(DEFAULT_MODULES);
     ext.getJdkCacheDir().convention(project.getLayout().dir(project.provider(
@@ -119,16 +119,20 @@ public class PackagrPlugin implements Plugin<Project> {
           task.getAppName().set(ext.getAppName());
           task.getMainClass().set(ext.getMainClass());
           task.getJvmArgs().set(ext.getJvmArgs());
-          task.getJdkVendor().set(ext.getJdkVendor());
           task.getJdkVersion().set(ext.getJdkVersion());
           task.getModules().set(ext.getJlinkModules());
           task.getTargetOs().set(target.getOs());
           task.getTargetArch().set(target.getArch());
+          task.getTargetName().set(target.getName());
           task.getJdkCacheDir().set(ext.getJdkCacheDir());
-          task.getAssetsDir().set(ext.getAssetsDir());
           task.getGameJar().set(jarTask.flatMap(Jar::getArchiveFile));
           task.getRuntimeClasspath().from(project.getConfigurations().named("runtimeClasspath"));
           task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("packagr/" + target.getName()));
+          // The distributable zip lands in the root project's dist folder, the conventional place a
+          // finished, shareable build goes (and where the previous packaging tool wrote it too).
+          Directory distDir = project.getRootProject().getLayout().getProjectDirectory().dir("dist");
+          task.getDistZip().set(ext.getAppName()
+              .map(name -> distDir.file(name + "-" + target.getName() + ".zip")));
           task.dependsOn(jarTask);
         });
 

@@ -27,18 +27,23 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Unpacks the JDK archives {@link JdkResolver} downloads, handling both formats a JDK ships in.
@@ -70,6 +75,64 @@ public final class Archives {
       } else {
         extractTarGz(raw, destDir);
       }
+    }
+  }
+
+  /**
+   * Zips a directory tree into a single distributable {@code .zip}, under one top-level folder.
+   *
+   * <p>Every entry is nested under {@code rootName} so unzipping produces one tidy folder rather than
+   * scattering files. The Unix executable bit is preserved for each file, which keeps the launcher
+   * and the bundled runtime's {@code bin/java} runnable after a player extracts the archive on Linux
+   * or macOS. On a host with no Unix permissions (Windows) every file is marked executable, which is
+   * harmless and keeps a cross-built package runnable on its target.
+   *
+   * @param sourceDir The directory whose contents are zipped.
+   * @param zipFile The {@code .zip} file to create (parent directories are created).
+   * @param rootName The single top-level folder every entry is nested under.
+   * @throws IOException When the directory cannot be read or the archive cannot be written.
+   */
+  public static void zipDirectory(Path sourceDir, Path zipFile, String rootName) throws IOException {
+    Files.createDirectories(zipFile.getParent());
+    List<Path> files;
+    try (Stream<Path> stream = Files.walk(sourceDir)) {
+      files = stream.filter(Files::isRegularFile).sorted(Comparator.naturalOrder()).toList();
+    }
+    try (OutputStream out = Files.newOutputStream(zipFile);
+        ZipArchiveOutputStream zip = new ZipArchiveOutputStream(out)) {
+      for (Path file : files) {
+        String relative = sourceDir.relativize(file).toString().replace('\\', '/');
+        ZipArchiveEntry entry = new ZipArchiveEntry(file.toFile(), rootName + "/" + relative);
+        entry.setUnixMode(zipMode(file));
+        zip.putArchiveEntry(entry);
+        Files.copy(file, zip);
+        zip.closeArchiveEntry();
+      }
+    }
+  }
+
+  private static int zipMode(Path file) {
+    try {
+      Set<PosixFilePermission> perms = Files.getPosixFilePermissions(file);
+      int mode = 0;
+      for (PosixFilePermission perm : perms) {
+        mode |= switch (perm) {
+          case OWNER_READ -> 0400;
+          case OWNER_WRITE -> 0200;
+          case OWNER_EXECUTE -> 0100;
+          case GROUP_READ -> 0040;
+          case GROUP_WRITE -> 0020;
+          case GROUP_EXECUTE -> 0010;
+          case OTHERS_READ -> 0004;
+          case OTHERS_WRITE -> 0002;
+          case OTHERS_EXECUTE -> 0001;
+        };
+      }
+      return mode;
+    } catch (IOException | UnsupportedOperationException e) {
+      // A non-POSIX host cannot report a mode; mark executable so a cross-built package stays
+      // runnable on its target (an executable data file is harmless).
+      return 0755;
     }
   }
 

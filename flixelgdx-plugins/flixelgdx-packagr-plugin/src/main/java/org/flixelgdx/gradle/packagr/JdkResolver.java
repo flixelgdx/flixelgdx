@@ -72,8 +72,11 @@ public final class JdkResolver {
   /**
    * Resolves a JDK home directory for the given platform, downloading and caching it if needed.
    *
+   * <p>The runtime is always built from Eclipse Temurin, the JDK the framework recommends. A full
+   * JDK (not a JRE) is downloaded because {@code jlink} needs its modules to assemble the trimmed
+   * runtime that ships with the game.
+   *
    * @param cacheDir The shared directory cached JDKs live in.
-   * @param vendor The JDK vendor; currently only {@code temurin} is supported.
    * @param version The JDK feature version, for example {@code 17}.
    * @param os The operating system the JDK targets.
    * @param arch The architecture the JDK targets.
@@ -81,15 +84,9 @@ public final class JdkResolver {
    * @return The path to the JDK home (the directory containing {@code jmods}).
    * @throws IOException When the JDK cannot be downloaded, verified, or unpacked.
    */
-  public static Path resolve(Path cacheDir, String vendor, int version, OperatingSystem os,
-      Architecture arch, Logger logger) throws IOException {
-    if (!"temurin".equalsIgnoreCase(vendor)) {
-      throw new GradleException("packagr currently supports only the 'temurin' JDK vendor, but '"
-          + vendor + "' was requested. Set jdkVendor = \"temurin\", or bundle another vendor's JDK "
-          + "yourself.");
-    }
-
-    String slug = vendor.toLowerCase(Locale.ROOT) + "-" + version + "-" + os.token() + "-" + arch.token();
+  public static Path resolve(Path cacheDir, int version, OperatingSystem os, Architecture arch,
+      Logger logger) throws IOException {
+    String slug = "temurin-" + version + "-" + os.token() + "-" + arch.token();
     Path base = cacheDir.resolve(slug);
     Path extracted = base.resolve("extracted");
     Path marker = base.resolve(MARKER_NAME);

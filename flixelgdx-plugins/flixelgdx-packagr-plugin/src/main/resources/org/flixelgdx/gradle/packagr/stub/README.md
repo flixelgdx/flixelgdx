@@ -11,15 +11,18 @@ in a folder named `<os>-<arch>` matching the classifier the plugin looks up at p
 
 ```
 linux-x86_64/launcher
+linux-aarch64/launcher
 windows-x86_64/launcher.exe
-macos-x86_64/launcher        (add when built)
-macos-aarch64/launcher       (add when built)
-linux-aarch64/launcher       (add when built)
-windows-aarch64/launcher.exe (add when built)
+windows-aarch64/launcher.exe
+macos-aarch64/launcher
 ```
 
+All of these are committed and produced by the `build-launcher-stubs` GitHub workflow. There is no
+`macos-x86_64` (Intel) launcher on purpose, since Apple has deprecated Intel Macs; packaging a macOS
+x86_64 target fails on purpose with a clear message.
+
 When a game is packaged for a platform that has no committed launcher, packaging stops with a clear
-message instead of producing something that cannot start. To support that platform, build its
+message instead of producing something that cannot start. To support a new platform, build its
 launcher with the matching command below and commit the result here.
 
 ## Why the binaries are committed
@@ -67,10 +70,10 @@ cl /O2 /I "%JAVA_HOME%\include" /I "%JAVA_HOME%\include\win32" ^
   /link /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup user32.lib
 ```
 
-### macOS (x86_64 and aarch64)
+### macOS (aarch64)
 
-Build on a Mac with the Xcode command-line tools. Build each architecture on (or targeting) that
-architecture:
+Build on an Apple Silicon Mac with the Xcode command-line tools. Intel (x86_64) is deliberately not
+built or supported.
 
 ```sh
 clang -O2 \
