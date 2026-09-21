@@ -24,7 +24,6 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.FlixelGame;
 import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
@@ -179,8 +178,7 @@ public interface FlixelRuntimeDevice {
    * <p>The default implementation is a no-op, so platforms that cannot intercept crashes degrade
    * gracefully without errors.
    *
-   * <p>This is called once by {@link FlixelGame} during {@code create()}, before the
-   * initial state is loaded.
+   * <p>This is called once by {@link Flixel#start}, before the runner is executed.
    *
    * @param handler The crash handler to install.
    */

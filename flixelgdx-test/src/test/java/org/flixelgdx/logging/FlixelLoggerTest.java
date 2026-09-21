@@ -145,19 +145,19 @@ class FlixelLoggerTest {
 
   @Test
   void getLogModeReturnsCurrentMode() {
-    assertEquals(FlixelLogMode.SIMPLE, logger.getLogMode());
+    assertEquals(FlixelLogMode.SIMPLE, logger.getMode());
   }
 
   @Test
   void setLogModeNullDefaultsToSimple() {
-    logger.setLogMode(null);
-    assertEquals(FlixelLogMode.SIMPLE, logger.getLogMode());
+    logger.setMode(null);
+    assertEquals(FlixelLogMode.SIMPLE, logger.getMode());
   }
 
   @Test
   void setLogModeChangesMode() {
-    logger.setLogMode(FlixelLogMode.DETAILED);
-    assertEquals(FlixelLogMode.DETAILED, logger.getLogMode());
+    logger.setMode(FlixelLogMode.DETAILED);
+    assertEquals(FlixelLogMode.DETAILED, logger.getMode());
   }
 
   @Test

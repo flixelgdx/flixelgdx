@@ -80,7 +80,7 @@ public class FlixelLogger {
   private String defaultTag = "";
 
   /** Log mode for console output. File output always uses {@link FlixelLogMode#DETAILED}. */
-  private FlixelLogMode logMode;
+  private FlixelLogMode mode;
 
   /** Custom logs folder path, or {@code null} to use the platform default. */
   private String customLogsFolderPath = null;
@@ -110,10 +110,10 @@ public class FlixelLogger {
    * Creates a logger that outputs to the console and optionally to a file
    * (when {@link #logFileHandler} is assigned).
    *
-   * @param logMode The mode used for console output formatting.
+   * @param mode The mode used for console output formatting.
    */
-  public FlixelLogger(FlixelLogMode logMode) {
-    this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
+  public FlixelLogger(FlixelLogMode mode) {
+    this.mode = mode != null ? mode : FlixelLogMode.SIMPLE;
   }
 
   /**
@@ -121,18 +121,18 @@ public class FlixelLogger {
    *
    * @return The active log mode, never {@code null}.
    */
-  public FlixelLogMode getLogMode() {
-    return logMode;
+  public FlixelLogMode getMode() {
+    return mode;
   }
 
   /**
    * Sets the log mode used for console output formatting. If {@code null}
    * is passed, the mode defaults to {@link FlixelLogMode#SIMPLE}.
    *
-   * @param logMode The desired log mode, or {@code null} to reset to the default simple mode.
+   * @param mode The desired log mode, or {@code null} to reset to the default simple mode.
    */
-  public void setLogMode(FlixelLogMode logMode) {
-    this.logMode = logMode != null ? logMode : FlixelLogMode.SIMPLE;
+  public void setMode(FlixelLogMode mode) {
+    this.mode = mode != null ? mode : FlixelLogMode.SIMPLE;
   }
 
   /**
@@ -717,7 +717,7 @@ public class FlixelLogger {
   }
 
   /**
-   * Formats and outputs a log message to the console (according to {@link #logMode}) and, if a
+   * Formats and outputs a log message to the console (according to {@link #mode}) and, if a
    * file line consumer is set, passes the detailed (plain) line for file output.
    */
   protected void outputLog(String tag, Object message, FlixelLogLevel level) {
@@ -821,11 +821,11 @@ public class FlixelLogger {
 
     if (consoleSink != null) {
       consoleSink.emit(level, safeTag, rawMessage, simpleFile + ":", file, method, ts,
-          logMode == FlixelLogMode.DETAILED);
+          mode == FlixelLogMode.DETAILED);
     } else {
       // Console: use current log mode.
       consoleLine.clear();
-      if (logMode == FlixelLogMode.SIMPLE) {
+      if (mode == FlixelLogMode.SIMPLE) {
         appendColored(consoleLine, simpleFile + ":", color, true, false, underlineFile);
         consoleLine.concat(' ');
         appendColored(consoleLine, rawMessage, color, false, true, false);
