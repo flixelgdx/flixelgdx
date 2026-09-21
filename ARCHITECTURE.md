@@ -16,6 +16,7 @@ The project is split into several modules, each serving a specific purpose:
 - **`flixelgdx-html5-plugin`**: Plugin that automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-logging-plugin`**: Plugin that runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
 - **`flixelgdx-shader-plugin`**: Plugin that bundles bgfx's `shaderc` binaries for all platforms and automatically compiles GLSL shaders for each graphics API. 
+- **`flixelgdx-packagr-plugin`**: Plugin that packages a game into a self-contained native app per platform, bundling a small committed launcher, a `jlink`-trimmed runtime, and only the target's native jars, with each downloaded JDK cached for reuse.
 - **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSeralizable`.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
