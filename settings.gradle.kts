@@ -21,7 +21,7 @@ pluginManagement {
 }
 
 plugins {
-  id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
+  id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 // Android modules are optional so the framework can be built without an Android SDK.
@@ -46,8 +46,8 @@ dependencyResolutionManagement {
     mavenCentral()
     gradlePluginPortal()
     google()
-    maven("https://s01.oss.sonatype.org")
     mavenLocal()
+    maven("https://s01.oss.sonatype.org")
     maven("https://oss.sonatype.org/content/repositories/snapshots/")
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven("https://jitpack.io")
@@ -58,15 +58,15 @@ rootProject.name = "flixelgdx"
 
 include(
   "flixelgdx-core",
-  "flixelgdx-jvm",
   "flixelgdx-desktop",
   "flixelgdx-html5",
-  "flixelgdx-html5-plugin",
   "flixelgdx-ios",
-  "flixelgdx-logging-plugin",
-  "flixelgdx-basisu-plugin",
-  "flixelgdx-shader-plugin",
+  "flixelgdx-jvm",
   "flixelgdx-json-processor",
+  ":flixelgdx-plugins:flixelgdx-html5-plugin",
+  ":flixelgdx-plugins:flixelgdx-logging-plugin",
+  ":flixelgdx-plugins:flixelgdx-basisu-plugin",
+  ":flixelgdx-plugins:flixelgdx-shader-plugin",
   "flixelgdx-test"
 )
 
