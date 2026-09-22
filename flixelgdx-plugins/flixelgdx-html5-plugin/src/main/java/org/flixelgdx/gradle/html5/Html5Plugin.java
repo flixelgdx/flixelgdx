@@ -36,7 +36,6 @@ import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.bundling.Zip;
-import org.teavm.gradle.api.SourceFilePolicy;
 import org.teavm.gradle.api.TeaVMExtension;
 
 import java.awt.Desktop;
@@ -524,25 +523,15 @@ public class Html5Plugin implements Plugin<Project> {
       return;
     }
 
-    Html5Extension ext = project.getExtensions().getByType(Html5Extension.class);
     boolean jsEnabled = teavm.getJs().getAddedToWebApp().getOrElse(false);
     boolean wasmEnabled = teavm.getWasmGC().getAddedToWebApp().getOrElse(false);
 
-    // When the build is configured as a debug build, automatically enable source maps so browser
-    // DevTools can show Java class names, method names, and line numbers in stack traces instead of
-    // mangled WASM addresses or generated JS function names.
-    // convention() is used so a developer can still override any of these explicitly.
-    if (ext.getMode().isPresent() && ext.getMode().get() == Html5Mode.DEBUG) {
-      if (jsEnabled) {
-        teavm.getJs().getSourceMap().convention(true);
-        teavm.getJs().getSourceFilePolicy().convention(SourceFilePolicy.COPY);
-      }
-      if (wasmEnabled) {
-        teavm.getWasmGC().getSourceMap().convention(true);
-        teavm.getWasmGC().getSourceFilePolicy().convention(SourceFilePolicy.COPY);
-      }
-    }
-
+    // Always enable debug information so exception stack traces resolve to real Java class names,
+    // method names, and line numbers at runtime instead of empty frames. Without this flag TeaVM
+    // strips the per-method line-number tables: the JavaScript target inlines them into the bundle,
+    // and the WebAssembly GC target emits them into the companion .teadbg file its deobfuscator
+    // reads. The extra files are only fetched in debug mode, so release users never download them.
+    // convention() is used so a developer can still override either flag explicitly.
     if (jsEnabled) {
       teavm.getJs().getDebugInformation().convention(true);
     }

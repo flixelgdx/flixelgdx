@@ -102,7 +102,14 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
    *
    * <p>A {@code @JSFunctor} callback is intentionally not used here. Pure JavaScript handlers keep
    * the crash path self-contained and free of any Java callback, which is the most robust option for
-   * code that must run even when the Java side is already unwinding from a fatal error.
+   * code that must run even when the Java side is already unwinding from a fatal error. This also
+   * sidesteps a hard limitation of the TeaVM version the framework targets (0.13.0): its WebAssembly
+   * GC code generator cannot emit a valid function for a {@code @JSFunctor} whose method returns a
+   * non-void type or takes a {@code JSObject} parameter. It generates a nameless function statement
+   * instead of a function expression, which throws a {@code SyntaxError} at module load time. Any
+   * callback that does cross a {@code @JSFunctor} boundary on this backend must therefore return
+   * {@code void} and accept only primitives or strings, with any {@code JSObject} unpacked inside the
+   * JavaScript wrapper before the call back into Java.
    *
    * @param handler The crash handler to install.
    */
