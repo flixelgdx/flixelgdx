@@ -45,6 +45,7 @@ import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The one-line entry point for a desktop FlixelGDX game.
@@ -54,10 +55,17 @@ import org.jetbrains.annotations.NotNull;
  * logging) and then starts the game. Developers do not need to call {@link Flixel#start(FlixelGame, FlixelGameRunner)}
  * themselves; it is the internal step this launcher performs once the backend is wired.
  *
+ * <p>To set a custom window icon (shown in the taskbar and title bar), pass the icon resource paths
+ * to {@link #launch(FlixelGame, String...)}. Icons are resolved from the Java resources folder, not
+ * the game's assets folder, and should be listed from smallest to largest so the OS can pick the
+ * best fit. An exception is thrown immediately if any path cannot be found, so missing icons are
+ * caught at startup rather than silently ignored at runtime.
+ *
  * <pre>{@code
  * public final class DesktopLauncher {
  *   public static void main(String[] args) {
- *     FlixelDesktopLauncher.launch(new MyGame());
+ *     FlixelDesktopLauncher.launch(new MyGame(),
+ *         "icons/icon16.png", "icons/icon32.png", "icons/icon256.png");
  *   }
  *   private DesktopLauncher() {}
  * }
@@ -89,39 +97,73 @@ public final class FlixelDesktopLauncher {
    * @param game The game instance to run.
    */
   public static void launch(@NotNull FlixelGame game) {
-    launch(game, resolveRuntimeMode());
+    launch(game, resolveRuntimeMode(), (String[]) null);
   }
 
   /**
-   * Resolves the runtime mode from the {@code flixel.mode} (or legacy {@code flixel.debug}) system
-   * property, defaulting to {@link FlixelRuntimeMode#RELEASE RELEASE}.
+   * Launches the game with a set of window icons, using the runtime mode from the
+   * {@code flixel.mode} system property.
    *
-   * @return The runtime mode requested on the command line, or {@code RELEASE} when none was.
+   * <p>Icons are loaded from the Java resources folder (not the game's assets folder). Provide
+   * them in order from smallest to largest so the OS can pick the best fit for each context (for
+   * example the taskbar may use 16x16 and the alt-tab switcher may use 48x48). A
+   * {@link RuntimeException} is thrown immediately if any icon path cannot be found in the
+   * classpath, so missing icons are caught at startup rather than silently ignored.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * FlixelDesktopLauncher.launch(new MyGame(),
+   *     "icons/icon16.png",
+   *     "icons/icon32.png",
+   *     "icons/icon256.png");
+   * }</pre>
+   *
+   * @param game The game instance to run.
+   * @param icons Resource paths for the window icons, ordered from smallest to largest. Each path
+   *              is resolved from the classpath root (for example {@code "icons/icon16.png"} loads
+   *              {@code /icons/icon16.png}). May be empty to set no icon.
+   * @throws RuntimeException if any icon path cannot be found in the classpath.
    */
-  private static FlixelRuntimeMode resolveRuntimeMode() {
-    String mode = System.getProperty("flixel.mode", "").trim().toLowerCase();
-    return switch (mode) {
-      case "debug" -> FlixelRuntimeMode.DEBUG;
-      case "test" -> FlixelRuntimeMode.TEST;
-      case "", "release" -> FlixelRuntimeMode.RELEASE;
-      default -> {
-        Flixel.warn("Desktop", "Unknown flixel.mode '" + mode + "'; defaulting to RELEASE.");
-        yield FlixelRuntimeMode.RELEASE;
-      }
-    };
+  public static void launch(@NotNull FlixelGame game, @NotNull String... icons) {
+    launch(game, resolveRuntimeMode(), icons);
   }
 
   /**
-   * Launches the game with full control over the runtime mode and a pre-start callback.
-   *
-   * <p>{@code onBeforeStart} runs after every default backend service has been installed but before
-   * the game starts, so it is the right place to replace a default without duplicating the rest of
-   * the launcher wiring.
+   * Launches the game with full control over the runtime mode.
    *
    * @param game The game instance to run.
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
+    launch(game, runtimeMode, (String[]) null);
+  }
+
+  /**
+   * Launches the game with full control over the runtime mode and a set of window icons.
+   *
+   * <p>Icons are loaded from the Java resources folder (not the game's assets folder). Provide
+   * them in order from smallest to largest so the OS can pick the best fit for each context. A
+   * {@link RuntimeException} is thrown immediately if any icon path cannot be found in the
+   * classpath.
+   *
+   * @param game The game instance to run.
+   * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
+   * @param icons Resource paths for the window icons, ordered from smallest to largest. Each path
+   *              is resolved from the classpath root (for example {@code "icons/icon16.png"} loads
+   *              {@code /icons/icon16.png}). May be {@code null} or empty to set no icon.
+   * @throws RuntimeException if any icon path cannot be found in the classpath.
+   */
+  public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode,
+      @Nullable String... icons) {
+    if (icons != null) {
+      for (String path : icons) {
+        if (FlixelDesktopLauncher.class.getResource("/" + path) == null) {
+          throw new RuntimeException("Icon not found in resources: " + path);
+        }
+      }
+    }
+
     FlixelConfig config = Flixel.config;
     Flixel.runtime = new FlixelJvmRuntimeDevice();
     if (Flixel.runtime.isRunningFromJar() && !AnsiConsole.isInstalled()) {
@@ -147,7 +189,7 @@ public final class FlixelDesktopLauncher {
     Flixel.log.logFileHandler = new FlixelJvmLogFileHandler();
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
-        iconManager, host, width, height);
+        iconManager, host, width, height, icons);
 
     FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
     assets.registerLoader(".ktx2", new FlixelKtx2Loader());
@@ -169,5 +211,24 @@ public final class FlixelDesktopLauncher {
     if (AnsiConsole.isInstalled()) {
       AnsiConsole.systemUninstall();
     }
+  }
+
+  /**
+   * Resolves the runtime mode from the {@code flixel.mode} (or legacy {@code flixel.debug}) system
+   * property, defaulting to {@link FlixelRuntimeMode#RELEASE RELEASE}.
+   *
+   * @return The runtime mode requested on the command line, or {@code RELEASE} when none was.
+   */
+  private static FlixelRuntimeMode resolveRuntimeMode() {
+    String mode = System.getProperty("flixel.mode", "").trim().toLowerCase();
+    return switch (mode) {
+      case "debug" -> FlixelRuntimeMode.DEBUG;
+      case "test" -> FlixelRuntimeMode.TEST;
+      case "", "release" -> FlixelRuntimeMode.RELEASE;
+      default -> {
+        Flixel.warn("Desktop", "Unknown flixel.mode '" + mode + "'; defaulting to RELEASE.");
+        yield FlixelRuntimeMode.RELEASE;
+      }
+    };
   }
 }

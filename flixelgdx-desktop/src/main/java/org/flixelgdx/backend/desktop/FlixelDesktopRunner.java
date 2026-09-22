@@ -35,7 +35,9 @@ import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
+import org.flixelgdx.graphics.FlixelImage;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
@@ -43,12 +45,19 @@ import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLInit;
 import org.lwjgl.sdl.SDLKeyboard;
 import org.lwjgl.sdl.SDLMouse;
+import org.lwjgl.sdl.SDLPixels;
+import org.lwjgl.sdl.SDLSurface;
 import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.sdl.SDL_DisplayMode;
 import org.lwjgl.sdl.SDL_Event;
 import org.lwjgl.sdl.SDL_Rect;
+import org.lwjgl.sdl.SDL_Surface;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.concurrent.locks.LockSupport;
 
@@ -87,13 +96,21 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   @NotNull
   private final FlixelDesktopHostIntegration host;
 
+  /**
+   * Resource paths for the window icon set, ordered smallest to largest (for example
+   * {@code "icons/icon16.png"}, {@code "icons/icon32.png"}, {@code "icons/icon256.png"}).
+   * May be {@code null} when no icons were requested.
+   */
+  @Nullable
+  private final String[] iconPaths;
+
   private int width;
   private int height;
 
   private boolean vsync = true;
 
   /**
-   * Creates a new desktop runner wired to the given platform components.
+   * Creates a new desktop runner wired to the given platform components, with a set of window icons.
    *
    * @param window The SDL window implementation.
    * @param input The desktop input device.
@@ -103,11 +120,15 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
    * @param host The desktop host integration.
    * @param width Initial window width in pixels.
    * @param height Initial window height in pixels.
+   * @param iconPaths Resource paths for the window icons, ordered from smallest to largest.
+   *                  Each path is resolved from the Java resources root (for example
+   *                  {@code "icons/icon16.png"} loads {@code /icons/icon16.png} from the
+   *                  classpath). May be {@code null} to set no icon.
    */
   public FlixelDesktopRunner(@NotNull FlixelSdlWindow window, @NotNull FlixelDesktopInputDevice input,
       @NotNull FlixelBgfxGraphics graphics, @NotNull FlixelSdlGamepadProvider gamepads,
       @NotNull FlixelSdlMouseIconManager iconManager, @NotNull FlixelDesktopHostIntegration host,
-      int width, int height) {
+      int width, int height, @Nullable String[] iconPaths) {
     this.window = window;
     this.input = input;
     this.graphics = graphics;
@@ -116,6 +137,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     this.host = host;
     this.width = width;
     this.height = height;
+    this.iconPaths = iconPaths;
   }
 
   @Override
@@ -160,6 +182,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     }
     SDLVideo.SDL_SetWindowPosition(windowHandle, SDLVideo.SDL_WINDOWPOS_CENTERED, SDLVideo.SDL_WINDOWPOS_CENTERED);
     window.bind(windowHandle);
+    applyWindowIcons(windowHandle);
 
     if (!initBgfx(windowHandle, transparentFramebuffer)) {
       SDLVideo.SDL_DestroyWindow(windowHandle);
@@ -257,6 +280,83 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     }
     while (System.nanoTime() < deadlineNanos) {
       Thread.onSpinWait();
+    }
+  }
+
+  /**
+   * Loads each icon in {@link #iconPaths} and hands the resulting SDL surfaces to
+   * {@code SDL_SetWindowIcon()}.
+   *
+   * <p>SDL3 only accepts one surface per call, so this iterates over every path. The surface
+   * returned by SDL_CreateSurfaceFrom() must stay alive until after SDL_SetWindowIcon() returns,
+   * at which point SDL has copied what it needs and the surface can be destroyed. Each iteration
+   * therefore follows a create-use-destroy pattern inside the loop.
+   *
+   * <p>If {@link #iconPaths} is {@code null} or empty the method returns immediately.
+   *
+   * @param wnd The SDL window handle to apply icons to.
+   */
+  private void applyWindowIcons(long wnd) {
+    if (iconPaths == null) {
+      return;
+    }
+    for (String path : iconPaths) {
+      SDL_Surface surface = null;
+      try {
+        FlixelImage image = loadIconImage(path);
+        if (image == null) {
+          Flixel.warn("Desktop", "Window icon could not be decoded: " + path);
+          continue;
+        }
+        // SDL_CreateSurfaceFrom requires the pixel buffer to remain valid for the lifetime
+        // of the surface. The image owns a Java-managed direct ByteBuffer; we pass it directly.
+        ByteBuffer pixels = image.getPixels();
+        int w = image.getWidth();
+        int h = image.getHeight();
+        // stb_image always decodes to RGBA order; SDL_PIXELFORMAT_RGBA32 matches that layout.
+        surface = SDLSurface.SDL_CreateSurfaceFrom(w, h, SDLPixels.SDL_PIXELFORMAT_RGBA32, pixels, w * 4);
+        if (surface == null) {
+          Flixel.warn("Desktop", "SDL_CreateSurfaceFrom failed for icon: " + path);
+          continue;
+        }
+        SDLVideo.SDL_SetWindowIcon(wnd, surface);
+      } finally {
+        if (surface != null) {
+          SDLSurface.SDL_DestroySurface(surface);
+        }
+      }
+    }
+  }
+
+  /**
+   * Reads a resource by path and decodes it into a {@link FlixelImage}.
+   *
+   * <p>The path is resolved from the Java classpath root: {@code "icons/icon16.png"} maps to
+   * {@code /icons/icon16.png} on the classpath. This matches the convention used by other
+   * framework loaders (such as the shader loader in {@code FlixelBgfxGraphics}).
+   *
+   * @param path The classpath-relative resource path (no leading slash).
+   * @return The decoded image, or {@code null} when the resource was not found or could not
+   *         be decoded.
+   */
+  @Nullable
+  private FlixelImage loadIconImage(String path) {
+    byte[] bytes;
+    try (InputStream in = FlixelDesktopRunner.class.getResourceAsStream("/" + path)) {
+      if (in == null) {
+        return null;
+      }
+      bytes = in.readAllBytes();
+    } catch (IOException e) {
+      return null;
+    }
+    // Wrap the raw bytes in a direct buffer so the decoder can read them natively.
+    ByteBuffer encoded = MemoryUtil.memAlloc(bytes.length);
+    try {
+      encoded.put(bytes).flip();
+      return graphics.decodeImage(encoded);
+    } finally {
+      MemoryUtil.memFree(encoded);
     }
   }
 
