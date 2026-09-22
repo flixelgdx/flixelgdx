@@ -103,7 +103,6 @@ public final class FlixelHtml5Launcher {
     FlixelSoundManager.defaultFactory = FlixelWebAudioFactory.create();
     FlixelFontRegistry.setRasterizer(new FlixelHtml5FontRasterizer());
 
-    window.setTitle(config.getTitle());
     gamepads.attach();
 
     Flixel.boot.afterStart(() -> {

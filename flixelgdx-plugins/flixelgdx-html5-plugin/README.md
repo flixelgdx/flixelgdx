@@ -101,10 +101,10 @@ html5 {
   generateDefaultIndexHtml = true
 
   // Provide a hand-crafted index.html instead of the generated default.
-  customIndexHtml = file('src/main/webapp/index.html')
+  indexHtml = file('src/main/webapp/index.html')
 
   // Provide a favicon that is copied to the output and linked in the generated index.html.
-  customFavicon = file('src/main/webapp/favicon.ico')
+  favicon = file('src/main/webapp/favicon.ico')
 }
 ```
 
