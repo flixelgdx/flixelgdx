@@ -586,7 +586,6 @@ public class Html5Plugin implements Plugin<Project> {
     }
     TaskContainer tasks = project.getTasks();
     build.dependsOn(tasks.named("copyAssets"),
-        tasks.named("copyWebApp"),
         tasks.named("copyShaders"),
         tasks.named("generateAssetManifest"),
         tasks.named("extractNativeScripts"));
@@ -594,8 +593,13 @@ public class Html5Plugin implements Plugin<Project> {
     Task copyWebApp = tasks.findByName("copyWebApp");
     if (index != null) {
       build.finalizedBy(index);
-      if (copyWebApp != null) {
-        index.mustRunAfter(copyWebApp);
+    }
+    // copyWebApp finalizes the build so user-supplied web resources (including a custom index.html)
+    // always land last, overriding anything the earlier tasks generated.
+    if (copyWebApp != null) {
+      build.finalizedBy(copyWebApp);
+      if (index != null) {
+        copyWebApp.mustRunAfter(index);
       }
     }
   }
