@@ -590,7 +590,7 @@ public final class Flixel {
    *
    * <pre>{@code
    * // React on first contact.
-   * if (Flixel.touches.list[0].isJustPressed()) {
+   * if (Flixel.touches.list[0].justPressed()) {
    *   spawnEffect(Flixel.touches.list[0].worldX, Flixel.touches.list[0].worldY);
    * }
    *

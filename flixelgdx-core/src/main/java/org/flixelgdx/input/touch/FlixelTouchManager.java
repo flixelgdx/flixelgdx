@@ -42,12 +42,12 @@ import org.jetbrains.annotations.Nullable;
  *
  * <pre>{@code
  * // Check the first finger each frame.
- * if (Flixel.touches.list[0].isJustPressed()) {
+ * if (Flixel.touches.list[0].justPressed()) {
  *   spawnEffect(Flixel.touches.list[0].worldX, Flixel.touches.list[0].worldY);
  * }
  *
  * // React to any active touch.
- * if (Flixel.touches.anyTouched()) {
+ * if (Flixel.touches.anyPressed()) {
  *   player.move(Flixel.touches.list[0].worldX, Flixel.touches.list[0].worldY);
  * }
  *

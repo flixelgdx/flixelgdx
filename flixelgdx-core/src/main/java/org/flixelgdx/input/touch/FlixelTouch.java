@@ -31,7 +31,7 @@ package org.flixelgdx.input.touch;
  *
  * <pre>{@code
  * FlixelTouch first = Flixel.touches.list[0];
- * if (first.isJustPressed()) {
+ * if (first.justPressed()) {
  *   spawnEffect(first.worldX, first.worldY);
  * }
  * }</pre>
