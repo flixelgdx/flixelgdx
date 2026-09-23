@@ -74,6 +74,17 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
+   * Feeds an OS key-repeat event from the runner, fired while a key is held after the initial
+   * {@link #onKeyDown(int)}. Unlike {@link #onKeyDown(int)}, this does not touch the pressed-key
+   * state array, since the key was already marked down and has not been released.
+   *
+   * @param flixelKey The mapped {@link FlixelKey} code.
+   */
+  public void onKeyRepeated(int flixelKey) {
+    dispatchKeyRepeated(flixelKey);
+  }
+
+  /**
    * Feeds a typed-character event from the runner.
    *
    * @param character The typed character.

@@ -470,8 +470,14 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       case SDLEvents.SDL_EVENT_WINDOW_FOCUS_GAINED -> game.onFocusGained();
       case SDLEvents.SDL_EVENT_WINDOW_MINIMIZED -> game.onMinimized();
       case SDLEvents.SDL_EVENT_KEY_DOWN -> {
-        if (!event.key().repeat()) {
-          input.onKeyDown(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+        // SDL resends this event at the OS repeat rate while a key stays held. The first one
+        // (repeat() false) is the physical press; every one after that is a repeat and is routed
+        // separately so justPressed-style state is only ever set once per press.
+        int flixelKey = FlixelSdlKeyMap.toFlixelKey(event.key().scancode());
+        if (event.key().repeat()) {
+          input.onKeyRepeated(flixelKey);
+        } else {
+          input.onKeyDown(flixelKey);
         }
       }
       case SDLEvents.SDL_EVENT_KEY_UP -> input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));

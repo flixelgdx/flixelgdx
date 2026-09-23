@@ -80,9 +80,11 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       if (shouldSwallow(key.getCode())) {
         event.preventDefault();
       }
-      // The browser repeats keydown while a key is held; ignore repeats so justPressed stays true
-      // for a single frame only.
-      if (!key.isRepeat()) {
+      // The browser repeats keydown while a key is held. Route repeats to onKeyRepeated instead
+      // of onKeyDown so justPressed stays true for a single frame only.
+      if (key.isRepeat()) {
+        onKeyRepeated(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
+      } else {
         onKeyDown(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
       }
       String printable = key.getKey();
@@ -128,6 +130,10 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       keyDown[flixelKey] = false;
     }
     dispatchKeyUp(flixelKey);
+  }
+
+  private void onKeyRepeated(int flixelKey) {
+    dispatchKeyRepeated(flixelKey);
   }
 
   private void onKeyTyped(char character) {

@@ -68,6 +68,17 @@ public interface FlixelKeyboardListener {
   default void keyUp(int keycode) {}
 
   /**
+   * Called while a key is held, at the operating system's repeat rate and delay, after the
+   * initial {@link #keyDown(int)}. {@link #keyDown(int)} still fires only once per physical
+   * press; this event fires again and again for as long as the key stays down, matching how the
+   * platform repeats keys for text editing. Typical use is text editing keys such as Backspace
+   * and the arrow keys.
+   *
+   * @param keycode The key that is repeating, as a {@link FlixelKey} code.
+   */
+  default void keyRepeated(int keycode) {}
+
+  /**
    * Called when a key press produces a typed character, respecting modifiers such as Shift and
    * Caps Lock. Use this for text input rather than {@link #keyDown(int)}.
    *
