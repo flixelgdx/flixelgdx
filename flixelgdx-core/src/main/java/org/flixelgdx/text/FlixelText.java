@@ -65,6 +65,19 @@ import org.jetbrains.annotations.Nullable;
  * Supported styles are {@link BorderStyle#SHADOW}, {@link BorderStyle#OUTLINE}, and
  * {@link BorderStyle#OUTLINE_FAST}.
  *
+ * <h2>Caret Positions</h2>
+ * <p>For a UI text box with a caret or selection highlight, {@link #getIndexAt(float, float)} maps a
+ * local point (game pixels from the text's top-left corner, before scale or rotation) to a caret
+ * index, and {@link #getCharX(int)} paired with {@link #getCharLine(int)} give that index's on-screen
+ * position back. For example, turning a mouse click into a caret index and finding where to draw it:
+ * <pre>{@code
+ * float localX = mouseX - text.getX();
+ * float localY = mouseY - text.getY();
+ * int caret = text.getIndexAt(localX, localY);
+ * float caretX = text.getCharX(caret);
+ * float caretY = text.getLineTop(text.getCharLine(caret));
+ * }</pre>
+ *
  * <h2>Sprite Methods</h2>
  * <p>Graphic-loading methods inherited from {@link FlixelSprite} are not applicable to text and will throw
  * {@link UnsupportedOperationException} if called.
@@ -772,6 +785,103 @@ public class FlixelText extends FlixelSprite {
   public float getTextHeight() {
     rebuildIfDirty();
     return layout.getHeight();
+  }
+
+  /**
+   * Returns the caret x position immediately before a character.
+   *
+   * <p>The result is in local game pixels measured from the text's top-left corner, before
+   * sprite scale or rotation is applied, matching {@link #getIndexAt(float, float)}.
+   *
+   * @param index The character index, from {@code 0} to the text length inclusive. The value at
+   *     the text length is the caret position after the last character.
+   * @return The caret x position in local game pixels.
+   */
+  public float getCharX(int index) {
+    rebuildIfDirty();
+    return layout.getCharX(index);
+  }
+
+  /**
+   * Returns the line a character sits on.
+   *
+   * @param index The character index, from {@code 0} to the text length inclusive.
+   * @return The zero-based line index.
+   */
+  public int getCharLine(int index) {
+    rebuildIfDirty();
+    return layout.getCharLine(index);
+  }
+
+  /**
+   * Returns the number of laid-out lines.
+   *
+   * @return The line count; always at least {@code 1}, even for empty text.
+   */
+  public int getLineCount() {
+    rebuildIfDirty();
+    return layout.getLineCount();
+  }
+
+  /**
+   * Returns the distance between two consecutive line tops.
+   *
+   * @return The line height in local game pixels.
+   */
+  public float getLineHeight() {
+    rebuildIfDirty();
+    return layout.getLineHeight();
+  }
+
+  /**
+   * Returns a line's top edge, measured down from the text's top-left corner.
+   *
+   * @param line The zero-based line index.
+   * @return The line's top y position in local game pixels.
+   */
+  public float getLineTop(int line) {
+    rebuildIfDirty();
+    return layout.getLineTop(line);
+  }
+
+  /**
+   * Returns the character index of the first character of a line.
+   *
+   * @param line The zero-based line index.
+   * @return The first character index of {@code line}.
+   */
+  public int getLineStart(int line) {
+    rebuildIfDirty();
+    return layout.getLineStart(line);
+  }
+
+  /**
+   * Returns the character index just past the last character of a line, excluding the newline
+   * that ends it.
+   *
+   * @param line The zero-based line index.
+   * @return The exclusive end character index of {@code line}.
+   */
+  public int getLineEnd(int line) {
+    rebuildIfDirty();
+    return layout.getLineEnd(line);
+  }
+
+  /**
+   * Maps a local point to the nearest caret index, for turning a click into a text-selection
+   * position.
+   *
+   * <p>The point is in local game pixels measured from the text's top-left corner, before sprite
+   * scale or rotation is applied. Subtract {@link #getX()} and {@link #getY()} (adjusted for
+   * camera scroll) from a world click point before calling this.
+   *
+   * @param x The x position in local game pixels from the text's left edge.
+   * @param y The y position in local game pixels from the text's top edge.
+   * @return The caret index, from {@code 0} to the text length.
+   */
+  public int getIndexAt(float x, float y) {
+    rebuildIfDirty();
+    return layout.getIndexAt(x, y);
   }
 
   @Override
