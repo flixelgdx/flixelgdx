@@ -169,4 +169,70 @@ public interface FlixelInputDevice {
    * @param listener The listener to remove.
    */
   default void removeTouchListener(FlixelTouchListener listener) {}
+
+  /**
+   * Requests that the platform start delivering typed text through
+   * {@link FlixelKeyboardListener#keyTyped(char)} and, on platforms that have one, show the
+   * on-screen keyboard. Does nothing by default.
+   *
+   * <p>A UI text box typically calls this when it gains focus, and {@link #stopTextInput()} when it
+   * loses it:
+   *
+   * <pre>{@code
+   * void focus() {
+   *   Flixel.input.startTextInput();
+   * }
+   *
+   * void blur() {
+   *   Flixel.input.stopTextInput();
+   * }
+   * }</pre>
+   */
+  default void startTextInput() {}
+
+  /**
+   * Releases one previous {@link #startTextInput()} request. Does nothing by default.
+   *
+   * <p>A UI text box typically calls this when it loses focus, pairing it with
+   * {@link #startTextInput()} on focus. See {@link #startTextInput()} for a usage example.
+   */
+  default void stopTextInput() {}
+
+  /**
+   * Returns {@code true} when text input is currently active, or {@code false} by default.
+   *
+   * @return {@code true} if at least one {@link #startTextInput()} request is still outstanding.
+   */
+  default boolean isTextInputActive() {
+    return false;
+  }
+
+  /**
+   * Tells the platform where text is currently being edited, so it can place the IME candidate
+   * window or an on-screen keyboard next to the caret. Does nothing by default.
+   *
+   * <p>A text box typically calls this whenever the caret moves while focused:
+   *
+   * <pre>{@code
+   * void onCaretMoved(int caretX, int caretY, int caretHeight) {
+   *   Flixel.input.setTextInputArea(caretX, caretY, 1, caretHeight);
+   * }
+   * }</pre>
+   *
+   * @param x The left edge of the edited text, in window pixels from the left edge.
+   * @param y The top edge of the edited text, in window pixels from the top edge.
+   * @param width The width of the edited text area, in pixels.
+   * @param height The height of the edited text area, in pixels.
+   */
+  default void setTextInputArea(int x, int y, int width, int height) {}
+
+  /**
+   * Returns {@code true} when the platform shows an on-screen keyboard while text input is active,
+   * or {@code false} by default.
+   *
+   * @return {@code true} if the platform has an on-screen keyboard.
+   */
+  default boolean hasScreenKeyboard() {
+    return false;
+  }
 }
