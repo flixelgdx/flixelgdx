@@ -45,6 +45,12 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   protected FlixelArray<FlixelMouseListener> mouseListeners = new FlixelArray<>();
   protected FlixelArray<FlixelTouchListener> touchListeners = new FlixelArray<>();
 
+  private int textInputRequests;
+  private int textInputAreaX;
+  private int textInputAreaY;
+  private int textInputAreaWidth;
+  private int textInputAreaHeight;
+
   @Override
   public void addKeyboardListener(FlixelKeyboardListener listener) {
     if (listener != null && !keyboardListeners.contains(listener, true)) {
@@ -79,6 +85,56 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   @Override
   public void removeTouchListener(FlixelTouchListener listener) {
     touchListeners.removeValue(listener, true);
+  }
+
+  /**
+   * Increments the outstanding text-input request count and, on the 0 to 1 transition, calls
+   * {@link #onTextInputStarted()} so several owners (for example a debug console and a UI text box)
+   * can share one text-input session without turning it off from under each other.
+   */
+  @Override
+  public void startTextInput() {
+    textInputRequests++;
+    if (textInputRequests == 1) {
+      onTextInputStarted();
+    }
+  }
+
+  /**
+   * Decrements the outstanding text-input request count, never below zero, and on the 1 to 0
+   * transition calls {@link #onTextInputStopped()}.
+   */
+  @Override
+  public void stopTextInput() {
+    if (textInputRequests == 0) {
+      return;
+    }
+    textInputRequests--;
+    if (textInputRequests == 0) {
+      onTextInputStopped();
+    }
+  }
+
+  @Override
+  public boolean isTextInputActive() {
+    return textInputRequests > 0;
+  }
+
+  /**
+   * Stores the given area and forwards it through {@link #onTextInputAreaChanged(int, int, int, int)}.
+   *
+   * @param x The left edge of the edited text, in window pixels from the left edge.
+   * @param y The top edge of the edited text, in window pixels from the top edge.
+   * @param width The width of the edited text area, in pixels.
+   * @param height The height of the edited text area, in pixels.
+   */
+  @Override
+  public void setTextInputArea(int x, int y, int width, int height) {
+    textInputAreaX = x;
+    textInputAreaY = y;
+    textInputAreaWidth = width;
+    textInputAreaHeight = height;
+    onTextInputAreaChanged(x, y, width, height);
   }
 
   /**
@@ -238,4 +294,28 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
       touchListeners.get(i).touchCancelled(pointer, x, y);
     }
   }
+
+  /**
+   * Called once when the first {@link #startTextInput()} request arrives (the 0 to 1 transition).
+   * Backends override this to ask the platform to begin delivering typed text.
+   */
+  protected void onTextInputStarted() {}
+
+  /**
+   * Called once when the last outstanding {@link #startTextInput()} request is released through
+   * {@link #stopTextInput()} (the 1 to 0 transition). Backends override this to ask the platform to
+   * stop delivering typed text.
+   */
+  protected void onTextInputStopped() {}
+
+  /**
+   * Called whenever {@link #setTextInputArea(int, int, int, int)} changes the edited text area.
+   * Backends override this to tell the platform where to place the IME candidate window.
+   *
+   * @param x The left edge of the edited text, in window pixels from the left edge.
+   * @param y The top edge of the edited text, in window pixels from the top edge.
+   * @param w The width of the edited text area, in pixels.
+   * @param h The height of the edited text area, in pixels.
+   */
+  protected void onTextInputAreaChanged(int x, int y, int w, int h) {}
 }

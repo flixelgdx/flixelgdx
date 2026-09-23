@@ -28,6 +28,9 @@ import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.keyboard.FlixelKey;
+import org.lwjgl.sdl.SDLKeyboard;
+import org.lwjgl.sdl.SDL_Rect;
+import org.lwjgl.system.MemoryStack;
 
 /**
  * The desktop input device, driven by SDL3 events pumped from the game loop.
@@ -39,6 +42,9 @@ import org.flixelgdx.input.keyboard.FlixelKey;
  * input managers install.
  */
 public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
+
+  /** Native SDL_Window pointer, bound by the runner once the window exists. */
+  private long windowHandle;
 
   /** Down state per FlixelKey code; sized to cover the whole key-code range. */
   private final boolean[] keyDown = new boolean[512];
@@ -149,6 +155,50 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
    */
   public void onScrolled(float amountX, float amountY) {
     dispatchScrolled(amountX, amountY);
+  }
+
+  @Override
+  protected void onTextInputStarted() {
+    if (windowHandle != 0L) {
+      SDLKeyboard.SDL_StartTextInput(windowHandle);
+    }
+  }
+
+  @Override
+  protected void onTextInputStopped() {
+    if (windowHandle != 0L) {
+      SDLKeyboard.SDL_StopTextInput(windowHandle);
+    }
+  }
+
+  @Override
+  protected void onTextInputAreaChanged(int x, int y, int w, int h) {
+    if (windowHandle == 0L) {
+      return;
+    }
+    // Not a per-frame call (only fires when a focused text box moves its caret), so a MemoryStack
+    // allocation here is cheap enough to avoid keeping a dedicated SDL_Rect field around.
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      SDL_Rect.Buffer rect = SDL_Rect.malloc(1, stack);
+      rect.get(0).x(x).y(y).w(w).h(h);
+      SDLKeyboard.SDL_SetTextInputArea(windowHandle, rect, 0);
+    }
+  }
+
+  @Override
+  public boolean hasScreenKeyboard() {
+    return SDLKeyboard.SDL_HasScreenKeyboardSupport();
+  }
+
+  /**
+   * Binds the native SDL window handle this device requests text input and IME placement on. The
+   * {@link FlixelDesktopRunner runner} calls this once the SDL window exists and before any text
+   * input request is made.
+   *
+   * @param windowHandle The native SDL_Window pointer.
+   */
+  public void setWindowHandle(long windowHandle) {
+    this.windowHandle = windowHandle;
   }
 
   @Override
