@@ -43,7 +43,6 @@ import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXInit;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLInit;
-import org.lwjgl.sdl.SDLKeyboard;
 import org.lwjgl.sdl.SDLMouse;
 import org.lwjgl.sdl.SDLPixels;
 import org.lwjgl.sdl.SDLSurface;
@@ -182,6 +181,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     }
     SDLVideo.SDL_SetWindowPosition(windowHandle, SDLVideo.SDL_WINDOWPOS_CENTERED, SDLVideo.SDL_WINDOWPOS_CENTERED);
     window.bind(windowHandle);
+    input.setWindowHandle(windowHandle);
     applyWindowIcons(windowHandle);
 
     if (!initBgfx(windowHandle, transparentFramebuffer)) {
@@ -194,11 +194,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     graphics.setVSync(vsync);
     gamepads.openConnected();
 
-    // The debug overlay's command line needs SDL text-input events (which carry composed characters,
+    // The debug overlay's command line needs text-input events (which carry composed characters,
     // separate from raw key events). Only debug builds have that overlay, so keep text input off
-    // otherwise to avoid triggering an IME where it is not wanted.
+    // otherwise to avoid triggering an IME where it is not wanted. This request is permanent for
+    // the session; a focused UI text box layers its own startTextInput()/stopTextInput() calls on
+    // top of it through the shared request counter in FlixelBaseInputDevice.
     if (Flixel.isDebugMode()) {
-      SDLKeyboard.SDL_StartTextInput(windowHandle);
+      input.startTextInput();
     }
 
     refreshMonitors(); // Fill in the monitors at startup.
