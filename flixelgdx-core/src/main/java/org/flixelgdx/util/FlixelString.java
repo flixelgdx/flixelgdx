@@ -70,6 +70,27 @@ import java.util.function.Supplier;
  * clearing, which is useful when building a line from multiple parts. {@link #charBuffer()} exposes
  * the raw {@link FlixelCharArray} for advanced interop with APIs that require it directly.
  *
+ * <h2>In-place editing</h2>
+ *
+ * <p>{@link #insert(int, char)}, {@link #insert(int, CharSequence)}, {@link #delete(int, int)}, and
+ * {@link #setLength(int)} edit the buffer's content without clearing it, which is what a text box
+ * needs when the player types or deletes a character in the middle of a line. Think of the buffer as
+ * a strip of paper tape: inserting slides the tape apart to make room, and deleting cuts a section
+ * out and slides the ends back together, all without ever allocating a new strip.
+ *
+ * <pre>{@code
+ * // A text box backing a single line of editable input.
+ * FlixelString line = new FlixelString("Helo");
+ *
+ * // The player moved the caret between the two 'l's and typed 'l'.
+ * line.insert(2, 'l');
+ * // line is now "Hello".
+ *
+ * // The player selected the last two characters and pressed delete.
+ * line.delete(3, 5);
+ * // line is now "Hel".
+ * }</pre>
+ *
  * <h2>Example Usage</h2>
  *
  * <pre>{@code
@@ -477,6 +498,72 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString concat(@Nullable Object obj) {
     buffer.append(obj);
+    return this;
+  }
+
+  /**
+   * Inserts a single character at the given position, shifting later characters right.
+   *
+   * @param index The position to insert at, from 0 to {@link #length()}.
+   * @param c The character to insert.
+   * @return {@code this} for chaining.
+   * @throws IndexOutOfBoundsException If {@code index} is out of range.
+   */
+  @NotNull
+  public FlixelString insert(int index, char c) {
+    buffer.insert(index, c);
+    return this;
+  }
+
+  /**
+   * Inserts every character of {@code s} at the given position, shifting later characters right.
+   *
+   * @param index The position to insert at, from 0 to {@link #length()}.
+   * @param s The characters to insert; {@code null} is treated like the literal {@code "null"}.
+   * @return {@code this} for chaining.
+   * @throws IndexOutOfBoundsException If {@code index} is out of range.
+   */
+  @NotNull
+  public FlixelString insert(int index, @Nullable CharSequence s) {
+    buffer.insertRange(index, s != null ? s : "null");
+    return this;
+  }
+
+  /**
+   * Removes the characters from {@code start} (inclusive) to {@code end} (exclusive), shifting
+   * later characters left to close the gap.
+   *
+   * @param start The index of the first character to remove.
+   * @param end The index just past the last character to remove.
+   * @return {@code this} for chaining.
+   * @throws IndexOutOfBoundsException If {@code end} is greater than {@link #length()}, or if
+   *     {@code start} is greater than {@code end}.
+   */
+  @NotNull
+  public FlixelString delete(int start, int end) {
+    buffer.removeRange(start, end);
+    return this;
+  }
+
+  /**
+   * Sets the number of live characters, truncating the buffer.
+   *
+   * <p>Growing is not supported here: {@link FlixelCharArray#setSize(int)} leaves grown positions
+   * with unspecified contents, which would corrupt the text this buffer represents, so this method
+   * throws instead of padding like {@link StringBuilder#setLength(int)} does.
+   *
+   * @param length The new length; must be from 0 to the current {@link #length()}.
+   * @return {@code this} for chaining.
+   * @throws IndexOutOfBoundsException If {@code length} is negative or greater than the current
+   *     {@link #length()}.
+   */
+  @NotNull
+  public FlixelString setLength(int length) {
+    int current = buffer.getSize();
+    if (length < 0 || length > current) {
+      throw new IndexOutOfBoundsException("length " + length + " out of range [0, " + current + "]");
+    }
+    buffer.setSize(length);
     return this;
   }
 
