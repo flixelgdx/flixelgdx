@@ -24,6 +24,7 @@
 package org.flixelgdx.collections;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -131,6 +132,61 @@ public class FlixelCharArray implements CharSequence, Appendable {
   }
 
   /**
+   * Inserts a character at the given index, shifting later characters right to make room.
+   *
+   * <p>When {@link #isOrdered()} is {@code false}, the character previously at {@code index} is
+   * moved to the end instead of shifting every later character, matching {@link #removeIndex(int)}.
+   * Text buffers should keep {@link #isOrdered()} {@code true} so character order is preserved.
+   *
+   * @param index The position to insert at, from 0 to {@link #getSize()}.
+   * @param value The character to insert.
+   * @throws IndexOutOfBoundsException If {@code index} is out of range.
+   */
+  public void insert(int index, char value) {
+    if (index > size) {
+      throw new IndexOutOfBoundsException("index " + index + " > size " + size);
+    }
+    if (size == items.length) {
+      grow(size + 1);
+    }
+    if (ordered) {
+      System.arraycopy(items, index, items, index + 1, size - index);
+    } else if (size > index) {
+      items[size] = items[index];
+    }
+    items[index] = value;
+    size++;
+  }
+
+  /**
+   * Inserts every character of a sequence at the given index, shifting later characters right to
+   * make room.
+   *
+   * <p>Unlike {@link #insert(int, char)}, this always preserves the order of both the inserted
+   * characters and the characters already in the buffer, regardless of {@link #isOrdered()}, since
+   * a multi-character insert has no meaningful unordered form.
+   *
+   * @param index The position to insert at, from 0 to {@link #getSize()}.
+   * @param chars The characters to insert; {@code null} or empty inserts nothing.
+   * @throws IndexOutOfBoundsException If {@code index} is out of range.
+   */
+  public void insertRange(int index, @Nullable CharSequence chars) {
+    if (index > size) {
+      throw new IndexOutOfBoundsException("index " + index + " > size " + size);
+    }
+    if (chars == null || chars.length() == 0) {
+      return;
+    }
+    int count = chars.length();
+    ensureCapacity(size + count);
+    System.arraycopy(items, index, items, index + count, size - index);
+    for (int i = 0; i < count; i++) {
+      items[index + i] = chars.charAt(i);
+    }
+    size += count;
+  }
+
+  /**
    * Removes and returns the value at the given index.
    *
    * @param index The position to remove, from 0 to {@code size - 1}.
@@ -149,6 +205,30 @@ public class FlixelCharArray implements CharSequence, Appendable {
       items[index] = items[size];
     }
     return removed;
+  }
+
+  /**
+   * Removes every character from {@code start} (inclusive) to {@code end} (exclusive), shifting
+   * later characters left to close the gap.
+   *
+   * <p>The relative order of the remaining characters is always preserved, regardless of
+   * {@link #isOrdered()}, since removing a range has no meaningful unordered form.
+   *
+   * @param start The index of the first character to remove.
+   * @param end The index just past the last character to remove.
+   * @throws IndexOutOfBoundsException If {@code end} is greater than {@link #getSize()}, or if
+   *     {@code start} is greater than {@code end}.
+   */
+  public void removeRange(int start, int end) {
+    if (end > size || start > end) {
+      throw new IndexOutOfBoundsException("invalid range [" + start + ", " + end + ") for size " + size);
+    }
+    int count = end - start;
+    if (count == 0) {
+      return;
+    }
+    System.arraycopy(items, end, items, start, size - end);
+    size -= count;
   }
 
   /**
