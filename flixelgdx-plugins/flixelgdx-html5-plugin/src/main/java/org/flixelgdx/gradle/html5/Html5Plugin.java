@@ -109,6 +109,26 @@ public class Html5Plugin implements Plugin<Project> {
   private static final String JS_DIR = "js/";
   private static final String WASM_DIR = "wasm-gc/";
 
+  // Every task that writes into the web root. The tasks that read the finished web root (run, debug,
+  // and package) depend on all of them, so they never see a partial app. Some of these only reach
+  // the task graph as finalizers of the TeaVM build tasks, and a finalizer is not a dependency, so
+  // listing them here is what makes the readers wait for them.
+  private static final String[] WEB_ROOT_TASKS = {
+      "generateJavaScript",
+      "generateWasmGC",
+      "copyWasmGCRuntime",
+      "copyAssets",
+      "copyShaders",
+      "copyFrameworkResources",
+      "generateAssetManifest",
+      "extractNativeScripts",
+      "generateIndexHtml",
+      "copyWebApp"
+  };
+
+  // The tasks that read the finished web root.
+  private static final String[] WEB_ROOT_READERS = { "run", "debug", "package" };
+
   @Override
   public void apply(Project project) {
     Html5Extension ext = project.getExtensions().create(Html5Extension.NAME, Html5Extension.class);
@@ -579,12 +599,6 @@ public class Html5Plugin implements Plugin<Project> {
 
     wireBuildTask(project, "generateJavaScript");
     wireBuildTask(project, "generateWasmGC");
-    dependOn(project, "run", "generateJavaScript");
-    dependOn(project, "run", "generateWasmGC");
-    dependOn(project, "debug", "generateJavaScript");
-    dependOn(project, "debug", "generateWasmGC");
-    dependOn(project, "package", "generateJavaScript");
-    dependOn(project, "package", "generateWasmGC");
 
     // TeaVM emits the WebAssembly bundle from generateWasmGC but copies its JavaScript loader runtime
     // (teavm.wasm-runtime.js, the classic TeaVM.wasmGC.load bootstrap the generated page uses) from a
@@ -596,10 +610,21 @@ public class Html5Plugin implements Plugin<Project> {
       Task copyRuntime = project.getTasks().findByName("copyWasmGCRuntime");
       if (generateWasm != null && copyRuntime != null) {
         generateWasm.finalizedBy(copyRuntime);
+        // copyWebApp lands last (see wireBuildTask()), after the runtime copy as well.
+        Task copyWebApp = project.getTasks().findByName("copyWebApp");
+        if (copyWebApp != null) {
+          copyWebApp.mustRunAfter(copyRuntime);
+        }
       }
-      dependOn(project, "run", "copyWasmGCRuntime");
-      dependOn(project, "debug", "copyWasmGCRuntime");
-      dependOn(project, "package", "copyWasmGCRuntime");
+    }
+
+    // Make run, debug, and package wait for every task that writes into the web root. Without
+    // this, package fails Gradle's validation because it reads copyWebApp's output with no declared
+    // dependency on it, and run or debug could start serving before index.html is written.
+    for (String reader : WEB_ROOT_READERS) {
+      for (String writer : WEB_ROOT_TASKS) {
+        dependOn(project, reader, writer);
+      }
     }
   }
 
@@ -619,13 +644,18 @@ public class Html5Plugin implements Plugin<Project> {
         tasks.named("extractNativeScripts"));
     Task index = tasks.findByName("generateIndexHtml");
     Task copyWebApp = tasks.findByName("copyWebApp");
+    // run, debug, and package also depend on these two directly (see wireTeaVm()). The explicit
+    // mustRunAfter pins them after the build either way, instead of relying on the finalizer
+    // relationship alone for that order.
     if (index != null) {
       build.finalizedBy(index);
+      index.mustRunAfter(build);
     }
     // copyWebApp finalizes the build so user-supplied web resources (including a custom index.html)
     // always land last, overriding anything the earlier tasks generated.
     if (copyWebApp != null) {
       build.finalizedBy(copyWebApp);
+      copyWebApp.mustRunAfter(build);
       if (index != null) {
         copyWebApp.mustRunAfter(index);
       }
