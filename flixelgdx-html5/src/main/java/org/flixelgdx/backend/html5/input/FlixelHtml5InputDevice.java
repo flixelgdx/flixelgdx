@@ -26,15 +26,12 @@ package org.flixelgdx.backend.html5.input;
 import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
-import org.flixelgdx.input.FlixelTouchListener;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.KeyboardEvent;
 import org.teavm.jso.dom.events.MouseEvent;
-import org.teavm.jso.dom.events.Touch;
-import org.teavm.jso.dom.events.TouchEvent;
 import org.teavm.jso.dom.events.WheelEvent;
 import org.teavm.jso.dom.html.HTMLCanvasElement;
 
@@ -46,12 +43,15 @@ import org.teavm.jso.dom.html.HTMLCanvasElement;
  * attaches DOM handlers once in {@link #attach(HTMLCanvasElement)} and lets them run whenever the
  * browser fires them. Each handler updates the same cached state the desktop device keeps (for
  * {@link #isKeyPressed(int)} and the pointer getters) and forwards to the framework's input
- * managers through the {@link FlixelKeyboardListener}, {@link FlixelMouseListener}, and
- * {@link FlixelTouchListener} lists.
+ * managers through the {@link FlixelKeyboardListener} and {@link FlixelMouseListener} lists.
+ *
+ * <p>Browser games are played with a mouse, keyboard, or gamepad, so this device does not listen
+ * for touch events. On a touch screen, taps still reach the game because the browser falls back to
+ * its own mouse emulation for elements with no touch listeners.
  *
  * <p>Keyboard events are bound to the page window rather than the canvas because a canvas does not
- * receive keyboard focus by default; pointer and touch events are bound to the canvas so their
- * coordinates can be translated into canvas space.
+ * receive keyboard focus by default; pointer events are bound to the canvas so their coordinates
+ * can be translated into canvas space.
  */
 public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
@@ -67,8 +67,8 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
    * Attaches DOM event listeners so browser input reaches the framework.
    *
    * <p>Called once during startup after the canvas exists. Keyboard listeners live on the window
-   * so keys are captured without the canvas needing focus; pointer and touch listeners live on the
-   * canvas so their coordinates map cleanly into canvas space.
+   * so keys are captured without the canvas needing focus; pointer listeners live on the canvas so
+   * their coordinates map cleanly into canvas space.
    *
    * @param canvas The canvas the game renders into.
    */
@@ -114,11 +114,6 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
     });
     // Suppress the right-click menu so games can use the right mouse button.
     canvas.addEventListener("contextmenu", Event::preventDefault);
-
-    canvas.addEventListener("touchstart", event -> dispatchTouch((TouchEvent) event, TouchPhase.START));
-    canvas.addEventListener("touchend", event -> dispatchTouch((TouchEvent) event, TouchPhase.END));
-    canvas.addEventListener("touchmove", event -> dispatchTouch((TouchEvent) event, TouchPhase.MOVE));
-    canvas.addEventListener("touchcancel", event -> dispatchTouch((TouchEvent) event, TouchPhase.CANCEL));
   }
 
   private void onKeyDown(int flixelKey) {
@@ -169,31 +164,6 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
   private void onScrolled(float amountX, float amountY) {
     dispatchScrolled(amountX, amountY);
-  }
-
-  /**
-   * Forwards the changed touches of a browser touch event to the touch listeners.
-   *
-   * <p>The touch's position in the event's changed-touches list is used as the pointer index, which
-   * keeps single-finger use on pointer zero and lets a few simultaneous fingers map to higher
-   * pointers without any per-frame allocation.
-   *
-   * @param event The browser touch event.
-   * @param phase Which lifecycle phase (start, move, end, cancel) fired.
-   */
-  private void dispatchTouch(TouchEvent event, TouchPhase phase) {
-    event.preventDefault();
-    for (int i = 0; i < event.getChangedTouches().getLength(); i++) {
-      Touch touch = event.getChangedTouches().get(i);
-      int x = canvasX(canvas, (int) touch.getClientX());
-      int y = canvasY(canvas, (int) touch.getClientY());
-      switch (phase) {
-        case START -> dispatchTouched(i, x, y);
-        case MOVE -> dispatchTouchDragged(i, x, y);
-        case END -> dispatchTouchReleased(i, x, y);
-        case CANCEL -> dispatchTouchCancelled(i, x, y);
-      }
-    }
   }
 
   /**
@@ -270,12 +240,4 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       return Math.round((clientY - r.top) * (canvas.height / r.height));
       """)
   private static native int canvasY(HTMLCanvasElement canvas, int clientY);
-
-  /** The lifecycle phase of a browser touch event, used to pick the listener callback to fire. */
-  private enum TouchPhase {
-    START,
-    MOVE,
-    END,
-    CANCEL
-  }
 }
