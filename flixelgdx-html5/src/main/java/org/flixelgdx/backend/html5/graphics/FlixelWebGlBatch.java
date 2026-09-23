@@ -23,8 +23,10 @@
  */
 package org.flixelgdx.backend.html5.graphics;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
@@ -121,6 +123,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
   private int totalRenderCalls;
 
   private boolean drawing;
+  private boolean loggedNoopTexture;
 
   /**
    * Builds the batch and its GPU resources.
@@ -416,10 +419,25 @@ public class FlixelWebGlBatch implements FlixelBatch {
    * Switches the bound texture, flushing first when the texture actually changes so quads never mix
    * two textures in one draw call.
    *
+   * <p>If {@code texture} is not a {@link FlixelWebGlTexture} (for example, a
+   * {@link FlixelNoopTexture} left behind when a bitmap font's page image
+   * failed to decode), any pending quads for the previous real texture are flushed and
+   * {@code currentTexture} is cleared so subsequent {@link #appendQuad} calls are silently skipped.
+   * A one-time warning is logged to flag the root cause.
+   *
    * @param texture The texture the next quad samples from.
    */
   private void switchTexture(FlixelTexture texture) {
-    FlixelWebGlTexture webGl = (FlixelWebGlTexture) texture;
+    if (!(texture instanceof FlixelWebGlTexture webGl)) {
+      if (!loggedNoopTexture) {
+        loggedNoopTexture = true;
+        Flixel.warn("WebGL", "Draw call skipped: texture is not a WebGL texture. "
+            + "This usually means a bitmap font's page image was unavailable at load time.");
+      }
+      flush();
+      currentTexture = null;
+      return;
+    }
     if (currentTexture == null || currentTexture.getHandle() != webGl.getHandle() || quadCount >= MAX_QUADS) {
       flush();
       currentTexture = webGl;
@@ -448,6 +466,9 @@ public class FlixelWebGlBatch implements FlixelBatch {
    */
   private void appendQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,
       float u, float v, float u2, float v2, float r, float g, float b, float a) {
+    if (currentTexture == null) {
+      return;
+    }
     if (quadCount >= MAX_QUADS) {
       flush();
     }

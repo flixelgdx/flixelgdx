@@ -131,6 +131,7 @@ public class Html5Plugin implements Plugin<Project> {
     registerCopyTasks(project, ext, webRoot);
     registerWasmExtractionTask(project, webRoot);
     registerShaderTask(project, webRoot);
+    registerFrameworkResourcesTask(project, webRoot);
     registerManifestTask(project, webRoot);
     registerIndexTask(project, ext, webRoot, bundle);
     registerRunTask(project, ext, webRoot);
@@ -183,6 +184,32 @@ public class Html5Plugin implements Plugin<Project> {
   }
 
   /**
+   * Registers the framework resource copy task. Certain framework JARs on the runtime classpath
+   * contain resources that the core runtime reads at startup through the classpath file root. On
+   * web, the classpath root maps to the published {@code assets/} folder, so those resources must be
+   * present there before the game runs. This task copies any path matching
+   * {@code org/flixelgdx/bitmap/**} (the packaged bitmap font atlas and descriptor) from every
+   * source on the runtime classpath into the web assets tree, following the same pattern used by
+   * {@code copyShaders} for compiled shader variants.
+   */
+  private void registerFrameworkResourcesTask(Project project, DirectoryProperty webRoot) {
+    project.getTasks().register("copyFrameworkResources", Copy.class, task -> {
+      task.setGroup(BUILD_GROUP);
+      task.setDescription(
+          "Copies packaged framework classpath resources (e.g. the bitmap font) into the web assets.");
+      Configuration runtimeClasspath = project.getConfigurations().findByName("runtimeClasspath");
+      if (runtimeClasspath != null) {
+        task.dependsOn(runtimeClasspath);
+        task.from(project.provider(() -> runtimeClasspath.getFiles().stream()
+            .map(file -> file.isDirectory() ? file : project.zipTree(file))
+            .collect(Collectors.toList())));
+      }
+      task.include("org/flixelgdx/bitmap/**");
+      task.into(webRoot.dir("assets"));
+    });
+  }
+
+  /**
    * Registers the asset manifest generator. It walks the copied assets and writes an
    * {@code assets/assets.txt} listing every file, which the web backend reads at startup to preload
    * everything before the game runs.
@@ -191,7 +218,8 @@ public class Html5Plugin implements Plugin<Project> {
     project.getTasks().register("generateAssetManifest", task -> {
       task.setGroup(BUILD_GROUP);
       task.setDescription("Writes assets/assets.txt listing every bundled asset for the web preloader.");
-      task.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyShaders"));
+      task.dependsOn(project.getTasks().named("copyAssets"), project.getTasks().named("copyShaders"),
+          project.getTasks().named("copyFrameworkResources"));
       task.doLast(t -> writeAssetManifest(new File(webRoot.get().getAsFile(), "assets")));
     });
   }

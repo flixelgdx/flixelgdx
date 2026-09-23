@@ -151,6 +151,15 @@ directory one per line. The web backend reads this at startup and preloads all o
 game's `create()` method is called, so assets are available synchronously (matching the behavior of
 the desktop and Android backends).
 
+## Framework resources
+
+The plugin also runs `copyFrameworkResources`, which copies the framework's own classpath resources
+into the web assets. These are resources the core runtime reads at startup through the classpath
+file root - for example the packaged bitmap font (`org/flixelgdx/bitmap/lsans-15.*`) used as the
+default font when no other font is registered. Without this step, any `FlixelText` object relying
+on the default font would silently not render in the browser. This task runs automatically before
+`generateAssetManifest`; no configuration is needed.
+
 ## Shaders
 
 If the shader plugin is on the classpath, the plugin also runs `copyShaders`, which copies the ESSL
@@ -220,14 +229,15 @@ sourceSets.main.resources.srcDir = 'src/main/emcc-output'
 
 ## Tasks registered
 
-| Task                    | Group       | Description                                                             |
-|-------------------------|-------------|-------------------------------------------------------------------------|
-| `copyAssets`            | build       | Copies game assets into the web output.                                 |
-| `copyWebApp`            | build       | Copies user-provided web resources into the web output.                 |
-| `copyShaders`           | build       | Copies compiled ESSL shader variants into the web assets.               |
-| `extractNativeScripts`  | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.         |
-| `generateAssetManifest` | build       | Writes `assets/assets.txt` for the web preloader.                       |
-| `generateIndexHtml`     | build       | Generates `index.html` and injects `<script>` tags for native scripts.  |
-| `run`                   | application | Builds the web app and starts the dev server.                           |
-| `debug`                 | application | Same as `run`, but opens in debug mode.                                 |
-| `package`               | application | Zips the web output into `dist/<name>-html5.zip`.                       |
+| Task                       | Group       | Description                                                                          |
+|----------------------------|-------------|--------------------------------------------------------------------------------------|
+| `copyAssets`               | build       | Copies game assets into the web output.                                              |
+| `copyWebApp`               | build       | Copies user-provided web resources into the web output.                              |
+| `copyShaders`              | build       | Copies compiled ESSL shader variants into the web assets.                            |
+| `copyFrameworkResources`   | build       | Copies packaged framework classpath resources (e.g. the bitmap font) into web assets.|
+| `extractNativeScripts`     | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.                     |
+| `generateAssetManifest`    | build       | Writes `assets/assets.txt` for the web preloader.                                   |
+| `generateIndexHtml`        | build       | Generates `index.html` and injects `<script>` tags for native scripts.               |
+| `run`                      | application | Builds the web app and starts the dev server.                                        |
+| `debug`                    | application | Same as `run`, but opens in debug mode.                                              |
+| `package`                  | application | Zips the web output into `dist/<name>-html5.zip`.                                   |

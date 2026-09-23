@@ -148,8 +148,11 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
     // The browser cannot read files synchronously, so every bundled asset is downloaded first and
     // the game only starts once the cache is warm. See FlixelHtml5AssetPreloader.
+    // After the regular preload, framework-owned images (the packaged bitmap font atlas) are
+    // decoded and stored so the runtime can read them synchronously at startup.
     FlixelHtml5AssetPreloader.preload(FlixelHtml5Files.ASSET_MANIFEST, FlixelHtml5Files.ASSET_ROOT,
-        this::startGame, FlixelHtml5Runner::onPreloadFailed);
+        () -> FlixelHtml5AssetPreloader.preloadFrameworkImages(FlixelHtml5Files.ASSET_ROOT, this::startGame),
+        FlixelHtml5Runner::onPreloadFailed);
   }
 
   /**
