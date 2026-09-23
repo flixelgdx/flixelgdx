@@ -145,7 +145,6 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
     subState = toOpen;
     toOpen.parentState = this;
     toOpen.create();
-    toOpen.syncBackgroundToCameras();
 
     if (toOpen.openCallback != null) {
       toOpen.openCallback.run();
@@ -283,6 +282,9 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
   /**
    * Reads the first camera's {@link FlixelCamera#bgColor}.
    *
+   * <p>{@link FlixelSubState} overrides this to return its own overlay color instead of reading
+   * any camera.
+   *
    * @return The background color of the first camera.
    */
   public FlixelColor getBgColor() {
@@ -293,9 +295,15 @@ public abstract class FlixelState extends FlixelBasicGroup<IFlixelBasic> {
   }
 
   /**
-   * Assigns every listed camera's {@link FlixelCamera#bgColor}.
+   * Assigns every camera's {@link FlixelCamera#bgColor}, the color each camera clears to before
+   * drawing a new frame.
    *
-   * @param value The background color to set.
+   * <p>{@link FlixelSubState} overrides this so it never touches a camera; a substate instead
+   * draws its own background as a translucent overlay behind its members, since changing every
+   * camera's clear color would also recolor cameras the substate has nothing to do with (for
+   * example, a HUD camera).
+   *
+   * @param value The background color to set on every camera.
    */
   public void setBgColor(@Nullable FlixelColor value) {
     if (value == null) {

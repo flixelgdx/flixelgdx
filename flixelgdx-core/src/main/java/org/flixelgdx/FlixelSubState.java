@@ -24,7 +24,12 @@
 package org.flixelgdx;
 
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelSpriteUtil;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A {@code FlixelSubState} can be opened inside a {@link FlixelState}. By default, it
@@ -35,6 +40,21 @@ import org.flixelgdx.util.FlixelColor;
  * draw while this substate is active.
  *
  * <p>Substates can be nested: a substate can open another substate on top of itself.
+ *
+ * <p>Unlike {@link FlixelState#setBgColor(FlixelColor)}, a substate's background color never
+ * touches any camera. Instead, it is drawn as a translucent overlay behind the substate's own
+ * members, the same way a sheet of colored glass held up in front of a scene tints only what is
+ * behind the glass without repainting the scene itself. This keeps a substate's own visuals from
+ * bleeding into the parent state or any other camera (such as a HUD camera) once the substate is
+ * closed. A pause screen that dims the game behind it might look like this:
+ *
+ * <pre>{@code
+ * public class PauseSubState extends FlixelSubState {
+ *   public PauseSubState() {
+ *     super(new FlixelColor(0f, 0f, 0f, 0.5f)); // Half-transparent black overlay.
+ *   }
+ * }
+ * }</pre>
  */
 public abstract class FlixelSubState extends FlixelState {
 
@@ -47,8 +67,11 @@ public abstract class FlixelSubState extends FlixelState {
   /** The parent state that opened this substate. Set internally by {@link FlixelState#openSubState}. */
   FlixelState parentState;
 
-  /** Preserved so {@link #syncBackgroundToCameras()} can run after the game exists (constructor may run earlier). */
-  private final FlixelColor subStateBackground;
+  /** This substate's own overlay background color. Never {@code null}; see {@link #getBgColor()}. */
+  private final FlixelColor bgColor;
+
+  /** Shared white pixel used to draw {@link #bgColor}, cached lazily on first draw. */
+  private FlixelFrame whitePixel;
 
   /**
    * Creates a new substate with a clear background.
@@ -60,17 +83,11 @@ public abstract class FlixelSubState extends FlixelState {
   /**
    * Creates a new substate with the given background color.
    *
-   * @param bgColor The background color for this substate.
+   * @param bgColor The background overlay color for this substate.
    */
   public FlixelSubState(FlixelColor bgColor) {
     super();
-    subStateBackground = bgColor != null ? new FlixelColor(bgColor) : new FlixelColor(FlixelColor.CLEAR);
-    setBgColor(subStateBackground);
-  }
-
-  /** Re-applies this substate's background to all cameras (needed if the constructor ran before {@link FlixelGame#create}). */
-  protected void syncBackgroundToCameras() {
-    setBgColor(subStateBackground);
+    this.bgColor = bgColor != null ? new FlixelColor(bgColor) : new FlixelColor(FlixelColor.CLEAR);
   }
 
   /** Closes this substate by telling the parent state to remove it. */
@@ -78,6 +95,59 @@ public abstract class FlixelSubState extends FlixelState {
     if (parentState != null) {
       parentState.closeSubState();
     }
+  }
+
+  /**
+   * Draws this substate's background overlay, then its members.
+   *
+   * <p>When {@link #getBgColor()} has a non-zero alpha, a rectangle covering the active camera's
+   * visible view is filled with that color before {@code super.draw(batch)} draws the members, so
+   * pause menus and similar substates can dim or tint the state beneath them without changing any
+   * camera's own background color.
+   *
+   * @param batch The batch to draw into.
+   */
+  @Override
+  public void draw(@NotNull FlixelBatch batch) {
+    if (bgColor.a > 0f) {
+      FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
+      if (whitePixel == null) {
+        whitePixel = FlixelSpriteUtil.obtainWhitePixel(Flixel.assets);
+      }
+      cam.fill(bgColor, true, 1f, batch, whitePixel);
+    }
+    super.draw(batch);
+  }
+
+  /**
+   * Returns this substate's own background overlay color.
+   *
+   * <p>Unlike {@link FlixelState#getBgColor()}, which reads a camera's clear color, this returns
+   * the color this substate draws behind its members in {@link #draw(FlixelBatch)}.
+   *
+   * @return This substate's background overlay color; never {@code null}.
+   */
+  @Override
+  @NotNull
+  public FlixelColor getBgColor() {
+    return bgColor;
+  }
+
+  /**
+   * Sets this substate's own background overlay color.
+   *
+   * <p>Unlike {@link FlixelState#setBgColor(FlixelColor)}, which assigns every camera's clear
+   * color, this only changes the translucent overlay this substate draws behind its members. No
+   * camera is touched.
+   *
+   * @param value The overlay color to copy into this substate's background. {@code null} is ignored.
+   */
+  @Override
+  public void setBgColor(@Nullable FlixelColor value) {
+    if (value == null) {
+      return;
+    }
+    bgColor.set(value);
   }
 
   @Override
