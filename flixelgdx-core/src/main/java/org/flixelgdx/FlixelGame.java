@@ -85,7 +85,9 @@ import java.util.function.Supplier;
  * one camera sized to match the initial window dimensions from {@link FlixelConfig}. Every
  * camera in the list is drawn in order each frame. Use {@link #resetCameras()} to restore the
  * single-camera default, or manipulate {@link Flixel#cameras} directly for split-screen or
- * minimap setups.
+ * minimap setups. When adding a HUD or UI camera on top of the world, set its
+ * {@link FlixelCamera#defaultDrawTarget} to {@code false} so world objects (which do not list
+ * any cameras of their own) do not also draw a second time on it.
  *
  * <h2>Global overlay</h2>
  *
