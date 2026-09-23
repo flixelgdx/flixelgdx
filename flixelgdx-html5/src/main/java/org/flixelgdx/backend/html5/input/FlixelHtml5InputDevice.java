@@ -101,7 +101,10 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
     Window.current().addEventListener("keydown", event -> {
       KeyboardEvent key = (KeyboardEvent) event;
-      if (shouldSwallow(key.getCode())) {
+      // Space is left alone while the text-input bridge is focused: preventing its default would
+      // stop the browser from inserting the space into the bridge, so it would never be typed.
+      // The focused bridge already keeps Space from scrolling the page.
+      if (shouldSwallow(key.getCode()) && !(isTextInputActive() && "Space".equals(key.getCode()))) {
         event.preventDefault();
       }
       // While the text-input bridge is focused, typed characters arrive through it instead (see
