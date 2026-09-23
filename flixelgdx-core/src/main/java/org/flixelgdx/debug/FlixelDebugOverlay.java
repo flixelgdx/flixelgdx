@@ -689,7 +689,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * is {@code true}, mirroring the actual draw chain.
    *
    * <p>Only objects assigned to {@code cam} are eligible. An object with a {@code null} or
-   * empty camera list is treated as assigned to all cameras (the default).
+   * empty camera list is treated as assigned to {@code cam} only if {@code cam}'s
+   * {@link FlixelCamera#defaultDrawTarget} is {@code true} (the default).
    *
    * <p>Hidden ({@code visible == false}) and dead ({@code exists == false}) members are skipped so
    * the picker never grabs invisible UI elements or pooled corpses.
@@ -772,12 +773,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
 
   /**
    * Returns {@code true} if {@code basic} should be rendered by {@code cam}. An object with a
-   * {@code null} or empty camera list renders to all cameras (the default).
+   * {@code null} or empty camera list renders on {@code cam} only if {@code cam}'s
+   * {@link FlixelCamera#defaultDrawTarget} is {@code true} (the default).
    */
   private static boolean isAssignedToCamera(@NotNull FlixelBasic basic, @NotNull FlixelCamera cam) {
     FlixelCamera[] list = basic.cameras;
     if (list == null || list.length == 0) {
-      return true;
+      return cam.defaultDrawTarget;
     }
     for (FlixelCamera c : list) {
       if (c == cam) {
@@ -833,11 +835,11 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
         }
         if (drawable instanceof FlixelBasic basic) {
           // Skip if the object is not projected to the current camera. A null/empty list means
-          // the object is projected to all cameras.
+          // the object is projected only to cameras whose defaultDrawTarget is true.
           boolean found = false;
           FlixelCamera[] list = basic.cameras;
           if (list == null || list.length == 0) {
-            found = true;
+            found = cam.defaultDrawTarget;
           } else {
             for (FlixelCamera c : list) {
               if (c == cam) {
