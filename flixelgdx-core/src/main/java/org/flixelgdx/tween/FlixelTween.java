@@ -113,7 +113,7 @@ import java.util.function.Supplier;
  * FlixelTween tween = FlixelTween.tween(sprite, new FlixelTweenSettings()
  *   .addGoal(sprite::getX, 100f, sprite::setX)
  *   .setDuration(1f)
- *   .setEase(FlixelEase::cubicInOut)
+ *   .setEase(FlixelEase::cubeInOut)
  *   .setOnComplete(tween -> Flixel.info("Done!")));
  * }</pre>
  *
