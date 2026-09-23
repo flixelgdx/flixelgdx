@@ -85,6 +85,14 @@ public final class FlixelTextLayout {
   @NotNull
   private final FlixelIntArray lineStartChar = new FlixelIntArray(8);
 
+  /**
+   * Character index just past the last character of each line, excluding a newline or a
+   * wrapped-past space. A hard break has no such separator character, so its line's end equals
+   * the next line's start.
+   */
+  @NotNull
+  private final FlixelIntArray lineEndChar = new FlixelIntArray(8);
+
   private float width;
   private float height;
 
@@ -115,6 +123,7 @@ public final class FlixelTextLayout {
     charX.clear();
     charLine.clear();
     lineStartChar.clear();
+    lineEndChar.clear();
 
     lineHeight = font.getLineHeight() * scale;
     float penX = 0f;
@@ -138,6 +147,7 @@ public final class FlixelTextLayout {
         charLine.add(currentLine);
         maxLineWidth = Math.max(maxLineWidth, penX);
         alignLine(lineStart, frames.getSize(), lineStartCharIndex, i + 1, penX, fieldWidth, align);
+        lineEndChar.add(i);
         penX = 0f;
         lineTop += lineHeight;
         lineStart = frames.getSize();
@@ -180,6 +190,7 @@ public final class FlixelTextLayout {
             charX.set(k, charX.get(k) - shift);
             charLine.set(k, newLine);
           }
+          lineEndChar.add(lastSpaceCharIndex);
           penX -= shift;
           lineStart = lastSpaceIndex;
           currentLine = newLine;
@@ -190,6 +201,9 @@ public final class FlixelTextLayout {
         } else {
           maxLineWidth = Math.max(maxLineWidth, penX);
           alignLine(lineStart, frames.getSize(), lineStartCharIndex, i, penX, fieldWidth, align);
+          // A hard break has no separator character between lines, so this line's exclusive
+          // end is the same character index where the next line starts.
+          lineEndChar.add(i);
           penX = 0f;
           lineTop += lineHeight;
           lineStart = frames.getSize();
@@ -219,6 +233,7 @@ public final class FlixelTextLayout {
     // The trailing caret slot is the position after the last character of the text.
     charX.add(penX);
     charLine.add(currentLine);
+    lineEndChar.add(length);
     if (length > 0) {
       alignLine(lineStart, frames.getSize(), lineStartCharIndex, length + 1, penX, effectiveFieldWidth, align);
     }
@@ -325,17 +340,15 @@ public final class FlixelTextLayout {
   }
 
   /**
-   * Returns the character index just past the last character of a line, excluding the newline
-   * that ends it.
+   * Returns the character index just past the last character of a line, excluding a newline or
+   * a wrapped-past space. A hard-broken line has no such separator character, so its end equals
+   * the character index where the next line starts.
    *
    * @param line The zero-based line index.
    * @return The exclusive end character index of {@code line}.
    */
   public int getLineEnd(int line) {
-    if (line + 1 < lineCount) {
-      return lineStartChar.get(line + 1) - 1;
-    }
-    return charX.getSize() - 1;
+    return lineEndChar.get(line);
   }
 
   /**

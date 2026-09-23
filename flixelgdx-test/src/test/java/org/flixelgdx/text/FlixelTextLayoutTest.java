@@ -153,6 +153,12 @@ class FlixelTextLayoutTest {
     assertEquals(2, layout.getLineStart(1));
     assertEquals(4, layout.getLineStart(2));
 
+    // A hard break has no separator character, so each line's exclusive end is exactly the
+    // character index where the next line starts.
+    assertEquals(layout.getLineStart(1), layout.getLineEnd(0));
+    assertEquals(layout.getLineStart(2), layout.getLineEnd(1));
+    assertEquals(6, layout.getLineEnd(2));
+
     assertEquals(0f, layout.getCharX(2));
     assertEquals(1, layout.getCharLine(2));
     assertEquals(0f, layout.getCharX(4));
@@ -160,6 +166,17 @@ class FlixelTextLayoutTest {
 
     assertEquals(25f, layout.getWidth());
     assertEquals(3f * LINE_HEIGHT, layout.getHeight());
+  }
+
+  @Test
+  void getIndexAtPastAHardBreakLineEndReturnsTheNextLinesStart() {
+    FlixelTextLayout layout = new FlixelTextLayout();
+    layout.set(buildFont(), "abcdef", 1f, 25f, true, FlixelAlign.LEFT, 0f);
+
+    // Clicking far to the right of the first hard-broken line snaps to the caret index shared
+    // with the start of the next line, since a hard break has no separator character of its own.
+    assertEquals(layout.getLineEnd(0), layout.getIndexAt(1000f, 0f));
+    assertEquals(2, layout.getIndexAt(1000f, 0f));
   }
 
   @Test
