@@ -131,6 +131,16 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
     canvas.addEventListener("mousedown", event -> {
       MouseEvent mouse = (MouseEvent) event;
+      if (isTextInputActive()) {
+        // A mousedown's default action shifts focus to the clicked element (or away from
+        // whatever was focused, if the target is not focusable). For the canvas that would move
+        // focus off the hidden text-input bridge and onto the page body, after which the window
+        // keydown listener stops dispatching keyTyped until the bridge is focused again, e.g.
+        // when a player clicks inside a focused text box to move the caret. Preventing the
+        // default here keeps the bridge focused without affecting the mouse event itself, which
+        // is still read and dispatched below.
+        event.preventDefault();
+      }
       onMouseDown(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()),
           canvasY(canvas, mouse.getClientY()));
     });
@@ -268,17 +278,35 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       composing = false;
       drainTextInputBridge();
     });
+    // Safety net for any focus theft this device did not already prevent (see the canvas
+    // "mousedown" listener in attach()): if the bridge loses focus while text input is still
+    // requested and the page itself still has focus, take focus back so typing keeps working.
+    // Checking document.hasFocus() stops this from fighting the player switching browser tabs,
+    // opening devtools, or clicking a real focusable element elsewhere on the page, and calling
+    // focus() here does not re-trigger this same blur listener, so it cannot loop.
+    textInputBridge.addEventListener("blur", event -> {
+      if (isTextInputActive() && documentHasFocus()) {
+        focusPreventScroll(textInputBridge);
+      }
+    });
     document.getBody().appendChild(textInputBridge);
   }
 
   /**
-   * Dispatches every UTF-16 unit currently sitting in the text-input bridge's value through
-   * {@link #onKeyTyped(char)}, then clears it. Both the plain {@code input} listener and the
+   * Dispatches every non-control UTF-16 unit currently sitting in the text-input bridge's value
+   * through {@link #onKeyTyped(char)}, then clears it. Both the plain {@code input} listener and the
    * {@code compositionend} listener in {@link #ensureTextInputBridge()} call this, and browsers do
    * not agree on which of those two fires first when an IME composition commits. That ordering does
    * not matter here: whichever listener runs first drains and clears the shared value, so the other
    * one finds nothing left to dispatch. This keeps a composed character from being typed twice
    * without needing to special-case either browser's event order.
+   *
+   * <p>Pressing Enter (or Tab, when its default is not prevented) inserts a control character into
+   * the textarea's value, which this method would otherwise dispatch as a literal {@code '\n'} or
+   * {@code '\t'} typed character. The desktop backend never delivers control characters this way
+   * (SDL text input excludes them; a game learns about Enter, Backspace, and Tab through
+   * {@link #onKeyDown(int)} / {@link #onKeyRepeated(int)} instead), so ASCII control characters
+   * ({@code < 0x20} and {@code 0x7F}) are skipped here to match.
    */
   private void drainTextInputBridge() {
     String text = textInputBridge.getValue();
@@ -286,7 +314,10 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       return;
     }
     for (int i = 0; i < text.length(); i++) {
-      onKeyTyped(text.charAt(i));
+      char character = text.charAt(i);
+      if (character >= 0x20 && character != 0x7F) {
+        onKeyTyped(character);
+      }
     }
     textInputBridge.setValue("");
   }
@@ -437,4 +468,7 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       if (textarea && textarea.focus) { textarea.focus({ preventScroll: true }); }
       """)
   private static native void focusPreventScroll(HTMLTextAreaElement textarea);
+
+  @JSBody(script = "return document.hasFocus();")
+  private static native boolean documentHasFocus();
 }
