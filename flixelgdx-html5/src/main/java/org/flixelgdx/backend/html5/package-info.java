@@ -63,8 +63,10 @@
  *       low-pass) are not supported on the web and degrade to the framework's shared no-ops.</li>
  *   <li><b>Input</b> -
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice FlixelHtml5InputDevice}
- *       translates DOM keyboard, mouse, wheel, and touch events into the core input API, using
- *       physical {@code KeyboardEvent.code} mapping so layout-independent keys work correctly.
+ *       translates DOM keyboard, mouse, and wheel events into the core input API, using physical
+ *       {@code KeyboardEvent.code} mapping so layout-independent keys work correctly. Browser games
+ *       are mouse and keyboard only, so touch events are not handled directly; taps still work
+ *       through the browser's own mouse emulation.
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider FlixelHtml5GamepadProvider}
  *       adds gamepad support through the Web Gamepad API with the standard layout mapping.</li>
  *   <li><b>File system</b> -
