@@ -263,8 +263,9 @@ public final class FlixelFontRegistry {
     byte[] png = readPackagedResource(PACKAGED_FONT_BASE + ".png");
     FlixelImage pageImage = null;
     if (png.length > 0) {
-      ByteBuffer encoded = ByteBuffer.allocateDirect(png.length).order(ByteOrder.nativeOrder());
-      encoded.put(png).flip();
+      // ByteBuffer.wrap avoids an extra copy and works on all platforms including WasmGC, which
+      // does not support ByteBuffer.allocateDirect.
+      ByteBuffer encoded = ByteBuffer.wrap(png).order(ByteOrder.nativeOrder());
       pageImage = Flixel.graphics.decodeImage(encoded);
     }
     packagedDefault = FlixelFont.fromFnt(new String(fnt, StandardCharsets.UTF_8), pageImage);

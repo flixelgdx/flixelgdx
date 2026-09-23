@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.html5.asset;
 
 import org.flixelgdx.backend.html5.file.FlixelHtml5File;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -79,6 +80,63 @@ public final class FlixelHtml5AssetPreloader {
       PreloadCallback onError) {
     preloadJs(manifestUrl, assetRoot, onComplete, onError);
   }
+
+  /**
+   * Decodes the packaged framework images and stores them in the asset cache as FLXI-encoded pixels.
+   *
+   * <p>Certain framework resources are PNG images that the runtime reads through
+   * {@code Flixel.files.classpath(...).readBytes()} at startup and then decodes synchronously via
+   * {@link FlixelGraphicsManager#decodeImage decodeImage}. The regular
+   * asset preloader skips PNG files to avoid excessive memory use, and the browser cannot decode
+   * images synchronously. This method bridges that gap by fetching and decoding only the small set
+   * of framework-owned images the runtime needs before the game's {@code create()} is called,
+   * storing the decoded pixels in {@code window.__flixelAssets} under the same path key that
+   * {@code readBytes()} looks up. The result is a compact FLXI-encoded buffer that the web graphics
+   * backend can unpack synchronously without any further async work.
+   *
+   * <p>This must be called after the main preloader finishes but before {@code startGame()} is
+   * invoked. Any fetch or decode failure is non-fatal: the callback fires regardless so the game
+   * still starts; text using the packaged default font simply will not render.
+   *
+   * @param assetRoot The URL prefix the web assets are served from (for example {@code "assets/"}).
+   * @param onComplete Invoked once all framework images have been decoded (or failed).
+   */
+  public static void preloadFrameworkImages(String assetRoot, PreloadCallback onComplete) {
+    preloadFrameworkImagesJs(assetRoot, onComplete);
+  }
+
+  @JSBody(params = { "assetRoot", "onComplete" }, script = """
+      if (!window.__flixelAssets) { window.__flixelAssets = {}; }
+      var path = 'org/flixelgdx/bitmap/lsans-15.png';
+      fetch(assetRoot + path)
+        .then(function(res) {
+          if (!res.ok) { throw new Error('HTTP ' + res.status); }
+          return res.arrayBuffer();
+        })
+        .then(function(buffer) {
+          return createImageBitmap(new Blob([buffer], { type: 'image/png' }));
+        })
+        .then(function(bitmap) {
+          var canvas = document.createElement('canvas');
+          canvas.width = bitmap.width; canvas.height = bitmap.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(bitmap, 0, 0);
+          var pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+          var out = new Uint8Array(12 + pixels.length);
+          out[0] = 70; out[1] = 76; out[2] = 88; out[3] = 73;
+          var view = new DataView(out.buffer);
+          view.setUint32(4, bitmap.width, true); view.setUint32(8, bitmap.height, true);
+          out.set(pixels, 12);
+          if (bitmap.close) { bitmap.close(); }
+          window.__flixelAssets[path] = out;
+          onComplete();
+        })
+        .catch(function(e) {
+          console.warn('[FlixelGDX] Packaged font page unavailable:', e && e.message ? e.message : e);
+          onComplete();
+        });
+      """)
+  private static native void preloadFrameworkImagesJs(String assetRoot, PreloadCallback onComplete);
 
   @JSBody(params = { "manifestUrl", "assetRoot", "onComplete", "onError" },
       script = """
