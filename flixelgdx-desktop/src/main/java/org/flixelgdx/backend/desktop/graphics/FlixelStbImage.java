@@ -27,6 +27,7 @@ import org.flixelgdx.graphics.FlixelImage;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -47,11 +48,31 @@ public class FlixelStbImage {
   /**
    * Decodes an encoded image into a fresh RGBA image.
    *
-   * @param encoded The encoded file bytes; must be a direct buffer positioned at the data start.
+   * <p>stb reads the bytes straight from native memory, so a heap buffer (for example one made
+   * with {@link ByteBuffer#wrap(byte[])}, which platform-neutral code uses because the web backend
+   * cannot allocate direct buffers) is first copied into a temporary native buffer. Passing a heap
+   * buffer to stb as-is would hand it an invalid address and crash the process.
+   *
+   * @param encoded The encoded file bytes, positioned at the data start. Direct and heap buffers
+   *     are both accepted.
    * @return The decoded image, or {@code null} when the data is not a supported image.
    */
   @Nullable
   static FlixelImage decode(ByteBuffer encoded) {
+    if (encoded.isDirect()) {
+      return decodeDirect(encoded);
+    }
+    ByteBuffer copy = MemoryUtil.memAlloc(encoded.remaining());
+    try {
+      copy.put(encoded.duplicate()).flip();
+      return decodeDirect(copy);
+    } finally {
+      MemoryUtil.memFree(copy);
+    }
+  }
+
+  @Nullable
+  private static FlixelImage decodeDirect(ByteBuffer encoded) {
     try (MemoryStack stack = MemoryStack.stackPush()) {
       IntBuffer w = stack.mallocInt(1);
       IntBuffer h = stack.mallocInt(1);

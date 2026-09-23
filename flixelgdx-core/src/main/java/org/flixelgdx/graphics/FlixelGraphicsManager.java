@@ -293,7 +293,11 @@ public interface FlixelGraphicsManager {
    * browser on web). Returns {@code null} when the data cannot be decoded or no backend is
    * present. Most games load images through the asset manager instead of calling this directly.
    *
-   * @param encoded The raw bytes of the encoded file.
+   * <p>The buffer may be direct or heap-backed (for example from {@link ByteBuffer#wrap(byte[])}).
+   * Platform-neutral code cannot always allocate direct buffers, so every backend must accept
+   * both.
+   *
+   * @param encoded The raw bytes of the encoded file, positioned at the data start.
    * @return The decoded image, or {@code null} when decoding is unavailable or fails.
    */
   @Nullable
