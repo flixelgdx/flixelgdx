@@ -104,6 +104,17 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   }
 
   /**
+   * Delivers a key-repeated event to every registered keyboard listener.
+   *
+   * @param keycode The {@link FlixelKey} code that is repeating.
+   */
+  protected void dispatchKeyRepeated(int keycode) {
+    for (int i = 0; i < keyboardListeners.getSize(); i++) {
+      keyboardListeners.get(i).keyRepeated(keycode);
+    }
+  }
+
+  /**
    * Delivers a typed-character event to every registered keyboard listener.
    *
    * @param character The Unicode character that was typed.
