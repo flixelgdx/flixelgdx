@@ -64,11 +64,11 @@
  *   <li><b>Input</b> -
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice FlixelHtml5InputDevice}
  *       translates DOM keyboard, mouse, and wheel events into the core input API, using physical
- *       {@code KeyboardEvent.code} mapping so layout-independent keys work correctly. Browser games
- *       are mouse and keyboard only, so touch events are not handled directly; taps still work
- *       through the browser's own mouse emulation.
+ *       {@code KeyboardEvent.code} mapping so layout-independent keys work correctly, and
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider FlixelHtml5GamepadProvider}
- *       adds gamepad support through the Web Gamepad API with the standard layout mapping.</li>
+ *       adds gamepad support through the Web Gamepad API with the standard layout mapping. Browser
+ *       games are played with a mouse, keyboard, or gamepad, so touch events are not handled
+ *       directly; taps still work through the browser's own mouse emulation.</li>
  *   <li><b>File system</b> -
  *       {@link org.flixelgdx.backend.html5.file.FlixelHtml5Files FlixelHtml5Files} in the
  *       {@code file} sub-package backs asset reads from a warm in-memory cache populated before

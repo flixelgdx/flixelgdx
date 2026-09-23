@@ -45,9 +45,9 @@ import org.teavm.jso.dom.html.HTMLCanvasElement;
  * {@link #isKeyPressed(int)} and the pointer getters) and forwards to the framework's input
  * managers through the {@link FlixelKeyboardListener} and {@link FlixelMouseListener} lists.
  *
- * <p>Browser games are treated as mouse and keyboard only, so this device does not listen for
- * touch events. On a touch screen, taps still reach the game because the browser falls back to its
- * own mouse emulation for elements with no touch listeners.
+ * <p>Browser games are played with a mouse, keyboard, or gamepad, so this device does not listen
+ * for touch events. On a touch screen, taps still reach the game because the browser falls back to
+ * its own mouse emulation for elements with no touch listeners.
  *
  * <p>Keyboard events are bound to the page window rather than the canvas because a canvas does not
  * receive keyboard focus by default; pointer events are bound to the canvas so their coordinates
