@@ -93,7 +93,10 @@ public abstract class FlixelBasic implements IFlixelBasic {
   /** A unique ID starting from 0 and increasing by 1 for each subsequent {@code FlixelBasic} created. */
   public final int ID;
 
-  /** Cameras this object may render on. {@code null} or an empty array means every camera. */
+  /**
+   * Cameras this object may render on. {@code null} or an empty array means every camera whose
+   * {@link FlixelCamera#defaultDrawTarget} is {@code true} (the default for every camera).
+   */
   @Nullable
   public FlixelCamera[] cameras;
 

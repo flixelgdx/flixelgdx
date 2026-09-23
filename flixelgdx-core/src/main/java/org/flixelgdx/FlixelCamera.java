@@ -266,6 +266,39 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
    */
   public boolean centerCameraOnResize = true;
 
+  /**
+   * Whether objects that do not list any cameras of their own ({@code cameras == null} or an
+   * empty array on the object) draw on {@code this} camera.
+   *
+   * <p>Every object defaults to having no camera list, so by default it draws on every camera
+   * whose {@code defaultDrawTarget} is {@code true}. Set this to {@code false} on a HUD or UI
+   * camera so that world objects stay off it; only objects that explicitly list the camera (by
+   * assigning it to their {@code cameras} array) will still draw there.
+   *
+   * <p>Think of {@code defaultDrawTarget} like a projector left running in a room: anything that
+   * does not say "skip this projector" gets shown on it automatically. Turning it off for a
+   * camera is like unplugging that one projector from the "show everything" feed. It still
+   * works, but now it only displays what you point at it directly.
+   *
+   * <p>Example: a HUD camera that only shows a score counter, leaving world sprites on the main
+   * camera only.
+   *
+   * <pre>{@code
+   * FlixelCamera hud = new FlixelCamera(width, height);
+   * hud.bgColor.a = 0f;
+   * hud.defaultDrawTarget = false;
+   * Flixel.cameras.add(hud);
+   *
+   * // World sprites never set `cameras`, so they stay off the HUD camera automatically.
+   * FlixelSprite player = new FlixelSprite();
+   *
+   * // The score text explicitly opts in to the HUD camera instead.
+   * FlixelText score = new FlixelText(0, 0, 100, "0");
+   * score.cameras = new FlixelCamera[] { hud };
+   * }</pre>
+   */
+  public boolean defaultDrawTarget = true;
+
   /** Whether positions of rendered objects are rounded to whole pixels. */
   public boolean pixelPerfectRender = false;
 

@@ -1409,11 +1409,16 @@ public final class Flixel {
 
   /**
    * Whether something with the given {@code cameras} list should render during the current draw pass.
-   * {@code null} or an empty array means all cameras; otherwise, the object is drawn only if {@link #getDrawCamera()}
-   * is reference-equal to an entry.
    *
-   * @param cameras The camera list to check against, or {@code null} to match all cameras.
-   * @return {@code true} if the current draw camera is in the list (or the list is null or empty).
+   * <p>When {@code cameras} is {@code null} or empty, the result follows
+   * {@link FlixelCamera#defaultDrawTarget} of the current draw camera: the object is drawn there
+   * only if that camera accepts objects that did not explicitly list any cameras of their own.
+   * Otherwise, the object is drawn only if {@link #getDrawCamera()} is reference-equal to an entry
+   * in {@code cameras}.
+   *
+   * @param cameras The camera list to check against, or {@code null} to defer to the current draw
+   *     camera's {@link FlixelCamera#defaultDrawTarget}.
+   * @return {@code true} if the object should be drawn on the current draw camera.
    */
   public static boolean isOnDrawCamera(@Nullable FlixelCamera[] cameras) {
     FlixelCamera active = drawCamera;
@@ -1421,7 +1426,7 @@ public final class Flixel {
       return true;
     }
     if (cameras == null || cameras.length == 0) {
-      return true;
+      return active.defaultDrawTarget;
     }
     for (FlixelCamera c : cameras) {
       if (c == active) {
