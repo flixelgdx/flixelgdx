@@ -241,3 +241,8 @@ sourceSets.main.resources.srcDir = 'src/main/emcc-output'
 | `run`                      | application | Builds the web app and starts the dev server.                                        |
 | `debug`                    | application | Same as `run`, but opens in debug mode.                                              |
 | `package`                  | application | Zips the web output into `dist/<name>-html5.zip`.                                   |
+
+`run`, `debug`, and `package` depend on every task above that writes into the web output, so they
+always work on a complete app. `generateIndexHtml` and `copyWebApp` run after the TeaVM build, with
+`copyWebApp` last so your own web resources (including a custom `index.html`) override anything the
+plugin generated.
