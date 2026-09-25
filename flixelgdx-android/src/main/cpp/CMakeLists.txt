@@ -38,8 +38,8 @@ add_subdirectory(
 
 FetchContent_Declare(
   basis_universal
-  GIT_REPOSITORY ${FLIXEL_BASISU_GIT_REPO}
-  GIT_TAG        ${FLIXEL_BASISU_GIT_COMMIT}
+  URL            ${FLIXEL_BASISU_URL}
+  URL_HASH       SHA256=${FLIXEL_BASISU_SHA256}
   # Point at a nonexistent subdirectory so FetchContent_MakeAvailable() does not configure
   # basis_universal's own CMake project (it builds encoders, tools, and samples we do not need).
   SOURCE_SUBDIR  flixel-sources-only
