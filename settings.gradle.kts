@@ -58,6 +58,7 @@ rootProject.name = "flixelgdx"
 
 include(
   "flixelgdx-core",
+  "flixelgdx-miniaudio",
   "flixelgdx-desktop",
   "flixelgdx-html5",
   "flixelgdx-ios",

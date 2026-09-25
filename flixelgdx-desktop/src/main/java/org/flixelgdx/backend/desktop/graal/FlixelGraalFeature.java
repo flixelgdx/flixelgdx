@@ -23,7 +23,7 @@
  */
 package org.flixelgdx.backend.desktop.graal;
 
-import org.flixelgdx.backend.desktop.audio.FlixelMiniAudio;
+import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
 import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
@@ -42,7 +42,7 @@ import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
  *   <li><b>Bundled platform natives</b> - the miniaudio shared libraries
  *       ({@code libflixel_miniaudio.so}, {@code flixel_miniaudio.dll},
  *       {@code libflixel_miniaudio.dylib}) are embedded as classpath resources and extracted to a
- *       temp file at run time by {@code FlixelMiniAudio.ensureLoaded()}. GraalVM excludes
+ *       temp file at run time by {@code FlixelDesktopMiniAudioLoader}. GraalVM excludes
  *       resources unless they are explicitly declared; each platform variant is registered
  *       individually so the correct binary ships inside the native image.</li>
  * </ul>
@@ -62,7 +62,7 @@ public class FlixelGraalFeature implements Feature {
     RuntimeJNIAccess.register(FlixelMiniAudio.class);
     RuntimeJNIAccess.register(FlixelMiniAudio.class.getDeclaredMethods());
 
-    // Include the bundled platform natives so FlixelMiniAudio.ensureLoaded() can extract and
+    // Include the bundled platform natives so FlixelDesktopMiniAudioLoader can extract and
     // load them from a temp file at run time.
     Module module = FlixelGraalFeature.class.getModule();
     RuntimeResourceAccess.addResource(module, "org/flixelgdx/natives/libflixel_miniaudio.so");

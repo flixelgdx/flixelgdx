@@ -21,80 +21,73 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.desktop.audio;
+package org.flixelgdx.backend.miniaudio;
 
 import org.flixelgdx.Flixel;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The thin JNI bridge to the bundled miniaudio native library.
  *
  * <p>miniaudio is a full audio engine (decoding, mixing, effects, spatialization) in a single C
- * header. This class holds the {@code native} methods our C wrapper implements, and loads the
- * matching platform library from the desktop module's {@code org/flixelgdx/natives} resources.
- * Libraries live in per-platform subdirectories ({@code linux-x86_64}, {@code linux-arm64},
- * {@code windows-x86_64}, {@code windows-arm64}, {@code macos}), letting the framework carry
- * binaries for every supported target at once. The native is extracted to a temp file once and loaded, so packaged
- * games need no extra setup.
+ * header. This class holds the {@code native} methods the C wrapper implements and dispatches
+ * library loading through a pluggable {@link FlixelLibraryLoader} installed by the platform
+ * backend. Desktop extracts a bundled binary; Android calls {@code System.loadLibrary}. If no
+ * loader is installed, or the loader throws, audio falls back to silent mode.
  *
  * <p>The bridge is deliberately low-level and stateless: every handle is a {@code long} pointer
  * into native memory. {@link FlixelMiniAudioFactory}, {@link FlixelMiniAudioSound}, and
  * {@link FlixelMiniAudioGroup} wrap these calls behind the framework's audio interfaces.
  *
  * <p>All calls must run on one thread; the framework only ever calls audio from the main thread.
+ *
+ * <p>Example wiring (called once before {@link FlixelMiniAudioFactory#create()}):
+ * <pre>{@code
+ * FlixelMiniAudio.setLoader(() -> System.loadLibrary("flixel_miniaudio"));
+ * }</pre>
  */
 public class FlixelMiniAudio {
 
-  /** {@code true} once {@link #ensureLoaded()} has successfully loaded the native library. */
+  @Nullable
+  private static FlixelLibraryLoader loader;
+
+  /** {@code true} once the native library has been loaded successfully. */
   private static boolean loaded;
 
   private FlixelMiniAudio() {}
 
   /**
-   * Extracts and loads the platform native library on first use.
+   * Registers the loader used to bring up the native library.
    *
-   * @return {@code true} when the native library is loaded and usable.
+   * <p>Call this once before the first call to {@link FlixelMiniAudioFactory#create()}.
+   * Replacing an already-set loader after the library was loaded has no effect.
+   *
+   * @param loader The loader to install; must not be {@code null}.
+   */
+  public static synchronized void setLoader(FlixelLibraryLoader loader) {
+    FlixelMiniAudio.loader = loader;
+  }
+
+  /**
+   * Loads the native library through the installed loader on first call.
+   *
+   * @return {@code true} when the native library is ready.
    */
   static synchronized boolean ensureLoaded() {
     if (loaded) {
       return true;
     }
-    String os = System.getProperty("os.name", "").toLowerCase();
-    String arch = System.getProperty("os.arch", "").toLowerCase();
-    String subdir;
-    String libName;
-    if (os.contains("win")) {
-      boolean arm64 = arch.equals("aarch64") || arch.equals("arm64");
-      subdir = arm64 ? "windows-arm64" : "windows-x86_64";
-      libName = "flixel_miniaudio.dll";
-    } else if (os.contains("mac") || os.contains("darwin")) {
-      subdir = "macos";
-      libName = "libflixel_miniaudio.dylib";
-    } else {
-      boolean arm64 = arch.equals("aarch64") || arch.equals("arm64");
-      subdir = arm64 ? "linux-arm64" : "linux-x86_64";
-      libName = "libflixel_miniaudio.so";
+    if (loader == null) {
+      Flixel.warn("Audio", "No miniaudio library loader was set; audio is disabled.");
+      return false;
     }
-    String resource = "/org/flixelgdx/natives/" + subdir + "/" + libName;
-    try (InputStream in = FlixelMiniAudio.class.getResourceAsStream(resource)) {
-      if (in == null) {
-        Flixel.warn("Audio", "Bundled miniaudio native not found at '" + resource + "'; audio is disabled.");
-        return false;
-      }
-      Path temp = Files.createTempFile("flixel_miniaudio", libName.substring(libName.lastIndexOf('.')));
-      temp.toFile().deleteOnExit();
-      Files.copy(in, temp, StandardCopyOption.REPLACE_EXISTING);
-      // Load by absolute path: System.load, not System.loadLibrary (the latter resolves a bare
-      // library name against java.library.path and would never find the extracted temp file).
-      System.load(temp.toAbsolutePath().toString());
+    try {
+      loader.load();
       loaded = true;
       return true;
-    } catch (IOException | UnsatisfiedLinkError e) {
+    } catch (Exception | UnsatisfiedLinkError e) {
+      // A missing or incompatible binary surfaces as UnsatisfiedLinkError, which is not an
+      // Exception, so it is caught explicitly to keep the silent-audio fallback working.
       Flixel.error("Audio", "Could not load the miniaudio native library.", e);
       return false;
     }
@@ -203,6 +196,7 @@ public class FlixelMiniAudio {
    * Returns {@code true} when the sound is actively playing.
    *
    * @param sound The sound handle.
+   * @return {@code true} if currently playing.
    */
   static native boolean soundIsPlaying(long sound);
 
@@ -210,6 +204,7 @@ public class FlixelMiniAudio {
    * Returns {@code true} when the cursor reached the end.
    *
    * @param sound The sound handle.
+   * @return {@code true} if at the end.
    */
   static native boolean soundIsAtEnd(long sound);
 
@@ -217,6 +212,7 @@ public class FlixelMiniAudio {
    * Returns the current volume in {@code [0, 1]} (or higher).
    *
    * @param sound The sound handle.
+   * @return The current volume.
    */
   static native float soundGetVolume(long sound);
 
@@ -248,6 +244,7 @@ public class FlixelMiniAudio {
    * Returns the current cursor position in seconds.
    *
    * @param sound The sound handle.
+   * @return The cursor position in seconds.
    */
   static native float soundGetCursor(long sound);
 
@@ -263,6 +260,7 @@ public class FlixelMiniAudio {
    * Returns the sound length in seconds, or {@code 0} when unknown.
    *
    * @param sound The sound handle.
+   * @return The length in seconds.
    */
   static native float soundGetLength(long sound);
 
@@ -270,6 +268,7 @@ public class FlixelMiniAudio {
    * Returns {@code true} when looping is enabled.
    *
    * @param sound The sound handle.
+   * @return {@code true} if looping.
    */
   static native boolean soundIsLooping(long sound);
 

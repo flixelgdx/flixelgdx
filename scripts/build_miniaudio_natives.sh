@@ -1,26 +1,33 @@
 #!/usr/bin/env bash
 #
-# Builds the miniaudio JNI native library for every desktop kernel and drops the results into the
-# desktop module's bundled-native resources. Run from the repository root:
+# Builds the miniaudio JNI native library for every desktop target and drops the results into
+# the desktop module's bundled-native resources. Run from the repository root:
 #
 #   ./scripts/build_miniaudio_natives.sh
 #
 # Requirements:
-#   - A JDK with JNI headers (set JAVA_HOME, or the script probes a few common locations).
-#   - Linux:   gcc
-#   - Windows: x86_64-w64-mingw32-gcc (mingw-w64)
-#   - macOS:   clang (native on a Mac) or an osxcross toolchain (o64-clang / oa64-clang)
+#   - cmake 3.21+ on PATH.
+#   - A C compiler for the target platform (gcc, clang, or MSVC via cmake's generator).
+#   - A JDK 17+ install; set JAVA_HOME or let cmake's FindJNI probe it.
 #
-# Every produced library is committed so packaged games run with no extra setup. Only rebuild when
-# flixel_miniaudio.c or miniaudio.h changes.
+# Dependency versions, download URLs, and SHA-256 hashes are pinned in:
+#   flixelgdx-miniaudio/src/main/native/deps.cmake
+# That file is the single source of truth; this script delegates to cmake so values are
+# never duplicated.
+#
+# Every produced library is committed so packaged games run with no extra setup. Only rebuild
+# when flixelgdx-miniaudio/src/main/native/flixel_miniaudio.c or deps.cmake changes.
 set -euo pipefail
 
-NATIVE_DIR="flixelgdx-desktop/src/main/native"
+NATIVE_DIR="flixelgdx-miniaudio/src/main/native"
 OUT_BASE="flixelgdx-desktop/src/main/resources/org/flixelgdx/natives"
-SRC="${NATIVE_DIR}/flixel_miniaudio.c"
+BUILD_DIR="$(mktemp -d)"
+trap 'rm -rf "${BUILD_DIR}"' EXIT
 
-mkdir -p "${OUT_BASE}/linux-x86_64" "${OUT_BASE}/linux-arm64" \
-         "${OUT_BASE}/windows-x86_64" "${OUT_BASE}/macos"
+if ! command -v cmake >/dev/null 2>&1; then
+  echo "cmake not found; install cmake 3.21+ and re-run." >&2
+  exit 1
+fi
 
 # Locate JNI headers.
 if [ -z "${JAVA_HOME:-}" ]; then
@@ -35,100 +42,70 @@ if [ -z "${JAVA_HOME:-}" ] || [ ! -f "${JAVA_HOME}/include/jni.h" ]; then
   echo "Could not find jni.h. Set JAVA_HOME to a JDK 17 install." >&2
   exit 1
 fi
-JNI_INC="${JAVA_HOME}/include"
-echo "Using JNI headers from: ${JNI_INC}"
+echo "Using JNI headers from: ${JAVA_HOME}/include"
 
-# --- Linux (x86_64, native) ---
-if command -v gcc >/dev/null 2>&1; then
-  ARCH="$(uname -m)"
-  if [ "${ARCH}" = "x86_64" ]; then
-    echo "Building Linux x86_64 (libflixel_miniaudio.so) ..."
-    gcc -O2 -fPIC -shared \
-      -I"${JNI_INC}" -I"${JNI_INC}/linux" \
-      -o "${OUT_BASE}/linux-x86_64/libflixel_miniaudio.so" "${SRC}" \
-      -lm -lpthread -ldl
-  elif [ "${ARCH}" = "aarch64" ]; then
-    echo "Building Linux arm64 (libflixel_miniaudio.so) ..."
-    gcc -O2 -fPIC -shared \
-      -I"${JNI_INC}" -I"${JNI_INC}/linux" \
-      -o "${OUT_BASE}/linux-arm64/libflixel_miniaudio.so" "${SRC}" \
-      -lm -lpthread -ldl
-  else
-    echo "Unsupported Linux arch '${ARCH}'; skipping Linux native." >&2
-  fi
-else
-  echo "Skipping Linux: gcc not found." >&2
+# Determine output subdirectory for this host.
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+case "${OS}" in
+  Linux)
+    if [ "${ARCH}" = "x86_64" ]; then
+      OUT_SUBDIR="linux-x86_64"
+      LIB_NAME="libflixel_miniaudio.so"
+    elif [ "${ARCH}" = "aarch64" ]; then
+      OUT_SUBDIR="linux-arm64"
+      LIB_NAME="libflixel_miniaudio.so"
+    else
+      echo "Unsupported Linux arch '${ARCH}'." >&2
+      exit 1
+    fi
+    ;;
+  Darwin)
+    OUT_SUBDIR="macos"
+    LIB_NAME="libflixel_miniaudio.dylib"
+    ;;
+  MINGW*|CYGWIN*|MSYS*)
+    if [ "${ARCH}" = "x86_64" ]; then
+      OUT_SUBDIR="windows-x86_64"
+    else
+      OUT_SUBDIR="windows-arm64"
+    fi
+    LIB_NAME="flixel_miniaudio.dll"
+    ;;
+  *)
+    echo "Unrecognised OS '${OS}'." >&2
+    exit 1
+    ;;
+esac
+
+mkdir -p "${OUT_BASE}/${OUT_SUBDIR}"
+
+echo "Configuring cmake (target: ${OUT_SUBDIR}) ..."
+
+CMAKE_EXTRA=()
+if [ "${OS}" = "Darwin" ]; then
+  # Universal binary covering both Intel and Apple Silicon.
+  CMAKE_EXTRA+=("-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64")
 fi
 
-# --- Windows ---
-if command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
-  echo "Building Windows x86_64 (flixel_miniaudio.dll) ..."
-  # mingw does not ship the Windows jni_md.h; supply the standard minimal one.
-  WIN_JNI="$(mktemp -d)"
-  cat > "${WIN_JNI}/jni_md.h" <<'HEADER'
-#ifndef _JAVASOFT_JNI_MD_H_
-#define _JAVASOFT_JNI_MD_H_
-#define JNIEXPORT __declspec(dllexport)
-#define JNIIMPORT __declspec(dllimport)
-#define JNICALL __stdcall
-typedef long jint;
-typedef long long jlong;
-typedef signed char jbyte;
-#endif
-HEADER
-  x86_64-w64-mingw32-gcc -O2 -shared \
-    -I"${JNI_INC}" -I"${WIN_JNI}" \
-    -o "${OUT_BASE}/windows-x86_64/flixel_miniaudio.dll" "${SRC}" \
-    -lole32 -lwinmm -static-libgcc
-  rm -rf "${WIN_JNI}"
-else
-  echo "Skipping Windows: x86_64-w64-mingw32-gcc not found." >&2
+cmake -S "${NATIVE_DIR}" -B "${BUILD_DIR}" \
+  -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON \
+  -DJAVA_HOME="${JAVA_HOME}" \
+  -DCMAKE_BUILD_TYPE=Release \
+  "${CMAKE_EXTRA[@]}"
+
+echo "Building ..."
+cmake --build "${BUILD_DIR}" --config Release
+
+# Locate the output shared library. cmake names the target "flixel_miniaudio_shared" but sets
+# OUTPUT_NAME "flixel_miniaudio", so the file is named as expected.
+BUILT_LIB="$(find "${BUILD_DIR}" -name "${LIB_NAME}" | head -1)"
+if [ -z "${BUILT_LIB}" ]; then
+  echo "Build succeeded but '${LIB_NAME}' was not found in ${BUILD_DIR}." >&2
+  exit 1
 fi
 
-# --- macOS ---
-# Native clang on a Mac uses "${JNI_INC}/darwin". An osxcross build uses o64-clang / oa64-clang and
-# the target JDK's darwin headers. Universal binary via lipo when both arch slices build.
-build_macos_slice() {
-  local compiler="$1" arch="$2" out="$3"
-  if command -v "${compiler}" >/dev/null 2>&1; then
-    echo "Building macOS ${arch} slice ..."
-    "${compiler}" -O2 -dynamiclib -arch "${arch}" \
-      -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
-      -o "${out}" "${SRC}"
-    return 0
-  fi
-  return 1
-}
-
-MAC_X64="$(mktemp -u).dylib"
-MAC_ARM="$(mktemp -u).dylib"
-BUILT_X64=0
-BUILT_ARM=0
-if build_macos_slice "o64-clang" "x86_64" "${MAC_X64}"; then BUILT_X64=1; fi
-if build_macos_slice "oa64-clang" "arm64" "${MAC_ARM}"; then BUILT_ARM=1; fi
-# Native macOS fallback (running this script on a Mac).
-if [ "${BUILT_X64}${BUILT_ARM}" = "00" ] && command -v clang >/dev/null 2>&1 && [ -d "${JNI_INC}/darwin" ]; then
-  echo "Building macOS universal (native clang) ..."
-  clang -O2 -dynamiclib -arch arm64 \
-    -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
-    -o "${MAC_ARM}" "${SRC}" && BUILT_ARM=1
-  clang -O2 -dynamiclib -arch x86_64 \
-    -I"${JNI_INC}" -I"${JNI_INC}/darwin" \
-    -o "${MAC_X64}" "${SRC}" && BUILT_X64=1
-fi
-if [ "${BUILT_X64}" = "1" ] || [ "${BUILT_ARM}" = "1" ]; then
-  SLICES=()
-  [ "${BUILT_X64}" = "1" ] && SLICES+=("${MAC_X64}")
-  [ "${BUILT_ARM}" = "1" ] && SLICES+=("${MAC_ARM}")
-  if command -v lipo >/dev/null 2>&1 && [ "${#SLICES[@]}" -gt 1 ]; then
-    lipo -create "${SLICES[@]}" -output "${OUT_BASE}/macos/libflixel_miniaudio.dylib"
-  else
-    cp "${SLICES[0]}" "${OUT_BASE}/macos/libflixel_miniaudio.dylib"
-  fi
-  rm -f "${MAC_X64}" "${MAC_ARM}"
-else
-  echo "Skipping macOS: no clang / osxcross toolchain found." >&2
-fi
-
-echo "Done. Built natives:"
-ls -laR "${OUT_BASE}"
+cp "${BUILT_LIB}" "${OUT_BASE}/${OUT_SUBDIR}/${LIB_NAME}"
+echo "Installed: ${OUT_BASE}/${OUT_SUBDIR}/${LIB_NAME}"
+echo "Done."
