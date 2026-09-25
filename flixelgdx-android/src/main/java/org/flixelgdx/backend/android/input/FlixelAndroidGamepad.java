@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.android.input;
 
+import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.InputDevice;
@@ -279,12 +280,32 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
     }
     float intensity = Math.max(leftIntensity, rightIntensity);
     int amplitude = (int) (clamp01(intensity) * 255f);
-    vibrator.vibrate(VibrationEffect.createOneShot(durationMs, amplitude));
+    if (durationMs <= 0 || amplitude <= 0) {
+      // VibrationEffect rejects a zero amplitude, and a zero-strength rumble is just a stop.
+      vibrator.cancel();
+      return;
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      vibrator.vibrate(VibrationEffect.createOneShot(durationMs, amplitude));
+    } else {
+      // VibrationEffect does not exist before API 26, so older devices get a full-strength buzz.
+      vibrateLegacy(durationMs);
+    }
   }
 
   @Override
   public void cancelVibration() {
     vibrator.cancel();
+  }
+
+  /**
+   * Starts a fixed-strength vibration through the pre-API-26 method.
+   *
+   * @param durationMs How long to vibrate, in milliseconds.
+   */
+  @SuppressWarnings("deprecation")
+  private void vibrateLegacy(int durationMs) {
+    vibrator.vibrate(durationMs);
   }
 
   private static float clamp01(float v) {
