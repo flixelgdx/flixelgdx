@@ -77,9 +77,10 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
   private volatile int head = 0;
 
   /**
-   * Read head (GL thread). Only one reader exists.
+   * Read head (GL thread). Only one reader exists; volatile so the UI thread sees freed slots
+   * when it checks whether the buffer is full.
    */
-  private int tail = 0;
+  private volatile int tail = 0;
 
   /**
    * Scale factor from view pixels to back-buffer pixels (width).

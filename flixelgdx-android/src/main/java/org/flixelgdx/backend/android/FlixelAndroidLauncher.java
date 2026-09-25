@@ -188,13 +188,11 @@ public final class FlixelAndroidLauncher {
       if (a != activity) {
         return;
       }
-      // Pause the GL surface view first so the EGL context is preserved before any GL calls.
-      glView.onPause();
-      // Dispatch focus-lost on the GL thread. Note: GLSurfaceView.queueEvent after onPause
-      // is not guaranteed to run on all devices; the event may be dropped if the renderer has
-      // been paused. We queue it here for completeness but do not rely on it for correctness;
-      // the game should use onFocusLost primarily for UI/audio reactions.
+      // Queue focus-lost before pausing the view. The GL thread runs queued events before it
+      // honors a pause request, so the game (and the autoPause audio handling in core) reacts
+      // before rendering stops.
       glView.queueEvent(() -> game.onFocusLost());
+      glView.onPause();
     }
 
     @Override
