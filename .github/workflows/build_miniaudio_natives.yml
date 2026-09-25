@@ -1,0 +1,155 @@
+# Temporary workflow: builds the miniaudio JNI natives for every desktop target.
+# Triggered on pushes to android/miniaudio-module when the workflow file or the C source changes.
+# The orchestrator downloads the produced artifacts, verifies them, and commits them to the repo.
+# Remove this workflow once the natives are committed and no longer need to be rebuilt on CI.
+name: Build miniaudio natives
+
+on:
+  push:
+    branches:
+      - android/miniaudio-module
+    paths:
+      - .github/workflows/build_miniaudio_natives.yml
+      - flixelgdx-miniaudio/src/main/native/**
+
+jobs:
+  linux-x86_64:
+    name: Linux x86-64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install cmake
+        run: sudo apt-get install -y cmake
+      - name: Build
+        run: |
+          cmake -S flixelgdx-miniaudio/src/main/native \
+                -B build_native \
+                -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON \
+                -DJAVA_HOME="${JAVA_HOME}" \
+                -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_native --config Release
+      - name: Stage artifact
+        run: |
+          mkdir -p out/linux-x86_64
+          cp build_native/libflixel_miniaudio.so out/linux-x86_64/libflixel_miniaudio.so
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: out/linux-x86_64/
+
+  linux-arm64:
+    name: Linux arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install cmake
+        run: sudo apt-get install -y cmake
+      - name: Build
+        run: |
+          cmake -S flixelgdx-miniaudio/src/main/native \
+                -B build_native \
+                -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON \
+                -DJAVA_HOME="${JAVA_HOME}" \
+                -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_native --config Release
+      - name: Stage artifact
+        run: |
+          mkdir -p out/linux-arm64
+          cp build_native/libflixel_miniaudio.so out/linux-arm64/libflixel_miniaudio.so
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: out/linux-arm64/
+
+  windows-x86_64:
+    name: Windows x86-64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build
+        shell: cmd
+        run: |
+          cmake -S flixelgdx-miniaudio/src/main/native ^
+                -B build_native ^
+                -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON ^
+                -DJAVA_HOME="%JAVA_HOME%" ^
+                -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
+                -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_native --config Release
+      - name: Stage artifact
+        shell: cmd
+        run: |
+          mkdir out\windows-x86_64
+          copy build_native\Release\flixel_miniaudio.dll out\windows-x86_64\flixel_miniaudio.dll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: out/windows-x86_64/
+
+  windows-arm64:
+    name: Windows arm64
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build
+        shell: cmd
+        run: |
+          cmake -S flixelgdx-miniaudio/src/main/native ^
+                -B build_native ^
+                -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON ^
+                -DJAVA_HOME="%JAVA_HOME%" ^
+                -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded ^
+                -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_native --config Release
+      - name: Stage artifact
+        shell: cmd
+        run: |
+          mkdir out\windows-arm64
+          copy build_native\Release\flixel_miniaudio.dll out\windows-arm64\flixel_miniaudio.dll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64
+          path: out/windows-arm64/
+
+  macos:
+    name: macOS (universal)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build universal
+        run: |
+          cmake -S flixelgdx-miniaudio/src/main/native \
+                -B build_native \
+                -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON \
+                -DJAVA_HOME="${JAVA_HOME}" \
+                -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+                -DCMAKE_BUILD_TYPE=Release
+          cmake --build build_native --config Release
+      - name: Stage artifact
+        run: |
+          mkdir -p out/macos
+          cp build_native/libflixel_miniaudio.dylib out/macos/libflixel_miniaudio.dylib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: out/macos/
