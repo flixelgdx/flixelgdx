@@ -85,7 +85,9 @@ public class FlixelMiniAudio {
       loader.load();
       loaded = true;
       return true;
-    } catch (Exception e) {
+    } catch (Exception | UnsatisfiedLinkError e) {
+      // A missing or incompatible binary surfaces as UnsatisfiedLinkError, which is not an
+      // Exception, so it is caught explicitly to keep the silent-audio fallback working.
       Flixel.error("Audio", "Could not load the miniaudio native library.", e);
       return false;
     }

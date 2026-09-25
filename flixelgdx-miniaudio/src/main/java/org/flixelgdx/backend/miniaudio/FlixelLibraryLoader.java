@@ -31,7 +31,7 @@ package org.flixelgdx.backend.miniaudio;
  * to a temp file and calls {@code System.load}; the Android backend calls
  * {@code System.loadLibrary} against the packaged .so.
  *
- * <p>Implementations must be idempotent -- calling {@link #load} more than once is
+ * <p>Implementations must be idempotent. Calling {@link #load} more than once is
  * safe, though {@link FlixelMiniAudio} will only call it once.
  *
  * <p>Example usage:
