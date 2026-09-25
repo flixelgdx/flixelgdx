@@ -48,8 +48,12 @@ import org.flixelgdx.util.FlixelBlendMode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * The Android graphics backend, rendering through OpenGL ES 3.0 on a GLSurfaceView.
@@ -488,6 +492,19 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   }
 
   @Override
+  @NotNull
+  public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
+    // The shader plugin writes an ESSL variant next to the bgfx ones and bundles it into the game's
+    // Java resources, which the Android build packs into the APK.
+    String vertex = readShaderResource("shaders/" + name + "/essl/vs.glsl");
+    String fragment = readShaderResource("shaders/" + name + "/essl/fs.glsl");
+    if (vertex == null || fragment == null) {
+      return FlixelUnsupportedShader.INSTANCE;
+    }
+    return compileShaderSource(vertex, fragment);
+  }
+
+  @Override
   public int getFps() {
     return (int) averageFps;
   }
@@ -628,5 +645,33 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
     batch = new FlixelGlesBatch(maxSlots);
     initialized = true;
+  }
+
+  /**
+   * Reads a text resource the shader plugin bundled into the game.
+   *
+   * @param path The resource path, relative to the classpath root.
+   * @return The resource text, or {@code null} when it is missing or cannot be read.
+   */
+  @Nullable
+  private static String readShaderResource(@NotNull String path) {
+    ClassLoader loader = FlixelAndroidGraphics.class.getClassLoader();
+    if (loader == null) {
+      return null;
+    }
+    try (InputStream in = loader.getResourceAsStream(path)) {
+      if (in == null) {
+        return null;
+      }
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      byte[] chunk = new byte[4096];
+      int read;
+      while ((read = in.read(chunk)) != -1) {
+        out.write(chunk, 0, read);
+      }
+      return out.toString(StandardCharsets.UTF_8.name());
+    } catch (IOException e) {
+      return null;
+    }
   }
 }
