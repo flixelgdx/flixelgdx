@@ -881,6 +881,9 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     BGFX.bgfx_set_index_buffer(quadIndexBuffer, 0, indexCount);
     BGFX.bgfx_set_texture(0, textureUniform, texture.getBgfxHandle(), (int) texture.getSamplerFlags());
     BGFX.bgfx_set_state(BGFX.BGFX_STATE_WRITE_RGB | BGFX.BGFX_STATE_WRITE_A | blendState(blend), 0);
+    if (shader != null && shader.getProgram() instanceof FlixelBgfxShader bgfxShader) {
+      bgfxShader.applyUniforms();
+    }
     BGFX.bgfx_submit(view, program, 0, BGFX.BGFX_DISCARD_ALL);
   }
 
