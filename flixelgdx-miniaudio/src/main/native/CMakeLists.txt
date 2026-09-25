@@ -24,6 +24,9 @@ FetchContent_Declare(
   miniaudio
   URL      ${FLIXEL_MINIAUDIO_URL}
   URL_HASH SHA256=${FLIXEL_MINIAUDIO_SHA256}
+  # Only the sources are needed. Pointing at a folder without a CMakeLists.txt stops
+  # FetchContent_MakeAvailable() from configuring miniaudio's own examples and extras.
+  SOURCE_SUBDIR flixel-sources-only
 )
 FetchContent_MakeAvailable(miniaudio)
 
@@ -33,7 +36,10 @@ set(MINIAUDIO_EXTRAS_DIR     ${miniaudio_SOURCE_DIR}/extras)
 
 # --- JNI headers --------------------------------------------------------------
 
-find_package(JNI REQUIRED)
+# The NDK sysroot already ships jni.h, so only desktop builds need a JDK.
+if(NOT ANDROID)
+  find_package(JNI REQUIRED)
+endif()
 
 # --- Static library (primary reusable target) ---------------------------------
 
@@ -80,7 +86,9 @@ if(FLIXEL_MINIAUDIO_BUILD_SHARED)
     set_target_properties(flixel_miniaudio_shared PROPERTIES
       MSVC_RUNTIME_LIBRARY "MultiThreaded"
     )
-    target_link_options(flixel_miniaudio_shared PRIVATE -static-libgcc)
+    if(MINGW)
+      target_link_options(flixel_miniaudio_shared PRIVATE -static-libgcc)
+    endif()
     target_link_libraries(flixel_miniaudio_shared PRIVATE ole32 winmm)
     set_target_properties(flixel_miniaudio_shared PROPERTIES OUTPUT_NAME "flixel_miniaudio")
   elseif(APPLE)
