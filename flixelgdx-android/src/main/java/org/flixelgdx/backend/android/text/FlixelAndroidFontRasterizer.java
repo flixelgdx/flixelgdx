@@ -32,20 +32,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.Arrays;
 
 /**
  * The Android font rasterizer, built on the platform's native text stack (Typeface + Paint).
  *
- * <p>Font bytes are written once to the application's cache directory under a stable name
- * derived from the content hash so the same font data is not written twice across calls within
- * one session. The file is removed when the returned {@link FlixelAndroidRasterizedFont} is
- * destroyed, but only when this opener created it.
- *
- * <p>On API 24 through 25 the file-based {@code Typeface.createFromFile} path is used.
- * On API 26 and above the same path is still used; an alternate builder-based path is
- * available from that API but offers no practical advantage here since the bytes are already
- * on disk for the duration of the font's use.
+ * <p>{@code Typeface.createFromFile} is the one loading path that works on every supported API
+ * level, so the font bytes are written to a unique temporary file in the application's cache
+ * directory, loaded, and the file is deleted immediately. The loaded typeface keeps its own copy
+ * of the data, so nothing is left on disk.
  *
  * @see FlixelAndroidRasterizedFont
  */
@@ -65,36 +59,26 @@ public class FlixelAndroidFontRasterizer implements FlixelFontRasterizer {
   @Nullable
   @Override
   public FlixelRasterizedFont open(byte @NotNull [] data, float pixelHeight) {
-    File cacheDir = context.getCacheDir();
-    // Build a stable filename from a 32-bit hash of the font bytes. Collisions are astronomically
-    // unlikely in practice; the worst outcome is two different fonts sharing one file, which
-    // Typeface.createFromFile would open incorrectly, and the rasterizer would produce wrong glyphs
-    // rather than crash.
-    String hex = Integer.toHexString(Arrays.hashCode(data) & 0x7FFFFFFF);
-    File fontFile = new File(cacheDir, "flixelgdx_font_" + hex + ".ttf");
-    boolean created = !fontFile.exists();
-    if (created) {
+    // Typeface can only be built from a file on older API levels, so the bytes go to a unique
+    // temporary file. The typeface maps the font into memory while loading, so the file is
+    // deleted right away and nothing is left behind in the cache directory.
+    File fontFile = null;
+    try {
+      fontFile = File.createTempFile("flixelgdx_font_", ".ttf", context.getCacheDir());
       try (FileOutputStream out = new FileOutputStream(fontFile)) {
         out.write(data);
-      } catch (Exception e) {
+      }
+      Typeface typeface = Typeface.createFromFile(fontFile);
+      if (typeface == null) {
         return null;
       }
-    }
-    Typeface typeface;
-    try {
-      typeface = Typeface.createFromFile(fontFile);
+      return new FlixelAndroidRasterizedFont(typeface, pixelHeight);
     } catch (Exception e) {
-      if (created) {
+      return null;
+    } finally {
+      if (fontFile != null) {
         fontFile.delete();
       }
-      return null;
     }
-    if (typeface == null) {
-      if (created) {
-        fontFile.delete();
-      }
-      return null;
-    }
-    return new FlixelAndroidRasterizedFont(typeface, fontFile, created, pixelHeight);
   }
 }

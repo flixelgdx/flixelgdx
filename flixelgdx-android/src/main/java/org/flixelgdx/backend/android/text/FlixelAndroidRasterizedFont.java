@@ -34,7 +34,6 @@ import org.flixelgdx.text.FlixelGlyphBitmap;
 import org.flixelgdx.text.FlixelRasterizedFont;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -59,7 +58,6 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
   private final float lineHeight;
   private int scratchW;
   private int scratchH;
-  private final File cacheFile;
   private final Paint paint;
   private Bitmap scratch;
   private Canvas scratchCanvas;
@@ -67,14 +65,9 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
   private final float[] widthBuf;
   private final Rect bounds;
   private ByteBuffer coverageBuf;
-  private final boolean ownsFile;
   private boolean destroyed;
 
-  FlixelAndroidRasterizedFont(Typeface typeface, File cacheFile, boolean ownsFile,
-      float pixelHeight) {
-    this.cacheFile = cacheFile;
-    this.ownsFile = ownsFile;
-
+  FlixelAndroidRasterizedFont(Typeface typeface, float pixelHeight) {
     // Build and calibrate the paint.
     // Android's ascent is negative (above baseline) and descent is positive (below baseline).
     // We want ascent - (-ascent) = descent - ascent = pixelHeight after calibration.
@@ -202,9 +195,6 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
     if (!destroyed) {
       destroyed = true;
       scratch.recycle();
-      if (ownsFile) {
-        cacheFile.delete();
-      }
     }
   }
 }
