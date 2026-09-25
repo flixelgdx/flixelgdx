@@ -53,6 +53,9 @@ import java.nio.ByteOrder;
  */
 class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
 
+  /** Empty pixels kept around each glyph so anti-aliased edges are never clipped. */
+  private static final int GLYPH_PADDING = 1;
+
   private final float ascent;
   private final float descent;
   private final float lineHeight;
@@ -73,6 +76,7 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
     // We want ascent - (-ascent) = descent - ascent = pixelHeight after calibration.
     paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     paint.setSubpixelText(true);
+    paint.setHinting(Paint.HINTING_OFF);
     paint.setTypeface(typeface);
     paint.setColor(Color.WHITE);
     paint.setTextSize(pixelHeight);
@@ -99,7 +103,7 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
     charBuf = new char[2];
     widthBuf = new float[2];
     bounds = new Rect();
-    coverageBuf = ByteBuffer.allocate(scratchW * scratchH).order(ByteOrder.nativeOrder());
+    coverageBuf = ByteBuffer.allocate(scratch.getByteCount()).order(ByteOrder.nativeOrder());
   }
 
   @Override
@@ -134,19 +138,22 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
       advance += widthBuf[1];
     }
 
-    // Tight pixel bounding box relative to the baseline origin.
+    // Pixel bounding box relative to the baseline origin. getTextBounds() rounds to whole pixels,
+    // and anti-aliased edges can land just outside it, so a small margin is added on every side
+    // to keep the outermost column and row of a glyph from being cut off.
     paint.getTextBounds(charBuf, 0, charCount, bounds);
-    int gw = bounds.width();
-    int gh = bounds.height();
+    boolean blank = bounds.width() <= 0 || bounds.height() <= 0;
+    int gw = bounds.width() + GLYPH_PADDING * 2;
+    int gh = bounds.height() + GLYPH_PADDING * 2;
 
     FlixelGlyphBitmap out = new FlixelGlyphBitmap();
     out.advance = advance;
     // bounds.left is the horizontal offset from the pen to the left edge of the box.
-    out.bearingX = bounds.left;
+    out.bearingX = bounds.left - GLYPH_PADDING;
     // bounds.top is negative for text above the baseline; negate to get a positive distance.
-    out.bearingY = -bounds.top;
+    out.bearingY = -bounds.top + GLYPH_PADDING;
 
-    if (gw <= 0 || gh <= 0) {
+    if (blank) {
       // Blank glyph such as space: return advance and metrics, no pixels.
       return out;
     }
@@ -160,25 +167,28 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
       scratchH = newH;
       scratch = Bitmap.createBitmap(scratchW, scratchH, Bitmap.Config.ALPHA_8);
       scratchCanvas = new Canvas(scratch);
-      coverageBuf = ByteBuffer.allocate(scratchW * scratchH).order(ByteOrder.nativeOrder());
+      coverageBuf = ByteBuffer.allocate(scratch.getByteCount()).order(ByteOrder.nativeOrder());
     }
 
     // Clear and draw. We position the text so that the bounding box top-left lands at (0, 0):
     // the pen baseline is at y = -bounds.top and the pen x is at -bounds.left.
     scratch.eraseColor(Color.TRANSPARENT);
-    scratchCanvas.drawText(charBuf, 0, charCount, -bounds.left, -bounds.top, paint);
+    scratchCanvas.drawText(charBuf, 0, charCount, -bounds.left + GLYPH_PADDING,
+        -bounds.top + GLYPH_PADDING, paint);
 
-    // Copy the ALPHA_8 coverage pixels. Each row in the bitmap is scratchW bytes wide.
+    // Copy the ALPHA_8 coverage pixels. Rows are getRowBytes() apart, which Android may pad past
+    // the pixel width, so that stride is used instead of assuming one byte per pixel column.
     coverageBuf.clear();
     scratch.copyPixelsToBuffer(coverageBuf);
     coverageBuf.rewind();
+    int stride = scratch.getRowBytes();
 
     // Build the RGBA image: white with the ALPHA_8 coverage as alpha, matching desktop format.
     FlixelImage image = new FlixelImage(gw, gh);
     ByteBuffer pixels = image.getPixels();
     for (int row = 0; row < gh; row++) {
       for (int col = 0; col < gw; col++) {
-        byte alpha = coverageBuf.get(row * scratchW + col);
+        byte alpha = coverageBuf.get(row * stride + col);
         int o = (row * gw + col) * 4;
         pixels.put(o, (byte) 0xFF);
         pixels.put(o + 1, (byte) 0xFF);
