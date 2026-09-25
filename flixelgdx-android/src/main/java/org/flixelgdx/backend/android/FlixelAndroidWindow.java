@@ -23,11 +23,14 @@
  */
 package org.flixelgdx.backend.android;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.os.Build;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import org.flixelgdx.backend.FlixelWindow;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,8 +51,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FlixelAndroidWindow implements FlixelWindow {
 
-
-
   @NotNull
   private final Activity activity;
 
@@ -63,6 +64,38 @@ public class FlixelAndroidWindow implements FlixelWindow {
    */
   public FlixelAndroidWindow(@NotNull Activity activity) {
     this.activity = activity;
+  }
+
+  /**
+   * Makes the game fill the whole screen once its view has been set as the activity's content.
+   *
+   * <p>This hides the activity's title bar, lets the game draw edge to edge (including the area
+   * around a display cutout on API 28 and above), and hides the system bars. Android clears
+   * immersive mode whenever the window loses focus (a dialog, the notification shade, switching
+   * apps), so it is reapplied every time the window regains focus.
+   *
+   * @param contentView The game view the launcher passed to {@code Activity.setContentView}.
+   */
+  void install(@NotNull View contentView) {
+    ActionBar actionBar = activity.getActionBar();
+    if (actionBar != null) {
+      actionBar.hide();
+    }
+    Window window = activity.getWindow();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      WindowManager.LayoutParams attrs = window.getAttributes();
+      attrs.layoutInDisplayCutoutMode =
+          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+      window.setAttributes(attrs);
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      window.setDecorFitsSystemWindows(false);
+    }
+    contentView.getViewTreeObserver().addOnWindowFocusChangeListener(hasFocus -> {
+      if (hasFocus) {
+        applyImmersiveFullscreen();
+      }
+    });
     applyImmersiveFullscreen();
   }
 

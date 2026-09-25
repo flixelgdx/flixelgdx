@@ -26,6 +26,7 @@ package org.flixelgdx.backend.android;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
+import android.view.Window;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
@@ -155,7 +156,16 @@ public final class FlixelAndroidLauncher {
     FlixelAndroidGamepadProvider gamepadProvider = new FlixelAndroidGamepadProvider(activity);
     input.setGamepadProvider(gamepadProvider);
 
+    // Drop the title bar before any content is added; requesting a window feature afterwards
+    // throws. Some activity themes (for example AppCompat ones) reject this, in which case
+    // install() below hides the bar instead.
+    try {
+      activity.requestWindowFeature(Window.FEATURE_NO_TITLE);
+    } catch (RuntimeException ignored) {
+      // The theme already decided; install() handles the action bar.
+    }
     activity.setContentView(glView);
+    window.install(glView);
 
     activity.getApplication().registerActivityLifecycleCallbacks(
         new ActivityLifecycleHandler(activity, glView, game, runner, gamepadProvider));
