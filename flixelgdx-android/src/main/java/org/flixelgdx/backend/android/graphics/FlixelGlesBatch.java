@@ -688,6 +688,11 @@ class FlixelGlesBatch implements FlixelBatch {
   /**
    * Builds the fragment shader source for {@code slots} texture samplers.
    *
+   * <p>ESSL 3.00 only allows a sampler array to be indexed by a constant, so the shader has to
+   * branch to pick the right sampler. Instead of testing every slot one after another, the branches
+   * form a binary search over the slot index: each test halves the remaining range, so finding one
+   * of 32 slots takes 5 comparisons instead of up to 32.
+   *
    * @param slots Number of sampler entries.
    * @return The ESSL 3.00 fragment shader source string.
    */
@@ -701,20 +706,36 @@ class FlixelGlesBatch implements FlixelBatch {
     sb.append("in float v_texIndex;\n");
     sb.append("out vec4 fragColor;\n");
     sb.append("void main() {\n");
+    sb.append("  int slot = int(v_texIndex + 0.5);\n");
     sb.append("  vec4 samp;\n");
-    for (int i = 0; i < slots; i++) {
-      if (i == 0) {
-        sb.append("  if");
-      } else {
-        sb.append("  else if");
-      }
-      sb.append(" (int(v_texIndex + 0.5) == ").append(i).append(") {");
-      sb.append(" samp = texture(u_textures[").append(i).append("], v_texCoords); }\n");
-    }
-    sb.append("  else { samp = vec4(1.0); }\n");
+    appendSlotSearch(sb, 0, slots - 1, "  ");
     sb.append("  fragColor = v_color * samp;\n");
     sb.append("}\n");
     return sb.toString();
+  }
+
+  /**
+   * Appends the branches that sample the texture for a slot in {@code [lo, hi]}.
+   *
+   * <p>The range is split at its middle: slots below the split go down the first branch and the
+   * rest go down the second, recursing until a single slot is left, which samples directly.
+   *
+   * @param sb The shader source being built.
+   * @param lo The lowest slot index in the range, inclusive.
+   * @param hi The highest slot index in the range, inclusive.
+   * @param indent The indentation for the emitted lines.
+   */
+  private static void appendSlotSearch(StringBuilder sb, int lo, int hi, String indent) {
+    if (lo == hi) {
+      sb.append(indent).append("samp = texture(u_textures[").append(lo).append("], v_texCoords);\n");
+      return;
+    }
+    int mid = (lo + hi + 1) >>> 1;
+    sb.append(indent).append("if (slot < ").append(mid).append(") {\n");
+    appendSlotSearch(sb, lo, mid - 1, indent + "  ");
+    sb.append(indent).append("} else {\n");
+    appendSlotSearch(sb, mid, hi, indent + "  ");
+    sb.append(indent).append("}\n");
   }
 
   // The built-in vertex shader uses ESSL 3.00 attributes and varyings so it compiles on the same
