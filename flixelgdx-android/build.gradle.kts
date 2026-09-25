@@ -60,6 +60,7 @@ dependencies {
   "coreLibraryDesugaring"(libs.desugar.jdk.libs)
 
   api(project(":flixelgdx-core"))
+  api(project(":flixelgdx-miniaudio"))
   api(libs.multidex)
   implementation(libs.jetbrains.annotations)
 }

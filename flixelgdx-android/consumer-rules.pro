@@ -6,4 +6,4 @@
 # breadth via `flixelReflectionProfile` and `flixelReflectionExtraPackages` in `gradle.properties`.
 
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
--keep class me.stringdotjar.flixelgdx.** { *; }
+-keep class org.flixelgdx.** { *; }
