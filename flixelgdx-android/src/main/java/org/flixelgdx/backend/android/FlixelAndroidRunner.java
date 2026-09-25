@@ -56,6 +56,8 @@ public class FlixelAndroidRunner implements FlixelGameRunner, GLSurfaceView.Rend
   /** Maximum delta clamped to avoid physics/game logic explosions after very slow frames. */
   private static final float MAX_DELTA = 1f / 15f;
 
+  private long lastNanos;
+
   @NotNull
   private final FlixelAndroidWindow window;
 
@@ -71,8 +73,10 @@ public class FlixelAndroidRunner implements FlixelGameRunner, GLSurfaceView.Rend
   @Nullable
   private FlixelCrashHandler crashHandler;
 
-  private long lastNanos;
   private boolean surfaceCreatedOnce = false;
+
+  /** Set after a crash so the loop stops calling into a game that is in a broken state. */
+  private boolean crashed;
 
   /**
    * Creates a runner wired to the given window and input device.
@@ -186,7 +190,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, GLSurfaceView.Rend
    */
   @Override
   public void onDrawFrame(GL10 gl) {
-    if (game == null) {
+    if (game == null || crashed) {
       return;
     }
     try {
@@ -210,6 +214,7 @@ public class FlixelAndroidRunner implements FlixelGameRunner, GLSurfaceView.Rend
   }
 
   private void dispatchCrash(Thread thread, Throwable t) {
+    crashed = true;
     if (crashHandler != null) {
       crashHandler.onCrash(thread, t);
     } else {

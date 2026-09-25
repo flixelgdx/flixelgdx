@@ -52,6 +52,10 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
   @NotNull
   private FlixelStackTraceProvider stackTraceProvider = FlixelNoopStackTraceProvider.INSTANCE;
 
+  /** The crash handler installed by the framework, or {@code null} before startup. */
+  @Nullable
+  private FlixelCrashHandler crashHandler;
+
   private boolean runtimeModeSet = false;
 
   /**
@@ -121,6 +125,18 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
 
   @Override
   public void setCrashHandler(@NotNull FlixelCrashHandler handler) {
+    this.crashHandler = handler;
     Thread.setDefaultUncaughtExceptionHandler(handler::onCrash);
+  }
+
+  /**
+   * Returns the crash handler the framework installed, so the game runner can route exceptions
+   * thrown on the GL thread through it.
+   *
+   * @return The installed crash handler, or {@code null} if the framework has not started yet.
+   */
+  @Nullable
+  public FlixelCrashHandler getCrashHandler() {
+    return crashHandler;
   }
 }
