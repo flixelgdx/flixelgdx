@@ -103,13 +103,35 @@ public class FlixelAndroidSurfaceView extends GLSurfaceView {
    */
   private final class FlixelInputConnection extends BaseInputConnection {
 
+    /**
+     * The in-progress word the keyboard is composing, exactly as it has already been sent to the
+     * game. Most keyboards type a word as "composing" text and only commit it at a space or a
+     * suggestion, updating the whole word on every key press. Sending only the difference from
+     * this copy makes each letter appear as it is typed, lets suggestions and autocorrect replace
+     * the word, and never sends the same text twice.
+     */
+    private final StringBuilder composing = new StringBuilder(32);
+
     FlixelInputConnection(@NotNull View targetView) {
       super(targetView, false);
     }
 
     /**
-     * Called by the IME when the user confirms composed text. Each character in {@code text}
-     * is forwarded as a {@link FlixelAndroidInputDevice#TYPE_CHAR_INPUT} slot.
+     * Called by the IME with the current state of the word being typed.
+     *
+     * @param text The full composing text, replacing the previous composing text.
+     * @param newCursorPosition Ignored; the game manages the cursor itself.
+     * @return Always {@code true}.
+     */
+    @Override
+    public boolean setComposingText(CharSequence text, int newCursorPosition) {
+      replaceComposing(text);
+      return true;
+    }
+
+    /**
+     * Called by the IME when text is final, either a finished word replacing the composing text
+     * or text typed directly (such as a space or punctuation).
      *
      * @param text The committed text string; never {@code null}.
      * @param newCursorPosition Ignored; the game manages the cursor itself.
@@ -117,9 +139,20 @@ public class FlixelAndroidSurfaceView extends GLSurfaceView {
      */
     @Override
     public boolean commitText(CharSequence text, int newCursorPosition) {
-      for (int i = 0, n = text.length(); i < n; i++) {
-        input.postChar(text.charAt(i));
-      }
+      replaceComposing(text);
+      composing.setLength(0);
+      return true;
+    }
+
+    /**
+     * Called by the IME when it stops composing without changing the text. The composing text has
+     * already been sent to the game, so it simply becomes final.
+     *
+     * @return Always {@code true}.
+     */
+    @Override
+    public boolean finishComposingText() {
+      composing.setLength(0);
       return true;
     }
 
@@ -133,14 +166,13 @@ public class FlixelAndroidSurfaceView extends GLSurfaceView {
      */
     @Override
     public boolean deleteSurroundingText(int beforeLength, int afterLength) {
-      for (int i = 0; i < beforeLength; i++) {
-        input.postKey(FlixelAndroidInputDevice.TYPE_KEY_DOWN, FlixelKey.DEL);
-        input.postKey(FlixelAndroidInputDevice.TYPE_KEY_UP, FlixelKey.DEL);
-      }
+      postBackspaces(beforeLength);
       for (int i = 0; i < afterLength; i++) {
         input.postKey(FlixelAndroidInputDevice.TYPE_KEY_DOWN, FlixelKey.FORWARD_DEL);
         input.postKey(FlixelAndroidInputDevice.TYPE_KEY_UP, FlixelKey.FORWARD_DEL);
       }
+      // Anything deleted from the in-progress word is no longer part of it.
+      composing.setLength(Math.max(0, composing.length() - beforeLength));
       return true;
     }
 
@@ -166,18 +198,35 @@ public class FlixelAndroidSurfaceView extends GLSurfaceView {
     }
 
     /**
-     * Called by the IME when composition finishes. Treats the final composition string the
-     * same as committed text so characters always reach the game.
+     * Sends the game the edits that turn the current composing text into {@code text}: one
+     * backspace per character after the shared start, then the new characters.
      *
-     * @return Always {@code true}.
+     * @param text The text that should replace the composing text.
      */
-    @Override
-    public boolean finishComposingText() {
-      CharSequence text = getEditable();
-      if (text != null && text.length() > 0) {
-        commitText(text, 1);
+    private void replaceComposing(@NotNull CharSequence text) {
+      int shared = 0;
+      int limit = Math.min(composing.length(), text.length());
+      while (shared < limit && composing.charAt(shared) == text.charAt(shared)) {
+        shared++;
       }
-      return super.finishComposingText();
+      postBackspaces(composing.length() - shared);
+      for (int i = shared, n = text.length(); i < n; i++) {
+        input.postChar(text.charAt(i));
+      }
+      composing.setLength(shared);
+      composing.append(text, shared, text.length());
+    }
+
+    /**
+     * Posts {@code count} backspace key press and release pairs.
+     *
+     * @param count How many characters to delete before the cursor.
+     */
+    private void postBackspaces(int count) {
+      for (int i = 0; i < count; i++) {
+        input.postKey(FlixelAndroidInputDevice.TYPE_KEY_DOWN, FlixelKey.DEL);
+        input.postKey(FlixelAndroidInputDevice.TYPE_KEY_UP, FlixelKey.DEL);
+      }
     }
   }
 }
