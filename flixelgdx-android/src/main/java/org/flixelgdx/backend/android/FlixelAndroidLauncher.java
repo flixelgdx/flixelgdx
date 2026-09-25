@@ -25,7 +25,6 @@ package org.flixelgdx.backend.android;
 
 import android.app.Activity;
 import android.app.Application;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
@@ -34,6 +33,7 @@ import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.android.asset.FlixelAndroidAssetManager;
 import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
+import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileHandler;
 import org.flixelgdx.backend.android.logging.FlixelAndroidStackTraceProvider;
 import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
@@ -47,7 +47,8 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Call {@link #launch(Activity, FlixelGame)} from your {@code Activity.onCreate} and nothing
  * else is required. The launcher installs every Android backend piece (files, audio, haptics,
- * logging, window) and starts the game loop on a {@link GLSurfaceView} with a GLES 3.0 context.
+ * logging, window, input, gamepads) and starts the game loop on a {@link FlixelAndroidSurfaceView}
+ * with a GLES 3.0 context.
  *
  * <p>Example in Kotlin:
  *
@@ -126,26 +127,43 @@ public final class FlixelAndroidLauncher {
 
     FlixelAndroidRunner runner = new FlixelAndroidRunner(window, input);
 
-    // Build the GLSurfaceView: GLES 3.0, preserve context on pause, RGBA8888 config.
-    GLSurfaceView glView = new GLSurfaceView(activity);
+    // Build the surface view: custom subclass supports text input via the IME.
+    FlixelAndroidSurfaceView glView = new FlixelAndroidSurfaceView(activity, input);
     glView.setEGLContextClientVersion(3);
     glView.setPreserveEGLContextOnPause(true);
     glView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
     glView.setRenderer(runner);
 
+    // Wire all input listeners.
     glView.setOnTouchListener(input.createTouchListener());
     glView.setOnKeyListener(input.createKeyListener());
+    glView.setOnGenericMotionListener(input.createGenericMotionListener());
     glView.setFocusable(true);
     glView.setFocusableInTouchMode(true);
+
+    // Give the input device its surface reference for IME show/hide.
+    input.setSurfaceAndActivity(glView, activity);
+
+    // Create the gamepad provider before Flixel.start() so afterStart sees it.
+    FlixelAndroidGamepadProvider gamepadProvider = new FlixelAndroidGamepadProvider(activity);
+    input.setGamepadProvider(gamepadProvider);
 
     activity.setContentView(glView);
 
     // Register lifecycle callbacks filtered to this activity so lifecycle events are forwarded
     // to the game even when we cannot subclass the activity.
     activity.getApplication().registerActivityLifecycleCallbacks(
-        new ActivityLifecycleHandler(activity, glView, game, runner));
+        new ActivityLifecycleHandler(activity, glView, game, runner, gamepadProvider));
 
     Flixel.runtime.setMode(runtimeMode);
+
+    // Install the gamepad provider after Flixel.start() initializes the gamepad manager.
+    Flixel.boot.afterStart(() -> {
+      Flixel.gamepads.setGamepadProvider(gamepadProvider);
+      Flixel.gamepads.addMappingResolver(gamepadProvider);
+      gamepadProvider.start();
+    });
+
     Flixel.start(game, runner);
 
     // Wire the crash handler from the runner after Flixel.start installs it.
@@ -167,7 +185,7 @@ public final class FlixelAndroidLauncher {
     private final Activity activity;
 
     @NotNull
-    private final GLSurfaceView glView;
+    private final FlixelAndroidSurfaceView glView;
 
     @NotNull
     private final FlixelGame game;
@@ -175,12 +193,19 @@ public final class FlixelAndroidLauncher {
     @NotNull
     private final FlixelAndroidRunner runner;
 
-    private ActivityLifecycleHandler(@NotNull Activity activity, @NotNull GLSurfaceView glView,
-        @NotNull FlixelGame game, @NotNull FlixelAndroidRunner runner) {
+    @NotNull
+    private final FlixelAndroidGamepadProvider gamepadProvider;
+
+    private ActivityLifecycleHandler(@NotNull Activity activity,
+        @NotNull FlixelAndroidSurfaceView glView,
+        @NotNull FlixelGame game,
+        @NotNull FlixelAndroidRunner runner,
+        @NotNull FlixelAndroidGamepadProvider gamepadProvider) {
       this.activity = activity;
       this.glView = glView;
       this.game = game;
       this.runner = runner;
+      this.gamepadProvider = gamepadProvider;
     }
 
     @Override
@@ -209,6 +234,7 @@ public final class FlixelAndroidLauncher {
       if (a != activity) {
         return;
       }
+      gamepadProvider.stop();
       // Destroy the game and shut down audio on the GL thread if possible. If the renderer
       // is already stopped, run synchronously to avoid a resource leak.
       try {
