@@ -29,7 +29,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelGameRunner;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.backend.desktop.audio.FlixelMiniAudioFactory;
+import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
 import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.graphics.FlixelKtx2Loader;
@@ -42,6 +42,8 @@ import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmLogFileHandler;
 import org.flixelgdx.backend.jvm.logging.FlixelJvmStackTraceProvider;
 import org.flixelgdx.backend.jvm.runtime.FlixelJvmRuntimeDevice;
+import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
+import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
@@ -187,6 +189,7 @@ public final class FlixelDesktopLauncher {
     Flixel.graphics = graphics;
     Flixel.runtime.setStackTraceProvider(new FlixelJvmStackTraceProvider());
     Flixel.log.logFileHandler = new FlixelJvmLogFileHandler();
+    FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
         iconManager, host, width, height, icons);

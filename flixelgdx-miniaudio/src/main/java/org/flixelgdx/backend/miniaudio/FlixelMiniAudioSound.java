@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.desktop.audio;
+package org.flixelgdx.backend.miniaudio;
 
 import org.flixelgdx.audio.FlixelSound;
 import org.jetbrains.annotations.NotNull;

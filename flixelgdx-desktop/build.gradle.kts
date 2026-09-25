@@ -18,6 +18,7 @@ val lwjglNatives = listOf(
 
 dependencies {
   api(project(":flixelgdx-core"))
+  api(project(":flixelgdx-miniaudio"))
   api(project(":flixelgdx-jvm"))
 
   api(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))

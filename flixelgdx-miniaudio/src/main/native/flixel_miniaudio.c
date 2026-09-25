@@ -25,7 +25,7 @@
 /*
  * JNI wrapper over the single-file miniaudio engine (miniaudio.h). Each Java handle is a raw
  * pointer into native memory. The framework's FlixelMiniAudio class declares the matching native
- * methods; this file implements them and is compiled into the desktop module's bundled natives.
+ * methods; this file implements them and is compiled into the flixelgdx-miniaudio shared module.
  */
 #include <jni.h>
 #include <stdlib.h>
@@ -57,7 +57,7 @@ typedef struct {
 } flixel_sound;
 
 JNIEXPORT jlong JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_engineInit(JNIEnv* env, jclass clazz) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_engineInit(JNIEnv* env, jclass clazz) {
   (void) env;
   (void) clazz;
   ma_engine* engine = (ma_engine*) malloc(sizeof(ma_engine));
@@ -72,7 +72,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_engineInit(JNIEnv* env,
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_engineUninit(JNIEnv* env, jclass clazz, jlong enginePtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_engineUninit(JNIEnv* env, jclass clazz, jlong enginePtr) {
   (void) env;
   (void) clazz;
   ma_engine* engine = (ma_engine*) (intptr_t) enginePtr;
@@ -83,7 +83,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_engineUninit(JNIEnv* en
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_engineSetVolume(JNIEnv* env, jclass clazz, jlong enginePtr, jfloat volume) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_engineSetVolume(JNIEnv* env, jclass clazz, jlong enginePtr, jfloat volume) {
   (void) env;
   (void) clazz;
   ma_engine* engine = (ma_engine*) (intptr_t) enginePtr;
@@ -93,7 +93,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_engineSetVolume(JNIEnv*
 }
 
 JNIEXPORT jlong JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupInit(JNIEnv* env, jclass clazz, jlong enginePtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_groupInit(JNIEnv* env, jclass clazz, jlong enginePtr) {
   (void) env;
   (void) clazz;
   ma_engine* engine = (ma_engine*) (intptr_t) enginePtr;
@@ -112,7 +112,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupInit(JNIEnv* env, 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupUninit(JNIEnv* env, jclass clazz, jlong groupPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_groupUninit(JNIEnv* env, jclass clazz, jlong groupPtr) {
   (void) env;
   (void) clazz;
   ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
@@ -123,7 +123,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupUninit(JNIEnv* env
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupStop(JNIEnv* env, jclass clazz, jlong groupPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_groupStop(JNIEnv* env, jclass clazz, jlong groupPtr) {
   (void) env;
   (void) clazz;
   ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
@@ -133,7 +133,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupStop(JNIEnv* env, 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupStart(JNIEnv* env, jclass clazz, jlong groupPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_groupStart(JNIEnv* env, jclass clazz, jlong groupPtr) {
   (void) env;
   (void) clazz;
   ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
@@ -143,7 +143,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupStart(JNIEnv* env,
 }
 
 JNIEXPORT jfloat JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupGetVolume(JNIEnv* env, jclass clazz, jlong groupPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_groupGetVolume(JNIEnv* env, jclass clazz, jlong groupPtr) {
   (void) env;
   (void) clazz;
   ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
@@ -154,7 +154,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupGetVolume(JNIEnv* 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupSetVolume(JNIEnv* env, jclass clazz, jlong groupPtr, jfloat volume) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_groupSetVolume(JNIEnv* env, jclass clazz, jlong groupPtr, jfloat volume) {
   (void) env;
   (void) clazz;
   ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
@@ -164,7 +164,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_groupSetVolume(JNIEnv* 
 }
 
 JNIEXPORT jlong JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundLoad(JNIEnv* env, jclass clazz, jlong enginePtr, jbyteArray data, jint length, jlong groupPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundLoad(JNIEnv* env, jclass clazz, jlong enginePtr, jbyteArray data, jint length, jlong groupPtr) {
   (void) clazz;
   ma_engine* engine = (ma_engine*) (intptr_t) enginePtr;
   ma_sound_group* group = (ma_sound_group*) (intptr_t) groupPtr;
@@ -237,7 +237,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundLoad(JNIEnv* env, 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundUninit(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundUninit(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -254,7 +254,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundUninit(JNIEnv* env
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundStart(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundStart(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -264,7 +264,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundStart(JNIEnv* env,
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundStop(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundStop(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -274,7 +274,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundStop(JNIEnv* env, 
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundIsPlaying(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundIsPlaying(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -282,7 +282,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundIsPlaying(JNIEnv* 
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundIsAtEnd(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundIsAtEnd(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -290,7 +290,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundIsAtEnd(JNIEnv* en
 }
 
 JNIEXPORT jfloat JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundGetVolume(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundGetVolume(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -298,7 +298,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundGetVolume(JNIEnv* 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetVolume(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat volume) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundSetVolume(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat volume) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -308,7 +308,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetVolume(JNIEnv* 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetPitch(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat pitch) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundSetPitch(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat pitch) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -318,7 +318,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetPitch(JNIEnv* e
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetPan(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat pan) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundSetPan(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat pan) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -328,7 +328,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetPan(JNIEnv* env
 }
 
 JNIEXPORT jfloat JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundGetCursor(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundGetCursor(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -341,7 +341,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundGetCursor(JNIEnv* 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSeek(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat seconds) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundSeek(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat seconds) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -357,7 +357,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSeek(JNIEnv* env, 
 }
 
 JNIEXPORT jfloat JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundGetLength(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundGetLength(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -370,7 +370,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundGetLength(JNIEnv* 
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundIsLooping(JNIEnv* env, jclass clazz, jlong soundPtr) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundIsLooping(JNIEnv* env, jclass clazz, jlong soundPtr) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -378,7 +378,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundIsLooping(JNIEnv* 
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetLooping(JNIEnv* env, jclass clazz, jlong soundPtr, jboolean looping) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundSetLooping(JNIEnv* env, jclass clazz, jlong soundPtr, jboolean looping) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
@@ -388,7 +388,7 @@ Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetLooping(JNIEnv*
 }
 
 JNIEXPORT void JNICALL
-Java_org_flixelgdx_backend_desktop_audio_FlixelMiniAudio_soundSetPosition(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat x, jfloat y, jfloat z) {
+Java_org_flixelgdx_backend_miniaudio_FlixelMiniAudio_soundSetPosition(JNIEnv* env, jclass clazz, jlong soundPtr, jfloat x, jfloat y, jfloat z) {
   (void) env;
   (void) clazz;
   flixel_sound* s = (flixel_sound*) (intptr_t) soundPtr;
