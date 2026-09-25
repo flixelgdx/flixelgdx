@@ -99,6 +99,12 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   @NotNull
   private final FlixelArray<FlixelGlesRenderTarget> targetStack = new FlixelArray<>();
 
+  /** Actions queued from other threads by {@link #queueMainThread(Runnable)}. */
+  private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
+
+  /** The batch of queued actions currently being run, swapped with the queue each frame. */
+  private final FlixelArray<Runnable> runningActions = new FlixelArray<>();
+
   @NotNull
   private final FlixelMatrix compositeOrtho = new FlixelMatrix();
 
@@ -157,6 +163,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     if (!initialized) {
       initGL();
     }
+    runQueuedActions();
 
     // EMA frame-rate tracking.
     long now = System.nanoTime();
@@ -181,8 +188,12 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   @Override
   public void queueMainThread(@NotNull Runnable action) {
-    // On Android the game loop runs on the GL thread, so queue-to-main == run-now.
-    action.run();
+    // Callers may be on the UI thread, an asset loader thread, or a host callback, none of which
+    // own the GL context. Actions are queued and run at the start of the next frame on the GL
+    // thread, the same as on desktop.
+    synchronized (mainThreadQueue) {
+      mainThreadQueue.add(action);
+    }
   }
 
   @Override
@@ -548,6 +559,28 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   }
 
   /** Binds a render target's framebuffer and sets the GL viewport to its size. */
+  /**
+   * Runs every action queued by {@link #queueMainThread(Runnable)} on the GL thread.
+   *
+   * <p>The queue is copied out under the lock and run afterwards, so an action may safely queue
+   * another action (which then runs next frame) without deadlocking or mutating the list being run.
+   */
+  private void runQueuedActions() {
+    synchronized (mainThreadQueue) {
+      if (mainThreadQueue.isEmpty()) {
+        return;
+      }
+      for (int i = 0; i < mainThreadQueue.getSize(); i++) {
+        runningActions.add(mainThreadQueue.get(i));
+      }
+      mainThreadQueue.clear();
+    }
+    for (int i = 0; i < runningActions.getSize(); i++) {
+      runningActions.get(i).run();
+    }
+    runningActions.clear();
+  }
+
   private void bindTarget(@NotNull FlixelGlesRenderTarget target) {
     GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.getFramebuffer());
     GLES30.glViewport(0, 0, target.getWidth(), target.getHeight());
