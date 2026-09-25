@@ -43,6 +43,16 @@ public class FlixelMiniAudioSound extends FlixelSound {
 
   private final FlixelMiniAudioGroup group;
 
+  /**
+   * The sound's length in milliseconds, read once when the sound is created.
+   *
+   * <p>For streamed formats such as MP3, miniaudio measures the length by scanning the whole
+   * stream, which seeks the same decoder the audio thread is reading from. Doing that while the
+   * sound plays races with playback and can crash, so it is done once, before the sound has ever
+   * started. A sound's length never changes, so the cached value is always correct.
+   */
+  private final float length;
+
   /** Cached pitch; miniaudio has no pitch getter. */
   private float pitch = 1f;
 
@@ -58,6 +68,7 @@ public class FlixelMiniAudioSound extends FlixelSound {
   FlixelMiniAudioSound(long handle, FlixelMiniAudioGroup group) {
     this.handle = handle;
     this.group = group;
+    this.length = handle == 0L ? 0f : FlixelMiniAudio.soundGetLength(handle) * 1000f;
     if (group != null) {
       group.add(this);
     }
@@ -142,7 +153,7 @@ public class FlixelMiniAudioSound extends FlixelSound {
 
   @Override
   public float getLength() {
-    return handle == 0L ? 0f : FlixelMiniAudio.soundGetLength(handle) * 1000f;
+    return handle == 0L ? 0f : length;
   }
 
   @Override
