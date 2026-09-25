@@ -47,7 +47,6 @@ tasks.register("javadocAll") {
     ":flixelgdx-desktop:javadoc",
     ":flixelgdx-html5:javadoc",
     ":flixelgdx-ios:javadoc",
-    ":flixelgdx-jvm:javadoc",
     ":flixelgdx-json-processor:javadoc",
     ":flixelgdx-plugins:flixelgdx-basisu-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-html5-plugin:javadoc",

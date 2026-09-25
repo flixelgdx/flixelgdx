@@ -40,8 +40,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>Every method has a safe default, so a backend only overrides what it can actually report, and
  * the no-op device ({@link FlixelNoopRuntimeDevice}) keeps calls safe before a backend is installed
- * and on platforms that cannot answer. Desktop JVM builds install {@code FlixelJvmRuntimeDevice}
- * from {@code flixelgdx-jvm} at startup.
+ * and on platforms that cannot answer. Desktop builds install {@code FlixelJvmRuntimeDevice}
+ * at startup.
  *
  * <p>Example:
  *

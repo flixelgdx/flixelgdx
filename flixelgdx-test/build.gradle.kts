@@ -11,8 +11,8 @@ java {
 
 dependencies {
   implementation(project(":flixelgdx-core"))
-  // The JVM module supplies the real java.io file backend so save round-trip tests persist to disk.
-  implementation(project(":flixelgdx-jvm"))
+  // The desktop module supplies the real java.io file backend so save round-trip tests persist to disk.
+  implementation(project(":flixelgdx-desktop"))
   implementation(libs.jetbrains.annotations)
 
   testRuntimeOnly(libs.junit.platform.launcher)
