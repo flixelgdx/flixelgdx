@@ -319,10 +319,21 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setScissor(int x, int y, int width, int height) {
-    int surfH = sceneActive ? renderHeight : window.getBackBufferHeight();
-    int glY = surfH - y - height;
+    // The framework already passes bottom-left framebuffer coordinates, which is GL's own
+    // convention, so no flip is needed. While a fixed render resolution is active, the rectangle is
+    // in window pixels and is mapped back into the smaller render surface.
+    int sx = x;
+    int sy = y;
+    int sw = width;
+    int sh = height;
+    if (sceneActive) {
+      sx = Math.round((x - compositeOffsetX) / compositeScale);
+      sy = Math.round((y - compositeOffsetY) / compositeScale);
+      sw = Math.round(width / compositeScale);
+      sh = Math.round(height / compositeScale);
+    }
     GLES30.glEnable(GLES30.GL_SCISSOR_TEST);
-    GLES30.glScissor(x, glY, Math.max(1, width), Math.max(1, height));
+    GLES30.glScissor(sx, sy, Math.max(1, sw), Math.max(1, sh));
   }
 
   @Override
@@ -332,14 +343,19 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setViewport(int x, int y, int width, int height) {
-    // The framework uses Y-down viewport coordinates; GL uses Y-up from the bottom.
-    int surfH = sceneActive ? renderHeight : window.getBackBufferHeight();
-    int glY = surfH - y - height;
+    // Bottom-left framebuffer coordinates, like setScissor(...): passed to GL as they are, or
+    // mapped into the render surface while a fixed render resolution is active.
+    if (sceneActive) {
+      x = Math.round((x - compositeOffsetX) / compositeScale);
+      y = Math.round((y - compositeOffsetY) / compositeScale);
+      width = Math.round(width / compositeScale);
+      height = Math.round(height / compositeScale);
+    }
     viewportX = x;
     viewportY = y;
-    viewportW = width;
-    viewportH = height;
-    GLES30.glViewport(x, Math.max(0, glY), Math.max(1, width), Math.max(1, height));
+    viewportW = Math.max(1, width);
+    viewportH = Math.max(1, height);
+    GLES30.glViewport(viewportX, viewportY, viewportW, viewportH);
   }
 
   @Override
