@@ -40,15 +40,36 @@ android {
   namespace = "org.flixelgdx"
   compileSdk = 36
 
+  // NDK r28b; AGP downloads this automatically on first build if not already installed.
+  ndkVersion = "28.2.13676358"
+
   defaultConfig {
     multiDexEnabled = true
     minSdk = 24
     consumerProguardFiles("${layout.buildDirectory.get()}/generated/flixel-reflection/consumer-rules.pro")
+
+    ndk {
+      abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+    }
+
+    externalNativeBuild {
+      cmake {
+        // Use -Os for code-size optimization to keep the AAR compact.
+        arguments += "-DANDROID_STL=c++_static"
+      }
+    }
   }
   compileOptions {
     isCoreLibraryDesugaringEnabled = true
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
+  }
+  externalNativeBuild {
+    cmake {
+      path = file("src/main/cpp/CMakeLists.txt")
+      // SDK CMake 3.22.1 is downloaded automatically by AGP when not already present.
+      version = "3.22.1"
+    }
   }
 }
 
