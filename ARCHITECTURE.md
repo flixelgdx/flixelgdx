@@ -24,7 +24,6 @@ The project is split into several modules, each serving a specific purpose.
 
 ### Misc.
 
-- **`flixelgdx-jvm`**: JVM-only helpers that are not suitable for the browser or other non-JVM targets (stack traces, optional log files, etc.).
 - **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSeralizable`.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.jvm.logging;
+package org.flixelgdx.backend.desktop.logging;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.logging.FlixelLogFileHandler;

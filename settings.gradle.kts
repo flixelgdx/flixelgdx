@@ -61,7 +61,6 @@ include(
   "flixelgdx-desktop",
   "flixelgdx-html5",
   "flixelgdx-ios",
-  "flixelgdx-jvm",
   "flixelgdx-json-processor",
   ":flixelgdx-plugins:flixelgdx-html5-plugin",
   ":flixelgdx-plugins:flixelgdx-logging-plugin",

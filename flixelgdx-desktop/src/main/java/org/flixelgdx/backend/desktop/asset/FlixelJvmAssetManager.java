@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.jvm.asset;
+package org.flixelgdx.backend.desktop.asset;
 
 import org.flixelgdx.asset.FlixelBaseAssetManager;
 import org.jetbrains.annotations.NotNull;
