@@ -25,6 +25,7 @@ package org.flixelgdx.gradle.shader;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -122,5 +123,39 @@ class ShaderSourcesTest {
     assertTrue(result.contains("varying vec4 v_color;"));
     assertTrue(result.contains("vec4 flixel_texture(vec2 uv)"));
     assertTrue(result.contains(body.strip()));
+  }
+
+  @Test
+  void promoteUniformsRewritesScalarsAndVectorsToVec4() {
+    String src = "uniform float u_time;\n"
+        + "uniform highp vec2 u_resolution;\n"
+        + "uniform vec3 u_tint;\n"
+        + "uniform int u_mode;\n"
+        + "uniform vec4 u_color;\n"
+        + "uniform mat4 u_matrix;\n";
+    String result = ShaderSources.promoteUniforms(src);
+    assertEquals("uniform vec4 u_time;\n#define u_time u_time.x\n"
+        + "uniform vec4 u_resolution;\n#define u_resolution u_resolution.xy\n"
+        + "uniform vec4 u_tint;\n#define u_tint u_tint.xyz\n"
+        + "uniform vec4 u_mode;\n#define u_mode int(u_mode.x)\n"
+        + "uniform vec4 u_color;\n"
+        + "uniform mat4 u_matrix;\n", result);
+  }
+
+  @Test
+  void bgfxStagesPromoteUniformsButEsslKeepsThem() {
+    String body = "uniform float u_time;\nvoid main() {\n  gl_FragColor = vec4(u_time);\n}";
+    assertTrue(ShaderSources.fragment(body).contains("#define u_time u_time.x"));
+    assertTrue(ShaderSources.vertex(body).contains("#define u_time u_time.x"));
+    assertTrue(ShaderSources.esslFragment(body).contains("uniform float u_time;"));
+  }
+
+  @Test
+  void bgfxStagesRenameHlslOnlyKeywords() {
+    String body = "void main() {\n  float line = 1.0;\n  gl_FragColor = vec4(line);\n}";
+    assertTrue(ShaderSources.fragment(body).contains("#define line flx_line"));
+    assertFalse(ShaderSources.fragment(body).contains("#define point"));
+    // Only whole words count: "outline" must not trigger the rename.
+    assertEquals("", ShaderSources.renameHlslKeywords("float outline = 1.0;"));
   }
 }
