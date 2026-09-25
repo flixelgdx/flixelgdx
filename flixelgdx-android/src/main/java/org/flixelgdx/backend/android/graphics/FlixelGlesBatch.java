@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
@@ -176,7 +177,7 @@ class FlixelGlesBatch implements FlixelBatch {
     // Allocate dynamic vertex buffer storage (data filled per flush).
     GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo);
     GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER,
-        MAX_QUADS * FLOATS_PER_QUAD * Float.BYTES, (java.nio.Buffer) null, GLES30.GL_DYNAMIC_DRAW);
+        MAX_QUADS * FLOATS_PER_QUAD * Float.BYTES, (Buffer) null, GLES30.GL_DYNAMIC_DRAW);
 
     // Describe the nine-float vertex layout to the VAO.
     GLES30.glEnableVertexAttribArray(FlixelGlesPrograms.POSITION);
@@ -248,13 +249,17 @@ class FlixelGlesBatch implements FlixelBatch {
       }
     }
 
-    // Upload vertex data: orphan then fill.
-    vertexData.flip();
-    int byteCount = quadCount * FLOATS_PER_QUAD * Float.BYTES;
+    // Upload vertex data: orphan then fill. Vertices are written with absolute puts, which never
+    // move the buffer's position, so the readable range is set from the quad count directly
+    // (flip() would see a position of zero and upload nothing).
+    int floatCount = quadCount * FLOATS_PER_QUAD;
+    vertexData.limit(floatCount);
+    vertexData.position(0);
+    int byteCount = floatCount * Float.BYTES;
     GLES30.glBindVertexArray(vao);
     GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo);
     GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER,
-        MAX_QUADS * FLOATS_PER_QUAD * Float.BYTES, (java.nio.Buffer) null, GLES30.GL_DYNAMIC_DRAW);
+        MAX_QUADS * FLOATS_PER_QUAD * Float.BYTES, (Buffer) null, GLES30.GL_DYNAMIC_DRAW);
     GLES30.glBufferSubData(GLES30.GL_ARRAY_BUFFER, 0, byteCount, vertexData);
 
     // Enable or disable the slot-index attribute depending on whether a custom shader is active.
