@@ -37,9 +37,11 @@ import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileHandler;
 import org.flixelgdx.backend.android.logging.FlixelAndroidStackTraceProvider;
 import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
+import org.flixelgdx.backend.android.text.FlixelAndroidFontRasterizer;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.graphics.FlixelViewport;
+import org.flixelgdx.text.FlixelFontRegistry;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -110,6 +112,8 @@ public final class FlixelAndroidLauncher {
     Flixel.window = window;
 
     Flixel.haptics = new FlixelAndroidHaptics(activity);
+
+    FlixelFontRegistry.setRasterizer(new FlixelAndroidFontRasterizer(activity));
 
     // Enable touch input for mobile.
     Flixel.touches.enabled = true;
