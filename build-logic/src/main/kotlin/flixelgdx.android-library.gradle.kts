@@ -14,6 +14,15 @@ plugins {
   id("com.vanniktech.maven.publish")
 }
 
+// Compile with a JDK 17 toolchain instead of whatever JDK runs Gradle. The Android plugin runs
+// jlink from the compiling JDK to build the Android JDK image, and some JDKs used to run Gradle
+// (such as the JetBrains Runtime bundled with IntelliJ) ship without jlink.
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(17)
+  }
+}
+
 // The android plugin does not register a javadoc task, so we add one here against the release
 // variant. AGP resolves bootClasspath and the compile configuration only after evaluation.
 afterEvaluate {
