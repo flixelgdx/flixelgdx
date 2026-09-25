@@ -130,6 +130,9 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
    */
   private final boolean[] keysDown = new boolean[FlixelKey.MAX_KEYCODE + 1];
 
+  /** Keys pressed during the current drain, so their release can wait a frame; see drain(). */
+  private final int[] keysPressedThisDrain = new int[16];
+
   /** Current X of the mouse cursor emulated from pointer 0. */
   private int mouseX;
 
@@ -313,10 +316,19 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Drains all pending events from the ring buffer and dispatches them to registered listeners.
+   * Drains pending events from the ring buffer and dispatches them to registered listeners.
    * Call this once per frame on the GL thread, before the game update.
+   *
+   * <p>Core's input managers read button and key state once per frame, so a press and its release
+   * arriving in the same frame would never be seen as pressed. That is common on Android: a quick
+   * tap can be shorter than a frame, and the soft keyboard sends key down and key up together. When
+   * a release follows a press of the same pointer or key within one drain, draining stops just
+   * before the release, which is then delivered next frame. Every press is therefore visible for
+   * at least one frame, and events keep their original order.
    */
   public void drain() {
+    int pressedPointers = 0;
+    int pressedKeyCount = 0;
     int h = head;
     while (tail != h) {
       int slot = tail & MASK;
@@ -325,7 +337,15 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
       int x = xs[slot];
       int y = ys[slot];
       int keyCode = keyCodes[slot];
+      if (releasesPressThisDrain(type, pointer, keyCode, pressedPointers, pressedKeyCount)) {
+        break;
+      }
       tail++;
+      if (type == TYPE_TOUCH_DOWN && pointer >= 0 && pointer < MAX_POINTERS) {
+        pressedPointers |= 1 << pointer;
+      } else if (type == TYPE_KEY_DOWN && pressedKeyCount < keysPressedThisDrain.length) {
+        keysPressedThisDrain[pressedKeyCount++] = keyCode;
+      }
       switch (type) {
         case TYPE_TOUCH_DOWN:
           if (pointer >= 0 && pointer < MAX_POINTERS) {
@@ -522,5 +542,31 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
     types[slot] = TYPE_CHAR_INPUT;
     keyCodes[slot] = c;
     head = h + 1;
+  }
+
+  /**
+   * Returns whether an event is the release of a pointer or key that was pressed earlier in the
+   * current drain, meaning it must wait until the next frame.
+   *
+   * @param type The event type.
+   * @param pointer The pointer ID for touch events.
+   * @param keyCode The key code for key events.
+   * @param pressedPointers Bit mask of pointers pressed during this drain.
+   * @param pressedKeyCount How many entries of {@code keysPressedThisDrain} are in use.
+   * @return {@code true} to stop draining before this event.
+   */
+  private boolean releasesPressThisDrain(int type, int pointer, int keyCode, int pressedPointers,
+      int pressedKeyCount) {
+    if (type == TYPE_TOUCH_UP || type == TYPE_TOUCH_CANCEL) {
+      return pointer >= 0 && pointer < MAX_POINTERS && (pressedPointers & (1 << pointer)) != 0;
+    }
+    if (type == TYPE_KEY_UP) {
+      for (int i = 0; i < pressedKeyCount; i++) {
+        if (keysPressedThisDrain[i] == keyCode) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
