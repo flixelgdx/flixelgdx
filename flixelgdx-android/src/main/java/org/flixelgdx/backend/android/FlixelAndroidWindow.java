@@ -48,6 +48,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FlixelAndroidWindow implements FlixelWindow {
 
+
+
   @NotNull
   private final Activity activity;
 
@@ -73,6 +75,16 @@ public class FlixelAndroidWindow implements FlixelWindow {
   public void setBackBufferSize(int w, int h) {
     backBufferWidth = w;
     backBufferHeight = h;
+  }
+
+  @Override
+  public String getTitle() {
+    return (String) activity.getTitle();
+  }
+
+  @Override
+  public void setTitle(String title) {
+    activity.setTitle(title);
   }
 
   @Override

@@ -54,22 +54,11 @@ import org.jetbrains.annotations.NotNull;
  * logging, window, input, gamepads) and starts the game loop on a {@link FlixelAndroidSurfaceView}
  * with a GLES 3.0 context.
  *
- * <p>Example in Kotlin:
- *
- * <pre>{@code
- * class GameActivity : Activity() {
- *   override fun onCreate(savedInstanceState: Bundle?) {
- *     super.onCreate(savedInstanceState)
- *     FlixelAndroidLauncher.launch(this, MyGame())
- *   }
- * }
- * }</pre>
- *
- * <p>Example in Java:
+ * <p>Example:
  *
  * <pre>{@code
  * public final class GameActivity extends Activity {
- *   {@literal @}Override
+ *   @Override
  *   protected void onCreate(Bundle savedInstanceState) {
  *     super.onCreate(savedInstanceState);
  *     FlixelAndroidLauncher.launch(this, new MyGame());
@@ -114,8 +103,6 @@ public final class FlixelAndroidLauncher {
     FlixelAndroidWindow window = new FlixelAndroidWindow(activity);
     Flixel.window = window;
 
-    // Install the GLES 3.0 graphics backend. GL init is deferred to the first beginFrame() call
-    // on the GL thread, so creating this before the surface view is safe.
     FlixelAndroidGraphics graphics = new FlixelAndroidGraphics(activity, window);
     Flixel.graphics = graphics;
 
@@ -123,13 +110,9 @@ public final class FlixelAndroidLauncher {
 
     FlixelFontRegistry.setRasterizer(new FlixelAndroidFontRasterizer(activity));
 
-    // Enable touch input for mobile.
-    Flixel.touches.enabled = true;
-
     // Use an EXTEND viewport so the game fills the device screen without letterboxing.
     FlixelCamera.viewportFactory = (w, h) -> new FlixelViewport(w, h, FlixelViewport.Scaling.EXTEND);
 
-    // Wire miniaudio for Android: the native .so is packaged inside the APK.
     FlixelMiniAudio.setLoader(() -> System.loadLibrary("flixelgdx"));
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
 
@@ -152,7 +135,6 @@ public final class FlixelAndroidLauncher {
       }
     });
 
-    // Build the surface view: custom subclass supports text input via the IME.
     FlixelAndroidSurfaceView glView = new FlixelAndroidSurfaceView(activity, input);
     glView.setEGLContextClientVersion(3);
     glView.setPreserveEGLContextOnPause(true);
@@ -166,28 +148,22 @@ public final class FlixelAndroidLauncher {
     glView.setFocusable(true);
     glView.setFocusableInTouchMode(true);
 
-    // Give the input device its surface reference for IME show/hide.
     input.setSurfaceAndActivity(glView, activity);
 
-    // Create the gamepad provider before Flixel.start() so afterStart sees it.
     FlixelAndroidGamepadProvider gamepadProvider = new FlixelAndroidGamepadProvider(activity);
     input.setGamepadProvider(gamepadProvider);
 
     activity.setContentView(glView);
 
-    // Register lifecycle callbacks filtered to this activity so lifecycle events are forwarded
-    // to the game even when we cannot subclass the activity.
     activity.getApplication().registerActivityLifecycleCallbacks(
         new ActivityLifecycleHandler(activity, glView, game, runner, gamepadProvider));
 
     Flixel.runtime.setMode(runtimeMode);
 
-    // Register the KTX2 compressed-texture loader so the asset manager prefers .ktx2 siblings
-    // over plain images when compressed textures are enabled.
     Flixel.assets.registerLoader(".ktx2", new FlixelAndroidKtx2Loader());
 
-    // Install the gamepad provider after Flixel.start() initializes the gamepad manager.
     Flixel.boot.afterStart(() -> {
+      Flixel.touches.enabled = true;
       Flixel.gamepads.setGamepadProvider(gamepadProvider);
       Flixel.gamepads.addMappingResolver(gamepadProvider);
       gamepadProvider.start();
@@ -195,104 +171,80 @@ public final class FlixelAndroidLauncher {
 
     Flixel.start(game, runner);
 
-    // Wire the crash handler from the runner after Flixel.start installs it.
-    runner.setCrashHandler(null);
+    runner.setCrashHandler(runtime.getCrashHandler());
   }
 
   /**
-   * Lifecycle callbacks that route Android activity events to the game.
-   *
-   * <p>Only events for the specific activity that launched the game are handled; all others are
-   * ignored. Window focus changes cannot be intercepted here - they are handled by overriding
-   * {@code onWindowFocusChanged} in the activity itself. Game code that needs focus notifications
-   * should override the activity method or use {@link Flixel#autoPause}.
-   */
-  private static final class ActivityLifecycleHandler
-      implements Application.ActivityLifecycleCallbacks {
-
-    @NotNull
-    private final Activity activity;
-
-    @NotNull
-    private final FlixelAndroidSurfaceView glView;
-
-    @NotNull
-    private final FlixelGame game;
-
-    @NotNull
-    private final FlixelAndroidRunner runner;
-
-    @NotNull
-    private final FlixelAndroidGamepadProvider gamepadProvider;
-
-    private ActivityLifecycleHandler(@NotNull Activity activity,
-        @NotNull FlixelAndroidSurfaceView glView,
-        @NotNull FlixelGame game,
-        @NotNull FlixelAndroidRunner runner,
-        @NotNull FlixelAndroidGamepadProvider gamepadProvider) {
-      this.activity = activity;
-      this.glView = glView;
-      this.game = game;
-      this.runner = runner;
-      this.gamepadProvider = gamepadProvider;
-    }
+     * Lifecycle callbacks that route Android activity events to the game.
+     *
+     * <p>Only events for the specific activity that launched the game are handled; all others are
+     * ignored. Window focus changes cannot be intercepted here - they are handled by overriding
+     * {@code onWindowFocusChanged} in the activity itself. Game code that needs focus notifications
+     * should override the activity method or use {@link Flixel#autoPause}.
+     */
+    private record ActivityLifecycleHandler(@NotNull Activity activity, @NotNull FlixelAndroidSurfaceView glView,
+        @NotNull FlixelGame game, @NotNull FlixelAndroidRunner runner,
+        @NotNull FlixelAndroidGamepadProvider gamepadProvider)
+    implements Application.ActivityLifecycleCallbacks {
 
     @Override
-    public void onActivityPaused(@NotNull Activity a) {
-      if (a != activity) {
-        return;
+      public void onActivityPaused(@NotNull Activity a) {
+        if (a != activity) {
+          return;
+        }
+        // Queue focus-lost before pausing the view. The GL thread runs queued events before it
+        // honors a pause request, so the game (and the autoPause audio handling in core) reacts
+        // before rendering stops.
+        glView.queueEvent(game::onFocusLost);
+        glView.onPause();
       }
-      // Queue focus-lost before pausing the view. The GL thread runs queued events before it
-      // honors a pause request, so the game (and the autoPause audio handling in core) reacts
-      // before rendering stops.
-      glView.queueEvent(() -> game.onFocusLost());
-      glView.onPause();
-    }
 
-    @Override
-    public void onActivityResumed(@NotNull Activity a) {
-      if (a != activity) {
-        return;
+      @Override
+      public void onActivityResumed(@NotNull Activity a) {
+        if (a != activity) {
+          return;
+        }
+        glView.onResume();
+        glView.queueEvent(game::onFocusGained);
       }
-      glView.onResume();
-      glView.queueEvent(() -> game.onFocusGained());
-    }
 
-    @Override
-    public void onActivityDestroyed(@NotNull Activity a) {
-      if (a != activity) {
-        return;
-      }
-      gamepadProvider.stop();
-      // Destroy the game and shut down audio on the GL thread if possible. If the renderer
-      // is already stopped, run synchronously to avoid a resource leak.
-      try {
-        glView.queueEvent(() -> {
-          game.destroy();
-          if (Flixel.sound != null) {
+      @Override
+      public void onActivityDestroyed(@NotNull Activity a) {
+        if (a != activity) {
+          return;
+        }
+        gamepadProvider.stop();
+        // Destroy the game and shut down audio on the GL thread if possible. If the renderer
+        // is already stopped, run synchronously to avoid a resource leak.
+        try {
+          glView.queueEvent(() -> {
+            game.destroy();
             Flixel.sound.destroy();
-          }
-        });
-      } catch (Throwable ignored) {
-        // Best-effort; the OS will reclaim native memory when the process exits.
+          });
+        } catch (Throwable ignored) {
+          // Best-effort; the OS will reclaim native memory when the process exits.
+        }
+        try {
+          activity.getApplication().unregisterActivityLifecycleCallbacks(this);
+        } catch (Throwable ignored) {
+          // Unregister is best-effort.
+        }
       }
-      try {
-        activity.getApplication().unregisterActivityLifecycleCallbacks(this);
-      } catch (Throwable ignored) {
-        // Unregister is best-effort.
+
+      @Override
+      public void onActivityCreated(@NotNull Activity a, Bundle savedInstanceState) {
+      }
+
+      @Override
+      public void onActivityStarted(@NotNull Activity a) {
+      }
+
+      @Override
+      public void onActivityStopped(@NotNull Activity a) {
+      }
+
+      @Override
+      public void onActivitySaveInstanceState(@NotNull Activity a, @NotNull Bundle outState) {
       }
     }
-
-    @Override
-    public void onActivityCreated(@NotNull Activity a, Bundle savedInstanceState) {}
-
-    @Override
-    public void onActivityStarted(@NotNull Activity a) {}
-
-    @Override
-    public void onActivityStopped(@NotNull Activity a) {}
-
-    @Override
-    public void onActivitySaveInstanceState(@NotNull Activity a, @NotNull Bundle outState) {}
-  }
 }

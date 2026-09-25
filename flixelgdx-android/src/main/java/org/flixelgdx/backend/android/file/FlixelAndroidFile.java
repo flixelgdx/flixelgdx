@@ -171,13 +171,11 @@ public class FlixelAndroidFile implements FlixelFile {
   public byte @NotNull [] readBytes() {
     try {
       InputStream in = openStream();
-      if (in == null) {
-        return new byte[0];
-      }
-      try {
+      try (in) {
+        if (in == null) {
+          return new byte[0];
+        }
         return readAll(in);
-      } finally {
-        in.close();
       }
     } catch (IOException e) {
       return new byte[0];

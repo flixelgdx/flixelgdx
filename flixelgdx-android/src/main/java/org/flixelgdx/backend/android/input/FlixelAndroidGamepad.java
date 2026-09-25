@@ -196,24 +196,24 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
    *     button.
    */
   static int keyCodeToButtonIndex(int keyCode) {
-    switch (keyCode) {
-      case KeyEvent.KEYCODE_BUTTON_A:      return BUTTON_A;
-      case KeyEvent.KEYCODE_BUTTON_B:      return BUTTON_B;
-      case KeyEvent.KEYCODE_BUTTON_X:      return BUTTON_X;
-      case KeyEvent.KEYCODE_BUTTON_Y:      return BUTTON_Y;
-      case KeyEvent.KEYCODE_BUTTON_L1:     return BUTTON_L1;
-      case KeyEvent.KEYCODE_BUTTON_R1:     return BUTTON_R1;
-      case KeyEvent.KEYCODE_BUTTON_THUMBL: return BUTTON_THUMBL;
-      case KeyEvent.KEYCODE_BUTTON_THUMBR: return BUTTON_THUMBR;
-      case KeyEvent.KEYCODE_BUTTON_START:  return BUTTON_START;
-      case KeyEvent.KEYCODE_BUTTON_SELECT: return BUTTON_SELECT;
-      case KeyEvent.KEYCODE_BUTTON_MODE:   return BUTTON_MODE;
-      case KeyEvent.KEYCODE_DPAD_UP:       return BUTTON_DPAD_UP;
-      case KeyEvent.KEYCODE_DPAD_DOWN:     return BUTTON_DPAD_DOWN;
-      case KeyEvent.KEYCODE_DPAD_LEFT:     return BUTTON_DPAD_LEFT;
-      case KeyEvent.KEYCODE_DPAD_RIGHT:    return BUTTON_DPAD_RIGHT;
-      default: return -1;
-    }
+    return switch (keyCode) {
+      case KeyEvent.KEYCODE_BUTTON_A -> BUTTON_A;
+      case KeyEvent.KEYCODE_BUTTON_B -> BUTTON_B;
+      case KeyEvent.KEYCODE_BUTTON_X -> BUTTON_X;
+      case KeyEvent.KEYCODE_BUTTON_Y -> BUTTON_Y;
+      case KeyEvent.KEYCODE_BUTTON_L1 -> BUTTON_L1;
+      case KeyEvent.KEYCODE_BUTTON_R1 -> BUTTON_R1;
+      case KeyEvent.KEYCODE_BUTTON_THUMBL -> BUTTON_THUMBL;
+      case KeyEvent.KEYCODE_BUTTON_THUMBR -> BUTTON_THUMBR;
+      case KeyEvent.KEYCODE_BUTTON_START -> BUTTON_START;
+      case KeyEvent.KEYCODE_BUTTON_SELECT -> BUTTON_SELECT;
+      case KeyEvent.KEYCODE_BUTTON_MODE -> BUTTON_MODE;
+      case KeyEvent.KEYCODE_DPAD_UP -> BUTTON_DPAD_UP;
+      case KeyEvent.KEYCODE_DPAD_DOWN -> BUTTON_DPAD_DOWN;
+      case KeyEvent.KEYCODE_DPAD_LEFT -> BUTTON_DPAD_LEFT;
+      case KeyEvent.KEYCODE_DPAD_RIGHT -> BUTTON_DPAD_RIGHT;
+      default -> -1;
+    };
   }
 
   @NotNull
@@ -257,15 +257,15 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
 
   @Override
   public float getAxis(int axisIndex) {
-    switch (axisIndex) {
-      case AXIS_LEFT_X:  return Float.intBitsToFloat(axisLeftX);
-      case AXIS_LEFT_Y:  return Float.intBitsToFloat(axisLeftY);
-      case AXIS_RIGHT_X: return Float.intBitsToFloat(axisRightX);
-      case AXIS_RIGHT_Y: return Float.intBitsToFloat(axisRightY);
-      case AXIS_L2:      return Float.intBitsToFloat(axisL2);
-      case AXIS_R2:      return Float.intBitsToFloat(axisR2);
-      default:           return 0f;
-    }
+    return switch (axisIndex) {
+      case AXIS_LEFT_X -> Float.intBitsToFloat(axisLeftX);
+      case AXIS_LEFT_Y -> Float.intBitsToFloat(axisLeftY);
+      case AXIS_RIGHT_X -> Float.intBitsToFloat(axisRightX);
+      case AXIS_RIGHT_Y -> Float.intBitsToFloat(axisRightY);
+      case AXIS_L2 -> Float.intBitsToFloat(axisL2);
+      case AXIS_R2 -> Float.intBitsToFloat(axisR2);
+      default -> 0f;
+    };
   }
 
   @Override

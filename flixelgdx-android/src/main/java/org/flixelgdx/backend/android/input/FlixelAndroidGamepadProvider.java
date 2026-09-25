@@ -172,8 +172,6 @@ public class FlixelAndroidGamepadProvider
     pad.applyHatAxes(hatX, hatY);
   }
 
-  // InputManager.InputDeviceListener ----------------------------------------------------------
-
   @Override
   public void onInputDeviceAdded(int deviceId) {
     tryAdd(deviceId);
@@ -201,8 +199,6 @@ public class FlixelAndroidGamepadProvider
     // No-op: device identity does not change in a way that requires re-creating the pad.
   }
 
-  // FlixelGamepadProvider ---------------------------------------------------------------------
-
   @Override
   public synchronized int getGamepadCount() {
     return padCount;
@@ -214,15 +210,11 @@ public class FlixelAndroidGamepadProvider
     return (index >= 0 && index < padCount) ? pads[index] : null;
   }
 
-  // FlixelGamepadMappingResolver --------------------------------------------------------------
-
   @Nullable
   @Override
   public FlixelGamepadMapping resolve(@NotNull FlixelGamepad gamepad) {
     return gamepad instanceof FlixelAndroidGamepad ? standardMapping : null;
   }
-
-  // Internal helpers --------------------------------------------------------------------------
 
   /** Attempts to add the device with the given ID if it is a gamepad or joystick. */
   private void tryAdd(int deviceId) {

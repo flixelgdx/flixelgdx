@@ -64,7 +64,7 @@ public class FlixelMiniAudio {
    *
    * @param loader The loader to install; must not be {@code null}.
    */
-  public static synchronized void setLoader(FlixelLibraryLoader loader) {
+  public static synchronized void setLoader(@Nullable FlixelLibraryLoader loader) {
     FlixelMiniAudio.loader = loader;
   }
 
