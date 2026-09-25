@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend.jvm.logging;
+package org.flixelgdx.backend.desktop.logging;
 
 import org.flixelgdx.logging.FlixelStackFrame;
 import org.flixelgdx.logging.FlixelStackTraceProvider;
@@ -40,7 +40,7 @@ public class FlixelJvmStackTraceProvider implements FlixelStackTraceProvider {
     if ("org.flixelgdx.logging.FlixelLogger".equals(className)) {
       return false;
     }
-    if ("org.flixelgdx.backend.jvm.logging.FlixelJvmStackTraceProvider".equals(className)) {
+    if ("org.flixelgdx.backend.desktop.logging.FlixelJvmStackTraceProvider".equals(className)) {
       return false;
     }
     if ("org.flixelgdx.Flixel".equals(className)) {
