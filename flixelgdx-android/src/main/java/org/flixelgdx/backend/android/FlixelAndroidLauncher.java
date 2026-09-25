@@ -33,6 +33,8 @@ import org.flixelgdx.audio.FlixelSoundManager;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.android.asset.FlixelAndroidAssetManager;
 import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
+import org.flixelgdx.backend.android.graphics.FlixelAndroidGraphics;
+import org.flixelgdx.backend.android.graphics.FlixelAndroidKtx2Loader;
 import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileHandler;
 import org.flixelgdx.backend.android.logging.FlixelAndroidStackTraceProvider;
@@ -112,6 +114,11 @@ public final class FlixelAndroidLauncher {
     FlixelAndroidWindow window = new FlixelAndroidWindow(activity);
     Flixel.window = window;
 
+    // Install the GLES 3.0 graphics backend. GL init is deferred to the first beginFrame() call
+    // on the GL thread, so creating this before the surface view is safe.
+    FlixelAndroidGraphics graphics = new FlixelAndroidGraphics(activity, window);
+    Flixel.graphics = graphics;
+
     Flixel.haptics = new FlixelAndroidHaptics(activity);
 
     FlixelFontRegistry.setRasterizer(new FlixelAndroidFontRasterizer(activity));
@@ -130,6 +137,20 @@ public final class FlixelAndroidLauncher {
     Flixel.input = input;
 
     FlixelAndroidRunner runner = new FlixelAndroidRunner(window, input);
+
+    // Wire the graphics manager into the context listener so it can rebuild GL state after the EGL
+    // context is lost and recreated (for example when the app goes to the background).
+    runner.setContextListener(new FlixelAndroidContextListener() {
+      @Override
+      public void onContextLost() {
+        graphics.onContextLost();
+      }
+
+      @Override
+      public void onContextRestored() {
+        graphics.onContextRestored();
+      }
+    });
 
     // Build the surface view: custom subclass supports text input via the IME.
     FlixelAndroidSurfaceView glView = new FlixelAndroidSurfaceView(activity, input);
@@ -160,6 +181,10 @@ public final class FlixelAndroidLauncher {
         new ActivityLifecycleHandler(activity, glView, game, runner, gamepadProvider));
 
     Flixel.runtime.setMode(runtimeMode);
+
+    // Register the KTX2 compressed-texture loader so the asset manager prefers .ktx2 siblings
+    // over plain images when compressed textures are enabled.
+    Flixel.assets.registerLoader(".ktx2", new FlixelAndroidKtx2Loader());
 
     // Install the gamepad provider after Flixel.start() initializes the gamepad manager.
     Flixel.boot.afterStart(() -> {
