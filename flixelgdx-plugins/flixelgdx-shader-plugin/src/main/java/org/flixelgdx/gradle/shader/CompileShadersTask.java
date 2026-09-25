@@ -139,12 +139,13 @@ public abstract class CompileShadersTask extends DefaultTask {
         compileStage(shaderc, fsSc, varyingFile, new File(variantDir, "fs.bin"), "fragment", target, name);
       }
 
-      // The web backend compiles GLSL at runtime rather than loading bgfx bytecode, so emit the raw
-      // ESSL variant it reads. This needs no shaderc invocation.
+      // The web and Android backends compile GLSL at runtime rather than loading bgfx bytecode, so
+      // emit the raw ESSL variant they read. This needs no shaderc invocation.
       File esslDir = new File(shadersOut, name + "/essl");
       Files.createDirectories(esslDir.toPath());
-      Files.writeString(new File(esslDir, "vs.glsl").toPath(), ShaderSources.webVertex(), StandardCharsets.UTF_8);
-      Files.writeString(new File(esslDir, "fs.glsl").toPath(), ShaderSources.webFragment(fragmentGlsl),
+      Files.writeString(new File(esslDir, "vs.glsl").toPath(), ShaderSources.esslVertex(vertexGlsl),
+          StandardCharsets.UTF_8);
+      Files.writeString(new File(esslDir, "fs.glsl").toPath(), ShaderSources.esslFragment(fragmentGlsl),
           StandardCharsets.UTF_8);
 
       getLogger().lifecycle("[FlixelGDX] Compiled shader '{}'.", name);

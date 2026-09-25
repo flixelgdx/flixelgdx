@@ -72,6 +72,21 @@ sprite and camera effect, since the batch already transforms quad corners on the
 vertex shader may read `a_position` (`vec2`), `a_texcoord0` (`vec2`), and `a_color0` (`vec4`),
 transform with `u_modelViewProj`, and must write `v_texCoords` and `v_color`.
 
+Custom vertex shaders work on all backends, including the web and Android ESSL backends. The plugin
+translates the bgfx naming convention to ESSL automatically by injecting `#define` aliases into the
+generated `essl/vs.glsl`, so you never have to write platform-specific vertex code.
+
+One form that does not translate: treating `a_position` as a `vec4`. The framework's vertex buffer
+stores position as two floats (`vec2`), so write `vec4(a_position, 0.0, 1.0)` to promote it to a
+homogeneous coordinate - this compiles correctly on both bgfx and ESSL. The alias table is:
+
+| bgfx name        | ESSL name        | Note                                         |
+|------------------|------------------|----------------------------------------------|
+| `a_texcoord0`    | `a_texCoord0`    | Lowercase `c` versus capital `C`.            |
+| `a_color0`       | `a_color`        | Numeric suffix dropped.                      |
+| `u_modelViewProj`| `u_projTrans`    | Different uniform name.                      |
+| `mul(a, b)`      | `((a) * (b))`    | bgfx GLSL helper, not available in plain ES. |
+
 ## Loading at runtime
 
 Load a compiled shader by the same name you declared in the build:
