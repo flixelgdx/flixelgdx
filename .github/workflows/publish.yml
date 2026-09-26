@@ -55,7 +55,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           # The NDK and CMake versions must match ndkVersion and cmake.version in
-          # flixelgdx-android/build.gradle.kts, which build the libflixelgdx.so natives.
+          # flixelgdx-android/build.gradle.kts, which build the libflixel_miniaudio.so and libbasisu.so natives.
           packages: "platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358 cmake;3.22.1"
 
       - name: Grant execute permission for gradlew

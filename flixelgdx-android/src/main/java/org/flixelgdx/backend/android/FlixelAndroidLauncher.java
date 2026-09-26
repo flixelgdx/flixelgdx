@@ -116,7 +116,7 @@ public final class FlixelAndroidLauncher {
     // Use an EXTEND viewport so the game fills the device screen without letterboxing.
     FlixelCamera.viewportFactory = (w, h) -> new FlixelViewport(w, h, FlixelViewport.Scaling.EXTEND);
 
-    FlixelMiniAudio.setLoader(() -> System.loadLibrary("flixelgdx"));
+    FlixelMiniAudio.setLoader(() -> System.loadLibrary("flixel_miniaudio"));
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
 
     FlixelAndroidInputDevice input = new FlixelAndroidInputDevice();

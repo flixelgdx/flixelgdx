@@ -70,9 +70,9 @@ else()
   endif()
 endif()
 
-# --- Optional standalone shared library (for desktop) -------------------------
+# --- Optional standalone shared library (for desktop and Android) -------------
 
-option(FLIXEL_MINIAUDIO_BUILD_SHARED "Build a standalone shared library for desktop" OFF)
+option(FLIXEL_MINIAUDIO_BUILD_SHARED "Build a standalone shared library (desktop and Android)" OFF)
 
 if(FLIXEL_MINIAUDIO_BUILD_SHARED)
   add_library(flixel_miniaudio_shared SHARED ${CMAKE_CURRENT_LIST_DIR}/flixel_miniaudio.c)
@@ -98,6 +98,10 @@ if(FLIXEL_MINIAUDIO_BUILD_SHARED)
       "-framework AudioUnit"
       "-framework CoreServices"
     )
+    set_target_properties(flixel_miniaudio_shared PROPERTIES OUTPUT_NAME "flixel_miniaudio")
+  elseif(ANDROID)
+    # Threads live in Android's libc, so there is no separate pthread library to link.
+    target_link_libraries(flixel_miniaudio_shared PRIVATE m dl log)
     set_target_properties(flixel_miniaudio_shared PROPERTIES OUTPUT_NAME "flixel_miniaudio")
   else()
     target_link_libraries(flixel_miniaudio_shared PRIVATE m pthread dl)

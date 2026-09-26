@@ -1,8 +1,8 @@
 # CMakeLists.txt - flixelgdx-android native build
 #
-# Builds libflixelgdx.so for Android via the NDK. It bundles:
-#   - flixel_miniaudio (audio JNI, a static lib from the shared miniaudio module)
-#   - Basis Universal KTX2 transcoder (FlixelBasisu JNI wrapper)
+# Builds the Android natives via the NDK, one library per job:
+#   - libflixel_miniaudio.so: audio JNI, built from the shared flixelgdx-miniaudio module
+#   - libbasisu.so: the Basis Universal KTX2 transcoder and its FlixelBasisu JNI wrapper
 #
 # The Android Gradle Plugin drives this file via externalNativeBuild; it selects ABI, sysroot,
 # and toolchain automatically. Do not invoke cmake directly.
@@ -26,9 +26,11 @@ endif()
 include(FetchContent)
 include(${CMAKE_CURRENT_LIST_DIR}/deps.cmake)
 
-# --- miniaudio (static, pulled from the sibling flixelgdx-miniaudio module) -----------------
+# --- miniaudio (pulled from the sibling flixelgdx-miniaudio module) -------------------------
 
+# Build the module's standalone shared library, named libflixel_miniaudio.so like on desktop.
 # The path is relative to this file so that out-of-tree builds still resolve correctly.
+set(FLIXEL_MINIAUDIO_BUILD_SHARED ON)
 add_subdirectory(
   ${CMAKE_CURRENT_LIST_DIR}/../../../../flixelgdx-miniaudio/src/main/native
   ${CMAKE_CURRENT_BINARY_DIR}/miniaudio_build
@@ -83,24 +85,10 @@ target_compile_definitions(flixel_basisu_transcoder PUBLIC
 
 set_target_properties(flixel_basisu_transcoder PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# --- JNI shared library: libflixelgdx.so ----------------------------------------------------
+# --- JNI shared library: libbasisu.so ------------------------------------------------------
 
-add_library(flixelgdx SHARED
+add_library(basisu SHARED
   ${CMAKE_CURRENT_LIST_DIR}/flixel_basisu.cpp
 )
 
-# Pull in miniaudio JNI symbols wholesale. --whole-archive ensures the linker keeps every
-# object file in the static library, so the Java_org_flixelgdx_backend_miniaudio_* symbols
-# exported from flixel_miniaudio.c are present in the final .so even though this CMakeLists
-# has no direct reference to them.
-target_link_libraries(flixelgdx
-  PRIVATE
-    -Wl,--whole-archive flixel_miniaudio -Wl,--no-whole-archive
-    flixel_basisu_transcoder
-    log
-)
-
-# miniaudio dlopens AAudio and OpenSL ES at runtime (no link-time dependency needed), but
-# it calls dl_open, so we need -ldl available. The Android NDK exposes dl as part of libc on
-# API 21+ and it is implicitly linked, but naming it explicitly is harmless and documents intent.
-target_link_libraries(flixelgdx PRIVATE dl)
+target_link_libraries(basisu PRIVATE flixel_basisu_transcoder log)

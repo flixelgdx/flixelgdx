@@ -66,9 +66,9 @@ public final class FlixelBasisu {
   public static final int FMT_RGBA32 = 2;
 
   static {
-    // The launcher normally loads the library first; loading here too keeps this class safe to
-    // use on its own. System.loadLibrary() is a no-op when the library is already loaded.
-    System.loadLibrary("flixelgdx");
+    // Loads the transcoder the first time this class is used. System.loadLibrary() is a no-op
+    // when the library is already loaded.
+    System.loadLibrary("basisu");
     init();
   }
 
