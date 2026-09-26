@@ -158,4 +158,24 @@ class ShaderSourcesTest {
     // Only whole words count: "outline" must not trigger the rename.
     assertEquals("", ShaderSources.renameHlslKeywords("float outline = 1.0;"));
   }
+
+  @Test
+  void expandVectorConstructorsRewritesSingleArgumentCalls() {
+    assertEquals("flx_vec3(gray)", ShaderSources.expandVectorConstructors("vec3(gray)"));
+    assertEquals("vec2(0.0, 0.0)", ShaderSources.expandVectorConstructors("vec2(0.0)"));
+    assertEquals("vec4(flx_vec3(a), 1.0)", ShaderSources.expandVectorConstructors("vec4(vec3(a), 1.0)"));
+    assertEquals("vec2(max(a, b), 1.0)", ShaderSources.expandVectorConstructors("vec2(max(a, b), 1.0)"));
+    assertEquals("const vec3 K = vec3(A, A, A);",
+        ShaderSources.expandVectorConstructors("const vec3 K = vec3(A);"));
+    // Names that merely end in "vec3" are not constructors.
+    assertEquals("myvec3(x)", ShaderSources.expandVectorConstructors("myvec3(x)"));
+  }
+
+  @Test
+  void bgfxStagesAddVectorHelpersOnlyWhenUsed() {
+    String body = "void main() {\n  gl_FragColor = vec4(vec3(v_color.r), 1.0);\n}";
+    String result = ShaderSources.fragment(body);
+    assertTrue(result.contains("vec3 flx_vec3(float x)"));
+    assertFalse(result.contains("flx_vec2(float x)"));
+  }
 }

@@ -194,6 +194,13 @@ public final class ShaderSources {
       "technique", "triangle", "triangleadj", "unorm", "vector"
   };
 
+  /** Matches the start of a {@code vec2(}, {@code vec3(}, or {@code vec4(} constructor call. */
+  private static final Pattern VECTOR_CONSTRUCTOR =
+      Pattern.compile("(?<![\\w.])vec([234])\\s*\\(");
+
+  /** Matches a plain numeric literal, such as {@code 0}, {@code 1.5}, or {@code -2.0}. */
+  private static final Pattern NUMBER_LITERAL = Pattern.compile("-?\\d+(\\.\\d*)?([eE][-+]?\\d+)?");
+
   private ShaderSources() {}
 
   /**
@@ -255,7 +262,7 @@ public final class ShaderSources {
         + "#define flixel_texture(_uv) texture2D(s_texture, _uv)\n"
         + renameHlslKeywords(fragmentGlsl)
         + "\n"
-        + promoteUniforms(fragmentGlsl.strip())
+        + bgfxBody(fragmentGlsl)
         + "\n";
   }
 
@@ -281,7 +288,7 @@ public final class ShaderSources {
         + "#define v_color v_color0\n"
         + renameHlslKeywords(body)
         + "\n"
-        + promoteUniforms(body.strip())
+        + bgfxBody(body)
         + "\n";
   }
 
@@ -351,6 +358,150 @@ public final class ShaderSources {
       }
     }
     return out.toString();
+  }
+
+  /**
+   * Prepares a developer's shader body for {@code shaderc}: promotes uniforms and replaces
+   * single-argument vector constructors, adding the helper functions the replacements call.
+   *
+   * @param glsl The developer's shader source.
+   * @return The rewritten body, preceded by any helper functions it needs.
+   */
+  @NotNull
+  private static String bgfxBody(@NotNull String glsl) {
+    String body = expandVectorConstructors(promoteUniforms(glsl.strip()));
+    StringBuilder helpers = new StringBuilder();
+    if (body.contains("flx_vec2(")) {
+      helpers.append("vec2 flx_vec2(float x) { return vec2(x, x); }\n")
+          .append("vec2 flx_vec2(vec2 v) { return v; }\n")
+          .append("vec2 flx_vec2(vec3 v) { return v.xy; }\n")
+          .append("vec2 flx_vec2(vec4 v) { return v.xy; }\n");
+    }
+    if (body.contains("flx_vec3(")) {
+      helpers.append("vec3 flx_vec3(float x) { return vec3(x, x, x); }\n")
+          .append("vec3 flx_vec3(vec3 v) { return v; }\n")
+          .append("vec3 flx_vec3(vec4 v) { return v.xyz; }\n");
+    }
+    if (body.contains("flx_vec4(")) {
+      helpers.append("vec4 flx_vec4(float x) { return vec4(x, x, x, x); }\n")
+          .append("vec4 flx_vec4(vec4 v) { return v; }\n");
+    }
+    return helpers.length() == 0 ? body : helpers + "\n" + body;
+  }
+
+  /**
+   * Rewrites every single-argument vector constructor into a form HLSL accepts.
+   *
+   * <p>GLSL lets {@code vec3(x)} fill every component with one value, or narrow a larger vector.
+   * HLSL, which bgfx uses for the SPIR-V and Direct3D variants, rejects both with "incorrect number
+   * of arguments". The argument's type cannot be known from the text alone, so the call becomes a
+   * call to an overloaded helper ({@code flx_vec3(x)}) that the compiler resolves by type:
+   *
+   * <pre>{@code
+   * vec3(gray)        // becomes: flx_vec3(gray)
+   * vec2(0.0)         // becomes: vec2(0.0, 0.0), since a number is always a scalar
+   * }</pre>
+   *
+   * <p>A {@code const} declaration cannot call a function, so there the argument is repeated for
+   * each component instead, which is correct for the scalar values constants are built from.
+   *
+   * @param glsl The shader source.
+   * @return The source with every single-argument vector constructor rewritten.
+   */
+  @NotNull
+  static String expandVectorConstructors(@NotNull String glsl) {
+    StringBuilder out = new StringBuilder(glsl.length() + 64);
+    Matcher matcher = VECTOR_CONSTRUCTOR.matcher(glsl);
+    int copied = 0;
+    int searchFrom = 0;
+    while (matcher.find(searchFrom)) {
+      int open = matcher.end() - 1;
+      int close = findClosingParen(glsl, open);
+      if (close < 0) {
+        break;
+      }
+      String argument = glsl.substring(open + 1, close);
+      int size = matcher.group(1).charAt(0) - '0';
+      out.append(glsl, copied, matcher.start());
+      if (hasTopLevelComma(argument) || argument.isBlank()) {
+        out.append(glsl, matcher.start(), open + 1).append(expandVectorConstructors(argument)).append(')');
+      } else {
+        String inner = expandVectorConstructors(argument).strip();
+        if (NUMBER_LITERAL.matcher(inner).matches() || isInConstDeclaration(glsl, matcher.start())) {
+          out.append("vec").append(size).append('(');
+          for (int i = 0; i < size; i++) {
+            out.append(i == 0 ? "" : ", ").append(inner);
+          }
+          out.append(')');
+        } else {
+          out.append("flx_vec").append(size).append('(').append(inner).append(')');
+        }
+      }
+      copied = close + 1;
+      searchFrom = close + 1;
+    }
+    out.append(glsl, copied, glsl.length());
+    return out.toString();
+  }
+
+  /**
+   * Returns the index of the parenthesis that closes the one at {@code open}, or {@code -1}.
+   *
+   * @param text The source text.
+   * @param open The index of an opening parenthesis.
+   * @return The index of the matching closing parenthesis, or {@code -1} when there is none.
+   */
+  private static int findClosingParen(@NotNull String text, int open) {
+    int depth = 0;
+    for (int i = open; i < text.length(); i++) {
+      char c = text.charAt(i);
+      if (c == '(') {
+        depth++;
+      } else if (c == ')' && --depth == 0) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Returns whether an argument list has a comma outside any nested parentheses or brackets.
+   *
+   * @param argument The text between a call's parentheses.
+   * @return {@code true} when the call has more than one argument.
+   */
+  private static boolean hasTopLevelComma(@NotNull String argument) {
+    int depth = 0;
+    for (int i = 0; i < argument.length(); i++) {
+      char c = argument.charAt(i);
+      if (c == '(' || c == '[') {
+        depth++;
+      } else if (c == ')' || c == ']') {
+        depth--;
+      } else if (c == ',' && depth == 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns whether the statement containing {@code index} starts with {@code const}.
+   *
+   * @param text The source text.
+   * @param index A position inside the statement.
+   * @return {@code true} when the statement is a {@code const} declaration.
+   */
+  private static boolean isInConstDeclaration(@NotNull String text, int index) {
+    int start = index;
+    while (start > 0) {
+      char c = text.charAt(start - 1);
+      if (c == ';' || c == '{' || c == '}') {
+        break;
+      }
+      start--;
+    }
+    return text.substring(start, index).strip().startsWith("const ");
   }
 
   /**

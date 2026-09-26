@@ -186,7 +186,11 @@ public abstract class CompileShadersTask extends DefaultTask {
     }
     String message = "[FlixelGDX] Failed to compile the " + type + " stage of shader '" + name
         + "' for the " + target.dir() + " backend:\n" + result.log();
-    if (target.hostLimited()) {
+    // When FXC ran and reported an error (D3DCompile failed, or an error code like X3014), the
+    // shader itself is at fault, so it fails the build like any other variant would.
+    boolean compilerRan = result.log().contains("D3DCompile failed")
+        || result.log().matches("(?s).*error X\\d+.*");
+    if (target.hostLimited() && !compilerRan) {
       getLogger().warn("{}\n[FlixelGDX] Skipping the {} variant on this host, since Microsoft's FXC "
           + "compiler could not run. The bundled d3d4linux shim needs Wine installed on Linux and "
           + "macOS; install Wine, or produce this variant on a Windows CI runner, so the shader works "

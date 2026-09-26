@@ -95,8 +95,9 @@ public enum ShaderTarget {
   /**
    * Returns whether this variant can only be compiled on a specific host.
    *
-   * <p>When {@code true}, a compilation failure is treated as a skippable warning instead of a
-   * build error, because the required FXC compiler is not present on every host.
+   * <p>When {@code true}, the variant is skipped with a warning if its compiler cannot run on this
+   * host, because FXC is not present everywhere. An error the compiler itself reports about the
+   * shader still fails the build.
    *
    * @return {@code true} if the variant is host-restricted.
    */
