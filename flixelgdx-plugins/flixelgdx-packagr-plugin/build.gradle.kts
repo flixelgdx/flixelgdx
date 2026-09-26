@@ -16,4 +16,12 @@ gradlePlugin {
 
 dependencies {
   implementation(libs.commons.compress)
+
+  testRuntimeOnly(libs.junit.platform.launcher)
+  testImplementation(platform(libs.junit.bom))
+  testImplementation(libs.junit.jupiter)
+}
+
+tasks.named<Test>("test") {
+  useJUnitPlatform()
 }
