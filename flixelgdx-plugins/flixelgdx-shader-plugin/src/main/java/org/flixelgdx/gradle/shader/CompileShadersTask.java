@@ -139,12 +139,13 @@ public abstract class CompileShadersTask extends DefaultTask {
         compileStage(shaderc, fsSc, varyingFile, new File(variantDir, "fs.bin"), "fragment", target, name);
       }
 
-      // The web backend compiles GLSL at runtime rather than loading bgfx bytecode, so emit the raw
-      // ESSL variant it reads. This needs no shaderc invocation.
+      // The web and Android backends compile GLSL at runtime rather than loading bgfx bytecode, so
+      // emit the raw ESSL variant they read. This needs no shaderc invocation.
       File esslDir = new File(shadersOut, name + "/essl");
       Files.createDirectories(esslDir.toPath());
-      Files.writeString(new File(esslDir, "vs.glsl").toPath(), ShaderSources.webVertex(), StandardCharsets.UTF_8);
-      Files.writeString(new File(esslDir, "fs.glsl").toPath(), ShaderSources.webFragment(fragmentGlsl),
+      Files.writeString(new File(esslDir, "vs.glsl").toPath(), ShaderSources.esslVertex(vertexGlsl),
+          StandardCharsets.UTF_8);
+      Files.writeString(new File(esslDir, "fs.glsl").toPath(), ShaderSources.esslFragment(fragmentGlsl),
           StandardCharsets.UTF_8);
 
       getLogger().lifecycle("[FlixelGDX] Compiled shader '{}'.", name);
@@ -185,7 +186,11 @@ public abstract class CompileShadersTask extends DefaultTask {
     }
     String message = "[FlixelGDX] Failed to compile the " + type + " stage of shader '" + name
         + "' for the " + target.dir() + " backend:\n" + result.log();
-    if (target.hostLimited()) {
+    // When FXC ran and reported an error (D3DCompile failed, or an error code like X3014), the
+    // shader itself is at fault, so it fails the build like any other variant would.
+    boolean compilerRan = result.log().contains("D3DCompile failed")
+        || result.log().matches("(?s).*error X\\d+.*");
+    if (target.hostLimited() && !compilerRan) {
       getLogger().warn("{}\n[FlixelGDX] Skipping the {} variant on this host, since Microsoft's FXC "
           + "compiler could not run. The bundled d3d4linux shim needs Wine installed on Linux and "
           + "macOS; install Wine, or produce this variant on a Windows CI runner, so the shader works "

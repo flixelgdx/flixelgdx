@@ -71,7 +71,7 @@ import java.io.File;
  */
 public class ShaderPlugin implements Plugin<Project> {
 
-  private static final String TASK_GROUP = "flixelgdx";
+  private static final String TASK_GROUP = "shaders";
   private static final String TASK_NAME = "compileShaders";
 
   @Override

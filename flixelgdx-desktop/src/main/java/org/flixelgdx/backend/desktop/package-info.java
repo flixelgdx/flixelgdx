@@ -86,6 +86,14 @@
  *       {@code FlixelSdlMouseIconManager}).</li>
  *   <li>{@code text} - stb_truetype font rasterizer ({@code FlixelStbFontRasterizer},
  *       {@code FlixelStbRasterizedFont}).</li>
+ *   <li>{@code asset} - JVM asset manager with background loading
+ *       ({@code FlixelJvmAssetManager}).</li>
+ *   <li>{@code file} - classpath and OS filesystem seam
+ *       ({@code FlixelJvmFiles}, {@code FlixelJvmFile}).</li>
+ *   <li>{@code logging} - stack trace provider and log file handler
+ *       ({@code FlixelJvmStackTraceProvider}, {@code FlixelJvmLogFileHandler}).</li>
+ *   <li>{@code runtime} - JVM runtime device
+ *       ({@code FlixelJvmRuntimeDevice}).</li>
  * </ul>
  *
  * @see org.flixelgdx.backend.desktop.FlixelDesktopLauncher
