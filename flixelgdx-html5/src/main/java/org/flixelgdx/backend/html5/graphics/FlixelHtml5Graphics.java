@@ -316,12 +316,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     batch.setBlendMode(FlixelBlendMode.NONE);
     batch.setColor(1f, 1f, 1f, 1f);
     batch.begin();
-    // WebGL render targets are stored bottom-up, so flip the vertical UVs when blitting.
-    if (sceneTarget.isFlipped()) {
-      batch.draw(sceneTarget.getTexture(), dstX, dstY, dstW, dstH, 0f, 1f, 1f, 0f);
-    } else {
-      batch.draw(sceneTarget.getTexture(), dstX, dstY, dstW, dstH);
-    }
+    batch.draw(sceneTarget.getTexture(), dstX, dstY, dstW, dstH);
     batch.end();
     batch.setBlendMode(FlixelBlendMode.NORMAL);
   }
@@ -357,7 +352,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
       sh = Math.max(1, height);
     }
     gl.enable(WebGLRenderingContext.SCISSOR_TEST);
-    gl.scissor(sx, sy, sw, sh);
+    gl.scissor(sx, mirrorY(sy, sh), sw, sh);
   }
 
   @Override
@@ -379,9 +374,9 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
       int ry = Math.round((y - compositeOffsetY) / compositeScale);
       int rw = Math.max(1, Math.round(width / compositeScale));
       int rh = Math.max(1, Math.round(height / compositeScale));
-      gl.viewport(rx, ry, rw, rh);
+      gl.viewport(rx, mirrorY(ry, rh), rw, rh);
     } else {
-      gl.viewport(x, y, width, height);
+      gl.viewport(x, mirrorY(y, height), width, height);
     }
   }
 
@@ -452,6 +447,22 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     bindTarget(target);
   }
 
+  /**
+   * Mirrors a rectangle's bottom edge while a render target is bound.
+   *
+   * <p>Render targets are drawn upside down so their images are stored top-down (see
+   * {@link FlixelWebGlRenderTarget}), so a rectangle given from the bottom of the surface has to be
+   * measured from the top instead.
+   *
+   * @param y The rectangle's bottom edge, in bottom-left framebuffer pixels.
+   * @param height The rectangle's height in pixels.
+   * @return The bottom edge to hand to WebGL.
+   */
+  private int mirrorY(int y, int height) {
+    int size = targetStack.getSize();
+    return size > 0 ? targetStack.get(size - 1).getHeight() - y - height : y;
+  }
+
   /** Ends the innermost render target, returning drawing to the enclosing target or the screen. */
   void popRenderTarget() {
     if (targetStack.getSize() > 0) {
@@ -465,13 +476,19 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     if (targetStack.getSize() > 0) {
       bindTarget(targetStack.get(targetStack.getSize() - 1));
     } else {
+      if (batch != null) {
+        batch.setFlipY(false);
+      }
       gl.bindFramebuffer(WebGLRenderingContext.FRAMEBUFFER, null);
       gl.viewport(0, 0, backBufferWidth, backBufferHeight);
     }
   }
 
-  /** Binds a render target's framebuffer and matches the viewport to its size. */
+  /** Binds a render target's framebuffer, matches the viewport to its size, and flips drawing. */
   private void bindTarget(@NotNull FlixelWebGlRenderTarget target) {
+    if (batch != null) {
+      batch.setFlipY(true);
+    }
     gl.bindFramebuffer(WebGLRenderingContext.FRAMEBUFFER, target.getFramebuffer());
     gl.viewport(0, 0, target.getWidth(), target.getHeight());
   }
