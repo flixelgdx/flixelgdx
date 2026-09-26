@@ -39,9 +39,10 @@ import org.teavm.jso.webgl.WebGLRenderingContext;
  * correctly (a camera target inside the whole-scene target), restoring the previous surface on
  * {@link #end()}.
  *
- * <p>Like every OpenGL-family backend, a framebuffer's texture is stored bottom-up rather than
- * top-down, so {@link #isFlipped()} reports {@code true} and the framework's composite passes flip
- * the vertical texture coordinate when they draw it back.
+ * <p>WebGL normally stores a framebuffer's rows bottom-up. While a target is bound, the graphics
+ * manager flips the batch's projection and mirrors scissor and viewport rectangles, so the image is
+ * stored top-down like on every other backend. {@link #isFlipped()} is therefore {@code false}, and
+ * texture coordinate {@code y = 0} is the top of the image in a shader.
  */
 public class FlixelWebGlRenderTarget implements FlixelRenderTarget {
 
@@ -112,7 +113,7 @@ public class FlixelWebGlRenderTarget implements FlixelRenderTarget {
 
   @Override
   public boolean isFlipped() {
-    return true;
+    return false;
   }
 
   @Override
