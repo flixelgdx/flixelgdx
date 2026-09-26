@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.gradle.packagr;
 
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -98,8 +100,14 @@ public final class Archives {
     try (Stream<Path> stream = Files.walk(sourceDir)) {
       files = stream.filter(Files::isRegularFile).sorted(Comparator.naturalOrder()).toList();
     }
+    // Declared as the generic base type, not ZipArchiveOutputStream, on purpose: a game module
+    // commonly applies other Gradle plugins (for example a native-image or a web-target plugin)
+    // that pull in their own, older commons-compress on the shared plugin classpath. That older
+    // release predates the ZipArchiveEntry-typed putArchiveEntry() overload, so calling through the
+    // narrower type risks a NoSuchMethodError at runtime if that older class wins classloading.
+    // The generic base method (putArchiveEntry(ArchiveEntry)) has been stable across releases.
     try (OutputStream out = Files.newOutputStream(zipFile);
-        ZipArchiveOutputStream zip = new ZipArchiveOutputStream(out)) {
+        ArchiveOutputStream<ZipArchiveEntry> zip = new ZipArchiveOutputStream(out)) {
       for (Path file : files) {
         String relative = sourceDir.relativize(file).toString().replace('\\', '/');
         ZipArchiveEntry entry = new ZipArchiveEntry(file.toFile(), rootName + "/" + relative);
@@ -137,7 +145,10 @@ public final class Archives {
   }
 
   private static void extractZip(InputStream raw, Path destDir) throws IOException {
-    try (ZipArchiveInputStream in = new ZipArchiveInputStream(raw)) {
+    // Declared as the generic base type for the same reason as in zipDirectory(): getNextEntry() is
+    // called through the stable, cross-version base signature instead of the ZipArchiveEntry-typed
+    // override that only exists on newer commons-compress releases.
+    try (ArchiveInputStream<ZipArchiveEntry> in = new ZipArchiveInputStream(raw)) {
       ZipArchiveEntry entry;
       while ((entry = in.getNextEntry()) != null) {
         Path target = resolveSafely(destDir, entry.getName());
@@ -153,7 +164,8 @@ public final class Archives {
   }
 
   private static void extractTarGz(InputStream raw, Path destDir) throws IOException {
-    try (TarArchiveInputStream in = new TarArchiveInputStream(new GzipCompressorInputStream(raw))) {
+    // See the comment in extractZip(): the base type keeps getNextEntry() on the stable signature.
+    try (ArchiveInputStream<TarArchiveEntry> in = new TarArchiveInputStream(new GzipCompressorInputStream(raw))) {
       TarArchiveEntry entry;
       while ((entry = in.getNextEntry()) != null) {
         Path target = resolveSafely(destDir, entry.getName());
