@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.json;
 
+import org.flixelgdx.collections.FlixelByteArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,12 @@ import org.jetbrains.annotations.Nullable;
  * {@link FlixelJsonValue} tree, and this builds a JSON string back up. It is what the
  * {@link JsonSerializable} annotation processor emits calls to, so game code rarely creates one
  * directly. Commas between fields are inserted automatically as values are written.
+ *
+ * <p>The writer tracks the exact shape of the document it is building (whether it is inside an
+ * object, inside an array, or waiting for a value after {@link #name(String)}), so a call made out
+ * of order throws immediately instead of silently producing broken JSON. For example, closing an
+ * object twice, or writing two values in a row for one field name, both throw
+ * {@link IllegalStateException} right away rather than letting bad output slip through.
  *
  * <p>It is a one-shot serialization helper (for save files, settings, network payloads), not a
  * per-frame path, so it uses a {@link StringBuilder} internally for clarity. Build one object, read
@@ -66,14 +73,45 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class FlixelJsonWriter {
 
+  /** Nothing has been written yet; a single top-level value may still start the document. */
+  private static final byte EMPTY_DOCUMENT = 0;
+
+  /** A top-level value has already been written; no further top-level value is allowed. */
+  private static final byte NONEMPTY_DOCUMENT = 1;
+
+  /** Inside an array, no elements have been written yet. */
+  private static final byte EMPTY_ARRAY = 2;
+
+  /** Inside an array, at least one element has already been written. */
+  private static final byte NONEMPTY_ARRAY = 3;
+
+  /** Inside an object, no fields have been written yet. */
+  private static final byte EMPTY_OBJECT = 4;
+
+  /** Inside an object, {@link #name(String)} was called and its value is still pending. */
+  private static final byte DANGLING_NAME = 5;
+
+  /** Inside an object, at least one complete field has already been written. */
+  private static final byte NONEMPTY_OBJECT = 6;
+
+  private int indent;
+
   @NotNull
   private final StringBuilder out = new StringBuilder(64);
 
-  private int indent;
-  private int depth;
+  /**
+   * A stack of the container states above, one entry per nesting level plus a bottom entry for the
+   * top-level document. The top entry always reflects what is legal to write next.
+   */
+  @NotNull
+  private final FlixelByteArray scopes = new FlixelByteArray(8);
 
-  /** Whether the next {@link #name(String)} must be preceded by a comma. */
-  private boolean needComma;
+  /**
+   * Creates a writer for a brand-new, empty document.
+   */
+  public FlixelJsonWriter() {
+    scopes.add(EMPTY_DOCUMENT);
+  }
 
   /**
    * Enables pretty-print indentation.
@@ -89,11 +127,17 @@ public final class FlixelJsonWriter {
    * @param spaces The number of spaces per indentation level. Must be 0 or greater.
    * @return This writer, for method chaining.
    * @throws IllegalArgumentException If {@code spaces} is negative.
+   * @throws IllegalStateException If this writer has already written output (a container was
+   *     opened, a value was written, or a name was started).
    */
   @NotNull
   public FlixelJsonWriter setIndent(int spaces) {
     if (spaces < 0) {
       throw new IllegalArgumentException("Indent must be >= 0, got " + spaces);
+    }
+    if (out.length() > 0) {
+      throw new IllegalStateException(
+          "setIndent(...) must be called before any output is written.");
     }
     indent = spaces;
     return this;
@@ -103,13 +147,15 @@ public final class FlixelJsonWriter {
    * Opens a JSON object.
    *
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If an object cannot legally start here, for example directly
+   *     inside another object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter beginObject() {
-    separateValue();
+    beforeValue();
     out.append('{');
-    depth++;
-    needComma = false;
+    scopes.add(EMPTY_OBJECT);
     return this;
   }
 
@@ -117,16 +163,26 @@ public final class FlixelJsonWriter {
    * Closes the current JSON object.
    *
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If the innermost open container is not an object, or a
+   *     {@link #name(String)} call is still waiting for its value.
    */
   @NotNull
   public FlixelJsonWriter endObject() {
-    depth--;
+    byte context = scopes.peek();
+    if (context == DANGLING_NAME) {
+      throw new IllegalStateException(
+          "endObject() was called while name(...) is still waiting for its value.");
+    }
+    if (context != EMPTY_OBJECT && context != NONEMPTY_OBJECT) {
+      throw new IllegalStateException(
+          "endObject() was called but the innermost open container is not an object.");
+    }
+    scopes.pop();
     if (indent > 0) {
       out.append('\n');
-      appendIndent(depth);
+      appendIndent(currentDepth());
     }
     out.append('}');
-    needComma = true;
     return this;
   }
 
@@ -134,13 +190,15 @@ public final class FlixelJsonWriter {
    * Opens a JSON array.
    *
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If an array cannot legally start here, for example directly
+   *     inside another object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter beginArray() {
-    separateValue();
+    beforeValue();
     out.append('[');
-    depth++;
-    needComma = false;
+    scopes.add(EMPTY_ARRAY);
     return this;
   }
 
@@ -148,16 +206,21 @@ public final class FlixelJsonWriter {
    * Closes the current JSON array.
    *
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If the innermost open container is not an array.
    */
   @NotNull
   public FlixelJsonWriter endArray() {
-    depth--;
+    byte context = scopes.peek();
+    if (context != EMPTY_ARRAY && context != NONEMPTY_ARRAY) {
+      throw new IllegalStateException(
+          "endArray() was called but the innermost open container is not an array.");
+    }
+    scopes.pop();
     if (indent > 0) {
       out.append('\n');
-      appendIndent(depth);
+      appendIndent(currentDepth());
     }
     out.append(']');
-    needComma = true;
     return this;
   }
 
@@ -167,15 +230,26 @@ public final class FlixelJsonWriter {
    *
    * @param name The field name.
    * @return This writer.
+   * @throws IllegalStateException If the innermost open container is not an object, or
+   *     {@code name(...)} was already called and is still waiting for its value.
    */
   @NotNull
   public FlixelJsonWriter name(@NotNull String name) {
-    if (needComma) {
+    byte context = scopes.peek();
+    if (context == DANGLING_NAME) {
+      throw new IllegalStateException(
+          "name(...) was already called for a field; write its value before naming another one.");
+    }
+    if (context != EMPTY_OBJECT && context != NONEMPTY_OBJECT) {
+      throw new IllegalStateException(
+          "name(...) can only be called directly inside an object opened with beginObject().");
+    }
+    if (context == NONEMPTY_OBJECT) {
       out.append(',');
     }
     if (indent > 0) {
       out.append('\n');
-      appendIndent(depth);
+      appendIndent(currentDepth());
     }
     out.append('"');
     escape(name);
@@ -184,7 +258,7 @@ public final class FlixelJsonWriter {
     if (indent > 0) {
       out.append(' ');
     }
-    needComma = false;
+    scopes.set(scopes.getSize() - 1, DANGLING_NAME);
     return this;
   }
 
@@ -193,10 +267,13 @@ public final class FlixelJsonWriter {
    *
    * @param value The string to write, or {@code null} to emit a JSON {@code null}.
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If a value cannot legally be written here, for example directly
+   *     inside an object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter value(@Nullable String value) {
-    separateValue();
+    beforeValue();
     if (value == null) {
       out.append("null");
     } else {
@@ -204,7 +281,6 @@ public final class FlixelJsonWriter {
       escape(value);
       out.append('"');
     }
-    needComma = true;
     return this;
   }
 
@@ -213,26 +289,37 @@ public final class FlixelJsonWriter {
    *
    * @param value The long integer to write.
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If a value cannot legally be written here, for example directly
+   *     inside an object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter value(long value) {
-    separateValue();
+    beforeValue();
     out.append(value);
-    needComma = true;
     return this;
   }
 
   /**
    * Writes a floating-point value.
    *
-   * @param value The double to write.
+   * @param value The double to write. Must be finite, since {@code NaN} and infinite values have
+   *     no representation in JSON.
    * @return This writer, for method chaining.
+   * @throws IllegalArgumentException If {@code value} is {@code NaN} or infinite.
+   * @throws IllegalStateException If a value cannot legally be written here, for example directly
+   *     inside an object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter value(double value) {
-    separateValue();
+    if (Double.isNaN(value) || Double.isInfinite(value)) {
+      throw new IllegalArgumentException(
+          "Cannot write a non-finite double as JSON (NaN and Infinity have no JSON representation): "
+              + value);
+    }
+    beforeValue();
     out.append(value);
-    needComma = true;
     return this;
   }
 
@@ -241,12 +328,14 @@ public final class FlixelJsonWriter {
    *
    * @param value The boolean to write.
    * @return This writer, for method chaining.
+   * @throws IllegalStateException If a value cannot legally be written here, for example directly
+   *     inside an object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter value(boolean value) {
-    separateValue();
+    beforeValue();
     out.append(value);
-    needComma = true;
     return this;
   }
 
@@ -256,13 +345,28 @@ public final class FlixelJsonWriter {
    *
    * @param json A valid JSON fragment.
    * @return This writer.
+   * @throws IllegalStateException If a value cannot legally be written here, for example directly
+   *     inside an object without a preceding {@link #name(String)}, or after the document is
+   *     already complete.
    */
   @NotNull
   public FlixelJsonWriter raw(@NotNull String json) {
-    separateValue();
+    beforeValue();
     out.append(json);
-    needComma = true;
     return this;
+  }
+
+  /**
+   * Reports whether this writer has produced one complete, self-contained JSON document.
+   *
+   * <p>This is {@code true} once the single top-level value (an object, an array, or a lone
+   * scalar) has been fully closed, and {@code false} while a container is still open or nothing has
+   * been written yet.
+   *
+   * @return {@code true} if {@link #toString()} currently holds a complete document.
+   */
+  public boolean isComplete() {
+    return scopes.getSize() == 1 && scopes.peek() == NONEMPTY_DOCUMENT;
   }
 
   @NotNull
@@ -272,28 +376,52 @@ public final class FlixelJsonWriter {
   }
 
   /**
-   * Inserts a separating comma (and, in pretty mode, a newline + indent) before an array element.
-   * When pretty-printing, also emits the leading newline + indent for the very first element inside
-   * an array (where no comma precedes it, but whitespace is still required for readable output).
+   * Validates that a value may legally be written next, inserts the separating comma or newline it
+   * needs, and advances the current container's state to reflect that the value is now present.
+   *
+   * @throws IllegalStateException If the innermost scope cannot accept a value right now (it is an
+   *     object waiting for a field name, or the document already holds its one top-level value).
    */
-  private void separateValue() {
-    int len = out.length();
-    if (needComma && len > 0 && out.charAt(len - 1) != ':') {
-      out.append(',');
-      if (indent > 0) {
-        out.append('\n');
-        appendIndent(depth);
-      }
-      needComma = false;
-    } else if (indent > 0 && len > 0 && out.charAt(len - 1) == '[') {
-      out.append('\n');
-      appendIndent(depth);
+  private void beforeValue() {
+    byte context = scopes.peek();
+    switch (context) {
+      case EMPTY_DOCUMENT:
+        scopes.set(scopes.getSize() - 1, NONEMPTY_DOCUMENT);
+        break;
+      case NONEMPTY_DOCUMENT:
+        throw new IllegalStateException(
+            "Cannot write more than one top-level value; the document is already complete.");
+      case EMPTY_ARRAY:
+        scopes.set(scopes.getSize() - 1, NONEMPTY_ARRAY);
+        if (indent > 0) {
+          out.append('\n');
+          appendIndent(currentDepth());
+        }
+        break;
+      case NONEMPTY_ARRAY:
+        out.append(',');
+        if (indent > 0) {
+          out.append('\n');
+          appendIndent(currentDepth());
+        }
+        break;
+      case DANGLING_NAME:
+        scopes.set(scopes.getSize() - 1, NONEMPTY_OBJECT);
+        break;
+      default :
+        throw new IllegalStateException(
+            "Cannot write a value directly inside an object; call name(...) first to start a field.");
     }
   }
 
+  /** Returns the number of currently open containers (objects and arrays). */
+  private int currentDepth() {
+    return scopes.getSize() - 1;
+  }
+
   /** Appends {@code depth * indent} spaces to give the current nesting its proper visual offset. */
-  private void appendIndent(int d) {
-    int spaces = d * indent;
+  private void appendIndent(int depth) {
+    int spaces = depth * indent;
     for (int i = 0; i < spaces; i++) {
       out.append(' ');
     }
