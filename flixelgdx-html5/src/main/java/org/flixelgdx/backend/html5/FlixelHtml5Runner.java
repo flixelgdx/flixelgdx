@@ -95,8 +95,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * Creates an HTML5 runner for the given canvas and platform components.
    *
    * @param canvasId The HTML canvas element id.
-   * @param width Initial canvas width.
-   * @param height Initial canvas height.
+   * @param width Fallback canvas width, used only when the page has no layout yet at startup.
+   * @param height Fallback canvas height, used only when the page has no layout yet at startup.
    * @param graphics The WebGL graphics implementation.
    * @param window The HTML5 window implementation.
    * @param host The HTML5 host integration.
@@ -131,11 +131,18 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
     HTMLDocument document = HTMLDocument.current();
     HTMLCanvasElement element = resolveCanvas(document);
-    element.setWidth(width);
-    element.setHeight(height);
+    // Start the drawing buffer at the window size, the same size every later resize uses, so the
+    // first frames are not drawn at the design size and then stretched. The design size is only a
+    // fallback for when the page has no layout yet.
+    int innerWidth = browserInnerWidth();
+    int innerHeight = browserInnerHeight();
+    int startWidth = innerWidth > 0 && innerHeight > 0 ? innerWidth : width;
+    int startHeight = innerWidth > 0 && innerHeight > 0 ? innerHeight : height;
+    element.setWidth(startWidth);
+    element.setHeight(startHeight);
     this.canvas = element;
 
-    window.bind(element, width, height);
+    window.bind(element, startWidth, startHeight);
     input.attach(element);
     graphics.initialize(element);
 
@@ -178,6 +185,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
       }
       return;
     }
+    // The window may have been resized while assets were downloading, so sync once before the
+    // first frame.
+    onViewportChanged();
     Window.requestAnimationFrame(this::onAnimationFrame);
   }
 
@@ -322,6 +332,10 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
   private void onViewportChanged() {
     int newWidth = browserInnerWidth();
     int newHeight = browserInnerHeight();
+    if (newWidth <= 0 || newHeight <= 0) {
+      // A hidden or not-yet-laid-out page reports zero; keep the last good size instead.
+      return;
+    }
     canvas.setWidth(newWidth);
     canvas.setHeight(newHeight);
     window.onResized(newWidth, newHeight);

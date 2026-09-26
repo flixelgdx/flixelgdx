@@ -807,8 +807,26 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   /** Returns submissions to the previously active view. */
   void popRenderTarget() {
-    if (viewStackDepth > 1) {
-      viewStackDepth--;
+    if (viewStackDepth <= 1) {
+      return;
+    }
+    viewStackDepth--;
+    if (viewStackDepth == 1) {
+      // Draws after the outermost target ends (such as the global shader chain's final pass) need a
+      // fresh on-screen view. Reusing view 0 would draw them before the camera views and always onto
+      // the back buffer, even while the render-resolution scene surface is the real destination.
+      int view = nextScreenView;
+      if (nextScreenView < MAX_SCREEN_VIEWS - 1) {
+        nextScreenView++;
+      }
+      int width = sceneActive ? renderWidth : backBufferWidth;
+      int height = sceneActive ? renderHeight : backBufferHeight;
+      viewStack[0] = view;
+      BGFX.bgfx_set_view_frame_buffer(view, sceneActive ? sceneFrameBuffer() : (short) -1);
+      BGFX.bgfx_set_view_mode(view, BGFX.BGFX_VIEW_MODE_SEQUENTIAL);
+      BGFX.bgfx_set_view_rect(view, 0, 0, Math.max(1, width), Math.max(1, height));
+      BGFX.bgfx_set_view_clear(view, BGFX.BGFX_CLEAR_NONE, 0, 1f, 0);
+      BGFX.bgfx_touch(view);
     }
   }
 

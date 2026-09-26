@@ -140,13 +140,16 @@ public class FlixelGlobalShaderPipeline {
   }
 
   /**
-   * Recreates the render targets to match the current scene dimensions.
-   * Call this whenever the window resizes and the chain is non-empty.
+   * Recreates the render targets if they no longer match the current scene dimensions.
+   *
+   * <p>{@link #beginCapture(FlixelGraphicsManager)} runs the same check every frame, so a render
+   * resolution change is picked up on its own. Calling this on a window resize just does the
+   * rebuild earlier.
    *
    * @param graphics The active graphics manager.
    */
   public void resize(@NotNull FlixelGraphicsManager graphics) {
-    if (!shaders.isEmpty()) {
+    if (!shaders.isEmpty() && !fbosMatch(graphics)) {
       initFbos(graphics, shaders.getSize() > 1);
     }
   }
@@ -160,6 +163,15 @@ public class FlixelGlobalShaderPipeline {
   public void beginCapture(@NotNull FlixelGraphicsManager graphics) {
     if (fboA == null) {
       return;
+    }
+    // The scene size changes when a fixed render resolution is set or cleared, not only when the
+    // window resizes, so rebuild the targets here if they no longer match. This only allocates on
+    // the frame the size actually changes.
+    if (!fbosMatch(graphics)) {
+      initFbos(graphics, shaders.getSize() > 1);
+      if (fboA == null) {
+        return;
+      }
     }
     fboA.begin();
     graphics.clear(0f, 0f, 0f, 0f);
@@ -253,6 +265,17 @@ public class FlixelGlobalShaderPipeline {
     if (needPingPong) {
       fboB = graphics.createRenderTarget(w, h);
     }
+  }
+
+  /**
+   * Returns whether the render targets already match the current scene size.
+   *
+   * @param graphics The active graphics manager.
+   * @return {@code true} if the primary target exists and is sized to the render resolution.
+   */
+  private boolean fbosMatch(@NotNull FlixelGraphicsManager graphics) {
+    return fboA != null && fboA.getWidth() == graphics.getRenderWidth()
+        && fboA.getHeight() == graphics.getRenderHeight();
   }
 
   private void disposeFbos() {

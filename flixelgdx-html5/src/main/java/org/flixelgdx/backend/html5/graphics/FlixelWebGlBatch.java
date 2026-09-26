@@ -56,12 +56,18 @@ import org.teavm.jso.webgl.WebGLUniformLocation;
  * <p>{@link #setShader(FlixelShader)} swaps in a custom program compiled by the web backend; when no
  * shader is set (or one failed to compile) the built-in sprite shader is used. Because every program
  * shares the same fixed vertex layout (see {@link FlixelWebGlPrograms}), switching shaders needs no
- * buffer rebinding. The additive, multiply, and screen blend modes map to WebGL blend functions; the
- * modes that need a separate blend equation fall back to normal alpha blending.
+ * buffer rebinding. Every {@link FlixelBlendMode} maps to a WebGL blend function and equation that
+ * matches the other backends.
  */
 public class FlixelWebGlBatch implements FlixelBatch {
 
   private static final int MAX_QUADS = 2000;
+
+  /** WebGL2's {@code MIN} blend equation, which TeaVM's WebGL1-shaped context does not declare. */
+  private static final int BLEND_MIN = 0x8007;
+
+  /** WebGL2's {@code MAX} blend equation, which TeaVM's WebGL1-shaped context does not declare. */
+  private static final int BLEND_MAX = 0x8008;
   private static final int FLOATS_PER_VERTEX = 8;
   private static final int FLOATS_PER_QUAD = FLOATS_PER_VERTEX * 4;
 
@@ -546,15 +552,62 @@ public class FlixelWebGlBatch implements FlixelBatch {
     gl.vertexAttribPointer(attrib, size, WebGLRenderingContext.FLOAT, false, stride, offset);
   }
 
-  /** Selects the WebGL blend function for the current blend mode. */
+  /**
+   * Selects the WebGL blend function and equation for the current blend mode.
+   *
+   * <p>The framework uses straight (non-premultiplied) alpha, so each mode weighs the color channels
+   * by the sprite's own alpha where needed. The alpha channel always accumulates with a standard
+   * "over" ({@code ONE}, {@code ONE_MINUS_SRC_ALPHA}) no matter what the color channels do, which
+   * keeps the alpha a camera or global shader later reads out of a render target correct. This
+   * mirrors the desktop backend's blend table.
+   */
   private void applyBlendMode() {
-    gl.enable(WebGLRenderingContext.BLEND);
-    switch (blendMode) {
-      case ADD -> gl.blendFunc(WebGLRenderingContext.SRC_ALPHA, WebGLRenderingContext.ONE);
-      case MULTIPLY -> gl.blendFunc(WebGLRenderingContext.DST_COLOR, WebGLRenderingContext.ONE_MINUS_SRC_ALPHA);
-      case SCREEN -> gl.blendFunc(WebGLRenderingContext.ONE, WebGLRenderingContext.ONE_MINUS_SRC_COLOR);
-      default -> gl.blendFunc(WebGLRenderingContext.SRC_ALPHA, WebGLRenderingContext.ONE_MINUS_SRC_ALPHA);
+    if (blendMode == FlixelBlendMode.NONE) {
+      // The source overwrites the destination, alpha included.
+      gl.disable(WebGLRenderingContext.BLEND);
+      return;
     }
+    gl.enable(WebGLRenderingContext.BLEND);
+    int equation = WebGLRenderingContext.FUNC_ADD;
+    int src;
+    int dst;
+    switch (blendMode) {
+      case ADD -> {
+        src = WebGLRenderingContext.SRC_ALPHA;
+        dst = WebGLRenderingContext.ONE;
+      }
+      case MULTIPLY -> {
+        src = WebGLRenderingContext.DST_COLOR;
+        dst = WebGLRenderingContext.ONE_MINUS_SRC_ALPHA;
+      }
+      case SCREEN -> {
+        src = WebGLRenderingContext.ONE;
+        dst = WebGLRenderingContext.ONE_MINUS_SRC_COLOR;
+      }
+      case SUBTRACT -> {
+        // color = dst - src * srcAlpha.
+        equation = WebGLRenderingContext.FUNC_REVERSE_SUBTRACT;
+        src = WebGLRenderingContext.SRC_ALPHA;
+        dst = WebGLRenderingContext.ONE;
+      }
+      case LIGHTEN -> {
+        // The MIN and MAX equations ignore the blend factors.
+        equation = BLEND_MAX;
+        src = WebGLRenderingContext.ONE;
+        dst = WebGLRenderingContext.ONE;
+      }
+      case DARKEN -> {
+        equation = BLEND_MIN;
+        src = WebGLRenderingContext.ONE;
+        dst = WebGLRenderingContext.ONE;
+      }
+      default -> {
+        src = WebGLRenderingContext.SRC_ALPHA;
+        dst = WebGLRenderingContext.ONE_MINUS_SRC_ALPHA;
+      }
+    }
+    gl.blendEquationSeparate(equation, WebGLRenderingContext.FUNC_ADD);
+    gl.blendFuncSeparate(src, dst, WebGLRenderingContext.ONE, WebGLRenderingContext.ONE_MINUS_SRC_ALPHA);
   }
 
   /** Uploads the static quad index pattern once, since it never changes. */

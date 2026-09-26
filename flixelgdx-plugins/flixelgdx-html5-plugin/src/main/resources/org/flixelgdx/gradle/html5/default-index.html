@@ -24,9 +24,12 @@
       justify-content: center;
     }
 
+    /* The framework keeps the canvas drawing buffer equal to the window size and letterboxes the
+       game itself, so the canvas just fills the page without any extra CSS scaling. */
     #{{CANVAS_ID}} {
       display: block;
-      transform-origin: center center;
+      width: 100%;
+      height: 100%;
     }
 
     #flixel-loading {
@@ -217,27 +220,6 @@
       } else {
         loadJs();
       }
-    })();
-  </script>
-  <script>
-    (function () {
-      const canvas = document.getElementById('{{CANVAS_ID}}');
-
-      function scaleCanvas() {
-        if (!canvas.width || !canvas.height) return;
-        const scaleX = window.innerWidth / canvas.width;
-        const scaleY = window.innerHeight / canvas.height;
-        canvas.style.transform = 'scale(' + Math.min(scaleX, scaleY) + ')';
-      }
-
-      // Poll until the framework sets the canvas dimensions, then scale and watch for resizes.
-      const poll = setInterval(function () {
-        if (canvas.width && canvas.height) {
-          clearInterval(poll);
-          scaleCanvas();
-          window.addEventListener('resize', scaleCanvas);
-        }
-      }, 100);
     })();
   </script>
 </body>
