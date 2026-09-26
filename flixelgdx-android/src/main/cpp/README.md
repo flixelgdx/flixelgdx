@@ -2,10 +2,10 @@
 
 The Android backend loads two native libraries, one per job:
 
-| Library                  | Built from                                                     | Loaded by                                              |
-|--------------------------|----------------------------------------------------------------|--------------------------------------------------------|
-| `libflixel_miniaudio.so` | `flixelgdx-miniaudio/src/main/native/flixel_miniaudio.c`       | `FlixelAndroidLauncher`, through `FlixelMiniAudio`     |
-| `libbasisu.so`           | `flixel_basisu.cpp` in this folder, plus the Basis Universal transcoder | `FlixelBasisu`, the first time a KTX2 texture loads |
+| Library                  | Built from                                                              | Loaded by                                             |
+|--------------------------|-------------------------------------------------------------------------|-------------------------------------------------------|
+| `libflixel_miniaudio.so` | `flixelgdx-miniaudio/src/main/native/flixel_miniaudio.c`                | `FlixelAndroidLauncher`, through `FlixelMiniAudio`    |
+| `libbasisu.so`           | `flixel_basisu.cpp` in this folder, plus the Basis Universal transcoder | `FlixelBasisu`, the first time a KTX2 texture loads   |
 
 Both are prebuilt for `arm64-v8a`, `armeabi-v7a`, and `x86_64`, and committed under
 `flixelgdx-android/src/main/jniLibs/<abi>/`. The Android build packages that folder
