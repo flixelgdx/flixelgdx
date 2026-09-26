@@ -175,6 +175,5 @@ public final class FlixelBasisu {
    * @param outBuf     a direct {@link ByteBuffer} large enough to hold the output
    * @return {@code true} on success, {@code false} on any error
    */
-  public static native boolean transcode(long handle, int levelIndex, int fmt,
-      @NotNull ByteBuffer outBuf);
+  public static native boolean transcode(long handle, int levelIndex, int fmt, @NotNull ByteBuffer outBuf);
 }

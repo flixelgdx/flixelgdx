@@ -510,16 +510,6 @@ class FlixelGlesBatch implements FlixelBatch {
   }
 
   /**
-   * Rebuilds the built-in program and resets the VAO after context loss. Call this from the
-   * graphics manager's {@code onContextRestored()} before any draw calls resume.
-   */
-  void onContextRestored() {
-    // The GL objects (vao, vbo, ibo, program) are invalid after context loss; recreate them.
-    // The VAO/VBO/IBO fields are final so we rebuild via the same code path, but this path is
-    // only called after construction. The batch is re-created by FlixelAndroidGraphics.
-  }
-
-  /**
    * Finds the slot already holding this texture, or assigns a new slot, flushing if all slots are
    * full. Returns {@code -1} and logs a warning if the texture is not a GLES texture.
    *

@@ -117,7 +117,6 @@ public class FlixelAndroidHaptics implements FlixelHaptics {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public boolean isSupported() {
     if (vibrator == null) {
       return false;
