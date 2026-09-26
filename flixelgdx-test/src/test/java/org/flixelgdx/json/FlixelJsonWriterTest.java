@@ -26,6 +26,7 @@ package org.flixelgdx.json;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -128,5 +129,176 @@ class FlixelJsonWriterTest {
     FlixelJsonValue root = FlixelJson.parse(json);
     assertTrue(root.getBool("alive", false));
     assertEquals(7, root.getInt("count", 0));
+  }
+
+  @Test
+  void isCompleteReflectsWriterProgress() {
+    FlixelJsonWriter writer = new FlixelJsonWriter();
+    assertFalse(writer.isComplete());
+
+    writer.beginObject();
+    assertFalse(writer.isComplete());
+
+    writer.name("x").value(1L);
+    assertFalse(writer.isComplete());
+
+    writer.endObject();
+    assertTrue(writer.isComplete());
+  }
+
+  @Test
+  void topLevelScalarIsAllowedAndMarksTheDocumentComplete() {
+    FlixelJsonWriter writer = new FlixelJsonWriter();
+    writer.value(42L);
+
+    assertEquals("42", writer.toString());
+    assertTrue(writer.isComplete());
+  }
+
+  @Test
+  void endObjectTwiceThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject().endObject();
+
+    assertThrows(IllegalStateException.class, writer::endObject);
+  }
+
+  @Test
+  void endObjectWithNothingOpenThrows() {
+    assertThrows(IllegalStateException.class, () -> new FlixelJsonWriter().endObject());
+  }
+
+  @Test
+  void endObjectOnAnOpenArrayThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginArray();
+
+    assertThrows(IllegalStateException.class, writer::endObject);
+  }
+
+  @Test
+  void endArrayOnAnOpenObjectThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject();
+
+    assertThrows(IllegalStateException.class, writer::endArray);
+  }
+
+  @Test
+  void endArrayWithNothingOpenThrows() {
+    assertThrows(IllegalStateException.class, () -> new FlixelJsonWriter().endArray());
+  }
+
+  @Test
+  void endObjectWhileNameIsDanglingThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject().name("x");
+
+    assertThrows(IllegalStateException.class, writer::endObject);
+  }
+
+  @Test
+  void nameAtTopLevelThrows() {
+    assertThrows(IllegalStateException.class, () -> new FlixelJsonWriter().name("x"));
+  }
+
+  @Test
+  void nameInsideAnArrayThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginArray();
+
+    assertThrows(IllegalStateException.class, () -> writer.name("x"));
+  }
+
+  @Test
+  void nameCalledTwiceInARowThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject().name("x");
+
+    assertThrows(IllegalStateException.class, () -> writer.name("y"));
+  }
+
+  @Test
+  void valueTwiceAfterOneNameThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject().name("x").value(1L);
+
+    assertThrows(IllegalStateException.class, () -> writer.value(2L));
+  }
+
+  @Test
+  void valueInsideAnObjectWithoutNameThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject();
+
+    assertThrows(IllegalStateException.class, () -> writer.value(1L));
+  }
+
+  @Test
+  void rawInsideAnObjectWithoutNameThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject();
+
+    assertThrows(IllegalStateException.class, () -> writer.raw("1"));
+  }
+
+  @Test
+  void beginObjectInsideAnObjectWithoutNameThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject();
+
+    assertThrows(IllegalStateException.class, writer::beginObject);
+  }
+
+  @Test
+  void beginArrayInsideAnObjectWithoutNameThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject();
+
+    assertThrows(IllegalStateException.class, writer::beginArray);
+  }
+
+  @Test
+  void secondTopLevelValueAfterDocumentCompleteThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject().endObject();
+
+    assertThrows(IllegalStateException.class, writer::beginObject);
+  }
+
+  @Test
+  void secondTopLevelScalarAfterDocumentCompleteThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().value(1L);
+
+    assertThrows(IllegalStateException.class, () -> writer.value(2L));
+  }
+
+  @Test
+  void setIndentAfterOutputHasBeenWrittenThrows() {
+    FlixelJsonWriter writer = new FlixelJsonWriter().beginObject();
+
+    assertThrows(IllegalStateException.class, () -> writer.setIndent(2));
+  }
+
+  @Test
+  void valueRejectsNaN() {
+    assertThrows(IllegalArgumentException.class, () -> new FlixelJsonWriter().value(Double.NaN));
+  }
+
+  @Test
+  void valueRejectsPositiveInfinity() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new FlixelJsonWriter().value(Double.POSITIVE_INFINITY));
+  }
+
+  @Test
+  void valueRejectsNegativeInfinity() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> new FlixelJsonWriter().value(Double.NEGATIVE_INFINITY));
+  }
+
+  @Test
+  void arraysInsideObjectsStillFollowValidSequencing() {
+    String json = new FlixelJsonWriter()
+        .beginObject()
+        .name("scores")
+        .beginArray()
+        .value(1L)
+        .value(2L)
+        .endArray()
+        .endObject()
+        .toString();
+
+    assertEquals("{\"scores\":[1,2]}", json);
   }
 }
