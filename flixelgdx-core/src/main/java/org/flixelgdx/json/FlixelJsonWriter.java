@@ -94,8 +94,6 @@ public final class FlixelJsonWriter {
   /** Inside an object, at least one complete field has already been written. */
   private static final byte NONEMPTY_OBJECT = 6;
 
-  private int indent;
-
   @NotNull
   private final StringBuilder out = new StringBuilder(64);
 
@@ -105,6 +103,8 @@ public final class FlixelJsonWriter {
    */
   @NotNull
   private final FlixelByteArray scopes = new FlixelByteArray(8);
+
+  private int indent;
 
   /**
    * Creates a writer for a brand-new, empty document.
@@ -385,32 +385,26 @@ public final class FlixelJsonWriter {
   private void beforeValue() {
     byte context = scopes.peek();
     switch (context) {
-      case EMPTY_DOCUMENT:
-        scopes.set(scopes.getSize() - 1, NONEMPTY_DOCUMENT);
-        break;
-      case NONEMPTY_DOCUMENT:
-        throw new IllegalStateException(
-            "Cannot write more than one top-level value; the document is already complete.");
-      case EMPTY_ARRAY:
+      case EMPTY_DOCUMENT -> scopes.set(scopes.getSize() - 1, NONEMPTY_DOCUMENT);
+      case NONEMPTY_DOCUMENT -> throw new IllegalStateException(
+          "Cannot write more than one top-level value; the document is already complete.");
+      case EMPTY_ARRAY -> {
         scopes.set(scopes.getSize() - 1, NONEMPTY_ARRAY);
         if (indent > 0) {
           out.append('\n');
           appendIndent(currentDepth());
         }
-        break;
-      case NONEMPTY_ARRAY:
+      }
+      case NONEMPTY_ARRAY -> {
         out.append(',');
         if (indent > 0) {
           out.append('\n');
           appendIndent(currentDepth());
         }
-        break;
-      case DANGLING_NAME:
-        scopes.set(scopes.getSize() - 1, NONEMPTY_OBJECT);
-        break;
-      default :
-        throw new IllegalStateException(
-            "Cannot write a value directly inside an object; call name(...) first to start a field.");
+      }
+      case DANGLING_NAME -> scopes.set(scopes.getSize() - 1, NONEMPTY_OBJECT);
+      default -> throw new IllegalStateException(
+          "Cannot write a value directly inside an object; call name(...) first to start a field.");
     }
   }
 
