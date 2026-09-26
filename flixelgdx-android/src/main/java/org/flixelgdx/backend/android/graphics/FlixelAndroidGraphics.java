@@ -293,8 +293,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     batch.setBlendMode(FlixelBlendMode.NONE);
     batch.setColor(1f, 1f, 1f, 1f);
     batch.begin();
-    // The scene FBO is stored bottom-up (isFlipped() == true), so flip the vertical coords.
-    batch.draw(sceneTarget.getTexture(), dstX, dstY, dstW, dstH, 0f, 1f, 1f, 0f);
+    batch.draw(sceneTarget.getTexture(), dstX, dstY, dstW, dstH);
     batch.end();
     batch.setBlendMode(FlixelBlendMode.NORMAL);
   }
@@ -323,9 +322,10 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setScissor(int x, int y, int width, int height) {
-    // The framework already passes bottom-left framebuffer coordinates, which is GL's own
-    // convention, so no flip is needed. While a fixed render resolution is active, the rectangle is
-    // in window pixels and is mapped back into the smaller render surface.
+    // The framework passes bottom-left framebuffer coordinates, which is GL's own convention for
+    // the screen. While a fixed render resolution is active, the rectangle is in window pixels and
+    // is mapped back into the smaller render surface. Render targets are drawn upside down (see
+    // FlixelGlesRenderTarget), so the rectangle is mirrored while one is bound.
     int sx = x;
     int sy = y;
     int sw = width;
@@ -336,8 +336,10 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
       sw = Math.round(width / compositeScale);
       sh = Math.round(height / compositeScale);
     }
+    sw = Math.max(1, sw);
+    sh = Math.max(1, sh);
     GLES30.glEnable(GLES30.GL_SCISSOR_TEST);
-    GLES30.glScissor(sx, sy, Math.max(1, sw), Math.max(1, sh));
+    GLES30.glScissor(sx, mirrorY(sy, sh), sw, sh);
   }
 
   @Override
@@ -347,8 +349,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   @Override
   public void setViewport(int x, int y, int width, int height) {
-    // Bottom-left framebuffer coordinates, like setScissor(...): passed to GL as they are, or
-    // mapped into the render surface while a fixed render resolution is active.
+    // Bottom-left framebuffer coordinates, like setScissor(...): mapped into the render surface
+    // while a fixed render resolution is active, and mirrored while a render target is bound.
     if (sceneActive) {
       x = Math.round((x - compositeOffsetX) / compositeScale);
       y = Math.round((y - compositeOffsetY) / compositeScale);
@@ -356,9 +358,9 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
       height = Math.round(height / compositeScale);
     }
     viewportX = x;
-    viewportY = y;
     viewportW = Math.max(1, width);
     viewportH = Math.max(1, height);
+    viewportY = mirrorY(y, viewportH);
     GLES30.glViewport(viewportX, viewportY, viewportW, viewportH);
   }
 
@@ -570,6 +572,21 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   }
 
   /**
+   * Mirrors a rectangle's bottom edge while a render target is bound.
+   *
+   * <p>Render targets are drawn upside down so their images are stored top-down, so a rectangle
+   * given from the bottom of the surface has to be measured from the top instead.
+   *
+   * @param y The rectangle's bottom edge, in bottom-left framebuffer pixels.
+   * @param height The rectangle's height in pixels.
+   * @return The bottom edge to hand to GL.
+   */
+  private int mirrorY(int y, int height) {
+    int size = targetStack.getSize();
+    return size > 0 ? targetStack.get(size - 1).getHeight() - y - height : y;
+  }
+
+  /**
    * Pops the topmost render target and restores the previous surface.
    */
   void popRenderTarget() {
@@ -586,12 +603,14 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     if (targetStack.getSize() > 0) {
       bindTarget(targetStack.get(targetStack.getSize() - 1));
     } else {
+      if (batch != null) {
+        batch.setFlipY(false);
+      }
       GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0);
       GLES30.glViewport(0, 0, window.getBackBufferWidth(), window.getBackBufferHeight());
     }
   }
 
-  /** Binds a render target's framebuffer and sets the GL viewport to its size. */
   /**
    * Runs every action queued by {@link #queueMainThread(Runnable)} on the GL thread.
    *
@@ -614,7 +633,11 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     runningActions.clear();
   }
 
+  /** Binds a render target's framebuffer, sets the GL viewport to its size, and flips drawing. */
   private void bindTarget(@NotNull FlixelGlesRenderTarget target) {
+    if (batch != null) {
+      batch.setFlipY(true);
+    }
     GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.getFramebuffer());
     GLES30.glViewport(0, 0, target.getWidth(), target.getHeight());
   }

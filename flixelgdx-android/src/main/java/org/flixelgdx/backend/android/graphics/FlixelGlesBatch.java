@@ -130,6 +130,7 @@ class FlixelGlesBatch implements FlixelBatch {
   private int totalRenderCalls;
 
   private boolean drawing;
+  private boolean flipY;
   private boolean loggedNoopTexture;
 
   /**
@@ -222,6 +223,13 @@ class FlixelGlesBatch implements FlixelBatch {
     }
 
     multiply(combined, projection.val, transform.val);
+    if (flipY) {
+      // Mirror clip-space Y so a render target's rows are stored top-down.
+      combined[1] = -combined[1];
+      combined[5] = -combined[5];
+      combined[9] = -combined[9];
+      combined[13] = -combined[13];
+    }
     applyBlendMode();
 
     GLES30.glUseProgram(activeProgram);
@@ -486,6 +494,22 @@ class FlixelGlesBatch implements FlixelBatch {
   public void setProjection(@NotNull FlixelMatrix projection) {
     flush();
     this.projection.set(projection.val);
+  }
+
+  /**
+   * Sets whether drawing is mirrored vertically in clip space.
+   *
+   * <p>The graphics manager turns this on while a render target is bound, so the target's image is
+   * stored top-down instead of OpenGL's usual bottom-up order. Pending geometry is flushed first,
+   * because it was meant for the previous surface.
+   *
+   * @param flipY {@code true} while a render target is bound.
+   */
+  void setFlipY(boolean flipY) {
+    if (this.flipY != flipY) {
+      flush();
+      this.flipY = flipY;
+    }
   }
 
   @Override

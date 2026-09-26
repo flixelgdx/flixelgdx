@@ -92,10 +92,10 @@ public class FlixelBgfxRenderTarget implements FlixelRenderTarget {
 
   @Override
   public boolean isFlipped() {
-    // bgfx render-target textures are stored top-down when the renderer's clip space is top-left
-    // (D3D, Metal, Vulkan) and bottom-up on OpenGL. The framework's composite passes flip based on
-    // this flag, so report the OpenGL case.
-    return BGFX.bgfx_get_renderer_type() == BGFX.BGFX_RENDERER_TYPE_OPENGL;
+    // Direct3D, Metal, and Vulkan store render targets top-down. OpenGL would store them bottom-up,
+    // so the graphics manager draws into them upside down there (see submitQuads(...)), which
+    // leaves every renderer with the same top-down image.
+    return false;
   }
 
   @Override

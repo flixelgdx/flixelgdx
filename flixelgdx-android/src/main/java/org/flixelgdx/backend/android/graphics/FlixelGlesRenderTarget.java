@@ -36,9 +36,10 @@ import org.jetbrains.annotations.NotNull;
  * (a camera's target inside the whole-scene target), restoring the previous surface on
  * {@link #end()}.
  *
- * <p>Like all OpenGL framebuffers, the color texture is stored bottom-up, so
- * {@link #isFlipped()} returns {@code true} and composite passes must flip the vertical
- * texture coordinate when drawing this target back to the screen.
+ * <p>OpenGL normally stores a framebuffer's rows bottom-up. While a target is bound, the graphics
+ * manager flips the batch's projection and mirrors scissor and viewport rectangles, so the image
+ * is stored top-down like on every other backend. {@link #isFlipped()} is therefore
+ * {@code false}, and texture coordinate {@code y = 0} is the top of the image in a shader.
  */
 class FlixelGlesRenderTarget implements FlixelRenderTarget {
 
@@ -106,7 +107,7 @@ class FlixelGlesRenderTarget implements FlixelRenderTarget {
 
   @Override
   public boolean isFlipped() {
-    return true;
+    return false;
   }
 
   @Override
