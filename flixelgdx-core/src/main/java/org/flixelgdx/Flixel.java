@@ -959,7 +959,15 @@ public final class Flixel {
       // guard here before the game object is assigned, because who wants a crash handler
       // that crashes while trying to say it crashed?
       if (game != null) {
-        game.destroy();
+        // A state that crashed partway through create() can throw again while being destroyed
+        // (for example a field that was never assigned). Report that secondary failure, but never
+        // let it replace the original error or escape the handler and kill the process.
+        try {
+          game.destroy();
+        } catch (Throwable destroyError) {
+          error("The game also failed to clean up after the crash:\n"
+              + FlixelExceptionUtil.getFullExceptionMessage(destroyError));
+        }
       }
       // Close the game only on desktop to avoid issues on web and compliance with iOS guidelines.
       FlixelPlatform platform = host.getPlatform();

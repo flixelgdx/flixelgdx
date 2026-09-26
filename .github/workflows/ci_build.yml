@@ -142,7 +142,8 @@ jobs:
         id: setup-android
         uses: android-actions/setup-android@v3
         with:
-          # Space-separated list (multiline is passed as one arg and breaks sdkmanager)
+          # Space-separated list (multiline is passed as one arg and breaks sdkmanager).
+          # The Android natives are prebuilt and committed, so no NDK or CMake is needed here.
           packages: "platform-tools platforms;android-36 build-tools;36.0.0"
 
       - name: Create local.properties (Android)

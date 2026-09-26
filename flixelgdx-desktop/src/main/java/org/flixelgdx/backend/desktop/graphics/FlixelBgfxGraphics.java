@@ -816,6 +816,23 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     return viewStack[viewStackDepth - 1];
   }
 
+  /**
+   * Returns the height of the render target submissions currently land in, or {@code 0} when they
+   * go to the back buffer.
+   *
+   * <p>The render-resolution scene surface counts as a target too, since it is an offscreen
+   * framebuffer the scene is drawn into before being stretched onto the window.
+   *
+   * @return The bound target's height in pixels, or {@code 0} for the back buffer.
+   */
+  private int boundTargetHeight() {
+    int level = viewStackDepth - 1;
+    if (level > 0) {
+      return viewStackHeight[level];
+    }
+    return sceneActive && sceneTarget != null ? renderHeight : 0;
+  }
+
   /** Rebuilds the scene surface when the render size or filter changed, then leaves it ready to use. */
   private void ensureSceneTarget() {
     if (sceneTarget != null && !sceneTargetDirty) {
@@ -870,17 +887,27 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     BGFX.bgfx_alloc_transient_vertex_buffer(transientVertices, vertexCount, vertexLayout);
     transientVertices.data().asFloatBuffer().put(verts, 0, quadCount * FlixelBgfxBatch.floatsPerQuad());
 
-    setViewTransform(view, projection, transform);
+    // OpenGL stores render targets bottom-up. Drawing into one upside down, with the view and
+    // scissor rectangles mirrored to match, stores the image top-down like every other renderer,
+    // so a shader sees texture coordinate y = 0 at the top of a target on every platform.
+    int targetHeight = boundTargetHeight();
+    boolean flip = targetHeight > 0 && (api == FlixelGraphicsApi.OpenGL || api == FlixelGraphicsApi.OpenGLES);
+    setViewTransform(view, projection, transform, flip);
 
-    BGFX.bgfx_set_view_rect(view, viewportX, viewportY, viewportWidth, viewportHeight);
+    int rectY = flip ? targetHeight - viewportY - viewportHeight : viewportY;
+    BGFX.bgfx_set_view_rect(view, viewportX, rectY, viewportWidth, viewportHeight);
     if (scissorWidth > 0) {
-      BGFX.bgfx_set_scissor(scissorX, scissorY, scissorWidth, scissorHeight);
+      int clipY = flip ? targetHeight - scissorY - scissorHeight : scissorY;
+      BGFX.bgfx_set_scissor(scissorX, clipY, scissorWidth, scissorHeight);
     }
     BGFX.bgfx_set_transient_vertex_buffer(0, transientVertices, 0, vertexCount);
     // The index pattern never changes, so every batch draws through the shared static index buffer.
     BGFX.bgfx_set_index_buffer(quadIndexBuffer, 0, indexCount);
     BGFX.bgfx_set_texture(0, textureUniform, texture.getBgfxHandle(), (int) texture.getSamplerFlags());
     BGFX.bgfx_set_state(BGFX.BGFX_STATE_WRITE_RGB | BGFX.BGFX_STATE_WRITE_A | blendState(blend), 0);
+    if (shader != null && shader.getProgram() instanceof FlixelBgfxShader bgfxShader) {
+      bgfxShader.applyUniforms();
+    }
     BGFX.bgfx_submit(view, program, 0, BGFX.BGFX_DISCARD_ALL);
   }
 
@@ -952,10 +979,19 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
    * @param view The bgfx view id to set the transform on.
    * @param projection The view-projection matrix.
    * @param transform The model transform applied before projection.
+   * @param flipY Whether to mirror clip-space Y, to draw into a render target upside down.
    */
-  private void setViewTransform(int view, @NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform) {
+  private void setViewTransform(int view, @NotNull FlixelMatrix projection, @NotNull FlixelMatrix transform,
+      boolean flipY) {
     combinedMatrix.set(projection);
     combinedMatrix.mul(transform);
+    if (flipY) {
+      float[] m = combinedMatrix.val;
+      m[1] = -m[1];
+      m[5] = -m[5];
+      m[9] = -m[9];
+      m[13] = -m[13];
+    }
     viewTransform.clear();
     viewTransform.put(combinedMatrix.val);
     viewTransform.flip();

@@ -23,7 +23,7 @@
  */
 package org.flixelgdx;
 
-import org.flixelgdx.backend.jvm.file.FlixelJvmFiles;
+import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
 
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
