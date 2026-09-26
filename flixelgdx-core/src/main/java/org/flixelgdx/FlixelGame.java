@@ -428,13 +428,14 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
 
     boolean useGlobalFbo = Flixel.graphics.hasGlobalShaders();
-    // The global shader chain already routes the whole scene through its own render targets, so a
-    // fixed render resolution only takes over when no global shaders are active. Otherwise the two
-    // composites would fight over the screen.
-    boolean useSceneResolution = !useGlobalFbo && Flixel.graphics.isRenderResolutionEnabled();
+    boolean useSceneResolution = Flixel.graphics.isRenderResolutionEnabled();
+    // The two nest: the fixed-resolution scene surface is the outer target, and the global shader
+    // capture runs inside it at the same size. The chain's final pass then lands on the scene
+    // surface, which endScene() stretches onto the window afterwards.
     if (useSceneResolution) {
       Flixel.graphics.beginScene();
-    } else if (useGlobalFbo) {
+    }
+    if (useGlobalFbo) {
       Flixel.graphics.beginGlobalShaderCapture();
     }
 
