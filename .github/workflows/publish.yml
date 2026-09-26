@@ -54,9 +54,8 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          # The NDK and CMake versions must match ndkVersion and cmake.version in
-          # flixelgdx-android/build.gradle.kts, which build the libflixel_miniaudio.so and libbasisu.so natives.
-          packages: "platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358 cmake;3.22.1"
+          # The Android natives are prebuilt and committed, so no NDK or CMake is needed here.
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew

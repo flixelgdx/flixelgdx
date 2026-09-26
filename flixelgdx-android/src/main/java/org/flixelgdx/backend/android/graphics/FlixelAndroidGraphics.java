@@ -182,9 +182,6 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   }
 
   @Override
-  public void endFrame() {}
-
-  @Override
   @NotNull
   public FlixelBatch getBatch() {
     return batch != null ? batch : FlixelUnsupportedBatch.INSTANCE;
@@ -192,9 +189,6 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   @Override
   public void queueMainThread(@NotNull Runnable action) {
-    // Callers may be on the UI thread, an asset loader thread, or a host callback, none of which
-    // own the GL context. Actions are queued and run at the start of the next frame on the GL
-    // thread, the same as on desktop.
     synchronized (mainThreadQueue) {
       mainThreadQueue.add(action);
     }
@@ -297,9 +291,6 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     batch.end();
     batch.setBlendMode(FlixelBlendMode.NORMAL);
   }
-
-  @Override
-  public void beginCameraPass() {}
 
   @Override
   public void clear(float r, float g, float b, float a) {

@@ -55,8 +55,7 @@ public class FlixelAndroidKtx2Loader implements FlixelAssetLoader<FlixelGraphic>
 
   @NotNull
   @Override
-  public Object loadRaw(@NotNull FlixelAssetManager assets, @NotNull String path,
-      @NotNull FlixelFile file) throws Exception {
+  public Object loadRaw(@NotNull FlixelAssetManager assets, @NotNull String path, @NotNull FlixelFile file) {
     byte[] bytes = file.readBytes();
     if (bytes.length == 0) {
       throw new IllegalStateException("Compressed texture file not found or empty: '" + path + "'.");
@@ -68,8 +67,7 @@ public class FlixelAndroidKtx2Loader implements FlixelAssetLoader<FlixelGraphic>
 
   @NotNull
   @Override
-  public Object finishRaw(@NotNull FlixelAssetManager assets, @NotNull String path,
-      @NotNull Object raw) {
+  public Object finishRaw(@NotNull FlixelAssetManager assets, @NotNull String path, @NotNull Object raw) {
     if (raw instanceof ByteBuffer container) {
       FlixelTexture texture = Flixel.graphics.createCompressedTexture(container);
       if (texture == null) {
@@ -82,8 +80,7 @@ public class FlixelAndroidKtx2Loader implements FlixelAssetLoader<FlixelGraphic>
 
   @NotNull
   @Override
-  public FlixelAsset<FlixelGraphic> createHandle(@NotNull FlixelAssetManager assets,
-      @NotNull String path) {
+  public FlixelAsset<FlixelGraphic> createHandle(@NotNull FlixelAssetManager assets, @NotNull String path) {
     return new FlixelGraphic(assets, path);
   }
 }

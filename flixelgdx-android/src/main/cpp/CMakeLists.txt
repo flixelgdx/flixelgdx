@@ -4,8 +4,9 @@
 #   - libflixel_miniaudio.so: audio JNI, built from the shared flixelgdx-miniaudio module
 #   - libbasisu.so: the Basis Universal KTX2 transcoder and its FlixelBasisu JNI wrapper
 #
-# The Android Gradle Plugin drives this file via externalNativeBuild; it selects ABI, sysroot,
-# and toolchain automatically. Do not invoke cmake directly.
+# The results are prebuilt and committed under flixelgdx-android/src/main/jniLibs, so the Gradle
+# build never runs this file. Rebuild every ABI with scripts/build_android_natives.sh, which passes
+# the NDK toolchain, ABI, and platform level, whenever a source file or deps.cmake changes.
 cmake_minimum_required(VERSION 3.21)
 project(flixelgdx C CXX)
 
