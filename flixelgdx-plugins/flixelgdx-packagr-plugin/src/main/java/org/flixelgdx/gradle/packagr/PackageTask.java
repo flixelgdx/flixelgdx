@@ -25,12 +25,10 @@ package org.flixelgdx.gradle.packagr;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
-import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
@@ -57,11 +55,12 @@ import java.util.stream.Stream;
  *
  * <p>Each run produces a directory a player can copy and double-click, and a zip of it in the root
  * project's {@code dist} folder for sharing. The directory holds a native launcher executable, a
- * trimmed Java runtime, the game jar and just the dependency jars that platform needs, and the small
- * config the launcher reads to start the JVM. The steps are, in order: resolve and cache the target
- * runtime ({@link JdkResolver}), build the trimmed runtime with {@link Jlink}, copy the game and its
- * platform-matched dependencies (see {@link NativeArtifacts}), unpack the launcher for the target,
- * write the launcher's {@link LaunchConfig configuration}, and zip the result.
+ * trimmed Java runtime, the game jar, and the small config the launcher reads to start the JVM. The
+ * game jar is expected to be self-contained, bundling its dependencies, natives, and assets, so it
+ * is the only jar shipped. The steps are, in order: resolve and cache the target runtime
+ * ({@link JdkResolver}), build the trimmed runtime with {@link Jlink}, copy the game jar, unpack the
+ * launcher for the target, write the launcher's {@link LaunchConfig configuration}, and zip the
+ * result.
  *
  * <p>The launcher for a platform is a small binary bundled in this plugin. When none is bundled for
  * the requested target, packaging fails with a clear message rather than producing a package that
@@ -105,14 +104,10 @@ public abstract class PackageTask extends DefaultTask {
   @Input
   public abstract Property<String> getTargetName();
 
-  /** The game's own jar, shipped as the package's main code. */
+  /** The game's self-contained jar, shipped as the package's only jar. */
   @InputFile
   @PathSensitive(PathSensitivity.NAME_ONLY)
   public abstract RegularFileProperty getGameJar();
-
-  /** The game's full runtime classpath; native jars are filtered to the target from it. */
-  @Classpath
-  public abstract ConfigurableFileCollection getRuntimeClasspath();
 
   /** The shared cache directory downloaded runtimes are stored in (not part of up-to-date checks). */
   @Internal
@@ -160,11 +155,8 @@ public abstract class PackageTask extends DefaultTask {
     Path jre = out.resolve("jre");
     Jlink.run(jlinkExe, version, targetJdk.resolve("jmods"), getModules().get(), jre, getLogger());
 
-    Path lib = out.resolve("lib");
-    Files.createDirectories(lib);
     File gameJar = getGameJar().get().getAsFile();
-    Files.copy(gameJar.toPath(), lib.resolve(gameJar.getName()), StandardCopyOption.REPLACE_EXISTING);
-    copyDependencies(lib, os, arch);
+    Files.copy(gameJar.toPath(), out.resolve(gameJar.getName()), StandardCopyOption.REPLACE_EXISTING);
 
     extractLauncher(out, os, arch);
     writeConfig(out);
@@ -211,20 +203,6 @@ public abstract class PackageTask extends DefaultTask {
           + System.getProperty("os.arch") + "). Package on a 64-bit x86 or ARM machine.");
     }
     return JdkResolver.resolve(cache, version, hostOs, hostArch, getLogger());
-  }
-
-  private void copyDependencies(Path lib, OperatingSystem os, Architecture arch) throws IOException {
-    for (File file : getRuntimeClasspath().getFiles()) {
-      // Project output shows up as directories, not jars; the game's own code ships as its jar, so
-      // only external jars are copied here, and native jars are kept only for this target.
-      if (!file.isFile() || !file.getName().endsWith(".jar")) {
-        continue;
-      }
-      if (!NativeArtifacts.includes(file.getName(), os, arch)) {
-        continue;
-      }
-      Files.copy(file.toPath(), lib.resolve(file.getName()), StandardCopyOption.REPLACE_EXISTING);
-    }
   }
 
   private void extractLauncher(Path out, OperatingSystem os, Architecture arch) throws IOException {
