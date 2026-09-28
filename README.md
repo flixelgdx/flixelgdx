@@ -231,6 +231,8 @@ camera.setShader(wave);
 #### Basis Universal Plugin
 
 The framework provides a Basis Universal compression plugin that automates converting images to small `.ktx2` files
+for Android. Desktop builds are not affected and keep loading plain PNGs, since the desktop backend cannot transcode
+Basis Universal textures.
 
 ```groovy
 basisu {

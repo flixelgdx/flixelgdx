@@ -35,7 +35,6 @@ lwjgl = { module = "org.lwjgl:lwjgl" }
 lwjgl-bgfx = { module = "org.lwjgl:lwjgl-bgfx" }
 lwjgl-sdl = { module = "org.lwjgl:lwjgl-sdl" }
 lwjgl-stb = { module = "org.lwjgl:lwjgl-stb" }
-lwjgl-zstd = { module = "org.lwjgl:lwjgl-zstd" }
 multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 teavm-gradle-plugin = { module = "org.teavm:teavm-gradle-plugin", version.ref = "teavm" }
 

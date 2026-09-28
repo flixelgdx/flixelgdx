@@ -16,7 +16,7 @@ The project is split into several modules, each serving a specific purpose.
 
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
 
-- **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset.
+- **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset on mobile.
 - **`flixelgdx-html5-plugin`**: Automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-logging-plugin`**: Runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
@@ -24,8 +24,8 @@ The project is split into several modules, each serving a specific purpose.
 
 ### Misc.
 
-- **`flixelgdx-miniaudio`**: Holds the Java API and C source code for interacting with miniaudio. It doesn't hold any natives, other backends provide their own.
-- **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSeralizable`.
+- **`flixelgdx-miniaudio`**: Holds the Java API and C source code for interacting with miniaudio. It doesn't hold any natives; other backends provide their own.
+- **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSerializable`.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
 ## Build System

@@ -34,7 +34,6 @@ import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
 import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
-import org.flixelgdx.backend.desktop.graphics.FlixelKtx2Loader;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
@@ -195,8 +194,6 @@ public final class FlixelDesktopLauncher {
         iconManager, host, width, height, icons);
 
     FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
-    assets.registerLoader(".ktx2", new FlixelKtx2Loader());
-    assets.setCompressedTexturesEnabled(true);
     Flixel.assets = assets;
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());

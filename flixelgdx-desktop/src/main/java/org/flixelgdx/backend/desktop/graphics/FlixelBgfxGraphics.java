@@ -44,17 +44,14 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXStats;
-import org.lwjgl.bgfx.BGFXTextureInfo;
 import org.lwjgl.bgfx.BGFXTransientVertexBuffer;
 import org.lwjgl.bgfx.BGFXVertexLayout;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
-import java.util.Objects;
 
 /**
  * The desktop graphics backend, built on bgfx.
@@ -427,29 +424,6 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public FlixelImage decodeImage(@NotNull ByteBuffer encoded) {
     return FlixelStbImage.decode(encoded);
-  }
-
-  @Nullable
-  @Override
-  public FlixelTexture createCompressedTexture(@NotNull ByteBuffer container) {
-    // bgfx parses the container (KTX2, KTX, DDS, PVR) itself and keeps the compressed data on the
-    // GPU. bgfx_copy takes ownership of a copy, so the caller's buffer can be released afterward.
-    ByteBuffer src = container.duplicate();
-    int size = src.remaining();
-    if (size == 0) {
-      return null;
-    }
-    ByteBuffer copy = ByteBuffer.allocateDirect(size);
-    copy.put(src).flip();
-    try (MemoryStack stack = MemoryStack.stackPush()) {
-      BGFXTextureInfo info = BGFXTextureInfo.malloc(stack);
-      short handle = BGFX.bgfx_create_texture(Objects.requireNonNull(BGFX.bgfx_copy(copy)),
-          BGFX.BGFX_TEXTURE_NONE, 0, info);
-      if (handle == -1) {
-        return null;
-      }
-      return new FlixelBgfxTexture(handle, info.width(), info.height());
-    }
   }
 
   @NotNull

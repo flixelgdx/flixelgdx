@@ -3,8 +3,7 @@ plugins {
 }
 
 // The desktop backend binds SDL3 (windowing, input, gamepads) and bgfx (rendering) through
-// LWJGL, plus stb (image decoding, TrueType/OpenType rasterization) and zstd (KTX2
-// supercompression). The miniaudio audio engine ships as our own JNI natives under
+// LWJGL, plus stb (image decoding, TrueType/OpenType rasterization). The miniaudio audio engine ships as our own JNI natives under
 // src/main/resources/org/flixelgdx/natives, so no extra dependency is needed for audio.
 val lwjglVersion = libs.versions.lwjgl.get()
 
@@ -25,14 +24,12 @@ dependencies {
   api(libs.lwjgl.sdl)
   api(libs.lwjgl.bgfx)
   api(libs.lwjgl.stb)
-  api(libs.lwjgl.zstd)
 
   lwjglNatives.forEach { classifier ->
     runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$classifier")
     runtimeOnly("org.lwjgl:lwjgl-sdl:$lwjglVersion:$classifier")
     runtimeOnly("org.lwjgl:lwjgl-bgfx:$lwjglVersion:$classifier")
     runtimeOnly("org.lwjgl:lwjgl-stb:$lwjglVersion:$classifier")
-    runtimeOnly("org.lwjgl:lwjgl-zstd:$lwjglVersion:$classifier")
   }
 
   // Dear ImGui (via the SpaiR imgui-java binding) powers the debug overlay and is exposed as api so

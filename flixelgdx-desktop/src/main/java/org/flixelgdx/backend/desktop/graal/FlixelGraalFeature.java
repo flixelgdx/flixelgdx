@@ -47,7 +47,7 @@ import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
  *       individually so the correct binary ships inside the native image.</li>
  * </ul>
  *
- * <p>LWJGL (SDL3, bgfx, stb, zstd) ships its own native-image support inside each module JAR, so
+ * <p>LWJGL (SDL3, bgfx, stb) ships its own native-image support inside each module JAR, so
  * those libraries do not need to be handled here.
  *
  * <p>This feature is wired in automatically by the {@code META-INF/native-image} properties file
