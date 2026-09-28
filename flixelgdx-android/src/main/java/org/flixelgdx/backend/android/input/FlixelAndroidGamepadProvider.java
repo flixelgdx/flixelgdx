@@ -65,8 +65,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see FlixelAndroidGamepad
  */
-public class FlixelAndroidGamepadProvider
-    implements FlixelGamepadProvider, FlixelGamepadMappingResolver,
+public class FlixelAndroidGamepadProvider implements FlixelGamepadProvider, FlixelGamepadMappingResolver,
     InputManager.InputDeviceListener {
 
   /** Maximum simultaneous gamepads supported. Exceeding this silently drops new devices. */
