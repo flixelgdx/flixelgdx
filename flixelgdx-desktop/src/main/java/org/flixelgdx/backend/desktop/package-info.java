@@ -56,8 +56,7 @@
  *   <li><b>File system</b> - A JVM file seam backed by the classpath and the OS filesystem is
  *       installed as {@link org.flixelgdx.Flixel#files Flixel.files}.</li>
  *   <li><b>Asset manager</b> - A JVM-based asset manager is installed as
- *       {@link org.flixelgdx.Flixel#assets Flixel.assets}. Textures load from plain images; Basis
- *       Universal {@code .ktx2} files are not supported on desktop.</li>
+ *       {@link org.flixelgdx.Flixel#assets Flixel.assets}.</li>
  *   <li><b>Logging</b> - JVM stack traces and optional file logging are wired into the logger.
  *       Log files are written to the platform's writable directory.</li>
  * </ul>
@@ -79,8 +78,7 @@
  *       {@code FlixelMiniAudioSound}, {@code FlixelMiniAudioGroup}).</li>
  *   <li>{@code graphics} - bgfx integration ({@code FlixelBgfxGraphics},
  *       {@code FlixelBgfxTexture}, {@code FlixelBgfxBatch}, {@code FlixelBgfxShader},
- *       {@code FlixelBgfxRenderTarget}), plus image loaders ({@code FlixelStbImage}, and
- *       the opt-in {@code FlixelKtx2Loader} for GPU-native KTX2 files).</li>
+ *       {@code FlixelBgfxRenderTarget}), plus the image loader ({@code FlixelStbImage}).</li>
  *   <li>{@code input} - SDL3 keyboard, mouse, and gamepad handling
  *       ({@code FlixelDesktopInputDevice}, {@code FlixelSdlGamepad},
  *       {@code FlixelSdlGamepadProvider}, {@code FlixelSdlKeyMap},
