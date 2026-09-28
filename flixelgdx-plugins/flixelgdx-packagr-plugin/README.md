@@ -112,8 +112,8 @@ Each target produces a folder a player can copy and run, plus a zip of it in the
 build/packagr/<target>/
   MyGame            launcher executable (MyGame.exe on Windows)
   packagr.cfg       launch settings the launcher reads
+  MyGame.jar        the game's self-contained jar
   jre/              the trimmed Java runtime
-  lib/              the game jar and its platform-matched dependency jars
 
 dist/
   MyGame-<target>.zip   the folder above, zipped under one top-level folder
@@ -122,8 +122,9 @@ dist/
 The `packagr.cfg` is a small text file listing the main class, the runtime and library folders, and
 each JVM argument. The launcher reads it at startup; there is nothing platform-specific to edit.
 
-Assets are not copied into the package: a game's assets already ship inside its jar (which lands in
-`lib/`), so there is no separate assets step.
+The game jar is the only jar in the package, so it must be self-contained: its dependencies,
+natives, and assets are all bundled inside it (projects from the FlixelGDX project generator already
+build their jar this way). There is no separate dependency or assets step.
 
 ## The bundled runtime
 

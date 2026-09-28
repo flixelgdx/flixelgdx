@@ -35,19 +35,20 @@ import java.util.List;
  * <pre>{@code
  * main=com.mygame.DesktopLauncher
  * jre=jre
- * libs=lib
+ * libs=.
  * vmarg=-Xmx1G
  * vmarg=-XX:+UseZGC
  * }</pre>
  *
  * <p>The {@code main} key is the class to launch, {@code jre} and {@code libs} are the bundled
- * runtime and classpath directories (relative to the launcher), and each {@code vmarg} line is one
+ * runtime and classpath directories (relative to the launcher; {@code .} means the launcher's own
+ * folder, where the game jar sits), and each {@code vmarg} line is one
  * argument handed to the JVM. A blank line or a line starting with {@code #} is ignored.
  */
 public final class LaunchConfig {
 
   private static final String JRE_DIR = "jre";
-  private static final String LIBS_DIR = "lib";
+  private static final String LIBS_DIR = ".";
 
   private LaunchConfig() {}
 

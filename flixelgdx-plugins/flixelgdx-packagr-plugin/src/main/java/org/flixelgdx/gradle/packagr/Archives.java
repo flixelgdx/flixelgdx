@@ -23,6 +23,8 @@
  */
 package org.flixelgdx.gradle.packagr;
 
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -98,8 +100,9 @@ public final class Archives {
     try (Stream<Path> stream = Files.walk(sourceDir)) {
       files = stream.filter(Files::isRegularFile).sorted(Comparator.naturalOrder()).toList();
     }
+    // The base stream types are used so an older commons-compress from another plugin still works.
     try (OutputStream out = Files.newOutputStream(zipFile);
-        ZipArchiveOutputStream zip = new ZipArchiveOutputStream(out)) {
+        ArchiveOutputStream<ZipArchiveEntry> zip = new ZipArchiveOutputStream(out)) {
       for (Path file : files) {
         String relative = sourceDir.relativize(file).toString().replace('\\', '/');
         ZipArchiveEntry entry = new ZipArchiveEntry(file.toFile(), rootName + "/" + relative);
@@ -137,7 +140,7 @@ public final class Archives {
   }
 
   private static void extractZip(InputStream raw, Path destDir) throws IOException {
-    try (ZipArchiveInputStream in = new ZipArchiveInputStream(raw)) {
+    try (ArchiveInputStream<ZipArchiveEntry> in = new ZipArchiveInputStream(raw)) {
       ZipArchiveEntry entry;
       while ((entry = in.getNextEntry()) != null) {
         Path target = resolveSafely(destDir, entry.getName());
@@ -153,7 +156,7 @@ public final class Archives {
   }
 
   private static void extractTarGz(InputStream raw, Path destDir) throws IOException {
-    try (TarArchiveInputStream in = new TarArchiveInputStream(new GzipCompressorInputStream(raw))) {
+    try (ArchiveInputStream<TarArchiveEntry> in = new TarArchiveInputStream(new GzipCompressorInputStream(raw))) {
       TarArchiveEntry entry;
       while ((entry = in.getNextEntry()) != null) {
         Path target = resolveSafely(destDir, entry.getName());

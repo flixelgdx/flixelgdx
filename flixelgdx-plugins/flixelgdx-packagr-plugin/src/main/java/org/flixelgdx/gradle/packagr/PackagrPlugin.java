@@ -126,7 +126,6 @@ public class PackagrPlugin implements Plugin<Project> {
           task.getTargetName().set(target.getName());
           task.getJdkCacheDir().set(ext.getJdkCacheDir());
           task.getGameJar().set(jarTask.flatMap(Jar::getArchiveFile));
-          task.getRuntimeClasspath().from(project.getConfigurations().named("runtimeClasspath"));
           task.getOutputDir().set(project.getLayout().getBuildDirectory().dir("packagr/" + target.getName()));
           // The distributable zip lands in the root project's dist folder, the conventional place a
           // finished, shareable build goes (and where the previous packaging tool wrote it too).
