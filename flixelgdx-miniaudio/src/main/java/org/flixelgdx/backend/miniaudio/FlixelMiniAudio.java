@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>miniaudio is a full audio engine (decoding, mixing, effects, spatialization) in a single C
  * header. This class holds the {@code native} methods the C wrapper implements and dispatches
- * library loading through a pluggable {@link FlixelLibraryLoader} installed by the platform
+ * library loading through a pluggable {@link FlixelMiniAudioLoader} installed by the platform
  * backend. Desktop extracts a bundled binary; Android calls {@code System.loadLibrary}. If no
  * loader is installed, or the loader throws, audio falls back to silent mode.
  *
@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 public class FlixelMiniAudio {
 
   @Nullable
-  private static FlixelLibraryLoader loader;
+  private static FlixelMiniAudioLoader loader;
 
   /** {@code true} once the native library has been loaded successfully. */
   private static boolean loaded;
@@ -64,7 +64,7 @@ public class FlixelMiniAudio {
    *
    * @param loader The loader to install; must not be {@code null}.
    */
-  public static synchronized void setLoader(@Nullable FlixelLibraryLoader loader) {
+  public static synchronized void setLoader(@Nullable FlixelMiniAudioLoader loader) {
     FlixelMiniAudio.loader = loader;
   }
 

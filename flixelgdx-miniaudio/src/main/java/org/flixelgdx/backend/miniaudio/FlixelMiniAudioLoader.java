@@ -41,7 +41,7 @@ package org.flixelgdx.backend.miniaudio;
  * }</pre>
  */
 @FunctionalInterface
-public interface FlixelLibraryLoader {
+public interface FlixelMiniAudioLoader {
 
   /**
    * Loads the native library.

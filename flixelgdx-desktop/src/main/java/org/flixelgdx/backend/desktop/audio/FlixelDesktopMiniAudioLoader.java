@@ -23,8 +23,7 @@
  */
 package org.flixelgdx.backend.desktop.audio;
 
-import org.flixelgdx.Flixel;
-import org.flixelgdx.backend.miniaudio.FlixelLibraryLoader;
+import org.flixelgdx.backend.miniaudio.FlixelMiniAudioLoader;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 
 import java.io.IOException;
@@ -46,7 +45,7 @@ import java.nio.file.StandardCopyOption;
  * FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());
  * }</pre>
  */
-public class FlixelDesktopMiniAudioLoader implements FlixelLibraryLoader {
+public class FlixelDesktopMiniAudioLoader implements FlixelMiniAudioLoader {
 
   /** Resource root holding the platform-specific subdirectories. */
   private static final String NATIVES_ROOT = "/org/flixelgdx/natives/";
@@ -82,7 +81,6 @@ public class FlixelDesktopMiniAudioLoader implements FlixelLibraryLoader {
       // Load by absolute path: System.load, not System.loadLibrary (the latter resolves a bare
       // library name against java.library.path and would never find the extracted temp file).
       System.load(temp.toAbsolutePath().toString());
-      Flixel.info("Audio", "Loaded miniaudio native from '" + resource + "'.");
     }
   }
 }
