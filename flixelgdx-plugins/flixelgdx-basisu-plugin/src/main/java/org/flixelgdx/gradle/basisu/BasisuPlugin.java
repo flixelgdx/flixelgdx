@@ -30,9 +30,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.ConfigurableFileTree;
-import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.api.tasks.bundling.Jar;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -58,8 +56,8 @@ import java.util.Set;
  * install and run the {@code basisu} command line tool by hand: it extracts a bundled {@code
  * basisu} binary for the host platform, caches it in the Gradle user home directory, and wires a
  * {@code compressBasisuTextures} task into the Android build so every {@code .png} under the
- * configured assets directory is compressed automatically. {@code FlixelGame.create()} enables
- * the matching runtime loader automatically on every backend, so game code keeps requesting
+ * configured assets directory is compressed automatically. The Android backend registers the
+ * matching runtime loader and {@code FlixelGame.create()} turns it on, so game code keeps requesting
  * {@code .png} paths and transparently gets the compressed texture back; see
  * {@code FlixelAssetManager.enableCompressedTextures()} in {@code flixelgdx-core} for the loading
  * side of this feature.
@@ -68,8 +66,8 @@ import java.util.Set;
  * {@link BasisuExtension} for the {@code enableBasisuCompression} Gradle property and other
  * configuration.
  *
- * <p>Apply in the platform module's {@code build.gradle}, alongside {@code com.android.application},
- * {@code com.android.library}, or the desktop module's {@code application} plugin:
+ * <p>Apply in the Android module's {@code build.gradle}, alongside {@code com.android.application}
+ * or {@code com.android.library}:
  *
  * <pre>{@code
  * plugins {
@@ -78,10 +76,10 @@ import java.util.Set;
  * }
  * }</pre>
  *
- * <p>On the desktop backend, compression only affects the packaged {@code jar} task (and anything
- * that depends on it, such as Construo). Running via {@code ./gradlew :lwjgl3:run}
- * still loads plain PNGs directly from the source assets directory, since compressing on every
- * run would slow the development loop.
+ * <p>This does not cover the desktop backend. Its bgfx renderer cannot parse Basis Universal KTX2
+ * files (their pixel format is undefined until transcoded, and they are supercompressed), and the
+ * desktop backend ships no transcoder, so desktop builds always package and load the plain PNGs.
+ * Applying this plugin to a desktop module has no effect on its output.
  *
  * <p>This does not currently cover the TeaVM web backend: neither libGDX's own compressed texture
  * loaders nor Basis Universal's transcoder ship a TeaVM binding, so web builds keep loading plain
@@ -190,7 +188,6 @@ public class BasisuPlugin implements Plugin<Project> {
 
     project.getPlugins().withId("com.android.application", p -> wireAndroid(project, ext, compressTask));
     project.getPlugins().withId("com.android.library", p -> wireAndroid(project, ext, compressTask));
-    project.getPlugins().withId("application", p -> wireJvmJar(project, ext, compressTask));
   }
 
   /**
@@ -343,54 +340,6 @@ public class BasisuPlugin implements Plugin<Project> {
         pngSibling.delete();
       }
     }
-  }
-
-  /**
-   * Wires compressed output into a desktop module's runnable {@code jar} task once the project
-   * is fully configured, so packaged builds ship {@code .ktx2} textures instead of the plain
-   * PNGs they were built from.
-   *
-   * <p>Unlike Android's asset merging (see {@link #wireAndroid}), {@code jar} is a standard
-   * Gradle {@link Jar} copy task and fully honors predicate-based exclusion, so the plain PNG is
-   * filtered out of the packaged jar directly instead of being cleaned up afterward.
-   *
-   * @param project The Gradle project the plugin was applied to.
-   * @param ext The resolved {@link BasisuExtension} for this project.
-   * @param compressTask The registered {@code compressBasisuTextures} task.
-   */
-  private void wireJvmJar(
-      @NonNull Project project,
-      @NonNull BasisuExtension ext,
-      @NonNull TaskProvider<Task> compressTask) {
-    project.afterEvaluate(p -> {
-      if (!ext.getEnabled().get() || !p.getTasks().getNames().contains("jar")) {
-        return;
-      }
-
-      p.getTasks().named("jar", Jar.class, jar -> {
-        jar.dependsOn(compressTask);
-        jar.from(ext.getOutputDir());
-        jar.exclude(details -> hasCompressedSibling(ext, details));
-      });
-    });
-  }
-
-  /**
-   * Returns {@code true} if {@code details} is a plain PNG with a compressed {@code .ktx2}
-   * sibling in the compression task's output directory, so {@link #wireJvmJar} can exclude it
-   * from the packaged JAR in favor of the compressed variant.
-   *
-   * @param ext The resolved {@link BasisuExtension} for this project.
-   * @param details The file being considered for inclusion in the JAR.
-   * @return {@code true} if the plain PNG should be excluded.
-   */
-  private boolean hasCompressedSibling(@NonNull BasisuExtension ext, @NonNull FileTreeElement details) {
-    String path = details.getPath();
-    if (!path.toLowerCase(Locale.ROOT).endsWith(".png")) {
-      return false;
-    }
-    String ktxRelative = path.substring(0, path.length() - ".png".length()) + ".ktx2";
-    return new File(ext.getOutputDir().get().getAsFile(), ktxRelative).isFile();
   }
 
   /**
