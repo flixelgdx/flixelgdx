@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.asset.FlixelAsset;
 import org.flixelgdx.asset.FlixelAssetLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
+import org.flixelgdx.backend.desktop.FlixelDesktopLauncher;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
@@ -37,12 +38,26 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Loads {@code .ktx2} compressed-texture files into GPU textures on the desktop backend.
+ * Loads GPU-native {@code .ktx2} compressed-texture files into GPU textures on the desktop backend.
  *
- * <p>KTX2 is a GPU container: it already holds pixels in a compressed format (such as BC7 or ASTC)
- * together with the mip chain. So, unlike a PNG, there is nothing to decode into RGBA on the CPU;
- * the whole file is handed to the GPU, which keeps it compressed. That saves both memory and upload
- * time versus an uncompressed texture.
+ * <p>KTX2 is a GPU container: it can hold pixels in a compressed format the GPU reads directly
+ * (such as BC7) together with the mip chain. So, unlike a PNG, there is nothing to decode into RGBA
+ * on the CPU; the whole file is handed to the GPU, which keeps it compressed. That saves both memory
+ * and upload time versus an uncompressed texture.
+ *
+ * <p>This loader only works with KTX2 files that bgfx can parse on its own: a concrete GPU format
+ * and no supercompression. It does <b>not</b> accept the Basis Universal files written by the
+ * {@code basisu} Gradle plugin (ETC1S or UASTC), since those store an undefined pixel format that
+ * must be transcoded first, and the desktop backend has no transcoder. For that reason
+ * {@link FlixelDesktopLauncher} does not register this loader, and desktop builds load the plain
+ * PNGs instead.
+ *
+ * <p>To opt in for your own GPU-native KTX2 files, register it before loading any textures:
+ *
+ * <pre>{@code
+ * Flixel.assets.registerLoader(".ktx2", new FlixelKtx2Loader());
+ * Flixel.assets.setCompressedTexturesEnabled(true);
+ * }</pre>
  *
  * <p>The read happens off the main thread ({@link #loadRaw}); the GPU upload happens on the main
  * thread ({@link #finishRaw}) through {@link FlixelGraphicsManager#createCompressedTexture
@@ -71,7 +86,9 @@ public class FlixelKtx2Loader implements FlixelAssetLoader<FlixelGraphic> {
     if (raw instanceof ByteBuffer container) {
       FlixelTexture texture = Flixel.graphics.createCompressedTexture(container);
       if (texture == null) {
-        throw new IllegalStateException("Could not upload compressed texture: '" + path + "'.");
+        throw new IllegalStateException("Could not upload compressed texture: '" + path + "'. bgfx only"
+            + " accepts KTX2 files with a GPU-native format and no supercompression; Basis Universal"
+            + " (ETC1S or UASTC) files are not supported on desktop.");
       }
       return texture;
     }

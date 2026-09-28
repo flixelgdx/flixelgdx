@@ -34,7 +34,6 @@ import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
 import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
-import org.flixelgdx.backend.desktop.graphics.FlixelKtx2Loader;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
@@ -194,9 +193,10 @@ public final class FlixelDesktopLauncher {
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
         iconManager, host, width, height, icons);
 
+    // No .ktx2 loader is registered on desktop. The basisu plugin writes Basis Universal KTX2 files,
+    // which bgfx cannot parse (it rejects their undefined pixel format and supercompression) and
+    // desktop has no transcoder for, so texture requests always resolve to the plain image instead.
     FlixelJvmAssetManager assets = new FlixelJvmAssetManager();
-    assets.registerLoader(".ktx2", new FlixelKtx2Loader());
-    assets.setCompressedTexturesEnabled(true);
     Flixel.assets = assets;
 
     FlixelFontRegistry.setRasterizer(new FlixelStbFontRasterizer());
