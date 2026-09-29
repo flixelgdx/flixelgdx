@@ -174,4 +174,14 @@ public class FlixelHtml5Window implements FlixelWindow {
 
   @JSBody(script = "if (window.close) { window.close(); }")
   private static native void closeWindow();
+
+  @Nullable
+  public HTMLCanvasElement getCanvas() {
+    return canvas;
+  }
+
+  @Nullable
+  public FlixelHtml5Runner getRunner() {
+    return runner;
+  }
 }

@@ -130,7 +130,11 @@ public class FlixelWebGlRenderTarget implements FlixelRenderTarget {
    *
    * @return The framebuffer object.
    */
-  WebGLFramebuffer getFramebuffer() {
+  public WebGLFramebuffer getFramebuffer() {
     return framebuffer;
+  }
+
+  public WebGLRenderingContext getGl() {
+    return gl;
   }
 }

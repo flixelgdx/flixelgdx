@@ -151,4 +151,12 @@ public class FlixelHtml5Gamepad implements FlixelGamepad {
       if (g && g.vibrationActuator && g.vibrationActuator.reset) { g.vibrationActuator.reset(); }
       """)
   private static native void resetVibration(int i);
+
+  public int getButtonCount() {
+    return buttonCount;
+  }
+
+  public String getId() {
+    return id;
+  }
 }

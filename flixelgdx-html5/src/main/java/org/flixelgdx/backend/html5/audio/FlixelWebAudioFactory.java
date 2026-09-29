@@ -118,4 +118,12 @@ public class FlixelWebAudioFactory implements FlixelSoundFactory {
       window.addEventListener('touchstart', resume);
       """)
   private static native void installResumeOnGesture(AudioContext context);
+
+  public AudioContext getContext() {
+    return context;
+  }
+
+  public GainNode getMasterGain() {
+    return masterGain;
+  }
 }

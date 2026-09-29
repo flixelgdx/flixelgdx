@@ -27,6 +27,7 @@ import org.flixelgdx.input.FlixelBaseInputDevice;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
+import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.dom.events.Event;
@@ -474,4 +475,13 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
   @JSBody(script = "return document.hasFocus();")
   private static native boolean documentHasFocus();
+
+  @Nullable
+  public HTMLCanvasElement getCanvas() {
+    return canvas;
+  }
+
+  public boolean isComposing() {
+    return composing;
+  }
 }

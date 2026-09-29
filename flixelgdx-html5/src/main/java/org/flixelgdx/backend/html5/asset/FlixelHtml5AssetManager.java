@@ -402,6 +402,18 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   @JSBody(params = "path", script = "if (window.__flixelDecodedImages) { delete window.__flixelDecodedImages[path]; }")
   private static native void freeDecodedImageJs(String path);
 
+  public int getTotalImages() {
+    return totalImages;
+  }
+
+  public int getPromotedImages() {
+    return promotedImages;
+  }
+
+  public int getActiveDecodeCount() {
+    return activeDecodeCount;
+  }
+
   /**
    * Loads images on web by reading pre-decoded FLXI pixels from the browser decode cache.
    *

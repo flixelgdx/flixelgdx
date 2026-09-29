@@ -277,6 +277,14 @@ public class FlixelHtml5File implements FlixelFile {
   @JSBody(params = "key", script = "window.localStorage.removeItem(key);")
   private static native void storageRemove(String key);
 
+  public String getResolved() {
+    return resolved;
+  }
+
+  public Kind getKind() {
+    return kind;
+  }
+
   /** Which browser mechanism backs a given handle. */
   public enum Kind {
 

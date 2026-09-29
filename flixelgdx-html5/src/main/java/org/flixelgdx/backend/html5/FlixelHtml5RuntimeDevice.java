@@ -29,6 +29,7 @@ import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.util.FlixelExceptionUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 
 import java.util.Objects;
@@ -128,8 +129,13 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
     installJsErrorHandlers();
   }
 
-  /** Returns the crash handler installed by {@link #setCrashHandler}, or {@code null} if not set. */
-  FlixelCrashHandler getCrashHandler() {
+  /**
+   * Returns the crash handler installed by {@link #setCrashHandler}.
+   *
+   * @return The installed crash handler, or {@code null} if none has been set.
+   */
+  @Nullable
+  public FlixelCrashHandler getCrashHandler() {
     return crashHandler;
   }
 
