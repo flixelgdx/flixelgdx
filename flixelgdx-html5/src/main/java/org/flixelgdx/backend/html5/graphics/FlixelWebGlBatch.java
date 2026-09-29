@@ -75,8 +75,8 @@ public class FlixelWebGlBatch implements FlixelBatch {
   /** WebGL2's {@code MAX} blend equation, which TeaVM's WebGL1-shaped context does not declare. */
   private static final int BLEND_MAX = 0x8008;
 
-  /** The most texture units the built-in shader samples from, which caps the if-chain it is built with. */
-  private static final int MAX_SLOTS = 8;
+  /** The most texture units the built-in shader samples from, which caps the sampler search it is built with. */
+  private static final int MAX_SLOTS = 16;
   private static final int FLOATS_PER_VERTEX = 9;
   private static final int FLOATS_PER_QUAD = FLOATS_PER_VERTEX * 4;
 
