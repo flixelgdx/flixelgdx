@@ -47,11 +47,17 @@ import org.teavm.jso.webgl.WebGLUniformLocation;
  * A WebGL2 sprite batch: the web backend's implementation of {@link FlixelBatch}.
  *
  * <p>It works the same way every 2D batcher does. Each {@code draw} call appends one textured quad
- * (four vertices, eight floats each: position, texture coordinates, and an RGBA tint) into a CPU
- * array. Nothing touches the GPU until a {@link #flush()}, which happens automatically when the
- * bound texture, blend mode, or matrices change, when the buffer fills, or at {@link #end()}.
- * Grouping many quads into one upload and one draw call is what keeps 2D rendering fast, so drawing
- * many sprites from a single atlas costs only one submission.
+ * (four vertices, nine floats each: position, texture coordinates, an RGBA tint, and a texture slot
+ * index) into a CPU array. Nothing touches the GPU until a {@link #flush()}, which happens
+ * automatically when the blend mode or matrices change, when the buffer or the texture slots fill, or
+ * at {@link #end()}. Grouping many quads into one upload and one draw call is what keeps 2D rendering
+ * fast.
+ *
+ * <p>Quads may sample from several textures within a single draw call. The built-in sprite shader
+ * declares up to {@value #MAX_SLOTS} samplers, one per texture unit, and each vertex carries the slot
+ * of the texture it samples. Switching between textures therefore only costs a flush once every slot
+ * is taken, instead of on every change. Custom shaders declare a single {@code u_texture} sampler, so
+ * while one is active the batch falls back to one texture per draw call.
  *
  * <p>{@link #setShader(FlixelShader)} swaps in a custom program compiled by the web backend; when no
  * shader is set (or one failed to compile) the built-in sprite shader is used. Because every program
@@ -68,7 +74,10 @@ public class FlixelWebGlBatch implements FlixelBatch {
 
   /** WebGL2's {@code MAX} blend equation, which TeaVM's WebGL1-shaped context does not declare. */
   private static final int BLEND_MAX = 0x8008;
-  private static final int FLOATS_PER_VERTEX = 8;
+
+  /** The most texture units the built-in shader samples from, which caps the sampler search it is built with. */
+  private static final int MAX_SLOTS = 16;
+  private static final int FLOATS_PER_VERTEX = 9;
   private static final int FLOATS_PER_QUAD = FLOATS_PER_VERTEX * 4;
 
   @NotNull
@@ -86,8 +95,8 @@ public class FlixelWebGlBatch implements FlixelBatch {
   @Nullable
   private final WebGLUniformLocation defaultProjTransLocation;
 
-  @Nullable
-  private final WebGLUniformLocation defaultTextureLocation;
+  @NotNull
+  private final FlixelWebGlTexture[] slots = new FlixelWebGlTexture[MAX_SLOTS];
 
   @NotNull
   private final Float32Array vertices = new Float32Array(MAX_QUADS * FLOATS_PER_QUAD);
@@ -109,9 +118,6 @@ public class FlixelWebGlBatch implements FlixelBatch {
   @Nullable
   private FlixelShader shader;
 
-  @Nullable
-  private FlixelWebGlTexture currentTexture;
-
   @NotNull
   private WebGLProgram activeProgram;
 
@@ -124,6 +130,9 @@ public class FlixelWebGlBatch implements FlixelBatch {
   @Nullable
   private FlixelWebGlShaderProgram activeShaderProgram;
 
+  private final int slotCount;
+
+  private int slotsUsed;
   private int quadCount;
   private int renderCalls;
   private int totalRenderCalls;
@@ -139,13 +148,19 @@ public class FlixelWebGlBatch implements FlixelBatch {
    */
   public FlixelWebGlBatch(@NotNull WebGLRenderingContext gl) {
     this.gl = gl;
-    this.defaultProgram = FlixelWebGlPrograms.build(gl, VERTEX_SOURCE, FRAGMENT_SOURCE);
+    this.slotCount = Math.max(1, Math.min(MAX_SLOTS, gl.getParameteri(WebGLRenderingContext.MAX_TEXTURE_IMAGE_UNITS)));
+    this.defaultProgram = FlixelWebGlPrograms.build(gl, VERTEX_SOURCE, buildFragmentSource(slotCount));
     this.defaultProjTransLocation = gl.getUniformLocation(defaultProgram, "u_projTrans");
-    this.defaultTextureLocation = gl.getUniformLocation(defaultProgram, "u_texture");
+
+    // Sampler i always reads texture unit i, so this only needs to be set once.
+    gl.useProgram(defaultProgram);
+    for (int i = 0; i < slotCount; i++) {
+      gl.uniform1i(gl.getUniformLocation(defaultProgram, "u_tex" + i), i);
+    }
 
     this.activeProgram = defaultProgram;
     this.activeProjTransLocation = defaultProjTransLocation;
-    this.activeTextureLocation = defaultTextureLocation;
+    this.activeTextureLocation = null;
 
     this.vertexBuffer = gl.createBuffer();
     this.indexBuffer = gl.createBuffer();
@@ -157,7 +172,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
     drawing = true;
     renderCalls = 0;
     quadCount = 0;
-    currentTexture = null;
+    clearSlots();
     // The active program is left untouched here on purpose: the global and per-camera shader passes
     // call setShader(...) right before begin(), so resetting to the default program here would
     // silently discard the shader they just set and draw the scene unshaded.
@@ -167,12 +182,11 @@ public class FlixelWebGlBatch implements FlixelBatch {
   public void end() {
     flush();
     drawing = false;
-    currentTexture = null;
   }
 
   @Override
   public void flush() {
-    if (quadCount == 0 || currentTexture == null) {
+    if (quadCount == 0) {
       return;
     }
 
@@ -197,8 +211,13 @@ public class FlixelWebGlBatch implements FlixelBatch {
       activeShaderProgram.apply(gl);
     }
 
+    // Textures are rebound every flush, so the texture upload code binding on unit 0 can never leave
+    // a stale slot behind.
+    for (int i = 0; i < slotsUsed; i++) {
+      gl.activeTexture(WebGLRenderingContext.TEXTURE0 + i);
+      gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, slots[i].getGlTexture());
+    }
     gl.activeTexture(WebGLRenderingContext.TEXTURE0);
-    gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, currentTexture.getGlTexture());
 
     gl.bindBuffer(WebGLRenderingContext.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(WebGLRenderingContext.ARRAY_BUFFER, vertices, WebGLRenderingContext.DYNAMIC_DRAW);
@@ -207,11 +226,13 @@ public class FlixelWebGlBatch implements FlixelBatch {
     enable(FlixelWebGlPrograms.POSITION, 2, stride, 0);
     enable(FlixelWebGlPrograms.TEXCOORD, 2, stride, 2 * 4);
     enable(FlixelWebGlPrograms.COLOR, 4, stride, 4 * 4);
+    enable(FlixelWebGlPrograms.TEXINDEX, 1, stride, 8 * 4);
 
     gl.bindBuffer(WebGLRenderingContext.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.drawElements(WebGLRenderingContext.TRIANGLES, quadCount * 6, WebGLRenderingContext.UNSIGNED_SHORT, 0);
 
     quadCount = 0;
+    clearSlots();
     renderCalls++;
     totalRenderCalls++;
   }
@@ -224,15 +245,15 @@ public class FlixelWebGlBatch implements FlixelBatch {
   @Override
   public void draw(@NotNull FlixelTexture texture, float x, float y, float width, float height,
       float u, float v, float u2, float v2) {
-    switchTexture(texture);
-    appendQuad(x, y + height, x + width, y + height, x + width, y, x, y, u, v2, u2, v,
+    int slot = slotFor(texture);
+    appendQuad(slot, x, y + height, x + width, y + height, x + width, y, x, y, u, v2, u2, v,
         color.r, color.g, color.b, color.a);
   }
 
   @Override
   public void draw(@NotNull FlixelFrame frame, float x, float y, float width, float height) {
-    switchTexture(frame.getTexture());
-    appendQuad(x, y + height, x + width, y + height, x + width, y, x, y,
+    int slot = slotFor(frame.getTexture());
+    appendQuad(slot, x, y + height, x + width, y + height, x + width, y, x, y,
         frame.getU(), frame.getV2(), frame.getU2(), frame.getV(),
         color.r, color.g, color.b, color.a);
   }
@@ -241,7 +262,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
   public void draw(@NotNull FlixelFrame frame, float x, float y, float originX, float originY,
       float width, float height, float scaleX, float scaleY, float rotation,
       boolean flipX, boolean flipY) {
-    switchTexture(frame.getTexture());
+    int slot = slotFor(frame.getTexture());
 
     float worldOriginX = x + originX;
     float worldOriginY = y + originY;
@@ -278,13 +299,13 @@ public class FlixelWebGlBatch implements FlixelBatch {
     float v2 = flipY ? frame.getV() : frame.getV2();
 
     // Vertices wound bottom-left, bottom-right, top-right, top-left.
-    appendQuad(x2, y2, x3, y3, x4, y4, x1, y1, u, v2, u2, v,
+    appendQuad(slot, x2, y2, x3, y3, x4, y4, x1, y1, u, v2, u2, v,
         color.r, color.g, color.b, color.a);
   }
 
   @Override
   public void draw(@NotNull FlixelFrame frame, float width, float height, @NotNull FlixelAffine transform) {
-    switchTexture(frame.getTexture());
+    int slot = slotFor(frame.getTexture());
 
     float x1 = transform.m02;
     float y1 = transform.m12;
@@ -295,19 +316,20 @@ public class FlixelWebGlBatch implements FlixelBatch {
     float x4 = transform.m01 * height + transform.m02;
     float y4 = transform.m11 * height + transform.m12;
 
-    appendQuad(x4, y4, x3, y3, x2, y2, x1, y1,
+    appendQuad(slot, x4, y4, x3, y3, x2, y2, x1, y1,
         frame.getU(), frame.getV2(), frame.getU2(), frame.getV(),
         color.r, color.g, color.b, color.a);
   }
 
   @Override
   public void draw(@NotNull FlixelTexture texture, float @NotNull [] verts, int offset, int count) {
-    switchTexture(texture);
     int quads = count / 20;
     for (int q = 0; q < quads; q++) {
       int base = offset + q * 20;
-      if (quadCount >= MAX_QUADS) {
-        flush();
+      // Resolved per quad because a flush in here empties the slots.
+      int slot = slotFor(texture);
+      if (slot < 0) {
+        return;
       }
       int out = quadCount * FLOATS_PER_QUAD;
       for (int corner = 0; corner < 4; corner++) {
@@ -318,7 +340,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
         float g = ((bits >>> 8) & 0xFF) / 255f * color.g;
         float b = ((bits >>> 16) & 0xFF) / 255f * color.b;
         float a = ((bits >>> 24) & 0xFF) / 255f * color.a;
-        out = writeVertex(out, verts[in], verts[in + 1], verts[in + 2], verts[in + 3], r, g, b, a);
+        out = writeVertex(out, verts[in], verts[in + 1], verts[in + 2], verts[in + 3], r, g, b, a, slot);
       }
       quadCount++;
     }
@@ -442,41 +464,63 @@ public class FlixelWebGlBatch implements FlixelBatch {
     activeShaderProgram = null;
     activeProgram = defaultProgram;
     activeProjTransLocation = defaultProjTransLocation;
-    activeTextureLocation = defaultTextureLocation;
+    activeTextureLocation = null;
   }
 
   /**
-   * Switches the bound texture, flushing first when the texture actually changes so quads never mix
-   * two textures in one draw call.
+   * Finds (or claims) the texture slot the next quad samples from, flushing first when there is no
+   * room left.
+   *
+   * <p>A flush happens only when the quad buffer is full or every slot holds a different texture.
+   * While a custom shader is active only one slot is usable, because custom shaders declare a single
+   * sampler, so every texture change flushes like a classic single-texture batch.
    *
    * <p>If {@code texture} is not a {@link FlixelWebGlTexture} (for example, a
-   * {@link FlixelNoopTexture} left behind when a bitmap font's page image
-   * failed to decode), any pending quads for the previous real texture are flushed and
-   * {@code currentTexture} is cleared so subsequent {@link #appendQuad} calls are silently skipped.
-   * A one-time warning is logged to flag the root cause.
+   * {@link FlixelNoopTexture} left behind when a bitmap font's page image failed to decode), the quad
+   * has nothing to sample and {@code -1} is returned so the caller can skip it. A one-time warning
+   * is logged to flag the root cause.
    *
    * @param texture The texture the next quad samples from.
+   * @return The slot index for the texture, or {@code -1} if the quad should be skipped.
    */
-  private void switchTexture(FlixelTexture texture) {
+  private int slotFor(FlixelTexture texture) {
     if (!(texture instanceof FlixelWebGlTexture webGl)) {
       if (!loggedNoopTexture) {
         loggedNoopTexture = true;
         Flixel.warn("WebGL", "Draw call skipped: texture is not a WebGL texture. "
             + "This usually means a bitmap font's page image was unavailable at load time.");
       }
-      flush();
-      currentTexture = null;
-      return;
+      return -1;
     }
-    if (currentTexture == null || currentTexture.getHandle() != webGl.getHandle() || quadCount >= MAX_QUADS) {
-      flush();
-      currentTexture = webGl;
+    for (int i = 0; i < slotsUsed; i++) {
+      if (slots[i] == webGl) {
+        if (quadCount >= MAX_QUADS) {
+          flush();
+          break;
+        }
+        return i;
+      }
     }
+    int capacity = activeShaderProgram != null ? 1 : slotCount;
+    if (quadCount >= MAX_QUADS || slotsUsed >= capacity) {
+      flush();
+    }
+    slots[slotsUsed] = webGl;
+    return slotsUsed++;
+  }
+
+  /** Forgets every slot's texture so none is kept alive or mistaken for bound after a flush. */
+  private void clearSlots() {
+    for (int i = 0; i < slotsUsed; i++) {
+      slots[i] = null;
+    }
+    slotsUsed = 0;
   }
 
   /**
    * Appends one quad's four vertices in the winding the batch expects.
    *
+   * @param slot The texture slot from {@link #slotFor(FlixelTexture)}, or negative to skip the quad.
    * @param x1 Bottom-left x.
    * @param y1 Bottom-left y.
    * @param x2 Bottom-right x.
@@ -494,19 +538,16 @@ public class FlixelWebGlBatch implements FlixelBatch {
    * @param b Blue tint in {@code [0, 1]}.
    * @param a Alpha tint in {@code [0, 1]}.
    */
-  private void appendQuad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,
+  private void appendQuad(int slot, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4,
       float u, float v, float u2, float v2, float r, float g, float b, float a) {
-    if (currentTexture == null) {
+    if (slot < 0) {
       return;
     }
-    if (quadCount >= MAX_QUADS) {
-      flush();
-    }
     int out = quadCount * FLOATS_PER_QUAD;
-    out = writeVertex(out, x1, y1, u, v, r, g, b, a);
-    out = writeVertex(out, x2, y2, u2, v, r, g, b, a);
-    out = writeVertex(out, x3, y3, u2, v2, r, g, b, a);
-    writeVertex(out, x4, y4, u, v2, r, g, b, a);
+    out = writeVertex(out, x1, y1, u, v, r, g, b, a, slot);
+    out = writeVertex(out, x2, y2, u2, v, r, g, b, a, slot);
+    out = writeVertex(out, x3, y3, u2, v2, r, g, b, a, slot);
+    writeVertex(out, x4, y4, u, v2, r, g, b, a, slot);
     quadCount++;
   }
 
@@ -522,9 +563,10 @@ public class FlixelWebGlBatch implements FlixelBatch {
    * @param g Green tint.
    * @param b Blue tint.
    * @param a Alpha tint.
+   * @param slot The texture slot the vertex samples from.
    * @return The float index just past the written vertex.
    */
-  private int writeVertex(int out, float x, float y, float u, float v, float r, float g, float b, float a) {
+  private int writeVertex(int out, float x, float y, float u, float v, float r, float g, float b, float a, int slot) {
     vertices.set(out, x);
     vertices.set(out + 1, y);
     vertices.set(out + 2, u);
@@ -533,6 +575,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
     vertices.set(out + 5, g);
     vertices.set(out + 6, b);
     vertices.set(out + 7, a);
+    vertices.set(out + 8, slot);
     return out + FLOATS_PER_VERTEX;
   }
 
@@ -647,33 +690,73 @@ public class FlixelWebGlBatch implements FlixelBatch {
   }
 
   // The built-in sprite shader is written in ESSL 1.00 against the framework's GLSL contract
-  // (a_position, a_texCoord0, a_color, u_projTrans, u_texture), so it shares one vertex layout with
-  // every custom shader and both can be swapped in without rebinding the vertex buffer.
+  // (a_position, a_texCoord0, a_color, u_projTrans), so it shares one vertex layout with every custom
+  // shader and both can be swapped in without rebinding the vertex buffer. It adds a_texIndex, which
+  // picks one of several samplers so many textures can share a draw call. Custom shaders never see it.
   private static final String VERTEX_SOURCE =
       """
           attribute vec2 a_position;
           attribute vec2 a_texCoord0;
           attribute vec4 a_color;
+          attribute float a_texIndex;
           uniform mat4 u_projTrans;
           varying vec2 v_texCoords;
           varying vec4 v_color;
+          varying float v_texIndex;
           void main() {
             v_texCoords = a_texCoord0;
             v_color = a_color;
+            v_texIndex = a_texIndex;
             gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);
           }
           """;
 
-  private static final String FRAGMENT_SOURCE =
-      """
-          #ifdef GL_ES
-          precision mediump float;
-          #endif
-          uniform sampler2D u_texture;
-          varying vec2 v_texCoords;
-          varying vec4 v_color;
-          void main() {
-            gl_FragColor = v_color * texture2D(u_texture, v_texCoords);
-          }
-          """;
+  /**
+   * Builds the built-in fragment shader for a number of texture slots.
+   *
+   * <p>Samplers cannot be indexed dynamically in ESSL 1.00, so the shader has to branch to pick the
+   * right one. Instead of testing every slot one after another, the branches form a binary search
+   * over the slot index: each test halves the remaining range, so finding one of 16 slots takes 4
+   * comparisons instead of up to 16. Every fragment of a quad takes the same branches, so this stays
+   * cheap.
+   *
+   * @param slots The number of samplers to declare, at least one.
+   * @return The GLSL fragment source.
+   */
+  private static String buildFragmentSource(int slots) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("#ifdef GL_ES\nprecision mediump float;\n#endif\n");
+    for (int i = 0; i < slots; i++) {
+      sb.append("uniform sampler2D u_tex").append(i).append(";\n");
+    }
+    sb.append("varying vec2 v_texCoords;\nvarying vec4 v_color;\nvarying float v_texIndex;\n");
+    sb.append("void main() {\n  int slot = int(v_texIndex + 0.5);\n  vec4 samp;\n");
+    appendSlotSearch(sb, 0, slots - 1, "  ");
+    sb.append("  gl_FragColor = v_color * samp;\n}\n");
+    return sb.toString();
+  }
+
+  /**
+   * Appends the branches that sample the texture for a slot in {@code [lo, hi]}.
+   *
+   * <p>The range is split at its middle: slots below the split go down the first branch and the
+   * rest go down the second, recursing until a single slot is left, which samples directly.
+   *
+   * @param sb The shader source being built.
+   * @param lo The lowest slot index in the range, inclusive.
+   * @param hi The highest slot index in the range, inclusive.
+   * @param indent The indentation for the emitted lines.
+   */
+  private static void appendSlotSearch(StringBuilder sb, int lo, int hi, String indent) {
+    if (lo == hi) {
+      sb.append(indent).append("samp = texture2D(u_tex").append(lo).append(", v_texCoords);\n");
+      return;
+    }
+    int mid = (lo + hi + 1) >>> 1;
+    sb.append(indent).append("if (slot < ").append(mid).append(") {\n");
+    appendSlotSearch(sb, lo, mid - 1, indent + "  ");
+    sb.append(indent).append("} else {\n");
+    appendSlotSearch(sb, mid, hi, indent + "  ");
+    sb.append(indent).append("}\n");
+  }
 }
