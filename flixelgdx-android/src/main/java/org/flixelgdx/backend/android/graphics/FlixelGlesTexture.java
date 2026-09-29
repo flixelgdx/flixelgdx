@@ -213,7 +213,7 @@ class FlixelGlesTexture implements FlixelTexture {
    *
    * @return The GL texture object name.
    */
-  int getGlTexture() {
+  public int getGlTexture() {
     return glTexture;
   }
 

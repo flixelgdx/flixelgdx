@@ -130,8 +130,12 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
     this.vibrator = device.getVibrator();
   }
 
-  /** Returns the Android input device ID for this gamepad. */
-  int getDeviceId() {
+  /**
+   * Returns the Android input device ID for this gamepad.
+   *
+   * @return The Android input device ID.
+   */
+  public int getDeviceId() {
     return deviceId;
   }
 

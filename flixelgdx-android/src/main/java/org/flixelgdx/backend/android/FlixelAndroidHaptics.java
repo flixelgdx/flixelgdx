@@ -127,4 +127,9 @@ public class FlixelAndroidHaptics implements FlixelHaptics {
       return false;
     }
   }
+
+  @Nullable
+  public Vibrator getVibrator() {
+    return vibrator;
+  }
 }

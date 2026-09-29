@@ -81,4 +81,8 @@ public class FlixelAndroidFontRasterizer implements FlixelFontRasterizer {
       }
     }
   }
+
+  public Context getContext() {
+    return context;
+  }
 }

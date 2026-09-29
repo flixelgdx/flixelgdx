@@ -185,4 +185,8 @@ public class FlixelAndroidWindow implements FlixelWindow {
       }
     });
   }
+
+  public Activity getActivity() {
+    return activity;
+  }
 }

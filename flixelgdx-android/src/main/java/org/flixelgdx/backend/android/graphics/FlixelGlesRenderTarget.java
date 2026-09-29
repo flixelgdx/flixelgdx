@@ -122,7 +122,7 @@ class FlixelGlesRenderTarget implements FlixelRenderTarget {
    *
    * @return The GL framebuffer object name.
    */
-  int getFramebuffer() {
+  public int getFramebuffer() {
     return framebuffer;
   }
 }

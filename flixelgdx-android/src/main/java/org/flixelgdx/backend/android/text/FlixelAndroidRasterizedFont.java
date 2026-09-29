@@ -207,4 +207,8 @@ class FlixelAndroidRasterizedFont implements FlixelRasterizedFont {
       scratch.recycle();
     }
   }
+
+  public boolean isDestroyed() {
+    return destroyed;
+  }
 }

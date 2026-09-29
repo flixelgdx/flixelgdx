@@ -78,4 +78,8 @@ public class FlixelAndroidAlerter implements FlixelAlerter {
       }
     });
   }
+
+  public Activity getActivity() {
+    return activity;
+  }
 }

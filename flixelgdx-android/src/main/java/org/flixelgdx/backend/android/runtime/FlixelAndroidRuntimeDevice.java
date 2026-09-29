@@ -139,4 +139,8 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
   public FlixelCrashHandler getCrashHandler() {
     return crashHandler;
   }
+
+  public File getLogsFolder() {
+    return logsFolder;
+  }
 }

@@ -105,4 +105,16 @@ public class FlixelAndroidFiles implements FlixelFiles {
     File root = new File(localRoot, org + "/" + app);
     return new FlixelAndroidFile(null, path, new File(root, path), false, false);
   }
+
+  public AssetManager getAssets() {
+    return assets;
+  }
+
+  public File getLocalRoot() {
+    return localRoot;
+  }
+
+  public File getExternalRoot() {
+    return externalRoot;
+  }
 }
