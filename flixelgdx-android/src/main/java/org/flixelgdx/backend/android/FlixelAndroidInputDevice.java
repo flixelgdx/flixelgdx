@@ -33,6 +33,7 @@ import android.view.inputmethod.InputMethodManager;
 import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
 import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
 import org.flixelgdx.input.FlixelBaseInputDevice;
+import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.jetbrains.annotations.NotNull;
@@ -247,7 +248,7 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
    * so the activity does not finish on Back. Volume keys are passed through unconsumed.
    * Gamepad button events are forwarded to the active {@link FlixelAndroidGamepadProvider} and
    * consumed. For hardware keyboard events, typed Unicode characters are also forwarded through
-   * the char-input path so {@link org.flixelgdx.input.FlixelKeyboardListener#keyTyped(char)} fires.
+   * the char-input path so {@link FlixelKeyboardListener#keyTyped(char)} fires.
    *
    * @return A key listener safe to call from the UI thread.
    */

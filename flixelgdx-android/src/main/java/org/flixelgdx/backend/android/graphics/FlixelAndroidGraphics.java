@@ -28,6 +28,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.opengl.GLES30;
 import android.util.DisplayMetrics;
+import org.flixelgdx.Flixel;
+import org.flixelgdx.backend.android.FlixelAndroidLauncher;
 import org.flixelgdx.backend.android.FlixelAndroidWindow;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
@@ -61,8 +63,8 @@ import java.nio.charset.StandardCharsets;
  * <p>This class implements {@link FlixelGraphicsManager} for the Android platform. It exposes
  * {@link #onContextLost()} and {@link #onContextRestored()} for the launcher to wire into the
  * runner's context listener. It is created by
- * {@link org.flixelgdx.backend.android.FlixelAndroidLauncher} and installed as
- * {@link org.flixelgdx.Flixel#graphics} before the game loop starts. All GL calls go through
+ * {@link FlixelAndroidLauncher} and installed as
+ * {@link Flixel#graphics} before the game loop starts. All GL calls go through
  * {@code android.opengl.GLES30} and must remain on the GL thread.
  *
  * <p>GL initialization is deferred to the first {@link #beginFrame()} call, which happens on the

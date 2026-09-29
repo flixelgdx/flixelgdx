@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.android.file;
 
 import android.content.res.AssetManager;
+import org.flixelgdx.Flixel;
 import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +42,7 @@ import java.nio.charset.StandardCharsets;
  * Android {@link FlixelFile} implementation that reads APK assets and disk files.
  *
  * <p>Instances are created by {@link FlixelAndroidFiles}; game code obtains them through
- * {@link org.flixelgdx.Flixel#files} and never constructs them directly.
+ * {@link Flixel#files} and never constructs them directly.
  *
  * <p>Internal files are read first from the APK {@link AssetManager}, then from the classpath
  * (for framework-bundled resources such as default fonts and shaders). Disk-backed files use

@@ -30,6 +30,8 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
+import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,12 +39,12 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Button and axis state are written from the UI thread (via key and motion event handlers
  * in {@link FlixelAndroidGamepadProvider}) and read from the GL thread (via the
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadProvider} polling calls). Volatile fields
+ * {@link FlixelGamepadProvider} polling calls). Volatile fields
  * provide the necessary memory ordering without any per-event allocation.
  *
  * <p>Native button indices are compact sequential values (0 to {@link #BUTTON_COUNT} minus one)
  * defined as constants in this class. The corresponding mapping to logical
- * {@link org.flixelgdx.input.gamepad.FlixelGamepadButton} tokens is built in
+ * {@link FlixelGamepadButton} tokens is built in
  * {@link FlixelAndroidGamepadProvider#buildStandardMapping()}.
  *
  * <p>Native axis indices are also compact (0 to {@link #AXIS_COUNT} minus one):

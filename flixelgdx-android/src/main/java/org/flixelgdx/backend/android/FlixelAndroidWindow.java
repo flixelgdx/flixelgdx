@@ -25,6 +25,7 @@ package org.flixelgdx.backend.android;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.Application;
 import android.os.Build;
 import android.view.View;
 import android.view.Window;
@@ -43,7 +44,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Window focus changes are driven by Android lifecycle events in the launcher; this class cannot
  * override {@code Activity.onWindowFocusChanged} from outside the activity. Focus callbacks are
- * instead delivered through the {@link android.app.Application.ActivityLifecycleCallbacks} hooks
+ * instead delivered through the {@link Application.ActivityLifecycleCallbacks} hooks
  * the launcher registers.
  *
  * <p>Title, position, and size setters are no-ops on Android as the activity always occupies

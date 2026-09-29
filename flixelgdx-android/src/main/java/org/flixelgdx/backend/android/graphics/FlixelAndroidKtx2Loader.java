@@ -29,6 +29,7 @@ import org.flixelgdx.asset.FlixelAssetLoader;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelGraphic;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,7 +41,7 @@ import java.nio.ByteOrder;
  *
  * <p>KTX2 is a GPU container that stores pixels in a Basis-compressed format together with the
  * full mip chain. Rather than decoding to RGBA on the CPU (as a PNG would), this loader hands the
- * container to {@link org.flixelgdx.graphics.FlixelGraphicsManager#createCompressedTexture
+ * container to {@link FlixelGraphicsManager#createCompressedTexture
  * createCompressedTexture}, which transcodes each mip level to the best GPU format this device
  * supports (ASTC 4x4, ETC2 RGBA8, or RGBA32 as a fallback) and uploads it in compressed form.
  * Keeping the texture compressed saves both GPU memory and upload bandwidth.
