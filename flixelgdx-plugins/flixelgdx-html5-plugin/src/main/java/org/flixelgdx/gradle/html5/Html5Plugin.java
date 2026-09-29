@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.gradle.html5;
 
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -482,6 +484,7 @@ public class Html5Plugin implements Plugin<Project> {
         Map.entry("html", "text/html; charset=utf-8"),
         Map.entry("js", "application/javascript"),
         Map.entry("map", "application/json"),
+        Map.entry("json", "application/json"),
         Map.entry("css", "text/css"),
         Map.entry("png", "image/png"),
         Map.entry("jpg", "image/jpeg"),
@@ -489,20 +492,34 @@ public class Html5Plugin implements Plugin<Project> {
         Map.entry("gif", "image/gif"),
         Map.entry("txt", "text/plain"),
         Map.entry("ttf", "font/ttf"),
-        Map.entry("wasm", "application/wasm"));
+        Map.entry("wasm", "application/wasm"),
+        Map.entry("mp4", "video/mp4"),
+        Map.entry("m4v", "video/mp4"),
+        Map.entry("webm", "video/webm"),
+        Map.entry("mov", "video/quicktime"),
+        Map.entry("ogv", "video/ogg"),
+        Map.entry("mkv", "video/x-matroska"),
+        Map.entry("mp3", "audio/mpeg"),
+        Map.entry("ogg", "audio/ogg"),
+        Map.entry("wav", "audio/wav"),
+        Map.entry("m4a", "audio/mp4"));
 
     server.createContext("/", (HttpExchange exchange) -> {
       String urlPath = exchange.getRequestURI().getPath();
       if (urlPath.equals("/") || urlPath.isEmpty()) {
         urlPath = "/index.html";
       }
+      boolean head = "HEAD".equalsIgnoreCase(exchange.getRequestMethod());
       File file = new File(webRoot, urlPath);
       if (!file.exists() || file.isDirectory()) {
         byte[] body = ("404 Not Found: " + urlPath).getBytes(StandardCharsets.UTF_8);
-        exchange.sendResponseHeaders(404, body.length);
-        try (OutputStream out = exchange.getResponseBody()) {
-          out.write(body);
+        exchange.sendResponseHeaders(404, head ? -1 : body.length);
+        if (!head) {
+          try (OutputStream out = exchange.getResponseBody()) {
+            out.write(body);
+          }
         }
+        exchange.close();
         return;
       }
       String suffix = "";
@@ -510,11 +527,49 @@ public class Html5Plugin implements Plugin<Project> {
       if (dot >= 0) {
         suffix = file.getName().substring(dot + 1).toLowerCase();
       }
-      byte[] bytes = Files.readAllBytes(file.toPath());
-      exchange.getResponseHeaders().set("Content-Type", mimeTypes.getOrDefault(suffix, "application/octet-stream"));
-      exchange.sendResponseHeaders(200, bytes.length);
-      try (OutputStream out = exchange.getResponseBody()) {
-        out.write(bytes);
+      long total = file.length();
+      Headers headers = exchange.getResponseHeaders();
+      headers.set("Content-Type", mimeTypes.getOrDefault(suffix, "application/octet-stream"));
+      headers.set("Accept-Ranges", "bytes");
+
+      long[] range = RangeParser.parse(exchange.getRequestHeaders().getFirst("Range"), total);
+      if (range != null && range.length == 0) {
+        headers.set("Content-Range", "bytes */" + total);
+        exchange.sendResponseHeaders(416, -1);
+        exchange.close();
+        return;
+      }
+      long start = 0;
+      long length = total;
+      int status = 200;
+      if (range != null) {
+        start = range[0];
+        length = range[1] - range[0] + 1;
+        status = 206;
+        headers.set("Content-Range", "bytes " + range[0] + "-" + range[1] + "/" + total);
+      }
+      if (head || length == 0) {
+        headers.set("Content-Length", Long.toString(length));
+        exchange.sendResponseHeaders(status, -1);
+        exchange.close();
+        return;
+      }
+      exchange.sendResponseHeaders(status, length);
+      try (OutputStream out = exchange.getResponseBody();
+          RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+        raf.seek(start);
+        byte[] buf = new byte[64 * 1024];
+        long remaining = length;
+        while (remaining > 0) {
+          int n = raf.read(buf, 0, (int) Math.min(buf.length, remaining));
+          if (n < 0) {
+            break;
+          }
+          out.write(buf, 0, n);
+          remaining -= n;
+        }
+      } catch (IOException ignored) {
+        // The browser commonly aborts range streams when it seeks; that is not an error.
       }
     });
 

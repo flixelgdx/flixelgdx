@@ -20,3 +20,13 @@ dependencies {
   // compile time.
   compileOnly(libs.teavm.gradle.plugin)
 }
+
+dependencies {
+  testRuntimeOnly(libs.junit.platform.launcher)
+  testImplementation(platform(libs.junit.bom))
+  testImplementation(libs.junit.jupiter)
+}
+
+tasks.named<Test>("test") {
+  useJUnitPlatform()
+}
