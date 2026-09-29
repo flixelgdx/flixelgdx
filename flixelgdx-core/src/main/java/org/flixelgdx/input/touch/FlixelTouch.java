@@ -23,6 +23,10 @@
  */
 package org.flixelgdx.input.touch;
 
+import org.flixelgdx.FlixelCamera;
+import org.flixelgdx.math.FlixelVector;
+import org.jetbrains.annotations.NotNull;
+
 /**
  * State snapshot for a single touch pointer (one finger).
  *
@@ -38,7 +42,9 @@ package org.flixelgdx.input.touch;
  *
  * <p>Screen coordinates use a top-left origin (Y increases downward). World coordinates are
  * unprojected via the touch manager's active camera and use the standard top-left origin
- * (Y increases downward), matching the rest of the scene.
+ * (Y increases downward), matching the rest of the scene. To convert the same touch into the space
+ * of a different camera (for example a HUD camera that does not scroll with the world), use
+ * {@link #getWorldX(FlixelCamera)} and {@link #getWorldY(FlixelCamera)}.
  *
  * <p>State fields ({@link #screenX}, {@link #screenY}, {@link #worldX}, {@link #worldY},
  * {@link #pointer}) are public for zero-overhead reads. The boolean state is exposed through
@@ -47,6 +53,8 @@ package org.flixelgdx.input.touch;
  * @see FlixelTouchManager
  */
 public final class FlixelTouch {
+
+  private static final FlixelVector TMP = new FlixelVector();
 
   /** World X coordinate of this pointer, unprojected from screen space via the active camera. */
   public float worldX;
@@ -119,5 +127,38 @@ public final class FlixelTouch {
    */
   public boolean justCancelled() {
     return justCancelled;
+  }
+
+  /**
+   * Returns this pointer's X position in the world coordinates of the given camera.
+   *
+   * <p>This uses the same math as {@link #worldX} but against {@code cam} instead of the touch
+   * manager's world camera, so {@code getWorldX(worldCamera)} equals {@link #worldX} for the
+   * current frame. Use it to hit-test objects that live on another camera, such as a UI camera.
+   * It does not allocate.
+   *
+   * @param cam The camera used to unproject the screen position.
+   * @return The unprojected world X coordinate.
+   */
+  public float getWorldX(@NotNull FlixelCamera cam) {
+    TMP.set(screenX, screenY);
+    cam.unproject(TMP);
+    return TMP.x + cam.getViewX();
+  }
+
+  /**
+   * Returns this pointer's Y position in the world coordinates of the given camera.
+   *
+   * <p>This uses the same math as {@link #worldY} but against {@code cam} instead of the touch
+   * manager's world camera, so {@code getWorldY(worldCamera)} equals {@link #worldY} for the
+   * current frame. It does not allocate.
+   *
+   * @param cam The camera used to unproject the screen position.
+   * @return The unprojected world Y coordinate.
+   */
+  public float getWorldY(@NotNull FlixelCamera cam) {
+    TMP.set(screenX, screenY);
+    cam.unproject(TMP);
+    return TMP.y + cam.getViewY();
   }
 }
