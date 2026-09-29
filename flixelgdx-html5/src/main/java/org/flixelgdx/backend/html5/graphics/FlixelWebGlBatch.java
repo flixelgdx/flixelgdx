@@ -714,8 +714,11 @@ public class FlixelWebGlBatch implements FlixelBatch {
   /**
    * Builds the built-in fragment shader for a number of texture slots.
    *
-   * <p>Samplers cannot be indexed dynamically in ESSL 1.00, so the shader picks one with an
-   * if-chain on the slot index. Every fragment of a quad takes the same branch, so this stays cheap.
+   * <p>Samplers cannot be indexed dynamically in ESSL 1.00, so the shader has to branch to pick the
+   * right one. Instead of testing every slot one after another, the branches form a binary search
+   * over the slot index: each test halves the remaining range, so finding one of 16 slots takes 4
+   * comparisons instead of up to 16. Every fragment of a quad takes the same branches, so this stays
+   * cheap.
    *
    * @param slots The number of samplers to declare, at least one.
    * @return The GLSL fragment source.
@@ -727,17 +730,33 @@ public class FlixelWebGlBatch implements FlixelBatch {
       sb.append("uniform sampler2D u_tex").append(i).append(";\n");
     }
     sb.append("varying vec2 v_texCoords;\nvarying vec4 v_color;\nvarying float v_texIndex;\n");
-    sb.append("void main() {\n  vec4 tex;\n");
-    if (slots == 1) {
-      sb.append("  tex = texture2D(u_tex0, v_texCoords);\n");
-    } else {
-      sb.append("  int i = int(v_texIndex + 0.5);\n");
-      for (int i = 0; i < slots; i++) {
-        sb.append(i == 0 ? "  if" : "  else if").append(" (i == ").append(i).append(") tex = texture2D(u_tex")
-            .append(i).append(", v_texCoords);\n");
-      }
-    }
-    sb.append("  gl_FragColor = v_color * tex;\n}\n");
+    sb.append("void main() {\n  int slot = int(v_texIndex + 0.5);\n  vec4 samp;\n");
+    appendSlotSearch(sb, 0, slots - 1, "  ");
+    sb.append("  gl_FragColor = v_color * samp;\n}\n");
     return sb.toString();
+  }
+
+  /**
+   * Appends the branches that sample the texture for a slot in {@code [lo, hi]}.
+   *
+   * <p>The range is split at its middle: slots below the split go down the first branch and the
+   * rest go down the second, recursing until a single slot is left, which samples directly.
+   *
+   * @param sb The shader source being built.
+   * @param lo The lowest slot index in the range, inclusive.
+   * @param hi The highest slot index in the range, inclusive.
+   * @param indent The indentation for the emitted lines.
+   */
+  private static void appendSlotSearch(StringBuilder sb, int lo, int hi, String indent) {
+    if (lo == hi) {
+      sb.append(indent).append("samp = texture2D(u_tex").append(lo).append(", v_texCoords);\n");
+      return;
+    }
+    int mid = (lo + hi + 1) >>> 1;
+    sb.append(indent).append("if (slot < ").append(mid).append(") {\n");
+    appendSlotSearch(sb, lo, mid - 1, indent + "  ");
+    sb.append(indent).append("} else {\n");
+    appendSlotSearch(sb, mid, hi, indent + "  ");
+    sb.append(indent).append("}\n");
   }
 }
