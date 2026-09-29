@@ -690,4 +690,45 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
       return null;
     }
   }
+
+  public Activity getActivity() {
+    return activity;
+  }
+
+  public FlixelAndroidWindow getWindow() {
+    return window;
+  }
+
+  public boolean isInitialized() {
+    return initialized;
+  }
+
+  public boolean isAstcSupported() {
+    return astcSupported;
+  }
+
+  public boolean isSceneActive() {
+    return sceneActive;
+  }
+
+  @Nullable
+  public FlixelGlesRenderTarget getSceneTarget() {
+    return sceneTarget;
+  }
+
+  public int getViewportX() {
+    return viewportX;
+  }
+
+  public int getViewportY() {
+    return viewportY;
+  }
+
+  public int getViewportWidth() {
+    return viewportW;
+  }
+
+  public int getViewportHeight() {
+    return viewportH;
+  }
 }

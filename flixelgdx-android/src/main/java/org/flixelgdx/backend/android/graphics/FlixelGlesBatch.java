@@ -772,4 +772,8 @@ class FlixelGlesBatch implements FlixelBatch {
   public boolean isDrawing() {
     return drawing;
   }
+
+  public boolean isFlipY() {
+    return flipY;
+  }
 }

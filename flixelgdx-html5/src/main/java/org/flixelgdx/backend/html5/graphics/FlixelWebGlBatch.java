@@ -759,4 +759,16 @@ public class FlixelWebGlBatch implements FlixelBatch {
     appendSlotSearch(sb, mid, hi, indent + "  ");
     sb.append(indent).append("}\n");
   }
+
+  public WebGLRenderingContext getGl() {
+    return gl;
+  }
+
+  public boolean isDrawing() {
+    return drawing;
+  }
+
+  public boolean isFlipY() {
+    return flipY;
+  }
 }

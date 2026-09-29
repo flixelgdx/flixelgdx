@@ -26,6 +26,7 @@ package org.flixelgdx.backend.html5.audio;
 import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundBuffer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -329,6 +330,23 @@ public class FlixelWebAudioSound extends FlixelSound {
 
   @JSBody(params = "source", script = "try { source.stop(); } catch (e) {}")
   private static native void safeStop(AudioBufferSourceNode source);
+
+  public AudioContext getContext() {
+    return context;
+  }
+
+  public GainNode getGainNode() {
+    return gainNode;
+  }
+
+  public StereoPannerNode getPanNode() {
+    return panNode;
+  }
+
+  @Nullable
+  public FlixelWebAudioGroup getGroup() {
+    return group;
+  }
 
   /** Receives the decoded audio buffer once the browser finishes decoding. */
   @JSFunctor

@@ -161,7 +161,7 @@ class FlixelGlesShaderProgram implements FlixelShaderProgram {
    *
    * @return The GL program object name.
    */
-  int getGlProgram() {
+  public int getGlProgram() {
     return program;
   }
 
@@ -171,7 +171,7 @@ class FlixelGlesShaderProgram implements FlixelShaderProgram {
    *
    * @return The projection-transform uniform location, or {@code -1}.
    */
-  int getProjTransLocation() {
+  public int getProjTransLocation() {
     return projTransLocation;
   }
 
@@ -181,7 +181,7 @@ class FlixelGlesShaderProgram implements FlixelShaderProgram {
    *
    * @return The texture sampler uniform location, or {@code -1}.
    */
-  int getTextureLocation() {
+  public int getTextureLocation() {
     return textureLocation;
   }
 

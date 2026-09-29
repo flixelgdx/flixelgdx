@@ -351,4 +351,56 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
 
   @JSBody(script = "return window.innerHeight;")
   private static native int browserInnerHeight();
+
+  public String getCanvasId() {
+    return canvasId;
+  }
+
+  public int getFallbackWidth() {
+    return width;
+  }
+
+  public int getFallbackHeight() {
+    return height;
+  }
+
+  public FlixelHtml5Graphics getGraphics() {
+    return graphics;
+  }
+
+  public FlixelHtml5Window getWindow() {
+    return window;
+  }
+
+  public FlixelHtml5InputDevice getInput() {
+    return input;
+  }
+
+  public FlixelHtml5HostIntegration getHost() {
+    return host;
+  }
+
+  @Nullable
+  public HTMLElement getContainer() {
+    return container;
+  }
+
+  @Nullable
+  public HTMLCanvasElement getCanvas() {
+    return canvas;
+  }
+
+  @Nullable
+  public FlixelGame getGame() {
+    return game;
+  }
+
+  @Nullable
+  public FlixelCrashHandler getCrashHandler() {
+    return crashHandler;
+  }
+
+  public boolean isStopped() {
+    return stopped;
+  }
 }

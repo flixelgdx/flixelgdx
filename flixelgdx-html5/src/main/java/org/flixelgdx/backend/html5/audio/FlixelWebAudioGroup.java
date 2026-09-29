@@ -26,6 +26,7 @@ package org.flixelgdx.backend.html5.audio;
 import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundGroup;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.webaudio.AudioContext;
 import org.teavm.jso.webaudio.GainNode;
@@ -58,8 +59,12 @@ public class FlixelWebAudioGroup implements FlixelSoundGroup {
     FlixelWebAudioFactory.connect(gainNode, master);
   }
 
-  /** Returns the group's gain node, used by member sounds for their audio routing. */
-  GainNode getGainNode() {
+  /**
+   * Returns the group's gain node, used by member sounds for their audio routing.
+   *
+   * @return The group's volume node.
+   */
+  public GainNode getGainNode() {
     return gainNode;
   }
 
@@ -131,5 +136,9 @@ public class FlixelWebAudioGroup implements FlixelSoundGroup {
    */
   void unregister(FlixelWebAudioSound sound) {
     sounds.removeValue(sound, true);
+  }
+
+  public FlixelList<FlixelWebAudioSound> getSounds() {
+    return sounds;
   }
 }

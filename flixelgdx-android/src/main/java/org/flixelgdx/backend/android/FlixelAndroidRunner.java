@@ -224,4 +224,26 @@ public class FlixelAndroidRunner implements FlixelGameRunner, GLSurfaceView.Rend
       }
     }
   }
+
+  public FlixelAndroidWindow getWindow() {
+    return window;
+  }
+
+  public FlixelAndroidInputDevice getInput() {
+    return input;
+  }
+
+  @Nullable
+  public FlixelGame getGame() {
+    return game;
+  }
+
+  @Nullable
+  public FlixelCrashHandler getCrashHandler() {
+    return crashHandler;
+  }
+
+  public boolean isCrashed() {
+    return crashed;
+  }
 }

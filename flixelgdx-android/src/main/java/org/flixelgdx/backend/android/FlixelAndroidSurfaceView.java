@@ -96,6 +96,10 @@ public class FlixelAndroidSurfaceView extends GLSurfaceView {
     return new FlixelInputConnection(this);
   }
 
+  public FlixelAndroidInputDevice getInput() {
+    return input;
+  }
+
   /**
    * The IME bridge: forwards committed text, delete events, and raw key events from the soft
    * keyboard into the input device's ring buffer. The view never stores or displays any text;

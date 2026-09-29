@@ -570,4 +570,27 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
     }
     return false;
   }
+
+  @Nullable
+  public FlixelAndroidSurfaceView getSurfaceView() {
+    return surfaceView;
+  }
+
+  @Nullable
+  public Activity getActivity() {
+    return activity;
+  }
+
+  @Nullable
+  public FlixelAndroidGamepadProvider getGamepadProvider() {
+    return gamepadProvider;
+  }
+
+  public float getScaleX() {
+    return scaleX;
+  }
+
+  public float getScaleY() {
+    return scaleY;
+  }
 }

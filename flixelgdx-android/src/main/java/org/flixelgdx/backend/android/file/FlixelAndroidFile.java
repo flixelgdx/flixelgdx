@@ -299,4 +299,12 @@ public class FlixelAndroidFile implements FlixelFile {
     }
     return out.toByteArray();
   }
+
+  public boolean isClasspath() {
+    return classpath;
+  }
+
+  public boolean isApk() {
+    return apk;
+  }
 }

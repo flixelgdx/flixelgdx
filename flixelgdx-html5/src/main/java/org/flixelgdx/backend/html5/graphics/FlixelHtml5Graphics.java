@@ -592,4 +592,29 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   @JSBody(script = "return (window.performance && window.performance.now) ? window.performance.now() : Date.now();")
   private static native double nowMillis();
+
+  @Nullable
+  public FlixelWebGlRenderTarget getSceneTarget() {
+    return sceneTarget;
+  }
+
+  public float getCompositeScale() {
+    return compositeScale;
+  }
+
+  public float getCompositeOffsetX() {
+    return compositeOffsetX;
+  }
+
+  public float getCompositeOffsetY() {
+    return compositeOffsetY;
+  }
+
+  public boolean isRenderSmooth() {
+    return renderSmooth;
+  }
+
+  public boolean isSceneActive() {
+    return sceneActive;
+  }
 }
