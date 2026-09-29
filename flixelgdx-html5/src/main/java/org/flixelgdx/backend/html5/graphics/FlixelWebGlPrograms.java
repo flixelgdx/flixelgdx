@@ -36,7 +36,7 @@ import org.teavm.jso.webgl.WebGLShader;
  * at the same locations in every program, so this helper binds them by name to fixed slots before
  * linking. That is what lets the batch switch shaders without rebinding its buffers: position is
  * always slot {@value #POSITION}, texture coordinate is always slot {@value #TEXCOORD}, and color is
- * always slot {@value #COLOR}.
+ * always slot {@value #COLOR}, and the texture slot index is always slot {@value #TEXINDEX}.
  *
  * <p>The attribute and uniform names match the framework's GLSL contract ({@code a_position},
  * {@code a_texCoord0}, {@code a_color}, {@code u_projTrans}, {@code u_texture}), so a shader authored
@@ -52,6 +52,12 @@ public final class FlixelWebGlPrograms {
 
   /** The fixed vertex attribute slot for the vertex color. */
   public static final int COLOR = 2;
+
+  /**
+   * The fixed vertex attribute slot for the texture slot index. Only the built-in sprite shader reads
+   * it; custom shaders that do not declare {@code a_texIndex} simply ignore it.
+   */
+  public static final int TEXINDEX = 3;
 
   private FlixelWebGlPrograms() {}
 
@@ -77,6 +83,7 @@ public final class FlixelWebGlPrograms {
     gl.bindAttribLocation(program, POSITION, "a_position");
     gl.bindAttribLocation(program, TEXCOORD, "a_texCoord0");
     gl.bindAttribLocation(program, COLOR, "a_color");
+    gl.bindAttribLocation(program, TEXINDEX, "a_texIndex");
     gl.linkProgram(program);
 
     // The shaders are no longer needed once linked into the program.
