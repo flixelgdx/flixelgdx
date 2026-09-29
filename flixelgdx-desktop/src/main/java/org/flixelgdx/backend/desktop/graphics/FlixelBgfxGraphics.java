@@ -804,6 +804,26 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     }
   }
 
+  /**
+   * Returns the native address of the vertex data in {@link #transientVertices} without allocating.
+   *
+   * <p>Reading the address straight from the struct avoids the {@link ByteBuffer} wrapper that
+   * {@code BGFXTransientVertexBuffer#data()} creates on every call.
+   */
+  private long transientDataAddress() {
+    return MemoryUtil.memGetAddress(transientVertices.address() + BGFXTransientVertexBuffer.DATA);
+  }
+
+  /** Writes one five-float vertex (x, y, u, v, packed color) at the given vertex index. */
+  private static void putVertex(long dst, int index, float x, float y, float u, float v, float color) {
+    long at = dst + (long) index * 20L;
+    MemoryUtil.memPutFloat(at, x);
+    MemoryUtil.memPutFloat(at + 4L, y);
+    MemoryUtil.memPutFloat(at + 8L, u);
+    MemoryUtil.memPutFloat(at + 12L, v);
+    MemoryUtil.memPutFloat(at + 16L, color);
+  }
+
   private int currentView() {
     return viewStack[viewStackDepth - 1];
   }
@@ -877,7 +897,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     int indexCount = quadCount * FlixelBgfxBatch.indicesPerQuad();
 
     BGFX.bgfx_alloc_transient_vertex_buffer(transientVertices, vertexCount, vertexLayout);
-    transientVertices.data().asFloatBuffer().put(verts, 0, quadCount * FlixelBgfxBatch.floatsPerQuad());
+    long dst = transientDataAddress();
+    int floatCount = quadCount * FlixelBgfxBatch.floatsPerQuad();
+    for (int i = 0; i < floatCount; i++) {
+      MemoryUtil.memPutFloat(dst + ((long) i << 2), verts[i]);
+    }
 
     // OpenGL stores render targets bottom-up. Drawing into one upside down, with the view and
     // scissor rectangles mirrored to match, stores the image top-down like every other renderer,
@@ -1129,11 +1153,11 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     int indexCount = FlixelBgfxBatch.indicesPerQuad();
     BGFX.bgfx_alloc_transient_vertex_buffer(transientVertices, vertexCount, vertexLayout);
     float white = Float.intBitsToFloat(0xFFFFFFFF);
-    FloatBuffer buf = transientVertices.data().asFloatBuffer();
-    buf.put(0f).put(0f).put(0f).put(0f).put(white); // top-left
-    buf.put(w).put(0f).put(1f).put(0f).put(white);  // top-right
-    buf.put(w).put(h).put(1f).put(1f).put(white);   // bottom-right
-    buf.put(0f).put(h).put(0f).put(1f).put(white);  // bottom-left
+    long dst = transientDataAddress();
+    putVertex(dst, 0, 0f, 0f, 0f, 0f, white);  // top-left
+    putVertex(dst, 1, w, 0f, 1f, 0f, white);   // top-right
+    putVertex(dst, 2, w, h, 1f, 1f, white);    // bottom-right
+    putVertex(dst, 3, 0f, h, 0f, 1f, white);   // bottom-left
 
     BGFX.bgfx_set_transient_vertex_buffer(0, transientVertices, 0, vertexCount);
     BGFX.bgfx_set_index_buffer(quadIndexBuffer, 0, indexCount);
