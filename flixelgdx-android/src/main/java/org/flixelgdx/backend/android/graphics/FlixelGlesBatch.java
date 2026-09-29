@@ -27,7 +27,6 @@ import android.opengl.GLES30;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
-import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
@@ -85,7 +84,6 @@ class FlixelGlesBatch implements FlixelBatch {
 
   private final int defaultProgram;
   private final int defaultProjTransLocation;
-  private final int[] defaultSamplerLocations;
 
   private final int vao;
   private final int vbo;
@@ -94,14 +92,11 @@ class FlixelGlesBatch implements FlixelBatch {
   @NotNull
   private final FloatBuffer vertexData;
 
-  @NotNull
-  private final float[] combined = new float[16];
+  private final float @NotNull [] combined = new float[16];
 
-  @NotNull
-  private final long[] slotHandles;
+  private final long @NotNull [] slotHandles;
 
-  @NotNull
-  private final int[] slotGlNames;
+  private final int @NotNull [] slotGlNames;
 
   @NotNull
   private final FlixelColor color = new FlixelColor(1f, 1f, 1f, 1f);
@@ -150,7 +145,7 @@ class FlixelGlesBatch implements FlixelBatch {
     defaultProgram = FlixelGlesPrograms.build(VERTEX_SOURCE, buildFragmentSource(maxSlots));
     GLES30.glUseProgram(defaultProgram);
     defaultProjTransLocation = GLES30.glGetUniformLocation(defaultProgram, "u_projTrans");
-    defaultSamplerLocations = new int[maxSlots];
+    int[] defaultSamplerLocations = new int[maxSlots];
     for (int i = 0; i < maxSlots; i++) {
       // Bind each sampler to texture unit i once; no per-draw-call cost.
       defaultSamplerLocations[i] = GLES30.glGetUniformLocation(defaultProgram, "u_textures[" + i + "]");
@@ -178,7 +173,7 @@ class FlixelGlesBatch implements FlixelBatch {
     // Allocate dynamic vertex buffer storage (data filled per flush).
     GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo);
     GLES30.glBufferData(GLES30.GL_ARRAY_BUFFER,
-        MAX_QUADS * FLOATS_PER_QUAD * Float.BYTES, (Buffer) null, GLES30.GL_DYNAMIC_DRAW);
+        MAX_QUADS * FLOATS_PER_QUAD * Float.BYTES, null, GLES30.GL_DYNAMIC_DRAW);
 
     // Describe the nine-float vertex layout to the VAO.
     GLES30.glEnableVertexAttribArray(FlixelGlesPrograms.POSITION);
@@ -773,4 +768,8 @@ class FlixelGlesBatch implements FlixelBatch {
             gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);
           }
           """;
+
+  public boolean isDrawing() {
+    return drawing;
+  }
 }

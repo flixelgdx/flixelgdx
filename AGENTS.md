@@ -69,8 +69,8 @@ When explaining code or introducing patterns:
 
 ### Coding style
 
-**Always put fields, modifiers, types, and methods in the correct order**. This keeps the code readable and consistent.
-Follow the orders below:
+- **Always put fields, modifiers, types, and methods in the correct order**. This keeps the code readable and consistent.
+  Follow the orders below:
 
 #### Modifiers
 
@@ -197,6 +197,10 @@ public class PerformanceObject {
   }
 }
 ```
+
+- When working in a platform backend, always add getters and setters for logical fields that would need them. Platforms
+  should get the same treatment; their API is public as well. Power users should be able to leverage the platforms
+  however they wish, not just through core.
 
 ### Architecture and scope
 
