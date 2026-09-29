@@ -47,7 +47,9 @@ import org.jetbrains.annotations.NotNull;
  * <p>Typical usage (layer 0, mip 0, ASTC target):
  * <pre>{@code
  * long handle = FlixelBasisu.open(ktx2Buffer);
- * if (handle == 0) { // handle failed parse }
+ * if (handle == 0) {
+ *   // Handle failed parse.
+ * }
  * int size = FlixelBasisu.getTranscodedSize(handle, 0, FlixelBasisu.FMT_ASTC_4x4_RGBA);
  * ByteBuffer out = ByteBuffer.allocateDirect(size);
  * boolean ok = FlixelBasisu.transcode(handle, 0, FlixelBasisu.FMT_ASTC_4x4_RGBA, out);
@@ -66,8 +68,6 @@ public final class FlixelBasisu {
   public static final int FMT_RGBA32 = 2;
 
   static {
-    // Loads the transcoder the first time this class is used. System.loadLibrary() is a no-op
-    // when the library is already loaded.
     System.loadLibrary("basisu");
     init();
   }
@@ -168,12 +168,12 @@ public final class FlixelBasisu {
    * allocated with {@link ByteBuffer#allocateDirect}. The method writes from position 0
    * regardless of the buffer's current position or limit.
    *
-   * @param handle     a handle returned by {@link #open}
-   * @param levelIndex mip level index (0 = largest)
-   * @param fmt        one of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
-   *                   {@link #FMT_RGBA32}
-   * @param outBuf     a direct {@link ByteBuffer} large enough to hold the output
-   * @return {@code true} on success, {@code false} on any error
+   * @param handle A handle returned by {@link #open}.
+   * @param levelIndex Mip level index (0 = largest).
+   * @param fmt One of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
+   *      {@link #FMT_RGBA32}.
+   * @param outBuf A direct {@link ByteBuffer} large enough to hold the output.
+   * @return {@code true} on success, {@code false} on any error.
    */
   public static native boolean transcode(long handle, int levelIndex, int fmt, @NotNull ByteBuffer outBuf);
 }
