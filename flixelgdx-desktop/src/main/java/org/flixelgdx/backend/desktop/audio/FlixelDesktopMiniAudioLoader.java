@@ -23,8 +23,8 @@
  */
 package org.flixelgdx.backend.desktop.audio;
 
-import org.flixelgdx.backend.miniaudio.FlixelMiniAudioLoader;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
+import org.flixelgdx.backend.miniaudio.FlixelMiniAudioLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
