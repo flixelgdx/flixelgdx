@@ -30,12 +30,13 @@ import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A compiled GLES shader program for custom game shaders.
  *
- * <p>Game code sets uniforms (for example in {@link org.flixelgdx.util.FlixelShader#applyUniforms()})
+ * <p>Game code sets uniforms (for example in {@link FlixelShader#applyUniforms()})
  * at a point where this program is not the one currently bound, and OpenGL ES only accepts a
  * uniform upload for the active program. So rather than uploading immediately, this class stores
  * each uniform's latest value and uploads them all in {@link #apply()}, which the batch calls

@@ -23,16 +23,16 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import java.nio.ByteBuffer;
-
 import org.jetbrains.annotations.NotNull;
+
+import java.nio.ByteBuffer;
 
 /**
  * Thin JNI binding to the Basis Universal KTX2 transcoder for the Android backend.
  *
  * <p>The static initializer calls {@link #init()} once so callers never need to do it
  * themselves. Every operation is driven through a native {@code long} handle obtained from
- * {@link #open(ByteBuffer)}; the handle holds a heap-allocated C++ object and must be
+ * {@link #open(ByteBuffer)}. The handle holds a heap-allocated C++ object and must be
  * released by calling {@link #close(long)} when the caller no longer needs the transcoder.
  *
  * <p>Target format constants:
@@ -47,7 +47,9 @@ import org.jetbrains.annotations.NotNull;
  * <p>Typical usage (layer 0, mip 0, ASTC target):
  * <pre>{@code
  * long handle = FlixelBasisu.open(ktx2Buffer);
- * if (handle == 0) { // handle failed parse }
+ * if (handle == 0) {
+ *   // Handle failed parse.
+ * }
  * int size = FlixelBasisu.getTranscodedSize(handle, 0, FlixelBasisu.FMT_ASTC_4x4_RGBA);
  * ByteBuffer out = ByteBuffer.allocateDirect(size);
  * boolean ok = FlixelBasisu.transcode(handle, 0, FlixelBasisu.FMT_ASTC_4x4_RGBA, out);
@@ -66,8 +68,6 @@ public final class FlixelBasisu {
   public static final int FMT_RGBA32 = 2;
 
   static {
-    // Loads the transcoder the first time this class is used. System.loadLibrary() is a no-op
-    // when the library is already loaded.
     System.loadLibrary("basisu");
     init();
   }
@@ -77,7 +77,7 @@ public final class FlixelBasisu {
   /**
    * Initializes the global Basis Universal transcoder lookup tables.
    *
-   * <p>The static initializer calls this automatically; there is no need to call it manually.
+   * <p>The static initializer calls this automatically, so there is no need to call it manually.
    * The underlying implementation is idempotent, so multiple calls are safe.
    */
   static native void init();
@@ -88,9 +88,9 @@ public final class FlixelBasisu {
    * <p>The buffer must remain valid and unmodified for the lifetime of the handle. The method
    * calls both {@code ktx2_transcoder::init} and {@code start_transcoding} internally.
    *
-   * @param buf a direct {@link ByteBuffer} containing the full KTX2 file data
-   * @return a non-zero handle on success, or {@code 0} if {@code buf} is {@code null},
-   *         is not a direct buffer, or the KTX2 data cannot be parsed
+   * @param buf A direct {@link ByteBuffer} containing the full KTX2 file data.
+   * @return A non-zero handle on success, or {@code 0} if {@code buf} is {@code null},
+   *      is not a direct buffer, or the KTX2 data cannot be parsed.
    */
   public static native long open(@NotNull ByteBuffer buf);
 
@@ -99,39 +99,39 @@ public final class FlixelBasisu {
    *
    * <p>Passing {@code 0} is a no-op. After this call the handle must not be used again.
    *
-   * @param handle a handle returned by {@link #open}, or {@code 0}
+   * @param handle A handle returned by {@link #open}, or {@code 0}.
    */
   public static native void close(long handle);
 
   /**
    * Returns the number of mip-map levels in the texture.
    *
-   * @param handle a handle returned by {@link #open}
-   * @return level count, or {@code 0} if the handle is invalid
+   * @param handle A handle returned by {@link #open}.
+   * @return The level count, or {@code 0} if the handle is invalid.
    */
   public static native int getLevels(long handle);
 
   /**
    * Returns the base-level width of the texture in texels.
    *
-   * @param handle a handle returned by {@link #open}
-   * @return width in texels, or {@code 0} if the handle is invalid
+   * @param handle A handle returned by {@link #open}.
+   * @return The width in texels, or {@code 0} if the handle is invalid.
    */
   public static native int getWidth(long handle);
 
   /**
    * Returns the base-level height of the texture in texels.
    *
-   * @param handle a handle returned by {@link #open}
-   * @return height in texels, or {@code 0} if the handle is invalid
+   * @param handle A handle returned by {@link #open}.
+   * @return The height in texels, or {@code 0} if the handle is invalid.
    */
   public static native int getHeight(long handle);
 
   /**
    * Returns whether the texture has an alpha channel.
    *
-   * @param handle a handle returned by {@link #open}
-   * @return {@code true} if the texture carries alpha data
+   * @param handle A handle returned by {@link #open}.
+   * @return {@code true} if the texture carries alpha data.
    */
   public static native boolean hasAlpha(long handle);
 
@@ -141,8 +141,8 @@ public final class FlixelBasisu {
    * <p>Both encodings can be transcoded to any of the three target formats; this accessor
    * is informational only.
    *
-   * @param handle a handle returned by {@link #open}
-   * @return {@code true} if the source encoding is UASTC
+   * @param handle A handle returned by {@link #open}.
+   * @return {@code true} if the source encoding is UASTC.
    */
   public static native boolean isUastc(long handle);
 
@@ -153,11 +153,11 @@ public final class FlixelBasisu {
    * <p>Allocate or validate your output {@link ByteBuffer} with this value before calling
    * {@link #transcode}.
    *
-   * @param handle     a handle returned by {@link #open}
-   * @param levelIndex mip level index (0 = largest)
-   * @param fmt        one of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
-   *                   {@link #FMT_RGBA32}
-   * @return byte count needed, or {@code 0} on error
+   * @param handle A handle returned by {@link #open}.
+   * @param levelIndex Mip level index (0 = largest).
+   * @param fmt One of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
+   *      {@link #FMT_RGBA32}.
+   * @return The byte count needed, or {@code 0} on error.
    */
   public static native int getTranscodedSize(long handle, int levelIndex, int fmt);
 
@@ -168,12 +168,12 @@ public final class FlixelBasisu {
    * allocated with {@link ByteBuffer#allocateDirect}. The method writes from position 0
    * regardless of the buffer's current position or limit.
    *
-   * @param handle     a handle returned by {@link #open}
-   * @param levelIndex mip level index (0 = largest)
-   * @param fmt        one of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
-   *                   {@link #FMT_RGBA32}
-   * @param outBuf     a direct {@link ByteBuffer} large enough to hold the output
-   * @return {@code true} on success, {@code false} on any error
+   * @param handle A handle returned by {@link #open}.
+   * @param levelIndex Mip level index (0 = largest).
+   * @param fmt One of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
+   *      {@link #FMT_RGBA32}.
+   * @param outBuf A direct {@link ByteBuffer} large enough to hold the output.
+   * @return {@code true} on success, {@code false} on any error.
    */
   public static native boolean transcode(long handle, int levelIndex, int fmt, @NotNull ByteBuffer outBuf);
 }
