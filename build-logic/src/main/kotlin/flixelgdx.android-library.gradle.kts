@@ -2,8 +2,8 @@
  * Convention for FlixelGDX Android library modules.
  *
  * <p>Applies {@code flixelgdx.java-base} for shared IDE and Spotless setup, then layers on:
- * the Android library plugin, a {@code javadoc} task over the release variant, and the Vanniktech
- * Maven publish pipeline targeting Sonatype Central Portal.
+ * the Android library plugin, a {@code checkstyleMain} task over the main source set, a
+ * {@code javadoc} task over the release variant, and the Vanniktech Maven publish pipeline targeting Sonatype Central Portal.
  */
 
 import com.android.build.gradle.LibraryExtension
@@ -12,6 +12,12 @@ plugins {
   id("flixelgdx.java-base")
   id("com.android.library")
   id("com.vanniktech.maven.publish")
+  checkstyle
+}
+
+checkstyle {
+  toolVersion = "10.21.0"
+  configDirectory.set(rootProject.layout.projectDirectory.dir("gradle/checkstyle"))
 }
 
 // Compile with a JDK 17 toolchain instead of whatever JDK runs Gradle. The Android plugin runs
@@ -20,6 +26,22 @@ plugins {
 java {
   toolchain {
     languageVersion = JavaLanguageVersion.of(17)
+  }
+}
+
+// The Checkstyle plugin only creates per-source-set tasks for Java source sets, which Android
+// modules do not have, so we register checkstyleMain by hand to match the other modules.
+afterEvaluate {
+  val android = extensions.getByType(LibraryExtension::class.java)
+  val checkstyleMain = tasks.register("checkstyleMain", Checkstyle::class.java) {
+    group = "verification"
+    description = "Runs Checkstyle on the Android main source set."
+    source(android.sourceSets.getByName("main").java.srcDirs)
+    include("**/*.java")
+    classpath = files()
+  }
+  tasks.named("check") {
+    dependsOn(checkstyleMain)
   }
 }
 
