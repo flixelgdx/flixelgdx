@@ -141,11 +141,13 @@ public class FlixelBgfxTexture implements FlixelTexture {
       // Swap R and B bytes in-place so the channel layout matches bgfx's expectation for this backend.
       swapRedBlueInPlace(pixels, count);
     }
-    // bgfx_make_ref stores a pointer to the caller-owned buffer rather than copying it. The buffer
-    // must remain valid until bgfx_frame() processes this submission (end of the current frame).
-    BGFX.bgfx_update_texture_2d(handle, 0, 0,
+    // bgfx_copy duplicates the pixels into bgfx-owned memory, so the caller may overwrite its buffer
+    // right away without tearing the frame bgfx has not consumed yet. The raw-address variants avoid
+    // allocating a Java wrapper object on every update.
+    long mem = BGFX.nbgfx_copy(MemoryUtil.memAddress(pixels), count * 4);
+    BGFX.nbgfx_update_texture_2d(handle, (short) 0, (byte) 0,
         (short) x, (short) y, (short) image.getWidth(), (short) image.getHeight(),
-        BGFX.bgfx_make_ref(pixels), 0xFFFF);
+        mem, (short) 0xFFFF);
   }
 
   /**
