@@ -54,6 +54,36 @@
  * rect.put();
  * }</pre>
  *
+ * <h2>Bounds and ranges</h2>
+ * <p>Two small families describe values that vary. Bounds say "pick something between these";
+ * ranges say "slide from this to that over a lifetime":
+ *
+ * <ul>
+ *   <li>{@link org.flixelgdx.math.FlixelBounds FlixelBounds} and
+ *       {@link org.flixelgdx.math.FlixelPointBounds FlixelPointBounds} - a minimum and a maximum
+ *       to roll a random number or point between.</li>
+ *   <li>{@link org.flixelgdx.math.FlixelRange FlixelRange} and
+ *       {@link org.flixelgdx.math.FlixelPointRange FlixelPointRange} - a start and an end that
+ *       something blends between as it ages.</li>
+ *   <li>{@link org.flixelgdx.math.FlixelRangeBounds FlixelRangeBounds} and
+ *       {@link org.flixelgdx.math.FlixelPointRangeBounds FlixelPointRangeBounds} - the recipe for
+ *       a range: bounds for the start, bounds for the end, and an optional easing curve.</li>
+ * </ul>
+ *
+ * <p>Particle emitters are the main user, but the types work anywhere you want controlled
+ * randomness, such as spawners or procedural effects. The color versions live next to
+ * {@link org.flixelgdx.util.FlixelColor FlixelColor} in {@link org.flixelgdx.util}.
+ *
+ * <pre>{@code
+ * // Each enemy spawns with a slightly different speed.
+ * FlixelBounds enemySpeed = new FlixelBounds(80f, 120f);
+ * float speed = Flixel.random.nextFloat(enemySpeed.min, enemySpeed.max);
+ *
+ * // Shrink from full size to nothing over one second.
+ * FlixelRange shrink = new FlixelRange(1f, 0f);
+ * sprite.setScale(shrink.lerp(elapsedSoFar / 1f));
+ * }</pre>
+ *
  * @see org.flixelgdx.math.FlixelMath
  * @see org.flixelgdx.math.FlixelRandom
  * @see org.flixelgdx.math.FlixelVector

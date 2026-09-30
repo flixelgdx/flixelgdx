@@ -21,24 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.particle;
+package org.flixelgdx.math;
 
 import org.flixelgdx.tween.ease.FlixelEase;
 import org.flixelgdx.tween.ease.FlixelEaseFunction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A 2D value that starts somewhere and ends somewhere else over a particle's lifetime, with some
- * randomness at each end.
+ * A 2D value that starts somewhere and ends somewhere else over a lifetime, with some randomness at
+ * each end.
  *
  * <p>This is the two-axis version of {@link FlixelRangeBounds}, used for properties with an X and a
- * Y, such as velocity and scale. When a particle is emitted, one point is rolled from
- * {@link #start} and one from {@link #end}, and the particle slides between them as it ages,
- * following {@link #ease}.
+ * Y, such as velocity and scale. Rolling a point from {@link #start} and another from {@link #end}
+ * produces a concrete {@link FlixelPointRange} to slide along, following {@link #ease}.
  *
- * <p>If {@link #end} holds the same bounds as {@link #start}, the particle keeps its start value for
- * its whole life instead of rolling a second one. Set {@link #active} to {@code false} to have the
- * emitter skip this property entirely.
+ * <p>By convention, if {@link #end} holds the same bounds as {@link #start} (see
+ * {@link #changes()}), the value should stay at its start roll for the whole lifetime.
+ * {@link #active} lets the owner switch the whole property off.
  *
  * <p>Example:
  *

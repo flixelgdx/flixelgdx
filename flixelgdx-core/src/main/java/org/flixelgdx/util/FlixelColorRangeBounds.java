@@ -21,25 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.particle;
+package org.flixelgdx.util;
 
+import org.flixelgdx.math.FlixelRangeBounds;
 import org.flixelgdx.tween.ease.FlixelEase;
 import org.flixelgdx.tween.ease.FlixelEaseFunction;
-import org.flixelgdx.util.FlixelColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A color that starts as one shade and ends as another over a particle's lifetime, with some
- * randomness at each end.
+ * A color that starts as one shade and ends as another over a lifetime, with some randomness at
+ * each end.
  *
- * <p>This is the color version of {@link FlixelRangeBounds}. Only the red, green, and blue channels
- * are used; transparency is controlled separately by the emitter's {@code alpha} range so the two
- * can follow different curves.
+ * <p>This is the color version of {@link FlixelRangeBounds}. Rolling a color from {@link #start}
+ * and another from {@link #end} produces a concrete {@link FlixelColorRange} to blend along,
+ * following {@link #ease}. Particle emitters use only the red, green, and blue channels from it
+ * and control transparency with a separate range, so the two can follow different curves.
  *
- * <p>If {@link #end} holds the same colors as {@link #start}, the particle keeps its start color for
- * its whole life. Set {@link #active} to {@code false} to have the emitter skip color entirely and
- * leave particles white.
+ * <p>By convention, if {@link #end} holds the same colors as {@link #start} (see
+ * {@link #changes()}), the color should stay at its start roll for the whole lifetime.
+ * {@link #active} lets the owner switch the whole property off.
  *
  * <p>Example:
  *

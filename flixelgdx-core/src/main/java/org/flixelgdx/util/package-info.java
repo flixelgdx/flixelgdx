@@ -24,15 +24,11 @@
  *       tweens, shake, and physics helpers.</li>
  *   <li>{@link org.flixelgdx.util.FlixelShader FlixelShader} - base class for custom GLSL
  *       shaders applied to sprites or render targets.</li>
- * </ul>
- *
- * <h2>Sub-packages</h2>
- * <ul>
- *   <li>{@link org.flixelgdx.util.signal signal} - multicast event signals for framework hooks
- *       and game events.</li>
- *   <li>{@link org.flixelgdx.util.timer timer} - frame-based timers for delayed and repeating
- *       callbacks.</li>
- *   <li>{@link org.flixelgdx.util.save save} - JSON-backed persistent save data.</li>
+ *   <li>{@link org.flixelgdx.util.FlixelColorBounds FlixelColorBounds},
+ *       {@link org.flixelgdx.util.FlixelColorRange FlixelColorRange}, and
+ *       {@link org.flixelgdx.util.FlixelColorRangeBounds FlixelColorRangeBounds} - the color
+ *       versions of the bounds and ranges in {@link org.flixelgdx.math}, used to give particles
+ *       and other effects random or changing tints.</li>
  * </ul>
  *
  * @see org.flixelgdx.util.FlixelColor

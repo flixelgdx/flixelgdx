@@ -21,20 +21,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.particle;
+package org.flixelgdx.math;
 
 /**
- * A pair of 2D points that a random point is picked between, one axis at a time.
+ * A minimum and a maximum 2D point that a random point is picked between, one axis at a time.
  *
- * <p>An emitter rolls a fresh X between {@link #minX} and {@link #maxX}, and a fresh Y between
- * {@link #minY} and {@link #maxY}, for every particle it emits. Setting the minimum and maximum of
- * an axis to the same number turns the roll off for that axis.
+ * <p>This is the two-axis version of {@link FlixelBounds}. A roll picks an X between {@link #minX}
+ * and {@link #maxX} and, separately, a Y between {@link #minY} and {@link #maxY}, so the results
+ * fill a rectangle. Setting the minimum and maximum of an axis to the same number turns the
+ * randomness off for that axis.
  *
  * <p>Example:
  *
  * <pre>{@code
- * emitter.acceleration.set(0f, 400f);            // Constant gravity pulling down.
- * emitter.drag.set(10f, 10f, 40f, 40f);          // Each particle slows down at a random rate.
+ * emitter.acceleration.set(0f, 400f);    // Constant gravity pulling down.
+ * emitter.drag.set(10f, 10f, 40f, 40f);  // Each particle slows down at a random rate.
  * }</pre>
  */
 public class FlixelPointBounds {

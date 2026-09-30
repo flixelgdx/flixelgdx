@@ -21,24 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.particle;
+package org.flixelgdx.math;
 
 import org.flixelgdx.tween.ease.FlixelEase;
 import org.flixelgdx.tween.ease.FlixelEaseFunction;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A value that starts somewhere and ends somewhere else over a particle's lifetime, with some
- * randomness at each end.
+ * A value that starts somewhere and ends somewhere else over a lifetime, with some randomness at
+ * each end.
  *
- * <p>When a particle is emitted, one value is rolled from {@link #start} and one from {@link #end}.
- * The particle then slides from its start value to its end value as it ages, following
- * {@link #ease} (a straight line when {@code null}). This is how particles fade out, shrink, or slow
- * down without any extra code.
+ * <p>Range bounds are the "recipe" side of a {@link FlixelRange}: they hold two {@link FlixelBounds},
+ * one for where a value may start and one for where it may end. Rolling a value from
+ * {@link #start} and another from {@link #end} produces a concrete {@link FlixelRange} that an
+ * object then slides along as it ages, following {@link #ease} (a straight line when
+ * {@code null}). Particle emitters use this to make each particle fade out, shrink, or slow down
+ * a little differently.
  *
- * <p>If {@link #end} holds the same bounds as {@link #start}, the particle keeps its start value for
- * its whole life instead of rolling a second one. Set {@link #active} to {@code false} to have the
- * emitter skip this property entirely and leave the particle's default in place.
+ * <p>By convention, if {@link #end} holds the same bounds as {@link #start} (see
+ * {@link #changes()}), the value should stay at its start roll for the whole lifetime instead of
+ * rolling a second one. {@link #active} lets the owner switch the whole property off.
  *
  * <p>Example:
  *

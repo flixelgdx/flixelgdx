@@ -21,28 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.particle;
+package org.flixelgdx.util;
 
-import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.math.FlixelBounds;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A pair of colors that a random color is picked between.
  *
- * <p>An emitter picks a random point along the line from {@link #min} to {@link #max} for every
- * particle it emits, so all channels move together and the results stay between the two colors
- * instead of mixing into unrelated ones. Setting both to the same color turns the roll off.
+ * <p>This is the color version of {@link FlixelBounds}. Rolling a color means picking one random
+ * point along the line from {@link #min} to {@link #max} (see {@link FlixelColor#lerp(FlixelColor,
+ * float)}), so all channels move together and the results stay between the two colors instead of
+ * mixing into unrelated ones. Setting both to the same color turns the randomness off.
  *
  * <p>Both colors are owned copies: {@link #set(FlixelColor, FlixelColor)} copies the components in,
  * so changing a color you passed in later does not affect these bounds.
+ *
+ * @param min One end of the colors a roll can produce.
+ * @param max The other end of the colors a roll can produce.
  */
-public class FlixelColorBounds {
-
-  /** One end of the colors a roll can produce. */
-  public final FlixelColor min;
-
-  /** The other end of the colors a roll can produce. */
-  public final FlixelColor max;
+public record FlixelColorBounds(FlixelColor min, FlixelColor max) {
 
   /**
    * Creates bounds where both ends are the same color.

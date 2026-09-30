@@ -21,20 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.particle;
+package org.flixelgdx.math;
 
 /**
- * A pair of numbers that a random value is picked between.
+ * A minimum and a maximum that a random value is picked between.
  *
- * <p>An emitter rolls a fresh value between {@link #min} and {@link #max} for every particle it
- * emits. Setting both to the same number turns the roll off, so every particle gets exactly that
- * value.
+ * <p>Bounds describe "somewhere between these two numbers" without picking the number yet. Code
+ * that spawns many similar things, such as a particle emitter or an enemy spawner, rolls a fresh
+ * value inside the bounds for each one so they do not all look identical. Setting {@link #min} and
+ * {@link #max} to the same number turns the randomness off.
+ *
+ * <p>Bounds only store the two numbers; rolling is up to the caller, usually with
+ * {@link FlixelRandom#nextFloat(float, float)}.
  *
  * <p>Example:
  *
  * <pre>{@code
- * emitter.lifespan.set(0.5f, 1.5f); // Each particle lives between half a second and 1.5 seconds.
- * emitter.launchAngle.set(-90f);    // Every particle launches straight up.
+ * FlixelBounds lifespan = new FlixelBounds(0.5f, 1.5f);
+ * float seconds = Flixel.random.nextFloat(lifespan.min, lifespan.max);
+ *
+ * lifespan.set(2f); // Now every roll gives exactly 2 seconds.
  * }</pre>
  */
 public class FlixelBounds {
