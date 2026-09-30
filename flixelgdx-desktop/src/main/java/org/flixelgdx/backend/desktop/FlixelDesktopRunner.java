@@ -212,6 +212,8 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         if (pumpEvents(event, game)) {
           break;
         }
+        // Apply the input queued by the pump before the game reads it.
+        input.drain();
 
         long now = System.nanoTime();
         float deltaSeconds = (now - lastNanos) / 1_000_000_000f;
@@ -436,9 +438,10 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
   }
 
   /**
-   * Drains all pending SDL events by polling, translating each one into input-device calls and
-   * lifecycle hooks. Used in continuous-rendering mode; for the blocking non-continuous path see
-   * the main loop which calls {@link #dispatchEvent} after {@code SDL_WaitEvent}.
+   * Drains all pending SDL events by polling, translating each one into queued input events and
+   * lifecycle hooks. Keyboard and mouse events only land in the input device's
+   * {@link FlixelDesktopInputDevice#getEventQueue() queue} here; the main loop applies them with
+   * {@link FlixelDesktopInputDevice#drain()} once the pump is done.
    *
    * @return {@code true} when a quit was requested.
    */
@@ -477,12 +480,13 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         // separately so justPressed-style state is only ever set once per press.
         int flixelKey = FlixelSdlKeyMap.toFlixelKey(event.key().scancode());
         if (event.key().repeat()) {
-          input.onKeyRepeated(flixelKey);
+          input.getEventQueue().postKeyRepeated(flixelKey);
         } else {
-          input.onKeyDown(flixelKey);
+          input.getEventQueue().postKeyDown(flixelKey);
         }
       }
-      case SDLEvents.SDL_EVENT_KEY_UP -> input.onKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
+      case SDLEvents.SDL_EVENT_KEY_UP ->
+        input.getEventQueue().postKeyUp(FlixelSdlKeyMap.toFlixelKey(event.key().scancode()));
       case SDLEvents.SDL_EVENT_TEXT_INPUT -> {
         // Composed text (letters, punctuation, IME output) arrives here as UTF-8, separate from the
         // physical key events above. Feed each character to listeners so the debug command line and
@@ -490,17 +494,20 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         String textInput = event.text().textString();
         if (textInput != null) {
           for (int i = 0; i < textInput.length(); i++) {
-            input.onKeyTyped(textInput.charAt(i));
+            input.getEventQueue().postKeyTyped(textInput.charAt(i));
           }
         }
       }
       case SDLEvents.SDL_EVENT_MOUSE_BUTTON_DOWN ->
-        input.onMouseDown(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+        input.getEventQueue().postMouseDown(mouseButton(event.button().button()), (int) event.button().x(),
+            (int) event.button().y());
       case SDLEvents.SDL_EVENT_MOUSE_BUTTON_UP ->
-        input.onMouseUp(mouseButton(event.button().button()), (int) event.button().x(), (int) event.button().y());
+        input.getEventQueue().postMouseUp(mouseButton(event.button().button()), (int) event.button().x(),
+            (int) event.button().y());
       case SDLEvents.SDL_EVENT_MOUSE_MOTION ->
-        input.onMouseMoved((int) event.motion().x(), (int) event.motion().y());
-      case SDLEvents.SDL_EVENT_MOUSE_WHEEL -> input.onScrolled(event.wheel().x(), event.wheel().y());
+        input.getEventQueue().postMouseMoved((int) event.motion().x(), (int) event.motion().y());
+      case SDLEvents.SDL_EVENT_MOUSE_WHEEL ->
+        input.getEventQueue().postScrolled(event.wheel().x(), event.wheel().y());
       case SDLEvents.SDL_EVENT_GAMEPAD_ADDED -> gamepads.onDeviceAdded(event.gdevice().which());
       case SDLEvents.SDL_EVENT_GAMEPAD_REMOVED -> gamepads.onDeviceRemoved(event.gdevice().which());
       case SDLEvents.SDL_EVENT_DISPLAY_ADDED,

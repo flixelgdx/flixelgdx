@@ -25,6 +25,7 @@ package org.flixelgdx.backend.desktop.input;
 
 import org.flixelgdx.backend.desktop.FlixelDesktopRunner;
 import org.flixelgdx.input.FlixelBaseInputDevice;
+import org.flixelgdx.input.FlixelInputEventQueue;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.keyboard.FlixelKey;
@@ -35,16 +36,25 @@ import org.lwjgl.system.MemoryStack;
 /**
  * The desktop input device, driven by SDL3 events pumped from the game loop.
  *
- * <p>The {@link FlixelDesktopRunner runner} translates SDL keyboard
- * and mouse events into the {@code on*} calls here, which update the cached state (for
- * {@link #isKeyPressed(int)} / pointer getters) and forward to the registered
+ * <p>The {@link FlixelDesktopRunner runner} translates SDL keyboard and mouse events and posts
+ * them into this device's {@link FlixelInputEventQueue}, then calls {@link #drain()} once the
+ * frame's events have all been pumped. Draining runs the {@code on*} calls here, which update the
+ * cached state (for {@link #isKeyPressed(int)} / pointer getters) and forward to the registered
  * {@link FlixelKeyboardListener} and {@link FlixelMouseListener} instances that the framework's
  * input managers install.
+ *
+ * <p>Queueing matters because one pump can hold both the press and the release of a quick click
+ * or key tap. Applied immediately, the button would already be up again by the time the game
+ * looked at it, so {@code justPressed} would never fire. The queue holds such a release back by
+ * one frame, so the press is seen on one frame and the release on the next.
  */
 public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
 
   /** Native SDL_Window pointer, bound by the runner once the window exists. */
   private long windowHandle;
+
+  private final FlixelInputEventQueue events = new FlixelInputEventQueue();
+  private final EventReceiver receiver = new EventReceiver();
 
   /** Down state per FlixelKey code; sized to cover the whole key-code range. */
   private final boolean[] keyDown = new boolean[512];
@@ -56,7 +66,10 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   private int mouseY;
 
   /**
-   * Feeds a key-down event from the runner.
+   * Feeds a key-down event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param flixelKey The mapped {@link FlixelKey} code.
    */
@@ -68,7 +81,10 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Feeds a key-up event from the runner.
+   * Feeds a key-up event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param flixelKey The mapped {@link FlixelKey} code.
    */
@@ -91,7 +107,10 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Feeds a typed-character event from the runner.
+   * Feeds a typed-character event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param character The typed character.
    */
@@ -100,7 +119,10 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Feeds a mouse-button-down event from the runner.
+   * Feeds a mouse-button-down event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param button The mouse button index.
    * @param x The pointer x in pixels.
@@ -116,7 +138,10 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Feeds a mouse-button-up event from the runner.
+   * Feeds a mouse-button-up event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param button The mouse button index.
    * @param x The pointer x in pixels.
@@ -132,7 +157,10 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Feeds a mouse-move event from the runner.
+   * Feeds a mouse-move event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param x The pointer x in pixels.
    * @param y The pointer y in pixels.
@@ -148,13 +176,29 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Feeds a scroll-wheel event from the runner.
+   * Feeds a scroll-wheel event.
+   *
+   * <p>The runner reaches this through {@link #drain()}. Call it directly only to inject input by
+   * hand, since that skips the queue.
    *
    * @param amountX Horizontal scroll amount.
    * @param amountY Vertical scroll amount.
    */
   public void onScrolled(float amountX, float amountY) {
     dispatchScrolled(amountX, amountY);
+  }
+
+  /**
+   * Applies every event queued since the last call and forwards it to the registered listeners.
+   *
+   * <p>The {@link FlixelDesktopRunner runner} calls this once per frame, after pumping SDL events
+   * and before the game updates. A release whose press was applied earlier in the same call waits
+   * for the next call, so a click or key tap that happened entirely within one pump still reports
+   * {@code justPressed} on one frame and {@code justReleased} on the next. See
+   * {@link FlixelInputEventQueue} for the details.
+   */
+  public void drain() {
+    events.drain(receiver);
   }
 
   @Override
@@ -229,5 +273,58 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
   @Override
   public int getY(int pointer) {
     return pointer == 0 ? mouseY : 0;
+  }
+
+  /**
+   * Returns the queue that holds SDL events until the next {@link #drain()}.
+   *
+   * @return The event queue the runner posts into.
+   */
+  public FlixelInputEventQueue getEventQueue() {
+    return events;
+  }
+
+  /** Applies drained events to this device's polled state and forwards them to listeners. */
+  private final class EventReceiver implements FlixelInputEventQueue.Receiver {
+
+    @Override
+    public void keyDown(int keycode) {
+      onKeyDown(keycode);
+    }
+
+    @Override
+    public void keyUp(int keycode) {
+      onKeyUp(keycode);
+    }
+
+    @Override
+    public void keyRepeated(int keycode) {
+      onKeyRepeated(keycode);
+    }
+
+    @Override
+    public void keyTyped(char character) {
+      onKeyTyped(character);
+    }
+
+    @Override
+    public void mouseDown(int button, int x, int y) {
+      onMouseDown(button, x, y);
+    }
+
+    @Override
+    public void mouseUp(int button, int x, int y) {
+      onMouseUp(button, x, y);
+    }
+
+    @Override
+    public void mouseMoved(int x, int y) {
+      onMouseMoved(x, y);
+    }
+
+    @Override
+    public void scrolled(float amountX, float amountY) {
+      onScrolled(amountX, amountY);
+    }
   }
 }
