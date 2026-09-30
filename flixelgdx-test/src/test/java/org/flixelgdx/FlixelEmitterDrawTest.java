@@ -27,6 +27,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelNoopTexture;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.particle.FlixelEmitter;
 import org.flixelgdx.particle.FlixelParticle;
 import org.flixelgdx.util.FlixelBlendMode;
@@ -53,6 +54,7 @@ class FlixelEmitterDrawTest {
 
   private int frameDraws;
   private int blendChanges;
+  private int shaderChanges;
   private FlixelBlendMode firstBlend;
   private FlixelBatch batch;
   private FlixelEmitter<FlixelParticle> emitter;
@@ -65,6 +67,8 @@ class FlixelEmitterDrawTest {
           String name = method.getName();
           if (name.equals("draw") && args[0] instanceof FlixelFrame) {
             frameDraws++;
+          } else if (name.equals("setShader")) {
+            shaderChanges++;
           } else if (name.equals("setBlendMode")) {
             blendChanges++;
             if (firstBlend == null) {
@@ -133,6 +137,22 @@ class FlixelEmitterDrawTest {
     emitter.draw(batch);
     assertEquals(FlixelBlendMode.ADD, firstBlend);
     assertEquals(2, blendChanges, "the emitter should switch to ADD once and back to NORMAL once");
+  }
+
+  @Test
+  void shaderIsSetOnceAroundAllParticles() {
+    FlixelShader glow = new FlixelShader("void main() {}") {
+      @Override
+      public boolean isCompiled() {
+        return true;
+      }
+    };
+    emitter.setShader(glow);
+    emitter.setPosition(50f, 50f);
+    emitter.start(true, 0f, 4);
+    emitter.draw(batch);
+    assertEquals(4, frameDraws);
+    assertEquals(2, shaderChanges, "the emitter should switch the shader on once and off once");
   }
 
   @Test

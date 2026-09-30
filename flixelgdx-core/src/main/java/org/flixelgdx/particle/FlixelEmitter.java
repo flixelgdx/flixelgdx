@@ -25,14 +25,19 @@ package org.flixelgdx.particle;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
+import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.functional.FlixelAntialiasable;
+import org.flixelgdx.functional.FlixelPositional;
+import org.flixelgdx.functional.FlixelShaderable;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelBounds;
 import org.flixelgdx.math.FlixelMath;
@@ -71,6 +76,12 @@ import java.util.function.Supplier;
  * and draws automatically. Its position and size describe the spawn area, whose shape is set by
  * {@link #shape}. Leave the size at zero to spawn every particle from a single point.
  *
+ * <p>The emitter also works with the framework's shared interfaces. As a {@link FlixelPositional},
+ * a {@link FlixelCamera} can follow it, and its {@linkplain #getAngle() angle} rotates the direction
+ * particles launch in, so {@code FlixelTween.angle(...)} can sweep a spray around. As a
+ * {@link FlixelAntialiasable} and {@link FlixelShaderable}, it applies smoothing and a shader to all
+ * of its particles at once.
+ *
  * <p>Example:
  *
  * <pre>{@code
@@ -93,7 +104,8 @@ import java.util.function.Supplier;
  * @param <P> The particle type this emitter launches. Use {@link FlixelParticle} unless you need
  *     custom per-particle behavior.
  */
-public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
+public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic
+    implements FlixelPositional, FlixelAntialiasable, FlixelShaderable {
 
   /**
    * The range of angles, in degrees, particles launch at in {@link FlixelEmitterMode#CIRCLE} mode.
@@ -171,8 +183,14 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   @NotNull
   private FlixelBlendMode blendMode = FlixelBlendMode.NORMAL;
 
+  @Nullable
+  private FlixelShader shader;
+
   private float x;
   private float y;
+  private float lastX;
+  private float lastY;
+  private float rotation;
   private float width;
   private float height;
   private float scrollX = 1f;
@@ -239,6 +257,8 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
     }
     this.x = x;
     this.y = y;
+    this.lastX = x;
+    this.lastY = y;
     // Erasure makes P[] a FlixelParticle[] at runtime, so this cast is safe.
     this.particles = (P[]) new FlixelParticle[capacity];
     for (int i = 0; i < capacity; i++) {
@@ -548,6 +568,8 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    */
   @Override
   public void update(float elapsed) {
+    lastX = x;
+    lastY = y;
     int i = 0;
     while (i < count) {
       P p = particles[i];
@@ -585,8 +607,9 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    * Draws every living particle through the normal sprite pipeline.
    *
    * <p>Particles share the emitter's texture, so the batch merges them into one GPU submission. The
-   * emitter applies its blend mode once around all of them instead of letting each particle switch
-   * it, and hands its camera list down so particles appear on the same cameras as the emitter.
+   * emitter applies its blend mode and shader once around all of them instead of letting each
+   * particle switch them, and hands its camera list down so particles appear on the same cameras as
+   * the emitter.
    *
    * @param batch The batch to draw into.
    */
@@ -599,12 +622,22 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
     if (blending) {
       batch.setBlendMode(blendMode);
     }
+    // Setting the shader flushes pending geometry, so doing it once here keeps every particle in one
+    // submission instead of one per particle.
+    boolean shading = shader != null && shader.isCompiled();
+    if (shading && batch.getShader() != shader) {
+      batch.setShader(shader);
+      shader.applyUniforms();
+    }
     for (int i = 0; i < count; i++) {
       P p = particles[i];
       if (p.exists && p.visible) {
         p.cameras = cameras;
         p.draw(batch);
       }
+    }
+    if (shading) {
+      batch.setShader(null);
     }
     if (blending) {
       batch.flush();
@@ -626,10 +659,46 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
       p.destroy();
     }
     frames = null;
+    shader = null;
     if (graphic != null) {
       graphic.release();
       graphic = null;
     }
+  }
+
+  /**
+   * Moves the spawn area by an amount. Particles already alive stay where they are.
+   *
+   * @param dx How far to move right, in pixels. Negative values move left.
+   */
+  @Override
+  public void changeX(float dx) {
+    x += dx;
+  }
+
+  /**
+   * Moves the spawn area by an amount. Particles already alive stay where they are.
+   *
+   * @param dy How far to move down, in pixels. Negative values move up.
+   */
+  @Override
+  public void changeY(float dy) {
+    y += dy;
+  }
+
+  /**
+   * Turns the emitter by an amount, which rotates the direction new particles launch in.
+   *
+   * @param deltaDegrees How far to turn, in degrees clockwise on screen.
+   */
+  @Override
+  public void changeAngle(float deltaDegrees) {
+    rotation += deltaDegrees;
+  }
+
+  @Override
+  public void toggleAntialiasing() {
+    setAntialiasing(!antialiasing);
   }
 
   /** Launches one particle for continuous emission and stops once the requested quantity is reached. */
@@ -651,7 +720,7 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
       if (!speed.active) {
         return;
       }
-      float a = roll(launchAngle.min, launchAngle.max);
+      float a = roll(launchAngle.min, launchAngle.max) + rotation;
       float cos = FlixelMath.cosDeg(a);
       float sin = FlixelMath.sinDeg(a);
       float s0 = roll(speed.start.min, speed.start.max);
@@ -673,6 +742,18 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
         FlixelPointBounds e = velocity.end;
         ex = roll(e.minX, e.maxX);
         ey = roll(e.minY, e.maxY);
+      }
+      if (rotation != 0f) {
+        // Turn both velocities by the emitter's angle, the same way CIRCLE mode offsets its launch
+        // angle, so rotating the emitter rotates the whole spray.
+        float cos = FlixelMath.cosDeg(rotation);
+        float sin = FlixelMath.sinDeg(rotation);
+        float rsx = sx * cos - sy * sin;
+        sy = sx * sin + sy * cos;
+        sx = rsx;
+        float rex = ex * cos - ey * sin;
+        ey = ex * sin + ey * cos;
+        ex = rex;
       }
     }
     p.setVelocity(sx, sy);
@@ -768,18 +849,22 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
     return graphic;
   }
 
+  @Override
   public float getX() {
     return x;
   }
 
+  @Override
   public void setX(float x) {
     this.x = x;
   }
 
+  @Override
   public float getY() {
     return y;
   }
 
+  @Override
   public void setY(float y) {
     this.y = y;
   }
@@ -790,23 +875,28 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    * @param x The new X position in world space.
    * @param y The new Y position in world space.
    */
+  @Override
   public void setPosition(float x, float y) {
     this.x = x;
     this.y = y;
   }
 
+  @Override
   public float getWidth() {
     return width;
   }
 
+  @Override
   public void setWidth(float width) {
     this.width = width;
   }
 
+  @Override
   public float getHeight() {
     return height;
   }
 
+  @Override
   public void setHeight(float height) {
     this.height = height;
   }
@@ -817,15 +907,65 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    * @param width The spawn area width, or zero for a vertical line or point.
    * @param height The spawn area height, or zero for a horizontal line or point.
    */
+  @Override
   public void setSize(float width, float height) {
     this.width = width;
     this.height = height;
   }
 
+  @Override
+  public float getLastX() {
+    return lastX;
+  }
+
+  @Override
+  public float getLastY() {
+    return lastY;
+  }
+
+  @Override
+  public float getMidpointX() {
+    return x + width * 0.5f;
+  }
+
+  @Override
+  public float getMidpointY() {
+    return y + height * 0.5f;
+  }
+
+  /**
+   * Returns how far the emitter is turned, in degrees clockwise on screen.
+   *
+   * <p>This is not the angle particles are drawn at; that comes from the {@link #angle} range. The
+   * emitter's own angle is added to {@link #launchAngle} in {@link FlixelEmitterMode#CIRCLE} mode
+   * and turns the rolled velocity in {@link FlixelEmitterMode#SQUARE} mode, so rotating the emitter
+   * rotates the whole spray, like turning a hose.
+   *
+   * @return The emitter's rotation in degrees.
+   */
+  @Override
+  public float getAngle() {
+    return rotation;
+  }
+
+  /**
+   * Turns the emitter, which rotates the direction new particles launch in. Particles already alive
+   * keep their direction.
+   *
+   * @param degrees The new rotation, in degrees clockwise on screen.
+   * @see #getAngle()
+   */
+  @Override
+  public void setAngle(float degrees) {
+    rotation = degrees;
+  }
+
+  @Override
   public float getScrollX() {
     return scrollX;
   }
 
+  @Override
   public float getScrollY() {
     return scrollY;
   }
@@ -838,6 +978,7 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    *     fixed on screen.
    * @param scrollY Vertical factor, with the same meaning as {@code scrollX}.
    */
+  @Override
   public void setScrollFactor(float scrollX, float scrollY) {
     this.scrollX = scrollX;
     this.scrollY = scrollY;
@@ -855,12 +996,17 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    * Sets how particles mix with what is behind them. {@link FlixelBlendMode#ADD} makes overlapping
    * particles glow, which suits fire, sparks, and magic.
    *
-   * @param blendMode The blend mode, or {@code null} for {@link FlixelBlendMode#NORMAL}.
+   * <p>The parameter is marked non-null so Kotlin sees {@code blendMode} as a writable property
+   * (its getter never returns {@code null}). Java callers passing {@code null} still get
+   * {@link FlixelBlendMode#NORMAL}.
+   *
+   * @param blendMode The blend mode to apply.
    */
-  public void setBlendMode(@Nullable FlixelBlendMode blendMode) {
+  public void setBlendMode(@NotNull FlixelBlendMode blendMode) {
     this.blendMode = blendMode != null ? blendMode : FlixelBlendMode.NORMAL;
   }
 
+  @Override
   public boolean isAntialiasing() {
     return antialiasing;
   }
@@ -871,10 +1017,32 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    *
    * @param antialiasing {@code true} for smooth filtering, {@code false} for sharp pixels.
    */
+  @Override
   public void setAntialiasing(boolean antialiasing) {
     this.antialiasing = antialiasing;
     if (graphic != null && graphic.isLoaded()) {
       graphic.getTexture().setSmooth(antialiasing);
     }
+  }
+
+  @Nullable
+  @Override
+  public FlixelShader getShader() {
+    return shader;
+  }
+
+  /**
+   * Applies a shader to every particle this emitter draws, or removes it with {@code null}.
+   *
+   * <p>The shader is switched on once around all particles, so they still share one GPU submission.
+   * A particle with its own shader overrides this one, but switching shaders per particle flushes the
+   * batch every time, so prefer a shared emitter shader. The shader is not owned by this emitter;
+   * destroy it yourself when you are done with it.
+   *
+   * @param shader The shader to apply, or {@code null} for none.
+   */
+  @Override
+  public void setShader(@Nullable FlixelShader shader) {
+    this.shader = shader;
   }
 }

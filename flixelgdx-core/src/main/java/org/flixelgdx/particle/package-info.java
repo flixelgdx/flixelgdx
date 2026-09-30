@@ -132,6 +132,24 @@
  * halo.focusOn(player); // Center the ring on the player.
  * }</pre>
  *
+ * <h2>Moving, rotating, and following</h2>
+ * <p>An emitter is a {@link org.flixelgdx.functional.FlixelPositional FlixelPositional}, so anything
+ * that works with positions works with it. Move it every frame to leave a trail, or let a camera
+ * follow it. Its angle rotates the direction particles launch in, so a tween can sweep a spray back
+ * and forth like a lawn sprinkler:
+ *
+ * <pre>{@code
+ * nozzle.launchAngle.set(-100f, -80f); // A narrow cone pointing up.
+ * FlixelTween.angle(nozzle, -45f, 45f,
+ *     new FlixelTweenSettings(FlixelTweenType.PINGPONG).setDuration(2f));
+ *
+ * Flixel.cameras.first().follow(nozzle);
+ * }</pre>
+ *
+ * <p>The emitter's angle is separate from the {@code angle} range, which sets how each particle is
+ * rotated when drawn. Moving or rotating the emitter only affects particles launched afterwards;
+ * particles already in the air keep going.
+ *
  * <h2>Graphics and frames</h2>
  * <p>{@link org.flixelgdx.particle.FlixelEmitter#loadGraphic(org.flixelgdx.file.FlixelFile, int, int) loadGraphic(...)}
  * cuts an image into a grid of frames that every particle shares. Each particle picks a random
@@ -193,9 +211,11 @@
  * {@code recycleWhenFull} to {@code false} to skip new launches instead.
  *
  * <p>Particles that share the emitter's graphic draw from the same texture, so the batch merges
- * them into a single GPU submission. The emitter also applies its blend mode once around all of
- * its particles, rather than once per particle. Avoid giving individual particles their own
- * shaders or blend modes, since each change forces the batch to flush.
+ * them into a single GPU submission. The emitter also applies its blend mode, shader
+ * ({@link org.flixelgdx.particle.FlixelEmitter#setShader(org.flixelgdx.graphics.FlixelShader) setShader(...)}),
+ * and antialiasing once for all of its particles, rather than once per particle. Avoid giving
+ * individual particles their own shaders or blend modes, since each change forces the batch to
+ * flush.
  *
  * <h2>Reproducible effects</h2>
  * <p>Every roll an emitter makes comes from its own

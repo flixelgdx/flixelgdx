@@ -351,6 +351,54 @@ class FlixelEmitterTest {
     }
   }
 
+  @Test
+  void emitterAngleRotatesCircleLaunches() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
+    emitter.launchAngle.set(0f);
+    emitter.speed.set(100f);
+    emitter.setAngle(90f);
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    assertEquals(0f, p.getVelocityX(), 0.5f);
+    assertEquals(100f, p.getVelocityY(), 0.5f);
+  }
+
+  @Test
+  void emitterAngleRotatesSquareLaunches() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
+    emitter.launchMode = FlixelEmitterMode.SQUARE;
+    emitter.velocity.set(100f, 0f);
+    emitter.changeAngle(90f);
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    assertEquals(0f, p.getVelocityX(), 0.5f);
+    assertEquals(100f, p.getVelocityY(), 0.5f);
+  }
+
+  @Test
+  void positionalMethodsDescribeTheSpawnArea() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(10f, 20f, 1, FlixelParticle::new);
+    emitter.setSize(40f, 60f);
+    assertEquals(30f, emitter.getMidpointX());
+    assertEquals(50f, emitter.getMidpointY());
+    emitter.update(0.016f);
+    emitter.changeX(5f);
+    emitter.changeY(-5f);
+    assertEquals(15f, emitter.getX());
+    assertEquals(15f, emitter.getY());
+    assertEquals(10f, emitter.getLastX());
+    assertEquals(20f, emitter.getLastY());
+  }
+
+  @Test
+  void toggleAntialiasingFlipsTheFlag() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
+    emitter.toggleAntialiasing();
+    assertTrue(emitter.isAntialiasing());
+    emitter.toggleAntialiasing();
+    assertFalse(emitter.isAntialiasing());
+  }
+
   private static float distanceFromCenter(FlixelParticle p, float cx, float cy) {
     float dx = p.getX() - cx;
     float dy = p.getY() - cy;
