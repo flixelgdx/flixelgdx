@@ -21,13 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util.save;
+package org.flixelgdx.particle;
 
 /**
- * Status of a {@link FlixelSave} {@code bind()}/{@code load()} operation.
+ * How a {@link FlixelEmitter} picks the starting velocity of each particle.
  */
-public enum FlixelSaveStatus {
-  EMPTY,
-  OK,
-  ERROR
+public enum FlixelEmitterMode {
+
+  /**
+   * Particles launch outward at a random angle from {@code launchAngle} and a random speed from
+   * {@code speed}. Use this for explosions, sparks, fountains, and anything that sprays in a cone
+   * or circle.
+   */
+  CIRCLE,
+
+  /**
+   * Particles get independent random X and Y velocities from {@code velocity}. Use this for effects
+   * that drift in a box-shaped spread, such as rain, snow, or rising smoke.
+   */
+  SQUARE
 }

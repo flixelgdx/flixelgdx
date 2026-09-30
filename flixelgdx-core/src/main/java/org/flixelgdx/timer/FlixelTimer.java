@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.util.timer;
+package org.flixelgdx.timer;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;

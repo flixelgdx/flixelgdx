@@ -27,7 +27,7 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelIntArray;
 import org.flixelgdx.input.FlixelInputManager;
-import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

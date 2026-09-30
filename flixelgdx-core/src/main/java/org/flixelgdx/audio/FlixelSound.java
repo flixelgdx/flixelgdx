@@ -25,10 +25,10 @@ package org.flixelgdx.audio;
 
 import org.flixelgdx.FlixelBasic;
 import org.flixelgdx.asset.FlixelAsset;
+import org.flixelgdx.signal.FlixelSignal;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.tween.settings.FlixelTweenSettings;
 import org.flixelgdx.tween.settings.FlixelTweenType;
-import org.flixelgdx.util.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

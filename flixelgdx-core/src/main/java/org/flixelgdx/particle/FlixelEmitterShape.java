@@ -21,36 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
-
-import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.collections.FlixelList;
-import org.flixelgdx.signal.FlixelSignal;
-import org.jetbrains.annotations.NotNull;
+package org.flixelgdx.particle;
 
 /**
- * Default {@link FlixelHostIntegration} used on platforms without host shell integration.
+ * The shape of the area a {@link FlixelEmitter} spawns particles inside.
  *
- * <p>All operations are no-ops. Capability checks return {@code false}. Signals are live instances
- * that never dispatch on their own, but callers may still add handlers to them safely.
+ * <p>Every shape fills the emitter's bounding box, from its position with its width and height.
+ * {@link #CIRCLE} and {@link #RING} become ovals when the width and height differ.
  */
-public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
+public enum FlixelEmitterShape {
 
-  /** Shared no-op instance. */
-  INSTANCE;
+  /** Particles appear anywhere inside the emitter's rectangle. Good for rain, snow, and dust. */
+  RECTANGLE,
 
-  private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
-  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
+  /**
+   * Particles appear anywhere inside the circle that fits the emitter's box, spread evenly over its
+   * area. Good for puffs, magic auras, and explosions that start with some size.
+   */
+  CIRCLE,
 
-  @Override
-  @NotNull
-  public FlixelSignal<String> onTextPasted() {
-    return onTextPasted;
-  }
-
-  @Override
-  @NotNull
-  public FlixelList<FlixelMonitor> getMonitors() {
-    return monitors;
-  }
+  /**
+   * Particles appear in a band just inside the edge of the circle that fits the emitter's box. The
+   * band's width is the emitter's ring thickness; a thickness of zero puts every particle exactly on
+   * the edge. Good for shockwaves, portals, and halos.
+   */
+  RING
 }

@@ -128,6 +128,25 @@ FlixelTween.tween(player, new FlixelTweenSettings()
 FlixelTween.shake(player, FlixelAxes.XY, 0.008f, new FlixelTweenSettings());
 ```
 
+### Particles
+
+Emitters launch hundreds of lightweight particles without allocating a single object while your game runs, and draw
+them all in one batch. They're configured with HaxeFlixel-style ranges:
+
+```java
+FlixelEmitter<FlixelParticle> sparks = new FlixelEmitter<>(64, FlixelParticle::new);
+sparks.loadGraphic(Flixel.files.internal("images/spark.png"));
+sparks.setBlendMode(FlixelBlendMode.ADD);
+sparks.launchAngle.set(-150f, -30f);   // Spray upward.
+sparks.speed.set(100f, 250f);
+sparks.acceleration.set(0f, 400f);     // Gravity.
+sparks.alpha.set(1f, 1f, 0f, 0f);      // Fade out over each particle's life.
+sparks.alpha.ease = FlixelEase::quadIn;
+add(sparks);
+
+sparks.start(true, 0f, 20); // Burst 20 sparks at once.
+```
+
 ### Performant Collection System
 
 FlixelGDX contains a large, performant-first collection system designed to be simple while being safe to use in hot loops,

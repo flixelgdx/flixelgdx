@@ -24,7 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.backend.FlixelWindow;
-import org.flixelgdx.util.save.FlixelSave;
+import org.flixelgdx.save.FlixelSave;
 import org.jetbrains.annotations.NotNull;
 
 /**

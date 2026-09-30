@@ -36,6 +36,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
@@ -43,7 +44,6 @@ import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
-import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -27,6 +27,7 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.save.FlixelSave;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

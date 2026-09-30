@@ -33,7 +33,7 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelMath;
-import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignal;
 import org.flixelgdx.xml.FlixelXml;
 import org.flixelgdx.xml.FlixelXmlElement;
 import org.jetbrains.annotations.NotNull;

@@ -52,4 +52,10 @@ class FlixelColorTest {
     assertEquals(c.b, fromPacked.b, 2e-2f);
     assertEquals(c.a, fromPacked.a, 2e-2f);
   }
+
+  @Test
+  void staticFloatBitsMatchInstanceFloatBits() {
+    FlixelColor c = new FlixelColor(1f, 0.5f, 0.25f, 0.75f);
+    assertEquals(c.toFloatBits(), FlixelColor.toFloatBits(1f, 0.5f, 0.25f, 0.75f));
+  }
 }
