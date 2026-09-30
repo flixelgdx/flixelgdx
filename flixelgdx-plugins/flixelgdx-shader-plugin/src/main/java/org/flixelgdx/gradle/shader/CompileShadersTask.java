@@ -38,6 +38,7 @@ import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,11 +50,20 @@ import java.util.Map;
  * Cross-compiles every configured shader into all backend variants and writes them into a
  * generated resources directory the game module bundles.
  *
- * <p>For each shader the task assembles the bgfx {@code .sc} sources from the developer's plain
- * GLSL (see {@link ShaderSources}), then runs {@code shaderc} once per stage per
- * {@link ShaderTarget}. The compiled bytecode lands at
- * {@code shaders/<name>/<variant>/vs.bin} and {@code fs.bin}, matching the layout the runtime
- * reads. The Direct3D variant needs Microsoft's FXC compiler (native on Windows, or via the
+ * <p>Each shader goes through three steps, like a document that is proofread once and then
+ * translated for each audience:
+ * <ol>
+ *   <li>{@link Glslang} compiles the developer's GLSL (wrapped by {@link ShaderSources}) into SPIR-V.
+ *   Any mistake in the shader fails the build here, with the developer's own file name and line
+ *   number.</li>
+ *   <li>{@link SpirvCross} translates that SPIR-V into ESSL 3.00 for the web and Android backends,
+ *   written to {@code shaders/<name>/essl/vs.glsl} and {@code fs.glsl}.</li>
+ *   <li>bgfx's {@code shaderc} compiles the bgfx {@code .sc} sources once per stage per
+ *   {@link ShaderTarget} for the desktop backend, written to {@code shaders/<name>/<variant>/vs.bin}
+ *   and {@code fs.bin}.</li>
+ * </ol>
+ *
+ * <p>The Direct3D variant needs Microsoft's FXC compiler (native on Windows, or via the
  * {@code d3d4linux} Wine shim elsewhere); when it is unavailable that one variant is skipped with a
  * warning, exactly as the framework's own shader build does, while every other variant still
  * compiles.
@@ -69,6 +79,18 @@ public abstract class CompileShadersTask extends DefaultTask {
   @Optional
   @PathSensitive(PathSensitivity.NONE)
   public abstract RegularFileProperty getShadercPath();
+
+  /** An explicit {@code glslang} path, or unset to use the bundled or {@code PATH} compiler. */
+  @InputFile
+  @Optional
+  @PathSensitive(PathSensitivity.NONE)
+  public abstract RegularFileProperty getGlslangPath();
+
+  /** An explicit {@code spirv-cross} path, or unset to use the bundled or {@code PATH} translator. */
+  @InputFile
+  @Optional
+  @PathSensitive(PathSensitivity.NONE)
+  public abstract RegularFileProperty getSpirvCrossPath();
 
   /** Maps each shader name to its fragment source path (relative to the source directory). */
   @Input
@@ -87,7 +109,7 @@ public abstract class CompileShadersTask extends DefaultTask {
   @OutputDirectory
   public abstract DirectoryProperty getGeneratedResourcesDir();
 
-  /** A scratch directory for the assembled {@code .sc} sources and the extracted compiler. */
+  /** A scratch directory for the assembled sources, the SPIR-V modules, and the extracted tools. */
   @Internal
   public abstract DirectoryProperty getWorkDir();
 
@@ -112,15 +134,17 @@ public abstract class CompileShadersTask extends DefaultTask {
     deleteRecursively(shadersOut);
     writeNativeImageResourceConfig(outputRoot);
 
-    File override = getShadercPath().isPresent() ? getShadercPath().getAsFile().get() : null;
-    Shaderc shaderc = Shaderc.prepare(workDir, override);
+    Glslang glslang = Glslang.prepare(workDir, optionalFile(getGlslangPath()));
+    SpirvCross spirvCross = SpirvCross.prepare(workDir, optionalFile(getSpirvCrossPath()));
+    Shaderc shaderc = Shaderc.prepare(workDir, optionalFile(getShadercPath()));
 
     File varyingFile = new File(workDir, "varying.def.sc");
     Files.writeString(varyingFile.toPath(), ShaderSources.varyingDef(), StandardCharsets.UTF_8);
 
     for (Map.Entry<String, String> entry : fragments.entrySet()) {
       String name = entry.getKey();
-      String fragmentGlsl = Files.readString(resolve(sourceDir, entry.getValue()).toPath(), StandardCharsets.UTF_8);
+      String fragmentPath = entry.getValue();
+      String fragmentGlsl = Files.readString(resolve(sourceDir, fragmentPath).toPath(), StandardCharsets.UTF_8);
       String vertexPath = vertices.get(name);
       String vertexGlsl = vertexPath == null
           ? null
@@ -128,6 +152,25 @@ public abstract class CompileShadersTask extends DefaultTask {
 
       File shaderWork = new File(workDir, name);
       Files.createDirectories(shaderWork.toPath());
+
+      // Compile to SPIR-V first. This is where a broken shader fails, with a readable error.
+      File vsGlsl = new File(shaderWork, "vs.vert");
+      File fsGlsl = new File(shaderWork, "fs.frag");
+      String vertexName = vertexPath == null ? "flixel-default.vert.glsl" : vertexPath;
+      Files.writeString(vsGlsl.toPath(), ShaderSources.glslVertex(vertexGlsl, vertexName), StandardCharsets.UTF_8);
+      Files.writeString(fsGlsl.toPath(), ShaderSources.glslFragment(fragmentGlsl, fragmentPath),
+          StandardCharsets.UTF_8);
+      File vsSpv = new File(shaderWork, "vs.spv");
+      File fsSpv = new File(shaderWork, "fs.spv");
+      compileSpirv(glslang, vsGlsl, "vert", vsSpv, "vertex", name);
+      compileSpirv(glslang, fsGlsl, "frag", fsSpv, "fragment", name);
+
+      // The web and Android backends compile ESSL at runtime rather than loading bgfx bytecode.
+      File esslDir = new File(shadersOut, name + "/essl");
+      translateEssl(spirvCross, vsSpv, new File(esslDir, "vs.glsl"), "vertex", name);
+      translateEssl(spirvCross, fsSpv, new File(esslDir, "fs.glsl"), "fragment", name);
+
+      // bgfx compiles from the developer's own source; see ShaderSources for why.
       File vsSc = new File(shaderWork, "vs.sc");
       File fsSc = new File(shaderWork, "fs.sc");
       Files.writeString(vsSc.toPath(), ShaderSources.vertex(vertexGlsl), StandardCharsets.UTF_8);
@@ -138,15 +181,6 @@ public abstract class CompileShadersTask extends DefaultTask {
         compileStage(shaderc, vsSc, varyingFile, new File(variantDir, "vs.bin"), "vertex", target, name);
         compileStage(shaderc, fsSc, varyingFile, new File(variantDir, "fs.bin"), "fragment", target, name);
       }
-
-      // The web and Android backends compile GLSL at runtime rather than loading bgfx bytecode, so
-      // emit the raw ESSL variant they read. This needs no shaderc invocation.
-      File esslDir = new File(shadersOut, name + "/essl");
-      Files.createDirectories(esslDir.toPath());
-      Files.writeString(new File(esslDir, "vs.glsl").toPath(), ShaderSources.esslVertex(vertexGlsl),
-          StandardCharsets.UTF_8);
-      Files.writeString(new File(esslDir, "fs.glsl").toPath(), ShaderSources.esslFragment(fragmentGlsl),
-          StandardCharsets.UTF_8);
 
       getLogger().lifecycle("[FlixelGDX] Compiled shader '{}'.", name);
     }
@@ -178,9 +212,53 @@ public abstract class CompileShadersTask extends DefaultTask {
     Files.writeString(new File(configDir, "resource-config.json").toPath(), config, StandardCharsets.UTF_8);
   }
 
+  /**
+   * Compiles one stage to SPIR-V, failing the build with glslang's diagnostics when the shader is
+   * invalid.
+   */
+  private void compileSpirv(Glslang glslang, File source, String stage, File out, String type, String name)
+      throws IOException {
+    ToolResult result = glslang.compile(source, stage, out);
+    String diagnostics = diagnostics(result.log());
+    if (!result.success()) {
+      throw new GradleException("[FlixelGDX] The " + type + " stage of shader '" + name
+          + "' does not compile:\n" + (diagnostics.isEmpty() ? result.log() : diagnostics));
+    }
+    if (!diagnostics.isEmpty()) {
+      getLogger().warn("[FlixelGDX] Warnings in the {} stage of shader '{}':\n{}", type, name, diagnostics);
+    }
+  }
+
+  /**
+   * Translates one SPIR-V stage into ESSL. A failure here is a tooling problem rather than a mistake
+   * in the shader, since glslang has already accepted it.
+   */
+  private static void translateEssl(SpirvCross spirvCross, File spirv, File out, String type, String name)
+      throws IOException {
+    ToolResult result = spirvCross.toEssl(spirv, out);
+    if (!result.success()) {
+      throw new GradleException("[FlixelGDX] spirv-cross could not translate the " + type + " stage of shader '"
+          + name + "' to ESSL:\n" + result.log());
+    }
+  }
+
+  /**
+   * Keeps only the {@code ERROR:} and {@code WARNING:} lines of a glslang log, dropping the echoed
+   * file path and the trailing summary lines.
+   */
+  private static String diagnostics(String log) {
+    StringBuilder out = new StringBuilder();
+    for (String line : log.split("\\R")) {
+      if (line.startsWith("ERROR:") || line.startsWith("WARNING:")) {
+        out.append(out.length() == 0 ? "" : "\n").append(line);
+      }
+    }
+    return out.toString();
+  }
+
   private void compileStage(Shaderc shaderc, File sc, File varying, File out, String type,
       ShaderTarget target, String name) throws IOException {
-    Shaderc.Result result = shaderc.compile(sc, varying, out, type, target);
+    ToolResult result = shaderc.compile(sc, varying, out, type, target);
     if (result.success()) {
       return;
     }
@@ -199,6 +277,11 @@ public abstract class CompileShadersTask extends DefaultTask {
       return;
     }
     throw new GradleException(message);
+  }
+
+  @Nullable
+  private static File optionalFile(RegularFileProperty property) {
+    return property.isPresent() ? property.getAsFile().get() : null;
   }
 
   private static File resolve(File sourceDir, String path) {

@@ -28,27 +28,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Locates and drives bgfx's {@code shaderc} compiler, the tool that turns a single {@code .sc}
- * source into the per-renderer bytecode the FlixelGDX backends load at runtime.
+ * source into the per-renderer bytecode the desktop backend loads at runtime.
  *
  * <p>The same compiler produces the framework's own built-in sprite shader, so its output is
  * guaranteed to be in the exact container format {@code bgfx_create_shader} expects, including the
  * uniform reflection table and the vertex/fragment signature hashes. That is why the plugin drives
  * {@code shaderc} instead of trying to synthesize that binary format by hand.
  *
- * <p>The compiler is resolved in priority order: an explicit path configured on the extension, the
- * binary bundled in this plugin for the current operating system, and finally a {@code shaderc}
- * found on the system {@code PATH}. The bundled binary and the {@code bgfx_shader.sh} include header
- * are extracted from the plugin JAR into a cache directory the first time they are needed.
+ * <p>The compiler is resolved like every other {@link BundledTool}. The {@code bgfx_shader.sh}
+ * include header is extracted from the plugin JAR next to it the first time it is needed.
  *
  * <p>On Linux and macOS the bundled {@code d3d4linux} Wine shim is extracted alongside the binary so
  * the Direct3D (dx11) variant can be compiled there too, provided Wine is installed. When the shim
@@ -56,18 +49,17 @@ import java.util.Locale;
  */
 public final class Shaderc {
 
-  private static final String TOOLS_ROOT = "/org/flixelgdx/gradle/shader/tools/";
   private static final String SHIM_ROOT = "/org/flixelgdx/gradle/shader/tools/windows-shim/";
   private static final String INCLUDE_HEADER = "/org/flixelgdx/gradle/shader/include/bgfx_shader.sh";
 
   @NotNull
-  private final File executable;
+  private final BundledTool tool;
 
   @NotNull
   private final File includeDir;
 
-  private Shaderc(@NotNull File executable, @NotNull File includeDir) {
-    this.executable = executable;
+  private Shaderc(@NotNull BundledTool tool, @NotNull File includeDir) {
+    this.tool = tool;
     this.includeDir = includeDir;
   }
 
@@ -85,44 +77,15 @@ public final class Shaderc {
     Files.createDirectories(workDir.toPath());
     File includeDir = new File(workDir, "include");
     Files.createDirectories(includeDir.toPath());
-    extractResource(INCLUDE_HEADER, new File(includeDir, "bgfx_shader.sh"));
+    BundledTool.extractResource(INCLUDE_HEADER, new File(includeDir, "bgfx_shader.sh"));
 
-    // An explicit path always wins.
-    if (override != null) {
-      if (!override.isFile()) {
-        throw new IOException("Configured shaderc path does not exist: " + override.getAbsolutePath());
-      }
-      return new Shaderc(override, includeDir);
+    // The bundled binary lands in bin/, so the Direct3D shim can sit at ../windows relative to it,
+    // the exact location shaderc looks for it.
+    BundledTool tool = BundledTool.locate(workDir, override, "shaderc", "shadercPath");
+    if (!BundledTool.isWindows()) {
+      extractDirect3DShim(workDir);
     }
-
-    // The binary bundled for this operating system.
-    String classifier = hostClassifier();
-    String exeName = isWindows() ? "shaderc.exe" : "shaderc";
-    String resource = TOOLS_ROOT + classifier + "/" + exeName;
-    if (Shaderc.class.getResource(resource) != null) {
-      // shaderc is placed under bin/ so the Direct3D shim can sit at ../windows relative to it, the
-      // exact location shaderc looks for it.
-      File binDir = new File(workDir, "bin");
-      Files.createDirectories(binDir.toPath());
-      File dest = new File(binDir, exeName);
-      extractResource(resource, dest);
-      if (!isWindows()) {
-        dest.setExecutable(true, false);
-        extractDirect3DShim(workDir);
-      }
-      return new Shaderc(dest, includeDir);
-    }
-
-    // A shaderc found on PATH.
-    File onPath = findOnPath(exeName);
-    if (onPath != null) {
-      return new Shaderc(onPath, includeDir);
-    }
-
-    throw new IOException(
-        "No shaderc compiler is bundled for this platform (" + classifier + ") and none was found on "
-            + "PATH. Set the compiler path with the 'shadercPath' option in the shaders block, or "
-            + "add a bundled binary for this platform to the plugin.");
+    return new Shaderc(tool, includeDir);
   }
 
   /**
@@ -137,49 +100,17 @@ public final class Shaderc {
    * @throws IOException When the compiler process cannot be started.
    */
   @NotNull
-  public Result compile(@NotNull File scFile, @NotNull File varyingFile, @NotNull File outFile,
+  public ToolResult compile(@NotNull File scFile, @NotNull File varyingFile, @NotNull File outFile,
       @NotNull String type, @NotNull ShaderTarget target) throws IOException {
     Files.createDirectories(outFile.getParentFile().toPath());
-    List<String> cmd = new ArrayList<>();
-    cmd.add(executable.getAbsolutePath());
-    cmd.add("-f");
-    cmd.add(scFile.getAbsolutePath());
-    cmd.add("-o");
-    cmd.add(outFile.getAbsolutePath());
-    cmd.add("--type");
-    cmd.add(type);
-    cmd.add("--platform");
-    cmd.add(target.platform());
-    cmd.add("-p");
-    cmd.add(target.profile());
-    cmd.add("--varyingdef");
-    cmd.add(varyingFile.getAbsolutePath());
-    cmd.add("-i");
-    cmd.add(includeDir.getAbsolutePath());
-
-    ProcessBuilder pb = new ProcessBuilder(cmd).redirectErrorStream(true);
-    Process process = pb.start();
-    String log;
-    try (InputStream in = process.getInputStream()) {
-      log = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-    }
-    int code;
-    try {
-      code = process.waitFor();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IOException("Interrupted while waiting for shaderc.", e);
-    }
-    return new Result(code == 0, log.strip());
-  }
-
-  private static void extractResource(@NotNull String resource, @NotNull File dest) throws IOException {
-    try (InputStream in = Shaderc.class.getResourceAsStream(resource)) {
-      if (in == null) {
-        throw new IOException("Plugin resource missing: " + resource);
-      }
-      Files.copy(in, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    }
+    return tool.run(List.of(
+        "-f", scFile.getAbsolutePath(),
+        "-o", outFile.getAbsolutePath(),
+        "--type", type,
+        "--platform", target.platform(),
+        "-p", target.profile(),
+        "--varyingdef", varyingFile.getAbsolutePath(),
+        "-i", includeDir.getAbsolutePath()));
   }
 
   /**
@@ -201,57 +132,10 @@ public final class Shaderc {
     try {
       File windowsDir = new File(workDir, "windows");
       Files.createDirectories(windowsDir.toPath());
-      extractResource(SHIM_ROOT + "d3d4linux.exe", new File(windowsDir, "d3d4linux.exe"));
-      extractResource(SHIM_ROOT + "d3dcompiler_47.dll", new File(windowsDir, "d3dcompiler_47.dll"));
+      BundledTool.extractResource(SHIM_ROOT + "d3d4linux.exe", new File(windowsDir, "d3d4linux.exe"));
+      BundledTool.extractResource(SHIM_ROOT + "d3dcompiler_47.dll", new File(windowsDir, "d3dcompiler_47.dll"));
     } catch (IOException e) {
       // Optional tooling; the Direct3D variant is skipped gracefully when the shim is unavailable.
     }
-  }
-
-  @Nullable
-  private static File findOnPath(@NotNull String exeName) {
-    String path = System.getenv("PATH");
-    if (path == null) {
-      return null;
-    }
-    for (String entry : path.split(File.pathSeparator)) {
-      File candidate = new File(entry, exeName);
-      if (candidate.isFile() && candidate.canExecute()) {
-        return candidate;
-      }
-    }
-    return null;
-  }
-
-  @NotNull
-  private static String hostClassifier() {
-    String os = osName();
-    String arch = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
-    boolean arm = arch.contains("aarch64") || arch.contains("arm64");
-    if (os.contains("win")) {
-      return arm ? "windows-aarch64" : "windows-x86_64";
-    }
-    if (os.contains("mac") || os.contains("darwin")) {
-      return arm ? "macos-aarch64" : "macos-x86_64";
-    }
-    return arm ? "linux-aarch64" : "linux-x86_64";
-  }
-
-  private static boolean isWindows() {
-    return osName().contains("win");
-  }
-
-  @NotNull
-  private static String osName() {
-    return System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-  }
-
-  /**
-   * The outcome of a single {@code shaderc} invocation.
-   *
-   * @param success Whether the compiler exited successfully.
-   * @param log The combined standard output and error, trimmed, for diagnostics.
-   */
-  public record Result(boolean success, @NotNull String log) {
   }
 }

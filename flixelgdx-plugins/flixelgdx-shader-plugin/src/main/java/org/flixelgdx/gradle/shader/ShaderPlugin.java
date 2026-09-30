@@ -38,8 +38,10 @@ import java.io.File;
  * build time.
  *
  * <p>A developer writes one plain GLSL fragment shader (and, rarely, a vertex shader). The plugin
- * drives bgfx's {@code shaderc} to produce the OpenGL, Vulkan, Metal, and Direct3D bytecode the
- * runtime loads, so no game code ever has to be written twice or compiled by hand. The compiled
+ * compiles it to SPIR-V with Khronos {@code glslang}, translates that into ESSL for the web and
+ * Android backends with {@code spirv-cross}, and drives bgfx's {@code shaderc} to produce the OpenGL,
+ * Vulkan, Metal, and Direct3D bytecode the desktop backend loads, so no game code ever has to be
+ * written twice or compiled by hand. The compiled
  * variants are added to the module's resources automatically, so they ship inside the game.
  *
  * <h2>Usage</h2>
@@ -87,6 +89,8 @@ public class ShaderPlugin implements Plugin<Project> {
           task.setDescription("Cross-compiles the game's GLSL shaders into every FlixelGDX backend variant.");
           task.getSourceDir().convention(ext.getSourceDir());
           task.getShadercPath().convention(ext.getShadercPath());
+          task.getGlslangPath().convention(ext.getGlslangPath());
+          task.getSpirvCrossPath().convention(ext.getSpirvCrossPath());
           task.getGeneratedResourcesDir()
               .convention(project.getLayout().getBuildDirectory().dir("generated/shaders/resources"));
           task.getWorkDir().convention(project.getLayout().getBuildDirectory().dir("tmp/shaders"));

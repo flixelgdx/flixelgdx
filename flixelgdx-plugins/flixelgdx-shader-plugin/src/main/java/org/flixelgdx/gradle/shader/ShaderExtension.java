@@ -34,7 +34,8 @@ import org.gradle.api.file.RegularFileProperty;
  * <p>Declare one entry per shader effect. Each entry names a fragment source (and optionally a
  * vertex source) written in plain GLSL; the plugin cross-compiles them into every backend variant
  * at build time and bundles the results into the module's resources, so the game ships a single
- * shader that runs on OpenGL, Vulkan, Metal, and Direct3D without any per-platform authoring.
+ * shader that runs on OpenGL, OpenGL ES, WebGL, Vulkan, Metal, and Direct3D without any per-platform
+ * authoring.
  *
  * <h2>Example</h2>
  *
@@ -79,6 +80,28 @@ public interface ShaderExtension {
    * @return The compiler path property.
    */
   RegularFileProperty getShadercPath();
+
+  /**
+   * An optional explicit path to a Khronos {@code glslang} executable.
+   *
+   * <p>glslang compiles every shader to SPIR-V before anything else runs. When unset, the plugin
+   * uses the {@code glslang} bundled for the current operating system, falling back to one found on
+   * the system {@code PATH}.
+   *
+   * @return The compiler path property.
+   */
+  RegularFileProperty getGlslangPath();
+
+  /**
+   * An optional explicit path to a Khronos {@code spirv-cross} executable.
+   *
+   * <p>spirv-cross translates the SPIR-V into the ESSL the web and Android backends load. When
+   * unset, the plugin uses the {@code spirv-cross} bundled for the current operating system, falling
+   * back to one found on the system {@code PATH}.
+   *
+   * @return The translator path property.
+   */
+  RegularFileProperty getSpirvCrossPath();
 
   /**
    * The set of shaders to compile.

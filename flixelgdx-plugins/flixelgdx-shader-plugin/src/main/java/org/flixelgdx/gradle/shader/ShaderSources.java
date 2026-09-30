@@ -30,22 +30,33 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Assembles the bgfx {@code shaderc} sources ({@code .sc} plus {@code varying.def.sc}) and the
- * ESSL sources for the web and Android backends from the plain GLSL a developer writes.
+ * Assembles the sources the shader tools compile from the plain GLSL a developer writes.
  *
- * <p>A game developer never has to learn bgfx's shader dialect. They write an ordinary GLSL
+ * <p>A game developer never has to learn a backend's shader dialect. They write an ordinary GLSL
  * {@code void main()} that reads a small set of framework-provided names, and this class wraps that
- * body with the bgfx contract: the {@code $input}/{@code $output} declarations, the
- * {@code #include <bgfx_shader.sh>} preamble, the stage-0 sampler the batch binds, and a block of
- * {@code #define} aliases mapping the friendly names to bgfx's internal ones. This mirrors how the
- * HaxeFlixel compatibility layer in {@code FlixelShader} rewrites {@code #pragma header} shaders.
+ * body in two ways:
+ * <ul>
+ *   <li>{@link #glslVertex} and {@link #glslFragment} build a complete GLSL 4.50 source for
+ *   {@link Glslang}. Its SPIR-V output is the source of truth that {@link SpirvCross} translates into
+ *   the ESSL the web and Android backends load.</li>
+ *   <li>{@link #vertex} and {@link #fragment} build the bgfx {@code .sc} sources for {@link Shaderc}:
+ *   the {@code $input}/{@code $output} declarations, the {@code #include <bgfx_shader.sh>} preamble,
+ *   the stage-0 sampler the batch binds, and {@code #define} aliases mapping the friendly names to
+ *   bgfx's internal ones.</li>
+ * </ul>
+ * This mirrors how the HaxeFlixel compatibility layer in {@code FlixelShader} rewrites
+ * {@code #pragma header} shaders.
  *
- * <p>The same vertex body also runs on ESSL backends (web, Android) because {@link #esslVertex}
- * injects {@code #define} aliases that map the bgfx-side names ({@code a_texcoord0},
- * {@code a_color0}, {@code u_modelViewProj}, {@code mul}) to the matching ESSL declarations. A body
- * that compiles against the bgfx vertex contract will therefore compile unchanged on ESSL too,
- * provided it reads {@code a_position} as a {@code vec2} (which is what the framework's vertex
- * buffer actually contains).
+ * <p>The bgfx sources are built from the developer's original text rather than from translated
+ * SPIR-V. bgfx compiles several variants through an HLSL front end, where {@code a * b} on a matrix is
+ * a per-component multiply and only {@code mul(a, b)} is a real matrix product. Translated code
+ * always writes {@code a * b}, so feeding it to bgfx would silently break every matrix transform.
+ *
+ * <p>A vertex body is written against the bgfx naming convention ({@code a_texcoord0},
+ * {@code a_color0}, {@code u_modelViewProj}, {@code mul}). The GLSL preamble aliases those names to
+ * the ones the GL backends bind ({@code a_texCoord0}, {@code a_color}, {@code u_projTrans}), so the
+ * same body compiles on every backend, provided it reads {@code a_position} as a {@code vec2} (which
+ * is what the framework's vertex buffer actually contains).
  *
  * <p>The names available to a fragment shader are:
  * <ul>
@@ -108,51 +119,26 @@ public final class ShaderSources {
       Pattern.MULTILINE);
 
   /**
-   * The ESSL pass-through vertex shader body, shared by both the no-custom-vertex path and
-   * the custom-vertex path as a reference for what the preamble provides.
+   * The GLSL 4.50 preamble prepended to a vertex body before it is compiled to SPIR-V.
    *
-   * <p>This vertex stage matches the web and Android backends' fixed vertex layout and attribute
-   * names ({@code a_position}, {@code a_texCoord0}, {@code a_color}), forwarding the texture
-   * coordinate and tint and applying the combined view-projection matrix.
-   */
-  private static final String ESSL_PASS_THROUGH_VERTEX = """
-      attribute vec2 a_position;
-      attribute vec2 a_texCoord0;
-      attribute vec4 a_color;
-      uniform mat4 u_projTrans;
-      varying vec2 v_texCoords;
-      varying vec4 v_color;
-      void main() {
-        v_texCoords = a_texCoord0;
-        v_color = a_color;
-        gl_Position = u_projTrans * vec4(a_position, 0.0, 1.0);
-      }
-      """;
-
-  /**
-   * The ESSL preamble prepended to a custom vertex body.
-   *
-   * <p>Declares the attributes, uniforms, and varyings, then defines aliases that let a vertex
-   * body written against the bgfx naming convention compile unchanged:
+   * <p>It declares the fixed vertex layout under the names the GL backends bind, at the same
+   * attribute slots they use ({@code a_position} at 0, {@code a_texCoord0} at 1, {@code a_color} at 2),
+   * along with the projection uniform and the varyings. It then aliases the bgfx-side names so one
+   * vertex body compiles on every backend:
    * <ul>
    *   <li>{@code a_texcoord0} maps to {@code a_texCoord0} (bgfx uses lowercase {@code c}).</li>
    *   <li>{@code a_color0} maps to {@code a_color} (bgfx uses a numeric suffix).</li>
    *   <li>{@code u_modelViewProj} maps to {@code u_projTrans} (different uniform name).</li>
-   *   <li>{@code mul(a, b)} expands to {@code ((a) * (b))} (bgfx GLSL helper, absent in plain GLSL).</li>
+   *   <li>{@code mul(a, b)} expands to {@code ((a) * (b))} (bgfx helper, absent in plain GLSL).</li>
    * </ul>
-   *
-   * <p>Note: {@code a_position} is declared as {@code vec2} here, matching the framework's vertex
-   * buffer. A body that treats it as {@code vec4} (a form sometimes used in bgfx dialect) will not
-   * compile on ESSL; write {@code vec4(a_position, 0.0, 1.0)} or {@code vec4(a_position.xy, 0.0, 1.0)}
-   * instead, which works on both bgfx and ESSL.
    */
-  private static final String ESSL_VERTEX_PREAMBLE = """
-      attribute vec2 a_position;
-      attribute vec2 a_texCoord0;
-      attribute vec4 a_color;
+  private static final String GLSL_VERTEX_PREAMBLE = """
+      layout(location = 0) in vec2 a_position;
+      layout(location = 1) in vec2 a_texCoord0;
+      layout(location = 2) in vec4 a_color;
       uniform mat4 u_projTrans;
-      varying vec2 v_texCoords;
-      varying vec4 v_color;
+      layout(location = 0) out vec2 v_texCoords;
+      layout(location = 1) out vec4 v_color;
       #define a_texcoord0 a_texCoord0
       #define a_color0 a_color
       #define u_modelViewProj u_projTrans
@@ -160,24 +146,21 @@ public final class ShaderSources {
       """;
 
   /**
-   * The fragment preamble prepended to the developer's source for the ESSL variant.
+   * The GLSL 4.50 preamble prepended to a fragment body before it is compiled to SPIR-V.
    *
-   * <p>It provides the same friendly names the bgfx contract exposes ({@code u_texture},
-   * {@code v_texCoords}, {@code v_color}, {@code flixel_texture}) but in browser-ready ESSL, so a
-   * developer's fragment source compiles unchanged on the web and Android backends.
+   * <p>It provides the friendly names ({@code u_texture}, {@code v_texCoords}, {@code v_color},
+   * {@code flixel_texture}) and maps the older GLSL spellings developers write ({@code gl_FragColor},
+   * {@code texture2D}) onto their GLSL 4.50 equivalents, so a fragment body written for any
+   * FlixelGDX backend compiles unchanged.
    */
-  private static final String ESSL_FRAGMENT_PREAMBLE = """
-      #ifdef GL_ES
-      #ifdef GL_FRAGMENT_PRECISION_HIGH
-      precision highp float;
-      #else
-      precision mediump float;
-      #endif
-      #endif
+  private static final String GLSL_FRAGMENT_PREAMBLE = """
+      layout(location = 0) in vec2 v_texCoords;
+      layout(location = 1) in vec4 v_color;
+      layout(location = 0) out vec4 flixel_FragColor;
       uniform sampler2D u_texture;
-      varying vec2 v_texCoords;
-      varying vec4 v_color;
-      vec4 flixel_texture(vec2 uv) { return texture2D(u_texture, uv); }
+      #define gl_FragColor flixel_FragColor
+      #define texture2D texture
+      vec4 flixel_texture(vec2 uv) { return texture(u_texture, uv); }
       """;
 
   /**
@@ -204,44 +187,33 @@ public final class ShaderSources {
   private ShaderSources() {}
 
   /**
-   * Returns the ESSL vertex shader source for the web and Android backends.
+   * Builds the complete GLSL 4.50 vertex source that {@link Glslang} compiles to SPIR-V.
    *
-   * <p>When {@code vertexGlsl} is {@code null} or blank, the built-in pass-through is returned,
-   * which covers the overwhelming majority of sprite and camera effects. When a custom vertex body
-   * is supplied, it is wrapped with an ES 1.00 preamble that declares the attributes, uniforms, and
-   * varyings, plus {@code #define} aliases so bodies written against the bgfx vertex naming
-   * convention ({@code a_texcoord0}, {@code a_color0}, {@code u_modelViewProj}, {@code mul}) compile
-   * unchanged on ESSL.
-   *
-   * <p>The one form that cannot be translated: treating {@code a_position} as {@code vec4}. The
-   * framework's vertex buffer stores position as two floats ({@code vec2}), so the attribute is
-   * declared as {@code vec2} here. Write {@code vec4(a_position, 0.0, 1.0)} to promote it safely,
-   * which is compatible with both bgfx and ESSL.
+   * <p>When {@code vertexGlsl} is {@code null} or blank, the built-in {@link #DEFAULT_VERTEX} is used,
+   * which covers the overwhelming majority of sprite and camera effects. The body is placed after a
+   * {@code #line} directive naming {@code sourceName}, so compile errors point at the developer's own
+   * file and line numbers instead of the generated preamble.
    *
    * @param vertexGlsl The developer's vertex body, or {@code null} to use the built-in pass-through.
-   * @return Complete ESSL vertex source ready to upload to the GPU.
+   * @param sourceName The file name reported in compile errors.
+   * @return Complete GLSL 4.50 vertex source.
    */
   @NotNull
-  public static String esslVertex(@Nullable String vertexGlsl) {
-    if (vertexGlsl == null || vertexGlsl.isBlank()) {
-      return HEADER + ESSL_PASS_THROUGH_VERTEX;
-    }
-    return HEADER + "\n" + ESSL_VERTEX_PREAMBLE + "\n" + vertexGlsl.strip() + "\n";
+  public static String glslVertex(@Nullable String vertexGlsl, @NotNull String sourceName) {
+    String body = (vertexGlsl == null || vertexGlsl.isBlank()) ? DEFAULT_VERTEX : vertexGlsl;
+    return glsl(GLSL_VERTEX_PREAMBLE, body, sourceName);
   }
 
   /**
-   * Wraps a developer's fragment GLSL in the ESSL fragment contract for the web and Android backends.
+   * Builds the complete GLSL 4.50 fragment source that {@link Glslang} compiles to SPIR-V.
    *
    * @param fragmentGlsl The developer's fragment source, containing a {@code void main()}.
-   * @return Complete ESSL fragment source ready to upload to the GPU.
+   * @param sourceName The file name reported in compile errors.
+   * @return Complete GLSL 4.50 fragment source.
    */
   @NotNull
-  public static String esslFragment(@NotNull String fragmentGlsl) {
-    return HEADER + "\n"
-        + ESSL_FRAGMENT_PREAMBLE
-        + "\n"
-        + fragmentGlsl.strip()
-        + "\n";
+  public static String glslFragment(@NotNull String fragmentGlsl, @NotNull String sourceName) {
+    return glsl(GLSL_FRAGMENT_PREAMBLE, fragmentGlsl, sourceName);
   }
 
   /**
@@ -289,6 +261,30 @@ public final class ShaderSources {
         + renameHlslKeywords(body)
         + "\n"
         + bgfxBody(body)
+        + "\n";
+  }
+
+  /**
+   * Joins a preamble and a developer's body into one GLSL 4.50 source.
+   *
+   * <p>The {@code GL_GOOGLE_cpp_style_line_directive} extension lets the {@code #line} directive carry
+   * a file name, so glslang reports errors as {@code crt.frag.glsl:3} rather than as a line in the
+   * generated file.
+   *
+   * @param preamble The stage's declarations and aliases.
+   * @param body The developer's source.
+   * @param sourceName The file name reported in compile errors.
+   * @return The complete source.
+   */
+  @NotNull
+  private static String glsl(@NotNull String preamble, @NotNull String body, @NotNull String sourceName) {
+    String name = sourceName.replace('\\', '/').replace("\"", "");
+    return "#version 450\n"
+        + "#extension GL_GOOGLE_cpp_style_line_directive : require\n"
+        + HEADER
+        + preamble
+        + "#line 1 \"" + name + "\"\n"
+        + body.strip()
         + "\n";
   }
 
