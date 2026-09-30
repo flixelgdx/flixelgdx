@@ -64,7 +64,9 @@
  *   <li><b>Input</b> -
  *       {@link org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice FlixelHtml5InputDevice}
  *       translates DOM keyboard, mouse, and wheel events into the core input API, using physical
- *       {@code KeyboardEvent.code} mapping so layout-independent keys work correctly. Text input
+ *       {@code KeyboardEvent.code} mapping so layout-independent keys work correctly. Events are
+ *       queued as the browser fires them and applied at the start of each frame, so a click or key
+ *       tap that begins and ends between two frames is still seen as pressed. Text input
  *       (started through the core input API) is bridged through a hidden, off-screen text field so
  *       IME composition, dead keys, and native paste all flow through the browser's own input
  *       pipeline instead of being reimplemented by hand, and

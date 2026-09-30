@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.html5.input;
 
 import org.flixelgdx.input.FlixelBaseInputDevice;
+import org.flixelgdx.input.FlixelInputEventQueue;
 import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.mouse.FlixelMouseButton;
@@ -44,9 +45,18 @@ import org.teavm.jso.dom.html.HTMLTextAreaElement;
  * <p>This is the web counterpart of the desktop input device. Where desktop pumps SDL events from
  * its loop, the browser pushes events to registered listeners on its own schedule, so this class
  * attaches DOM handlers once in {@link #attach(HTMLCanvasElement)} and lets them run whenever the
- * browser fires them. Each handler updates the same cached state the desktop device keeps (for
- * {@link #isKeyPressed(int)} and the pointer getters) and forwards to the framework's input
- * managers through the {@link FlixelKeyboardListener} and {@link FlixelMouseListener} lists.
+ * browser fires them. Each handler only records its event in a {@link FlixelInputEventQueue}; the
+ * game loop calls {@link #drain()} at the start of every frame, which updates the same cached state
+ * the desktop device keeps (for {@link #isKeyPressed(int)} and the pointer getters) and forwards
+ * each event to the framework's input managers through the {@link FlixelKeyboardListener} and
+ * {@link FlixelMouseListener} lists.
+ *
+ * <p>Queueing matters because the browser can deliver a mouse button's press and its release
+ * between two frames, for example on a fast click, a trackpad tap, or while the tab is throttled.
+ * Applied immediately, both would land before the next frame looked at the button, so it would
+ * never appear pressed and {@code justPressed} would never fire. The queue holds such a release
+ * back by one frame, so the press is seen on one frame and the release on the next. The same rule
+ * covers quick key taps.
  *
  * <p>Browser games are played with a mouse, keyboard, or gamepad, so this device does not listen
  * for touch events. On a touch screen, taps still reach the game because the browser falls back to
@@ -76,6 +86,9 @@ import org.teavm.jso.dom.html.HTMLTextAreaElement;
  * inactive, exactly as before.
  */
 public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
+
+  private final FlixelInputEventQueue events = new FlixelInputEventQueue();
+  private final EventReceiver receiver = new EventReceiver();
 
   private final boolean[] keyDown = new boolean[512];
   private final boolean[] buttonDown = new boolean[8];
@@ -123,14 +136,14 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       // The browser repeats keydown while a key is held. Route repeats to onKeyRepeated instead
       // of onKeyDown so justPressed stays true for a single frame only.
       if (key.isRepeat()) {
-        onKeyRepeated(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
+        events.postKeyRepeated(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
       } else {
-        onKeyDown(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
+        events.postKeyDown(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
       }
     });
     Window.current().addEventListener("keyup", event -> {
       KeyboardEvent key = (KeyboardEvent) event;
-      onKeyUp(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
+      events.postKeyUp(FlixelHtml5KeyMap.toFlixelKey(key.getCode()));
     });
 
     canvas.addEventListener("mousedown", event -> {
@@ -142,26 +155,40 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
         // keydown listener stops dispatching keyTyped until the bridge is focused again, e.g.
         // when a player clicks inside a focused text box to move the caret. Preventing the
         // default here keeps the bridge focused without affecting the mouse event itself, which
-        // is still read and dispatched below.
+        // is still read and queued below.
         event.preventDefault();
       }
-      onMouseDown(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()),
+      events.postMouseDown(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()),
           canvasY(canvas, mouse.getClientY()));
     });
     canvas.addEventListener("mouseup", event -> {
       MouseEvent mouse = (MouseEvent) event;
-      onMouseUp(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()), canvasY(canvas, mouse.getClientY()));
+      events.postMouseUp(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()),
+          canvasY(canvas, mouse.getClientY()));
     });
     canvas.addEventListener("mousemove", event -> {
       MouseEvent mouse = (MouseEvent) event;
-      onMouseMoved(canvasX(canvas, mouse.getClientX()), canvasY(canvas, mouse.getClientY()));
+      events.postMouseMoved(canvasX(canvas, mouse.getClientX()), canvasY(canvas, mouse.getClientY()));
     });
     canvas.addEventListener("wheel", event -> {
       WheelEvent wheel = (WheelEvent) event;
-      onScrolled((float) wheel.getDeltaX(), (float) wheel.getDeltaY());
+      events.postScrolled((float) wheel.getDeltaX(), (float) wheel.getDeltaY());
     });
     // Suppress the right-click menu so games can use the right mouse button.
     canvas.addEventListener("contextmenu", Event::preventDefault);
+  }
+
+  /**
+   * Applies every browser event queued since the last frame and forwards it to the registered
+   * listeners.
+   *
+   * <p>The game loop calls this once per frame, before the game updates. A release whose press was
+   * applied earlier in the same call waits for the next call, so a click or key tap that happened
+   * entirely between two frames still reports {@code justPressed} on one frame and
+   * {@code justReleased} on the next. See {@link FlixelInputEventQueue} for the details.
+   */
+  public void drain() {
+    events.drain(receiver);
   }
 
   private void onKeyDown(int flixelKey) {
@@ -219,12 +246,12 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Dispatches a typed character straight from a {@code keydown} event, used only while the
+   * Queues a typed character straight from a {@code keydown} event, used only while the
    * text-input bridge is inactive (see {@link #isTextInputActive()}). Modifier combinations such as
    * Ctrl+V still produce a one-character {@code KeyboardEvent.key} value in most browsers (for
    * example {@code "v"}), so those are skipped here to avoid feeding shortcut letters back into the
    * game as typed text. Characters outside the Basic Multilingual Plane arrive as a two-character
-   * surrogate pair, which is dispatched as two separate calls to match how the text-input bridge
+   * surrogate pair, which is queued as two separate characters to match how the text-input bridge
    * (and the desktop backend) deliver them.
    *
    * @param key The {@code keydown} event to read the typed character from.
@@ -238,11 +265,11 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
       return;
     }
     if (printable.length() == 1) {
-      onKeyTyped(printable.charAt(0));
+      events.postKeyTyped(printable.charAt(0));
     } else if (printable.length() == 2 && Character.isHighSurrogate(printable.charAt(0))
         && Character.isLowSurrogate(printable.charAt(1))) {
-      onKeyTyped(printable.charAt(0));
-      onKeyTyped(printable.charAt(1));
+      events.postKeyTyped(printable.charAt(0));
+      events.postKeyTyped(printable.charAt(1));
     }
   }
 
@@ -297,8 +324,9 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
   }
 
   /**
-   * Dispatches every non-control UTF-16 unit currently sitting in the text-input bridge's value
-   * through {@link #onKeyTyped(char)}, then clears it. Both the plain {@code input} listener and the
+   * Queues every non-control UTF-16 unit currently sitting in the text-input bridge's value as a
+   * typed character (delivered through {@link #onKeyTyped(char)} on the next {@link #drain()}), then
+   * clears it. Both the plain {@code input} listener and the
    * {@code compositionend} listener in {@link #ensureTextInputBridge()} call this, and browsers do
    * not agree on which of those two fires first when an IME composition commits. That ordering does
    * not matter here: whichever listener runs first drains and clears the shared value, so the other
@@ -320,7 +348,7 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
     for (int i = 0; i < text.length(); i++) {
       char character = text.charAt(i);
       if (character >= 0x20 && character != 0x7F) {
-        onKeyTyped(character);
+        events.postKeyTyped(character);
       }
     }
     textInputBridge.setValue("");
@@ -483,5 +511,58 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
   public boolean isComposing() {
     return composing;
+  }
+
+  /**
+   * Returns the queue that holds browser events until the next {@link #drain()}.
+   *
+   * @return The event queue this device posts into.
+   */
+  public FlixelInputEventQueue getEventQueue() {
+    return events;
+  }
+
+  /** Applies drained events to this device's polled state and forwards them to listeners. */
+  private final class EventReceiver implements FlixelInputEventQueue.Receiver {
+
+    @Override
+    public void keyDown(int keycode) {
+      onKeyDown(keycode);
+    }
+
+    @Override
+    public void keyUp(int keycode) {
+      onKeyUp(keycode);
+    }
+
+    @Override
+    public void keyRepeated(int keycode) {
+      onKeyRepeated(keycode);
+    }
+
+    @Override
+    public void keyTyped(char character) {
+      onKeyTyped(character);
+    }
+
+    @Override
+    public void mouseDown(int button, int x, int y) {
+      onMouseDown(button, x, y);
+    }
+
+    @Override
+    public void mouseUp(int button, int x, int y) {
+      onMouseUp(button, x, y);
+    }
+
+    @Override
+    public void mouseMoved(int x, int y) {
+      onMouseMoved(x, y);
+    }
+
+    @Override
+    public void scrolled(float amountX, float amountY) {
+      onScrolled(amountX, amountY);
+    }
   }
 }

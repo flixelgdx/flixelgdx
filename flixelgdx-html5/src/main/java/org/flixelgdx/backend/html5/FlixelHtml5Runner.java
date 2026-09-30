@@ -220,6 +220,9 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * previous timestamp to subtract from, so it reports a zero delta and lets {@link FlixelGame}
    * clamp it; every later frame reports the real time elapsed since the previous drawn frame.
    *
+   * <p>Input events the browser delivered since the previous callback are applied first through
+   * {@link FlixelHtml5InputDevice#drain()}, so the game sees them before it updates.
+   *
    * <p>When a DOM alert overlay is visible (info or warn), {@code window.__flixelAlertPaused} is
    * {@code true}. While that flag is set, the game is not updated or drawn and the timestamp is
    * reset so the first frame after the overlay is dismissed does not report the paused duration as
@@ -238,10 +241,22 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
     }
     if (isAlertPaused()) {
       lastTimestamp = -1.0;
+      // Keep applying input while paused, as the browser keeps delivering it, so the queue cannot
+      // fill up and drop a release during a long pause.
+      try {
+        input.drain();
+      } catch (Throwable t) {
+        if (crashHandler != null) {
+          crashHandler.onCrash(null, t);
+        }
+        return;
+      }
       Window.requestAnimationFrame(this::onAnimationFrame);
       return;
     }
     try {
+      // Apply the input the browser delivered since the last frame before the game reads it.
+      input.drain();
       float deltaSeconds = lastTimestamp < 0.0 ? 0f : (float) ((timestamp - lastTimestamp) / 1000.0);
       lastTimestamp = timestamp;
       float elapsed = game.advanceTime(deltaSeconds);
