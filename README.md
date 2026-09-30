@@ -193,8 +193,10 @@ Since FlixelGDX's native platforms (primarily desktop and mobile) are built on [
 that usually means handling shaders would be a nightmare: download bgfx's source code and its required dependencies,
 wait forever until it compiles, write different shaders for each graphics API, etc.
 
-Not here. The framework's `org.flixelgdx.shader` plugin pre-bundles the `shaderc` binary for every platform, and
-cross-compiles a single GLSL shader into every `.bin` shader file for each graphics API:
+Not here. The framework's `org.flixelgdx.shaders` plugin pre-bundles every compiler it needs for each platform
+(Khronos `glslang` and `spirv-cross`, plus bgfx's `shaderc`). It compiles a single GLSL shader to SPIR-V, catching
+mistakes at build time with your own file name and line number, then produces a `.bin` shader file for each desktop
+graphics API and ESSL for Android and the web:
 
 ```groovy
 plugins {

@@ -20,7 +20,7 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-html5-plugin`**: Automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
 - **`flixelgdx-logging-plugin`**: Runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
-- **`flixelgdx-shader-plugin`**: Bundles bgfx's `shaderc` binaries for all platforms and automatically compiles GLSL shaders for each graphics API.
+- **`flixelgdx-shader-plugin`**: Bundles Khronos `glslang` and `spirv-cross` plus bgfx's `shaderc` for all platforms. It compiles GLSL shaders to SPIR-V, then produces the variant each graphics API needs (bgfx `.bin` files for desktop, ESSL for Android and the web).
 
 ### Misc.
 
