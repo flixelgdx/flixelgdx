@@ -33,7 +33,7 @@ import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.typedarrays.Float32Array;

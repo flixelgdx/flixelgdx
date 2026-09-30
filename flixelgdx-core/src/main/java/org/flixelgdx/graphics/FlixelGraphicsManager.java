@@ -29,7 +29,6 @@ import org.flixelgdx.FlixelGame;
 import org.flixelgdx.asset.FlixelAssetManager;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.functional.FlixelDrawable;
-import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -22,7 +22,7 @@
  *       for directional state (UP, DOWN, LEFT, RIGHT) used in collision response.</li>
  *   <li>{@link org.flixelgdx.util.FlixelAxes FlixelAxes} - axis flags (X, Y, XY) used by
  *       tweens, shake, and physics helpers.</li>
- *   <li>{@link org.flixelgdx.util.FlixelShader FlixelShader} - base class for custom GLSL
+ *   <li>{@link org.flixelgdx.graphics.FlixelShader FlixelShader} - base class for custom GLSL
  *       shaders applied to sprites or render targets.</li>
  *   <li>{@link org.flixelgdx.util.FlixelColorBounds FlixelColorBounds},
  *       {@link org.flixelgdx.util.FlixelColorRange FlixelColorRange}, and

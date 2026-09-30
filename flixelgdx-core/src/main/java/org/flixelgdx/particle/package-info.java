@@ -64,9 +64,8 @@
  * particle so you can adjust it further.
  *
  * <h2>Describing particles with ranges</h2>
- * <p>Every property of an emitter is a range object in the same style as HaxeFlixel's
- * {@code FlxEmitter}, so each particle rolls its own values and no two look exactly alike. There
- * are two kinds:
+ * <p>Every property of an emitter is a range object, so each particle rolls its own values and no
+ * two look exactly alike. There are two kinds:
  *
  * <ul>
  *   <li>Bounds, such as {@code lifespan} and {@code launchAngle}, hold a minimum and a maximum.

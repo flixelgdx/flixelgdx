@@ -38,7 +38,7 @@ import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
-import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.BufferUtils;

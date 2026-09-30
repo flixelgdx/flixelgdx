@@ -33,8 +33,8 @@ package org.flixelgdx.math;
  * <p>Example:
  *
  * <pre>{@code
- * FlixelPointRange grow = new FlixelPointRange(1f, 1f, 2f, 2f); // Normal size to double size.
- * float width = grow.lerpX(0.25f) * 16f;                       // 1.25 times a 16 pixel frame.
+ * FlixelPointRange grow = new FlixelPointRange(1f, 1f, 2f, 2f);  // Normal size to double size.
+ * float width = grow.lerpX(0.25f) * 16f;  // 1.25 times a 16 pixel frame.
  * }</pre>
  */
 public class FlixelPointRange {

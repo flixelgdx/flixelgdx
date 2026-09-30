@@ -25,7 +25,7 @@ package org.flixelgdx.functional;
 
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelSprite;
-import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.Nullable;
 
 /**

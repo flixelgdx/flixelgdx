@@ -43,7 +43,7 @@ import org.flixelgdx.util.FlixelAxes;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
-import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

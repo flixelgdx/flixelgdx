@@ -43,7 +43,7 @@ import org.flixelgdx.text.FlixelFontRegistry;
 import org.flixelgdx.timer.FlixelTimer;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.util.FlixelSpriteUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

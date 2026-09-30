@@ -25,7 +25,6 @@ package org.flixelgdx.graphics;
 
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.math.FlixelMatrix;
-import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

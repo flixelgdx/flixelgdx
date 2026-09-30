@@ -71,7 +71,7 @@
  *
  * <p>The easiest way to apply a post-processing effect to the entire scene is through
  * {@link org.flixelgdx.graphics.FlixelGlobalShaderPipeline FlixelGlobalShaderPipeline}, reached via
- * {@link org.flixelgdx.graphics.FlixelGraphicsManager#addGlobalShader(org.flixelgdx.util.FlixelShader) FlixelGraphicsManager.addGlobalShader(...)}.
+ * {@link org.flixelgdx.graphics.FlixelGraphicsManager#addGlobalShader(FlixelShader) FlixelGraphicsManager.addGlobalShader(...)}.
  * Shaders added there chain automatically: each reads from the previous output and writes its
  * result forward.
  *
@@ -86,7 +86,7 @@
  * opaque handle to a compiled GPU shader program. It is created by the backend via
  * {@link org.flixelgdx.graphics.FlixelGraphicsManager#compileShaderProgram(String) FlixelGraphicsManager.compileShaderProgram(...)}
  * and is normally wrapped by a higher-level
- * {@link org.flixelgdx.util.FlixelShader FlixelShader} that manages uniforms and the destroy
+ * {@link org.flixelgdx.graphics.FlixelShader FlixelShader} that manages uniforms and the destroy
  * lifecycle automatically. Prefer {@code FlixelShader} in game code; only reach for
  * {@code FlixelShaderProgram} when writing a custom renderer or backend.
  *

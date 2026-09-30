@@ -29,7 +29,7 @@ import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelShader;
+import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.webgl.WebGLProgram;
 import org.teavm.jso.webgl.WebGLRenderingContext;

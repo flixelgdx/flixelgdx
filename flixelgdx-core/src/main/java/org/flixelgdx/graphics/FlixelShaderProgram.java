@@ -27,7 +27,6 @@ import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.util.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 
 /**
