@@ -38,13 +38,13 @@ import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.group.FlixelBasicGroup;
 import org.flixelgdx.input.action.FlixelActionSets;
 import org.flixelgdx.math.FlixelMatrix;
+import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
 import org.flixelgdx.text.FlixelFontRegistry;
+import org.flixelgdx.timer.FlixelTimer;
 import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelShader;
 import org.flixelgdx.util.FlixelSpriteUtil;
-import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
-import org.flixelgdx.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
