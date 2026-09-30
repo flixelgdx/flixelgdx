@@ -30,13 +30,13 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMath;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDirectionFlags;
-import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
