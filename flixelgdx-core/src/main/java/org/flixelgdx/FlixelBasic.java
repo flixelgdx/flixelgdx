@@ -23,8 +23,6 @@
  */
 package org.flixelgdx;
 
-import org.flixelgdx.collections.FlixelPool;
-import org.flixelgdx.collections.FlixelPoolable;
 import org.flixelgdx.functional.FlixelDrawable;
 import org.flixelgdx.functional.FlixelExistable;
 import org.flixelgdx.functional.IFlixelBasic;
@@ -42,10 +40,9 @@ import org.jetbrains.annotations.Nullable;
  * ({@link #exists}, {@link #active}) are defined by {@link FlixelExistable}.
  *
  * <p>Prefer {@link #kill()} when an object should stop updating and drawing but might be {@link #revive()}d later
- * (bullets, particles, pooled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
+ * (bullets, particles, recycled gameplay objects). Call {@link #destroy()} when you are done with the instance for good:
  * it clears lifecycle state and, in subclasses such as {@link FlixelSprite}, releases graphics and
- * other resources. {@link #reset()} (the {@link FlixelPoolable} hook) delegates to
- * {@link #destroy()}, so returning an instance to a {@link FlixelPool} cleans it up.
+ * other resources.
  *
  * <table border="1">
  *   <caption><strong>Lifecycle cheat sheet</strong></caption>
@@ -78,12 +75,7 @@ import org.jetbrains.annotations.Nullable;
  *       <td>Let the group/state call {@link #destroy()} on each member</td>
  *       <td>Relying on {@link #kill()} for GPU/native cleanup</td>
  *     </tr>
- *     <tr>
- *       <td>Returning instance to a {@link FlixelPool}</td>
- *       <td>{@code pool.free(object)} (invokes {@link #reset()} -> {@link #destroy()})</td>
- *       <td>Expecting {@link #kill()} to run pool reset logic</td>
- *     </tr>
- *   </tbody>
+ * *   </tbody>
  * </table>
  */
 public abstract class FlixelBasic implements IFlixelBasic {
@@ -264,11 +256,8 @@ public abstract class FlixelBasic implements IFlixelBasic {
    * <p>Override this function to clean up any resources used by this object,
    * such as textures, fonts, sounds, etc.
    *
-   * <p>This function is called automatically when {@link #reset()} is executed
-   * (for example when this object is returned to a pool), so you don't need to
-   * call it manually.
-   *
-   * @see #reset()
+   * <p>A {@link FlixelState} or {@link FlixelBasicGroup} calls this on every member when it is
+   * destroyed itself, so you only need to call it yourself for objects that are not in one.
    */
   @Override
   public void destroy() {
@@ -296,15 +285,6 @@ public abstract class FlixelBasic implements IFlixelBasic {
   public void revive() {
     alive = true;
     exists = true;
-  }
-
-  /**
-   * Automatically calls {@link #destroy()}. Marked as final to prevent subclasses from overriding it,
-   * they should call {@link #destroy()} instead.
-   */
-  @Override
-  public final void reset() {
-    destroy();
   }
 
   @Override
