@@ -25,7 +25,6 @@ package org.flixelgdx.particle;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelBasic;
-import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelState;
 import org.flixelgdx.asset.FlixelAssetManager;
@@ -35,18 +34,23 @@ import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.math.FlixelBounds;
 import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelPointBounds;
+import org.flixelgdx.math.FlixelPointRangeBounds;
 import org.flixelgdx.math.FlixelRandom;
+import org.flixelgdx.math.FlixelRangeBounds;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelColorRangeBounds;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
 
 /**
- * Launches, updates, and draws a fixed number of lightweight particles for effects such as sparks,
- * smoke, fire, rain, and explosions.
+ * Launches, updates, and draws a fixed number of particles for effects such as sparks, smoke,
+ * fire, rain, and explosions.
  *
  * <p>Think of an emitter like a fountain. You decide where it sits, how hard and in which directions
  * it sprays, and how long each drop lasts before it disappears. The emitter takes care of launching
@@ -56,7 +60,6 @@ import java.util.function.Supplier;
  * <p>Every particle is created once, in the constructor, and reused forever after, so a running
  * emitter never allocates. Living particles are packed at the front of one array: launching takes
  * the next unused slot, and when a particle dies the last living particle is moved into its slot.
- * All particles share the emitter's texture and are drawn together in a single batch submission.
  *
  * <p>Each property is configured with a range object in the same style as HaxeFlixel's
  * {@code FlxEmitter}. A {@link FlixelBounds} picks one random value per particle (like
@@ -65,9 +68,8 @@ import java.util.function.Supplier;
  * follow an easing curve through its {@code ease} field.
  *
  * <p>An emitter is a {@link FlixelBasic}, so add it to a {@link FlixelState} or group and it updates
- * and draws automatically. Its position and size describe the spawn area: particles appear at a
- * random point inside the rectangle from ({@link #getX()}, {@link #getY()}) with the emitter's width
- * and height. Leave the size at zero to spawn every particle from a single point.
+ * and draws automatically. Its position and size describe the spawn area, whose shape is set by
+ * {@link #shape}. Leave the size at zero to spawn every particle from a single point.
  *
  * <p>Example:
  *
@@ -86,29 +88,12 @@ import java.util.function.Supplier;
  * // Later, when the player lands:
  * sparks.setPosition(footX, footY);
  * sparks.start(true, 0f, 20);          // Explode 20 particles at once.
- *
- * // Campfire smoke: always running.
- * FlixelEmitter<FlixelParticle> smoke = new FlixelEmitter<>(320f, 400f, 128, FlixelParticle::new);
- * smoke.loadGraphic(Flixel.files.internal("images/smoke.png"));
- * smoke.setSize(24f, 4f);
- * smoke.launchMode = FlixelEmitterMode.SQUARE;
- * smoke.velocity.set(-10f, -60f, 10f, -30f);
- * smoke.scale.set(0.5f, 0.5f, 0.5f, 0.5f, 1.5f, 1.5f, 2f, 2f); // Grows as it rises.
- * smoke.scale.ease = FlixelEase::quadOut;
- * smoke.lifespan.set(1.5f, 2.5f);
- * smoke.start(false, 0.08f);           // One particle every 0.08 seconds, forever.
- * add(smoke);
  * }</pre>
- *
- * <p>Particles are purely visual and do not collide with anything. For gameplay objects that need
- * collision, use sprites in a recycled group instead.
  *
  * @param <P> The particle type this emitter launches. Use {@link FlixelParticle} unless you need
  *     custom per-particle behavior.
  */
 public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
-
-  private static final int FLOATS_PER_QUAD = 20;
 
   /**
    * The range of angles, in degrees, particles launch at in {@link FlixelEmitterMode#CIRCLE} mode.
@@ -159,6 +144,16 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   @NotNull
   public FlixelEmitterMode launchMode = FlixelEmitterMode.CIRCLE;
 
+  /** The shape of the spawn area. Defaults to {@link FlixelEmitterShape#RECTANGLE}. */
+  @NotNull
+  public FlixelEmitterShape shape = FlixelEmitterShape.RECTANGLE;
+
+  /**
+   * How far the {@link FlixelEmitterShape#RING} band reaches inward from the edge, in pixels. Zero
+   * spawns every particle exactly on the edge.
+   */
+  public float ringThickness;
+
   /**
    * Seconds between launches while emitting continuously. Zero or less launches one particle every
    * frame.
@@ -166,7 +161,6 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   public float frequency = 0.1f;
 
   private final P[] particles;
-  private final float[] vertices;
 
   @Nullable
   private FlixelGraphic graphic;
@@ -201,8 +195,8 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   public boolean keepScaleRatio;
 
   /**
-   * Whether particles step through every loaded frame over their life, like a short animation.
-   * When {@code false}, each particle picks one random frame and keeps it.
+   * Whether particles step through every frame of the emitter's graphic over their life, like a
+   * short animation. When {@code false}, each particle picks one random frame and keeps it.
    */
   public boolean animateFrames;
 
@@ -221,6 +215,7 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    *     created now, so pick a number that covers your busiest moment without going far over.
    * @param factory Creates one particle. Called {@code capacity} times, only in this constructor.
    *     Usually a constructor reference such as {@code FlixelParticle::new}.
+   * @throws IllegalArgumentException If {@code capacity} is less than 1.
    */
   public FlixelEmitter(int capacity, @NotNull Supplier<P> factory) {
     this(0f, 0f, capacity, factory);
@@ -251,7 +246,6 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
       p.emitter = this;
       particles[i] = p;
     }
-    this.vertices = new float[capacity * FLOATS_PER_QUAD];
   }
 
   /**
@@ -337,6 +331,10 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    * otherwise nothing launches. A particle recycled this way is cut short rather than dying, so its
    * {@link FlixelParticle#onDeath()} does not run.
    *
+   * <p>When the emitter has a graphic loaded, it replaces the particle's frame. Otherwise the
+   * particle keeps whatever graphic it loaded itself, which lets a particle subclass bring its own
+   * art or animations.
+   *
    * @return The launched particle, or {@code null} if the emitter was full and recycling is off.
    */
   @Nullable
@@ -350,85 +348,97 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
       return null;
     }
 
-    p.reset();
-    p.alive = true;
+    FlixelFrame[] f = frames;
+    if (f != null) {
+      FlixelFrame frame = f[f.length > 1 && !animateFrames ? random.nextInt(f.length) : 0];
+      p.setRegion(frame);
+      p.updateHitbox(frame.getRegionWidth(), frame.getRegionHeight());
+    }
+
+    // Roll the spawn point, then center the particle's hitbox on it.
+    float halfW = width * 0.5f;
+    float halfH = height * 0.5f;
+    float spawnX;
+    float spawnY;
+    if (shape == FlixelEmitterShape.RECTANGLE) {
+      spawnX = x + roll(0f, width);
+      spawnY = y + roll(0f, height);
+    } else {
+      // Picking the squared radius evenly (instead of the radius) spreads points evenly over the
+      // area rather than bunching them at the center. The same pick is shared by both axes so the
+      // point stays between the inner and outer ovals.
+      float innerW = shape == FlixelEmitterShape.RING ? Math.max(0f, halfW - ringThickness) : 0f;
+      float innerH = shape == FlixelEmitterShape.RING ? Math.max(0f, halfH - ringThickness) : 0f;
+      float u = random.nextFloat();
+      float a = random.nextFloat(0f, FlixelMath.PI2);
+      float rw = (float) Math.sqrt(FlixelMath.lerp(innerW * innerW, halfW * halfW, u));
+      float rh = (float) Math.sqrt(FlixelMath.lerp(innerH * innerH, halfH * halfH, u));
+      spawnX = x + halfW + FlixelMath.cos(a) * rw;
+      spawnY = y + halfH + FlixelMath.sin(a) * rh;
+    }
+    p.reset(spawnX - p.getWidth() * 0.5f, spawnY - p.getHeight() * 0.5f);
+    p.setScrollFactor(scrollX, scrollY);
     p.lifespan = roll(lifespan.min, lifespan.max);
-    p.x = x + roll(0f, width);
-    p.y = y + roll(0f, height);
     boolean timed = p.lifespan > 0f;
 
     rollVelocity(p, timed);
-    p.accelerationX = roll(acceleration.minX, acceleration.maxX);
-    p.accelerationY = roll(acceleration.minY, acceleration.maxY);
-    p.dragX = roll(drag.minX, drag.maxX);
-    p.dragY = roll(drag.minY, drag.maxY);
+    p.setAcceleration(roll(acceleration.minX, acceleration.maxX), roll(acceleration.minY, acceleration.maxY));
+    p.setDrag(roll(drag.minX, drag.maxX), roll(drag.minY, drag.maxY));
 
     if (angle.active) {
-      p.angleStart = roll(angle.start.min, angle.start.max);
-      p.angleEnd = angle.changes() ? roll(angle.end.min, angle.end.max) : p.angleStart;
-      p.angle = p.angleStart;
-      p.angleRangeActive = ignoreAngularVelocity && timed && p.angleStart != p.angleEnd;
+      float start = roll(angle.start.min, angle.start.max);
+      float end = angle.changes() ? roll(angle.end.min, angle.end.max) : start;
+      p.setAngle(start);
+      if (ignoreAngularVelocity) {
+        p.angleRange.set(start, end);
+        p.angleRange.active &= timed;
+      }
     }
     if (angularVelocity.active && !ignoreAngularVelocity) {
-      p.angularVelocityStart = roll(angularVelocity.start.min, angularVelocity.start.max);
-      p.angularVelocityEnd = angularVelocity.changes()
-          ? roll(angularVelocity.end.min, angularVelocity.end.max)
-          : p.angularVelocityStart;
-      p.angularVelocity = p.angularVelocityStart;
-      p.angularVelocityRangeActive = timed && p.angularVelocityStart != p.angularVelocityEnd;
+      float start = roll(angularVelocity.start.min, angularVelocity.start.max);
+      float end = angularVelocity.changes() ? roll(angularVelocity.end.min, angularVelocity.end.max) : start;
+      p.setAngularVelocity(start);
+      p.angularVelocityRange.set(start, end);
+      p.angularVelocityRange.active &= timed;
     }
 
     if (scale.active) {
-      p.scaleStartX = roll(scale.start.minX, scale.start.maxX);
-      p.scaleStartY = keepScaleRatio ? p.scaleStartX : roll(scale.start.minY, scale.start.maxY);
+      float sx = roll(scale.start.minX, scale.start.maxX);
+      float sy = keepScaleRatio ? sx : roll(scale.start.minY, scale.start.maxY);
+      float ex = sx;
+      float ey = sy;
       if (scale.changes()) {
-        p.scaleEndX = roll(scale.end.minX, scale.end.maxX);
-        p.scaleEndY = keepScaleRatio ? p.scaleEndX : roll(scale.end.minY, scale.end.maxY);
-      } else {
-        p.scaleEndX = p.scaleStartX;
-        p.scaleEndY = p.scaleStartY;
+        ex = roll(scale.end.minX, scale.end.maxX);
+        ey = keepScaleRatio ? ex : roll(scale.end.minY, scale.end.maxY);
       }
-      p.scaleX = p.scaleStartX;
-      p.scaleY = p.scaleStartY;
-      p.scaleRangeActive = timed && (p.scaleStartX != p.scaleEndX || p.scaleStartY != p.scaleEndY);
+      p.setScale(sx, sy);
+      p.scaleRange.set(sx, sy, ex, ey);
+      p.scaleRange.active &= timed;
     }
 
     if (alpha.active) {
-      p.alphaStart = roll(alpha.start.min, alpha.start.max);
-      p.alphaEnd = alpha.changes() ? roll(alpha.end.min, alpha.end.max) : p.alphaStart;
-      p.alpha = p.alphaStart;
-      p.alphaRangeActive = timed && p.alphaStart != p.alphaEnd;
+      float start = roll(alpha.start.min, alpha.start.max);
+      float end = alpha.changes() ? roll(alpha.end.min, alpha.end.max) : start;
+      p.setAlpha(start);
+      p.alphaRange.set(start, end);
+      p.alphaRange.active &= timed;
     }
 
     if (color.active) {
-      FlixelColor sMin = color.start.min;
-      FlixelColor sMax = color.start.max;
-      float t = random.nextFloat();
-      p.redStart = FlixelMath.lerp(sMin.r, sMax.r, t);
-      p.greenStart = FlixelMath.lerp(sMin.g, sMax.g, t);
-      p.blueStart = FlixelMath.lerp(sMin.b, sMax.b, t);
+      FlixelColor start = p.colorRange.start;
+      FlixelColor end = p.colorRange.end;
+      start.set(color.start.min()).lerp(color.start.max(), random.nextFloat());
       if (color.changes()) {
-        FlixelColor eMin = color.end.min;
-        FlixelColor eMax = color.end.max;
-        t = random.nextFloat();
-        p.redEnd = FlixelMath.lerp(eMin.r, eMax.r, t);
-        p.greenEnd = FlixelMath.lerp(eMin.g, eMax.g, t);
-        p.blueEnd = FlixelMath.lerp(eMin.b, eMax.b, t);
+        end.set(color.end.min()).lerp(color.end.max(), random.nextFloat());
       } else {
-        p.redEnd = p.redStart;
-        p.greenEnd = p.greenStart;
-        p.blueEnd = p.blueStart;
+        end.set(start);
       }
-      p.red = p.redStart;
-      p.green = p.greenStart;
-      p.blue = p.blueStart;
-      p.colorRangeActive = timed
-          && (p.redStart != p.redEnd || p.greenStart != p.greenEnd || p.blueStart != p.blueEnd);
-    }
-
-    int frameCount = getFrameCount();
-    if (frameCount > 1 && !animateFrames) {
-      p.frame = random.nextInt(frameCount);
+      p.colorRange.set(start, end);
+      p.colorRange.active &= timed;
+      FlixelColor tint = p.getColor();
+      tint.r = start.r;
+      tint.g = start.g;
+      tint.b = start.b;
     }
 
     p.onEmit();
@@ -442,7 +452,7 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    */
   public void clear() {
     for (int i = 0; i < count; i++) {
-      particles[i].alive = false;
+      particles[i].kill();
     }
     count = 0;
   }
@@ -488,7 +498,8 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
    * Cuts an already retained graphic into a grid of equally sized frames for particles to use.
    *
    * <p>The emitter takes over the caller's retain and releases it when the graphic is replaced or
-   * the emitter is destroyed.
+   * the emitter is destroyed. Particles only borrow the frames, so they never release the graphic
+   * themselves.
    *
    * @param g The graphic to use, already retained by the caller.
    * @param frameWidth The width of each frame, in pixels.
@@ -571,74 +582,30 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   }
 
   /**
-   * Draws every living particle in one batch submission.
+   * Draws every living particle through the normal sprite pipeline.
    *
-   * <p>Particles outside the camera view are skipped. Nothing is drawn until a graphic is loaded
-   * with {@link #loadGraphic(FlixelFile)} or {@link #makeGraphic(int, int, FlixelColor)}.
+   * <p>Particles share the emitter's texture, so the batch merges them into one GPU submission. The
+   * emitter applies its blend mode once around all of them instead of letting each particle switch
+   * it, and hands its camera list down so particles appear on the same cameras as the emitter.
    *
    * @param batch The batch to draw into.
    */
   @Override
   public void draw(@NotNull FlixelBatch batch) {
-    FlixelFrame[] f = frames;
-    if (!visible || count == 0 || f == null || !isOnDrawCamera()) {
+    if (!visible || count == 0 || !isOnDrawCamera()) {
       return;
     }
-    FlixelCamera cam = Flixel.getDrawCamera() != null ? Flixel.getDrawCamera() : Flixel.cameras.first();
-    // worldToView is a pure offset, so one conversion of the origin serves every particle.
-    float viewOffX = cam.worldToViewX(0f, scrollX);
-    float viewOffY = cam.worldToViewY(0f, scrollY);
-    int frameCount = f.length;
-
-    int n = 0;
-    float[] v = vertices;
-    for (int i = 0; i < count; i++) {
-      P p = particles[i];
-      if (!p.alive || p.alpha <= 0f) {
-        continue;
-      }
-      FlixelFrame fr = f[Math.max(0, Math.min(p.frame, frameCount - 1))];
-      float hw = fr.getRegionWidth() * 0.5f * p.scaleX;
-      float hh = fr.getRegionHeight() * 0.5f * p.scaleY;
-      float cx = p.x + viewOffX;
-      float cy = p.y + viewOffY;
-
-      // |hw| + |hh| covers the quad at any rotation, so one cheap check works for every angle.
-      float r = Math.abs(hw) + Math.abs(hh);
-      if (!cam.isInView(cx - r, cy - r, r * 2f, r * 2f)) {
-        continue;
-      }
-
-      float cos = 1f;
-      float sin = 0f;
-      if (p.angle != 0f) {
-        cos = FlixelMath.cosDeg(p.angle);
-        sin = FlixelMath.sinDeg(p.angle);
-      }
-      float c = FlixelColor.toFloatBits(p.red, p.green, p.blue, p.alpha);
-      float u = fr.getU();
-      float u2 = fr.getU2();
-      float tv = fr.getV();
-      float tv2 = fr.getV2();
-
-      // Corners wound bottom-left, bottom-right, top-right, top-left, where "bottom" is the larger
-      // Y since the view's Y axis points down. Each corner is rotated around the particle center.
-      n = putVertex(v, n, cx, cy, -hw, hh, cos, sin, u, tv2, c);
-      n = putVertex(v, n, cx, cy, hw, hh, cos, sin, u2, tv2, c);
-      n = putVertex(v, n, cx, cy, hw, -hh, cos, sin, u2, tv, c);
-      n = putVertex(v, n, cx, cy, -hw, -hh, cos, sin, u, tv, c);
-    }
-    if (n == 0) {
-      return;
-    }
-
-    // Non-NORMAL blend modes apply to everything the GPU draws until restored, so this emitter's
-    // geometry gets its own flush, the same way FlixelSprite isolates its blend state.
     boolean blending = blendMode != FlixelBlendMode.NORMAL;
     if (blending) {
       batch.setBlendMode(blendMode);
     }
-    batch.draw(f[0].getTexture(), v, 0, n);
+    for (int i = 0; i < count; i++) {
+      P p = particles[i];
+      if (p.exists && p.visible) {
+        p.cameras = cameras;
+        p.draw(batch);
+      }
+    }
     if (blending) {
       batch.flush();
       batch.setBlendMode(FlixelBlendMode.NORMAL);
@@ -646,15 +613,18 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   }
 
   /**
-   * Destroys this emitter, releasing its graphic and discarding every living particle.
+   * Destroys this emitter and every particle it owns, and releases its graphic.
    *
-   * <p>The emitter cannot draw again until a new graphic is loaded.
+   * <p>The emitter cannot be used again afterwards.
    */
   @Override
   public void destroy() {
     super.destroy();
-    clear();
     emitting = false;
+    count = 0;
+    for (P p : particles) {
+      p.destroy();
+    }
     frames = null;
     if (graphic != null) {
       graphic.release();
@@ -673,6 +643,10 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
 
   /** Rolls a particle's starting (and, if it changes, ending) velocity for the current launch mode. */
   private void rollVelocity(P p, boolean timed) {
+    float sx;
+    float sy;
+    float ex;
+    float ey;
     if (launchMode == FlixelEmitterMode.CIRCLE) {
       if (!speed.active) {
         return;
@@ -682,31 +656,28 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
       float sin = FlixelMath.sinDeg(a);
       float s0 = roll(speed.start.min, speed.start.max);
       float s1 = speed.changes() ? roll(speed.end.min, speed.end.max) : s0;
-      p.velocityStartX = cos * s0;
-      p.velocityStartY = sin * s0;
-      p.velocityEndX = cos * s1;
-      p.velocityEndY = sin * s1;
-      p.velocityRangeActive = timed && s0 != s1;
+      sx = cos * s0;
+      sy = sin * s0;
+      ex = cos * s1;
+      ey = sin * s1;
     } else {
       if (!velocity.active) {
         return;
       }
       FlixelPointBounds s = velocity.start;
-      p.velocityStartX = roll(s.minX, s.maxX);
-      p.velocityStartY = roll(s.minY, s.maxY);
+      sx = roll(s.minX, s.maxX);
+      sy = roll(s.minY, s.maxY);
+      ex = sx;
+      ey = sy;
       if (velocity.changes()) {
         FlixelPointBounds e = velocity.end;
-        p.velocityEndX = roll(e.minX, e.maxX);
-        p.velocityEndY = roll(e.minY, e.maxY);
-      } else {
-        p.velocityEndX = p.velocityStartX;
-        p.velocityEndY = p.velocityStartY;
+        ex = roll(e.minX, e.maxX);
+        ey = roll(e.minY, e.maxY);
       }
-      p.velocityRangeActive = timed
-          && (p.velocityStartX != p.velocityEndX || p.velocityStartY != p.velocityEndY);
     }
-    p.velocityX = p.velocityStartX;
-    p.velocityY = p.velocityStartY;
+    p.setVelocity(sx, sy);
+    p.velocityRange.set(sx, sy, ex, ey);
+    p.velocityRange.active &= timed;
   }
 
   /** Returns the index of a particle killed but not yet recycled, or else the one with the greatest age. */
@@ -714,12 +685,12 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
     int oldest = 0;
     float maxAge = -1f;
     for (int i = 0; i < count; i++) {
-      if (!particles[i].alive) {
+      P p = particles[i];
+      if (!p.alive) {
         return i;
       }
-      float age = particles[i].age;
-      if (age > maxAge) {
-        maxAge = age;
+      if (p.age > maxAge) {
+        maxAge = p.age;
         oldest = i;
       }
     }
@@ -729,17 +700,6 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   /** Picks a random value between two numbers, skipping the generator when they are equal. */
   private float roll(float min, float max) {
     return min == max ? min : random.nextFloat(min, max);
-  }
-
-  /** Writes one rotated corner into the vertex array and returns the next write index. */
-  private static int putVertex(float[] v, int n, float cx, float cy, float lx, float ly,
-      float cos, float sin, float u, float tv, float c) {
-    v[n] = cx + cos * lx - sin * ly;
-    v[n + 1] = cy + sin * lx + cos * ly;
-    v[n + 2] = u;
-    v[n + 3] = tv;
-    v[n + 4] = c;
-    return n + 5;
   }
 
   /** Cuts a texture into a grid of equally sized frames, row by row from the top-left. */
@@ -783,12 +743,24 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   }
 
   /**
-   * Returns how many frames the loaded graphic was cut into.
+   * Returns how many frames the emitter's graphic was cut into.
    *
    * @return The frame count, or zero if no graphic is loaded.
    */
   public int getFrameCount() {
     return frames != null ? frames.length : 0;
+  }
+
+  /**
+   * Returns one of the frames the emitter's graphic was cut into.
+   *
+   * @param index The frame to read, counted row by row from the top-left of the graphic.
+   * @return The frame.
+   * @throws NullPointerException If no graphic is loaded.
+   * @throws ArrayIndexOutOfBoundsException If {@code index} is outside the frame count.
+   */
+  public FlixelFrame getFrame(int index) {
+    return frames[index];
   }
 
   @Nullable
@@ -859,7 +831,8 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   }
 
   /**
-   * Sets how much particles move with the camera, for parallax.
+   * Sets how much particles move with the camera, for parallax. Applies to living particles right
+   * away and to every particle launched afterwards.
    *
    * @param scrollX Horizontal factor, where {@code 1} moves fully with the camera and {@code 0} stays
    *     fixed on screen.
@@ -868,6 +841,9 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   public void setScrollFactor(float scrollX, float scrollY) {
     this.scrollX = scrollX;
     this.scrollY = scrollY;
+    for (int i = 0; i < count; i++) {
+      particles[i].setScrollFactor(scrollX, scrollY);
+    }
   }
 
   @NotNull
@@ -890,8 +866,8 @@ public class FlixelEmitter<P extends FlixelParticle> extends FlixelBasic {
   }
 
   /**
-   * Sets whether the particle texture is smoothed when scaled or rotated. Leave this off for crisp
-   * pixel art.
+   * Sets whether the emitter's texture is smoothed when particles are scaled or rotated. Leave this
+   * off for crisp pixel art.
    *
    * @param antialiasing {@code true} for smooth filtering, {@code false} for sharp pixels.
    */

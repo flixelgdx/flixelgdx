@@ -24,29 +24,26 @@
 package org.flixelgdx.particle;
 
 import org.flixelgdx.FlixelSprite;
-import org.flixelgdx.collections.FlixelPool;
-import org.flixelgdx.math.FlixelMath;
+import org.flixelgdx.math.FlixelPointRange;
+import org.flixelgdx.math.FlixelRange;
 import org.flixelgdx.tween.ease.FlixelEaseFunction;
+import org.flixelgdx.util.FlixelColor;
+import org.flixelgdx.util.FlixelColorRange;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A single lightweight particle owned by a {@link FlixelEmitter}.
+ * A sprite with a limited lifetime, launched and recycled by a {@link FlixelEmitter}.
  *
- * <p>A particle is a plain bundle of numbers (position, velocity, scale, color, and age), not a
- * {@link FlixelSprite}. It has no graphic, hitbox, or animation of its own; the emitter draws every
- * particle it owns in one batch using its own texture. That keeps particles cheap enough to have
- * hundreds on screen at once.
+ * <p>A particle is a regular {@link FlixelSprite}, so it moves, spins, scales, tints, animates,
+ * and draws exactly like any other sprite. On top of that it adds a {@link #lifespan}, an
+ * {@link #age}, and a set of ranges (such as {@link #alphaRange}) that it slides along as it ages.
+ * When its age reaches its lifespan, it kills itself and its emitter recycles it for a later
+ * launch.
  *
- * <p>Particles are never created while the game runs. The emitter builds all of them up front,
- * then hands out the same instances over and over: {@link #reset()} clears a particle, the emitter
- * rolls its new values, and {@link #onEmit()} runs. When a particle's {@link #age} reaches its
- * {@link #lifespan}, it dies, {@link #onDeath()} runs, and the emitter reuses it later. This is
- * different from a {@link FlixelPool}: the emitter keeps its particles in one packed array instead
- * of a free list, so it never has to allocate or discard anything.
- *
- * <p>Every field is public so {@link #update(float)} stays fast and subclasses can read and change
- * anything. Most games never touch particles directly; configure the emitter instead. To add custom
- * behavior, subclass this and pass the constructor to the emitter.
+ * <p>Particles are never created while the game runs. The emitter builds all of them up front and
+ * reuses them: {@link #reset(float, float)} clears a particle, the emitter rolls its new values,
+ * and {@link #onEmit()} runs. Most games never touch particles directly; configure the emitter
+ * instead. To add custom behavior, subclass this and pass the constructor to the emitter.
  *
  * <p>Example:
  *
@@ -63,16 +60,16 @@ import org.jetbrains.annotations.Nullable;
  *
  *   @Override
  *   public void update(float elapsed) {
- *     super.update(elapsed); // Keep the standard movement, fading, and aging.
+ *     super.update(elapsed); // Keep the standard aging, fading, and movement.
  *     wobble += elapsed * 4f;
- *     x += FlixelMath.sin(wobble) * 20f * elapsed; // Sway side to side while rising.
+ *     changeX(FlixelMath.sin(wobble) * 20f * elapsed); // Sway side to side while rising.
  *   }
  * }
  *
  * FlixelEmitter<Ember> embers = new FlixelEmitter<>(96, Ember::new);
  * }</pre>
  */
-public class FlixelParticle {
+public class FlixelParticle extends FlixelSprite {
 
   /**
    * The emitter that owns this particle. Set by the emitter when the particle is created, so it is
@@ -81,156 +78,50 @@ public class FlixelParticle {
   @Nullable
   public FlixelEmitter<?> emitter;
 
-  /** The X position of this particle's center in world space. */
-  public float x;
+  /** The velocity this particle slides between over its life, when active. */
+  public final FlixelPointRange velocityRange = new FlixelPointRange();
 
-  /** The Y position of this particle's center in world space. */
-  public float y;
+  /** The rotation speed this particle slides between over its life, when active. */
+  public final FlixelRange angularVelocityRange = new FlixelRange();
 
-  /** Horizontal velocity in pixels per second. */
-  public float velocityX;
+  /** The angle this particle turns between over its life, when active. Rotation speed is ignored then. */
+  public final FlixelRange angleRange = new FlixelRange();
 
-  /** Vertical velocity in pixels per second. */
-  public float velocityY;
+  /** The scale this particle slides between over its life, when active. */
+  public final FlixelPointRange scaleRange = new FlixelPointRange();
 
-  /** Horizontal acceleration in pixels per second squared. */
-  public float accelerationX;
+  /** The opacity this particle slides between over its life, when active. */
+  public final FlixelRange alphaRange = new FlixelRange();
 
-  /** Vertical acceleration in pixels per second squared. */
-  public float accelerationY;
-
-  /** Horizontal slowdown in pixels per second squared, applied only while {@link #accelerationX} is zero. */
-  public float dragX;
-
-  /** Vertical slowdown in pixels per second squared, applied only while {@link #accelerationY} is zero. */
-  public float dragY;
-
-  /** Rotation in degrees, clockwise on screen. */
-  public float angle;
-
-  /** Rotation speed in degrees per second. */
-  public float angularVelocity;
-
-  /** Horizontal draw scale, where {@code 1} is the frame's natural width. */
-  public float scaleX = 1f;
-
-  /** Vertical draw scale, where {@code 1} is the frame's natural height. */
-  public float scaleY = 1f;
-
-  /** Opacity, from {@code 0} (invisible) to {@code 1} (fully opaque). */
-  public float alpha = 1f;
-
-  /** The red tint channel, from {@code 0} to {@code 1}. */
-  public float red = 1f;
-
-  /** The green tint channel, from {@code 0} to {@code 1}. */
-  public float green = 1f;
-
-  /** The blue tint channel, from {@code 0} to {@code 1}. */
-  public float blue = 1f;
+  /** The tint this particle blends between over its life, when active. Only red, green, and blue are used. */
+  public final FlixelColorRange colorRange = new FlixelColorRange();
 
   /** How many seconds this particle has been alive. */
   public float age;
 
   /**
    * How many seconds this particle lives before dying. Zero or less means it lives until killed,
-   * and lifetime ranges (fading, shrinking, and so on) do not run.
+   * and its ranges never run.
    */
   public float lifespan;
 
-  /** The velocity at the start of this particle's life, used while {@link #velocityRangeActive} is set. */
-  public float velocityStartX;
-
-  /** The velocity at the start of this particle's life, used while {@link #velocityRangeActive} is set. */
-  public float velocityStartY;
-
-  /** The velocity at the end of this particle's life, used while {@link #velocityRangeActive} is set. */
-  public float velocityEndX;
-
-  /** The velocity at the end of this particle's life, used while {@link #velocityRangeActive} is set. */
-  public float velocityEndY;
-
-  /** The rotation speed at the start of this particle's life. */
-  public float angularVelocityStart;
-
-  /** The rotation speed at the end of this particle's life. */
-  public float angularVelocityEnd;
-
-  /** The angle at the start of this particle's life, used while {@link #angleRangeActive} is set. */
-  public float angleStart;
-
-  /** The angle at the end of this particle's life, used while {@link #angleRangeActive} is set. */
-  public float angleEnd;
-
-  /** The horizontal scale at the start of this particle's life. */
-  public float scaleStartX = 1f;
-
-  /** The vertical scale at the start of this particle's life. */
-  public float scaleStartY = 1f;
-
-  /** The horizontal scale at the end of this particle's life. */
-  public float scaleEndX = 1f;
-
-  /** The vertical scale at the end of this particle's life. */
-  public float scaleEndY = 1f;
-
-  /** The opacity at the start of this particle's life. */
-  public float alphaStart = 1f;
-
-  /** The opacity at the end of this particle's life. */
-  public float alphaEnd = 1f;
-
-  /** The red channel at the start of this particle's life. */
-  public float redStart = 1f;
-
-  /** The green channel at the start of this particle's life. */
-  public float greenStart = 1f;
-
-  /** The blue channel at the start of this particle's life. */
-  public float blueStart = 1f;
-
-  /** The red channel at the end of this particle's life. */
-  public float redEnd = 1f;
-
-  /** The green channel at the end of this particle's life. */
-  public float greenEnd = 1f;
-
-  /** The blue channel at the end of this particle's life. */
-  public float blueEnd = 1f;
-
-  /** Which of the emitter's frames this particle draws, as an index into its frame list. */
-  public int frame;
-
-  /** Whether this particle is still alive. The emitter recycles it on its next update once this is {@code false}. */
-  public boolean alive;
-
-  /** Whether velocity slides from its start value to its end value instead of following acceleration. */
-  public boolean velocityRangeActive;
-
-  /** Whether rotation speed slides from its start value to its end value. */
-  public boolean angularVelocityRangeActive;
-
-  /** Whether the angle slides from its start value to its end value, ignoring rotation speed. */
-  public boolean angleRangeActive;
-
-  /** Whether scale slides from its start value to its end value. */
-  public boolean scaleRangeActive;
-
-  /** Whether opacity slides from its start value to its end value. */
-  public boolean alphaRangeActive;
-
-  /** Whether the tint slides from its start color to its end color. */
-  public boolean colorRangeActive;
+  /** Creates a particle that starts dead, waiting for its emitter to launch it. */
+  public FlixelParticle() {
+    super();
+    alive = false;
+    exists = false;
+  }
 
   /**
-   * Advances this particle by one frame: ages it, slides its lifetime ranges, and moves it.
+   * Ages this particle, slides its active ranges, then moves and animates it like any sprite.
    *
-   * <p>The emitter calls this for every living particle each frame. When the particle's age passes
-   * its lifespan, it is killed here and nothing else runs. Override this to add custom motion, and
-   * call {@code super.update(elapsed)} to keep the standard behavior.
+   * <p>When the particle's age passes its lifespan, it is killed here and does not move this
+   * frame. Override this to add custom motion, and call {@code super.update(elapsed)} to keep the
+   * standard behavior.
    *
    * @param elapsed Seconds elapsed since the last frame.
    */
+  @Override
   public void update(float elapsed) {
     age += elapsed;
     if (lifespan > 0f) {
@@ -240,26 +131,38 @@ public class FlixelParticle {
       }
       updateRanges(age / lifespan);
     }
-
-    if (!velocityRangeActive) {
-      velocityX = computeVelocity(velocityX, accelerationX, dragX, elapsed);
-      velocityY = computeVelocity(velocityY, accelerationY, dragY, elapsed);
-    }
-    x += velocityX * elapsed;
-    y += velocityY * elapsed;
-
-    if (!angleRangeActive) {
-      angle += angularVelocity * elapsed;
-    }
+    super.update(elapsed);
   }
 
   /**
-   * Marks this particle as dead so its emitter recycles it on its next update.
+   * Revives this particle at a position and clears everything left over from its last launch.
    *
-   * <p>Safe to call from anywhere, including from inside {@link #update(float)}.
+   * <p>The emitter calls this right before rolling new values, so the particle starts from plain
+   * sprite defaults: no velocity, acceleration, drag, or rotation, normal scale, white, and fully
+   * opaque, with every range inactive. Subclasses with their own fields should override this,
+   * clear those fields, and call {@code super.reset(x, y)}.
+   *
+   * @param x The new X position of this particle's top-left corner.
+   * @param y The new Y position of this particle's top-left corner.
    */
-  public void kill() {
-    alive = false;
+  @Override
+  public void reset(float x, float y) {
+    super.reset(x, y);
+    setAcceleration(0f, 0f);
+    setDrag(0f, 0f);
+    setAngle(0f);
+    setAngularVelocity(0f);
+    setScale(1f);
+    setColor(FlixelColor.WHITE);
+    age = 0f;
+    lifespan = 0f;
+    visible = true;
+    velocityRange.active = false;
+    angularVelocityRange.active = false;
+    angleRange.active = false;
+    scaleRange.active = false;
+    alphaRange.active = false;
+    colorRange.active = false;
   }
 
   /**
@@ -270,110 +173,54 @@ public class FlixelParticle {
   public void onEmit() {}
 
   /**
-   * Called once when this particle dies, just before the emitter recycles it.
+   * Called once when this particle dies, just after its emitter has moved it out of the living
+   * particles.
    *
    * <p>Override this to react to a particle ending, such as spawning a smaller burst where it
-   * vanished. If you launch new particles from here, read this particle's fields first: the emitter
-   * may reuse this very instance for the new launch. For the same reason, do not keep a reference
-   * to this particle afterwards. The default does nothing.
+   * vanished. If you launch new particles from here, read this particle's values first: the
+   * emitter may reuse this very instance for the new launch. For the same reason, do not keep a
+   * reference to this particle afterwards. The default does nothing.
    *
    * <p>This does not run when a full emitter recycles a particle early, or when
    * {@link FlixelEmitter#clear()} removes it.
    */
   public void onDeath() {}
 
-  /**
-   * Clears every field back to its default so no state carries over from a previous launch.
-   *
-   * <p>The emitter calls this before rolling new values. Subclasses with their own fields should
-   * override this, clear those fields, and call {@code super.reset()}. The {@link #emitter}
-   * reference is kept.
-   */
-  public void reset() {
-    x = 0f;
-    y = 0f;
-    velocityX = 0f;
-    velocityY = 0f;
-    accelerationX = 0f;
-    accelerationY = 0f;
-    dragX = 0f;
-    dragY = 0f;
-    angle = 0f;
-    angularVelocity = 0f;
-    scaleX = 1f;
-    scaleY = 1f;
-    alpha = 1f;
-    red = 1f;
-    green = 1f;
-    blue = 1f;
-    age = 0f;
-    lifespan = 0f;
-    velocityStartX = 0f;
-    velocityStartY = 0f;
-    velocityEndX = 0f;
-    velocityEndY = 0f;
-    angularVelocityStart = 0f;
-    angularVelocityEnd = 0f;
-    angleStart = 0f;
-    angleEnd = 0f;
-    scaleStartX = 1f;
-    scaleStartY = 1f;
-    scaleEndX = 1f;
-    scaleEndY = 1f;
-    alphaStart = 1f;
-    alphaEnd = 1f;
-    redStart = 1f;
-    greenStart = 1f;
-    blueStart = 1f;
-    redEnd = 1f;
-    greenEnd = 1f;
-    blueEnd = 1f;
-    frame = 0;
-    alive = false;
-    velocityRangeActive = false;
-    angularVelocityRangeActive = false;
-    angleRangeActive = false;
-    scaleRangeActive = false;
-    alphaRangeActive = false;
-    colorRangeActive = false;
-  }
-
-  /** Slides every active lifetime range to the given point in this particle's life. */
+  /** Slides every active range to the given point in this particle's life. */
   private void updateRanges(float t) {
     FlixelEmitter<?> e = emitter;
-    if (velocityRangeActive) {
+    if (velocityRange.active) {
       FlixelEaseFunction ease = null;
       if (e != null) {
         ease = e.launchMode == FlixelEmitterMode.CIRCLE ? e.speed.ease : e.velocity.ease;
       }
       float k = ease(ease, t);
-      velocityX = FlixelMath.lerp(velocityStartX, velocityEndX, k);
-      velocityY = FlixelMath.lerp(velocityStartY, velocityEndY, k);
+      velocityX = velocityRange.lerpX(k);
+      velocityY = velocityRange.lerpY(k);
     }
-    if (angleRangeActive) {
-      angle = FlixelMath.lerp(angleStart, angleEnd, ease(e != null ? e.angle.ease : null, t));
-    } else if (angularVelocityRangeActive) {
-      float k = ease(e != null ? e.angularVelocity.ease : null, t);
-      angularVelocity = FlixelMath.lerp(angularVelocityStart, angularVelocityEnd, k);
+    if (angleRange.active) {
+      setAngle(angleRange.lerp(ease(e != null ? e.angle.ease : null, t)));
+    } else if (angularVelocityRange.active) {
+      angularVelocity = angularVelocityRange.lerp(ease(e != null ? e.angularVelocity.ease : null, t));
     }
-    if (scaleRangeActive) {
+    if (scaleRange.active) {
       float k = ease(e != null ? e.scale.ease : null, t);
-      scaleX = FlixelMath.lerp(scaleStartX, scaleEndX, k);
-      scaleY = FlixelMath.lerp(scaleStartY, scaleEndY, k);
+      scaleX = scaleRange.lerpX(k);
+      scaleY = scaleRange.lerpY(k);
     }
-    if (alphaRangeActive) {
-      alpha = FlixelMath.lerp(alphaStart, alphaEnd, ease(e != null ? e.alpha.ease : null, t));
+    if (colorRange.active) {
+      // The color range carries no opacity of its own, so keep whatever alpha the particle has.
+      float a = color.a;
+      colorRange.lerp(ease(e != null ? e.color.ease : null, t), color);
+      color.a = a;
     }
-    if (colorRangeActive) {
-      float k = ease(e != null ? e.color.ease : null, t);
-      red = FlixelMath.lerp(redStart, redEnd, k);
-      green = FlixelMath.lerp(greenStart, greenEnd, k);
-      blue = FlixelMath.lerp(blueStart, blueEnd, k);
+    if (alphaRange.active) {
+      color.a = alphaRange.lerp(ease(e != null ? e.alpha.ease : null, t));
     }
     if (e != null && e.animateFrames) {
       int count = e.getFrameCount();
       if (count > 1) {
-        frame = Math.min((int) (t * count), count - 1);
+        setRegion(e.getFrame(Math.min((int) (t * count), count - 1)));
       }
     }
   }
@@ -381,23 +228,5 @@ public class FlixelParticle {
   /** Runs an optional easing curve, falling back to a straight line when there is none. */
   private static float ease(@Nullable FlixelEaseFunction ease, float t) {
     return ease != null ? ease.compute(t) : t;
-  }
-
-  /** Applies acceleration, or drag toward zero when there is no acceleration, to one velocity axis. */
-  private static float computeVelocity(float velocity, float acceleration, float drag, float elapsed) {
-    if (acceleration != 0f) {
-      return velocity + acceleration * elapsed;
-    }
-    if (drag != 0f) {
-      float d = drag * elapsed;
-      if (velocity - d > 0f) {
-        return velocity - d;
-      }
-      if (velocity + d < 0f) {
-        return velocity + d;
-      }
-      return 0f;
-    }
-    return velocity;
   }
 }

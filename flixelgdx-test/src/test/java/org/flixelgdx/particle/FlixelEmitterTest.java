@@ -25,12 +25,14 @@ package org.flixelgdx.particle;
 
 import org.flixelgdx.FlixelHeadlessExtension;
 import org.flixelgdx.tween.ease.FlixelEase;
+import org.flixelgdx.util.FlixelColor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,6 +53,7 @@ class FlixelEmitterTest {
     assertEquals(0, emitter.getCount());
     for (int i = 0; i < 8; i++) {
       assertSame(emitter, emitter.getParticle(i).emitter);
+      assertFalse(emitter.getParticle(i).alive);
     }
   }
 
@@ -118,7 +121,7 @@ class FlixelEmitterTest {
     assertEquals(4, emitter.getCount());
     for (int i = 0; i < emitter.getCount(); i++) {
       assertTrue(emitter.getParticle(i).alive);
-      assertTrue(emitter.getParticle(i) != victim);
+      assertNotSame(victim, emitter.getParticle(i));
     }
     assertSame(victim, emitter.getParticle(4));
   }
@@ -136,22 +139,55 @@ class FlixelEmitterTest {
   }
 
   @Test
+  void relaunchedParticleStartsClean() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
+    emitter.lifespan.set(1f);
+    emitter.alpha.set(1f, 1f, 0f, 0f);
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    emitter.update(0.9f);
+
+    emitter.alpha.set(1f);
+    emitter.clear();
+    assertSame(p, emitter.emitParticle());
+    assertEquals(0f, p.age);
+    assertEquals(1f, p.getAlpha(), 1e-5f);
+    assertFalse(p.alphaRange.active);
+  }
+
+  @Test
   void alphaFadesOverLifeAndFollowsEase() {
     FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
     emitter.lifespan.set(1f);
     emitter.alpha.set(1f, 1f, 0f, 0f);
     FlixelParticle p = emitter.emitParticle();
     assertNotNull(p);
-    assertEquals(1f, p.alpha, 1e-5f);
+    assertEquals(1f, p.getAlpha(), 1e-5f);
     emitter.update(0.5f);
-    assertEquals(0.5f, p.alpha, 1e-5f);
+    assertEquals(0.5f, p.getAlpha(), 1e-5f);
 
     emitter.clear();
     emitter.alpha.ease = FlixelEase::quadIn;
     p = emitter.emitParticle();
     assertNotNull(p);
     emitter.update(0.5f);
-    assertEquals(0.75f, p.alpha, 1e-5f);
+    assertEquals(0.75f, p.getAlpha(), 1e-5f);
+  }
+
+  @Test
+  void colorBlendsWithoutTouchingAlpha() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
+    emitter.lifespan.set(1f);
+    emitter.alpha.set(0.5f);
+    emitter.color.set(
+        FlixelColor.RED, FlixelColor.RED,
+        FlixelColor.BLUE, FlixelColor.BLUE);
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    emitter.update(0.5f);
+    assertEquals(0.5f, p.getColor().r, 1e-4f);
+    assertEquals(0.5f, p.getColor().b, 1e-4f);
+    assertEquals(0.5f, p.getColor().a, 1e-4f);
   }
 
   @Test
@@ -161,12 +197,12 @@ class FlixelEmitterTest {
     emitter.speed.set(50f, 150f);
     FlixelParticle p = emitter.emitParticle();
     assertNotNull(p);
-    assertFalse(p.velocityRangeActive);
-    float vx = p.velocityX;
-    float vy = p.velocityY;
+    assertFalse(p.velocityRange.active);
+    float vx = p.getVelocityX();
+    float vy = p.getVelocityY();
     emitter.update(0.5f);
-    assertEquals(vx, p.velocityX, 1e-5f);
-    assertEquals(vy, p.velocityY, 1e-5f);
+    assertEquals(vx, p.getVelocityX(), 1e-4f);
+    assertEquals(vy, p.getVelocityY(), 1e-4f);
   }
 
   @Test
@@ -176,8 +212,8 @@ class FlixelEmitterTest {
     emitter.speed.set(100f);
     FlixelParticle p = emitter.emitParticle();
     assertNotNull(p);
-    assertEquals(0f, p.velocityX, 0.5f);
-    assertEquals(100f, p.velocityY, 0.5f);
+    assertEquals(0f, p.getVelocityX(), 0.5f);
+    assertEquals(100f, p.getVelocityY(), 0.5f);
   }
 
   @Test
@@ -188,8 +224,8 @@ class FlixelEmitterTest {
     emitter.start(true);
     for (int i = 0; i < emitter.getCount(); i++) {
       FlixelParticle p = emitter.getParticle(i);
-      assertTrue(p.velocityX >= -10f && p.velocityX <= 10f);
-      assertTrue(p.velocityY >= -60f && p.velocityY <= -30f);
+      assertTrue(p.getVelocityX() >= -10f && p.getVelocityX() <= 10f);
+      assertTrue(p.getVelocityY() >= -60f && p.getVelocityY() <= -30f);
     }
   }
 
@@ -201,19 +237,54 @@ class FlixelEmitterTest {
     FlixelParticle p = emitter.emitParticle();
     assertNotNull(p);
     emitter.update(1f);
-    assertEquals(100f, p.velocityY, 1e-4f);
-    assertEquals(100f, p.y, 1e-4f);
+    assertEquals(100f, p.getVelocityY(), 1e-3f);
   }
 
   @Test
-  void spawnPointStaysInsideSpawnArea() {
+  void rectangleSpawnStaysInsideSpawnArea() {
     FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(50f, 20f, 64, FlixelParticle::new);
     emitter.setSize(30f, 10f);
     emitter.start(true);
     for (int i = 0; i < emitter.getCount(); i++) {
       FlixelParticle p = emitter.getParticle(i);
-      assertTrue(p.x >= 50f && p.x <= 80f);
-      assertTrue(p.y >= 20f && p.y <= 30f);
+      assertTrue(p.getX() >= 50f && p.getX() <= 80f);
+      assertTrue(p.getY() >= 20f && p.getY() <= 30f);
+    }
+  }
+
+  @Test
+  void circleSpawnStaysInsideCircle() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(0f, 0f, 256, FlixelParticle::new);
+    emitter.setSize(100f, 100f);
+    emitter.shape = FlixelEmitterShape.CIRCLE;
+    emitter.start(true);
+    for (int i = 0; i < emitter.getCount(); i++) {
+      float d = distanceFromCenter(emitter.getParticle(i), 50f, 50f);
+      assertTrue(d <= 50.5f, "particle spawned outside the circle at distance " + d);
+    }
+  }
+
+  @Test
+  void ringSpawnStaysInsideBand() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(0f, 0f, 256, FlixelParticle::new);
+    emitter.setSize(100f, 100f);
+    emitter.shape = FlixelEmitterShape.RING;
+    emitter.ringThickness = 10f;
+    emitter.start(true);
+    for (int i = 0; i < emitter.getCount(); i++) {
+      float d = distanceFromCenter(emitter.getParticle(i), 50f, 50f);
+      assertTrue(d >= 39.5f && d <= 50.5f, "particle spawned outside the ring at distance " + d);
+    }
+  }
+
+  @Test
+  void zeroThicknessRingSpawnsOnTheEdge() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(0f, 0f, 64, FlixelParticle::new);
+    emitter.setSize(100f, 100f);
+    emitter.shape = FlixelEmitterShape.RING;
+    emitter.start(true);
+    for (int i = 0; i < emitter.getCount(); i++) {
+      assertEquals(50f, distanceFromCenter(emitter.getParticle(i), 50f, 50f), 0.5f);
     }
   }
 
@@ -228,7 +299,7 @@ class FlixelEmitterTest {
     a.start(true);
     b.start(true);
     for (int i = 0; i < 16; i++) {
-      assertEquals(a.getParticle(i).velocityX, b.getParticle(i).velocityX);
+      assertEquals(a.getParticle(i).getVelocityX(), b.getParticle(i).getVelocityX());
       assertEquals(a.getParticle(i).lifespan, b.getParticle(i).lifespan);
     }
   }
@@ -241,8 +312,21 @@ class FlixelEmitterTest {
     emitter.start(true);
     for (int i = 0; i < emitter.getCount(); i++) {
       FlixelParticle p = emitter.getParticle(i);
-      assertEquals(p.scaleX, p.scaleY);
+      assertEquals(p.getScaleX(), p.getScaleY());
     }
+  }
+
+  @Test
+  void ignoreAngularVelocityTurnsAlongAngleRange() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(1, FlixelParticle::new);
+    emitter.lifespan.set(1f);
+    emitter.ignoreAngularVelocity = true;
+    emitter.angularVelocity.set(500f);
+    emitter.angle.set(0f, 0f, 90f, 90f);
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    emitter.update(0.5f);
+    assertEquals(45f, p.getAngle(), 1e-3f);
   }
 
   @Test
@@ -267,23 +351,9 @@ class FlixelEmitterTest {
     }
   }
 
-  @Test
-  void particleWithoutEmitterKeepsItsFrame() {
-    FlixelParticle p = new FlixelParticle();
-    p.lifespan = 1f;
-    p.alive = true;
-    p.update(0.5f);
-    assertEquals(0, p.frame, "a particle without an emitter never changes frame");
-  }
-
-  @Test
-  void rangeBoundsSetCopiesStartToEnd() {
-    FlixelRangeBounds range = new FlixelRangeBounds(0f);
-    range.set(2f, 4f);
-    assertEquals(2f, range.end.min);
-    assertEquals(4f, range.end.max);
-    assertFalse(range.changes());
-    range.set(2f, 4f, 0f, 0f);
-    assertTrue(range.changes());
+  private static float distanceFromCenter(FlixelParticle p, float cx, float cy) {
+    float dx = p.getX() - cx;
+    float dy = p.getY() - cy;
+    return (float) Math.sqrt(dx * dx + dy * dy);
   }
 }

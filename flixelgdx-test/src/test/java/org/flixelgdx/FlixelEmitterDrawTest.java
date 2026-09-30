@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.graphics.FlixelBatch;
+import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.particle.FlixelEmitter;
@@ -38,9 +39,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.lang.reflect.Proxy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
- * Checks that {@link FlixelEmitter} submits every visible particle in a single vertex draw.
+ * Checks how {@link FlixelEmitter} hands its particles to the batch.
  *
  * <p>Lives in {@code org.flixelgdx} to reach the package-private {@link Flixel#setDrawCamera(FlixelCamera)}.
  * The batch is a recording proxy since the test has no GPU.
@@ -48,10 +51,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith(FlixelHeadlessExtension.class)
 class FlixelEmitterDrawTest {
 
-  private int vertexDraws;
-  private int lastFloatCount;
-  private float[] lastVertices;
-  private FlixelBlendMode lastBlend;
+  private int frameDraws;
+  private int blendChanges;
+  private FlixelBlendMode firstBlend;
   private FlixelBatch batch;
   private FlixelEmitter<FlixelParticle> emitter;
 
@@ -61,12 +63,13 @@ class FlixelEmitterDrawTest {
     batch = (FlixelBatch) Proxy.newProxyInstance(
         FlixelBatch.class.getClassLoader(), new Class<?>[] { FlixelBatch.class }, (proxy, method, args) -> {
           String name = method.getName();
-          if (name.equals("draw") && args.length == 4 && args[1] instanceof float[] v) {
-            vertexDraws++;
-            lastVertices = v;
-            lastFloatCount = (int) args[3];
-          } else if (name.equals("setBlendMode") && lastBlend == null) {
-            lastBlend = (FlixelBlendMode) args[0];
+          if (name.equals("draw") && args[0] instanceof FlixelFrame) {
+            frameDraws++;
+          } else if (name.equals("setBlendMode")) {
+            blendChanges++;
+            if (firstBlend == null) {
+              firstBlend = (FlixelBlendMode) args[0];
+            }
           }
           Class<?> r = method.getReturnType();
           if (r == int.class) {
@@ -77,6 +80,9 @@ class FlixelEmitterDrawTest {
           }
           if (r == float.class) {
             return 0f;
+          }
+          if (r == FlixelColor.class) {
+            return new FlixelColor();
           }
           return null;
         });
@@ -93,43 +99,52 @@ class FlixelEmitterDrawTest {
   }
 
   @Test
-  void drawsAllParticlesInOneCall() {
+  void drawsEveryVisibleParticle() {
     emitter.setPosition(50f, 50f);
     emitter.start(true, 0f, 3);
     emitter.draw(batch);
-    assertEquals(1, vertexDraws);
-    assertEquals(3 * 20, lastFloatCount);
+    assertEquals(3, frameDraws);
   }
 
   @Test
-  void quadIsCenteredOnParticle() {
+  void particleIsCenteredOnSpawnPoint() {
     emitter.setPosition(50f, 60f);
-    emitter.start(true, 0f, 1);
-    emitter.draw(batch);
-    // Bottom-left corner of a 4x4 quad centered at (50, 60), with the view's Y pointing down.
-    assertEquals(48f, lastVertices[0], 1e-4f);
-    assertEquals(62f, lastVertices[1], 1e-4f);
-    // Top-right corner.
-    assertEquals(52f, lastVertices[10], 1e-4f);
-    assertEquals(58f, lastVertices[11], 1e-4f);
-    assertEquals(FlixelColor.WHITE.toFloatBits(), lastVertices[4]);
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    assertEquals(48f, p.getX(), 1e-4f);
+    assertEquals(58f, p.getY(), 1e-4f);
+    assertSame(emitter.getFrame(0), p.getCurrentFrame());
   }
 
   @Test
   void offscreenParticlesAreCulled() {
     emitter.setPosition(50f, 50f);
     emitter.start(true, 0f, 2);
-    emitter.getParticle(0).x = -500f;
+    emitter.getParticle(0).setX(-500f);
     emitter.draw(batch);
-    assertEquals(20, lastFloatCount);
+    assertEquals(1, frameDraws);
   }
 
   @Test
-  void nothingDrawnWhenEveryParticleIsCulled() {
-    emitter.setPosition(-500f, -500f);
-    emitter.start(true, 0f, 2);
+  void blendModeIsSetOnceAroundAllParticles() {
+    emitter.setBlendMode(FlixelBlendMode.ADD);
+    emitter.setPosition(50f, 50f);
+    emitter.start(true, 0f, 4);
     emitter.draw(batch);
-    assertEquals(0, vertexDraws);
+    assertEquals(FlixelBlendMode.ADD, firstBlend);
+    assertEquals(2, blendChanges, "the emitter should switch to ADD once and back to NORMAL once");
+  }
+
+  @Test
+  void emitterCamerasArePassedToParticles() {
+    FlixelCamera hud = new FlixelCamera(200, 150);
+    emitter.cameras = new FlixelCamera[] { hud };
+    emitter.setPosition(50f, 50f);
+    emitter.start(true, 0f, 1);
+    Flixel.setDrawCamera(hud);
+    emitter.draw(batch);
+    assertEquals(1, frameDraws);
+    assertSame(emitter.cameras, emitter.getParticle(0).cameras);
   }
 
   @Test
@@ -140,16 +155,8 @@ class FlixelEmitterDrawTest {
     emitter.animateFrames = true;
     emitter.lifespan.set(1f);
     FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
     emitter.update(0.6f);
-    assertEquals(2, p.frame);
-  }
-
-  @Test
-  void blendModeIsAppliedAroundTheDraw() {
-    emitter.setBlendMode(FlixelBlendMode.ADD);
-    emitter.setPosition(50f, 50f);
-    emitter.start(true, 0f, 1);
-    emitter.draw(batch);
-    assertEquals(FlixelBlendMode.ADD, lastBlend);
+    assertSame(emitter.getFrame(2), p.getCurrentFrame());
   }
 }
