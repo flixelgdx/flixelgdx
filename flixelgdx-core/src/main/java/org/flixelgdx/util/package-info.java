@@ -37,8 +37,8 @@
  *
  * @see org.flixelgdx.util.FlixelColor
  * @see org.flixelgdx.util.FlixelString
- * @see org.flixelgdx.util.signal.FlixelSignal
- * @see org.flixelgdx.util.timer.FlixelTimer
- * @see org.flixelgdx.util.save.FlixelSave
+ * @see org.flixelgdx.signal.FlixelSignal
+ * @see org.flixelgdx.timer.FlixelTimer
+ * @see org.flixelgdx.save.FlixelSave
  */
 package org.flixelgdx.util;

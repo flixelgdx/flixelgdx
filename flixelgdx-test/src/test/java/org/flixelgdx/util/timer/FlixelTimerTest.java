@@ -24,6 +24,8 @@
 package org.flixelgdx.util.timer;
 
 import org.flixelgdx.FlixelHeadlessExtension;
+import org.flixelgdx.timer.FlixelTimer;
+import org.flixelgdx.timer.FlixelTimerManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

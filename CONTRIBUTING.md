@@ -142,7 +142,7 @@ for (int i = activeTweens.size - 1; i >= 0; i--) { ... }
 ### Performance and Memory
 
 - **Avoid allocations in hot paths**: Do not create new objects inside `update()` or `draw()` (or other per-frame code) unless necessary. Allocations in hot paths cause GC pressure and can cause hitches.
-- **Reuse and pooling**: Reuse objects (e.g. a `FlixelVector` or `FlixelRect` stored in a field) where possible. For frequently created and destroyed objects (e.g. particles), implement `FlixelPoolable` and use a `FlixelPool` so instances can be recycled instead of discarded.
+- **Reuse and pooling**: Reuse objects (e.g. a `FlixelVector` or `FlixelRect` stored in a field) where possible. For frequently created and destroyed objects (e.g. bullets), implement `FlixelPoolable` and use a `FlixelPool` so instances can be recycled instead of discarded. For visual particles, use `FlixelEmitter`, which pre-allocates and recycles its particles for you.
 - **Libraries**: Prefer FlixelGDX types and idioms (e.g. `FlixelArray`, `FlixelMap`, `FlixelPool`).
 - **No standard Java collections**: Standard Java collection types like `HashMap` and `List` are ***completely banned*** and not allowed to be used in the framework's critical backends, especially `flixelgdx-core`. The only exception is inside build-time tools like plugins, since it doesn't impact a game at runtime. 
 - **Absolutely no reflection**: Reflection (especially in the `flixelgdx-core` module) is ***not allowed to be used***. It completely breaks AOT compilers and isn't reliable.

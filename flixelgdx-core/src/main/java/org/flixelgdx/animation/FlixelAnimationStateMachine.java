@@ -28,7 +28,7 @@ import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.collections.FlixelSet;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.functional.FlixelUpdatable;
-import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -5,24 +5,24 @@
  * (called "binding"), write whatever you want into it, and close it (called "flushing") to
  * persist the data to disk. The next time the game starts, you open the same notebook and
  * your data is there waiting. The only class you need for this is
- * {@link org.flixelgdx.util.save.FlixelSave FlixelSave}, which the framework makes available
+ * {@link org.flixelgdx.save.FlixelSave FlixelSave}, which the framework makes available
  * globally as {@link org.flixelgdx.Flixel#save Flixel.save}.
  *
  * <h2>Core workflow</h2>
  * <p>Every save session follows the same three steps: bind, read/write, then flush.
  *
  * <ol>
- *   <li><b>Bind</b> - call {@link org.flixelgdx.util.save.FlixelSave#bind(String, String) FlixelSave.bind(...)}
+ *   <li><b>Bind</b> - call {@link org.flixelgdx.save.FlixelSave#bind(String, String) FlixelSave.bind(...)}
  *     to open a named save file. Binding also loads any previously saved data automatically, so you can
  *     start reading immediately after binding.</li>
  *   <li><b>Read and write</b> - access entries through the public
- *     {@link org.flixelgdx.util.save.FlixelSave#data FlixelSave.data} map, or use the typed convenience
- *     methods ({@link org.flixelgdx.util.save.FlixelSave#getInt(String, int) getInt(...)},
- *     {@link org.flixelgdx.util.save.FlixelSave#getFloat(String, float) getFloat(...)},
- *     {@link org.flixelgdx.util.save.FlixelSave#getBool(String, boolean) getBool(...)},
- *     {@link org.flixelgdx.util.save.FlixelSave#getString(String, String) getString(...)})
+ *     {@link org.flixelgdx.save.FlixelSave#data FlixelSave.data} map, or use the typed convenience
+ *     methods ({@link org.flixelgdx.save.FlixelSave#getInt(String, int) getInt(...)},
+ *     {@link org.flixelgdx.save.FlixelSave#getFloat(String, float) getFloat(...)},
+ *     {@link org.flixelgdx.save.FlixelSave#getBool(String, boolean) getBool(...)},
+ *     {@link org.flixelgdx.save.FlixelSave#getString(String, String) getString(...)})
  *     when reading values back.</li>
- *   <li><b>Flush</b> - call {@link org.flixelgdx.util.save.FlixelSave#flush() FlixelSave.flush()} to
+ *   <li><b>Flush</b> - call {@link org.flixelgdx.save.FlixelSave#flush() FlixelSave.flush()} to
  *     write the current state of {@code data} to disk. Nothing is saved until you flush.</li>
  * </ol>
  *
@@ -69,20 +69,20 @@
  *
  * <p>To save somewhere else entirely (for example a cloud-sync folder during development or
  * a temporary path in tests) use the three-argument overload
- * {@link org.flixelgdx.util.save.FlixelSave#bind(String, String, org.flixelgdx.file.FlixelFile) FlixelSave.bind(name, slot, directory)}.
+ * {@link org.flixelgdx.save.FlixelSave#bind(String, String, org.flixelgdx.file.FlixelFile) FlixelSave.bind(name, slot, directory)}.
  * When a custom directory is provided, no company name check is performed.
  *
  * <h2>Checking whether data was loaded</h2>
  * <p>After binding, inspect
- * {@link org.flixelgdx.util.save.FlixelSave#getStatus() FlixelSave.getStatus()} to understand
+ * {@link org.flixelgdx.save.FlixelSave#getStatus() FlixelSave.getStatus()} to understand
  * what happened:
  *
  * <ul>
- *   <li>{@link org.flixelgdx.util.save.FlixelSaveStatus#EMPTY FlixelSaveStatus.EMPTY} - no file
+ *   <li>{@link org.flixelgdx.save.FlixelSaveStatus#EMPTY FlixelSaveStatus.EMPTY} - no file
  *     existed yet (for example on a first launch), or the file was empty.</li>
- *   <li>{@link org.flixelgdx.util.save.FlixelSaveStatus#OK FlixelSaveStatus.OK} - data was
+ *   <li>{@link org.flixelgdx.save.FlixelSaveStatus#OK FlixelSaveStatus.OK} - data was
  *     loaded or last flushed successfully.</li>
- *   <li>{@link org.flixelgdx.util.save.FlixelSaveStatus#ERROR FlixelSaveStatus.ERROR} - the file
+ *   <li>{@link org.flixelgdx.save.FlixelSaveStatus#ERROR FlixelSaveStatus.ERROR} - the file
  *     existed but could not be parsed, or the last flush failed.</li>
  * </ul>
  *
@@ -112,7 +112,7 @@
  * back as a {@code String}. Store structured data in nested maps instead.
  *
  * <h2>Merging data from another source</h2>
- * <p>Use {@link org.flixelgdx.util.save.FlixelSave#mergeData(org.flixelgdx.collections.FlixelMap, boolean, boolean) FlixelSave.mergeData(...)}
+ * <p>Use {@link org.flixelgdx.save.FlixelSave#mergeData(org.flixelgdx.collections.FlixelMap, boolean, boolean) FlixelSave.mergeData(...)}
  * to copy entries from another map into the save without overwriting the whole thing. This is
  * useful when applying defaults: merge a defaults map with {@code overwrite = false} so existing
  * player progress is never replaced.
@@ -127,7 +127,7 @@
  * }</pre>
  *
  * <h2>Erasing a save</h2>
- * <p>Call {@link org.flixelgdx.util.save.FlixelSave#erase() FlixelSave.erase()} to clear the
+ * <p>Call {@link org.flixelgdx.save.FlixelSave#erase() FlixelSave.erase()} to clear the
  * in-memory {@code data} map and delete the file from disk. The save remains bound afterward,
  * so you can immediately start writing new data and flush again.
  *
@@ -137,11 +137,11 @@
  *   <li>This system is designed for small structured state: scores, settings, unlocks, and
  *     similar compact data. Do not store large binary blobs here; load those through
  *     {@link org.flixelgdx.Flixel#files Flixel.files} instead.</li>
- *   <li>Nothing is written to disk until you call {@link org.flixelgdx.util.save.FlixelSave#flush() flush()}.
+ *   <li>Nothing is written to disk until you call {@link org.flixelgdx.save.FlixelSave#flush() flush()}.
  *     Forgetting to flush after writing is the most common save bug.</li>
  * </ul>
  *
- * @see org.flixelgdx.util.save.FlixelSave
- * @see org.flixelgdx.util.save.FlixelSaveStatus
+ * @see org.flixelgdx.save.FlixelSave
+ * @see org.flixelgdx.save.FlixelSaveStatus
  */
-package org.flixelgdx.util.save;
+package org.flixelgdx.save;

@@ -43,8 +43,8 @@ import org.flixelgdx.tween.FlixelTween;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelShader;
 import org.flixelgdx.util.FlixelSpriteUtil;
-import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
-import org.flixelgdx.util.timer.FlixelTimer;
+import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
+import org.flixelgdx.timer.FlixelTimer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

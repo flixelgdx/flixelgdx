@@ -239,6 +239,23 @@ public class FlixelColor {
    * @return This color packed as ABGR8888, reinterpreted as a float.
    */
   public float toFloatBits() {
+    return toFloatBits(r, g, b, a);
+  }
+
+  /**
+   * Packs loose color components into a single float for a vertex color attribute.
+   *
+   * <p>This is the allocation-free twin of {@link #toFloatBits()} for code that keeps its color as
+   * plain floats instead of a {@link FlixelColor} instance, such as particles. Components outside
+   * {@code [0, 1]} are clamped.
+   *
+   * @param r The red component, in {@code [0, 1]}.
+   * @param g The green component, in {@code [0, 1]}.
+   * @param b The blue component, in {@code [0, 1]}.
+   * @param a The alpha component, in {@code [0, 1]}.
+   * @return The color packed as ABGR8888, reinterpreted as a float.
+   */
+  public static float toFloatBits(float r, float g, float b, float a) {
     int r8 = clampByte(r);
     int g8 = clampByte(g);
     int b8 = clampByte(b);

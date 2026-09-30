@@ -24,7 +24,6 @@
 package org.flixelgdx.signal;
 
 import org.flixelgdx.FlixelHeadlessExtension;
-import org.flixelgdx.util.signal.FlixelSignal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

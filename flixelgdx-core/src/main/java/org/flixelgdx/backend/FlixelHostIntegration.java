@@ -26,7 +26,7 @@ package org.flixelgdx.backend;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
-import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

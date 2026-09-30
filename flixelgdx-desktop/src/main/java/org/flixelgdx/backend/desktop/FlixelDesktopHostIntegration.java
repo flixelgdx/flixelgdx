@@ -29,7 +29,7 @@ import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
-import org.flixelgdx.util.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.sdl.SDLClipboard;

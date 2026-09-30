@@ -85,12 +85,12 @@ import org.flixelgdx.tween.type.motion.FlixelLinearPath;
 import org.flixelgdx.tween.type.motion.FlixelQuadMotion;
 import org.flixelgdx.tween.type.motion.FlixelQuadPath;
 import org.flixelgdx.util.FlixelExceptionUtil;
-import org.flixelgdx.util.save.FlixelSave;
-import org.flixelgdx.util.signal.FlixelSignal;
-import org.flixelgdx.util.signal.FlixelSignalData.StateSwitchSignalData;
-import org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData;
-import org.flixelgdx.util.timer.FlixelTimer;
-import org.flixelgdx.util.timer.FlixelTimerListener;
+import org.flixelgdx.save.FlixelSave;
+import org.flixelgdx.signal.FlixelSignal;
+import org.flixelgdx.signal.FlixelSignalData.StateSwitchSignalData;
+import org.flixelgdx.signal.FlixelSignalData.UpdateSignalData;
+import org.flixelgdx.timer.FlixelTimer;
+import org.flixelgdx.timer.FlixelTimerListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

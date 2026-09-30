@@ -21,36 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.backend;
-
-import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.collections.FlixelList;
-import org.flixelgdx.signal.FlixelSignal;
-import org.jetbrains.annotations.NotNull;
+package org.flixelgdx.save;
 
 /**
- * Default {@link FlixelHostIntegration} used on platforms without host shell integration.
- *
- * <p>All operations are no-ops. Capability checks return {@code false}. Signals are live instances
- * that never dispatch on their own, but callers may still add handlers to them safely.
+ * Status of a {@link FlixelSave} {@code bind()}/{@code load()} operation.
  */
-public enum FlixelNoopHostIntegration implements FlixelHostIntegration {
-
-  /** Shared no-op instance. */
-  INSTANCE;
-
-  private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
-  private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
-
-  @Override
-  @NotNull
-  public FlixelSignal<String> onTextPasted() {
-    return onTextPasted;
-  }
-
-  @Override
-  @NotNull
-  public FlixelList<FlixelMonitor> getMonitors() {
-    return monitors;
-  }
+public enum FlixelSaveStatus {
+  EMPTY,
+  OK,
+  ERROR
 }

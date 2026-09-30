@@ -45,7 +45,7 @@
  *       ({@code %APPDATA%} on Windows, {@code ~/Library/Application Support} on macOS,
  *       {@code $XDG_DATA_HOME} on Linux). Use this for persistent save data in
  *       production-shipping games instead of {@code external}. This is rarely used in game code, as the
- *       {@link org.flixelgdx.util.save.FlixelSave FlixelSave} system uses this under the hood.</li>
+ *       {@link org.flixelgdx.save.FlixelSave FlixelSave} system uses this under the hood.</li>
  * </ul>
  *
  * <h2>Reading a file</h2>

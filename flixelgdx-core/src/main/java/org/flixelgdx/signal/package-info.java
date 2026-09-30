@@ -7,15 +7,15 @@
  * player object does not need to reach into the UI, the audio system, or the achievement tracker;
  * it just dispatches a signal and the interested parties respond on their own.
  *
- * <p>The main class is {@link org.flixelgdx.util.signal.FlixelSignal FlixelSignal}, a generic
+ * <p>The main class is {@link org.flixelgdx.signal.FlixelSignal FlixelSignal}, a generic
  * multicast listener list. The framework also defines a set of global signals on
  * {@link org.flixelgdx.Flixel.Signals Flixel.Signals} that fire for lifecycle events such as
  * state switches and per-frame updates.
  *
  * <h2>Subscribing to a signal</h2>
- * <p>Call {@link org.flixelgdx.util.signal.FlixelSignal#add(org.flixelgdx.util.signal.FlixelSignal.SignalHandler) FlixelSignal.add(...)}
+ * <p>Call {@link org.flixelgdx.signal.FlixelSignal#add(FlixelSignal.SignalHandler) FlixelSignal.add(...)}
  * to register a listener that fires every time the signal is dispatched. Because
- * {@link org.flixelgdx.util.signal.FlixelSignal.SignalHandler SignalHandler} is a functional
+ * {@link org.flixelgdx.signal.FlixelSignal.SignalHandler SignalHandler} is a functional
  * interface, you can use a lambda expression:
  *
  * <pre>{@code
@@ -23,7 +23,7 @@
  * onScoreChanged.add(score -> hud.setScore(score));
  * }</pre>
  *
- * <p>Use {@link org.flixelgdx.util.signal.FlixelSignal#addOnce(org.flixelgdx.util.signal.FlixelSignal.SignalHandler) FlixelSignal.addOnce(...)}
+ * <p>Use {@link org.flixelgdx.signal.FlixelSignal#addOnce(FlixelSignal.SignalHandler) FlixelSignal.addOnce(...)}
  * when you only need to react to the very next dispatch. The listener removes itself automatically
  * after firing once. This is ideal for one-time events like showing a tutorial prompt or playing
  * an intro cutscene exactly one time:
@@ -33,7 +33,7 @@
  * }</pre>
  *
  * <h2>Dispatching a signal</h2>
- * <p>Call {@link org.flixelgdx.util.signal.FlixelSignal#dispatch(Object) FlixelSignal.dispatch(...)}
+ * <p>Call {@link org.flixelgdx.signal.FlixelSignal#dispatch(Object) FlixelSignal.dispatch(...)}
  * to fire every registered listener with a value. Permanent listeners (added with {@code add}) fire
  * first in registration order, followed by one-time listeners (added with {@code addOnce}), which
  * are then removed:
@@ -44,7 +44,7 @@
  * }</pre>
  *
  * <p>If no data needs to accompany the event, use {@code Void} as the type parameter and call the
- * no-arg {@link org.flixelgdx.util.signal.FlixelSignal#dispatch() FlixelSignal.dispatch()} overload:
+ * no-arg {@link org.flixelgdx.signal.FlixelSignal#dispatch() FlixelSignal.dispatch()} overload:
  *
  * <pre>{@code
  * FlixelSignal<Void> onPlayerDied = new FlixelSignal<>();
@@ -54,10 +54,10 @@
  *
  * <h2>Removing listeners</h2>
  * <p>To remove a specific listener, call
- * {@link org.flixelgdx.util.signal.FlixelSignal#remove(org.flixelgdx.util.signal.FlixelSignal.SignalHandler) FlixelSignal.remove(...)}
+ * {@link org.flixelgdx.signal.FlixelSignal#remove(FlixelSignal.SignalHandler) FlixelSignal.remove(...)}
  * with the exact same reference that was originally registered. Lookup is by reference identity,
  * not by {@code equals}. To remove all listeners at once (for example when tearing down a game
- * state) call {@link org.flixelgdx.util.signal.FlixelSignal#clear() FlixelSignal.clear()}.
+ * state) call {@link org.flixelgdx.signal.FlixelSignal#clear() FlixelSignal.clear()}.
  *
  * <pre>{@code
  * FlixelSignal.SignalHandler<Integer> listener = score -> hud.setScore(score);
@@ -88,9 +88,9 @@
  * }</pre>
  *
  * <h2>Signal data types and GC pressure</h2>
- * <p>The {@link org.flixelgdx.util.signal.FlixelSignalData FlixelSignalData} class groups the
+ * <p>The {@link org.flixelgdx.signal.FlixelSignalData FlixelSignalData} class groups the
  * carrier types used by the framework's own signals. The most important is
- * {@link org.flixelgdx.util.signal.FlixelSignalData.UpdateSignalData UpdateSignalData}, a mutable
+ * {@link org.flixelgdx.signal.FlixelSignalData.UpdateSignalData UpdateSignalData}, a mutable
  * object that is reused across every frame. Allocating a fresh object for every pre/post update
  * dispatch at 60 FPS would create noticeable GC pressure; the framework avoids this by mutating
  * and reusing the same instance instead.
@@ -111,8 +111,8 @@
  * Flixel.signals.onPreUpdate.add(data -> stored = data); // Do not do this.
  * }</pre>
  *
- * @see org.flixelgdx.util.signal.FlixelSignal
- * @see org.flixelgdx.util.signal.FlixelSignalData
+ * @see org.flixelgdx.signal.FlixelSignal
+ * @see org.flixelgdx.signal.FlixelSignalData
  * @see org.flixelgdx.Flixel.Signals
  */
-package org.flixelgdx.util.signal;
+package org.flixelgdx.signal;
