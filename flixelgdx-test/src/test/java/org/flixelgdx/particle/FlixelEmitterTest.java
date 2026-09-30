@@ -399,6 +399,26 @@ class FlixelEmitterTest {
     assertFalse(emitter.isAntialiasing());
   }
 
+  @Test
+  void disablingColorLaunchesWhiteParticles() {
+    FlixelEmitter<FlixelParticle> emitter = new FlixelEmitter<>(4, FlixelParticle::new);
+    emitter.lifespan.set(1f);
+    emitter.color.set(FlixelColor.YELLOW, FlixelColor.WHITE, FlixelColor.RED, FlixelColor.MAGENTA);
+    emitter.start(true);
+    emitter.update(0.5f);
+    emitter.update(0.6f);
+
+    emitter.color.active = false;
+    FlixelParticle p = emitter.emitParticle();
+    assertNotNull(p);
+    assertEquals(1f, p.getColor().r, 1e-5f);
+    assertEquals(1f, p.getColor().g, 1e-5f);
+    assertEquals(1f, p.getColor().b, 1e-5f);
+    emitter.update(0.5f);
+    assertEquals(1f, p.getColor().g, 1e-5f);
+    assertEquals(1f, FlixelColor.WHITE.g, 1e-5f, "the shared WHITE preset must never be modified");
+  }
+
   private static float distanceFromCenter(FlixelParticle p, float cx, float cy) {
     float dx = p.getX() - cx;
     float dy = p.getY() - cy;

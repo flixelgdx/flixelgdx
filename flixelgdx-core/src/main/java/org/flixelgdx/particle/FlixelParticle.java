@@ -27,6 +27,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.math.FlixelPointRange;
 import org.flixelgdx.math.FlixelRange;
 import org.flixelgdx.tween.ease.FlixelEaseFunction;
+import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelColorRange;
 import org.jetbrains.annotations.Nullable;
 
@@ -152,6 +153,7 @@ public class FlixelParticle extends FlixelSprite {
     setAngle(0f);
     setAngularVelocity(0f);
     setScale(1f);
+    setColor(FlixelColor.WHITE);
     age = 0f;
     lifespan = 0f;
     visible = true;
