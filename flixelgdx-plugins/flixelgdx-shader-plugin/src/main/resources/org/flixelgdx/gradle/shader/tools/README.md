@@ -1,32 +1,50 @@
-# Bundled `shaderc` binaries
+# Bundled shader tools
 
-This directory holds the bgfx `shaderc` compiler that the FlixelGDX shader plugin runs at build
-time. Each operating system has its own subfolder, named by classifier:
+This directory holds the command-line compilers the FlixelGDX shader plugin runs at build time. Each
+operating system has its own subfolder, named by classifier:
 
 ```
 tools/
-  linux-aarch64/shaderc
-  linux-x86_64/shaderc
-  macos-aarch64/shaderc
-  windows-aarch64/shaderc.exe
-  windows-shim/d3d4linux.exe
-  windows-x86_64/shaderc.exe
+  linux-aarch64/{glslang, spirv-cross, shaderc}
+  linux-x86_64/{glslang, spirv-cross, shaderc}
+  macos-aarch64/{glslang, spirv-cross, shaderc}
+  windows-aarch64/{glslang.exe, spirv-cross.exe, shaderc.exe}
+  windows-x86_64/{glslang.exe, spirv-cross.exe, shaderc.exe}
+  windows-shim/{d3d4linux.exe, d3dcompiler_47.dll}
 ```
 
-The plugin extracts the binary for the current host, then invokes it to cross-compile each GLSL
-shader into the per-renderer bytecode the runtime loads. Because this is build-time tooling, its
-size does not affect a shipped game.
+The plugin extracts the binaries for the current host, then invokes them: `glslang` compiles each
+shader to SPIR-V, `spirv-cross` translates that into ESSL for the web and Android backends, and
+`shaderc` produces the per-renderer bytecode the desktop backend loads. Because this is build-time
+tooling, its size does not affect a shipped game.
 
-## Why the compiler is vendored
+## `glslang` and `spirv-cross`
+
+Both come from the Khronos Group and are built from source:
+
+- [glslang](https://github.com/KhronosGroup/glslang) tag `16.6.0`, target `glslang-standalone`,
+  configured with `-DENABLE_OPT=OFF -DENABLE_HLSL=OFF` (the plugin needs neither the optimizer nor
+  the HLSL front end, and leaving them out keeps the binary small).
+- [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross) tag `vulkan-sdk-1.4.363.0`, target
+  `spirv-cross`.
+
+Every binary links the C and C++ runtimes statically (`-static-libstdc++ -static-libgcc` on Linux,
+the `MultiThreaded` runtime on Windows), so it runs on a clean machine with nothing else installed.
+The Linux builds are made on Ubuntu 22.04 so they only need glibc 2.34 or newer. To update them,
+build each classifier with those settings (a GitHub Actions matrix over `ubuntu-22.04`,
+`ubuntu-22.04-arm`, `macos-14`, `windows-2022`, and `windows-11-arm` covers all five), strip the
+non-Windows binaries, and replace the files here.
+
+## Why `shaderc` is vendored
 
 `shaderc` is bgfx's own shader compiler. It produces the exact binary container format
 `bgfx_create_shader` expects (uniform reflection table plus vertex/fragment signature hashes), and
 it is the same compiler that builds the framework's own sprite shader. Driving it directly is far
 safer than trying to synthesize that format by hand.
 
-## Adding or updating a binary
+## Building `shaderc`
 
-The binaries are built from a checkout of [bgfx](https://github.com/bkaradzic/bgfx).
+The `shaderc` binaries are built from a checkout of [bgfx](https://github.com/bkaradzic/bgfx).
 
 The Direct3D (`dx11`) variants are DXBC, which needs Microsoft's FXC compiler. FXC is native to
 Windows, so the Windows `shaderc` emits those variants directly. On Linux and macOS, `shaderc`

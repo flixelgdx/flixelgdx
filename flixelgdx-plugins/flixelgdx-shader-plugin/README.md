@@ -3,21 +3,44 @@
 Write one shader. Run it everywhere.
 
 This Gradle plugin lets a game author a single GLSL shader and have it work on every FlixelGDX
-backend, with no per-platform authoring and no manual shader compilation. At build time it drives
-bgfx's `shaderc` to cross-compile each shader into the OpenGL, Vulkan, Metal, and Direct3D bytecode
-the runtime loads, then bundles the results into the game's resources.
+backend, with no per-platform authoring and no manual shader compilation. At build time it compiles
+each shader to SPIR-V, translates it for the web and Android, cross-compiles it into the OpenGL,
+Vulkan, Metal, and Direct3D bytecode the desktop backend loads, then bundles the results into the
+game's resources.
 
 ## Why it exists
 
-The FlixelGDX backends consume bgfx's compiled shader format, and the different graphics APIs each
-need their own variant. Without this plugin a developer would have to write shaders in bgfx's
-dialect and run `shaderc` by hand for every platform. The plugin removes that entirely: you write
-ordinary GLSL, and the build produces every variant for you.
+Each FlixelGDX backend needs shaders in a different form: the desktop backend loads bgfx's compiled
+`.bin` format, while the web (WebGL 2) and Android (OpenGL ES 3) backends compile ESSL source at
+runtime. Without this plugin a developer would have to write shaders in several dialects and run
+the compilers by hand for every platform. The plugin removes that entirely: you write ordinary GLSL,
+and the build produces every variant for you.
 
-The plugin drives bgfx's real `shaderc` rather than synthesizing the binary format itself, because
-`shaderc` is the same compiler that builds the framework's own sprite shader. Its output is
-guaranteed to be the exact container `bgfx_create_shader` expects, down to the uniform reflection
-table and the vertex/fragment signature hashes.
+## How it works
+
+Every shader goes through the same three steps:
+
+```
+your GLSL + framework preamble
+   |  glslang (Khronos reference compiler)
+   v
+ SPIR-V --- spirv-cross ---> essl/{vs,fs}.glsl       web and Android
+   |
+   '------- (checked) -----> shaderc x4 -> .bin     desktop (bgfx)
+```
+
+1. **glslang compiles the shader to SPIR-V.** glslang really parses GLSL, so a mistake in your
+   shader fails the build right here, reported against your own file name and line number
+   (for example `ERROR: crt.frag.glsl:12: ...`). Nothing broken ever reaches a player's GPU driver.
+2. **spirv-cross translates the SPIR-V into ESSL 3.00** for the web and Android backends. Because
+   it works from the compiled module, the output is always valid, with every macro expanded and every
+   uniform, attribute, and varying keeping the exact name you wrote.
+3. **bgfx's `shaderc` compiles the desktop variants.** It is the same compiler that builds the
+   framework's own sprite shader, so its output is guaranteed to be the exact container
+   `bgfx_create_shader` expects, down to the uniform reflection table and the vertex/fragment
+   signature hashes. `shaderc` is fed your original source, not the translated SPIR-V: bgfx compiles
+   several variants through an HLSL front end, where only `mul(a, b)` is a real matrix product, and
+   translated code always writes `a * b`.
 
 ## Applying the plugin
 
@@ -73,12 +96,12 @@ vertex shader may read `a_position` (`vec2`), `a_texcoord0` (`vec2`), and `a_col
 transform with `u_modelViewProj`, and must write `v_texCoords` and `v_color`.
 
 Custom vertex shaders work on all backends, including the web and Android ESSL backends. The plugin
-translates the bgfx naming convention to ESSL automatically by injecting `#define` aliases into the
-generated `essl/vs.glsl`, so you never have to write platform-specific vertex code.
+maps the bgfx naming convention onto the names the GL backends bind before compiling to SPIR-V, so
+you never have to write platform-specific vertex code.
 
 One form that does not translate: treating `a_position` as a `vec4`. The framework's vertex buffer
 stores position as two floats (`vec2`), so write `vec4(a_position, 0.0, 1.0)` to promote it to a
-homogeneous coordinate - this compiles correctly on both bgfx and ESSL. The alias table is:
+homogeneous coordinate, which compiles correctly on both bgfx and ESSL. The alias table is:
 
 | bgfx name        | ESSL name        | Note                                         |
 |------------------|------------------|----------------------------------------------|
@@ -109,7 +132,7 @@ shaders/<name>/glsl/{vs,fs}.bin      OpenGL (and the runtime fallback)
 shaders/<name>/spirv/{vs,fs}.bin     Vulkan
 shaders/<name>/metal/{vs,fs}.bin     Metal
 shaders/<name>/dx11/{vs,fs}.bin      Direct3D 11 and 12
-shaders/<name>/essl/{vs,fs}.glsl     ESSL (for HTML5)
+shaders/<name>/essl/{vs,fs}.glsl     ESSL 3.00 (web and Android)
 ```
 
 ## Direct3D and the compiler
@@ -134,8 +157,17 @@ A game that ships without the `dx11` variant does not crash; the effect simply f
 unshaded draw on the Direct3D renderer, and bgfx can also be pointed at the Vulkan or OpenGL
 renderer on Windows.
 
-The `shaderc` binary is resolved in priority order: an explicit `shadercPath` in the
-`shaders` block, the binary bundled with the plugin for the current operating system, and
-finally a `shaderc` found on the system `PATH`. See
-[`tools/README.md`](src/main/resources/org/flixelgdx/gradle/shader/tools/README.md) for how the
-bundled binaries are produced.
+## Bundled tools
+
+The plugin ships every compiler it runs, so a game developer never installs any shader tooling:
+
+| Tool          | Job                                         | Override option  |
+|---------------|---------------------------------------------|------------------|
+| `glslang`     | Compiles GLSL to SPIR-V and reports errors. | `glslangPath`    |
+| `spirv-cross` | Translates SPIR-V to ESSL 3.00.             | `spirvCrossPath` |
+| `shaderc`     | Compiles the bgfx `.bin` desktop variants.  | `shadercPath`    |
+
+Each tool is resolved in priority order: an explicit path in the `shaders` block, the binary bundled
+with the plugin for the current operating system, and finally one with the same name found on the
+system `PATH`. See [`tools/README.md`](src/main/resources/org/flixelgdx/gradle/shader/tools/README.md)
+for how the bundled binaries are produced.
