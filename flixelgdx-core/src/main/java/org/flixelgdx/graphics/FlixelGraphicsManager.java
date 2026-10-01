@@ -468,11 +468,6 @@ public interface FlixelGraphicsManager {
    * Compiles a shader program directly from GLSL source strings, for backends that build shaders at
    * runtime rather than from precompiled bytecode.
    *
-   * <p>The bgfx desktop and mobile backends compile shaders ahead of time through the FlixelGDX
-   * shader plugin, so they leave this as the default no-op. The web backend, whose renderer compiles
-   * GLSL at runtime, overrides it: this is how {@code new FlixelShader(vertexSource, fragmentSource)}
-   * works in the browser.
-   *
    * <p>When the backend cannot compile source (every backend except web, or a headless session),
    * this returns {@link FlixelUnsupportedShader}, whose {@link FlixelShaderProgram#isValid()} is
    * always {@code false}, so a shader simply has no effect rather than crashing.

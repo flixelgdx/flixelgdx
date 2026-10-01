@@ -541,9 +541,9 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @Override
   @NotNull
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
-    // The web variant is raw GLSL text, not the bgfx bytecode the other backends load. A browser
-    // cannot read classpath resources, so the build plugin copies these ESSL files into the web
-    // assets and the preloader caches them; here they are read straight from that warm cache.
+    // The web variant is raw GLSL text. A browser cannot read classpath resources, so the
+    // build plugin copies these ESSL files into the web assets and the preloader caches them;
+    // here they are read straight from that warm cache.
     FlixelFile vertexFile = Flixel.files.internal("shaders/" + name + "/essl/vs.glsl");
     FlixelFile fragmentFile = Flixel.files.internal("shaders/" + name + "/essl/fs.glsl");
     if (!vertexFile.exists() || !fragmentFile.exists()) {
