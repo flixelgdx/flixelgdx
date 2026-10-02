@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.html5.graphics;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.logging.FlixelLogger;
 import org.teavm.jso.webgl.WebGLProgram;
 import org.teavm.jso.webgl.WebGLRenderingContext;
 import org.teavm.jso.webgl.WebGLShader;
@@ -58,6 +59,7 @@ public final class FlixelWebGlPrograms {
    * it; custom shaders that do not declare {@code a_texIndex} simply ignore it.
    */
   public static final int TEXINDEX = 3;
+  private static final FlixelLogger LOG = Flixel.log.tagged("Html5");
 
   private FlixelWebGlPrograms() {}
 
@@ -91,7 +93,7 @@ public final class FlixelWebGlPrograms {
     gl.deleteShader(fragment);
 
     if (!gl.getProgramParameterb(program, WebGLRenderingContext.LINK_STATUS)) {
-      Flixel.warn("Html5", "Shader program failed to link: " + gl.getProgramInfoLog(program));
+      LOG.warn("Shader program failed to link: {}", gl.getProgramInfoLog(program));
       gl.deleteProgram(program);
       return null;
     }
@@ -111,7 +113,7 @@ public final class FlixelWebGlPrograms {
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameterb(shader, WebGLRenderingContext.COMPILE_STATUS)) {
-      Flixel.warn("Html5", "Shader stage failed to compile: " + gl.getShaderInfoLog(shader));
+      LOG.warn("Shader stage failed to compile: {}", gl.getShaderInfoLog(shader));
       gl.deleteShader(shader);
       return null;
     }

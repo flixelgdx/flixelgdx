@@ -30,6 +30,7 @@ import org.flixelgdx.graphics.FlixelNoopTexture;
 import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
@@ -79,6 +80,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
   private static final int MAX_SLOTS = 16;
   private static final int FLOATS_PER_VERTEX = 9;
   private static final int FLOATS_PER_QUAD = FLOATS_PER_VERTEX * 4;
+  private static final FlixelLogger LOG = Flixel.log.tagged("WebGL");
 
   @NotNull
   private final WebGLRenderingContext gl;
@@ -487,7 +489,7 @@ public class FlixelWebGlBatch implements FlixelBatch {
     if (!(texture instanceof FlixelWebGlTexture webGl)) {
       if (!loggedNoopTexture) {
         loggedNoopTexture = true;
-        Flixel.warn("WebGL", "Draw call skipped: texture is not a WebGL texture. "
+        LOG.warn("Draw call skipped: texture is not a WebGL texture. "
             + "This usually means a bitmap font's page image was unavailable at load time.");
       }
       return -1;

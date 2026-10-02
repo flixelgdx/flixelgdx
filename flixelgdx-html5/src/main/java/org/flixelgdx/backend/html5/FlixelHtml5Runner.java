@@ -31,6 +31,7 @@ import org.flixelgdx.backend.html5.asset.FlixelHtml5AssetPreloader;
 import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.teavm.jso.JSBody;
@@ -62,6 +63,8 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * container so they remain inside the fullscreen element's subtree during fullscreen transitions.
    */
   static final String CONTAINER_ID = "flixel-game-container";
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Html5");
 
   private double lastTimestamp = -1.0;
 
@@ -200,7 +203,7 @@ public class FlixelHtml5Runner implements FlixelGameRunner {
    * not be downloaded. The browser console contains the specific error logged by the preloader.
    */
   private static void onPreloadFailed() {
-    Flixel.error("Html5",
+    LOG.error(
         "Asset preloading failed. Common causes: the 'assets/assets.txt' manifest is missing "
             + "(make sure the org.flixelgdx.html5 plugin is applied), or a non-image asset could not be "
             + "downloaded. The game will not start.");
