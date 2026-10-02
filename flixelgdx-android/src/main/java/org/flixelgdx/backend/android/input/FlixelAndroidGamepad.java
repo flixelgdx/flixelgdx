@@ -184,26 +184,14 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
   void setAxis(int axisIndex, float value) {
     int bits = Float.floatToRawIntBits(value);
     switch (axisIndex) {
-      case AXIS_LEFT_X:
-        axisLeftX = bits;
-        break;
-      case AXIS_LEFT_Y:
-        axisLeftY = bits;
-        break;
-      case AXIS_RIGHT_X:
-        axisRightX = bits;
-        break;
-      case AXIS_RIGHT_Y:
-        axisRightY = bits;
-        break;
-      case AXIS_L2:
-        axisL2 = bits;
-        break;
-      case AXIS_R2:
-        axisR2 = bits;
-        break;
-      default :
-        break;
+      case AXIS_LEFT_X -> axisLeftX = bits;
+      case AXIS_LEFT_Y -> axisLeftY = bits;
+      case AXIS_RIGHT_X -> axisRightX = bits;
+      case AXIS_RIGHT_Y -> axisRightY = bits;
+      case AXIS_L2 -> axisL2 = bits;
+      case AXIS_R2 -> axisR2 = bits;
+      default -> {
+      }
     }
   }
 
