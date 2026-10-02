@@ -370,7 +370,7 @@ public final class FlixelDefaultLogger implements FlixelLogger {
    * <p>On a tagged logger, this changes the level of its root, which every tagged logger shares.
    */
   @Override
-  public void setLevel(@Nullable FlixelLogLevel level) {
+  public void setLevel(@NotNull FlixelLogLevel level) {
     root.level = level != null ? level : FlixelLogLevel.DEBUG;
   }
 
@@ -389,7 +389,7 @@ public final class FlixelDefaultLogger implements FlixelLogger {
    * <p>On a tagged logger, this changes the mode of its root, which every tagged logger shares.
    */
   @Override
-  public void setMode(@Nullable FlixelLogMode mode) {
+  public void setMode(@NotNull FlixelLogMode mode) {
     FlixelDefaultLogger r = root;
     synchronized (r.lock) {
       r.mode = mode != null ? mode : FlixelLogMode.SIMPLE;
@@ -409,7 +409,7 @@ public final class FlixelDefaultLogger implements FlixelLogger {
    * or of other tagged loggers.
    */
   @Override
-  public void setTag(@Nullable String tag) {
+  public void setTag(@NotNull String tag) {
     this.tag = tag != null ? tag : "";
   }
 

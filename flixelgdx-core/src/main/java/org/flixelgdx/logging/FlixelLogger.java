@@ -217,9 +217,9 @@ public interface FlixelLogger {
    * Sets the minimum level that is logged. Messages less severe than this are thrown away before any
    * work is done for them.
    *
-   * @param level The new minimum level. {@code null} resets it to {@link FlixelLogLevel#DEBUG}.
+   * @param level The new minimum level. Passing {@code null} resets it to {@link FlixelLogLevel#DEBUG}.
    */
-  void setLevel(@Nullable FlixelLogLevel level);
+  void setLevel(@NotNull FlixelLogLevel level);
 
   /**
    * Returns the console format.
@@ -234,7 +234,7 @@ public interface FlixelLogger {
    *
    * @param mode The new mode. {@code null} resets it to {@link FlixelLogMode#SIMPLE}.
    */
-  void setMode(@Nullable FlixelLogMode mode);
+  void setMode(@NotNull FlixelLogMode mode);
 
   /**
    * Returns the tag that this logger prints on its messages.
@@ -250,7 +250,7 @@ public interface FlixelLogger {
    *
    * @param tag The new tag. {@code null} resets it to an empty tag.
    */
-  void setTag(@Nullable String tag);
+  void setTag(@NotNull String tag);
 
   /**
    * Returns the custom folder for log files.
