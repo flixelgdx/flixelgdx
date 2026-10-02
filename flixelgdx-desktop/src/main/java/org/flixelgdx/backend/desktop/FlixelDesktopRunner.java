@@ -36,6 +36,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGraphicsApi;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
@@ -71,6 +72,7 @@ import java.util.concurrent.locks.LockSupport;
 public class FlixelDesktopRunner implements FlixelGameRunner {
 
   private static final long SPIN_MARGIN_NANOS = 1_500_000L;
+  private static final FlixelLogger LOG = Flixel.log.tagged("Desktop");
 
   private long windowHandle;
 
@@ -147,7 +149,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     graphics.setTargetFps(config.getFramerate());
 
     if (!SDLInit.SDL_Init(SDLInit.SDL_INIT_VIDEO | SDLInit.SDL_INIT_EVENTS | SDLInit.SDL_INIT_GAMEPAD)) {
-      Flixel.error("Desktop", "SDL_Init failed; cannot open a window.");
+      LOG.error("SDL_Init failed; cannot open a window.");
       return;
     }
 
@@ -175,7 +177,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     }
     windowHandle = SDLVideo.SDL_CreateWindow(config.getTitle(), width, height, windowFlags);
     if (windowHandle == 0L) {
-      Flixel.error("Desktop", "The SDL window could not be created.");
+      LOG.error("The SDL window could not be created.");
       SDLInit.SDL_Quit();
       return;
     }
@@ -307,7 +309,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
       try {
         FlixelImage image = loadIconImage(path);
         if (image == null) {
-          Flixel.warn("Desktop", "Window icon could not be decoded: " + path);
+          LOG.warn("Window icon could not be decoded: {}", path);
           continue;
         }
         // SDL_CreateSurfaceFrom requires the pixel buffer to remain valid for the lifetime
@@ -318,7 +320,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
         // stb_image always decodes to RGBA order; SDL_PIXELFORMAT_RGBA32 matches that layout.
         surface = SDLSurface.SDL_CreateSurfaceFrom(w, h, SDLPixels.SDL_PIXELFORMAT_RGBA32, pixels, w * 4);
         if (surface == null) {
-          Flixel.warn("Desktop", "SDL_CreateSurfaceFrom failed for icon: " + path);
+          LOG.warn("SDL_CreateSurfaceFrom failed for icon: {}", path);
           continue;
         }
         SDLVideo.SDL_SetWindowIcon(wnd, surface);
@@ -367,7 +369,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     long nativeWindow = FlixelSdlNativeHandle.windowHandle(windowHandle);
     long nativeDisplay = FlixelSdlNativeHandle.displayHandle(windowHandle);
     if (nativeWindow == 0L) {
-      Flixel.error("Desktop", "Could not resolve the native window handle for bgfx.");
+      LOG.error("Could not resolve the native window handle for bgfx.");
       return false;
     }
     try (BGFXInit init = BGFXInit.calloc()) {
@@ -382,7 +384,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
           res -> res.width(width).height(height).reset(finalResetFlags).formatColor(BGFX.BGFX_TEXTURE_FORMAT_RGBA8));
       init.platformData(pd -> pd.nwh(nativeWindow).ndt(nativeDisplay));
       if (!BGFX.bgfx_init(init)) {
-        Flixel.error("Desktop", "bgfx could not be initialized.");
+        LOG.error("bgfx could not be initialized.");
         return false;
       }
     }
@@ -430,8 +432,7 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     if (backend.equals(FlixelGraphicsApi.Noop.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_NOOP;
     }
-    Flixel.warn("Desktop", "Unknown flixel.render.backend '" + backend
-        + "'; letting bgfx auto-pick the renderer.");
+    LOG.warn("Unknown flixel.render.backend '{}'; letting bgfx auto-pick the renderer.", backend);
     return BGFX.BGFX_RENDERER_TYPE_COUNT;
   }
 

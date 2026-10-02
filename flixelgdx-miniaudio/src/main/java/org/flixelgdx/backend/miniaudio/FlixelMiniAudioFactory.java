@@ -29,6 +29,7 @@ import org.flixelgdx.audio.FlixelSound;
 import org.flixelgdx.audio.FlixelSoundBuffer;
 import org.flixelgdx.audio.FlixelSoundFactory;
 import org.flixelgdx.audio.FlixelSoundGroup;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +46,8 @@ import org.jetbrains.annotations.Nullable;
  * from a folder, a packaged JAR, or any other file root.
  */
 public class FlixelMiniAudioFactory implements FlixelSoundFactory {
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Audio");
 
   /** Native miniaudio engine handle. */
   private final long engine;
@@ -66,7 +69,7 @@ public class FlixelMiniAudioFactory implements FlixelSoundFactory {
     }
     long engine = FlixelMiniAudio.engineInit();
     if (engine == 0L) {
-      Flixel.warn("Audio", "miniaudio engine failed to initialize; audio is disabled.");
+      LOG.warn("miniaudio engine failed to initialize; audio is disabled.");
       return FlixelNoopSoundFactory.INSTANCE;
     }
     return new FlixelMiniAudioFactory(engine);
@@ -79,7 +82,7 @@ public class FlixelMiniAudioFactory implements FlixelSoundFactory {
     byte[] data = buffer.data();
     long handle = FlixelMiniAudio.soundLoad(engine, data, data.length, groupHandle);
     if (handle == 0L) {
-      Flixel.warn("Audio", "Could not decode audio '" + buffer.path() + "'.");
+      LOG.warn("Could not decode audio '{}'.", buffer.path());
     }
     FlixelMiniAudioGroup miniGroup = group instanceof FlixelMiniAudioGroup g ? g : null;
     return new FlixelMiniAudioSound(handle, miniGroup);

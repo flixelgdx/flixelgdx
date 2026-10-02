@@ -37,6 +37,7 @@ import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.graphics.FlixelUnsupportedShader;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.jetbrains.annotations.NotNull;
@@ -85,6 +86,8 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
 
   /** First view id handed out to render targets, above the reserved on-screen range. */
   private static final int FIRST_TARGET_VIEW = MAX_SCREEN_VIEWS;
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
 
   @NotNull
   private final FlixelBgfxBatch batch = new FlixelBgfxBatch(this);
@@ -280,8 +283,8 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
       BGFX.bgfx_set_debug(BGFX.BGFX_DEBUG_STATS);
     }
     if (statsEnabled) {
-      Flixel.debug("Graphics", "bgfx stats logging is on (flixel.render.stats="
-          + value + "). CPU submit vs GPU time is logged once per second.");
+      LOG.debug("bgfx stats logging is on (flixel.render.stats={}). "
+          + "CPU submit vs GPU time is logged once per second.", value);
     }
   }
 
@@ -886,8 +889,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     if (program == -1 || texture == null) {
       if (!programWarned && program == -1) {
         programWarned = true;
-        Flixel.warn("Graphics", "No sprite shader program is available. "
-            + "Rendering is a no-op until compiled shaders are bundled.");
+        LOG.warn("No sprite shader program is available. Rendering is a no-op until compiled shaders are bundled.");
       }
       return;
     }
