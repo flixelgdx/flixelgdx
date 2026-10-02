@@ -25,6 +25,7 @@ package org.flixelgdx.backend.android.graphics;
 
 import android.opengl.GLES30;
 import org.flixelgdx.Flixel;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -53,6 +54,8 @@ final class FlixelGlesPrograms {
 
   /** Fixed vertex attribute slot for the multi-texture slot index ({@code a_texIndex}). */
   static final int TEXINDEX = 3;
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("GLES");
 
   private FlixelGlesPrograms() {}
 
@@ -91,7 +94,7 @@ final class FlixelGlesPrograms {
     int[] status = new int[1];
     GLES30.glGetProgramiv(program, GLES30.GL_LINK_STATUS, status, 0);
     if (status[0] == GLES30.GL_FALSE) {
-      Flixel.warn("GLES", "Shader program failed to link: " + GLES30.glGetProgramInfoLog(program));
+      LOG.warn("Shader program failed to link: {}", GLES30.glGetProgramInfoLog(program));
       GLES30.glDeleteProgram(program);
       return 0;
     }
@@ -136,7 +139,7 @@ final class FlixelGlesPrograms {
     int[] status = new int[1];
     GLES30.glGetProgramiv(program, GLES30.GL_LINK_STATUS, status, 0);
     if (status[0] == GLES30.GL_FALSE) {
-      Flixel.warn("GLES", "Custom shader failed to link: " + GLES30.glGetProgramInfoLog(program));
+      LOG.warn("Custom shader failed to link: {}", GLES30.glGetProgramInfoLog(program));
       GLES30.glDeleteProgram(program);
       return 0;
     }
@@ -159,7 +162,7 @@ final class FlixelGlesPrograms {
     int[] status = new int[1];
     GLES30.glGetShaderiv(shader, GLES30.GL_COMPILE_STATUS, status, 0);
     if (status[0] == GLES30.GL_FALSE) {
-      Flixel.warn("GLES", "Shader stage failed to compile: " + GLES30.glGetShaderInfoLog(shader));
+      LOG.warn("Shader stage failed to compile: {}", GLES30.glGetShaderInfoLog(shader));
       GLES30.glDeleteShader(shader);
       return 0;
     }
