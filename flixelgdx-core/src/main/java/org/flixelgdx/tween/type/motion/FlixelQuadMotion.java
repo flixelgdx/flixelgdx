@@ -90,13 +90,13 @@ public class FlixelQuadMotion extends FlixelMotion {
   }
 
   private static float approximateQuadLength(float x0, float y0, float x1, float y1, float x2, float y2) {
-    float d1 = Vector2len(x1 - x0, y1 - y0);
-    float d2 = Vector2len(x2 - x1, y2 - y1);
-    float d3 = Vector2len(x2 - x0, y2 - y0);
+    float d1 = vector2Len(x1 - x0, y1 - y0);
+    float d2 = vector2Len(x2 - x1, y2 - y1);
+    float d3 = vector2Len(x2 - x0, y2 - y0);
     return (d1 + d2 + d3) * 0.5f;
   }
 
-  private static float Vector2len(float dx, float dy) {
+  private static float vector2Len(float dx, float dy) {
     return (float) Math.sqrt(dx * dx + dy * dy);
   }
 

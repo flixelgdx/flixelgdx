@@ -139,6 +139,7 @@ import java.util.function.Supplier;
 public abstract class FlixelTween implements FlixelPoolable {
 
   /** The global tween manager for the entire game. */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelTweenManager globalManager = new FlixelTweenManager();
 
   /** The settings used for how the tween is handled and calculated (aka how it looks and animates). */

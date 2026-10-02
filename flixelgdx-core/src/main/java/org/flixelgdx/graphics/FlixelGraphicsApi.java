@@ -45,7 +45,7 @@ import java.util.Objects;
  * {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.graphics.getApi() == FlixelGraphicsApi.Vulkan) {
+ * if (Flixel.graphics.getApi() == FlixelGraphicsApi.VULKAN) {
  *   // Enable a Vulkan-specific rendering path.
  * }
  * }</pre>
@@ -57,28 +57,28 @@ public final class FlixelGraphicsApi {
   private static final FlixelMap<String, FlixelGraphicsApi> REGISTRY = new FlixelMap<>();
 
   /** The desktop OpenGL renderer. */
-  public static final FlixelGraphicsApi OpenGL = of("OpenGL");
+  public static final FlixelGraphicsApi OPENGL = of("OpenGL");
 
   /** The embedded or mobile OpenGL ES renderer. */
-  public static final FlixelGraphicsApi OpenGLES = of("OpenGLES");
+  public static final FlixelGraphicsApi OPENGL_ES = of("OpenGLES");
 
   /** The cross-platform Vulkan renderer. */
-  public static final FlixelGraphicsApi Vulkan = of("Vulkan");
+  public static final FlixelGraphicsApi VULKAN = of("Vulkan");
 
   /** The Apple Metal renderer, used on macOS and iOS. */
-  public static final FlixelGraphicsApi Metal = of("Metal");
+  public static final FlixelGraphicsApi METAL = of("Metal");
 
   /** The Direct3D 11 renderer, used on Windows. */
-  public static final FlixelGraphicsApi Direct3D11 = of("Direct3D11");
+  public static final FlixelGraphicsApi DIRECT3D11 = of("Direct3D11");
 
   /** The Direct3D 12 renderer, used on Windows. */
-  public static final FlixelGraphicsApi Direct3D12 = of("Direct3D12");
+  public static final FlixelGraphicsApi DIRECT3D12 = of("Direct3D12");
 
   /** The web backend built on the browser's native WebGPU. */
-  public static final FlixelGraphicsApi WebGPU = of("WebGPU");
+  public static final FlixelGraphicsApi WEBGPU = of("WebGPU");
 
   /** The web backend built on WebGL. */
-  public static final FlixelGraphicsApi WebGL = of("WebGL");
+  public static final FlixelGraphicsApi WEBGL = of("WebGL");
 
   /**
    * No real backend is present.
@@ -86,7 +86,7 @@ public final class FlixelGraphicsApi {
    * <p>This is reported by the safe default manager on headless or not-yet-initialized sessions,
    * where drawing is a no-op.
    */
-  public static final FlixelGraphicsApi Noop = of("Noop");
+  public static final FlixelGraphicsApi NOOP = of("Noop");
 
   private final String id;
 

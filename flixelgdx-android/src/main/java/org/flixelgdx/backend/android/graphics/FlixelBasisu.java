@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  *
  * <p>Target format constants:
  * <ul>
- *   <li>{@link #FMT_ASTC_4x4_RGBA} - ASTC 4x4 with alpha, preferred on most modern Android
+ *   <li>{@link #FMT_ASTC_4X4_RGBA} - ASTC 4x4 with alpha, preferred on most modern Android
  *       GPUs (Adreno, Mali, PowerVR since 2013).</li>
  *   <li>{@link #FMT_ETC2_RGBA} - ETC2 EAC+alpha, universally supported on Android 4.3+
  *       (all devices that ship with OpenGL ES 3.0 or higher).</li>
@@ -50,16 +50,16 @@ import java.nio.ByteBuffer;
  * if (handle == 0) {
  *   // Handle failed parse.
  * }
- * int size = FlixelBasisu.getTranscodedSize(handle, 0, FlixelBasisu.FMT_ASTC_4x4_RGBA);
+ * int size = FlixelBasisu.getTranscodedSize(handle, 0, FlixelBasisu.FMT_ASTC_4X4_RGBA);
  * ByteBuffer out = ByteBuffer.allocateDirect(size);
- * boolean ok = FlixelBasisu.transcode(handle, 0, FlixelBasisu.FMT_ASTC_4x4_RGBA, out);
+ * boolean ok = FlixelBasisu.transcode(handle, 0, FlixelBasisu.FMT_ASTC_4X4_RGBA, out);
  * FlixelBasisu.close(handle);
  * }</pre>
  */
 public final class FlixelBasisu {
 
   /** Target format constant: ASTC 4x4 RGBA (16 bytes per 4x4 block). */
-  public static final int FMT_ASTC_4x4_RGBA = 0;
+  public static final int FMT_ASTC_4X4_RGBA = 0;
 
   /** Target format constant: ETC2 EAC RGBA (16 bytes per 4x4 block). */
   public static final int FMT_ETC2_RGBA = 1;
@@ -155,7 +155,7 @@ public final class FlixelBasisu {
    *
    * @param handle A handle returned by {@link #open}.
    * @param levelIndex Mip level index (0 = largest).
-   * @param fmt One of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
+   * @param fmt One of {@link #FMT_ASTC_4X4_RGBA}, {@link #FMT_ETC2_RGBA}, or
    *      {@link #FMT_RGBA32}.
    * @return The byte count needed, or {@code 0} on error.
    */
@@ -170,7 +170,7 @@ public final class FlixelBasisu {
    *
    * @param handle A handle returned by {@link #open}.
    * @param levelIndex Mip level index (0 = largest).
-   * @param fmt One of {@link #FMT_ASTC_4x4_RGBA}, {@link #FMT_ETC2_RGBA}, or
+   * @param fmt One of {@link #FMT_ASTC_4X4_RGBA}, {@link #FMT_ETC2_RGBA}, or
    *      {@link #FMT_RGBA32}.
    * @param outBuf A direct {@link ByteBuffer} large enough to hold the output.
    * @return {@code true} on success, {@code false} on any error.

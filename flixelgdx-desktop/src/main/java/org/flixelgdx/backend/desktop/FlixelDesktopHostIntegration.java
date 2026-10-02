@@ -41,7 +41,7 @@ import java.util.Objects;
 /**
  * The desktop host integration.
  *
- * <p>Reports the {@link FlixelPlatform#Desktop Desktop} platform and provides SDL-backed clipboard
+ * <p>Reports the {@link FlixelPlatform#DESKTOP Desktop} platform and provides SDL-backed clipboard
  * access. Toast notifications and taskbar attention are platform-specific and left as no-ops for
  * now; they can be layered on per OS later.
  */
@@ -142,7 +142,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   @NotNull
   @Override
   public FlixelPlatform getPlatform() {
-    return FlixelPlatform.Desktop;
+    return FlixelPlatform.DESKTOP;
   }
 
   private static boolean tryStartProcess(ProcessBuilder pb) {

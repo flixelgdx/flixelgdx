@@ -414,22 +414,22 @@ public class FlixelDesktopRunner implements FlixelGameRunner {
     if (backend.isEmpty() || backend.equals("auto")) {
       return BGFX.BGFX_RENDERER_TYPE_COUNT; // Let bgfx auto-pick the best backend.
     }
-    if (backend.equals(FlixelGraphicsApi.OpenGL.getId().toLowerCase())) {
+    if (backend.equals(FlixelGraphicsApi.OPENGL.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_OPENGL;
     }
-    if (backend.equals(FlixelGraphicsApi.Vulkan.getId().toLowerCase())) {
+    if (backend.equals(FlixelGraphicsApi.VULKAN.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_VULKAN;
     }
-    if (backend.equals(FlixelGraphicsApi.Metal.getId().toLowerCase())) {
+    if (backend.equals(FlixelGraphicsApi.METAL.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_METAL;
     }
-    if (backend.equals(FlixelGraphicsApi.Direct3D11.getId().toLowerCase())) {
+    if (backend.equals(FlixelGraphicsApi.DIRECT3D11.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_DIRECT3D11;
     }
-    if (backend.equals(FlixelGraphicsApi.Direct3D12.getId().toLowerCase())) {
+    if (backend.equals(FlixelGraphicsApi.DIRECT3D12.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_DIRECT3D12;
     }
-    if (backend.equals(FlixelGraphicsApi.Noop.getId().toLowerCase())) {
+    if (backend.equals(FlixelGraphicsApi.NOOP.getId().toLowerCase())) {
       return BGFX.BGFX_RENDERER_TYPE_NOOP;
     }
     LOG.warn("Unknown flixel.render.backend '{}'; letting bgfx auto-pick the renderer.", backend);

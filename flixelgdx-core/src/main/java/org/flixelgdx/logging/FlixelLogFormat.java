@@ -63,6 +63,7 @@ public final class FlixelLogFormat {
   private static FlixelRuntimeDevice cachedDevice;
 
   private static final Object TIME_LOCK = new Object();
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final char[] dateChars = new char[10];
 
   private FlixelLogFormat() {}

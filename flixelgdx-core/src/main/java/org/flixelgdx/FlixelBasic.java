@@ -83,7 +83,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
   private static int idEnumerator = 0;
 
   /** A unique ID starting from 0 and increasing by 1 for each subsequent {@code FlixelBasic} created. */
-  public final int ID;
+  public final int id;
 
   /**
    * Cameras this object may render on. {@code null} or an empty array means every camera whose
@@ -123,7 +123,7 @@ public abstract class FlixelBasic implements IFlixelBasic {
 
   /** Creates a new FlixelBasic with a unique auto-assigned ID and no camera overrides. */
   public FlixelBasic() {
-    this.ID = idEnumerator++;
+    this.id = idEnumerator++;
     this.cameras = null;
   }
 
@@ -289,6 +289,6 @@ public abstract class FlixelBasic implements IFlixelBasic {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(ID=" + ID + ")";
+    return getClass().getSimpleName() + "(ID=" + id + ")";
   }
 }

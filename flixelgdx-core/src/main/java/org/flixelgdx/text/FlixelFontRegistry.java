@@ -65,9 +65,11 @@ public final class FlixelFontRegistry {
   private static final String PACKAGED_FONT_BASE = "org/flixelgdx/bitmap/lsans-15";
 
   /** Registered font file bytes by id. */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelMap<String, byte[]> fontData = new FlixelMap<>();
 
   /** Baked fonts keyed by {@code id|size|smooth}. */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelMap<String, FlixelFont> bakedFonts = new FlixelMap<>();
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Fonts");

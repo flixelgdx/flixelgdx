@@ -344,6 +344,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelArray<FlixelCamera> cameras = new FlixelArray<>(FlixelCamera[]::new);
 
   /**
@@ -368,6 +369,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelRandom random = new FlixelRandom();
 
   /**
@@ -384,6 +386,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelBootManager boot = new FlixelBootManager();
 
   /**
@@ -776,7 +779,7 @@ public final class Flixel {
    * Flixel.host.requestAttention();
    *
    * // Check the current platform.
-   * if (Flixel.host.getPlatform() == FlixelPlatform.Android) {
+   * if (Flixel.host.getPlatform() == FlixelPlatform.ANDROID) {
    *   addBackButton();
    * }
    * }</pre>
@@ -921,6 +924,7 @@ public final class Flixel {
    * World bounds used by {@link #overlap} and {@link #collide} for broad-phase culling.
    * Format: {@code [x, y, width, height]}. Defaults to a very large area.
    */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
   /** The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)}. */
@@ -985,7 +989,7 @@ public final class Flixel {
       }
       // Close the game only on desktop to avoid issues on web and compliance with iOS guidelines.
       FlixelPlatform platform = host.getPlatform();
-      if (platform == FlixelPlatform.Desktop) {
+      if (platform == FlixelPlatform.DESKTOP) {
         window.setAbsorbCloseRequests(false);
         quit();
       }
@@ -1783,16 +1787,27 @@ public final class Flixel {
    */
   public static final class Signals {
 
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<UpdateSignalData> preUpdate = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<UpdateSignalData> postUpdate = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> preDraw = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> postDraw = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<StateSwitchSignalData> preStateSwitch = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<StateSwitchSignalData> postStateSwitch = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> preGameClose = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowUnfocused = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowMinimized = new FlixelLifecycleSignal<>();
 
     private Signals() {}

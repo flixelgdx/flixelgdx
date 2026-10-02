@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Android host integration that reports {@link FlixelPlatform#Android}.
+ * Android host integration that reports {@link FlixelPlatform#ANDROID}.
  *
  * <p>Notifications and clipboard are not wired in this initial implementation; only the platform
  * identity and no-op signal are provided. Full clipboard and notification support can be layered
@@ -48,7 +48,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   @Override
   @NotNull
   public FlixelPlatform getPlatform() {
-    return FlixelPlatform.Android;
+    return FlixelPlatform.ANDROID;
   }
 
   @Override

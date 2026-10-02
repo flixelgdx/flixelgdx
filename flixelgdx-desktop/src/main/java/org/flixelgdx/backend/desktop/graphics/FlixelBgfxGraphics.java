@@ -100,7 +100,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
 
   @NotNull
-  private FlixelGraphicsApi api = FlixelGraphicsApi.OpenGL;
+  private FlixelGraphicsApi api = FlixelGraphicsApi.OPENGL;
 
   /** Stack of active view ids; the top is where the batch currently submits. */
   private final int @NotNull [] viewStack = new int[16];
@@ -313,7 +313,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   @Override
   public boolean isDepthZeroToOne() {
     // OpenGL and OpenGL ES map NDC depth to [-1, 1]; every other bgfx backend uses [0, 1].
-    return api != FlixelGraphicsApi.OpenGL && api != FlixelGraphicsApi.OpenGLES;
+    return api != FlixelGraphicsApi.OPENGL && api != FlixelGraphicsApi.OPENGL_ES;
   }
 
   @NotNull
@@ -909,7 +909,7 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
     // scissor rectangles mirrored to match, stores the image top-down like every other renderer,
     // so a shader sees texture coordinate y = 0 at the top of a target on every platform.
     int targetHeight = boundTargetHeight();
-    boolean flip = targetHeight > 0 && (api == FlixelGraphicsApi.OpenGL || api == FlixelGraphicsApi.OpenGLES);
+    boolean flip = targetHeight > 0 && (api == FlixelGraphicsApi.OPENGL || api == FlixelGraphicsApi.OPENGL_ES);
     setViewTransform(view, projection, transform, flip);
 
     int rectY = flip ? targetHeight - viewportY - viewportHeight : viewportY;
@@ -1070,32 +1070,32 @@ public class FlixelBgfxGraphics implements FlixelGraphicsManager {
   /** Maps a bgfx renderer type constant to the corresponding {@link FlixelGraphicsApi}. */
   private static FlixelGraphicsApi apiFromRenderer(int type) {
     if (type == BGFX.BGFX_RENDERER_TYPE_DIRECT3D11) {
-      return FlixelGraphicsApi.Direct3D11;
+      return FlixelGraphicsApi.DIRECT3D11;
     }
     if (type == BGFX.BGFX_RENDERER_TYPE_DIRECT3D12) {
-      return FlixelGraphicsApi.Direct3D12;
+      return FlixelGraphicsApi.DIRECT3D12;
     }
     if (type == BGFX.BGFX_RENDERER_TYPE_METAL) {
-      return FlixelGraphicsApi.Metal;
+      return FlixelGraphicsApi.METAL;
     }
     if (type == BGFX.BGFX_RENDERER_TYPE_VULKAN) {
-      return FlixelGraphicsApi.Vulkan;
+      return FlixelGraphicsApi.VULKAN;
     }
     if (type == BGFX.BGFX_RENDERER_TYPE_OPENGLES) {
-      return FlixelGraphicsApi.OpenGLES;
+      return FlixelGraphicsApi.OPENGL_ES;
     }
-    return FlixelGraphicsApi.OpenGL;
+    return FlixelGraphicsApi.OPENGL;
   }
 
   /** Returns the shader subfolder that corresponds to a given graphics API. */
   private static String shaderVariantDir(@NotNull FlixelGraphicsApi api) {
-    if (api == FlixelGraphicsApi.Direct3D11 || api == FlixelGraphicsApi.Direct3D12) {
+    if (api == FlixelGraphicsApi.DIRECT3D11 || api == FlixelGraphicsApi.DIRECT3D12) {
       return "dx11";
     }
-    if (api == FlixelGraphicsApi.Metal) {
+    if (api == FlixelGraphicsApi.METAL) {
       return "metal";
     }
-    if (api == FlixelGraphicsApi.Vulkan) {
+    if (api == FlixelGraphicsApi.VULKAN) {
       return "spirv";
     }
     return "glsl";
