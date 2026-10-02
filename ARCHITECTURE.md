@@ -27,30 +27,6 @@ The project is split into several modules, each serving a specific purpose.
 - **`flixelgdx-json-processor`**: Annotation processor for the framework's JSON annotation `@JsonSerializable`.
 - **`flixelgdx-test`**: **Test-only** module. Holds JUnit tests for `flixelgdx-core` (tweens, utilities, signals, etc.). It is not published to Maven; run `./gradlew :flixelgdx-test:test` locally and in CI.
 
-## Logging
-
-Logging lives in `flixelgdx-core` (`org.flixelgdx.logging`) and is built from a few small, replaceable pieces. There is no Gradle
-plugin or bytecode rewriting involved, so games do not need to apply anything extra.
-
-- **`FlixelLogger`** is the interface behind `Flixel.log`. It holds the log level, mode, tag and sink setup, plus every `debug` /
-  `info` / `warn` / `error` overload. **`FlixelDefaultLogger`** is the default implementation. It filters out messages below the
-  minimum level before doing any work, then formats each message once into a reused entry, so logging does not create garbage.
-  A logger carries its own tag: use `Flixel.log.tagged("MyClass")` to get a logger with a preset tag.
-- **Sinks** receive each formatted `FlixelLogEntry`. A logger has one console sink, an optional file sink (`FlixelLogFileSink`)
-  and any number of extra sinks (such as the debug overlay). Core ships `FlixelPlainConsoleSink` (plain text, no colors), and every
-  backend installs the sinks that suit its platform before the game starts:
-  - **Desktop**: `FlixelAnsiConsoleSink` (colored terminal output) and `FlixelJvmLogFileSink` (`flixel-*.log` files).
-  - **Android**: `FlixelLogcatSink` and `FlixelAndroidLogFileSink`.
-  - **HTML5**: `FlixelHtml5ConsoleSink`, which writes to the browser's developer tools console. There is no file sink on the web.
-- **Call-site resolution** finds the file, line and method of a log call. The entry only asks for it when a sink reads it, through
-  a `FlixelLogSiteResolver` supplied by the platform:
-  - **Desktop** walks the stack with a cached `StackWalker`.
-  - **Android** reads the current thread's stack trace.
-  - **HTML5** has no stack to walk, so a **TeaVM compiler plugin** shipped inside `flixelgdx-html5` (`FlixelLogSiteTeaVMPlugin`)
-    records the site at compile time. It inserts a `FlixelLogSiteMarker.mark(...)` call before each log call, and the logger reads
-    that note back. TeaVM finds the plugin automatically through `META-INF/services/org.teavm.vm.spi.TeaVMPlugin`, so having the
-    `flixelgdx-html5` dependency is enough.
-
 ## Build System
 
 FlixelGDX uses **Gradle** with **Kotlin DSL** as its build system. 
