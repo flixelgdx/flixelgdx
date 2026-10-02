@@ -11,7 +11,7 @@ FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. 
 3. [IntelliJ IDEA setup](#intellij-idea-setup)
 4. [Testing with a test project](#testing-with-a-test-project)
 5. [How to run unit tests](#how-to-run-unit-tests)
-6. [Web (TeaVM) setup and configuration](#web-teavm-setup-and-configuration)
+6. [HTML5 setup and configuration](#html5-setup-and-configuration)
 7. [Setting up the Android SDK (for contributing to the Android platform)](#setting-up-the-android-sdk-for-contributing-to-the-android-platform)
 8. [Troubleshooting](#troubleshooting)
 
@@ -224,8 +224,8 @@ Use the **Getting Started** page on the [FlixelGDX website](https://flixelgdx.or
 my-game/
   assets/               -- game assets shared across all platforms
   core/                 -- your game’s shared logic (depends on flixelgdx-core)
-  lwjgl3/               -- desktop launcher (depends on flixelgdx-lwjgl3)
-  teavm/                -- web launcher (depends on flixelgdx-teavm)
+  desktop/              -- desktop launcher (depends on flixelgdx-desktop)
+  html5/                -- web launcher (depends on flixelgdx-html5)
   build.gradle          -- root build file
   gradlew / gradlew.bat -- Gradle wrapper script(s)
   settings.gradle       -- Project settings
@@ -237,14 +237,14 @@ my-game/
     - **Package name**: e.g. `com.example.flixeltest`.
     - **Language**: **Java** (or Kotlin).
     - **JDK vendor**: **Eclipse Temurin** (recommended).
-    - **Platforms**: at minimum **Desktop (LWJGL3)**. Add **Web (TeaVM)** if you want to test the web backend.
+    - **Platforms**: at minimum **Desktop**. Add others if you need to test them as well.
     - **Template**: **Blank play state** for an empty starting point.
 2. Click **Download project** and unzip the result to a folder of your choice.
 3. Open a terminal in the unzipped folder and verify the project boots:
    ```bash
-   ./gradlew :lwjgl3:run
+   ./gradlew :desktop:run
    ```
-   (Use `gradlew.bat :lwjgl3:run` on Windows.)
+   (Use `gradlew.bat :desktop:run` on Windows.)
 
 Gradle auto-downloads a matching JDK toolchain on the first build. After a brief first-time download you should see the empty game window.
 
@@ -255,12 +255,12 @@ The template pre-creates a `FlixelGame` subclass and a `FlixelState` in `core/sr
 
 **Platform run commands:**
 
-| Platform | Run command |
-|----------|---|
-| **Desktop (LWJGL3)** | `./gradlew :lwjgl3:run` |
-| **Web (TeaVM)** | `./gradlew :teavm:run` |
+| Platform    | Run command                       |
+|-------------|-----------------------------------|
+| **Desktop** | `./gradlew :desktop:run`          |
+| **Web**     | `./gradlew :html5:run`            |
 | **Android** | `./gradlew :android:installDebug` |
-| **iOS** | - |
+| **iOS**     | -                                 |
 
 Now that you have the project downloaded, you need to actually test your local changes, rather than from Maven Central. There are two methods of doing this:
 
@@ -281,9 +281,7 @@ The generated project targets Maven Central by default, pulling the last stable 
 > The published artifact version is derived from your most recent git tag using `git describe`. If git is not installed or your clone has no tags, the version will be `unspecified`, and the test project will fail to resolve the dependency. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid version concerns entirely.
 
 > [!NOTE]
-> You must re-run `publishToMavenLocal` each time you change the framework and want the test project to pick up those changes. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid this.
-
-If you launch the desktop module with your own LWJGL3 configuration instance, declare it as `FlixelLwjgl3ApplicationConfiguration` rather than raw `Lwjgl3ApplicationConfiguration` so Flixel can wrap any `Lwjgl3WindowListener` you install without relying on reflection (important for tools such as GraalVM Native Image).
+> You must re-run `publishToMavenLocal` each time you change the framework and want the test project to pick up those changes. Use [Method 2](#method-2-composite-build) to avoid this.
 
 ### Method 2: Composite build
 
@@ -310,7 +308,7 @@ Composite build lets the test project use your local FlixelGDX source so changes
 
 ## How to run unit tests
 
-All unit tests live in a separate Gradle module, inside of `flixelgdx-test`. You can run the framework's unit tests with the following command:
+All unit tests for the core API live in a separate Gradle module, inside of `flixelgdx-test`. You can run the framework's unit tests with the following command:
 
 ```bash
 ./gradlew :flixelgdx-test:test
@@ -332,11 +330,11 @@ Running a FlixelGDX web game in your browser is as simple as executing the `run`
 ```
 
 The output under `teavm/build/generated/teavm/` (or whatever you set as `teavm.all.outputDir`) is a self-contained folder you can serve with any HTTP server. 
-Thanks to the framework's [TeaVM plugin](./flixelgdx-teavm-plugin), running this simple task will automatically:
+Thanks to the framework's [HTML5 plugin](./flixelgdx-plugins/flixelgdx-html5-plugin), running this simple task will automatically:
 
 - Copy `<rootProject>/assets/` to `<outputDir>/assets/` before each build.
 - Generate a default `index.html` (with the correct canvas ID and script path) if you do not
-  provide one in the `flixelgdx {}` extension block (refer to the [plugin module](flixelgdx-teavm-plugin/) and its Javadoc for more details).
+  provide one in the `html5 {}` extension block (refer to the [plugin module](./flixelgdx-plugins/flixelgdx-html5-plugin) and its Javadoc for more details).
 - Wires everything to `generateJavaScript`.
 - Opens a local port to test the game immediately.
 
@@ -447,7 +445,7 @@ You can still edit and build the **flixelgdx-android** module without a device o
 - **Symptom**: Gradle or IntelliJ IDEA reports “JAVA_HOME is not set” or uses the wrong Java version.
 - **Fix**: Set `JAVA_HOME` to the **JDK 17** installation directory (see [Java (JDK 17 with Eclipse Temurin)](#2-java-jdk-17-with-eclipse-temurin) for your OS). Use a **new** terminal/IntelliJ IDEA restart after changing environment variables.
 
-### Wrong Java version (8, 11, 21, etc.)
+### Wrong Java version
 
 - **Symptom**: Build fails with “invalid target release” or “class file version” errors, or `java -version` is not 17.
 - **Fix**:  

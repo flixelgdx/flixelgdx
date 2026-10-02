@@ -97,8 +97,6 @@ Match the existing style in the file you are editing. When in doubt, run `./grad
 - **Constants**: UPPER_SNAKE_CASE for static final constants (e.g. `MAX_VELOCITY`).
 - **Final**: Use `final` for parameters and local variables when the reference or value is not reassigned. This clarifies intent and helps avoid mistakes.
 
-When replicating HaxeFlixel or Flixel APIs, follow the existing naming in this project. If the original uses an underscore (e.g. in Haxe), we use camelCase in Java (no underscores in identifiers).
-
 ### When to Add Comments and Javadoc
 
 **Javadoc (block comments starting with `/**`):**
