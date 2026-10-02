@@ -35,7 +35,9 @@ import org.flixelgdx.backend.html5.file.FlixelHtml5Files;
 import org.flixelgdx.backend.html5.graphics.FlixelHtml5Graphics;
 import org.flixelgdx.backend.html5.input.FlixelHtml5GamepadProvider;
 import org.flixelgdx.backend.html5.input.FlixelHtml5InputDevice;
+import org.flixelgdx.backend.html5.logging.FlixelHtml5ConsoleSink;
 import org.flixelgdx.backend.html5.text.FlixelHtml5FontRasterizer;
+import org.flixelgdx.logging.FlixelLogSiteMarker;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.teavm.jso.JSBody;
 
@@ -91,6 +93,11 @@ public final class FlixelHtml5Launcher {
     FlixelHtml5HostIntegration host = new FlixelHtml5HostIntegration();
     FlixelHtml5InputDevice input = new FlixelHtml5InputDevice();
     FlixelHtml5GamepadProvider gamepads = new FlixelHtml5GamepadProvider();
+
+    // The browser cannot walk the stack, so the TeaVM plugin marks each log call's source location
+    // before the call and the marker resolver reads it back. There is no file sink on the web.
+    Flixel.log.setSiteResolver(FlixelLogSiteMarker.INSTANCE);
+    Flixel.log.setConsoleSink(new FlixelHtml5ConsoleSink());
 
     Flixel.alert = new FlixelHtml5Alerter();
     Flixel.window = window;
