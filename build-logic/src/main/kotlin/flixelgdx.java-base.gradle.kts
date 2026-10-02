@@ -31,12 +31,10 @@ tasks.withType<JavaCompile>().configureEach {
   options.encoding = "UTF-8"
 }
 
+// Android modules have no Java source sets for Spotless to discover, so their sources are
+// formatted by the root project instead (see flixelgdx.spotless-android).
 spotless {
   java {
-    eclipse("4.33").configFile("${rootDir}/gradle/spotless/eclipse-formatter.xml")
-    importOrder("com", "org", "io", "java", "javax", "jdk", "", "\\#")
-    removeUnusedImports()
-    endWithNewline()
-    trimTrailingWhitespace()
+    flixelRules(rootDir)
   }
 }

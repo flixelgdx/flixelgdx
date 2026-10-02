@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.backend.android.text;
 
-import android.content.Context;
-import android.graphics.Typeface;
 import org.flixelgdx.text.FlixelFontRasterizer;
 import org.flixelgdx.text.FlixelRasterizedFont;
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +30,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
+
+import android.content.Context;
+import android.graphics.Typeface;
 
 /**
  * The Android font rasterizer, built on the platform's native text stack (Typeface + Paint).

@@ -23,11 +23,6 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.opengl.GLES30;
-import android.util.DisplayMetrics;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.android.FlixelAndroidLauncher;
 import org.flixelgdx.backend.android.FlixelAndroidWindow;
@@ -56,6 +51,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.opengl.GLES30;
+import android.util.DisplayMetrics;
 
 /**
  * The Android graphics backend, rendering through OpenGL ES 3.0 on a GLSurfaceView.

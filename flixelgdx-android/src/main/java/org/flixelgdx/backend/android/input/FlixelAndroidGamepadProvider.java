@@ -23,13 +23,6 @@
  */
 package org.flixelgdx.backend.android.input;
 
-import android.content.Context;
-import android.hardware.input.InputManager;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.InputDevice;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
 import org.flixelgdx.input.gamepad.FlixelGamepad;
 import org.flixelgdx.input.gamepad.FlixelGamepadAxis;
 import org.flixelgdx.input.gamepad.FlixelGamepadButton;
@@ -38,6 +31,14 @@ import org.flixelgdx.input.gamepad.FlixelGamepadMappingResolver;
 import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import android.content.Context;
+import android.hardware.input.InputManager;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.InputDevice;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 
 /**
  * The Android gamepad feed, backed by the platform's {@link InputManager}.
@@ -275,28 +276,28 @@ public class FlixelAndroidGamepadProvider implements FlixelGamepadProvider, Flix
   private static FlixelGamepadMapping buildStandardMapping() {
     FlixelGamepadMapping mapping = new FlixelGamepadMapping();
 
-    mapping.registerButton(FlixelGamepadButton.A,           FlixelAndroidGamepad.BUTTON_A);
-    mapping.registerButton(FlixelGamepadButton.B,           FlixelAndroidGamepad.BUTTON_B);
-    mapping.registerButton(FlixelGamepadButton.X,           FlixelAndroidGamepad.BUTTON_X);
-    mapping.registerButton(FlixelGamepadButton.Y,           FlixelAndroidGamepad.BUTTON_Y);
-    mapping.registerButton(FlixelGamepadButton.L1,          FlixelAndroidGamepad.BUTTON_L1);
-    mapping.registerButton(FlixelGamepadButton.R1,          FlixelAndroidGamepad.BUTTON_R1);
-    mapping.registerButton(FlixelGamepadButton.LEFT_STICK,  FlixelAndroidGamepad.BUTTON_THUMBL);
+    mapping.registerButton(FlixelGamepadButton.A, FlixelAndroidGamepad.BUTTON_A);
+    mapping.registerButton(FlixelGamepadButton.B, FlixelAndroidGamepad.BUTTON_B);
+    mapping.registerButton(FlixelGamepadButton.X, FlixelAndroidGamepad.BUTTON_X);
+    mapping.registerButton(FlixelGamepadButton.Y, FlixelAndroidGamepad.BUTTON_Y);
+    mapping.registerButton(FlixelGamepadButton.L1, FlixelAndroidGamepad.BUTTON_L1);
+    mapping.registerButton(FlixelGamepadButton.R1, FlixelAndroidGamepad.BUTTON_R1);
+    mapping.registerButton(FlixelGamepadButton.LEFT_STICK, FlixelAndroidGamepad.BUTTON_THUMBL);
     mapping.registerButton(FlixelGamepadButton.RIGHT_STICK, FlixelAndroidGamepad.BUTTON_THUMBR);
-    mapping.registerButton(FlixelGamepadButton.START,       FlixelAndroidGamepad.BUTTON_START);
-    mapping.registerButton(FlixelGamepadButton.BACK,        FlixelAndroidGamepad.BUTTON_SELECT);
-    mapping.registerButton(FlixelGamepadButton.MODE,        FlixelAndroidGamepad.BUTTON_MODE);
-    mapping.registerButton(FlixelGamepadButton.DPAD_UP,     FlixelAndroidGamepad.BUTTON_DPAD_UP);
-    mapping.registerButton(FlixelGamepadButton.DPAD_DOWN,   FlixelAndroidGamepad.BUTTON_DPAD_DOWN);
-    mapping.registerButton(FlixelGamepadButton.DPAD_LEFT,   FlixelAndroidGamepad.BUTTON_DPAD_LEFT);
-    mapping.registerButton(FlixelGamepadButton.DPAD_RIGHT,  FlixelAndroidGamepad.BUTTON_DPAD_RIGHT);
+    mapping.registerButton(FlixelGamepadButton.START, FlixelAndroidGamepad.BUTTON_START);
+    mapping.registerButton(FlixelGamepadButton.BACK, FlixelAndroidGamepad.BUTTON_SELECT);
+    mapping.registerButton(FlixelGamepadButton.MODE, FlixelAndroidGamepad.BUTTON_MODE);
+    mapping.registerButton(FlixelGamepadButton.DPAD_UP, FlixelAndroidGamepad.BUTTON_DPAD_UP);
+    mapping.registerButton(FlixelGamepadButton.DPAD_DOWN, FlixelAndroidGamepad.BUTTON_DPAD_DOWN);
+    mapping.registerButton(FlixelGamepadButton.DPAD_LEFT, FlixelAndroidGamepad.BUTTON_DPAD_LEFT);
+    mapping.registerButton(FlixelGamepadButton.DPAD_RIGHT, FlixelAndroidGamepad.BUTTON_DPAD_RIGHT);
 
-    mapping.registerAxis(FlixelGamepadAxis.LEFT_X,  FlixelAndroidGamepad.AXIS_LEFT_X);
-    mapping.registerAxis(FlixelGamepadAxis.LEFT_Y,  FlixelAndroidGamepad.AXIS_LEFT_Y);
+    mapping.registerAxis(FlixelGamepadAxis.LEFT_X, FlixelAndroidGamepad.AXIS_LEFT_X);
+    mapping.registerAxis(FlixelGamepadAxis.LEFT_Y, FlixelAndroidGamepad.AXIS_LEFT_Y);
     mapping.registerAxis(FlixelGamepadAxis.RIGHT_X, FlixelAndroidGamepad.AXIS_RIGHT_X);
     mapping.registerAxis(FlixelGamepadAxis.RIGHT_Y, FlixelAndroidGamepad.AXIS_RIGHT_Y);
-    mapping.registerAxis(FlixelGamepadAxis.L2,      FlixelAndroidGamepad.AXIS_L2);
-    mapping.registerAxis(FlixelGamepadAxis.R2,      FlixelAndroidGamepad.AXIS_R2);
+    mapping.registerAxis(FlixelGamepadAxis.L2, FlixelAndroidGamepad.AXIS_L2);
+    mapping.registerAxis(FlixelGamepadAxis.R2, FlixelAndroidGamepad.AXIS_R2);
 
     return mapping;
   }

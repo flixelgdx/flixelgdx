@@ -23,6 +23,9 @@
  */
 package org.flixelgdx.backend.android;
 
+import org.flixelgdx.backend.FlixelWindow;
+import org.jetbrains.annotations.NotNull;
+
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Application;
@@ -32,8 +35,6 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
-import org.flixelgdx.backend.FlixelWindow;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Android {@link FlixelWindow} that manages immersive fullscreen and Activity lifecycle.

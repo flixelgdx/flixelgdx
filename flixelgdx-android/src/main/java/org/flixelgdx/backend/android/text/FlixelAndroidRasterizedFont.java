@@ -23,12 +23,6 @@
  */
 package org.flixelgdx.backend.android.text;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
-import android.graphics.Typeface;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.text.FlixelGlyphBitmap;
 import org.flixelgdx.text.FlixelRasterizedFont;
@@ -36,6 +30,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Typeface;
 
 /**
  * One font opened at a pixel size using Android's native Typeface and Paint APIs.

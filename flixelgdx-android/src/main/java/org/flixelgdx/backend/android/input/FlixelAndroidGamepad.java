@@ -23,16 +23,17 @@
  */
 package org.flixelgdx.backend.android.input;
 
+import org.flixelgdx.input.gamepad.FlixelGamepad;
+import org.flixelgdx.input.gamepad.FlixelGamepadButton;
+import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
+import org.jetbrains.annotations.NotNull;
+
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import org.flixelgdx.input.gamepad.FlixelGamepad;
-import org.flixelgdx.input.gamepad.FlixelGamepadButton;
-import org.flixelgdx.input.gamepad.FlixelGamepadProvider;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A single connected Android gamepad, backed by an {@link InputDevice} from the system.
@@ -56,32 +57,32 @@ import org.jetbrains.annotations.NotNull;
 public class FlixelAndroidGamepad implements FlixelGamepad {
 
   // Compact native button indices. These define the bit positions in the button bitmask.
-  static final int BUTTON_A          = 0;
-  static final int BUTTON_B          = 1;
-  static final int BUTTON_X          = 2;
-  static final int BUTTON_Y          = 3;
-  static final int BUTTON_L1         = 4;
-  static final int BUTTON_R1         = 5;
-  static final int BUTTON_THUMBL     = 6;
-  static final int BUTTON_THUMBR     = 7;
-  static final int BUTTON_START      = 8;
-  static final int BUTTON_SELECT     = 9;
-  static final int BUTTON_MODE       = 10;
-  static final int BUTTON_DPAD_UP    = 11;
-  static final int BUTTON_DPAD_DOWN  = 12;
-  static final int BUTTON_DPAD_LEFT  = 13;
+  static final int BUTTON_A = 0;
+  static final int BUTTON_B = 1;
+  static final int BUTTON_X = 2;
+  static final int BUTTON_Y = 3;
+  static final int BUTTON_L1 = 4;
+  static final int BUTTON_R1 = 5;
+  static final int BUTTON_THUMBL = 6;
+  static final int BUTTON_THUMBR = 7;
+  static final int BUTTON_START = 8;
+  static final int BUTTON_SELECT = 9;
+  static final int BUTTON_MODE = 10;
+  static final int BUTTON_DPAD_UP = 11;
+  static final int BUTTON_DPAD_DOWN = 12;
+  static final int BUTTON_DPAD_LEFT = 13;
   static final int BUTTON_DPAD_RIGHT = 14;
 
   /** Total number of compact button slots. */
   static final int BUTTON_COUNT = 15;
 
   // Compact native axis indices.
-  static final int AXIS_LEFT_X  = 0;
-  static final int AXIS_LEFT_Y  = 1;
+  static final int AXIS_LEFT_X = 0;
+  static final int AXIS_LEFT_Y = 1;
   static final int AXIS_RIGHT_X = 2;
   static final int AXIS_RIGHT_Y = 3;
-  static final int AXIS_L2      = 4;
-  static final int AXIS_R2      = 5;
+  static final int AXIS_L2 = 4;
+  static final int AXIS_R2 = 5;
 
   /** Total number of compact axis slots. */
   static final int AXIS_COUNT = 6;
@@ -167,10 +168,10 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
    * @param hatY The {@link MotionEvent#AXIS_HAT_Y} value, in the range {@code [-1, 1]}.
    */
   void applyHatAxes(float hatX, float hatY) {
-    setButton(BUTTON_DPAD_LEFT,  hatX < -HAT_THRESHOLD);
+    setButton(BUTTON_DPAD_LEFT, hatX < -HAT_THRESHOLD);
     setButton(BUTTON_DPAD_RIGHT, hatX > HAT_THRESHOLD);
-    setButton(BUTTON_DPAD_UP,    hatY < -HAT_THRESHOLD);
-    setButton(BUTTON_DPAD_DOWN,  hatY > HAT_THRESHOLD);
+    setButton(BUTTON_DPAD_UP, hatY < -HAT_THRESHOLD);
+    setButton(BUTTON_DPAD_DOWN, hatY > HAT_THRESHOLD);
   }
 
   /**
@@ -183,13 +184,26 @@ public class FlixelAndroidGamepad implements FlixelGamepad {
   void setAxis(int axisIndex, float value) {
     int bits = Float.floatToRawIntBits(value);
     switch (axisIndex) {
-      case AXIS_LEFT_X:  axisLeftX  = bits; break;
-      case AXIS_LEFT_Y:  axisLeftY  = bits; break;
-      case AXIS_RIGHT_X: axisRightX = bits; break;
-      case AXIS_RIGHT_Y: axisRightY = bits; break;
-      case AXIS_L2:      axisL2     = bits; break;
-      case AXIS_R2:      axisR2     = bits; break;
-      default: break;
+      case AXIS_LEFT_X:
+        axisLeftX = bits;
+        break;
+      case AXIS_LEFT_Y:
+        axisLeftY = bits;
+        break;
+      case AXIS_RIGHT_X:
+        axisRightX = bits;
+        break;
+      case AXIS_RIGHT_Y:
+        axisRightY = bits;
+        break;
+      case AXIS_L2:
+        axisL2 = bits;
+        break;
+      case AXIS_R2:
+        axisR2 = bits;
+        break;
+      default :
+        break;
     }
   }
 

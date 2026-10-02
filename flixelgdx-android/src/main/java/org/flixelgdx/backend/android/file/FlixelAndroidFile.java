@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.backend.android.file;
 
-import android.content.res.AssetManager;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.file.FlixelFile;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +36,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
+import android.content.res.AssetManager;
 
 /**
  * Android {@link FlixelFile} implementation that reads APK assets and disk files.

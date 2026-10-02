@@ -23,10 +23,10 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.opengl.GLES30;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.logging.FlixelLogger;
@@ -34,15 +34,16 @@ import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+
+import android.opengl.GLES30;
 
 /**
  * The GLES 3.0 sprite batch for the Android backend: collects textured quads and submits them
@@ -525,9 +526,9 @@ class FlixelGlesBatch implements FlixelBatch {
   @Override
   public void destroy() {
     GLES30.glDeleteProgram(defaultProgram);
-    int[] del = {vbo, ibo};
+    int[] del = { vbo, ibo };
     GLES30.glDeleteBuffers(2, del, 0);
-    int[] vaoArr = {vao};
+    int[] vaoArr = { vao };
     GLES30.glDeleteVertexArrays(1, vaoArr, 0);
   }
 
