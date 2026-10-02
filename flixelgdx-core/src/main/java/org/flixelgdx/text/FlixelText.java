@@ -32,6 +32,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelAlign;
 import org.flixelgdx.util.FlixelColor;
@@ -83,6 +84,8 @@ import org.jetbrains.annotations.Nullable;
  * {@link UnsupportedOperationException} if called.
  */
 public class FlixelText extends FlixelSprite {
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Fonts");
 
   /** The text buffer for saving memory when the text is not changing. */
   private final FlixelString textBuffer = new FlixelString(48);
@@ -550,7 +553,7 @@ public class FlixelText extends FlixelSprite {
    */
   public void setFont(@Nullable String id) {
     if (id != null && !FlixelFontRegistry.has(id)) {
-      Flixel.warn("Fonts", "No font registered under id '" + id + "'; using the default font.");
+      LOG.warn("No font registered under id '{}'; using the default font.", id);
     }
     fontRegistryId = id;
     fontFile = null;

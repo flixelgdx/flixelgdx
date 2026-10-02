@@ -32,6 +32,7 @@ import org.flixelgdx.file.FlixelFiles;
 import org.flixelgdx.functional.FlixelDestroyable;
 import org.flixelgdx.json.FlixelJson;
 import org.flixelgdx.json.FlixelJsonValue;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +64,8 @@ import java.util.Objects;
  * }</pre>
  */
 public class FlixelSave implements FlixelDestroyable {
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Save");
 
   /**
    * Root data object. Read and write entries directly, then call {@link #flush()} to persist.
@@ -114,7 +117,7 @@ public class FlixelSave implements FlixelDestroyable {
     }
     FlixelConfig config = Flixel.config;
     if (config.getCompany().isEmpty()) {
-      Flixel.error("Save", "bind() requires a company name to resolve the correct save directory. "
+      LOG.error("bind() requires a company name to resolve the correct save directory. "
           + "Set it via FlixelConfig.Builder.company(...) in your FlixelGame subclass constructor, "
           + "or use bind(name, slot, directory) to supply a custom save path instead.");
       return false;
@@ -200,7 +203,7 @@ public class FlixelSave implements FlixelDestroyable {
       readObjectInto(root, data);
       status = data.isEmpty() ? FlixelSaveStatus.EMPTY : FlixelSaveStatus.OK;
     } catch (Exception e) {
-      Flixel.error("Save", "Could not parse save file '" + file.getPath() + "'.", e);
+      LOG.error("Could not parse save file '{}'.", file.getPath(), e);
       status = FlixelSaveStatus.ERROR;
     }
   }

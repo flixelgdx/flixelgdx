@@ -32,6 +32,7 @@ import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,6 +67,7 @@ import java.nio.ByteOrder;
 public class FlixelBaseAssetManager implements FlixelAssetManager {
 
   private static final String[] TEXTURE_EXTENSIONS = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
+  private static final FlixelLogger LOG = Flixel.log.tagged("Assets");
 
   @NotNull
   private final FlixelMap<String, FlixelAsset<?>> handles = new FlixelMap<>();
@@ -241,7 +243,7 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
     if (handle != null) {
       int refs = handle.getRefCount();
       if (refs > 0) {
-        Flixel.warn("Assets", "Unloading '" + key + "' while it still has " + refs + " active reference(s).");
+        LOG.warn("Unloading '{}' while it still has {} active reference(s).", key, refs);
       }
       evict(handle);
     } else {
@@ -386,7 +388,7 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
   private void finishTask(@NotNull PendingLoad task) {
     finishedThisBatch++;
     if (task.error != null) {
-      Flixel.error("Assets", "Failed to load asset '" + task.path + "'.", task.error);
+      LOG.error("Failed to load asset '{}'.", task.path, task.error);
       return;
     }
     Object raw = task.raw;
@@ -397,7 +399,7 @@ public class FlixelBaseAssetManager implements FlixelAssetManager {
       Object finished = task.loader.finishRaw(this, task.path, raw);
       rawCache.put(task.path, finished);
     } catch (Exception e) {
-      Flixel.error("Assets", "Failed to finish asset '" + task.path + "'.", e);
+      LOG.error("Failed to finish asset '{}'.", task.path, e);
       return;
     }
     FlixelAsset<?> handle = handles.get(task.path);
