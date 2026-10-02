@@ -203,6 +203,9 @@ public final class FlixelLogSiteTransformer implements ClassHolderTransformer {
   /**
    * Turns a compiler generated lambda method name such as {@code lambda$update$0} back into the name
    * of the method that contains the lambda ({@code update}). Other names are returned unchanged.
+   *
+   * @param methodName The method name as it appears in the compiled class.
+   * @return The name of the enclosing method for a lambda, or {@code methodName} for anything else.
    */
   private static String displayName(String methodName) {
     if (methodName.startsWith(LAMBDA_PREFIX)) {

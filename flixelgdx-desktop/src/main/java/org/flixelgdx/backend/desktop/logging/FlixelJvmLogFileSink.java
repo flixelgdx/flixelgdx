@@ -297,6 +297,9 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
   /**
    * Deletes the oldest {@code flixel-*.log} files so that, once the new file is created, at most
    * {@code maxLogFiles} of them remain. Files with any other name are never deleted.
+   *
+   * @param logsFolder The folder that holds the log files.
+   * @param maxLogFiles The number of log files to keep, including the one about to be created.
    */
   private static void pruneOldLogFiles(File logsFolder, int maxLogFiles) {
     File[] existing = logsFolder.listFiles(
@@ -314,6 +317,8 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
   /**
    * The body of the writer thread. It moves queued lines into the file until the sink is closed and
    * the queue is empty, or until an input or output error happens.
+   *
+   * @param writer The open writer that receives the queued lines.
    */
   private void runWriter(BufferedWriter writer) {
     try {
