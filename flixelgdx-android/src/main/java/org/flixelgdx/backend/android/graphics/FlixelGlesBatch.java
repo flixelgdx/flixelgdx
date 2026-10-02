@@ -29,6 +29,7 @@ import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelFrame;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.math.FlixelAffine;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.util.FlixelBlendMode;
@@ -73,6 +74,8 @@ class FlixelGlesBatch implements FlixelBatch {
   private static final int FLOATS_PER_VERTEX = 9;
   private static final int BYTES_PER_VERTEX = FLOATS_PER_VERTEX * Float.BYTES;
   private static final int FLOATS_PER_QUAD = FLOATS_PER_VERTEX * 4;
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("GLES");
 
   // Byte offsets of each attribute within one vertex.
   private static final int OFFSET_POS = 0;
@@ -539,7 +542,7 @@ class FlixelGlesBatch implements FlixelBatch {
     if (!(texture instanceof FlixelGlesTexture gles)) {
       if (!loggedNoopTexture) {
         loggedNoopTexture = true;
-        Flixel.warn("GLES", "Draw call skipped: texture is not a GLES texture. "
+        LOG.warn("Draw call skipped: texture is not a GLES texture. "
             + "This usually means a bitmap font's page image was unavailable at load time.");
       }
       flush();
