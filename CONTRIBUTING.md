@@ -18,7 +18,7 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 > close your pull request.
 >
 > 2. We don't require you to mention whether you used AI to help you by default. We believe that the core of software engineering
-> isn't just about writing code, but rather it's about solving problems through innovation; however, if a maintainer at any
+> isn't just about writing code, but rather it's about solving problems for the benefit of others; however, if a maintainer at any
 > point asks you about whether you used AI to help you, we request you to be honest and transparent about it.
 >
 > 3. If your code is broken or rejected, ***it is not the AI's fault, it is yours***. AI is useful, but it can't do the thinking for you.
@@ -34,7 +34,8 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 
 ## Java runtime (JDK 17, Eclipse Temurin)
 
-FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)** (the Adoptium distribution of OpenJDK). Temurin is a well-tested, freely available HotSpot build with strong community support and broad platform coverage.
+FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)** 
+(the Adoptium distribution of OpenJDK). Temurin is a well-tested, freely available HotSpot build with strong community support and broad platform coverage.
 
 **Do not** use Oracle’s proprietary JDK. If `java -version` output mentions **Temurin** or **OpenJDK**, you are on a compatible build.
 
@@ -51,7 +52,7 @@ Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx
 To maintain a stable code base, we follow a specific branching model:
 
 1. **Target Branch**: All pull requests must be made against the `master` branch.
-2. **Build Checks**: Your PR **MUST** pass all automated build checks. If the build fails, **the PR will not be considered for merging until the issues are resolved.**
+2. **Build Checks**: Your PR **MUST** pass all automated build checks. If the build fails, **the PR will not beconsidered for merging until the issues are resolved.**
 3. **Commit Messages**: Keep commit messages concise and descriptive. Use the imperative mood (e.g. "Add tween callback" not "Added tween callback"). If the change fixes an issue, reference it in the message (e.g. "Fix NPE when sprite has no graphic (#123)").
 4. **Scope**: Prefer one logical change per PR. Large features can be split into smaller, reviewable PRs (e.g. API first, then implementation).
 5. **Discussion**: For large or breaking changes, consider opening an issue first to discuss the approach. For bugs, feel free to open a PR directly if the fix is clear.
