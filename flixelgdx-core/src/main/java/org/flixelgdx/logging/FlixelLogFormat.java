@@ -23,13 +23,15 @@
  */
 package org.flixelgdx.logging;
 
+import org.flixelgdx.Flixel;
+import org.flixelgdx.backend.FlixelNoopRuntimeDevice;
+import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.util.FlixelExceptionUtil;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 /**
  * Shared text layouts for log lines, so every sink prints the same thing.
@@ -57,6 +59,8 @@ public final class FlixelLogFormat {
   private static long hourStart = Long.MAX_VALUE;
 
   private static int hourOfDay;
+
+  private static FlixelRuntimeDevice cachedDevice;
 
   private static final Object TIME_LOCK = new Object();
   private static final char[] dateChars = new char[10];
@@ -129,7 +133,11 @@ public final class FlixelLogFormat {
    * Appends a local-time timestamp in the form {@code yyyy-MM-dd HH:mm:ss.SSS}.
    *
    * <p>The date and the hour are cached and only recomputed when the time moves into a different hour
-   * (which also keeps daylight saving changes correct). Minutes, seconds, and milliseconds are worked
+   * (which also keeps daylight saving changes correct). The local time zone comes from
+   * {@link FlixelRuntimeDevice#getUtcOffsetMillis(long)}, so each platform decides what "local" means
+   * (a browser build reports the browser's time zone, not UTC). The cache is also refreshed when
+   * {@link Flixel#runtime} is replaced, so a timestamp logged before a backend installs its device
+   * does not keep the old offset. Minutes, seconds, and milliseconds are worked
    * out with plain arithmetic, so the usual call creates no objects. The refresh once per hour does.
    *
    * @param out The string to append to.
@@ -140,7 +148,7 @@ public final class FlixelLogFormat {
     long rem;
     synchronized (TIME_LOCK) {
       long delta = epochMillis - hourStart;
-      if (delta < 0L || delta >= HOUR_MS) {
+      if (delta < 0L || delta >= HOUR_MS || cachedDevice != currentDevice()) {
         refreshHour(epochMillis);
         delta = epochMillis - hourStart;
       }
@@ -181,8 +189,27 @@ public final class FlixelLogFormat {
     out.setLength(len);
   }
 
+  /** Forgets the cached hour so the next timestamp recomputes it. Tests call this after changing the offset source. */
+  static void resetCache() {
+    synchronized (TIME_LOCK) {
+      hourStart = Long.MAX_VALUE;
+      cachedDevice = null;
+    }
+  }
+
+  private static FlixelRuntimeDevice currentDevice() {
+    // Flixel.runtime is never null in normal use, but it is a public field, so fall back to the default.
+    FlixelRuntimeDevice device = Flixel.runtime;
+    return device != null ? device : FlixelNoopRuntimeDevice.INSTANCE;
+  }
+
   private static void refreshHour(long epochMillis) {
-    LocalDateTime ldt = LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+    FlixelRuntimeDevice device = currentDevice();
+    cachedDevice = device;
+    long localMs = epochMillis + device.getUtcOffsetMillis(epochMillis);
+    // Reading the shifted time as if it were UTC gives the local wall clock fields.
+    LocalDateTime ldt = LocalDateTime.ofEpochSecond(
+        Math.floorDiv(localMs, 1000L), Math.floorMod(localMs, 1000) * 1_000_000, ZoneOffset.UTC);
     hourStart = epochMillis - (ldt.getMinute() * MINUTE_MS + ldt.getSecond() * 1000L + ldt.getNano() / 1_000_000L);
     hourOfDay = ldt.getHour();
     int year = ldt.getYear();
