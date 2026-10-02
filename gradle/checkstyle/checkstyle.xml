@@ -45,6 +45,16 @@
     <!-- One variable declaration per statement to keep diffs readable. -->
     <module name="MultipleVariableDeclarations"/>
 
+    <!-- Switches must use arrow labels ("case X ->"), not legacy colon labels ("case X:").
+         Arrow labels cannot fall through by accident and work for both switch statements and
+         switch expressions. Colon labels are the only thing that creates a CASE_GROUP node. -->
+    <module name="MatchXpath">
+      <property name="id" value="legacySwitch"/>
+      <property name="query" value="//CASE_GROUP"/>
+      <message key="matchxpath.match"
+          value="Use arrow labels (case X -> ...) instead of legacy colon labels (case X:)."/>
+    </module>
+
     <!-- Standard Java collection implementations allocate garbage and use more memory
          than FlixelGDX's lean equivalents.
 
