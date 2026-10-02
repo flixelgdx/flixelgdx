@@ -60,6 +60,8 @@ public final class FlixelLogFormat {
 
   private static int hourOfDay;
 
+  private static FlixelRuntimeDevice cachedDevice;
+
   private static final Object TIME_LOCK = new Object();
   private static final char[] dateChars = new char[10];
 
@@ -133,7 +135,9 @@ public final class FlixelLogFormat {
    * <p>The date and the hour are cached and only recomputed when the time moves into a different hour
    * (which also keeps daylight saving changes correct). The local time zone comes from
    * {@link FlixelRuntimeDevice#getUtcOffsetMillis(long)}, so each platform decides what "local" means
-   * (a browser build reports the browser's time zone, not UTC). Minutes, seconds, and milliseconds are worked
+   * (a browser build reports the browser's time zone, not UTC). The cache is also refreshed when
+   * {@link Flixel#runtime} is replaced, so a timestamp logged before a backend installs its device
+   * does not keep the old offset. Minutes, seconds, and milliseconds are worked
    * out with plain arithmetic, so the usual call creates no objects. The refresh once per hour does.
    *
    * @param out The string to append to.
@@ -144,7 +148,7 @@ public final class FlixelLogFormat {
     long rem;
     synchronized (TIME_LOCK) {
       long delta = epochMillis - hourStart;
-      if (delta < 0L || delta >= HOUR_MS) {
+      if (delta < 0L || delta >= HOUR_MS || cachedDevice != currentDevice()) {
         refreshHour(epochMillis);
         delta = epochMillis - hourStart;
       }
@@ -189,12 +193,19 @@ public final class FlixelLogFormat {
   static void resetCache() {
     synchronized (TIME_LOCK) {
       hourStart = Long.MAX_VALUE;
+      cachedDevice = null;
     }
   }
 
-  private static void refreshHour(long epochMillis) {
+  private static FlixelRuntimeDevice currentDevice() {
     // Flixel.runtime is never null in normal use, but it is a public field, so fall back to the default.
-    FlixelRuntimeDevice device = Flixel.runtime != null ? Flixel.runtime : FlixelNoopRuntimeDevice.INSTANCE;
+    FlixelRuntimeDevice device = Flixel.runtime;
+    return device != null ? device : FlixelNoopRuntimeDevice.INSTANCE;
+  }
+
+  private static void refreshHour(long epochMillis) {
+    FlixelRuntimeDevice device = currentDevice();
+    cachedDevice = device;
     long localMs = epochMillis + device.getUtcOffsetMillis(epochMillis);
     // Reading the shifted time as if it were UTC gives the local wall clock fields.
     LocalDateTime ldt = LocalDateTime.ofEpochSecond(

@@ -72,13 +72,17 @@ class FlixelLogFormatTimeZoneTest {
   }
 
   private static void useOffset(int offsetMs) {
+    useOffsetKeepingCache(offsetMs);
+    FlixelLogFormat.resetCache();
+  }
+
+  private static void useOffsetKeepingCache(int offsetMs) {
     Flixel.runtime = new FlixelRuntimeDevice() {
       @Override
       public int getUtcOffsetMillis(long epochMillis) {
         return offsetMs;
       }
     };
-    FlixelLogFormat.resetCache();
   }
 
   @Test
@@ -121,6 +125,14 @@ class FlixelLogFormatTimeZoneTest {
     FlixelLogFormat.resetCache();
     assertEquals("2024-03-10 01:59:59.900", stamp("2024-03-10T06:59:59.900Z"));
     assertEquals("2024-03-10 03:00:00.100", stamp("2024-03-10T07:00:00.100Z"));
+  }
+
+  @Test
+  void swappingTheRuntimeDeviceRefreshesTheCachedHour() {
+    useOffset(0);
+    assertEquals("2024-06-01 03:07:09.123", stamp("2024-06-01T03:07:09.123Z"));
+    useOffsetKeepingCache(-5 * HOUR_MS);
+    assertEquals("2024-05-31 22:07:10.123", stamp("2024-06-01T03:07:10.123Z"));
   }
 
   @Test
