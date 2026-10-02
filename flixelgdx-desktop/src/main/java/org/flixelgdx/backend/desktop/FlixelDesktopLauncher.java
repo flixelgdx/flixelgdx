@@ -37,10 +37,14 @@ import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
+import org.flixelgdx.backend.desktop.logging.FlixelAnsiConsoleSink;
+import org.flixelgdx.backend.desktop.logging.FlixelJvmLogFileSink;
+import org.flixelgdx.backend.desktop.logging.FlixelJvmLogSiteResolver;
 import org.flixelgdx.backend.desktop.runtime.FlixelJvmRuntimeDevice;
 import org.flixelgdx.backend.desktop.text.FlixelStbFontRasterizer;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
@@ -71,6 +75,8 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  */
 public final class FlixelDesktopLauncher {
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Desktop");
 
   private FlixelDesktopLauncher() {}
 
@@ -184,6 +190,7 @@ public final class FlixelDesktopLauncher {
     Flixel.files = new FlixelJvmFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
+    installLogging();
     FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
@@ -210,6 +217,18 @@ public final class FlixelDesktopLauncher {
   }
 
   /**
+   * Installs the desktop call-site resolver, the colored console sink, and the log file sink.
+   *
+   * <p>Logging to a file still starts only when the game calls
+   * {@link FlixelLogger#startFileLogging() Flixel.log.startFileLogging()}.
+   */
+  private static void installLogging() {
+    Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
+    Flixel.log.setConsoleSink(new FlixelAnsiConsoleSink());
+    Flixel.log.setFileSink(new FlixelJvmLogFileSink());
+  }
+
+  /**
    * Resolves the runtime mode from the {@code flixel.mode} (or legacy {@code flixel.debug}) system
    * property, defaulting to {@link FlixelRuntimeMode#RELEASE RELEASE}.
    *
@@ -222,7 +241,10 @@ public final class FlixelDesktopLauncher {
       case "test" -> FlixelRuntimeMode.TEST;
       case "", "release" -> FlixelRuntimeMode.RELEASE;
       default -> {
-        Flixel.warn("Desktop", "Unknown flixel.mode '" + mode + "'; defaulting to RELEASE.");
+        // The launch overloads resolve the mode before the main launch runs, so the logging seams
+        // are installed here too, so that this warning still has colors and a call site.
+        installLogging();
+        LOG.warn("Unknown flixel.mode '{}'; defaulting to RELEASE.", mode);
         yield FlixelRuntimeMode.RELEASE;
       }
     };
