@@ -24,7 +24,14 @@
     <property name="optional" value="false"/>
   </module>
 
+  <!-- Honors the @SuppressWarnings("checkstyle:CheckName") annotations collected by
+       SuppressWarningsHolder. -->
+  <module name="SuppressWarningsFilter"/>
+
   <module name="TreeWalker">
+
+    <!-- Lets @SuppressWarnings("checkstyle:CheckName") silence a check for one declaration. -->
+    <module name="SuppressWarningsHolder"/>
 
     <!-- Modifier keywords must appear in the order: public protected private abstract default
          static final transient volatile synchronized native strictfp. -->
@@ -44,6 +51,31 @@
 
     <!-- One variable declaration per statement to keep diffs readable. -->
     <module name="MultipleVariableDeclarations"/>
+
+    <!-- Standard Java naming conventions, using each check's built-in default format:
+         lowercase package names; UpperCamelCase for classes, interfaces, enums, and records;
+         lowerCamelCase for methods, fields, parameters, and local variables; UPPER_SNAKE_CASE for
+         static final constants; and a single capital letter for type parameters.
+         A static final field that holds a mutable object (a singleton such as Flixel.random, a
+         signal, or a private cache) is not a constant, so it keeps lowerCamelCase and opts out with
+         @SuppressWarnings("checkstyle:ConstantName") on that field. -->
+    <module name="PackageName"/>
+    <module name="TypeName"/>
+    <module name="MethodName"/>
+    <module name="MemberName"/>
+    <module name="StaticVariableName"/>
+    <module name="ConstantName"/>
+    <module name="ParameterName"/>
+    <module name="LambdaParameterName"/>
+    <module name="CatchParameterName"/>
+    <module name="LocalVariableName"/>
+    <module name="LocalFinalVariableName"/>
+    <module name="PatternVariableName"/>
+    <module name="RecordComponentName"/>
+    <module name="ClassTypeParameterName"/>
+    <module name="MethodTypeParameterName"/>
+    <module name="InterfaceTypeParameterName"/>
+    <module name="RecordTypeParameterName"/>
 
     <!-- Switches must use arrow labels ("case X ->"), not legacy colon labels ("case X:").
          Arrow labels cannot fall through by accident and work for both switch statements and
