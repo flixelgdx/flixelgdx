@@ -447,7 +447,9 @@ public interface FlixelWindow extends FlixelShakeable {
    *
    * <p>When enabling, uses the current display mode from
    * {@link FlixelGraphicsManager#getDisplayMode() Flixel.graphics.getDisplayMode()}.
-   * When disabling, restores the window to the design size set in {@link FlixelConfig}.
+   * When disabling, restores the window to the render resolution (see
+   * {@link FlixelGraphicsManager#setRenderResolution(int, int)}), or to the design size set in
+   * {@link FlixelConfig} when no render resolution is active.
    *
    * @param enabled {@code true} to enter fullscreen, {@code false} to return to windowed mode.
    */
@@ -455,8 +457,16 @@ public interface FlixelWindow extends FlixelShakeable {
     if (enabled) {
       setFullscreen(Flixel.graphics.getDisplayMode());
     } else {
-      int w = Flixel.config != null ? Flixel.config.getWidth() : getWidth();
-      int h = Flixel.config != null ? Flixel.config.getHeight() : getHeight();
+      int w;
+      int h;
+      if (Flixel.graphics.isRenderResolutionEnabled()) {
+        // Return to the chosen display resolution, which may have changed while fullscreen.
+        w = Flixel.graphics.getRenderWidth();
+        h = Flixel.graphics.getRenderHeight();
+      } else {
+        w = Flixel.config != null ? Flixel.config.getWidth() : getWidth();
+        h = Flixel.config != null ? Flixel.config.getHeight() : getHeight();
+      }
       setWindowed(w, h);
     }
   }

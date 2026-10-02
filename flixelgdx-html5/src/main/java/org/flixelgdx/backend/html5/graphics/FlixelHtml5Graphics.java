@@ -66,11 +66,11 @@ import java.nio.ByteOrder;
  * shared with WebGL1; the {@code #version 300 es} shaders still require the underlying context to be
  * WebGL2, which is what is requested.
  *
- * <p>This backend fully supports both the global post-processing shader pipeline
- * ({@link #getGlobalShaderPipeline()}) and fixed render resolution
- * ({@link #setRenderResolution(int, int, boolean)}).
- * Both features use off-screen {@link FlixelWebGlRenderTarget} surfaces so games look the same on
- * every platform without any platform-specific game code.
+ * <p>This backend fully supports the global post-processing shader pipeline
+ * ({@link #setRenderResolution(int, int, boolean)}) and render scale
+ * ({@link #setRenderScale(float)}), which is applied on top of the render resolution (or the canvas
+ * size when none is set). All three use off-screen {@link FlixelWebGlRenderTarget} surfaces so games
+ * look the same on every platform without any platform-specific game code.
  *
  * @see FlixelGlobalShaderPipeline
  */
@@ -106,7 +106,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   private WebGLRenderingContext gl;
   private FlixelWebGlBatch batch;
 
-  /** Fixed-resolution scene surface the whole frame renders into when a render resolution is set. */
+  /** Scene surface the whole frame renders into when a render resolution or render scale is set. */
   @Nullable
   private FlixelWebGlRenderTarget sceneTarget;
 
@@ -118,6 +118,15 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
   /** Fixed render height in pixels, active only when {@link #renderResolutionEnabled} is true. */
   private int renderHeight;
+
+  /** Width of the scene surface in pixels: the render resolution (or canvas) times the render scale. */
+  private int sceneWidth;
+
+  /** Height of the scene surface in pixels: the render resolution (or canvas) times the render scale. */
+  private int sceneHeight;
+
+  /** How many pixels the scene is drawn with relative to the size it is displayed at. */
+  private float renderScale = 1f;
 
   /** Scale applied to the scene surface when stretching it to fill the window. */
   private float compositeScale = 1f;
@@ -137,7 +146,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   /** True between {@link #beginScene()} and {@link #endScene()}, so viewport remapping is active. */
   private boolean sceneActive;
 
-  /** Set when the render size or filter changed, so the scene surface is rebuilt on the next frame. */
+  /** Set when the scene size changed, so the scene surface is rebuilt on the next frame. */
   private boolean sceneTargetDirty;
 
   /**
@@ -163,8 +172,8 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   /**
    * Records a new canvas size and updates the WebGL viewport to match.
    *
-   * <p>When a render resolution is set the scene target is sized to the fixed resolution, so no
-   * rebuild is needed here; only the letterbox math updates on the next {@link #beginScene()} call.
+   * <p>The scene target is resized lazily on the next {@link #beginScene()} call when its size
+   * depends on the canvas (no render resolution set), so no rebuild is needed here.
    * The global shader pipeline FBOs are resized via {@code Flixel.graphics.resizeGlobalShaders()},
    * which {@code FlixelGame.resize(...)} calls after this method returns.
    *
@@ -268,22 +277,59 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   }
 
   @Override
+  public void setRenderScale(float scale) {
+    renderScale = Math.max(MIN_RENDER_SCALE, Math.min(MAX_RENDER_SCALE, scale));
+  }
+
+  @Override
+  public float getRenderScale() {
+    return renderScale;
+  }
+
+  @Override
+  public void setRenderSmooth(boolean smooth) {
+    renderSmooth = smooth;
+    if (sceneTarget != null) {
+      sceneTarget.getTexture().setSmooth(smooth);
+    }
+  }
+
+  @Override
+  public int getSceneWidth() {
+    return Math.max(1, Math.round(getRenderWidth() * renderScale));
+  }
+
+  @Override
+  public int getSceneHeight() {
+    return Math.max(1, Math.round(getRenderHeight() * renderScale));
+  }
+
+  @Override
   public void beginScene() {
-    if (!renderResolutionEnabled) {
+    int width = getSceneWidth();
+    int height = getSceneHeight();
+    if (width == backBufferWidth && height == backBufferHeight) {
+      // The scene matches the canvas one to one, so draw straight to it and skip the extra blit.
+      disposeSceneTarget();
       return;
+    }
+    if (width != sceneWidth || height != sceneHeight) {
+      sceneWidth = width;
+      sceneHeight = height;
+      sceneTargetDirty = true;
     }
     ensureSceneTarget();
     if (sceneTarget == null) {
       return;
     }
     sceneActive = true;
-    // Work out how the fixed surface is stretched onto the current window (a FIT letterbox).
+    // Work out how the surface is stretched onto the current window (a FIT letterbox).
     // Both the per-camera viewport remap and the final blit derive from this.
     float ww = Math.max(1, backBufferWidth);
     float wh = Math.max(1, backBufferHeight);
-    compositeScale = Math.min(ww / renderWidth, wh / renderHeight);
-    compositeOffsetX = (ww - renderWidth * compositeScale) / 2f;
-    compositeOffsetY = (wh - renderHeight * compositeScale) / 2f;
+    compositeScale = Math.min(ww / sceneWidth, wh / sceneHeight);
+    compositeOffsetX = (ww - sceneWidth * compositeScale) / 2f;
+    compositeOffsetY = (wh - sceneHeight * compositeScale) / 2f;
     // Redirect all subsequent draws into the scene surface and clear it.
     sceneTarget.begin();
     gl.clearColor(0f, 0f, 0f, 0f);
@@ -304,8 +350,8 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
 
     float dstX = compositeOffsetX;
     float dstY = compositeOffsetY;
-    float dstW = renderWidth * compositeScale;
-    float dstH = renderHeight * compositeScale;
+    float dstW = sceneWidth * compositeScale;
+    float dstH = sceneHeight * compositeScale;
 
     // Restore the full back buffer viewport for the blit pass.
     clearScissor();
@@ -340,7 +386,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     int sh;
     if (sceneActive) {
       // Clip rects arrive in window pixels (bottom-left origin). Undo the composite stretch to
-      // map them into the fixed render surface so sprites clip correctly inside the scene FBO.
+      // map them into the scene surface so sprites clip correctly inside the scene FBO.
       sx = Math.round((x - compositeOffsetX) / compositeScale);
       sy = Math.round((y - compositeOffsetY) / compositeScale);
       sw = Math.max(1, Math.round(width / compositeScale));
@@ -369,7 +415,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     }
     if (sceneActive) {
       // Cameras lay out their viewport in window pixels, but the scene surface is a different
-      // (fixed) size, so undo the composite stretch to land in render pixels.
+      // size, so undo the composite stretch to land in scene pixels.
       int rx = Math.round((x - compositeOffsetX) / compositeScale);
       int ry = Math.round((y - compositeOffsetY) / compositeScale);
       int rw = Math.max(1, Math.round(width / compositeScale));
@@ -575,7 +621,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     if (gl == null) {
       return;
     }
-    sceneTarget = new FlixelWebGlRenderTarget(this, gl, Math.max(1, renderWidth), Math.max(1, renderHeight));
+    sceneTarget = new FlixelWebGlRenderTarget(this, gl, sceneWidth, sceneHeight);
     sceneTarget.getTexture().setSmooth(renderSmooth);
     sceneTargetDirty = false;
   }
@@ -610,6 +656,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     return compositeOffsetY;
   }
 
+  @Override
   public boolean isRenderSmooth() {
     return renderSmooth;
   }

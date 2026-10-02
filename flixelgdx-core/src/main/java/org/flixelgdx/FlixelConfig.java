@@ -24,6 +24,7 @@
 package org.flixelgdx;
 
 import org.flixelgdx.backend.FlixelWindow;
+import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.save.FlixelSave;
 import org.jetbrains.annotations.NotNull;
 
@@ -75,6 +76,7 @@ public final class FlixelConfig {
   private final int framerate;
   private final int renderWidth;
   private final int renderHeight;
+  private final float renderScale;
 
   private final boolean vsync;
   private final boolean fullscreen;
@@ -91,6 +93,7 @@ public final class FlixelConfig {
     this.framerate = builder.framerate;
     this.renderWidth = builder.renderWidth;
     this.renderHeight = builder.renderHeight;
+    this.renderScale = builder.renderScale;
     this.vsync = builder.vsync;
     this.fullscreen = builder.fullscreen;
     this.renderResolutionEnabled = builder.renderResolutionEnabled;
@@ -126,32 +129,44 @@ public final class FlixelConfig {
   }
 
   /**
-   * Returns {@code true} when the game renders at a fixed resolution and upscales to the window.
+   * Returns {@code true} when a render (display) resolution is configured.
    *
    * <p>Enabled by default; see {@link Builder#renderResolution(int, int)}.
    *
-   * @return {@code true} when a fixed render resolution is configured.
+   * @return {@code true} when a render resolution is configured.
    */
   public boolean isRenderResolutionEnabled() {
     return renderResolutionEnabled;
   }
 
   /**
-   * Returns the fixed render width in pixels, falling back to the design width when none was set.
+   * Returns the render (display) width in pixels, falling back to the design width when none was
+   * set.
    *
-   * @return The render width to draw the scene at.
+   * @return The render width to display the game at.
    */
   public int getRenderWidth() {
     return renderWidth > 0 ? renderWidth : width;
   }
 
   /**
-   * Returns the fixed render height in pixels, falling back to the design height when none was set.
+   * Returns the render (display) height in pixels, falling back to the design height when none was
+   * set.
    *
-   * @return The render height to draw the scene at.
+   * @return The render height to display the game at.
    */
   public int getRenderHeight() {
     return renderHeight > 0 ? renderHeight : height;
+  }
+
+  /**
+   * Returns the starting render scale, {@code 1} by default.
+   *
+   * @return The scale the scene is drawn at relative to its displayed size.
+   * @see Builder#renderScale(float)
+   */
+  public float getRenderScale() {
+    return renderScale;
   }
 
   /**
@@ -223,6 +238,7 @@ public final class FlixelConfig {
     private int framerate = 60;
     private int renderWidth = 0;
     private int renderHeight = 0;
+    private float renderScale = 1f;
 
     private boolean vsync = true;
     private boolean fullscreen = false;
@@ -320,15 +336,14 @@ public final class FlixelConfig {
     }
 
     /**
-     * Sets a fixed render resolution the whole scene is drawn at before being upscaled to the
-     * window, with smooth (linear) filtering.
+     * Sets the resolution the game is displayed at when it starts, with smooth (linear) filtering.
      *
-     * <p>A fixed render resolution is <b>on by default</b> at the design size set by
-     * {@link #size(int, int)}, so most games do not need to call this. Use it to render at a
-     * different size than the design size: below it (for example {@code 960x540} for a
-     * {@code 1280x720} game) as a performance option, or above it to supersample for smoother
-     * edges. Keep the same aspect ratio as the design size to avoid distortion. To turn the
-     * feature off entirely and draw straight to the window, call {@link #disableRenderResolution()}.
+     * <p>A render resolution is <b>on by default</b> at the design size set by
+     * {@link #size(int, int)}, so most games do not need to call this. On desktop, a windowed game
+     * opens at this size, and a fullscreen game draws at this size and stretches it to the monitor.
+     * Mobile ignores it, since the screen size is fixed. To have fullscreen draw at the monitor's
+     * full size instead, call {@link #disableRenderResolution()}. See
+     * {@link FlixelGraphicsManager#setRenderResolution(int, int)} for the full behavior.
      *
      * @param width The fixed render width in pixels.
      * @param height The fixed render height in pixels.
@@ -340,7 +355,7 @@ public final class FlixelConfig {
     }
 
     /**
-     * Sets a fixed render resolution and chooses how it is filtered when upscaled to the window.
+     * Sets the starting render resolution and chooses how the scene is filtered when stretched.
      *
      * @param width The fixed render width in pixels.
      * @param height The fixed render height in pixels.
@@ -359,8 +374,8 @@ public final class FlixelConfig {
     }
 
     /**
-     * Turns off the fixed render resolution so the scene draws straight to the window at its real
-     * size. This opts out of the on-by-default behavior described in
+     * Turns off the render resolution so the game is displayed at the native size of its window or
+     * screen. This opts out of the on-by-default behavior described in
      * {@link #renderResolution(int, int)}.
      *
      * @return This builder, for chaining.
@@ -368,6 +383,41 @@ public final class FlixelConfig {
     @NotNull
     public Builder disableRenderResolution() {
       this.renderResolutionEnabled = false;
+      return this;
+    }
+
+    /**
+     * Sets the starting render scale, with smooth (linear) filtering.
+     *
+     * <p>The render scale is how many pixels the scene is drawn with relative to the size it is
+     * displayed at: {@code 1} (the default) is one to one, {@code 0.5} draws at half size and
+     * stretches it up to save GPU time, and values above {@code 1} supersample for smoother edges.
+     * It works on every platform and never changes how much of the world is visible. See
+     * {@link FlixelGraphicsManager#setRenderScale(float)} for the full behavior.
+     *
+     * @param scale The scale factor, clamped by the backend to
+     *     {@link FlixelGraphicsManager#MIN_RENDER_SCALE} through
+     *     {@link FlixelGraphicsManager#MAX_RENDER_SCALE}.
+     * @return This builder, for chaining.
+     */
+    @NotNull
+    public Builder renderScale(float scale) {
+      return renderScale(scale, true);
+    }
+
+    /**
+     * Sets the starting render scale and chooses how the scene is filtered when stretched.
+     *
+     * @param scale The scale factor.
+     * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor (crisp
+     *     pixel art).
+     * @return This builder, for chaining.
+     * @see #renderScale(float)
+     */
+    @NotNull
+    public Builder renderScale(float scale, boolean smooth) {
+      this.renderScale = scale;
+      this.renderSmooth = smooth;
       return this;
     }
 

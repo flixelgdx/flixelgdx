@@ -71,9 +71,11 @@ import android.util.DisplayMetrics;
  * <p>GL initialization is deferred to the first {@link #beginFrame()} call, which happens on the
  * GL thread after the EGL context is ready. Until then, all queries return safe neutral values.
  *
- * <p>Render resolution (see {@link #setRenderResolution(int, int, boolean)}) works the same as
- * the desktop backend: the scene is drawn into a fixed-size framebuffer and letterboxed to the
- * window on each frame. The global post-processing shader chain is also supported.
+ * <p>Render scale (see {@link #setRenderScale(float)}) draws the scene into a framebuffer scaled
+ * from the screen size and stretches it back over the screen each frame, keeping the screen's
+ * shape so no bars are added. Render resolution is not supported, since a phone's screen size is
+ * fixed, so {@link #setRenderResolution(int, int)} keeps its no-op default. The global
+ * post-processing shader chain is also supported.
  *
  * <p>KTX2 / Basis Universal compressed textures are transcoded to ASTC 4x4 on devices that expose
  * {@code GL_KHR_texture_compression_astc_ldr}, falling back to ETC2 RGBA8 (universally available
@@ -118,8 +120,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   @NotNull
   private final FlixelGlobalShaderPipeline globalPipeline = new FlixelGlobalShaderPipeline();
 
-  // Render resolution: when enabled, the scene is drawn into sceneTarget then stretched to the
-  // window. compositeScale/OffsetX/OffsetY describe the FIT letterbox used to place the surface.
+  // Render scale: when the scaled size differs from the screen, the scene is drawn into sceneTarget
+  // then stretched to the window. compositeScale/OffsetX/OffsetY describe how the surface is placed.
   @Nullable
   private FlixelGlesRenderTarget sceneTarget;
 
@@ -130,8 +132,9 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   private float compositeOffsetX;
   private float compositeOffsetY;
 
-  private int renderWidth;
-  private int renderHeight;
+  private int sceneWidth;
+  private int sceneHeight;
+  private float renderScale = 1f;
 
   private float density = 1f;
   private float ppi;
@@ -144,7 +147,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
   private boolean initialized;
   private boolean astcSupported;
-  private boolean renderResolutionEnabled;
+  private boolean renderSmooth = true;
   private boolean sceneActive;
 
   /**
@@ -198,70 +201,64 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   }
 
   @Override
-  public void setRenderResolution(int width, int height, boolean smooth) {
-    if (width < 1 || height < 1) {
-      clearRenderResolution();
-      return;
-    }
-    if (renderResolutionEnabled && width == renderWidth && height == renderHeight) {
-      if (sceneTarget != null) {
-        sceneTarget.getTexture().setSmooth(smooth);
-      }
-      return;
-    }
-    renderResolutionEnabled = true;
-    renderWidth = width;
-    renderHeight = height;
+  public void setRenderScale(float scale) {
+    renderScale = Math.max(MIN_RENDER_SCALE, Math.min(MAX_RENDER_SCALE, scale));
+  }
+
+  @Override
+  public float getRenderScale() {
+    return renderScale;
+  }
+
+  @Override
+  public void setRenderSmooth(boolean smooth) {
+    renderSmooth = smooth;
     if (sceneTarget != null) {
-      sceneTarget.destroy();
-      sceneTarget = null;
+      sceneTarget.getTexture().setSmooth(smooth);
     }
-    if (initialized) {
-      sceneTarget = new FlixelGlesRenderTarget(this, width, height, smooth);
-    }
-    globalPipeline.resize(this);
   }
 
   @Override
-  public void clearRenderResolution() {
-    renderResolutionEnabled = false;
-    if (sceneTarget != null) {
-      sceneTarget.destroy();
-      sceneTarget = null;
-    }
-    globalPipeline.resize(this);
+  public boolean isRenderSmooth() {
+    return renderSmooth;
   }
 
   @Override
-  public boolean isRenderResolutionEnabled() {
-    return renderResolutionEnabled;
+  public int getSceneWidth() {
+    return Math.max(1, Math.round(window.getBackBufferWidth() * renderScale));
   }
 
   @Override
-  public int getRenderWidth() {
-    return renderResolutionEnabled ? renderWidth : window.getBackBufferWidth();
-  }
-
-  @Override
-  public int getRenderHeight() {
-    return renderResolutionEnabled ? renderHeight : window.getBackBufferHeight();
+  public int getSceneHeight() {
+    return Math.max(1, Math.round(window.getBackBufferHeight() * renderScale));
   }
 
   @Override
   public void beginScene() {
-    if (!renderResolutionEnabled || batch == null) {
+    if (batch == null) {
       return;
     }
-    if (sceneTarget == null) {
-      sceneTarget = new FlixelGlesRenderTarget(this, renderWidth, renderHeight, true);
+    int width = getSceneWidth();
+    int height = getSceneHeight();
+    if (width == window.getBackBufferWidth() && height == window.getBackBufferHeight()) {
+      // The scene matches the screen one to one, so draw straight to it and skip the extra blit.
+      destroySceneTarget();
+      return;
+    }
+    if (sceneTarget == null || width != sceneWidth || height != sceneHeight) {
+      // Only reached on the frame the size changes (a new scale or a rotation), not every frame.
+      destroySceneTarget();
+      sceneWidth = width;
+      sceneHeight = height;
+      sceneTarget = new FlixelGlesRenderTarget(this, width, height, renderSmooth);
     }
     sceneActive = true;
 
     float ww = Math.max(1, window.getBackBufferWidth());
     float wh = Math.max(1, window.getBackBufferHeight());
-    compositeScale = Math.min(ww / renderWidth, wh / renderHeight);
-    compositeOffsetX = (ww - renderWidth * compositeScale) / 2f;
-    compositeOffsetY = (wh - renderHeight * compositeScale) / 2f;
+    compositeScale = Math.min(ww / sceneWidth, wh / sceneHeight);
+    compositeOffsetX = (ww - sceneWidth * compositeScale) / 2f;
+    compositeOffsetY = (wh - sceneHeight * compositeScale) / 2f;
 
     sceneTarget.begin();
     GLES30.glClearColor(0f, 0f, 0f, 0f);
@@ -278,8 +275,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
 
     float dstX = compositeOffsetX;
     float dstY = compositeOffsetY;
-    float dstW = renderWidth * compositeScale;
-    float dstH = renderHeight * compositeScale;
+    float dstW = sceneWidth * compositeScale;
+    float dstH = sceneHeight * compositeScale;
 
     int backW = window.getBackBufferWidth();
     int backH = window.getBackBufferHeight();
@@ -305,8 +302,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   public boolean fillViewOpaque(float r, float g, float b, float a) {
     // Clearing in GL covers the whole bound framebuffer, so we can only use it when the
     // camera exactly fills the current surface.
-    int surfaceW = sceneActive ? renderWidth : window.getBackBufferWidth();
-    int surfaceH = sceneActive ? renderHeight : window.getBackBufferHeight();
+    int surfaceW = sceneActive ? sceneWidth : window.getBackBufferWidth();
+    int surfaceH = sceneActive ? sceneHeight : window.getBackBufferHeight();
     if (viewportX > 0 || viewportY > 0 || viewportW < surfaceW || viewportH < surfaceH) {
       return false;
     }
@@ -317,8 +314,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   @Override
   public void setScissor(int x, int y, int width, int height) {
     // The framework passes bottom-left framebuffer coordinates, which is GL's own convention for
-    // the screen. While a fixed render resolution is active, the rectangle is in window pixels and
-    // is mapped back into the smaller render surface. Render targets are drawn upside down (see
+    // the screen. While a scaled scene surface is active, the rectangle is in window pixels and
+    // is mapped back into that surface. Render targets are drawn upside down (see
     // FlixelGlesRenderTarget), so the rectangle is mirrored while one is bound.
     int sx = x;
     int sy = y;
@@ -344,7 +341,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   @Override
   public void setViewport(int x, int y, int width, int height) {
     // Bottom-left framebuffer coordinates, like setScissor(...): mapped into the render surface
-    // while a fixed render resolution is active, and mirrored while a render target is bound.
+    // while a scaled scene surface is active, and mirrored while a render target is bound.
     if (sceneActive) {
       x = Math.round((x - compositeOffsetX) / compositeScale);
       y = Math.round((y - compositeOffsetY) / compositeScale);
@@ -549,9 +546,6 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
    */
   public void onContextRestored() {
     initGL();
-    if (renderResolutionEnabled) {
-      sceneTarget = new FlixelGlesRenderTarget(this, renderWidth, renderHeight, true);
-    }
     globalPipeline.resize(this);
   }
 
@@ -634,6 +628,13 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     }
     GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, target.getFramebuffer());
     GLES30.glViewport(0, 0, target.getWidth(), target.getHeight());
+  }
+
+  private void destroySceneTarget() {
+    if (sceneTarget != null) {
+      sceneTarget.destroy();
+      sceneTarget = null;
+    }
   }
 
   /** Performs one-time GL initialization on the GL thread. */

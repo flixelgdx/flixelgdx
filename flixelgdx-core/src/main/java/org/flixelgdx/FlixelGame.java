@@ -302,8 +302,10 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     stateLifecyclePauseDispatched = false;
 
-    // Apply the configured render resolution now that the graphics backend is running. It is on by
-    // default at the design size, so the scene draws at a fixed size and upscales to the window.
+    // Apply the configured render scale and resolution now that the graphics backend is running.
+    // The resolution is on by default at the design size, which is also the starting window size.
+    Flixel.graphics.setRenderSmooth(Flixel.config.isRenderSmooth());
+    Flixel.graphics.setRenderScale(Flixel.config.getRenderScale());
     if (Flixel.config.isRenderResolutionEnabled()) {
       Flixel.graphics.setRenderResolution(Flixel.config.getRenderWidth(), Flixel.config.getRenderHeight(),
           Flixel.config.isRenderSmooth());
@@ -428,13 +430,11 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
     int totalRenderCallsBefore = batch.getTotalRenderCalls();
 
     boolean useGlobalFbo = Flixel.graphics.hasGlobalShaders();
-    boolean useSceneResolution = Flixel.graphics.isRenderResolutionEnabled();
-    // The two nest: the fixed-resolution scene surface is the outer target, and the global shader
-    // capture runs inside it at the same size. The chain's final pass then lands on the scene
-    // surface, which endScene() stretches onto the window afterwards.
-    if (useSceneResolution) {
-      Flixel.graphics.beginScene();
-    }
+    // The two nest: the scaled scene surface is the outer target, and the global shader capture runs
+    // inside it at the same size. The chain's final pass then lands on the scene surface, which
+    // endScene() stretches onto the window afterwards. The backend decides whether a scene surface
+    // is needed at all, and both calls do nothing when the scene draws straight to the window.
+    Flixel.graphics.beginScene();
     if (useGlobalFbo) {
       Flixel.graphics.beginGlobalShaderCapture();
     }
@@ -537,10 +537,8 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
       }
     }
 
-    // Stretch the fixed-resolution scene (cameras plus overlay) to fill the window in one pass.
-    if (useSceneResolution) {
-      Flixel.graphics.endScene();
-    }
+    // Stretch the scene surface (cameras plus overlay) to fill the window in one pass.
+    Flixel.graphics.endScene();
 
     frameRenderCalls = batch.getTotalRenderCalls() - totalRenderCallsBefore;
 

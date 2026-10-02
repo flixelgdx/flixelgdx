@@ -187,8 +187,9 @@ public final class FlixelDesktopLauncher {
     FlixelBgfxGraphics graphics = new FlixelBgfxGraphics();
     FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
     FlixelSdlMouseIconManager iconManager = new FlixelSdlMouseIconManager();
-    int width = config.getWidth();
-    int height = config.getHeight();
+    // A windowed game opens at its render resolution, which is the design size unless configured.
+    int width = config.isRenderResolutionEnabled() ? config.getRenderWidth() : config.getWidth();
+    int height = config.isRenderResolutionEnabled() ? config.getRenderHeight() : config.getHeight();
 
     Flixel.alert = new FlixelDesktopAlerter();
     Flixel.window = window;

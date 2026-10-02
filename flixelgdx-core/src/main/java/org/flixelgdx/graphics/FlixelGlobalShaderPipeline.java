@@ -163,7 +163,7 @@ public class FlixelGlobalShaderPipeline {
     if (fboA == null) {
       return;
     }
-    // The scene size changes when a fixed render resolution is set or cleared, not only when the
+    // The scene size changes when the render resolution or render scale changes, not only when the
     // window resizes, so rebuild the targets here if they no longer match. This only allocates on
     // the frame the size actually changes.
     if (!fbosMatch(graphics)) {
@@ -196,8 +196,8 @@ public class FlixelGlobalShaderPipeline {
     if (fboA == null) {
       return;
     }
-    int w = graphics.getRenderWidth();
-    int h = graphics.getRenderHeight();
+    int w = graphics.getSceneWidth();
+    int h = graphics.getSceneHeight();
     boolean usingA = true;
     FlixelRenderTarget src = fboA;
     int n = shaders.getSize();
@@ -256,10 +256,10 @@ public class FlixelGlobalShaderPipeline {
 
   private void initFbos(@NotNull FlixelGraphicsManager graphics, boolean needPingPong) {
     disposeFbos();
-    // Size to the scene render resolution, which equals the back buffer unless a fixed render
-    // resolution is active, so the shader chain matches whatever size the cameras draw at.
-    int w = graphics.getRenderWidth();
-    int h = graphics.getRenderHeight();
+    // Size to the scene surface, which equals the back buffer unless the render resolution or render
+    // scale changes it, so the shader chain matches whatever size the cameras draw at.
+    int w = graphics.getSceneWidth();
+    int h = graphics.getSceneHeight();
     fboA = graphics.createRenderTarget(w, h);
     if (needPingPong) {
       fboB = graphics.createRenderTarget(w, h);
@@ -270,11 +270,11 @@ public class FlixelGlobalShaderPipeline {
    * Returns whether the render targets already match the current scene size.
    *
    * @param graphics The active graphics manager.
-   * @return {@code true} if the primary target exists and is sized to the render resolution.
+   * @return {@code true} if the primary target exists and is sized to the scene surface.
    */
   private boolean fbosMatch(@NotNull FlixelGraphicsManager graphics) {
-    return fboA != null && fboA.getWidth() == graphics.getRenderWidth()
-        && fboA.getHeight() == graphics.getRenderHeight();
+    return fboA != null && fboA.getWidth() == graphics.getSceneWidth()
+        && fboA.getHeight() == graphics.getSceneHeight();
   }
 
   private void disposeFbos() {
