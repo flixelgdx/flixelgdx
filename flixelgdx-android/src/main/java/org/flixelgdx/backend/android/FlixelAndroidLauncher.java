@@ -37,6 +37,9 @@ import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidGraphics;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidKtx2Loader;
 import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
+import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileSink;
+import org.flixelgdx.backend.android.logging.FlixelAndroidLogSiteResolver;
+import org.flixelgdx.backend.android.logging.FlixelLogcatSink;
 import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
 import org.flixelgdx.backend.android.text.FlixelAndroidFontRasterizer;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
@@ -96,6 +99,10 @@ public final class FlixelAndroidLauncher {
     Flixel.files = new FlixelAndroidFiles(activity);
     Flixel.assets = new FlixelAndroidAssetManager();
     Flixel.host = new FlixelAndroidHostIntegration();
+
+    Flixel.log.setSiteResolver(new FlixelAndroidLogSiteResolver());
+    Flixel.log.setConsoleSink(new FlixelLogcatSink());
+    Flixel.log.setFileSink(new FlixelAndroidLogFileSink());
 
     FlixelAndroidWindow window = new FlixelAndroidWindow(activity);
     Flixel.window = window;
