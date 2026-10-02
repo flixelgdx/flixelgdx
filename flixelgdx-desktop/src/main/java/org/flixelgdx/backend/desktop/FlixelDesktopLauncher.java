@@ -78,6 +78,8 @@ public final class FlixelDesktopLauncher {
 
   private static final FlixelLogger LOG = Flixel.log.tagged("Desktop");
 
+  private static boolean loggingInstalled;
+
   private FlixelDesktopLauncher() {}
 
   /**
@@ -102,6 +104,7 @@ public final class FlixelDesktopLauncher {
    * @param game The game instance to run.
    */
   public static void launch(@NotNull FlixelGame game) {
+    installLogging();
     launch(game, resolveRuntimeMode(), (String[]) null);
   }
 
@@ -131,6 +134,7 @@ public final class FlixelDesktopLauncher {
    * @throws RuntimeException if any icon path cannot be found in the classpath.
    */
   public static void launch(@NotNull FlixelGame game, @NotNull String... icons) {
+    installLogging();
     launch(game, resolveRuntimeMode(), icons);
   }
 
@@ -141,6 +145,7 @@ public final class FlixelDesktopLauncher {
    * @param runtimeMode The {@link FlixelRuntimeMode} for this session (TEST, DEBUG, or RELEASE).
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode) {
+    installLogging();
     launch(game, runtimeMode, (String[]) null);
   }
 
@@ -161,6 +166,7 @@ public final class FlixelDesktopLauncher {
    */
   public static void launch(@NotNull FlixelGame game, @NotNull FlixelRuntimeMode runtimeMode,
       @Nullable String... icons) {
+    installLogging();
     if (icons != null) {
       for (String path : icons) {
         if (FlixelDesktopLauncher.class.getResource("/" + path) == null) {
@@ -190,7 +196,6 @@ public final class FlixelDesktopLauncher {
     Flixel.files = new FlixelJvmFiles();
     Flixel.input = input;
     Flixel.graphics = graphics;
-    installLogging();
     FlixelMiniAudio.setLoader(new FlixelDesktopMiniAudioLoader());
     FlixelSoundManager.defaultFactory = FlixelMiniAudioFactory.create();
     FlixelGameRunner runner = new FlixelDesktopRunner(window, input, graphics, gamepads,
@@ -219,10 +224,18 @@ public final class FlixelDesktopLauncher {
   /**
    * Installs the desktop call-site resolver, the colored console sink, and the log file sink.
    *
+   * <p>Every public launch method calls this first, so even a warning logged while the runtime mode
+   * is being resolved has colors and a call site. Only the first call does anything, so overloads
+   * that delegate to each other do not install the sinks twice.
+   *
    * <p>Logging to a file still starts only when the game calls
    * {@link FlixelLogger#startFileLogging() Flixel.log.startFileLogging()}.
    */
   private static void installLogging() {
+    if (loggingInstalled) {
+      return;
+    }
+    loggingInstalled = true;
     Flixel.log.setSiteResolver(new FlixelJvmLogSiteResolver());
     Flixel.log.setConsoleSink(new FlixelAnsiConsoleSink());
     Flixel.log.setFileSink(new FlixelJvmLogFileSink());
@@ -241,9 +254,6 @@ public final class FlixelDesktopLauncher {
       case "test" -> FlixelRuntimeMode.TEST;
       case "", "release" -> FlixelRuntimeMode.RELEASE;
       default -> {
-        // The launch overloads resolve the mode before the main launch runs, so the logging seams
-        // are installed here too, so that this warning still has colors and a call site.
-        installLogging();
         LOG.warn("Unknown flixel.mode '{}'; defaulting to RELEASE.", mode);
         yield FlixelRuntimeMode.RELEASE;
       }
