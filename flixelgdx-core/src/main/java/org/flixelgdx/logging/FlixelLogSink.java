@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Install sinks with {@link FlixelLogger#setConsoleSink(FlixelLogSink)},
  * {@link FlixelLogger#setFileSink(FlixelLogFileSink)}, or
- * {@link FlixelLogger#addExtraSink(FlixelLogSink)}.
+ * {@link FlixelLogger#addSink(FlixelLogSink)}.
  *
  * <p>Example:
  * <pre>{@code

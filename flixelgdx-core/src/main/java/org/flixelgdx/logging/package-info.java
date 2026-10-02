@@ -36,7 +36,7 @@
  * FlixelLogEntry} and hands it to its {@link org.flixelgdx.logging.FlixelLogSink FlixelLogSink}s: one
  * console sink, an optional {@link org.flixelgdx.logging.FlixelLogFileSink FlixelLogFileSink}, and any
  * number of extra sinks added with
- * {@link org.flixelgdx.logging.FlixelLogger#addExtraSink(org.flixelgdx.logging.FlixelLogSink)
+ * {@link org.flixelgdx.logging.FlixelLogger#addSink(org.flixelgdx.logging.FlixelLogSink)
  * FlixelLogger.addExtraSink(...)}. The core default console sink,
  * {@link org.flixelgdx.logging.FlixelPlainConsoleSink FlixelPlainConsoleSink}, prints plain text.
  * Platform launchers install sinks that suit their platform before the game starts.

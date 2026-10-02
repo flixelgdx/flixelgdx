@@ -167,14 +167,14 @@ public interface FlixelLogger {
    *
    * @param sink The sink to add.
    */
-  void addExtraSink(@Nullable FlixelLogSink sink);
+  void addSink(@Nullable FlixelLogSink sink);
 
   /**
-   * Removes a sink that was added with {@link #addExtraSink(FlixelLogSink)}.
+   * Removes a sink that was added with {@link #addSink(FlixelLogSink)}.
    *
    * @param sink The sink to remove.
    */
-  void removeExtraSink(@Nullable FlixelLogSink sink);
+  void removeSink(@Nullable FlixelLogSink sink);
 
   /**
    * Returns the resolver that finds the file and line of each log call.

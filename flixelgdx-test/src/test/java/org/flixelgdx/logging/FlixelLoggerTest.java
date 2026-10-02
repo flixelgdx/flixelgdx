@@ -51,7 +51,7 @@ class FlixelLoggerTest {
     logger.setConsoleSink(null);
     captured = new ArrayList<>();
     capture = entry -> captured.add(new Captured(entry));
-    logger.addExtraSink(capture);
+    logger.addSink(capture);
   }
 
   @Test
@@ -270,7 +270,7 @@ class FlixelLoggerTest {
     assertEquals(FlixelLogLevel.DEBUG, logger.getLevel());
 
     List<String> late = new ArrayList<>();
-    ai.addExtraSink(entry -> late.add(entry.getMessage().toString()));
+    ai.addSink(entry -> late.add(entry.getMessage().toString()));
     logger.info("both");
     assertEquals(1, late.size());
     assertEquals("both", late.get(0));
@@ -292,7 +292,7 @@ class FlixelLoggerTest {
 
   private FlixelLogMode captureMode() {
     FlixelLogMode[] seen = new FlixelLogMode[1];
-    logger.addExtraSink(entry -> seen[0] = entry.getMode());
+    logger.addSink(entry -> seen[0] = entry.getMode());
     logger.tagged("C").info("x");
     return seen[0];
   }
@@ -304,10 +304,10 @@ class FlixelLoggerTest {
 
   @Test
   void extraSinkCanBeRemovedAndNullIsIgnored() {
-    logger.addExtraSink(null);
-    logger.removeExtraSink(null);
+    logger.addSink(null);
+    logger.removeSink(null);
     logger.info("first");
-    logger.removeExtraSink(capture);
+    logger.removeSink(capture);
     logger.info("second");
     assertEquals(1, captured.size());
   }
@@ -317,10 +317,10 @@ class FlixelLoggerTest {
     PrintStream originalErr = System.err;
     System.setErr(new PrintStream(new ByteArrayOutputStream()));
     try {
-      logger.addExtraSink(entry -> {
+      logger.addSink(entry -> {
         throw new IllegalStateException("bad sink");
       });
-      logger.addExtraSink(entry -> captured.add(new Captured(entry)));
+      logger.addSink(entry -> captured.add(new Captured(entry)));
       logger.info("hi");
     } finally {
       System.setErr(originalErr);
@@ -398,7 +398,7 @@ class FlixelLoggerTest {
       return true;
     });
     String[] seen = new String[2];
-    logger.addExtraSink(entry -> {
+    logger.addSink(entry -> {
       seen[0] = entry.site().getFileName() + ":" + entry.site().getLine();
       seen[1] = entry.site().getMethodName();
     });
@@ -423,7 +423,7 @@ class FlixelLoggerTest {
   void siteMarkerFeedsTheEntrySiteAndIsClearedAfterwards() {
     FlixelLogSiteMarker.clear();
     String[] seen = new String[1];
-    logger.addExtraSink(entry -> seen[0] = entry.site().getFileName() + ":" + entry.site().getLine());
+    logger.addSink(entry -> seen[0] = entry.site().getFileName() + ":" + entry.site().getLine());
     FlixelLogSiteMarker.mark("Marked.java", 77, "a.b.Marked", "go");
     logger.info("with marker");
     assertEquals("Marked.java:77", seen[0]);
@@ -444,13 +444,13 @@ class FlixelLoggerTest {
     List<String> after = new ArrayList<>();
     FlixelDefaultLogger local = new FlixelDefaultLogger();
     local.setConsoleSink(null);
-    local.addExtraSink(entry -> {
+    local.addSink(entry -> {
       before.add(entry.getMessage().toString());
       if (entry.getMessage().toString().equals("outer message")) {
         local.info("inner {}", 1);
       }
     });
-    local.addExtraSink(entry -> after.add(entry.getMessage().toString() + "|" + entry.getTag()));
+    local.addSink(entry -> after.add(entry.getMessage().toString() + "|" + entry.getTag()));
     local.setTag("T");
 
     PrintStream originalErr = System.err;
@@ -481,7 +481,7 @@ class FlixelLoggerTest {
         return "bomb";
       }
     };
-    local.addExtraSink(entry -> local.info("{}", bomb));
+    local.addSink(entry -> local.info("{}", bomb));
 
     PrintStream originalErr = System.err;
     System.setErr(new PrintStream(new ByteArrayOutputStream()));
@@ -518,8 +518,8 @@ class FlixelLoggerTest {
     int threads = 8;
     int perThread = 1000;
     List<String> lines = new ArrayList<>();
-    logger.removeExtraSink(capture);
-    logger.addExtraSink(entry -> lines.add(entry.getMessage().toString()));
+    logger.removeSink(capture);
+    logger.addSink(entry -> lines.add(entry.getMessage().toString()));
     CountDownLatch start = new CountDownLatch(1);
     Thread[] workers = new Thread[threads];
     for (int t = 0; t < threads; t++) {

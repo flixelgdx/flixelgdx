@@ -164,7 +164,7 @@ public final class FlixelDefaultLogger implements FlixelLogger {
   }
 
   @Override
-  public void addExtraSink(@Nullable FlixelLogSink sink) {
+  public void addSink(@Nullable FlixelLogSink sink) {
     if (sink == null) {
       return;
     }
@@ -175,7 +175,7 @@ public final class FlixelDefaultLogger implements FlixelLogger {
   }
 
   @Override
-  public void removeExtraSink(@Nullable FlixelLogSink sink) {
+  public void removeSink(@Nullable FlixelLogSink sink) {
     if (sink == null) {
       return;
     }

@@ -325,7 +325,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     if (Flixel.isDebugMode()) {
       FlixelDebugOverlay overlay = Flixel.debug.createOverlay();
-      Flixel.log.addExtraSink(overlay.getLogSink());
+      Flixel.log.addSink(overlay.getLogSink());
     }
 
     Flixel.switchState(initialStateFactory, true, true, true);
@@ -752,7 +752,7 @@ public abstract class FlixelGame implements FlixelUpdatable, FlixelDrawable, Fli
 
     Flixel.Signals.preGameClose.dispatch();
 
-    Flixel.log.removeExtraSink(Flixel.debug.overlay.getLogSink());
+    Flixel.log.removeSink(Flixel.debug.overlay.getLogSink());
     Flixel.debug.overlay.destroy();
     Flixel.debug.overlay = FlixelNoopDebugOverlay.INSTANCE;
 

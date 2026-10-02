@@ -142,8 +142,8 @@ class FlixelAnsiConsoleSinkTest {
     logger.setConsoleSink(null);
     logger.setSiteResolver(new FlixelJvmLogSiteResolver());
     logger.setTag("T");
-    logger.addExtraSink(new FlixelPlainConsoleSink());
-    logger.addExtraSink(new FlixelAnsiConsoleSink(false));
+    logger.addSink(new FlixelPlainConsoleSink());
+    logger.addSink(new FlixelAnsiConsoleSink(false));
     logger.info("plain {}", 1);
     assertTwinOutput();
     logger.error("with trace", new IllegalArgumentException("oops"));

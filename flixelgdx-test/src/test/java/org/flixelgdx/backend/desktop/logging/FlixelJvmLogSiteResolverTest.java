@@ -55,7 +55,7 @@ class FlixelJvmLogSiteResolverTest {
     logger = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
     logger.setConsoleSink(null);
     logger.setSiteResolver(new FlixelJvmLogSiteResolver());
-    logger.addExtraSink(entry -> {
+    logger.addSink(entry -> {
       FlixelLogSite site = entry.site();
       file = site.getFileName();
       line = site.getLine();
