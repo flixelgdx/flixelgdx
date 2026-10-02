@@ -26,29 +26,50 @@ package org.flixelgdx.logging;
 /**
  * An enum that defines the log levels for FlixelGDX's logging system. This is used to determine the
  * severity of a log message and how it should be displayed in the console.
+ *
+ * <p>The constants are listed in a fixed order, but that order is <strong>not</strong> the severity.
+ * Always compare levels with {@link #getSeverity()} (a higher number means a more important message),
+ * which is what {@link FlixelLogger#isEnabled(FlixelLogLevel)} does.
  */
 public enum FlixelLogLevel {
 
   /**
    * Simple white/gray text and simple informational log level that is used for general information about the game.
    */
-  INFO,
+  INFO(1),
 
   /**
    * Highlighted yellow in the console and, although not critical, indicates that something may be
    * wrong and should be looked into.
    */
-  WARN,
+  WARN(2),
 
   /**
    * Highlighted red in the console and indicates an error. Shows something is wrong and
    * should be looked into immediately.
    */
-  ERROR,
+  ERROR(3),
 
   /**
    * Highlighted blue in the console and used for verbose, low-priority messages that help during active
    * development. The lowest severity level in the FlixelGDX logging system.
    */
-  DEBUG
+  DEBUG(0);
+
+  private final int severity;
+
+  FlixelLogLevel(int severity) {
+    this.severity = severity;
+  }
+
+  /**
+   * Returns how important this level is. A message is shown when its severity is at least the
+   * severity of the logger's minimum level.
+   *
+   * @return {@code 0} for {@link #DEBUG}, {@code 1} for {@link #INFO}, {@code 2} for {@link #WARN},
+   *   and {@code 3} for {@link #ERROR}.
+   */
+  public int getSeverity() {
+    return severity;
+  }
 }
