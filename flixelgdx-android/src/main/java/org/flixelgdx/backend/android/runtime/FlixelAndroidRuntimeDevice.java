@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.backend.android.runtime;
 
-import android.content.Context;
-import android.os.Debug;
 import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
@@ -34,6 +32,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Objects;
+
+import android.content.Context;
+import android.os.Debug;
 
 /**
  * Android implementation of {@link FlixelRuntimeDevice}: native heap via {@link Debug}, JVM heap

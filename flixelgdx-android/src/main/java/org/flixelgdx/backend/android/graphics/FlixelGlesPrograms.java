@@ -23,10 +23,11 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.opengl.GLES30;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
+
+import android.opengl.GLES30;
 
 /**
  * Compiles and links GLES shader programs with the framework's fixed vertex attribute layout.

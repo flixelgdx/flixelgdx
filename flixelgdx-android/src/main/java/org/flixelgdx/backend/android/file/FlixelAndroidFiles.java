@@ -23,13 +23,14 @@
  */
 package org.flixelgdx.backend.android.file;
 
-import android.content.Context;
-import android.content.res.AssetManager;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.file.FlixelFiles;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+
+import android.content.Context;
+import android.content.res.AssetManager;
 
 /**
  * Android file system that routes reads to the APK asset manager and disk.

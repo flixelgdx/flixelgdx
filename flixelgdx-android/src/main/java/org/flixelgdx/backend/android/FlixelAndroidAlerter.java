@@ -23,10 +23,11 @@
  */
 package org.flixelgdx.backend.android;
 
-import android.app.Activity;
-import android.app.AlertDialog;
 import org.flixelgdx.backend.FlixelAlerter;
 import org.jetbrains.annotations.NotNull;
+
+import android.app.Activity;
+import android.app.AlertDialog;
 
 /**
  * Android {@link FlixelAlerter} backed by an {@link AlertDialog} on the UI thread.

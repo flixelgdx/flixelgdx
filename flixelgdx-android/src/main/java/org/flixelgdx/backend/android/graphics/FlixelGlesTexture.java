@@ -23,12 +23,13 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.opengl.GLES30;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+
+import android.opengl.GLES30;
 
 /**
  * A GPU texture backed by an OpenGL ES 3.0 texture object.
@@ -204,7 +205,7 @@ class FlixelGlesTexture implements FlixelTexture {
 
   @Override
   public void destroy() {
-    int[] ids = {glTexture};
+    int[] ids = { glTexture };
     GLES30.glDeleteTextures(1, ids, 0);
   }
 

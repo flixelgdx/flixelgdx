@@ -23,10 +23,11 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.opengl.GLES30;
 import org.flixelgdx.graphics.FlixelRenderTarget;
 import org.flixelgdx.graphics.FlixelTexture;
 import org.jetbrains.annotations.NotNull;
+
+import android.opengl.GLES30;
 
 /**
  * An off-screen surface backed by an OpenGL ES 3.0 framebuffer with a color texture attachment.
@@ -112,7 +113,7 @@ class FlixelGlesRenderTarget implements FlixelRenderTarget {
 
   @Override
   public void destroy() {
-    int[] ids = {framebuffer};
+    int[] ids = { framebuffer };
     GLES30.glDeleteFramebuffers(1, ids, 0);
     texture.destroy();
   }

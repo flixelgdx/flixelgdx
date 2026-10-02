@@ -23,15 +23,16 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.opengl.GLES30;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
+import org.flixelgdx.graphics.FlixelShader;
 import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
-import org.flixelgdx.graphics.FlixelShader;
 import org.jetbrains.annotations.NotNull;
+
+import android.opengl.GLES30;
 
 /**
  * A compiled GLES shader program for custom game shaders.

@@ -23,6 +23,15 @@
  */
 package org.flixelgdx.backend.android;
 
+import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
+import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
+import org.flixelgdx.input.FlixelBaseInputDevice;
+import org.flixelgdx.input.FlixelKeyboardListener;
+import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import android.app.Activity;
 import android.content.Context;
 import android.view.InputDevice;
@@ -30,14 +39,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
-import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
-import org.flixelgdx.input.FlixelBaseInputDevice;
-import org.flixelgdx.input.FlixelKeyboardListener;
-import org.flixelgdx.input.keyboard.FlixelKey;
-import org.flixelgdx.input.mouse.FlixelMouseButton;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Android input device: a lock-free SPSC ring buffer that decouples the UI thread (producer)
@@ -233,7 +234,7 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
                 (int) (event.getY(i) * scaleY));
           }
           break;
-        default:
+        default :
           break;
       }
       return true;
@@ -414,7 +415,7 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
         case TYPE_CHAR_INPUT:
           dispatchKeyTyped((char) keyCode);
           break;
-        default:
+        default :
           break;
       }
     }

@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.backend.android;
 
-import android.opengl.GLSurfaceView;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.backend.FlixelCrashHandler;
@@ -33,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+
+import android.opengl.GLSurfaceView;
 
 /**
  * The Android game loop: drives the game's update/draw cycle from the GL thread via
