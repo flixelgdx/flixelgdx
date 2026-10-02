@@ -86,9 +86,9 @@ Once EditorConfig is enabled, new and edited files will respect the project’s 
 - **Line length**: Prefer staying under 120 characters. Break long lines at natural points (e.g. after a comma, before an operator); avoid breaking in the middle of a word or string when possible.
 - **Braces**: Opening brace on the same line as the declaration (K&R style), with a space before it. Single-statement blocks may stay on one line when readable.
 - **Whitespace**: Trim trailing whitespace from every line. End each file with a single newline. Use a single blank line between methods and between logical sections; do not add multiple blank lines in a row unless the style already exists in that file.
-- **Imports**: Use single-class imports (no `import foo.bar.*`). Order imports as the rest of the project does (typically: Java, then third-party, then project packages, with blank lines between groups).
+- **Imports**: Use single-class imports (no `import foo.bar.*`). Spotless orders them for you: `com`, `org`, `io`, `java`, `javax`, `jdk`, everything else, then static imports, with a blank line between groups.
 
-Match the existing style in the file you are editing. When in doubt, run `./gradlew spotlessApply` and rely on the build; we expect code to look like it was written by a single person.
+Match the existing style in the file you are editing. When in doubt, run `./gradlew spotlessApply` and rely on the build; we expect code to look like it was written by a single person. Spotless covers every Java module, including `flixelgdx-android`, and you do not need the Android SDK or `-PincludeAndroid=true` for it to do so.
 
 ### Naming and Style
 
