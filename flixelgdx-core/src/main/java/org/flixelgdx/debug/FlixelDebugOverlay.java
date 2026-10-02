@@ -45,7 +45,7 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogLevel;
-import org.flixelgdx.logging.FlixelLogger;
+import org.flixelgdx.logging.FlixelLogSink;
 import org.flixelgdx.math.FlixelVector;
 import org.flixelgdx.util.FlixelColor;
 import org.flixelgdx.util.FlixelDebugUtil;
@@ -53,8 +53,6 @@ import org.flixelgdx.util.FlixelSpriteUtil;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.function.Consumer;
 
 /**
  * Platform-agnostic <em>controller</em> for the FlixelGDX in-game debugger. This abstract class is the
@@ -113,6 +111,9 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
    * {@value #PERF_SAMPLE_INTERVAL}s gives a rolling window of about six seconds.
    */
   public static final int PERF_HISTORY_SIZE = 120;
+
+  /** Maximum number of lines the in-game debug console keeps. Older lines are trimmed when this is exceeded. */
+  public static final int MAX_LOG_ENTRIES = 200;
 
   /**
    * Effective stats refresh interval. Initialized to {@link #STATS_UPDATE_INTERVAL}; subclasses may
@@ -207,13 +208,13 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Pool of tracker blocks between rebuilds to avoid reallocating block objects. */
   private final FlixelArray<CachedTrackerBlock> cachedTrackerBlockPool = new FlixelArray<>();
 
-  /** Latest log lines, oldest first; bounded by {@link FlixelLogger#MAX_LOG_ENTRIES}. */
+  /** Latest log lines, oldest first; bounded by {@link #MAX_LOG_ENTRIES}. */
   protected final FlixelArray<BufferedLogLine> logBuffer = new FlixelArray<>();
 
   /** Pool of {@link BufferedLogLine} instances reused as the buffer rolls over. */
   private final FlixelArray<BufferedLogLine> logLinePool = new FlixelArray<>();
 
-  private final Consumer<FlixelLogEntry> logListener = this::onLogEntry;
+  private final FlixelLogSink logSink = this::onLogEntry;
 
   protected int debugInspectCameraIndex;
 
@@ -244,8 +245,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   /** Constructs the shared debug overlay state. Subclasses should call this before wiring platform UI. */
   protected FlixelDebugOverlay() {}
 
-  public final Consumer<FlixelLogEntry> getLogListener() {
-    return logListener;
+  public final FlixelLogSink getLogSink() {
+    return logSink;
   }
 
   public final boolean isVisible() {
@@ -970,11 +971,8 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
   }
 
   private void onLogEntry(FlixelLogEntry entry) {
-    if (entry == null) {
-      return;
-    }
     synchronized (logBuffer) {
-      while (logBuffer.getSize() >= FlixelLogger.MAX_LOG_ENTRIES) {
+      while (logBuffer.getSize() >= MAX_LOG_ENTRIES) {
         BufferedLogLine old = logBuffer.removeIndex(0);
         logLinePool.add(old);
       }
@@ -1050,14 +1048,17 @@ public abstract class FlixelDebugOverlay implements FlixelUpdatable, FlixelDestr
     public String messageStr = "";
 
     void set(FlixelLogEntry entry) {
-      level = entry.level();
-      String t = entry.tag() != null ? entry.tag() : "";
+      level = entry.getLevel();
       tag.clear();
-      tag.concat(t);
+      tag.concat(entry.getTag());
       tagStr = tag.toString();
-      String m = entry.message() != null ? entry.message() : "";
       message.clear();
-      message.concat(m);
+      message.concat(entry.getMessage());
+      Throwable thrown = entry.getThrowable();
+      if (thrown != null) {
+        message.concat(" | ");
+        message.concat(thrown.toString());
+      }
       messageStr = message.toString();
     }
 
