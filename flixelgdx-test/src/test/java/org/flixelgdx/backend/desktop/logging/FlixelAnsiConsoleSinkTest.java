@@ -75,7 +75,8 @@ class FlixelAnsiConsoleSinkTest {
     String out = output();
     assertTrue(out.startsWith(FlixelAsciiCodes.BOLD + FlixelAsciiCodes.WHITE + LOCATION), out);
     assertTrue(out.contains(FlixelAsciiCodes.RESET + " "), out);
-    assertTrue(out.contains(FlixelAsciiCodes.ITALIC + FlixelAsciiCodes.WHITE + "hello 5" + FlixelAsciiCodes.RESET), out);
+    assertTrue(out.contains(FlixelAsciiCodes.ITALIC + FlixelAsciiCodes.WHITE + "hello 5" + FlixelAsciiCodes.RESET),
+        out);
     assertFalse(out.contains(FlixelAsciiCodes.UNDERLINE), out);
   }
 

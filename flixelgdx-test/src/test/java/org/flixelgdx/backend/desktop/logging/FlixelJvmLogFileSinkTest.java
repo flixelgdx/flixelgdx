@@ -75,7 +75,8 @@ class FlixelJvmLogFileSinkTest {
     assertTrue(lines.size() > 2, lines.toString());
     String first = lines.get(0);
     assertTrue(first.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} \\[INFO\\] \\[Test\\] "
-        + "\\[FlixelJvmLogFileSinkTest\\.java:\\d+\\] \\[writesDetailedLinesWithTheStackTrace\\(\\)\\] hello 1"), first);
+        + "\\[FlixelJvmLogFileSinkTest\\.java:\\d+\\] \\[writesDetailedLinesWithTheStackTrace\\(\\)\\] hello 1"),
+        first);
     String second = lines.get(1);
     assertTrue(second.contains("[ERROR] [Test]"), second);
     assertTrue(second.endsWith("] failed"), second);
@@ -140,10 +141,10 @@ class FlixelJvmLogFileSinkTest {
   @Test
   void pruningOnlyDeletesTheOldestFlixelLogFiles() throws IOException {
     String[] oldLogs = {
-      "flixel-2020-01-01_00-00-00.log",
-      "flixel-2020-01-02_00-00-00.log",
-      "flixel-2020-01-03_00-00-00.log",
-      "flixel-2020-01-04_00-00-00.log"
+        "flixel-2020-01-01_00-00-00.log",
+        "flixel-2020-01-02_00-00-00.log",
+        "flixel-2020-01-03_00-00-00.log",
+        "flixel-2020-01-04_00-00-00.log"
     };
     String[] others = { "notes.txt", "save.dat", "flixel-notes.txt", "other.log", "a-flixel-x.log" };
     for (String name : oldLogs) {
