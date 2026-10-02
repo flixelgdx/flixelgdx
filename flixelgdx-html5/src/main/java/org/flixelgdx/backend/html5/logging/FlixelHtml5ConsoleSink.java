@@ -120,7 +120,7 @@ public class FlixelHtml5ConsoleSink implements FlixelLogSink {
    * @param headLen How many characters at the start of {@code text} belong to the location part.
    * @param styled Whether to apply the CSS styling.
    */
-  @JSBody(params = {"level", "text", "headLen", "styled"}, script = """
+  @JSBody(params = { "level", "text", "headLen", "styled" }, script = """
       var flixelFn = level === 0 ? console.debug
         : level === 1 ? console.info
         : level === 2 ? console.warn
