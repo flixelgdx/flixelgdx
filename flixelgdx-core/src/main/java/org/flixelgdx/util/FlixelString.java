@@ -28,6 +28,7 @@ import org.flixelgdx.text.FlixelText;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -197,11 +198,7 @@ public class FlixelString implements CharSequence {
   @NotNull
   public FlixelString set(@Nullable CharSequence text) {
     buffer.clear();
-    if (text == null) {
-      buffer.append("null");
-    } else {
-      buffer.append(text);
-    }
+    buffer.append(Objects.requireNonNullElse(text, "null"));
     return this;
   }
 
