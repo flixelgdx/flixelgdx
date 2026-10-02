@@ -88,7 +88,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   private static final double FPS_SMOOTHING = 0.1;
 
   /** GLES internal format constant for ASTC 4x4 RGBA (extension, not in GLES30 constants). */
-  private static final int GL_COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
+  private static final int GL_COMPRESSED_RGBA_ASTC_4X4_KHR = 0x93B0;
 
   private long lastFrameNanos = -1L;
 
@@ -435,8 +435,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
       int glFormat;
       boolean compressed;
       if (astcSupported) {
-        fmt = FlixelBasisu.FMT_ASTC_4x4_RGBA;
-        glFormat = GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+        fmt = FlixelBasisu.FMT_ASTC_4X4_RGBA;
+        glFormat = GL_COMPRESSED_RGBA_ASTC_4X4_KHR;
         compressed = true;
       } else {
         fmt = FlixelBasisu.FMT_ETC2_RGBA;
