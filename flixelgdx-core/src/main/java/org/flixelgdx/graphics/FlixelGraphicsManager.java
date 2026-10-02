@@ -164,6 +164,8 @@ public interface FlixelGraphicsManager {
    *       drawn at this size and then stretched to fill the screen, the same way a monitor scales a
    *       lower resolution in exclusive fullscreen. The aspect ratio is kept by adding bars when
    *       it does not match the monitor.</li>
+   *   <li><b>Web:</b> the page decides the canvas size, so the scene is drawn at this size and
+   *       stretched to fill the canvas, like desktop fullscreen.</li>
    *   <li><b>Mobile:</b> the screen size is fixed, so this does nothing. Use
    *       {@link #setRenderScale(float)} to trade sharpness for speed instead.</li>
    * </ul>
@@ -249,8 +251,10 @@ public interface FlixelGraphicsManager {
    * GPU time; this is the main way to keep a game smooth on weak hardware, phones especially. Above
    * {@code 1} the scene is drawn larger and shrunk down, which smooths jagged edges at a higher cost.
    *
-   * <p>The scaled surface always keeps the same shape as the screen, so changing the scale never
-   * adds bars or changes how much of the world is visible; only the sharpness changes.
+   * <p>The scale is applied to whatever size the scene is displayed at: the window or screen, or
+   * the render resolution where that is drawn and stretched (desktop fullscreen and web). The
+   * scaled surface keeps that shape, so changing the scale never adds bars or changes how much of
+   * the world is visible; only the sharpness changes.
    *
    * <p>Example (draw at 75% on a phone to save battery):
    *
