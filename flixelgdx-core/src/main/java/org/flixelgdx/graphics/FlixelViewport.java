@@ -25,7 +25,6 @@ package org.flixelgdx.graphics;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
-import org.flixelgdx.FlixelConfig;
 import org.flixelgdx.math.FlixelMatrix;
 import org.flixelgdx.math.FlixelRect;
 import org.flixelgdx.math.FlixelVector;
@@ -347,19 +346,19 @@ public class FlixelViewport {
     /**
      * Scale uniformly and grow the visible world to fill the screen (no bars, more world shown).
      *
-     * <p>This policy works as described when the game renders directly to the window (render
-     * resolution disabled via {@link FlixelConfig.Builder#disableRenderResolution()}).
-     * When a fixed render resolution is active (the default), the scene surface is a fixed size and
-     * cannot extend, so this policy behaves the same as {@link #FIT} within that surface.
+     * <p>This fills the whole window whenever the scene surface has the same shape as the window,
+     * which is always true for the render scale. The one exception is a desktop game in fullscreen
+     * with a render resolution whose aspect ratio differs from the monitor's: the surface keeps
+     * that resolution's shape, so the world extends to fill the surface and the surface itself is
+     * letterboxed onto the monitor.
      */
     EXTEND,
 
     /**
      * Stretch each axis independently to fill the screen, distorting the art.
      *
-     * <p>Like {@link #EXTEND}, this policy only fills the full window when the game renders
-     * directly to the window (render resolution disabled). With a fixed render resolution active,
-     * the distortion is applied to the fixed surface, which is then upscaled by the compositor.
+     * <p>Like {@link #EXTEND}, this fills whatever surface the scene draws into, so it covers the
+     * whole window except in the fullscreen render resolution case described there.
      */
     STRETCH
   }

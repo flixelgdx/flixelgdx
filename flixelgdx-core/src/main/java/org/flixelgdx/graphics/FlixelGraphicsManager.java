@@ -69,6 +69,12 @@ import java.nio.ByteBuffer;
  */
 public interface FlixelGraphicsManager {
 
+  /** The smallest render scale {@link #setRenderScale(float)} accepts. */
+  float MIN_RENDER_SCALE = 0.1f;
+
+  /** The largest render scale {@link #setRenderScale(float)} accepts. */
+  float MAX_RENDER_SCALE = 2f;
+
   /**
    * Returns which graphics backend is running this session, defaulting to {@link FlixelGraphicsApi#NOOP}.
    *
@@ -146,80 +152,88 @@ public interface FlixelGraphicsManager {
   default void beginCameraPass() {}
 
   /**
-   * Pins the resolution the whole scene is rendered at, independent of the window size.
+   * Sets the resolution the game is displayed at, the equivalent of a "Resolution" option in a
+   * game's settings menu.
    *
-   * <p>Normally every sprite is drawn straight to the window, so a larger window (for example
-   * fullscreen) shades proportionally more pixels and costs more GPU time. When a render resolution
-   * is set, the framework instead draws the entire scene into one fixed-size off-screen surface and
-   * then stretches that surface to fill the window in a single pass. The expensive per-pixel work is
-   * now tied to this fixed size rather than the window, so fullscreen stops multiplying the cost.
-   * This is the classic fix for a game that runs fine in a small window but drops frames when
-   * maximized.
+   * <p>What this changes depends on the platform, since each one presents a game differently:
    *
-   * <p>The size does not have to match the game's design size. Render below it (for example
-   * {@code 960x540} for a {@code 1280x720} game) as a performance option on weak hardware, or above
-   * it to supersample for smoother edges. For the picture to stay undistorted, keep the same aspect
-   * ratio as the design size; the framework letterboxes the final stretch to the window just like a
-   * {@link FlixelViewport.Scaling#FIT} camera.
+   * <ul>
+   *   <li><b>Desktop, windowed:</b> the window is resized to this size, so the game actually
+   *       appears larger or smaller on the monitor.</li>
+   *   <li><b>Desktop, fullscreen:</b> the window always covers the whole monitor, so the scene is
+   *       drawn at this size and then stretched to fill the screen, the same way a monitor scales a
+   *       lower resolution in exclusive fullscreen. The aspect ratio is kept by adding bars when
+   *       it does not match the monitor.</li>
+   *   <li><b>Mobile:</b> the screen size is fixed, so this does nothing. Use
+   *       {@link #setRenderScale(float)} to trade sharpness for speed instead.</li>
+   * </ul>
    *
-   * <p>By default, {@link FlixelGame} will automatically set this, at startup based on the initial
-   * design size set. You can reset it at any time during runtime if you ever need to.
+   * <p>This is separate from the game's design size (the world size the cameras show) and from
+   * {@link #setRenderScale(float)} (how many pixels are drawn relative to the displayed size). Think
+   * of a picture on a wall: the design size is the picture, the render resolution is the frame it
+   * hangs in, and the render scale is how finely the picture is painted.
    *
-   * <p>Example (render a 1280x720 game at a fixed 1280x720 no matter the window size):
+   * <p>By default, {@link FlixelGame} sets this at startup from the configured render resolution,
+   * which is the design size unless the config says otherwise. You can change it at any time, for
+   * example from an options menu.
+   *
+   * <p>Example (a resolution picker in an options menu):
    *
    * <pre>{@code
-   * Flixel.graphics.setRenderResolution(1280, 720);
+   * Flixel.graphics.setRenderResolution(1920, 1080);
    * }</pre>
    *
-   * @param width The fixed render width in pixels; values below {@code 1} disable the feature.
-   * @param height The fixed render height in pixels; values below {@code 1} disable the feature.
+   * @param width The display width in pixels; values below {@code 1} disable the feature.
+   * @param height The display height in pixels; values below {@code 1} disable the feature.
    */
-  default void setRenderResolution(int width, int height) {
-    setRenderResolution(width, height, true);
+  default void setRenderResolution(int width, int height) {}
+
+  /**
+   * Sets the display resolution and chooses how the scene is filtered whenever it is stretched.
+   *
+   * <p>See {@link #setRenderResolution(int, int)} for the full explanation. This overload also sets
+   * {@link #setRenderSmooth(boolean)} in the same call.
+   *
+   * @param width The display width in pixels; values below {@code 1} disable the feature.
+   * @param height The display height in pixels; values below {@code 1} disable the feature.
+   * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor.
+   */
+  default void setRenderResolution(int width, int height, boolean smooth) {
+    setRenderSmooth(smooth);
+    setRenderResolution(width, height);
   }
 
   /**
-   * Pins the render resolution and chooses how the result is filtered when stretched to the window.
-   *
-   * <p>See {@link #setRenderResolution(int, int)} for the full explanation. This overload only adds
-   * control over the upscale filter: smooth (linear) blends neighboring pixels for clean scaling of
-   * high-resolution art, while nearest-neighbor keeps hard pixel edges, which is what pixel-art games
-   * want.
-   *
-   * @param width The fixed render width in pixels; values below {@code 1} disable the feature.
-   * @param height The fixed render height in pixels; values below {@code 1} disable the feature.
-   * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor.
+   * Disables a previously set render resolution, so the game is displayed at the native size of its
+   * window or screen (fullscreen renders at the monitor's full size).
    */
-  default void setRenderResolution(int width, int height, boolean smooth) {}
-
-  /** Disables a previously set render resolution, so the scene draws straight to the window again. */
   default void clearRenderResolution() {}
 
   /**
-   * Returns {@code true} when a fixed render resolution is active (see
+   * Returns {@code true} when a render resolution is active (see
    * {@link #setRenderResolution(int, int)}), or {@code false} by default.
    *
-   * @return {@code true} when the scene is drawn into a fixed-size surface before being upscaled.
+   * @return {@code true} when a display resolution has been set.
    */
   default boolean isRenderResolutionEnabled() {
     return false;
   }
 
   /**
-   * Returns the width the scene is rendered at, which is the fixed render width when one is set and
-   * the back buffer width otherwise. Framework rendering that sizes its own surfaces (such as the
-   * global shader chain) uses this so it matches the scene, not the window.
+   * Returns the display width set by {@link #setRenderResolution(int, int)}, or the back buffer
+   * width when none is set.
    *
-   * @return The scene render width in pixels.
+   * @return The display width in pixels.
    */
   default int getRenderWidth() {
     return getBackBufferWidth();
   }
 
   /**
-   * Returns the height the scene is rendered at.
+   * Returns the display height set by {@link #setRenderResolution(int, int)}, or the back buffer
+   * height when none is set.
    *
-   * @return The scene render height in pixels.
+   * @return The display height in pixels.
    * @see #getRenderWidth()
    */
   default int getRenderHeight() {
@@ -227,19 +241,93 @@ public interface FlixelGraphicsManager {
   }
 
   /**
-   * Redirects drawing into the fixed-resolution scene surface, when a render resolution is active.
+   * Sets how many pixels the scene is drawn with, relative to the size it is displayed at.
    *
-   * <p>The framework calls this once per frame right before it draws the cameras. When no render
-   * resolution is set this does nothing and drawing goes straight to the window as usual. Pair every
-   * call with {@link #endScene()}.
+   * <p>This is the "Render scale" or "Resolution scale" option many games offer. A scale of
+   * {@code 1} draws one pixel for every displayed pixel. Below {@code 1} (for example {@code 0.5})
+   * the scene is drawn into a smaller surface and stretched up, which looks softer but costs far less
+   * GPU time; this is the main way to keep a game smooth on weak hardware, phones especially. Above
+   * {@code 1} the scene is drawn larger and shrunk down, which smooths jagged edges at a higher cost.
+   *
+   * <p>The scaled surface always keeps the same shape as the screen, so changing the scale never
+   * adds bars or changes how much of the world is visible; only the sharpness changes.
+   *
+   * <p>Example (draw at 75% on a phone to save battery):
+   *
+   * <pre>{@code
+   * Flixel.graphics.setRenderScale(0.75f);
+   * }</pre>
+   *
+   * @param scale The scale factor, clamped to {@link #MIN_RENDER_SCALE} through
+   *     {@link #MAX_RENDER_SCALE}.
+   */
+  default void setRenderScale(float scale) {}
+
+  /**
+   * Returns the render scale set by {@link #setRenderScale(float)}, or {@code 1} by default.
+   *
+   * @return The render scale factor.
+   */
+  default float getRenderScale() {
+    return 1f;
+  }
+
+  /**
+   * Chooses how the scene is filtered when it is stretched to the screen, which happens whenever
+   * the render scale is not {@code 1} or a fullscreen render resolution differs from the monitor.
+   *
+   * <p>Smooth (linear) filtering blends neighboring pixels for clean scaling of high-resolution art,
+   * while nearest-neighbor keeps hard pixel edges, which is what pixel-art games want.
+   *
+   * @param smooth {@code true} for linear filtering, {@code false} for nearest-neighbor.
+   */
+  default void setRenderSmooth(boolean smooth) {}
+
+  /**
+   * Returns {@code true} when the stretched scene uses linear filtering, which is the default.
+   *
+   * @return {@code true} for linear filtering, {@code false} for nearest-neighbor.
+   */
+  default boolean isRenderSmooth() {
+    return true;
+  }
+
+  /**
+   * Returns the width of the surface the scene is actually drawn into this frame, after the render
+   * resolution and render scale are both applied. Framework rendering that sizes its own surfaces
+   * (such as the global shader chain) uses this so it matches the scene, not the window.
+   *
+   * @return The scene surface width in pixels.
+   */
+  default int getSceneWidth() {
+    return getRenderWidth();
+  }
+
+  /**
+   * Returns the height of the surface the scene is actually drawn into this frame.
+   *
+   * @return The scene surface height in pixels.
+   * @see #getSceneWidth()
+   */
+  default int getSceneHeight() {
+    return getRenderHeight();
+  }
+
+  /**
+   * Redirects drawing into the scaled scene surface, when the scene is not drawn at the screen's
+   * native size.
+   *
+   * <p>The framework calls this once per frame right before it draws the cameras. When the scene
+   * matches the screen this does nothing and drawing goes straight to the window as usual. Pair
+   * every call with {@link #endScene()}.
    */
   default void beginScene() {}
 
   /**
-   * Ends scene redirection and stretches the fixed-resolution surface to fill the window.
+   * Ends scene redirection and stretches the scene surface to fill the window.
    *
-   * <p>The framework calls this once per frame after all cameras have drawn. When no render
-   * resolution is set this does nothing. See {@link #beginScene()}.
+   * <p>The framework calls this once per frame after all cameras have drawn. When the scene was
+   * drawn straight to the window this does nothing. See {@link #beginScene()}.
    */
   default void endScene() {}
 
