@@ -386,8 +386,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  @SuppressWarnings("checkstyle:ConstantName")
-  public static final FlixelBootManager boot = new FlixelBootManager();
+  public static FlixelBootManager boot = new FlixelBootManager();
 
   /**
    * The platform-specific alert dialog provider.
