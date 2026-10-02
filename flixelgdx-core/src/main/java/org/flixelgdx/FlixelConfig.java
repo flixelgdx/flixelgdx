@@ -27,6 +27,8 @@ import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.save.FlixelSave;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Immutable startup configuration for a {@link FlixelGame}.
  *
@@ -250,7 +252,7 @@ public final class FlixelConfig {
      */
     @NotNull
     public Builder company(@NotNull String company) {
-      this.company = company != null ? company : "";
+      this.company = Objects.requireNonNullElse(company, "");
       return this;
     }
 
@@ -262,7 +264,7 @@ public final class FlixelConfig {
      */
     @NotNull
     public Builder version(@NotNull String version) {
-      this.version = version != null ? version : "";
+      this.version = Objects.requireNonNullElse(version, "");
       return this;
     }
 
