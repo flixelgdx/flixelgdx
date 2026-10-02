@@ -67,11 +67,10 @@ import java.nio.ByteOrder;
  * WebGL2, which is what is requested.
  *
  * <p>This backend fully supports the global post-processing shader pipeline
- * ({@link #getGlobalShaderPipeline()}), fixed render resolution
- * ({@link #setRenderResolution(int, int, boolean)}), and render scale
+ * ({@link #setRenderResolution(int, int, boolean)}) and render scale
  * ({@link #setRenderScale(float)}), which is applied on top of the render resolution (or the canvas
- * size when none is set). All three use off-screen {@link FlixelWebGlRenderTarget} surfaces so games look the same on
- * every platform without any platform-specific game code.
+ * size when none is set). All three use off-screen {@link FlixelWebGlRenderTarget} surfaces so games
+ * look the same on every platform without any platform-specific game code.
  *
  * @see FlixelGlobalShaderPipeline
  */
