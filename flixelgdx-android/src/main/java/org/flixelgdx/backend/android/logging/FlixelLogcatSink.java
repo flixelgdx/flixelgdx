@@ -23,7 +23,6 @@
  */
 package org.flixelgdx.backend.android.logging;
 
-import android.util.Log;
 import org.flixelgdx.logging.FlixelLogEntry;
 import org.flixelgdx.logging.FlixelLogFormat;
 import org.flixelgdx.logging.FlixelLogLevel;
@@ -32,6 +31,8 @@ import org.flixelgdx.logging.FlixelLogSink;
 import org.flixelgdx.logging.FlixelLogSite;
 import org.flixelgdx.util.FlixelString;
 import org.jetbrains.annotations.NotNull;
+
+import android.util.Log;
 
 /**
  * A {@link FlixelLogSink} that sends every message to Android's Logcat.
