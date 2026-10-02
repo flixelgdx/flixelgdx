@@ -162,7 +162,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   @Override
   @NotNull
   public FlixelGraphicsApi getApi() {
-    return FlixelGraphicsApi.OpenGLES;
+    return FlixelGraphicsApi.OPENGL_ES;
   }
 
   @Override

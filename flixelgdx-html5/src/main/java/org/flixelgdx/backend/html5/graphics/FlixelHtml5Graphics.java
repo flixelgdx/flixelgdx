@@ -206,7 +206,7 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
   @Override
   @NotNull
   public FlixelGraphicsApi getApi() {
-    return FlixelGraphicsApi.WebGL;
+    return FlixelGraphicsApi.WEBGL;
   }
 
   @Override

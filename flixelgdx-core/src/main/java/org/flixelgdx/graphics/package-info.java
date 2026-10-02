@@ -115,7 +115,7 @@
  * example to skip a feature unsupported in a specific environment:
  *
  * <pre>{@code
- * if (Flixel.graphics.getApi() == FlixelGraphicsApi.Noop) {
+ * if (Flixel.graphics.getApi() == FlixelGraphicsApi.NOOP) {
  *   // Running headless or in a test environment. Skip GPU work.
  * }
  * }</pre>

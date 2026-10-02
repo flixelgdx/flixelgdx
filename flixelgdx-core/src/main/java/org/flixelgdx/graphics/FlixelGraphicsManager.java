@@ -70,13 +70,13 @@ import java.nio.ByteBuffer;
 public interface FlixelGraphicsManager {
 
   /**
-   * Returns which graphics backend is running this session, defaulting to {@link FlixelGraphicsApi#Noop}.
+   * Returns which graphics backend is running this session, defaulting to {@link FlixelGraphicsApi#NOOP}.
    *
    * @return The active graphics API; never {@code null}.
    */
   @NotNull
   default FlixelGraphicsApi getApi() {
-    return FlixelGraphicsApi.Noop;
+    return FlixelGraphicsApi.NOOP;
   }
 
   /**

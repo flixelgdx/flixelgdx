@@ -779,7 +779,7 @@ public final class Flixel {
    * Flixel.host.requestAttention();
    *
    * // Check the current platform.
-   * if (Flixel.host.getPlatform() == FlixelPlatform.Android) {
+   * if (Flixel.host.getPlatform() == FlixelPlatform.ANDROID) {
    *   addBackButton();
    * }
    * }</pre>
@@ -989,7 +989,7 @@ public final class Flixel {
       }
       // Close the game only on desktop to avoid issues on web and compliance with iOS guidelines.
       FlixelPlatform platform = host.getPlatform();
-      if (platform == FlixelPlatform.Desktop) {
+      if (platform == FlixelPlatform.DESKTOP) {
         window.setAbsorbCloseRequests(false);
         quit();
       }
