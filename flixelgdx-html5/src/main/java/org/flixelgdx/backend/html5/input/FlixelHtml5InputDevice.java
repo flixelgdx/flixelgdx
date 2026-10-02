@@ -102,17 +102,9 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
 
     Window.current().addEventListener("keydown", event -> {
       KeyboardEvent key = (KeyboardEvent) event;
-      // Space is left alone while the text-input bridge is focused: preventing its default would
-      // stop the browser from inserting the space into the bridge, so it would never be typed.
-      // The focused bridge already keeps Space from scrolling the page.
       if (shouldSwallow(key.getCode()) && !(isTextInputActive() && "Space".equals(key.getCode()))) {
         event.preventDefault();
       }
-      // While the text-input bridge is focused, typed characters arrive through it instead (see
-      // the input/composition listeners wired in ensureTextInputBridge()), so only editing keys
-      // like Backspace and the arrows need to keep flowing from here. Ctrl/Meta shortcuts that
-      // would otherwise copy, cut, select, or paste into the hidden field are swallowed, since the
-      // game handles clipboard access itself.
       if (isTextInputActive()) {
         if (shouldPreventDefaultForBridge(key)) {
           event.preventDefault();
@@ -136,13 +128,6 @@ public class FlixelHtml5InputDevice extends FlixelBaseInputDevice {
     canvas.addEventListener("mousedown", event -> {
       MouseEvent mouse = (MouseEvent) event;
       if (isTextInputActive()) {
-        // A mousedown's default action shifts focus to the clicked element (or away from
-        // whatever was focused, if the target is not focusable). For the canvas that would move
-        // focus off the hidden text-input bridge and onto the page body, after which the window
-        // keydown listener stops dispatching keyTyped until the bridge is focused again, e.g.
-        // when a player clicks inside a focused text box to move the caret. Preventing the
-        // default here keeps the bridge focused without affecting the mouse event itself, which
-        // is still read and dispatched below.
         event.preventDefault();
       }
       onMouseDown(mapButton(mouse.getButton()), canvasX(canvas, mouse.getClientX()),

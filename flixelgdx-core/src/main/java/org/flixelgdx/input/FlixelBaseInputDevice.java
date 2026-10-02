@@ -46,10 +46,6 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
   protected FlixelArray<FlixelTouchListener> touchListeners = new FlixelArray<>();
 
   private int textInputRequests;
-  private int textInputAreaX;
-  private int textInputAreaY;
-  private int textInputAreaWidth;
-  private int textInputAreaHeight;
 
   @Override
   public void addKeyboardListener(FlixelKeyboardListener listener) {
@@ -130,10 +126,6 @@ public abstract class FlixelBaseInputDevice implements FlixelInputDevice {
    */
   @Override
   public void setTextInputArea(int x, int y, int width, int height) {
-    textInputAreaX = x;
-    textInputAreaY = y;
-    textInputAreaWidth = width;
-    textInputAreaHeight = height;
     onTextInputAreaChanged(x, y, width, height);
   }
 
