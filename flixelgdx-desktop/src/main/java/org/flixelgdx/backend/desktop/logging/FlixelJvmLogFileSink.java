@@ -97,9 +97,11 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
   private final FlixelString marker = new FlixelString(80);
   private String logFilePath;
   private Thread writerThread;
+  private BufferedWriter pendingWriter;
 
   private boolean closing;
   private volatile boolean open;
+  private final boolean deferWriter;
 
   /** Creates a sink with room for {@link #DEFAULT_CAPACITY} queued lines. */
   public FlixelJvmLogFileSink() {
@@ -113,6 +115,21 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
    *   raised to 1. When all slots are in use, new lines are dropped.
    */
   public FlixelJvmLogFileSink(int capacity) {
+    this(capacity, false);
+  }
+
+  /**
+   * Creates a sink that can hold back its writer thread, so tests can fill the queue without any
+   * timing involved.
+   *
+   * <p>When {@code deferWriter} is {@code true}, {@link #open(String, int)} opens the file but does
+   * not start the writer thread until {@link #releaseWriter()} (or {@link #close()}) is called.
+   *
+   * @param capacity The number of lines that can wait for the writer thread.
+   * @param deferWriter Whether to delay starting the writer thread. Only meant for tests.
+   */
+  FlixelJvmLogFileSink(int capacity, boolean deferWriter) {
+    this.deferWriter = deferWriter;
     this.capacity = Math.max(1, capacity);
     slots = new FlixelString[this.capacity];
     for (int i = 0; i < this.capacity; i++) {
@@ -156,14 +173,15 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
     }
     logFilePath = logFile.getAbsolutePath();
 
-    Thread thread = new Thread(() -> runWriter(writer), "FlixelGDX Log Thread");
-    thread.setDaemon(true);
-    writerThread = thread;
-    thread.start();
+    pendingWriter = writer;
+    if (!deferWriter) {
+      releaseWriter();
+    }
   }
 
   @Override
   public synchronized void close() {
+    releaseWriter();
     Thread thread;
     synchronized (lock) {
       open = false;
@@ -208,6 +226,22 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
     }
   }
 
+  /**
+   * Starts the writer thread if {@link #open(String, int)} held it back. Does nothing when the
+   * thread is already running or no file is open.
+   */
+  synchronized void releaseWriter() {
+    BufferedWriter writer = pendingWriter;
+    if (writer == null) {
+      return;
+    }
+    pendingWriter = null;
+    Thread thread = new Thread(() -> runWriter(writer), "FlixelGDX Log Thread");
+    thread.setDaemon(true);
+    writerThread = thread;
+    thread.start();
+  }
+
   @Override
   public boolean isOpen() {
     return open;
@@ -236,6 +270,17 @@ public class FlixelJvmLogFileSink implements FlixelLogFileSink {
    */
   public int getCapacity() {
     return capacity;
+  }
+
+  /**
+   * Returns how many lines are waiting for the writer thread right now.
+   *
+   * @return The number of queued lines.
+   */
+  public int getQueuedCount() {
+    synchronized (lock) {
+      return count;
+    }
   }
 
   /**

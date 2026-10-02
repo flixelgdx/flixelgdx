@@ -169,29 +169,58 @@ class FlixelJvmLogFileSinkTest {
   }
 
   @Test
-  void tinyCapacityDropsLinesAndWritesAMarker() throws IOException {
-    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink(1);
-    assertEquals(1, sink.getCapacity());
+  void fullQueueDropsLinesAndMarksThePlaceOfTheGap() throws IOException {
+    // The writer thread is held back, so the three slots fill up and the next four lines are dropped.
+    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink(3, true);
+    assertEquals(3, sink.getCapacity());
     logger.setFileSink(sink);
     sink.open(dir.toString(), 5);
-    int total = 20000;
-    for (int i = 0; i < total; i++) {
+    for (int i = 0; i < 7; i++) {
+      logger.info("line {}", i);
+    }
+    assertEquals(3, sink.getQueuedCount());
+    assertEquals(4L, sink.getDroppedCount());
+
+    sink.releaseWriter();
+    waitUntilDrained(sink);
+    logger.info("line {}", 7);
+    sink.close();
+
+    List<String> lines = Files.readAllLines(onlyLogFile(), StandardCharsets.UTF_8);
+    assertEquals(5, lines.size(), lines.toString());
+    assertTrue(lines.get(0).endsWith("line 0"));
+    assertTrue(lines.get(1).endsWith("line 1"));
+    assertTrue(lines.get(2).endsWith("line 2"));
+    assertEquals("[4" + DROP_SUFFIX, lines.get(3));
+    assertTrue(lines.get(4).endsWith("line 7"));
+    assertEquals(4L, sink.getDroppedCount());
+  }
+
+  @Test
+  void dropsAtTheEndAreReportedOnClose() throws IOException {
+    FlixelJvmLogFileSink sink = new FlixelJvmLogFileSink(2, true);
+    logger.setFileSink(sink);
+    sink.open(dir.toString(), 5);
+    for (int i = 0; i < 5; i++) {
       logger.info("line {}", i);
     }
     sink.close();
 
-    int written = 0;
-    long markerTotal = 0;
-    for (String line : Files.readAllLines(onlyLogFile(), StandardCharsets.UTF_8)) {
-      if (line.startsWith("[") && line.endsWith(DROP_SUFFIX)) {
-        markerTotal += Long.parseLong(line.substring(1, line.length() - DROP_SUFFIX.length()));
-      } else {
-        written++;
-      }
+    List<String> lines = Files.readAllLines(onlyLogFile(), StandardCharsets.UTF_8);
+    assertEquals(3, lines.size(), lines.toString());
+    assertTrue(lines.get(0).endsWith("line 0"));
+    assertTrue(lines.get(1).endsWith("line 1"));
+    assertEquals("[3" + DROP_SUFFIX, lines.get(2));
+    assertEquals(3L, sink.getDroppedCount());
+  }
+
+  /** Waits until the writer thread has written every queued line. The outcome does not depend on how long it takes. */
+  private static void waitUntilDrained(FlixelJvmLogFileSink sink) {
+    long deadline = System.nanoTime() + 10_000_000_000L;
+    while (sink.getQueuedCount() > 0) {
+      assertTrue(System.nanoTime() < deadline, "The writer thread never drained the queue");
+      Thread.onSpinWait();
     }
-    assertTrue(markerTotal > 0, "A one-slot queue should have dropped lines");
-    assertEquals(markerTotal, sink.getDroppedCount());
-    assertEquals(total, written + markerTotal);
   }
 
   private File[] logFiles() {
