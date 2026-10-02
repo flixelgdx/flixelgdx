@@ -73,10 +73,7 @@ import java.util.function.Supplier;
  * <h2>In-place editing</h2>
  *
  * <p>{@link #insert(int, char)}, {@link #insert(int, CharSequence)}, {@link #delete(int, int)}, and
- * {@link #setLength(int)} edit the buffer's content without clearing it, which is what a text box
- * needs when the player types or deletes a character in the middle of a line. Think of the buffer as
- * a strip of paper tape: inserting slides the tape apart to make room, and deleting cuts a section
- * out and slides the ends back together, all without ever allocating a new strip.
+ * {@link #setLength(int)} edit the buffer's content without clearing it.
  *
  * <pre>{@code
  * // A text box backing a single line of editable input.
@@ -100,12 +97,8 @@ import java.util.function.Supplier;
  * FlixelString fs = new FlixelString(32);
  * FlixelText ft = new FlixelText();
  *
- * // In your update loop...
  * @Override
  * public void update(float elapsed) {
- *   // Below would be the same equivalent of doing ft.setText("Score: " + score),
- *   // except it doesn't allocate new strings every frame and keeps your
- *   // framerate silky smooth!
  *   fs.set("Score: ");
  *   fs.concat(score);
  *   ft.setText(fs);

@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.logging;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -608,7 +609,7 @@ class FlixelLoggerTest {
     }
 
     @Override
-    public void write(FlixelLogEntry entry) {
+    public void write(@NotNull FlixelLogEntry entry) {
       lines.add(entry.getMessage().toString());
     }
   }

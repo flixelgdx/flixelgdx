@@ -64,8 +64,8 @@ public final class FlixelDefaultLogger implements FlixelLogger {
   private volatile FlixelLogLevel level = FlixelLogLevel.DEBUG;
   private volatile String tag = "";
 
-  private FlixelDefaultLogger root;
-  private Object lock;
+  private final FlixelDefaultLogger root;
+  private final Object lock = new Object();
   private FlixelLogMode mode;
   private String logsFolder;
   private FlixelLogSink consoleSink;
@@ -90,7 +90,6 @@ public final class FlixelDefaultLogger implements FlixelLogger {
    */
   public FlixelDefaultLogger(@Nullable FlixelLogMode mode) {
     this.root = this;
-    this.lock = new Object();
     this.mode = mode != null ? mode : FlixelLogMode.SIMPLE;
     this.consoleSink = new FlixelPlainConsoleSink();
     this.extraSinks = new FlixelArray<>(FlixelLogSink[]::new);
@@ -292,8 +291,7 @@ public final class FlixelDefaultLogger implements FlixelLogger {
     }
 
     int used = 0;
-    if (message instanceof CharSequence) {
-      CharSequence fmt = (CharSequence) message;
+    if (message instanceof CharSequence fmt) {
       int len = fmt.length();
       for (int i = 0; i < len; i++) {
         char c = fmt.charAt(i);
