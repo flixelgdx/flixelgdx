@@ -24,11 +24,12 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.logging.FlixelLogger;
 
 /**
  * Default {@link FlixelAlerter} used when no platform dialog provider is installed.
  *
- * <p>No dialog is ever shown; each alert is forwarded to the logger (when one exists) so the
+ * <p>No dialog is ever shown; each alert is forwarded to the logger so the
  * message is not silently lost on headless sessions.
  */
 public enum FlixelNoopAlerter implements FlixelAlerter {
@@ -36,24 +37,20 @@ public enum FlixelNoopAlerter implements FlixelAlerter {
   /** Shared no-op instance. */
   INSTANCE;
 
+  private static final FlixelLogger LOG = Flixel.log.tagged("Alert");
+
   @Override
   public void info(String title, String message) {
-    if (Flixel.log != null) {
-      Flixel.info("Alert", title + ": " + message);
-    }
+    LOG.info("{}: {}", title, message);
   }
 
   @Override
   public void warn(String title, String message) {
-    if (Flixel.log != null) {
-      Flixel.warn("Alert", title + ": " + message);
-    }
+    LOG.warn("{}: {}", title, message);
   }
 
   @Override
   public void error(String title, String message) {
-    if (Flixel.log != null) {
-      Flixel.error("Alert", title + ": " + message);
-    }
+    LOG.error("{}: {}", title, message);
   }
 }

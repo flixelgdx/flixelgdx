@@ -23,8 +23,6 @@
  */
 package org.flixelgdx.backend;
 
-import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
-import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +43,6 @@ public enum FlixelNoopRuntimeDevice implements FlixelRuntimeDevice {
   INSTANCE;
 
   private FlixelRuntimeMode runtimeMode = FlixelRuntimeMode.RELEASE;
-  private FlixelStackTraceProvider stackTraceProvider = FlixelNoopStackTraceProvider.INSTANCE;
 
   private boolean runtimeModeSet = false;
 
@@ -63,19 +60,6 @@ public enum FlixelNoopRuntimeDevice implements FlixelRuntimeDevice {
       runtimeModeSet = true;
     } else {
       throw new RuntimeException("The runtime mode has already been set, it cannot be changed.");
-    }
-  }
-
-  @Override
-  @NotNull
-  public FlixelStackTraceProvider getStackTraceProvider() {
-    return stackTraceProvider;
-  }
-
-  @Override
-  public void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {
-    if (provider != null) {
-      this.stackTraceProvider = provider;
     }
   }
 
