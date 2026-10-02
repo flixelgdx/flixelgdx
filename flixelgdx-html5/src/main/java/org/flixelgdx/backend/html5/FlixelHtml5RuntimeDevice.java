@@ -70,6 +70,11 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
   }
 
   @Override
+  public int getUtcOffsetMillis(long epochMillis) {
+    return (int) utcOffset((double) epochMillis);
+  }
+
+  @Override
   public @NotNull FlixelRuntimeMode getMode() {
     return mode;
   }
@@ -244,6 +249,21 @@ public class FlixelHtml5RuntimeDevice implements FlixelRuntimeDevice {
         ? window.performance.memory.usedJSHeapSize : 0;
       """)
   private static native double usedHeap();
+
+  /**
+   * Asks the browser how far its local time zone is from UTC at the given moment.
+   *
+   * <p>JavaScript reports the difference in minutes with the opposite sign (UTC-5 is {@code 300}), so
+   * the script flips the sign and converts to milliseconds. The moment is a {@code double} because a
+   * Java {@code long} is not a plain JavaScript number.
+   *
+   * @param epochMillis The moment to look up, in milliseconds since the Unix epoch.
+   * @return The local offset from UTC in milliseconds, positive east of UTC.
+   */
+  @JSBody(params = { "epochMillis" }, script = """
+      return -new Date(epochMillis).getTimezoneOffset() * 60000;
+      """)
+  private static native double utcOffset(double epochMillis);
 
   /**
    * Reads the used JavaScript heap in bytes, or zero on browsers that do not expose it.

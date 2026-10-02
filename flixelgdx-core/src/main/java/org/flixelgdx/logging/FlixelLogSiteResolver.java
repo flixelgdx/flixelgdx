@@ -23,36 +23,30 @@
  */
 package org.flixelgdx.logging;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
- * Interface representing a stack frame in a platform-independent way.
+ * Finds out which line of game code made a log call.
+ *
+ * <p>Each platform finds the call site in its own way: the desktop backend walks the stack, the web
+ * backend reads a marker that the compiler inserted, and so on. The logger only asks for the answer
+ * when a sink actually reads {@link FlixelLogEntry#site()}, so a resolver costs nothing for sinks that
+ * never look at it.
+ *
+ * <p>Install one with {@link FlixelLogger#setSiteResolver(FlixelLogSiteResolver)}.
  */
-public interface FlixelStackFrame {
+@FunctionalInterface
+public interface FlixelLogSiteResolver {
 
   /**
-   * Returns the name of the file containing the execution point represented by this stack frame.
+   * Fills {@code out} with the location of the code that logged the current message.
    *
-   * @return The source file name, or {@code null} if unavailable.
-   */
-  String getFileName();
-
-  /**
-   * Returns the line number of the execution point represented by this stack frame.
+   * <p>This is called on the thread that logged the message, while the logger's lock is held. Write
+   * the answer into {@code out} in place (see {@link FlixelLogSite#set(String, int, String, String)})
+   * instead of creating new objects.
    *
-   * @return The source line number, or a negative value if unavailable.
+   * @param out The holder to fill in.
+   * @return {@code true} if the site was found and {@code out} was filled, {@code false} if it is unknown.
    */
-  int getLineNumber();
-
-  /**
-   * Returns the fully qualified name of the class containing the execution point represented by this stack frame.
-   *
-   * @return The fully qualified class name.
-   */
-  String getClassName();
-
-  /**
-   * Returns the name of the method containing the execution point represented by this stack frame.
-   *
-   * @return The method name.
-   */
-  String getMethodName();
+  boolean resolve(@NotNull FlixelLogSite out);
 }

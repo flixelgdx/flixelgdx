@@ -23,19 +23,18 @@
  */
 package org.flixelgdx.backend.android.runtime;
 
-import android.content.Context;
-import android.os.Debug;
 import org.flixelgdx.backend.FlixelCrashHandler;
 import org.flixelgdx.backend.FlixelRunEnvironment;
 import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
-import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Objects;
+
+import android.content.Context;
+import android.os.Debug;
 
 /**
  * Android implementation of {@link FlixelRuntimeDevice}: native heap via {@link Debug}, JVM heap
@@ -48,9 +47,6 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
 
   @NotNull
   private FlixelRuntimeMode mode = FlixelRuntimeMode.RELEASE;
-
-  @NotNull
-  private FlixelStackTraceProvider stackTraceProvider = FlixelNoopStackTraceProvider.INSTANCE;
 
   /** The crash handler installed by the framework, or {@code null} before startup. */
   @Nullable
@@ -110,17 +106,6 @@ public class FlixelAndroidRuntimeDevice implements FlixelRuntimeDevice {
     } else {
       throw new RuntimeException("The runtime mode has already been set, it cannot be changed.");
     }
-  }
-
-  @Override
-  @NotNull
-  public FlixelStackTraceProvider getStackTraceProvider() {
-    return stackTraceProvider;
-  }
-
-  @Override
-  public void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {
-    this.stackTraceProvider = Objects.requireNonNull(provider, "provider cannot be null.");
   }
 
   @Override

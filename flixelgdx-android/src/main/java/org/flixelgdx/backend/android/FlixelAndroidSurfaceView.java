@@ -23,6 +23,10 @@
  */
 package org.flixelgdx.backend.android;
 
+import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
+import org.flixelgdx.input.keyboard.FlixelKey;
+import org.jetbrains.annotations.NotNull;
+
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.text.InputType;
@@ -31,9 +35,6 @@ import android.view.View;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
-import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
-import org.flixelgdx.input.keyboard.FlixelKey;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The game surface view, extending {@link GLSurfaceView} to support soft-keyboard text input.

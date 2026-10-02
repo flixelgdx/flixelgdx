@@ -1,11 +1,3 @@
-/**
- * Convention for FlixelGDX Android library modules.
- *
- * <p>Applies {@code flixelgdx.java-base} for shared IDE and Spotless setup, then layers on:
- * the Android library plugin, a {@code checkstyleMain} task over the main source set, a
- * {@code javadoc} task over the release variant, and the Vanniktech Maven publish pipeline targeting Sonatype Central Portal.
- */
-
 import com.android.build.gradle.LibraryExtension
 
 plugins {
@@ -20,9 +12,6 @@ checkstyle {
   configDirectory.set(rootProject.layout.projectDirectory.dir("gradle/checkstyle"))
 }
 
-// Compile with a JDK 17 toolchain instead of whatever JDK runs Gradle. The Android plugin runs
-// jlink from the compiling JDK to build the Android JDK image, and some JDKs used to run Gradle
-// (such as the JetBrains Runtime bundled with IntelliJ) ship without jlink.
 java {
   toolchain {
     languageVersion = JavaLanguageVersion.of(17)
@@ -45,8 +34,6 @@ afterEvaluate {
   }
 }
 
-// The android plugin does not register a javadoc task, so we add one here against the release
-// variant. AGP resolves bootClasspath and the compile configuration only after evaluation.
 afterEvaluate {
   val android = extensions.getByType(LibraryExtension::class.java)
   tasks.register("javadoc", Javadoc::class.java) {
@@ -70,8 +57,6 @@ afterEvaluate {
   }
 }
 
-// JitPack rewrites Gradle module metadata and drops classifier compatibility data; omit .module
-// files so metadata is sourced from the POM alone.
 tasks.matching { it.name.startsWith("generateMetadataFileFor") }.configureEach {
   enabled = false
 }

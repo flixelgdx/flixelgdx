@@ -42,7 +42,7 @@ import java.util.Objects;
  * with {@code ==}:
  *
  * <pre>{@code
- * if (Flixel.host.getPlatform() == FlixelPlatform.Desktop) {
+ * if (Flixel.host.getPlatform() == FlixelPlatform.DESKTOP) {
  *   // Desktop-only behavior.
  * }
  * }</pre>
@@ -50,7 +50,7 @@ import java.util.Objects;
  * <p>To define a custom platform, hold a constant your backend returns:
  *
  * <pre>{@code
- * public static final FlixelPlatform MyConsole = FlixelPlatform.of("MyConsole");
+ * public static final FlixelPlatform MY_CONSOLE = FlixelPlatform.of("MyConsole");
  * }</pre>
  *
  * @see FlixelHostIntegration#getPlatform()
@@ -60,19 +60,19 @@ public final class FlixelPlatform {
   private static final FlixelMap<String, FlixelPlatform> REGISTRY = new FlixelMap<>();
 
   /** A desktop computer (Windows, macOS, Linux and similar). */
-  public static final FlixelPlatform Desktop = of("Desktop");
+  public static final FlixelPlatform DESKTOP = of("Desktop");
 
   /** A web browser. */
   public static final FlixelPlatform HTML5 = of("HTML5");
 
   /** An Android mobile device. */
-  public static final FlixelPlatform Android = of("Android");
+  public static final FlixelPlatform ANDROID = of("Android");
 
   /** An iOS mobile device. */
-  public static final FlixelPlatform iOS = of("iOS");
+  public static final FlixelPlatform IOS = of("iOS");
 
   /** A platform that isn't known, typically because no host integration has been installed yet. */
-  public static final FlixelPlatform Unknown = of("Unknown");
+  public static final FlixelPlatform UNKNOWN = of("Unknown");
 
   private final String id;
 

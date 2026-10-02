@@ -1,6 +1,5 @@
 [versions]
 agp = "8.7.3"
-asm = "9.7.1"
 commonsCompress = "1.27.1"
 desugarJdkLibs = "2.1.5"
 graalvm = "24.2.0"
@@ -17,8 +16,6 @@ vanniktech = "0.33.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
-asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
-asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 graalvm-nativeimage = { module = "org.graalvm.sdk:nativeimage", version.ref = "graalvm" }
@@ -36,6 +33,7 @@ lwjgl-bgfx = { module = "org.lwjgl:lwjgl-bgfx" }
 lwjgl-sdl = { module = "org.lwjgl:lwjgl-sdl" }
 lwjgl-stb = { module = "org.lwjgl:lwjgl-stb" }
 multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
+teavm-core = { module = "org.teavm:teavm-core", version.ref = "teavm" }
 teavm-gradle-plugin = { module = "org.teavm:teavm-gradle-plugin", version.ref = "teavm" }
 
 [plugins]

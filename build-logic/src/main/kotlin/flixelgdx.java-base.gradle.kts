@@ -1,12 +1,3 @@
-/**
- * Baseline convention applied to every FlixelGDX Java subproject.
- *
- * <p>Covers: project coordinates, IDE metadata (Eclipse + IntelliJ), centralized repository
- * declarations, Java compile encoding, and Spotless formatting rules. Modules that need
- * publication or the {@code java-library} surface area apply {@code flixelgdx.java-library}
- * instead, which in turn applies this plugin.
- */
-
 plugins {
   eclipse
   idea
@@ -33,10 +24,6 @@ tasks.withType<JavaCompile>().configureEach {
 
 spotless {
   java {
-    eclipse("4.33").configFile("${rootDir}/gradle/spotless/eclipse-formatter.xml")
-    importOrder("com", "org", "io", "java", "javax", "jdk", "", "\\#")
-    removeUnusedImports()
-    endWithNewline()
-    trimTrailingWhitespace()
+    flixelRules(rootDir)
   }
 }

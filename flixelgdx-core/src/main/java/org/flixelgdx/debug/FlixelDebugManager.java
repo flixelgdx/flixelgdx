@@ -30,6 +30,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,6 +86,7 @@ public class FlixelDebugManager {
    * whitespace, symbols, etc.) triggers an {@link IllegalArgumentException} from {@link #validateCommandName(String)}.
    */
   private static final Pattern VALID_COMMAND_NAME = Pattern.compile("^[a-zA-Z.]+$");
+  private static final FlixelLogger LOG = Flixel.log.tagged("FlixelDebug");
 
   /** Maximum entries kept in the input history (oldest are dropped first). */
   public static final int MAX_HISTORY_ENTRIES = 64;
@@ -366,8 +368,7 @@ public class FlixelDebugManager {
     String name = tokens[0];
     RegisteredCommand cmd = commands.get(name);
     if (cmd == null) {
-      Flixel.error("FlixelDebug", "Unknown command \"" + name + "\". Type \"help\" to see "
-          + "the registered commands.");
+      LOG.error("Unknown command \"{}\". Type \"help\" to see the registered commands.", name);
       return false;
     }
     String[] argv = new String[tokens.length - 1];
@@ -375,8 +376,7 @@ public class FlixelDebugManager {
     try {
       cmd.handler.invoke(new FlixelDebugCommandArgs(argv));
     } catch (Throwable t) {
-      Flixel.error("FlixelDebug", "Command \"" + name + "\" threw " + t.getClass().getSimpleName()
-          + ": " + t.getMessage());
+      LOG.error("Command \"{}\" threw {}: {}", name, t.getClass().getSimpleName(), t.getMessage());
       return false;
     }
     return true;
@@ -433,39 +433,39 @@ public class FlixelDebugManager {
     registerCommand("help", args -> {
       String filter = args.getString(0, null);
       FlixelArray<String> names = getRegisteredCommandNames();
-      Flixel.info("FlixelDebug", "Registered commands:");
+      LOG.info("Registered commands:");
       for (int i = 0; i < names.getSize(); i++) {
         String n = names.get(i);
         if (filter != null && !n.startsWith(filter)) {
           continue;
         }
-        Flixel.info("FlixelDebug", "  " + n);
+        LOG.info("  {}", n);
       }
     });
 
     registerCommand("pause", args -> {
       boolean target = args.getBoolean(0, !Flixel.game.isGamePaused());
       Flixel.game.setGamePaused(target);
-      Flixel.info("FlixelDebug", "Pause state: " + Flixel.game.isGamePaused());
+      LOG.info("Pause state: {}", Flixel.game.isGamePaused());
     });
 
     registerCommand("hitboxes", args -> {
       boolean target = args.getBoolean(0, !overlay.isDrawDebug());
       overlay.setDrawDebug(target);
-      Flixel.info("FlixelDebug", "Hitboxes: " + overlay.isDrawDebug());
+      LOG.info("Hitboxes: {}", overlay.isDrawDebug());
     });
 
     registerCommand("hide", args -> overlay.setVisible(false));
 
     registerCommand("resetState", args -> {
-      Flixel.info("FlixelDebug", "Resetting current state.");
+      LOG.info("Resetting current state.");
       Flixel.resetState();
     });
 
     registerCommand("watch.clear", args -> {
       if (Flixel.watch != null) {
         Flixel.watch.clear();
-        Flixel.info("FlixelDebug", "Cleared watch entries.");
+        LOG.info("Cleared watch entries.");
       }
     });
 

@@ -243,13 +243,13 @@ public interface FlixelHostIntegration {
    * Returns the platform this game is running on.
    *
    * <p>Compare against the {@link FlixelPlatform} constants with {@code ==}, for example
-   * {@code Flixel.host.getPlatform() == FlixelPlatform.Desktop}. Defaults to
-   * {@link FlixelPlatform#Unknown} until a host integration is installed.
+   * {@code Flixel.host.getPlatform() == FlixelPlatform.DESKTOP}. Defaults to
+   * {@link FlixelPlatform#UNKNOWN} until a host integration is installed.
    *
    * @return The current platform; never {@code null}.
    */
   @NotNull
   default FlixelPlatform getPlatform() {
-    return FlixelPlatform.Unknown;
+    return FlixelPlatform.UNKNOWN;
   }
 }

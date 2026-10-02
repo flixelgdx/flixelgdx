@@ -23,10 +23,11 @@
  */
 package org.flixelgdx.backend.android.input;
 
-import android.view.KeyEvent;
 import org.flixelgdx.input.keyboard.FlixelKey;
 
 import java.util.Arrays;
+
+import android.view.KeyEvent;
 
 /**
  * Translates Android {@code KeyEvent.KEYCODE_*} values into {@link FlixelKey} codes.

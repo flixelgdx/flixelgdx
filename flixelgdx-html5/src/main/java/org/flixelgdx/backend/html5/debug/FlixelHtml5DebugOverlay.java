@@ -32,6 +32,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
+import org.flixelgdx.logging.FlixelLogger;
 import org.teavm.jso.JSBody;
 
 /**
@@ -92,6 +93,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
 
   /** Tab index for the Performance panel; used to gate the (relatively costly) graph redraw. */
   private static final int TAB_PERFORMANCE = 1;
+  private static final FlixelLogger LOG = Flixel.log.tagged("FlixelDebug");
 
   /** Reused buffer for the comma-separated graph samples, so the redraw path allocates only the final string. */
   private final StringBuilder graphBuffer = new StringBuilder(768);
@@ -290,7 +292,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
     if (command != null) {
       String trimmed = command.trim();
       if (!trimmed.isEmpty()) {
-        Flixel.info("FlixelDebug", "> " + trimmed);
+        LOG.info("> {}", trimmed);
         Flixel.debug.executeCommand(trimmed);
       }
     }

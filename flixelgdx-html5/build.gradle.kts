@@ -6,4 +6,5 @@ plugins {
 dependencies {
   api(project(":flixelgdx-core"))
   implementation(libs.jetbrains.annotations)
+  compileOnly(libs.teavm.core)
 }

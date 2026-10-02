@@ -1,15 +1,3 @@
-/**
- * Convention for FlixelGDX Kotlin library modules.
- *
- * <p>Applies {@code flixelgdx.java-base} for shared setup (coordinates, repositories, Spotless,
- * IDE metadata), then layers on: the Kotlin JVM plugin targeting a Java 17 toolchain, the
- * {@code java-library} surface area, and the Vanniktech Maven publish pipeline used by every
- * other published module.
- *
- * <p>Unlike {@code flixelgdx.java-library} this convention does not configure the Javadoc task,
- * since Kotlin sources do not produce Javadoc through it.
- */
-
 plugins {
   id("flixelgdx.java-base")
   id("org.jetbrains.kotlin.jvm")

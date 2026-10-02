@@ -23,11 +23,6 @@
  */
 package org.flixelgdx.backend.android.graphics;
 
-import android.app.Activity;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.opengl.GLES30;
-import android.util.DisplayMetrics;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.android.FlixelAndroidLauncher;
 import org.flixelgdx.backend.android.FlixelAndroidWindow;
@@ -56,6 +51,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+
+import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.opengl.GLES30;
+import android.util.DisplayMetrics;
 
 /**
  * The Android graphics backend, rendering through OpenGL ES 3.0 on a GLSurfaceView.
@@ -87,7 +88,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   private static final double FPS_SMOOTHING = 0.1;
 
   /** GLES internal format constant for ASTC 4x4 RGBA (extension, not in GLES30 constants). */
-  private static final int GL_COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
+  private static final int GL_COMPRESSED_RGBA_ASTC_4X4_KHR = 0x93B0;
 
   private long lastFrameNanos = -1L;
 
@@ -161,7 +162,7 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
   @Override
   @NotNull
   public FlixelGraphicsApi getApi() {
-    return FlixelGraphicsApi.OpenGLES;
+    return FlixelGraphicsApi.OPENGL_ES;
   }
 
   @Override
@@ -434,8 +435,8 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
       int glFormat;
       boolean compressed;
       if (astcSupported) {
-        fmt = FlixelBasisu.FMT_ASTC_4x4_RGBA;
-        glFormat = GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+        fmt = FlixelBasisu.FMT_ASTC_4X4_RGBA;
+        glFormat = GL_COMPRESSED_RGBA_ASTC_4X4_KHR;
         compressed = true;
       } else {
         fmt = FlixelBasisu.FMT_ETC2_RGBA;

@@ -1162,7 +1162,7 @@ public class FlixelObject extends FlixelBasic implements FlixelDebugDrawable, Fl
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(ID=" + ID
+    return getClass().getSimpleName() + "(ID=" + id
         + ", x=" + x + ", y=" + y
         + ", w=" + width + ", h=" + height + ")";
   }

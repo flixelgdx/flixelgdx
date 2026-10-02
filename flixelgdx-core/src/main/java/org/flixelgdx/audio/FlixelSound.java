@@ -96,7 +96,7 @@ public abstract class FlixelSound extends FlixelBasic implements FlixelAsset<Fli
    */
   protected FlixelSound() {
     super();
-    this.path = "__flixel_sound__/" + ID;
+    this.path = "__flixel_sound__/" + id;
     retain();
   }
 

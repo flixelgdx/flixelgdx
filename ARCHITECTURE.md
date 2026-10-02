@@ -9,16 +9,15 @@ The project is split into several modules, each serving a specific purpose.
 ### Base (Core + Platform Backends)
 
 - **`flixelgdx-core`**: The heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent. Every platform in the entire framework depends on this.
-- **`flixelgdx-desktop`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**.
+- **`flixelgdx-desktop`**: The desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**.
 - **`flixelgdx-html5`**: The backend for the web using [TeaVM](https://teavm.org) to transpile Java bytecode to JavaScript or WebAssembly, allowing games to run seamlessly in a browser.
-- **`flixelgdx-android`**: The backend for Android mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
+- **`flixelgdx-android`**: The backend for Android mobile devices.
 - **`flixelgdx-ios`**: Planned backend for iOS mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
 
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
 
 - **`flixelgdx-basisu-plugin`**: Bundles Basis Universal binaries for each OS and applies `.ktx2` compression for every `.png` asset on mobile.
 - **`flixelgdx-html5-plugin`**: Automates the workflow for web games. This includes copying assets and generating the HTML index file that boots the WebAssembly or JavaScript bundle, and more.
-- **`flixelgdx-logging-plugin`**: Runs after `compile*` and rewrites `FlixelLogger` and **`Flixel`** static `info(...)` / `warn(...)` / `error(...)` / `debug(...)` calls to injected hooks / `*WithSite` overloads so logs show accurate file and line without relying on stack walking (essential on the web and helpful on the JVM).
 - **`flixelgdx-packagr-plugin`**: Automates deployment and packaging for desktop games, with default options for Windows, macOS and Linux on all architectures.
 - **`flixelgdx-shader-plugin`**: Bundles Khronos `glslang` and `spirv-cross` plus bgfx's `shaderc` for all platforms. It compiles GLSL shaders to SPIR-V, then produces the variant each graphics API needs (bgfx `.bin` files for desktop, ESSL for Android and the web).
 
@@ -47,5 +46,5 @@ Dependencies are managed in the `build.gradle.kts` file of each module. We use `
 
 ## GitHub Integration
 
-FlixelGDX's codebase has multiple GitHub configurations and templates, which can be found inside of [`.github/`](.github/).
+FlixelGDX's codebase has multiple GitHub configurations and templates, which can be found inside of [`.github/`](.github).
 It holds the issue and pull request templates, Dependabot configurations, workflows, and more.

@@ -23,14 +23,15 @@
  */
 package org.flixelgdx.backend.android;
 
+import org.flixelgdx.backend.FlixelHaptics;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import android.content.Context;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
-import org.flixelgdx.backend.FlixelHaptics;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Android {@link FlixelHaptics} backed by the system {@link Vibrator} service.

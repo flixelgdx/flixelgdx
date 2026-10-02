@@ -24,6 +24,7 @@
 package org.flixelgdx.backend.miniaudio;
 
 import org.flixelgdx.Flixel;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -47,6 +48,8 @@ import org.jetbrains.annotations.Nullable;
  * }</pre>
  */
 public class FlixelMiniAudio {
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Audio");
 
   @Nullable
   private static FlixelMiniAudioLoader loader;
@@ -78,7 +81,7 @@ public class FlixelMiniAudio {
       return true;
     }
     if (loader == null) {
-      Flixel.warn("Audio", "No miniaudio library loader was set; audio is disabled.");
+      LOG.warn("No miniaudio library loader was set; audio is disabled.");
       return false;
     }
     try {
@@ -88,7 +91,7 @@ public class FlixelMiniAudio {
     } catch (Exception | UnsatisfiedLinkError e) {
       // A missing or incompatible binary surfaces as UnsatisfiedLinkError, which is not an
       // Exception, so it is caught explicitly to keep the silent-audio fallback working.
-      Flixel.error("Audio", "Could not load the miniaudio native library.", e);
+      LOG.error("Could not load the miniaudio native library.", e);
       return false;
     }
   }

@@ -90,6 +90,7 @@ import org.jetbrains.annotations.Nullable;
 public class FlixelSprite extends FlixelObject implements FlixelAntialiasable, FlixelColorable, FlixelShaderable {
 
   /** Shared scratch rectangle for clip rect bounds; reused across all sprite draw calls. */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelRect tempClipBounds = new FlixelRect();
 
   /** Graphic backing this sprite (shared/cached wrapper around a texture). */

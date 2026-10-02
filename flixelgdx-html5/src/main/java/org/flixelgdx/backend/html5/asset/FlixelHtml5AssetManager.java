@@ -35,6 +35,7 @@ import org.flixelgdx.graphics.FlixelGraphic;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.graphics.FlixelImage;
 import org.flixelgdx.graphics.FlixelTexture;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.file.Blob;
@@ -86,6 +87,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
   private static final int MAX_CONCURRENT_DECODES = 6;
 
   private static final String[] IMAGE_EXTENSIONS = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
+  private static final FlixelLogger LOG = Flixel.log.tagged("Html5");
 
   /** Images currently being fetched and decoded (a Promise is in flight for each key). */
   @NotNull
@@ -172,7 +174,7 @@ public class FlixelHtml5AssetManager extends FlixelBaseAssetManager {
           it.remove();
           activeDecodeCount--;
           promotedImages++;
-          Flixel.warn("Html5", "Image failed to load and will be skipped: " + entry.key);
+          LOG.warn("Image failed to load and will be skipped: {}", entry.key);
         }
       }
     }

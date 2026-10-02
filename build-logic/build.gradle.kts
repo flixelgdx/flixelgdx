@@ -1,10 +1,3 @@
-/**
- * Build logic for FlixelGDX convention plugins.
- *
- * <p>Every plugin declared in src/main/kotlin/ is compiled against the dependencies listed here,
- * so their types and extensions are available to the precompiled script plugins without needing
- * a buildscript block in each applying project.
- */
 plugins {
   `kotlin-dsl`
 }

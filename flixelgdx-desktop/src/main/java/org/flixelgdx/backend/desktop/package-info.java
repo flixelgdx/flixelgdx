@@ -89,8 +89,7 @@
  *       ({@code FlixelJvmAssetManager}).</li>
  *   <li>{@code file} - classpath and OS filesystem seam
  *       ({@code FlixelJvmFiles}, {@code FlixelJvmFile}).</li>
- *   <li>{@code logging} - stack trace provider and log file handler
- *       ({@code FlixelJvmStackTraceProvider}, {@code FlixelJvmLogFileHandler}).</li>
+ *   <li>{@code logging} - desktop logging helpers.</li>
  *   <li>{@code runtime} - JVM runtime device
  *       ({@code FlixelJvmRuntimeDevice}).</li>
  * </ul>

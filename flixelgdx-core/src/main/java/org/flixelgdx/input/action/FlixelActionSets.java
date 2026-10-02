@@ -54,6 +54,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FlixelActionSets {
 
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelArray<FlixelActionSet> registered = new FlixelArray<>(8);
 
   private FlixelActionSets() {}

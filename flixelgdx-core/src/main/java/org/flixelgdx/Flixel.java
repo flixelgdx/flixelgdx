@@ -67,9 +67,9 @@ import org.flixelgdx.input.mouse.FlixelMouseButton;
 import org.flixelgdx.input.mouse.FlixelMouseInputManager;
 import org.flixelgdx.input.touch.FlixelTouch;
 import org.flixelgdx.input.touch.FlixelTouchManager;
+import org.flixelgdx.logging.FlixelDefaultLogger;
 import org.flixelgdx.logging.FlixelLogMode;
 import org.flixelgdx.logging.FlixelLogger;
-import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.flixelgdx.math.FlixelRandom;
 import org.flixelgdx.save.FlixelSave;
 import org.flixelgdx.signal.FlixelSignal;
@@ -176,16 +176,20 @@ import java.util.function.Supplier;
  *
  * // Log diagnostic information.
  * Flixel.info("Player has reached checkpoint.");
- * Flixel.warn("Player is low on health.");
+ * Flixel.warn("Player is low on health: {}", health);
  * Flixel.error("Game crashed!");
  * Flixel.debug("Player just touched the ground.");
+ *
+ * // Keep a tagged logger for a class that logs a lot.
+ * private static final FlixelLogger LOG = Flixel.log.tagged("PlayState");
+ * LOG.info("Spawned {} enemies.", count);
  *
  * // Load an asset.
  * Flixel.assets.load("player.png");
  *
  * // Use the global signal system.
  * Flixel.Signals.preStateSwitch.add(data -> {
- *   Flixel.info("Now switching to state: " + data.state().toString());
+ *   Flixel.info("Now switching to state: {}", data.state());
  * });
  * }</pre>
  *
@@ -197,7 +201,7 @@ import java.util.function.Supplier;
  *   </li>
  *   <li>
  *     Custom configuration and subsystems can be plugged in by replacing or augmenting the static references, e.g.,
- *     custom {@link FlixelLogger} or {@link FlixelStackTraceProvider} for advanced logging.
+ *     custom {@link FlixelLogger} for advanced logging.
  *   </li>
  *   <li>
  *     All engine systems are globally accessible through this class to simplify game logic implementation.
@@ -225,6 +229,56 @@ public final class Flixel {
    * to at most this value so a long hitch does not move physics too far in one step.
    */
   public static final float MAX_ELAPSED = 0.1f;
+
+  /**
+   * The default logger used for game diagnostics and debugging output.
+   *
+   * <p>The logger formats each message once and hands it to its sinks: the console, the in-game debug
+   * overlay, and optionally a persistent log file. It supports four severity levels:
+   * {@link FlixelLogger#debug(Object) debug}, {@link FlixelLogger#info(Object) info},
+   * {@link FlixelLogger#warn(Object) warn}, and {@link FlixelLogger#error(Object) error}, and it
+   * throws away messages below its minimum level before doing any work for them.
+   *
+   * <p>For convenience, the logging calls are promoted to static methods on {@link Flixel} itself:
+   * {@link Flixel#info(Object)}, {@link Flixel#warn(Object)}, {@link Flixel#error(Object)}, and
+   * {@link Flixel#debug(Object)}. These all delegate to this field and print its tag. Each message is
+   * annotated with the file and line of the call by the active
+   * {@link FlixelLogger#getSiteResolver() site resolver}, making it easy to trace output back to its
+   * source without a full stack dump.
+   *
+   * <p>This field is initialized first, before every other object in this class, so framework classes
+   * can safely call {@code Flixel.log.tagged(...)} in their own static initializers. You can replace it
+   * with your own {@link FlixelLogger}, but do it from the launcher before
+   * {@link Flixel#start(FlixelGame, FlixelGameRunner) Flixel.start(...)} runs. Loggers returned by
+   * {@link FlixelLogger#tagged(String)} keep pointing at the logger that created them, so a swap does
+   * not affect the ones that already exist.
+   *
+   * <p>To write logs to a file, call {@link FlixelLogger#startFileLogging()} after configuring
+   * {@link FlixelLogger#setCanStoreLogs(boolean)} and optionally
+   * {@link FlixelLogger#setLogsFolder(String)}.
+   *
+   * <p>Example:
+   * <pre>{@code
+   * // Simple convenience wrappers on Flixel itself.
+   * Flixel.info("Player spawned.");
+   * Flixel.warn("Low health: {}", health);
+   * Flixel.error("Save file corrupted.");
+   *
+   * // A logger that always prints its own tag.
+   * private static final FlixelLogger LOG = Flixel.log.tagged("AI");
+   * LOG.info("Pathfinding recalculated in {} ms.", ms);
+   *
+   * // Choose what is shown and how.
+   * Flixel.log.setTag("MyGame");
+   * Flixel.log.setLevel(FlixelLogLevel.WARN);
+   *
+   * // Enable persistent file logging at startup.
+   * Flixel.log.setCanStoreLogs(true);
+   * Flixel.log.startFileLogging();
+   * }</pre>
+   */
+  @NotNull
+  public static FlixelLogger log = new FlixelDefaultLogger(FlixelLogMode.SIMPLE);
 
   /**
    * Automatically applies the globally set {@link #setAntialiasing(boolean) antialiasing} value for any
@@ -290,6 +344,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelArray<FlixelCamera> cameras = new FlixelArray<>(FlixelCamera[]::new);
 
   /**
@@ -314,6 +369,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final FlixelRandom random = new FlixelRandom();
 
   /**
@@ -330,7 +386,7 @@ public final class Flixel {
    * }</pre>
    */
   @NotNull
-  public static final FlixelBootManager boot = new FlixelBootManager();
+  public static FlixelBootManager boot = new FlixelBootManager();
 
   /**
    * The platform-specific alert dialog provider.
@@ -651,45 +707,6 @@ public final class Flixel {
   public static FlixelGamepadInputManager gamepads;
 
   /**
-   * The default logger used for game diagnostics and debugging output.
-   *
-   * <p>The logger formats and routes messages to the console, the in-game debug overlay, and
-   * optionally a persistent log file. It supports three severity levels: informational
-   * ({@link FlixelLogger#info}), warnings ({@link FlixelLogger#warn}), and errors
-   * ({@link FlixelLogger#error}), each visually distinguished by color in terminals that support
-   * ANSI codes.
-   *
-   * <p>For convenience, the three most common logging calls are promoted to static methods on
-   * {@link Flixel} itself: {@link Flixel#info}, {@link Flixel#warn}, and {@link Flixel#error}.
-   * These all delegate to this field.
-   *
-   * <p>Each message is automatically annotated with the calling class name and line number by the
-   * active {@link FlixelStackTraceProvider}, making it easy to trace output back to its source
-   * without a full stack dump.
-   *
-   * <p>To write logs to a file, call {@link FlixelLogger#startFileLogging()} after configuring
-   * {@link FlixelLogger#setCanStoreLogs(boolean)} and optionally
-   * {@link FlixelLogger#setLogsFolder(String)}.
-   *
-   * <p>Example:
-   * <pre>{@code
-   * // Simple convenience wrappers on Flixel itself.
-   * Flixel.info("Player spawned.");
-   * Flixel.warn("Low health!");
-   * Flixel.error("Save file corrupted.");
-   *
-   * // Create a log with a distinguishing tag.
-   * Flixel.info("AI", "Pathfinding recalculated.");
-   *
-   * // Enable persistent file logging at startup.
-   * Flixel.log.setCanStoreLogs(true);
-   * Flixel.log.startFileLogging();
-   * }</pre>
-   */
-  @NotNull
-  public static FlixelLogger log = new FlixelLogger(FlixelLogMode.SIMPLE);
-
-  /**
    * Desktop window integration for transparency helpers, opacity control, and OS-level window tweaks.
    *
    * <p>On desktop (LWJGL3), this field is replaced by a real implementation before
@@ -761,7 +778,7 @@ public final class Flixel {
    * Flixel.host.requestAttention();
    *
    * // Check the current platform.
-   * if (Flixel.host.getPlatform() == FlixelPlatform.Android) {
+   * if (Flixel.host.getPlatform() == FlixelPlatform.ANDROID) {
    *   addBackButton();
    * }
    * }</pre>
@@ -906,6 +923,7 @@ public final class Flixel {
    * World bounds used by {@link #overlap} and {@link #collide} for broad-phase culling.
    * Format: {@code [x, y, width, height]}. Defaults to a very large area.
    */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final float[] worldBounds = { -10000f, -10000f, 20000f, 20000f };
 
   /** The camera currently being drawn in {@link FlixelDrawable#draw(FlixelBatch)}. */
@@ -925,7 +943,7 @@ public final class Flixel {
    * owns the update/draw loop from there.
    *
    * <p>Missing platform pieces never crash startup: any backend hook that was not installed
-   * (alerter, sound factory, stack trace provider) simply stays a safe no-op. Advanced users can
+   * (alerter, sound factory, log site resolver) simply stays a safe no-op. Advanced users can
    * swap implementations from an {@link FlixelBootManager#getAfterStart()} callback before any core
    * system reads them.
    *
@@ -953,7 +971,7 @@ public final class Flixel {
       String logs = FlixelExceptionUtil.getFullExceptionMessage(throwable);
       String threadName = thread != null ? thread.getName() : "main";
       String msg = "There was an uncaught exception on thread \"" + threadName + "\"!\n" + logs;
-      error(msg);
+      error("There was an uncaught exception on thread \"{}\"!", threadName, throwable);
       alert.error("Uncaught Exception", msg);
       // It's possible that something in boot.beforeStart can throw an exception, so we add a
       // guard here before the game object is assigned, because who wants a crash handler
@@ -965,13 +983,12 @@ public final class Flixel {
         try {
           game.destroy();
         } catch (Throwable destroyError) {
-          error("The game also failed to clean up after the crash:\n"
-              + FlixelExceptionUtil.getFullExceptionMessage(destroyError));
+          error("The game also failed to clean up after the crash.", destroyError);
         }
       }
       // Close the game only on desktop to avoid issues on web and compliance with iOS guidelines.
       FlixelPlatform platform = host.getPlatform();
-      if (platform == FlixelPlatform.Desktop) {
+      if (platform == FlixelPlatform.DESKTOP) {
         window.setAbsorbCloseRequests(false);
         quit();
       }
@@ -1111,7 +1128,10 @@ public final class Flixel {
   }
 
   /**
-   * Logs a debug message using the default tag.
+   * Logs a debug message.
+   *
+   * <p>Debug messages are verbose and low-priority; they help while developing a game. The message is logged through
+   * {@link #log}, using its tag.
    *
    * @param message The message to log.
    */
@@ -1120,96 +1140,167 @@ public final class Flixel {
   }
 
   /**
-   * Logs a debug message under a custom tag.
+   * Logs a debug message with one argument.
    *
-   * @param tag The tag to log the message under.
-   * @param message The message to log.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void debug(String tag, Object message) {
-    log.debug(tag, message);
+  public static void debug(String format, Object a1) {
+    log.debug(format, a1);
   }
 
   /**
-   * Logs a debug message under a custom tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order.
+   * Logs a debug message with two arguments.
    *
-   * @param tag The tag to log the message under.
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void debug(String tag, Object message, Object... args) {
-    log.debug(tag, message, args);
+  public static void debug(String format, Object a1, Object a2) {
+    log.debug(format, a1, a2);
   }
 
   /**
-   * Logs a generic informational message. This is likely the method you'll use the most,
-   * as it's for general messages that don't fit into the other log methods.
+   * Logs a debug message with three arguments.
+   *
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument.
+   * @param a3 The third argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
+   */
+  public static void debug(String format, Object a1, Object a2, Object a3) {
+    log.debug(format, a1, a2, a3);
+  }
+
+  /**
+   * Logs a debug message with any number of arguments. Prefer the fixed-argument overloads when you have three or
+   * fewer arguments, because they do not create an array.
+   *
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments. A trailing {@link Throwable} that no placeholder uses becomes the exception.
+   */
+  public static void debug(String format, Object... args) {
+    log.debug(format, args);
+  }
+
+  /**
+   * Logs a generic informational message.
+   *
+   * <p>This is likely the method you will use the most, as it is for general messages that do not fit the other
+   * levels. The message is logged through {@link #log}, using its tag.
    *
    * @param message The message to log.
    */
   public static void info(Object message) {
-    info(log.getDefaultTag(), message);
+    log.info(message);
   }
 
   /**
-   * Logs a generic informational message with a custom tag. This is likely the method
-   * you'll use the most, as it's for general messages that don't fit into the other log methods.
+   * Logs a generic informational message with one argument.
    *
-   * @param tag The tag to log the message under.
-   * @param message The message to log.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void info(String tag, Object message) {
-    log.info(tag, message);
+  public static void info(String format, Object a1) {
+    log.info(format, a1);
   }
 
   /**
-   * Logs an informational message under a custom tag, replacing each {@code {}} placeholder
-   * with the corresponding argument in order.
+   * Logs a generic informational message with two arguments.
    *
-   * @param tag The tag to log the message under.
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void info(String tag, Object message, Object... args) {
-    log.info(tag, message, args);
+  public static void info(String format, Object a1, Object a2) {
+    log.info(format, a1, a2);
   }
 
   /**
-   * Logs a generic warning message. This is for messages that are not errors, but are
-   * still important to note.
+   * Logs a generic informational message with three arguments.
+   *
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument.
+   * @param a3 The third argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
+   */
+  public static void info(String format, Object a1, Object a2, Object a3) {
+    log.info(format, a1, a2, a3);
+  }
+
+  /**
+   * Logs a generic informational message with any number of arguments. Prefer the fixed-argument overloads when you have three or
+   * fewer arguments, because they do not create an array.
+   *
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments. A trailing {@link Throwable} that no placeholder uses becomes the exception.
+   */
+  public static void info(String format, Object... args) {
+    log.info(format, args);
+  }
+
+  /**
+   * Logs a warning message.
+   *
+   * <p>Use it for problems that are not errors, but should be looked at. The message is logged through {@link #log},
+   * using its tag.
    *
    * @param message The message to log.
    */
   public static void warn(Object message) {
-    warn(log.getDefaultTag(), message);
+    log.warn(message);
   }
 
   /**
-   * Logs a warning message with a custom tag. This is for messages that are not errors
-   * but are still important to note.
+   * Logs a warning message with one argument.
    *
-   * @param tag The tag to log the message under.
-   * @param message The message to log.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void warn(String tag, Object message) {
-    log.warn(tag, message);
+  public static void warn(String format, Object a1) {
+    log.warn(format, a1);
   }
 
   /**
-   * Logs a warning message under a custom tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order.
+   * Logs a warning message with two arguments.
    *
-   * @param tag The tag to log the message under.
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void warn(String tag, Object message, Object... args) {
-    log.warn(tag, message, args);
+  public static void warn(String format, Object a1, Object a2) {
+    log.warn(format, a1, a2);
   }
 
   /**
-   * Logs an error message with red highlighting (and the file location underlined).
-   * This is for events that are typically not recoverable.
+   * Logs a warning message with three arguments.
+   *
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument.
+   * @param a3 The third argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
+   */
+  public static void warn(String format, Object a1, Object a2, Object a3) {
+    log.warn(format, a1, a2, a3);
+  }
+
+  /**
+   * Logs a warning message with any number of arguments. Prefer the fixed-argument overloads when you have three or
+   * fewer arguments, because they do not create an array.
+   *
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments. A trailing {@link Throwable} that no placeholder uses becomes the exception.
+   */
+  public static void warn(String format, Object... args) {
+    log.warn(format, args);
+  }
+
+  /**
+   * Logs an error message.
+   *
+   * <p>Use it for something that is wrong and needs attention. To attach an exception, pass it as the last argument,
+   * for example {@code Flixel.error("Save failed", exception)}. The message is logged through {@link #log}, using its
+   * tag.
    *
    * @param message The message to log.
    */
@@ -1218,74 +1309,47 @@ public final class Flixel {
   }
 
   /**
-   * Logs an error message with red highlighting (and the file location underlined), including
-   * the throwable's string representation.
+   * Logs an error message with one argument.
    *
-   * @param message The message to log.
-   * @param throwable The throwable to log.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void error(Object message, Throwable throwable) {
-    log.error(message, throwable);
+  public static void error(String format, Object a1) {
+    log.error(format, a1);
   }
 
   /**
-   * Logs an error message with red highlighting (and the file location underlined) under
-   * a custom tag.
+   * Logs an error message with two arguments.
    *
-   * @param tag The tag to log the message under.
-   * @param message The message to log.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void error(String tag, Object message) {
-    log.error(tag, message);
+  public static void error(String format, Object a1, Object a2) {
+    log.error(format, a1, a2);
   }
 
   /**
-   * Logs an error message with red highlighting (and the file location underlined) under
-   * a custom tag, including the throwable's string representation.
+   * Logs an error message with three arguments.
    *
-   * @param tag The tag to log the message under.
-   * @param message The message to log.
-   * @param throwable The throwable to log.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param a1 The first argument.
+   * @param a2 The second argument.
+   * @param a3 The third argument. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void error(String tag, Object message, Throwable throwable) {
-    log.error(tag, message, throwable);
+  public static void error(String format, Object a1, Object a2, Object a3) {
+    log.error(format, a1, a2, a3);
   }
 
   /**
-   * Logs an error message using the default tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order, including the throwable's string representation.
+   * Logs an error message with any number of arguments. Prefer the fixed-argument overloads when you have three or
+   * fewer arguments, because they do not create an array.
    *
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param throwable The throwable to log.
-   * @param args The arguments to substitute into the message.
+   * @param format The message, where each {@code {}} is replaced by the next argument.
+   * @param args The arguments. A trailing {@link Throwable} that no placeholder uses becomes the exception.
    */
-  public static void error(Object message, Throwable throwable, Object... args) {
-    log.error(message, throwable, args);
-  }
-
-  /**
-   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order.
-   *
-   * @param tag The tag to log the message under.
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param args The arguments to substitute into the message.
-   */
-  public static void error(String tag, Object message, Object... args) {
-    log.error(tag, message, args);
-  }
-
-  /**
-   * Logs an error message under a custom tag, replacing each {@code {}} placeholder with
-   * the corresponding argument in order, including the throwable's string representation.
-   *
-   * @param tag The tag to log the message under.
-   * @param message The format string, where each {@code {}} is replaced by the next argument.
-   * @param throwable The throwable to log.
-   * @param args The arguments to substitute into the message.
-   */
-  public static void error(String tag, Object message, Throwable throwable, Object... args) {
-    log.error(tag, message, throwable, args);
+  public static void error(String format, Object... args) {
+    log.error(format, args);
   }
 
   /**
@@ -1722,16 +1786,27 @@ public final class Flixel {
    */
   public static final class Signals {
 
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<UpdateSignalData> preUpdate = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<UpdateSignalData> postUpdate = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> preDraw = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> postDraw = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<StateSwitchSignalData> preStateSwitch = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<StateSwitchSignalData> postStateSwitch = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> preGameClose = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> postGameClose = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowFocused = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowUnfocused = new FlixelLifecycleSignal<>();
+    @SuppressWarnings("checkstyle:ConstantName")
     public static final FlixelSignal<Void> windowMinimized = new FlixelLifecycleSignal<>();
 
     private Signals() {}

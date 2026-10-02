@@ -23,6 +23,15 @@
  */
 package org.flixelgdx.backend.android;
 
+import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
+import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
+import org.flixelgdx.input.FlixelBaseInputDevice;
+import org.flixelgdx.input.FlixelKeyboardListener;
+import org.flixelgdx.input.keyboard.FlixelKey;
+import org.flixelgdx.input.mouse.FlixelMouseButton;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import android.app.Activity;
 import android.content.Context;
 import android.view.InputDevice;
@@ -30,14 +39,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import org.flixelgdx.backend.android.input.FlixelAndroidKeyMap;
-import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
-import org.flixelgdx.input.FlixelBaseInputDevice;
-import org.flixelgdx.input.FlixelKeyboardListener;
-import org.flixelgdx.input.keyboard.FlixelKey;
-import org.flixelgdx.input.mouse.FlixelMouseButton;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Android input device: a lock-free SPSC ring buffer that decouples the UI thread (producer)
@@ -207,34 +208,32 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
       int action = event.getActionMasked();
       int actionIndex = event.getActionIndex();
       switch (action) {
-        case MotionEvent.ACTION_DOWN:
-        case MotionEvent.ACTION_POINTER_DOWN:
+        case MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
           postTouch(TYPE_TOUCH_DOWN, event.getPointerId(actionIndex),
               (int) (event.getX(actionIndex) * scaleX),
               (int) (event.getY(actionIndex) * scaleY));
-          break;
-        case MotionEvent.ACTION_UP:
-        case MotionEvent.ACTION_POINTER_UP:
+        }
+        case MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
           postTouch(TYPE_TOUCH_UP, event.getPointerId(actionIndex),
               (int) (event.getX(actionIndex) * scaleX),
               (int) (event.getY(actionIndex) * scaleY));
-          break;
-        case MotionEvent.ACTION_MOVE:
+        }
+        case MotionEvent.ACTION_MOVE -> {
           for (int i = 0, n = event.getPointerCount(); i < n; i++) {
             postTouch(TYPE_TOUCH_MOVE, event.getPointerId(i),
                 (int) (event.getX(i) * scaleX),
                 (int) (event.getY(i) * scaleY));
           }
-          break;
-        case MotionEvent.ACTION_CANCEL:
+        }
+        case MotionEvent.ACTION_CANCEL -> {
           for (int i = 0, n = event.getPointerCount(); i < n; i++) {
             postTouch(TYPE_TOUCH_CANCEL, event.getPointerId(i),
                 (int) (event.getX(i) * scaleX),
                 (int) (event.getY(i) * scaleY));
           }
-          break;
-        default:
-          break;
+        }
+        default -> {
+        }
       }
       return true;
     };
@@ -348,7 +347,7 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
         keysPressedThisDrain[pressedKeyCount++] = keyCode;
       }
       switch (type) {
-        case TYPE_TOUCH_DOWN:
+        case TYPE_TOUCH_DOWN -> {
           if (pointer >= 0 && pointer < MAX_POINTERS) {
             pointerXs[pointer] = x;
             pointerYs[pointer] = y;
@@ -360,8 +359,8 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
             mouseDown = true;
             dispatchMouseDown(FlixelMouseButton.LEFT, x, y);
           }
-          break;
-        case TYPE_TOUCH_UP:
+        }
+        case TYPE_TOUCH_UP -> {
           if (pointer >= 0 && pointer < MAX_POINTERS) {
             pointerXs[pointer] = x;
             pointerYs[pointer] = y;
@@ -373,8 +372,8 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
             mouseDown = false;
             dispatchMouseUp(FlixelMouseButton.LEFT, x, y);
           }
-          break;
-        case TYPE_TOUCH_MOVE:
+        }
+        case TYPE_TOUCH_MOVE -> {
           if (pointer >= 0 && pointer < MAX_POINTERS) {
             pointerXs[pointer] = x;
             pointerYs[pointer] = y;
@@ -385,8 +384,8 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
             mouseY = y;
             dispatchMouseDragged(x, y);
           }
-          break;
-        case TYPE_TOUCH_CANCEL:
+        }
+        case TYPE_TOUCH_CANCEL -> {
           if (pointer >= 0 && pointer < MAX_POINTERS) {
             pointerXs[pointer] = x;
             pointerYs[pointer] = y;
@@ -398,24 +397,22 @@ public class FlixelAndroidInputDevice extends FlixelBaseInputDevice {
             mouseDown = false;
             dispatchMouseUp(FlixelMouseButton.LEFT, x, y);
           }
-          break;
-        case TYPE_KEY_DOWN:
+        }
+        case TYPE_KEY_DOWN -> {
           if (keyCode >= 0 && keyCode <= FlixelKey.MAX_KEYCODE) {
             keysDown[keyCode] = true;
           }
           dispatchKeyDown(keyCode);
-          break;
-        case TYPE_KEY_UP:
+        }
+        case TYPE_KEY_UP -> {
           if (keyCode >= 0 && keyCode <= FlixelKey.MAX_KEYCODE) {
             keysDown[keyCode] = false;
           }
           dispatchKeyUp(keyCode);
-          break;
-        case TYPE_CHAR_INPUT:
-          dispatchKeyTyped((char) keyCode);
-          break;
-        default:
-          break;
+        }
+        case TYPE_CHAR_INPUT -> dispatchKeyTyped((char) keyCode);
+        default -> {
+        }
       }
     }
   }

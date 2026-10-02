@@ -37,6 +37,7 @@ import org.flixelgdx.graphics.FlixelTexture;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseCursor;
 import org.flixelgdx.logging.FlixelLogLevel;
+import org.flixelgdx.logging.FlixelLogger;
 import org.lwjgl.bgfx.BGFX;
 import org.lwjgl.bgfx.BGFXStats;
 
@@ -97,7 +98,8 @@ import imgui.type.ImString;
  */
 public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
-  private static final String TAG = "FlixelImGuiDebugOverlay";
+  private static final FlixelLogger LOG = Flixel.log.tagged("FlixelImGuiDebugOverlay");
+  private static final FlixelLogger COMMAND_LOG = Flixel.log.tagged("FlixelDebug");
 
   // Component-per-channel color constants. Colored labels use pushStyleColor(ImGuiCol.Text, ...) plus
   // textUnformatted so dynamic strings are never passed through printf-style formatting.
@@ -513,7 +515,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   private void initImGui() {
     if (!(Flixel.graphics instanceof FlixelBgfxGraphics bgfx)) {
-      Flixel.warn(TAG, "Desktop graphics are not bgfx; the ImGui debug overlay will not run.");
+      LOG.warn("Desktop graphics are not bgfx; the ImGui debug overlay will not run.");
       imguiShutdown = true;
       return;
     }
@@ -537,7 +539,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ByteBuffer pixels = fonts.getTexDataAsRGBA32(fontWidth, fontHeight);
     long texId = renderer.init(pixels, fontWidth.get(), fontHeight.get());
     if (texId == -1) {
-      Flixel.warn(TAG, "Could not upload the ImGui font atlas; the debug overlay is disabled.");
+      LOG.warn("Could not upload the ImGui font atlas; the debug overlay is disabled.");
       ImGui.destroyContext();
       imguiShutdown = true;
       return;
@@ -1311,7 +1313,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
         line = decodeCommandLineScratchUtf8();
       }
       if (!line.isEmpty()) {
-        Flixel.info("FlixelDebug", "> " + line);
+        COMMAND_LOG.info("> {}", line);
         Flixel.debug.executeCommand(line);
         commandLineUtf8ScratchLen = 0;
       }

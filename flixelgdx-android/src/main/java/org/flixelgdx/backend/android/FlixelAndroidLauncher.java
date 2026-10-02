@@ -23,10 +23,6 @@
  */
 package org.flixelgdx.backend.android;
 
-import android.app.Activity;
-import android.app.Application;
-import android.os.Bundle;
-import android.view.Window;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelGame;
@@ -37,9 +33,9 @@ import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidGraphics;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidKtx2Loader;
 import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
-import org.flixelgdx.backend.android.logging.FlixelAndroidLogConsoleSink;
-import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileHandler;
-import org.flixelgdx.backend.android.logging.FlixelAndroidStackTraceProvider;
+import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileSink;
+import org.flixelgdx.backend.android.logging.FlixelAndroidLogSiteResolver;
+import org.flixelgdx.backend.android.logging.FlixelLogcatSink;
 import org.flixelgdx.backend.android.runtime.FlixelAndroidRuntimeDevice;
 import org.flixelgdx.backend.android.text.FlixelAndroidFontRasterizer;
 import org.flixelgdx.backend.miniaudio.FlixelMiniAudio;
@@ -47,6 +43,11 @@ import org.flixelgdx.backend.miniaudio.FlixelMiniAudioFactory;
 import org.flixelgdx.graphics.FlixelViewport;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.jetbrains.annotations.NotNull;
+
+import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
+import android.view.Window;
 
 /**
  * The one-line entry point for an Android FlixelGDX game.
@@ -95,13 +96,14 @@ public final class FlixelAndroidLauncher {
       @NotNull FlixelRuntimeMode runtimeMode) {
     FlixelAndroidRuntimeDevice runtime = new FlixelAndroidRuntimeDevice(activity);
     Flixel.runtime = runtime;
-    Flixel.runtime.setStackTraceProvider(new FlixelAndroidStackTraceProvider());
-    Flixel.log.logFileHandler = new FlixelAndroidLogFileHandler();
-    Flixel.log.logConsoleSink = new FlixelAndroidLogConsoleSink();
     Flixel.alert = new FlixelAndroidAlerter(activity);
     Flixel.files = new FlixelAndroidFiles(activity);
     Flixel.assets = new FlixelAndroidAssetManager();
     Flixel.host = new FlixelAndroidHostIntegration();
+
+    Flixel.log.setSiteResolver(new FlixelAndroidLogSiteResolver());
+    Flixel.log.setConsoleSink(new FlixelLogcatSink());
+    Flixel.log.setFileSink(new FlixelAndroidLogFileSink());
 
     FlixelAndroidWindow window = new FlixelAndroidWindow(activity);
     Flixel.window = window;
@@ -194,69 +196,65 @@ public final class FlixelAndroidLauncher {
      * {@code onWindowFocusChanged} in the activity itself. Game code that needs focus notifications
      * should override the activity method or use {@link Flixel#autoPause}.
      */
-    private record ActivityLifecycleHandler(@NotNull Activity activity, @NotNull FlixelAndroidSurfaceView glView,
-        @NotNull FlixelGame game, @NotNull FlixelAndroidRunner runner,
-        @NotNull FlixelAndroidGamepadProvider gamepadProvider)
-    implements Application.ActivityLifecycleCallbacks {
+  private record ActivityLifecycleHandler(@NotNull Activity activity, @NotNull FlixelAndroidSurfaceView glView,
+      @NotNull FlixelGame game, @NotNull FlixelAndroidRunner runner,
+      @NotNull FlixelAndroidGamepadProvider gamepadProvider)
+      implements Application.ActivityLifecycleCallbacks {
 
     @Override
-      public void onActivityPaused(@NotNull Activity a) {
-        if (a != activity) {
-          return;
-        }
-        // Queue focus-lost before pausing the view. The GL thread runs queued events before it
-        // honors a pause request, so the game (and the autoPause audio handling in core) reacts
-        // before rendering stops.
-        glView.queueEvent(game::onFocusLost);
-        glView.onPause();
+    public void onActivityPaused(@NotNull Activity a) {
+      if (a != activity) {
+        return;
       }
+      // Queue focus-lost before pausing the view. The GL thread runs queued events before it
+      // honors a pause request, so the game (and the autoPause audio handling in core) reacts
+      // before rendering stops.
+      glView.queueEvent(game::onFocusLost);
+      glView.onPause();
+    }
 
-      @Override
-      public void onActivityResumed(@NotNull Activity a) {
-        if (a != activity) {
-          return;
-        }
-        glView.onResume();
-        glView.queueEvent(game::onFocusGained);
+    @Override
+    public void onActivityResumed(@NotNull Activity a) {
+      if (a != activity) {
+        return;
       }
+      glView.onResume();
+      glView.queueEvent(game::onFocusGained);
+    }
 
-      @Override
-      public void onActivityDestroyed(@NotNull Activity a) {
-        if (a != activity) {
-          return;
-        }
-        gamepadProvider.stop();
-        // Destroy the game and shut down audio on the GL thread if possible. If the renderer
-        // is already stopped, run synchronously to avoid a resource leak.
-        try {
-          glView.queueEvent(() -> {
-            game.destroy();
-            Flixel.sound.destroy();
-          });
-        } catch (Throwable ignored) {
-          // Best-effort; the OS will reclaim native memory when the process exits.
-        }
-        try {
-          activity.getApplication().unregisterActivityLifecycleCallbacks(this);
-        } catch (Throwable ignored) {
-          // Unregister is best-effort.
-        }
+    @Override
+    public void onActivityDestroyed(@NotNull Activity a) {
+      if (a != activity) {
+        return;
       }
-
-      @Override
-      public void onActivityCreated(@NotNull Activity a, Bundle savedInstanceState) {
+      gamepadProvider.stop();
+      // Destroy the game and shut down audio on the GL thread if possible. If the renderer
+      // is already stopped, run synchronously to avoid a resource leak.
+      try {
+        glView.queueEvent(() -> {
+          game.destroy();
+          Flixel.sound.destroy();
+        });
+      } catch (Throwable ignored) {
+        // Best-effort; the OS will reclaim native memory when the process exits.
       }
-
-      @Override
-      public void onActivityStarted(@NotNull Activity a) {
-      }
-
-      @Override
-      public void onActivityStopped(@NotNull Activity a) {
-      }
-
-      @Override
-      public void onActivitySaveInstanceState(@NotNull Activity a, @NotNull Bundle outState) {
+      try {
+        activity.getApplication().unregisterActivityLifecycleCallbacks(this);
+      } catch (Throwable ignored) {
+        // Unregister is best-effort.
       }
     }
+
+    @Override
+    public void onActivityCreated(@NotNull Activity a, Bundle savedInstanceState) {}
+
+    @Override
+    public void onActivityStarted(@NotNull Activity a) {}
+
+    @Override
+    public void onActivityStopped(@NotNull Activity a) {}
+
+    @Override
+    public void onActivitySaveInstanceState(@NotNull Activity a, @NotNull Bundle outState) {}
+  }
 }

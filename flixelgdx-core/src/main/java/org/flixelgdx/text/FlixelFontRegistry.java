@@ -28,6 +28,7 @@ import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelImage;
+import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,10 +65,14 @@ public final class FlixelFontRegistry {
   private static final String PACKAGED_FONT_BASE = "org/flixelgdx/bitmap/lsans-15";
 
   /** Registered font file bytes by id. */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelMap<String, byte[]> fontData = new FlixelMap<>();
 
   /** Baked fonts keyed by {@code id|size|smooth}. */
+  @SuppressWarnings("checkstyle:ConstantName")
   private static final FlixelMap<String, FlixelFont> bakedFonts = new FlixelMap<>();
+
+  private static final FlixelLogger LOG = Flixel.log.tagged("Fonts");
 
   @Nullable
   private static FlixelFontRasterizer rasterizer;
@@ -102,7 +107,7 @@ public final class FlixelFontRegistry {
   public static void register(@NotNull String id, @NotNull FlixelFile fontFile) {
     byte[] data = fontFile.readBytes();
     if (data.length == 0) {
-      Flixel.warn("Fonts", "Font file for id '" + id + "' is missing or empty: " + fontFile.getPath());
+      LOG.warn("Font file for id '{}' is missing or empty: {}", id, fontFile.getPath());
       return;
     }
     if (fontData.containsKey(id)) {
@@ -192,7 +197,7 @@ public final class FlixelFontRegistry {
     }
     FlixelRasterizedFont opened = raster.open(data, pixelSize);
     if (opened == null) {
-      Flixel.warn("Fonts", "Could not open font '" + id + "'; is it a valid .ttf/.otf file?");
+      LOG.warn("Could not open font '{}'; is it a valid .ttf/.otf file?", id);
       return null;
     }
     FlixelFont baked = FlixelFont.bake(opened, smooth);
@@ -257,7 +262,7 @@ public final class FlixelFontRegistry {
     byte[] fnt = readPackagedResource(PACKAGED_FONT_BASE + ".fnt");
     if (fnt.length == 0) {
       packagedDefaultFailed = true;
-      Flixel.warn("Fonts", "Packaged default font is unavailable; text will not render.");
+      LOG.warn("Packaged default font is unavailable; text will not render.");
       return null;
     }
     byte[] png = readPackagedResource(PACKAGED_FONT_BASE + ".png");

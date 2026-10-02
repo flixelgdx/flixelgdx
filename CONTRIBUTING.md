@@ -18,7 +18,7 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 > close your pull request.
 >
 > 2. We don't require you to mention whether you used AI to help you by default. We believe that the core of software engineering
-> isn't just about writing code, but rather it's about solving problems through innovation; however, if a maintainer at any
+> isn't just about writing code, but rather it's about solving problems for the benefit of others; however, if a maintainer at any
 > point asks you about whether you used AI to help you, we request you to be honest and transparent about it.
 >
 > 3. If your code is broken or rejected, ***it is not the AI's fault, it is yours***. AI is useful, but it can't do the thinking for you.
@@ -34,7 +34,8 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 
 ## Java runtime (JDK 17, Eclipse Temurin)
 
-FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)** (the Adoptium distribution of OpenJDK). Temurin is a well-tested, freely available HotSpot build with strong community support and broad platform coverage.
+FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)** 
+(the Adoptium distribution of OpenJDK). Temurin is a well-tested, freely available HotSpot build with strong community support and broad platform coverage.
 
 **Do not** use Oracle’s proprietary JDK. If `java -version` output mentions **Temurin** or **OpenJDK**, you are on a compatible build.
 
@@ -51,7 +52,7 @@ Framework unit tests live in the **`flixelgdx-test`** Gradle module (`:flixelgdx
 To maintain a stable code base, we follow a specific branching model:
 
 1. **Target Branch**: All pull requests must be made against the `master` branch.
-2. **Build Checks**: Your PR **MUST** pass all automated build checks. If the build fails, **the PR will not be considered for merging until the issues are resolved.**
+2. **Build Checks**: Your PR **MUST** pass all automated build checks. If the build fails, **the PR will not beconsidered for merging until the issues are resolved.**
 3. **Commit Messages**: Keep commit messages concise and descriptive. Use the imperative mood (e.g. "Add tween callback" not "Added tween callback"). If the change fixes an issue, reference it in the message (e.g. "Fix NPE when sprite has no graphic (#123)").
 4. **Scope**: Prefer one logical change per PR. Large features can be split into smaller, reviewable PRs (e.g. API first, then implementation).
 5. **Discussion**: For large or breaking changes, consider opening an issue first to discuss the approach. For bugs, feel free to open a PR directly if the fix is clear.
@@ -86,9 +87,9 @@ Once EditorConfig is enabled, new and edited files will respect the project’s 
 - **Line length**: Prefer staying under 120 characters. Break long lines at natural points (e.g. after a comma, before an operator); avoid breaking in the middle of a word or string when possible.
 - **Braces**: Opening brace on the same line as the declaration (K&R style), with a space before it. Single-statement blocks may stay on one line when readable.
 - **Whitespace**: Trim trailing whitespace from every line. End each file with a single newline. Use a single blank line between methods and between logical sections; do not add multiple blank lines in a row unless the style already exists in that file.
-- **Imports**: Use single-class imports (no `import foo.bar.*`). Order imports as the rest of the project does (typically: Java, then third-party, then project packages, with blank lines between groups).
+- **Imports**: Use single-class imports (no `import foo.bar.*`). Spotless orders them for you: `com`, `org`, `io`, `java`, `javax`, `jdk`, everything else, then static imports, with a blank line between groups.
 
-Match the existing style in the file you are editing. When in doubt, run `./gradlew spotlessApply` and rely on the build; we expect code to look like it was written by a single person.
+Match the existing style in the file you are editing. When in doubt, run `./gradlew spotlessApply` and rely on the build; we expect code to look like it was written by a single person. Spotless covers every Java module, including `flixelgdx-android`, and you do not need the Android SDK or `-PincludeAndroid=true` for it to do so.
 
 ### Naming and Style
 
@@ -96,8 +97,6 @@ Match the existing style in the file you are editing. When in doubt, run `./grad
 - **Methods and variables**: camelCase (e.g. `updateMotion`, `velocityX`). Use descriptive names; avoid single-letter names except for trivial loop indices or well-known math (e.g. `x`, `y`).
 - **Constants**: UPPER_SNAKE_CASE for static final constants (e.g. `MAX_VELOCITY`).
 - **Final**: Use `final` for parameters and local variables when the reference or value is not reassigned. This clarifies intent and helps avoid mistakes.
-
-When replicating HaxeFlixel or Flixel APIs, follow the existing naming in this project. If the original uses an underscore (e.g. in Haxe), we use camelCase in Java (no underscores in identifiers).
 
 ### When to Add Comments and Javadoc
 

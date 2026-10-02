@@ -24,10 +24,11 @@
 package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
-import org.flixelgdx.logging.FlixelNoopStackTraceProvider;
-import org.flixelgdx.logging.FlixelStackTraceProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.time.Instant;
+import java.time.ZoneId;
 
 /**
  * The current machine and program layout, as seen by FlixelGDX: memory usage, where the game is
@@ -75,6 +76,40 @@ public interface FlixelRuntimeDevice {
    */
   default long getNativeHeap() {
     return 0L;
+  }
+
+  /**
+   * Returns how far the local time zone is from UTC at the given moment, in milliseconds.
+   *
+   * <p>Log timestamps, and anything else that shows a clock time to a person, need to know the
+   * player's local time. Computers keep time as a single count of milliseconds since the Unix epoch,
+   * which is the same everywhere in the world (UTC). Adding this offset to that count gives the
+   * wall clock time on the player's machine. Think of it as the number you add to a world clock to
+   * read the clock on your own wall.
+   *
+   * <p>The value is positive east of UTC and negative west of it. For example, UTC-5 returns
+   * {@code -18000000} and UTC+5:30 returns {@code 19800000}.
+   *
+   * <p>The method takes the moment you are asking about, instead of returning one fixed number,
+   * because the offset changes during the year. Daylight saving time moves clocks forward and
+   * backward, so the same place can be UTC-5 in winter and UTC-4 in summer.
+   *
+   * <p>The default asks the Java time zone rules for the system time zone, which is right on
+   * desktop and Android. A backend whose Java runtime cannot see the real time zone (such as the
+   * browser, where the Java time zone is always UTC) overrides this.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * long now = System.currentTimeMillis();
+   * long localNow = now + Flixel.runtime.getUtcOffsetMillis(now);
+   * }</pre>
+   *
+   * @param epochMillis The moment to look up, in milliseconds since the Unix epoch.
+   * @return The offset of local time from UTC at that moment, in milliseconds.
+   */
+  default int getUtcOffsetMillis(long epochMillis) {
+    return ZoneId.systemDefault().getRules().getOffset(Instant.ofEpochMilli(epochMillis)).getTotalSeconds() * 1000;
   }
 
   /**
@@ -146,26 +181,6 @@ public interface FlixelRuntimeDevice {
    * @param mode The runtime mode to apply.
    */
   default void setMode(@NotNull FlixelRuntimeMode mode) {}
-
-  /**
-   * Returns the stack trace provider used by the logger to annotate log messages with their call
-   * site. Defaults to {@link FlixelNoopStackTraceProvider#INSTANCE} when the backend has not
-   * supplied one.
-   *
-   * @return The active stack trace provider, never {@code null}.
-   */
-  @NotNull
-  default FlixelStackTraceProvider getStackTraceProvider() {
-    return FlixelNoopStackTraceProvider.INSTANCE;
-  }
-
-  /**
-   * Sets the platform-specific stack trace provider. Called by the platform launcher before
-   * {@link Flixel#start} so the logger resolves call-site information correctly.
-   *
-   * @param provider The provider to install.
-   */
-  default void setStackTraceProvider(@NotNull FlixelStackTraceProvider provider) {}
 
   /**
    * Installs the supplied handler as the platform's unhandled-exception sink.

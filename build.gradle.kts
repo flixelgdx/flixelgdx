@@ -9,7 +9,7 @@
 plugins {
   eclipse
   idea
-  alias(libs.plugins.spotless) apply false
+  id("flixelgdx.spotless-android")
   alias(libs.plugins.vanniktech) apply false
   alias(libs.plugins.android.library) apply false
   alias(libs.plugins.kotlin.jvm) apply false
@@ -51,7 +51,6 @@ tasks.register("javadocAll") {
     ":flixelgdx-json-processor:javadoc",
     ":flixelgdx-plugins:flixelgdx-basisu-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-html5-plugin:javadoc",
-    ":flixelgdx-plugins:flixelgdx-logging-plugin:javadoc",
     ":flixelgdx-plugins:flixelgdx-shader-plugin:javadoc"
   )
   if (gradle.extra["includeAndroid"] as Boolean) {
