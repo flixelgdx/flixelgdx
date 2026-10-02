@@ -71,9 +71,9 @@ public class FlixelLogcatSink implements FlixelLogSink {
 
   private static final String FALLBACK_TAG = "FlixelGDX";
 
-  private final FlixelString line = new FlixelString(512);
-
   private String defaultTag;
+
+  private final FlixelString line = new FlixelString(512);
 
   /** Creates a sink that uses {@code FlixelGDX} as the Logcat tag when a logger has no tag. */
   public FlixelLogcatSink() {
