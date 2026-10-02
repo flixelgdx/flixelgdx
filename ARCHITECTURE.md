@@ -9,9 +9,9 @@ The project is split into several modules, each serving a specific purpose.
 ### Base (Core + Platform Backends)
 
 - **`flixelgdx-core`**: The heart of FlixelGDX. It contains the base framework classes (`FlixelGame`, `FlixelSprite`, `FlixelState`, etc.) and logic that is platform-independent. Every platform in the entire framework depends on this.
-- **`flixelgdx-desktop`**: The primary desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**.
+- **`flixelgdx-desktop`**: The desktop backend using the third release of the **[Lightweight Java Game Library](https://www.lwjgl.org/)**.
 - **`flixelgdx-html5`**: The backend for the web using [TeaVM](https://teavm.org) to transpile Java bytecode to JavaScript or WebAssembly, allowing games to run seamlessly in a browser.
-- **`flixelgdx-android`**: The backend for Android mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
+- **`flixelgdx-android`**: The backend for Android mobile devices.
 - **`flixelgdx-ios`**: Planned backend for iOS mobile devices. Not supported yet. Currently only fail-fasts when attempted to be used.
 
 ### Plugins (inside [`flixelgdx-plugins`](flixelgdx-plugins/))
@@ -46,5 +46,5 @@ Dependencies are managed in the `build.gradle.kts` file of each module. We use `
 
 ## GitHub Integration
 
-FlixelGDX's codebase has multiple GitHub configurations and templates, which can be found inside of [`.github/`](.github/).
+FlixelGDX's codebase has multiple GitHub configurations and templates, which can be found inside of [`.github/`](.github).
 It holds the issue and pull request templates, Dependabot configurations, workflows, and more.
