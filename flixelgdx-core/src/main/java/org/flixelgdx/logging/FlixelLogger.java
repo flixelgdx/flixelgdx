@@ -125,7 +125,7 @@ public interface FlixelLogger {
    *
    * @param tag The tag to print, or {@code null} for none.
    * @return A logger with its own tag. It keeps pointing at the logger that created it, even if
-   *   {@link Flixel#log} is replaced later.
+   *     {@link Flixel#log} is replaced later.
    */
   @NotNull
   FlixelLogger tagged(@Nullable String tag);
