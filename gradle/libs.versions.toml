@@ -1,4 +1,5 @@
 [versions]
+activity = "1.9.3"
 agp = "8.7.3"
 commonsCompress = "1.27.1"
 desugarJdkLibs = "2.1.5"
@@ -15,6 +16,7 @@ teavm = "0.13.0"
 vanniktech = "0.33.0"
 
 [libraries]
+androidx-activity = { module = "androidx.activity:activity", version.ref = "activity" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
