@@ -57,9 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * {@link #pickFiles(FlixelFilePickListener, String...)} open the system file dialog without freezing
  * the game. They return right away and call your {@link FlixelFilePickListener} later, on the main
  * thread, with a possibly empty array of files. On the web, the browser only allows the dialog to
- * open from a user gesture, so call these from a click or key handler. A listener was chosen over a
- * signal because each request has exactly one answer that belongs to that request, whereas
- * {@link #onTextPasted()} is a broadcast.
+ * open from a user gesture, so call these from a click or key handler.
  *
  * <p>Example:
  *
@@ -191,12 +189,6 @@ public interface FlixelHostIntegration {
 
   /**
    * Opens the system file picker so the user can choose one file.
-   *
-   * <p>Think of it as sending a runner to the filing cabinet: the call returns immediately so the
-   * game keeps running, and the runner reports back through {@code listener} once the user is done.
-   * The listener is always called on the game's main thread, so you do not need to marshal threads
-   * yourself. It receives an array of length 1 on success or length 0 if the user canceled or the
-   * pick failed; the array is never {@code null}.
    *
    * <p>{@code extensions} restricts what can be chosen. Pass bare extensions without a dot, such as
    * {@code "png"} or {@code "png", "jpg"}; case, a leading dot, and a leading {@code *.} are ignored.
