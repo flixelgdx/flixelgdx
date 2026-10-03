@@ -43,7 +43,7 @@ import android.net.Uri;
  */
 public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
-  private final FlixelLogger LOG = Flixel.log.tagged("Host");
+  private final FlixelLogger log = Flixel.log.tagged("Host");
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
   private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
   private final Activity activity;
@@ -80,7 +80,7 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
     try {
       activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
     } catch (Exception e) {
-      LOG.error("Failed to open url.", e);
+      log.error("Failed to open url.", e);
     }
   }
 

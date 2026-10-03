@@ -61,7 +61,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
 
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 
-  private final FlixelLogger LOG = Flixel.log.tagged("Host");
+  private final FlixelLogger log = Flixel.log.tagged("Host");
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
 
   @Override
@@ -154,11 +154,11 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
       } else if (isLinux()) {
         pb.command("xdg-open", url); // I'm hungry for distros.
       } else {
-        LOG.warn("Current OS \"{}\" is not supported for opening URLs, aborting.", OS);
+        log.warn("Current OS \"{}\" is not supported for opening URLs, aborting.", OS);
       }
       pb.start();
     } catch (Exception e) {
-      LOG.error("Failed to open URL.", e);
+      log.error("Failed to open URL.", e);
     }
   }
 
@@ -169,7 +169,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   }
 
   public FlixelLogger getLogger() {
-    return LOG;
+    return log;
   }
 
   private static boolean tryStartProcess(ProcessBuilder pb) {

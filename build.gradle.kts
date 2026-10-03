@@ -10,6 +10,7 @@ plugins {
   eclipse
   idea
   id("flixelgdx.spotless-android")
+  id("flixelgdx.checkstyle-android")
   alias(libs.plugins.vanniktech) apply false
   alias(libs.plugins.android.library) apply false
   alias(libs.plugins.kotlin.jvm) apply false

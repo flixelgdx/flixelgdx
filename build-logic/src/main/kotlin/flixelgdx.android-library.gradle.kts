@@ -4,33 +4,11 @@ plugins {
   id("flixelgdx.java-base")
   id("com.android.library")
   id("com.vanniktech.maven.publish")
-  checkstyle
-}
-
-checkstyle {
-  toolVersion = "10.21.0"
-  configDirectory.set(rootProject.layout.projectDirectory.dir("gradle/checkstyle"))
 }
 
 java {
   toolchain {
     languageVersion = JavaLanguageVersion.of(17)
-  }
-}
-
-// The Checkstyle plugin only creates per-source-set tasks for Java source sets, which Android
-// modules do not have, so we register checkstyleMain by hand to match the other modules.
-afterEvaluate {
-  val android = extensions.getByType(LibraryExtension::class.java)
-  val checkstyleMain = tasks.register("checkstyleMain", Checkstyle::class.java) {
-    group = "verification"
-    description = "Runs Checkstyle on the Android main source set."
-    source(android.sourceSets.getByName("main").java.srcDirs)
-    include("**/*.java")
-    classpath = files()
-  }
-  tasks.named("check") {
-    dependsOn(checkstyleMain)
   }
 }
 
