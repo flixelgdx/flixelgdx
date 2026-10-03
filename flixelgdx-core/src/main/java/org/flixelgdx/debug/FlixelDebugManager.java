@@ -27,16 +27,13 @@ import org.flixelgdx.Flixel;
 import org.flixelgdx.FlixelGame;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.collections.FlixelArray;
-import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
-import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 /**
  * The single entry point for everything related to the FlixelGDX debugger.
@@ -49,8 +46,8 @@ import java.util.regex.Pattern;
  * <pre>{@code
  * Flixel.debug.toggleVisible();
  * Flixel.debug.setDrawDebug(true);
- * Flixel.debug.registerCommand("hello", args -> Flixel.info("Hi!"));
- * Flixel.debug.executeCommand("hello");
+ * Flixel.debug.commands.register("hello", args -> Flixel.info("Hi!"));
+ * Flixel.debug.commands.execute("hello");
  *
  * // Customize keybinds via the overlay field (null-safe: only set after debug mode starts).
  * if (Flixel.debug.overlay != null) {
@@ -59,14 +56,14 @@ import java.util.regex.Pattern;
  * }</pre>
  *
  * <p>The manager is intentionally lightweight: it forwards visibility/hitbox toggles to the active
- * {@link FlixelDebugOverlay}, owns the registry of console commands, and tracks the
+ * {@link FlixelDebugOverlay}, exposes the console command registry through {@link #commands}, and tracks the
  * "currently inspected sprite" for the texture inspector window. The overlay itself (and the
  * platform-specific UI) reads from the manager rather than the other way around so the manager can
  * stay platform-agnostic and reflection-free.
  *
  * <h2>Custom commands</h2>
  *
- * <p>Use {@link #registerCommand(String, Consumer)} with a handler that receives
+ * <p>Use {@link FlixelDebugCommandManager#register(String, Consumer)} via {@link #commands} with a handler that receives
  * {@link FlixelDebugCommandArgs}. That keeps parsing explicit and avoids reflection, which is
  * important on platforms where reflection is restricted (TeaVM, R8/ProGuard-shrunk Android
  * builds).
@@ -80,21 +77,7 @@ import java.util.regex.Pattern;
  */
 public class FlixelDebugManager {
 
-  /**
-   * Regex enforced by {@link #registerCommand(String, Consumer)}. A valid command name must
-   * consist of one or more letters and / or periods only; everything else (numbers, hyphens, underscores,
-   * whitespace, symbols, etc.) triggers an {@link IllegalArgumentException} from {@link #validateCommandName(String)}.
-   */
-  private static final Pattern VALID_COMMAND_NAME = Pattern.compile("^[a-zA-Z.]+$");
-  private static final FlixelLogger LOG = Flixel.log.tagged("FlixelDebug");
-
-  /** Maximum entries kept in the input history (oldest are dropped first). */
-  public static final int MAX_HISTORY_ENTRIES = 64;
-
   private Supplier<FlixelDebugOverlay> overlayFactory = FlixelHeadlessDebugOverlay::new;
-
-  private final FlixelMap<String, RegisteredCommand> commands = new FlixelMap<>();
-  private final FlixelArray<String> commandHistory = new FlixelArray<>(MAX_HISTORY_ENTRIES);
 
   /**
    * Extra {@link FlixelBatch} instances registered by game code via {@link #trackBatch(FlixelBatch)}.
@@ -122,6 +105,15 @@ public class FlixelDebugManager {
    */
   public FlixelDebugOverlay overlay = FlixelNoopDebugOverlay.INSTANCE;
 
+  /**
+   * The console command registry. Register custom commands and run command lines through it:
+   * <pre>{@code
+   * Flixel.debug.commands.register("god", args -> player.setInvincible(true));
+   * Flixel.debug.commands.execute("god");
+   * }</pre>
+   */
+  public final FlixelDebugCommandManager commands;
+
   /** The sprite currently selected by the LMB picker, or {@code null}. */
   @Nullable
   private FlixelObject inspectedSprite;
@@ -130,9 +122,9 @@ public class FlixelDebugManager {
   @Nullable
   private FlixelObject draggedSprite;
 
-  /** Internal: registers the small set of always-available commands ({@code help}, {@code clear}, etc.). */
+  /** Creates the debug manager and its {@link #commands} registry with the always-available commands. */
   public FlixelDebugManager() {
-    registerBuiltinCommands();
+    commands = new FlixelDebugCommandManager(this);
   }
 
   /**
@@ -285,206 +277,5 @@ public class FlixelDebugManager {
   /** Returns the live array of registered tracker entries. Package-private; consumed by the debug overlay. */
   FlixelArray<FlixelDebugTrackerEntry> getTrackerEntries() {
     return trackerEntries;
-  }
-
-  /**
-   * Registers a console command. The {@code handler} receives a {@link FlixelDebugCommandArgs}
-   * object that wraps the positional tokens the user typed after the command name.
-   *
-   * <p>Example:
-   * <pre>{@code
-   * Flixel.debug.registerCommand("hello", args -> {
-   *   String name = args.getString(0, "World"); // 0 = The first argument after the command name.
-   *   Flixel.info("Hello, " + name + "!");
-   * });
-   * }</pre>
-   *
-   * @param name The command name (the first token typed in the console).
-   * @param handler The handler invoked when the command runs.
-   */
-  public void registerCommand(@NotNull String name, @NotNull Consumer<FlixelDebugCommandArgs> handler) {
-    if (handler == null) {
-      return;
-    }
-    validateCommandName(name);
-    commands.put(name, new RegisteredCommand(name, handler::accept));
-  }
-
-  /**
-   * Verifies that {@code name} is a syntactically valid command identifier (only ASCII letters
-   * and periods). Throws {@link IllegalArgumentException} for {@code null}, empty, or otherwise
-   * invalid inputs so registration mistakes surface immediately at startup instead of silently
-   * dropping the command.
-   *
-   * <p>The pattern is intentionally restrictive: numbers, hyphens, underscores, whitespace,
-   * and special symbols are all rejected.
-   *
-   * @param name The candidate command name. Must not be {@code null} or empty.
-   * @throws IllegalArgumentException If {@code name} is null, empty, or contains characters
-   *   outside {@code [a-zA-Z.]}.
-   */
-  private static void validateCommandName(@Nullable String name) {
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Command name must not be null or empty.");
-    }
-    if (!VALID_COMMAND_NAME.matcher(name).matches()) {
-      throw new IllegalArgumentException(
-          "Invalid command name '" + name
-              + "'. Command names may only contain letters and periods (regex: "
-              + VALID_COMMAND_NAME.pattern() + ").");
-    }
-  }
-
-  /**
-   * Removes a previously registered command.
-   *
-   * @param name The command name to remove.
-   */
-  public void unregisterCommand(@NotNull String name) {
-    if (name != null) {
-      commands.remove(name);
-    }
-  }
-
-  /**
-   * Executes a raw command line. The first whitespace-separated token is the command name and
-   * any remaining tokens become positional arguments. Logs an error to {@link Flixel#log} if the
-   * command does not exist.
-   *
-   * @param commandLine The raw input line (for example {@code "spawn enemy.png 1.5"}).
-   * @return {@code true} if a command matched and was executed; {@code false} otherwise.
-   */
-  public boolean executeCommand(@NotNull String commandLine) {
-    if (commandLine == null) {
-      return false;
-    }
-    String trimmed = commandLine.trim();
-    if (trimmed.isEmpty()) {
-      return false;
-    }
-    addToHistory(trimmed);
-
-    String[] tokens = trimmed.split("\\s+");
-    String name = tokens[0];
-    RegisteredCommand cmd = commands.get(name);
-    if (cmd == null) {
-      LOG.error("Unknown command \"{}\". Type \"help\" to see the registered commands.", name);
-      return false;
-    }
-    String[] argv = new String[tokens.length - 1];
-    System.arraycopy(tokens, 1, argv, 0, argv.length);
-    try {
-      cmd.handler.invoke(new FlixelDebugCommandArgs(argv));
-    } catch (Throwable t) {
-      LOG.error("Command \"{}\" threw {}: {}", name, t.getClass().getSimpleName(), t.getMessage());
-      return false;
-    }
-    return true;
-  }
-
-  private void addToHistory(@NotNull String line) {
-    // Skip duplicate of the most recent entry to avoid spamming the up-arrow buffer.
-    if (commandHistory.getSize() > 0 && commandHistory.peek().equals(line)) {
-      return;
-    }
-    while (commandHistory.getSize() >= MAX_HISTORY_ENTRIES) {
-      commandHistory.removeIndex(0);
-    }
-    commandHistory.add(line);
-  }
-
-  /**
-   * Returns the in-memory command history (oldest first). The returned array is the live backing
-   * store and must not be modified. Use {@link FlixelArray#getSize()} and indexed access to read it.
-   *
-   * @return The command history (live, do not modify).
-   */
-  @NotNull
-  public FlixelArray<String> getCommandHistory() {
-    return commandHistory;
-  }
-
-  /**
-   * Returns the {@link FlixelArray} of registered command names. The returned array is freshly allocated.
-   *
-   * @return A sorted array of all registered command names.
-   */
-  @NotNull
-  public FlixelArray<String> getRegisteredCommandNames() {
-    FlixelArray<String> out = new FlixelArray<>(commands.getSize());
-    for (FlixelMap.Entry<String, RegisteredCommand> e : commands.entries()) {
-      out.add(e.key);
-    }
-    out.sort();
-    return out;
-  }
-
-  /**
-   * Returns {@code true} if a command with the given name is registered.
-   *
-   * @param name The command name to look up.
-   * @return {@code true} if a command with that name has been registered.
-   */
-  public boolean hasCommand(@NotNull String name) {
-    return commands.containsKey(name);
-  }
-
-  private void registerBuiltinCommands() {
-    registerCommand("help", args -> {
-      String filter = args.getString(0, null);
-      FlixelArray<String> names = getRegisteredCommandNames();
-      LOG.info("Registered commands:");
-      for (int i = 0; i < names.getSize(); i++) {
-        String n = names.get(i);
-        if (filter != null && !n.startsWith(filter)) {
-          continue;
-        }
-        LOG.info("  {}", n);
-      }
-    });
-
-    registerCommand("pause", args -> {
-      boolean target = args.getBoolean(0, !Flixel.game.isGamePaused());
-      Flixel.game.setGamePaused(target);
-      LOG.info("Pause state: {}", Flixel.game.isGamePaused());
-    });
-
-    registerCommand("hitboxes", args -> {
-      boolean target = args.getBoolean(0, !overlay.isDrawDebug());
-      overlay.setDrawDebug(target);
-      LOG.info("Hitboxes: {}", overlay.isDrawDebug());
-    });
-
-    registerCommand("hide", args -> overlay.setVisible(false));
-
-    registerCommand("resetState", args -> {
-      LOG.info("Resetting current state.");
-      Flixel.resetState();
-    });
-
-    registerCommand("watch.clear", args -> {
-      if (Flixel.watch != null) {
-        Flixel.watch.clear();
-        LOG.info("Cleared watch entries.");
-      }
-    });
-
-    registerCommand("watch.mouse", args -> {
-      if (Flixel.watch != null) {
-        Flixel.watch.addMouse();
-      }
-    });
-  }
-
-  /**
-   * Internal handler form used after registration has wrapped the raw consumer. Kept
-   * package-private because external code never has a reason to construct one directly.
-   */
-  @FunctionalInterface
-  interface CommandHandler {
-    void invoke(@NotNull FlixelDebugCommandArgs args);
-  }
-
-  record RegisteredCommand(String name, CommandHandler handler) {
   }
 }
