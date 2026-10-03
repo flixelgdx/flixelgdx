@@ -23,13 +23,9 @@
  */
 package org.flixelgdx.backend.android;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.net.Uri;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
-import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
@@ -38,12 +34,12 @@ import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+
 /**
  * Android host integration that reports {@link FlixelPlatform#ANDROID}.
- *
- * <p>Notifications and clipboard are not wired in this initial implementation; only the platform
- * identity and no-op signal are provided. Full clipboard and notification support can be layered
- * on later without changing the launcher.
  */
 public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
@@ -52,6 +48,12 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
   private final Activity activity;
 
+  /**
+   * Creates a new host integration for Android.
+   *
+   * @param activity The Android {@link Activity} used for some specific features,
+   *     such as opening URLs through an {@link Intent}.
+   */
   public FlixelAndroidHostIntegration(Activity activity) {
     this.activity = activity;
   }

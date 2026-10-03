@@ -153,10 +153,12 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
         pb.command("open", url);
       } else if (isLinux()) {
         pb.command("xdg-open", url); // I'm hungry for distros.
+      } else {
+        LOG.warn("Current OS \"{}\" is not supported for opening URLs, aborting.", OS);
       }
       pb.start();
     } catch (Exception e) {
-      LOG.error("Failed to open url.", e);
+      LOG.error("Failed to open URL.", e);
     }
   }
 
@@ -164,6 +166,10 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   @Override
   public FlixelPlatform getPlatform() {
     return FlixelPlatform.DESKTOP;
+  }
+
+  public FlixelLogger getLogger() {
+    return LOG;
   }
 
   private static boolean tryStartProcess(ProcessBuilder pb) {
