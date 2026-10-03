@@ -92,6 +92,10 @@ html5 {
   // Source directory for game assets (default: rootProject/assets/).
   assetsDir = file('../assets')
 
+  // Ant-style glob patterns, relative to assetsDir, for assets to leave out of the web build
+  // (default: none). See "Excluding assets" below.
+  excludes = ['debug/**', '**/*.psd', 'music/old_track.ogg']
+
   // Source directory for user-provided web resources (default: src/main/webapp/).
   // Files here are copied verbatim into the web output. An index.html here suppresses
   // auto-generation.
@@ -157,6 +161,47 @@ The plugin writes `assets/assets.txt` into the web output, listing every file un
 directory one per line. The web backend reads this at startup and preloads all of them before the
 game's `create()` method is called, so assets are available synchronously (matching the behavior of
 the desktop and Android backends).
+
+## Excluding assets
+
+Some files in the assets directory are only useful during development, such as source art or debug
+data. Leave them out of the web build with the `excludes` option. It takes Ant-style glob patterns
+relative to `assetsDir`:
+
+```groovy
+html5 {
+  excludes = [
+    'debug/**',             // an entire folder
+    '**/*.psd',             // a file extension, in any folder
+    'music/old_track.ogg'   // a single file
+  ]
+}
+```
+
+Excluded files are not copied into the web output and never appear in `assets/assets.txt`, so the
+game does not preload them. Only the game's own assets are affected; framework resources and shaders
+are always bundled. Changing the list re-runs `copyAssets` on the next build.
+
+Desktop and Android do not need this option because Gradle already has a way to do it for each:
+
+- **Desktop:** add an `exclude` inside the jar's `from` block in the game's `lwjgl3/build.gradle`:
+
+  ```groovy
+  from(rootProject.file('assets')) {
+    exclude 'debug/**', '**/*.psd'
+  }
+  ```
+
+- **Android:** use `ignoreAssetsPattern` in the `android` block. It matches file and folder names,
+  not full paths:
+
+  ```groovy
+  android {
+    androidResources {
+      ignoreAssetsPattern = '!debug:!*.psd'
+    }
+  }
+  ```
 
 ## Framework resources
 

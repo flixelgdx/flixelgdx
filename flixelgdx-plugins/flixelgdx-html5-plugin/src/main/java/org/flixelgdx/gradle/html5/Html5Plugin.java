@@ -36,6 +36,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.Zip;
 import org.teavm.gradle.api.TeaVMExtension;
 
@@ -140,6 +141,7 @@ public class Html5Plugin implements Plugin<Project> {
     ext.getTitle().convention(Html5Extension.DEFAULT_TITLE);
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
+    ext.getExcludes().convention(List.of());
     ext.getGenerateDefaultIndexHtml().convention(true);
     ext.getInjectHtmlTags().convention(true);
     ext.getDevServerPort().convention(8080);
@@ -167,12 +169,16 @@ public class Html5Plugin implements Plugin<Project> {
 
   /** Registers the asset and web-resource copy tasks. */
   private void registerCopyTasks(Project project, Html5Extension ext, DirectoryProperty webRoot) {
-    project.getTasks().register("copyAssets", Copy.class, task -> {
+    TaskProvider<Copy> copyAssets = project.getTasks().register("copyAssets", Copy.class, task -> {
       task.setGroup(BUILD_GROUP);
       task.setDescription("Copies game assets from the assets directory into the web output directory.");
       task.from(ext.getAssetsDir());
       task.into(webRoot.dir("assets"));
     });
+
+    // The exclude patterns are resolved after the build script has run. Gradle tracks a Copy task's
+    // patterns as inputs, so changing the excludes re-runs the copy instead of reusing stale output.
+    project.afterEvaluate(p -> copyAssets.configure(task -> task.exclude(ext.getExcludes().get())));
 
     project.getTasks().register("copyWebApp", Copy.class, task -> {
       task.setGroup(BUILD_GROUP);

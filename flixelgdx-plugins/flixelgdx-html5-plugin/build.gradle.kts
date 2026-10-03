@@ -23,6 +23,7 @@ dependencies {
 
 dependencies {
   testRuntimeOnly(libs.junit.platform.launcher)
+  testImplementation(libs.teavm.gradle.plugin)
   testImplementation(platform(libs.junit.bom))
   testImplementation(libs.junit.jupiter)
 }
