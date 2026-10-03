@@ -110,6 +110,23 @@
  * return {@code false} automatically. This prevents clicks inside a debug panel from triggering
  * game behavior at the same time.
  *
+ * <h2>Moving the pointer</h2>
+ *
+ * <p>Desktop games can move the pointer with
+ * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#setScreenPosition(float, float) setScreenPosition()}
+ * and
+ * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#setWorldPosition(float, float) setWorldPosition()}
+ * (plus the single-axis {@code setScreenX/Y} and {@code setWorldX/Y} variants). Browsers and mobile
+ * systems cannot move the pointer, so these calls do nothing there; check
+ * {@link org.flixelgdx.input.mouse.FlixelMouseInputManager#supportsSetPosition() supportsSetPosition()}
+ * when your game depends on it.
+ *
+ * <pre>{@code
+ * // Snap the cursor onto a button sprite.
+ * Flixel.mouse.setWorldPosition(button.getX() + button.getWidth() / 2f,
+ *     button.getY() + button.getHeight() / 2f);
+ * }</pre>
+ *
  * <h2>Cursor styling</h2>
  *
  * <p>Games that want to change the OS cursor at runtime use
