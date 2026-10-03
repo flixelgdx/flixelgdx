@@ -111,6 +111,9 @@ public class FlixelText extends FlixelSprite {
   /** The color of the border in RGBA. */
   private final FlixelColor borderColor = new FlixelColor(FlixelColor.CLEAR);
 
+  /** Reused scratch color holding {@link #borderColor} multiplied by this text's alpha while drawing. */
+  private final FlixelColor borderDrawColor = new FlixelColor(FlixelColor.CLEAR);
+
   /** The size of the border in pixels. */
   private float borderSize = 1;
 
@@ -1153,7 +1156,7 @@ public class FlixelText extends FlixelSprite {
    * @param y The y coordinate of the text's <em>top</em> edge.
    */
   private void drawTextContent(FlixelBatch batch, float x, float y) {
-    if (borderStyle != BorderStyle.NONE && borderColor.a > 0 && borderSize > 0) {
+    if (borderStyle != BorderStyle.NONE && borderColor.a > 0 && getAlpha() > 0 && borderSize > 0) {
       drawBorder(batch, x, y);
     }
     batch.setColor(getColor());
@@ -1161,9 +1164,18 @@ public class FlixelText extends FlixelSprite {
     batch.setColor(FlixelColor.WHITE);
   }
 
+  /**
+   * Returns the border color with this text's alpha applied, so the border fades with the glyphs.
+   *
+   * <p>The result is a reused scratch color; {@link #getBorderColor()} is never modified.
+   */
+  FlixelColor resolveBorderColor() {
+    return borderDrawColor.set(borderColor.r, borderColor.g, borderColor.b, borderColor.a * getAlpha());
+  }
+
   /** Draws the text border/outline by rendering the layout at offset positions. */
   private void drawBorder(FlixelBatch batch, float x, float y) {
-    batch.setColor(borderColor);
+    batch.setColor(resolveBorderColor());
 
     switch (borderStyle) {
       case SHADOW -> layout.draw(batch, x + borderSize, y + borderSize);
