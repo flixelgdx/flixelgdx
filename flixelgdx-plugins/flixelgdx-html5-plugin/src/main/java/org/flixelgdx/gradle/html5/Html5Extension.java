@@ -25,6 +25,7 @@ package org.flixelgdx.gradle.html5;
 
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
 /**
@@ -54,6 +55,10 @@ import org.gradle.api.provider.Property;
  *
  *   // Specify the directory where game assets are stored (default: rootProject/assets/).
  *   assetsDir = file('../assets')
+ *
+ *   // Ant-style glob patterns, relative to assetsDir, for assets to leave out of the web build.
+ *   // 'debug/**' skips a whole folder and a plain path skips one file (default: none).
+ *   excludes = ['debug/**', 'music/old_track.ogg']
  *
  *   // Specify the directory where user-provided web resources are stored (default: src/main/webapp/).
  *   webappDir = file('src/main/webapp')
@@ -132,6 +137,21 @@ public interface Html5Extension {
    * @return The assets source directory property.
    */
   DirectoryProperty getAssetsDir();
+
+  /**
+   * Ant-style glob patterns, relative to {@link #getAssetsDir()}, for assets that should be left out
+   * of the web build.
+   *
+   * <p>A plain path (for example, {@code "music/old_track.ogg"}) excludes just that one file.
+   * A path ending in {@code /**} (for example, {@code "debug/**"}) excludes an entire folder and
+   * everything under it. A pattern such as <code>**&#47;*.psd</code> excludes every file with that
+   * extension. Excluded files are not copied into the web output and do not appear in the asset
+   * manifest, so the game never preloads them. Only the game's own assets are affected; framework
+   * resources and shaders are always bundled. Defaults to an empty list.
+   *
+   * @return The excludes property.
+   */
+  ListProperty<String> getExcludes();
 
   /**
    * Whether the plugin should generate a default {@code index.html} when none is found in
