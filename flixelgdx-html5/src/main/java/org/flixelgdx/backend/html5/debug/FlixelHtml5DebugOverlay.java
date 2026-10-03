@@ -60,7 +60,7 @@ import org.teavm.jso.JSBody;
  *   <li><b>Log</b> - the live, level-filtered log stream.</li>
  *   <li><b>Controls</b> - hitbox and pause toggles, a time-scale slider, an overlay update-rate
  *       slider, and the keybind reference.</li>
- *   <li><b>Command</b> - a text field routed through {@code Flixel.debug.executeCommand(...)}, with
+ *   <li><b>Command</b> - a text field routed through {@code Flixel.debug.commands.execute(...)}, with
  *       output flowing to the Log tab.</li>
  * </ul>
  *
@@ -293,7 +293,7 @@ public class FlixelHtml5DebugOverlay extends FlixelDebugOverlay {
       String trimmed = command.trim();
       if (!trimmed.isEmpty()) {
         LOG.info("> {}", trimmed);
-        Flixel.debug.executeCommand(trimmed);
+        Flixel.debug.commands.execute(trimmed);
       }
     }
   }
