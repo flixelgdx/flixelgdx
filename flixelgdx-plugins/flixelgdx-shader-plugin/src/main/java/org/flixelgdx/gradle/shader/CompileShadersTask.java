@@ -250,7 +250,7 @@ public abstract class CompileShadersTask extends DefaultTask {
     StringBuilder out = new StringBuilder();
     for (String line : log.split("\\R")) {
       if (line.startsWith("ERROR:") || line.startsWith("WARNING:")) {
-        out.append(out.length() == 0 ? "" : "\n").append(line);
+        out.append(out.isEmpty() ? "" : "\n").append(line);
       }
     }
     return out.toString();

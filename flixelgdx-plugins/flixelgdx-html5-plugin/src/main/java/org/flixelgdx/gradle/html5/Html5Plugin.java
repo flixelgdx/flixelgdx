@@ -125,7 +125,8 @@ public class Html5Plugin implements Plugin<Project> {
       "generateAssetManifest",
       "extractNativeScripts",
       "generateIndexHtml",
-      "copyWebApp"
+      "copyWebApp",
+      "injectHtmlTags"
   };
 
   // The tasks that read the finished web root.
@@ -140,6 +141,7 @@ public class Html5Plugin implements Plugin<Project> {
     ext.getWebappDir().convention(project.getLayout().getProjectDirectory().dir("src/main/webapp"));
     ext.getAssetsDir().convention(project.getRootProject().getLayout().getProjectDirectory().dir("assets"));
     ext.getGenerateDefaultIndexHtml().convention(true);
+    ext.getInjectHtmlTags().convention(true);
     ext.getDevServerPort().convention(8080);
 
     // Resolved to the TeaVM output directory in afterEvaluate; the fallback is only used when
@@ -155,7 +157,8 @@ public class Html5Plugin implements Plugin<Project> {
     registerShaderTask(project, webRoot);
     registerFrameworkResourcesTask(project, webRoot);
     registerManifestTask(project, webRoot);
-    registerIndexTask(project, ext, webRoot, bundle);
+    registerIndexTask(project, ext, webRoot);
+    registerInjectTask(project, ext, webRoot, bundle);
     registerRunTask(project, ext, webRoot);
     registerPackageTask(project, webRoot);
 
@@ -275,9 +278,8 @@ public class Html5Plugin implements Plugin<Project> {
     }
   }
 
-  /** Registers the {@code index.html} generator. */
-  private void registerIndexTask(Project project, Html5Extension ext, DirectoryProperty webRoot,
-      AtomicReference<WebBundle> bundle) {
+  /** Registers the {@code index.html} generator, which writes the page with its tags still unresolved. */
+  private void registerIndexTask(Project project, Html5Extension ext, DirectoryProperty webRoot) {
     project.getTasks().register("generateIndexHtml", task -> {
       task.setGroup(BUILD_GROUP);
       task.setDescription("Writes index.html into the output directory, booting the WebAssembly or JavaScript bundle.");
@@ -292,22 +294,38 @@ public class Html5Plugin implements Plugin<Project> {
         // Skip when the webapp source directory already contains an index.html (copyWebApp handles it).
         return !new File(ext.getWebappDir().get().getAsFile(), "index.html").exists();
       });
-      task.doLast(t -> writeIndexHtml(project, ext, webRoot.get().getAsFile(), bundle.get()));
+      task.doLast(t -> writeIndexHtml(ext, webRoot.get().getAsFile()));
     });
   }
 
   /**
-   * Writes {@code index.html}, either copying a developer-supplied file or filling in the built-in
-   * template with the resolved bundle names.
+   * Registers the {@code injectHtmlTags} task, which always runs last. It resolves the
+   * {@code {{...}}} tags in whatever {@code index.html} ended up in the output (the built-in
+   * template, one from the webapp directory, or a custom file), so every source is treated alike.
    */
-  private void writeIndexHtml(Project project, Html5Extension ext, File outputDir, WebBundle bundle) {
+  private void registerInjectTask(Project project, Html5Extension ext, DirectoryProperty webRoot,
+      AtomicReference<WebBundle> bundle) {
+    project.getTasks().register("injectHtmlTags", task -> {
+      task.setGroup(BUILD_GROUP);
+      task.setDescription("Replaces {{...}} tags in the output index.html with their resolved values.");
+      task.onlyIf(t -> ext.getInjectHtmlTags().get());
+      task.doLast(t -> injectHtmlTags(project, ext, webRoot.get().getAsFile(), bundle.get()));
+    });
+  }
+
+  /**
+   * Writes {@code index.html}, either copying a developer-supplied file or writing the built-in
+   * template as-is. Tag substitution happens afterwards in {@code injectHtmlTags}.
+   */
+  private void writeIndexHtml(Html5Extension ext, File outputDir) {
     outputDir.mkdirs();
+    File target = new File(outputDir, "index.html");
 
     if (ext.getIndexHtml().isPresent()) {
       File custom = ext.getIndexHtml().getAsFile().get();
       if (custom.exists()) {
         try {
-          Files.copy(custom.toPath(), new File(outputDir, "index.html").toPath(), StandardCopyOption.REPLACE_EXISTING);
+          Files.copy(custom.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
           throw new RuntimeException("FlixelGDX: failed to copy custom index.html.", e);
         }
@@ -315,32 +333,42 @@ public class Html5Plugin implements Plugin<Project> {
       }
     }
 
-    String faviconLink = copyFavicon(project, ext, outputDir);
-    String modeDefault = resolveModeDefault(ext);
-    String nativeScripts = buildNativeScriptTags(outputDir);
     copyLoadingAssets(outputDir);
+    copyResource(DEFAULT_INDEX_TEMPLATE, target);
+  }
+
+  /**
+   * Replaces every known {@code {{...}}} tag found in the output {@code index.html}. Unknown tags are
+   * left untouched, and the favicon is only copied when the page actually uses its tag.
+   */
+  private void injectHtmlTags(Project project, Html5Extension ext, File outputDir, WebBundle bundle) {
+    File file = new File(outputDir, "index.html");
+    if (!file.exists()) {
+      return;
+    }
 
     try {
-      String template;
-      try (InputStream in = Html5Plugin.class.getResourceAsStream(DEFAULT_INDEX_TEMPLATE)) {
-        if (in == null) {
-          throw new IOException("default-index.html template not found in plugin JAR at " + DEFAULT_INDEX_TEMPLATE);
-        }
-        template = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      String html = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+      if (!html.contains("{{")) {
+        return;
       }
-      String html = template
+      if (html.contains("{{FAVICON}}")) {
+        html = html.replace("{{FAVICON}}", copyFavicon(project, ext, outputDir));
+      }
+      if (html.contains("{{NATIVE_SCRIPTS}}")) {
+        html = html.replace("{{NATIVE_SCRIPTS}}", buildNativeScriptTags(outputDir));
+      }
+      html = html
           .replace("{{TITLE}}", ext.getTitle().get())
           .replace("{{CANVAS_ID}}", ext.getCanvasId().get())
-          .replace("{{FAVICON}}", faviconLink)
-          .replace("{{NATIVE_SCRIPTS}}", nativeScripts)
-          .replace("{{MODE_DEFAULT}}", modeDefault)
+          .replace("{{MODE_DEFAULT}}", resolveModeDefault(ext))
           .replace("{{WASM_ENABLED}}", Boolean.toString(bundle.wasmEnabled()))
           .replace("{{JS_BUNDLE}}", bundle.jsBundle())
           .replace("{{WASM_BUNDLE}}", bundle.wasmBundle())
           .replace("{{WASM_RUNTIME}}", bundle.wasmRuntime());
-      Files.writeString(new File(outputDir, "index.html").toPath(), html, StandardCharsets.UTF_8);
+      Files.writeString(file.toPath(), html, StandardCharsets.UTF_8);
     } catch (IOException e) {
-      throw new RuntimeException("FlixelGDX: failed to generate default index.html.", e);
+      throw new RuntimeException("FlixelGDX: failed to inject tags into index.html.", e);
     }
   }
 
@@ -670,6 +698,10 @@ public class Html5Plugin implements Plugin<Project> {
         if (copyWebApp != null) {
           copyWebApp.mustRunAfter(copyRuntime);
         }
+        Task inject = project.getTasks().findByName("injectHtmlTags");
+        if (inject != null) {
+          inject.mustRunAfter(copyRuntime);
+        }
       }
     }
 
@@ -699,6 +731,7 @@ public class Html5Plugin implements Plugin<Project> {
         tasks.named("extractNativeScripts"));
     Task index = tasks.findByName("generateIndexHtml");
     Task copyWebApp = tasks.findByName("copyWebApp");
+    Task inject = tasks.findByName("injectHtmlTags");
     // run, debug, and package also depend on these two directly (see wireTeaVm()). The explicit
     // mustRunAfter pins them after the build either way, instead of relying on the finalizer
     // relationship alone for that order.
@@ -714,6 +747,19 @@ public class Html5Plugin implements Plugin<Project> {
       if (index != null) {
         copyWebApp.mustRunAfter(index);
       }
+    }
+    // Tag injection is the very last step, so it also covers an index.html that copyWebApp just
+    // dropped into the output.
+    if (inject != null) {
+      build.finalizedBy(inject);
+      inject.mustRunAfter(build);
+      if (index != null) {
+        inject.mustRunAfter(index);
+      }
+      if (copyWebApp != null) {
+        inject.mustRunAfter(copyWebApp);
+      }
+      inject.mustRunAfter(tasks.named("extractNativeScripts"));
     }
   }
 

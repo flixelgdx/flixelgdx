@@ -61,6 +61,9 @@ import org.gradle.api.provider.Property;
  *   // Set to false to disable index.html auto-generation entirely (default: true).
  *   generateDefaultIndexHtml = true
  *
+ *   // Set to false to leave {{...}} tags in index.html unresolved (default: true).
+ *   injectHtmlTags = true
+ *
  *   // Provide a custom index.html instead of the generated default.
  *   indexHtml = file('src/main/webapp/index.html')
  *
@@ -144,6 +147,20 @@ public interface Html5Extension {
   Property<Boolean> getGenerateDefaultIndexHtml();
 
   /**
+   * Whether {@code {{...}}} tags in the output {@code index.html} are replaced with real values.
+   *
+   * <p>Injection runs as the last step of the build, so it applies to the built-in template and to a
+   * custom page from {@link #getIndexHtml()} or {@link #getWebappDir()} alike. The supported tags are
+   * {@code {{TITLE}}}, {@code {{CANVAS_ID}}}, {@code {{FAVICON}}}, {@code {{NATIVE_SCRIPTS}}},
+   * {@code {{MODE_DEFAULT}}}, {@code {{WASM_ENABLED}}}, {@code {{JS_BUNDLE}}}, {@code {{WASM_BUNDLE}}},
+   * and {@code {{WASM_RUNTIME}}}. Set to {@code false} to opt out; the page, including the default
+   * template, is then left exactly as written. Defaults to {@code true}.
+   *
+   * @return The tag injection toggle property.
+   */
+  Property<Boolean> getInjectHtmlTags();
+
+  /**
    * TCP port that the {@code run} task's embedded HTTP dev server listens on.
    *
    * <p>Defaults to {@code 8080}. Change this if port 8080 is already in use on your machine:
@@ -163,8 +180,9 @@ public interface Html5Extension {
    *
    * <p>When set, this file is copied verbatim into the TeaVM web output directory as
    * {@code index.html}, bypassing both the default template generator and any {@code index.html}
-   * found in {@link #getWebappDir()}. No placeholder substitution is applied; the developer is
-   * responsible for the full HTML content, including loading the bundle.
+   * found in {@link #getWebappDir()}. Any {@code {{...}}} tags in the file are resolved afterwards
+   * unless {@link #getInjectHtmlTags()} is {@code false}, in which case the developer is responsible
+   * for the full HTML content, including loading the bundle.
    *
    * @return The custom index.html file property.
    */
@@ -174,9 +192,8 @@ public interface Html5Extension {
    * Optional path to a favicon file (any format supported by browsers, e.g. {@code .ico}, {@code .png}).
    *
    * <p>When set, the file is copied into the TeaVM web output directory and a {@code <link rel="icon">}
-   * tag referencing it is injected into the generated {@code index.html}. Has no effect when a custom
-   * {@code index.html} is provided via {@link #getIndexHtml()} or {@link #getWebappDir()}, since
-   * those are copied verbatim.
+   * tag referencing it replaces the {@code {{FAVICON}}} tag in {@code index.html}. Has no effect
+   * when the page lacks that tag or {@link #getInjectHtmlTags()} is {@code false}.
    *
    * @return The custom favicon file property.
    */

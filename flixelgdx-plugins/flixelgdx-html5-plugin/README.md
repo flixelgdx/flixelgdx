@@ -100,6 +100,9 @@ html5 {
   // Set to false to skip index.html auto-generation entirely (default: true).
   generateDefaultIndexHtml = true
 
+  // Set to false to leave {{...}} tags in index.html unresolved (default: true).
+  injectHtmlTags = true
+
   // Provide a hand-crafted index.html instead of the generated default.
   indexHtml = file('src/main/webapp/index.html')
 
@@ -137,12 +140,16 @@ so does a WASM-only build (the fallback path just never triggers).
 If the generated page does not meet the game's needs, supply a custom one in two ways:
 
 **Via `webappDir` (recommended).** Place an `index.html` in `src/main/webapp/`. The plugin copies
-it verbatim into the web output and skips auto-generation. Other files in that directory (scripts,
+it into the web output and skips auto-generation. Other files in that directory (scripts,
 stylesheets, extra images) are copied alongside it.
 
 **Via `customIndexHtml`.** Point directly at a file anywhere on disk. The file is copied as
-`index.html` regardless of where `webappDir` is. No placeholder substitution is applied; the full
-HTML is the developer's responsibility, including loading the TeaVM bundle.
+`index.html` regardless of where `webappDir` is. Any `{{...}}` tags it contains are resolved by the
+last build step (`injectHtmlTags`), exactly like the default template: `{{TITLE}}`, `{{CANVAS_ID}}`,
+`{{FAVICON}}`, `{{NATIVE_SCRIPTS}}`, `{{MODE_DEFAULT}}`, `{{WASM_ENABLED}}`, `{{JS_BUNDLE}}`,
+`{{WASM_BUNDLE}}`, and `{{WASM_RUNTIME}}`. Unknown tags are left alone. Set `injectHtmlTags = false`
+to opt out; the page (default template included) is then left exactly as written, and loading the
+TeaVM bundle is the developer's responsibility.
 
 ## Asset manifest
 
@@ -180,9 +187,9 @@ runtime classpath that contains files under `META-INF/wasm/` will have those fil
 `<head>` before the game bundle loads. The scripts therefore execute and finish setting up before any
 game code runs.
 
-**Important:** the `<script>` tags are only injected into the auto-generated `index.html`. If you
-supply a [custom index.html](#custom-indexhtml), you are responsible for loading the scripts
-yourself using the same `native/` paths.
+**Important:** the `<script>` tags replace the `{{NATIVE_SCRIPTS}}` tag, so a
+[custom index.html](#custom-indexhtml) must contain that tag to get them. With `injectHtmlTags = false`,
+load the scripts yourself using the same `native/` paths.
 
 ### How Emscripten companion files are resolved
 
@@ -229,20 +236,21 @@ sourceSets.main.resources.srcDir = 'src/main/emcc-output'
 
 ## Tasks registered
 
-| Task                       | Group       | Description                                                                          |
-|----------------------------|-------------|--------------------------------------------------------------------------------------|
-| `copyAssets`               | build       | Copies game assets into the web output.                                              |
-| `copyWebApp`               | build       | Copies user-provided web resources into the web output.                              |
-| `copyShaders`              | build       | Copies compiled ESSL shader variants into the web assets.                            |
-| `copyFrameworkResources`   | build       | Copies packaged framework classpath resources (e.g. the bitmap font) into web assets.|
-| `extractNativeScripts`     | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.                     |
-| `generateAssetManifest`    | build       | Writes `assets/assets.txt` for the web preloader.                                   |
-| `generateIndexHtml`        | build       | Generates `index.html` and injects `<script>` tags for native scripts.               |
-| `run`                      | application | Builds the web app and starts the dev server.                                        |
-| `debug`                    | application | Same as `run`, but opens in debug mode.                                              |
-| `package`                  | application | Zips the web output into `dist/<name>-html5.zip`.                                   |
+| Task                       | Group       | Description                                                                           |
+|----------------------------|-------------|---------------------------------------------------------------------------------------|
+| `copyAssets`               | build       | Copies game assets into the web output.                                               |
+| `copyWebApp`               | build       | Copies user-provided web resources into the web output.                               |
+| `copyShaders`              | build       | Copies compiled ESSL shader variants into the web assets.                             |
+| `copyFrameworkResources`   | build       | Copies packaged framework classpath resources (e.g. the bitmap font) into web assets. |
+| `extractNativeScripts`     | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.                       |
+| `generateAssetManifest`    | build       | Writes `assets/assets.txt` for the web preloader.                                     |
+| `generateIndexHtml`        | build       | Writes the default `index.html` (or copies your custom one).                          |
+| `injectHtmlTags`           | build       | Runs last; replaces `{{...}}` tags in the output `index.html`.                        |
+| `run`                      | application | Builds the web app and starts the dev server.                                         |
+| `debug`                    | application | Same as `run`, but opens in debug mode.                                               |
+| `package`                  | application | Zips the web output into `dist/<name>-html5.zip`.                                     |
 
 `run`, `debug`, and `package` depend on every task above that writes into the web output, so they
-always work on a complete app. `generateIndexHtml` and `copyWebApp` run after the TeaVM build, with
-`copyWebApp` last so your own web resources (including a custom `index.html`) override anything the
-plugin generated.
+always work on a complete app. `generateIndexHtml`, `copyWebApp`, and `injectHtmlTags` run after the TeaVM
+build, in that order, so your own web resources (including a custom `index.html`) override anything
+the plugin generated and still get their tags resolved.
