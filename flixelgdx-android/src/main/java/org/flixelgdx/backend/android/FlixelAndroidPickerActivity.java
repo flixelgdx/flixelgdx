@@ -31,7 +31,6 @@ import java.util.List;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -54,7 +53,7 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
   /** Intent extra holding whether several files may be chosen. */
   static final String EXTRA_MANY = "org.flixelgdx.PICK_MANY";
 
-  private static final String[] ANY_TYPE = {"*/*"};
+  private static final String[] ANY_TYPE = { "*/*" };
 
   @Nullable
   private static Listener pending;
@@ -88,7 +87,7 @@ public class FlixelAndroidPickerActivity extends ComponentActivity {
     }
 
     ActivityResultLauncher<String[]> single = registerForActivityResult(
-        new ActivityResultContracts.OpenDocument(), uri -> finishWith(uri != null ? new Uri[] {uri} : null));
+        new ActivityResultContracts.OpenDocument(), uri -> finishWith(uri != null ? new Uri[] { uri } : null));
     ActivityResultLauncher<String[]> multiple = registerForActivityResult(
         new ActivityResultContracts.OpenMultipleDocuments(), this::finishWithList);
 

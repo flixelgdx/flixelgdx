@@ -107,7 +107,8 @@ public class FlixelAndroidUriFile implements FlixelFile {
       if (in == null) {
         return new byte[0];
       }
-      ByteArrayOutputStream out = new ByteArrayOutputStream(size > 0L ? (int) Math.min(size, Integer.MAX_VALUE - 8) : 8192);
+      ByteArrayOutputStream out =
+          new ByteArrayOutputStream(size > 0L ? (int) Math.min(size, Integer.MAX_VALUE - 8) : 8192);
       byte[] buffer = new byte[8192];
       int read;
       while ((read = in.read(buffer)) != -1) {
