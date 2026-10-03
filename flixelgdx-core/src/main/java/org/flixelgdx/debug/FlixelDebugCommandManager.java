@@ -25,6 +25,7 @@ package org.flixelgdx.debug;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.collections.FlixelMap;
 import org.flixelgdx.logging.FlixelLogger;
 import org.jetbrains.annotations.NotNull;
@@ -170,13 +171,12 @@ public class FlixelDebugCommandManager {
   }
 
   /**
-   * Returns the in-memory command history (oldest first). The returned array is the live backing
-   * store and must not be modified. Use {@link FlixelArray#getSize()} and indexed access to read it.
+   * Returns the in-memory command history (oldest first).
    *
-   * @return The command history (live, do not modify).
+   * @return The command history.
    */
   @NotNull
-  public FlixelArray<String> getHistory() {
+  public FlixelList<String> getHistory() {
     return history;
   }
 
@@ -266,16 +266,12 @@ public class FlixelDebugCommandManager {
     });
 
     register("watch.clear", args -> {
-      if (Flixel.watch != null) {
-        Flixel.watch.clear();
-        LOG.info("Cleared watch entries.");
-      }
+      Flixel.watch.clear();
+      LOG.info("Cleared watch entries.");
     });
 
     register("watch.mouse", args -> {
-      if (Flixel.watch != null) {
-        Flixel.watch.addMouse();
-      }
+      Flixel.watch.addMouse();
     });
   }
 

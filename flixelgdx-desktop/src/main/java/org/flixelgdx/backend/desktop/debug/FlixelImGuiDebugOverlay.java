@@ -30,6 +30,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
@@ -1427,7 +1428,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * newest clears the buffer.
    */
   private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
-    FlixelArray<String> history = Flixel.debug.commands.getHistory();
+    FlixelList<String> history = Flixel.debug.commands.getHistory();
     if (history.getSize() == 0) {
       return;
     }
