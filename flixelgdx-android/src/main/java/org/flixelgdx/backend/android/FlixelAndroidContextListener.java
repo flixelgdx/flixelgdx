@@ -36,7 +36,7 @@ package org.flixelgdx.backend.android;
  * via {@link FlixelAndroidRunner#setContextListener}. Keep this interface package-level; it is an
  * internal contract between the runner and the graphics manager and is not part of the public API.
  */
-interface FlixelAndroidContextListener {
+public interface FlixelAndroidContextListener {
 
   /**
    * Called on the GL thread when the EGL context has been lost, just before the surface is
