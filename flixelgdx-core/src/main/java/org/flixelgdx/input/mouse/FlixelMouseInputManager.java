@@ -88,6 +88,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   private FlixelCamera worldCamera;
 
   private final FlixelVector tmpUnproject = new FlixelVector();
+  private final FlixelVector tmpProject = new FlixelVector();
 
   /** When {@code false}, all queries return inactive state. */
   public boolean enabled = true;
@@ -128,7 +129,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
   }
 
   private void recomputeWorld() {
-    FlixelCamera cam = worldCamera != null ? worldCamera : safeGetDefaultCamera();
+    FlixelCamera cam = resolveCamera();
     if (cam == null) {
       worldX = screenX;
       worldY = screenY;
@@ -138,6 +139,11 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     cam.unproject(tmpUnproject);
     worldX = tmpUnproject.x;
     worldY = tmpUnproject.y;
+  }
+
+  @Nullable
+  private FlixelCamera resolveCamera() {
+    return worldCamera != null ? worldCamera : safeGetDefaultCamera();
   }
 
   @Nullable
@@ -215,6 +221,172 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
     tmpUnproject.set(screenX, screenY);
     cam.unproject(tmpUnproject);
     return tmpUnproject.y;
+  }
+
+  /**
+   * Returns {@code true} when the current platform can move the pointer from code. Desktop returns
+   * {@code true}; web, Android, and iOS return {@code false}, and every {@code set...} position
+   * method on this manager is then a no-op.
+   *
+   * @return {@code true} if the {@code setScreen...} and {@code setWorld...} methods move the pointer.
+   */
+  public boolean supportsSetPosition() {
+    return Flixel.input.supportsPointerWarp();
+  }
+
+  /**
+   * Moves the pointer horizontally to the given game-screen X, keeping the current Y.
+   *
+   * <p>The coordinate is in the same space {@link #getScreenX()} reports. This only works on
+   * desktop; on web and mobile it does nothing and the tracked position does not change (see
+   * {@link #supportsSetPosition()}).
+   *
+   * @param x The target X in screen pixels from the left edge.
+   */
+  public void setScreenX(int x) {
+    setScreenPosition(x, screenY);
+  }
+
+  /**
+   * Moves the pointer vertically to the given game-screen Y, keeping the current X.
+   *
+   * <p>The coordinate is in the same space {@link #getScreenY()} reports. This only works on
+   * desktop; on web and mobile it does nothing and the tracked position does not change (see
+   * {@link #supportsSetPosition()}).
+   *
+   * @param y The target Y in screen pixels from the top edge.
+   */
+  public void setScreenY(int y) {
+    setScreenPosition(screenX, y);
+  }
+
+  /**
+   * Moves the pointer to the given game-screen position.
+   *
+   * <p>Think of it as picking up the mouse and putting it down somewhere else on the desk: the
+   * position you read back this frame is already the new one. Coordinates are in the same space
+   * {@link #getScreenX()} and {@link #getScreenY()} report. This only works on desktop; browsers
+   * and mobile systems cannot move the pointer, so on web, Android, and iOS this does nothing and
+   * the tracked position does not change (see {@link #supportsSetPosition()}).
+   *
+   * <pre>{@code
+   * // Snap the cursor back to the middle of a 1280x720 window.
+   * if (Flixel.mouse.supportsSetPosition()) {
+   *   Flixel.mouse.setScreenPosition(640f, 360f);
+   * }
+   * }</pre>
+   *
+   * @param x The target X in screen pixels from the left edge.
+   * @param y The target Y in screen pixels from the top edge.
+   */
+  public void setScreenPosition(float x, float y) {
+    if (!enabled || !Flixel.input.supportsPointerWarp()) {
+      return;
+    }
+    Flixel.input.warpPointer(Math.round(x), Math.round(y));
+    screenX = Flixel.input.getX();
+    screenY = Flixel.input.getY();
+    recomputeWorld();
+  }
+
+  /**
+   * Moves the pointer horizontally to the given world X, keeping the current screen Y.
+   *
+   * <p>The coordinate is in the same space {@link #getWorldX()} reports, converted through the
+   * world camera. Desktop only; see {@link #setScreenPosition(float, float)}.
+   *
+   * @param x The target X in world coordinates.
+   */
+  public void setWorldX(float x) {
+    setWorldX(x, resolveCamera());
+  }
+
+  /**
+   * Moves the pointer horizontally to the given world X of a specific camera, keeping the current
+   * screen Y. Desktop only; see {@link #setScreenPosition(float, float)}.
+   *
+   * @param x The target X in world coordinates of {@code cam}.
+   * @param cam The camera used to project world coordinates onto the screen, or {@code null} to
+   *     treat world coordinates as screen coordinates.
+   */
+  public void setWorldX(float x, @Nullable FlixelCamera cam) {
+    if (cam == null) {
+      setScreenX((int) x);
+      return;
+    }
+    tmpProject.set(x, getWorldY(cam));
+    cam.project(tmpProject);
+    setScreenPosition(tmpProject.x, screenY);
+  }
+
+  /**
+   * Moves the pointer vertically to the given world Y, keeping the current screen X.
+   *
+   * <p>The coordinate is in the same space {@link #getWorldY()} reports, converted through the
+   * world camera. Desktop only; see {@link #setScreenPosition(float, float)}.
+   *
+   * @param y The target Y in world coordinates.
+   */
+  public void setWorldY(float y) {
+    setWorldY(y, resolveCamera());
+  }
+
+  /**
+   * Moves the pointer vertically to the given world Y of a specific camera, keeping the current
+   * screen X. Desktop only; see {@link #setScreenPosition(float, float)}.
+   *
+   * @param y The target Y in world coordinates of {@code cam}.
+   * @param cam The camera used to project world coordinates onto the screen, or {@code null} to
+   *     treat world coordinates as screen coordinates.
+   */
+  public void setWorldY(float y, @Nullable FlixelCamera cam) {
+    if (cam == null) {
+      setScreenY((int) y);
+      return;
+    }
+    tmpProject.set(getWorldX(cam), y);
+    cam.project(tmpProject);
+    setScreenPosition(screenX, tmpProject.y);
+  }
+
+  /**
+   * Moves the pointer to the given world position.
+   *
+   * <p>Handy for snapping the cursor onto an object, like dropping a pin on a map. Coordinates are
+   * in the same space {@link #getWorldX()} and {@link #getWorldY()} report, converted through the
+   * world camera (the one from {@link #getWorldCamera()}, or the default camera). This only works
+   * on desktop; on web, Android, and iOS it does nothing (see {@link #supportsSetPosition()}).
+   *
+   * <pre>{@code
+   * // Snap the cursor to the center of a button sprite.
+   * Flixel.mouse.setWorldPosition(button.getX() + button.getWidth() / 2f,
+   *     button.getY() + button.getHeight() / 2f);
+   * }</pre>
+   *
+   * @param x The target X in world coordinates.
+   * @param y The target Y in world coordinates.
+   */
+  public void setWorldPosition(float x, float y) {
+    setWorldPosition(x, y, resolveCamera());
+  }
+
+  /**
+   * Moves the pointer to the given world position of a specific camera. Desktop only; see
+   * {@link #setWorldPosition(float, float)}.
+   *
+   * @param x The target X in world coordinates of {@code cam}.
+   * @param y The target Y in world coordinates of {@code cam}.
+   * @param cam The camera used to project world coordinates onto the screen, or {@code null} to
+   *     treat world coordinates as screen coordinates.
+   */
+  public void setWorldPosition(float x, float y, @Nullable FlixelCamera cam) {
+    if (cam == null) {
+      setScreenPosition(x, y);
+      return;
+    }
+    tmpProject.set(x, y);
+    cam.project(tmpProject);
+    setScreenPosition(tmpProject.x, tmpProject.y);
   }
 
   /**

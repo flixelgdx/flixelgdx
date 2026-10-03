@@ -29,6 +29,7 @@ import org.flixelgdx.input.FlixelKeyboardListener;
 import org.flixelgdx.input.FlixelMouseListener;
 import org.flixelgdx.input.keyboard.FlixelKey;
 import org.lwjgl.sdl.SDLKeyboard;
+import org.lwjgl.sdl.SDLMouse;
 import org.lwjgl.sdl.SDL_Rect;
 import org.lwjgl.system.MemoryStack;
 
@@ -183,6 +184,29 @@ public class FlixelDesktopInputDevice extends FlixelBaseInputDevice {
       rect.get(0).x(x).y(y).w(w).h(h);
       SDLKeyboard.SDL_SetTextInputArea(windowHandle, rect, 0);
     }
+  }
+
+  @Override
+  public boolean supportsPointerWarp() {
+    return true;
+  }
+
+  /**
+   * Moves the OS cursor with {@code SDL_WarpMouseInWindow} and updates the cached position right
+   * away, so reads in the same frame already see the new spot. The motion event SDL queues for the
+   * warp carries the same coordinates, so handling it later is harmless.
+   *
+   * @param x The target X in window pixels from the left edge.
+   * @param y The target Y in window pixels from the top edge.
+   */
+  @Override
+  public void warpPointer(int x, int y) {
+    if (windowHandle == 0L) {
+      return;
+    }
+    SDLMouse.SDL_WarpMouseInWindow(windowHandle, x, y);
+    mouseX = x;
+    mouseY = y;
   }
 
   @Override

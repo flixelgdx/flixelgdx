@@ -189,6 +189,26 @@ public class FlixelViewport {
   }
 
   /**
+   * Converts world coordinates into window coordinates (pixels, y measured downward from the
+   * window's top), writing the result in place. This is the exact inverse of
+   * {@link #unproject(FlixelVector)}.
+   *
+   * @param worldCoords In: world coordinates; out: window coordinates.
+   * @return The same vector, for chaining.
+   */
+  @NotNull
+  public FlixelVector project(@NotNull FlixelVector worldCoords) {
+    float windowHeight = Math.max(1, Flixel.graphics.getBackBufferHeight());
+    float visibleW = worldWidth * viewScale;
+    float visibleH = worldHeight * viewScale;
+    float relX = (worldCoords.x - cameraX) / visibleW + 0.5f;
+    float relY = 0.5f - (worldCoords.y - cameraY) / visibleH;
+    worldCoords.x = screenX + relX * screenWidth;
+    worldCoords.y = windowHeight - (screenY + relY * screenHeight);
+    return worldCoords;
+  }
+
+  /**
    * Projects an axis-aligned rectangle from world coordinates into framebuffer pixels (measured
    * from the window's bottom-left corner), the form the graphics scissor takes.
    *
