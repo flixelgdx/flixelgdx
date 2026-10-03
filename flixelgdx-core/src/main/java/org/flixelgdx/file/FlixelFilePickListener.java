@@ -48,7 +48,7 @@ public interface FlixelFilePickListener {
   /**
    * Called once when the picker closes.
    *
-   * @param files The chosen files. Empty if the user cancelled or the pick failed; never
+   * @param files The chosen files. Empty if the user canceled or the pick failed; never
    *     {@code null}. A single-file pick holds at most one entry.
    */
   void onPick(@NotNull FlixelFile @NotNull [] files);

@@ -195,7 +195,7 @@ public interface FlixelHostIntegration {
    * <p>Think of it as sending a runner to the filing cabinet: the call returns immediately so the
    * game keeps running, and the runner reports back through {@code listener} once the user is done.
    * The listener is always called on the game's main thread, so you do not need to marshal threads
-   * yourself. It receives an array of length 1 on success or length 0 if the user cancelled or the
+   * yourself. It receives an array of length 1 on success or length 0 if the user canceled or the
    * pick failed; the array is never {@code null}.
    *
    * <p>{@code extensions} restricts what can be chosen. Pass bare extensions without a dot, such as
@@ -240,7 +240,7 @@ public interface FlixelHostIntegration {
    *
    * <p>It behaves like {@link #pickFile(FlixelFilePickListener, String...)} (asynchronous, main
    * thread delivery, user gesture required on the web, same extension rules), except the listener
-   * receives every file the user selected. The array is empty if the user cancelled.
+   * receives every file the user selected. The array is empty if the user canceled.
    *
    * <p>Example:
    *

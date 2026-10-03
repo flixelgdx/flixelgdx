@@ -23,6 +23,7 @@
  */
 package org.flixelgdx.backend.android;
 
+import org.flixelgdx.backend.FlixelHostIntegration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +44,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
  * Framework picker with the modern Activity Result API, hands the result to the pending
  * {@link Listener}, and closes itself. It is declared in this library's manifest, so games do not
  * register it by hand. Game code never starts it directly; use
- * {@link org.flixelgdx.backend.FlixelHostIntegration#pickFile} instead.
+ * {@link FlixelHostIntegration#pickFile} instead.
  */
 public class FlixelAndroidPickerActivity extends ComponentActivity {
 
