@@ -63,8 +63,8 @@ public final class FlixelFilePicker {
     }
     int count = 0;
     String[] out = new String[extensions.length];
-    for (int i = 0; i < extensions.length; i++) {
-      String ext = extensions[i];
+    for (String extension : extensions) {
+      String ext = extension;
       if (ext == null) {
         continue;
       }
@@ -108,8 +108,8 @@ public final class FlixelFilePicker {
       return false;
     }
     int len = name.length() - dot - 1;
-    for (int i = 0; i < extensions.length; i++) {
-      if (extensions[i].length() == len && name.regionMatches(true, dot + 1, extensions[i], 0, len)) {
+    for (String extension : extensions) {
+      if (extension.length() == len && name.regionMatches(true, dot + 1, extension, 0, len)) {
         return true;
       }
     }
