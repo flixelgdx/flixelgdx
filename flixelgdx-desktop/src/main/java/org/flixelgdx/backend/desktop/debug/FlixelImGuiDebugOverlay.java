@@ -30,6 +30,7 @@ import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugTrackerEntry;
@@ -1279,7 +1280,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
 
   /**
    * Renders the runtime command line. Pressing Enter routes the input through
-   * {@code Flixel.debug.executeCommand(...)}, so the same parser is shared with code-driven
+   * {@code Flixel.debug.commands.execute(...)}, so the same parser is shared with code-driven
    * invocations.
    */
   private void drawCommandWindow() {
@@ -1314,7 +1315,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       }
       if (!line.isEmpty()) {
         COMMAND_LOG.info("> {}", line);
-        Flixel.debug.executeCommand(line);
+        Flixel.debug.commands.execute(line);
         commandLineUtf8ScratchLen = 0;
       }
       commandInputBuffer.set("");
@@ -1427,7 +1428,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * newest clears the buffer.
    */
   private void applyHistoryKeyInInputCallback(ImGuiInputTextCallbackData data, int direction) {
-    FlixelArray<String> history = Flixel.debug.getCommandHistory();
+    FlixelList<String> history = Flixel.debug.commands.getHistory();
     if (history.getSize() == 0) {
       return;
     }

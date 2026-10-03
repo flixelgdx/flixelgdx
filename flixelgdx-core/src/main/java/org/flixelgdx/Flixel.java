@@ -41,6 +41,7 @@ import org.flixelgdx.backend.FlixelRuntimeDevice;
 import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.FlixelWindow;
 import org.flixelgdx.collections.FlixelArray;
+import org.flixelgdx.debug.FlixelDebugCommandManager;
 import org.flixelgdx.debug.FlixelDebugManager;
 import org.flixelgdx.debug.FlixelDebugOverlay;
 import org.flixelgdx.debug.FlixelDebugWatchManager;
@@ -382,7 +383,7 @@ public final class Flixel {
    * <p>Example:
    * <pre>{@code
    * Flixel.boot.beforeStart(() -> FlixelSoundManager.defaultFactory = myFactory);
-   * Flixel.boot.afterStart(() -> Flixel.debug.registerCommand("reload", args -> reload()));
+   * Flixel.boot.afterStart(() -> Flixel.debug.commands.register("reload", args -> reload()));
    * }</pre>
    */
   @NotNull
@@ -558,7 +559,7 @@ public final class Flixel {
    *   </li>
    *   <li>
    *     <b>Custom commands:</b> Register interactive console commands with
-   *     {@link FlixelDebugManager#registerCommand(String, Consumer)} to run
+   *     {@link FlixelDebugCommandManager#register(String, Consumer)} to run
    *     arbitrary game code from the debug overlay's input line.
    *   </li>
    * </ul>
@@ -578,7 +579,7 @@ public final class Flixel {
    * Flixel.debug.overlay.setDrawDebug(true);
    *
    * // Register a custom console command.
-   * Flixel.debug.registerCommand("god", args -> player.setInvincible(true));
+   * Flixel.debug.commands.register("god", args -> player.setInvincible(true));
    * }</pre>
    */
   @NotNull

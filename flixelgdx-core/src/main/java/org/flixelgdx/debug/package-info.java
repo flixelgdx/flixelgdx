@@ -27,13 +27,13 @@
  * code:
  *
  * <pre>{@code
- * Flixel.debug.registerCommand("god", args -> {
+ * Flixel.debug.commands.register("god", args -> {
  *   player.invincible = !player.invincible;
  *   Flixel.info("God mode: " + player.invincible);
  * });
  *
  * // Trigger programmatically:
- * Flixel.debug.executeCommand("god");
+ * Flixel.debug.commands.execute("god");
  * }</pre>
  *
  * <h2>Overlay key binding</h2>

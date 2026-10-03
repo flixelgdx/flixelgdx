@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <h2>Example</h2>
  * <pre>{@code
- * Flixel.debug.registerCommand("setScale", args -> {
+ * Flixel.debug.commands.register("setScale", args -> {
  *   String key = args.getString(0, "");
  *   float scale = args.getFloat(1, 1f);
  *   // ... do something with key and scale ...

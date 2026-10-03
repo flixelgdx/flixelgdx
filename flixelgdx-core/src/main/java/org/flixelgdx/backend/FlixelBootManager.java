@@ -44,7 +44,7 @@ import org.jetbrains.annotations.NotNull;
  *   Flixel.info("Setting up custom asset loader...");
  * });
  * Flixel.boot.afterStart(() -> {
- *   Flixel.debug.registerCommand("reload", args -> reloadLevel());
+ *   Flixel.debug.commands.register("reload", args -> reloadLevel());
  * });
  * }</pre>
  *
