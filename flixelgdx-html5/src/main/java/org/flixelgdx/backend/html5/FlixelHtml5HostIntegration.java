@@ -27,8 +27,12 @@ import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
+import org.flixelgdx.backend.html5.file.FlixelHtml5MemoryFile;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.file.FlixelFilePickListener;
+import org.flixelgdx.file.FlixelFilePicker;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +40,8 @@ import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
 import org.teavm.jso.core.JSArray;
+import org.teavm.jso.core.JSString;
+import org.teavm.jso.typedarrays.Int8Array;
 
 /**
  * Web host integration: the bridge between the game and the browser environment it runs in.
@@ -50,6 +56,13 @@ import org.teavm.jso.core.JSArray;
  * value straight back to synchronous Java. Those results are delivered through the framework's own
  * asynchronous channels instead: a clipboard read arrives on {@link #onTextPasted()} once the
  * promise resolves, exactly as the interface documents.
+ *
+ * <p>The file picker uses a hidden {@code <input type="file">} element. Browsers only open it from a
+ * user gesture, so {@link #pickFile(FlixelFilePickListener, String...)} must be called from a click
+ * or key handler. Chosen files are read fully into memory and wrapped as read-only
+ * {@link FlixelHtml5MemoryFile} instances. The listener runs directly from the browser event, which
+ * is already the game's only thread. Browsers that do not fire a cancel event never call the
+ * listener when the user dismisses the dialog.
  */
 public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
 
@@ -115,6 +128,16 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   }
 
   @Override
+  public void pickFile(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
+    showFilePicker(listener, extensions, false);
+  }
+
+  @Override
+  public void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
+    showFilePicker(listener, extensions, true);
+  }
+
+  @Override
   public boolean supportsNotifications() {
     return notificationsGranted();
   }
@@ -127,6 +150,11 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @Override
   public boolean supportsClipboard() {
     return clipboardSupported();
+  }
+
+  @Override
+  public boolean supportsFilePicker() {
+    return true;
   }
 
   @Override
@@ -194,6 +222,60 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
     }
   }
 
+  private static void showFilePicker(FlixelFilePickListener listener, String[] extensions, boolean many) {
+    String[] exts = FlixelFilePicker.normalize(extensions);
+    StringBuilder accept = new StringBuilder();
+    for (int i = 0; i < exts.length; i++) {
+      if (i > 0) {
+        accept.append(',');
+      }
+      accept.append('.').append(exts[i]);
+    }
+    openFileInput(accept.toString(), many, (names, data) -> {
+      int count = names.getLength();
+      FlixelFile[] files = new FlixelFile[count];
+      for (int i = 0; i < count; i++) {
+        files[i] = new FlixelHtml5MemoryFile(names.get(i).stringValue(), data.get(i).copyToJavaArray());
+      }
+      listener.onPick(files);
+    });
+  }
+
+  @JSBody(params = { "accept", "multiple", "callback" }, script = """
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = accept;
+      input.multiple = multiple;
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      var done = false;
+      function finish(names, data) {
+        if (done) { return; }
+        done = true;
+        if (input.parentNode) { input.parentNode.removeChild(input); }
+        callback(names, data);
+      }
+      input.addEventListener('cancel', function() { finish([], []); });
+      input.addEventListener('change', function() {
+        var list = input.files;
+        if (!list || list.length === 0) { finish([], []); return; }
+        Promise.all(Array.prototype.map.call(list, function(f) {
+          return f.arrayBuffer()
+              .then(function(b) { return { n: f.name, d: new Int8Array(b) }; })
+              .catch(function() { return null; });
+        })).then(function(results) {
+          var names = [];
+          var data = [];
+          for (var i = 0; i < results.length; i++) {
+            if (results[i]) { names.push(results[i].n); data.push(results[i].d); }
+          }
+          finish(names, data);
+        });
+      });
+      input.click();
+      """)
+  private static native void openFileInput(String accept, boolean multiple, FilePickCallback callback);
+
   @JSBody(script = "if (typeof Notification !== 'undefined') { Notification.requestPermission(); }")
   private static native void requestNotificationPermissionJs();
 
@@ -257,5 +339,11 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   @JSFunctor
   private interface TextCallback extends JSObject {
     void accept(String text);
+  }
+
+  /** Receives the names and raw bytes of the files the browser file input produced. */
+  @JSFunctor
+  private interface FilePickCallback extends JSObject {
+    void accept(JSArray<JSString> names, JSArray<Int8Array> data);
   }
 }

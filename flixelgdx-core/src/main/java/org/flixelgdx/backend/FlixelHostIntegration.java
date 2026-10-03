@@ -25,6 +25,9 @@ package org.flixelgdx.backend;
 
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.file.FlixelFilePickListener;
+import org.flixelgdx.file.FlixelFilePicker;
 import org.flixelgdx.graphics.FlixelGraphicsManager;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
@@ -48,6 +51,16 @@ import org.jetbrains.annotations.Nullable;
  * data. Handlers may not be called on the GL thread; because of this, wrap any calls
  * with {@link FlixelGraphicsManager#queueMainThread(Runnable)}.
  *
+ * <h2>File picker</h2>
+ *
+ * <p>{@link #pickFile(FlixelFilePickListener, String...)} and
+ * {@link #pickFiles(FlixelFilePickListener, String...)} open the system file dialog without freezing
+ * the game. They return right away and call your {@link FlixelFilePickListener} later, on the main
+ * thread, with a possibly empty array of files. On the web, the browser only allows the dialog to
+ * open from a user gesture, so call these from a click or key handler. A listener was chosen over a
+ * signal because each request has exactly one answer that belongs to that request, whereas
+ * {@link #onTextPasted()} is a broadcast.
+ *
  * <p>Example:
  *
  * <pre>{@code
@@ -65,6 +78,13 @@ import org.jetbrains.annotations.Nullable;
  *   }
  * });
  * Flixel.host.pasteFromClipboard();
+ *
+ * // File picker (one PNG or JPG).
+ * Flixel.host.pickFile(files -> {
+ *   if (files.length > 0) {
+ *     byte[] data = files[0].readBytes();
+ *   }
+ * }, "png", "jpg");
  * }</pre>
  *
  * @see Flixel#host
@@ -159,6 +179,87 @@ public interface FlixelHostIntegration {
   default void pasteFromClipboard() {}
 
   /**
+   * Opens the system file picker so the user can choose any one file.
+   *
+   * <p>This is a shortcut for {@link #pickFile(FlixelFilePickListener, String...)} with no filter.
+   *
+   * @param listener Receives the result; see {@link #pickFile(FlixelFilePickListener, String...)}.
+   */
+  default void pickFile(@NotNull FlixelFilePickListener listener) {
+    pickFile(listener, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system file picker so the user can choose one file.
+   *
+   * <p>Think of it as sending a runner to the filing cabinet: the call returns immediately so the
+   * game keeps running, and the runner reports back through {@code listener} once the user is done.
+   * The listener is always called on the game's main thread, so you do not need to marshal threads
+   * yourself. It receives an array of length 1 on success or length 0 if the user canceled or the
+   * pick failed; the array is never {@code null}.
+   *
+   * <p>{@code extensions} restricts what can be chosen. Pass bare extensions without a dot, such as
+   * {@code "png"} or {@code "png", "jpg"}; case, a leading dot, and a leading {@code *.} are ignored.
+   * Pass none (or {@code "*"}) to allow any file.
+   *
+   * <p>On the web, browsers only open the picker from a user gesture, so call this from a click or
+   * key handler. The returned {@link FlixelFile} is a read-only in-memory copy.
+   * Check {@link #supportsFilePicker()} first: on unsupported platforms the listener is called
+   * immediately with an empty array.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.host.pickFile(files -> {
+   *   if (files.length > 0) {
+   *     String json = files[0].readString();
+   *   }
+   * }, "json");
+   * }</pre>
+   *
+   * @param listener Receives the chosen file, or an empty array on cancel.
+   * @param extensions The allowed extensions; empty allows any file.
+   */
+  default void pickFile(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
+    listener.onPick(FlixelFilePicker.NO_FILES);
+  }
+
+  /**
+   * Opens the system file picker so the user can choose any number of files.
+   *
+   * <p>This is a shortcut for {@link #pickFiles(FlixelFilePickListener, String...)} with no filter.
+   *
+   * @param listener Receives the result; see {@link #pickFiles(FlixelFilePickListener, String...)}.
+   */
+  default void pickFiles(@NotNull FlixelFilePickListener listener) {
+    pickFiles(listener, FlixelFilePicker.NO_FILTER);
+  }
+
+  /**
+   * Opens the system file picker so the user can choose several files at once.
+   *
+   * <p>It behaves like {@link #pickFile(FlixelFilePickListener, String...)} (asynchronous, main
+   * thread delivery, user gesture required on the web, same extension rules), except the listener
+   * receives every file the user selected. The array is empty if the user canceled.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * Flixel.host.pickFiles(files -> {
+   *   for (int i = 0; i < files.length; i++) {
+   *     importSong(files[i]);
+   *   }
+   * }, "ogg", "mp3");
+   * }</pre>
+   *
+   * @param listener Receives the chosen files, or an empty array on cancel.
+   * @param extensions The allowed extensions; empty allows any file.
+   */
+  default void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
+    listener.onPick(FlixelFilePicker.NO_FILES);
+  }
+
+  /**
    * Returns {@code true} if {@link #sendNotification(String, String)} is expected to do useful
    * work on this platform session. On the web backend, returns {@code true} only after
    * {@link #requestNotificationPermission()} has been granted by the user.
@@ -185,6 +286,16 @@ public interface FlixelHostIntegration {
    * @return {@code true} if clipboard read and write operations are available on this platform.
    */
   default boolean supportsClipboard() {
+    return false;
+  }
+
+  /**
+   * Returns {@code true} if the file picker methods are supported on this platform.
+   *
+   * @return {@code true} if {@link #pickFile(FlixelFilePickListener, String...)} and
+   *     {@link #pickFiles(FlixelFilePickListener, String...)} can show a dialog.
+   */
+  default boolean supportsFilePicker() {
     return false;
   }
 

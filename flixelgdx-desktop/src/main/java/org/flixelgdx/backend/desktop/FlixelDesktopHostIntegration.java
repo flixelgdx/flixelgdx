@@ -30,13 +30,21 @@ import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.file.FlixelFile;
+import org.flixelgdx.file.FlixelFilePickListener;
+import org.flixelgdx.file.FlixelFilePicker;
 import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.sdl.SDLClipboard;
+import org.lwjgl.sdl.SDLDialog;
+import org.lwjgl.sdl.SDL_DialogFileCallback;
+import org.lwjgl.sdl.SDL_DialogFileFilter;
+import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -108,12 +116,27 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   }
 
   @Override
+  public void pickFile(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
+    showFileDialog(listener, extensions, false);
+  }
+
+  @Override
+  public void pickFiles(@NotNull FlixelFilePickListener listener, @NotNull String... extensions) {
+    showFileDialog(listener, extensions, true);
+  }
+
+  @Override
   public boolean supportsNotifications() {
     return true;
   }
 
   @Override
   public boolean supportsClipboard() {
+    return true;
+  }
+
+  @Override
+  public boolean supportsFilePicker() {
     return true;
   }
 
@@ -192,6 +215,63 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
 
   private static String escapeOsascript(String s) {
     return s.replace("\\", "\\\\").replace("\"", "\\\"");
+  }
+
+  /**
+   * Shows SDL's asynchronous open dialog and delivers the result on the main thread.
+   *
+   * <p>SDL may call back from another thread, so the paths are read inside the callback and the
+   * listener is notified through {@link FlixelFilePicker#deliver}. The native callback and filter
+   * memory are released from a queued task after the callback has returned.
+   */
+  private void showFileDialog(FlixelFilePickListener listener, String[] extensions, boolean many) {
+    final String[] exts = FlixelFilePicker.normalize(extensions);
+    final SDL_DialogFileCallback[] callback = new SDL_DialogFileCallback[1];
+    final ByteBuffer[] strings = new ByteBuffer[2];
+    SDL_DialogFileFilter.Buffer filters = null;
+    try {
+      if (exts.length > 0) {
+        StringBuilder pattern = new StringBuilder();
+        for (int i = 0; i < exts.length; i++) {
+          if (i > 0) {
+            pattern.append(';');
+          }
+          pattern.append(exts[i]);
+        }
+        strings[0] = MemoryUtil.memUTF8("Files");
+        strings[1] = MemoryUtil.memUTF8(pattern);
+        filters = SDL_DialogFileFilter.calloc(1);
+        filters.get(0).set(strings[0], strings[1]);
+      }
+      final SDL_DialogFileFilter.Buffer nativeFilters = filters;
+      callback[0] = SDL_DialogFileCallback.create((userdata, fileList, filter) -> {
+        FlixelFile[] result = FlixelFilePicker.NO_FILES;
+        if (fileList != 0L) {
+          int count = 0;
+          while (MemoryUtil.memGetAddress(fileList + (long) count * Long.BYTES) != 0L) {
+            count++;
+          }
+          result = new FlixelFile[count];
+          for (int i = 0; i < count; i++) {
+            String path = MemoryUtil.memUTF8(MemoryUtil.memGetAddress(fileList + (long) i * Long.BYTES));
+            result[i] = Flixel.files.absolute(path);
+          }
+        }
+        FlixelFilePicker.deliver(listener, result);
+        Flixel.graphics.queueMainThread(() -> {
+          callback[0].free();
+          if (nativeFilters != null) {
+            nativeFilters.free();
+          }
+          MemoryUtil.memFree(strings[0]);
+          MemoryUtil.memFree(strings[1]);
+        });
+      });
+      SDLDialog.SDL_ShowOpenFileDialog(callback[0], 0L, 0L, filters, (CharSequence) null, many);
+    } catch (Throwable t) {
+      log.error("Failed to open the file picker.", t);
+      FlixelFilePicker.deliver(listener, FlixelFilePicker.NO_FILES);
+    }
   }
 
   private boolean isWindows() {

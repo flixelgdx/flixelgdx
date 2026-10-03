@@ -18,8 +18,11 @@ afterEvaluate {
     group = "documentation"
     description = "Generates Javadoc for the Android release variant."
     source(android.sourceSets.getByName("main").java.srcDirs)
-    classpath = configurations.getByName("releaseCompileClasspath")
-      .plus(files(android.bootClasspath))
+    // Ask for the plain class jars so Android library (AAR) dependencies are readable by Javadoc.
+    val classJars = configurations.getByName("releaseCompileClasspath").incoming.artifactView {
+      attributes.attribute(Attribute.of("artifactType", String::class.java), "android-classes-jar")
+    }.files
+    classpath = classJars.plus(files(android.bootClasspath))
     options.encoding = "UTF-8"
     (options as StandardJavadocDocletOptions).apply {
       charSet = "UTF-8"

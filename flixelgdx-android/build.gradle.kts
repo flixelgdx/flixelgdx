@@ -25,5 +25,6 @@ dependencies {
   api(project(":flixelgdx-core"))
   api(project(":flixelgdx-miniaudio"))
   api(libs.multidex)
+  implementation(libs.androidx.activity)
   implementation(libs.jetbrains.annotations)
 }
