@@ -235,4 +235,25 @@ public interface FlixelInputDevice {
   default boolean hasScreenKeyboard() {
     return false;
   }
+
+  /**
+   * Returns {@code true} when this platform can move the pointer from code, or {@code false} by
+   * default. Desktop backends return {@code true}; browsers and touch platforms cannot move the
+   * pointer.
+   *
+   * @return {@code true} if {@link #warpPointer(int, int)} actually moves the pointer.
+   */
+  default boolean supportsPointerWarp() {
+    return false;
+  }
+
+  /**
+   * Moves the pointer to the given window position, then makes {@link #getX()} and {@link #getY()}
+   * report it immediately. Does nothing by default, which is correct for platforms that cannot move
+   * the pointer; see {@link #supportsPointerWarp()}.
+   *
+   * @param x The target X in window pixels from the left edge.
+   * @param y The target Y in window pixels from the top edge.
+   */
+  default void warpPointer(int x, int y) {}
 }

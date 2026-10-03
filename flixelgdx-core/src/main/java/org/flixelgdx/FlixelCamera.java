@@ -1466,6 +1466,18 @@ public class FlixelCamera extends FlixelBasic implements FlixelColorable, Flixel
   }
 
   /**
+   * Converts world coordinates into window coordinates (pixels, y measured downward from the
+   * window's top). This is the inverse of {@link #unproject(FlixelVector)}.
+   *
+   * @param worldCoords In: world coordinates; out: window coordinates.
+   * @return The same vector, for chaining.
+   */
+  @NotNull
+  public FlixelVector project(@NotNull FlixelVector worldCoords) {
+    return viewport.project(worldCoords);
+  }
+
+  /**
    * Returns the underlying {@link FlixelViewport} used for screen scaling.
    *
    * @return The viewport that manages this camera's screen scaling and world projection.
