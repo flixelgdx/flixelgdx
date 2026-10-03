@@ -236,19 +236,19 @@ sourceSets.main.resources.srcDir = 'src/main/emcc-output'
 
 ## Tasks registered
 
-| Task                       | Group       | Description                                                                          |
-|----------------------------|-------------|--------------------------------------------------------------------------------------|
-| `copyAssets`               | build       | Copies game assets into the web output.                                              |
-| `copyWebApp`               | build       | Copies user-provided web resources into the web output.                              |
-| `copyShaders`              | build       | Copies compiled ESSL shader variants into the web assets.                            |
-| `copyFrameworkResources`   | build       | Copies packaged framework classpath resources (e.g. the bitmap font) into web assets.|
-| `extractNativeScripts`     | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.                     |
-| `generateAssetManifest`    | build       | Writes `assets/assets.txt` for the web preloader.                                   |
-| `generateIndexHtml`        | build       | Writes the default `index.html` (or copies your custom one).                         |
-| `injectHtmlTags`           | build       | Runs last; replaces `{{...}}` tags in the output `index.html`.                       |
-| `run`                      | application | Builds the web app and starts the dev server.                                        |
-| `debug`                    | application | Same as `run`, but opens in debug mode.                                              |
-| `package`                  | application | Zips the web output into `dist/<name>-html5.zip`.                                   |
+| Task                       | Group       | Description                                                                           |
+|----------------------------|-------------|---------------------------------------------------------------------------------------|
+| `copyAssets`               | build       | Copies game assets into the web output.                                               |
+| `copyWebApp`               | build       | Copies user-provided web resources into the web output.                               |
+| `copyShaders`              | build       | Copies compiled ESSL shader variants into the web assets.                             |
+| `copyFrameworkResources`   | build       | Copies packaged framework classpath resources (e.g. the bitmap font) into web assets. |
+| `extractNativeScripts`     | build       | Extracts `META-INF/wasm/**` from classpath JARs into `native/`.                       |
+| `generateAssetManifest`    | build       | Writes `assets/assets.txt` for the web preloader.                                     |
+| `generateIndexHtml`        | build       | Writes the default `index.html` (or copies your custom one).                          |
+| `injectHtmlTags`           | build       | Runs last; replaces `{{...}}` tags in the output `index.html`.                        |
+| `run`                      | application | Builds the web app and starts the dev server.                                         |
+| `debug`                    | application | Same as `run`, but opens in debug mode.                                               |
+| `package`                  | application | Zips the web output into `dist/<name>-html5.zip`.                                     |
 
 `run`, `debug`, and `package` depend on every task above that writes into the web output, so they
 always work on a complete app. `generateIndexHtml`, `copyWebApp`, and `injectHtmlTags` run after the TeaVM
