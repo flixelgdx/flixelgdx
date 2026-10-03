@@ -65,8 +65,8 @@ class FlixelMouseInputManagerTest {
       m.update();
       assertFalse(m.supportsSetPosition());
       m.setScreenPosition(120f, 80f);
-      m.setScreenX(5f);
-      m.setScreenY(6f);
+      m.setScreenX(5);
+      m.setScreenY(6);
       m.setWorldPosition(10f, 10f, null);
       assertEquals(0, m.getScreenX());
       assertEquals(0, m.getScreenY());
@@ -87,10 +87,10 @@ class FlixelMouseInputManagerTest {
       m.setScreenPosition(100.4f, 50.6f);
       assertEquals(100, m.getScreenX());
       assertEquals(51, m.getScreenY());
-      m.setScreenX(7f);
+      m.setScreenX(7);
       assertEquals(7, m.getScreenX());
       assertEquals(51, m.getScreenY());
-      m.setScreenY(9f);
+      m.setScreenY(9);
       assertEquals(7, m.getScreenX());
       assertEquals(9, m.getScreenY());
       assertEquals(3, device.warps);

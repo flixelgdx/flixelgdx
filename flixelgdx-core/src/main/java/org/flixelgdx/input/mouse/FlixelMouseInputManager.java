@@ -243,7 +243,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    *
    * @param x The target X in screen pixels from the left edge.
    */
-  public void setScreenX(float x) {
+  public void setScreenX(int x) {
     setScreenPosition(x, screenY);
   }
 
@@ -256,7 +256,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    *
    * @param y The target Y in screen pixels from the top edge.
    */
-  public void setScreenY(float y) {
+  public void setScreenY(int y) {
     setScreenPosition(screenX, y);
   }
 
@@ -311,7 +311,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    */
   public void setWorldX(float x, @Nullable FlixelCamera cam) {
     if (cam == null) {
-      setScreenX(x);
+      setScreenX((int) x);
       return;
     }
     tmpProject.set(x, getWorldY(cam));
@@ -341,7 +341,7 @@ public class FlixelMouseInputManager implements FlixelInputManager, FlixelMouseL
    */
   public void setWorldY(float y, @Nullable FlixelCamera cam) {
     if (cam == null) {
-      setScreenY(y);
+      setScreenY((int) y);
       return;
     }
     tmpProject.set(getWorldX(cam), y);
