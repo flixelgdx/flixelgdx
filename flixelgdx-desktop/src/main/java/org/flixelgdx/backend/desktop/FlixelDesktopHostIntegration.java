@@ -60,6 +60,8 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+
+  private final FlixelLogger LOG = Flixel.log.tagged("Host");
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
 
   @Override
@@ -154,7 +156,7 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
       }
       pb.start();
     } catch (Exception e) {
-      Flixel.error("Failed to open url.", e);
+      LOG.error("Failed to open url.", e);
     }
   }
 

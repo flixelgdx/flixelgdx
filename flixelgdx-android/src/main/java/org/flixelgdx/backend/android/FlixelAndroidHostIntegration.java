@@ -23,12 +23,17 @@
  */
 package org.flixelgdx.backend.android;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,23 +47,19 @@ import org.jetbrains.annotations.Nullable;
  */
 public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
 
+  private final FlixelLogger LOG = Flixel.log.tagged("Host");
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
   private final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
+  private final Activity activity;
+
+  public FlixelAndroidHostIntegration(Activity activity) {
+    this.activity = activity;
+  }
 
   @Override
   @NotNull
   public FlixelPlatform getPlatform() {
     return FlixelPlatform.ANDROID;
-  }
-
-  @Override
-  public boolean supportsNotifications() {
-    return false;
-  }
-
-  @Override
-  public boolean supportsClipboard() {
-    return false;
   }
 
   @Override
@@ -73,9 +74,12 @@ public class FlixelAndroidHostIntegration implements FlixelHostIntegration {
   }
 
   @Override
-  @NotNull
-  public FlixelMonitor getPrimaryMonitor() {
-    return FlixelNoopMonitor.INSTANCE;
+  public void openUrl(@NotNull String url) {
+    try {
+      activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+    } catch (Exception e) {
+      LOG.error("Failed to open url.", e);
+    }
   }
 
   @Override
