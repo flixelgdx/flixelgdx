@@ -160,6 +160,11 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
   }
 
   @Override
+  public void openUrl(@NotNull String url) {
+    jsOpenUrl(url);
+  }
+
+  @Override
   @NotNull
   public FlixelPlatform getPlatform() {
     return FlixelPlatform.HTML5;
@@ -213,6 +218,9 @@ public class FlixelHtml5HostIntegration implements FlixelHostIntegration {
 
   @JSBody(script = "return !!(navigator.wakeLock);")
   private static native boolean wakeLockSupported();
+
+  @JSBody(params = "url", script = "window.open(url, \"_blank\");")
+  private static native void jsOpenUrl(String url);
 
   @JSBody(script = """
       if (navigator.wakeLock) {

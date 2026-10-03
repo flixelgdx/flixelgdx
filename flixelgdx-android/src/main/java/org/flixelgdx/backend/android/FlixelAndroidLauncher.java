@@ -99,7 +99,7 @@ public final class FlixelAndroidLauncher {
     Flixel.alert = new FlixelAndroidAlerter(activity);
     Flixel.files = new FlixelAndroidFiles(activity);
     Flixel.assets = new FlixelAndroidAssetManager();
-    Flixel.host = new FlixelAndroidHostIntegration();
+    Flixel.host = new FlixelAndroidHostIntegration(activity);
 
     Flixel.log.setSiteResolver(new FlixelAndroidLogSiteResolver());
     Flixel.log.setConsoleSink(new FlixelLogcatSink());
