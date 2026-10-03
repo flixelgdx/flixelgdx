@@ -23,12 +23,14 @@
  */
 package org.flixelgdx.backend.desktop;
 
+import org.flixelgdx.Flixel;
 import org.flixelgdx.backend.FlixelHostIntegration;
 import org.flixelgdx.backend.FlixelMonitor;
 import org.flixelgdx.backend.FlixelNoopMonitor;
 import org.flixelgdx.backend.FlixelPlatform;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
+import org.flixelgdx.logging.FlixelLogger;
 import org.flixelgdx.signal.FlixelSignal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,7 +60,6 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
   final FlixelArray<FlixelMonitor> monitors = new FlixelArray<>(FlixelMonitor[]::new);
 
   private static final String OS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-
   private final FlixelSignal<String> onTextPasted = new FlixelSignal<>();
 
   @Override
@@ -137,6 +138,24 @@ public class FlixelDesktopHostIntegration implements FlixelHostIntegration {
       return monitors.get(0);
     }
     return FlixelNoopMonitor.INSTANCE;
+  }
+
+  @Override
+  public void openUrl(@NotNull String url) {
+    try {
+      ProcessBuilder pb = new ProcessBuilder();
+      if (isWindows()) {
+        // TODO: Find a way that doesn't open the Windows CMD window.
+        pb.command("cmd.exe", "/c", "start", "", url);
+      } else if (isMac()) {
+        pb.command("open", url);
+      } else if (isLinux()) {
+        pb.command("xdg-open", url); // I'm hungry for distros.
+      }
+      pb.start();
+    } catch (Exception e) {
+      Flixel.error("Failed to open url.", e);
+    }
   }
 
   @NotNull

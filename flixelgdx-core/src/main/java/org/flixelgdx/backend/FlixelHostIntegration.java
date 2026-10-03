@@ -240,6 +240,13 @@ public interface FlixelHostIntegration {
   }
 
   /**
+   * Opens a website URL in an external browser.
+   *
+   * @param url The URL to open.
+   */
+  default void openUrl(@NotNull String url) {}
+
+  /**
    * Returns the platform this game is running on.
    *
    * <p>Compare against the {@link FlixelPlatform} constants with {@code ==}, for example
