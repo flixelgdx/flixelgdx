@@ -1,4 +1,5 @@
 import com.android.build.gradle.LibraryExtension
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 
 plugins {
   id("flixelgdx.java-base")
@@ -38,11 +39,21 @@ afterEvaluate {
   }
 }
 
+// Package the javadoc task output as the -javadoc jar that Maven Central requires. AGP's own javadoc jar is not
+// used because its bundled Dokka cannot read Java records from flixelgdx-core and fails the release build.
+val javadocJar = tasks.register("javadocJar", Jar::class.java) {
+  group = "documentation"
+  description = "Packages the Android release Javadoc into a jar for publishing."
+  archiveClassifier = "javadoc"
+  from(tasks.named("javadoc"))
+}
+
 tasks.matching { it.name.startsWith("generateMetadataFileFor") }.configureEach {
   enabled = false
 }
 
 mavenPublishing {
+  configure(AndroidSingleVariantLibrary(variant = "release", sourcesJar = true, publishJavadocJar = false))
   publishToMavenCentral()
 
   val hasSigning = findProperty("flixel.signing.enabled")?.toString() == "true"
@@ -76,5 +87,11 @@ mavenPublishing {
       developerConnection = rootProject.property("pomScmDeveloperConnection") as String
       url = rootProject.property("pomScmUrl") as String
     }
+  }
+}
+
+publishing {
+  publications.withType(MavenPublication::class.java).configureEach {
+    artifact(javadocJar)
   }
 }
