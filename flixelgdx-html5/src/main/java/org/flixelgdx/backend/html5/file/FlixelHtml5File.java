@@ -160,6 +160,21 @@ public class FlixelHtml5File implements FlixelFile {
     return path;
   }
 
+  /**
+   * Returns the concrete locator for this handle: the asset URL for {@link Kind#ASSET} handles, or
+   * the {@code localStorage} key for {@link Kind#STORAGE} handles.
+   *
+   * <p>This keeps two handles with the same logical path but different roots (such as
+   * {@code internal("a.ogg")} and {@code local("a.ogg")}) distinguishable.
+   *
+   * @return The resolved locator; never {@code null}.
+   */
+  @Override
+  @NotNull
+  public String getAbsolutePath() {
+    return resolved;
+  }
+
   @Override
   @NotNull
   public String getName() {
