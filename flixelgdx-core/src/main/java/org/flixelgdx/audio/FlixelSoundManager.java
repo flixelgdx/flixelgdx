@@ -344,10 +344,12 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   /**
    * Builds a new {@link FlixelSound} from {@code file} without starting playback.
    *
-   * <p>Internal/classpath files go through the asset manager cache using the file's path as the
-   * key. Files from {@link FlixelFiles#absolute Flixel.files.absolute} or
-   * {@link FlixelFiles#external Flixel.files.external} (whose {@link FlixelFile#getAbsolutePath()}
-   * differs from {@link FlixelFile#getPath()}) bypass the cache and are decoded directly.
+   * <p>A file goes through the asset manager cache (keyed by its path) only when it points at the
+   * same location the asset manager would read for that path, which is the usual case for
+   * {@link FlixelFiles#internal Flixel.files.internal} handles. Any other file (for example from
+   * {@link FlixelFiles#absolute Flixel.files.absolute}, {@link FlixelFiles#external Flixel.files.external},
+   * or {@link FlixelFiles#local Flixel.files.local}) is read directly from the handle that was passed
+   * in, so the asset manager never tries to re-resolve its path as an internal asset.
    *
    * @param file Handle to the audio file.
    * @param targetGroup The group to create the sound in.
@@ -356,20 +358,40 @@ public class FlixelSoundManager implements FlixelUpdatable, FlixelDestroyable {
   @NotNull
   private FlixelSound buildSound(@NotNull FlixelFile file, @NotNull FlixelSoundGroup targetGroup) {
     String path = file.getPath();
-    String absolutePath = file.getAbsolutePath();
-    if (!absolutePath.equals(path)) {
-      FlixelSoundBuffer buffer = FlixelSoundBuffer.read(absolutePath, file);
+    FlixelAssetManager assets = Flixel.assets;
+    if (!isAssetFile(assets, file)) {
+      FlixelSoundBuffer buffer = FlixelSoundBuffer.read(file.getAbsolutePath(), file);
       return factory.createSound(buffer, targetGroup);
     }
-    FlixelAssetManager assets = Flixel.assets;
     if (!assets.isLoaded(path)) {
       assets.load(path);
       assets.finishLoadingAsset(path);
     }
-    FlixelAsset<FlixelSoundSource> sourceHandle = assets.<FlixelSoundSource>get(path).retain();
+    FlixelAsset<FlixelSoundSource> sourceHandle = assets.get(path);
     FlixelSound sound = sourceHandle.get().create(targetGroup);
-    sound.setSourceAsset(sourceHandle);
+    sound.setSourceAsset(sourceHandle.retain());
     return sound;
+  }
+
+  /**
+   * Returns {@code true} when {@code file} is the same file the asset manager would read for its
+   * path, meaning it is safe to load and cache it through the asset pipeline.
+   *
+   * <p>The resolved file must also exist. Some backends fall back to a classpath handle whose
+   * absolute path is just the raw path, so an absolute path that is not an asset could otherwise
+   * look like a match.
+   *
+   * @param assets The asset manager that would load the file.
+   * @param file The file to check.
+   * @return {@code true} if the asset manager resolves the file's path to the same, existing location.
+   */
+  private static boolean isAssetFile(@NotNull FlixelAssetManager assets, @NotNull FlixelFile file) {
+    String path = file.getPath();
+    if (path.isEmpty()) {
+      return false;
+    }
+    FlixelFile resolved = assets.resolveFile(path);
+    return resolved.exists() && resolved.getAbsolutePath().equals(file.getAbsolutePath());
   }
 
   /**
