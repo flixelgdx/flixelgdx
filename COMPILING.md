@@ -428,7 +428,7 @@ FlixelGDX on Android renders with WebGPU (Dawn, through jwebgpu's JNI backend), 
 
 - **minSdk 26** (Android 8.0) and a device with **Vulkan 1.1**. The backend's manifest declares `android.hardware.vulkan.version` 0x401000 as required, so Google Play only offers the game to devices that can run it. Emulators need a Vulkan-capable GPU configuration.
 - **64-bit only**: `arm64-v8a` and `x86_64`. The 32-bit ABIs are not supported, and the backend restricts its ABI filters accordingly.
-- The `jwebgpu-jni` library is an Android library from the jwebgpu checkout. It is only part of the jwebgpu build when `includeAndroid=true` is set. If a test project that includes both checkouts fails with "Could not find io.github.stringdotjar:jwebgpu-jni", put `includeAndroid=true` and `sdk.dir=...` in the jwebgpu checkout's own `local.properties` as well.
+- The `jwebgpu-jni` library is an Android library from the jwebgpu checkout. jwebgpu includes it whenever the build that includes jwebgpu enables Android (`-PincludeAndroid=true` or `includeAndroid=true` in that build's `local.properties`), so nothing extra is needed in the jwebgpu checkout.
 - The AAR carries `libwebgpu_dawn.so`, `libjwebgpu_jni.so` and `META-INF/jwebgpu/dawn-licenses.txt`; a game picks them up through its normal dependency on `flixelgdx-android`.
 - Shaders are WGSL only, the same files as on desktop. The `flixel_preamble.wgsl` and `sprite.wgsl` resources are Java resources and are packaged into the APK.
 
