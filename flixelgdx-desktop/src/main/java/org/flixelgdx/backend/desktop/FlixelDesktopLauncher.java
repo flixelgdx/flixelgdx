@@ -33,6 +33,7 @@ import org.flixelgdx.backend.desktop.asset.FlixelJvmAssetManager;
 import org.flixelgdx.backend.desktop.audio.FlixelDesktopMiniAudioLoader;
 import org.flixelgdx.backend.desktop.debug.FlixelImGuiDebugOverlay;
 import org.flixelgdx.backend.desktop.file.FlixelJvmFiles;
+import org.flixelgdx.backend.desktop.graphics.FlixelStbImage;
 import org.flixelgdx.backend.desktop.input.FlixelDesktopInputDevice;
 import org.flixelgdx.backend.desktop.input.FlixelSdlGamepadProvider;
 import org.flixelgdx.backend.desktop.input.FlixelSdlMouseIconManager;
@@ -190,6 +191,8 @@ public final class FlixelDesktopLauncher {
     FlixelDesktopHostIntegration host = new FlixelDesktopHostIntegration();
     FlixelDesktopInputDevice input = new FlixelDesktopInputDevice();
     FlixelGpuGraphics graphics = new FlixelGpuGraphics();
+    // Decoding is needed before the GPU exists (the window icons are decoded first).
+    graphics.setImageDecoder(FlixelStbImage::decode);
     FlixelSdlGamepadProvider gamepads = new FlixelSdlGamepadProvider();
     FlixelSdlMouseIconManager iconManager = new FlixelSdlMouseIconManager();
     // A windowed game opens at its render resolution, which is the design size unless configured.

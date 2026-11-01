@@ -32,17 +32,17 @@ package org.flixelgdx.backend.gpu;
  */
 public final class FlixelGpuStats {
 
-  /** Milliseconds spent between the start and the end of the last frame's command recording. */
-  public float cpuMs;
-
-  /** Milliseconds {@code present()} blocked, which is usually the wait for vertical sync. */
-  public float presentMs;
-
   /** Bytes of texture memory currently allocated (an estimate: four bytes per pixel). */
   public long textureBytes;
 
   /** Bytes of vertex, index and uniform ring memory allocated. */
   public long ringBytes;
+
+  /** Milliseconds spent between the start and the end of the last frame's command recording. */
+  public float cpuMs;
+
+  /** Milliseconds {@code present()} blocked, which is usually the wait for vertical sync. */
+  public float presentMs;
 
   /** Draw calls issued in the last frame. */
   public int draws;

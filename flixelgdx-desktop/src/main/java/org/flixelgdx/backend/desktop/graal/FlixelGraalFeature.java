@@ -47,8 +47,12 @@ import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
  *       individually so the correct binary ships inside the native image.</li>
  * </ul>
  *
- * <p>LWJGL (SDL3, bgfx, stb) ships its own native-image support inside each module JAR, so
+ * <p>LWJGL (SDL3, stb) ships its own native-image support inside each module JAR, so
  * those libraries do not need to be handled here.
+ *
+ * <p>The WebGPU library is called through Java's foreign function API. GraalVM needs reachability
+ * metadata that lists every foreign call, and that metadata has to come from the WebGPU bindings
+ * themselves; it is not generated yet, so a native-image build of a game cannot call the GPU until it is.
  *
  * <p>This feature is wired in automatically by the {@code META-INF/native-image} properties file
  * bundled with the desktop module JAR; game projects do not need to reference it directly.

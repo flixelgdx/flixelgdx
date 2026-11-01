@@ -113,7 +113,7 @@ public class FlixelSdlMouseIconManager implements FlixelMouseIconManager {
    * Destroys all cached SDL cursor handles.
    *
    * <p>Must be called before SDL shuts down. The runner invokes this automatically at the end of
-   * the game loop, before {@code bgfx_shutdown} and {@code SDL_Quit}.
+   * the game loop, before the GPU shuts down and {@code SDL_Quit}.
    */
   public void dispose() {
     for (int i = 0; i < handles.length; i++) {

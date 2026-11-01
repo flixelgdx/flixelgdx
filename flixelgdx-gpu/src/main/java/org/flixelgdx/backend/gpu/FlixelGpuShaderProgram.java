@@ -46,6 +46,8 @@ import io.github.stringdotjar.jwebgpu.GpuShaderModule;
  */
 public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
 
+  private long uploadEpoch = -1L;
+
   private final int id;
   private final String vertexEntry;
   private final FlixelUniformBuffer uniforms;
@@ -55,7 +57,6 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
   private GpuBindGroupLayout groupLayout;
   private GpuBindGroup bindGroup;
 
-  private long uploadEpoch = -1L;
   private int uploadOffset;
 
   private boolean valid = true;

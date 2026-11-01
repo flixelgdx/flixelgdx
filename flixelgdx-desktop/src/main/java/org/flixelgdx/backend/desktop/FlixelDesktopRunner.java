@@ -66,11 +66,11 @@ import java.nio.IntBuffer;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * The desktop main loop: creates the SDL3 window, hands its native handle to bgfx for rendering,
+ * The desktop main loop: creates the SDL3 window, turns it into a WebGPU surface for rendering,
  * then pumps events and drives the game each frame until the window closes.
  *
  * <p>This is the {@link FlixelGameRunner} the desktop launcher installs. It owns everything that
- * only makes sense once a window exists: SDL initialization, bgfx device setup, the per-frame
+ * only makes sense once a window exists: SDL initialization, WebGPU device setup, the per-frame
  * event pump (translated into the input device), and the frame timing passed to the game loop.
  */
 public class FlixelDesktopRunner implements FlixelGameRunner {

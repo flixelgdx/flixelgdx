@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
  * Placeholder launcher for the iOS backend.
  *
  * <p>The iOS backend is not implemented on the framework's current rendering and platform stack
- * (bgfx for drawing, SDL3 for windowing and input). If attempted to be used, it will throw an
+ * (WebGPU for drawing, SDL3 for windowing and input). If attempted to be used, it will throw an
  * exception immediately upon being executed.
  */
 public final class FlixelIOSLauncher {

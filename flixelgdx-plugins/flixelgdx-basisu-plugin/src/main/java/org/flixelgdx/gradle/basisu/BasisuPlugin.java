@@ -76,7 +76,7 @@ import java.util.Set;
  * }
  * }</pre>
  *
- * <p>This does not cover the desktop backend. Its bgfx renderer cannot parse Basis Universal KTX2
+ * <p>This does not cover the desktop backend. Its renderer cannot parse Basis Universal KTX2
  * files (their pixel format is undefined until transcoded, and they are supercompressed), and the
  * desktop backend ships no transcoder, so desktop builds always package and load the plain PNGs.
  * Applying this plugin to a desktop module has no effect on its output.

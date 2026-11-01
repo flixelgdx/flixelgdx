@@ -100,7 +100,7 @@ public final class FlixelGraphicsApi {
    * <p>Calling this twice with the same ID returns the very same instance, so results compare equal
    * with {@code ==}. Use this to define a custom backend's identity, or to look one up by ID.
    *
-   * @param id The backend ID, for example {@code "bgfx"}; must not be {@code null}.
+   * @param id The backend ID, for example {@code "MyRenderer"}; must not be {@code null}.
    * @return The one shared {@link FlixelGraphicsApi} for that id.
    */
   @NotNull

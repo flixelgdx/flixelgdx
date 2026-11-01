@@ -34,9 +34,9 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Every operation does nothing. {@link #isValid()} always returns {@code false} so callers can
  * detect that no real GPU shader is present without null-checking the result of
- * {@link FlixelGraphicsManager#compileShaderProgram(byte[], byte[])}.
+ * {@link FlixelGraphicsManager#compileShaderSource(String)}.
  *
- * @see FlixelGraphicsManager#compileShaderProgram(byte[], byte[])
+ * @see FlixelGraphicsManager#compileShaderSource(String)
  */
 public enum FlixelUnsupportedShader implements FlixelShaderProgram {
 

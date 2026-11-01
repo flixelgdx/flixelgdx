@@ -114,9 +114,6 @@ import java.nio.ByteBuffer;
  */
 public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
-  /** The smoothing factor of the frame rate average. */
-  public double smoothingFactor = 0.1;
-
   private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
@@ -127,8 +124,8 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private static final int GLOBALS_FLOATS = FlixelWgsl.GLOBALS_SIZE / 4;
   private static final String SPRITE_SHADER = "org/flixelgdx/shaders/sprite.wgsl";
 
-  private final Object gpuLock = new Object();
-  private final FlixelStatsLog statsLog = new FlixelStatsLog();
+  /** The smoothing factor of the frame rate average. */
+  public double smoothingFactor = 0.1;
 
   private long lastFrameNanos = System.nanoTime();
   private long frameStartNanos;
@@ -136,6 +133,8 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private long nextTextureId = 1L;
   private double averageFps;
 
+  private final Object gpuLock = new Object();
+  private final FlixelStatsLog statsLog = new FlixelStatsLog();
   private final FlixelGpuBatch batch = new FlixelGpuBatch(this);
   private final FlixelArray<FlixelDisplayMode> displayModes = new FlixelArray<>();
   private final FlixelArray<Runnable> mainThreadQueue = new FlixelArray<>();
@@ -179,12 +178,12 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private final boolean[] cutEnabled = new boolean[MAX_LEVELS + 1];
 
   private FlixelGraphicsApi api = FlixelGraphicsApi.WEBGPU;
+  private GpuTextureFormat surfaceFormat = GpuTextureFormat.RGBA8_UNORM;
 
   private GpuAdapter adapter;
   private GpuDevice device;
   private GpuQueue queue;
   private GpuSurface surface;
-  private GpuTextureFormat surfaceFormat = GpuTextureFormat.RGBA8_UNORM;
   private GpuCommandEncoder encoder;
   private GpuRenderPassEncoder pass;
   private GpuCommandBuffer commands;
