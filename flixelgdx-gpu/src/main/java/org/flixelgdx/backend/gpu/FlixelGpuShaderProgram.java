@@ -49,6 +49,7 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
   private long uploadEpoch = -1L;
 
   private final int id;
+  private final int epoch;
   private final String vertexEntry;
   private final FlixelUniformBuffer uniforms;
   private final FlixelGpuGraphics graphics;
@@ -64,6 +65,7 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
   FlixelGpuShaderProgram(@NotNull FlixelGpuGraphics graphics, int id, @NotNull GpuShaderModule module,
       @NotNull String vertexEntry, @NotNull FlixelWgslLayout layout) {
     this.graphics = graphics;
+    this.epoch = graphics.getDeviceEpoch();
     this.id = id;
     this.module = module;
     this.vertexEntry = vertexEntry;
@@ -118,7 +120,7 @@ public final class FlixelGpuShaderProgram implements FlixelShaderProgram {
 
   @Override
   public boolean isValid() {
-    return valid && module != null;
+    return valid && module != null && epoch == graphics.getDeviceEpoch();
   }
 
   @Override

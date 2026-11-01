@@ -45,6 +45,7 @@ import io.github.stringdotjar.jwebgpu.GpuTextureView;
 public class FlixelGpuTexture implements FlixelTexture {
 
   private final long id;
+  private final long extraUsage;
   private final int width;
   private final int height;
 
@@ -53,6 +54,8 @@ public class FlixelGpuTexture implements FlixelTexture {
   private GpuTextureView view;
   private GpuBindGroup nearestGroup;
   private GpuBindGroup linearGroup;
+
+  private int epoch;
 
   private boolean smooth;
   private boolean destroyed;
@@ -69,6 +72,8 @@ public class FlixelGpuTexture implements FlixelTexture {
     this.graphics = graphics;
     this.width = width;
     this.height = height;
+    this.extraUsage = extraUsage;
+    this.epoch = graphics.getDeviceEpoch();
     this.texture = graphics.createRawTexture(width, height, extraUsage);
     this.view = texture.createView(null);
     this.id = graphics.registerTexture(this);
@@ -90,6 +95,7 @@ public class FlixelGpuTexture implements FlixelTexture {
     if (destroyed) {
       return;
     }
+    refresh();
     graphics.writePixels(texture, x, y, image.getWidth(), image.getHeight(), image.getPixels());
   }
 
@@ -114,6 +120,34 @@ public class FlixelGpuTexture implements FlixelTexture {
   }
 
   /**
+   * Replaces the GPU objects with empty ones when the renderer has moved to a new device.
+   *
+   * <p>After a device loss every object of the old device is dead, and the pixels were never kept in memory. The
+   * texture therefore comes back transparent, with the same size and id, so drawing stays valid and the game can
+   * upload the pixels again. It costs one integer comparison when nothing was lost.
+   */
+  private void refresh() {
+    int current = graphics.getDeviceEpoch();
+    if (epoch == current) {
+      return;
+    }
+    epoch = current;
+    // The objects belong to a dead device, but their handles still need to be given back.
+    if (nearestGroup != null) {
+      nearestGroup.release();
+      nearestGroup = null;
+    }
+    if (linearGroup != null) {
+      linearGroup.release();
+      linearGroup = null;
+    }
+    view.release();
+    texture.release();
+    texture = graphics.createRawTexture(width, height, extraUsage);
+    view = texture.createView(null);
+  }
+
+  /**
    * Returns the bind group (uniform slot, this texture and the right sampler) for the current filtering mode,
    * creating it on first use.
    *
@@ -121,6 +155,7 @@ public class FlixelGpuTexture implements FlixelTexture {
    */
   @NotNull
   GpuBindGroup bindGroup() {
+    refresh();
     if (smooth) {
       if (linearGroup == null) {
         linearGroup = graphics.createTextureGroup(view, true);
@@ -140,6 +175,7 @@ public class FlixelGpuTexture implements FlixelTexture {
    */
   @NotNull
   public GpuTexture getGpuTexture() {
+    refresh();
     return texture;
   }
 
@@ -150,6 +186,7 @@ public class FlixelGpuTexture implements FlixelTexture {
    */
   @NotNull
   public GpuTextureView getView() {
+    refresh();
     return view;
   }
 

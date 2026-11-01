@@ -207,6 +207,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private Runnable eventPump;
   private GpuRenderPipeline lastPipeline;
 
+  private int deviceEpoch;
   private int uniformAlignment = 256;
   private int backBufferWidth;
   private int backBufferHeight;
@@ -260,6 +261,8 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     this.adapter = adapter;
     this.device = device;
     this.surface = surface;
+    this.surfaceDetached = false;
+    this.deviceEpoch++;
     this.decoder = decoder;
     this.transparentFramebuffer = transparent;
     this.backBufferWidth = Math.max(1, width);
@@ -1388,6 +1391,18 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
       program = pipelines.compile(source, label, uniformRing.getBuffer(), eventPump, this);
     }
     return program != null ? program : FlixelUnsupportedShader.INSTANCE;
+  }
+
+  /**
+   * Returns how many devices this renderer has been initialized with.
+   *
+   * <p>It goes up by one every time {@link #initialize} runs again after a device loss. Textures and shader programs
+   * remember the value they were created with, so they can tell that their GPU objects belong to a dead device.
+   *
+   * @return The device generation, starting at 1 after the first initialization.
+   */
+  int getDeviceEpoch() {
+    return deviceEpoch;
   }
 
   void forgetProgram(FlixelGpuShaderProgram program) {
