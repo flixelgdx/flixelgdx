@@ -21,19 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package org.flixelgdx.gradle.shader;
-
-import org.jetbrains.annotations.NotNull;
+package org.flixelgdx.gradle.shader.worker;
 
 /**
- * The outcome of running one of the plugin's external command-line compilers.
+ * One finding of the validator: an error or a warning, already formatted for people to read.
  *
- * <p>Every tool the plugin drives ({@code glslang}, {@code spirv-cross}, and bgfx's
- * {@code shaderc}) reports errors as plain text on its output streams, so a result is just whether
- * the process succeeded plus everything it printed.
- *
- * @param success Whether the tool exited successfully.
- * @param log The combined standard output and error, trimmed, for diagnostics.
+ * <p>The text starts with {@code <file path>:<line>:<column>: <severity>: <message>} whenever the finding has a
+ * position in the user's file, and with {@code <file path>: <severity>: <message>} when it concerns the shader as a
+ * whole (for example a missing entry point). A source excerpt may follow on the next lines.
  */
-public record ToolResult(boolean success, @NotNull String log) {
+public final class Diagnostic {
+
+  private final String text;
+  private final boolean error;
+
+  /**
+   * Creates a finding.
+   *
+   * @param error Whether the finding fails the build.
+   * @param text The formatted message.
+   */
+  public Diagnostic(boolean error, String text) {
+    this.error = error;
+    this.text = text;
+  }
+
+  public boolean isError() {
+    return error;
+  }
+
+  public String getText() {
+    return text;
+  }
 }

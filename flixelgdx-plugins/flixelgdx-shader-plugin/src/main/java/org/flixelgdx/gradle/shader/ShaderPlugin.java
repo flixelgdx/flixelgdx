@@ -25,114 +25,102 @@ package org.flixelgdx.gradle.shader;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.language.jvm.tasks.ProcessResources;
-
-import java.io.File;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.jvm.toolchain.JavaLauncher;
+import org.gradle.jvm.toolchain.JavaToolchainService;
 
 /**
- * Gradle plugin that cross-compiles a game's GLSL shaders into every FlixelGDX backend variant at
- * build time.
+ * Gradle plugin that checks a game's WGSL shaders with Dawn at build time and bundles them as resources.
  *
- * <p>A developer writes one plain GLSL fragment shader (and, rarely, a vertex shader). The plugin
- * compiles it to SPIR-V with Khronos {@code glslang}, translates that into ESSL for the web and
- * Android backends with {@code spirv-cross}, and drives bgfx's {@code shaderc} to produce the OpenGL,
- * Vulkan, Metal, and Direct3D bytecode the desktop backend loads, so no game code ever has to be
- * written twice or compiled by hand. The compiled
- * variants are added to the module's resources automatically, so they ship inside the game.
+ * <p>FlixelGDX shaders are written in WGSL only, and every platform compiles the same text at run time. The
+ * plugin's job is to move the mistakes from run time to build time: it compiles each {@code .wgsl} file with the
+ * exact compiler the game uses (Dawn), fails the build with {@code file:line:column} messages when something is
+ * wrong, and copies the files to {@code build/generated/flixelgdx/shaders/shaders/<name>.wgsl}, a folder that is
+ * added to the {@code main} resources. {@code FlixelShader.load(name)} then finds every shader on every platform.
  *
  * <h2>Usage</h2>
- *
- * <p>Apply the plugin and declare shaders in the game module's {@code build.gradle}:
  *
  * <pre>{@code
  * plugins {
  *   id 'java'
  *   id 'org.flixelgdx.shaders' version '0.1.0-beta'
  * }
- *
- * shaders {
- *   shader('crt') {
- *     fragment = 'crt.frag.glsl'   // under src/main/shaders by default
- *   }
- * }
  * }</pre>
  *
- * <p>Load the result at runtime by the same name:
+ * <p>Put shaders in {@code src/main/shaders} and load them by their path without the extension:
  *
  * <pre>{@code
- * FlixelShader crt = FlixelShader.load("crt");
- * Flixel.cameras.first().setShader(crt);
+ * FlixelShader wave = FlixelShader.load("wave");
  * }</pre>
  *
+ * <h2>How validation runs</h2>
+ *
+ * <p>The check runs in a forked Java 25 process (Gradle's worker API with process isolation), because it calls
+ * Dawn through Java's foreign function API. The jwebgpu libraries it needs live in a dedicated configuration of
+ * this plugin, so they never reach the game's own class path.
+ *
  * @see ShaderExtension
- * @see CompileShadersTask
+ * @see ProcessShadersTask
  */
 public class ShaderPlugin implements Plugin<Project> {
 
-  private static final String TASK_GROUP = "shaders";
-  private static final String TASK_NAME = "compileShaders";
+  /** The name of the task that validates and copies the shaders. */
+  public static final String TASK_NAME = "processShaders";
+
+  /** The name of the configuration that holds the jwebgpu libraries of the validator. */
+  public static final String CONFIGURATION_NAME = "shaderValidator";
+
+  private static final String JWEBGPU_GROUP = "io.github.stringdotjar";
 
   @Override
   public void apply(Project project) {
-    ShaderExtension ext =
-        project.getExtensions().create(ShaderExtension.NAME, ShaderExtension.class);
-    ext.getSourceDir()
-        .convention(project.getLayout().getProjectDirectory().dir(ShaderExtension.DEFAULT_SOURCE_DIR));
+    ShaderExtension ext = project.getExtensions().create(ShaderExtension.NAME, ShaderExtension.class);
+    ext.getSourceDir().convention(project.getLayout().getProjectDirectory().dir(ShaderExtension.DEFAULT_SOURCE_DIR));
+    ext.getValidate().convention(true);
 
-    TaskProvider<CompileShadersTask> compile =
-        project.getTasks().register(TASK_NAME, CompileShadersTask.class, task -> {
-          task.setGroup(TASK_GROUP);
-          task.setDescription("Cross-compiles the game's GLSL shaders into every FlixelGDX backend variant.");
+    Configuration validator = project.getConfigurations().create(CONFIGURATION_NAME, config -> {
+      config.setCanBeConsumed(false);
+      config.setCanBeResolved(true);
+      config.setDescription("The jwebgpu libraries that the shader validator runs with. Not part of the game.");
+      config.defaultDependencies(deps -> {
+        String version = ext.getJwebgpuVersion().getOrNull();
+        String suffix = version == null || version.isEmpty() ? "" : ":" + version;
+        deps.add(project.getDependencies().create(JWEBGPU_GROUP + ":jwebgpu-api" + suffix));
+        deps.add(project.getDependencies().create(JWEBGPU_GROUP + ":jwebgpu-ffm" + suffix));
+        deps.add(project.getDependencies()
+            .create(JWEBGPU_GROUP + ":jwebgpu-natives-" + HostTarget.current() + suffix));
+      });
+    });
+
+    JavaToolchainService toolchains = project.getExtensions().getByType(JavaToolchainService.class);
+    Provider<JavaLauncher> launcher =
+        toolchains.launcherFor(spec -> spec.getLanguageVersion().set(JavaLanguageVersion.of(25)));
+
+    TaskProvider<ProcessShadersTask> process =
+        project.getTasks().register(TASK_NAME, ProcessShadersTask.class, task -> {
+          task.setGroup("shaders");
+          task.setDescription("Validates the game's WGSL shaders with Dawn and copies them into the resources.");
           task.getSourceDir().convention(ext.getSourceDir());
-          task.getShadercPath().convention(ext.getShadercPath());
-          task.getGlslangPath().convention(ext.getGlslangPath());
-          task.getSpirvCrossPath().convention(ext.getSpirvCrossPath());
-          task.getGeneratedResourcesDir()
-              .convention(project.getLayout().getBuildDirectory().dir("generated/shaders/resources"));
-          task.getWorkDir().convention(project.getLayout().getBuildDirectory().dir("tmp/shaders"));
+          task.getSources()
+              .from(ext.getSourceDir().map(dir -> project.fileTree(dir, tree -> tree.include("**/*.wgsl"))));
+          task.getValidate().convention(ext.getValidate());
+          task.getValidatorClasspath().from(
+              project.provider(() -> ext.getValidate().get() ? validator : project.files()));
+          task.getLauncher().convention(launcher);
+          task.getOutputDir().convention(project.getLayout().getBuildDirectory().dir(ProcessShadersTask.OUTPUT_DIR));
         });
 
-    // Populate the task's inputs from the DSL once the build script has been evaluated, since the
-    // shader container is filled during evaluation.
-    project.afterEvaluate(p -> compile.configure(task -> {
-      File sourceDir = ext.getSourceDir().get().getAsFile();
-      ext.getShaders().forEach(spec -> {
-        if (!spec.getFragment().isPresent()) {
-          throw new IllegalStateException(
-              "FlixelGDX: shader '" + spec.getName() + "' is missing a required 'fragment' source.");
-        }
-        String fragment = spec.getFragment().get();
-        task.getFragmentSources().put(spec.getName(), fragment);
-        task.getSourceFiles().from(resolve(sourceDir, fragment));
-        if (spec.getVertex().isPresent()) {
-          String vertex = spec.getVertex().get();
-          task.getVertexSources().put(spec.getName(), vertex);
-          task.getSourceFiles().from(resolve(sourceDir, vertex));
-        }
-      });
-    }));
-
-    // Bundle the compiled variants into the module's resources so they ship inside the game.
-    //
-    // The resource root is registered from a stable layout path rather than the task's output
-    // provider, so IDE sync can resolve the source set without querying (and therefore trying to
-    // run) the task during configuration. The task writes to this same directory, and
-    // processResources depends on the task so the files exist before they are copied.
+    // Bundle the shaders into the module's resources so they ship inside the game on every platform. The output
+    // directory is registered as a provider of the task, so building the resources runs the task first.
     project.getPlugins().withId("java", plugin -> {
-      Provider<Directory> generatedDir =
-          project.getLayout().getBuildDirectory().dir("generated/shaders/resources");
       SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-      sourceSets.getByName("main").getResources().srcDir(generatedDir);
-      project.getTasks().withType(ProcessResources.class).configureEach(task -> task.dependsOn(compile));
+      Provider<Directory> out = process.flatMap(ProcessShadersTask::getOutputDir);
+      sourceSets.getByName("main").getResources().srcDir(out);
     });
-  }
-
-  private static File resolve(File sourceDir, String path) {
-    File file = new File(path);
-    return file.isAbsolute() ? file : new File(sourceDir, path);
   }
 }
