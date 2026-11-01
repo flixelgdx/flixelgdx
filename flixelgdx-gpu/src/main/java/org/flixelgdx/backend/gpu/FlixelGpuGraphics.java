@@ -226,6 +226,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private boolean transparentFramebuffer;
   private boolean vsync = true;
   private boolean surfaceDirty;
+  private boolean surfaceDetached;
   private boolean frameActive;
   private boolean passOpen;
   private boolean stateDirty;
@@ -422,6 +423,53 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     surfaceDirty = true;
   }
 
+  /**
+   * Stops presenting to the current surface without touching the device or any GPU resource.
+   *
+   * <p>A platform whose window can disappear while the app keeps running (Android destroys the surface of an app
+   * that goes to the background) calls this <em>before</em> it releases the surface. Until
+   * {@link #attachSurface} is called, {@link #beginFrame()} starts no frame and {@link #isFrameActive()} stays
+   * {@code false}, so nothing is drawn. Textures, shaders and render targets stay valid, because they belong to the
+   * device and not to the surface.
+   *
+   * <p>The caller still owns the {@link GpuSurface} and must release it itself; this method only unconfigures it.
+   * Do not call it while a frame is being recorded.
+   */
+  public void detachSurface() {
+    if (surface == null) {
+      return;
+    }
+    frameActive = false;
+    passOpen = false;
+    if (surfaceView != null) {
+      surfaceView.release();
+      surfaceView = null;
+    }
+    surface.unconfigure();
+    surface = null;
+    surfaceDetached = true;
+  }
+
+  /**
+   * Starts presenting to a new surface after {@link #detachSurface()}, keeping every other resource.
+   *
+   * <p>The surface is configured right away with the given size, using the formats and present mode that the
+   * surface supports. The caller keeps ownership of the surface and releases it after calling
+   * {@link #detachSurface()} again.
+   *
+   * @param newSurface The surface to present to.
+   * @param width The back buffer width in pixels.
+   * @param height The back buffer height in pixels.
+   */
+  public void attachSurface(@NotNull GpuSurface newSurface, int width, int height) {
+    surface = newSurface;
+    surfaceDetached = false;
+    backBufferWidth = Math.max(1, width);
+    backBufferHeight = Math.max(1, height);
+    configureSurface();
+    surfaceDirty = false;
+  }
+
   @NotNull
   @Override
   public FlixelGraphicsApi getApi() {
@@ -489,6 +537,9 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   }
 
   private boolean acquireBackBuffer() {
+    if (surfaceDetached) {
+      return false;
+    }
     if (surface == null) {
       surfaceView = headlessView;
       return true;

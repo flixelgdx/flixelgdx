@@ -27,6 +27,7 @@ import org.flixelgdx.graphics.FlixelShaderProgram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -188,7 +189,14 @@ public final class FlixelWgsl {
       if (in == null) {
         return null;
       }
-      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+      // InputStream.readAllBytes() is missing on Android before API 33, so read in chunks instead.
+      ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
+      byte[] chunk = new byte[4096];
+      int read;
+      while ((read = in.read(chunk)) != -1) {
+        out.write(chunk, 0, read);
+      }
+      return new String(out.toByteArray(), StandardCharsets.UTF_8);
     } catch (IOException e) {
       return null;
     }

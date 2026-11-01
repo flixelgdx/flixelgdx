@@ -33,6 +33,7 @@ import io.github.stringdotjar.jwebgpu.GpuBackendType;
 import io.github.stringdotjar.jwebgpu.GpuCallbackMode;
 import io.github.stringdotjar.jwebgpu.GpuDevice;
 import io.github.stringdotjar.jwebgpu.GpuDeviceDescriptor;
+import io.github.stringdotjar.jwebgpu.GpuDeviceLostCallback;
 import io.github.stringdotjar.jwebgpu.GpuInstance;
 import io.github.stringdotjar.jwebgpu.GpuPowerPreference;
 import io.github.stringdotjar.jwebgpu.GpuRequestAdapterOptions;
@@ -66,6 +67,7 @@ public final class FlixelGpuBootstrap {
   private volatile GpuDevice device;
   private volatile String error;
 
+  private GpuDeviceLostCallback lostCallback;
   private GpuPowerPreference powerPreference = GpuPowerPreference.HIGH_PERFORMANCE;
   private GpuBackendType backendType = GpuBackendType.UNDEFINED;
 
@@ -102,6 +104,10 @@ public final class FlixelGpuBootstrap {
     GpuDeviceDescriptor descriptor = new GpuDeviceDescriptor();
     descriptor.label = "FlixelGDX device";
     descriptor.uncapturedErrorCallback = (dev, type, message) -> LOG.error("WebGPU error ({}): {}", type, message);
+    if (lostCallback != null) {
+      descriptor.deviceLostCallback = lostCallback;
+      descriptor.deviceLostMode = GpuCallbackMode.ALLOW_PROCESS_EVENTS;
+    }
     chosen.requestDevice(descriptor, GpuCallbackMode.ALLOW_PROCESS_EVENTS, (status, result, message) -> {
       if (result == null) {
         fail("The GPU device could not be created (" + status + "): " + message);
@@ -193,5 +199,18 @@ public final class FlixelGpuBootstrap {
    */
   public void setBackendType(@NotNull GpuBackendType backendType) {
     this.backendType = backendType;
+  }
+
+  /**
+   * Sets a callback for when the device is lost (a GPU reset, a driver crash, or the device being destroyed on
+   * purpose). Takes effect only if called before {@link #start()}.
+   *
+   * <p>With the mode used here, the callback runs from {@code instance.processEvents()}, on the thread that calls
+   * it. A platform that wants to survive a lost device checks a flag set by this callback once per frame.
+   *
+   * @param callback The callback, or {@code null} for none.
+   */
+  public void setDeviceLostCallback(@Nullable GpuDeviceLostCallback callback) {
+    this.lostCallback = callback;
   }
 }
