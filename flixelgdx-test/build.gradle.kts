@@ -11,6 +11,7 @@ java {
 
 dependencies {
   implementation(project(":flixelgdx-core"))
+  implementation(project(":flixelgdx-gpu"))
   // The desktop module supplies the real java.io file backend so save round-trip tests persist to disk.
   implementation(project(":flixelgdx-desktop"))
   implementation(libs.jetbrains.annotations)
@@ -26,4 +27,7 @@ dependencies {
 
 tasks.named<Test>("test") {
   useJUnitPlatform()
+
+  // The GPU smoke test calls the WebGPU library through Java's foreign function API.
+  jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
