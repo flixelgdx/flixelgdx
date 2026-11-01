@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.VIBRATE"/>
+    <!--
+      FlixelGDX renders through WebGPU (Dawn), which runs on Vulkan 1.1 on Android. There is no OpenGL ES fallback,
+      so the requirement is hard: Google Play hides the game from devices without Vulkan 1.1 instead of letting
+      them install a game that cannot start. 0x401000 encodes version 1.1.0.
+    -->
+    <uses-feature android:name="android.hardware.vulkan.version" android:version="0x401000" android:required="true"/>
     <application>
         <activity
             android:name="org.flixelgdx.backend.android.FlixelAndroidPickerActivity"

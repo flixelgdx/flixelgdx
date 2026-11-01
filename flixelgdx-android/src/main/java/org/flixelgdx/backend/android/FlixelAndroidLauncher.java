@@ -31,7 +31,6 @@ import org.flixelgdx.backend.FlixelRuntimeMode;
 import org.flixelgdx.backend.android.asset.FlixelAndroidAssetManager;
 import org.flixelgdx.backend.android.file.FlixelAndroidFiles;
 import org.flixelgdx.backend.android.graphics.FlixelAndroidGraphics;
-import org.flixelgdx.backend.android.graphics.FlixelAndroidKtx2Loader;
 import org.flixelgdx.backend.android.input.FlixelAndroidGamepadProvider;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogFileSink;
 import org.flixelgdx.backend.android.logging.FlixelAndroidLogSiteResolver;
@@ -44,6 +43,8 @@ import org.flixelgdx.graphics.FlixelViewport;
 import org.flixelgdx.text.FlixelFontRegistry;
 import org.jetbrains.annotations.NotNull;
 
+import io.github.stringdotjar.jwebgpu.jni.JWebGpuJni;
+
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
@@ -54,8 +55,12 @@ import android.view.Window;
  *
  * <p>Call {@link #launch(Activity, FlixelGame)} from your {@code Activity.onCreate} and nothing
  * else is required. The launcher installs every Android backend piece (files, audio, haptics,
- * logging, window, input, gamepads) and starts the game loop on a {@link FlixelAndroidSurfaceView}
- * with a GLES 3.0 context.
+ * logging, window, input, gamepads), loads the WebGPU native library, and starts the game loop on a
+ * {@link FlixelAndroidSurfaceView} that the shared WebGPU renderer draws into. Game developers never install the
+ * WebGPU backend themselves.
+ *
+ * <p>The device needs Android 8.0 (API 26) and Vulkan 1.1, and the app must be built for a 64-bit ABI
+ * (arm64-v8a or x86_64).
  *
  * <p>Example:
  *
@@ -94,6 +99,10 @@ public final class FlixelAndroidLauncher {
    */
   public static void launch(@NotNull Activity activity, @NotNull FlixelGame game,
       @NotNull FlixelRuntimeMode runtimeMode) {
+    // Game developers never call this: the launcher loads the WebGPU native library (Dawn) and registers the JNI
+    // backend, so everything after this point only talks to the platform-neutral WebGPU API.
+    JWebGpuJni.install();
+
     FlixelAndroidRuntimeDevice runtime = new FlixelAndroidRuntimeDevice(activity);
     Flixel.runtime = runtime;
     Flixel.alert = new FlixelAndroidAlerter(activity);
@@ -108,7 +117,7 @@ public final class FlixelAndroidLauncher {
     FlixelAndroidWindow window = new FlixelAndroidWindow(activity);
     Flixel.window = window;
 
-    FlixelAndroidGraphics graphics = new FlixelAndroidGraphics(activity, window);
+    FlixelAndroidGraphics graphics = new FlixelAndroidGraphics(activity);
     Flixel.graphics = graphics;
 
     Flixel.haptics = new FlixelAndroidHaptics(activity);
@@ -124,36 +133,21 @@ public final class FlixelAndroidLauncher {
     FlixelAndroidInputDevice input = new FlixelAndroidInputDevice();
     Flixel.input = input;
 
-    FlixelAndroidRunner runner = new FlixelAndroidRunner(window, input);
+    FlixelAndroidRunner runner = new FlixelAndroidRunner(window, input, graphics);
 
-    // Wire the graphics manager into the context listener so it can rebuild GL state after the EGL
-    // context is lost and recreated (for example when the app goes to the background).
-    runner.setContextListener(new FlixelAndroidContextListener() {
-      @Override
-      public void onContextLost() {
-        graphics.onContextLost();
-      }
-
-      @Override
-      public void onContextRestored() {
-        graphics.onContextRestored();
-      }
-    });
-
-    FlixelAndroidSurfaceView glView = new FlixelAndroidSurfaceView(activity, input);
-    glView.setEGLContextClientVersion(3);
-    glView.setPreserveEGLContextOnPause(true);
-    glView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
-    glView.setRenderer(runner);
+    // The view is a plain SurfaceView. The runner turns its surface into a WebGPU surface on the render thread and
+    // keeps the GPU device alive when Android destroys and recreates the surface (the app going to the background).
+    FlixelAndroidSurfaceView view = new FlixelAndroidSurfaceView(activity, input);
+    view.getHolder().addCallback(runner);
 
     // Wire all input listeners.
-    glView.setOnTouchListener(input.createTouchListener());
-    glView.setOnKeyListener(input.createKeyListener());
-    glView.setOnGenericMotionListener(input.createGenericMotionListener());
-    glView.setFocusable(true);
-    glView.setFocusableInTouchMode(true);
+    view.setOnTouchListener(input.createTouchListener());
+    view.setOnKeyListener(input.createKeyListener());
+    view.setOnGenericMotionListener(input.createGenericMotionListener());
+    view.setFocusable(true);
+    view.setFocusableInTouchMode(true);
 
-    input.setSurfaceAndActivity(glView, activity);
+    input.setSurfaceAndActivity(view, activity);
 
     FlixelAndroidGamepadProvider gamepadProvider = new FlixelAndroidGamepadProvider(activity);
     input.setGamepadProvider(gamepadProvider);
@@ -166,15 +160,13 @@ public final class FlixelAndroidLauncher {
     } catch (RuntimeException ignored) {
       // The theme already decided; install() handles the action bar.
     }
-    activity.setContentView(glView);
-    window.install(glView);
+    activity.setContentView(view);
+    window.install(view);
 
     activity.getApplication().registerActivityLifecycleCallbacks(
-        new ActivityLifecycleHandler(activity, glView, game, runner, gamepadProvider));
+        new ActivityLifecycleHandler(activity, runner, gamepadProvider));
 
     Flixel.runtime.setMode(runtimeMode);
-
-    Flixel.assets.registerLoader(".ktx2", new FlixelAndroidKtx2Loader());
 
     Flixel.boot.afterStart(() -> {
       Flixel.touches.enabled = true;
@@ -189,37 +181,32 @@ public final class FlixelAndroidLauncher {
   }
 
   /**
-     * Lifecycle callbacks that route Android activity events to the game.
-     *
-     * <p>Only events for the specific activity that launched the game are handled; all others are
-     * ignored. Window focus changes cannot be intercepted here - they are handled by overriding
-     * {@code onWindowFocusChanged} in the activity itself. Game code that needs focus notifications
-     * should override the activity method or use {@link Flixel#autoPause}.
-     */
-  private record ActivityLifecycleHandler(@NotNull Activity activity, @NotNull FlixelAndroidSurfaceView glView,
-      @NotNull FlixelGame game, @NotNull FlixelAndroidRunner runner,
+   * Lifecycle callbacks that route Android activity events to the runner.
+   *
+   * <p>Only events for the specific activity that launched the game are handled; all others are
+   * ignored. Window focus changes cannot be intercepted here - they are handled by overriding
+   * {@code onWindowFocusChanged} in the activity itself. Game code that needs focus notifications
+   * should override the activity method or use {@link Flixel#autoPause}.
+   *
+   * <p>The runner moves the work onto the render thread, so none of these callbacks touch the game or the GPU
+   * directly.
+   */
+  private record ActivityLifecycleHandler(@NotNull Activity activity, @NotNull FlixelAndroidRunner runner,
       @NotNull FlixelAndroidGamepadProvider gamepadProvider)
       implements Application.ActivityLifecycleCallbacks {
 
     @Override
     public void onActivityPaused(@NotNull Activity a) {
-      if (a != activity) {
-        return;
+      if (a == activity) {
+        runner.pause();
       }
-      // Queue focus-lost before pausing the view. The GL thread runs queued events before it
-      // honors a pause request, so the game (and the autoPause audio handling in core) reacts
-      // before rendering stops.
-      glView.queueEvent(game::onFocusLost);
-      glView.onPause();
     }
 
     @Override
     public void onActivityResumed(@NotNull Activity a) {
-      if (a != activity) {
-        return;
+      if (a == activity) {
+        runner.resume();
       }
-      glView.onResume();
-      glView.queueEvent(game::onFocusGained);
     }
 
     @Override
@@ -228,16 +215,7 @@ public final class FlixelAndroidLauncher {
         return;
       }
       gamepadProvider.stop();
-      // Destroy the game and shut down audio on the GL thread if possible. If the renderer
-      // is already stopped, run synchronously to avoid a resource leak.
-      try {
-        glView.queueEvent(() -> {
-          game.destroy();
-          Flixel.sound.destroy();
-        });
-      } catch (Throwable ignored) {
-        // Best-effort; the OS will reclaim native memory when the process exits.
-      }
+      runner.destroy();
       try {
         activity.getApplication().unregisterActivityLifecycleCallbacks(this);
       } catch (Throwable ignored) {

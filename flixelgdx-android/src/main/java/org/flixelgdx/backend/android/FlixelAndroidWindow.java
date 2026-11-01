@@ -102,7 +102,7 @@ public class FlixelAndroidWindow implements FlixelWindow {
   }
 
   /**
-   * Updates the cached back-buffer dimensions, called from the GL renderer when the surface changes.
+   * Updates the cached back-buffer dimensions, called from the render thread when the surface changes.
    *
    * @param w Back-buffer width in pixels.
    * @param h Back-buffer height in pixels.
