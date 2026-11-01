@@ -83,7 +83,7 @@ Everything below is optional except `mainClass`.
 | `appName`      | project name                | Name of the launcher executable, output folder, and zip.   |
 | `appVersion`   | project version             | Version recorded for the package.                          |
 | `jvmArg(...)`  | none                        | An argument passed to the bundled JVM at startup.          |
-| `jreVersion`   | `17`                        | Feature version of the Java runtime to bundle.             |
+| `jreVersion`   | `25`                        | Feature version of the Java runtime to bundle.             |
 | `jreCacheDir`  | `~/.flixelgdx/jdks`         | Shared cache; a given runtime is downloaded only once.     |
 | `jlinkModules` | a desktop-game module set   | Java modules included in the trimmed runtime.              |
 

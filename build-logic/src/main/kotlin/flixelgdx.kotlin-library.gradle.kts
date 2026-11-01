@@ -6,7 +6,7 @@ plugins {
 }
 
 kotlin {
-  jvmToolchain(17)
+  jvmToolchain(25)
 
   // Build against an older Kotlin baseline than the compiler so the published artifact stays
   // consumable by projects on older Kotlin toolchains. The compiler is 2.2.x (required by Gradle 9),

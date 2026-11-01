@@ -10,7 +10,7 @@
   [![JitPack](https://jitpack.io/v/flixelgdx/flixelgdx.svg)](https://jitpack.io/#flixelgdx/flixelgdx)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Website](https://img.shields.io/badge/website-flixelgdx.org-blue)](https://flixelgdx.org)
-  [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](https://adoptium.net/temurin/releases?version=17&os=any&arch=any)
+  [![Java 25+](https://img.shields.io/badge/Java-25%2B-orange)](https://adoptium.net/temurin/releases?version=25&os=any&arch=any)
   [![Platforms](https://img.shields.io/badge/platforms-Desktop%20%7C%20Web%20%7C%20Android-brightgreen)](https://flixelgdx.org)
 
   FlixelGDX is a feature-packed game framework for the Java ecosystem, with heavy inspiration from 

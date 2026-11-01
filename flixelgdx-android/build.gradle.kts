@@ -14,13 +14,21 @@ android {
   }
   compileOptions {
     isCoreLibraryDesugaringEnabled = true
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
   }
 }
 
 dependencies {
   "coreLibraryDesugaring"(libs.desugar.jdk.libs)
+
+  // androidx.activity pulls kotlinx-coroutines 1.6.4, which depends on the legacy kotlin-stdlib-jdk7
+  // and kotlin-stdlib-jdk8 artifacts at 1.6.21. Those old versions still contain classes that also live
+  // in kotlin-stdlib, which breaks dexing with duplicate kotlin.* classes. Depending on the current
+  // (empty) jdk7/jdk8 artifacts directly makes dependency resolution pick them over the old ones in
+  // every consuming game.
+  implementation(libs.kotlin.stdlib.jdk7)
+  implementation(libs.kotlin.stdlib.jdk8)
 
   api(project(":flixelgdx-core"))
   api(project(":flixelgdx-miniaudio"))

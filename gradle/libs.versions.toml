@@ -1,6 +1,6 @@
 [versions]
 activity = "1.9.3"
-agp = "8.7.3"
+agp = "8.11.0"
 commonsCompress = "1.27.1"
 desugarJdkLibs = "2.1.5"
 graalvm = "24.2.0"
@@ -30,6 +30,8 @@ jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "j
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+kotlin-stdlib-jdk7 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk7", version.ref = "kotlin" }
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 lwjgl = { module = "org.lwjgl:lwjgl" }
 lwjgl-bgfx = { module = "org.lwjgl:lwjgl-bgfx" }
 lwjgl-sdl = { module = "org.lwjgl:lwjgl-sdl" }

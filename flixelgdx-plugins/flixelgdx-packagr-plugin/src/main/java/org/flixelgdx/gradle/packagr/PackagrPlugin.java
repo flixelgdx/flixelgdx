@@ -101,7 +101,7 @@ public class PackagrPlugin implements Plugin<Project> {
   private static void applyConventions(Project project, PackagrExtension ext) {
     ext.getAppName().convention(project.getName());
     ext.getAppVersion().convention(project.provider(() -> String.valueOf(project.getVersion())));
-    ext.getJdkVersion().convention(17);
+    ext.getJdkVersion().convention(25);
     ext.getJlinkModules().convention(DEFAULT_MODULES);
     ext.getJdkCacheDir().convention(project.getLayout().dir(project.provider(
         () -> new File(System.getProperty("user.home"), ".flixelgdx/jdks"))));

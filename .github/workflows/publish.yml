@@ -18,11 +18,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17 (Temurin)
+      - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 25
           cache: 'gradle'
 
       - name: Grant execute permission for gradlew
@@ -44,11 +44,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17 (Temurin)
+      - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 25
           cache: 'gradle'
 
       - name: Set up Android SDK

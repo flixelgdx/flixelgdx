@@ -77,7 +77,7 @@ public final class JdkResolver {
    * runtime that ships with the game.
    *
    * @param cacheDir The shared directory cached JDKs live in.
-   * @param version The JDK feature version, for example {@code 17}.
+   * @param version The JDK feature version, for example {@code 25}.
    * @param os The operating system the JDK targets.
    * @param arch The architecture the JDK targets.
    * @param logger The Gradle logger used to report progress.

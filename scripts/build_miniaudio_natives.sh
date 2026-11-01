@@ -8,7 +8,7 @@
 # Requirements:
 #   - cmake 3.21+ on PATH.
 #   - A C compiler for the target platform (gcc, clang, or MSVC via cmake's generator).
-#   - A JDK 17+ install; set JAVA_HOME or let cmake's FindJNI probe it.
+#   - A JDK 25+ install; set JAVA_HOME or let cmake's FindJNI probe it.
 #
 # Dependency versions, download URLs, and SHA-256 hashes are pinned in:
 #   flixelgdx-miniaudio/src/main/native/deps.cmake
@@ -39,7 +39,7 @@ if [ -z "${JAVA_HOME:-}" ]; then
   done
 fi
 if [ -z "${JAVA_HOME:-}" ] || [ ! -f "${JAVA_HOME}/include/jni.h" ]; then
-  echo "Could not find jni.h. Set JAVA_HOME to a JDK 17 install." >&2
+  echo "Could not find jni.h. Set JAVA_HOME to a JDK 25 install." >&2
   exit 1
 fi
 echo "Using JNI headers from: ${JAVA_HOME}/include"
