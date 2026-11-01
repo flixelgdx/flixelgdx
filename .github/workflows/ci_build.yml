@@ -5,6 +5,10 @@ on:
     branches: [master]
   pull_request:
 
+# jwebgpu is not published yet, so every job checks it out next to the build and points Gradle at it.
+env:
+  JWEBGPU_DIR: ${{ github.workspace }}/jwebgpu
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,6 +20,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout jwebgpu
+        uses: actions/checkout@v4
+        with:
+          repository: stringdotjar/jwebgpu
+          path: jwebgpu
 
       - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v5
@@ -40,6 +50,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout jwebgpu
+        uses: actions/checkout@v4
+        with:
+          repository: stringdotjar/jwebgpu
+          path: jwebgpu
+
       - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v5
         with:
@@ -63,6 +79,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout jwebgpu
+        uses: actions/checkout@v4
+        with:
+          repository: stringdotjar/jwebgpu
+          path: jwebgpu
+
       - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v5
         with:
@@ -83,6 +105,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout jwebgpu
+        uses: actions/checkout@v4
+        with:
+          repository: stringdotjar/jwebgpu
+          path: jwebgpu
 
       - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v5
@@ -129,6 +157,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Checkout jwebgpu
+        uses: actions/checkout@v4
+        with:
+          repository: stringdotjar/jwebgpu
+          path: jwebgpu
 
       - name: Set up JDK 25 (Temurin)
         uses: actions/setup-java@v5

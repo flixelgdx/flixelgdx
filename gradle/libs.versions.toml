@@ -27,13 +27,20 @@ imgui-natives-macos = { module = "io.github.spair:imgui-java-natives-macos", ver
 imgui-natives-windows = { module = "io.github.spair:imgui-java-natives-windows", version.ref = "imgui" }
 jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
+jwebgpu-api = { module = "io.github.stringdotjar:jwebgpu-api" }
+jwebgpu-ffm = { module = "io.github.stringdotjar:jwebgpu-ffm" }
+jwebgpu-natives-linux-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-aarch64" }
+jwebgpu-natives-linux-x86-64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-x86_64" }
+jwebgpu-natives-macos-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-aarch64" }
+jwebgpu-natives-macos-x86-64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-x86_64" }
+jwebgpu-natives-windows-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-windows-aarch64" }
+jwebgpu-natives-windows-x86-64 = { module = "io.github.stringdotjar:jwebgpu-natives-windows-x86_64" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kotlin-stdlib-jdk7 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk7", version.ref = "kotlin" }
 kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 lwjgl = { module = "org.lwjgl:lwjgl" }
-lwjgl-bgfx = { module = "org.lwjgl:lwjgl-bgfx" }
 lwjgl-sdl = { module = "org.lwjgl:lwjgl-sdl" }
 lwjgl-stb = { module = "org.lwjgl:lwjgl-stb" }
 multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }

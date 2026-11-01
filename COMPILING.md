@@ -114,7 +114,14 @@ sudo pacman -S jdk25-openjdk
    git fetch upstream
    git checkout master
   ```
-3. **Branch off `master`** for development and PRs (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+3. **Clone jwebgpu next to FlixelGDX.** Every FlixelGDX renderer is written against [jwebgpu](https://github.com/stringdotjar/jwebgpu), the WebGPU bindings for Java. jwebgpu is not published to Maven yet, so FlixelGDX pulls it in as a Gradle composite build and the build **fails to start** when it cannot find a checkout. Put it in the same parent folder as FlixelGDX:
+  ```bash
+   cd ..
+   git clone https://github.com/stringdotjar/jwebgpu.git
+   cd flixelgdx
+  ```
+   The build looks for `../jwebgpu` by default. To keep the checkout somewhere else, pass `-Pjwebgpu.dir=/path/to/jwebgpu`, add `jwebgpu.dir=/path/to/jwebgpu` to `local.properties` (or `gradle.properties`), or set the `JWEBGPU_DIR` environment variable. GitHub Actions checks it out into the workspace and sets `JWEBGPU_DIR` for every job.
+4. **Branch off `master`** for development and PRs (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ---
 
@@ -280,6 +287,9 @@ The generated project targets Maven Central by default, pulling the last stable 
 > [!WARNING]
 > The published artifact version is derived from your most recent git tag using `git describe`. If git is not installed or your clone has no tags, the version will be `unspecified`, and the test project will fail to resolve the dependency. Use [Method 2](#method-2-composite-build-intellij-or-any-gradle-based-ide) to avoid version concerns entirely.
 
+> [!IMPORTANT]
+> FlixelGDX depends on jwebgpu, which is not published yet, so a game that consumes FlixelGDX from `mavenLocal()` also needs the jwebgpu artifacts there. Run `./gradlew publishToMavenLocal` in your jwebgpu checkout too, or use [Method 2](#method-2-composite-build) and include both builds.
+
 > [!NOTE]
 > You must re-run `publishToMavenLocal` each time you change the framework and want the test project to pick up those changes. Use [Method 2](#method-2-composite-build) to avoid this.
 
@@ -295,6 +305,11 @@ Composite build lets the test project use your local FlixelGDX source so changes
    Replace `/path/to/flixelgdx` with the path to your FlixelGDX clone.
   - **Windows**: use forward slashes, e.g. `C:/Users/You/flixelgdx`.
   - **macOS/Linux**: e.g. `/home/you/projects/flixelgdx`.
+   Until jwebgpu is published, the game's `settings.gradle` must include **jwebgpu** as well, because FlixelGDX's `flixelgdx-gpu` and `flixelgdx-desktop` modules depend on it by coordinates (`io.github.stringdotjar:jwebgpu-api`, `jwebgpu-ffm` and the `jwebgpu-natives-<os>-<arch>` modules):
+  ```gradle
+   includeBuild '/path/to/flixelgdx'
+   includeBuild '/path/to/jwebgpu'
+  ```
 3. **Your existing dependency declaration stays as-is**; the composite build substitutes it automatically:
   ```gradle
    dependencies {
@@ -475,6 +490,16 @@ Then run your Gradle command again.
 
 - **Symptom**: “Project directory does not exist” or path not found in `includeBuild`.
 - **Fix**: Use an absolute path with forward slashes, e.g. `C:/Users/You/flixelgdx`, or escaped backslashes. Avoid trailing backslash.
+
+### jwebgpu checkout not found
+
+- **Symptom**: Gradle stops right away with "FlixelGDX needs the jwebgpu checkout".
+- **Fix**: Clone `https://github.com/stringdotjar/jwebgpu.git` next to the FlixelGDX folder, or point the build at your checkout with `-Pjwebgpu.dir=...`, `jwebgpu.dir` in `local.properties`, or `JWEBGPU_DIR`.
+
+### Native access warning or `IllegalCallerException` on the desktop
+
+- **Symptom**: The desktop backend reports it may not call native code.
+- **Fix**: The WebGPU backend uses Java's Foreign Function and Memory API, which must be enabled with `--enable-native-access=ALL-UNNAMED`. Gradle `run` tasks and packaged games set this for you; set it yourself when you start a game with plain `java`.
 
 ### Version mismatch (test project vs published artifact)
 
