@@ -114,6 +114,12 @@ import java.nio.ByteBuffer;
  */
 public class FlixelGpuGraphics implements FlixelGraphicsManager {
 
+  /**
+   * The classpath location of the built-in sprite shader. A platform that has to bundle its resources by name
+   * (for example the web) can use this to include the file.
+   */
+  public static final String SPRITE_SHADER = "org/flixelgdx/shaders/sprite.wgsl";
+
   private static final FlixelLogger LOG = Flixel.log.tagged("Graphics");
 
   private static final long VERTEX_RING_BYTES = 4L << 20;
@@ -122,7 +128,6 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private static final int MAX_LEVELS = 16;
   private static final int SPARE = MAX_LEVELS;
   private static final int GLOBALS_FLOATS = FlixelWgsl.GLOBALS_SIZE / 4;
-  private static final String SPRITE_SHADER = "org/flixelgdx/shaders/sprite.wgsl";
 
   /** The smoothing factor of the frame rate average. */
   public double smoothingFactor = 0.1;

@@ -29,6 +29,7 @@ jansi = { module = "org.fusesource.jansi:jansi", version.ref = "jansi" }
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotations" }
 jwebgpu-api = { module = "io.github.stringdotjar:jwebgpu-api" }
 jwebgpu-ffm = { module = "io.github.stringdotjar:jwebgpu-ffm" }
+jwebgpu-teavm = { module = "io.github.stringdotjar:jwebgpu-teavm" }
 jwebgpu-natives-linux-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-aarch64" }
 jwebgpu-natives-linux-x64 = { module = "io.github.stringdotjar:jwebgpu-natives-linux-x86_64" }
 jwebgpu-natives-macos-aarch64 = { module = "io.github.stringdotjar:jwebgpu-natives-macos-aarch64" }
