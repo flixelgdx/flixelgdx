@@ -10,7 +10,7 @@
 # pass -DFLIXEL_MINIAUDIO_BUILD_SHARED=ON to cmake.
 #
 # Dependencies are fetched automatically via CMake FetchContent; cmake 3.21+ and a C compiler
-# are the only build requirements. Set JAVA_HOME to a JDK 17+ install for JNI headers, or
+# are the only build requirements. Set JAVA_HOME to a JDK 25+ install for JNI headers, or
 # let FindJNI locate them automatically.
 cmake_minimum_required(VERSION 3.21)
 project(flixel_miniaudio C)

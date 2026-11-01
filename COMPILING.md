@@ -35,36 +35,36 @@ FlixelGDX is a framework, not a standalone game, so it cannot be run by itself. 
 
 Verify: open a new terminal and run `git --version`.
 
-### 2. Java (JDK 17 with Eclipse Temurin)
+### 2. Java (JDK 25 with Eclipse Temurin)
 
-FlixelGDX requires **Java 17** (LTS). The build uses the Gradle wrapper (Gradle 9.x), which runs on JDK 17+. IntelliJ IDEA and your command line must both use JDK 17.
+FlixelGDX requires **Java 25** (LTS). The build uses the Gradle wrapper (Gradle 9.x), which runs on JDK 25 or newer. IntelliJ IDEA and your command line must both use JDK 25.
 
-**Use Eclipse Temurin:** install **[Eclipse Temurin 17 (Adoptium)](https://adoptium.net/temurin/releases/?package=jdk&version=17)** - the battle-tested, open-source HotSpot JDK used across the Java game development ecosystem. It gets timely security updates through Adoptium and integrates seamlessly with Gradle toolchains.
+**Use Eclipse Temurin:** install **[Eclipse Temurin 25 (Adoptium)](https://adoptium.net/temurin/releases/?package=jdk&version=25)** - the battle-tested, open-source HotSpot JDK used across the Java game development ecosystem. It gets timely security updates through Adoptium and integrates seamlessly with Gradle toolchains.
 
-After install, `java -version` should show **17** and mention `OpenJDK`.
+After install, `java -version` should show **25** and mention `OpenJDK`.
 
 #### Windows
 
-- Download the **Windows x64** JDK 17 MSI from the [Adoptium Temurin downloads](https://adoptium.net/temurin/releases/?package=jdk&version=17) page.
+- Download the **Windows x64** JDK 25 MSI from the [Adoptium Temurin downloads](https://adoptium.net/temurin/releases/?package=jdk&version=25) page.
 - Run the installer. Enable “Set JAVA_HOME” / “Add to PATH” if offered.
 - **Set JAVA_HOME (if not set by installer)**
   - **Settings -> System -> About -> Advanced system settings -> Environment Variables**.
-  - **System variables -> New**: `JAVA_HOME` = Temurin install folder (e.g. `C:\Program Files\Eclipse Adoptium\jdk-17.x.x`).
+  - **System variables -> New**: `JAVA_HOME` = Temurin install folder (e.g. `C:\Program Files\Eclipse Adoptium\jdk-25.x.x`).
   - **Path** -> **New** -> `%JAVA_HOME%\bin`.
   - Restart the terminal.
 - **Verify**
-  - `java -version` - should show **17**.
-  - `javac -version` - **17**.
+  - `java -version` - should show **25**.
+  - `javac -version` - **25**.
 
 #### macOS
 
 - **Option A (Homebrew)**
-  - `brew install --cask temurin@17`
+  - `brew install --cask temurin@25`
   - Point `JAVA_HOME` at the Temurin install (e.g. under `/Library/Java/JavaVirtualMachines/`).
 - **Option B (installer)**
-  - Download **macOS** JDK 17 from [Adoptium Temurin downloads](https://adoptium.net/temurin/releases/?package=jdk&version=17) and install the `.pkg`.
+  - Download **macOS** JDK 25 from [Adoptium Temurin downloads](https://adoptium.net/temurin/releases/?package=jdk&version=25) and install the `.pkg`.
 - **Verify**
-  - `java -version` and `javac -version` show 17.
+  - `java -version` and `javac -version` show 25.
 
 #### Linux
 
@@ -78,20 +78,20 @@ wget -qO- https://packages.adoptium.net/artifactory/api/gpg/key/public \
 echo “deb [signed-by=/usr/share/keyrings/adoptium.gpg] \
   https://packages.adoptium.net/artifactory/deb $(lsb_release -cs) main” \
   | sudo tee /etc/apt/sources.list.d/adoptium.list
-sudo apt update && sudo apt install -y temurin-17-jdk
+sudo apt update && sudo apt install -y temurin-25-jdk
 ```
 
 **Fedora / RHEL:**
 
 ```bash
 sudo dnf install https://packages.adoptium.net/artifactory/rpm/fedora/$(rpm -E %fedora)/adoptium.repo
-sudo dnf install -y temurin-17-jdk
+sudo dnf install -y temurin-25-jdk
 ```
 
 **Arch:**
 
 ```bash
-sudo pacman -S jdk17-openjdk
+sudo pacman -S jdk25-openjdk
 ```
 
 (Arch ships HotSpot OpenJDK, which is binary-compatible with Temurin.)
@@ -443,14 +443,14 @@ You can still edit and build the **flixelgdx-android** module without a device o
 ### JAVA_HOME not set or wrong
 
 - **Symptom**: Gradle or IntelliJ IDEA reports “JAVA_HOME is not set” or uses the wrong Java version.
-- **Fix**: Set `JAVA_HOME` to the **JDK 17** installation directory (see [Java (JDK 17 with Eclipse Temurin)](#2-java-jdk-17-with-eclipse-temurin) for your OS). Use a **new** terminal/IntelliJ IDEA restart after changing environment variables.
+- **Fix**: Set `JAVA_HOME` to the **JDK 25** installation directory (see [Java (JDK 25 with Eclipse Temurin)](#2-java-jdk-25-with-eclipse-temurin) for your OS). Use a **new** terminal/IntelliJ IDEA restart after changing environment variables.
 
 ### Wrong Java version
 
-- **Symptom**: Build fails with “invalid target release” or “class file version” errors, or `java -version` is not 17.
+- **Symptom**: Build fails with “invalid target release” or “class file version” errors, or `java -version` is not 25.
 - **Fix**:  
-  - From the command line: ensure `JAVA_HOME` and `PATH` point to JDK 17; run `java -version` and `javac -version`.  
-  - In IntelliJ IDEA: set the **project SDK / JRE** to JDK 17 (see [IntelliJ IDEA setup](#intellij-idea-setup)).
+  - From the command line: ensure `JAVA_HOME` and `PATH` point to JDK 25; run `java -version` and `javac -version`.  
+  - In IntelliJ IDEA: set the **project SDK / JRE** to JDK 25 (see [IntelliJ IDEA setup](#intellij-idea-setup)).
 
 ### Gradle wrapper not executable (Linux / macOS)
 

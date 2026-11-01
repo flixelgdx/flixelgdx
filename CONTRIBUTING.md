@@ -32,14 +32,20 @@ We welcome contributions! Whether you're fixing bugs, adding new features, or im
 > 5. AI-generated bug reports are **not allowed**. If  there's an issue with your game or the framework itself, *you* are the one who should address 
 > it. AI is allowed to find the bug itself, but you need to the one presenting it. This also includes feature requests for the same obvious reasons.
 
-## Java runtime (JDK 17, Eclipse Temurin)
+## Java runtime (JDK 25, Eclipse Temurin)
 
-FlixelGDX targets **Java 17**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 17](https://adoptium.net/temurin/releases/?version=17)** 
+FlixelGDX targets **Java 25**. For **local development, running games, and Gradle**, use **[Eclipse Temurin 25](https://adoptium.net/temurin/releases/?version=25)** 
 (the Adoptium distribution of OpenJDK). Temurin is a well-tested, freely available HotSpot build with strong community support and broad platform coverage.
 
 **Do not** use Oracle’s proprietary JDK. If `java -version` output mentions **Temurin** or **OpenJDK**, you are on a compatible build.
 
-CI uses **Eclipse Temurin 17** via GitHub Actions so builds match that recommendation.
+CI uses **Eclipse Temurin 25** via GitHub Actions so builds match that recommendation.
+
+**Android note:** Java 25 syntax (records, pattern `switch`, `_`) is fine in shared code because D8 desugars it, but library
+APIs that ART lacks must not be used in code that runs on Android: `java.lang.foreign`, `ScopedValue`, `StructuredTaskScope`
+and virtual threads, `java.lang.classfile`, SequencedCollection methods such as `getFirst()`, `getLast()` and `reversed()`,
+`Math.clamp`, `StringBuilder.repeat`, `HexFormat`, `Thread.threadId()`, and `Locale.of`. Android games also need
+Android Gradle Plugin 8.11.0 or newer.
 
 Full installation steps for Windows, macOS, and Linux are in [COMPILING.md](COMPILING.md) (Java section).
 

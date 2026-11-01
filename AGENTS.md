@@ -212,7 +212,12 @@ public class PerformanceObject {
 
 ### Language and style
 
-- Target **Java 17**. Prefer modern features (records, lambdas, modern `switch`) over legacy patterns.
+- Target **Java 25**. Prefer modern features (records, lambdas, modern `switch`) over legacy patterns.
+- Code that also runs on Android must not use Java library APIs newer than Java 17 that ART lacks. Java 25 syntax is
+  fine because D8 desugars it (records, pattern `switch`, unnamed variables `_`), but these library APIs are **banned**
+  in any code that runs on Android: `java.lang.foreign`, `ScopedValue`, `StructuredTaskScope` and virtual threads,
+  `java.lang.classfile`, SequencedCollection methods such as `getFirst()`, `getLast()` and `reversed()`, `Math.clamp`,
+  `StringBuilder.repeat`, `HexFormat`, `Thread.threadId()`, and `Locale.of`.
 - **Import** every type you use. Do **not** use star imports (`*`).
 - Do **not** use fully qualified class names inline when a normal import would read cleanly.
 - Empty or void-returning methods: opening brace on the same line per `.editorconfig` (example: `public void hook() {}`).
