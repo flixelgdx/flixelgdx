@@ -336,6 +336,14 @@ All unit tests for the core API live in a separate Gradle module, inside of `fli
 FlixelGDX supports web builds through the **TeaVM** backend (in the `flixelgdx-html5` module). TeaVM transpiles
 Java bytecode into JavaScript and WebAssembly so your game can run in a browser.
 
+The web backend draws with **WebGPU** (through `flixelgdx-gpu` and jwebgpu's browser backend) and has **no WebGL
+fallback**. To run a web game you need a browser with WebGPU: Chrome or Edge 113 or newer, Safari 26 or newer, or
+Firefox 141 or newer on Windows. On some systems (for example Linux) WebGPU may still need to be switched on in the
+browser's settings. The page must be served over HTTPS or from `localhost`; the dev server started by `run` uses
+`localhost`. A browser without WebGPU shows a message in the page instead of the game. Shaders are WGSL. Because the
+web backend depends on jwebgpu, the jwebgpu checkout described under [Getting the source](#getting-the-source) is
+needed to build it as well.
+
 ### Run the game in the browser
 
 Running a FlixelGDX web game in your browser is as simple as executing the `run` task:
