@@ -99,6 +99,8 @@ public final class FlixelHtml5Launcher {
     // set here already because the web decoder needs no GPU.
     FlixelGpuGraphics graphics = new FlixelGpuGraphics();
     graphics.setImageDecoder(FlixelHtml5ImageDecoder.INSTANCE);
+    // The page sizes the canvas, not the game, so a render resolution is always drawn at that size and stretched.
+    graphics.setWindowedRenderResolution(true);
     FlixelHtml5Window window = new FlixelHtml5Window();
     FlixelHtml5HostIntegration host = new FlixelHtml5HostIntegration();
     FlixelHtml5InputDevice input = new FlixelHtml5InputDevice();

@@ -232,6 +232,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
   private boolean passOpen;
   private boolean stateDirty;
   private boolean renderResolutionEnabled;
+  private boolean windowedRenderResolution;
   private boolean renderSmooth = true;
   private boolean sceneActive;
   private boolean sceneTargetDirty;
@@ -854,7 +855,7 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
     renderWidth = width;
     renderHeight = height;
     renderResolutionEnabled = true;
-    if (!Flixel.window.isFullscreen()) {
+    if (!windowedRenderResolution && !Flixel.window.isFullscreen()) {
       Flixel.window.setSize(width, height);
     }
   }
@@ -917,10 +918,12 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
    *
    * <p>In fullscreen with a render resolution set, the scene is drawn at that resolution and stretched to the
    * monitor. Otherwise (windowed, where the window already is the resolution, or no resolution set) it starts
-   * from the back buffer. The render scale is applied on top of either.
+   * from the back buffer. A platform that cannot resize its own window turns on
+   * {@link #setWindowedRenderResolution(boolean)}, and then a set resolution always applies. The render scale is
+   * applied on top of either.
    */
   private int sceneSize(boolean horizontal) {
-    boolean fixed = renderResolutionEnabled && Flixel.window.isFullscreen();
+    boolean fixed = renderResolutionEnabled && (windowedRenderResolution || Flixel.window.isFullscreen());
     int base;
     if (horizontal) {
       base = fixed ? renderWidth : backBufferWidth;
@@ -1628,6 +1631,30 @@ public class FlixelGpuGraphics implements FlixelGraphicsManager {
    */
   public void setStatsEnabled(boolean statsEnabled) {
     this.statsEnabled = statsEnabled;
+  }
+
+  /**
+   * Returns whether a set render resolution also applies outside fullscreen.
+   *
+   * @return {@code true} if the scene is always drawn at the render resolution.
+   * @see #setWindowedRenderResolution(boolean)
+   */
+  public boolean isWindowedRenderResolution() {
+    return windowedRenderResolution;
+  }
+
+  /**
+   * Makes a set render resolution apply outside fullscreen too.
+   *
+   * <p>By default a render resolution only takes effect in fullscreen: in a window, the window itself is resized to
+   * that resolution instead. A platform whose window the game cannot resize (such as a browser canvas, which the
+   * page sizes) turns this on, so the scene is drawn at the render resolution and stretched to fit, like a
+   * fullscreen monitor.
+   *
+   * @param windowedRenderResolution Whether a render resolution always applies.
+   */
+  public void setWindowedRenderResolution(boolean windowedRenderResolution) {
+    this.windowedRenderResolution = windowedRenderResolution;
   }
 
   /** Logs the frame statistics once per second when {@code flixel.render.stats} is on. */
