@@ -235,7 +235,7 @@ public class Html5Plugin implements Plugin<Project> {
    * present there before the game runs. This task copies any path matching
    * {@code org/flixelgdx/bitmap/**} (the packaged bitmap font atlas and descriptor) from every
    * source on the runtime classpath into the web assets tree, following the same pattern used by
-   * {@code copyShaders} for compiled shader variants.
+   * {@code copyShaders} for the game's WGSL shaders.
    */
   private void registerFrameworkResourcesTask(Project project, DirectoryProperty webRoot) {
     project.getTasks().register("copyFrameworkResources", Copy.class, task -> {

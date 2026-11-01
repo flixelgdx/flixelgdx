@@ -219,7 +219,8 @@ Games write shaders in WGSL (`shaders/<name>.wgsl` in the game's resources) and 
 `copyShaders`, which copies every `shaders/**/*.wgsl` file from the game's resources and from the
 JARs on the runtime classpath into the web assets tree. They preload like any other asset, and
 the web renderer reads them from the preloaded cache. This works whether or not the shader plugin
-is applied; when it is, its validated shaders are part of the resources and are picked up the same way.
+is applied: the shader plugin's `processShaders` task writes its validated shaders to a resource root of the `main`
+source set, so they are part of the resources and are picked up the same way.
 
 The renderer's own shaders (the shader preamble and the built-in sprite shader) need no copying:
 the web backend embeds them into the translated program when TeaVM builds the game.
