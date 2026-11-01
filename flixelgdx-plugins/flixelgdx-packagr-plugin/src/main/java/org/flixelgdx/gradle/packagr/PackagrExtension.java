@@ -117,9 +117,9 @@ public abstract class PackagrExtension {
   public abstract ListProperty<String> getJvmArgs();
 
   /**
-   * The feature version of the Java runtime to bundle, for example {@code 17} or {@code 21}.
+   * The feature version of the Java runtime to bundle, for example {@code 25} or {@code 21}.
    *
-   * <p>Defaults to {@code 17}, the version the framework targets. The runtime is always built from
+   * <p>Defaults to {@code 25}, the version the framework targets. The runtime is always built from
    * Eclipse Temurin, the JDK the framework recommends.
    *
    * @return The runtime-version property.
