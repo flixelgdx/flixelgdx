@@ -9,7 +9,7 @@ plugins {
 
 java {
   toolchain {
-    languageVersion = JavaLanguageVersion.of(17)
+    languageVersion = JavaLanguageVersion.of(25)
   }
 }
 
@@ -29,7 +29,7 @@ afterEvaluate {
       charSet = "UTF-8"
       docEncoding = "UTF-8"
       memberLevel = JavadocMemberLevel.PUBLIC
-      links("https://docs.oracle.com/en/java/javase/17/docs/api/")
+      links("https://docs.oracle.com/en/java/javase/25/docs/api/")
       if (JavaVersion.current().isJava9Compatible) {
         addStringOption("Xdoclint:all,-missing", "-quiet")
         addStringOption("Werror")

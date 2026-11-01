@@ -14,10 +14,10 @@ repositories {
 dependencies {
   implementation("com.diffplug.spotless:spotless-plugin-gradle:8.6.0")
   implementation("com.vanniktech:gradle-maven-publish-plugin:0.33.0")
-  implementation("com.android.tools.build:gradle:8.7.3")
+  implementation("com.android.tools.build:gradle:8.11.0")
   implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.20")
 }
 
 kotlin {
-  jvmToolchain(17)
+  jvmToolchain(25)
 }
