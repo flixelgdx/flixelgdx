@@ -28,7 +28,8 @@ import org.flixelgdx.FlixelCamera;
 import org.flixelgdx.FlixelObject;
 import org.flixelgdx.FlixelSprite;
 import org.flixelgdx.backend.FlixelRuntimeMode;
-import org.flixelgdx.backend.desktop.graphics.FlixelBgfxGraphics;
+import org.flixelgdx.backend.gpu.FlixelGpuGraphics;
+import org.flixelgdx.backend.gpu.FlixelGpuStats;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
 import org.flixelgdx.debug.FlixelDebugManager;
@@ -39,8 +40,6 @@ import org.flixelgdx.input.keyboard.FlixelKey;
 import org.flixelgdx.input.mouse.FlixelMouseCursor;
 import org.flixelgdx.logging.FlixelLogLevel;
 import org.flixelgdx.logging.FlixelLogger;
-import org.lwjgl.bgfx.BGFX;
-import org.lwjgl.bgfx.BGFXStats;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -68,7 +67,7 @@ import imgui.type.ImInt;
 import imgui.type.ImString;
 
 /**
- * Dear ImGui based debug overlay for the desktop (bgfx + SDL3) backend.
+ * Dear ImGui based debug overlay for the desktop (WebGPU + SDL3) backend.
  *
  * <h2>Wiring</h2>
  *
@@ -76,16 +75,16 @@ import imgui.type.ImString;
  * launching in {@link FlixelRuntimeMode#DEBUG} mode. You can also register it manually with
  * {@link FlixelDebugManager#setOverlayFactory(Supplier)} before the game starts.
  *
- * <p>Initialization (creating the Dear ImGui context, uploading the font atlas as a bgfx texture, and
+ * <p>Initialization (creating the Dear ImGui context, uploading the font atlas as a GPU texture, and
  * registering the SDL input listener) happens lazily on the first {@link #draw()} call, so
  * construction stays cheap and the cost is only paid once debug mode actually shows the overlay.
  *
  * <h2>Rendering and input</h2>
  *
  * <p>Unlike a typical Dear ImGui integration, nothing here talks to a graphics API directly. Panels
- * are submitted through {@link FlixelImGuiBgfxRenderer}, which turns Dear ImGui's draw lists into bgfx
+ * are submitted through {@link FlixelImGuiGpuRenderer}, which turns Dear ImGui's draw lists into WebGPU
  * draw calls, and input arrives through {@link FlixelImGuiSdlInput}, which forwards the desktop
- * backend's SDL events into Dear ImGui. Both are bespoke because the project ships its own bgfx and
+ * backend's SDL events into Dear ImGui. Both are bespoke because the project ships its own WebGPU and
  * SDL3 stack instead of the OpenGL and GLFW backends imgui-java bundles.
  *
  * <p>Window positions are not persisted across runs: the {@code imgui.ini} file is disabled because
@@ -143,17 +142,17 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       "No trackers registered. Use Flixel.debug.addTrackerEntry(...) to show grouped values here.";
 
   /**
-   * Number of unique bgfx time-series graphs, used to size the per-series Y-axis scale array.
-   * Indices: 0 CPU submit, 1 GPU, 2 Wait submit, 3 Wait render, 4 GPU memory.
-   * CPU frame and draw calls are omitted because they duplicate the core perf ring buffers.
+   * Number of unique renderer time-series graphs, used to size the per-series Y-axis scale array.
+   * Indices: 0 record time, 1 present wait, 2 triangles, 3 ring use, 4 texture memory.
+   * Draw calls are omitted because they duplicate the core perf ring buffers.
    */
-  private static final int BGFX_GRAPH_COUNT = 5;
+  private static final int GPU_GRAPH_COUNT = 5;
 
   private final FlixelImGuiSdlInput imguiInput = new FlixelImGuiSdlInput();
-  private final FlixelBgfxStatsSampler statsSampler = new FlixelBgfxStatsSampler();
+  private final FlixelGpuStatsSampler statsSampler = new FlixelGpuStatsSampler();
 
-  private FlixelBgfxGraphics graphics;
-  private FlixelImGuiBgfxRenderer renderer;
+  private FlixelGpuGraphics graphics;
+  private FlixelImGuiGpuRenderer renderer;
 
   // Snapshot of the log buffer taken once per frame to avoid holding logBuffer during draw.
   private final FlixelArray<FlixelDebugOverlay.BufferedLogLine> logSnapshot = new FlixelArray<>();
@@ -265,7 +264,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float layoutCommandY;
   private float layoutCommandW;
   private float layoutCommandH;
-  private float bgfxSampleTimer = 0f;
+  private float gpuSampleTimer = 0f;
   private float overlayUpdateRate = 20f;
   private float textureViewerZoom = 1f;
 
@@ -277,8 +276,8 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   private float perfScaleMaxNativeMb = 1f;
   private float perfScaleMaxRenderCalls = 1f;
 
-  /** Per-series Y-axis scale maxima for the bgfx render graphs, one per graph. */
-  private final float[] bgfxScaleMax = new float[BGFX_GRAPH_COUNT];
+  /** Per-series Y-axis scale maxima for the renderer graphs, one per graph. */
+  private final float[] gpuScaleMax = new float[GPU_GRAPH_COUNT];
 
   private boolean imguiInitialized;
   private boolean imguiShutdown;
@@ -309,7 +308,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     if (!imguiInitialized) {
       initImGui();
       if (!imguiInitialized) {
-        // Initialization could not complete (no bgfx graphics yet, for example). Skip rendering and
+        // Initialization could not complete (no GPU renderer yet, for example). Skip rendering and
         // try again next frame so the overlay degrades gracefully instead of crashing.
         return;
       }
@@ -396,11 +395,11 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
       return;
     }
     snapshotLogBuffer();
-    bgfxSampleTimer += Flixel.getRawElapsed();
-    float bgfxSampleInterval = 1f / overlayUpdateRate;
-    if (bgfxSampleTimer >= bgfxSampleInterval) {
-      bgfxSampleTimer -= bgfxSampleInterval;
-      statsSampler.sample(graphics.getBgfxStats());
+    gpuSampleTimer += Flixel.getRawElapsed();
+    float gpuSampleInterval = 1f / overlayUpdateRate;
+    if (gpuSampleTimer >= gpuSampleInterval) {
+      gpuSampleTimer -= gpuSampleInterval;
+      statsSampler.sample(graphics.getStats());
     }
 
     if (sanitizeImGuiInputBeforeNextDraw) {
@@ -515,13 +514,13 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   protected void onDrawImGui() {}
 
   private void initImGui() {
-    if (!(Flixel.graphics instanceof FlixelBgfxGraphics bgfx)) {
-      LOG.warn("Desktop graphics are not bgfx; the ImGui debug overlay will not run.");
+    if (!(Flixel.graphics instanceof FlixelGpuGraphics gpu)) {
+      LOG.warn("Desktop graphics are not the WebGPU renderer; the ImGui debug overlay will not run.");
       imguiShutdown = true;
       return;
     }
-    graphics = bgfx;
-    renderer = new FlixelImGuiBgfxRenderer(bgfx);
+    graphics = gpu;
+    renderer = new FlixelImGuiGpuRenderer(gpu);
 
     ImGui.createContext();
     ImGuiIO io = ImGui.getIO();
@@ -857,7 +856,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
   }
 
   /**
-   * Merged Performance panel: real-time graphs of the platform-agnostic ring buffers and bgfx render
+   * Merged Performance panel: real-time graphs of the platform-agnostic ring buffers and the renderer
    * statistics, organized into collapsing sections. The Core section (FPS, frame time, draw calls)
    * starts open; Memory, GPU Timing, Submission, and Resources start collapsed.
    */
@@ -878,15 +877,9 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     ImGui.sameLine();
     text(COLOR_VALUE, graphics.getBackBufferWidth() + " x " + graphics.getBackBufferHeight());
 
-    BGFXStats stats = graphics.getBgfxStats();
-    int bgfxCount = statsSampler.getCount();
-    int bgfxOffset = statsSampler.getPlotOffset();
-    // Read conversion factors directly from the live stats so they stay current even when the
-    // sampler is throttled; fall back to the sampler's last known values when stats is null.
-    long cpuFreq = stats != null ? stats.cpuTimerFreq() : 0;
-    long gpuFreq = stats != null ? stats.gpuTimerFreq() : 0;
-    double cpuToMs = cpuFreq > 0 ? 1000.0 / cpuFreq : statsSampler.getCpuToMs();
-    double gpuToMs = gpuFreq > 0 ? 1000.0 / gpuFreq : statsSampler.getGpuToMs();
+    FlixelGpuStats stats = graphics.getStats();
+    int gpuCount = statsSampler.getCount();
+    int gpuOffset = statsSampler.getPlotOffset();
     float graphWidth = ImGui.getContentRegionAvailX();
     float graphHeight = 60f;
     float graphHeightSmall = 48f;
@@ -941,85 +934,57 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
               graphHeight);
         }
       }
-      if (bgfxCount > 0) {
-        if (statsSampler.latest(statsSampler.getGpuMemoryMb()) > 0f) {
-          drawBgfxGraph(4, "GPU (MB)", statsSampler.getGpuMemoryMb(), bgfxCount, bgfxOffset, graphWidth,
-              graphHeightSmall,
-              false);
-        } else {
-          text(COLOR_HINT, "GPU memory tracking unavailable for this graphics API.");
-        }
-      }
-      if (stats != null) {
-        ImGui.separator();
-        drawByteRow("GPU memory used", stats.gpuMemoryUsed());
-        drawByteRow("GPU memory max", stats.gpuMemoryMax());
-        drawByteRow("Texture memory", stats.textureMemoryUsed());
-        drawByteRow("Render target memory", stats.rtMemoryUsed());
-        drawStatRow("Transient VB (KB)", stats.transientVbUsed() / 1024);
-        drawStatRow("Transient IB (KB)", stats.transientIbUsed() / 1024);
+      ImGui.separator();
+      drawByteRow("Texture memory", stats.textureBytes);
+      drawByteRow("Ring buffers", stats.ringBytes);
+      if (gpuCount > 0) {
+        drawGpuGraph(4, "Texture memory (MB)", statsSampler.getTextureMb(), gpuCount, gpuOffset, graphWidth,
+            graphHeightSmall, true);
+        drawGpuGraph(3, "Ring use (KB)", statsSampler.getRingKb(), gpuCount, gpuOffset, graphWidth,
+            graphHeightSmall, false);
       }
     }
 
     if (ImGui.collapsingHeader("GPU Timing")) {
-      if (bgfxCount == 0) {
+      if (gpuCount == 0) {
         text(COLOR_HINT, "Collecting samples...");
       } else {
-        drawBgfxGraph(0, "CPU submit (ms)", statsSampler.getCpuSubmitMs(), bgfxCount, bgfxOffset, graphWidth,
+        drawGpuGraph(0, "Record + submit (ms)", statsSampler.getRecordMs(), gpuCount, gpuOffset, graphWidth,
             graphHeightSmall, true);
-        drawBgfxGraph(1, "GPU (ms)", statsSampler.getGpuMs(), bgfxCount, bgfxOffset, graphWidth, graphHeightSmall,
-            true);
-        drawBgfxGraph(2, "Wait submit (ms)", statsSampler.getWaitSubmitMs(), bgfxCount, bgfxOffset, graphWidth,
-            graphHeightSmall, true);
-        drawBgfxGraph(3, "Wait render (ms)", statsSampler.getWaitRenderMs(), bgfxCount, bgfxOffset, graphWidth,
+        drawGpuGraph(1, "Present wait (ms)", statsSampler.getPresentMs(), gpuCount, gpuOffset, graphWidth,
             graphHeightSmall, true);
       }
-      if (stats != null) {
-        ImGui.separator();
-        drawStatRow("CPU frame (ms)", (float) (stats.cpuTimeFrame() * cpuToMs));
-        drawStatRow("CPU submit (ms)", (float) ((stats.cpuTimeEnd() - stats.cpuTimeBegin()) * cpuToMs));
-        if (gpuToMs > 0.0) {
-          drawStatRow("GPU (ms)", (float) ((stats.gpuTimeEnd() - stats.gpuTimeBegin()) * gpuToMs));
-        } else {
-          text(COLOR_KEY, "GPU (ms)");
-          ImGui.sameLine();
-          text(COLOR_VALUE, "n/a");
-        }
-        drawStatRow("Wait submit (ms)", (float) (stats.waitSubmit() * cpuToMs));
-        drawStatRow("Wait render (ms)", (float) (stats.waitRender() * cpuToMs));
-      }
+      ImGui.separator();
+      drawStatRow("Record + submit (ms)", stats.cpuMs);
+      drawStatRow("Present wait (ms)", stats.presentMs);
+      text(COLOR_HINT, "The GPU itself is not timed; present wait is mostly the wait for vertical sync.");
     }
 
-    if (stats != null) {
-      if (ImGui.collapsingHeader("Submission")) {
-        drawStatRow("Peak draw calls", stats.numDrawCallsPeak());
-        drawStatRow("Compute calls", stats.numCompute());
-        drawStatRow("Blit calls", stats.numBlit());
-        drawStatRow("Triangles", stats.numPrims(BGFX.BGFX_TOPOLOGY_TRI_LIST));
-        drawStatRow("Views", stats.numViews());
-        drawStatRow("Encoders", stats.numEncoders());
-        drawStatRow("GPU latency", stats.maxGpuLatency());
+    if (ImGui.collapsingHeader("Submission")) {
+      drawStatRow("Draw calls", stats.draws);
+      drawStatRow("Triangles", stats.triangles);
+      drawStatRow("Vertices", stats.vertices);
+      drawStatRow("Render passes", stats.passes);
+      drawStatRow("Submits", stats.submits);
+      drawStatRow("Vertex ring (KB)", stats.vertexBytes / 1024);
+      drawStatRow("Uniform ring (KB)", stats.uniformBytes / 1024);
+      if (gpuCount > 0) {
+        drawGpuGraph(2, "Triangles", statsSampler.getTriangles(), gpuCount, gpuOffset, graphWidth, graphHeightSmall,
+            false);
       }
-      if (ImGui.collapsingHeader("Resources")) {
-        drawStatRow("Textures", stats.numTextures());
-        drawStatRow("Shaders", stats.numShaders());
-        drawStatRow("Programs", stats.numPrograms());
-        drawStatRow("Uniforms", stats.numUniforms());
-        drawStatRow("Frame buffers", stats.numFrameBuffers());
-        drawStatRow("Vertex buffers", stats.numVertexBuffers());
-        drawStatRow("Index buffers", stats.numIndexBuffers());
-        drawStatRow("Dynamic VB", stats.numDynamicVertexBuffers());
-        drawStatRow("Dynamic IB", stats.numDynamicIndexBuffers());
-      }
+    }
+    if (ImGui.collapsingHeader("Resources")) {
+      drawStatRow("Textures", stats.textures);
+      drawStatRow("Pipelines", stats.pipelines);
     }
 
     ImGui.end();
   }
 
   /**
-   * Draws one labeled bgfx graph with a live value readout.
+   * Draws one labeled renderer graph with a live value readout.
    *
-   * @param index The per-series scale slot (0 to {@link #BGFX_GRAPH_COUNT} - 1).
+   * @param index The per-series scale slot (0 to {@link #GPU_GRAPH_COUNT} - 1).
    * @param label The row label.
    * @param ring The ring buffer to plot.
    * @param count The number of valid samples.
@@ -1029,17 +994,17 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
    * @param oneDecimal Whether to format the live value with one decimal ({@code true}) or as a
    *     rounded integer ({@code false}).
    */
-  private void drawBgfxGraph(int index, String label, float[] ring, int count, int offset,
+  private void drawGpuGraph(int index, String label, float[] ring, int count, int offset,
       float width, float height, boolean oneDecimal) {
     float latest = statsSampler.latest(ring);
-    bgfxScaleMax[index] = Math.max(ringMax(ring, count) * 1.15f, bgfxScaleMax[index] * 0.997f);
-    if (bgfxScaleMax[index] < 1e-4f) {
-      bgfxScaleMax[index] = 1e-4f;
+    gpuScaleMax[index] = Math.max(ringMax(ring, count) * 1.15f, gpuScaleMax[index] * 0.997f);
+    if (gpuScaleMax[index] < 1e-4f) {
+      gpuScaleMax[index] = 1e-4f;
     }
     text(COLOR_KEY, label);
     ImGui.sameLine();
     text(COLOR_VALUE, oneDecimal ? formatOneDecimal(latest) : Integer.toString(Math.round(latest)));
-    ImGui.plotLines("##bgfx" + index, ring, count, offset, "", 0f, bgfxScaleMax[index], width, height);
+    ImGui.plotLines("##gpu" + index, ring, count, offset, "", 0f, gpuScaleMax[index], width, height);
   }
 
   private void drawControlsWindow() {
@@ -1382,7 +1347,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     int texH = texture.getHeight();
     text(COLOR_KEY, "Texture");
     ImGui.sameLine();
-    text(COLOR_VALUE, texW + " x " + texH + " (bgfx=" + handle + ")");
+    text(COLOR_VALUE, texW + " x " + texH + " (id " + handle + ")");
 
     ImGui.separator();
     textureViewerZoomBuf[0] = textureViewerZoom;
@@ -1391,7 +1356,7 @@ public class FlixelImGuiDebugOverlay extends FlixelDebugOverlay {
     }
 
     if (ImGui.beginChild("texscroll", 0, 0, true, ImGuiWindowFlags.HorizontalScrollbar)) {
-      // Pass the bgfx texture handle as the Dear ImGui texture id; the bgfx renderer binds it back.
+      // Pass the texture id as the Dear ImGui texture id; the GPU renderer looks the texture up again.
       // Framework textures store texel (0, 0) at the top-left, matching ImGui's default UVs, so the
       // image renders upright.
       ImGui.image(handle, texW * textureViewerZoom, texH * textureViewerZoom);

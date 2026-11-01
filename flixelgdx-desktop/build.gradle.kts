@@ -13,18 +13,27 @@ val lwjglNatives = listOf(
 
 dependencies {
   api(project(":flixelgdx-core"))
+  api(project(":flixelgdx-gpu"))
   api(project(":flixelgdx-miniaudio"))
+
+  // The WebGPU backend for the desktop (Java FFM) plus the Dawn library of every desktop platform, so a packaged
+  // game runs anywhere. Each natives jar is a few MB; a game that ships to fewer platforms can exclude the rest.
+  api(libs.jwebgpu.ffm)
+  runtimeOnly(libs.jwebgpu.natives.linux.x64)
+  runtimeOnly(libs.jwebgpu.natives.linux.aarch64)
+  runtimeOnly(libs.jwebgpu.natives.windows.x64)
+  runtimeOnly(libs.jwebgpu.natives.windows.aarch64)
+  runtimeOnly(libs.jwebgpu.natives.macos.x64)
+  runtimeOnly(libs.jwebgpu.natives.macos.aarch64)
 
   api(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
   api(libs.lwjgl)
   api(libs.lwjgl.sdl)
-  api(libs.lwjgl.bgfx)
   api(libs.lwjgl.stb)
 
   lwjglNatives.forEach { classifier ->
     runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:$classifier")
     runtimeOnly("org.lwjgl:lwjgl-sdl:$lwjglVersion:$classifier")
-    runtimeOnly("org.lwjgl:lwjgl-bgfx:$lwjglVersion:$classifier")
     runtimeOnly("org.lwjgl:lwjgl-stb:$lwjglVersion:$classifier")
   }
 
