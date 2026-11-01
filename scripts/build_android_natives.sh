@@ -6,9 +6,8 @@
 #
 #   ./scripts/build_android_natives.sh
 #
-# It produces, per ABI (arm64-v8a, armeabi-v7a, x86_64):
+# It produces, per ABI (arm64-v8a, x86_64):
 #   - libflixel_miniaudio.so: the audio engine, built from flixelgdx-miniaudio/src/main/native
-#   - libbasisu.so: the Basis Universal KTX2 transcoder and its JNI wrapper
 #
 # Requirements (both install through the Android SDK manager):
 #   - Android NDK 28.2.13676358. Set ANDROID_NDK_HOME, or ANDROID_HOME / ANDROID_SDK_ROOT so the
@@ -17,17 +16,16 @@
 #     PATH work too.
 #
 # The NDK cross-compiles, so one host (Linux, macOS, or Windows through Git Bash) builds every ABI.
-# Dependency versions and SHA-256 hashes are pinned in flixelgdx-android/src/main/cpp/deps.cmake
-# and flixelgdx-miniaudio/src/main/native/deps.cmake.
+# Dependency versions and SHA-256 hashes are pinned in flixelgdx-miniaudio/src/main/native/deps.cmake.
 #
 # The produced libraries are committed so building the framework or a game never needs the NDK.
-# Only rebuild when flixel_basisu.cpp, flixel_miniaudio.c, a CMakeLists.txt, or a deps.cmake
-# changes.
+# Only rebuild when flixel_miniaudio.c, a CMakeLists.txt, or a deps.cmake changes.
 set -euo pipefail
 
 NDK_VERSION="28.2.13676358"
-MIN_SDK="24"
-ABIS=("arm64-v8a" "armeabi-v7a" "x86_64")
+MIN_SDK="26"
+# jwebgpu (Dawn) is 64-bit only, so the 32-bit ABIs are not built.
+ABIS=("arm64-v8a" "x86_64")
 SOURCE_DIR="flixelgdx-android/src/main/cpp"
 OUT_BASE="flixelgdx-android/src/main/jniLibs"
 BUILD_DIR="$(mktemp -d)"
@@ -68,7 +66,7 @@ for ABI in "${ABIS[@]}"; do
   "${CMAKE}" --build "${BUILD_DIR}/${ABI}"
 
   mkdir -p "${OUT_BASE}/${ABI}"
-  for LIB in libflixel_miniaudio.so libbasisu.so; do
+  for LIB in libflixel_miniaudio.so; do
     BUILT="$(find "${BUILD_DIR}/${ABI}" -name "${LIB}" | head -1)"
     if [ -z "${BUILT}" ]; then
       echo "Build succeeded but '${LIB}' was not found for ${ABI}." >&2
