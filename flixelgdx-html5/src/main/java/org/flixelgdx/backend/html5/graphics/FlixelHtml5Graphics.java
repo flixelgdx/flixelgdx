@@ -26,7 +26,6 @@ package org.flixelgdx.backend.html5.graphics;
 import org.flixelgdx.Flixel;
 import org.flixelgdx.collections.FlixelArray;
 import org.flixelgdx.collections.FlixelList;
-import org.flixelgdx.file.FlixelFile;
 import org.flixelgdx.graphics.FlixelBatch;
 import org.flixelgdx.graphics.FlixelDisplayMode;
 import org.flixelgdx.graphics.FlixelGlobalShaderPipeline;
@@ -574,9 +573,16 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     return new FlixelImage(width, height, src.slice().order(ByteOrder.nativeOrder()));
   }
 
-  @Override
+  /**
+   * Compiles a program from GLSL source text. This is only used by the web renderer's own built-in programs
+   * while it still runs on WebGL; user shaders are WGSL and are not supported on this backend yet.
+   *
+   * @param vertexSource The GLSL ES vertex shader source.
+   * @param fragmentSource The GLSL ES fragment shader source.
+   * @return The compiled program, or {@link FlixelUnsupportedShader#INSTANCE} when it does not compile.
+   */
   @NotNull
-  public FlixelShaderProgram compileShaderSource(@NotNull String vertexSource, @NotNull String fragmentSource) {
+  public FlixelShaderProgram compileGlslSource(@NotNull String vertexSource, @NotNull String fragmentSource) {
     if (gl == null) {
       return FlixelUnsupportedShader.INSTANCE;
     }
@@ -584,18 +590,18 @@ public class FlixelHtml5Graphics implements FlixelGraphicsManager {
     return program != null ? new FlixelWebGlShaderProgram(gl, program) : FlixelUnsupportedShader.INSTANCE;
   }
 
+  // TODO: The web backend has not moved to the WebGPU renderer yet, so WGSL shaders are not supported here.
+  @Override
+  @NotNull
+  public FlixelShaderProgram compileShaderSource(@NotNull String wgslSource) {
+    return FlixelUnsupportedShader.INSTANCE;
+  }
+
+  // TODO: The web backend has not moved to the WebGPU renderer yet, so WGSL shaders are not supported here.
   @Override
   @NotNull
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
-    // The web variant is raw GLSL text. A browser cannot read classpath resources, so the
-    // build plugin copies these ESSL files into the web assets and the preloader caches them;
-    // here they are read straight from that warm cache.
-    FlixelFile vertexFile = Flixel.files.internal("shaders/" + name + "/essl/vs.glsl");
-    FlixelFile fragmentFile = Flixel.files.internal("shaders/" + name + "/essl/fs.glsl");
-    if (!vertexFile.exists() || !fragmentFile.exists()) {
-      return FlixelUnsupportedShader.INSTANCE;
-    }
-    return compileShaderSource(vertexFile.readString(), fragmentFile.readString());
+    return FlixelUnsupportedShader.INSTANCE;
   }
 
   /**

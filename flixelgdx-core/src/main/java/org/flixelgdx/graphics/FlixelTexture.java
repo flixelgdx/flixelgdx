@@ -48,7 +48,7 @@ public interface FlixelTexture extends FlixelDestroyable {
   /**
    * Returns a backend-specific identifier for this texture.
    *
-   * <p>This value only has meaning to the active backend (for example, a bgfx texture handle).
+   * <p>This value only has meaning to the active backend (for example, a native texture pointer).
    * It exists for advanced interop and debugging; portable game code should never interpret it.
    *
    * @return The opaque native handle, or {@code 0} when no GPU object exists.

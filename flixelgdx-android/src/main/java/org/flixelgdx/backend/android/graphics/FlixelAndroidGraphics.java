@@ -476,25 +476,32 @@ public class FlixelAndroidGraphics implements FlixelGraphicsManager {
     return new FlixelGlesRenderTarget(this, width, height, true);
   }
 
-  @Override
+  /**
+   * Compiles a program from GLSL source text. This is only used by the Android renderer's own built-in programs
+   * while it still runs on OpenGL ES; user shaders are WGSL and are not supported on this backend yet.
+   *
+   * @param vertexSource The GLSL ES vertex shader source.
+   * @param fragmentSource The GLSL ES fragment shader source.
+   * @return The compiled program, or {@link FlixelUnsupportedShader#INSTANCE} when it does not compile.
+   */
   @NotNull
-  public FlixelShaderProgram compileShaderSource(@NotNull String vertexSource,
-      @NotNull String fragmentSource) {
+  public FlixelShaderProgram compileGlslSource(@NotNull String vertexSource, @NotNull String fragmentSource) {
     int program = FlixelGlesPrograms.buildCustom(vertexSource, fragmentSource);
     return program != 0 ? new FlixelGlesShaderProgram(program) : FlixelUnsupportedShader.INSTANCE;
   }
 
+  // TODO: Android has not moved to the WebGPU renderer yet, so WGSL shaders are not supported here.
+  @Override
+  @NotNull
+  public FlixelShaderProgram compileShaderSource(@NotNull String wgslSource) {
+    return FlixelUnsupportedShader.INSTANCE;
+  }
+
+  // TODO: Android has not moved to the WebGPU renderer yet, so WGSL shaders are not supported here.
   @Override
   @NotNull
   public FlixelShaderProgram compileShaderProgram(@NotNull String name) {
-    // The shader plugin writes an ESSL variant next to the bgfx ones and bundles it into the game's
-    // Java resources, which the Android build packs into the APK.
-    String vertex = readShaderResource("shaders/" + name + "/essl/vs.glsl");
-    String fragment = readShaderResource("shaders/" + name + "/essl/fs.glsl");
-    if (vertex == null || fragment == null) {
-      return FlixelUnsupportedShader.INSTANCE;
-    }
-    return compileShaderSource(vertex, fragment);
+    return FlixelUnsupportedShader.INSTANCE;
   }
 
   @Override

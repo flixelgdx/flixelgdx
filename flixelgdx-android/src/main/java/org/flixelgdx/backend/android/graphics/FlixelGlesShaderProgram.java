@@ -45,7 +45,7 @@ import android.opengl.GLES30;
  * holders keyed by name, so setting a uniform every frame allocates nothing after the first time
  * a name is seen.
  *
- * <p>Instances are created by {@link FlixelAndroidGraphics#compileShaderSource} and must only
+ * <p>Instances are created by {@link FlixelAndroidGraphics#compileGlslSource} and must only
  * be used on the GL thread.
  */
 class FlixelGlesShaderProgram implements FlixelShaderProgram {

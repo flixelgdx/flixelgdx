@@ -74,7 +74,7 @@ public final class FlixelGraphicsApi {
   /** The Direct3D 12 renderer, used on Windows. */
   public static final FlixelGraphicsApi DIRECT3D12 = of("Direct3D12");
 
-  /** The web backend built on the browser's native WebGPU. */
+  /** A WebGPU renderer whose underlying native API is unknown (the browser, or an adapter that does not say). */
   public static final FlixelGraphicsApi WEBGPU = of("WebGPU");
 
   /** The web backend built on WebGL. */
