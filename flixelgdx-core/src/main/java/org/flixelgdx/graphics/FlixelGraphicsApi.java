@@ -77,9 +77,6 @@ public final class FlixelGraphicsApi {
   /** A WebGPU renderer whose underlying native API is unknown (the browser, or an adapter that does not say). */
   public static final FlixelGraphicsApi WEBGPU = of("WebGPU");
 
-  /** The web backend built on WebGL. */
-  public static final FlixelGraphicsApi WEBGL = of("WebGL");
-
   /**
    * No real backend is present.
    *
