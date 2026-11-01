@@ -422,6 +422,16 @@ To **build the Android module in this repo** (e.g. to work on Android-specific c
   ```
   Then any normal `./gradlew ...` run will include the Android module. You still need the Android SDK and the setup steps below when the module is enabled.
 
+### Requirements of the Android backend
+
+FlixelGDX on Android renders with WebGPU (Dawn, through jwebgpu's JNI backend), which runs on Vulkan. Keep these in mind when you build or test:
+
+- **minSdk 26** (Android 8.0) and a device with **Vulkan 1.1**. The backend's manifest declares `android.hardware.vulkan.version` 0x401000 as required, so Google Play only offers the game to devices that can run it. Emulators need a Vulkan-capable GPU configuration.
+- **64-bit only**: `arm64-v8a` and `x86_64`. The 32-bit ABIs are not supported, and the backend restricts its ABI filters accordingly.
+- The `jwebgpu-jni` library is an Android library from the jwebgpu checkout. It is only part of the jwebgpu build when `includeAndroid=true` is set. If a test project that includes both checkouts fails with "Could not find io.github.stringdotjar:jwebgpu-jni", put `includeAndroid=true` and `sdk.dir=...` in the jwebgpu checkout's own `local.properties` as well.
+- The AAR carries `libwebgpu_dawn.so`, `libjwebgpu_jni.so` and `META-INF/jwebgpu/dawn-licenses.txt`; a game picks them up through its normal dependency on `flixelgdx-android`.
+- Shaders are WGSL only, the same files as on desktop. The `flixel_preamble.wgsl` and `sprite.wgsl` resources are Java resources and are packaged into the APK.
+
 ### Why you need the Android SDK
 
 - **Building the flixelgdx-android module in this repo**: after enabling it (see above), `./gradlew :flixelgdx-android:assemble` (or `assembleRelease`) requires the Android SDK and build tools.
